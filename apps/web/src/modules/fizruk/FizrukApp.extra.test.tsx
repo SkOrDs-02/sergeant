@@ -398,10 +398,10 @@ describe("FizrukApp (extra) — header callbacks", () => {
       navigate: navigateMock,
     });
     render(<FizrukApp />);
-    expect(screen.getByText("Атлас тіла")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
   });
 
-  it("shows active program subtitle on programs page", () => {
+  it("keeps the module header stable on the programs page", () => {
     vi.mocked(useFizrukRoute).mockReturnValueOnce({
       page: "programs",
       segments: [],
@@ -418,6 +418,7 @@ describe("FizrukApp (extra) — header callbacks", () => {
       deactivateProgram: vi.fn(),
     });
     render(<FizrukApp />);
-    expect(screen.getByText("Активна: Сила 5×5")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    expect(screen.queryByText("Активна: Сила 5×5")).not.toBeInTheDocument();
   });
 });

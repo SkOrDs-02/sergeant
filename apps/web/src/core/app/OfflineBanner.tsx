@@ -8,7 +8,7 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
 
 /**
  * Subtle connectivity-and-sync indicator — a small floating pill in the
- * top-right corner. For a PWA designed to work offline, screaming
+ * below the app header. For a PWA designed to work offline, screaming
  * "NO INTERNET!" felt like a critical error, so this stays compact.
  *
  * Three visible states (idle → renders `null`):
@@ -23,10 +23,10 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
  * stays symmetric on notched devices (mobile-audit A6).
  */
 
-// Safe-area on the `top` OFFSET, not on the pill's padding — padding-top
-// distorted the round pill into an asymmetric blob on devices with a notch.
+// Keep the exceptional-state pill below the 68px app header instead of
+// covering its title/actions. The indicator is absent in the happy path.
 const PILL_CLS =
-  "fixed top-[calc(0.75rem+env(safe-area-inset-top,0px))] right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "fixed top-[calc(4.75rem+env(safe-area-inset-top,0px))] right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/95 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 type BannerState = "blocked" | "offline" | "syncing";
 

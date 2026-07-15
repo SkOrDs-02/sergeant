@@ -163,7 +163,10 @@ export function BudgetsGoalsSection({
                 setBudgets((bs) =>
                   bs.map((x, j) =>
                     j === globalIdx && x.type === "goal"
-                      ? { ...x, targetDate: nextDate || undefined }
+                      ? nextDate
+                        ? { ...x, targetDate: nextDate }
+                        : (({ targetDate: _removed, ...withoutDate }) =>
+                            withoutDate)(x)
                       : x,
                   ),
                 )

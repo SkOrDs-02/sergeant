@@ -268,7 +268,7 @@ describe("FinykSection interactions", () => {
   it("clears the transaction cache through the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("🧹 Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
@@ -283,11 +283,11 @@ describe("FinykSection interactions", () => {
   it("refreshes all data on demand", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const btn = await screen.findByText("🔄 Оновити дані");
+    const btn = await screen.findByText("Оновити дані");
     fireEvent.click(btn);
     // Button flips to the busy label while the invalidations resolve.
     await waitFor(() =>
-      expect(screen.getByText("🔄 Оновити дані")).toBeInTheDocument(),
+      expect(screen.getByText("Оновити дані")).toBeInTheDocument(),
     );
   });
 

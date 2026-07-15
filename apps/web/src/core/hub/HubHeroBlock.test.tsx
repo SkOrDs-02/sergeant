@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { HubHeroBlock } from "./HubHeroBlock";
 
 const { flagMock, openActionMock } = vi.hoisted(() => ({
@@ -102,7 +103,8 @@ function renderHero(overrides: Record<string, unknown> = {}) {
     hasValueBar: false,
     ...overrides,
   };
-  return { ...render(<HubHeroBlock {...(props as never)} />), props };
+  const typedProps = props as unknown as ComponentProps<typeof HubHeroBlock>;
+  return { ...render(<HubHeroBlock {...typedProps} />), props };
 }
 
 describe("HubHeroBlock", () => {

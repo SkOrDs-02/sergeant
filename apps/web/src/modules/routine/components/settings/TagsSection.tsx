@@ -9,6 +9,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
@@ -181,7 +182,7 @@ export function TagsSection({
                   onClick={() => startEdit(t.id, t.name)}
                   aria-label={`Змінити ${t.name}`}
                 >
-                  ✎
+                  <Icon name="edit" size={14} aria-hidden />
                 </IconButton>
                 <IconButton
                   size="xs"

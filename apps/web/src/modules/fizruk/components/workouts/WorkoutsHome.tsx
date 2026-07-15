@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
 
@@ -107,14 +108,15 @@ export function WorkoutsHome({
               className="h-12 text-base"
               onClick={onRequestStart}
             >
-              ▶︎ Почати тренування
+              <Icon name="play" size={16} aria-hidden /> Почати тренування
             </Button>
             <Button
               variant="secondary"
               className="h-12 text-base"
               onClick={onOpenRetro}
             >
-              ✏️ Внести проведене заняття
+              <Icon name="edit" size={16} aria-hidden /> Внести проведене
+              заняття
             </Button>
             {onOpenSchedule && (
               <Button
@@ -122,7 +124,8 @@ export function WorkoutsHome({
                 className="h-12 text-base"
                 onClick={onOpenSchedule}
               >
-                🗓️ Запланувати тренування
+                <Icon name="calendar" size={16} aria-hidden /> Запланувати
+                тренування
               </Button>
             )}
           </div>
@@ -176,9 +179,7 @@ export function WorkoutsHome({
             onClick={onOpenCatalog}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📚
-              </span>
+              <Icon name="book-open" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">Каталог вправ</div>
                 <div className="text-xs text-subtle mt-0.5">
@@ -196,9 +197,7 @@ export function WorkoutsHome({
             onClick={onOpenTemplates}
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📋
-              </span>
+              <Icon name="clipboard" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">Шаблони</div>
                 <div className="text-xs text-subtle mt-0.5">
@@ -217,9 +216,7 @@ export function WorkoutsHome({
               onClick={onOpenPrograms}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl" aria-hidden>
-                  🗓️
-                </span>
+                <Icon name="calendar" size={22} className="text-muted" />
                 <div className="flex-1 min-w-0">
                   <div className="text-style-label text-text">Програми</div>
                   <div className="text-xs text-subtle mt-0.5">

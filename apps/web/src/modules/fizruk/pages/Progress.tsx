@@ -291,7 +291,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         {!hasAny && (
           <EmptyState
             compact
-            icon="📈"
+            icon={<Icon name="trending-up" size={22} aria-hidden />}
             title={messages.fizruk.progress.emptyTitle}
             description={messages.fizruk.progress.emptyDescription}
           />
@@ -312,7 +312,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             </SectionHeading>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-fizruk/10 flex items-center justify-center shrink-0 text-base">
-                💪
+                <Icon name="dumbbell" size={18} aria-hidden />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-style-label text-text">
@@ -506,7 +506,6 @@ export function Progress({ onNavigate }: ProgressProps) {
             prFilter === "all"
               ? prs
               : prs.filter((p) => p.muscleGroup === prFilter);
-          const MEDALS = ["🥇", "🥈", "🥉"];
           return (
             <Card radius="lg" padding="lg">
               <div className="flex items-center justify-between gap-2 mb-3">
@@ -573,10 +572,8 @@ export function Progress({ onNavigate }: ProgressProps) {
                 <div className="space-y-2">
                   {filtered.map((p) => {
                     const globalRank = prs.findIndex((x) => x.id === p.id);
-                    const medal =
-                      globalRank >= 0 && globalRank < 3
-                        ? MEDALS[globalRank]
-                        : null;
+                    const podiumRank =
+                      globalRank >= 0 && globalRank < 3 ? globalRank + 1 : null;
                     return (
                       <button
                         key={p.id}
@@ -588,9 +585,10 @@ export function Progress({ onNavigate }: ProgressProps) {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            {medal && (
-                              <span className="shrink-0 text-base leading-none">
-                                {medal}
+                            {podiumRank && (
+                              <span className="shrink-0 inline-flex items-center gap-1 text-xs text-warning-strong dark:text-warning">
+                                <Icon name="award" size={14} aria-hidden />
+                                {podiumRank}
                               </span>
                             )}
                             <div className="text-style-label text-text truncate">

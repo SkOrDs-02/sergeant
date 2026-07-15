@@ -7,6 +7,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
+import { Icon } from "@shared/components/ui/Icon";
 
 export interface PrEntry {
   id: string;
@@ -26,8 +27,6 @@ interface PrBoardProps {
   musclesUk: Record<string, string> | undefined;
   onSelect: (id: string) => void;
 }
-
-const MEDALS = ["🥇", "🥈", "🥉"];
 
 /**
  * Strength PR leaderboard with a per-muscle-group filter strip. Extracted
@@ -115,8 +114,8 @@ export function PrBoard({
         <div className="space-y-2">
           {filtered.map((p) => {
             const globalRank = prs.findIndex((x) => x.id === p.id);
-            const medal =
-              globalRank >= 0 && globalRank < 3 ? MEDALS[globalRank] : null;
+            const podiumRank =
+              globalRank >= 0 && globalRank < 3 ? globalRank + 1 : null;
             return (
               <button
                 key={p.id}
@@ -126,9 +125,10 @@ export function PrBoard({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    {medal && (
-                      <span className="shrink-0 text-base leading-none">
-                        {medal}
+                    {podiumRank && (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs text-warning-strong dark:text-warning">
+                        <Icon name="award" size={14} aria-hidden />
+                        {podiumRank}
                       </span>
                     )}
                     <div className="text-style-label text-text truncate">

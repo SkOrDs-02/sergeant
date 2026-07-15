@@ -1,5 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type {
@@ -62,7 +64,15 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                   : "text-warning-strong dark:text-warning",
               )}
             >
-              {pct}% {pct >= 100 ? "⚠ перевищено" : "· понад 60% ліміту"}
+              {pct}%{" "}
+              {pct >= 100 ? (
+                <>
+                  <Icon name="alert-triangle" size={13} aria-hidden />
+                  {messages.finyk.budgetOverLimit}
+                </>
+              ) : (
+                messages.finyk.budgetOverSixtyPercent
+              )}
             </span>
           </div>
         );

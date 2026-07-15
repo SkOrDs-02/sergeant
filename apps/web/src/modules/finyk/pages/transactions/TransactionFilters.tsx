@@ -34,7 +34,7 @@ export function TransactionFilters({
     { id: "all", label: "Всі" },
     { id: "expense", label: "Витрати" },
     { id: "income", label: "Доходи" },
-    ...(hasCreditAccounts ? [{ id: "credit", label: "💳 Кредитна" }] : []),
+    ...(hasCreditAccounts ? [{ id: "credit", label: "Кредитна" }] : []),
     ...catSpends.map((c) => {
       // Audit 05 F11: `c.label.split(" ")[0]` returned `string | undefined`
       // under Hard Rule #19 (noUncheckedIndexedAccess) and was implicitly

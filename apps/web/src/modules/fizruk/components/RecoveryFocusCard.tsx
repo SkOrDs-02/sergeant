@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { BodyAtlas } from "./BodyAtlas";
 import { buildAtlasData } from "../lib/atlasData";
@@ -107,9 +108,12 @@ export function RecoveryFocusCard({
 
           {rec.wellbeingMult > 1.1 && (
             <div className="mb-3 px-3 py-2 rounded-xl bg-warning/10 border border-warning/25 flex items-start gap-2">
-              <span className="text-base shrink-0" aria-hidden>
-                😴
-              </span>
+              <Icon
+                name="moon"
+                size={16}
+                className="shrink-0 text-warning-strong dark:text-warning"
+                aria-hidden
+              />
               <p className="text-xs text-warning-strong dark:text-warning leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія — відновлення значно сповільнене."

@@ -80,7 +80,11 @@ export function PlanSection() {
   }
 
   return (
-    <SettingsGroup title="Підписка та план" emoji="💳" anchorId="settings-plan">
+    <SettingsGroup
+      title="Підписка та план"
+      icon="wallet"
+      anchorId="settings-plan"
+    >
       <div className="flex flex-col gap-4">
         <div
           className="flex items-center gap-3"

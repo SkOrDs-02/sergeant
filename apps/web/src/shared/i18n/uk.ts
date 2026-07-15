@@ -24,6 +24,7 @@
  */
 
 import { fizrukPageMessages } from "./uk.fizruk";
+import { finykPageMessages } from "./uk.finyk";
 
 export const messages = {
   auth: {
@@ -495,19 +496,7 @@ export const messages = {
     },
   },
 
-  finyk: {
-    // HubReports ExpensesCard
-    reportHeading: "Фінік (витрати)",
-    addLimitOrGoal: "+ Додати ліміт або ціль",
-    // Accessible name for the Transactions filter toolbar (page-audit-05 F13).
-    transactionsFilterLabel: "Фільтр транзакцій",
-    // Mono webhook connect error wording (PR-32 ux-roast 2026-Q2 / C7).
-    // 401 → токен реджектнутий, мережеві/інші — connectivity-проблема.
-    monoConnectErrors: {
-      tokenRejected: "Mono відхилив токен. Перевір, чи скопіював правильний.",
-      networkUnavailable: "Не вдалось зв'язатись з Mono. Перевір з'єднання.",
-    },
-  },
+  finyk: finykPageMessages,
 
   // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
   // last-seen у людському форматі»). Section copy + accessibility-labels

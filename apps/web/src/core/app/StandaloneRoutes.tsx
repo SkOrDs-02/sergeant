@@ -261,7 +261,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ],
     render: ({ pathname }) => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        <div className="page-enter h-app-dvh min-h-0 overflow-hidden">
           <LegalPage pathname={pathname} />
         </div>
       </Suspense>

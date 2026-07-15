@@ -22,7 +22,7 @@ describe("DebtCard", () => {
         total={10000}
       />,
     );
-    expect(screen.getByText(/💳 Кредит/)).toBeInTheDocument();
+    expect(screen.getByText("Кредит")).toBeInTheDocument();
     expect(screen.getByText(/−5,?000\s*₴|−5 000 ₴/)).toBeInTheDocument();
     expect(screen.getByText(/Сплачено/)).toBeInTheDocument();
   });
@@ -99,7 +99,7 @@ describe("DebtCard", () => {
         linkedCount={2}
       />,
     );
-    fireEvent.click(screen.getByText("🗑"));
+    fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
     expect(onDelete).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText(/Прив.язати транзакції \(2\)/));
     expect(onLink).toHaveBeenCalledTimes(1);

@@ -153,7 +153,7 @@ export function NutritionSection() {
   }, [navigate]);
 
   return (
-    <SettingsGroup title="Їжа" emoji="🥗">
+    <SettingsGroup title="Їжа" icon="utensils">
       {storageErr && (
         <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-strong dark:text-danger">
           {storageErr}

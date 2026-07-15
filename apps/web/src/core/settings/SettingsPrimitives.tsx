@@ -45,18 +45,8 @@ const MODULE_ICON_BG: Record<SettingsModule, string> = {
 
 export interface SettingsGroupProps {
   title: string;
-  /**
-   * Optional icon name (Lucide icon string). Replaces the deprecated
-   * `emoji` prop. When combined with `module`, the icon badge uses the
-   * module's soft-surface palette.
-   */
+  /** Optional design-system icon shown in the section badge. */
   icon?: string;
-  /**
-   * @deprecated Use `icon` instead. Kept for call-site back-compat;
-   * when both are provided `icon` wins.
-   * @removeBy 2026-09-01
-   */
-  emoji?: string;
   /** Module accent for the icon badge. Requires `icon` to be set. */
   module?: SettingsModule;
   children: ReactNode;
@@ -80,7 +70,6 @@ function matchesHash(anchorId: string | undefined): boolean {
 export function SettingsGroup({
   title,
   icon,
-  emoji,
   module,
   children,
   defaultOpen = false,
@@ -97,10 +86,6 @@ export function SettingsGroup({
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, [anchorId]);
-
-  // `icon` wins over the deprecated `emoji` prop.
-  const resolvedIcon = icon ?? undefined;
-  const resolvedEmoji = !resolvedIcon ? emoji : undefined;
 
   // Scoped module bg class — uses registered token pair, never raw RGB
   // (Hard Rule #12). Guard with ?. so noUncheckedIndexedAccess is satisfied.
@@ -130,7 +115,7 @@ export function SettingsGroup({
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          {resolvedIcon && (
+          {icon && (
             <span
               className={cn(
                 "rounded-r-md p-1.5 border flex items-center justify-center shrink-0",
@@ -138,12 +123,7 @@ export function SettingsGroup({
                   "bg-surface-soft-glass border-surface-line text-muted-v2",
               )}
             >
-              <Icon name={resolvedIcon} size={18} />
-            </span>
-          )}
-          {resolvedEmoji && (
-            <span className="text-lg w-7 h-7 flex items-center justify-center rounded-xl bg-bg">
-              {resolvedEmoji}
+              <Icon name={icon} size={18} />
             </span>
           )}
           <span className="text-base font-semibold text-text">{title}</span>

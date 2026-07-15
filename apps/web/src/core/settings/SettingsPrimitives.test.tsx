@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 //
 // PR-A v2-polish-redesign — SettingsPrimitives icon prop + glass surface.
-// Covers: SettingsGroup renders <Icon> when `icon` is passed; falls back to
-// `emoji` when no `icon`; module badge applies correct bg class.
+// Covers: SettingsGroup renders the design-system <Icon>; module badge applies
+// the correct scoped surface class.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
@@ -39,30 +39,6 @@ describe("SettingsGroup — icon prop", () => {
     const badgeIcon = icons.find((el) => el.dataset["name"] === "user");
     expect(badgeIcon).toBeTruthy();
     expect(badgeIcon?.dataset["size"]).toBe("18");
-  });
-
-  it("does NOT render an emoji span when only `icon` is provided", () => {
-    render(
-      <SettingsGroup title="Профіль" icon="user" emoji="👤">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    // emoji span has text-lg class; should not appear when icon wins
-    const emojiSpan = document.querySelector("span.text-lg");
-    expect(emojiSpan).toBeNull();
-  });
-
-  it("falls back to emoji span when no `icon` is set", () => {
-    render(
-      <SettingsGroup title="Профіль" emoji="👤">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    const emojiSpan = document.querySelector("span.text-lg");
-    expect(emojiSpan).toBeTruthy();
-    expect(emojiSpan?.textContent).toBe("👤");
   });
 
   it("applies module soft-surface class on the icon badge span", () => {

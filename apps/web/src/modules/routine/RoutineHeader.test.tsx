@@ -8,10 +8,8 @@ describe("RoutineHeader", () => {
 
   it("renders module title and subtitle", () => {
     render(<RoutineHeader />);
-    expect(screen.getByText("РУТИНА")).toBeInTheDocument();
-    expect(
-      screen.getByText("Сьогоднішні звички й найближчі події"),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Рутина" })).toBeInTheDocument();
+    expect(screen.getByText("Звички й події")).toBeInTheDocument();
   });
 
   it("shows hub back button when onBackToHub is provided", () => {

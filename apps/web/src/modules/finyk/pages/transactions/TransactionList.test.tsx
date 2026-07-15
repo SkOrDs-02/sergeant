@@ -175,4 +175,29 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
   });
+
+  it("shows the split action for a manual expense", () => {
+    const manualTx = {
+      ...SAMPLE_TX,
+      id: "manual-1",
+      _manual: true,
+      _manualId: "manual-1",
+    } as unknown as Transaction;
+
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[manualTx]}
+        filtered={[manualTx]}
+        groupedByDate={[{ key: "2026-05-04", items: [manualTx] }]}
+        groupCounts={[1]}
+        flatItems={[manualTx]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Розподілити транзакцію" }),
+    ).toBeInTheDocument();
+  });
 });

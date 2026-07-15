@@ -96,7 +96,7 @@ function TxListItemImpl({
               : undefined
           }
           onSwipeRight={undefined}
-          rightLabel="🙈 Приховати"
+          rightLabel="Приховати"
           rightColor="bg-warning/80"
           // Surface the swipe-affordance peek on the first row of the list
           // for first-time users only — `SwipeToAction` reads/writes a
@@ -122,7 +122,7 @@ function TxListItemImpl({
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}
-            onSplitChange={isManual ? undefined : onSplitChange}
+            onSplitChange={onSplitChange}
             customCategories={customCategories}
           />
         </SwipeToAction>

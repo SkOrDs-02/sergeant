@@ -198,24 +198,14 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     );
   });
 
-  it("toggles pushNotifications preference and calls updatePreferences", async () => {
-    vi.mocked(meApi.updatePreferences).mockResolvedValue({
-      ...basePrefs,
-      pushNotifications: true,
-    });
+  it("does not duplicate the notification toggle from Notifications settings", async () => {
     render(<PrivacySection />);
     await openSection();
 
-    const pushToggle = await screen.findByRole("switch", {
-      name: /Системні сповіщення/i,
-    });
-    fireEvent.click(pushToggle);
-
-    await waitFor(() =>
-      expect(meApi.updatePreferences).toHaveBeenCalledWith({
-        pushNotifications: true,
-      }),
-    );
+    expect(
+      screen.queryByRole("switch", { name: /Системні сповіщення/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/окремому розділі/i)).toBeInTheDocument();
   });
 
   it("calls updatePreferences and handles failure without crashing", async () => {

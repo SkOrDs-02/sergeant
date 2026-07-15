@@ -180,6 +180,11 @@ export default function App({
   // Pass `connected` so the pill does not claim "ок" when no bank account
   // has ever been linked — clientInfo is null until the first successful sync.
   const syncTone = getSyncTone(mergedMono?.syncState, clientInfo != null);
+  const showSyncPill =
+    clientInfo != null &&
+    ["loading", "partial", "error"].includes(
+      String(mergedMono?.syncState?.status ?? ""),
+    );
 
   // Swipe navigation
   const curPageIdx = NAV_IDS.indexOf(page);
@@ -340,10 +345,11 @@ export default function App({
               <FinykHeaderIcon />
             )
           }
-          title="Фінанси"
+          title="Фінік"
+          subtitle="Фінанси"
           right={
             <div className="flex items-center gap-2">
-              <SyncPill syncTone={syncTone} />
+              {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
               <button
                 type="button"
                 onClick={() => setShowBalance(!showBalance)}
@@ -540,7 +546,7 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
-      <span className="sr-only sm:not-sr-only">{syncTone.text}</span>
+      <span>{syncTone.text}</span>
     </div>
   );
 }
@@ -564,9 +570,12 @@ function AuthErrorBanner({
       className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
     >
       <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <span className="text-lg shrink-0 mt-0.5" aria-hidden>
-          ⚠️
-        </span>
+        <Icon
+          name="alert-triangle"
+          size={18}
+          className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
+          aria-hidden
+        />
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Токен потребує оновлення</p>
           <p className="text-xs text-muted mt-0.5">{authError}</p>
@@ -586,7 +595,7 @@ function AuthErrorBanner({
           className="focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
-          ✕
+          <Icon name="close" size={16} aria-hidden />
         </button>
       </div>
     </div>

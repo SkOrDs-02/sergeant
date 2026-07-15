@@ -52,7 +52,7 @@ export function ExperimentalSection() {
   const togglesDisabled = !acknowledged;
 
   return (
-    <SettingsGroup title={copy.title} emoji="🧪">
+    <SettingsGroup title={copy.title} icon="tool">
       <p className="text-xs text-subtle leading-snug">{copy.intro}</p>
       <div
         role="note"

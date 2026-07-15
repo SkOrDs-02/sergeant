@@ -151,11 +151,23 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             newRecv={newRecv}
             setNewRecv={setNewRecv}
             setReceivables={setReceivables}
-            setShowRecvForm={setShowRecvForm}
+            setShowRecvForm={(next) => {
+              setShowRecvForm(next);
+              if (!next) setEditingRecvId(null);
+            }}
             editingId={editingRecvId}
             onUpdate={(id, value) => {
               setReceivables((rs) =>
-                rs.map((item) => (item.id === id ? value : item)),
+                rs.map((item) =>
+                  item.id === id
+                    ? {
+                        ...item,
+                        ...value,
+                        id,
+                        linkedTxIds: item.linkedTxIds ?? [],
+                      }
+                    : item,
+                ),
               );
               setEditingRecvId(null);
             }}
@@ -163,7 +175,17 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         ) : (
           <button
             type="button"
-            onClick={() => setShowRecvForm(true)}
+            onClick={() => {
+              setEditingRecvId(null);
+              setNewRecv({
+                name: "",
+                emoji: "",
+                amount: "",
+                note: "",
+                dueDate: "",
+              });
+              setShowRecvForm(true);
+            }}
             className="w-full py-2.5 text-style-label rounded-xl bg-success/10 text-success-strong dark:bg-success/15 dark:text-success border border-success/30 hover:bg-success/15 dark:hover:bg-success/25 active:scale-[0.99] transition-colors shadow-soft"
           >
             + Додати актив «мені винні»
@@ -185,20 +207,16 @@ export function AssetsAssetsSection({ state }: { state: State }) {
               усе, що не на картці Monobank.
             </p>
             <div className="flex flex-wrap gap-1.5 px-1">
-              {[
-                "\uD83D\uDCB5 Готівка",
-                "\uD83C\uDFE6 Депозит",
-                "\uD83D\uDCC8 Інвестиції",
-                "\uD83C\uDFE0 Нерухомість",
-                "\uD83D\uDE97 Авто",
-              ].map((chip) => (
-                <span
-                  key={chip}
-                  className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
-                >
-                  {chip}
-                </span>
-              ))}
+              {["Готівка", "Депозит", "Інвестиції", "Нерухомість", "Авто"].map(
+                (chip) => (
+                  <span
+                    key={chip}
+                    className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                  >
+                    {chip}
+                  </span>
+                ),
+              )}
             </div>
           </div>
         )}
@@ -207,7 +225,10 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             newAsset={newAsset}
             setNewAsset={setNewAsset}
             setManualAssets={setManualAssets}
-            setShowAssetForm={setShowAssetForm}
+            setShowAssetForm={(next) => {
+              setShowAssetForm(next);
+              if (!next) setEditingAssetId(null);
+            }}
             assetFormRef={assetFormRef}
             assetNameInputRef={assetNameInputRef}
             editingId={editingAssetId}
@@ -221,7 +242,16 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         ) : (
           <button
             type="button"
-            onClick={() => setShowAssetForm(true)}
+            onClick={() => {
+              setEditingAssetId(null);
+              setNewAsset({
+                name: "",
+                amount: "",
+                currency: "UAH",
+                emoji: "",
+              });
+              setShowAssetForm(true);
+            }}
             className="w-full py-2.5 text-style-label rounded-xl bg-success/10 text-success-strong dark:bg-success/15 dark:text-success border border-success/30 hover:bg-success/15 dark:hover:bg-success/25 active:scale-[0.99] transition-colors shadow-soft"
           >
             + Додати актив
@@ -237,7 +267,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-panelHi text-xl leading-none shrink-0"
                 aria-hidden
               >
-                {a.emoji}
+                <Icon name="wallet" size={18} className="text-muted" />
               </span>
               <div className="min-w-0">
                 <div className="text-style-label truncate">{a.name}</div>

@@ -18,7 +18,10 @@ export function LegalDocumentView({
   lastUpdated,
 }: LegalDocumentViewProps) {
   return (
-    <MeshBackground className="min-h-screen overflow-y-auto px-5 py-8 sm:py-12">
+    <MeshBackground
+      className="h-app-dvh min-h-0 overflow-y-auto overscroll-contain px-5 py-8 sm:py-12"
+      data-testid="legal-scroll-container"
+    >
       <main
         id="main"
         tabIndex={-1}

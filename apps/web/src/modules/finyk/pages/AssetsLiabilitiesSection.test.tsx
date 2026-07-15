@@ -33,6 +33,8 @@ function makeState(overrides: Partial<State> = {}): State {
     transactions: [],
     manualDebts: [],
     setManualDebts: vi.fn(),
+    editingDebtId: null,
+    setEditingDebtId: vi.fn(),
     monoDebtAccounts: [],
     monoDebtLinkedTxIds: {},
     showDebtForm: false,

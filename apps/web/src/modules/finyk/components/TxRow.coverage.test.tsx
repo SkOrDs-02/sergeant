@@ -98,7 +98,6 @@ describe("TxRow", () => {
     render(
       <TxRow tx={mkTx({ _accountId: "acc-credit" })} accounts={accounts} />,
     );
-    expect(screen.getByText(/💳/)).toBeInTheDocument();
     expect(screen.getByText(/Чорна/)).toBeInTheDocument();
   });
 
@@ -119,7 +118,7 @@ describe("TxRow", () => {
 
   it("renders the highlighted check icon", () => {
     const { container } = render(<TxRow tx={mkTx()} highlighted />);
-    expect(container.textContent).toContain("✅");
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
   it("invokes onClick when the row body is clicked", () => {
@@ -162,7 +161,7 @@ describe("TxRow", () => {
         <TxRow tx={mkTx()} onCatChange={onCatChange} overrideCatId="food" />,
       );
       fireEvent.click(screen.getByLabelText("Змінити категорію"));
-      const reset = screen.getByText(/скинути/);
+      const reset = screen.getByRole("button", { name: /скинути/i });
       fireEvent.click(reset);
       expect(onCatChange).toHaveBeenCalledWith("tx-1", null);
     });

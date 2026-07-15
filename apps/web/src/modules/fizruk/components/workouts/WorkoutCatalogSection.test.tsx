@@ -81,14 +81,16 @@ describe("WorkoutCatalogSection — search input", () => {
   it("shows a clear button when q is non-empty and clears on click", () => {
     const setQ = vi.fn();
     render(<WorkoutCatalogSection {...baseProps({ q: "жим", setQ })} />);
-    const clearBtn = screen.getByRole("button", { name: "✕" });
+    const clearBtn = screen.getByRole("button", { name: "Очистити пошук" });
     fireEvent.click(clearBtn);
     expect(setQ).toHaveBeenCalledWith("");
   });
 
   it("hides the clear button when q is empty", () => {
     render(<WorkoutCatalogSection {...baseProps({ q: "" })} />);
-    expect(screen.queryByRole("button", { name: "✕" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Очистити пошук" }),
+    ).not.toBeInTheDocument();
   });
 });
 

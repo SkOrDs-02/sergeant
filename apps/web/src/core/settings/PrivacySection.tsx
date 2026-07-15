@@ -120,13 +120,12 @@ export function PrivacySection() {
 
       <div className="space-y-3">
         <div>
-          <h3 className="text-style-label text-text">
-            Згода, дані та сповіщення
-          </h3>
+          <h3 className="text-style-label text-text">Згода та дані</h3>
           <p className="mt-1 text-xs text-subtle leading-relaxed">
-            Обери, що Sergeant може використовувати для якості продукту,
-            персоналізації та нагадувань. Дані для входу, безпеки й оплати
-            залишаються потрібними для роботи застосунку.
+            Обери, що Sergeant може використовувати для якості продукту та
+            персоналізації. Дані для входу, безпеки й оплати залишаються
+            потрібними для роботи застосунку. Сповіщення налаштовуються в
+            окремому розділі.
           </p>
         </div>
         <ToggleRow

@@ -10,7 +10,7 @@ describe("FizrukHeader", () => {
     const onContextualBack = vi.fn();
     render(<FizrukHeader page="atlas" onContextualBack={onContextualBack} />);
 
-    expect(screen.getByText("Атлас тіла")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Назад до Моє тіло" }));
     expect(onContextualBack).toHaveBeenCalledTimes(1);
   });
@@ -44,7 +44,7 @@ describe("FizrukHeader", () => {
     expect(onGoToHub).toHaveBeenCalledTimes(1);
   });
 
-  it("shows active program subtitle on programs page", () => {
+  it("keeps the module name in the header on programs page", () => {
     render(
       <FizrukHeader
         page="programs"
@@ -53,7 +53,8 @@ describe("FizrukHeader", () => {
       />,
     );
 
-    expect(screen.getByText("Активна: Сила 5×5")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    expect(screen.queryByText("Активна: Сила 5×5")).toBeNull();
   });
 
   it("renders settings button when onOpenSettings is provided", () => {

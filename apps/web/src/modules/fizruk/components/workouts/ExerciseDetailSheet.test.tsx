@@ -125,6 +125,8 @@ function baseProps(over: Partial<Record<string, unknown>> = {}) {
       triceps: "Трицепс",
       quadriceps: "Квадрицепс",
     },
+    primaryGroupsUk: { chest: "Груди" },
+    equipmentUk: { barbell: "Штанга" },
     rec: { by: {} },
     recoveryConflictsForExercise: noopRecovery as Parameters<
       typeof ExerciseDetailSheet
@@ -174,10 +176,10 @@ describe("ExerciseDetailSheet – basic rendering", () => {
     expect(screen.getByText(/Трицепс/)).toBeInTheDocument();
   });
 
-  it("renders equipment from the equipment array when equipmentUk is absent", () => {
+  it("localizes the primary group and equipment fallback keys", () => {
     render(<ExerciseDetailSheet {...baseProps()} />);
-    // Equipment labels from the exercise.equipment array fall back to the raw key
-    expect(screen.getByText("barbell")).toBeInTheDocument();
+    expect(screen.getByText("Груди")).toBeInTheDocument();
+    expect(screen.getByText("Штанга")).toBeInTheDocument();
   });
 
   it("renders equipment from the equipmentUk extended field when present", () => {

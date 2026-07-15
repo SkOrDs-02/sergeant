@@ -10,7 +10,11 @@ import {
 } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 import { useShortcutGlyph } from "@shared/hooks";
-import { webKVStore } from "@shared/lib/storage/storage";
+import {
+  safeReadStringSS,
+  safeWriteSS,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useHubPref } from "../settings/hubPrefs";
@@ -19,6 +23,9 @@ export interface HintsOrchestratorProps {
   inFtuxSession: boolean;
   hasFirstRealEntry: boolean;
 }
+
+const HINT_SHOWN_THIS_SESSION_KEY = "sergeant:hints:shown-this-session";
+const HINT_REVEAL_DELAY_MS = 8000;
 
 export function HintsOrchestrator({
   inFtuxSession,
@@ -63,11 +70,12 @@ export function HintsOrchestrator({
   useEffect(() => {
     if (!showHints) return;
     if (shownThisMount.current) return;
+    if (safeReadStringSS(HINT_SHOWN_THIS_SESSION_KEY) === "1") return;
 
     // Delay hint showing to let the user orient themselves first
     const timer = setTimeout(() => {
       showHintIfEligible();
-    }, 2500);
+    }, HINT_REVEAL_DELAY_MS);
 
     return () => clearTimeout(timer);
 
@@ -91,6 +99,7 @@ export function HintsOrchestrator({
                   "Тиждень — серйозна заявка! 7 днів поспіль доведено підвищують шанс закріпити звичку.",
               }[retentionId];
               if (def) {
+                safeWriteSS(HINT_SHOWN_THIS_SESSION_KEY, "1");
                 toast.info(def, 6000);
                 return;
               }
@@ -135,6 +144,11 @@ export function HintsOrchestrator({
       })();
 
       if (!msg) return;
+
+      // One educational toast per PWA/browser session. Navigating between
+      // Hub and modules remounts this orchestrator; without a session cap the
+      // next eligible hint appeared almost immediately after every return.
+      safeWriteSS(HINT_SHOWN_THIS_SESSION_KEY, "1");
 
       // Track which hints the user actually engaged with vs. let
       // time out. The flag is closed over by both callbacks so the

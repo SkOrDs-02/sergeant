@@ -86,7 +86,7 @@ export function DashboardSection() {
   );
 
   return (
-    <SettingsGroup title="Дашборд" emoji="🧭" anchorId="settings-dashboard">
+    <SettingsGroup title="Дашборд" icon="compass" anchorId="settings-dashboard">
       <SettingsSubGroup title="Вигляд">
         <ToggleRow
           label="Чистий режим"

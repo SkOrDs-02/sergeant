@@ -8,6 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -178,7 +179,7 @@ export function CategoriesSection({
                       }}
                       aria-label={`Змінити ${c.name}`}
                     >
-                      ✎
+                      <Icon name="edit" size={14} aria-hidden />
                     </IconButton>
                     <IconButton
                       size="xs"
