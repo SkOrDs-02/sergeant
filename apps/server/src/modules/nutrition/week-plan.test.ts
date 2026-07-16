@@ -55,7 +55,7 @@ beforeEach(() => {
 });
 
 describe("week-plan handler", () => {
-  it("returns a normalized 7-day plan with trimmed meals and shopping list", async () => {
+  it("returns a normalized 7-day plan without generating shopping items", async () => {
     anthropicMessages.mockResolvedValueOnce(
       anthropicResponses.text(
         JSON.stringify({
@@ -88,7 +88,7 @@ describe("week-plan handler", () => {
     const body = asRecord(res.body);
     const plan = asRecord(body["plan"]);
     expect(plan["days"]).toHaveLength(7);
-    expect(plan["shoppingList"]).toHaveLength(50);
+    expect(plan["shoppingList"]).toEqual([]);
     expect(plan["rawText"]).toBeUndefined();
     expect(body["rawText"]).toBeNull();
     expect(plan["days"]).toContainEqual(
@@ -126,7 +126,7 @@ describe("week-plan handler", () => {
           { label: "День 1", note: "", meals: [] },
           { label: "День 2", note: "", meals: ["сніданок"] },
         ],
-        shoppingList: ["молоко"],
+        shoppingList: [],
       },
       rawText: null,
     });

@@ -90,7 +90,18 @@ export function usePhotoAnalysis({
   const onPickPhoto = async (file: File | null | undefined) => {
     setErr("");
     setPhotoResult(null);
-    if (!file) return;
+    if (!file) {
+      if (photoPreviewUrl) {
+        try {
+          URL.revokeObjectURL(photoPreviewUrl);
+        } catch {
+          /* ignore */
+        }
+      }
+      setPhotoPreviewUrl("");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     if (!/^image\//.test(file.type || "")) {
       setErr("Обери файл зображення (jpg/png/heic).");
       return;

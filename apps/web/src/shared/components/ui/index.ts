@@ -212,6 +212,9 @@ export type { TooltipPlacement, TooltipProps, TooltipSize } from "./Tooltip";
 export { ThemeSwitcher } from "./ThemeSwitcher";
 export type { ThemeSwitcherProps } from "./ThemeSwitcher";
 
+export { DateField } from "./DateField";
+export type { DateFieldProps } from "./DateField";
+
 export type { FormVariant, SmallMediumLarge } from "./types";
 
 export {

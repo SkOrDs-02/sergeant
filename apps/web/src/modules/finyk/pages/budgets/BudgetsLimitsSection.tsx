@@ -165,6 +165,8 @@ export function BudgetsLimitsSection({
                   type: "limit" as const,
                   categoryId,
                   limit: b.limit,
+                  period: b.period ?? "month",
+                  ...(b.createdAt ? { createdAt: b.createdAt } : {}),
                 }}
                 categoryLabel={catLabel}
                 spent={usage.spent}
@@ -189,6 +191,27 @@ export function BudgetsLimitsSection({
                   setBudgets((bs) =>
                     bs.map((x, j) =>
                       j === globalIdx ? { ...x, limit: Number(nextLimit) } : x,
+                    ),
+                  )
+                }
+                onChangePeriod={(period) =>
+                  setBudgets((bs) =>
+                    bs.map((x, j) =>
+                      j === globalIdx
+                        ? {
+                            ...x,
+                            period,
+                            ...(period === "one_time" &&
+                            x.type === "limit" &&
+                            !x.createdAt
+                              ? {
+                                  // UTC creation instant; period math converts it to Kyiv boundaries.
+                                  // eslint-disable-next-line no-restricted-syntax
+                                  createdAt: new Date().toISOString(),
+                                }
+                              : {}),
+                          }
+                        : x,
                     ),
                   )
                 }

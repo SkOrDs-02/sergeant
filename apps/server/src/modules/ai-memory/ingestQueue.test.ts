@@ -110,6 +110,19 @@ vi.mock("./dlq.js", () => ({
   })),
 }));
 
+const { hasAiMemoryConsentMock } = vi.hoisted(() => ({
+  hasAiMemoryConsentMock: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock("./consent.js", () => ({
+  hasAiMemoryConsent: hasAiMemoryConsentMock,
+}));
+
+beforeEach(() => {
+  hasAiMemoryConsentMock.mockReset();
+  hasAiMemoryConsentMock.mockResolvedValue(true);
+});
+
 import {
   aiMemoryIngestEnqueuedTotal as _enqueued,
   aiMemoryIngestProcessedTotal as _processed,
@@ -267,6 +280,24 @@ describe("processMemoryIngestJob — processor contract", () => {
     );
   });
 
+  it("skips a queued job after the user revokes consent", async () => {
+    hasAiMemoryConsentMock.mockResolvedValueOnce(false);
+    const remember = vi.fn().mockResolvedValue(undefined);
+    __resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await processMemoryIngestJob({
+      data: samplePayload,
+      attemptsMade: 0,
+      name: "finyk",
+    });
+
+    expect(remember).not.toHaveBeenCalled();
+    expect(processedInc).toHaveBeenCalledWith({
+      outcome: "consent_disabled",
+      source: "finyk",
+    });
+  });
+
   it("на retryable error: re-throw для BullMQ retry, outcome=retry", async () => {
     const err = new VoyageHttpError(503, "Service Unavailable", true);
     const remember = vi.fn().mockRejectedValue(err);
@@ -422,6 +453,32 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     expect(
       (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
     ).toHaveBeenCalledWith({ mode: "disabled", source: "finyk" });
+  });
+
+  it("does not enqueue or remember when aiMemory consent is disabled", async () => {
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    vi.resetModules();
+    hasAiMemoryConsentMock.mockResolvedValue(false);
+    const remember = vi.fn().mockResolvedValue(undefined);
+    const mod = await import("./ingestQueue.js");
+    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await mod.enqueueMemoryIngest(samplePayload);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(remember).not.toHaveBeenCalled();
+    const { aiMemoryIngestEnqueuedTotal } =
+      await import("../../obs/metrics.js");
+    expect(
+      (
+        aiMemoryIngestEnqueuedTotal as unknown as {
+          inc: ReturnType<typeof vi.fn>;
+        }
+      ).inc,
+    ).toHaveBeenCalledWith({
+      mode: "consent_disabled",
+      source: "finyk",
+    });
   });
 
   it("invalid source: НЕ throw, інкрементує enqueue_error", async () => {

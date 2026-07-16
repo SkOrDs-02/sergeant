@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
@@ -21,6 +22,8 @@ export type NewBudgetDraft =
       type: "limit";
       categoryId: string;
       limit: number;
+      period: "month" | "week" | "one_time";
+      createdAt: string;
     }
   | {
       type: "goal";
@@ -90,6 +93,7 @@ type LimitFormValues = {
   type: "limit";
   categoryId: string;
   limit: string;
+  period: "month" | "week" | "one_time";
 };
 
 type GoalFormValues = {
@@ -121,6 +125,7 @@ const LIMIT_DEFAULTS: LimitFormValues = {
   type: "limit",
   categoryId: "",
   limit: "",
+  period: "month",
 };
 
 const GOAL_DEFAULTS: GoalFormValues = {
@@ -150,6 +155,7 @@ function AddBudgetFormComponent({
           type: z.literal("limit"),
           categoryId: z.string().min(1, messages.validation.categoryRequired),
           limit: positiveNumberString(messages.validation.limitAmountRequired),
+          period: z.enum(["month", "week", "one_time"]),
         })
         .superRefine((data, ctx) => {
           const dup = existingBudgets.some(
@@ -174,6 +180,10 @@ function AddBudgetFormComponent({
         type: "limit",
         categoryId: values.categoryId,
         limit: Number(values.limit),
+        period: values.period,
+        // UTC timestamp for one-time limit anchoring, not a calendar day key.
+        // eslint-disable-next-line no-restricted-syntax
+        createdAt: new Date().toISOString(),
       });
     },
   });
@@ -203,6 +213,7 @@ function AddBudgetFormComponent({
   const goalTargetDate = goalForm.watch("targetDate");
   const limitCategoryId = limitForm.watch("categoryId");
   const limitAmount = limitForm.watch("limit");
+  const limitPeriod = limitForm.watch("period");
   const goalName = goalForm.watch("name");
   const goalTargetAmount = goalForm.watch("targetAmount");
   const goalSavedAmount = goalForm.watch("savedAmount");
@@ -255,6 +266,18 @@ function AddBudgetFormComponent({
           aria-label="Новий ліміт бюджету"
         >
           <div>
+            <select
+              aria-label="Період ліміту"
+              className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+              disabled={isSubmitting}
+              {...limitForm.register("period")}
+            >
+              <option value="month">Щомісяця</option>
+              <option value="week">Щотижня</option>
+              <option value="one_time">Одноразово</option>
+            </select>
+          </div>
+          <div>
             <CategorySelector
               value={limitCategoryId}
               onChange={(val) =>
@@ -292,8 +315,11 @@ function AddBudgetFormComponent({
               </p>
             )}
             <p className="mt-1 text-xs text-subtle">
-              Ліміт діє щомісяця й автоматично починає новий період на початку
-              календарного місяця.
+              {limitPeriod === "week"
+                ? "Новий період починається щопонеділка за київським часом."
+                : limitPeriod === "one_time"
+                  ? "Витрати рахуються від моменту створення без автоматичного скидання."
+                  : "Новий період починається першого числа за київським часом."}
             </p>
           </div>
           {!limitDraftValid ? (
@@ -397,10 +423,11 @@ function AddBudgetFormComponent({
               </p>
             )}
           </div>
-          <div className="relative">
-            <Input
+          <div>
+            <DateField
               id="budget-goal-target-date"
-              type="date"
+              emptyLabel="Дата завершення"
+              value={goalTargetDate}
               aria-label="Дата завершення"
               // iOS Safari's native `type="date"` never renders a
               // `placeholder`, and the owner rejected an external label
@@ -410,15 +437,10 @@ function AddBudgetFormComponent({
               // inherits `color`) while a value is unset; the overlay
               // below fills that same spot, same as `placeholder:` on
               // the text/number inputs above.
-              className={cn("w-full", !goalTargetDate && "text-transparent")}
+              className="w-full"
               disabled={isSubmitting}
               {...goalForm.register("targetDate")}
             />
-            {!goalTargetDate && (
-              <span className="pointer-events-none absolute inset-0 flex items-center px-4 text-base text-subtle/70">
-                Дата завершення
-              </span>
-            )}
           </div>
           {!goalDraftValid ? (
             <p className="text-style-caption text-subtle" role="status">

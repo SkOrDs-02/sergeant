@@ -28,6 +28,7 @@
 import { Queue, Worker, type Job } from "bullmq";
 import type { Redis as IORedisClient } from "ioredis";
 
+import pool from "../../db.js";
 import { env } from "../../env.js";
 import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import {
@@ -44,6 +45,7 @@ import {
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { getAiMemory } from "./bootstrap.js";
+import { hasAiMemoryConsent } from "./consent.js";
 import { recordIngestDlq } from "./dlq.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
@@ -249,6 +251,34 @@ async function enqueueMemoryIngestImpl(
     return;
   }
 
+  try {
+    if (!(await hasAiMemoryConsent(pool, payload.userId))) {
+      aiMemoryIngestEnqueuedTotal.inc({
+        mode: "consent_disabled",
+        source: sourceLabel,
+      });
+      logger.debug({
+        msg: "ai_memory_ingest_skipped_consent_disabled",
+        userId: payload.userId,
+        source: sourceLabel,
+      });
+      return;
+    }
+  } catch (err) {
+    aiMemoryIngestEnqueuedTotal.inc({
+      mode: "consent_check_error",
+      source: sourceLabel,
+    });
+    logger.warn({
+      msg: "ai_memory_ingest_consent_check_failed",
+      userId: payload.userId,
+      source: sourceLabel,
+      err: serializeError(err, { includeStack: false }),
+    });
+    if (opts.rethrowEnqueueError) throw err;
+    return;
+  }
+
   // Per-source kill-switch (PR-19). Поки що тільки `finyk` (Mono
   // webhook) gate-нутий — інші source-и контролюються виключно
   // master-flag-ом `AI_MEMORY_ENABLED`. Перевірка живе тут (а не у
@@ -338,6 +368,17 @@ export async function processMemoryIngestJob(
   const startedAt = process.hrtime.bigint();
   const sourceLabel = job.data.source;
   try {
+    if (!(await hasAiMemoryConsent(pool, job.data.userId))) {
+      aiMemoryIngestProcessedTotal.inc({
+        outcome: "consent_disabled",
+        source: sourceLabel,
+      });
+      aiMemoryIngestDurationMs.observe(
+        { outcome: "consent_disabled", source: sourceLabel },
+        elapsedMs(startedAt),
+      );
+      return;
+    }
     await getService().remember([
       {
         userId: job.data.userId,

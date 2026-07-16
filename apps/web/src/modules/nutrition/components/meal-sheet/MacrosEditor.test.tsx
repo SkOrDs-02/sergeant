@@ -124,7 +124,9 @@ describe("MacrosEditor", () => {
     // Edit deferred — field not called yet, dialog opened instead.
     expect(setProtein).not.toHaveBeenCalled();
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText(/Відʼєднати «Молоко»/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Редагувати КБЖВ для «Молоко» вручну/),
+    ).toBeInTheDocument();
   });
 
   it("confirming the unlink clears the picked food and applies the deferred edit", () => {
@@ -147,7 +149,7 @@ describe("MacrosEditor", () => {
     fireEvent.change(screen.getByLabelText("Білки г"), {
       target: { value: "9" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Відʼєднати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Редагувати вручну" }));
     expect(setPickedFood).toHaveBeenCalledWith(null);
     expect(setProtein).toHaveBeenCalledWith("9");
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -179,7 +181,7 @@ describe("MacrosEditor", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("offers an explicit unlink action that opens the confirm panel", () => {
+  it("offers an explicit manual-edit action that opens the confirm panel", () => {
     render(
       <MacrosEditor
         form={makeForm()}
@@ -191,7 +193,9 @@ describe("MacrosEditor", () => {
         hasPhotoMacros={false}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Відʼєднати" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Редагувати КБЖВ вручну" }),
+    );
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
   });
 

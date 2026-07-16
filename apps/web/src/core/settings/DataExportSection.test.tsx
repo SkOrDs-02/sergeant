@@ -10,12 +10,10 @@ import {
 
 const apiMocks = vi.hoisted(() => ({
   exportData: vi.fn(),
-  deleteAccount: vi.fn(),
 }));
 vi.mock("@shared/api", () => ({
   meApi: {
     exportData: apiMocks.exportData,
-    deleteAccount: apiMocks.deleteAccount,
   },
 }));
 
@@ -44,7 +42,7 @@ describe("DataExportSection", () => {
     expect(
       screen.getByText("Завантажити серверний експорт"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Видалити акаунт")).toBeInTheDocument();
+    expect(screen.queryByText("Видалити акаунт")).not.toBeInTheDocument();
   });
 
   it("downloads a server export and shows a success message", async () => {
@@ -81,51 +79,5 @@ describe("DataExportSection", () => {
       ),
     ).toBeInTheDocument();
     expect(downloadString).not.toHaveBeenCalled();
-  });
-
-  it("does nothing when the delete confirmation is declined", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
-    render(<DataExportSection />);
-
-    fireEvent.click(screen.getByText("Видалити акаунт"));
-
-    expect(apiMocks.deleteAccount).not.toHaveBeenCalled();
-  });
-
-  it("deletes the account and redirects home on confirm", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    apiMocks.deleteAccount.mockResolvedValue(undefined);
-    const assign = vi.fn();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { ...window.location, assign },
-    });
-
-    render(<DataExportSection />);
-    fireEvent.click(screen.getByText("Видалити акаунт"));
-
-    await waitFor(() => {
-      expect(apiMocks.deleteAccount).toHaveBeenCalledTimes(1);
-    });
-    expect(
-      await screen.findByText(
-        "Запит на видалення прийнято. Повертаю на головну…",
-      ),
-    ).toBeInTheDocument();
-    expect(assign).toHaveBeenCalledWith("/");
-  });
-
-  it("shows an error when account deletion fails", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    apiMocks.deleteAccount.mockRejectedValue(new Error("boom"));
-
-    render(<DataExportSection />);
-    fireEvent.click(screen.getByText("Видалити акаунт"));
-
-    expect(
-      await screen.findByText(
-        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в підтримку.",
-      ),
-    ).toBeInTheDocument();
   });
 });

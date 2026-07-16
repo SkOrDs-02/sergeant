@@ -109,6 +109,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Очистити серверну памʼять ШІ поточного користувача. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Памʼять очищено. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AiMemoryClearResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai-memory/recall": {
         parameters: {
             query?: never;
@@ -2907,6 +2952,10 @@ export interface components {
                 servings?: number;
                 timeMinutes?: number;
                 exclude?: string;
+                /** @enum {string} */
+                mealType?: "any" | "breakfast" | "lunch" | "dinner" | "snack";
+                /** @enum {string} */
+                pantryMode?: "prefer" | "only" | "ignore";
                 locale?: string;
             };
             count?: number;
@@ -3120,6 +3169,12 @@ export interface components {
                 path: string;
                 message: string;
             }[];
+        };
+        /** @description Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів. */
+        AiMemoryClearResponse: {
+            /** @constant */
+            ok: true;
+            deleted: number;
         };
         /** @description Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім). */
         RecallMemoryResponse: {

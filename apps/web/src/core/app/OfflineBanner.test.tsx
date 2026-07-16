@@ -50,9 +50,8 @@ describe("OfflineBanner", () => {
     expect(pill.getAttribute("data-state")).toBe("offline");
     expect(pill.tagName).toBe("BUTTON");
     expect(pill.getAttribute("aria-live")).toBe("polite");
-    expect(pill).toHaveClass(
-      "top-[calc(4.75rem+env(safe-area-inset-top,0px))]",
-    );
+    expect(pill).toHaveClass("min-h-11", "min-w-11");
+    expect(pill).not.toHaveClass("fixed");
     expect(pill.textContent).toContain("Офлайн");
     // No queue — should not include a count.
     expect(pill.textContent).not.toContain("·");

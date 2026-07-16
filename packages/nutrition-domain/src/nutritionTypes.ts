@@ -36,6 +36,8 @@ export interface NutritionPrefs {
   servings: number;
   timeMinutes: number;
   exclude: string;
+  recipeMealType: MealTypeId | "any";
+  recipePantryMode: "prefer" | "only" | "ignore";
   dailyTargetKcal: number | null;
   dailyTargetProtein_g: number | null;
   dailyTargetFat_g: number | null;

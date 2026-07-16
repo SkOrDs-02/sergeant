@@ -49,7 +49,13 @@ type AccountLike = Partial<MonoAccount> & {
 };
 
 export type AssetsProps = {
-  mono: { accounts: AccountLike[]; transactions: readonly Transaction[] };
+  mono: {
+    accounts: AccountLike[];
+    transactions: readonly Transaction[];
+    loadingTx?: boolean;
+    error?: unknown;
+    refetchTransactions?: () => void;
+  };
   storage: StorageSlice;
   showBalance?: boolean;
   initialOpenDebt?: boolean;
@@ -67,7 +73,8 @@ export function useAssetsState({
   showBalance = true,
   initialOpenDebt = false,
 }: AssetsProps) {
-  const { accounts, transactions } = mono;
+  const { accounts, transactions, loadingTx, error, refetchTransactions } =
+    mono;
   const {
     hiddenAccounts,
     manualAssets,
@@ -232,6 +239,9 @@ export function useAssetsState({
     // Raw data from props
     accounts,
     transactions,
+    loadingTx: Boolean(loadingTx),
+    transactionsError: error,
+    refetchTransactions,
     showBalance,
 
     // Storage-derived

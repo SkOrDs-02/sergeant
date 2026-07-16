@@ -60,7 +60,11 @@ export interface HideTransactionAction {
 
 export interface SetBudgetLimitAction {
   name: "set_budget_limit";
-  input: { category_id: string; limit: number | string };
+  input: {
+    category_id: string;
+    limit: number | string;
+    period?: "month" | "week" | "one_time";
+  };
 }
 
 export interface SetMonthlyPlanAction {
@@ -153,6 +157,8 @@ export interface BudgetLimit {
   type: "limit";
   categoryId: string;
   limit: number;
+  period?: "month" | "week" | "one_time";
+  createdAt?: string;
 }
 
 export interface BudgetGoal {

@@ -32,7 +32,7 @@ describe("PdfPreviewModal", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("triggers the iframe's print dialog on Зберегти PDF", () => {
+  it("honestly labels and opens the system save/print dialog", () => {
     render(<PdfPreviewModal html={HTML} onClose={() => undefined} />);
 
     const iframe = screen.getByTitle("PDF-звіт") as HTMLIFrameElement;
@@ -44,7 +44,7 @@ describe("PdfPreviewModal", () => {
       value: printSpy,
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Зберегти PDF/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Зберегти \/ друк/i }));
     expect(printSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -43,10 +43,12 @@ describe("SubscriptionForm", () => {
       />,
     );
     expect(
-      screen.getByPlaceholderText("Ключове слово з транзакції"),
+      screen.getByLabelText("Пошук транзакції за описом"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/для суми підписки знайдемо найновішу витратну/),
+      screen.getByText(
+        /знайдемо найновішу витрату, опис якої містить цей текст/,
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("День списання (1-31)"),

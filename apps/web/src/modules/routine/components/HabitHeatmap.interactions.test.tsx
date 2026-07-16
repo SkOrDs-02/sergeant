@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 /**
  * Interaction + branch coverage for HabitHeatmap (selection, roving
- * keyboard navigation, the aria-live details region and the legend).
+ * keyboard navigation and the persistent aria-live details region).
  * The label / off-by-year regression is covered separately in
  * HabitHeatmap.test.tsx; this file drives the stateful behaviour.
  *
@@ -30,20 +30,14 @@ describe("HabitHeatmap interactions", () => {
     vi.useRealTimers();
   });
 
-  it("shows the legend by default and the details region after a cell is selected", () => {
+  it("shows today's details by default and selects the cell on click", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
-    // Legend visible until a cell is selected.
-    expect(screen.getByLabelText("Легенда заповнення")).toBeInTheDocument();
+    expect(screen.getByText(/1 з 1 звички виконано/)).toBeInTheDocument();
 
     const todayCell = screen.getByLabelText("2026-06-16: 1 з 1 звички");
     fireEvent.click(todayCell);
     expect(todayCell).toHaveAttribute("aria-pressed", "true");
-    // The aria-live region now reports the completion summary.
     expect(screen.getByText(/1 з 1 звички виконано/)).toBeInTheDocument();
-    // Legend is replaced by the details panel.
-    expect(
-      screen.queryByLabelText("Легенда заповнення"),
-    ).not.toBeInTheDocument();
   });
 
   it("toggles selection off when the same cell is clicked twice", () => {
@@ -53,7 +47,7 @@ describe("HabitHeatmap interactions", () => {
     expect(cell).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(cell);
     expect(cell).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByLabelText("Легенда заповнення")).toBeInTheDocument();
+    expect(screen.getByText(/1 з 1 звички виконано/)).toBeInTheDocument();
   });
 
   it("reports 'немає звичок' for a selected cell when there are no habits", () => {
@@ -101,7 +95,9 @@ describe("HabitHeatmap interactions", () => {
 
   it("handles null habits/completions without crashing", () => {
     render(<HabitHeatmap habits={null} completions={null} />);
-    expect(screen.getByText("Активність за рік")).toBeInTheDocument();
+    expect(
+      screen.getByText("Активність: сьогодні та історія"),
+    ).toBeInTheDocument();
     // No habits → today's cell reads "0 з 0 звичок".
     expect(
       screen.getByLabelText("2026-06-16: 0 з 0 звичок"),

@@ -123,7 +123,14 @@ export function RecoveryFocusCard({
             </div>
           )}
 
-          <BodyAtlas data={atlasData} compact />
+          <button
+            type="button"
+            onClick={() => onOpenAtlas?.()}
+            aria-label="Відкрити атлас мʼязів за силуетом"
+            className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+          >
+            <BodyAtlas data={atlasData} compact />
+          </button>
 
           <div className="mt-4 pt-3 border-t border-line">
             <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">

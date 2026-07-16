@@ -90,6 +90,24 @@ export const paths: ZodOpenApiPathsObject = {
   },
 
   // ────────────────────── /api/ai-memory/* ──────────────────────
+  "/api/ai-memory": {
+    delete: {
+      summary: "Очистити серверну памʼять ШІ поточного користувача.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Памʼять очищено.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryClearResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
   "/api/ai-memory/recall": {
     post: {
       summary:

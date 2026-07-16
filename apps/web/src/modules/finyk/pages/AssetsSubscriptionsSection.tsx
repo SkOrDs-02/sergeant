@@ -74,6 +74,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           setNewSub={setNewSub}
           setSubscriptions={setSubscriptions}
           setShowSubForm={setShowSubForm}
+          transactions={transactions}
         />
       ) : (
         <button

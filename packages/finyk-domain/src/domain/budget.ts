@@ -2,7 +2,11 @@
 // Тут немає React-хуків і немає доступу до localStorage — кожна функція є
 // чистою проєкцією вхідних даних. Усі UI/хуки мають викликати саме ці
 // функції, а не дублювати формули.
-import { toLocalISODate } from "@sergeant/shared";
+import {
+  kyivDayStartMs,
+  kyivMondayStartMs,
+  toLocalISODate,
+} from "@sergeant/shared";
 import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
   Budget,
@@ -27,8 +31,65 @@ export function getLimitBudgets(
   budgets: readonly Budget[] | null | undefined,
 ): LimitBudget[] {
   return Array.isArray(budgets)
-    ? budgets.filter((b): b is LimitBudget => b?.type === "limit")
+    ? budgets
+        .filter((b): b is LimitBudget => b?.type === "limit")
+        .map(normalizeLimitBudget)
     : [];
+}
+
+export type LimitPeriod = "month" | "week" | "one_time";
+
+export function normalizeLimitBudget<T extends LimitBudget>(
+  budget: T,
+): T & {
+  period: LimitPeriod;
+} {
+  const period: LimitPeriod =
+    budget.period === "week" || budget.period === "one_time"
+      ? budget.period
+      : "month";
+  return { ...budget, period };
+}
+
+export function getLimitPeriodRange(
+  budget: Pick<LimitBudget, "period" | "createdAt">,
+  now: Date = new Date(),
+): { startMs: number; endMs: number } {
+  const period = budget.period ?? "month";
+  const nowMs = now.getTime();
+  if (period === "week") {
+    return { startMs: kyivMondayStartMs(now), endMs: nowMs };
+  }
+  if (period === "one_time") {
+    const parsed = budget.createdAt ? Date.parse(budget.createdAt) : NaN;
+    return {
+      startMs: Number.isFinite(parsed)
+        ? parsed
+        : kyivDayStartMs(toLocalISODate(now)),
+      endMs: nowMs,
+    };
+  }
+  const monthKey = `${toLocalISODate(now).slice(0, 7)}-01`;
+  return { startMs: kyivDayStartMs(monthKey), endMs: nowMs };
+}
+
+export function filterTransactionsForLimitPeriod<
+  T extends { time?: number; date?: string },
+>(
+  transactions: readonly T[],
+  budget: Pick<LimitBudget, "period" | "createdAt">,
+  now: Date = new Date(),
+): T[] {
+  const { startMs, endMs } = getLimitPeriodRange(budget, now);
+  return transactions.filter((transaction) => {
+    const timeMs =
+      typeof transaction.time === "number"
+        ? transaction.time * 1000
+        : transaction.date
+          ? Date.parse(transaction.date)
+          : NaN;
+    return Number.isFinite(timeMs) && timeMs >= startMs && timeMs <= endMs;
+  });
 }
 
 export function getGoalBudgets(
@@ -270,12 +331,15 @@ export interface LimitFormInput {
   type?: "limit";
   categoryId?: string;
   limit?: number | string;
+  period?: LimitPeriod;
+  createdAt?: string;
   [k: string]: unknown;
 }
 
 export interface LimitFormNormalized extends LimitFormInput {
   type: "limit";
   limit: number;
+  period: LimitPeriod;
 }
 
 export interface LimitFormResult {
@@ -302,7 +366,12 @@ export function validateLimitBudgetForm(
   }
   return {
     error: null,
-    normalized: { ...form, type: "limit" as const, limit: limitVal },
+    normalized: {
+      ...form,
+      type: "limit" as const,
+      limit: limitVal,
+      period: form.period ?? "month",
+    },
   };
 }
 

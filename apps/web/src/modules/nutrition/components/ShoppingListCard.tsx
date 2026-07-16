@@ -128,7 +128,7 @@ export function ShoppingListCard({
             <div className="mt-2 text-xs text-subtle text-center">
               {source === "recipes"
                 ? "Спершу згенеруй рецепти у Меню → Рецепти"
-                : "Спершу згенеруй тижневий план у Меню → План на день"}
+                : "Спершу згенеруй тижневий план у Меню → Тижневий план"}
             </div>
           )}
         </div>

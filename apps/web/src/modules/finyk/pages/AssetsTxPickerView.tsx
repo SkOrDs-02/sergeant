@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
@@ -24,6 +25,9 @@ import {
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { cn } from "@shared/lib/ui/cn";
+import { Input } from "@shared/components/ui/Input";
+import { Button } from "@shared/components/ui/Button";
+import { Skeleton } from "@shared/components/ui/Skeleton";
 
 type Subscription = {
   id: string;
@@ -47,6 +51,9 @@ interface AssetsTxPickerViewProps {
   setTxPicker: (next: TxPickerState | null) => void;
   accounts: readonly MonoAccount[];
   transactions: readonly TxRowTx[];
+  loading?: boolean;
+  error?: unknown;
+  onRetry?: (() => void) | undefined;
   monoDebtLinkedTxIds: Record<string, string[]>;
   toggleMonoDebtTx: (accountId: string, txId: string) => void;
   subscriptions: readonly Subscription[];
@@ -84,7 +91,10 @@ export function AssetsTxPickerView({
   txPicker,
   setTxPicker,
   accounts,
-  transactions,
+  transactions: allTransactions,
+  loading = false,
+  error,
+  onRetry,
   monoDebtLinkedTxIds,
   toggleMonoDebtTx,
   subscriptions,
@@ -95,6 +105,122 @@ export function AssetsTxPickerView({
   showBalance,
   customCategories,
 }: AssetsTxPickerViewProps) {
+  const [query, setQuery] = useState("");
+  const [month, setMonth] = useState("");
+  const [openedAt] = useState(() => Date.now());
+  const linkedIds = useMemo(() => {
+    if (txPicker.type === "monoDebt") {
+      return new Set(monoDebtLinkedTxIds[txPicker.id] ?? []);
+    }
+    if (txPicker.type === "sub") {
+      const linked = subscriptions.find(
+        (item) => item.id === txPicker.subId,
+      )?.linkedTxId;
+      return new Set(linked ? [linked] : []);
+    }
+    const collection = txPicker.type === "debt" ? manualDebts : receivables;
+    return new Set(
+      collection.find((item) => item.id === txPicker.id)?.linkedTxIds ?? [],
+    );
+  }, [manualDebts, monoDebtLinkedTxIds, receivables, subscriptions, txPicker]);
+  const monthOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          allTransactions
+            .map((item) => {
+              const instant = (item.time ?? 0) * 1000;
+              return instant > 0
+                ? new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Europe/Kyiv",
+                    year: "numeric",
+                    month: "2-digit",
+                  }).format(instant)
+                : "";
+            })
+            .filter(Boolean),
+        ),
+      ]
+        .sort()
+        .reverse(),
+    [allTransactions],
+  );
+  const transactions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const cutoff = openedAt - 90 * 24 * 60 * 60 * 1000;
+    return allTransactions.filter((item) => {
+      const instant = (item.time ?? 0) * 1000;
+      const itemMonth =
+        instant > 0
+          ? new Intl.DateTimeFormat("en-CA", {
+              timeZone: "Europe/Kyiv",
+              year: "numeric",
+              month: "2-digit",
+            }).format(instant)
+          : "";
+      const inRange = month
+        ? itemMonth === month
+        : instant >= cutoff || linkedIds.has(item.id);
+      const haystack =
+        `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
+      return (
+        inRange && (!normalizedQuery || haystack.includes(normalizedQuery))
+      );
+    });
+  }, [allTransactions, linkedIds, month, openedAt, query]);
+  const pickerControls = (
+    <div className="mb-3 space-y-2">
+      <Input
+        type="search"
+        aria-label="Пошук транзакцій"
+        placeholder="Пошук за описом або сумою"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <select
+        aria-label="Період транзакцій"
+        value={month}
+        onChange={(event) => setMonth(event.target.value)}
+        className="input-focus-finyk h-10 w-full rounded-xl border border-line bg-bg px-3 text-sm text-text"
+      >
+        <option value="">Останні 90 днів</option>
+        {monthOptions.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      {loading && allTransactions.length === 0 && (
+        <div aria-busy="true" className="space-y-2">
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+        </div>
+      )}
+      {Boolean(error) && allTransactions.length === 0 && (
+        <Card variant="flat" radius="md" className="space-y-2">
+          <p className="text-style-caption text-danger-strong dark:text-danger">
+            Не вдалося завантажити транзакції.
+          </p>
+          {onRetry && (
+            <Button size="sm" onClick={onRetry}>
+              Повторити
+            </Button>
+          )}
+        </Card>
+      )}
+      {!loading && !error && transactions.length === 0 && (
+        <p
+          className="py-6 text-center text-style-caption text-subtle"
+          role="status"
+        >
+          {query.trim()
+            ? "За цим пошуком транзакцій немає."
+            : "За вибраний період транзакцій немає."}
+        </p>
+      )}
+    </div>
+  );
   if (txPicker.type === "monoDebt") {
     const account = accounts.find((a) => a.id === txPicker.id);
     if (!account) {
@@ -164,6 +290,7 @@ export function AssetsTxPickerView({
               Тапни транзакцію щоб прив&apos;язати як погашення. Виділені
               зеленим — автоматично виявлені поповнення картки.
             </p>
+            {pickerControls}
             {transactions.map((t, i) => {
               const isLinked = linkedIds.includes(t.id);
               const suggested = isSuggested(t);
@@ -248,6 +375,7 @@ export function AssetsTxPickerView({
                 )}
               </p>
             </Card>
+            {pickerControls}
             {expenses.map((t, i) => {
               const isLinked = linkedId === t.id;
               return (
@@ -359,6 +487,7 @@ export function AssetsTxPickerView({
               {total?.toLocaleString("uk-UA")} ₴
             </div>
           </Card>
+          {pickerControls}
           {transactions.map((t, i) => {
             const isLinked = linked.includes(t.id);
             const role = isLinked ? getTxRole(t) : null;

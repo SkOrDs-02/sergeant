@@ -165,6 +165,13 @@ export type RecallMemoryRequest = z.infer<typeof RecallMemoryRequestSchema>;
 export type RecallMemoryResult = z.infer<typeof RecallMemoryResultSchema>;
 export type RecallMemoryResponse = z.infer<typeof RecallMemoryResponseSchema>;
 
+/** Response для `DELETE /api/ai-memory`. */
+export const AiMemoryClearResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.number().int().nonnegative(),
+});
+export type AiMemoryClearResponse = z.infer<typeof AiMemoryClearResponseSchema>;
+
 /** /api/nutrition/analyze-photo */
 export const AnalyzePhotoSchema = z.object({
   image_base64: z
@@ -245,6 +252,10 @@ export const RecommendRecipesSchema = z.object({
       servings: z.number().finite().positive().optional(),
       timeMinutes: z.number().finite().positive().optional(),
       exclude: z.string().max(500).optional(),
+      mealType: z
+        .enum(["any", "breakfast", "lunch", "dinner", "snack"])
+        .optional(),
+      pantryMode: z.enum(["prefer", "only", "ignore"]).optional(),
       locale: Locale,
     })
     .partial()

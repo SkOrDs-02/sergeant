@@ -6,6 +6,7 @@ import { requirePlan } from "../modules/billing/requirePlan.js";
 import { buildEventSyncHandler } from "../modules/ai-memory/eventSyncRoute.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
+import { clearAiMemoryHandler } from "../modules/ai-memory/clearRoute.js";
 
 /**
  * `/api/ai-memory/*` — клієнт-driven ingestion для джерел, які живуть на
@@ -45,6 +46,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     requirePlan(pool, "pro"),
     recallMemoryHandler,
   );
+  r.delete("/api/ai-memory", requireSession(), clearAiMemoryHandler);
   // PR-24: PostHog → AI memory sync. Не вимагаємо pro-plan — behavioral
   // events важливі для founder-recall на будь-якому tier-і (founder теж
   // user-row, на free-tier у dev). Memory ingest сам перевіряє

@@ -167,6 +167,33 @@ export function useTheme(): UseThemeReturn {
     applyResolvedTheme(resolved);
   }, [resolved]);
 
+  // iOS can restore an installed PWA from the back-forward cache without
+  // remounting React. Re-assert the persisted choice on `pageshow` (and when
+  // the tab becomes visible) so the UI radio state cannot say "dark" while
+  // `<html>` has silently lost its `.dark` class during suspension.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+    const restore = () => {
+      const persisted = readInitialChoice();
+      const prefersDark = readSystemPrefersDark();
+      choiceRef.current = persisted;
+      setChoiceState(persisted);
+      setSystemPrefersDark(prefersDark);
+      applyResolvedTheme(resolveTheme(persisted, prefersDark));
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") restore();
+    };
+    window.addEventListener("pageshow", restore);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", restore);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   // System color-scheme: subscribe once. Used for `system` and `hc`
   // modes (HC follows OS-level light/dark preference).
   useEffect(() => {

@@ -66,6 +66,25 @@ describe("Measurements page", () => {
     expect(() => render(<Measurements />)).not.toThrow();
   });
 
+  it("opens the internal measurement guide with primary-source links", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Як правильно робити заміри" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /WHO STEPS/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("who.int"),
+    );
+    expect(screen.getByRole("link", { name: /CDC/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("cdc.gov"),
+    );
+  });
+
   it("disables the submit button when the form is empty (F4)", () => {
     render(<Measurements />);
     expect(getSaveButton()).toBeDisabled();

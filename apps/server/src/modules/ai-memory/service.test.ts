@@ -371,3 +371,40 @@ describe("AiMemoryService — enabled", () => {
     );
   });
 });
+
+describe("AiMemoryService — per-user consent", () => {
+  it("does not embed or write when consent is disabled", async () => {
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(false),
+    });
+
+    await svc.remember([
+      { userId: "u1", source: "chat", sourceRef: null, content: "private" },
+    ]);
+
+    expect(embeddings.calls).toBe(0);
+    expect(store.upsertCalls).toBe(0);
+  });
+
+  it("does not embed or read when consent is disabled", async () => {
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(false),
+    });
+
+    await expect(
+      svc.recall({ userId: "u1", query: "private" }),
+    ).resolves.toEqual([]);
+    expect(embeddings.calls).toBe(0);
+    expect(store.queryCalls).toBe(0);
+  });
+});

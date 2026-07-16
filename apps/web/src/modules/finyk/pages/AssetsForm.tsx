@@ -1,6 +1,7 @@
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
@@ -12,6 +13,8 @@ import type {
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
+import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import type { TxRowTx } from "../components/TxRow";
 
 const isPositiveFinite = (value: string) => {
   const parsed = Number(value);
@@ -31,6 +34,7 @@ export function SubscriptionForm({
   setNewSub,
   setSubscriptions,
   setShowSubForm,
+  transactions = [],
 }: {
   newSub: {
     name: string;
@@ -42,7 +46,11 @@ export function SubscriptionForm({
   setNewSub: React.Dispatch<React.SetStateAction<typeof newSub>>;
   setSubscriptions: React.Dispatch<React.SetStateAction<Subscription[]>>;
   setShowSubForm: (v: boolean) => void;
+  transactions?: readonly TxRowTx[];
 }) {
+  const keywordMatch = newSub.keyword.trim()
+    ? getLastTxForSubscription({ keyword: newSub.keyword }, [...transactions])
+    : null;
   return (
     <Card variant="flat" radius="md" className="space-y-3 mt-2">
       <Input
@@ -51,16 +59,31 @@ export function SubscriptionForm({
         value={newSub.name}
         onChange={(e) => setNewSub((a) => ({ ...a, name: e.target.value }))}
       />
-      <Input
-        aria-label="Ключове слово з транзакції"
-        placeholder="Ключове слово з транзакції"
-        value={newSub.keyword}
-        onChange={(e) => setNewSub((a) => ({ ...a, keyword: e.target.value }))}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="subscription-transaction-keyword" optional>
+          Пошук транзакції за описом
+        </Label>
+        <Input
+          id="subscription-transaction-keyword"
+          aria-label="Пошук транзакції за описом"
+          placeholder="Наприклад, netflix"
+          value={newSub.keyword}
+          onChange={(e) =>
+            setNewSub((a) => ({ ...a, keyword: e.target.value }))
+          }
+        />
+      </div>
       <p className="text-xs text-subtle">
-        Якщо не привʼязувати вручну, для суми підписки знайдемо найновішу
-        витратну транзакцію, опис якої містить це слово.
+        Якщо не вибрати транзакцію вручну, знайдемо найновішу витрату, опис якої
+        містить цей текст. Пошук не залежить від регістру.
       </p>
+      {newSub.keyword.trim() && (
+        <p className="text-style-caption text-subtle" role="status">
+          {keywordMatch
+            ? `Знайдено: ${keywordMatch.description || "Транзакція"} · ${Math.abs(keywordMatch.amount / 100).toLocaleString("uk-UA")} ₴`
+            : "Збігів не знайдено"}
+        </p>
+      )}
       <Input
         aria-label="День списання (1-31)"
         placeholder="День списання (1-31)"
@@ -187,11 +210,11 @@ export function ReceivableForm({
         <Label htmlFor="receivable-due-date" optional>
           Дата повернення
         </Label>
-        <Input
+        <DateField
           id="receivable-due-date"
           aria-label="Дата повернення"
           className="w-full"
-          type="date"
+          emptyLabel="Обери дату повернення"
           value={newRecv.dueDate}
           onChange={(e) =>
             setNewRecv((a) => ({ ...a, dueDate: e.target.value }))
@@ -474,11 +497,11 @@ export function DebtForm({
         <Label htmlFor="debt-due-date" optional>
           Дата погашення
         </Label>
-        <Input
+        <DateField
           id="debt-due-date"
           aria-label="Дата погашення"
           className="w-full"
-          type="date"
+          emptyLabel="Обери дату погашення"
           value={newDebt.dueDate}
           onChange={(e) =>
             setNewDebt((a) => ({ ...a, dueDate: e.target.value }))

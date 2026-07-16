@@ -17,25 +17,37 @@ import type {
 } from "../types";
 
 export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
-  const { category_id, limit } = action.input;
+  const { category_id, limit, period = "month" } = action.input;
   const budgets = ls<Budget[]>("finyk_budgets", []);
   const idx = budgets.findIndex(
     (b) => b.type === "limit" && b.categoryId === category_id,
   );
   if (idx >= 0) {
     (budgets[idx] as BudgetLimit).limit = Number(limit);
+    (budgets[idx] as BudgetLimit).period = period;
+    if (period === "one_time" && !(budgets[idx] as BudgetLimit).createdAt) {
+      (budgets[idx] as BudgetLimit).createdAt = new Date().toISOString();
+    }
   } else {
     budgets.push({
       id: `b_${Date.now()}`,
       type: "limit",
       categoryId: category_id,
       limit: Number(limit),
+      period,
+      createdAt: new Date().toISOString(),
     });
   }
   finykChatWrite("finyk_budgets", budgets);
   const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(category_id, customC);
-  return `Ліміт ${cat?.label || category_id} встановлено: ${limit} грн`;
+  const periodLabel =
+    period === "week"
+      ? "на тиждень"
+      : period === "one_time"
+        ? "одноразово"
+        : "на місяць";
+  return `Ліміт ${cat?.label || category_id} встановлено: ${limit} грн ${periodLabel}`;
 }
 
 export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {

@@ -3,7 +3,7 @@
  *
  * In-app PDF preview. Renders the generated report HTML inside a
  * same-origin `<iframe srcDoc>` and overlays a real React toolbar with
- * "Назад" (close) and "Зберегти PDF" (trigger the iframe's system print
+ * "Назад" (close) and "Зберегти / друк" (trigger the iframe's system print
  * dialog) actions.
  *
  * Replaces the previous `window.open("", "_blank")` flow: on iOS Safari
@@ -27,7 +27,7 @@ const COPY = {
   iframeTitle: "PDF-звіт",
   back: "Назад",
   title: "Перегляд PDF",
-  save: "Зберегти PDF",
+  save: "Зберегти / друк",
 } as const;
 
 export interface PdfPreviewModalProps {

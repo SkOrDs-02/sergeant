@@ -62,6 +62,8 @@ export default async function handler(
   const servings = Number(prefs.servings || 1);
   const timeMinutes = Number(prefs.timeMinutes || 25);
   const exclude = String(prefs.exclude || "");
+  const mealType = String(prefs.mealType || "any");
+  const pantryMode = String(prefs.pantryMode || "prefer");
   const locale = String(prefs.locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({
@@ -74,6 +76,8 @@ export default async function handler(
 Порції: ${Number.isFinite(servings) && servings > 0 ? servings : 1}.
 Час: ${Number.isFinite(timeMinutes) && timeMinutes > 0 ? timeMinutes : 25} хв.
 Не використовувати/алергени: ${exclude || "—"}.
+Тип прийому їжі: ${mealType === "any" ? "будь-який" : mealType}.
+Режим комори: ${pantryMode} (prefer — віддай перевагу наявному; only — тільки наявне; ignore — не обмежуй рецепт коморою).
 
 ${pantrySec}
 

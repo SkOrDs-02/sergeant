@@ -8,7 +8,6 @@ import { type HubNotification } from "./NotificationBell";
 import { HubMainContent } from "./HubMainContent";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
-import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import {
@@ -160,10 +159,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         } as CSSProperties
       }
     >
-      <HintsOrchestrator
-        inFtuxSession={inFtuxSession}
-        hasFirstRealEntry={hasFirstRealEntry}
-      />
       <OfflineBanner />
 
       <HubHeader

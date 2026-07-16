@@ -20,6 +20,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
 import { Select } from "@shared/components/ui/Select";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -272,9 +273,9 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
           >
             {COPY.birthDateLabel}
           </label>
-          <Input
+          <DateField
             id="biometrics-birth-date"
-            type="date"
+            emptyLabel={COPY.birthDateLabel}
             value={form.birthDate}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, birthDate: e.target.value }))

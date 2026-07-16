@@ -93,15 +93,20 @@ export function PhotoAnalyzeCard({
           disabled={busy}
         />
         {photoPreviewUrl ? (
-          <img
-            src={photoPreviewUrl}
-            alt="Обране фото"
-            loading="lazy"
-            decoding="async"
-            width="600"
-            height="280"
-            className="w-full max-h-[280px] object-cover rounded-2xl"
-          />
+          <div className="relative">
+            <img
+              src={photoPreviewUrl}
+              alt="Обране фото"
+              loading="lazy"
+              decoding="async"
+              width="600"
+              height="280"
+              className="w-full max-h-[280px] object-cover rounded-2xl"
+            />
+            <span className="absolute bottom-3 right-3 rounded-xl bg-panel/95 px-3 py-2 text-style-caption text-text shadow-soft">
+              Замінити фото
+            </span>
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted">
             <svg
@@ -124,6 +129,17 @@ export function PhotoAnalyzeCard({
           </div>
         )}
       </label>
+
+      {photoPreviewUrl ? (
+        <button
+          type="button"
+          onClick={() => void onPickPhoto(null)}
+          disabled={busy}
+          className="mt-2 min-h-11 px-3 text-style-caption text-danger-strong hover:underline disabled:opacity-50"
+        >
+          Прибрати фото
+        </button>
+      ) : null}
 
       {photoResult && (
         <div className="mt-4 grid gap-3">
@@ -221,19 +237,6 @@ export function PhotoAnalyzeCard({
                       disabled={busy}
                     />
                   </div>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={refinePhoto}
-                      disabled={busy}
-                      className={cn(
-                        "text-style-label w-full h-11 rounded-2xl",
-                        "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
-                      )}
-                    >
-                      Перерахувати
-                    </button>
-                  </div>
                 </div>
 
                 {photoResult.questions.slice(0, 6).map((q: string) => (
@@ -249,6 +252,17 @@ export function PhotoAnalyzeCard({
                     />
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={refinePhoto}
+                  disabled={busy}
+                  className={cn(
+                    "text-style-label w-full h-11 rounded-2xl",
+                    "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                  )}
+                >
+                  Перерахувати за всіма відповідями
+                </button>
               </div>
             )}
         </div>

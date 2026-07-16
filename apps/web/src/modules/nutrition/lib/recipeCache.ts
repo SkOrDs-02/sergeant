@@ -45,6 +45,8 @@ export interface RecipeCachePrefs {
   servings?: unknown;
   timeMinutes?: unknown;
   exclude?: unknown;
+  recipeMealType?: unknown;
+  recipePantryMode?: unknown;
 }
 
 export interface RecipeCacheEntry<TRecipe = unknown> {
@@ -67,6 +69,8 @@ export function buildRecipeCacheKey(
     prefs?.servings,
     prefs?.timeMinutes,
     String(prefs?.exclude || ""),
+    prefs?.recipeMealType,
+    prefs?.recipePantryMode,
   ].join("|");
   const raw = `${activePantryId}\n${names.join("\n")}\n${prefStr}`;
   return shortHash(raw);
@@ -81,8 +85,7 @@ export function readRecipeCache<TRecipe = unknown>(
     const all = JSON.parse(raw);
     if (!all || typeof all !== "object") return null;
     const entry = (all as Record<string, unknown>)[cacheKey] as
-      | RecipeCacheEntry<TRecipe>
-      | undefined;
+      RecipeCacheEntry<TRecipe> | undefined;
     if (!entry || !Array.isArray(entry.recipes)) return null;
     return {
       recipes: entry.recipes,

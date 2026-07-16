@@ -12,7 +12,6 @@ function exportFilename(): string {
 
 export function DataExportSection() {
   const [serverExportBusy, setServerExportBusy] = useState(false);
-  const [deleteBusy, setDeleteBusy] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -35,28 +34,6 @@ export function DataExportSection() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      "Видалити акаунт і запустити процес видалення? Частину даних можемо тримати до 30 днів для відновлення та аудиту.",
-    );
-    if (!confirmed) return;
-
-    setDeleteBusy(true);
-    setServerError(null);
-    setServerMessage(null);
-    try {
-      await meApi.deleteAccount();
-      setServerMessage("Запит на видалення прийнято. Повертаю на головну…");
-      window.location.assign("/");
-    } catch {
-      setServerError(
-        "Не вдалося видалити акаунт. Спробуй ще раз або напиши в підтримку.",
-      );
-    } finally {
-      setDeleteBusy(false);
-    }
-  };
-
   return (
     <SettingsGroup title="Експорт/імпорт JSON" icon="download">
       <p className="text-xs text-subtle leading-snug">
@@ -70,8 +47,8 @@ export function DataExportSection() {
         <div>
           <h3 className="text-style-label text-text">Права на дані</h3>
           <p className="mt-1 text-xs text-subtle leading-relaxed">
-            Серверний експорт не включає сирі секрети й токени. Видалення
-            акаунта запускає процес із 30-денним періодом відновлення та аудиту.
+            Серверний експорт не включає сирі секрети й токени. Видалити акаунт
+            можна у профілі — там зібрані всі дії керування акаунтом.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -80,21 +57,11 @@ export function DataExportSection() {
             variant="secondary"
             size="sm"
             onClick={handleServerExport}
-            disabled={serverExportBusy || deleteBusy}
+            disabled={serverExportBusy}
           >
             {serverExportBusy
               ? "Готую експорт…"
               : "Завантажити серверний експорт"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleDeleteAccount}
-            disabled={serverExportBusy || deleteBusy}
-            className="text-danger-strong"
-          >
-            {deleteBusy ? "Видаляю…" : "Видалити акаунт"}
           </Button>
         </div>
         {serverMessage ? (

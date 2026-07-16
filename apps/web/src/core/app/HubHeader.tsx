@@ -119,6 +119,7 @@ export function HubHeader({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
+          <span data-sync-status-slot className="contents" />
           {/* Global AI-assistant entry. Lives in the hub top-bar so it is
               reachable from every hub tab and does not depend on the
               dashboard-only FTUX-gated FAB (which vanished on the empty

@@ -40,6 +40,7 @@ const lbl =
   "px-1 block text-xs uppercase tracking-wider font-bold text-fizruk-strong dark:text-fizruk-300/70";
 
 export function Measurements() {
+  const [guideOpen, setGuideOpen] = useState(false);
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
   const toast = useToast();
   const handleDelete = useCallback(
@@ -88,13 +89,64 @@ export function Measurements() {
     return { total, latestAt, filledLatest };
   }, [entries, latest]);
 
+  if (guideOpen) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <article className="max-w-2xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+          <button
+            type="button"
+            onClick={() => setGuideOpen(false)}
+            className="min-h-11 text-style-label text-fizruk-strong hover:underline"
+          >
+            {messages.fizruk.measurements.guideBack}
+          </button>
+          <Card radius="lg" className="space-y-4">
+            <div>
+              <SectionHeading as="h2" size="lg">
+                {messages.fizruk.measurements.guideTitle}
+              </SectionHeading>
+              <p className="mt-2 text-sm text-subtle leading-relaxed">
+                {messages.fizruk.measurements.guideIntro}
+              </p>
+            </div>
+            <ol className="list-decimal pl-5 space-y-3 text-sm text-text leading-relaxed">
+              {messages.fizruk.measurements.guideSteps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <p className="text-xs text-subtle leading-relaxed">
+              {messages.fizruk.measurements.guideDisclaimer}
+            </p>
+            <div className="flex flex-wrap gap-3 text-style-caption">
+              <a
+                href="https://www.who.int/docs/default-source/ncds/ncd-surveillance/steps/steps-manual.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+              >
+                {messages.fizruk.measurements.guideWhoLink}
+              </a>
+              <a
+                href="https://www.cdc.gov/diabetes/living-with/healthy-weight.html"
+                target="_blank"
+                rel="noreferrer"
+                className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
+              >
+                {messages.fizruk.measurements.guideCdcLink}
+              </a>
+            </div>
+          </Card>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
-        <a
-          href="https://fitness.net.ua/yak-pravylno-robyty-zamiry-tila/"
-          target="_blank"
-          rel="noreferrer"
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
           className="flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
         >
           <div className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
@@ -121,10 +173,7 @@ export function Measurements() {
               {messages.fizruk.measurements.manualLink}
             </div>
           </div>
-          <span className="sr-only">
-            {messages.fizruk.measurements.manualLinkNewTab}
-          </span>
-        </a>
+        </button>
 
         <div className="grid grid-cols-3 gap-2">
           <Card radius="lg" padding="sm">

@@ -341,14 +341,16 @@ describe("RecipesCard — recipe generator section", () => {
 
   it("renders goal select with the correct initial value", () => {
     renderCard(makeProps());
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const select = screen.getByRole("combobox", {
+      name: "Ціль",
+    }) as HTMLSelectElement;
     expect(select.value).toBe("balanced");
   });
 
   it("calls setPrefs when goal select changes", () => {
     const setPrefs = vi.fn();
     renderCard(makeProps({ setPrefs }));
-    const select = screen.getByRole("combobox");
+    const select = screen.getByRole("combobox", { name: "Ціль" });
     fireEvent.change(select, { target: { value: "high_protein" } });
     expect(setPrefs).toHaveBeenCalledTimes(1);
   });

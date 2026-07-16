@@ -69,6 +69,7 @@ export function GeneratorCard({
           <div>
             <div className="text-xs text-subtle mb-1">Ціль</div>
             <select
+              aria-label="Ціль"
               value={prefs.goal}
               onChange={(e) =>
                 setPrefs((p) => ({ ...p, goal: e.target.value }))
@@ -127,6 +128,53 @@ export function GeneratorCard({
             placeholder="напр. арахіс, гриби"
             disabled={busy}
           />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="block">
+            <span className="block text-xs text-subtle mb-1">Прийом їжі</span>
+            <select
+              aria-label="Прийом їжі"
+              value={prefs.recipeMealType}
+              onChange={(e) =>
+                setPrefs((p) => ({
+                  ...p,
+                  recipeMealType: e.target
+                    .value as NutritionPrefs["recipeMealType"],
+                }))
+              }
+              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
+              disabled={busy}
+            >
+              <option value="any">Будь-який</option>
+              <option value="breakfast">Сніданок</option>
+              <option value="lunch">Обід</option>
+              <option value="dinner">Вечеря</option>
+              <option value="snack">Перекус</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="block text-xs text-subtle mb-1">
+              Як враховувати комору
+            </span>
+            <select
+              aria-label="Використання комори"
+              value={prefs.recipePantryMode}
+              onChange={(e) =>
+                setPrefs((p) => ({
+                  ...p,
+                  recipePantryMode: e.target
+                    .value as NutritionPrefs["recipePantryMode"],
+                }))
+              }
+              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
+              disabled={busy}
+            >
+              <option value="prefer">Переважно з наявного</option>
+              <option value="only">Тільки з наявного</option>
+              <option value="ignore">Не враховувати комору</option>
+            </select>
+          </label>
         </div>
 
         <button

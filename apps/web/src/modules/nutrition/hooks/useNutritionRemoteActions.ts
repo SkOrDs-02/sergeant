@@ -100,6 +100,8 @@ export interface RemoteActionsPrefs {
   servings?: number | string | null;
   timeMinutes?: number | string | null;
   exclude?: string | null;
+  recipeMealType?: "any" | "breakfast" | "lunch" | "dinner" | "snack";
+  recipePantryMode?: "prefer" | "only" | "ignore";
   dailyTargetKcal: number | null;
   dailyTargetProtein_g: number | null;
   dailyTargetFat_g: number | null;
@@ -223,7 +225,10 @@ export function useNutritionRemoteActions({
   const recipesMutation = useMutation({
     mutationFn: () => {
       const items = pantry.effectiveItems;
-      if (items.length === 0)
+      if (
+        items.length === 0 &&
+        (prefs.recipePantryMode ?? "prefer") !== "ignore"
+      )
         throw new Error("Дай хоча б 2–3 продукти для рецептів.");
       return nutritionApi.recommendRecipes({
         pantry: items.slice(0, 40),
@@ -232,6 +237,8 @@ export function useNutritionRemoteActions({
           servings: toNumber(prefs.servings, 1),
           timeMinutes: toNumber(prefs.timeMinutes, 25),
           exclude: String(prefs.exclude || ""),
+          mealType: prefs.recipeMealType ?? "any",
+          pantryMode: prefs.recipePantryMode ?? "prefer",
           locale: "uk-UA",
         },
       });
@@ -275,7 +282,6 @@ export function useNutritionRemoteActions({
   const weekPlanMutation = useMutation({
     mutationFn: () => {
       const items = pantry.effectiveItems;
-      if (items.length === 0) throw new Error("Додай продукти в комору.");
       return nutritionApi.weekPlan({
         pantry: items.slice(0, 50),
         preferences: { goal: prefs.goal },

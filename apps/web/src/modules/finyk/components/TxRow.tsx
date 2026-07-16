@@ -132,6 +132,9 @@ function TxRowImpl({
 }: TxRowProps) {
   const [catPicker, setCatPicker] = useState(false);
   const [splitEditor, setSplitEditor] = useState(false);
+  const [splitCategoryPicker, setSplitCategoryPicker] = useState<number | null>(
+    null,
+  );
   // Драфт-стан редактора сплітів. Типізуємо явно — раніше `useState([])`
   // звужувався до `never[]` під `noImplicitAny: false`, і будь-яка помилка
   // у shape-і елемента ловилась лише рантаймом.
@@ -450,24 +453,75 @@ function TxRowImpl({
             Розподіл · {formatMoney(totalAmt, { minFractionDigits: 2 })} всього
           </div>
           {draftSplits.map((sp, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <select
-                value={sp.categoryId}
-                onChange={(e) =>
-                  setDraftSplits((prev) =>
-                    prev.map((p, j) =>
-                      j === i ? { ...p, categoryId: e.target.value } : p,
-                    ),
+            <div key={i} className="relative flex items-center gap-2">
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={splitCategoryPicker === i}
+                onClick={() =>
+                  setSplitCategoryPicker((current) =>
+                    current === i ? null : i,
                   )
                 }
-                className={splitInp}
+                className={cn(splitInp, "flex items-center gap-2 text-left")}
               >
-                {splitCategoryOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                <Icon
+                  name={CATEGORY_ICON_MAP[sp.categoryId] ?? "tag"}
+                  size={15}
+                  aria-hidden
+                />
+                <span className="truncate">
+                  {stripLeadingEmoji(
+                    splitCategoryOptions.find((c) => c.id === sp.categoryId)
+                      ?.label ?? sp.categoryId,
+                  )}
+                </span>
+                <Icon
+                  name="chevron-down"
+                  size={13}
+                  className="ml-auto"
+                  aria-hidden
+                />
+              </button>
+              {splitCategoryPicker === i && (
+                <div
+                  role="listbox"
+                  aria-label="Категорія частини розподілу"
+                  className="absolute left-0 right-28 top-10 z-20 max-h-56 overflow-y-auto rounded-xl border border-line bg-panel p-1.5 shadow-lg"
+                >
+                  {splitCategoryOptions.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      role="option"
+                      aria-selected={category.id === sp.categoryId}
+                      onClick={() => {
+                        setDraftSplits((prev) =>
+                          prev.map((part, index) =>
+                            index === i
+                              ? { ...part, categoryId: category.id }
+                              : part,
+                          ),
+                        );
+                        setSplitCategoryPicker(null);
+                      }}
+                      className={cn(
+                        "flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-left text-style-caption",
+                        category.id === sp.categoryId
+                          ? "bg-primary/10 text-primary"
+                          : "text-text hover:bg-panelHi",
+                      )}
+                    >
+                      <Icon
+                        name={CATEGORY_ICON_MAP[category.id] ?? "tag"}
+                        size={16}
+                        aria-hidden
+                      />
+                      {stripLeadingEmoji(category.label)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <input
                 type="number"
                 value={sp.amount || ""}
