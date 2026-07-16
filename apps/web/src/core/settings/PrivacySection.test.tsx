@@ -215,7 +215,6 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
   it("does not duplicate the notification toggle from Notifications settings", async () => {
     render(<PrivacySection />);
     await openSection();
-
     expect(
       screen.queryByRole("switch", { name: /Системні сповіщення/i }),
     ).not.toBeInTheDocument();

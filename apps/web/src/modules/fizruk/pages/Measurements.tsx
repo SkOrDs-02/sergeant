@@ -110,9 +110,10 @@ export function Measurements() {
               </p>
             </div>
             <ol className="list-decimal pl-5 space-y-3 text-sm text-text leading-relaxed">
-              {messages.fizruk.measurements.guideSteps.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
+              <li>{messages.fizruk.measurements.guideStep1}</li>
+              <li>{messages.fizruk.measurements.guideStep2}</li>
+              <li>{messages.fizruk.measurements.guideStep3}</li>
+              <li>{messages.fizruk.measurements.guideStep4}</li>
             </ol>
             <p className="text-xs text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
