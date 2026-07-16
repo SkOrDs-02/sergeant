@@ -5,9 +5,27 @@ import { DateField } from "./DateField";
 
 describe("DateField", () => {
   it("keeps the native date input inside the available inline size", () => {
-    render(<DateField id="due" value="" onChange={() => undefined} />);
+    const { container } = render(
+      <DateField id="due" value="" onChange={() => undefined} />,
+    );
     const input = screen.getByLabelText("Обери дату", { selector: "input" });
     expect(input).toHaveClass("min-w-0", "max-w-full", "[min-inline-size:0]");
+    expect(input.parentElement).toHaveClass(
+      "w-full",
+      "min-w-0",
+      "max-w-full",
+      "overflow-hidden",
+    );
+    expect(input.parentElement?.parentElement).toHaveClass(
+      "w-full",
+      "min-w-0",
+      "max-w-full",
+    );
+    expect(container.firstElementChild).toHaveClass(
+      "w-full",
+      "min-w-0",
+      "max-w-full",
+    );
   });
 
   it("shows an empty label until the native picker receives focus", () => {

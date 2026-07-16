@@ -141,7 +141,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     inputMode ?? (type ? DEFAULT_INPUT_MODE[type] : undefined);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
       {label && (
         <label
           htmlFor={id}
@@ -150,7 +150,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </label>
       )}
-      <div className="relative min-w-0">
+      <div className="relative w-full min-w-0 max-w-full overflow-hidden">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
             {icon}

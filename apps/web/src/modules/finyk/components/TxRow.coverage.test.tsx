@@ -188,13 +188,19 @@ describe("TxRow", () => {
   });
 
   describe("split editor", () => {
+    const categoryPickers = () =>
+      screen
+        .getAllByRole("button")
+        .filter((button) => button.getAttribute("aria-haspopup") === "listbox");
+
     it("opens, shows the default two-row split and the total label", () => {
       const onSplitChange = vi.fn();
       render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
       fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
       expect(screen.getByText(/Розподіл/)).toBeInTheDocument();
-      // two selects rendered for the two default split rows
-      expect(screen.getAllByRole("combobox")).toHaveLength(2);
+      expect(categoryPickers()).toHaveLength(2);
+      expect(categoryPickers()[0]).toHaveAccessibleName("Продукти");
+      expect(categoryPickers()[0]).not.toHaveTextContent("🛒");
     });
 
     it("adds a split part via '+ Додати частину'", () => {
@@ -202,7 +208,7 @@ describe("TxRow", () => {
       render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
       fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
       fireEvent.click(screen.getByText("+ Додати частину"));
-      expect(screen.getAllByRole("combobox")).toHaveLength(3);
+      expect(categoryPickers()).toHaveLength(3);
     });
 
     it("saves a balanced split via onSplitChange", () => {
@@ -233,13 +239,13 @@ describe("TxRow", () => {
       render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
       fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
       fireEvent.click(screen.getByText("+ Додати частину"));
-      expect(screen.getAllByRole("combobox")).toHaveLength(3);
+      expect(categoryPickers()).toHaveLength(3);
       fireEvent.click(
         screen.getAllByRole("button", {
           name: "Видалити частину розподілу",
         })[0]!,
       );
-      expect(screen.getAllByRole("combobox")).toHaveLength(2);
+      expect(categoryPickers()).toHaveLength(2);
     });
 
     it("closes the split editor with the ✕ cancel button", () => {

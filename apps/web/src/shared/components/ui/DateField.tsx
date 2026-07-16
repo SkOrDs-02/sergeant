@@ -44,7 +44,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
     const helperId = helperText ? `${id}-helper` : undefined;
 
     return (
-      <div className="flex min-w-0 max-w-full flex-col gap-1">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
         {label ? (
           <label
             htmlFor={id}
@@ -53,7 +53,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="relative min-w-0 max-w-full overflow-hidden rounded-2xl">
+        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl">
           <Input
             {...props}
             ref={ref}
