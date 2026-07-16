@@ -199,15 +199,20 @@ describe("useNutritionRemoteActions", () => {
       expect(spies.setWeekPlanRaw).toHaveBeenCalledWith("wk-raw");
     });
 
-    it("throws when pantry is empty", async () => {
+    it("allows generating a plan before the pantry is filled", async () => {
+      apiFetchWeekPlan.mockResolvedValueOnce({
+        plan: { days: [] },
+        rawText: "empty-pantry-plan",
+      });
       const { result, spies } = makeHarness({ pantry: { effectiveItems: [] } });
       act(() => {
         result.current.fetchWeekPlan();
       });
-      await waitFor(() =>
-        expect(spies.setErr).toHaveBeenCalledWith("Додай продукти в комору."),
+      await waitFor(() => expect(apiFetchWeekPlan).toHaveBeenCalled());
+      expect(apiFetchWeekPlan).toHaveBeenCalledWith(
+        expect.objectContaining({ pantry: [] }),
       );
-      expect(apiFetchWeekPlan).not.toHaveBeenCalled();
+      expect(spies.setErr).not.toHaveBeenCalledWith("Додай продукти в комору.");
     });
   });
 

@@ -157,6 +157,7 @@ export function ModuleHeader({
             </>
           )}
         </div>
+        <span data-sync-status-slot className="contents" />
         {right}
       </div>
       {renderSwitcher && module ? <ModuleSwitcher active={module} /> : null}

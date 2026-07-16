@@ -189,4 +189,14 @@ describe("createMeEndpoints", () => {
     const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.method).toBe("DELETE");
   });
+
+  it("DELETE /api/ai-memory повертає кількість видалених записів", async () => {
+    const fetchMock = mockFetchOnce({ ok: true, deleted: 3 });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.clearAiMemory()).resolves.toEqual({ ok: true, deleted: 3 });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toMatch(/\/api(?:\/v1)?\/ai-memory$/);
+    expect((init as RequestInit).method).toBe("DELETE");
+  });
 });

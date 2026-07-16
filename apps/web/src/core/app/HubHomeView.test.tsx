@@ -56,9 +56,6 @@ vi.mock("./ActiveWorkoutBanner", () => ({
   ),
 }));
 vi.mock("./OfflineBanner", () => ({ OfflineBanner: () => null }));
-vi.mock("../hints/HintsOrchestrator", () => ({
-  HintsOrchestrator: () => null,
-}));
 vi.mock("@shared/components/layout/MeshBackground", () => ({
   MeshBackground: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>

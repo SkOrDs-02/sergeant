@@ -17,6 +17,9 @@ export function Assets({
         setTxPicker={state.setTxPicker}
         accounts={state.accounts as never}
         transactions={state.transactions}
+        loading={state.loadingTx}
+        error={state.transactionsError}
+        onRetry={state.refetchTransactions}
         monoDebtLinkedTxIds={state.monoDebtLinkedTxIds}
         toggleMonoDebtTx={state.toggleMonoDebtTx}
         subscriptions={state.subscriptions}

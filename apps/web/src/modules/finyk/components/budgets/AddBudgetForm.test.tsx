@@ -82,11 +82,15 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     });
     fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
     await waitFor(() => {
-      expect(onSubmit).toHaveBeenCalledWith({
-        type: "limit",
-        categoryId: "food",
-        limit: 1500,
-      } satisfies NewBudgetDraft);
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "limit",
+          categoryId: "food",
+          limit: 1500,
+          period: "month",
+          createdAt: expect.any(String),
+        }),
+      );
     });
   });
 

@@ -64,6 +64,10 @@ export interface LimitBudget {
   type: "limit";
   categoryId: string;
   limit: number;
+  /** Calendar window used to reset/aggregate the limit. Legacy records omit it. */
+  period?: "month" | "week" | "one_time";
+  /** ISO instant from which a one-time limit starts accumulating expenses. */
+  createdAt?: string;
   /** Необов'язкова людино-читана назва (UI). */
   label?: string;
 }

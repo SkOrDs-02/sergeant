@@ -1,10 +1,12 @@
 import {
   MeDeleteResponseSchema,
+  AiMemoryClearResponseSchema,
   MeExportResponseSchema,
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
   type MeDeleteResponse,
+  type AiMemoryClearResponse,
   type MeExportResponse,
   type MeResponse,
   type User,
@@ -34,6 +36,9 @@ export interface MeEndpoints {
   deleteAccount: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<MeDeleteResponse>;
+  clearAiMemory: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AiMemoryClearResponse>;
 }
 
 export function createMeEndpoints(http: HttpClient): MeEndpoints {
@@ -61,11 +66,18 @@ export function createMeEndpoints(http: HttpClient): MeEndpoints {
       const raw = await http.del<unknown>("/api/me", undefined, { signal });
       return MeDeleteResponseSchema.parse(raw);
     },
+    clearAiMemory: async ({ signal } = {}) => {
+      const raw = await http.del<unknown>("/api/ai-memory", undefined, {
+        signal,
+      });
+      return AiMemoryClearResponseSchema.parse(raw);
+    },
   };
 }
 
 export type {
   MeDeleteResponse,
+  AiMemoryClearResponse,
   MeExportResponse,
   MeResponse,
   User,

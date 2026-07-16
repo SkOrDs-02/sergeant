@@ -56,6 +56,7 @@ vi.mock("@shared/api", () => {
     meApi: {
       getPreferences: vi.fn().mockResolvedValue(prefs),
       updatePreferences: vi.fn().mockResolvedValue(prefs),
+      clearAiMemory: vi.fn().mockResolvedValue({ ok: true, deleted: 2 }),
     },
   };
 });
@@ -198,10 +199,22 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     );
   });
 
-  it("does not duplicate the notification toggle from Notifications settings", async () => {
+  it("clears server and local AI memory after confirmation", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<PrivacySection />);
     await openSection();
 
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+    );
+
+    await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText("Памʼять ШІ очищено.")).toBeInTheDocument();
+  });
+
+  it("does not duplicate the notification toggle from Notifications settings", async () => {
+    render(<PrivacySection />);
+    await openSection();
     expect(
       screen.queryByRole("switch", { name: /Системні сповіщення/i }),
     ).not.toBeInTheDocument();

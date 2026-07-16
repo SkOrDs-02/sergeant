@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
@@ -26,7 +27,7 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
 // Плашка виняткового стану розміщується під 68px-хедером і не перекриває
 // його назву та дії. У нормальному стані індикатор не показується.
 const PILL_CLS =
-  "fixed top-[calc(4.75rem+env(safe-area-inset-top,0px))] right-3 z-toast flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/95 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 type BannerState = "blocked" | "offline" | "syncing";
 
@@ -39,6 +40,11 @@ const queueLabel = (count: number) =>
 
 export function OfflineBanner() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(() =>
+    typeof document === "undefined"
+      ? null
+      : document.querySelector<HTMLElement>("[data-sync-status-slot]"),
+  );
   const online = useOnlineStatus();
   const {
     syncV2PendingCount = 0,
@@ -46,6 +52,20 @@ export function OfflineBanner() {
     retrySyncV2DeadLetters,
   } = useSyncStatus();
   const pending = syncV2PendingCount;
+
+  useEffect(() => {
+    if (headerSlot || typeof MutationObserver === "undefined") return;
+    const observer = new MutationObserver(() => {
+      const slot = document.querySelector<HTMLElement>(
+        "[data-sync-status-slot]",
+      );
+      if (!slot) return;
+      setHeaderSlot(slot);
+      observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [headerSlot]);
 
   const state: BannerState | null =
     syncV2DeadLetterCount > 0
@@ -82,7 +102,7 @@ export function OfflineBanner() {
             label: `Синхронізація · ${queueLabel(pending)}`,
           };
 
-  return (
+  const content = (
     <>
       <button
         type="button"
@@ -100,7 +120,7 @@ export function OfflineBanner() {
           aria-hidden
           className={cn(view.iconClass)}
         />
-        <span>{view.label}</span>
+        <span className="hidden xl:inline">{view.label}</span>
       </button>
       <SyncStatusSheet
         open={sheetOpen}
@@ -112,4 +132,7 @@ export function OfflineBanner() {
       />
     </>
   );
+
+  if (headerSlot === undefined) return null;
+  return headerSlot ? createPortal(content, headerSlot) : content;
 }

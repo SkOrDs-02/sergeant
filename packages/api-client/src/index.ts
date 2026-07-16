@@ -26,6 +26,7 @@ export type {
 // Endpoint factories and their response shapes
 export {
   createMeEndpoints,
+  type AiMemoryClearResponse,
   type MeDeleteResponse,
   type MeEndpoints,
   type MeExportResponse,

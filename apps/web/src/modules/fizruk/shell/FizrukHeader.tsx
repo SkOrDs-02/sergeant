@@ -11,6 +11,7 @@ import {
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import type { FizrukPage } from "./fizrukRoute";
 
 interface ActiveProgramHeaderView {
@@ -161,7 +162,7 @@ export function FizrukHeader({
       module={showContextualBack ? undefined : "fizruk"}
       left={left}
       title={titleFor(page)}
-      subtitle={undefined}
+      subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

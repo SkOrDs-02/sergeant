@@ -9,9 +9,9 @@ interface Subscription {
 interface Transaction {
   id: string;
   amount: number;
-  time?: number;
-  description?: string;
-  currencyCode?: number;
+  time?: number | undefined;
+  description?: string | undefined;
+  currencyCode?: number | undefined;
 }
 
 interface AmountMeta {

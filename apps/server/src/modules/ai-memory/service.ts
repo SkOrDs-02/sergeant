@@ -76,6 +76,8 @@ export interface AiMemoryService {
 interface CreateAiMemoryServiceDeps {
   embeddings: EmbeddingProvider;
   vectorStore: VectorStore;
+  /** Per-user privacy gate supplied by the production bootstrap. */
+  isConsentEnabled?: (userId: string) => Promise<boolean>;
   /**
    * Override `enabled` flag для тестів. Default — `env.AI_MEMORY_ENABLED`.
    * У production не передавай — тут флаг має один source-of-truth.
@@ -87,6 +89,7 @@ export function createAiMemoryService(
   deps: CreateAiMemoryServiceDeps,
 ): AiMemoryService {
   const enabled = deps.enabled ?? env.AI_MEMORY_ENABLED;
+  const isConsentEnabled = deps.isConsentEnabled ?? (async () => true);
 
   return {
     async remember(inputs: RememberInput[]): Promise<void> {
@@ -99,6 +102,21 @@ export function createAiMemoryService(
       }
       if (inputs.length === 0) return;
 
+      const consentByUser = new Map<string, boolean>();
+      for (const userId of new Set(inputs.map((input) => input.userId))) {
+        consentByUser.set(userId, await isConsentEnabled(userId));
+      }
+      const consentedInputs = inputs.filter(
+        (input) => consentByUser.get(input.userId) === true,
+      );
+      if (consentedInputs.length === 0) {
+        logger.debug({
+          msg: "ai_memory_remember_skipped_consent_disabled",
+          count: inputs.length,
+        });
+        return;
+      }
+
       // Voyage hard daily budget pause-ingestion гейт. Якщо `VOYAGE_DAILY_BUDGET_USD_HARD`
       // вже відстрелявся сьогодні — skip-аємо embed-call ще до `embedBatch()`,
       // щоб не витрачати Voyage-квоту і не дублювати alert-и. Sentry-error
@@ -107,13 +125,13 @@ export function createAiMemoryService(
       if (isVoyageBudgetHardExceeded()) {
         logger.warn({
           msg: "ai_memory_remember_skipped_hard_budget",
-          count: inputs.length,
-          sources: inputs.map((i) => i.source),
+          count: consentedInputs.length,
+          sources: consentedInputs.map((i) => i.source),
         });
         return;
       }
 
-      const texts = inputs.map((i) => i.content);
+      const texts = consentedInputs.map((i) => i.content);
       let embeddings: Float32Array[];
       try {
         // PR-38 — background ingestion (digest / mono webhook / RAG-prep)
@@ -129,8 +147,8 @@ export function createAiMemoryService(
           // знати, котрі ingestion-source-и нагрівали soft-cap.
           logger.warn({
             msg: "ai_memory_remember_skipped_soft_budget",
-            count: inputs.length,
-            sources: inputs.map((i) => i.source),
+            count: consentedInputs.length,
+            sources: consentedInputs.map((i) => i.source),
             usage_usd: err.usage,
             threshold_usd: err.threshold,
             day_key: err.dayKey,
@@ -139,14 +157,14 @@ export function createAiMemoryService(
         }
         throw err;
       }
-      if (embeddings.length !== inputs.length) {
+      if (embeddings.length !== consentedInputs.length) {
         throw new Error(
-          `Embedding provider returned ${embeddings.length} vectors for ${inputs.length} inputs`,
+          `Embedding provider returned ${embeddings.length} vectors for ${consentedInputs.length} inputs`,
         );
       }
 
       await deps.vectorStore.upsert(
-        inputs.map((input, i) => ({
+        consentedInputs.map((input, i) => ({
           userId: input.userId,
           source: input.source,
           sourceRef: input.sourceRef,
@@ -161,6 +179,13 @@ export function createAiMemoryService(
     async recall(input: RecallInput): Promise<MemoryQueryResult[]> {
       if (!enabled) {
         logger.debug({ msg: "ai_memory_recall_skipped_disabled" });
+        return [];
+      }
+      if (!(await isConsentEnabled(input.userId))) {
+        logger.debug({
+          msg: "ai_memory_recall_skipped_consent_disabled",
+          userId: input.userId,
+        });
         return [];
       }
       const topK = input.topK ?? env.AI_MEMORY_TOP_K;

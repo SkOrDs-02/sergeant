@@ -18,6 +18,8 @@ type State = ReturnType<typeof useAssetsState>;
 
 export function AssetsAssetsSection({ state }: { state: State }) {
   const toast = useToast();
+  const [allReceivablesVisible, setAllReceivablesVisible] = useState(false);
+  const [allAssetsVisible, setAllAssetsVisible] = useState(false);
   const {
     accounts,
     transactions,
@@ -112,40 +114,53 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             транзакції, щоб автоматично рахувати повернене.
           </p>
         )}
-        {receivables.map((r) => (
-          <DebtCard
-            key={r.id}
-            name={r.name ?? ""}
-            emoji={r.emoji ?? ""}
-            remaining={calcReceivableRemaining(r, transactions)}
-            paid={getRecvPaid(r, transactions)}
-            total={getReceivableEffectiveTotal(r, transactions)}
-            dueDate={r.dueDate}
-            isReceivable
-            onEdit={() => {
-              setEditingRecvId(r.id);
-              setNewRecv({
-                name: r.name ?? "",
-                emoji: r.emoji ?? "",
-                amount: String(r.amount ?? ""),
-                note: String(r["note"] ?? ""),
-                dueDate: r.dueDate ?? "",
-              });
-              setShowRecvForm(true);
-            }}
-            showBalance={showBalance}
-            onDelete={() => {
-              const removed = r;
-              setReceivables((rs) => rs.filter((x) => x.id !== removed.id));
-              showUndoToast(toast, {
-                msg: `Видалено борг «${removed.name}»`,
-                onUndo: () => setReceivables((rs) => [...rs, removed]),
-              });
-            }}
-            onLink={() => setTxPicker({ id: r.id, type: "recv" })}
-            linkedCount={r.linkedTxIds?.length || 0}
-          />
-        ))}
+        {receivables
+          .slice(0, allReceivablesVisible ? undefined : 3)
+          .map((r) => (
+            <DebtCard
+              key={r.id}
+              name={r.name ?? ""}
+              emoji={r.emoji ?? ""}
+              remaining={calcReceivableRemaining(r, transactions)}
+              paid={getRecvPaid(r, transactions)}
+              total={getReceivableEffectiveTotal(r, transactions)}
+              dueDate={r.dueDate}
+              isReceivable
+              onEdit={() => {
+                setEditingRecvId(r.id);
+                setNewRecv({
+                  name: r.name ?? "",
+                  emoji: r.emoji ?? "",
+                  amount: String(r.amount ?? ""),
+                  note: String(r["note"] ?? ""),
+                  dueDate: r.dueDate ?? "",
+                });
+                setShowRecvForm(true);
+              }}
+              showBalance={showBalance}
+              onDelete={() => {
+                const removed = r;
+                setReceivables((rs) => rs.filter((x) => x.id !== removed.id));
+                showUndoToast(toast, {
+                  msg: `Видалено борг «${removed.name}»`,
+                  onUndo: () => setReceivables((rs) => [...rs, removed]),
+                });
+              }}
+              onLink={() => setTxPicker({ id: r.id, type: "recv" })}
+              linkedCount={r.linkedTxIds?.length || 0}
+            />
+          ))}
+        {receivables.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setAllReceivablesVisible((visible) => !visible)}
+            className="touch-target w-full text-style-caption text-primary hover:underline"
+          >
+            {allReceivablesVisible
+              ? "Згорнути"
+              : `Показати всі (${receivables.length})`}
+          </button>
+        )}
         {showRecvForm ? (
           <ReceivableForm
             newRecv={newRecv}
@@ -257,7 +272,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             + Додати актив
           </button>
         )}
-        {manualAssets.map((a, i) => (
+        {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
             key={i}
             className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3 hover:bg-panelHi transition-colors"
@@ -329,7 +344,19 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             </div>
           </div>
         ))}
+        {manualAssets.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setAllAssetsVisible((visible) => !visible)}
+            className="touch-target w-full text-style-caption text-primary hover:underline"
+          >
+            {allAssetsVisible
+              ? "Згорнути"
+              : `Показати всі (${manualAssets.length})`}
+          </button>
+        )}
       </Card>
     </div>
   );
 }
+import { useState } from "react";

@@ -17,6 +17,7 @@ import {
   getCurrentMonthContext,
   getMonthlyPlanUsage,
   calculateTotalExpenseFact,
+  filterTransactionsForLimitPeriod,
 } from "@sergeant/finyk-domain/domain/budget";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
@@ -155,13 +156,15 @@ export function Budgets({
   const calcSpent = useCallback(
     (budget: Budget) =>
       calcCategorySpent(
-        statTx,
+        budget.type === "limit"
+          ? filterTransactionsForLimitPeriod(statTx, budget, now)
+          : statTx,
         budget.type === "limit" ? budget.categoryId : "",
         txCategories,
         txSplits,
         customCategories,
       ),
-    [customCategories, statTx, txCategories, txSplits],
+    [customCategories, now, statTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
   const goalBudgets = useMemo(() => getGoalBudgets(budgets), [budgets]);

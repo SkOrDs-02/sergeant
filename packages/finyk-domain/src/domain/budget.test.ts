@@ -18,6 +18,9 @@ import {
   shouldShowProactiveAdvice,
   validateGoalBudgetForm,
   validateLimitBudgetForm,
+  getLimitPeriodRange,
+  normalizeLimitBudget,
+  filterTransactionsForLimitPeriod,
 } from "./budget";
 
 describe("budget: split helpers", () => {
@@ -31,6 +34,49 @@ describe("budget: split helpers", () => {
     expect(getLimitBudgets(list)).toHaveLength(2);
     expect(getGoalBudgets(list).map((b) => b.id)).toEqual(["b"]);
     expect(getLimitBudgets(null)).toEqual([]);
+  });
+});
+
+describe("budget: limit periods", () => {
+  it("normalizes legacy limits to a monthly period", () => {
+    expect(
+      normalizeLimitBudget({
+        id: "legacy",
+        type: "limit",
+        categoryId: "food",
+        limit: 1000,
+      }),
+    ).toMatchObject({ period: "month" });
+  });
+
+  it("builds Kyiv-aware month, week and one-time ranges", () => {
+    const now = new Date("2026-07-16T21:30:00Z");
+    expect(getLimitPeriodRange({ period: "month" }, now).startMs).toBe(
+      Date.UTC(2026, 5, 30, 21),
+    );
+    expect(getLimitPeriodRange({ period: "week" }, now).startMs).toBe(
+      Date.UTC(2026, 6, 12, 21),
+    );
+    expect(
+      getLimitPeriodRange(
+        { period: "one_time", createdAt: "2026-07-10T12:00:00.000Z" },
+        now,
+      ).startMs,
+    ).toBe(Date.parse("2026-07-10T12:00:00.000Z"));
+  });
+
+  it("filters transactions to the selected limit period", () => {
+    const tx = [
+      { id: "old", time: Date.parse("2026-07-12T20:59:59Z") / 1000 },
+      { id: "week", time: Date.parse("2026-07-12T21:00:00Z") / 1000 },
+    ];
+    expect(
+      filterTransactionsForLimitPeriod(
+        tx,
+        { period: "week" },
+        new Date("2026-07-16T12:00:00Z"),
+      ).map((item) => item.id),
+    ).toEqual(["week"]);
   });
 });
 

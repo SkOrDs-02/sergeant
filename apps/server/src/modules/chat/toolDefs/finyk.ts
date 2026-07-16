@@ -154,9 +154,14 @@ export const FINYK_TOOLS: AnthropicTool[] = [
       type: "object",
       properties: {
         category_id: { type: "string", description: "ID категорії" },
-        limit: { type: "number", description: "Ліміт в грн на місяць" },
+        limit: { type: "number", description: "Сума ліміту в грн" },
+        period: {
+          type: "string",
+          enum: ["month", "week", "one_time"],
+          description: "Період: місяць, тиждень або одноразово",
+        },
       },
-      required: ["category_id", "limit"],
+      required: ["category_id", "limit", "period"],
     },
   },
   {

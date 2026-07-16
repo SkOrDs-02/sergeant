@@ -19,6 +19,8 @@ export function defaultNutritionPrefs(): NutritionPrefs {
     servings: 1,
     timeMinutes: 25,
     exclude: "",
+    recipeMealType: "any",
+    recipePantryMode: "prefer",
     dailyTargetKcal: null,
     dailyTargetProtein_g: null,
     dailyTargetFat_g: null,
@@ -58,6 +60,15 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
       timeMinutes:
         raw["timeMinutes"] != null ? Number(raw["timeMinutes"]) || 25 : 25,
       exclude: raw["exclude"] == null ? "" : String(raw["exclude"]),
+      recipeMealType:
+        raw["recipeMealType"] === "any" || isMealTypeId(raw["recipeMealType"])
+          ? raw["recipeMealType"]
+          : "any",
+      recipePantryMode:
+        raw["recipePantryMode"] === "only" ||
+        raw["recipePantryMode"] === "ignore"
+          ? raw["recipePantryMode"]
+          : "prefer",
       goal: raw["goal"] ? String(raw["goal"]) : "balanced",
       dailyTargetKcal: optionalPositiveNumber(raw["dailyTargetKcal"]),
       dailyTargetProtein_g: optionalPositiveNumber(raw["dailyTargetProtein_g"]),

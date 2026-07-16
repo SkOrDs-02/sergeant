@@ -25,6 +25,7 @@ const {
   getSessionUserMock,
   enqueueMemoryIngestMock,
   recallMock,
+  forgetUserMock,
 } = vi.hoisted(() => {
   process.env["AI_MEMORY_ENABLED"] = "true";
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
@@ -39,12 +40,14 @@ const {
   const getSessionUserMock = vi.fn().mockResolvedValue(null);
   const enqueueMemoryIngestMock = vi.fn().mockResolvedValue(undefined);
   const recallMock = vi.fn().mockResolvedValue([]);
+  const forgetUserMock = vi.fn().mockResolvedValue(3);
   return {
     mockPool,
     queryMock,
     getSessionUserMock,
     enqueueMemoryIngestMock,
     recallMock,
+    forgetUserMock,
   };
 });
 
@@ -71,7 +74,7 @@ vi.mock("./../modules/ai-memory/bootstrap.js", () => ({
   getAiMemory: () => ({
     remember: vi.fn().mockResolvedValue(undefined),
     recall: recallMock,
-    forgetUser: vi.fn().mockResolvedValue(0),
+    forgetUser: forgetUserMock,
     forgetSource: vi.fn().mockResolvedValue(undefined),
     health: vi.fn().mockResolvedValue({ ok: true, provider: "pgvector" }),
   }),
@@ -91,6 +94,8 @@ beforeEach(() => {
   enqueueMemoryIngestMock.mockResolvedValue(undefined);
   recallMock.mockReset();
   recallMock.mockResolvedValue([]);
+  forgetUserMock.mockReset();
+  forgetUserMock.mockResolvedValue(3);
   process.env["AI_MEMORY_ENABLED"] = "true";
 });
 
@@ -453,6 +458,21 @@ describe("POST /api/ai-memory/recall — provider failure", () => {
       .send({ query: "test" });
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ code: "RECALL_FAILED" });
+  });
+});
+
+describe("DELETE /api/ai-memory", () => {
+  it("hard-deletes memory only for the authenticated user", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u-clear" });
+    const app = createApp();
+
+    const res = await request(app)
+      .delete("/api/ai-memory")
+      .set("X-Requested-With", "XMLHttpRequest");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, deleted: 3 });
+    expect(forgetUserMock).toHaveBeenCalledWith("u-clear");
   });
 });
 

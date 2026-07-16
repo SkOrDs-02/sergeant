@@ -6,6 +6,7 @@ import { useFlag, setFlag } from "../lib/featureFlags";
 import { useAppLockContext } from "../security/AppLockContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
+import { writeMemoryEntries } from "../profile/memoryBank";
 
 const m = messages.privacy.lock;
 
@@ -28,6 +29,10 @@ export function PrivacySection() {
   const [preferencesError, setPreferencesError] = useState<string | null>(null);
   const [savingPreference, setSavingPreference] =
     useState<PreferenceKey | null>(null);
+  const [clearingMemory, setClearingMemory] = useState(false);
+  const [memoryClearStatus, setMemoryClearStatus] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -148,6 +153,43 @@ export function PrivacySection() {
           checked={preferences.aiMemory}
           onChange={(checked) => void updatePreference("aiMemory", checked)}
         />
+        <div className="rounded-2xl border border-line bg-panelHi p-3">
+          <p className="text-xs text-subtle leading-relaxed">
+            Памʼять зберігає підтверджені факти профілю локально та, коли
+            перемикач увімкнений, семантичні записи на сервері. Вимкнення блокує
+            нові записи й використання між сесіями, але не видаляє вже
+            збережене.
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={clearingMemory}
+            className="mt-2 text-danger-strong"
+            onClick={async () => {
+              if (!window.confirm("Очистити локальну й серверну памʼять ШІ?"))
+                return;
+              setClearingMemory(true);
+              setMemoryClearStatus(null);
+              try {
+                await meApi.clearAiMemory();
+                writeMemoryEntries([]);
+                setMemoryClearStatus("Памʼять ШІ очищено.");
+              } catch {
+                setMemoryClearStatus("Не вдалося очистити памʼять ШІ.");
+              } finally {
+                setClearingMemory(false);
+              }
+            }}
+          >
+            {clearingMemory ? "Очищаю…" : "Очистити памʼять ШІ"}
+          </Button>
+          {memoryClearStatus ? (
+            <p className="mt-2 text-xs text-subtle" role="status">
+              {memoryClearStatus}
+            </p>
+          ) : null}
+        </div>
         {!preferencesLoaded && preferencesError ? (
           <p className="text-xs text-danger-strong" role="alert">
             {preferencesError}

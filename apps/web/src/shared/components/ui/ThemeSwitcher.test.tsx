@@ -73,7 +73,21 @@ describe("ThemeSwitcher — segmented (default)", () => {
     render(<ThemeSwitcher />);
     expect(screen.getByText("Світла")).toBeInTheDocument();
     expect(screen.getByText("Темна")).toBeInTheDocument();
-    expect(screen.getByText("Системна")).toBeInTheDocument();
+    expect(screen.getByText("Авто")).toBeInTheDocument();
     expect(screen.getByText("Контраст")).toBeInTheDocument();
+  });
+
+  it("re-applies the persisted theme when an iOS-style pageshow restores the PWA", () => {
+    render(<ThemeSwitcher />);
+    fireEvent.click(screen.getByRole("radio", { name: "Темна" }));
+    document.documentElement.classList.remove("dark");
+
+    window.dispatchEvent(new Event("pageshow"));
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(screen.getByRole("radio", { name: "Темна" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 });

@@ -93,12 +93,33 @@ export default function NutritionApp({
 
   const {
     activePage,
-    setActivePageAndHash,
+    setActivePageAndHash: setActivePageAndHashRaw,
     pantrySubTab,
     menuSubTab,
-    setPantrySubTab,
-    setMenuSubTab,
+    setPantrySubTab: setPantrySubTabRaw,
+    setMenuSubTab: setMenuSubTabRaw,
   } = useNutritionRoute();
+  const setActivePageAndHash = useCallback(
+    (...args: Parameters<typeof setActivePageAndHashRaw>) => {
+      setErr("");
+      setActivePageAndHashRaw(...args);
+    },
+    [setActivePageAndHashRaw],
+  );
+  const setPantrySubTab = useCallback(
+    (...args: Parameters<typeof setPantrySubTabRaw>) => {
+      setErr("");
+      setPantrySubTabRaw(...args);
+    },
+    [setPantrySubTabRaw],
+  );
+  const setMenuSubTab = useCallback(
+    (...args: Parameters<typeof setMenuSubTabRaw>) => {
+      setErr("");
+      setMenuSubTabRaw(...args);
+    },
+    [setMenuSubTabRaw],
+  );
 
   const {
     firstRunNutritionActive,
@@ -517,8 +538,20 @@ export default function NutritionApp({
 
             {statusText && <Banner className="mb-4">{statusText}</Banner>}
             {err && (
-              <Banner variant="danger" className="mb-4">
-                {err}
+              <Banner
+                variant="danger"
+                className="mb-4 flex items-start justify-between gap-3"
+                role="alert"
+              >
+                <span>{err}</span>
+                <button
+                  type="button"
+                  onClick={() => setErr("")}
+                  aria-label="Закрити повідомлення про помилку"
+                  className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                >
+                  ×
+                </button>
               </Banner>
             )}
             {storageBanner && (

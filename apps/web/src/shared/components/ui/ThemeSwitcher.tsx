@@ -48,7 +48,7 @@ export interface ThemeSwitcherProps {
 const SEGMENTED_CAPTIONS: Record<ThemeChoice, string> = {
   light: "Світла",
   dark: "Темна",
-  system: "Системна",
+  system: "Авто",
   hc: "Контраст",
 };
 
@@ -75,7 +75,7 @@ function SwitchIconButton({ choice, isActive, onSelect }: SwitchButtonProps) {
         }
       }}
       className={cn(
-        "flex-1 min-h-11 flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
+        "flex-1 min-w-0 min-h-11 flex flex-col items-center justify-center gap-1 px-1.5 py-1.5 rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
         FOCUS_RING,
         isActive
           ? "bg-brand-soft border-brand-soft-border text-brand-strong dark:text-brand shadow-sm"
@@ -83,7 +83,9 @@ function SwitchIconButton({ choice, isActive, onSelect }: SwitchButtonProps) {
       )}
     >
       <Icon name={icon} size="md" aria-hidden />
-      <span className="text-style-caption leading-none">{caption}</span>
+      <span className="max-w-full truncate text-style-caption leading-tight">
+        {caption}
+      </span>
     </button>
   );
 }

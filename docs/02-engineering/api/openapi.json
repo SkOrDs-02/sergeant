@@ -113,6 +113,44 @@
         }
       }
     },
+    "/api/ai-memory": {
+      "delete": {
+        "summary": "Очистити серверну памʼять ШІ поточного користувача.",
+        "tags": [
+          "ai-memory"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Памʼять очищено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiMemoryClearResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ai-memory/recall": {
       "post": {
         "summary": "Semantic-пошук у ai_memories за query (Voyage embed → pgvector ANN).",
@@ -3649,6 +3687,24 @@
                 "type": "string",
                 "maxLength": 500
               },
+              "mealType": {
+                "type": "string",
+                "enum": [
+                  "any",
+                  "breakfast",
+                  "lunch",
+                  "dinner",
+                  "snack"
+                ]
+              },
+              "pantryMode": {
+                "type": "string",
+                "enum": [
+                  "prefer",
+                  "only",
+                  "ignore"
+                ]
+              },
               "locale": {
                 "type": "string",
                 "minLength": 2,
@@ -4751,6 +4807,26 @@
         ],
         "additionalProperties": false,
         "description": "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію)."
+      },
+      "AiMemoryClearResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "deleted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "ok",
+          "deleted"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів."
       },
       "RecallMemoryResponse": {
         "type": "object",

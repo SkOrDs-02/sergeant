@@ -11,9 +11,8 @@ import { readLastSeenId, writeLastSeenId } from "./storage";
  *     встиг заштампувати outcome-card / hints) обчислює `pickRelease`
  *     vs `lastSeenId` з localStorage. Якщо є unseen latest реліз —
  *     виставляє `open: true` і шле `whats_new_shown` PostHog event.
- *   - **Delay** — `SHOW_DELAY_MS = 2500` mirroring HintsOrchestrator
- *     (`apps/web/src/core/hints/HintsOrchestrator.tsx`); FTUX-сурфейс
- *     і modal не повинні гонятись за one-shot focus.
+ *   - **Delay** — `SHOW_DELAY_MS = 2500`; FTUX-сурфейс і modal не повинні
+ *     гонятись за one-shot focus.
  *   - **Gate.** `enabled` контролюється викликачем (HubHomeView
  *     ставить `false` у FTUX-session window, щоб не конкурувати з
  *     outcome-card §3.1 PR-09 з master tracker'а).

@@ -48,6 +48,11 @@ const RecallMemoryResponse = schemas.RecallMemoryResponseSchema.meta({
   description:
     "Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім).",
 });
+const AiMemoryClearResponse = schemas.AiMemoryClearResponseSchema.meta({
+  id: "AiMemoryClearResponse",
+  description:
+    "Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів.",
+});
 const AnalyzePhoto = schemas.AnalyzePhotoSchema.meta({
   id: "AnalyzePhoto",
   description: "POST /api/nutrition/analyze-photo — base64 фото страви.",
@@ -298,6 +303,7 @@ export const namedSchemas = {
   RecallMemoryRequest,
   RecallMemoryResult,
   RecallMemoryResponse,
+  AiMemoryClearResponse,
   AnalyzePhoto,
   RefinePhoto,
   ParsePantry,

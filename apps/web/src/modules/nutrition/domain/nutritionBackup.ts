@@ -110,6 +110,8 @@ function normalizePrefs(x: unknown): NutritionPrefs {
     servings: safeNumber(p.servings, 1) || 1,
     timeMinutes: safeNumber(p.timeMinutes, 25) || 25,
     exclude: p.exclude == null ? "" : String(p.exclude),
+    recipeMealType: p.recipeMealType,
+    recipePantryMode: p.recipePantryMode,
     dailyTargetKcal: optionalPositiveNumber(p.dailyTargetKcal),
     dailyTargetProtein_g: optionalPositiveNumber(p.dailyTargetProtein_g),
     dailyTargetFat_g: optionalPositiveNumber(p.dailyTargetFat_g),

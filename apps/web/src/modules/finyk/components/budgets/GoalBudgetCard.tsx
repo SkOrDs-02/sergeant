@@ -6,6 +6,7 @@ import { memo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { formatMoney, pluralDays } from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
@@ -93,9 +94,9 @@ function GoalBudgetCardComponent({
               value={budget.savedAmount || ""}
               onChange={(e) => onChangeSaved?.(Number(e.target.value))}
             />
-            <Input
+            <DateField
               size="sm"
-              type="date"
+              emptyLabel="Дата завершення"
               aria-label="Дата завершення цілі"
               value={budget.targetDate || ""}
               onChange={(e) => onChangeDate?.(e.target.value)}

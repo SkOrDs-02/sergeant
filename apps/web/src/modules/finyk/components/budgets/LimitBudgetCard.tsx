@@ -16,6 +16,8 @@ interface LimitBudgetInput {
   type?: "limit" | "goal";
   categoryId?: string;
   limit: number;
+  period?: "month" | "week" | "one_time";
+  createdAt?: string;
   [extra: string]: unknown;
 }
 
@@ -33,6 +35,7 @@ interface LimitBudgetCardProps {
   onDismissAdvice?: ((() => void) | null) | undefined;
   onBeginEdit: () => void;
   onChangeLimit?: ((next: number) => void) | undefined;
+  onChangePeriod?: ((next: "month" | "week" | "one_time") => void) | undefined;
   onSave: () => void;
   onDelete: () => void;
 }
@@ -54,6 +57,7 @@ function LimitBudgetCardComponent({
   onDismissAdvice,
   onBeginEdit,
   onChangeLimit,
+  onChangePeriod,
   onSave,
   onDelete,
 }: LimitBudgetCardProps) {
@@ -72,6 +76,20 @@ function LimitBudgetCardComponent({
             value={budget.limit}
             onChange={(e) => onChangeLimit?.(Number(e.target.value))}
           />
+          <select
+            aria-label="Період ліміту"
+            value={budget.period ?? "month"}
+            onChange={(event) =>
+              onChangePeriod?.(
+                event.target.value as "month" | "week" | "one_time",
+              )
+            }
+            className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+          >
+            <option value="month">Щомісяця</option>
+            <option value="week">Щотижня</option>
+            <option value="one_time">Одноразово</option>
+          </select>
           <div className="flex gap-2">
             <Button className="flex-1" size="sm" onClick={onSave}>
               Зберегти
@@ -89,7 +107,16 @@ function LimitBudgetCardComponent({
       ) : (
         <>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-style-label">{categoryLabel || "—"}</span>
+            <div>
+              <span className="text-style-label">{categoryLabel || "—"}</span>
+              <div className="text-style-caption text-subtle mt-0.5">
+                {budget.period === "week"
+                  ? "Щотижня"
+                  : budget.period === "one_time"
+                    ? "Одноразовий"
+                    : "Щомісяця"}
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <span
                 className={cn(
