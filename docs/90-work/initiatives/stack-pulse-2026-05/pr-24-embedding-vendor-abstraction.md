@@ -1,7 +1,7 @@
 # PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).
+> **Status:** Reference — abstraction shipped; vendor switch активується лише після regression, pricing або outage trigger.
 
 |                    |                                                                                           |
 | ------------------ | ----------------------------------------------------------------------------------------- |

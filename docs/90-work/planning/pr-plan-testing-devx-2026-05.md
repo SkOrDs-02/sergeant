@@ -1,7 +1,7 @@
 # PR-план Testing & DevX 2026-05 — зі зрізу 2026-05-13
 
 > **Last validated:** 2026-06-07 by Codex (session docs ledger for web helper coverage PRs). **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Reference/carry-over — актуальні задачі перенесено в sprint 9–10 і tech-debt trackers.
 
 Цей документ — виконавчий PR-план для **outstanding-пунктів** прожарки [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md). Картки покривають тільки те, що **не закрите** landing-PR-ом цієї прожарки (P0-1 + P1-1 для `/api/barcode` consumer-side уже змерджено в основний PR прожарки і виключені нижче).
 

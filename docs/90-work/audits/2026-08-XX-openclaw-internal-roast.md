@@ -1,7 +1,7 @@
 # OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — заготовка майбутнього аудиту без дати й owner commitment.
 
 > **Owner:** @Skords-01 (backend)
 > **Trigger date:** **2026-08-11** (locked — next backend-roast cycle baseline).

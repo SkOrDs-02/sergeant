@@ -1,7 +1,7 @@
 # Independent Audit — Sergeant — 2026-06-11
 
 > **Last validated:** 2026-07-13 by @claude (freshness re-validation — all P0/P1 work-streams merged, findings archived). **Next review:** 2026-08-13.
-> **Status:** Active
+> **Status:** Closed — усі P0/P1 потоки змерджено; залишок перенесено в канонічні trackers.
 > **Методологія:** 53 агенти у 4 фазах — 8 розвідників (recon fan-out), 9 вимірних аудиторів, адверсарна верифікація CRITICAL/HIGH, синтез. `[VERIFIED]` = пройшло незалежну спробу спростування. Повна версія знахідок з evidence — у git-історії цього файлу (перша редакція); тут — стиснута версія після execute-хвилі 2026-06-11.
 
 ---

@@ -1,7 +1,7 @@
 # Consolidated Page Audit — 2026-05-13
 
 > **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — C1/C2/Theme 2 touch-targets annotated as shipped).
-> **Status:** Active
+> **Status:** Closed — зведений історичний зріз; виконання ведеться у successor trackers.
 > **Parent session:** <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>
 > **Scope:** All web app pages (`apps/web`), audited by 9 parallel child Devin sessions across 12 perspectives (security, a11y, performance, UX, bugs, hard-rule compliance, TS strictness, Tailwind tokens, i18n, test coverage, AI markers, lifecycle markers).
 > **Type:** Pure static analysis (no dev server, no code changes).

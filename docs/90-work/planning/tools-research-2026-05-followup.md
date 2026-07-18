@@ -1,7 +1,7 @@
 # Tools research 2026-05 — follow-up: що з відкладеного дійсно гірше / краще
 
 > **Last validated:** 2026-07-10 by @cursoragent (runtime Node 22; openclaw path). **Next review:** 2026-10-08.
-> **Status:** Active
+> **Status:** Reference — adoption snapshot; нові adoption-рішення потребують окремого tracker-а.
 
 > **Контекст:** [`tools-research-2026-05.md`](./tools-research-2026-05.md) (далі — TR-26-05) — основний research-довідник станом на 2026-05-05.
 > Цей документ — чесний follow-up через 4 дні: повернення до «відкладеного» / «не рекомендованого», з перевіркою реального стану коду (`grep` по `package.json` і модулях) і зважуванням, де ваше рішення сильніше за альтернативу, а де — це втрачена вартість.

@@ -1,7 +1,7 @@
 # Browser user journey loop
 
 > **Last validated:** 2026-06-30 by Codex. **Next review:** 2026-07-14.
-> **Status:** Active
+> **Status:** Reference — повторюваний протокол; сам по собі не є відкритою роботою.
 
 ## Мета
 

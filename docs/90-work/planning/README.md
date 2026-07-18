@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-10 by @cursoragent (pr-plan-revenue ADR-0068). **Next review:** 2026-10-08.
+> **Last validated:** 2026-07-18 by Codex (lifecycle reconciliation). **Next review:** 2026-08-18.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -28,22 +28,22 @@
 
 ### PR-плани з прожарок 2026-05-13
 
-| Документ                                                                               | Скоуп                                                | Статус |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------ |
-| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план             | Active |
-| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план             | Active |
-| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план | Active |
+| Документ                                                                               | Скоуп                                                | Статус               |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------- |
+| [`pr-plan-dead-code-hard-rules-2026-05.md`](./pr-plan-dead-code-hard-rules-2026-05.md) | Dead-code + hard-rules follow-up PR-план             | Active               |
+| [`pr-plan-revenue-2026-05.md`](./pr-plan-revenue-2026-05.md)                           | Revenue / monetization / paywall PR-план             | Reference/carry-over |
+| [`pr-plan-web-2026-05.md`](./pr-plan-web-2026-05.md)                                   | Web architecture/state + frontend ergonomics PR-план | Reference/carry-over |
 
 ### Дослідження, міграції, рішення
 
 | Документ                                                                     | Скоуп                                                                                                                                                         | Статус                                                        |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md)                   | План покращення AI-coding workflow (агентська інфраструктура, не продукт)                                                                                     | Active                                                        |
-| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                   | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Active research                                               |
-| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Active research                                               |
+| [`tools-research-2026-05.md`](./tools-research-2026-05.md)                   | Дослідження готових рішень / лібок / тулзів зі зрізу 2026-05                                                                                                  | Reference                                                     |
+| [`tools-research-2026-05-followup.md`](./tools-research-2026-05-followup.md) | Follow-up до `tools-research-2026-05.md` — реальний стан адопції + переоцінка «відкладених» / «не рекомендованих» (Hold / Mild miss / Real loss / Reconsider) | Reference                                                     |
 | [`tailwind-v4-migration.md`](./tailwind-v4-migration.md)                     | Tailwind v3 → v4 migration plan                                                                                                                               | Phases 1/3/4 ✅ done; Phase 2 (mobile / NativeWind 5) blocked |
 | [`flyio-vs-railway.md`](./flyio-vs-railway.md)                               | Decision-rationale: Railway зараз залишається, Fly.io — checklist «коли мігрувати»                                                                            | Reference (не потребує дій)                                   |
-| [`syncv2-decomposition-detailed.md`](./syncv2-decomposition-detailed.md)     | Детальний план декомпозиції `syncV2.ts` (Hard Rule #18 module-size)                                                                                           | Active                                                        |
+| [`syncv2-decomposition-detailed.md`](./syncv2-decomposition-detailed.md)     | Історичний план декомпозиції `syncV2.ts` (3100 → 509 LOC)                                                                                                     | Closed                                                        |
 | [`talk-to-your-data.md`](./talk-to-your-data.md)                             | План для conversational data Q&A на даних користувача                                                                                                         | Draft                                                         |
 
 ## Архів

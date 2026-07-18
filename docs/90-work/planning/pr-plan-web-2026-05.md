@@ -1,7 +1,7 @@
 # PR-план web 2026-05 — Architecture, state & frontend ergonomics
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Reference/carry-over — травневий план завершив роль execution queue; актуальні задачі мають successor trackers.
 
 > **Оновлено 2026-06-04 (drift reconcile).** Вже **shipped** у коді (звірено sweep-ом): **A1** — `useHashRouter` codemod завершено, ESLint-правило на `error` (`eslint.config.js:317`), 0 violations у `apps/web/src/modules`; **A3** — per-route bundle-gate у `scripts/check-bundle-size.mjs` (FinykApp/150, FizrukApp/180, RoutineApp/120, NutritionApp/100); **A4** — усі 4 файли під 600 LOC (`NutritionApp.tsx`=592, `hubChatContext.ts`=28 + subdir, `fizrukActions.ts`=73, `AssetsTable.tsx`=132); **A7** — `useSyncStatus` має `useQuery` з `refetchInterval` для online-сесії. Перевір перед тим, як брати у роботу.
 

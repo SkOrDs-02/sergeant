@@ -1,7 +1,7 @@
 # Storage & Sync — Appendix (інфраструктура, ризики, метрики, тех-борг)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — довідковий додаток до завершеного roadmap.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 13](./07-stage-13.md)
 

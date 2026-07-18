@@ -3,7 +3,7 @@
 # Production Readiness Execution — 2026-06-29
 
 > **Last validated:** 2026-06-29 by Codex. **Next review:** 2026-07-13.
-> **Status:** Active
+> **Status:** Closed — execution snapshot завершено; нові прогони створюють окремий запис.
 
 Canonical loop: [`production-readiness-testing-loop.md`](./production-readiness-testing-loop.md).
 

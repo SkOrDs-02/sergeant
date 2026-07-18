@@ -1,7 +1,7 @@
 # Storage & Sync — PR-плани: Stage 0–3 (Security, Consolidation, Foundation, SPIKE)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — етапи 0–3 виконано.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Overview](./01-overview.md) · [→ Stage 4](./03-stage-4.md)
 
@@ -380,13 +380,13 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   - Зняти заміри bundle (web) + first-open SQLite latency на iOS
     Safari 16.4+ і опублікувати у `routine-sqlite-v2.md`.
 - **Decision gate (kill criteria).**
-  | Метрика | Pass | Fail |
-  |---|---|---|
-  | Initial bundle (web) | ≤ +5 KB | ≥ +50 KB |
-  | First open SQLite latency | ≤ 200 ms | ≥ 800 ms |
-  | OPFS на Safari iOS 16.4+ | works | doesn't load |
-  | Multi-device toggle conflict-free | yes | manual conflict resolution required |
-  | Vercel bundle build time | ≤ +30s | ≥ 2 min |
+  | Метрика                           | Pass     | Fail                                |
+  | --------------------------------- | -------- | ----------------------------------- |
+  | Initial bundle (web)              | ≤ +5 KB  | ≥ +50 KB                            |
+  | First open SQLite latency         | ≤ 200 ms | ≥ 800 ms                            |
+  | OPFS на Safari iOS 16.4+          | works    | doesn't load                        |
+  | Multi-device toggle conflict-free | yes      | manual conflict resolution required |
+  | Vercel bundle build time          | ≤ +30s   | ≥ 2 min                             |
 - **Якщо fail.** Документуємо blockers, повертаємось до Stage 1
   consolidation (без SQLite). План B: на whole-blob LWW + custom
   per-row diff на сервері.

@@ -1,7 +1,7 @@
 # PR-22: Mobile Expo SDK 52 → 53 upgrade
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Deprecated — план SDK 53 застарів; dependency PR-и вже таргетять новіші Expo major-и.
 
 |                    |                                                                                        |
 | ------------------ | -------------------------------------------------------------------------------------- |

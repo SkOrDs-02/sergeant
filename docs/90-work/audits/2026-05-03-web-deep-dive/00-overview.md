@@ -1,6 +1,6 @@
 # Web deep-dive — Overview
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
 > **Status:** Active (rounds 1–13 tracker; new follow-ups land as numbered round updates inline).
 >
 > **Update 2026-05-04 (round 4):** Tier 1 закрито у foundation-формі — items #8, #9. Roadmap-таблиця нижче помічена done з PR-лінками.
@@ -80,7 +80,7 @@
 
 > **Update 2026-05-05 (round 16 — high-frequency burndown + codemod fix):** Розширили каталог 9-ма групами (`actions.*` +13 ключів: `skip/continue/collapse/expand/hide/tryAgain/later/change/restore/reload/clear/remove/send`; нові групи `status.*` `period.*` `nav.*` `hub.*` `onboarding.*` `form.*` `loaders.*` + module-specific `fizruk.*` `nutrition.*` `routine.*` `finyk.*`; +`auth.createAccount` + 6 ключів у `errors.generic.*`). Знайдено й полагоджено баг import-injection codemod-а: regex `^import [^\n]*\n` не покриває multi-line `import { … }`-блоки → AST-обхід `ts.isImportDeclaration` замість regex. Прогон round 16: **34 файли мігровано / 50 replacements**, allowlist `233 → 199` (мінус 34 entries). Покрито: `ModuleErrorBoundary`, navigation-shell-и (`HubBottomNav`/`HubHomeView`/`HubSearch`/`SearchInput`/`ModuleHeader`/`ModuleSettingsDrawer`/`QuickActionsMenu`), onboarding (`ModuleChecklist`/`ModuleFirstRunGoalSheet`/`SoftAuthPromptCard`), hub-shell (`ChatQuickActions`/`CrossModulePreview`/`HubInsightsPanel`/`ValueProgressBar`/`HubChatComposer`/`WeeklyDigestStories`), error/loader-primitives (`PageLoader`/`ModulePageLoader`/`DataState`/`SectionErrorBoundary`/`KeyboardAccessory`/`ActiveWorkoutBanner`/`main.tsx`), і декілька module-roots (`Overview`/`Budgets`/`TransactionDayHeader`/`RestTimerOverlay`/`FizrukRouter`/`FromPantryRow`/`MealTemplatesRow`/`MealTypePicker`/`DayProgressRing`/`WeekdayPicker`).
 
-> **Status:** Active
+> **Status:** Closed — rounds 1–13 завершено; нові findings не додаються в цей snapshot.
 > **Scope:** `apps/web` + `apps/server` + `packages/*` (mobile — лише дотичні точки).
 > **Related:**
 >
@@ -109,7 +109,7 @@
 1. **`apps/web` усе ще на `tsconfig.strict: false`** — це проривається у формах, у `chatActions/*` і у місцях, де `unknown` ховається під «м'якою» типізацією. **(High impact, M cost)** — див. §1.0 в [02-architecture-and-state](./02-architecture-and-state.md).
 2. **17 файлів усе ще читають `localStorage` напряму** через TODO-allowlist у `eslint.config.js`. Кожен з них — потенційний краш у Safari Private Mode / quota exceeded. **(High impact, M cost)** — див. [02-architecture-and-state §2.2](./02-architecture-and-state.md).
 3. **Форм-стек неуніфікований.** `Input.tsx` чудовий, але є `useFormValidation` (`shared/hooks`) + локальний state + кілька самописних `validateXxx` у різних модулях. Жодного RHF/zod-resolver-патерна. **(Medium-high impact, M cost)** — див. [01-frontend-ergonomics §3.1](./01-frontend-ergonomics.md).
-4. **`apps/web/src/index.css = 1244 рядки.** Tailwind + кастомні `@layer` не маршалюються. Половина тут — design-tokens/CSS variables, які мали б жити в `packages/design-tokens`. **(Medium impact, S-M cost)** — див. [02-architecture-and-state §1.4](./02-architecture-and-state.md).
+4. **`apps/web/src/index.css = 1244 рядки.** Tailwind + кастомні `@layer`не маршалюються. Половина тут — design-tokens/CSS variables, які мали б жити в`packages/design-tokens`. **(Medium impact, S-M cost)** — див. [02-architecture-and-state §1.4](./02-architecture-and-state.md).
 5. **Provider-tree в `App.tsx` неоднорідний** і має тонкий race в порядку — нема інваріант-теста, який би це фіксував. **(Low-medium impact, S cost)** — див. [02-architecture-and-state §1.1](./02-architecture-and-state.md).
 
 ### Що в нас уже сильне (важливо не зламати)

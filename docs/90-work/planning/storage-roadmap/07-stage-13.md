@@ -1,7 +1,7 @@
 # Storage & Sync — PR-плани: Stage 13 (Audit findings & post-migration cleanup)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — етапи 10–13 виконано.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 8–9](./06-stage-8-9.md) · [→ Appendix](./08-appendix.md)
 

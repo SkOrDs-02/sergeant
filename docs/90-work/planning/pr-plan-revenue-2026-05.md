@@ -1,7 +1,7 @@
 # PR-план revenue + monetization (2026-05)
 
 > **Last validated:** 2026-07-10 by @cursoragent (ADR-0068 pricing canon; shipped billing inventory). **Next review:** 2026-10-08.
-> **Status:** Active
+> **Status:** Reference/carry-over — актуальне виконання ведеться в initiative 0010 і sprint 9–10 tracker.
 
 > **Оновлено 2026-07-10 (freshness pass).** **Pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md)** (₴199/₴1490, reverse trial 7d, Free AI 15/day; supersedes ADR-0051). У коді shipped: `TrialBanner`, `PlanSection`, Customer Portal, `?checkout=success`, paywall у HubChat. **Founder/external blockers:** live Stripe (ФОП), production price IDs. Нижче — historical PR-картки; $7/₴99 — контекст прожарки 2026-05.
 

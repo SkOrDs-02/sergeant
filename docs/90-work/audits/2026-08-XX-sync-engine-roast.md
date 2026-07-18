@@ -1,7 +1,7 @@
 # Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)
 
 > **Last validated:** 2026-06-06 by @claude (audit-closeout pass — added per-handler transaction-boundary diagrams and DLQ TTL note from direct code trace). **Next review:** 2026-09-06.
-> **Status:** Draft
+> **Status:** Reference — заготовка майбутнього аудиту без дати й owner commitment.
 
 > **Owner:** TBD (backend-engineer)
 > **Trigger window:** Q3 2026 (next backend-roast cycle, аligned with `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § Спринт 8 closeout). Заплановано **2026-08-11** як baseline-date.

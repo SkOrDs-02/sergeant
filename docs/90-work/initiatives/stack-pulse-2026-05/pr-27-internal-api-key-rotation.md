@@ -1,7 +1,7 @@
 # PR-27: `INTERNAL_API_KEY` rotation мechanism
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Reference — security-triggered design note; без audit finding або leak це не ready-now робота.
 
 |                    |                                                                                                                   |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------- |

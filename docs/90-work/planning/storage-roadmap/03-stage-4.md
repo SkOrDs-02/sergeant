@@ -1,7 +1,7 @@
 # Storage & Sync — PR-плани: Stage 4 (Per-module migration)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — етап 4 виконано.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 0–3](./02-stages-0-3.md) · [→ Stage 5](./04-stage-5.md)
 

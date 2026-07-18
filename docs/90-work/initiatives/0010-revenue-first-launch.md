@@ -15,7 +15,7 @@
 >   **Owner:** `@Skords-01`
 >   **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
 >   **Sources:** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md), [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md), [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md), [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
->   **Canonical delivery owner:** [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). This initiative stays as decision frame/reference, not the live PR tracker.
+>   **Canonical delivery owner:** цей документ; поточний sprint slice — [`sprint-9-10-plan-2026.md`](../planning/sprint-9-10-plan-2026.md). Травневий PR-план лишається reference/carry-over.
 
 ## TL;DR
 

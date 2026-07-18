@@ -1,7 +1,7 @@
 # Overview — stack pulse 2026-05
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active
+> **Status:** Reference/carry-over — травневий зріз завершено; trigger-gated залишки мають окремі картки.
 
 Скорочена картина зрізу стеку, без розгорнутих PR-планів. Деталі — у
 відповідних `pr-NN-*.md`.

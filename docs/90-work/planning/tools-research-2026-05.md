@@ -1,7 +1,7 @@
 # Sergeant — готові рішення, ліби та тулзи
 
 > **Last validated:** 2026-07-10 by @cursoragent (OpenClaw row → external gateway). **Next review:** 2026-10-08.
-> **Status:** Active
+> **Status:** Reference — research snapshot 2026-05, не execution backlog.
 
 Дослідження GitHub + мережі. Фокус: що реально додасть цінності Sergeant на поточному стеку, а не вже є в [`dev-stack-roadmap.md`](./dev-stack-roadmap.md).
 
