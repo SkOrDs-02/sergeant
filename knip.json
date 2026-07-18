@@ -20,7 +20,6 @@
         "eslint-plugin-react",
         "eslint-plugin-react-hooks",
         "typescript-eslint",
-        "lint-staged",
         "openapi-typescript",
         "tsc-files",
         // globals — imported in eslint.baseline.js (detected via eslint knip plugin); not in entry
@@ -35,7 +34,9 @@
         // pg — used in scripts/db-index-audit.mjs, scripts/migration-down-drill.mjs,
         //      scripts/seed-strategic-goals.mjs
         "pg"
-      ]
+      ],
+      // External binary installed by the operator/CI image, not from npm.
+      "ignoreBinaries": ["gitleaks"]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
@@ -57,8 +58,6 @@
         "@fontsource-variable/dm-sans",
         "@fontsource-variable/jetbrains-mono",
         "@fontsource-variable/manrope",
-        // better-sqlite3 — used in dualWrite/__tests__/testSqlite.ts files; not in web package.json
-        "better-sqlite3",
         // @testing-library/user-event — used in nutrition page tests; not in web package.json
         "@testing-library/user-event",
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
@@ -74,8 +73,8 @@
         // pino-loki — used as string reference `target: "pino-loki"` in lokiTransport.ts,
         //   not an ES import; added in 03f1596db (feat: loki transport). Confirmed real infra.
         "pino-loki",
-        // @better-auth/core — used via deep path @better-auth/core/db/adapter; transitive dep
-        "@better-auth/core"
+        // Stryker loads the runner by package name from stryker.normalizers.conf.json.
+        "@stryker-mutator/vitest-runner"
       ]
     },
     "apps/mobile": {
@@ -88,10 +87,7 @@
         // expo-updates, expo-system-ui — detected by knip Expo plugin from app.config.ts;
         //   these are implicit Expo runtime deps, not direct imports
         "expo-updates",
-        "expo-system-ui",
-        // drizzle-orm — used in db/__tests__/sqlite.test.ts and db/sqlite.ts;
-        //   hoisted from workspace but not declared in apps/mobile/package.json
-        "drizzle-orm"
+        "expo-system-ui"
       ]
     },
     "apps/mobile-shell": {
@@ -103,10 +99,7 @@
       "ignoreDependencies": ["@capacitor/ios"]
     },
     "packages/api-client": {
-      "project": ["src/**/*.{ts,tsx}"],
-      // jsdom — used via // @vitest-environment jsdom directive in test files;
-      //   not declared in api-client/package.json (hoisted)
-      "ignoreDependencies": ["jsdom"]
+      "project": ["src/**/*.{ts,tsx}"]
     },
     "packages/config": {
       "entry": ["*.ts", "*.json"],
@@ -125,10 +118,7 @@
       //   package has no package.json dependencies at all (hoisted from root)
       "ignoreDependencies": ["@typescript-eslint/parser"]
     },
-    "packages/finyk-domain": {
-      // jsdom — used via // @vitest-environment jsdom in transactions.test.ts (hoisted)
-      "ignoreDependencies": ["jsdom"]
-    },
+    "packages/finyk-domain": {},
     "packages/openclaw-plugin": {
       // Scaffolded parity barrel — @scaffolded + @nextStep; tracked in dead-code roast 2026-05-13.
       // Do NOT delete; future smoke-suite / integration suite will import from it.
@@ -141,9 +131,8 @@
     "packages/shared": {
       "project": ["src/**/*.ts"],
       "ignoreDependencies": [
-        "@stryker-mutator/vitest-runner",
-        // jsdom — used via // @vitest-environment jsdom in deepLinkChannel.test.ts (hoisted)
-        "jsdom"
+        // Stryker loads the runner by package name from stryker.conf.json.
+        "@stryker-mutator/vitest-runner"
       ]
     }
   },
