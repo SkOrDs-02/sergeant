@@ -35,7 +35,9 @@
         // pg — used in scripts/db-index-audit.mjs, scripts/migration-down-drill.mjs,
         //      scripts/seed-strategic-goals.mjs
         "pg"
-      ]
+      ],
+      // External binary installed by the operator/CI image, not from npm.
+      "ignoreBinaries": ["gitleaks"]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],

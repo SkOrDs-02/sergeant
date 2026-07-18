@@ -686,6 +686,9 @@ const SQL_ONLY_TABLES = [
   "apple_iap_receipts",
   "billing_subscriptions",
   "billing_webhook_events",
+  // Plata recurring-payment credential: encrypted secret consumed only by
+  // the server scheduler/raw-pg billing layer; never exposed through Drizzle.
+  "plata_card_token",
   "revenue_daily",
   "stripe_webhook_events",
   "subscriptions",

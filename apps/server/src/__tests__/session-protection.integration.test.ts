@@ -233,6 +233,11 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // Stripe webhook — signature-verified by Stripe lib; calling it
   // requires possession of `STRIPE_WEBHOOK_SECRET`, not a user session.
   "/api/billing/stripe-webhook",
+  // LiqPay / Plata callbacks are provider-to-provider webhooks. Each route
+  // verifies its provider signature before processing and cannot carry a
+  // browser session cookie by design.
+  "/api/billing/liqpay-callback",
+  "/api/billing/plata-webhook",
   // Anonymous AI endpoint — gated by `requireAnthropicKey` +
   // `requireAiQuota` (anonymous bucket via IP), same shape as `/api/chat`.
   "/api/weekly-digest",
