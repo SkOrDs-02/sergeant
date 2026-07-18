@@ -26,6 +26,7 @@ function makeStorage(overrides: Record<string, unknown> = {}): StorageArg {
     monoDebtLinkedTxIds: {},
     toggleMonoDebtTx: vi.fn(),
     customCategories: [] as Array<Record<string, unknown>>,
+    manualExpenses: [] as Array<Record<string, unknown>>,
     ...overrides,
   };
   return base as unknown as StorageArg;
@@ -51,6 +52,29 @@ describe("useAssetsState", () => {
     expect(result.current.networth).toBe(0);
     expect(result.current.totalAssets).toBe(0);
     expect(result.current.totalDebt).toBe(0);
+  });
+
+  it("exposes manual operation records to the transaction-link picker", () => {
+    const { result } = renderHook(() =>
+      useAssetsState({
+        mono: makeMono(),
+        storage: makeStorage({
+          manualExpenses: [
+            {
+              id: "manual-1",
+              amount: 50,
+              category: "other",
+              description: "Інше",
+              date: "2026-07-16",
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(result.current.transactions).toEqual([
+      expect.objectContaining({ id: "manual_manual-1", description: "Інше" }),
+    ]);
   });
 
   it("computes monoTotal from visible accounts", () => {

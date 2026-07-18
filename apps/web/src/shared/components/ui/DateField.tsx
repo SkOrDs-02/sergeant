@@ -53,7 +53,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] rounded-2xl">
+        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl ring-1 ring-inset ring-line">
           <Input
             {...props}
             ref={ref}
@@ -72,7 +72,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
               onBlur?.(event);
             }}
             className={cn(
-              "min-w-0 max-w-full [min-inline-size:0] [inline-size:100%]",
+              "min-w-0 max-w-full border-transparent [min-inline-size:0] [inline-size:100%]",
               className,
             )}
           />

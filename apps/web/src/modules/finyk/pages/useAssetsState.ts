@@ -10,6 +10,7 @@ import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 
 // AI-NOTE: Props mirror the original Assets component signature from FinykApp.
 // The original component was untyped; we use loose structural types here to
@@ -39,6 +40,7 @@ type StorageSlice = Pick<
   | "monoDebtLinkedTxIds"
   | "toggleMonoDebtTx"
   | "customCategories"
+  | "manualExpenses"
 >;
 
 type AccountLike = Partial<MonoAccount> & {
@@ -94,7 +96,18 @@ export function useAssetsState({
     monoDebtLinkedTxIds,
     toggleMonoDebtTx,
     customCategories,
+    manualExpenses,
   } = storage;
+
+  const linkableTransactions = useMemo(
+    () => [
+      ...transactions,
+      ...(manualExpenses ?? []).map((expense) =>
+        manualExpenseToTransaction(expense),
+      ),
+    ],
+    [manualExpenses, transactions],
+  );
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showDebtForm, setShowDebtForm] = useState(initialOpenDebt);
@@ -238,7 +251,7 @@ export function useAssetsState({
   return {
     // Raw data from props
     accounts,
-    transactions,
+    transactions: linkableTransactions,
     loadingTx: Boolean(loadingTx),
     transactionsError: error,
     refetchTransactions,
