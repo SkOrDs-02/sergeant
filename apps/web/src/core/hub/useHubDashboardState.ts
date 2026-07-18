@@ -45,14 +45,6 @@ import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
-import {
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import {
@@ -162,12 +154,8 @@ export interface HubDashboardState {
   toggleEditMode: () => void;
   displayOrder: readonly string[];
   order: readonly string[];
-  sensors: ReturnType<typeof useSensors>;
-  handleDragStart: (event: { active: { id: string | number } }) => void;
-  handleDragEnd: (event: {
-    active: { id: string | number };
-    over: { id: string | number } | null;
-  }) => void;
+  announceReorderStart: (id: ModuleId) => void;
+  moveModule: (activeId: ModuleId, overId: ModuleId) => void;
   adaptive: { liftedId: ModuleId | null; reason: string | null };
 
   // Focus / Insights
@@ -378,57 +366,34 @@ export function useHubDashboardState(props: {
     [visibleOrder, adaptive.liftedId],
   );
 
-  // MouseSensor (not PointerSensor) for the desktop pointer + a separate
-  // TouchSensor for coarse pointers. PointerSensor handles touch-pointer
-  // events too, but with its distance-only activation (no delay) the first
-  // few px of a finger scroll or an imprecise tap on a card body started a
-  // reorder drag — hijacking scroll and "moving" the module on every touch.
-  // Splitting the sensors lets touch require a deliberate 250ms long-press
-  // (tap → open module, swipe → scroll, hold → drag) while the mouse keeps
-  // its instant 8px drag threshold.
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
   const { announce } = useAnnounce();
 
-  const handleDragStart = useCallback(
-    (event: { active: { id: string | number } }) => {
-      const activeId = String(event.active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
+  const announceReorderStart = useCallback(
+    (activeId: ModuleId) => {
+      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId];
       announce(
-        `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
+        `Переміщення ${label}. Перетягни картку або скористайся кнопками зі стрілками.`,
       );
     },
     [announce],
   );
 
-  const handleDragEnd = useCallback(
-    (event: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) => {
-      const { active, over } = event;
-      if (!active) return;
-      const activeId = String(active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      if (over && active.id !== over.id) {
-        const overId = String(over.id) as ModuleId;
+  const moveModule = useCallback(
+    (activeId: ModuleId, overId: ModuleId) => {
+      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId];
+      if (activeId !== overId) {
         const oldIndex = order.indexOf(activeId);
         const newIndex = order.indexOf(overId);
-        const next = arrayMove(order, oldIndex, newIndex);
+        if (oldIndex < 0 || newIndex < 0) return;
+        const next = [...order];
+        const [moved] = next.splice(oldIndex, 1);
+        if (!moved) return;
+        next.splice(newIndex, 0, moved);
         setOrder(next);
         saveDashboardOrder(next);
         announce(
           `${label} пересунуто на позицію ${newIndex + 1} з ${next.length}.`,
         );
-      } else {
-        announce(`${label} залишилось на тому ж місці.`);
       }
     },
     [announce, order],
@@ -445,11 +410,7 @@ export function useHubDashboardState(props: {
   const showDigestFooter = true;
 
   const primaryModule = activeModules[0] as
-    | "finyk"
-    | "fizruk"
-    | "routine"
-    | "nutrition"
-    | undefined;
+    "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
   const showChecklist =
     primaryModule &&
     hasRealEntry &&
@@ -501,9 +462,8 @@ export function useHubDashboardState(props: {
     toggleEditMode,
     displayOrder,
     order,
-    sensors,
-    handleDragStart,
-    handleDragEnd,
+    announceReorderStart,
+    moveModule,
     adaptive,
     focus,
     rest,

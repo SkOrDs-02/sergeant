@@ -95,6 +95,24 @@ describe("ExpensesCard", () => {
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
   });
 
+  it("shows and clears a tooltip when a bar is selected and deselected", () => {
+    localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+
+    const bar = screen.getByLabelText("Графік").querySelector("button");
+    expect(bar).not.toBeNull();
+    const tooltip = bar?.getAttribute("aria-label");
+    fireEvent.click(bar as HTMLButtonElement);
+    expect(
+      screen.getByText(tooltip ?? "__missing_tooltip__"),
+    ).toBeInTheDocument();
+    fireEvent.click(bar as HTMLButtonElement);
+    expect(
+      screen.queryByText(tooltip ?? "__missing_tooltip__"),
+    ).not.toBeInTheDocument();
+  });
+
   it("renders month period without crashing", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="month" offset={0} />);

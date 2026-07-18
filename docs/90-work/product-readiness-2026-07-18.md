@@ -28,11 +28,20 @@ production-ready launch. Основні модулі й інженерна ос�
 | ----- | ----------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | P0    | [`sync-client-wiring.md`](./planning/sync-client-wiring.md)                                     | Ready після локального verification handoff | Testcontainers, два профілі/device E2E, `pnpm check`; потім закрити Phase 2 і перейти до pull/SSE                   |
 | P0    | Стабілізація release signal                                                                     | Ready                                       | Розібрати актуальні failures `main`, відділити flaky/baseline від regressions, повернути обов'язкові checks у green |
-| P1    | S10-Q1 mutation-testing workflow                                                                | Ready                                       | Weekly/manual workflow, tier-1 score ≥ 70%, artifact retention                                                      |
 | P1    | S10-T2 bundle cuts                                                                              | Ready, але після P0                         | Підтверджений size report і знижений budget без UX-регресії                                                         |
 | P1    | Повний EN-locale contract із S10-R2                                                             | Ready                                       | Parity gate та критичні launch screens без hard-coded UA copy                                                       |
 | P2    | [`ponytail-packages-cleanup-2026-07.md`](./planning/specs/ponytail-packages-cleanup-2026-07.md) | Ready пакетами WP1→WP5                      | Окремі scoped PR, тести кожного package, вимір видаленого коду                                                      |
 | P2    | Tech-debt burndown                                                                              | Ready вибірково                             | `eslint-disable` cleanup і аудит реальних rate-limit gaps; не брати trigger-gated пункти                            |
+
+## Закрито після зрізу
+
+- **S10-Q1 mutation workflow (2026-07-19):** weekly/manual tier-1 Stryker для
+  shared utils і server normalizers, поріг 70%, 30-денний HTML artifact.
+- **Tech-debt slice (2026-07-19):** 4/4 недокументовані non-null assertions
+  прибрано; filesystem suppression підтверджено як deployment-controlled.
+- **S10-T2 slice 1 (2026-07-19):** `@dnd-kit/*` видалено без втрати reorder;
+  JS brotli −11,930 B. Весь S10-T2 лишається відкритим через +20,310 B понад
+  budget.
 
 ## Не брати зараз
 
