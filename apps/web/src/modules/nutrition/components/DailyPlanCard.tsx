@@ -93,9 +93,6 @@ export function DailyPlanCard({
   const weekPlanDays = Array.isArray(weekPlan?.days)
     ? (weekPlan.days as WeekPlanDay[])
     : [];
-  const shoppingList = Array.isArray(weekPlan?.shoppingList)
-    ? (weekPlan.shoppingList as string[])
-    : [];
 
   return (
     <Card className="p-4">
@@ -282,7 +279,7 @@ export function DailyPlanCard({
                 "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
               )}
             >
-              {weekPlanBusy ? "…" : "План на тиждень + покупки"}
+              {weekPlanBusy ? "…" : "План на тиждень"}
             </button>
           )}
         </div>
@@ -316,16 +313,6 @@ export function DailyPlanCard({
                 )}
               </div>
             ))}
-            {shoppingList.length > 0 && (
-              <div>
-                <div className="text-xs text-muted mb-1">Список покупок</div>
-                <ul className="list-disc pl-4 text-sm text-text space-y-0.5">
-                  {shoppingList.map((s: string, i: number) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
 

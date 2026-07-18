@@ -115,6 +115,63 @@ export function Measurements() {
               <li>{messages.fizruk.measurements.guideStep3}</li>
               <li>{messages.fizruk.measurements.guideStep4}</li>
             </ol>
+            <div className="overflow-x-auto rounded-2xl border border-line">
+              <table className="w-full min-w-[560px] text-left text-style-caption">
+                <thead className="bg-panelHi text-text">
+                  <tr>
+                    <th className="px-3 py-2">
+                      {messages.fizruk.measurements.guideMetricHeader}
+                    </th>
+                    <th className="px-3 py-2">
+                      {messages.fizruk.measurements.guidePlaceHeader}
+                    </th>
+                    <th className="px-3 py-2">
+                      {messages.fizruk.measurements.guideTechniqueHeader}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line text-subtle">
+                  {[
+                    [
+                      "Талія",
+                      "Посередині між нижнім ребром і верхом тазової кістки",
+                      "Горизонтально, після звичайного видиху, не стягувати шкіру",
+                    ],
+                    [
+                      "Стегна",
+                      "Навколо найширшої частини сідниць",
+                      "Горизонтально, ноги разом",
+                    ],
+                    [
+                      "Груди",
+                      "Навколо грудної клітки на рівні сосків",
+                      "Горизонтально, руки розслаблені, без глибокого вдиху",
+                    ],
+                    [
+                      "Біцепс",
+                      "Посередині між плечем і ліктем",
+                      "Рука розслаблена; щоразу міряти ту саму руку",
+                    ],
+                    [
+                      "Стегно",
+                      "Навколо найширшої частини верхнього стегна",
+                      "Стояти рівно, вагу розподілити на обидві ноги",
+                    ],
+                  ].map(([metric, place, technique]) => (
+                    <tr key={metric}>
+                      <th
+                        scope="row"
+                        className="px-3 py-2 font-semibold text-text"
+                      >
+                        {metric}
+                      </th>
+                      <td className="px-3 py-2">{place}</td>
+                      <td className="px-3 py-2">{technique}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <p className="text-xs text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
             </p>

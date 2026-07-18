@@ -150,7 +150,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {label}
         </label>
       )}
-      <div className="relative w-full min-w-0 max-w-full overflow-hidden">
+      <div className="relative w-full min-w-0 max-w-full">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
             {icon}
@@ -165,7 +165,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full text-text placeholder:text-subtle/70",
+            "box-border w-full text-text placeholder:text-subtle/70",
             "outline-none transition-colors duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],

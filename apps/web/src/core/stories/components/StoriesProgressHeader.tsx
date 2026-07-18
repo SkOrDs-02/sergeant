@@ -44,6 +44,7 @@ export function StoriesProgressHeader({
               className="flex-1 h-[3px] rounded-full bg-white/25 overflow-hidden"
             >
               <div
+                data-testid={isActive ? "active-story-progress" : undefined}
                 className="h-full bg-white rounded-full"
                 style={{
                   width: `${fill}%`,

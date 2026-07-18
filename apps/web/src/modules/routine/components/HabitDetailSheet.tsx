@@ -279,7 +279,7 @@ export function HabitDetailSheet({
   return (
     <>
       <Sheet
-        open
+        open={!editOpen}
         onClose={onClose}
         title={
           <span>

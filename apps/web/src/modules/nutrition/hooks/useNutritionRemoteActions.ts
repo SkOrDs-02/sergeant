@@ -393,7 +393,9 @@ export function useNutritionRemoteActions({
         })
         .then((data) => {
           const plan = data?.plan;
-          if (!plan) throw new Error("Не вдалося отримати план харчування");
+          if (!plan || !Array.isArray(plan.meals) || plan.meals.length === 0) {
+            throw new Error("Не вдалося отримати план харчування");
+          }
           return { plan, regenerateMealType };
         }),
     onMutate: (regenerateMealType) => {

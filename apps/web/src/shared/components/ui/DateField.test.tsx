@@ -10,12 +10,8 @@ describe("DateField", () => {
     );
     const input = screen.getByLabelText("Обери дату", { selector: "input" });
     expect(input).toHaveClass("min-w-0", "max-w-full", "[min-inline-size:0]");
-    expect(input.parentElement).toHaveClass(
-      "w-full",
-      "min-w-0",
-      "max-w-full",
-      "overflow-hidden",
-    );
+    expect(input.parentElement).toHaveClass("w-full", "min-w-0", "max-w-full");
+    expect(input.parentElement).not.toHaveClass("overflow-hidden");
     expect(input.parentElement?.parentElement).toHaveClass(
       "w-full",
       "min-w-0",

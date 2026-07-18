@@ -105,6 +105,22 @@ describe("AssetsAssetsSection", () => {
     expect(screen.getByText("Інші активи")).toBeInTheDocument();
   });
 
+  it("collapses and expands both user-managed asset blocks", () => {
+    render(wrap(<AssetsAssetsSection state={makeState()} />));
+
+    const receivablesToggle = screen.getByRole("button", {
+      name: /Мені винні/,
+    });
+    fireEvent.click(receivablesToggle);
+    expect(receivablesToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/Зберігайте облік боргів/)).not.toBeVisible();
+
+    const assetsToggle = screen.getByRole("button", { name: /Інші активи/ });
+    fireEvent.click(assetsToggle);
+    expect(assetsToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/Готівка, заощадження/)).not.toBeVisible();
+  });
+
   it("shows the empty-state placeholder for receivables", () => {
     render(wrap(<AssetsAssetsSection state={makeState()} />));
     expect(

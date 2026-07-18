@@ -363,7 +363,7 @@ describe("DailyPlanCard — weekPlan section", () => {
     expect(screen.getByText("Вівсянка")).toBeInTheDocument();
   });
 
-  it("renders the shopping list when weekPlan.shoppingList is populated", () => {
+  it("does not duplicate shopping inside the weekly meal plan", () => {
     render(
       <DailyPlanCard
         prefs={EMPTY_PREFS}
@@ -371,9 +371,9 @@ describe("DailyPlanCard — weekPlan section", () => {
         weekPlan={weekPlanWithDays}
       />,
     );
-    expect(screen.getByText("Список покупок")).toBeInTheDocument();
-    expect(screen.getByText("Молоко")).toBeInTheDocument();
-    expect(screen.getByText("Яйця")).toBeInTheDocument();
+    expect(screen.queryByText("Список покупок")).not.toBeInTheDocument();
+    expect(screen.queryByText("Молоко")).not.toBeInTheDocument();
+    expect(screen.queryByText("Яйця")).not.toBeInTheDocument();
   });
 
   it("renders weekPlanRaw diagnostic section when weekPlan has no days", () => {

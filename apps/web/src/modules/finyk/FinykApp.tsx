@@ -181,11 +181,7 @@ export default function App({
   // Pass `connected` so the pill does not claim "ок" when no bank account
   // has ever been linked — clientInfo is null until the first successful sync.
   const syncTone = getSyncTone(mergedMono?.syncState, hasConnectedProvider);
-  const showSyncPill =
-    hasConnectedProvider &&
-    ["loading", "partial", "error"].includes(
-      String(mergedMono?.syncState?.status ?? ""),
-    );
+  const showSyncPill = hasConnectedProvider;
 
   // Swipe navigation
   const curPageIdx = NAV_IDS.indexOf(page);

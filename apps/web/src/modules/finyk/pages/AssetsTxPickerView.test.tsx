@@ -104,6 +104,26 @@ describe("AssetsTxPickerView", () => {
       fireEvent.click(screen.getByText("Магазин"));
       expect(toggleMonoDebtTx).toHaveBeenCalledWith("acc-1", "ex-1");
     });
+
+    it("shows available older transactions when the last 90 days are empty", () => {
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          transactions={[
+            mkTx({
+              id: "old-1",
+              description: "Стара транзакція",
+              time: Math.floor(
+                new Date("2025-01-10T12:00:00Z").getTime() / 1000,
+              ),
+            }),
+          ]}
+          txPicker={{ type: "monoDebt", id: "acc-1" }}
+        />,
+      );
+
+      expect(screen.getByText("Стара транзакція")).toBeInTheDocument();
+    });
   });
 
   describe("sub mode", () => {

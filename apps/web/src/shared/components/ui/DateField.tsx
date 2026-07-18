@@ -53,7 +53,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl">
+        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] rounded-2xl">
           <Input
             {...props}
             ref={ref}
