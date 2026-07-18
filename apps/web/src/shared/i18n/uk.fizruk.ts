@@ -80,8 +80,8 @@ export const fizrukPageMessages = {
       "Зроби два виміри. Якщо вони помітно різняться, повтори й запиши середнє значення.",
     guideDisclaimer:
       "Це інструкція для послідовного відстеження прогресу, а не медична діагностика.",
-    guideWhoLink: "Методика WHO STEPS",
-    guideCdcLink: "Пояснення CDC про талію",
+    guideWhoLink: "Коротка інструкція CDC",
+    guideCdcLink: "Як виміряти талію — NHS",
     guideMetricHeader: "Замір",
     guidePlaceHeader: "Де міряти",
     guideTechniqueHeader: "Як тримати стрічку",

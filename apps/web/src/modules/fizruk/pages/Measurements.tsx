@@ -177,7 +177,7 @@ export function Measurements() {
             </p>
             <div className="flex flex-wrap gap-3 text-style-caption">
               <a
-                href="https://www.who.int/docs/default-source/ncds/ncd-surveillance/steps/steps-manual.pdf"
+                href="https://www.cdc.gov/diabetes/living-with/healthy-weight.html"
                 target="_blank"
                 rel="noreferrer"
                 className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
@@ -185,7 +185,7 @@ export function Measurements() {
                 {messages.fizruk.measurements.guideWhoLink}
               </a>
               <a
-                href="https://www.cdc.gov/diabetes/living-with/healthy-weight.html"
+                href="https://www.nhs.uk/health-assessment-tools/calculate-your-waist-to-height-ratio"
                 target="_blank"
                 rel="noreferrer"
                 className="min-h-11 inline-flex items-center text-fizruk-strong hover:underline"

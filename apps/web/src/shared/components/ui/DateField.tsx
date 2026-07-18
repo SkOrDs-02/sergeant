@@ -53,7 +53,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl ring-1 ring-inset ring-line">
+        <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-line bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
           <Input
             {...props}
             ref={ref}
@@ -72,14 +72,14 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
               onBlur?.(event);
             }}
             className={cn(
-              "min-w-0 max-w-full border-transparent [min-inline-size:0] [inline-size:100%]",
+              "min-w-0 max-w-full border-0 rounded-[calc(1rem-1px)] focus-visible:border-transparent focus-visible:ring-0 [min-inline-size:0] [inline-size:100%]",
               className,
             )}
           />
           {isEmpty && !focused ? (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-px left-px right-11 flex items-center rounded-l-2xl bg-panelHi px-4 text-base text-subtle"
+              className="pointer-events-none absolute inset-y-0 left-0 right-11 flex items-center rounded-l-2xl bg-panelHi px-4 text-base text-subtle"
             >
               {emptyLabel}
             </span>

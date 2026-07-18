@@ -13,10 +13,11 @@ describe("DateField", () => {
     expect(input.parentElement).toHaveClass("w-full", "min-w-0", "max-w-full");
     expect(input.parentElement?.parentElement?.parentElement).toHaveClass(
       "overflow-hidden",
-      "ring-1",
-      "ring-inset",
-      "ring-line",
+      "border",
+      "border-line",
+      "focus-within:border-brand-400",
     );
+    expect(input).toHaveClass("border-0", "focus-visible:ring-0");
     expect(
       input.parentElement?.parentElement?.parentElement?.parentElement,
     ).toHaveClass("w-full", "min-w-0", "max-w-full");

@@ -549,15 +549,23 @@ export function useNutritionRemoteActions({
       return nutritionApi.shoppingList(body).then((data) => {
         if (!Array.isArray(data?.categories))
           throw new Error("Не вдалося згенерувати список покупок.");
-        return data;
+        const categories = adaptShoppingCategories(data.categories).filter(
+          (category) => category.items.length > 0,
+        );
+        if (categories.length === 0) {
+          throw new Error(
+            "AI не повернув жодної покупки. Перевір джерело списку або склад комори й спробуй ще раз.",
+          );
+        }
+        return categories;
       });
     },
     onMutate: () => {
       setShoppingBusy(true);
       setErr("");
     },
-    onSuccess: (data) => {
-      shopping.setGeneratedList(adaptShoppingCategories(data.categories));
+    onSuccess: (categories) => {
+      shopping.setGeneratedList(categories);
       hapticSuccess();
     },
     onError: (err) => {

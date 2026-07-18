@@ -58,12 +58,12 @@ describe("HabitHeatmap interactions", () => {
     expect(screen.getByText("немає звичок")).toBeInTheDocument();
   });
 
-  it("moves the roving tab stop with ArrowLeft (one week back)", () => {
+  it("moves the roving tab stop right into the previous week", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
     const today = screen.getByLabelText("2026-06-16: 1 з 1 звички");
     // Today is the default tab stop.
     expect(today).toHaveAttribute("tabindex", "0");
-    fireEvent.keyDown(today, { key: "ArrowLeft" });
+    fireEvent.keyDown(today, { key: "ArrowRight" });
     // One week back = 2026-06-09; it becomes the focused/roving cell.
     const prevWeek = screen.getByLabelText("2026-06-09: 0 з 1 звички");
     expect(prevWeek).toHaveAttribute("tabindex", "0");

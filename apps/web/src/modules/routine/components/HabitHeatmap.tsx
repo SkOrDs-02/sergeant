@@ -113,8 +113,6 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     }
 
     const weeks: HeatmapCell[][] = [];
-    const seenMonths = new Set<string>();
-    const monthMarkers: MonthMarker[] = [];
 
     for (let w = 0; w < WEEKS; w++) {
       const week: HeatmapCell[] = [];
@@ -129,21 +127,37 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
         const total = activeHabits.length;
         const ratio = total > 0 && !isFuture ? cnt / total : 0;
         week.push({ key, dt, isFuture, isToday, cnt, total, ratio });
-
-        const mk = `${dt.getFullYear()}-${dt.getMonth()}`;
-        if (!seenMonths.has(mk)) {
-          seenMonths.add(mk);
-          monthMarkers.push({
-            weekIdx: w,
-            label: dt.toLocaleDateString("uk-UA", { month: "short" }),
-          });
-        }
       }
       weeks.push(week);
     }
     /* eslint-enable sergeant-design/prefer-kyiv-time */
 
-    return { weeks, monthMarkers };
+    // Mobile-first order: current week is the first visible column, followed
+    // by history newest→oldest. The four-week look-ahead remains available
+    // after the historical range without pushing today off the first screen.
+    // The user no longer has to rely on an imperative iOS scrollLeft jump.
+    const currentWeekIndex = HISTORY_WEEKS - 1;
+    const orderedWeeks = [
+      ...weeks.slice(currentWeekIndex, currentWeekIndex + 1),
+      ...weeks.slice(0, currentWeekIndex).reverse(),
+      ...weeks.slice(currentWeekIndex + 1),
+    ];
+    const orderedMonthMarkers: MonthMarker[] = [];
+    let previousMonth = "";
+    orderedWeeks.forEach((week, weekIdx) => {
+      const first = week[0];
+      if (!first) return;
+      const firstKyiv = getKyivDateParts(first.dt);
+      const monthKey = `${firstKyiv.year}-${firstKyiv.month}`;
+      if (monthKey === previousMonth) return;
+      previousMonth = monthKey;
+      orderedMonthMarkers.push({
+        weekIdx,
+        label: first.dt.toLocaleDateString("uk-UA", { month: "short" }),
+      });
+    });
+
+    return { weeks: orderedWeeks, monthMarkers: orderedMonthMarkers };
   }, [activeHabits, completions]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
@@ -221,12 +235,8 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   const detailCell = selectedCell ?? todayCell;
 
   useLayoutEffect(() => {
-    if (!todayCell) return;
-    const todayButton = cellRefs.current.get(todayCell.key);
-    if (viewportRef.current && todayButton) {
-      viewportRef.current.scrollLeft = Math.max(0, todayButton.offsetLeft - 8);
-    }
-  }, [todayCell]);
+    if (viewportRef.current) viewportRef.current.scrollLeft = 0;
+  }, []);
 
   return (
     <Card ref={rootRef} radius="lg">
