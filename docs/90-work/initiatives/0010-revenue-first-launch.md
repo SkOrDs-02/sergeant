@@ -530,3 +530,14 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 - Tests: `provider.test.ts` (5), `liqpay.test.ts` (6) — 11 green; повний billing-модуль 41 green; `pnpm lint:migrations` + eslint + server typecheck clean.
 
 **Наступний крок (Phase 7, поза цією ініціативою):** live LiqPay — `data`/`signature` підпис (base64/SHA1), server-callback webhook, рекурентні платежі через `subscribe`, cancel-flow + UI; адаптація `stripe.ts` під `BillingProvider`; LiqPay merchant-акаунт (ФОП).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                             | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------- | ---------- |
+| [#308](https://github.com/Skords-01/Sergeant/pull/308) | docs(docs): reconcile 90-work portfolio readiness | 2026-07-18 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
