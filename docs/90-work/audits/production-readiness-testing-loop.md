@@ -2,7 +2,7 @@
 
 # Production readiness testing loop
 
-> **Last validated:** 2026-06-29 by Codex. **Next review:** 2026-07-13.
+> **Last validated:** 2026-07-19 by Codex. **Next review:** 2026-10-17.
 > **Status:** Reference — повторюваний протокол; сам по собі не є відкритою роботою.
 
 ## Мета

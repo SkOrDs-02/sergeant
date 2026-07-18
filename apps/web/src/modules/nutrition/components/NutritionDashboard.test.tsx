@@ -99,7 +99,7 @@ describe("NutritionDashboard", () => {
         onGoToLog={onGoToLog}
       />,
     );
-    fireEvent.click(screen.getByText("+ Додати"));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом їжі" }));
     expect(onAddMeal).toHaveBeenCalled();
     fireEvent.click(screen.getByText("Журнал →"));
     expect(onGoToLog).toHaveBeenCalled();

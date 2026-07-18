@@ -36,6 +36,7 @@ import {
 } from "../../test/createIntegrationApp.js";
 import { processStripeWebhook } from "./stripeWebhook.js";
 import { __setPostHogCaptureForTesting } from "./stripeShared.js";
+import { errorHandler } from "../../http/errorHandler.js";
 
 let harness: IntegrationHarness;
 let dockerAvailable = false;
@@ -194,6 +195,9 @@ describe("stripeWebhook — integration (real Postgres)", () => {
           express.raw({ type: "application/json" }),
         );
         app.use(createBillingRouter({ pool: harness.pool }));
+        // Match the production app: route-level ValidationError instances are
+        // serialized by the central handler instead of Express' empty test body.
+        app.use(errorHandler);
 
         // Sign a _different_ payload than what we actually send.
         const goodPayload = Buffer.from(
@@ -211,7 +215,12 @@ describe("stripeWebhook — integration (real Postgres)", () => {
           .send(tamperedPayload.toString("utf8"));
 
         expect(res.status).toBe(400);
-        expect(res.body).toEqual({ error: "Invalid Stripe signature" });
+        expect(res.body).toEqual(
+          expect.objectContaining({
+            error: "Invalid Stripe signature",
+            message: "Invalid Stripe signature",
+          }),
+        );
 
         // No rows must have been written.
         const { rows } = await harness.pool.query<{ c: string }>(

@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-10",
+  "generated_at": "2026-07-18",
   "sourceHashes": {
-    "knowledge-graph": "791d4ca6aad1548e43b0c78845d45e6bd59d2a15200fee65c91bb242350bbdd2",
-    "symbol-index": "49d603c54623c97ef28235c04ff92046f197fd988adb3769f22b9f0d402959cf"
+    "knowledge-graph": "b7c09b3239b726ec1be465f2a57564ff513fd2281c1cc4ad5546755ea884fae7",
+    "symbol-index": "7026ca476698caa4dfe747757c4528b3003c78c16761761897b7b471f7acb742"
   },
   "counts": {
-    "adr": 70,
+    "adr": 71,
     "audit": 24,
     "export": 304,
     "hard-rule": 26,
     "initiative": 52,
     "playbook": 62,
     "skill": 24,
-    "total": 562
+    "total": 563
   },
   "chunks": [
     {
@@ -112,9 +112,9 @@
       "line": 1,
       "title": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)",
       "tier": "core",
-      "status": "accepted",
-      "text": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web) · adr:0009 · adr · accepted · 9 · 0. TL;DR · ADR-9.1 — Web: Vercel як CDN + Edge proxy до API · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-9.2 — API: Railway як persistent Node + Postgres · ADR-9.3 — Edge proxy як cookie-boundary, не як security-boundary · ADR-9.4 — Environment variable boundary: VITE ніколи не містить секрети",
-      "contentHash": "1e75907ec572cf40f12743cdad3c9e898baa43cc9a8c09ed9fa44ef6a9de695c"
+      "status": "superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)",
+      "text": "ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web) · adr:0009 · adr · superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена) · 9 · 0. TL;DR · ADR-9.1 — Web: Vercel як CDN + Edge proxy до API · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-9.2 — API: Railway як persistent Node + Postgres · ADR-9.3 — Edge proxy як cookie-boundary, не як security-boundary · ADR-9.4 — Environment variable boundary: VITE ніколи не містить секрети",
+      "contentHash": "b8d595c883acd60f6e3b0032db8561b9548d2bbebec449dce05647624d713a3d"
     },
     {
       "id": "adr:0010",
@@ -540,8 +540,8 @@
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-06-09 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "f88b0f1b125a4ec2b43a95887cda6082951e93083f8a2e12581c9dccfe428768"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-10 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "87db36d888981530f8bbb3db8b0fd2898d393417c0e34c199961a8866194d1c0"
     },
     {
       "id": "adr:0051",
@@ -782,8 +782,19 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-10 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "7302a8a4158b6c6781f849fcb4a99b199434568131dcc445095ac2484e4f4836"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-12 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "34c698bf7b454a640d60c5e91c88d8d9beec2066db666051a57f7fcc673d39d9"
+    },
+    {
+      "id": "adr:0074",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0074-hosting-hetzner-coolify.md",
+      "line": 1,
+      "title": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway)",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway) · adr:0074 · adr · accepted · 74 · 0. TL;DR · ADR-74.1 — VPS + Coolify замість Railway · Context · Decision · Consequences · Alternatives considered · Exit criteria · Implementation tracker",
+      "contentHash": "c41bd13362bc4890687a1d3b6ee2029e559d7e285955a1c607f97e168376a906"
     },
     {
       "id": "audit:2026-05-06-ux-roast-pr-plan",
@@ -4437,9 +4448,9 @@
       "line": 1,
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "tier": "core",
-      "status": "Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production.",
-      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Active — Phase 1 (generation + freshness gate) shipped + [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) source-of-truth написаний (2026-06-05); contract roundtrip tests (`tests/contract/`) + Schemathesis property-based testing лишаються deferred. Phase 1 закриває drift-detection use-case (spec ↔ runtime Zod); roundtrip/property-based testing активуються коли з'явиться перший contract-bug у production. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "70d44377c1923e09350e5c971f60fdf02eff6a845319ada1549d2a4dc3ddb2fc"
+      "status": "Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision.",
+      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "966534ae3bfeb1cd88c63d8f5172e74b111e0834c2ae1183604ef658bd55b18c"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction",
