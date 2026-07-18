@@ -1,7 +1,7 @@
 # Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing
 
 > **Last validated:** 2026-06-13 by @claude (audit-triage reconciliation — F2/F3/F4 confirmed shipped on current branch).
-> **Status:** Active
+> **Status:** Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.
 > **Auditor:** child Devin session (parent: https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40)
 > **Scope slug:** `10-errors-pwa-marketing`
 > **Pages in scope:**

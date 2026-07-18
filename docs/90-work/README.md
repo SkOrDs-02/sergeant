@@ -1,6 +1,6 @@
 # 90 · Work — активні tracker-и
 
-> **Last validated:** 2026-07-10 by @cursoragent (sync з ADR-0068, Node 22, billing scaffold). **Next review:** 2026-10-08.
+> **Last validated:** 2026-07-18 by Codex (portfolio/lifecycle reconciliation). **Next review:** 2026-08-18.
 > **Status:** Active
 
 > **Update 2026-07-10:** pricing canon — [ADR-0068](../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). Billing scaffold shipped; `tools/openclaw` removed (ADR-0055 external gateway). Product/governance doc passes: #220, #221.
@@ -8,6 +8,10 @@
 Жива робота: ініціативи, плани, аудити, технічний борг. Жанр — **trackers**
 (lifecycle-managed `Active → Closed → Archived`). Читай, коли плануєш PR;
 онови, коли шипиш. Зведений дашборд усього відкритого — [`open-work.md`](../open-work.md).
+
+Починай оцінку обсягу й готовності з
+[`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md). Він відділяє
+ready-now роботу від зовнішніх блокерів, owner-рішень і reference-матеріалів.
 
 | Розділ                                    | Що тут                                                                            |
 | ----------------------------------------- | --------------------------------------------------------------------------------- |

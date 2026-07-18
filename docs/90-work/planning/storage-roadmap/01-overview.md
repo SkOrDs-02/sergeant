@@ -1,7 +1,7 @@
 # Storage & Sync — Overview, Goals та Timeline
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — усі 13 етапів виконано; це історична карта реалізації.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Index](../storage-roadmap.md) · [→ PR-плани Stage 0–3](./02-stages-0-3.md)
 

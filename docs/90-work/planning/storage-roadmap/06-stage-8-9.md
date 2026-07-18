@@ -1,7 +1,7 @@
 # Storage & Sync — PR-плани: Stage 8–9 (SQLite cut-over та KV store swap)
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — етапи 8–9 виконано.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 6–7](./05-stage-6-7.md) · [→ Stage 13](./07-stage-13.md)
 

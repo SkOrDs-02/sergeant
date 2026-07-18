@@ -191,6 +191,8 @@ export function classifyStatus(rawStatus) {
   // Reference / informational — work tracked elsewhere or no action needed.
   if (/^frozen\b/i.test(t)) return "reference";
   if (/^reference\b/i.test(t)) return "reference";
+  if (/^deprecated\b/i.test(t)) return "reference";
+  if (/^withdrawn\b/i.test(t)) return "reference";
   if (/^superseded\b/i.test(t)) return "reference";
   if (/^аналіз\b/i.test(t)) return "reference";
   if (/не\s+потребує\s+дій/i.test(lower)) return "reference";
@@ -682,7 +684,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` — виключені.",
+    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` / `Deprecated` / `Withdrawn` — виключені.",
   );
   lines.push("");
   lines.push(

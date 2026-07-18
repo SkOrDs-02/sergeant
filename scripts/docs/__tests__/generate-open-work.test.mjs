@@ -78,6 +78,8 @@ describe("classifyStatus", () => {
     assert.equal(classifyStatus("Frozen reference — see foo.md"), "reference");
     assert.equal(classifyStatus("Reference (no actions)"), "reference");
     assert.equal(classifyStatus("Superseded by ADR-0050"), "reference");
+    assert.equal(classifyStatus("Deprecated — historical plan"), "reference");
+    assert.equal(classifyStatus("Withdrawn — residual moved"), "reference");
     assert.equal(classifyStatus("Аналіз, не потребує дій зараз."), "reference");
   });
 

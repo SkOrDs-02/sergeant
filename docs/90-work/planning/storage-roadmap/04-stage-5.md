@@ -1,7 +1,7 @@
 # Storage & Sync — PR-плани: Stage 5 (Sync engine v2 hardening)
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference — етап 5 виконано.
 
 > **Частина** [storage-roadmap](../storage-roadmap.md) · [← Stage 4](./03-stage-4.md) · [→ Stage 6–7](./05-stage-6-7.md)
 

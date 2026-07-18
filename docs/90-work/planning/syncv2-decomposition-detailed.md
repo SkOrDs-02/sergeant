@@ -1,12 +1,13 @@
 # Детальний план декомпозиції syncV2.ts
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Closed — декомпозицію виконано; `syncV2.ts` має 509 рядків станом на 2026-07-18.
 
 ## Поточний стан
 
 - **Файл:** `apps/server/src/modules/sync/syncV2.ts`
-- **Розмір:** 3100 LOC (порушує Hard Rule #18: max-lines 600)
+- **Історичний baseline:** 3100 LOC до декомпозиції. Поточний файл має 509 LOC
+  і відповідає Hard Rule #18.
 - **Структура:**
   - Рядки 1-299: Типи, константи, registry (~300 LOC)
   - Рядки 300-433: Helper функції (~134 LOC)

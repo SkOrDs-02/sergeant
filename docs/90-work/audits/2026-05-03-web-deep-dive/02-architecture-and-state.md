@@ -1,7 +1,7 @@
 # Web deep-dive — Architecture & state
 
 > **Last validated:** 2026-05-13 by @Skords-01.
-> **Status:** Active
+> **Status:** Closed — історичний audit slice; нова робота має окремі trackers.
 > **Scope:** Provider tree, routing, sync v1↔v2, `index.css`, in-process workers, React Query patterns, `localStorage` migration, CloudSync split-brain risk, `useCloudSync` shape.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/tech-debt/frontend.md`, `docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`.
 
@@ -329,16 +329,16 @@ ShortcutRegistryProvider
 
 ## Прив'язка до roadmap (00-overview)
 
-| Item у roadmap                                  | Section тут |
+| Item у roadmap | Section тут |
 | ----------------------------------------------- | ----------- | --------------------- | ---- |
-| `tsconfig.strict: true` для `apps/web` поетапно | §1.0        |
-| Provider-tree інваріант-тест                    | §1.1        |
-| Routing — типобезпечний registry                | §1.2        |
-| `@deprecated_after` marker для sync v1          | §1.3        |
-| `index.css` decomposition                       | §1.4        |
+| `tsconfig.strict: true` для `apps/web` поетапно | §1.0 |
+| Provider-tree інваріант-тест | §1.1 |
+| Routing — типобезпечний registry | §1.2 |
+| `@deprecated_after` marker для sync v1 | §1.3 |
+| `index.css` decomposition | §1.4 |
 | `SERVER_ROLE=api                                | worker      | all` + event-loop SLO | §1.6 |
-| `localStorage` 17 → 0 codemod                   | §2.2        |
-| CloudSync split-brain integration tests         | §2.3        |
-| `useCloudSync` split на read/write              | §2.4        |
+| `localStorage` 17 → 0 codemod | §2.2 |
+| CloudSync split-brain integration tests | §2.3 |
+| `useCloudSync` split на read/write | §2.4 |
 
 > **Tracker.** Кожен item після впровадження → `docs/90-work/tech-debt/frontend.md` (frontend-side) або `docs/90-work/tech-debt/backend.md` (server-side) з фіналізованим статусом.

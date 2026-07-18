@@ -1,7 +1,7 @@
 # PR-19: Workers health-registry + `/api/health/workers` endpoint
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.
+> **Status:** Reference — базовий endpoint shipped; розширення активується лише після stalled-worker incident.
 
 |                    |                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------ |

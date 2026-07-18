@@ -1,7 +1,7 @@
 # Web deep-dive — Frontend ergonomics & UX
 
 > **Last validated:** 2026-05-13 by @Skords-01.
-> **Status:** Active
+> **Status:** Closed — історичний audit slice; нова робота має окремі trackers.
 > **Scope:** Forms, loading/empty/error states, Toast, Modal, mobile safe-area, PWA install banner, auth error translation, i18n readiness, feature-reveal pattern.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/90-work/audits/2026-04-28-ux-improvement-plan.md`.
 

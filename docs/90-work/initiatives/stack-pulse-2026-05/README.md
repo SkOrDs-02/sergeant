@@ -1,7 +1,7 @@
 # Stack pulse — 2026-05
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** Active
+> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Status:** Reference/carry-over — програма виконана; окремі trigger-gated картки не є поточною чергою.
 
 Серія планів-PR-ів для виправлення слабких місць стеку Sergeant, виявлених
 під час глибокого зрізу 2026-05-03. Кожен файл — самостійний executable

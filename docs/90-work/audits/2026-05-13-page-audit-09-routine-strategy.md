@@ -1,7 +1,7 @@
 # Page Audit — Routine module + Strategy page
 
 > **Last validated:** 2026-05-13 by Devin.
-> **Status:** Active
+> **Status:** Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.
 > **Auditor:** child Devin session (parent: <https://app.devin.ai/sessions/7d63e4e64e644012afe8c886eab9fc40>)
 > **Scope slug:** `09-routine-strategy`
 > **Pages in scope:**

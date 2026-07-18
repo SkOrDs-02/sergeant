@@ -1,7 +1,7 @@
 # PR-17: 80+ env-vars → DB feature-flag toggle
 
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Planned
+> **Status:** Reference — speculative trigger (90-та env-змінна) не настав; не брати в роботу зараз.
 
 |                    |                                                                                         |
 | ------------------ | --------------------------------------------------------------------------------------- |

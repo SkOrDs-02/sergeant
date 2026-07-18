@@ -3,7 +3,7 @@
 # Аудит реалізації founder-feedback після PR #303
 
 > **Last touched:** 2026-07-17 by Codex. **Next review:** 2026-08-17.
-> **Status:** Active
+> **Status:** Closed — remediation merged у PR #304, #306 і #307; нові regressions фіксуються окремим проходом.
 
 Цей документ звіряє кожен пункт із вихідного повідомлення з фактичним `main`,
 а не лише з описом PR. `sergeant.vercel.app` на момент аудиту віддавав збірку з

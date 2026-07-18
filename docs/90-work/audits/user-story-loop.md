@@ -3,7 +3,7 @@
 # User Story QA Loop
 
 > **Last validated:** 2026-07-09 by @claude (freshness-cadence refresh — контракт лупу без змін). **Next review:** 2026-10-07.
-> **Status:** Active
+> **Status:** Reference — повторюваний протокол; актуальні результати живуть у ledger.
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-07-09 by @claude (freshness-cadence refresh — знімок лишається чинним, без змін контенту). **Next review:** 2026-10-07.
 >
-> **Status:** Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).
+> **Status:** Closed — усі 4 теми виконано; незалежні follow-up-и мають власні trackers.
 
 > **Single source of truth → root [`AGENTS.md`](../../../AGENTS.md).** Цей файл —
 > аудиторський знімок на 2026-06-08. Не дублює repo policy; кожна знахідка

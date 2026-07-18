@@ -1,7 +1,7 @@
 # PR-23: OpenAPI spec contract-tested vs runtime
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** 2026-08-12.
-> **Status:** Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision.
+> **Status:** Reference — committed scope shipped; Schemathesis/full-route expansion потребує нового runtime decision.
 
 |                    |                                                                           |
 | ------------------ | ------------------------------------------------------------------------- |
