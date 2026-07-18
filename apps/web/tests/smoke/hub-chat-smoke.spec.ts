@@ -23,6 +23,10 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
 
+  // The authenticated smoke user keeps chat sessions between CI runs. Start a
+  // fresh conversation so this test exercises the empty-state suggestions
+  // instead of depending on whether an earlier run left messages behind.
+  await page.getByRole("button", { name: "Нова бесіда" }).click();
   await expect(page.getByTestId("chat-empty-suggestion-finyk")).toBeVisible();
   await page.getByTestId("chat-empty-suggestion-finyk").click();
 

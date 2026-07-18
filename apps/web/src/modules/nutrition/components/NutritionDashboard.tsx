@@ -266,6 +266,7 @@ export function NutritionDashboard({
             <button
               type="button"
               onClick={onAddMeal}
+              aria-label="Додати прийом їжі"
               className={cn(
                 "text-style-label shrink-0 px-4 h-11 min-w-[44px] rounded-xl",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",

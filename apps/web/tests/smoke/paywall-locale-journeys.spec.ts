@@ -41,15 +41,15 @@ test("@critical locale: English pricing link renders the English conversion funn
 }) => {
   await page.goto("/pricing?lang=en", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "Pricing" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Plans" })).toBeVisible({
     timeout: 15_000,
   });
   await expect(
     page.getByRole("heading", {
-      name: "Premium — when you need everything at once.",
+      name: "Sergeant is free for everyday use. Premium — when you need everything at once.",
     }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try Premium" })).toBeVisible();
-  await expect(page).toHaveURL(/\/pricing$/);
+  await expect(page).toHaveURL(/\/pricing\?lang=en$/);
   await expect(page).toHaveTitle(/.+/);
 });
