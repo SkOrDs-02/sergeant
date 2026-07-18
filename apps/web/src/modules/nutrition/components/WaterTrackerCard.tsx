@@ -18,7 +18,7 @@ function fmt(ml: number) {
 // an add (subtract it back) or a reset (add the pre-reset total back) —
 // so it never shows up with nothing left to undo, and never no-ops after
 // a reset the way a bare "last added amount" number did.
-type LastAction = { type: "add" | "reset"; amount: number } | null;
+type LastAction = { type: "add"; amount: number } | null;
 
 interface WaterTrackerCardProps {
   goalMl?: number;
@@ -41,11 +41,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
 
   const handleUndo = () => {
     if (!lastAction) return;
-    if (lastAction.type === "add") {
-      subtract(lastAction.amount);
-    } else {
-      add(lastAction.amount);
-    }
+    subtract(lastAction.amount);
     setLastAction(null);
   };
 
@@ -159,17 +155,9 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           <button
             type="button"
             onClick={handleUndo}
-            title={
-              lastAction.type === "add"
-                ? "Відмінити останнє додавання"
-                : "Відмінити скидання"
-            }
+            title={"Відмінити останнє додавання"}
             className="h-11 px-3 rounded-xl text-style-caption text-subtle hover:text-text border border-line transition-colors shrink-0 whitespace-nowrap"
-            aria-label={
-              lastAction.type === "add"
-                ? `Відмінити останнє додавання (${lastAction.amount} мл)`
-                : `Відмінити скидання (повернути ${lastAction.amount} мл)`
-            }
+            aria-label={`Відмінити останнє додавання (${lastAction.amount} мл)`}
           >
             ↶ {lastAction.amount}
           </button>
@@ -186,12 +174,9 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                   clearTimeout(resetTimerRef.current);
                   resetTimerRef.current = null;
                 }
-                const preResetMl = todayMl;
                 reset();
                 setResetPending(false);
-                setLastAction(
-                  preResetMl > 0 ? { type: "reset", amount: preResetMl } : null,
-                );
+                setLastAction(null);
               } else {
                 // Скидаємо попередній таймер, якщо користувач натиснув двічі
                 // поспіль — інакше перше повернення в idle зніматиме нове pending.

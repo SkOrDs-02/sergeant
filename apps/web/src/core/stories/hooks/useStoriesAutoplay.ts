@@ -27,12 +27,9 @@ export function useStoriesAutoplay({
   paused,
   onAdvance,
 }: Options): number {
-  const [progress, setProgress] = useState(0);
-  const [progressKey, setProgressKey] = useState(key);
-  if (key !== progressKey) {
-    setProgressKey(key);
-    setProgress(0);
-  }
+  const [progressState, setProgressState] = useState({ key, value: 0 });
+  const progressRef = useRef(0);
+  const activeKeyRef = useRef(key);
   // Keep `onAdvance` behind a ref so the animation loop doesn't need to
   // restart every time a parent re-renders with a new callback identity.
   const onAdvanceRef = useRef(onAdvance);
@@ -50,28 +47,41 @@ export function useStoriesAutoplay({
     let cancelled = false;
     let advanced = false;
     // Mutable so visibilitychange can rebase without restarting the loop.
-    const state = { startTs: performance.now(), lastProgress: 0 };
+    // Date.now keeps advancing on iOS standalone PWA even when the WebKit
+    // performance clock/rAF timestamp is temporarily frozen in low-power mode.
+    if (activeKeyRef.current !== key) {
+      activeKeyRef.current = key;
+      progressRef.current = 0;
+    }
+    const state = {
+      startTs: Date.now() - (progressRef.current / 100) * durationMs,
+      lastProgress: progressRef.current,
+    };
 
     const doAdvance = () => {
       if (advanced || cancelled) return;
       advanced = true;
-      setProgress(100);
+      setProgressState({ key, value: 100 });
       onAdvanceRef.current();
     };
 
-    const update = (now: number) => {
+    const update = () => {
       if (cancelled || advanced) return;
-      const pct = Math.min(100, ((now - state.startTs) / durationMs) * 100);
+      const pct = Math.min(
+        100,
+        ((Date.now() - state.startTs) / durationMs) * 100,
+      );
       state.lastProgress = pct;
-      setProgress(pct);
+      progressRef.current = pct;
+      setProgressState({ key, value: pct });
       if (pct >= 100) {
         doAdvance();
       }
     };
 
-    const tick = (now: number) => {
+    const tick = () => {
       if (cancelled || advanced) return;
-      update(now);
+      update();
       if (!cancelled && !advanced) {
         rafId = window.requestAnimationFrame(tick);
       }
@@ -84,15 +94,14 @@ export function useStoriesAutoplay({
     // guarantee the slide advances on time.
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === "hidden") return;
-      update(performance.now());
+      update();
     }, 250);
 
     const onVisibility = () => {
       if (document.visibilityState === "visible" && !cancelled && !advanced) {
         // Rebase startTs so we resume from the last observed progress
         // rather than crediting hidden-tab time to the current slide.
-        state.startTs =
-          performance.now() - (state.lastProgress / 100) * durationMs;
+        state.startTs = Date.now() - (state.lastProgress / 100) * durationMs;
         // Re-kick rAF — some browsers drop the pending callback when the
         // page was hidden; the interval guard covers the gap in between.
         if (rafId !== null) window.cancelAnimationFrame(rafId);
@@ -109,5 +118,5 @@ export function useStoriesAutoplay({
     };
   }, [key, durationMs, paused]);
 
-  return progress;
+  return progressState.key === key ? progressState.value : 0;
 }

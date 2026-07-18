@@ -93,7 +93,7 @@ describe("WaterTrackerCard", () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  it("reset then undo restores the pre-reset amount (T4 round-3)", () => {
+  it("full reset clears the previous-step undo action", () => {
     todayMl = 800;
     render(<WaterTrackerCard goalMl={2000} />);
     fireEvent.click(screen.getByLabelText("Скинути воду за сьогодні"));
@@ -101,8 +101,8 @@ describe("WaterTrackerCard", () => {
       screen.getByLabelText("Підтвердити скидання води за сьогодні"),
     );
     expect(reset).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByLabelText(/Відмінити скидання/));
-    expect(add).toHaveBeenCalledWith(800);
+    expect(screen.queryByLabelText(/Відмінити/)).not.toBeInTheDocument();
+    expect(add).not.toHaveBeenCalled();
   });
 
   it("clears the pending confirm after the timeout", () => {

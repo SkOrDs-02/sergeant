@@ -311,11 +311,11 @@ export function PricingPage() {
   }
 
   return (
-    <MeshBackground>
+    <MeshBackground className="min-h-0">
       <main
         id="main"
         tabIndex={-1}
-        className="flex-1 min-h-0 w-full overflow-y-auto outline-none"
+        className="min-h-0 h-full w-full overflow-y-scroll overscroll-y-contain outline-none [-webkit-overflow-scrolling:touch]"
         style={{
           paddingTop: "max(1.25rem, env(safe-area-inset-top))",
           paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",

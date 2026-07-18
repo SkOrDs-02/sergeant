@@ -46,6 +46,11 @@ type TxPickerState =
   | { type: "debt"; id: string }
   | { type: "recv"; id: string };
 
+function transactionInstant(time: number | undefined): number {
+  const value = time ?? 0;
+  return value > 1_000_000_000_000 ? value : value * 1000;
+}
+
 interface AssetsTxPickerViewProps {
   txPicker: TxPickerState;
   setTxPicker: (next: TxPickerState | null) => void;
@@ -129,7 +134,7 @@ export function AssetsTxPickerView({
         ...new Set(
           allTransactions
             .map((item) => {
-              const instant = (item.time ?? 0) * 1000;
+              const instant = transactionInstant(item.time);
               return instant > 0
                 ? new Intl.DateTimeFormat("en-CA", {
                     timeZone: "Europe/Kyiv",
@@ -148,8 +153,11 @@ export function AssetsTxPickerView({
   const transactions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const cutoff = openedAt - 90 * 24 * 60 * 60 * 1000;
+    const hasRecent = allTransactions.some(
+      (item) => transactionInstant(item.time) >= cutoff,
+    );
     return allTransactions.filter((item) => {
-      const instant = (item.time ?? 0) * 1000;
+      const instant = transactionInstant(item.time);
       const itemMonth =
         instant > 0
           ? new Intl.DateTimeFormat("en-CA", {
@@ -160,7 +168,7 @@ export function AssetsTxPickerView({
           : "";
       const inRange = month
         ? itemMonth === month
-        : instant >= cutoff || linkedIds.has(item.id);
+        : !hasRecent || instant >= cutoff || linkedIds.has(item.id);
       const haystack =
         `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
       return (
@@ -391,7 +399,7 @@ export function AssetsTxPickerView({
                       // Kyiv-local day-of-month so subscription billing day
                       // stays anchored to Europe/Kyiv, not the host clock.
                       const bd = getKyivDateParts(
-                        new Date((t.time || 0) * 1000),
+                        new Date(transactionInstant(t.time)),
                       ).day;
                       updateSubscription(sub.id, {
                         linkedTxId: t.id,

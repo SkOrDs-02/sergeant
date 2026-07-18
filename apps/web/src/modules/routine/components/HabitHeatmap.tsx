@@ -2,7 +2,14 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import {
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -10,7 +17,9 @@ import { chartHeatmap } from "@shared/charts/chartTheme";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Habit, RoutineState } from "../lib/types";
 
-const WEEKS = 53;
+const HISTORY_WEEKS = 53;
+const FUTURE_WEEKS = 4;
+const WEEKS = HISTORY_WEEKS + FUTURE_WEEKS;
 const DAYS = 7;
 const DAY_LABELS = ["Пн", "", "Ср", "", "Пт", "", "Нд"];
 const HEATMAP = chartHeatmap.routine;
@@ -94,7 +103,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     mondayThisWeek.setDate(today.getDate() - dow);
 
     const startDate = new Date(mondayThisWeek);
-    startDate.setDate(mondayThisWeek.getDate() - (WEEKS - 1) * 7);
+    startDate.setDate(mondayThisWeek.getDate() - (HISTORY_WEEKS - 1) * 7);
 
     const cntByDay: Record<string, number> = {};
     for (const h of activeHabits) {
@@ -211,14 +220,9 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   }, [weeks]);
   const detailCell = selectedCell ?? todayCell;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!todayCell) return;
     const todayButton = cellRefs.current.get(todayCell.key);
-    todayButton?.scrollIntoView?.({
-      block: "nearest",
-      inline: "start",
-      behavior: "auto",
-    });
     if (viewportRef.current && todayButton) {
       viewportRef.current.scrollLeft = Math.max(0, todayButton.offsetLeft - 8);
     }
@@ -231,8 +235,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       </SectionHeading>
 
       <div className="mb-2 text-style-caption text-subtle">
-        Горизонтальна історія за 12 місяців відкривається на сьогоднішньому
-        дні.
+        Горизонтальна історія за 12 місяців відкривається на сьогоднішньому дні.
       </div>
 
       <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
