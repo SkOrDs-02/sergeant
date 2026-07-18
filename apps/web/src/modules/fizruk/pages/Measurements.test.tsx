@@ -75,9 +75,13 @@ describe("Measurements page", () => {
     expect(
       screen.getByRole("heading", { name: "Як правильно робити заміри" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /WHO STEPS/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /CDC/ })).toHaveAttribute(
       "href",
-      expect.stringContaining("who.int"),
+      expect.stringContaining("cdc.gov"),
+    );
+    expect(screen.getByRole("link", { name: /NHS/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("nhs.uk"),
     );
     expect(screen.getByRole("link", { name: /CDC/ })).toHaveAttribute(
       "href",

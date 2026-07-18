@@ -449,7 +449,12 @@ describe("useNutritionRemoteActions", () => {
 
     it("posts recipes when source fallback and feeds categories to shopping", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({
-        categories: [{ name: "Овочі", items: [] }],
+        categories: [
+          {
+            name: "Овочі",
+            items: [{ name: "Помідори", quantity: "2 шт", note: "" }],
+          },
+        ],
       });
       const { result, spies } = makeHarness({
         recipes: [{ id: "r1", name: "Омлет" }],
@@ -459,9 +464,34 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setGeneratedList).toHaveBeenCalledWith([
-          { name: "Овочі", items: [] },
+          {
+            name: "Овочі",
+            items: [
+              expect.objectContaining({
+                name: "Помідори",
+                quantity: "2 шт",
+                checked: false,
+              }),
+            ],
+          },
         ]),
       );
+    });
+
+    it("shows an actionable error instead of silently accepting an empty list", async () => {
+      apiFetchShoppingList.mockResolvedValueOnce({ categories: [] });
+      const { result, spies } = makeHarness({
+        recipes: [{ id: "r1", name: "Омлет" }],
+      });
+
+      act(() => result.current.generateShoppingList("recipes"));
+
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(
+          expect.stringContaining("AI не повернув жодної покупки"),
+        ),
+      );
+      expect(spies.setGeneratedList).not.toHaveBeenCalled();
     });
   });
 });
