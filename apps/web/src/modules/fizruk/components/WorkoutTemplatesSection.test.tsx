@@ -132,6 +132,24 @@ describe("WorkoutTemplatesSection", () => {
     expect(screen.getByText(/Порядок \(1\)/)).toBeInTheDocument();
   });
 
+  it("keeps the order unchanged when moving beyond either boundary", () => {
+    const props = baseProps();
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+    fireEvent.click(screen.getByText("+ Новий шаблон"));
+    fireEvent.click(screen.getByText("Жим лежачи"));
+    fireEvent.click(screen.getByText("Присідання"));
+
+    fireEvent.click(screen.getAllByLabelText("Вище")[0]!);
+    fireEvent.click(screen.getAllByLabelText("Нижче")[1]!);
+    fireEvent.click(screen.getByText("Зберегти"));
+
+    expect(props.addTemplate).toHaveBeenCalledWith(
+      "Мій шаблон",
+      ["bench", "squat"],
+      { groups: [] },
+    );
+  });
+
   it("creates a superset group from two selected exercises", () => {
     const props = baseProps();
     render(wrap(<WorkoutTemplatesSection {...props} />));

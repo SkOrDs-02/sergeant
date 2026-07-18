@@ -2,9 +2,13 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { memo, useCallback, useMemo } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import {
+  memo,
+  useCallback,
+  useMemo,
+  type ButtonHTMLAttributes,
+  type DragEventHandler,
+} from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
@@ -19,15 +23,9 @@ export interface BentoCardProps {
   config: ModuleConfig;
   onClick: () => void;
   /**
-   * Ref/props applied to the inner primary `<button>` so dnd-kit can use it
-   * as the drag activator. Keeping the activator on the primary button (not
-   * the wrapper) keeps the drag-handle a sibling of the primary button
-   * rather than a nested interactive control — see the `nested-interactive`
-   * axe rule (#839).
+   * Intent-prefetch props applied to the inner primary button.
    */
-  primaryRef?: ((node: HTMLButtonElement | null) => void) | undefined;
-  primaryProps?: Record<string, unknown> | undefined;
-  isDragging?: boolean | undefined;
+  primaryProps?: ButtonHTMLAttributes<HTMLButtonElement> | undefined;
   /**
    * When `true`, the card is rendered in a muted/greyed-out state
    * because the user did not mark this module as important during
@@ -38,13 +36,14 @@ export interface BentoCardProps {
   /**
    * When `true`, the card is in dashboard "edit mode": it wiggles to
    * signal it is draggable and exposes a visible top-right grip handle.
-   * The grip handle uses `handleRef` / `handleProps` as the dnd-kit
-   * activator so the whole card body can keep navigating to the module
-   * on tap.
+   * Two explicit move controls keep reordering available to keyboard and
+   * coarse-pointer users without nesting controls inside the card button.
    */
   editMode?: boolean | undefined;
-  handleRef?: ((node: HTMLButtonElement | null) => void) | undefined;
-  handleProps?: Record<string, unknown> | undefined;
+  canMovePrevious?: boolean | undefined;
+  canMoveNext?: boolean | undefined;
+  onMovePrevious?: (() => void) | undefined;
+  onMoveNext?: (() => void) | undefined;
   /**
    * Set on the single card the adaptive-bento engine has lifted to the top
    * for the current context (signal × time of day). Renders a small
@@ -67,13 +66,13 @@ export interface BentoCardProps {
 export const BentoCard = memo(function BentoCard({
   config,
   onClick,
-  primaryRef,
   primaryProps,
-  isDragging,
   inactive,
   editMode,
-  handleRef,
-  handleProps,
+  canMovePrevious,
+  canMoveNext,
+  onMovePrevious,
+  onMoveNext,
   adaptiveReason,
 }: BentoCardProps) {
   const preview = config.getPreview();
@@ -89,15 +88,12 @@ export const BentoCard = memo(function BentoCard({
     <div
       className={cn(
         "relative h-full",
-        isDragging && "opacity-70 z-50",
         inactive && "opacity-60",
-        // Edit-mode wiggle. Suppressed while a card is being dragged so
-        // the dnd-kit transform is not fighting the rotation keyframes.
-        editMode && !isDragging && "motion-safe:animate-wiggle",
+        // Edit-mode wiggle makes the reorder state visible.
+        editMode && "motion-safe:animate-wiggle",
       )}
     >
       <button
-        ref={primaryRef}
         type="button"
         onClick={onClick}
         {...primaryProps}
@@ -120,7 +116,6 @@ export const BentoCard = memo(function BentoCard({
           "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
           "active:scale-[0.98] pointer-coarse:active:scale-[0.97]",
           inactive ? "bg-panel grayscale" : config.cardBg,
-          isDragging && "shadow-float cursor-grabbing",
         )}
       >
         <div className="flex items-center justify-between mb-2">
@@ -228,104 +223,80 @@ export const BentoCard = memo(function BentoCard({
       </button>
 
       {showHandle && (
-        <button
-          ref={handleRef}
-          type="button"
-          {...handleProps}
-          aria-label={`Перетягнути ${config.label}`}
-          title="Перетягнути для зміни порядку"
-          className={cn(
-            "absolute top-3.5 right-3.5 pointer-coarse:top-4 pointer-coarse:right-4",
-            // Visible 28 px glyph; 44×44 hit area on coarse pointers via
-            // `touch-target`.
-            "w-7 h-7 touch-target",
-            // CONTROL tier (12 px) per the 3-tier radius system in
-            // `tailwind-preset.js` — matches Button iconSizes.xs/sm.
-            "rounded-xl flex items-center justify-center",
-            "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
-            "transition-colors cursor-grab active:cursor-grabbing touch-none",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
-          )}
-        >
-          <Icon name="grip-vertical" size="sm" strokeWidth={2} />
-        </button>
+        <div className="absolute top-3 right-3 flex gap-1 pointer-coarse:top-3.5 pointer-coarse:right-3.5">
+          <button
+            type="button"
+            onClick={onMovePrevious}
+            disabled={!canMovePrevious}
+            aria-label={`Перемістити ${config.label} назад`}
+            className="flex h-8 w-8 pointer-coarse:h-11 pointer-coarse:w-11 items-center justify-center rounded-xl bg-panel/90 text-muted transition-colors hover:bg-panelHi hover:text-text disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+          >
+            <Icon name="chevron-left" size="sm" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={onMoveNext}
+            disabled={!canMoveNext}
+            aria-label={`Перемістити ${config.label} вперед`}
+            className="flex h-8 w-8 pointer-coarse:h-11 pointer-coarse:w-11 items-center justify-center rounded-xl bg-panel/90 text-muted transition-colors hover:bg-panelHi hover:text-text disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+          >
+            <Icon name="chevron-right" size="sm" strokeWidth={2} />
+          </button>
+        </div>
       )}
     </div>
   );
 });
 
-export interface SortableCardProps {
+export interface ReorderableCardProps {
   id: ModuleId;
   onOpenModule: (id: ModuleId) => void;
   inactive?: boolean;
   /**
-   * When `true`, dnd-kit listeners attach to the visible drag handle
-   * instead of the primary card button — taps on the body still navigate
-   * to the module, while drag is gated to the explicit grip affordance.
+   * Enables native desktop drag and explicit previous/next controls.
    */
   editMode?: boolean;
   /**
    * Forwarded to `BentoCard` — adaptive-bento "lifted" reason chip.
    */
   adaptiveReason?: string | null;
+  canMovePrevious: boolean;
+  canMoveNext: boolean;
+  onMovePrevious: () => void;
+  onMoveNext: () => void;
+  onNativeDragStart: () => void;
+  onNativeDrop: () => void;
 }
 
 /**
- * Drag-sortable wrapper around `BentoCard` that wires up `@dnd-kit/sortable`
- * transforms / listeners. Rendered inside `<SortableContext>` from the
- * parent dashboard so the order persists via `saveDashboardOrder`.
+ * Reorderable wrapper around `BentoCard`: native HTML drag on fine pointers,
+ * explicit previous/next controls for keyboard and touch users.
  */
-export const SortableCard = memo(function SortableCard({
+export const ReorderableCard = memo(function ReorderableCard({
   id,
   onOpenModule,
   inactive,
   editMode,
   adaptiveReason,
-}: SortableCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = useMemo(
-    () => ({
-      transform: CSS.Transform.toString(transform),
-      transition,
-    }),
-    [transform, transition],
-  );
-
-  // AI-NOTE: spread dnd-kit attributes/listeners on the *inner* primary button
-  // (via `primaryProps` + `setActivatorNodeRef`). Spreading them on the wrapper
-  // would either nest interactive controls (button-in-button with quick-add)
-  // or attach `role="button"` to a `<div>` whose only focusable child is the
-  // primary `<button>` — both fail axe a11y rules.
-  // In edit mode the same listeners move to the visible grip handle so
-  // accidental drags from the card body don't fight the explicit handle.
-  // We also fold in `getModulePrefetchProps(id)` (intent-prefetch on hover/
-  // focus) when not editing — the same primary button is the user's "I'm
-  // about to open this module" affordance, so warming its chunk on hover
-  // shaves the next dynamic-import RTT off the click handler. Suppressed
-  // in edit mode because hovers there are about reordering, not opening.
-  const dndProps = useMemo(
-    () => ({ ...attributes, ...listeners }),
-    [attributes, listeners],
-  );
-
+  canMovePrevious,
+  canMoveNext,
+  onMovePrevious,
+  onMoveNext,
+  onNativeDragStart,
+  onNativeDrop,
+}: ReorderableCardProps) {
   const intentProps = useMemo(
     () => (editMode ? null : getModulePrefetchProps(id)),
     [editMode, id],
   );
 
-  const primaryProps = useMemo(
-    () => (editMode ? undefined : { ...dndProps, ...intentProps }),
-    [editMode, dndProps, intentProps],
-  );
+  const primaryProps = intentProps ?? undefined;
+
+  const handleDragStart: DragEventHandler<HTMLDivElement> = (event) => {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", id);
+    onNativeDragStart();
+  };
 
   // Inactive cards route the user to Hub Settings → Дашборд → "Модулі
   // дашборду" instead of opening the module itself. The card's copy
@@ -345,18 +316,29 @@ export const SortableCard = memo(function SortableCard({
   if (!cfg) return null;
 
   return (
-    <div ref={setNodeRef} style={style} className="min-w-0 h-full">
+    <div
+      className="min-w-0 h-full"
+      draggable={editMode}
+      onDragStart={handleDragStart}
+      onDragOver={(event) => {
+        if (editMode) event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        onNativeDrop();
+      }}
+    >
       <BentoCard
         config={cfg}
         onClick={handleClick}
-        primaryRef={editMode ? undefined : setActivatorNodeRef}
         primaryProps={primaryProps}
-        handleRef={editMode ? setActivatorNodeRef : undefined}
-        handleProps={editMode ? dndProps : undefined}
-        isDragging={isDragging}
         inactive={inactive}
         editMode={editMode}
         adaptiveReason={adaptiveReason}
+        canMovePrevious={canMovePrevious}
+        canMoveNext={canMoveNext}
+        onMovePrevious={onMovePrevious}
+        onMoveNext={onMoveNext}
       />
     </div>
   );

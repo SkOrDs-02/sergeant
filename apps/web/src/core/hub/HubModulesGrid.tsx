@@ -12,15 +12,8 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { isActiveModule, type DashboardModuleId } from "@sergeant/shared";
-import {
-  DndContext,
-  closestCenter,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
-import { SortableCard } from "./dashboard/BentoCard";
+import { useState } from "react";
+import { ReorderableCard } from "./dashboard/BentoCard";
 import { type ModuleId } from "./dashboard/moduleConfigs";
 import type { DashboardDensity } from "./hub.types";
 import { DENSITY_BENTO_GAP } from "./hub.types";
@@ -34,9 +27,8 @@ export interface HubModulesGridProps {
   editMode: boolean;
   toggleEditMode: () => void;
   displayOrder: readonly string[];
-  sensors: ReturnType<typeof useSensors>;
-  handleDragStart: (event: DragStartEvent) => void;
-  handleDragEnd: (event: DragEndEvent) => void;
+  announceReorderStart: (id: ModuleId) => void;
+  moveModule: (activeId: ModuleId, overId: ModuleId) => void;
   onOpenModule: (module: string) => void;
   activeModules: readonly string[];
   adaptive: { liftedId: ModuleId | null; reason: string | null };
@@ -50,9 +42,8 @@ export function HubModulesGrid({
   editMode,
   toggleEditMode,
   displayOrder,
-  sensors,
-  handleDragStart,
-  handleDragEnd,
+  announceReorderStart,
+  moveModule,
   onOpenModule,
   activeModules,
   adaptive,
@@ -60,6 +51,13 @@ export function HubModulesGrid({
   hideInactive,
   toggleHideInactive,
 }: HubModulesGridProps) {
+  const [draggedId, setDraggedId] = useState<ModuleId | null>(null);
+
+  const finishNativeDrag = (overId: ModuleId) => {
+    if (draggedId) moveModule(draggedId, overId);
+    setDraggedId(null);
+  };
+
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-2 px-0.5">
@@ -94,42 +92,42 @@ export function HubModulesGrid({
         </button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
+      <div
+        className={cn(
+          "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+          DENSITY_BENTO_GAP[density],
+        )}
       >
-        <SortableContext
-          items={displayOrder as string[]}
-          strategy={rectSortingStrategy}
-        >
-          <div
-            className={cn(
-              "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-              DENSITY_BENTO_GAP[density],
-            )}
-          >
-            {displayOrder.map((id) => (
-              <SortableCard
-                key={id}
-                id={id as ModuleId}
-                onOpenModule={onOpenModule}
-                inactive={
-                  !isActiveModule(
-                    activeModules as DashboardModuleId[],
-                    id as DashboardModuleId,
-                  )
-                }
-                editMode={editMode}
-                adaptiveReason={
-                  id === adaptive.liftedId ? adaptive.reason : null
-                }
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+        {displayOrder.map((id, index) => (
+          <ReorderableCard
+            key={id}
+            id={id as ModuleId}
+            onOpenModule={onOpenModule}
+            inactive={
+              !isActiveModule(
+                activeModules as DashboardModuleId[],
+                id as DashboardModuleId,
+              )
+            }
+            editMode={editMode}
+            adaptiveReason={id === adaptive.liftedId ? adaptive.reason : null}
+            canMovePrevious={index > 0}
+            canMoveNext={index < displayOrder.length - 1}
+            onMovePrevious={() =>
+              moveModule(id as ModuleId, displayOrder[index - 1] as ModuleId)
+            }
+            onMoveNext={() =>
+              moveModule(id as ModuleId, displayOrder[index + 1] as ModuleId)
+            }
+            onNativeDragStart={() => {
+              const moduleId = id as ModuleId;
+              setDraggedId(moduleId);
+              announceReorderStart(moduleId);
+            }}
+            onNativeDrop={() => finishNativeDrag(id as ModuleId)}
+          />
+        ))}
+      </div>
 
       {hasInactive && (
         <button

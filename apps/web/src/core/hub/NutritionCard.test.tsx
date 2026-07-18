@@ -62,10 +62,17 @@ describe("NutritionCard", () => {
       b.getAttribute("aria-label")?.includes("1"),
     );
     expect(todayBar).toBeTruthy();
+    const tooltip = todayBar?.getAttribute("aria-label");
     fireEvent.click(todayBar!);
     expect(todayBar).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.getByText(tooltip ?? "__missing_tooltip__"),
+    ).toBeInTheDocument();
     fireEvent.click(todayBar!);
     expect(todayBar).toHaveAttribute("aria-pressed", "false");
+    expect(
+      screen.queryByText(tooltip ?? "__missing_tooltip__"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders month period without crashing", () => {

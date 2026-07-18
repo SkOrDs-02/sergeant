@@ -129,8 +129,10 @@ export function WorkoutTemplatesSection({
       const j = idx + dir;
       if (j < 0 || j >= o.length) return o;
       const next = [...o];
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      [next[idx], next[j]] = [next[j]!, next[idx]!];
+      const current = next[idx];
+      const target = next[j];
+      if (current === undefined || target === undefined) return o;
+      [next[idx], next[j]] = [target, current];
       return next;
     });
   };

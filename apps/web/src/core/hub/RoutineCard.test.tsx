@@ -51,6 +51,18 @@ describe("RoutineCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /Рутина/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
+
+    const bar = chart.querySelector("button");
+    expect(bar).not.toBeNull();
+    const tooltip = bar?.getAttribute("aria-label");
+    fireEvent.click(bar as HTMLButtonElement);
+    expect(
+      screen.getByText(tooltip ?? "__missing_tooltip__"),
+    ).toBeInTheDocument();
+    fireEvent.click(bar as HTMLButtonElement);
+    expect(
+      screen.queryByText(tooltip ?? "__missing_tooltip__"),
+    ).not.toBeInTheDocument();
   });
 
   it("ignores archived habits without crashing", () => {

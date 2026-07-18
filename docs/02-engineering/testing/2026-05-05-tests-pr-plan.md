@@ -261,6 +261,10 @@
 
 ## Wave E — P1 Mutation testing scope (тиждень 4)
 
+> **Progress 2026-07-19:** weekly/manual tier-1 workflow активний для shared
+> `macros.ts`/`date.ts` і server normalizers. PR-T25 виконано; PR-T23/T24/T26/T27
+> лишаються окремим розширенням scope після першого scheduled score baseline.
+
 ### PR-T23 — Stryker для `packages/finyk-domain`
 
 - **Branch:** `devin/{ts}-stryker-finyk-domain`
@@ -279,6 +283,10 @@
 - **Deps:** PR-T06 (без тестів немає що killувати).
 
 ### PR-T25 — Stryker для `apps/server/src/lib/normalizers/*`
+
+**Status: Done (2026-07-19).** `stryker.normalizers.conf.json`, isolated five-file
+allowlist, 70% break threshold і artifact wiring додано. Dry-run: 396 mutants,
+94 tests.
 
 - **Branch:** `devin/{ts}-stryker-server-normalizers`
 - **Files:** `apps/server/stryker.normalizers.conf.json`.

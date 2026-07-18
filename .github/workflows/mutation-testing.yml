@@ -8,9 +8,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: mutation-testing
+  cancel-in-progress: false
+
 jobs:
-  shared-utils:
-    name: shared utils tier-1
+  tier-1:
+    name: tier-1 mutation allowlist
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,14 +43,21 @@ jobs:
           TZ: Europe/Kyiv
         run: pnpm --filter @sergeant/shared mutation:utils
 
+      - name: Run Stryker server normalizers tier-1
+        env:
+          TZ: Europe/Kyiv
+        run: pnpm --filter @sergeant/server mutation:normalizers
+
       - name: Upload mutation report
         if: always()
         # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: shared-utils-mutation-report
+          name: mutation-tier-1-report
           path: |
             packages/shared/reports/mutation/utils/index.html
             packages/shared/reports/mutation/utils/mutation-report.json
+            apps/server/reports/mutation/normalizers/index.html
+            apps/server/reports/mutation/normalizers/mutation-report.json
           if-no-files-found: warn
           retention-days: 30

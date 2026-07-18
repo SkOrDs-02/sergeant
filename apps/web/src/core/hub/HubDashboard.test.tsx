@@ -38,72 +38,11 @@ const mocks = vi.hoisted(() => ({
   openHubModule: vi.fn(),
   openHubModuleWithAction: vi.fn(),
   openHubSettingsSection: vi.fn(),
-  // Capture refs for the latest sensor wiring + DndContext callbacks so
-  // PR-12 (UX-roast 2026-Q2 / A9) can assert KeyboardSensor registration
-  // and aria-live announcements without booting full pointer simulation.
-  dndCapture: {
-    sensors: undefined as unknown,
-    onDragStart: undefined as ((event: unknown) => void) | undefined,
-    onDragEnd: undefined as ((event: unknown) => void) | undefined,
-  },
   announce: vi.fn(),
-}));
-
-vi.mock("@dnd-kit/core", () => ({
-  DndContext: ({
-    children,
-    sensors,
-    onDragStart,
-    onDragEnd,
-  }: {
-    children: ReactNode;
-    sensors?: unknown;
-    onDragStart?: (event: unknown) => void;
-    onDragEnd?: (event: unknown) => void;
-  }) => {
-    mocks.dndCapture.sensors = sensors;
-    mocks.dndCapture.onDragStart = onDragStart;
-    mocks.dndCapture.onDragEnd = onDragEnd;
-    return <div data-testid="dnd-context">{children}</div>;
-  },
-  PointerSensor: function PointerSensor() {},
-  MouseSensor: function MouseSensor() {},
-  TouchSensor: function TouchSensor() {},
-  KeyboardSensor: function KeyboardSensor() {},
-  closestCenter: function closestCenter() {},
-  useSensor: (sensor: unknown, options: unknown) => ({ sensor, options }),
-  useSensors: (...sensors: unknown[]) => sensors,
-}));
-
-vi.mock("@dnd-kit/sortable", () => ({
-  SortableContext: ({ children }: { children: ReactNode }) => (
-    <div data-testid="sortable-context">{children}</div>
-  ),
-  arrayMove: <T,>(items: T[], from: number, to: number) => {
-    const next = [...items];
-    const [moved] = next.splice(from, 1);
-    next.splice(to, 0, moved!);
-    return next;
-  },
-  rectSortingStrategy: {},
-  sortableKeyboardCoordinates: function sortableKeyboardCoordinates() {},
-  useSortable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: () => undefined,
-    setActivatorNodeRef: () => undefined,
-    transform: null,
-    transition: undefined,
-    isDragging: false,
-  }),
 }));
 
 vi.mock("@shared/components/ui/ScreenReaderAnnouncer", () => ({
   useAnnounce: () => ({ announce: mocks.announce }),
-}));
-
-vi.mock("@dnd-kit/utilities", () => ({
-  CSS: { Transform: { toString: () => "" } },
 }));
 
 vi.mock("@shared/lib/modules/hubNav", () => ({
@@ -335,9 +274,6 @@ describe("HubDashboard", () => {
     mocks.openHubModuleWithAction.mockClear();
     mocks.openHubSettingsSection.mockClear();
     mocks.announce.mockClear();
-    mocks.dndCapture.sensors = undefined;
-    mocks.dndCapture.onDragStart = undefined;
-    mocks.dndCapture.onDragEnd = undefined;
   });
 
   afterEach(() => {
@@ -545,7 +481,7 @@ describe("HubDashboard", () => {
     expect(screen.getByTestId("weekly-digest-card")).toBeInTheDocument();
   });
 
-  it("registers KeyboardSensor and announces dnd reorder via aria-live (PR-12 / A9)", () => {
+  it("reorders modules with accessible controls and persists the result", () => {
     // Active modules so the bento grid actually renders all four cards.
     localStorage.setItem(
       VIBE_PICKS_KEY,
@@ -553,54 +489,48 @@ describe("HubDashboard", () => {
     );
 
     renderDashboard();
-
-    const sensors = mocks.dndCapture.sensors as Array<{
-      sensor: { name?: string };
-    }>;
-    expect(Array.isArray(sensors)).toBe(true);
-    const sensorNames = sensors.map((entry) => entry.sensor?.name);
-    expect(sensorNames).toContain("KeyboardSensor");
-    // PointerSensor розділено на MouseSensor (миттєвий 8px drag) +
-    // TouchSensor (250ms long-press) — див. коментар у useHubDashboardState.
-    expect(sensorNames).toContain("MouseSensor");
-    expect(sensorNames).toContain("TouchSensor");
-
-    expect(mocks.dndCapture.onDragStart).toBeTypeOf("function");
-    expect(mocks.dndCapture.onDragEnd).toBeTypeOf("function");
-
-    mocks.dndCapture.onDragStart!({ active: { id: "finyk" } });
-    expect(mocks.announce).toHaveBeenCalledWith(
-      expect.stringContaining(DASHBOARD_MODULE_LABELS.finyk),
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Налаштувати порядок модулів",
+      }),
     );
-    expect(mocks.announce).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "\u0421\u0442\u0440\u0456\u043b\u043a\u0430\u043c\u0438",
-      ),
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: `Перемістити ${DASHBOARD_MODULE_LABELS.finyk} вперед`,
+      }),
     );
 
-    mocks.announce.mockClear();
-    mocks.dndCapture.onDragEnd!({
-      active: { id: "finyk" },
-      over: { id: "fizruk" },
-    });
-    const movedMessages = mocks.announce.mock.calls.map(
-      (args) => args[0] as string,
-    );
     expect(
-      movedMessages.some((message) =>
-        /\u043f\u043e\u0437\u0438\u0446\u0456\u044e 2 \u0437/.test(message),
-      ),
-    ).toBe(true);
-
-    mocks.announce.mockClear();
-    mocks.dndCapture.onDragEnd!({
-      active: { id: "finyk" },
-      over: { id: "finyk" },
-    });
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.DASHBOARD_ORDER)!),
+    ).toEqual(["fizruk", "finyk", "routine", "nutrition"]);
     expect(mocks.announce).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "\u0437\u0430\u043b\u0438\u0448\u0438\u043b\u043e\u0441\u044c",
-      ),
+      expect.stringContaining("позицію 2 з 4"),
+    );
+
+    const finykCard = screen
+      .getByRole("button", {
+        name: new RegExp(`^${DASHBOARD_MODULE_LABELS.finyk}:`),
+      })
+      .closest('[draggable="true"]');
+    const routineCard = screen
+      .getByRole("button", {
+        name: new RegExp(`^${DASHBOARD_MODULE_LABELS.routine}:`),
+      })
+      .closest('[draggable="true"]');
+    expect(finykCard).not.toBeNull();
+    expect(routineCard).not.toBeNull();
+
+    fireEvent.dragStart(finykCard!, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() },
+    });
+    fireEvent.dragOver(routineCard!);
+    fireEvent.drop(routineCard!);
+
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEYS.DASHBOARD_ORDER)!),
+    ).toEqual(["fizruk", "routine", "finyk", "nutrition"]);
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.stringContaining(`Переміщення ${DASHBOARD_MODULE_LABELS.finyk}`),
     );
   });
 

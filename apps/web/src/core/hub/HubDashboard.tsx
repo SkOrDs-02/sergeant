@@ -76,9 +76,8 @@ export function HubDashboard({
         editMode={s.editMode}
         toggleEditMode={s.toggleEditMode}
         displayOrder={s.displayOrder}
-        sensors={s.sensors}
-        handleDragStart={s.handleDragStart}
-        handleDragEnd={s.handleDragEnd}
+        announceReorderStart={s.announceReorderStart}
+        moveModule={s.moveModule}
         onOpenModule={onOpenModule}
         activeModules={s.activeModules}
         adaptive={s.adaptive}

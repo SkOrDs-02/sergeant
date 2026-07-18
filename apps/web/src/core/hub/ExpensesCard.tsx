@@ -59,6 +59,8 @@ function BarChart({
     return Math.ceil(count / 8);
   }
   const step = labelStep(dates.length);
+  const selectedDate = selected === null ? undefined : dates[selected];
+  const selectedValue = selected === null ? undefined : vals[selected];
 
   function formatLabel(dateStr: string) {
     const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
@@ -78,13 +80,14 @@ function BarChart({
 
   return (
     <div>
-      {selected !== null && (
+      {selectedDate !== undefined && selectedValue !== undefined && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-          {formatTooltip(dates[selected]!, vals[selected]!)}
+          {formatTooltip(selectedDate, selectedValue)}
         </div>
       )}
-      {selected === null && <div className="h-4 mb-1" />}
+      {(selectedDate === undefined || selectedValue === undefined) && (
+        <div className="h-4 mb-1" />
+      )}
       <div
         className="flex items-end gap-0.5 h-20"
         aria-label={messages.hub.reportChartAria}
