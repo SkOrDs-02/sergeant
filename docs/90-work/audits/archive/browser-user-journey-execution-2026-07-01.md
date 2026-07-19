@@ -2,10 +2,10 @@
 
 # Browser user journey execution log — 2026-07-01
 
-> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Closed — execution snapshot завершено.
 
-Canonical loop: [`browser-user-journey-loop.md`](./browser-user-journey-loop.md).
+Canonical loop: [`browser-user-journey-loop.md`](../browser-user-journey-loop.md).
 Попередній прогін: [`browser-user-journey-execution-2026-06-30.md`](./browser-user-journey-execution-2026-06-30.md).
 
 ## Мета прогону

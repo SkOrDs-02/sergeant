@@ -1,6 +1,6 @@
 # Детальний план декомпозиції syncV2.ts
 
-> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Closed — декомпозицію виконано; `syncV2.ts` має 509 рядків станом на 2026-07-18.
 
 ## Поточний стан

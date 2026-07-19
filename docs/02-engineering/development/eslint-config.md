@@ -152,7 +152,7 @@ text-on-fill`, etc.) з посиланням на ADR/playbook де релева
 
 Станом на 2026-05-13 (після dead-code purge): `@sergeant/web` лінт чистий. Попереднє pre-existing
 failure (`sergeant-design/no-low-contrast-text-on-fill` на видаленому зараз віджеті dashboard) вирішено
-при dead-code purge у PR ПО слідам [audit `2026-05-13-dead-code-hard-rules-roast.md`](../../90-work/audits/2026-05-13-dead-code-hard-rules-roast.md).
+при dead-code purge у PR ПО слідам [audit `2026-05-13-dead-code-hard-rules-roast.md`](../../90-work/audits/archive/2026-05-13-dead-code-hard-rules-roast.md).
 
 ## Refs
 

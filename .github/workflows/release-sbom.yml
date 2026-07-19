@@ -15,7 +15,7 @@ name: Release SBOM + SLSA L1 provenance
 #
 # Ініціатива: docs/90-work/initiatives/archive/_0008-platform-hardening.md § Phase 4
 # (SBOM I3 Phase 1) + docs/04-governance/security/hardening/I3-sbom-generation.md § Phase 3
-# (sigstore signing — закрито у PR-45 / pr-plan-2026-05 §«Security & supply
+# (sigstore signing — закрито у PR-45 / archive/pr-plan-2026-05 §«Security & supply
 # chain» row #45 «SLSA Level 1 / SBOM via syft»).
 #
 # Чому окремий workflow, а не extend nightly-audit:

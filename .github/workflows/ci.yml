@@ -101,7 +101,7 @@ jobs:
 
       - name: pnpm dedupe drift guard (P2-1)
         # Closes audit item P2-1 in
-        # docs/90-work/audits/2026-05-13-testing-devx-roast.md. `pnpm install`
+        # docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md. `pnpm install`
         # without `--frozen-lockfile` can silently introduce duplicate
         # copies of a transitive dep when the lockfile drifts (e.g. a
         # local `pnpm add` resolves a newer compatible version that the
@@ -214,7 +214,7 @@ jobs:
         # files carry a lifecycle marker (/** @status Active */ or equivalent).
         # Non-blocking during burn-down (exits 0 even with violations); promoted
         # to --fail-on-violations once coverage reaches 100%.
-        # See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4 and
+        # See docs/90-work/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
         # docs/04-governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
@@ -753,7 +753,7 @@ jobs:
 
   migration-down-drill:
     name: Migration down drill (AGENTS rule #4)
-    # PR-32 (`docs/90-work/planning/pr-plan-2026-05.md`). Static lint above guarantees
+    # PR-32 (`docs/90-work/planning/archive/pr-plan-2026-05.md`). Static lint above guarantees
     # sequential numbering + two-phase DROP, but down-migrations themselves
     # are not validated by the linter — they could `DROP COLUMN` a column
     # that no longer exists or forget a sequence created in the up, and the

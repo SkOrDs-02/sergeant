@@ -4,7 +4,7 @@
 > **Status:** Deprecated — рішення застаріле.
 > **Owner:** @Skords-01
 >
-> **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** висновок «лишитися на Railway» більше не чинний — бекенд переїхав на Hetzner CX23 + Coolify (НЕ Fly.io; причина — фіксована ціна ~$7/міс проти usage-білінгу, не multi-region). Зберігається як історія порівняння опцій.
+> **⚠️ Superseded by [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** висновок «лишитися на Railway» більше не чинний — бекенд переїхав на Hetzner CX23 + Coolify (НЕ Fly.io; причина — фіксована ціна ~$7/міс проти usage-білінгу, не multi-region). Зберігається як історія порівняння опцій.
 
 ## TL;DR
 

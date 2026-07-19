@@ -1,6 +1,6 @@
 # FTUX onboarding roast — Day 0-7 (2026-05-13)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Archived
 > Прожарка #1/10 серії «10 прожарок», запущеної 2026-05-13. Скоуп — `apps/web/src/core/onboarding/**`, `apps/web/src/core/app/WelcomeScreen.tsx`, FTUX hero, peek backdrop, first-run sheets, CelebrationModal та перші 7 днів у хабі. Перспектива — продуктовий UX-аудит очима нового користувача, який дає продукту 30-60 секунд перш ніж піти.
 >
@@ -8,7 +8,7 @@
 > [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (frozen reference) ·
 > [`docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/90-work/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — post-onboarding UX-прожарка (day 0-7) ·
-> [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
+> [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](./2026-05-06-ux-roast-pr-plan.md) — виконавчий план UX-прожарки ·
 > [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../../../01-product/launch/product-os/ftux-master-tracker.md) — поточний SSOT FTUX-стану ·
 > [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/product-os/ftux-sprint-plan.md) — frozen sprint-плани.
 >

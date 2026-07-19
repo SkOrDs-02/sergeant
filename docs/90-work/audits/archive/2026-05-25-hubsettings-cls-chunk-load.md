@@ -3,17 +3,17 @@
 > **Last validated:** 2026-06-09.
 > **Status:** Closed
 > **Source:** Code review of merged batch `chore/orchestrated-batch-2026-05-22` (рebase виявив, що всі коміти вже в main; знахідки актуальні для поточного main).
-> **Initiative:** [0017 — hub tabs mount perf](../initiatives/0017-hub-tabs-mount-perf.md) — Sprint 1 PR-1.2 closeout.
+> **Initiative:** [0017 — hub tabs mount perf](../../initiatives/0017-hub-tabs-mount-perf.md) — Sprint 1 PR-1.2 closeout.
 
 ## Контекст
 
-Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../apps/web/src/core/hub/HubSettingsPage.tsx)) ввів lazy-loading 4 settings sections (Finyk / Nutrition / Routine / решта) через `lazy()` + `<Suspense>`. Code review знайшов два MEDIUM-issue, які не блокували merge, але живуть на main зараз і ризикують реальною UX-регресією на production.
+Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../../apps/web/src/core/hub/HubSettingsPage.tsx)) ввів lazy-loading 4 settings sections (Finyk / Nutrition / Routine / решта) через `lazy()` + `<Suspense>`. Code review знайшов два MEDIUM-issue, які не блокували merge, але живуть на main зараз і ризикують реальною UX-регресією на production.
 
 ## Знахідки
 
 ### MEDIUM #1 — chunk-load failure = white screen
 
-**Файл:** [apps/web/src/core/hub/HubSettingsPage.tsx:32](../../../apps/web/src/core/hub/HubSettingsPage.tsx) (lazy declarations), Suspense wrappers на L430-440.
+**Файл:** [apps/web/src/core/hub/HubSettingsPage.tsx:32](../../../../apps/web/src/core/hub/HubSettingsPage.tsx) (lazy declarations), Suspense wrappers на L430-440.
 
 **Проблема.** Якщо deploy invalidates chunk hash під час user session (типово PWA + service-worker stale cache + frequent deploys), `lazy(() => import(...))` reject'не з `ChunkLoadError` і React Suspense fallback залишиться вічно. User бачить porozhniy skeleton без recovery UI.
 
@@ -27,7 +27,7 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../apps/web/s
 
 ### MEDIUM #2 — Suspense fallback minH занижений → CLS jump
 
-**Файл:** [apps/web/src/core/hub/HubSettingsPage.tsx:254-277](../../../apps/web/src/core/hub/HubSettingsPage.tsx) — усі 4 sections мають `lazy: { minH: 72 }`.
+**Файл:** [apps/web/src/core/hub/HubSettingsPage.tsx:254-277](../../../../apps/web/src/core/hub/HubSettingsPage.tsx) — усі 4 sections мають `lazy: { minH: 72 }`.
 
 **Проблема.** `72` — це collapsed-state висота заголовка section. Але Finyk / Nutrition / Routine відкриті за замовчуванням з bento sub-cards. Реальна painted minHeight section root коли content paint'нувся — 160-280px (потребує заміру). Між Suspense skeleton (72) і real content (220-ish) — CLS jump downward, який збиває scroll position коли user вже scrollив униз через deep link.
 
@@ -56,8 +56,8 @@ Sprint 1 PR-1.2 ([apps/web/src/core/hub/HubSettingsPage.tsx](../../../apps/web/s
 
 ## LOW-знахідки (не блокуючі, optional)
 
-- **Hash-link scroll race** — [HubSettingsPage.tsx:441](../../../apps/web/src/core/hub/HubSettingsPage.tsx) — `?tab=settings#settings-finyk` scroll'ить до wrapper до того як chunk paint'нувся; scroll target drift downward. Re-trigger `scrollIntoView` у `useEffect` після lazy mount, або `await Promise.all(preloads)` перед scroll для direct hash hits.
-- **`noteDraftsRef` lag** — [apps/web/src/modules/routine/hooks/useCompletionNoteDrafts.ts:75](../../../apps/web/src/modules/routine/hooks/useCompletionNoteDrafts.ts) — ref оновлюється в `useEffect`, тому caller `scheduleNoteFlush(...) + read noteDraftsRef.current[key]` побачить prior value. Identical pre-extraction; latent debt — не регресія цього PR.
+- **Hash-link scroll race** — [HubSettingsPage.tsx:441](../../../../apps/web/src/core/hub/HubSettingsPage.tsx) — `?tab=settings#settings-finyk` scroll'ить до wrapper до того як chunk paint'нувся; scroll target drift downward. Re-trigger `scrollIntoView` у `useEffect` після lazy mount, або `await Promise.all(preloads)` перед scroll для direct hash hits.
+- **`noteDraftsRef` lag** — [apps/web/src/modules/routine/hooks/useCompletionNoteDrafts.ts:75](../../../../apps/web/src/modules/routine/hooks/useCompletionNoteDrafts.ts) — ref оновлюється в `useEffect`, тому caller `scheduleNoteFlush(...) + read noteDraftsRef.current[key]` побачить prior value. Identical pre-extraction; latent debt — не регресія цього PR.
 - **`@sergeant/mobile` 0 unit tests** — окремий tech-debt запис.
 
 ## Closure

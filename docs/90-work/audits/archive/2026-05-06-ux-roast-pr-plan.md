@@ -4,11 +4,11 @@
 > **Status:** Closed — execution-план завершено або розкладено у successor trackers.
 
 > **Cross-refs:**
-> [`2026-05-06-ux-roast.md`](./archive/2026-05-06-ux-roast.md) — джерельна прожарка (P0/P1/P2 + add/change/remove) ·
-> [`2026-04-28-ux-improvement-plan.md`](./archive/2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
-> [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../../01-product/launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
+> [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — джерельна прожарка (P0/P1/P2 + add/change/remove) ·
+> [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
+> [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../../../01-product/launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
 
-**Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./archive/2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Загальна виконавча шкала — **41 PR** у 3 спринтах + 1 enabling-PR (PR-0). Початково було 43; PR-13 і PR-37 закриті як obsolete-by-drift після Stage 7 storage cleanup і dark-mode toggle consolidation (див. розділи нижче).
+**Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Загальна виконавча шкала — **41 PR** у 3 спринтах + 1 enabling-PR (PR-0). Початково було 43; PR-13 і PR-37 закриті як obsolete-by-drift після Stage 7 storage cleanup і dark-mode toggle consolidation (див. розділи нижче).
 
 > **Update 2026-05-06:** PR-1 (App-lock, XL) розбито на **PR-1a** (base PIN-flow) + **PR-1b** (biometric add-on) — щоб знизити ризик XL-merge.
 >
@@ -78,7 +78,7 @@
 
 ### PR-0 · Telemetry & ADR foundation
 
-> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../../04-governance/adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../../01-product/launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
+> **Closure note (2026-05-31, audits-runner triage):** Shipped via prior catalog work. Усі 9 PR-0 events живуть у [`packages/shared/src/lib/analyticsEvents.ts:273-302`](../../../../packages/shared/src/lib/analyticsEvents.ts): `APP_LOCK_SETUP_STARTED`, `APP_LOCK_SETUP_COMPLETED`, `APP_LOCK_UNLOCK_SUCCESS`, `APP_LOCK_UNLOCK_FAILED`, `BIOMETRIC_SETUP_COMPLETED`, `MODULE_SETTINGS_OPENED`, `MODULE_LANDING_TAB_CLICKED`, `ERROR_BOUNDARY_REQUEST_ID_COPIED`, `PERMISSIONS_SETTINGS_OPENED`. ADR розписаний як [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md). Master-tracker entry [flipped to Closed in this PR](../../../01-product/launch/product-os/ftux-master-tracker.md). **Анблок 11 downstream PR-ів** (PR-1a/1b, PR-2, PR-3, PR-6, PR-7, PR-8, PR-14, PR-16, PR-22, PR-42, PR-X4).
 
 **Why first:** §18 (Як міряти ефект) вимагає PostHog-events, які зараз або відсутні, або непослідовні. Без них ми не помітимо, чи P0-зміни щось дали.
 **Scope:**
@@ -574,12 +574,12 @@
 
 **Items covered:** §7.1, §7.4.
 
-> **Контекст vs. initiative 0006 (frontend routing):** route-level lazy boundaries для цілих модулів (`/finyk/*`, `/nutrition/*`) вже реалізовані у [`core/app/router.tsx`](../../../apps/web/src/core/app/router.tsx) (Phase 1+2.b — `lazy: () => import("../../modules/<mod>/route")`). Phase 5 ([0006](../initiatives/0006-frontend-routing-and-code-split.md)) додатково замінить `element: <App />` на `<Lazy>` навколо `<FinykApp />`. Це **інша площина**: 0006 розщеплює per-module page-tree, PR-22 розщеплює **sub-cards усередині вже-mount-нутих сторінок** (Overview, HubDashboard hero) — щоб LCP не блокувався heavy data-fetch-ами в `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList`. Доповнюючі ефекти, не дублюючі.
+> **Контекст vs. initiative 0006 (frontend routing):** route-level lazy boundaries для цілих модулів (`/finyk/*`, `/nutrition/*`) вже реалізовані у [`core/app/router.tsx`](../../../../apps/web/src/core/app/router.tsx) (Phase 1+2.b — `lazy: () => import("../../modules/<mod>/route")`). Phase 5 ([0006](../../initiatives/0006-frontend-routing-and-code-split.md)) додатково замінить `element: <App />` на `<Lazy>` навколо `<FinykApp />`. Це **інша площина**: 0006 розщеплює per-module page-tree, PR-22 розщеплює **sub-cards усередині вже-mount-нутих сторінок** (Overview, HubDashboard hero) — щоб LCP не блокувався heavy data-fetch-ами в `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList`. Доповнюючі ефекти, не дублюючі.
 
 **Scope:**
 
 - `HubDashboard` — секції Insights / Weekly Digest / Re-engagement → `<Suspense fallback={<Skeleton/>}>` + `lazy(() => import(...))` (component-level, бо HubDashboard — частина основного bundle-а через catch-all route у `router.tsx`).
-- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy. Цей файл уже всередині finyk-route chunk-а ([initiative 0006 Phase 2.b](../initiatives/0006-frontend-routing-and-code-split.md)); тут робимо вторинний split на рівні sub-cards.
+- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy. Цей файл уже всередині finyk-route chunk-а ([initiative 0006 Phase 2.b](../../initiatives/0006-frontend-routing-and-code-split.md)); тут робимо вторинний split на рівні sub-cards.
 - IntersectionObserver як trigger для нижніх секцій (не лише `requestIdleCallback`); `MonthPulseCard` / hero-card — eager.
 - Vitest perf-snapshot: bundle-size delta + chunk-list assertion (через `vite-bundle-visualizer` або `rollup-plugin-visualizer` snapshot).
   **Files:**
@@ -589,7 +589,7 @@
   **Acceptance:**
 - LCP покращується ≥ 100 ms у Lighthouse profile (mobile slow-3G simul).
 - Bundle-stats: `Insights.lazy.js`, `WeeklyDigest.lazy.js`, `BudgetAlertsList.lazy.js`, `PlannedFlowsCard.lazy.js` видно як окремі chunks (через `pnpm --filter web build` + Rollup output analysis).
-- Не дублювати `lazy()`-обгортки, що вже є в [`core/app/StandaloneRoutes.tsx`](../../../apps/web/src/core/app/StandaloneRoutes.tsx) і `ActiveModuleView.tsx` для FinykApp/NutritionApp/тощо — PR-22 додає **новий** layer, не переписує існуючий.
+- Не дублювати `lazy()`-обгортки, що вже є в [`core/app/StandaloneRoutes.tsx`](../../../../apps/web/src/core/app/StandaloneRoutes.tsx) і `ActiveModuleView.tsx` для FinykApp/NutritionApp/тощо — PR-22 додає **новий** layer, не переписує існуючий.
   **Size:** M
   **Depends on:** PR-3, PR-20
 
@@ -938,7 +938,7 @@
 
 ### PR-X3 · Content-style guide
 
-> **Closure note (2026-05-31, audits-runner triage):** Shipped. [`docs/01-product/copy/style-guide.uk.md`](../../01-product/copy/style-guide.uk.md) створено з 10 секціями (Hard rules, Voice, Errors, Buttons, Empty states, Toasts, Заборонені слова, Числа/дати, Headings/microcopy, How-to-update). Лінк у [`AGENTS.md § See also`](../../../AGENTS.md#see-also). Файл базується на патернах з `apps/web/src/shared/i18n/uk.ts` (PR-30 round-17 1st-person-singular рефакторінг).
+> **Closure note (2026-05-31, audits-runner triage):** Shipped. [`docs/01-product/copy/style-guide.uk.md`](../../../01-product/copy/style-guide.uk.md) створено з 10 секціями (Hard rules, Voice, Errors, Buttons, Empty states, Toasts, Заборонені слова, Числа/дати, Headings/microcopy, How-to-update). Лінк у [`AGENTS.md § See also`](../../../../AGENTS.md#see-also). Файл базується на патернах з `apps/web/src/shared/i18n/uk.ts` (PR-30 round-17 1st-person-singular рефакторінг).
 
 **Scope:**
 

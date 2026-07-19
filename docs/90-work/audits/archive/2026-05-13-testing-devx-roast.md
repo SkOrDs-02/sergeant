@@ -3,12 +3,12 @@
 > **Last validated:** 2026-06-09 (P1-4 testID wiring complete — `settings-group-system` wired in `HubSettingsPage.tsx`; all other testIDs were already present; typecheck + Jest suite green; specs ready for Detox simulator run; prev 2026-06-04 wave-1 #3363 — P1-2 залишок openclaw/weekly-digest закрито, P1-4 Detox specs авторовано; prev 2026-06-03 audits-runner closeout — P1-2 / P1-3 / P1-6 / P2-3 closed, outstanding=0 for assigned scope; earlier 2026-06-03 — P0-2 closed; prev 2026-05-13 by Devin child session). **Next review:** 2026-08-11.
 > **Status:** Closed — findings виконано або перенесено у sprint/tech-debt trackers.
 > **Cross-refs:**
-> [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](./2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·
-> [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — генеральний аудит, що зафіксував blocker з web-build-smoke та heap-OOM у mobile-jest ·
-> [`docs/90-work/audits/2026-05-07-full-app-regression-ux-audit.md`](./archive/2026-05-07-full-app-regression-ux-audit.md) — регресійний прохід після chain #2191–#2218 ·
-> [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../../02-engineering/testing/2026-05-05-tests-pr-plan.md) — multi-wave PR-план (Wave A–G, ~50 PR-ів) ·
-> [`docs/02-engineering/testing/2026-05-05-tests-review.md`](../../02-engineering/testing/2026-05-05-tests-review.md) — інвентар testing-стека (Vitest / Jest / Playwright / Detox / Stryker / Argos / MSW / Testcontainers) ·
-> [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml) — primary CI gate (759 lines, 12+ jobs).
+> [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — попередня deep-dive прожарка (web, секції §7 Testing pyramid + §8 DevX) ·
+> [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — генеральний аудит, що зафіксував blocker з web-build-smoke та heap-OOM у mobile-jest ·
+> [`docs/90-work/audits/2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — регресійний прохід після chain #2191–#2218 ·
+> [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../../../02-engineering/testing/2026-05-05-tests-pr-plan.md) — multi-wave PR-план (Wave A–G, ~50 PR-ів) ·
+> [`docs/02-engineering/testing/2026-05-05-tests-review.md`](../../../02-engineering/testing/2026-05-05-tests-review.md) — інвентар testing-стека (Vitest / Jest / Playwright / Detox / Stryker / Argos / MSW / Testcontainers) ·
+> [`.github/workflows/ci.yml`](../../../../.github/workflows/ci.yml) — primary CI gate (759 lines, 12+ jobs).
 
 **Скоуп:** Vitest (web), Jest (mobile), Playwright (e2e + visual), CI workflows, developer experience — pre-commit, lint-staged, helper scripts, lint швидкість.
 
@@ -86,7 +86,7 @@
 - **Файли:** `.husky/pre-commit:1` → `pnpm exec lint-staged --concurrent false`. Stages: ESLint --fix + Prettier (per file), `scripts/staged-typecheck.mjs` (one batch per staged TS/TSX), `scripts/docs/bump-last-validated.mjs` (per `.md`).
 - **Why:** На великих PR (>20 файлів) pre-commit вже відчутно тригерить уповільнення; точних чисел немає. `lint-staged --concurrent false` (а не `true`) — захист від OOM, але можливо лишає performance left on the table.
 - **Дія:** **Add** `scripts/timing-precommit.mjs` що репортує `time` для кожного stage у `.husky/.last-precommit-timing.json` (gitignored); опційний `pnpm precommit:bench` що руне його на mock-staging. Розгорнути у наступних роастах — потребує дискусії про privacy (timing не має ставитися у репо).
-- **Status:** ✅ Closed у цьому PR. `scripts/pre-commit-timing.mjs` обгортає `pnpm exec lint-staged --concurrent false` із `perf_hooks.performance.now()` навколо child-spawn, друкує markdown summary у stderr і дописує JSONL-рядок у `.husky/.pre-commit-timings.log` (gitignored). Per-stage breakdown — через env-контракт `SERGEANT_TIMING_LOG` (приклад у [`docs/02-engineering/development/pre-commit-timing.md`](../../02-engineering/development/pre-commit-timing.md)); поточно активний `total` row. `SERGEANT_SKIP_TIMING=1` — opt-out для local debug, **не** для CI gates. Aggregation: `pnpm pre-commit:timings [-- --last N | --all]` друкує p50/p95/mean/max з логу. Інструментацію `staged-typecheck.mjs` і `bump-last-validated.mjs` лишили на follow-up, щоб не роздути цей PR; контракт стабільний і чекає.
+- **Status:** ✅ Closed у цьому PR. `scripts/pre-commit-timing.mjs` обгортає `pnpm exec lint-staged --concurrent false` із `perf_hooks.performance.now()` навколо child-spawn, друкує markdown summary у stderr і дописує JSONL-рядок у `.husky/.pre-commit-timings.log` (gitignored). Per-stage breakdown — через env-контракт `SERGEANT_TIMING_LOG` (приклад у [`docs/02-engineering/development/pre-commit-timing.md`](../../../02-engineering/development/pre-commit-timing.md)); поточно активний `total` row. `SERGEANT_SKIP_TIMING=1` — opt-out для local debug, **не** для CI gates. Aggregation: `pnpm pre-commit:timings [-- --last N | --all]` друкує p50/p95/mean/max з логу. Інструментацію `staged-typecheck.mjs` і `bump-last-validated.mjs` лишили на follow-up, щоб не роздути цей PR; контракт стабільний і чекає.
 
 ### P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed
 

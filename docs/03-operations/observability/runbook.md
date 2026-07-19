@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -534,7 +534,7 @@ architecture/rag-eval.md`](../../02-engineering/architecture/rag-eval.md).
 
 **Що горить**: weekly eval зафіксував `recall@4` < `kill_threshold`
 (default `0.4`). Це **decision-point Day 60** з
-[`pr-plan-2026-05.md`](../../90-work/planning/pr-plan-2026-05.md) — RAG потрібно
+[`pr-plan-2026-05.md`](../../90-work/planning/archive/pr-plan-2026-05.md) — RAG потрібно
 вимкнути до того, як це впливає на користувачів.
 
 **Рівень**: critical — RAG injection у chat може повертати irrelevant

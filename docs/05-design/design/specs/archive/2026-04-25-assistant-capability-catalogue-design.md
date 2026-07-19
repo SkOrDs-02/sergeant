@@ -1,6 +1,6 @@
 # Assistant Capability Catalogue — дизайн-спек
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** shipped (PR [#795](https://github.com/Skords-01/Sergeant/pull/795) +
 > follow-ups [#798](https://github.com/Skords-01/Sergeant/pull/798),
 > [#799](https://github.com/Skords-01/Sergeant/pull/799),
@@ -15,7 +15,7 @@
 > `/help` редіректить на каталог через `onOpenCatalogue` у `HubChat.tsx`.
 > Залишковий борг закрито: `apps/web/src/core/lib/<hubChatQuickActions>.ts` видалено (файлу немає; `<>` — governance-sync-skip-маркер для історичної референції);
 > `ChatQuickActions.tsx` читає реджистр напряму через `ASSISTANT_CAPABILITIES` із
-> [`packages/shared/src/lib/assistantCatalogue.ts`](../../../../packages/shared/src/lib/assistantCatalogue.ts).
+> [`packages/shared/src/lib/assistantCatalogue.ts`](../../../../../packages/shared/src/lib/assistantCatalogue.ts).
 
 ## Контекст
 
@@ -508,11 +508,11 @@ E2E (Playwright smoke):
 
 1. **Чи групувати «Аналітика» окремо від «Кросмодульні» у UI**, навіть якщо в `toolDefs/crossModule.ts` вони разом? Поточна пропозиція — так, бо юзер мислить «графіки і тренди» окремо від «брифінг і підсумок». Але це вимагає `module: "analytics"` явно у реджистрі.
 2. **Tail-секція «Все інше / експериментальне»** для capabilities, що не вписуються в 8 груп. Поки нема таких — но залишимо ментально на майбутнє.
-3. **Feature flag для catalogue?** Не плануємо в v1 — запуск тривіальний, відкат через PR-revert. Якщо хочеш — додамо `assistant_catalogue_enabled` flag через [`featureFlags.ts`](../../../../apps/web/src/core/lib/featureFlags.ts) у impl-плані.
+3. **Feature flag для catalogue?** Не плануємо в v1 — запуск тривіальний, відкат через PR-revert. Якщо хочеш — додамо `assistant_catalogue_enabled` flag через [`featureFlags.ts`](../../../../../apps/web/src/core/lib/featureFlags.ts) у impl-плані.
 
 ## See also
 
-- [`docs/05-design/design/specs/archive/2026-04-24-assistant-quick-actions-v1-design.md`](./archive/2026-04-24-assistant-quick-actions-v1-design.md) — попередній етап (chips), на якому будується catalogue
-- [`docs/00-start/playbooks/add-hubchat-tool.md`](../../../00-start/playbooks/add-hubchat-tool.md) — оновити після PR 1: додавання tool вимагає catalogue entry
-- [`docs/00-start/playbooks/tune-system-prompt.md`](../../../00-start/playbooks/tune-system-prompt.md) — оновити після PR 2: токен-cost через `buildToolList()`
-- [`AGENTS.md`](../../../../AGENTS.md) — секція «Architecture: AI tool execution path» (без змін у v1; в PR 2 додамо ноту про реджистр як SSOT)
+- [`docs/05-design/design/specs/archive/2026-04-24-assistant-quick-actions-v1-design.md`](./2026-04-24-assistant-quick-actions-v1-design.md) — попередній етап (chips), на якому будується catalogue
+- [`docs/00-start/playbooks/add-hubchat-tool.md`](../../../../00-start/playbooks/add-hubchat-tool.md) — оновити після PR 1: додавання tool вимагає catalogue entry
+- [`docs/00-start/playbooks/tune-system-prompt.md`](../../../../00-start/playbooks/tune-system-prompt.md) — оновити після PR 2: токен-cost через `buildToolList()`
+- [`AGENTS.md`](../../../../../AGENTS.md) — секція «Architecture: AI tool execution path» (без змін у v1; в PR 2 додамо ноту про реджистр як SSOT)
