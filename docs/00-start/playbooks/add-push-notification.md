@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -33,12 +33,12 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 
 Запитай: коли саме push має полетіти?
 
-| Тип тригера                       | Куди вставити                                                                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Реакція на user-action (POST/PUT) | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                                 |
-| Mono webhook event                | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                                   |
-| Періодичний (раз на день/тиждень) | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (Railway scheduler / GitHub Action). У репо немає вбудованого in-process scheduler-а. |
-| Side effect AI insight            | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                          |
+| Тип тригера                       | Куди вставити                                                                                                                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Реакція на user-action (POST/PUT) | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                             |
+| Mono webhook event                | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                               |
+| Періодичний (раз на день/тиждень) | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (GitHub Actions schedule / n8n). У репо немає вбудованого in-process scheduler-а. |
+| Side effect AI insight            | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                      |
 
 **Не клади** push логіку в `chat.ts` (порушує тонко-passthrough архітектуру; див. `AGENTS.md`).
 
@@ -100,7 +100,7 @@ void sendToUserQuietly(user.id, payload);
 
 Перевір що:
 
-- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` присутні у Railway production.
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` присутні у production env (Coolify).
 - Локально (у `.env`) — заповнено, якщо хочеш отримати web-push на dev-машині. Без них `sendWebPush` мовчки skip-ає web-канал, але APNs/FCM продовжують працювати.
 
 Згенерувати pair можна через `npx web-push generate-vapid-keys` (один раз на проєкт).
@@ -160,7 +160,7 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 - [ ] `data.module` встановлено для коректного click-routing у SW.
 - [ ] Unit test mock-ує `sendToUser` і перевіряє shape payload-у.
 - [ ] Якщо змінено SW — версію bumpнуто (workbox cache key) + smoke у DevTools, що SW дійсно оновився.
-- [ ] VAPID env заповнено в Railway (production); локально — опціонально.
+- [ ] VAPID env заповнено в production env (Coolify); локально — опціонально.
 - [ ] `pnpm --filter @sergeant/server exec vitest run src/modules/<domain>` — green.
 
 ## Notes

@@ -1,13 +1,13 @@
 ---
 name: sergeant-data-and-migrations
-description: Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних.
+description: Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Coolify pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних.
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
 # Дані і міграції в Sergeant
 
-Sergeant використовує raw `pg` плюс послідовні SQL-міграції. Зміни в БД мають бути безпечними для Railway pre-deploy і для старої версії app-у, яка ще може коротко обслуговувати трафік.
+Sergeant використовує raw `pg` плюс послідовні SQL-міграції. Зміни в БД мають бути безпечними для Coolify pre-deploy (`pre_deployment_command = node dist-server/migrate.js`, ADR-0074) і для старої версії app-у, яка ще може коротко обслуговувати трафік.
 
 ## Що покриває
 
@@ -48,4 +48,4 @@ Sergeant використовує raw `pg` плюс послідовні SQL-м�
 
 - [docs/00-start/playbooks/add-sql-migration.md](../../../docs/00-start/playbooks/add-sql-migration.md)
 - [docs/00-start/playbooks/pre-merge-migration-checklist.md](../../../docs/00-start/playbooks/pre-merge-migration-checklist.md)
-- [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md)
+- [docs/04-governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md) — актуальний backend-хостинг (Hetzner + Coolify), pre-deploy міграції

@@ -37,6 +37,6 @@ RETURNING id;
 
 ## Sergeant-specific note
 
-Sync drain and push-delivery workers can run on more than one Railway instance (multi-instance fan-out). `SKIP LOCKED` is what keeps two instances from draining the same job. Back the predicate with a partial index `WHERE status = 'pending'` (see `query-partial-indexes.md`). Be deliberate about the SQLite-vs-Postgres partition on the client side — server-side queue claims belong in Postgres, not the local SQLite mirror.
+Sync drain and push-delivery workers can run on more than one backend instance (multi-instance fan-out; today prod is a single Coolify instance — ADR-0074). `SKIP LOCKED` is what keeps two instances from draining the same job. Back the predicate with a partial index `WHERE status = 'pending'` (see `query-partial-indexes.md`). Be deliberate about the SQLite-vs-Postgres partition on the client side — server-side queue claims belong in Postgres, not the local SQLite mirror.
 
 > Adapted from [supabase/agent-skills](https://github.com/supabase/agent-skills) (MIT).

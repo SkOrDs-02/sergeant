@@ -54,12 +54,12 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Web-UI, PWA-shell, Tailwind, accessibility                       | `sergeant-web-ui`                  |
 | Server-роути, серіалізатори, api-client, контракти               | `sergeant-server-api`              |
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
-| SQL, схема, дизайн запитів, міграції, Railway DB rollout         | `sergeant-data-and-migrations`     |
+| SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify)  | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
 | HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
 | OpenClaw Gateway, console agent, openclaw-plugin                 | `sergeant-openclaw`                |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
-| Деплой, env-vars, health checks, Sentry, Railway/Vercel, n8n     | `sergeant-deploy-and-observability`|
+| Деплой, env-vars, health checks, Sentry, Coolify/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |
 | Playwright / E2E тести / smoke test / accessibility automation    | `sergeant-e2e-testing`             |
 | Security review, аудит вразливостей, pnpm audit, PAT safety       | `sergeant-security-audit`          |

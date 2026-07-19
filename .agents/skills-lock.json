@@ -4,7 +4,7 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "36c784c07fe5b7b15aa745ab139eac50e58e4f71cd6e8fb4e1c27d0a8a7a46ff"
+      "computedHash": "440957171e03b86f0c28caa0ad88070c6d37a34eeb427608cfcb2b9c5ada3eee"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
@@ -14,12 +14,12 @@
     "sergeant-data-and-migrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "85dbec77ec854074649c81101ba33ed189594e2e6b7d800dbdec03e10d73c666"
+      "computedHash": "e5475a44025b25da573136547ee0709bd236fc7266ca2dd34b2e3e5539ae7045"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "73197b54e134b04b4e6f9ccbe4fd8f68a5edc223ca0d08659c0cf349c4364c72"
+      "computedHash": "2bbbcae5ed333020105f3cd117588c4d90ce3c03576dc971079b27d7b2299bb7"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "dadabd72787a1a9ccd3af4ebb91ef21877361d5f733ee6f61ad2eefa899cb20e"
+      "computedHash": "bd0cced3c6ae5d847a90cf7bc570b9b226ff038a8f9c3bada7b10ce2c44ae53d"
     },
     "sergeant-web-ui": {
       "source": "local",
