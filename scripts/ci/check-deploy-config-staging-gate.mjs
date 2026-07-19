@@ -3,7 +3,8 @@
 //
 // Initiative 0011 phase 1 PR 1.3 — staging-verification gate for PRs
 // that change deploy-config files (vercel.json / fly.toml /
-// railway.toml / Dockerfile* / apps/server/build.mjs / Caddyfile).
+// Dockerfile* / apps/server/build.mjs / Caddyfile).
+// (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.)
 //
 // The job fails when:
 //   1. A deploy-config file has non-comment, non-whitespace changes
@@ -35,7 +36,7 @@ import { basename } from "node:path";
  *
  * Patterns (basename / suffix-match):
  *   - `vercel.json` (anywhere)                  → none
- *   - `fly.toml`, `railway.toml`                → hash
+ *   - `fly.toml`                                → hash
  *   - `Dockerfile*` (basename starts with)      → hash
  *   - `Caddyfile` (basename equals)             → hash
  *   - `apps/server/build.mjs` (exact path)      → js
@@ -43,7 +44,7 @@ import { basename } from "node:path";
 export function deployConfigDialect(path) {
   const base = basename(path);
   if (base === "vercel.json") return "none";
-  if (base === "fly.toml" || base === "railway.toml") return "hash";
+  if (base === "fly.toml") return "hash";
   if (base.startsWith("Dockerfile")) return "hash";
   if (base === "Caddyfile") return "hash";
   if (path === "apps/server/build.mjs") return "js";

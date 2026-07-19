@@ -7,26 +7,26 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # Деплой і обсервабіліті в Sergeant
 
-Production-facing зміни в Sergeant не вважаються завершеними, коли код збирається. Вони завершені, коли deploy-обвʼязка, доки і runtime-верифікація все ще відповідають очікуванням Coolify (Hetzner VPS), Vercel, Railway (OpenClaw), Sentry і n8n.
+Production-facing зміни в Sergeant не вважаються завершеними, коли код збирається. Вони завершені, коли deploy-обвʼязка, доки і runtime-верифікація все ще відповідають очікуванням Coolify (Hetzner VPS), Vercel, Sentry і n8n.
 
 ## Що покриває
 
-- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `railway.openclaw-gateway.toml`, `vercel.json`, deploy-доки, health-endpoints
+- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `vercel.json`, deploy-доки, health-endpoints
 - env-зміни через web/server
 - Sentry, readiness/liveness, маршрутизація алертів, release-верифікація
 - operator-facing доки для деплою або реакції на інцидент
 
 ## Deploy targets (актуально — ADR-0074)
 
-Бекенд-стек (API + Postgres + Redis) з 2026-07 живе на **Hetzner CX23 VPS під Coolify** (ADR-0074, superseded ADR-0009 у частині бекенду). Railway лишається **тільки** для OpenClaw:
+Бекенд-стек (API + Postgres + Redis) з 2026-07 живе на **Hetzner CX23 VPS під Coolify** (ADR-0074, superseded ADR-0009 у частині бекенду). Railway виведено повністю (config-файли `railway*.toml` видалено з репо):
 
 | Target | Repo source | Notes |
 |---|---|---|
 | Coolify app `sergeant-api` (Hetzner) | `apps/server` via `Dockerfile.api` | Образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`; Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`). Health: `/health`. |
-| Railway `sergeant-openclaw-gateway` | `packages/openclaw-plugin` via `Dockerfile.openclaw-gateway` | Зовнішній Telegram шлюз (ADR-0055, Node 24-alpine). Config-as-code з `ops/openclaw/` копіюється в runtime. |
+| OpenClaw Gateway (не задеплоєний) | `packages/openclaw-plugin` via `Dockerfile.openclaw-gateway` | Зовнішній Telegram шлюз (ADR-0055, Node 24-alpine). Historically Railway `sergeant-openclaw-gateway`; після декомісії Railway хостинг TBD — міграція на Coolify або deprecation. Config-as-code з `ops/openclaw/`. |
 | Vercel | `apps/web` | Frontend + edge-proxy `/api/*` — auto-deploy on push. Same-origin cookie топологія з ADR-0009 не змінилась. |
 
-При deploy зміни до OpenClaw Gateway: онови `ops/openclaw/` config → push → Railway auto-redeploys `sergeant-openclaw-gateway`. Детальніше — `sergeant-openclaw` скіл.
+Зміни до OpenClaw Gateway: онови `ops/openclaw/` config + `packages/openclaw-plugin`; runtime-деплою наразі немає (Railway декомісовано). Детальніше — `sergeant-openclaw` скіл.
 
 ## Жорсткі правила
 

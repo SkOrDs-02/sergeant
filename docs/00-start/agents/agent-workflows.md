@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -98,7 +98,7 @@
 3. If the change also modifies HubChat tool defs or executors → also load `sergeant-hubchat`.
 4. If the change requires Coolify env vars or health verification → also load `sergeant-deploy-and-observability`.
 5. `pnpm --filter @sergeant/openclaw-plugin build` locally before pushing.
-6. After deploy: verify `sergeant-openclaw-gateway` Railway service health + test `@OpenClaw_sergeant_v2_bot` responds.
+6. After deploy (коли Gateway знову задеплоєно — Railway декомісовано, hosting TBD): verify `sergeant-openclaw-gateway` health + test `@OpenClaw_sergeant_v2_bot` responds.
 
 ## 11. Docs-Sync Sweep (parallel reconcile across `docs/`)
 

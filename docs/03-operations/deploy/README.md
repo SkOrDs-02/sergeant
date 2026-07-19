@@ -1,9 +1,9 @@
 # Deploy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
-Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operational recipes — for the current backend hosting (Hetzner CX23 + Coolify) see [`../../04-governance/adr/0074-hosting-hetzner-coolify.md`](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (supersedes [ADR-0009](../../04-governance/adr/0009-hosting-split-railway-vercel.md)), and for the runtime inventory see [`../architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md). ⚠️ Backend деплой-рецепти нижче ще описують Railway — оновлюються під Coolify окремим follow-up (див. ADR-0074). OpenClaw-сервіси лишаються на Railway.
+Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operational recipes — for the current backend hosting (Hetzner CX23 + Coolify) see [`../../04-governance/adr/0074-hosting-hetzner-coolify.md`](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (supersedes [ADR-0009](../../04-governance/adr/0009-hosting-split-railway-vercel.md)), and for the runtime inventory see [`../architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md). ⚠️ Backend деплой-рецепти нижче ще описують Railway — оновлюються під Coolify окремим follow-up (див. ADR-0074). Railway виведено повністю (config-файли `railway*.toml` видалено з репо 2026-07-19); OpenClaw-сервіси не задеплоєні — міграція на Coolify або deprecation TBD.
 
 ## Documents
 
