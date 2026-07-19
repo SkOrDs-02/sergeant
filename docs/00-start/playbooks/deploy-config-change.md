@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
@@ -127,3 +127,14 @@ flowchart TD
 - Джерело CI-job: [`.github/workflows/deploy-config-staging-gate.yml`](../../../.github/workflows/deploy-config-staging-gate.yml). Логіка: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../../scripts/ci/check-deploy-config-staging-gate.mjs).
 - Initiative ref: [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
 - Закриває type-incident PR #1595 → PR #1600.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                       | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- | ---------- |
+| [#313](https://github.com/Skords-01/Sergeant/pull/313) | chore(root): remove decommissioned Railway config and references (ADR-0074) | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
