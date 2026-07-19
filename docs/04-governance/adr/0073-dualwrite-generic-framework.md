@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-12 by @dimastahov16012003. **Next review:** 2026-10-10.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -250,7 +250,7 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - Поведінка в рантаймі байт-ідентична за визначенням гейта; жодних змін API, схем чи міграцій БД.
 - residualImport-и лишаються майже незмінними (лише shared константа + скелет, якщо крок 10 схвалено).
-- **Dual-write teardown (2026-07-10):** production LS-write модульних даних прибрано (PR #169); каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; shim-и видалено; entropy-janitor `dualwrite-residue` guard-ить регресії. Деталі — [`dualwrite-teardown.md`](../../90-work/planning/dualwrite-teardown.md).
+- **Dual-write teardown (2026-07-10):** production LS-write модульних даних прибрано (PR #169); каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; shim-и видалено; entropy-janitor `dualwrite-residue` guard-ить регресії. Деталі — [`dualwrite-teardown.md`](../../90-work/planning/archive/dualwrite-teardown.md).
 
 ## Risks
 

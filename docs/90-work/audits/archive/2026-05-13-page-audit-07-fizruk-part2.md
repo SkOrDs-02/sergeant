@@ -47,7 +47,7 @@ Cтатичний аудит Fizruk Part 2 виявив **6 high-severity** і *
 **Lines:** L17–L23
 
 **Description.**
-`weekStartMs` будує week-bucket через `new Date(d)` + `getDay()` + `setHours(0,0,0,0)` — це native JS, прив'язаний до системного таймзона браузера. Domain invariants ([`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md)) явно фіксують **Europe/Kyiv** як єдиний правильний таймзон для day-keys і week-bucket-ів.
+`weekStartMs` будує week-bucket через `new Date(d)` + `getDay()` + `setHours(0,0,0,0)` — це native JS, прив'язаний до системного таймзона браузера. Domain invariants ([`docs/02-engineering/architecture/domain-invariants.md`](../../../02-engineering/architecture/domain-invariants.md)) явно фіксують **Europe/Kyiv** як єдиний правильний таймзон для day-keys і week-bucket-ів.
 
 ```ts
 function weekStartMs(d: number | string | Date) {
@@ -87,7 +87,7 @@ const todayDayIndex = (new Date().getDay() + 6) % 7;
 Користувач у іншому таймзоні бачить підсвічений неправильний день у graph-strip (L104–L124), а кнопка стартує сесію, яка не належить до поточного дня програми. Збиває звичку та progression-логіку.
 
 **Recommendation.**
-Імпортувати helper з домену: `import { kyivDayIndex } from "@sergeant/shared/time"` (за аналогією з [`computeRecoveryBy`](../../../packages/fizruk-domain/src/lib/recoveryCompute.ts), яка вже Kyiv-aware). Інакше cross-timezone smoke у Playwright (`process.env.TZ`) має флагнути цей drift як CI-gate.
+Імпортувати helper з домену: `import { kyivDayIndex } from "@sergeant/shared/time"` (за аналогією з [`computeRecoveryBy`](../../../../packages/fizruk-domain/src/lib/recoveryCompute.ts), яка вже Kyiv-aware). Інакше cross-timezone smoke у Playwright (`process.env.TZ`) має флагнути цей drift як CI-gate.
 
 ---
 
@@ -355,7 +355,7 @@ Hard Rule #11 (`no arbitrary hex in className`) сюди формально не
 </div>
 ```
 
-`text-2xs` = 10px (per `packages/design-tokens/tailwind-preset.js:446`). Hard Rule #16 ([12px floor](../../04-governance/governance/rules/16-typography-scale-12px-floor.md)) дозволяє 10px **лише для chart axis ticks і decorative metadata badges**. Тут "Відпочинок: 120с / Прогресія: +2.5 кг" — це primary workout-config information, який юзер має прочитати, щоб зрозуміти, як працює програма.
+`text-2xs` = 10px (per `packages/design-tokens/tailwind-preset.js:446`). Hard Rule #16 ([12px floor](../../../04-governance/governance/rules/16-typography-scale-12px-floor.md)) дозволяє 10px **лише для chart axis ticks і decorative metadata badges**. Тут "Відпочинок: 120с / Прогресія: +2.5 кг" — це primary workout-config information, який юзер має прочитати, щоб зрозуміти, як працює програма.
 
 **Why it matters.**
 Лит-rule fires on the lint-side (`sergeant-design/...`-родина), і автор міг пропустити, бо badges поряд (`text-2xs` для "День 1") виглядають legitimate. Але змішування decorative і primary в одному visual chunk — це type-system drift, який точно треба ловити в audit.
@@ -616,7 +616,7 @@ sublabel={
 **Lines:** L1–L591
 
 **Description.**
-591 LOC — за 9 рядків від `max-lines: 600` Hard Rule #18 ([active initiative](../../04-governance/governance/rules/18-module-size-discipline-600.md)). Один компонент `Progress` робить:
+591 LOC — за 9 рядків від `max-lines: 600` Hard Rule #18 ([active initiative](../../../04-governance/governance/rules/18-module-size-discipline-600.md)). Один компонент `Progress` робить:
 
 1. Header + quickStats (header strip, L235–L258).
 2. Weekly volume chart wrapper.

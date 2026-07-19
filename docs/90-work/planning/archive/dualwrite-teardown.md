@@ -1,8 +1,8 @@
 # Dual-write teardown — перехід клієнта на чистий SQLite
 
 > **Status:** Deprecated (ініціатива виконана 2026-07-10; документ зберігається як історія)
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
-> Трек-документ багатокрокової ініціативи: прибрати LS/MMKV-запис **модульних даних** (finyk / fizruk / nutrition / routine) і зробити SQLite єдиним джерелом правди на клієнті. Продовження [`storage-roadmap.md`](./storage-roadmap.md) (Stage 8 cut-over) і [ADR-0073](../../04-governance/adr/0073-dualwrite-generic-framework.md) (generic SQLite-writer фреймворк). **Закрито:** PR [#169](https://github.com/Skords-01/Sergeant/pull/169) (finyk tx-shim + mobile settings) + Phase 5 PR (rename `dualWrite/` → `sqliteWriter/`, entropy-janitor, doc closure).
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> Трек-документ багатокрокової ініціативи: прибрати LS/MMKV-запис **модульних даних** (finyk / fizruk / nutrition / routine) і зробити SQLite єдиним джерелом правди на клієнті. Продовження [`storage-roadmap.md`](../storage-roadmap.md) (Stage 8 cut-over) і [ADR-0073](../../../04-governance/adr/0073-dualwrite-generic-framework.md) (generic SQLite-writer фреймворк). **Закрито:** PR [#169](https://github.com/Skords-01/Sergeant/pull/169) (finyk tx-shim + mobile settings) + Phase 5 PR (rename `dualWrite/` → `sqliteWriter/`, entropy-janitor, doc closure).
 
 ---
 
@@ -236,10 +236,10 @@ pnpm check
 
 ## 11. Пов'язане
 
-- [`storage-roadmap.md`](./storage-roadmap.md) — попередня ініціатива (Stage 8 cut-over, dual-write default-on).
-- [`sync-client-wiring.md`](./sync-client-wiring.md) — **наступна ініціатива** (client pull + outbox enqueue для multi-device sync).
-- [ADR-0073](../../04-governance/adr/0073-dualwrite-generic-framework.md) — generic dual-write фреймворк (adapter, що стає SQLite-writer-ом).
-- [ADR-0004](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md) — LWW-семантика (R1).
-- [ADR-0011](../../04-governance/adr/0011-local-first-storage.md) — local-first контекст.
+- [`storage-roadmap.md`](../storage-roadmap.md) — попередня ініціатива (Stage 8 cut-over, dual-write default-on).
+- [`sync-client-wiring.md`](../sync-client-wiring.md) — **наступна ініціатива** (client pull + outbox enqueue для multi-device sync).
+- [ADR-0073](../../../04-governance/adr/0073-dualwrite-generic-framework.md) — generic dual-write фреймворк (adapter, що стає SQLite-writer-ом).
+- [ADR-0004](../../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md) — LWW-семантика (R1).
+- [ADR-0011](../../../04-governance/adr/0011-local-first-storage.md) — local-first контекст.
 - `apps/web/vercel.json:36-42` — COOP/COEP (умова надійності SQLite, закрита).
-- Domain invariants: [`domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md).
+- Domain invariants: [`domain-invariants.md`](../../../02-engineering/architecture/domain-invariants.md).

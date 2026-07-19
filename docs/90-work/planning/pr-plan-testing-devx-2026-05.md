@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-07 by Codex (session docs ledger for web helper coverage PRs). **Next review:** 2026-08-11.
 > **Status:** Reference/carry-over — актуальні задачі перенесено в sprint 9–10 і tech-debt trackers.
 
-Цей документ — виконавчий PR-план для **outstanding-пунктів** прожарки [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md). Картки покривають тільки те, що **не закрите** landing-PR-ом цієї прожарки (P0-1 + P1-1 для `/api/barcode` consumer-side уже змерджено в основний PR прожарки і виключені нижче).
+Цей документ — виконавчий PR-план для **outstanding-пунктів** прожарки [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/archive/2026-05-13-testing-devx-roast.md). Картки покривають тільки те, що **не закрите** landing-PR-ом цієї прожарки (P0-1 + P1-1 для `/api/barcode` consumer-side уже змерджено в основний PR прожарки і виключені нижче).
 
 ## TL;DR
 
@@ -14,7 +14,7 @@
 
 ## Cross-refs
 
-- **Прожарка-джерело:** [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/2026-05-13-testing-devx-roast.md) — P0/P1/P2 з file:line та `Add/Change/Remove` діями.
+- **Прожарка-джерело:** [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](../audits/archive/2026-05-13-testing-devx-roast.md) — P0/P1/P2 з file:line та `Add/Change/Remove` діями.
 - **Архітектура тестового стека:** [`docs/04-governance/adr/0020-testing-pyramid.md`](../../04-governance/adr/0020-testing-pyramid.md) — 5 шарів (unit / component / integration / a11y / smoke-E2E) + per-package coverage floors з 2pp буфером.
 - **Multi-wave план попередньої прожарки:** [`docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`](../../02-engineering/testing/2026-05-05-tests-pr-plan.md) — Wave A–G, ~50 PR-ів (статус `merged` для PR-T01..T06, T08, T31, T32, T39; outstanding для T07, T09+, T13–T22, T23–T27, T29–T30, T33–T38).
 - **Інвентар тестового стека:** [`docs/02-engineering/testing/2026-05-05-tests-review.md`](../../02-engineering/testing/2026-05-05-tests-review.md) — per-app coverage % зрізу 2026-05-05.

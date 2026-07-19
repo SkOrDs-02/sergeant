@@ -49,7 +49,7 @@
   [`AGENTS.md`](../../../../AGENTS.md) Hard Rules #20 (no OpenClaw PATs у проді),
   #21 (Pino redaction enforced), #22 (Skill body security scan).
 - **Сусідній план для секвенсингу:**
-  [`docs/90-work/planning/pr-plan-2026-05.md`](../pr-plan-2026-05.md) — 48-PR
+  [`docs/90-work/planning/pr-plan-2026-05.md`](./pr-plan-2026-05.md) — 48-PR
   revenue/ops план. Дублів немає; security/obs тут не перетинається з
   revenue-track-ом.
 
@@ -410,7 +410,7 @@
 > **Принцип:** P0 (S2) — у найближчий sprint. P1 (S3–S8) — упродовж
 > кварталу. P2 (S9–S11) — у наступному кварталі або як «filler»-PR-и
 > між revenue-track-карткою з
-> [`docs/90-work/planning/pr-plan-2026-05.md`](../pr-plan-2026-05.md).
+> [`docs/90-work/planning/pr-plan-2026-05.md`](./pr-plan-2026-05.md).
 
 ### Sprint 1 (current, 14 днів)
 

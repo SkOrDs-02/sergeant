@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-07-19",
   "sourceHashes": {
-    "knowledge-graph": "e7f735456b29c965b5c3ac7d58c8034ef904bfb9e68c5d72e618fea0b26c50f2",
-    "symbol-index": "80686b8416ff60c7b73206b64ad955b77deba863ff4eb0fe2c8db031d32f1267"
+    "knowledge-graph": "f483f61148bdc950a8efc6aa9c7ff5131ac0133e4cdb3812b9a7c88ae8d327a7",
+    "symbol-index": "990a78f3556aaa7386f0054300070c3ed452e67aa30d63b2242cab7d0219523f"
   },
   "counts": {
     "adr": 71,
-    "audit": 24,
+    "audit": 9,
     "export": 305,
     "hard-rule": 26,
     "initiative": 52,
     "playbook": 62,
     "skill": 24,
-    "total": 564
+    "total": 549
   },
   "chunks": [
     {
@@ -782,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-12 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "34c698bf7b454a640d60c5e91c88d8d9beec2066db666051a57f7fcc673d39d9"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-19 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "95904ea296bc9eb595a1afd741a297a8c17406b9f64e9d85a452a0fb92ff4b78"
     },
     {
       "id": "adr:0074",
@@ -795,127 +795,6 @@
       "status": "accepted",
       "text": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway) · adr:0074 · adr · accepted · 74 · 0. TL;DR · ADR-74.1 — VPS + Coolify замість Railway · Context · Decision · Consequences · Alternatives considered · Exit criteria · Implementation tracker",
       "contentHash": "c41bd13362bc4890687a1d3b6ee2029e559d7e285955a1c607f97e168376a906"
-    },
-    {
-      "id": "audit:2026-05-06-ux-roast-pr-plan",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
-      "line": 1,
-      "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
-      "tier": "core",
-      "status": "Closed — execution-план завершено або розкладено у successor trackers.",
-      "text": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06) · audit:2026-05-06-ux-roast-pr-plan · audit · Closed — execution-план завершено або розкладено у successor trackers. · Status — shipped (станом на 2026-05-06) · Sprint 0 — Enabling · PR-0 · Telemetry & ADR foundation · Sprint 1 — P0 (trust + IA) · PR-1a · App-lock (base PIN-flow) [A1 — phase 1/2] · PR-1b · App-lock biometric add-on [A1 — phase 2/2] · PR-2 · Module settings shortcut [A2] · PR-3 · Bento subtitles [A3] · PR-4 · Уніфікація landing-табу до «Огляд» [C1] — ✅ DONE [#2103](https://github.com/Skords-01/Sergeant/pull/2103) · PR-5 · Copy fixes bundle (UA OfflineBanner + DataExport + Pricing) [C2 + C3 + §15] — ✅ DONE commit [bc4b9251](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102) · PR-6 · HubReports EmptyState [A4 + C16] · PR-7 · Permissions overview в Settings [A5 + R6 + A17] · Sprint 2 — P1 (empty/error/forms/permissions/perf) · PR-8 · Hub notifications sub-group [A6] · PR-9 · Reminder-time UI унифікація [C4] · PR-10 · Sessions: «Цей пристрій» + last-seen у людському форматі [A7] — ✅ DONE [#2187](https://github.com/Skords-01/Sergeant/pull/2187) · PR-11 · CSV export + email-mine-data [A8] · PR-12 · Keyboard accessibility for dnd-kit reorder [A9] — ✅ DONE [#2184](https://github.com/Skords-01/Sergeant/pull/2184) · PR-13 · Module-context у sync-error toast [A15] — ❌ OBSOLETE-BY-DRIFT · PR-14 · Request-ID в ModuleErrorBoundary [A16] · PR-15 · Password-strength entropy [C8] — ✅ DONE [#2156](https://github.com/Skords-01/Sergeant/pull/2156) · PR-16 · Memory Bank → Settings → Асистент [C9] · PR-17 · Logout primary в Profile [C10] — ✅ DONE [#2153](https://github.com/Skords-01/Sergeant/pull/2153)",
-      "contentHash": "09c560bfe5bb5b3240b391835b968a74a49ef8bdb8153ba13664f740e1b7f480"
-    },
-    {
-      "id": "audit:2026-05-13-consolidated-page-audit",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-consolidated-page-audit.md",
-      "line": 1,
-      "title": "Consolidated Page Audit — 2026-05-13",
-      "tier": "core",
-      "status": "Closed — зведений історичний зріз; виконання ведеться у successor trackers.",
-      "text": "Consolidated Page Audit — 2026-05-13 · audit:2026-05-13-consolidated-page-audit · audit · Closed — зведений історичний зріз; виконання ведеться у successor trackers. · Coverage · Critical findings (2) · C1 — useChatSend runs toolcalls from the model through executeActions with no runtime validation · C2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) · High-severity themes (50 findings) · Theme 1 — Timezone correctness (Domain invariant: Europe/Kyiv) ✅ DONE · Theme 2 — Touch targets below 44×44 px (WCAG 2.5.5 / Apple HIG) · Theme 3 — Tailwind tokens / palette violations (Hard Rule #11 / #13 / #9) · Theme 4 — Hard Rule #10 (lifecycle markers) systemically missing · Theme 5 — Hard Rule #2 (RQ keys via factories) — multiple inline queryKey: [...] and raw localStorage strings · Theme 6 — noUncheckedIndexedAccess bypassed via non-null assertions (Hard Rule #19) · Theme 7 — Bug hunting (correctness-impacting logic errors) · Recurring \"horizontal\" themes (medium/low severity) · Operational notes · Recommended next steps",
-      "contentHash": "764c4ec81620cff3aea1420a2b05a598643613205409b6a53240d7afb277817b"
-    },
-    {
-      "id": "audit:2026-05-13-dead-code-hard-rules-roast",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md",
-      "line": 1,
-      "title": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13)",
-      "tier": "core",
-      "status": "Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable)",
-      "text": "Прожарка #9/10 — Dead Code, Stale Links & Hard Rules (2026-05-13) · audit:2026-05-13-dead-code-hard-rules-roast · audit · Closed (2026-06-08 — 17/17 implemented, 0 actionable outstanding; residual = knip false-positive watchlist, не actionable) · TL;DR · P0 — Closed у цьому PR · P0.1 — 11 unmarked unused-файлів (Hard Rule #10, dead-code:files gate red) · Skipped 18 file(s) with @scaffolded/@deprecated/@experimental markers · No unmarked unused files. ✓ · P0.2 — 53 broken internal markdown-links (docs:check-links gate red) · Scanning 540 markdown files… · → 3810 internal links, 2065 external links. · ✅ All markdown links resolve. · P0.3 — knip.json redundant entries (Configuration hints 21 → 5) · P1 — Outstanding (Tracked у 2026-05-13-dead-code-hard-rules-roast.md) · P1.1 — unused deps sweep — ✅ Closed (2026-06-03) · P1.2 — .github/workflows/lighthouse-ci.yml workflow-файл відсутній — ✅ Closed · P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03) · P1.4 — process.env budget burn-down (Hard Rule violation, ratchet-baseline restored) · P1.5 — App-audit §1.3 mobile-shell knip — 5 unused exports · P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed · P2 — Cosmetic / Watchlist · Прогрес виконання (цей PR) · Follow-up 2026-05-16 — claude/identify-critical-issues-3IgIx (PR [#2933](https://github.com/Skords-01/Sergeant/pull/2933)) · Verification matrix · Cross-references",
-      "contentHash": "1c2ca0db82bf2f4d1bf3701b873ef21b6866a856d176c76b1af13f6c64a4fb1a"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-01-auth-onboarding",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-01-auth-onboarding.md",
-      "line": 1,
-      "title": "Page Audit — Auth & Onboarding pages",
-      "tier": "core",
-      "status": "Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted)",
-      "text": "Page Audit — Auth & Onboarding pages · audit:2026-05-13-page-audit-01-auth-onboarding · audit · Closed (2026-06-08 — ~24/25 implemented, 0 outstanding; F4 dead-code already deleted) · Summary · Findings · F1 — text-error / bg-error / border-error token does not exist [severity: high] [perspective: tailwind/ux/bug] · F2 — AuthPage.tsx exceeds Hard Rule #18 max-lines budget [severity: high] [perspective: rule] · F3 — Scaffolded auth decomposition is dead code [severity: high] [perspective: rule/code-quality] · F4 — PermissionsPrompt.tsx is unwired dead code [severity: high] [perspective: code-quality] · F5 — CelebrationModal hijacks global Enter/Space keydowns [severity: high] [perspective: bug/a11y] · F6 — \"Забули пароль?\" never pre-fills the email the user typed [severity: high] [perspective: bug] · F7 — DailyNudge close X is w-6 h-6 (24×24) — half the touch-target floor [severity: medium] [perspective: a11y] · F8 — DailyNudge popover trigger is w-8 h-8 (32×32) — below touch-target floor [severity: medium] [perspective: a11y] · F9 — DemoModeBanner CTA forces min-h-[40px] below touch-target floor [severity: medium] [perspective: a11y] · F10 — SoftAuthPromptCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F11 — ReEngagementCard \"Пізніше\" plain button is ~28 px tall [severity: medium] [perspective: a11y] · F12 — FirstRunHintBanner CTA px-2.5 py-1 is ~26 px tall [severity: medium] [perspective: a11y] · F13 — ReEngagementCard pluralization breaks for 11–14 [severity: medium] [perspective: i18n/bug] · F14 — Lifecycle markers missing on every file in scope [severity: medium] [perspective: lifecycle] · F15 — AI markers under-used in high-risk auth code [severity: medium] [perspective: ai-marker] · F16 — presetApply.ts bypasses module storage public API [severity: medium] [perspective: code-quality] · F17 — seedDemoData.ts bypasses storage allowlist [severity: medium] [perspective: code-quality] · F18 — CelebrationModal auto-dismiss timer races user input [severity: medium] [perspective: ux/race] · F19 — ResetPasswordPage.tsx mixes broken and correct error tokens in same file [severity: medium] [perspective: tailwind/code-quality] · F20 — Test coverage targets dead LoginForm.tsx / RegisterForm.tsx [severity: medium] [perspective: test] · F21 — Better Auth client type-extension via as ReturnType<...> & {...} cast [severity: medium] [perspective: ts]",
-      "contentHash": "7a2dd777d41626a13dde898601d065dbb6bf8d3c1e9c0a036557b9983ead9a60"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-03-hub-chat-search",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md",
-      "line": 1,
-      "title": "Page Audit — Hub Chat, Search & Backup panel",
-      "tier": "core",
-      "status": "Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation).",
-      "text": "Page Audit — Hub Chat, Search & Backup panel · audit:2026-05-13-page-audit-03-hub-chat-search · audit · Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation). · Summary · Findings · F1 — hubChatSessions.deriveSessionTitle formats with host timezone, violating Kyiv domain invariant [severity: high] [perspective: bug] · F2 — HubChatHistoryDrawer.formatStamp uses host time for \"today\" detection and HH:MM rendering [severity: high] [perspective: bug] · F3 — useChatSend runs toolcalls from the model through executeActions with no runtime validation [severity: critical] [perspective: security] · F4 — /chat?q=…&autoSend=1 deep link auto-sends arbitrary text to the AI on render [severity: high] [perspective: security] · F5 — Voice-keyword regex auto-triggers TTS playback without user consent [severity: medium] [perspective: security] · F6 — Touch targets in HubChatHistoryDrawer (close, delete) are below 44×44 px [severity: high] [perspective: a11y] · F7 — Inline cancel pill in HubChatBody is h-7 (28 px) — below WCAG touch-target [severity: medium] [perspective: a11y] · F8 — searchTypes.localDateKey & searchSources produce non-Kyiv day keys [severity: high] [perspective: bug] · F9 — Nested interactive elements inside the session row (a11y violation) [severity: medium] [perspective: a11y] · F10 — Search dialog (HubSearch) has no focus trap; only Esc is bound [severity: medium] [perspective: a11y] · F11 — Lifecycle markers (Last validated: / Status:) missing across the entire scope [severity: medium] [perspective: lifecycle] · F12 — HubChatBody auto-scrolls to bottom on every message change, breaking \"scroll up to read history\" [severity: medium] [perspective: ux] · F13 — HubChatPage.handleClose falls back to navigate(\"/\") only when window.history.length <= 1 — unreliable signal [severity: medium] [perspective: bug] · F14 — useChatSessions title-rewrite test title.startsWith(\"Бесіда \") will steamroll legitimate user titles [severity: medium] [perspective: bug] · F15 — hubChatUtils.consumeHubChatSse accepts unbounded server SSE without per-chunk size cap [severity: medium] [perspective: perf] · F16 — searchSources.performSearch re-scans finyktxcache synchronously on every keystroke after 120 ms debounce [severity: medium] [perspective: perf] · F17 — useChatSend initial-message effect depends on initialMessage but mutates setInput/setMessages without listing them [severity: low] [perspective: bug] · F18 — chat/HubChatHeader.tsx builds a Popover trigger out of a <span role=\"button\"-less> styled with cursor-pointer select-none — non-button activation [severity: medium] [perspective: a11y] · F19 — aria-live=\"polite\" on the chat scroller is a verbosity trap during streamed responses [severity: low] [perspective: a11y] · F20 — HubBackupPanel export reuses the user's downloaded JSON without redaction of Better-Auth opaque user IDs [severity: medium] [perspective: security] · F21 — searchSources results are not sanitised before being passed into AssistantMessageBody for AI-handoff snippets [severity: medium] [perspective: security]",
-      "contentHash": "ce6686046ea1a0f3eb6113fdda679060cd3b27082b4feed7afaded6679863c25"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-07-fizruk-part2",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-07-fizruk-part2.md",
-      "line": 1,
-      "title": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body)",
-      "tier": "core",
-      "status": "Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation).",
-      "text": "Page Audit — Fizruk module Part 2 (Progress, Measurements, Programs, Body) · audit:2026-05-13-page-audit-07-fizruk-part2 · audit · Closed — 2026-06-19: усі знахідки верифіковано реалізованими/закритими в коді (reconciliation). · Summary · Findings · F1 — Progress page рахує тиждень у локальному таймзоні замість Europe/Kyiv [severity: high] [perspective: bug] · F2 — Programs обчислює todayDayIndex у локальному часі [severity: high] [perspective: bug] · F3 — Measurements зберігає замір без жодних діапазон-валідацій (sensitive PII) [severity: high] [perspective: security] · F4 — Measurements дозволяє зберегти повністю порожню форму [severity: high] [perspective: bug] · F5 — Жоден з 4 page-файлів не має unit-тестів [severity: high] [perspective: test] · F6 — Програма стартує сесію через non-null assertion на можливо-відсутній sessionKey [severity: high] [perspective: bug] · F7 — PR filter pills нижче WCAG 2.5.5 touch-target floor [severity: medium] [perspective: a11y] · F8 — Inline кнопка \"Видалити\" в Measurements історії — крихітна, без touch-target + без confirmation [severity: medium] [perspective: a11y] · F9 — Chart-кольори в Progress та Body вшиті як rgb(…) props, бай-пас design-token system [severity: medium] [perspective: tailwind] · F10 — text-2xs (10px) на primary-content metadata у Programs (Hard Rule #16) [severity: medium] [perspective: rule] · F11 — Програма-buttons (Активувати / Розпочати / Зупинити / Деталі) без focus-visible:-індикатора [severity: medium] [perspective: a11y] · F12 — Measurements submit-button без focus-visible:-ring + emoji-icon без aria-label [severity: medium] [perspective: a11y] · F13 — Measurements input-и без явної прив'язки <label> ↔ <input> [severity: medium] [perspective: a11y] · F14 — ScoreButton groups не семантично radiogroup/radio [severity: medium] [perspective: a11y] · F15 — Per-PR card button у Progress без focus-visible:-індикатора [severity: medium] [perspective: a11y] · F16 — Програма \"сьогодні відпочинок\" / day-strip без screen-reader summary [severity: medium] [perspective: a11y] · F17 — Programs day-strip використовує text-2xs (10px) для primary scheduling content [severity: medium] [perspective: rule] · F18 — Progress PR filter втрачає state на back-nav та не reset-ить на стейл group [severity: medium] [perspective: ux] · F19 — meas.delta(field) викликається 3–4 рази у тому ж рендері без memoization [severity: medium] [perspective: perf] · F20 — Progress page близько до Hard Rule #18 (591 / 600 LOC) [severity: medium] [perspective: rule] · F21 — Body page близько до 600 LOC порога; рендер-функція ~280 LOC [severity: medium] [perspective: rule]",
-      "contentHash": "80add31f404c80a09c783b5837df8be4c90058456464f545c911dcceb914580c"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-08-nutrition",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-08-nutrition.md",
-      "line": 1,
-      "title": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu)",
-      "tier": "core",
-      "status": "Closed — 2026-06-19: усі знахідки закриті або в tracked burn-down (reconciliation).",
-      "text": "Page Audit — Nutrition module — 4 pages (start/pantry/log/menu) · audit:2026-05-13-page-audit-08-nutrition · audit · Closed — 2026-06-19: усі знахідки закриті або в tracked burn-down (reconciliation). · Scope notes · Summary · Findings · F1 — Raw-palette кольори макро-міток у Daily Plan (Hard Rule #11/#13) [severity: high] [perspective: tailwind] · F2 — Sky-палітра у water-tracker progress bar (Hard Rule #11) [severity: high] [perspective: tailwind] · F3 — Raw-palette amber-500 у banner про великий журнал (Hard Rule #11/#13) [severity: high] [perspective: tailwind] · F4 — Touch target нижче 44×44 px на ItemRow delete button (WCAG 2.5.5) [severity: high] [perspective: a11y] · F5 — Фокус-індикатор лише через opacity (WCAG 2.4.7 Focus Visible) [severity: high] [perspective: a11y] · F6 — Hard Rule #10 (lifecycle markers) практично відсутні у всьому модулі [severity: high] [perspective: lifecycle] · F7 — RecipesCard.tsx 593 LoC — впритул до Hard Rule #18 ліміту [severity: medium] [perspective: rule] · F8 — Дубльовані Meal-ID generators (7 sites) з drift у довжині random-сегмента [severity: medium] [perspective: bug] · F9 — sessionStorage напряму у recipeCache.ts (bypass @shared/storage) [severity: medium] [perspective: rule] · F10 — Module-accent containment risk: bg-info-soft у нативно-Nutrition WaterTracker (Hard Rule #12 grey-zone) [severity: medium] [perspective: tailwind] · F11 — staleTime: Infinity на nutritionLog без явного invalidate-strategy [severity: medium] [perspective: perf] · F12 — Page-level testing gap: 0 з 4 page-файлів покриті тестами [severity: medium] [perspective: test] · F13 — Імперативні setTimeout через scheduleTransient у production code [severity: medium] [perspective: bug] · F14 — as NutritionPage cast у parser без exhaustive guard [severity: medium] [perspective: ts] · F15 — Hardcoded magic-numbers у consume-pantry без uom-conversion test [severity: medium] [perspective: bug] · F16 — Empty-state copy непослідовний (i18n / UX) [severity: medium] [perspective: ux] · F17 — arr[0] || makeDefaultPantry() без явного guard на повернений тип [severity: low] [perspective: ts] · F18 — Inline non-null assertions у consumePantryItem (Hard Rule #19 cousin) [severity: low] [perspective: ts] · F19 — useEffect без exhaustive-deps comment, риск stale-closure [severity: low] [perspective: bug] · F20 — Відсутність prefers-reduced-motion guard у NutritionApp.tsx loading skeleton [severity: low] [perspective: a11y]",
-      "contentHash": "2e298332b386d67465768ca7ea005ca7e549fa2cb784531e465a6dd062ed7db3"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-09-routine-strategy",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md",
-      "line": 1,
-      "title": "Page Audit — Routine module + Strategy page",
-      "tier": "core",
-      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
-      "text": "Page Audit — Routine module + Strategy page · audit:2026-05-13-page-audit-09-routine-strategy · audit · Closed — історичний зріз; незакриті пункти перенесено у поточні trackers. · Summary · Findings · F1 — Strategy page calls /api/internal/strategic/ without internalFetch / bearer auth [severity: high] [perspective: security] · F2 — Strategy page leaks raw server error.message to the user [severity: high] [perspective: security] · F3 — Routine module setHours(12, 0, 0, 0) derives day keys in local device time, not Europe/Kyiv [severity: high] [perspective: bug] · F4 — RoutineCalendarPanel.tsx is 607 LOC — over Hard Rule #18's 600-line ceiling [severity: high] [perspective: rule] · F5 — Foreign module accents (sky-, emerald-) inside the routine subtree [severity: high] [perspective: rule] · F6 — Routine deep-link ?routineDay=… validates format only, not the calendar date [severity: high] [perspective: bug] · F7 — useRoutineReminders swallows every error via empty catch {} [severity: high] [perspective: bug] · F8 — useRoutineReminders scheduler is bound only to enabled flag; runtime permission flips are ignored [severity: medium] [perspective: bug] · F9 — Notification title contains habit name in plain text — no privacy opt-in [severity: medium] [perspective: security] · F10 — noUncheckedIndexedAccess bypassed via row! non-null assertion in drag-reorder [severity: medium] [perspective: ts] · F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n] · F12 — Strategy page uses raw Tailwind palette pairs (bg-blue-600, text-red-600, text-gray-200) [severity: medium] [perspective: tailwind] · F13 — Strategy page submit button has no minimum 44×44 touch target [severity: medium] [perspective: a11y] · F14 — Strategy page has no skeleton / retry CTA / empty-state polish [severity: medium] [perspective: ux] · F15 — Strategy page useQuery has no staleTime — refetches on every focus [severity: medium] [perspective: perf] · F16 — Strategy page goalsByPersona uses optional chaining on a fully-initialized map [severity: low] [perspective: ts] · F17 — Strategy page @scaffolded marker missing @owner and @addedIn per Rule #10 [severity: low] [perspective: ai-marker] · F18 — <button> close button inside the storage-error banner is below the 44 px touch floor [severity: medium] [perspective: a11y] · F19 — Routine UI shell files have no co-located tests [severity: medium] [perspective: test] · F20 — Routine module Banner \"Закрити\" + chip filters lack aria-pressed / aria-expanded [severity: medium] [perspective: a11y] · F21 — Notification storage cleanup uses cutoff.toISOString().slice(0, 10) — UTC, not Kyiv [severity: medium] [perspective: bug]",
-      "contentHash": "4ce96e730efe084fbcadf1f2cdaaa77b81ef7a09af30a159a096bb65c590a929"
-    },
-    {
-      "id": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
-      "line": 1,
-      "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
-      "tier": "core",
-      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
-      "text": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing · audit:2026-05-13-page-audit-10-errors-pwa-marketing · audit · Closed — історичний зріз; незакриті пункти перенесено у поточні trackers. · Summary · Findings · F1 — Service Worker has no offline navigation fallback to /offline [severity: high] [perspective: ux] · F2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) [severity: critical] [perspective: security] · F3 — Sentry Session Replay records text without maskAllText: true [severity: high] [perspective: security] · F4 — PricingPage redirects to checkout.url without origin allow-list [severity: high] [perspective: security] · F5 — ErrorFallback in main.tsx displays raw error.message to end-user [severity: medium] [perspective: security] · F6 — middleware.ts proxies arbitrary BACKENDURL with no scheme validation [severity: medium] [perspective: security] · F7 — middleware.ts forwards all request headers including potential secrets [severity: medium] [perspective: security] · F8 — SW notificationclick opens /?module=${module} with no allow-list on module [severity: medium] [perspective: security] · F9 — SW push handler renders payload.title/body verbatim with no length/charset clamp [severity: medium] [perspective: security] · F10 — StatusPage shows raw fetch err.message to anonymous visitors [severity: medium] [perspective: security] · F11 — StatusPage COMPONENTNAME is hardcoded English (\"API server\", \"Database\", \"n8n workflows\", \"OpenClaw bot\") [severity: medium] [perspective: i18n] · F12 — OfflinePage reload CTA blindly reloads regardless of navigator.onLine [severity: medium] [perspective: ux] · F13 — OfflinePage/NotFoundPage/ServerErrorPage have no .test.tsx coverage [severity: medium] [perspective: test] · F14 — analytics.ts writes every event to localStorage twice (read + slice + write) [severity: medium] [perspective: perf] · F15 — useAppLock idle reset listeners are unthrottled across pointermove/scroll/keydown/touchstart capture phase [severity: medium] [perspective: perf] · F16 — lockStorage.ts stores PIN hash under fixed key \"v1\" with no per-user scoping [severity: medium] [perspective: security] · F17 — sqlite.ts opens a single per-origin DB without per-user partitioning [severity: medium] [perspective: bug] · F18 — usePlan.ts combines staleTime: 60000 with refetchOnWindowFocus: \"always\" (contradictory) [severity: low] [perspective: perf] · F19 — PaywallModal fires PAYWALLVIEWED on every surface re-render via [open, surface] deps [severity: low] [perspective: bug] · F20 — useSyncStatus reads singleton at mount-time only; runtime changes are missed [severity: medium] [perspective: bug] · F21 — dualWriteTelemetry calls setSentryTag before SDK init (lazy no-op drops tags) [severity: low] [perspective: bug]",
-      "contentHash": "3816d24b060450c69f0ebbaa84c29af12b6022c36b3d5194357647f7f91e07f1"
-    },
-    {
-      "id": "audit:2026-05-13-testing-devx-roast",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-13-testing-devx-roast.md",
-      "line": 1,
-      "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
-      "tier": "core",
-      "status": "Closed — findings виконано або перенесено у sprint/tech-debt trackers.",
-      "text": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) · audit:2026-05-13-testing-devx-roast · audit · Closed — findings виконано або перенесено у sprint/tech-debt trackers. · TL;DR — top-7 болів · P0 — критичне, без обхідних шляхів · P0-1. Empty .down.sql зливалися без жодної rollback-SQL — Hard Rule #4 enforcement gap · P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed · P1 — high-impact gaps з готовим планом · P1-1. Contract-fixture pattern застосовано тільки до /api/me · P1-2. Server AI-tool handlers — coverage 0–15% ✅ Closed · P1-3. Web smoke E2E — лише 4 спеки ✅ Closed · P1-4. Mobile Detox suite — лише 4 спеки ✅ Closed · P1-5. Pre-commit timing не вимірюється ✅ Closed · P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed · P2 — nice-to-have, ризик ≤ medium · P2-1. pnpm dedupe --check не в CI ✅ Зроблено в цьому PR · P2-2. ESLint plugin coverage · P2-3. Visual regression — Argos baseline розширення ✅ Closed (частково; /settings — follow-up) · P2-4. Property-based tests для парсерів · P2-5. pnpm check не паралелизує web/mobile/server · Прогрес виконання · Outstanding після цього PR — порядок наступних роастів · Outstanding count",
-      "contentHash": "1396f35ec19013af0b1e74e45ce2256c33f6c27ce8a352688701e643a964704b"
-    },
-    {
-      "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-05-25-hubsettings-cls-chunk-load.md",
-      "line": 1,
-      "title": "HubSettings lazy boundaries — CLS + chunk-load follow-up",
-      "tier": "core",
-      "status": "Closed",
-      "text": "HubSettings lazy boundaries — CLS + chunk-load follow-up · audit:2026-05-25-hubsettings-cls-chunk-load · audit · Closed · Контекст · Знахідки · MEDIUM #1 — chunk-load failure = white screen · MEDIUM #2 — Suspense fallback minH занижений → CLS jump · Виконання · LOW-знахідки (не блокуючі, optional) · Closure",
-      "contentHash": "082936bebdef2efc6067d4272140f58262df8ac7a7bcfc76810ad1ef6b8ebab5"
     },
     {
       "id": "audit:2026-06-08-codebase-cleanup-audit",
@@ -973,28 +852,6 @@
       "contentHash": "7adbf5678c0186add534b02bbf88b51d4b7641b0e535b12a64c8037b20a11081"
     },
     {
-      "id": "audit:browser-user-journey-execution-2026-06-30",
-      "type": "audit",
-      "path": "docs/90-work/audits/browser-user-journey-execution-2026-06-30.md",
-      "line": 1,
-      "title": "Browser user journey execution log",
-      "tier": "core",
-      "status": "Closed — execution snapshot завершено.",
-      "text": "Browser user journey execution log · audit:browser-user-journey-execution-2026-06-30 · audit · Closed — execution snapshot завершено. · Мета · Контекст запуску · Самопромпт · Результати · Виправлення · BRJ-001: Ledger webServer timeout замалий · BRJ-002: Smoke API readiness timeout замалий · Відкриті ризики · BRJ-003: Fresh worktree install зависає на Windows · BRJ-004: Локальні env gaps очікувано деградують AI/push/backup paths · BRJ-005: Better Auth/Postgres connection timeout шум у extended run · Що можна чесно стверджувати",
-      "contentHash": "03802e84de01cd8857759c06bebafd4f6b9c4d814e3f0f01b0523ab04dc3e893"
-    },
-    {
-      "id": "audit:browser-user-journey-execution-2026-07-01",
-      "type": "audit",
-      "path": "docs/90-work/audits/browser-user-journey-execution-2026-07-01.md",
-      "line": 1,
-      "title": "Browser user journey execution log — 2026-07-01",
-      "tier": "core",
-      "status": "Closed — execution snapshot завершено.",
-      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Closed — execution snapshot завершено. · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Fix-фаза: deep-CRUD dual-write races (BRJ2-005, E2E-гілка) · Підсумок",
-      "contentHash": "b3d16c39eeff55342b56127c387953ae1ecbd572ccbfc59ceebe8332b23878b3"
-    },
-    {
       "id": "audit:browser-user-journey-loop",
       "type": "audit",
       "path": "docs/90-work/audits/browser-user-journey-loop.md",
@@ -1006,17 +863,6 @@
       "contentHash": "00f84ff9946b0c80051df639a5e1e015520d98ef62691a6f5d9b548d91cdcced"
     },
     {
-      "id": "audit:deep-module-crud-browser-execution-2026-06-30",
-      "type": "audit",
-      "path": "docs/90-work/audits/deep-module-crud-browser-execution-2026-06-30.md",
-      "line": 1,
-      "title": "Deep module CRUD browser execution log",
-      "tier": "core",
-      "status": "Closed — execution snapshot завершено.",
-      "text": "Deep module CRUD browser execution log · audit:deep-module-crud-browser-execution-2026-06-30 · audit · Closed — execution snapshot завершено. · Контекст запуску · Code map · Results · Findings · Current status",
-      "contentHash": "b2d0606c2f4d80eb06737b97d9b9f59dc4aaa7862b9a1722480ceebcd84409c5"
-    },
-    {
       "id": "audit:deep-module-crud-browser-loop",
       "type": "audit",
       "path": "docs/90-work/audits/deep-module-crud-browser-loop.md",
@@ -1026,17 +872,6 @@
       "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
       "text": "Deep module CRUD browser loop · audit:deep-module-crud-browser-loop · audit · Reference — повторюваний протокол; сам по собі не є відкритою роботою. · Мета · Жорсткі правила · Покриття loop 4 · Порядок виконання · Handoff prompt",
       "contentHash": "5455bb2cde6c1c76d218a022544875ac7a56aa8a2a45c37d727028178c8882a2"
-    },
-    {
-      "id": "audit:production-readiness-execution-2026-06-29",
-      "type": "audit",
-      "path": "docs/90-work/audits/production-readiness-execution-2026-06-29.md",
-      "line": 1,
-      "title": "Production Readiness Execution — 2026-06-29",
-      "tier": "core",
-      "status": "Closed — execution snapshot завершено; нові прогони створюють окремий запис.",
-      "text": "Production Readiness Execution — 2026-06-29 · audit:production-readiness-execution-2026-06-29 · audit · Closed — execution snapshot завершено; нові прогони створюють окремий запис. · Context · Evidence Log · Findings · Open Questions / External Inputs",
-      "contentHash": "7580ec86f7e932efb3feea6ff1dd3b7428968929a965f9788aa2acf34601e862"
     },
     {
       "id": "audit:production-readiness-testing-loop",

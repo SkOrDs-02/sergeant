@@ -1,8 +1,8 @@
 # Assistant Quick Actions v1 — дизайн-спек
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** shipped (PR [#743](https://github.com/Skords-01/Sergeant/pull/743)) — **superseded by**
-> [`2026-04-25-assistant-capability-catalogue-design.md`](../2026-04-25-assistant-capability-catalogue-design.md).
+> [`2026-04-25-assistant-capability-catalogue-design.md`](./2026-04-25-assistant-capability-catalogue-design.md).
 > Quick action chips, `RISKY_TOOLS` і action cards живі (`apps/web/src/core/components/ChatQuickActions.tsx`,
 > `apps/web/src/core/lib/hubChatActionCards.ts`); back-compat shim
 > `apps/web/src/core/lib/<hubChatQuickActions>.ts` уже видалено (файлу немає; `<>`-обгортка — говерненс-skip-маркер для історичних референсів) — `ChatQuickActions.tsx`

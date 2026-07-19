@@ -2,7 +2,7 @@
 
 # Routine — timeline дня та кросмодульний календар
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 > **Статус:** Draft — product interview complete, implementation not started.
@@ -202,5 +202,5 @@ MVP зберігає наявні режими day/week/month, але day/timeli
 - [`apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`](../../../../apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx)
 - [`apps/web/src/modules/routine/lib/hubCalendarAggregate.ts`](../../../../apps/web/src/modules/routine/lib/hubCalendarAggregate.ts)
 - [`apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts`](../../../../apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts)
-- [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../../90-work/audits/2026-05-13-page-audit-09-routine-strategy.md)
+- [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../../90-work/audits/archive/2026-05-13-page-audit-09-routine-strategy.md)
 - [`docs/90-work/research/2026-06-28-audience-discovery-trackers.md`](../../../90-work/research/2026-06-28-audience-discovery-trackers.md)

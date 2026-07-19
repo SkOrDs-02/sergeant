@@ -12,7 +12,7 @@
 **Audits / прожарки:**
 
 - [`docs/90-work/audits/2026-05-13-ftux-onboarding-roast.md`](../../audits/archive/2026-05-13-ftux-onboarding-roast.md) — джерельна прожарка (5 болів полірування + 3 структурні борги).
-- [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) — попередній виконавчий план UX-прожарки (41 PR у 3 спринтах). Цей план — **incremental delta** поверх нього; коли пункт уже закритий або обмежено-в-розробці, відсилка на conf-PR із master tracker-а.
+- [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/archive/2026-05-06-ux-roast-pr-plan.md) — попередній виконавчий план UX-прожарки (41 PR у 3 спринтах). Цей план — **incremental delta** поверх нього; коли пункт уже закритий або обмежено-в-розробці, відсилка на conf-PR із master tracker-а.
 - [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../audits/archive/2026-05-06-ux-roast.md) — пост-onboarding UX-прожарка (Day 0-7).
 - [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна FTUX-прожарка (frozen).
 

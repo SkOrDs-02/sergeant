@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -141,7 +141,7 @@ DB-level safety:
 
 ### 4.1. SQLite cut-over — завершено; sync client wiring — outstanding
 
-**Оновлено 2026-07-10** після [`dualwrite-teardown.md`](../../90-work/planning/dualwrite-teardown.md):
+**Оновлено 2026-07-10** після [`dualwrite-teardown.md`](../../90-work/planning/archive/dualwrite-teardown.md):
 
 - **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) — **єдиний source-of-truth** для модульних даних finyk / fizruk / nutrition / routine. Production LS/MMKV-write модульних ключів прибрано; `sqliteWriter/` — canonical mutation path.
 - **Свідомі винятки** (не residue): demo-seed LS bridge, `fizruk_rest_settings_v1`, web nutrition recipes (IndexedDB), Mono client mirror, kv_store, TanStack Query persister.

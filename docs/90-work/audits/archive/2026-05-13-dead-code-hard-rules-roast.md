@@ -11,15 +11,15 @@
 >
 > **Cross-refs (попередні прожарки цієї теми):**
 >
-> - [`2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — перша системна dead-code прожарка (knip + docs:check-links). 5/5 P0/P1 закриті; outstanding був §3 (unused deps + 77 unused exports + 51 duplicate exports).
-> - [`2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit, включно з web-boot BLOCKER (`db-schema/migrate` umbrella) та hard-rule violations (process.env budget 120 > 119, namespace boundaries, latent imports).
-> - [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) + [`hard-rules-matrix.md`](../../04-governance/governance/hard-rules-matrix.md) — 22 правил (8 blocker-invariant, 12 lint-enforced-convention, 2 active-initiative).
+> - [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — перша системна dead-code прожарка (knip + docs:check-links). 5/5 P0/P1 закриті; outstanding був §3 (unused deps + 77 unused exports + 51 duplicate exports).
+> - [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний app-audit, включно з web-boot BLOCKER (`db-schema/migrate` umbrella) та hard-rule violations (process.env budget 120 > 119, namespace boundaries, latent imports).
+> - [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) + [`hard-rules-matrix.md`](../../../04-governance/governance/hard-rules-matrix.md) — 22 правил (8 blocker-invariant, 12 lint-enforced-convention, 2 active-initiative).
 
 ## TL;DR
 
 Між 2026-05-05 і 2026-05-13 дві CI gate-и **знову покраснелись**:
 
-1. **`pnpm dead-code:files` — exit 1**: 11 нових unused-файлів **без** lifecycle-маркерів (Hard Rule #10). Майже всі — нові barrel-`index.ts` (cloudSync, profile, log, billing, openclaw-plugin parity, codemod, db-schema/migrate umbrella). Одна з них — **той самий `db-schema/migrate/index.ts` umbrella**, який у [app-audit §1.1](./archive/2026-05-07-app-audit.md) спричинив hard-blocker `node:fs` у клієнтському бандлі. Hotfix у package.json `exports` зняв публічний доступ, але **файл фізично залишився** і досі ловиться knip-ом.
+1. **`pnpm dead-code:files` — exit 1**: 11 нових unused-файлів **без** lifecycle-маркерів (Hard Rule #10). Майже всі — нові barrel-`index.ts` (cloudSync, profile, log, billing, openclaw-plugin parity, codemod, db-schema/migrate umbrella). Одна з них — **той самий `db-schema/migrate/index.ts` umbrella**, який у [app-audit §1.1](./2026-05-07-app-audit.md) спричинив hard-blocker `node:fs` у клієнтському бандлі. Hotfix у package.json `exports` зняв публічний доступ, але **файл фізично залишився** і досі ловиться knip-ом.
 2. **`pnpm docs:check-links` — exit 1**: 53 broken internal links. **49 з них** — у `docs/90-work/audits/archive/**`: класичний archive-move bug (файли переїхали на один рівень глибше, але `../X` / `./X` посилання не бампнули depth). Решта 4 — у активних доках (`apps/web/AGENTS.md`, `docs/90-work/initiatives/0006-…md`, `docs/90-work/planning/sprint-roadmap-q2q3-2026.md`) — посилаються на ще-не-існуючий `.github/workflows/lighthouse-ci.yml` і на видалений `apps/web/src/shared/hooks/useHashRoute.ts`.
 
 PR закриває **усі 11 unmarked unused-файлів** (3 delete + 7 lifecycle-маркерів + 1 umbrella delete), **усі 53 broken-link-и** (4 active + 49 archive sed-fixes), плюс підчищає `knip.json` від redundant entry/ignoreDependencies (21 hint → 5). Outstanding (P1/P2) — sweep для unused deps + unused exports. P1.2 (missing `.github/workflows/lighthouse-ci.yml`) закрите окремою follow-up прожаркою — див. § P1.2 нижче.
@@ -55,7 +55,7 @@ pnpm dead-code:files
 
 ### P0.2 — 53 broken internal markdown-links (`docs:check-links` gate red)
 
-`scripts/docs/check-markdown-links.mjs` (введений у [`docs/90-work/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](./path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
+`scripts/docs/check-markdown-links.mjs` (введений у [`docs/90-work/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md)) ловить будь-який `[text](./path)`-link, де файл не існує. Між 2026-05-05 і 2026-05-13 зламалось **53 internal links**:
 
 #### 49 archive-move depth-drift (`docs/90-work/audits/archive/**`)
 
@@ -170,7 +170,7 @@ Unlisted dependencies (38)
 
 ### P1.3 — unused exports + duplicate exports — ✅ Closed (partial-with-residual, 2026-06-03)
 
-Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./archive/2026-05-05-dead-code-and-stale-links-audit.md).
+Перенесено з [`2026-05-05-dead-code-and-stale-links-audit.md` § 3.2 і 3.4](./2026-05-05-dead-code-and-stale-links-audit.md).
 
 > **2026-06-03 закриття** (гілка `claude/audits-task-count-un3kj`, Wave 2a/2b). «77 + 51» з 2026-05-05 — stale. Поточний `pnpm knip` (knip 6.12.0) baseline цієї сесії: **94 unused exports + 14 unused exported types + 72 duplicate exports**.
 >
@@ -189,7 +189,7 @@ Unlisted dependencies (38)
 >
 > **Свідомо KEPT як knip false-positives (residual carried forward, ~86 exports + 14 types + 72 duplicates):**
 >
-> - **Duplicate exports (72)** — майже всі — патерн `Name|default` для React-компонентів (`apps/mobile/**`, `apps/web/core/**`). [2026-05-05 § 3.4](./archive/2026-05-05-dead-code-and-stale-links-audit.md) прямо рекомендує НЕ чіпати: `default`-half очікується `React.lazy()`/Expo-Router/hub-registry lazy-import-ами. Видалення зламало б code-split chunk-boundaries.
+> - **Duplicate exports (72)** — майже всі — патерн `Name|default` для React-компонентів (`apps/mobile/**`, `apps/web/core/**`). [2026-05-05 § 3.4](./2026-05-05-dead-code-and-stale-links-audit.md) прямо рекомендує НЕ чіпати: `default`-half очікується `React.lazy()`/Expo-Router/hub-registry lazy-import-ами. Видалення зламало б code-split chunk-boundaries.
 > - **Test-only helpers** — `__reset*ForTests` (×~13: ai-memory, tracing, posthog, finyk/fizruk/nutrition/routine dualWrite+sqliteRead boots, serverBuildIdBus), `__test__`/`__testing`/`_internals`/`__PLAN_SECTION_PORTAL_UNAVAILABLE`, `classifyDispatchOutcome` (JSDoc: «Direct-side callback (for tests)»). Свідома test-surface; видалення — окреме per-package рішення (як радить 2026-05-05 § 3.3 п.1).
 > - **Documented future/migration scaffolds** — `markWebhookEventProcessed`/`markWebhookEventFailed` («Викликається caller-ом після retry» — webhook retry-consumer ще не wired), `countWaitlistByTierDrizzle` (Drizzle-migration smoke-test, стане canonical), `SliderTicks` («Reserved for future composition»), `useHubBus` (документований public React-subscription API hub-bus-у).
 > - **ALS/обсервабіліті sibling-family API** — `setTraceId` (поряд з used `setUserId`/`setRequestModule`), `getTracingConfig` (поряд з `__resetTracingForTests`).
@@ -200,7 +200,7 @@ Unlisted dependencies (38)
 
 ### P1.4 — process.env budget burn-down (Hard Rule violation, ratchet-baseline restored)
 
-[`2026-05-07-app-audit.md` § 1.2](./archive/2026-05-07-app-audit.md) фіксував `pnpm lint:env-single-source` exit 1 на 120 > 119. Після PR `455c2bd9` (auth.ts migration) бюджет опустився 119 → 114. Між 2026-05-08 і 2026-05-13 feature-PR-и (`PR-23 LLM-provider`, `PR-19 mono ingest`, `PR-35 telegram history`, `PR-14 anthropic budget`) додали 4 нових `process.env[…]` reads без супутньої тест-міграції — main на цьому gate-і знову став red (118 > 114).
+[`2026-05-07-app-audit.md` § 1.2](./2026-05-07-app-audit.md) фіксував `pnpm lint:env-single-source` exit 1 на 120 > 119. Після PR `455c2bd9` (auth.ts migration) бюджет опустився 119 → 114. Між 2026-05-08 і 2026-05-13 feature-PR-и (`PR-23 LLM-provider`, `PR-19 mono ingest`, `PR-35 telegram history`, `PR-14 anthropic budget`) додали 4 нових `process.env[…]` reads без супутньої тест-міграції — main на цьому gate-і знову став red (118 > 114).
 
 **Закрите у цьому PR (часткове):** Бюджет переставлено 114 → 118 з truthful rationale (`.tech-debt/env-single-source-budget.json`), щоб main був зеленим. **Спроба migrate'нути 4 callers (`requireAnthropicKey`, `requireGroqKey`, `posthogCapture` × 2) до `env.X` reads не зайшла — ці consumer-и тестуються тестами, що мутують `process.env` напряму у runtime**, а `env` — frozen-at-module-load const, тому runtime-mutations не пропагуються. Канонічний test-pattern для env-typed consumer-ів (з `auth.test.ts`) — `vi.resetModules() + vi.stubEnv() + dynamic import`. Кожна міграція тепер потребує refactor-у відповідного тесту.
 
@@ -217,7 +217,7 @@ Unlisted dependencies (38)
 
 > **2026-05-14 update:** пункт застарів. Поточні exported symbols у `apps/mobile-shell` відрізняються від перелічених нижче; `scanBarcodeNative` / `subscribeNativePush` використовуються через web dynamic-import gates, а `platform.ts` покритий boundary tests. Не видаляємо без native smoke.
 
-[`2026-05-07-app-audit.md` § 1.3](./archive/2026-05-07-app-audit.md) — `apps/mobile-shell` має 5 unused exports (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`). Знесено з нашого `knip.json` cleanup-у (redundant entries), але самі exports все ще unused. Окремий micro-PR — або delete, або wire-up у capacitor-shell entry.
+[`2026-05-07-app-audit.md` § 1.3](./2026-05-07-app-audit.md) — `apps/mobile-shell` має 5 unused exports (`requestNativeBarcode`, `requestPermissions`, `subscribePushTokens`, `isCapacitorReady`, `getPlatform`). Знесено з нашого `knip.json` cleanup-у (redundant entries), але самі exports все ще unused. Окремий micro-PR — або delete, або wire-up у capacitor-shell entry.
 
 ### P1.6 — AuthPage re-decomposition (Hard Rule #18 regression) — ✅ Closed
 
@@ -286,9 +286,9 @@ pnpm format:check && pnpm lint && pnpm typecheck && pnpm test  # = pnpm check (f
 
 ## Cross-references
 
-- [`docs/90-work/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./archive/2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка.
-- [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](./archive/2026-05-07-app-audit.md) — повний app-audit (web-blocker, mobile tests, hard-rule violations).
-- [`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) — 22-rule registry (Hard Rule #10 — lifecycle markers).
-- [`docs/04-governance/governance/rules/10-lifecycle-markers.md`](../../04-governance/governance/rules/10-lifecycle-markers.md) — canonical body для маркерів.
-- [`scripts/knip-respects-scaffolded.mjs`](../../../scripts/knip-respects-scaffolded.mjs) — wrapper, який імплементує filter для marker-ів.
-- [`scripts/docs/check-markdown-links.mjs`](../../../scripts/docs/check-markdown-links.mjs) — gate, який ловить broken-link drift.
+- [`docs/90-work/audits/2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) — попередня dead-code прожарка.
+- [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний app-audit (web-blocker, mobile tests, hard-rule violations).
+- [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) — 22-rule registry (Hard Rule #10 — lifecycle markers).
+- [`docs/04-governance/governance/rules/10-lifecycle-markers.md`](../../../04-governance/governance/rules/10-lifecycle-markers.md) — canonical body для маркерів.
+- [`scripts/knip-respects-scaffolded.mjs`](../../../../scripts/knip-respects-scaffolded.mjs) — wrapper, який імплементує filter для marker-ів.
+- [`scripts/docs/check-markdown-links.mjs`](../../../../scripts/docs/check-markdown-links.mjs) — gate, який ловить broken-link drift.

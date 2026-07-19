@@ -138,7 +138,7 @@ jobs:
           timeout 60 bash -c 'until curl -sf http://127.0.0.1:4173 >/dev/null 2>&1; do sleep 2; done'
           echo "Both servers ready."
 
-      # Route matrix (audit 2026-05-13-testing-devx-roast.md §P2-3 closeout):
+      # Route matrix (audit archive/2026-05-13-testing-devx-roast.md §P2-3 closeout):
       # `tests/a11y/ds-visual-qa.spec.ts` covers welcome / auth / hub /
       # hub-pre-ftux and the module shells finyk / fizruk / routine /
       # nutrition (via `ALL_FTUX_MODULES`) plus the dedicated `/chat`

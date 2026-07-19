@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
@@ -510,7 +510,7 @@ slos:
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 
-> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../../90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../../90-work/audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md).
+> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../../90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../../90-work/audits/archive/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
 
