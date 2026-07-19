@@ -202,6 +202,7 @@
   },
   "pnpm": {
     "overrides": {
+      "ioredis": "^5.11.1",
       "react-server-dom-webpack": "^19.0.2",
       "tar": ">=7.5.16",
       "@xmldom/xmldom": ">=0.8.13 <0.9.0",

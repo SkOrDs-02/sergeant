@@ -155,8 +155,10 @@ describe("/api/internal/*", () => {
       .send({ userId: "u_ghost" });
 
     expect(res.status).toBe(404);
-    const [sql] = pool.query.mock.calls[0]!;
-    expect(sql).toContain("UPDATE subscriptions");
+    // Downgrade спершу best-effort сигналить провайдерам зупинити списання
+    // (SELECT provider_subscription_id …), і лише потім робить SQL-cancel.
+    const sqls = pool.query.mock.calls.map(([sql]) => String(sql));
+    expect(sqls.some((sql) => sql.includes("UPDATE subscriptions"))).toBe(true);
   });
 
   it("rejects unsafe prompt slugs before reading from disk", async () => {

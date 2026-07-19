@@ -70,7 +70,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
     const validate = responseValidator("/api/me", "get", 200);
     expect(
       validate(response.body),
-      validate.errors?.map((error) => error.message),
+      validate.errors?.map((error) => error.message).join("; "),
     ).toBe(true);
   });
 
@@ -83,7 +83,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
     const validate = responseValidator("/api/me", "get", 401);
     expect(
       validate(response.body),
-      validate.errors?.map((error) => error.message),
+      validate.errors?.map((error) => error.message).join("; "),
     ).toBe(true);
   });
 });
