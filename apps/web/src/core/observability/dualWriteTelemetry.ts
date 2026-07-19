@@ -100,11 +100,7 @@ export function bucketCount(n: number): CountBucket {
 }
 
 export type ErrorRateBucket =
-  | "0"
-  | "<=0.1pct"
-  | "0.1-1pct"
-  | "1-5pct"
-  | ">5pct";
+  "0" | "<=0.1pct" | "0.1-1pct" | "1-5pct" | ">5pct";
 
 /**
  * Bucket the running error-rate (errored ops / total ops) into the

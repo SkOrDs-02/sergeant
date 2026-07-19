@@ -1,6 +1,6 @@
 # Оцінка стеку інфраструктури, авторизації та вартості Sergeant
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Deprecated — доміграційний знімок стеку.
 >
 > **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** ця оцінка описує стек ДО міграції (Railway як current backend). Бекенд відтоді переїхав на Hetzner CX23 + Coolify. Зберігається як історичний assessment; вартісні/хостингові висновки не актуальні.
@@ -85,8 +85,8 @@ Anthropic usage-tier, щоб зняти 50 RPM.
 | Resend / Stripe                    | $0 / %         | free-tier / %                 | tier / %                     |
 | **Разом (порядок)**                | **$5–25**      | **$150–800**                  | **Claude-dominated**         |
 
-**Claude на активного користувача:** при 50 req/день, ~2–5k input + ~500–1k output
-токенів/запит на **Sonnet** ($3/$15 за MTok) — **~$5–25/user/міс без кешу**; на
+**Claude на активного користувача:** при 50 req/день, ~2–5k input + ~~500–1k output
+токенів/запит на **Sonnet** ($3/$15 за MTok) — **~~$5–25/user/міс без кешу**; на
 **Haiku** (~$1/$5) — близько ⅓; на **Opus** ($5/$25) — у кілька разів більше.
 **Prompt caching:** cache read = 0.1× base input (−90%); 5-хв cache write = 1.25×,
 окупається після **одного** читання (1.25×+0.1× = 1.35× проти 2× без кешу). Кешовані

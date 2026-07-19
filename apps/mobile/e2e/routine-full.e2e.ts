@@ -42,8 +42,7 @@ async function readStreakText(): Promise<string> {
   const attrs = (await element(
     by.id("routine-calendar-streak-value"),
   ).getAttributes()) as
-    | { text?: string }
-    | { elements: Array<{ text?: string }> };
+    { text?: string } | { elements: Array<{ text?: string }> };
   if ("text" in attrs && typeof attrs.text === "string") return attrs.text;
   if ("elements" in attrs && attrs.elements[0]?.text) {
     return attrs.elements[0].text;

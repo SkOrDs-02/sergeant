@@ -106,9 +106,7 @@ export async function getSentryIssues(
     { headers: { Authorization: `Bearer ${token}` } },
   );
   const body = (await res.json().catch(() => null)) as
-    | SentryIssueRecord[]
-    | { detail?: string }
-    | null;
+    SentryIssueRecord[] | { detail?: string } | null;
 
   if (!Array.isArray(body)) {
     return {

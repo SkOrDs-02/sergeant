@@ -1,6 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Closed (superseded by ADR-0052 + initiative 0010; historical reference only)
 >
 > **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/02-engineering/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
@@ -46,10 +46,10 @@
 ### Фаза 1 — інвентаризація і метрики (3 дні)
 
 - **PR `mobile-feature-parity-matrix`** — оновити [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) з повною feature-parity таблицею:
-  | Module | Web | Shell | RN | Notes |
-  | ------------- | --- | ----- | -- | ----- |
-  | Auth (Better) | ✅ | ✅ | ✅ | bearer контракт уніфікований |
-  | Hub chat | ✅ | ✅ | 🟡 | RN voice ще без STT-fallback |
+  | Module            | Web | Shell | RN  | Notes                        |
+  | ----------------- | --- | ----- | --- | ---------------------------- |
+  | Auth (Better)     | ✅  | ✅    | ✅  | bearer контракт уніфікований |
+  | Hub chat          | ✅  | ✅    | 🟡  | RN voice ще без STT-fallback |
   | … (повний список) |
 - **PR `mobile-tax-report`** — додати у `docs/90-work/initiatives/0002-…` секцію _Outcome → Cost baseline_ з:
   - Кількість shell-related commits / quarter

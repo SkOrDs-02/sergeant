@@ -76,8 +76,7 @@ interface OutboxRow {
 
 function readRow(db: BetterSqliteDatabase, id: number): OutboxRow | undefined {
   return db.prepare(`SELECT * FROM sync_op_outbox WHERE id = ?`).get(id) as
-    | OutboxRow
-    | undefined;
+    OutboxRow | undefined;
 }
 
 function readAll(db: BetterSqliteDatabase): OutboxRow[] {

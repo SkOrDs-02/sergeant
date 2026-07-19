@@ -111,11 +111,7 @@ declare module "openclaw/plugin-sdk/plugin-entry" {
    * these to discriminate `approved` vs `rejected` write-audit rows.
    */
   export type PluginApprovalResolution =
-    | "allow-once"
-    | "allow-always"
-    | "deny"
-    | "timeout"
-    | "cancelled";
+    "allow-once" | "allow-always" | "deny" | "timeout" | "cancelled";
 
   /**
    * Event payload for `before_tool_call`. Real source:

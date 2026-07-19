@@ -56,8 +56,7 @@ export class CircuitBreaker {
   private readonly resetTimeoutMs: number;
   private readonly successThreshold: number;
   private readonly onStateChange?:
-    | ((from: CircuitState, to: CircuitState) => void)
-    | undefined;
+    ((from: CircuitState, to: CircuitState) => void) | undefined;
 
   constructor(options: CircuitBreakerOptions) {
     this.name = options.name;

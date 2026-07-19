@@ -35,7 +35,7 @@ services:
 # →
 services:
   postgres:
-    image: pgvector/pgvector@sha256:<digest>  # pg16 as of 2026-05-07
+    image: pgvector/pgvector@sha256:<digest> # pg16 as of 2026-05-07
 ```
 
 Digest fetched через `docker pull pgvector/pgvector:pg16 && docker inspect`.

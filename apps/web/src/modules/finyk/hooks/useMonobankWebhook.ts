@@ -308,9 +308,7 @@ export function useMonobankWebhook({
     return {
       status: statusMap[syncStateData.status] ?? "idle",
       source: (transactions.length > 0 ? "network" : "none") as
-        | "none"
-        | "network"
-        | "cache",
+        "none" | "network" | "cache",
       lastSuccess: lastUpdated,
       lastError:
         syncStateData.status === "invalid"

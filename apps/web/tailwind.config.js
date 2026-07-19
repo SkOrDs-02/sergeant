@@ -19,7 +19,9 @@ export default {
         finyk: { DEFAULT: "rgb(var(--c-finyk-accent) / <alpha-value>)" },
         fizruk: { DEFAULT: "rgb(var(--c-fizruk-accent) / <alpha-value>)" },
         routine: { DEFAULT: "rgb(var(--c-routine-accent) / <alpha-value>)" },
-        nutrition: { DEFAULT: "rgb(var(--c-nutrition-accent) / <alpha-value>)" },
+        nutrition: {
+          DEFAULT: "rgb(var(--c-nutrition-accent) / <alpha-value>)",
+        },
       },
     },
   },

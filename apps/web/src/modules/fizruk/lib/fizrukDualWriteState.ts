@@ -314,13 +314,11 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     type: String(item.type ?? "strength"),
   };
   if (Array.isArray(item.sets)) {
-    out.sets = item.sets.map(
-      (s): FizrukSetSnapshot => ({
-        weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
-        reps: typeof s.reps === "number" ? s.reps : 0,
-        ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
-      }),
-    );
+    out.sets = item.sets.map((s): FizrukSetSnapshot => ({
+      weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
+      reps: typeof s.reps === "number" ? s.reps : 0,
+      ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
+    }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;

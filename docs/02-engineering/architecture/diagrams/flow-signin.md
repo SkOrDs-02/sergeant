@@ -1,6 +1,6 @@
 # Flow — Sign-in cookie flow (Better Auth)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 Cookie-based session login через Better Auth. Email + password (magic-link / OAuth — варіації цього самого flow).
@@ -55,7 +55,7 @@ sequenceDiagram
 | ------------------------------ | -------------------------------- | ------------------------------------------------------------------------------ |
 | 401 спайк після deploy         | rotated `BETTER_AUTH_SECRET`     | переконатись, що secret не змінювався без міграції; пере-логінити користувачів |
 | 403 `email_not_verified` спайк | SMTP queue лагає або mail bounce | Sentry → BullMQ Auth Mail dashboard, перевірити SMTP relay                     |
-| Cookie не виставляється        | proxy strips `Set-Cookie`        | перевірити Vercel edge-proxy (`BACKEND_URL`) + Coolify Traefik ланцюг                              |
+| Cookie не виставляється        | proxy strips `Set-Cookie`        | перевірити Vercel edge-proxy (`BACKEND_URL`) + Coolify Traefik ланцюг          |
 
 ## Тести
 

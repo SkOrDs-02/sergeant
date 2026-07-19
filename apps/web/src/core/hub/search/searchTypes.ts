@@ -12,11 +12,7 @@ import { scoreMatch } from "../hubSearchEngine";
  * `/assistant` / cross-module quick-add / open-chat handoff).
  */
 export type SearchSurface =
-  | ModuleAccent
-  | "settings"
-  | "assistant"
-  | "actions"
-  | "ai";
+  ModuleAccent | "settings" | "assistant" | "actions" | "ai";
 
 export type Hit = {
   id: string;

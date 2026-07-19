@@ -445,11 +445,7 @@ export function useHubDashboardState(props: {
   const showDigestFooter = true;
 
   const primaryModule = activeModules[0] as
-    | "finyk"
-    | "fizruk"
-    | "routine"
-    | "nutrition"
-    | undefined;
+    "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
   const showChecklist =
     primaryModule &&
     hasRealEntry &&

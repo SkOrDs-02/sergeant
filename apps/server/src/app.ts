@@ -170,8 +170,7 @@ export function createApp({
 
   if (servesFrontend && distPath) {
     const fe = createFrontendMiddleware({ distPath }) as
-      | Handler
-      | FrontendMiddlewareBundle;
+      Handler | FrontendMiddlewareBundle;
     if (typeof fe === "function") {
       // Express 5 / path-to-regexp v8: bare "*" is no longer a valid path.
       // A RegExp route matches every path including "/" (root-inclusive),

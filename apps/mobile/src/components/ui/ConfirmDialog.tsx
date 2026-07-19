@@ -47,10 +47,7 @@ import { Button } from "./Button";
 const ALERT_DIALOG_ROLE = "alertdialog" as AccessibilityRole;
 
 export type ConfirmDialogVariant =
-  | "default"
-  | "destructive"
-  | "warning"
-  | "info";
+  "default" | "destructive" | "warning" | "info";
 
 export interface ConfirmDialogProps {
   open: boolean;

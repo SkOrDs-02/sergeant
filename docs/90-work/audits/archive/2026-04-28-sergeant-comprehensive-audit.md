@@ -1,6 +1,6 @@
 # Sergeant — Комплексний Генеральний Аудит
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Closed (historical record — outstanding items відстежуються у [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md))
 
 > **Initial audit date:** 2026-04-28 (історичний аудит; поточна ревалідація живе у `Last validated` / `Next review`).
@@ -313,16 +313,17 @@ jest.mock("react-native", () => ({
 **Поточний стан:** 52 файли в ESLint allowlist
 
 **План міграції по модулях:**
-| Модуль | Файлів | Пріоритет | Wrapper |
-|--------|--------|-----------|---------|
-| `core/onboarding/*` | 8 | High | `createModuleStorage` |
-| `core/insights/*` | 4 | High | `useLocalStorageState` |
-| `core/hub/*` | 5 | High | `createModuleStorage` |
-| `modules/finyk/*` | 6 | Medium | `finykStorage` |
-| `modules/fizruk/*` | 8 | Medium | `createModuleStorage` |
-| `modules/nutrition/*` | 4 | Medium | `createModuleStorage` |
-| `modules/routine/*` | 2 | Low | `createModuleStorage` |
-| Інші | 15 | Low | case-by-case |
+
+| Модуль                | Файлів | Пріоритет | Wrapper                |
+| --------------------- | ------ | --------- | ---------------------- |
+| `core/onboarding/*`   | 8      | High      | `createModuleStorage`  |
+| `core/insights/*`     | 4      | High      | `useLocalStorageState` |
+| `core/hub/*`          | 5      | High      | `createModuleStorage`  |
+| `modules/finyk/*`     | 6      | Medium    | `finykStorage`         |
+| `modules/fizruk/*`    | 8      | Medium    | `createModuleStorage`  |
+| `modules/nutrition/*` | 4      | Medium    | `createModuleStorage`  |
+| `modules/routine/*`   | 2      | Low       | `createModuleStorage`  |
+| Інші                  | 15     | Low       | case-by-case           |
 
 **Приклад міграції:**
 

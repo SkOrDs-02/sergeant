@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Типізований TS-клієнт — [`packages/api-client/src/generated/openapi.d.ts`](../../../packages/api-client/src/generated/openapi.d.ts) (автогенерований через [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)).
@@ -49,12 +49,12 @@ npx @redocly/cli preview-docs docs/02-engineering/api/openapi.json
 
 ### Свідомо НЕ у spec'і (operational / probes)
 
-| Path                                                       | Чому                                                                                |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`    | Оркестратор/uptime probes (Coolify Traefik + external); не product API. |
-| `/health/liveness`, `/health/readiness`, `/health/startup` | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами.    |
-| `/health/workers`                                          | Внутрішня діагностика воркерів. Не для клієнтів.                                    |
-| `/metrics`                                                 | Prom-scrape endpoint. Не JSON, не для клієнтів.                                     |
+| Path                                                       | Чому                                                                             |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`    | Оркестратор/uptime probes (Coolify Traefik + external); не product API.          |
+| `/health/liveness`, `/health/readiness`, `/health/startup` | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами. |
+| `/health/workers`                                          | Внутрішня діагностика воркерів. Не для клієнтів.                                 |
+| `/metrics`                                                 | Prom-scrape endpoint. Не JSON, не для клієнтів.                                  |
 
 ### Відомі прогалини (треба додати у `packages/shared/src/openapi/routes.ts` і перегенерувати spec)
 

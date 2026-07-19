@@ -85,12 +85,12 @@
 
 ### 2.3. Середні (P2) — DX-покращення
 
-| ID       | Проблема                    | Деталі              |
+| ID | Проблема | Деталі |
 | -------- | --------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P2-1** | TODO/FIXME без трекінгу     | 10 файлів           | Потребує перевірки                                                                                                                                |
-| **P2-2** | No Sentry integration       | Error context loss  | ✅ **Закрито.** Web: lazy `@sentry/react` у `core/observability/sentry.ts`. Mobile: `@sentry/react-native`. Server: `@sentry/node` у `sentry.ts`. |
-| **P2-3** | Mobile debt tracker missing | Hidden accumulation | Потребує перевірки                                                                                                                                |
-| **P2-4** | `as unknown as X` patterns  | 0 у prod-коді       | ✅ **Закрито** для production-коду. Залишились тільки в тестах (~20 файлів) — прийнятно для test fixtures.                                        |
+| **P2-1** | TODO/FIXME без трекінгу | 10 файлів | Потребує перевірки |
+| **P2-2** | No Sentry integration | Error context loss | ✅ **Закрито.** Web: lazy `@sentry/react` у `core/observability/sentry.ts`. Mobile: `@sentry/react-native`. Server: `@sentry/node` у `sentry.ts`. |
+| **P2-3** | Mobile debt tracker missing | Hidden accumulation | Потребує перевірки |
+| **P2-4** | `as unknown as X` patterns | 0 у prod-коді | ✅ **Закрито** для production-коду. Залишились тільки в тестах (~20 файлів) — прийнятно для test fixtures. |
 
 ---
 

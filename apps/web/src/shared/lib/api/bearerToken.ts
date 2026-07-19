@@ -35,8 +35,7 @@ async function loadStorage(): Promise<AuthStorageModule | null> {
     // пакет, якого формально нема у bundle graph браузерного білду;
     // try/catch ізолює його в рантаймі.
     const mod = (await import("@sergeant/mobile-shell/auth-storage")) as
-      | AuthStorageModule
-      | { default?: AuthStorageModule };
+      AuthStorageModule | { default?: AuthStorageModule };
     return "getBearerToken" in mod
       ? (mod as AuthStorageModule)
       : (mod.default ?? null);

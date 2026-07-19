@@ -1,15 +1,9 @@
 export type JanitorKind =
-  | "doc-drift"
-  | "dead-code"
-  | "dep-cycles"
-  | "dualwrite-residue";
+  "doc-drift" | "dead-code" | "dep-cycles" | "dualwrite-residue";
 
 export interface DriftFinding {
   readonly kind:
-    | "broken-ref"
-    | "missing-file"
-    | "missing-symbol"
-    | "circular-dep";
+    "broken-ref" | "missing-file" | "missing-symbol" | "circular-dep";
   readonly path: string;
   readonly line?: number | undefined;
   readonly message: string;

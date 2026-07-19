@@ -15,6 +15,7 @@
 import { useMemo } from "react";
 import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
   Transaction,
   TxSplitsMap,
@@ -35,14 +36,15 @@ export const COFFEE_CATEGORY_SLUG = "restaurant";
 function previousMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
   if (!y || !m) return "";
-  const date = new Date(y, (m ?? 1) - 2, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  return `${prevY}-${String(prevM).padStart(2, "0")}`;
 }
 
-/** "YYYY-MM" for today (Europe/Kyiv boundary — uses local clock, same as the rest of Finyk). */
+/** "YYYY-MM" for today, anchored to the Europe/Kyiv civil date (domain invariant). */
 function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { year, month } = getKyivDateParts();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 /** Sum category spend for a given "YYYY-MM" month slice. */
@@ -85,8 +87,7 @@ interface UseCoffeeLimitInsightArgs {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?:
-    | readonly { id: string; label?: string | undefined }[]
-    | undefined;
+    readonly { id: string; label?: string | undefined }[] | undefined;
 }
 
 export function useCoffeeLimitInsight({

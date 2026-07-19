@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -282,7 +282,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 `coach-insight` / `weekly-digest` — батч-флоу без TTL-overlap; вмикання cache там не відповідає cost-економіці (write-cost 1.25× без read-amortization). Out-of-scope для 0005; якщо потрібно вмикнути — окремий ADR + перевірка hit-rate в staging.
 
-**Cost (7d):** $0.115 total spend (peak day = $0.10, найнижчий = $0.005). Spending-volume занадто низький для cost-cap alert; `ai_daily_cost_usd > $X` зостається у `Carry-over → Після baseline-week` queue до моменту, коли launch (Initiative 0010) дасть осмислений baseline.
+**Cost (7d):** $0.115 total spend (peak day = $0.10, найнижчий = $0.005). Spending-volume занадто низький для cost-cap alert; `ai_daily_cost_usd > $X`зостається у`Carry-over → Після baseline-week` queue до моменту, коли launch (Initiative 0010) дасть осмислений baseline.
 
 **Drift signal:** `anthropic_prompt_cache_hit_total{version="v7"}` = 2 hits / 7d, `version="v8"` = 0; per-request counter залишається sparse vs token-rate (55k+ cache_read tokens / 7d). Це **не bug** — counter інкрементиться `bumpCacheHit()` тільки коли SDK явно сигналізує hit/miss outcome у message-completion event-і (для streaming flow сигнал часто не доходить до SSE-handler-у). Token-decomposition через `ai_tokens_total{kind=~"cache_read|cache_write|prompt"}` залишається canonical signal. Per-route hit-rate breakdown переноситься у `Carry-over → без due` вже (`endpoint` label на `anthropic_prompt_cache_hit_total` — коли incident вимагатиме).
 

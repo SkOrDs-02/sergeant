@@ -39,8 +39,7 @@ import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
 
 type GroupedListItem =
-  | { kind: "header"; label: string }
-  | { kind: "event"; e: HubCalendarEvent };
+  { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
 
 const timeModeItems: ReadonlyArray<{
   value: RoutineTimeModeId;

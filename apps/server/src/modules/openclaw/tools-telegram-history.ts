@@ -61,9 +61,7 @@ export interface ReadTelegramTopicHistoryInput {
 }
 
 export type ReadTelegramTopicHistoryErrorCode =
-  | "rate_limit"
-  | "forbidden"
-  | "api_error";
+  "rate_limit" | "forbidden" | "api_error";
 
 export interface ReadTelegramTopicHistoryError {
   code: ReadTelegramTopicHistoryErrorCode;

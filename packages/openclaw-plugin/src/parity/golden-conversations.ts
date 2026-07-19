@@ -63,10 +63,7 @@ import type {
  *     legitimate result для будь-яких НЕ-фікстурних inputs.
  */
 export type ParityLayer =
-  | "shortcut"
-  | "strategic-mode"
-  | "council"
-  | "fallthrough";
+  "shortcut" | "strategic-mode" | "council" | "fallthrough";
 
 /**
  * Куди б цей input пішов через legacy grammy console bot. Bottom row
@@ -76,11 +73,7 @@ export type ParityLayer =
  * це Layer 0 / strategic-mode / council deterministic-ом.
  */
 export type LegacyAgent =
-  | "dispatcher"
-  | "ops"
-  | "marketing"
-  | "help"
-  | "unknown";
+  "dispatcher" | "ops" | "marketing" | "help" | "unknown";
 
 export interface ShortcutFixture {
   kind: "shortcut";
@@ -124,9 +117,7 @@ export interface CouncilFixture {
 }
 
 export type GoldenConversation =
-  | ShortcutFixture
-  | StrategicModeFixture
-  | CouncilFixture;
+  ShortcutFixture | StrategicModeFixture | CouncilFixture;
 
 /**
  * Helper — витягає `toolName[]` для shortcut-а з реального

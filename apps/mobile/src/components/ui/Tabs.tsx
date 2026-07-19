@@ -26,11 +26,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 export type TabsVariant =
-  | "accent"
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition";
+  "accent" | "finyk" | "fizruk" | "routine" | "nutrition";
 
 export type TabsStyle = "underline" | "pill";
 

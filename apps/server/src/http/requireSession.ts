@@ -72,9 +72,11 @@ export function requireSession(): RequestHandler {
     try {
       const user = await getSessionUser(req);
       if (!user) {
-        res
-          .status(401)
-          .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+        res.status(401).json({
+          error: "Потрібна автентифікація",
+          message: "Потрібна автентифікація",
+          code: "UNAUTHORIZED",
+        });
         return;
       }
       (req as AuthedRequest).user = user;
@@ -126,9 +128,11 @@ export function requireSessionSoft(): RequestHandler {
     if (lookupError === undefined) {
       // True "no session" — preserve original 401 behaviour and do
       // not touch the failure counter.
-      res
-        .status(401)
-        .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+      res.status(401).json({
+        error: "Потрібна автентифікація",
+        message: "Потрібна автентифікація",
+        code: "UNAUTHORIZED",
+      });
       return;
     }
 
@@ -158,8 +162,10 @@ export function requireSessionSoft(): RequestHandler {
       return;
     }
 
-    res
-      .status(401)
-      .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+    res.status(401).json({
+      error: "Потрібна автентифікація",
+      message: "Потрібна автентифікація",
+      code: "UNAUTHORIZED",
+    });
   };
 }

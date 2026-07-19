@@ -31,11 +31,7 @@ import { syncV1LegacyClientsTotal } from "../../obs/metrics.js";
  */
 
 export type UserAgentClass =
-  | "web"
-  | "mobile-rn"
-  | "mobile-shell-ios"
-  | "mobile-shell-android"
-  | "other";
+  "web" | "mobile-rn" | "mobile-shell-ios" | "mobile-shell-android" | "other";
 
 const KNOWN_VERSION_LIMIT = 20;
 const knownVersions = new Set<string>();

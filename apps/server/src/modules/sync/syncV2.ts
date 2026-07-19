@@ -97,8 +97,7 @@ type SyncV2Outcome =
   | "error";
 
 type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 type ApplyFn = (
   client: PoolClient,

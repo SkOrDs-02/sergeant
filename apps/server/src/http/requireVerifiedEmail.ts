@@ -35,9 +35,11 @@ export function requireVerifiedEmail(): RequestHandler {
       // `requireSession() → requireVerifiedEmail()` `req.user` вже точно
       // є. Дублюємо 401 на випадок, якщо хтось забуде попередній
       // middleware (та і взагалі сюди не буде попадати без сесії).
-      res
-        .status(401)
-        .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+      res.status(401).json({
+        error: "Потрібна автентифікація",
+        message: "Потрібна автентифікація",
+        code: "UNAUTHORIZED",
+      });
       return;
     }
     if (user.emailVerified !== true) {

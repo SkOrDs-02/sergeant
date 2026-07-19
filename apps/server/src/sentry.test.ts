@@ -409,8 +409,7 @@ describe("SENTRY_DENY_URLS", () => {
     expect(SENTRY_DENY_URLS).toContain("/health");
     // favicon noise — regex.
     const faviconRe = SENTRY_DENY_URLS.find((r) => r instanceof RegExp) as
-      | RegExp
-      | undefined;
+      RegExp | undefined;
     expect(faviconRe).toBeDefined();
     expect(faviconRe!.test("https://example.com/favicon.ico")).toBe(true);
   });

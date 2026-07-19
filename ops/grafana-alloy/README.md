@@ -1,6 +1,6 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить
@@ -112,15 +112,15 @@ Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](.
    Service → Deploy from GitHub Repo (`SkOrDs-02/sergeant`), **Root Directory:**
    `ops/grafana-alloy`, Build: Dockerfile (auto). Назви `grafana-alloy`.
 2. **Env нового сервісу:**
-   | Змінна | Значення |
-   | --- | --- |
-   | `GRAFANA_CLOUD_PROMETHEUS_URL` | (як на старому) |
-   | `GRAFANA_CLOUD_PROMETHEUS_USERNAME` | (як на старому) |
-   | `GRAFANA_CLOUD_PROMETHEUS_API_KEY` | (як на старому) |
-   | `METRICS_TOKEN` | той самий, що в сервісі `Sergeant` (можна Reference-змінною) |
-   | `SERGEANT_SERVER_TARGET` | **`<server>.railway.internal:3000`** (private — резолвиться у тому ж проєкті) |
-   | `SERGEANT_SERVER_SCHEME` | **`http`** (private network, без TLS) |
-   | `N8N_METRICS_TARGET` | `n8n-production.up.railway.app:443` (тепер cross-project → **публічний** домен n8n) + `N8N_METRICS_SCHEME=https`, якщо config це підтримує; інакше тимчасово лишити n8n-scrape на старому сервісі |
+   | Змінна                              | Значення                                                                                                                                                                                          |
+   | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | `GRAFANA_CLOUD_PROMETHEUS_URL`      | (як на старому)                                                                                                                                                                                   |
+   | `GRAFANA_CLOUD_PROMETHEUS_USERNAME` | (як на старому)                                                                                                                                                                                   |
+   | `GRAFANA_CLOUD_PROMETHEUS_API_KEY`  | (як на старому)                                                                                                                                                                                   |
+   | `METRICS_TOKEN`                     | той самий, що в сервісі `Sergeant` (можна Reference-змінною)                                                                                                                                      |
+   | `SERGEANT_SERVER_TARGET`            | **`<server>.railway.internal:3000`** (private — резолвиться у тому ж проєкті)                                                                                                                     |
+   | `SERGEANT_SERVER_SCHEME`            | **`http`** (private network, без TLS)                                                                                                                                                             |
+   | `N8N_METRICS_TARGET`                | `n8n-production.up.railway.app:443` (тепер cross-project → **публічний** домен n8n) + `N8N_METRICS_SCHEME=https`, якщо config це підтримує; інакше тимчасово лишити n8n-scrape на старому сервісі |
 3. **Parallel run.** Не вимикати старий сервіс одразу. Обидва remote_write-ять
    у той самий Grafana Cloud з `external_labels.project="sergeant"` → дублікати
    серій короткочасно (Mimir дедуплікує по labels+timestamp; сплеск active

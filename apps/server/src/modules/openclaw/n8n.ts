@@ -448,10 +448,7 @@ export async function triggerN8nWorkflow(
 // ─────────────────────────────────────────────────────────────────────────
 
 export type ActivateN8nWorkflowStatus =
-  | "activated"
-  | "deactivated"
-  | "not_configured"
-  | "error";
+  "activated" | "deactivated" | "not_configured" | "error";
 
 export interface ActivateN8nWorkflowInput {
   workflowId: string;

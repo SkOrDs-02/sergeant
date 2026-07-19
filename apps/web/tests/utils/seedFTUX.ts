@@ -117,10 +117,7 @@ export function moduleFirstSeenKey(moduleId: FtuxModuleId): string {
 export type FtuxTheme = "light" | "dark";
 
 export type FtuxSeedMode =
-  | "cold"
-  | "pre-ftux"
-  | "post-ftux"
-  | "module-first-run";
+  "cold" | "pre-ftux" | "post-ftux" | "module-first-run";
 
 export interface SeedFTUXOptions {
   /** Theme to apply via `hub_dark_mode_v1`. Defaults to `"light"`. */

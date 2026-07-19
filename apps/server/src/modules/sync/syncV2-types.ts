@@ -94,8 +94,7 @@ export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];
 export type RejectReason = ApplyRejectReason | EngineRejectReason;
 
 export type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 // Re-export
 export type { SyncV2Op } from "../../http/schemas.js";

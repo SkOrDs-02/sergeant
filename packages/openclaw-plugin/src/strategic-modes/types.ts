@@ -33,9 +33,7 @@ export type StrategicModeSlug = "plan" | "analyze" | "okr";
  * is merged).
  */
 export type StrategicModeTrigger =
-  | "strategic_plan"
-  | "strategic_analyze"
-  | "strategic_okr";
+  "strategic_plan" | "strategic_analyze" | "strategic_okr";
 
 /**
  * Result of matching a user message against a strategic-mode definition.

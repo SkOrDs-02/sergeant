@@ -25,19 +25,10 @@ import { messages } from "@shared/i18n/uk";
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type CelebrationType =
-  | "achievement"
-  | "goal"
-  | "levelUp"
-  | "streak"
-  | "success"
-  | "confetti";
+  "achievement" | "goal" | "levelUp" | "streak" | "success" | "confetti";
 
 export type ModuleTheme =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "default";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "default";
 
 interface ConfettiParticle {
   id: number;

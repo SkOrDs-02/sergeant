@@ -22,11 +22,7 @@ import { Icon } from "./Icon";
  */
 
 export type CheckboxVariant =
-  | "default"
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition";
+  "default" | "finyk" | "fizruk" | "routine" | "nutrition";
 
 export type CheckboxSize = "sm" | "md" | "lg";
 

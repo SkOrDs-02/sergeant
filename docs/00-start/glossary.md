@@ -1,6 +1,6 @@
 # Глосарій — доменні й платформні терміни Sergeant
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 > Один екран, щоб новачок (людина чи агент) розшифрував жаргон, який
@@ -44,14 +44,14 @@
 
 ## Платформа і пакети
 
-| Термін                | Що це                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| **apps/web**          | Frontend (React + Vite, PWA). Деплой — Vercel.                                                    |
+| Термін                | Що це                                                                                                                  |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **apps/web**          | Frontend (React + Vite, PWA). Деплой — Vercel.                                                                         |
 | **apps/server**       | Backend (Express, Drizzle). Деплой — Hetzner + Coolify (образ `ghcr.io/.../sergeant-api`, `Dockerfile.api`; ADR-0074). |
-| **apps/mobile**       | Expo / React Native застосунок (NativeWind).                                                      |
-| **apps/mobile-shell** | Тонка нативна оболонка навколо web (Capacitor-стиль), MMKV-сховище.                               |
-| **api-client**        | `@sergeant/api-client` — типізований HTTP-клієнт; контракт server ↔ client ↔ test (Hard Rule #3). |
-| **EAS**               | Expo Application Services — білд/submit мобільних артефактів.                                     |
+| **apps/mobile**       | Expo / React Native застосунок (NativeWind).                                                                           |
+| **apps/mobile-shell** | Тонка нативна оболонка навколо web (Capacitor-стиль), MMKV-сховище.                                                    |
+| **api-client**        | `@sergeant/api-client` — типізований HTTP-клієнт; контракт server ↔ client ↔ test (Hard Rule #3).                      |
+| **EAS**               | Expo Application Services — білд/submit мобільних артефактів.                                                          |
 
 ## Процес і governance
 

@@ -12,11 +12,7 @@ import { titleFor } from "./hubChatActionCardsHelpers";
 import { summaryFor } from "./hubChatActionCardsSummary";
 
 export type ChatActionCardModule =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "hub";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
 
 export type ChatActionCardStatus = "completed" | "failed";
 

@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-06-26 by @Skords-01. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -282,12 +282,12 @@ Test stacks by surface:
 
 ## Deployment
 
-| Service                  | Deployed to                          | How                                                            |
-| ------------------------ | ------------------------------------ | -------------------------------------------------------------- |
-| Web (frontend)           | Vercel                               | Auto preview deploy on every PR, production on merge to `main` |
+| Service                  | Deployed to                          | How                                                                                                      |
+| ------------------------ | ------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Web (frontend)           | Vercel                               | Auto preview deploy on every PR, production on merge to `main`                                           |
 | Server (API)             | Hetzner CX23 + Coolify               | `deploy-api.yml` → `ghcr.io/.../sergeant-api` → Coolify; `Dockerfile.api`, pre-deploy migrate (ADR-0074) |
-| Mobile (Expo)            | EAS Build → TestFlight / Google Play | Via Expo Application Services                                  |
-| Mobile Shell (Capacitor) | App Store / Google Play              | Via Capacitor build                                            |
+| Mobile (Expo)            | EAS Build → TestFlight / Google Play | Via Expo Application Services                                                                            |
+| Mobile Shell (Capacitor) | App Store / Google Play              | Via Capacitor build                                                                                      |
 
 ## Integrations
 
