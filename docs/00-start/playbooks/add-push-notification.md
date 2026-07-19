@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -179,3 +179,14 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 - `apps/server/src/lib/webpushSend.ts` — web-push transport
 - `apps/web/src/sw.ts` рядок ~627 — `push` event listener
 - `packages/shared/src/types/index.ts` — `PushPayload` контракт
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------- |
+| [#312](https://github.com/Skords-01/Sergeant/pull/312) | docs(docs): actualize documentation — regenerate dynamic artifacts, align hosting refs with ADR-0074 | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

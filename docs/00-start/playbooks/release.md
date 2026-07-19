@@ -1,6 +1,6 @@
 # Playbook: Реліз
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.
@@ -163,3 +163,14 @@ flowchart TD
 - Skill: `sergeant-server-api`
 - Skill: `sergeant-web-ui`
 - Skill: `sergeant-mobile-expo`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------- |
+| [#312](https://github.com/Skords-01/Sergeant/pull/312) | docs(docs): actualize documentation — regenerate dynamic artifacts, align hosting refs with ADR-0074 | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

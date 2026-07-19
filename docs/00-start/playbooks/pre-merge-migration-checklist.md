@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
@@ -136,3 +136,14 @@ Reviewer must confirm before approving merge:
 - [`apps/server/src/migrations/__tests__/rollback-sanity.test.ts`](../../../apps/server/src/migrations/__tests__/rollback-sanity.test.ts) — auto-test, що `down.sql` принаймні виконується (PR #918).
 - [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md) — Database & migrations review.
 ```
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------- |
+| [#312](https://github.com/Skords-01/Sergeant/pull/312) | docs(docs): actualize documentation — regenerate dynamic artifacts, align hosting refs with ADR-0074 | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
