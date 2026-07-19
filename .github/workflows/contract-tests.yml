@@ -45,5 +45,12 @@ jobs:
       - name: Check generated OpenAPI artifacts
         run: pnpm api:check-openapi && pnpm api:check-openapi-types
 
+      # apps/server imports built subpath exports (e.g. `@sergeant/db-schema/pg`
+      # from the waitlist route) that resolve to dist/ — build workspace deps
+      # before running the suite, mirroring what `turbo run test` does in the
+      # main check job.
+      - name: Build workspace deps of apps/server
+        run: pnpm --filter @sergeant/server^... build
+
       - name: Run runtime response roundtrip tests
         run: pnpm --filter @sergeant/server exec vitest run src/__tests__/contracts/openapi-roundtrip.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism
