@@ -111,17 +111,15 @@ describe("createCheckoutSession", () => {
     mockEnv["STRIPE_PRICE_ID_PRO_MONTHLY"] = "price_pro_monthly";
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              id: "cs_1",
-              url: "https://checkout.stripe.com/cs_1",
-            }),
-            { status: 200 },
-          ),
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            id: "cs_1",
+            url: "https://checkout.stripe.com/cs_1",
+          }),
+          { status: 200 },
         ),
+      ),
     );
     const pool = { query: vi.fn() } as never;
 
@@ -137,17 +135,15 @@ describe("createCheckoutSession", () => {
   it("omits customer_email from the request body when the user has no email", async () => {
     mockEnv["STRIPE_SECRET_KEY"] = "sk_test_abc";
     mockEnv["STRIPE_PRICE_ID_PRO_MONTHLY"] = "price_pro_monthly";
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            id: "cs_1",
-            url: "https://checkout.stripe.com/cs_1",
-          }),
-          { status: 200 },
-        ),
-      );
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "cs_1",
+          url: "https://checkout.stripe.com/cs_1",
+        }),
+        { status: 200 },
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
     const pool = { query: vi.fn() } as never;
 

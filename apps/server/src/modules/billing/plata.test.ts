@@ -227,13 +227,11 @@ describe("ensurePlataPubkey", () => {
 
   it("fetches and caches the pubkey from monopay", async () => {
     const derPubkey = publicKey.export({ type: "spki", format: "der" });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ key: derPubkey.toString("base64") }), {
-          status: 200,
-        }),
-      );
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ key: derPubkey.toString("base64") }), {
+        status: 200,
+      }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await ensurePlataPubkey();
