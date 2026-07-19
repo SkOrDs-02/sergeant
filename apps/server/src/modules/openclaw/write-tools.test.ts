@@ -222,6 +222,94 @@ describe("commitToStrategyDoc", () => {
       note: "PR response missing html_url",
     });
   });
+
+  it("fails soft when the base ref response is missing a sha", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    installFetchSpy().mockResolvedValueOnce(jsonResponse({ object: {} }));
+
+    const result = await commitToStrategyDoc({
+      path: "docs/strategy/roadmap.md",
+      content: "# Roadmap\n",
+      message: "update roadmap",
+      repo: "owner/repo",
+    });
+    expect(result).toEqual({
+      status: "error",
+      note: "Base ref response missing sha",
+    });
+  });
+
+  it("fails soft when branch creation returns a non-422 error status", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    installFetchSpy()
+      .mockResolvedValueOnce(jsonResponse({ object: { sha: "base_sha" } }))
+      .mockResolvedValueOnce(jsonResponse({ message: "boom" }, 500));
+
+    const result = await commitToStrategyDoc({
+      path: "docs/strategy/roadmap.md",
+      content: "# Roadmap\n",
+      message: "update roadmap",
+      repo: "owner/repo",
+    });
+    expect(result).toEqual({
+      status: "error",
+      note: "Failed to create branch: HTTP 500",
+    });
+  });
+
+  it("treats a missing probe response (new file) as no existing sha", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    const fetchSpy = installFetchSpy()
+      .mockResolvedValueOnce(jsonResponse({ object: { sha: "base_sha" } }))
+      .mockResolvedValueOnce(jsonResponse({ ref: "refs/heads/branch" }, 201))
+      .mockResolvedValueOnce(jsonResponse({ message: "Not Found" }, 404))
+      .mockResolvedValueOnce(jsonResponse({ content: { sha: "new_sha" } }))
+      .mockResolvedValueOnce(
+        jsonResponse({ html_url: "https://github.com/owner/repo/pull/9" }),
+      );
+
+    const result = await commitToStrategyDoc({
+      path: "docs/strategy/new-doc.md",
+      content: "# New\n",
+      message: "add new doc",
+      repo: "owner/repo",
+    });
+    expect(result.status).toBe("opened");
+    const putInit = fetchSpy.mock.calls[3]?.[1] as RequestInit;
+    expect(JSON.parse(String(putInit.body))).not.toHaveProperty("sha");
+  });
+
+  it("fails soft when writing the file (PUT contents) fails", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    installFetchSpy()
+      .mockResolvedValueOnce(jsonResponse({ object: { sha: "base_sha" } }))
+      .mockResolvedValueOnce(jsonResponse({ ref: "refs/heads/branch" }, 201))
+      .mockResolvedValueOnce(jsonResponse({}, 404))
+      .mockResolvedValueOnce(jsonResponse({ message: "conflict" }, 409));
+
+    const result = await commitToStrategyDoc({
+      path: "docs/strategy/roadmap.md",
+      content: "# Roadmap\n",
+      message: "update roadmap",
+      repo: "owner/repo",
+    });
+    expect(result).toEqual({
+      status: "error",
+      note: "Failed to write file: HTTP 409",
+    });
+  });
 });
 
 describe("createGithubIssue", () => {
@@ -266,6 +354,44 @@ describe("createGithubIssue", () => {
       "Issue opened automatically by OpenClaw",
     );
   });
+
+  it("returns an error status when GitHub responds non-ok", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    installFetchSpy().mockResolvedValueOnce(
+      jsonResponse({ message: "Bad credentials" }, 401),
+    );
+
+    const result = await createGithubIssue({
+      repo: "owner/repo",
+      title: "x",
+      body: "y",
+    });
+    expect(result).toEqual({
+      status: "error",
+      note: "GitHub returned HTTP 401",
+    });
+  });
+
+  it("returns an error status when the response is missing html_url/number", async () => {
+    vi.spyOn(
+      await import("./github-auth.js"),
+      "getOpenclawGithubAuth",
+    ).mockResolvedValue({ token: "ghs_install", source: "app" });
+    installFetchSpy().mockResolvedValueOnce(jsonResponse({}));
+
+    const result = await createGithubIssue({
+      repo: "owner/repo",
+      title: "x",
+      body: "y",
+    });
+    expect(result).toEqual({
+      status: "error",
+      note: "Issue response missing html_url/number",
+    });
+  });
 });
 
 describe("postToTopic", () => {
@@ -309,6 +435,51 @@ describe("postToTopic", () => {
       message_thread_id: 42,
       text: "Ship window starts now",
       disable_notification: true,
+    });
+  });
+
+  it("returns an error status when the topic env var is not numeric", async () => {
+    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "bot-token";
+    process.env["SERGEANT_OPS_CHAT_ID"] = "-1001";
+    process.env["TELEGRAM_TOPIC_OPS"] = "not-a-number";
+
+    const result = await postToTopic({ topic: "ops", text: "hi" });
+    expect(result).toEqual({
+      status: "error",
+      topic: "ops",
+      note: "Topic env var 'TELEGRAM_TOPIC_OPS' is not a number.",
+    });
+  });
+
+  it("returns an error status when the Telegram API rejects the send", async () => {
+    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "bot-token";
+    process.env["SERGEANT_OPS_CHAT_ID"] = "-1001";
+    process.env["TELEGRAM_TOPIC_OPS"] = "42";
+    installFetchSpy().mockResolvedValueOnce(
+      jsonResponse({ ok: false, description: "chat not found" }, 400),
+    );
+
+    const result = await postToTopic({ topic: "ops", text: "hi" });
+    expect(result).toEqual({
+      status: "error",
+      topic: "ops",
+      note: "Telegram API returned 400: chat not found",
+    });
+  });
+
+  it("returns an error status (without description) when the JSON body can't be parsed", async () => {
+    process.env["SERGEANT_ALERT_BOT_TOKEN"] = "bot-token";
+    process.env["SERGEANT_OPS_CHAT_ID"] = "-1001";
+    process.env["TELEGRAM_TOPIC_OPS"] = "42";
+    installFetchSpy().mockResolvedValueOnce(
+      new Response("not json", { status: 502 }),
+    );
+
+    const result = await postToTopic({ topic: "ops", text: "hi" });
+    expect(result).toEqual({
+      status: "error",
+      topic: "ops",
+      note: "Telegram API returned 502",
     });
   });
 });
@@ -360,5 +531,65 @@ describe("pauseWorkflow and muteSentryAlert", () => {
       status: "ignored",
       ignoreDuration: 90,
     });
+  });
+
+  it("pauseWorkflow returns an error status when n8n responds non-ok", async () => {
+    process.env["N8N_API_URL"] = "https://n8n.example.test/";
+    process.env["N8N_API_KEY"] = "n8n-key";
+    installFetchSpy().mockResolvedValueOnce(
+      new Response("workflow not found", { status: 404 }),
+    );
+
+    const result = await pauseWorkflow({ workflowId: "wf_missing" });
+    expect(result).toEqual({
+      status: "error",
+      workflowId: "wf_missing",
+      note: "n8n API returned HTTP 404: workflow not found",
+    });
+  });
+
+  it("muteSentryAlert returns an error status when Sentry responds non-ok", async () => {
+    process.env["SENTRY_AUTH_TOKEN"] = "sentry-token";
+    installFetchSpy().mockResolvedValueOnce(
+      jsonResponse({ detail: "not found" }, 404),
+    );
+
+    const result = await muteSentryAlert({ issueId: "999" });
+    expect(result).toEqual({
+      status: "error",
+      issueId: "999",
+      note: "Sentry API returned HTTP 404",
+    });
+  });
+
+  it("muteSentryAlert mutes indefinitely (no ignoreDuration) when untilIso is omitted", async () => {
+    process.env["SENTRY_AUTH_TOKEN"] = "sentry-token";
+    const fetchSpy = installFetchSpy().mockResolvedValueOnce(
+      jsonResponse({ ok: true }),
+    );
+
+    const result = await muteSentryAlert({ issueId: "42" });
+    expect(result).toEqual({
+      status: "muted",
+      issueId: "42",
+      untilIso: undefined,
+    });
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(init.body))).toEqual({ status: "ignored" });
+  });
+
+  it("muteSentryAlert ignores an unparseable untilIso (NaN → no ignoreDuration)", async () => {
+    process.env["SENTRY_AUTH_TOKEN"] = "sentry-token";
+    const fetchSpy = installFetchSpy().mockResolvedValueOnce(
+      jsonResponse({ ok: true }),
+    );
+
+    const result = await muteSentryAlert({
+      issueId: "42",
+      untilIso: "not-a-date",
+    });
+    expect(result.status).toBe("muted");
+    const init = fetchSpy.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(init.body))).toEqual({ status: "ignored" });
   });
 });

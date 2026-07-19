@@ -243,6 +243,37 @@ describe("finyk/recurringDetect", () => {
       expect(out[1]!.confidence).toBe("low");
     });
 
+    it("breaks a confidence+amount tie by more recent lastTxTime", () => {
+      const base = baseThree;
+      const clean: RecurringTx[] = [
+        // Group A: same confidence (2 occ) and amount as B, older lastTxTime
+        tx({ id: "a1", time: base, description: "Older Sub", amount: -19900 }),
+        tx({
+          id: "a2",
+          time: base + 30 * DAY,
+          description: "Older Sub",
+          amount: -19900,
+        }),
+        // Group B: same confidence/amount, more recent lastTxTime
+        tx({
+          id: "b1",
+          time: base + 5 * DAY,
+          description: "Newer Sub",
+          amount: -19900,
+        }),
+        tx({
+          id: "b2",
+          time: base + 35 * DAY,
+          description: "Newer Sub",
+          amount: -19900,
+        }),
+      ];
+      const out = detectRecurring(clean, { nowSec: now });
+      expect(out).toHaveLength(2);
+      expect(out[0]!.key).toBe("newer sub");
+      expect(out[1]!.key).toBe("older sub");
+    });
+
     it("returns USD for currencyCode 840", () => {
       const base = baseTwo;
       const txs: RecurringTx[] = [

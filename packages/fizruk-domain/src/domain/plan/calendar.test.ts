@@ -37,6 +37,28 @@ describe("parseDateKey", () => {
     expect(d.getDate()).toBe(15);
     expect(d.getHours()).toBe(12);
   });
+
+  it("falls back to 1970-01-01 for a fully non-numeric key", () => {
+    const d = parseDateKey("abc-def-ghi");
+    expect(d.getFullYear()).toBe(1970);
+    expect(d.getMonth()).toBe(0);
+    expect(d.getDate()).toBe(1);
+  });
+
+  it("falls back per-component when the key has missing parts", () => {
+    // Only the year is present -> month/day parts are undefined.
+    const d = parseDateKey("2030");
+    expect(d.getFullYear()).toBe(2030);
+    expect(d.getMonth()).toBe(0);
+    expect(d.getDate()).toBe(1);
+  });
+
+  it("falls back only for the malformed component (mixed valid/invalid)", () => {
+    const d = parseDateKey("2030-xx-15");
+    expect(d.getFullYear()).toBe(2030);
+    expect(d.getMonth()).toBe(0); // invalid month -> fallback 1 -> index 0
+    expect(d.getDate()).toBe(15);
+  });
 });
 
 describe("monthCursorFromDate", () => {

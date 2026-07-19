@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 // Stub the kvStoreBoot dependency — it requires @sergeant/db-schema/sqlite
 // (WASM artefact not built in test env). Must be hoisted before any import
@@ -88,5 +88,38 @@ describe("OfflinePage", () => {
     expect(
       screen.getByText(/Модулі Фінік.*зберігають дані офлайн/i),
     ).toBeInTheDocument();
+  });
+
+  it("clicking the reload CTA while online does not throw (window.location.reload path)", () => {
+    // window.location.reload is not redefinable in jsdom (see
+    // ServerErrorPage.test.tsx) — assert the click handler runs to
+    // completion without throwing instead of spying on the reload call.
+    mockUseOnlineStatus.mockReturnValue(true);
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
+    render(<OfflinePage />);
+    expect(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Спробувати ще/i }));
+    }).not.toThrow();
+  });
+
+  it("early-returns without reloading when navigator.onLine reports false", () => {
+    // Covers the defensive `navigator.onLine === false` guard even when
+    // the (mocked) useOnlineStatus hook still reports online=true.
+    mockUseOnlineStatus.mockReturnValue(true);
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    });
+    render(<OfflinePage />);
+    expect(() => {
+      fireEvent.click(screen.getByRole("button", { name: /Спробувати ще/i }));
+    }).not.toThrow();
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: true,
+    });
   });
 });

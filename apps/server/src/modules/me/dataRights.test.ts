@@ -73,6 +73,45 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
     const result = await getUserPreferences(mockDb([]), "user-1");
     expect(() => UserPreferencesSchema.parse(result)).not.toThrow();
   });
+
+  it("returns updatedAt: null when the stored updated_at is null", async () => {
+    const db = mockDb([
+      {
+        analytics: true,
+        ai_memory: false,
+        push_notifications: false,
+        updated_at: null,
+      },
+    ]);
+    const result = await getUserPreferences(db, "user-1");
+    expect(result.updatedAt).toBeNull();
+  });
+
+  it("parses a string updated_at into an ISO timestamp", async () => {
+    const db = mockDb([
+      {
+        analytics: true,
+        ai_memory: false,
+        push_notifications: false,
+        updated_at: "2026-06-06T10:00:00.000Z",
+      },
+    ]);
+    const result = await getUserPreferences(db, "user-1");
+    expect(result.updatedAt).toBe("2026-06-06T10:00:00.000Z");
+  });
+
+  it("returns updatedAt: null when the stored updated_at is unparseable", async () => {
+    const db = mockDb([
+      {
+        analytics: true,
+        ai_memory: false,
+        push_notifications: false,
+        updated_at: "not-a-date",
+      },
+    ]);
+    const result = await getUserPreferences(db, "user-1");
+    expect(result.updatedAt).toBeNull();
+  });
 });
 
 // ─── upsertUserPreferences ───────────────────────────────────────────────────
@@ -136,6 +175,28 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
     const db = mockDb([]);
     const result = await buildMeExport(db, ME_USER);
     expect(result.data.mono.connection).toBeNull();
+  });
+
+  it("mono.connection carries the row through when a connection exists", async () => {
+    const connectionRow = {
+      status: "active",
+      token_fingerprint: "fp-1",
+      webhook_registered_at: new Date("2026-01-01T00:00:00.000Z"),
+      last_event_at: null,
+      last_backfill_at: null,
+      created_at: new Date("2026-01-01T00:00:00.000Z"),
+      updated_at: new Date("2026-01-01T00:00:00.000Z"),
+    };
+    const db = {
+      query: vi.fn().mockImplementation((sql: string) => {
+        if (typeof sql === "string" && sql.includes("FROM mono_connection")) {
+          return Promise.resolve({ rows: [connectionRow] });
+        }
+        return Promise.resolve({ rows: [] });
+      }),
+    };
+    const result = await buildMeExport(db, ME_USER);
+    expect(result.data.mono.connection).toEqual(connectionRow);
   });
 });
 

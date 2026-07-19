@@ -109,6 +109,111 @@ describe("computeTopPRs", () => {
     expect(computeTopPRs(workouts, { limit: 2 })).toHaveLength(2);
   });
 
+  it("skips falsy workout entries, non-string endedAt, and items with no exerciseId", () => {
+    const workouts = [
+      null,
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: 12345 as unknown as string, // non-string endedAt
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            // no exerciseId
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+    ];
+    expect(computeTopPRs(workouts as never)).toEqual([]);
+  });
+
+  it("falls back to null nameUk when the item has no name", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+    ];
+    const result = computeTopPRs(workouts);
+    expect(result[0]!.nameUk).toBeNull();
+  });
+
+  it("on a tie in 1RM, the more recent workout wins", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-01T10:00:00Z",
+        endedAt: "2026-04-01T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }], // 1RM = 116.67
+          },
+        ],
+      },
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }], // same 1RM, later date
+          },
+        ],
+      },
+    ];
+    const result = computeTopPRs(workouts);
+    expect(result[0]!.atIso).toBe("2026-04-10T11:00:00Z");
+  });
+
+  it("keeps the earlier PR when a later workout ties but is not chronologically newer", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+      {
+        startedAt: "2026-04-01T10:00:00Z",
+        endedAt: "2026-04-01T11:00:00Z", // earlier than the first
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }], // same 1RM
+          },
+        ],
+      },
+    ];
+    const result = computeTopPRs(workouts);
+    expect(result[0]!.atIso).toBe("2026-04-10T11:00:00Z");
+  });
+
   it("ignores zero-weight / zero-rep sets and non-strength items", () => {
     const workouts = [
       {

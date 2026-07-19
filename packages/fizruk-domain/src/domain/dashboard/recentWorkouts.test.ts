@@ -99,4 +99,77 @@ describe("listRecentCompletedWorkouts", () => {
     const rows = listRecentCompletedWorkouts(workouts);
     expect(rows[0]!.label).toBe("Тренування");
   });
+
+  it("skips workouts with a non-string / empty endedAt or missing startedAt", () => {
+    const workouts = [
+      { startedAt: "2026-04-20T10:00:00Z", endedAt: "", items: [] },
+      { startedAt: "2026-04-20T10:00:00Z", endedAt: 123, items: [] },
+      { endedAt: "2026-04-20T11:00:00Z", items: [] }, // no startedAt
+      { startedAt: "", endedAt: "2026-04-20T11:00:00Z", items: [] }, // empty startedAt
+    ];
+    expect(listRecentCompletedWorkouts(workouts as never)).toEqual([]);
+  });
+
+  it("returns durationSec 0 for unparsable start/end timestamps", () => {
+    const workouts = [
+      { startedAt: "not-a-date", endedAt: "also-not-a-date", items: [] },
+    ];
+    const rows = listRecentCompletedWorkouts(workouts);
+    expect(rows[0]!.durationSec).toBe(0);
+  });
+
+  it("falls back to the first item's name when the note is blank/whitespace", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-20T10:00:00Z",
+        endedAt: "2026-04-20T11:00:00Z",
+        note: "   ",
+        items: [
+          { exerciseId: "x", nameUk: "  ", type: "strength", sets: [] },
+          { exerciseId: "bench", nameUk: "Жим", type: "strength", sets: [] },
+        ],
+      },
+    ];
+    const rows = listRecentCompletedWorkouts(workouts);
+    expect(rows[0]!.label).toBe("Жим");
+  });
+
+  it("excludes zero/negative weight or rep sets from tonnage", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-20T10:00:00Z",
+        endedAt: "2026-04-20T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [
+              { weightKg: 0, reps: 10 },
+              { weightKg: 50, reps: 0 },
+              { weightKg: -5, reps: 5 },
+            ],
+          },
+          {
+            exerciseId: "run",
+            type: "distance",
+            sets: [{ weightKg: 100, reps: 100 }],
+          },
+        ],
+      },
+    ];
+    const rows = listRecentCompletedWorkouts(workouts);
+    expect(rows[0]!.tonnageKg).toBe(0);
+  });
+
+  it("counts itemsCount as 0 when items is not an array", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-20T10:00:00Z",
+        endedAt: "2026-04-20T11:00:00Z",
+        items: undefined,
+      },
+    ];
+    const rows = listRecentCompletedWorkouts(workouts as never);
+    expect(rows[0]!.itemsCount).toBe(0);
+  });
 });

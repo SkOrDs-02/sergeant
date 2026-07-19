@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  compareIsoDesc,
   completedWorkoutsCount,
   countCompletedInCurrentWeek,
   formatCompactKg,
@@ -36,6 +37,31 @@ describe("workoutTonnageKg", () => {
 describe("workoutDurationSec", () => {
   it("returns 0 without startedAt", () => {
     expect(workoutDurationSec({})).toBe(0);
+  });
+
+  it("returns 0 for null/undefined workout", () => {
+    expect(workoutDurationSec(null)).toBe(0);
+    expect(workoutDurationSec(undefined)).toBe(0);
+  });
+
+  it("returns 0 when startedAt is unparsable", () => {
+    expect(workoutDurationSec({ startedAt: "not-a-date" })).toBe(0);
+  });
+
+  it("computes elapsed seconds between startedAt and endedAt", () => {
+    expect(
+      workoutDurationSec({
+        startedAt: "2026-01-01T10:00:00Z",
+        endedAt: "2026-01-01T10:01:30Z",
+      }),
+    ).toBe(90);
+  });
+
+  it("falls back to Date.now() when endedAt is missing (in-progress workout)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T10:05:00Z"));
+    expect(workoutDurationSec({ startedAt: "2026-01-01T10:00:00Z" })).toBe(300);
+    vi.useRealTimers();
   });
 });
 
@@ -135,17 +161,80 @@ describe("countCompletedInCurrentWeek", () => {
       ]),
     ).toBe(2);
   });
+
+  it("skips workouts without endedAt or with an unparsable startedAt", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
+    expect(
+      countCompletedInCurrentWeek([
+        { startedAt: "2026-06-10T10:00:00Z", items: [] }, // no endedAt
+        {
+          startedAt: "not-a-date",
+          endedAt: "2026-06-10T10:00:00Z",
+          items: [],
+        }, // unparsable startedAt
+        { endedAt: "2026-06-10T10:00:00Z", items: [] }, // no startedAt at all
+      ]),
+    ).toBe(0);
+  });
+
+  it("returns 0 for null/undefined input", () => {
+    expect(countCompletedInCurrentWeek(null)).toBe(0);
+    expect(countCompletedInCurrentWeek(undefined)).toBe(0);
+  });
 });
 
 describe("formatCompactKg", () => {
   it("formats thousands", () => {
     expect(formatCompactKg(1500)).toMatch(/k/);
   });
+
+  it("formats millions", () => {
+    expect(formatCompactKg(2_500_000)).toBe("2.5M");
+  });
+
+  it("rounds sub-thousand values with no suffix", () => {
+    expect(formatCompactKg(42.6)).toBe("43");
+  });
+
+  it("defaults null/undefined/NaN to 0", () => {
+    expect(formatCompactKg(null)).toBe("0");
+    expect(formatCompactKg(undefined)).toBe("0");
+  });
+});
+
+describe("compareIsoDesc", () => {
+  it("orders more recent ISO timestamps first", () => {
+    expect(
+      compareIsoDesc("2026-02-01T00:00:00Z", "2026-01-01T00:00:00Z"),
+    ).toBeLessThan(0);
+    expect(
+      compareIsoDesc("2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z"),
+    ).toBeGreaterThan(0);
+  });
+
+  it("returns 0 when both timestamps are unparsable/missing", () => {
+    expect(compareIsoDesc(null, undefined)).toBe(0);
+    expect(compareIsoDesc("garbage", "")).toBe(0);
+  });
+
+  it("sinks an unparsable `a` below a valid `b`", () => {
+    expect(compareIsoDesc("garbage", "2026-01-01T00:00:00Z")).toBe(1);
+  });
+
+  it("sinks an unparsable `b` below a valid `a`", () => {
+    expect(compareIsoDesc("2026-01-01T00:00:00Z", "garbage")).toBe(-1);
+  });
 });
 
 describe("completedWorkoutsCount", () => {
   it("counts ended workouts", () => {
     expect(completedWorkoutsCount([{ endedAt: "x" }, {}])).toBe(1);
+  });
+
+  it("returns 0 for null/undefined input", () => {
+    expect(completedWorkoutsCount(null)).toBe(0);
+    expect(completedWorkoutsCount(undefined)).toBe(0);
   });
 });
 
@@ -156,6 +245,18 @@ describe("totalCompletedVolumeKg", () => {
       items: [{ type: "strength", sets: [{ weightKg: 10, reps: 5 }] }],
     };
     expect(totalCompletedVolumeKg([w])).toBe(50);
+  });
+
+  it("skips workouts without endedAt", () => {
+    const w = {
+      items: [{ type: "strength", sets: [{ weightKg: 10, reps: 5 }] }],
+    };
+    expect(totalCompletedVolumeKg([w])).toBe(0);
+  });
+
+  it("returns 0 for null/undefined input", () => {
+    expect(totalCompletedVolumeKg(null)).toBe(0);
+    expect(totalCompletedVolumeKg(undefined)).toBe(0);
   });
 });
 

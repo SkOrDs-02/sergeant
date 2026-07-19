@@ -197,4 +197,33 @@ describe("runMigrations × pg adapter (pg-mem)", () => {
     );
     expect(rowsToString(rows.rows, "name")).toEqual(FILES.map((f) => f.name));
   });
+
+  it("applies an all-whitespace migration body without issuing a query for it (skip branch)", async () => {
+    const adapter = createPgAdapter(h.client);
+    const blank: MigrationFile = { name: "001_blank.sql", sql: "   \n  " };
+    const result = await runMigrations({ adapter, files: [blank] });
+    expect(result.applied).toEqual(["001_blank.sql"]);
+    // Still recorded in the ledger even though no DDL ran.
+    const ledger = await h.client.query(
+      'SELECT name FROM "schema_migrations" ORDER BY id ASC',
+    );
+    expect(rowsToString(ledger.rows, "name")).toEqual(["001_blank.sql"]);
+  });
+});
+
+describe("createPgAdapter — defensive getAppliedNames() type guard", () => {
+  it("throws when the ledger's `name` column is not a string", async () => {
+    const fakeClient: PgQueryClient = {
+      query: async (sql: string) => {
+        if (sql.startsWith("SELECT name FROM")) {
+          return { rows: [{ name: 42 }] }; // corrupt/malformed row
+        }
+        return { rows: [] };
+      },
+    };
+    const adapter = createPgAdapter(fakeClient);
+    await expect(adapter.getAppliedNames("schema_migrations")).rejects.toThrow(
+      /Migrations ledger row missing "name" column/,
+    );
+  });
 });

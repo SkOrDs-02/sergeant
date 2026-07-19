@@ -233,6 +233,57 @@ describe("runMigrations — runner contract", () => {
     expect(state.applyCalls.length).toBe(0);
   });
 
+  it("wraps a non-Error thrown by the adapter into a MigrationFailedError with an Error cause", async () => {
+    const state: FakeAdapterState = {
+      ledgerExists: false,
+      applied: [],
+      ensureLedgerCalls: 0,
+      applyCalls: [],
+    };
+    const throwingAdapter: MigrationAdapter = {
+      async ensureLedger() {
+        state.ledgerExists = true;
+      },
+      async getAppliedNames() {
+        return [];
+      },
+      async applyMigration(_table, name) {
+        state.applyCalls.push({ name, sql: "" });
+        // Deliberately non-Error, exercising the runner's normalization branch.
+        const rawFailure: unknown = "raw string failure";
+        throw rawFailure;
+      },
+    };
+    let caught: unknown;
+    try {
+      await runMigrations({ adapter: throwingAdapter, files: FILES });
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(MigrationFailedError);
+    const failure = caught as MigrationFailedError;
+    expect(failure.cause).toBeInstanceOf(Error);
+    expect(failure.cause.message).toBe("raw string failure");
+    expect(failure.migration).toBe("001_a.sql");
+  });
+
+  it("stringifies a non-Error, non-string throw (e.g. an object) into the cause message", async () => {
+    const throwingAdapter: MigrationAdapter = {
+      async ensureLedger() {},
+      async getAppliedNames() {
+        return [];
+      },
+      async applyMigration() {
+        // Deliberately non-Error/non-string.
+        const weirdFailure: unknown = { code: "E_WEIRD" };
+        throw weirdFailure;
+      },
+    };
+    await expect(
+      runMigrations({ adapter: throwingAdapter, files: FILES }),
+    ).rejects.toBeInstanceOf(MigrationFailedError);
+  });
+
   it("emits log events in order: ensure → applying → applied → skipped", async () => {
     const state: FakeAdapterState = {
       ledgerExists: false,

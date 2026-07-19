@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Pool } from "pg";
 import {
+  attachDecisionPrUrl,
+  finalizeInvocation,
+  getDailyCostUsd,
+  insertDecision,
+  listRecentDecisions,
+  listRecentInvocations,
   listRecentWriteAudits,
+  openInvocation,
   recordWriteAudit,
+  type RecordDecisionInput,
   type RecordWriteAuditInput,
 } from "./store.js";
 
@@ -363,5 +371,308 @@ describe("listRecentWriteAudits", () => {
     expect(r.ok).toBeNull();
     expect(r.response_excerpt).toBeNull();
     expect(r.persona).toBeNull();
+  });
+});
+
+function baseDecisionInput(): RecordDecisionInput {
+  return {
+    founderUserId: "user-1",
+    topic: "pricing",
+    context: "Q3 pricing review",
+    decision: "raise Pro tier by 10%",
+    rationale: "COGS increased",
+  };
+}
+
+describe("openInvocation", () => {
+  it("INSERTs into openclaw_invocations and coerces bigint id to number", async () => {
+    const { pool, calls } = makeFakePool([{ id: "9001" }]);
+    const id = await openInvocation(pool, {
+      founderUserId: "user-1",
+      founderTgUserId: 555,
+      trigger: "dm",
+      userMessage: "hi",
+    });
+    expect(id).toBe(9001);
+    expect(typeof id).toBe("number");
+    expect(calls[0]?.text).toMatch(/INSERT INTO openclaw_invocations/);
+    expect(calls[0]?.values).toEqual(["user-1", 555, "dm", "hi", "{}"]);
+  });
+
+  it("serialises metadata as JSON when supplied", async () => {
+    const { pool, calls } = makeFakePool([{ id: "1" }]);
+    await openInvocation(pool, {
+      founderUserId: "user-1",
+      founderTgUserId: 555,
+      trigger: "weekly_review",
+      userMessage: "digest",
+      metadata: { source: "weekly" },
+    });
+    expect(calls[0]?.values?.[4]).toBe(JSON.stringify({ source: "weekly" }));
+  });
+
+  it("throws if INSERT…RETURNING produced no rows", async () => {
+    const { pool } = makeFakePool([]);
+    await expect(
+      openInvocation(pool, {
+        founderUserId: "user-1",
+        founderTgUserId: 555,
+        trigger: "dm",
+        userMessage: "hi",
+      }),
+    ).rejects.toThrow(/INSERT RETURNING returned no rows/);
+  });
+});
+
+describe("finalizeInvocation", () => {
+  it("UPDATEs openclaw_invocations with defaulted optional fields", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await finalizeInvocation(pool, { invocationId: 7, status: "success" });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.text).toMatch(/UPDATE openclaw_invocations/);
+    const v = calls[0]?.values ?? [];
+    expect(v[0]).toBe(7); // id
+    expect(v[1]).toBe("success"); // status
+    expect(v[2]).toBeNull(); // assistant_response
+    expect(v[3]).toBe("[]"); // tool_calls
+    expect(v[4]).toBe(0); // cost_usd
+    expect(v[5]).toBe(0); // duration_ms
+    expect(v[6]).toBe(0); // iterations
+    expect(v[7]).toBeNull(); // error_message
+    expect(v[8]).toBeNull(); // tone_mode
+    expect(v[9]).toBe("{}"); // metadata patch
+  });
+
+  it("passes through supplied fields verbatim", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await finalizeInvocation(pool, {
+      invocationId: 8,
+      status: "error",
+      assistantResponse: "sorry, failed",
+      toolCalls: [
+        {
+          tool: "pause_workflow",
+          input: {},
+          output_chars: 12,
+          output_preview: "ok",
+          status: "ok",
+          duration_ms: 5,
+        },
+      ],
+      costUsd: 0.42,
+      durationMs: 1234,
+      iterations: 3,
+      errorMessage: "rate_limited",
+      toneMode: "direct",
+      metadataPatch: { retried: true },
+    });
+    const v = calls[0]?.values ?? [];
+    expect(v[2]).toBe("sorry, failed");
+    expect(v[3]).toBe(
+      JSON.stringify([
+        {
+          tool: "pause_workflow",
+          input: {},
+          output_chars: 12,
+          output_preview: "ok",
+          status: "ok",
+          duration_ms: 5,
+        },
+      ]),
+    );
+    expect(v[4]).toBe(0.42);
+    expect(v[5]).toBe(1234);
+    expect(v[6]).toBe(3);
+    expect(v[7]).toBe("rate_limited");
+    expect(v[8]).toBe("direct");
+    expect(v[9]).toBe(JSON.stringify({ retried: true }));
+  });
+});
+
+describe("getDailyCostUsd", () => {
+  it("parses the COALESCE(SUM) text total to a float", async () => {
+    const { pool, calls } = makeFakePool([{ total: "12.5000" }]);
+    const total = await getDailyCostUsd(pool, "user-1", "Europe/Kyiv");
+    expect(total).toBe(12.5);
+    expect(calls[0]?.text).toMatch(/FROM openclaw_invocations/);
+    expect(calls[0]?.values).toEqual(["user-1", "Europe/Kyiv"]);
+  });
+
+  it("defaults to 0 when no row is returned", async () => {
+    const { pool } = makeFakePool([]);
+    const total = await getDailyCostUsd(pool, "user-1", "Europe/Kyiv");
+    expect(total).toBe(0);
+  });
+});
+
+describe("insertDecision", () => {
+  it("INSERTs into openclaw_decisions and coerces id to number", async () => {
+    const { pool, calls } = makeFakePool([{ id: "55" }]);
+    const id = await insertDecision(pool, baseDecisionInput());
+    expect(id).toBe(55);
+    expect(calls[0]?.text).toMatch(/INSERT INTO openclaw_decisions/);
+  });
+
+  it("nullifies alternatives/invocationId when not supplied", async () => {
+    const { pool, calls } = makeFakePool([{ id: "1" }]);
+    await insertDecision(pool, baseDecisionInput());
+    const v = calls[0]?.values ?? [];
+    expect(v[5]).toBeNull(); // alternatives
+    expect(v[6]).toBeNull(); // invocation_id
+  });
+
+  it("throws if INSERT…RETURNING produced no rows", async () => {
+    const { pool } = makeFakePool([]);
+    await expect(insertDecision(pool, baseDecisionInput())).rejects.toThrow(
+      /insertDecision: INSERT RETURNING returned no rows/,
+    );
+  });
+});
+
+describe("attachDecisionPrUrl", () => {
+  it("UPDATEs git_pr_url for the decision id", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await attachDecisionPrUrl(pool, 42, "https://github.com/o/r/pull/1");
+    expect(calls[0]?.text).toMatch(
+      /UPDATE openclaw_decisions SET git_pr_url = \$2 WHERE id = \$1/,
+    );
+    expect(calls[0]?.values).toEqual([42, "https://github.com/o/r/pull/1"]);
+  });
+
+  it("allows a NULL update for retry-flow", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await attachDecisionPrUrl(pool, 42, null);
+    expect(calls[0]?.values).toEqual([42, null]);
+  });
+});
+
+describe("listRecentDecisions", () => {
+  it("SELECTs from openclaw_decisions ordered newest-first, clamping limit", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await listRecentDecisions(pool, "user-1", 9_999);
+    expect(calls[0]?.text).toMatch(/FROM openclaw_decisions/);
+    expect(calls[0]?.text).toMatch(/ORDER BY decided_at DESC/);
+    expect(calls[0]?.values).toEqual(["user-1", 50]);
+  });
+
+  it("clamps limit to at least 1", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await listRecentDecisions(pool, "user-1", -3);
+    expect(calls[0]?.values).toEqual(["user-1", 1]);
+  });
+
+  it("normalises row shape — bigint→number, Date→ISO, nullable invocation_id", async () => {
+    const decidedAt = new Date("2026-04-01T12:00:00.000Z");
+    const { pool } = makeFakePool([
+      {
+        id: "3",
+        decided_at: decidedAt,
+        founder_user_id: "user-1",
+        topic: "pricing",
+        context: "ctx",
+        decision: "raise price",
+        rationale: "costs",
+        alternatives: null,
+        git_pr_url: null,
+        invocation_id: "9",
+        metadata: null,
+      },
+    ]);
+    const out = await listRecentDecisions(pool, "user-1", 10);
+    const r = out[0]!;
+    expect(r.id).toBe(3);
+    expect(typeof r.id).toBe("number");
+    expect(r.decided_at).toBe("2026-04-01T12:00:00.000Z");
+    expect(r.invocation_id).toBe(9);
+    expect(r.metadata).toEqual({});
+  });
+
+  it("passes through invocation_id null and a string decided_at as-is", async () => {
+    const { pool } = makeFakePool([
+      {
+        id: "1",
+        decided_at: "2026-04-01T12:00:00.000Z",
+        founder_user_id: "user-1",
+        topic: "t",
+        context: "c",
+        decision: "d",
+        rationale: "r",
+        alternatives: "alt",
+        git_pr_url: "https://example.com/pr/1",
+        invocation_id: null,
+        metadata: { a: 1 },
+      },
+    ]);
+    const out = await listRecentDecisions(pool, "user-1", 10);
+    const r = out[0]!;
+    expect(r.decided_at).toBe("2026-04-01T12:00:00.000Z");
+    expect(r.invocation_id).toBeNull();
+    expect(r.alternatives).toBe("alt");
+    expect(r.git_pr_url).toBe("https://example.com/pr/1");
+    expect(r.metadata).toEqual({ a: 1 });
+  });
+});
+
+describe("listRecentInvocations", () => {
+  it("SELECTs from openclaw_invocations ordered newest-first, clamping limit", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await listRecentInvocations(pool, "user-1", 500);
+    expect(calls[0]?.text).toMatch(/FROM openclaw_invocations/);
+    expect(calls[0]?.text).toMatch(/ORDER BY invoked_at DESC/);
+    expect(calls[0]?.values).toEqual(["user-1", 100]);
+  });
+
+  it("clamps limit to at least 1", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await listRecentInvocations(pool, "user-1", 0);
+    expect(calls[0]?.values).toEqual(["user-1", 1]);
+  });
+
+  it("normalises row shape — bigint→number, Date→ISO, cost_usd parsed as float", async () => {
+    const invokedAt = new Date("2026-04-02T08:00:00.000Z");
+    const { pool } = makeFakePool([
+      {
+        id: "11",
+        invoked_at: invokedAt,
+        trigger: "dm",
+        user_message: "hi",
+        status: "success",
+        cost_usd: "0.0850",
+        duration_ms: "1200",
+        iterations: "2",
+        tone_mode: "direct",
+      },
+    ]);
+    const out = await listRecentInvocations(pool, "user-1", 5);
+    const r = out[0]!;
+    expect(r.id).toBe(11);
+    expect(r.invoked_at).toBe("2026-04-02T08:00:00.000Z");
+    expect(r.cost_usd).toBeCloseTo(0.085);
+    expect(r.duration_ms).toBe(1200);
+    expect(r.iterations).toBe(2);
+    expect(r.tone_mode).toBe("direct");
+  });
+
+  it("defaults duration_ms/iterations to 0 when missing and preserves string invoked_at", async () => {
+    const { pool } = makeFakePool([
+      {
+        id: "12",
+        invoked_at: "2026-04-02T08:00:00.000Z",
+        trigger: "monthly_okr",
+        user_message: "digest",
+        status: "allowlist_fail",
+        cost_usd: null,
+        duration_ms: null,
+        iterations: null,
+        tone_mode: null,
+      },
+    ]);
+    const out = await listRecentInvocations(pool, "user-1", 5);
+    const r = out[0]!;
+    expect(r.invoked_at).toBe("2026-04-02T08:00:00.000Z");
+    expect(r.duration_ms).toBe(0);
+    expect(r.iterations).toBe(0);
+    expect(r.cost_usd).toBe(0);
+    expect(r.tone_mode).toBeNull();
   });
 });

@@ -1,6 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import Database from "better-sqlite3";
 import type { Database as BetterSqliteDatabase } from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { eq } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 import { kvStore } from "../sqlite/kvStore.js";
 import {
@@ -227,6 +229,32 @@ describe("KV_STORE_CLIENT_MIGRATIONS apply roundtrip", () => {
         .prepare(`INSERT INTO kv_store (key, value) VALUES (?, ?)`)
         .run("shared_key", "second"),
     ).toThrow();
+  });
+
+  it("Drizzle ORM insert without updatedAt fires the $defaultFn(() => new Date())", async () => {
+    await runMigrations({
+      adapter: createSqliteAdapter(client),
+      files: KV_STORE_CLIENT_MIGRATIONS,
+      tableName: KV_STORE_MIGRATIONS_TABLE,
+    });
+
+    const orm = drizzle(db);
+    const before = Date.now();
+    // No `updatedAt` supplied — this is the only path that invokes the
+    // Drizzle-level `$defaultFn` closure (the raw-SQL tests above use the
+    // column's SQL-level DEFAULT instead, which is a separate mechanism).
+    await orm.insert(kvStore).values({ key: "warm_cache_seed", value: "1" });
+    const after = Date.now();
+
+    const [row] = await orm
+      .select()
+      .from(kvStore)
+      .where(eq(kvStore.key, "warm_cache_seed"));
+    expect(row).toBeDefined();
+    expect(row!.updatedAt).toBeInstanceOf(Date);
+    const ts = row!.updatedAt.getTime();
+    expect(ts).toBeGreaterThanOrEqual(before - 1000);
+    expect(ts).toBeLessThanOrEqual(after + 1000);
   });
 
   it("INSERT ON CONFLICT(key) DO UPDATE upserts value + bumps updated_at", async () => {

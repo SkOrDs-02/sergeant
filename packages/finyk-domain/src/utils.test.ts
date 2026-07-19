@@ -128,6 +128,15 @@ describe("fmtDate", () => {
     );
     expect(fmtDate(earlyTodayTs)).toMatch(/^Сьогодні/);
   });
+
+  it("падає на форматовану дату (день.місяць) коли diff > 1 день", () => {
+    const olderTs = Math.floor(
+      new Date("2024-06-10T12:00:00Z").getTime() / 1000,
+    );
+    const result = fmtDate(olderTs);
+    expect(result).not.toMatch(/^Сьогодні/);
+    expect(result).not.toMatch(/^Вчора/);
+  });
 });
 
 describe("getAccountLabel", () => {
@@ -154,6 +163,26 @@ describe("getAccountLabel", () => {
   });
   it("fallback коли нічого не співпадає", () => {
     expect(getAccountLabel({ type: "unknown" })).toContain("Картка");
+  });
+  it("чорна картка без кредитного ліміту", () => {
+    expect(getAccountLabel({ type: "black" })).toContain("Чорна картка");
+  });
+  it("біла картка", () => {
+    expect(getAccountLabel({ type: "white" })).toContain("Біла картка");
+  });
+  it("платинова картка", () => {
+    expect(getAccountLabel({ type: "platinum" })).toContain("Платинова");
+  });
+  it("залізна картка", () => {
+    expect(getAccountLabel({ type: "iron" })).toContain("Залізна");
+  });
+  it("ФОП картка", () => {
+    expect(getAccountLabel({ type: "fop" })).toContain("ФОП");
+  });
+  it("creditLimit <= 0 не тригерить кредитну гілку", () => {
+    expect(
+      getAccountLabel({ type: "black", creditLimit: 0 } as never),
+    ).toContain("Чорна картка");
   });
 });
 

@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { calcFinykPeriodAggregate } from "./spending.js";
+import {
+  calcFinykPeriodAggregate,
+  calcFinykSpendingByDate,
+  calcFinykSpendingTotal,
+} from "./spending.js";
 
 const monday = new Date("2026-04-20T00:00:00").getTime();
 const sunday = new Date("2026-04-27T00:00:00").getTime();
@@ -122,5 +126,121 @@ describe("calcFinykPeriodAggregate", () => {
     );
     expect(r.txCount).toBe(0);
     expect(r.totalSpent).toBe(0);
+  });
+});
+
+describe("calcFinykSpendingTotal", () => {
+  it("returns 0 for null/undefined/non-array input", () => {
+    expect(calcFinykSpendingTotal(null)).toBe(0);
+    expect(calcFinykSpendingTotal(undefined)).toBe(0);
+    expect(calcFinykSpendingTotal("nope" as never)).toBe(0);
+  });
+
+  it("sums only negative-amount (expense) transactions", () => {
+    const total = calcFinykSpendingTotal([
+      tx({ id: "a", amount: -10_000 }),
+      tx({ id: "b", amount: 5_000 }), // income, skipped
+      tx({ id: "c", amount: -2_500 }),
+    ]);
+    expect(total).toBe(125);
+  });
+
+  it("skips falsy transaction entries", () => {
+    const total = calcFinykSpendingTotal([
+      null as never,
+      tx({ id: "a", amount: -10_000 }),
+    ]);
+    expect(total).toBe(100);
+  });
+
+  it("excludes ids given as a Set or as an array", () => {
+    const txs = [
+      tx({ id: "a", amount: -10_000 }),
+      tx({ id: "b", amount: -20_000 }),
+    ];
+    expect(calcFinykSpendingTotal(txs, { excludedTxIds: new Set(["a"]) })).toBe(
+      200,
+    );
+    expect(calcFinykSpendingTotal(txs, { excludedTxIds: ["a"] })).toBe(200);
+  });
+
+  it("uses txSplits to compute the stat amount, dropping internal_transfer splits", () => {
+    const total = calcFinykSpendingTotal([tx({ id: "a", amount: -100_000 })], {
+      txSplits: {
+        a: [
+          { categoryId: "food", amount: 300 },
+          { categoryId: "internal_transfer", amount: 700 },
+        ],
+      },
+    });
+    expect(total).toBe(300);
+  });
+});
+
+describe("calcFinykSpendingByDate", () => {
+  const localDateKeyFn = (d: Date) => d.toISOString().slice(0, 10);
+
+  it("buckets expenses by local date key, ignoring dates outside dateSet", () => {
+    const dateSet = new Set(["2026-04-20"]);
+    const { total, daily } = calcFinykSpendingByDate(
+      [
+        { id: "a", amount: -10_000, time: monday / 1000 + 3600 }, // unix seconds
+        { id: "b", amount: -5_000, time: monday + 3_600_000 }, // ms
+        { id: "outside", amount: -1_000, time: sunday }, // outside dateSet
+      ],
+      { dateSet, localDateKeyFn },
+    );
+    expect(daily["2026-04-20"]).toBe(150);
+    expect(total).toBe(150);
+  });
+
+  it("returns empty totals for non-array/empty input", () => {
+    const dateSet = new Set(["2026-04-20"]);
+    const { total, daily } = calcFinykSpendingByDate(undefined as never, {
+      dateSet,
+      localDateKeyFn,
+    });
+    expect(total).toBe(0);
+    expect(daily).toEqual({});
+  });
+
+  it("skips falsy entries, income, and excluded ids", () => {
+    const dateSet = new Set(["2026-04-20"]);
+    const { total } = calcFinykSpendingByDate(
+      [
+        null as never,
+        tx({ id: "income", amount: 5_000 }),
+        tx({ id: "excluded", amount: -10_000 }),
+        tx({ id: "kept", amount: -3_000 }),
+      ],
+      { dateSet, localDateKeyFn, excludedTxIds: new Set(["excluded"]) },
+    );
+    expect(total).toBe(30);
+  });
+
+  it("sums rounded daily buckets so total equals the sum of daily values", () => {
+    const dateSet = new Set(["2026-04-20"]);
+    const { total, daily } = calcFinykSpendingByDate(
+      [
+        tx({ id: "a", amount: -10_050 }), // 100.5
+        tx({ id: "b", amount: -10_050 }), // 100.5 -> bucket sums to 201 exactly
+      ],
+      { dateSet, localDateKeyFn },
+    );
+    expect(daily["2026-04-20"]).toBe(201);
+    expect(total).toBe(201);
+  });
+
+  it("respects txSplits when bucketing by date", () => {
+    const dateSet = new Set(["2026-04-20"]);
+    const { daily } = calcFinykSpendingByDate(
+      [tx({ id: "a", amount: -100_000 })],
+      {
+        dateSet,
+        localDateKeyFn,
+        txSplits: { a: [{ categoryId: "food", amount: 400 }] },
+      },
+    );
+    expect(daily["2026-04-20"]).toBe(400);
   });
 });

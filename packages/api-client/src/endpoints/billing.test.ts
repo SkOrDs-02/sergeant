@@ -15,6 +15,7 @@ import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
 import {
   BillingCancelResponseBodySchema,
+  BillingCheckoutResponseBodySchema,
   BillingPortalResponseBodySchema,
   BillingProvidersResponseBodySchema,
   createBillingEndpoints,
@@ -43,6 +44,130 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = originalFetch;
   vi.restoreAllMocks();
+});
+
+describe("createBillingEndpoints.createCheckout", () => {
+  it("POSTs /api/v1/billing/checkout with the plan and returns the parsed session", async () => {
+    const fetchMock = mockFetchOnce({
+      ok: true,
+      mode: "test",
+      sessionId: "cs_test_123",
+      url: "https://checkout.stripe.com/pay/cs_test_123",
+    });
+
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const res = await billing.createCheckout({ plan: "pro" });
+
+    expect(res).toEqual({
+      ok: true,
+      mode: "test",
+      sessionId: "cs_test_123",
+      url: "https://checkout.stripe.com/pay/cs_test_123",
+    });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toBe("https://api.example.com/api/v1/billing/checkout");
+    expect((init as RequestInit).method).toBe("POST");
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({
+      plan: "pro",
+    });
+  });
+
+  it("passes through an optional provider and an AbortSignal", async () => {
+    const fetchMock = mockFetchOnce({
+      ok: true,
+      mode: "live",
+      sessionId: "cs_live_1",
+      url: "https://checkout.stripe.com/pay/cs_live_1",
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const controller = new AbortController();
+
+    await billing.createCheckout(
+      { plan: "plus", provider: "liqpay" },
+      { signal: controller.signal },
+    );
+
+    const [, init] = firstCall(fetchMock);
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({
+      plan: "plus",
+      provider: "liqpay",
+    });
+    expect((init as RequestInit).signal).toBe(controller.signal);
+  });
+
+  it("rejects a malformed checkout response via the canonical schema", () => {
+    expect(() =>
+      BillingCheckoutResponseBodySchema.parse({ ok: true, mode: "test" }),
+    ).toThrow();
+    expect(() =>
+      BillingCheckoutResponseBodySchema.parse({
+        ok: true,
+        mode: "unknown",
+        sessionId: "x",
+        url: "https://x.example.com",
+      }),
+    ).toThrow();
+  });
+});
+
+describe("createBillingEndpoints.status", () => {
+  it("GETs /api/v1/billing/status and returns the parsed subscription", async () => {
+    const subscription = {
+      id: 42,
+      provider: "stripe",
+      plan: "pro",
+      status: "active",
+      active: true,
+      currentPeriodEnd: "2026-05-20T00:00:00.000Z",
+    };
+    const fetchMock = mockFetchOnce({ subscription });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+
+    const res = await billing.status();
+
+    expect(res).toEqual({ subscription });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toBe("https://api.example.com/api/v1/billing/status");
+    expect((init as RequestInit).method ?? "GET").toBe("GET");
+  });
+
+  it("returns a null subscription (no active plan) verbatim", async () => {
+    const subscription = {
+      id: null,
+      provider: null,
+      plan: null,
+      status: null,
+      active: false,
+      currentPeriodEnd: null,
+    };
+    mockFetchOnce({ subscription });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const res = await billing.status();
+    expect(res.subscription.active).toBe(false);
+  });
+
+  it("passes through an AbortSignal", async () => {
+    const fetchMock = mockFetchOnce({
+      subscription: {
+        id: null,
+        provider: null,
+        plan: null,
+        status: null,
+        active: false,
+        currentPeriodEnd: null,
+      },
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    const controller = new AbortController();
+    await billing.status({ signal: controller.signal });
+    const [, init] = firstCall(fetchMock);
+    expect((init as RequestInit).signal).toBe(controller.signal);
+  });
 });
 
 describe("createBillingEndpoints.createPortal", () => {
