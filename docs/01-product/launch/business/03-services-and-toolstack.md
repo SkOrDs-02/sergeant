@@ -5,7 +5,7 @@
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
-> Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`, `apps/server/src/env.ts`, `ops/`.
+> Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `Dockerfile.api`, `vercel.json`, `apps/server/src/lib/**`, `apps/server/src/env.ts`, `ops/`.
 >
 > **Канон 2026-05-19:** цей каталог описує service/tool usage, а не live revenue rollout. Stripe уже є в коді (`/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`); open work — production configuration/legal readiness, не “додати Stripe з нуля”. Live delivery owner: [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md).
 
@@ -84,7 +84,7 @@
 | USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`                                                                                | in use                       |
 | PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                                                                                                 | in use                       |
 | Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                                                                                         | in use                       |
-| Railway (Dockerfile.api)    | `railway.toml` → `Dockerfile.api`                                                                                         | in use                       |
+| Hetzner + Coolify (Dockerfile.api) | `deploy-api.yml` → `ghcr.io` → Coolify (ADR-0074; Railway виведено 2026-07)                                        | in use                       |
 | Turborepo                   | root `package.json` → `turbo ^2.9`                                                                                        | in use                       |
 | TanStack Query              | `@tanstack/react-query ^5.99`                                                                                             | in use                       |
 | Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                                | in use                       |
@@ -114,7 +114,8 @@
 | Сервіс            | Сайт                                                                  | Free tier                                                                       | Paid tier                                                                                                       | Date checked | Why this / Why not                                                                                      | Status    |
 | ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- | --------- |
 | **Vercel**        | [vercel.com](https://vercel.com)                                      | Hobby: 100 GB bandwidth, 1M invocations, 6 000 build-min/mo, 1 concurrent build | Pro: $20/user/mo + usage; 1 TB bandwidth, 12 concurrent builds                                                  | 2026-04      | CDN + preview deploys + immutable caching; ідеально для SPA/PWA. Для одного розробника Hobby вистачає.  | in use    |
-| **Railway**       | [railway.app](https://railway.app)                                    | Trial: $5 credit, 512 MB RAM                                                    | Hobby: $5/mo + usage ($5 credit); 8 GB RAM, 10 GB disk. Pro: $20/mo + usage ($20 credit); 32 GB RAM, 50 GB disk | 2026-04      | Backend + managed Postgres + Redis в одному місці; auto-deploy з GitHub. Usage-based, прозорий pricing. | in use    |
+| **Hetzner + Coolify** | [hetzner.com](https://www.hetzner.com/cloud)                      | —                                                                               | CX23: ~$7/міс фіксовано (2 vCPU / 4 GB / 40 GB)                                                                 | 2026-07      | Backend + Postgres(pgvector) + Redis на одному VPS під self-hosted Coolify; auto-deploy з ghcr.io. Фікс-ціна замість usage. [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md). | in use    |
+| ~~**Railway**~~   | [railway.app](https://railway.app)                                    | Trial: $5 credit                                                                | Hobby: $5/mo + usage; Pro: $20/mo + usage                                                                       | 2026-04      | **Виведено 2026-07** — usage-білінг $20-50/міс при нульовому трафіку невиправданий → Hetzner/Coolify (ADR-0074).                     | retired   |
 | **EAS Build**     | [expo.dev/eas](https://expo.dev/eas)                                  | Free: 15 Android + 15 iOS builds/mo, low-priority queue, 45-min timeout         | Starter: $19/mo ($45 credit); Production: $199/mo ($225 credit), 50K MAU                                        | 2026-04      | Потрібен для нативних білдів Expo 52. Free tier достатній для розробки; Production — для CI/CD.         | to add    |
 | **Cloudflare R2** | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | 10 GB storage, 1M Class A ops, 10M Class B ops/mo, $0 egress                    | $0.015/GB-mo storage, $4.50/1M Class A, $0.36/1M Class B                                                        | 2026-04      | S3-compatible + нуль egress fees. Для фото їжі, PDF-експорту. Не MVP — Phase 2+.                        | evaluated |
 
@@ -301,10 +302,10 @@
 | ------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Додати таблицю `subscriptions` | P0        | Міграція `009_subscriptions.sql` — основа paywall. Деталі тірів — [01](./01-monetization-and-pricing.md#2-тарифні-плани). |
 | Railway backups                | P0        | Перевірити що automated daily backups увімкнені. Для production з платежами — обов'язково.                                |
-| Connection pooling             | P2        | Зараз `pg Pool` direct. При >50 юзерів — PgBouncer / Railway built-in pooler.                                             |
+| Connection pooling             | P2        | Зараз `pg Pool` direct. При >50 юзерів — PgBouncer (окремий Coolify-ресурс) / Supavisor.                                  |
 | Read replicas                  | P3        | Не потрібно до ~10K MAU.                                                                                                  |
 
-### 4.2 Backend (Express / Railway)
+### 4.2 Backend (Express / Coolify on Hetzner)
 
 | Зміна                      | Пріоритет | Деталі                                                                                                                                                       |
 | -------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -361,10 +362,10 @@
 
 ```env
 # Core
-DATABASE_URL=                    # Railway Postgres (direct, для міграцій)
+DATABASE_URL=                    # Postgres (Coolify internal, direct — для міграцій)
 DATABASE_URL_POOL=               # pgBouncer pool URL (optional, runtime queries)
 DATABASE_URL_REPLICA=            # Read-replica (optional, analytics offload)
-REDIS_URL=                       # Railway Redis (optional, fallback in-memory)
+REDIS_URL=                       # Redis (Coolify internal, optional — fallback in-memory)
 NODE_ENV=production
 PORT=3000                        # Railway auto
 
@@ -445,11 +446,10 @@ GOOGLE_PLAY_SERVICE_ACCOUNT=     # JSON credentials для EAS Submit
                     ----------   ---------    ---------    ----------
 Infrastructure
   Vercel (Hobby)    $0           $0           $0           $0-20
-  Railway (server)  $5           $5-10        $10-20       $30-50
-  Railway (Postgres)$5           $5           $5-10        $10-20
-  Railway (Redis)   $3           $3           $3-5         $5-10
+  Hetzner (Coolify) $7           $7           $7           $7-14
+   API+PG+Redis на 1 VPS, фікс-ціна (ADR-0074; Railway виведено 2026-07)
                     ----------   ---------    ---------    ----------
-  Subtotal infra    $13          $13-18       $18-35       $45-100
+  Subtotal infra    $7           $7           $7           $7-34
 
 External APIs
   Anthropic         $5-15        $15-50       $50-200      $100-400
@@ -470,7 +470,7 @@ Marketing
 
 Legal (one-time)    ~5K UAH      ---          ---          ---
 
-TOTAL fixed         ~$18-28/mo   ~$28-68/mo   ~$88-274/mo  ~$184-719/mo
+TOTAL fixed         ~$12-22/mo   ~$22-57/mo   ~$77-246/mo  ~$146-653/mo
                     + 5K UAH     + Stripe %   + 5-15K UAH  + 15-50K UAH
                     once                      ads          ads
 
@@ -484,10 +484,7 @@ Breakeven subs      ---          ~30 Pro      ~100 Pro     profitable
 | Сервіс             | Зараз ($/mo) | Після монетизації ($/mo) | Примітки                                               |
 | ------------------ | ------------ | ------------------------ | ------------------------------------------------------ |
 | Vercel (frontend)  | $0           | $0                       | Hobby до 100 GB bandwidth                              |
-| Railway (server)   | ~$5          | $10-20                   | Залежить від CPU/memory                                |
-| Railway (Postgres) | ~$5          | $5-10                    | Usage-based                                            |
-| Railway (Redis)    | ~$3          | $3-5                     | BullMQ + AI-memory ingest queue збільшать навантаження |
-| Railway (n8n)      | ~$3-5        | $3-5                     | Self-host n8n у тому ж проекті                         |
+| Hetzner CX23 (Coolify) | ~$7      | ~$7                      | API + Postgres + Redis на одному VPS, фікс-ціна ([ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)). n8n виведено разом з Railway. |
 | Anthropic (AI)     | ~$10-50      | $50-200                  | Залежить від MAU та моделі                             |
 | Voyage (embed)     | ~$0-5        | $5-15                    | $0.02/1M tokens, lite-tier                             |
 | Resend (email)     | $0           | $0                       | Free tier: 3K emails/mo                                |

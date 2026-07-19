@@ -478,7 +478,7 @@ LTV (optimistic)   / CAC (blended min) = ₴3 080 / ₴20 = 154:1
 
 ```
 Фіксовані витрати:
-  Railway (server)       ≈ $20/міс   = ₴880
+  Hetzner CX23 (Coolify) ≈ $7/міс    = ₴308   (API+PG+Redis, ADR-0074)
   Anthropic API          ≈ $50/міс   = ₴2 200  (при 500 active AI users)
   Vercel (frontend)      ≈ $0        = ₴0      (free tier)
   Resend (email)         ≈ $0        = ₴0      (free tier до 3K/міс)

@@ -1,15 +1,15 @@
-# Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
+# Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify)
 
 > **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
 
-> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо (ADR-0074).
+> `railway.toml` більше не трекається гейтом — Railway декомісовано, файл видалено з репо ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)).
 
 ## Owner surface
 
-- Primary surface: production deploy pipeline (Vercel / Railway / Fly / build-tooling)
+- Primary surface: production deploy pipeline (Vercel / Coolify / build-tooling)
 - Governing skill: `sergeant-deploy-and-observability`
 
 ## Required context
@@ -35,7 +35,7 @@ PR #1595 → PR #1600 — «Vercel SSOT-flip». Edit deploy-конфігу у к
 
 - `apps/web/vercel.json` → [§1 Перевір Vercel preview](#1-перевір-vercel-preview).
 - `Dockerfile.api`, `apps/server/build.mjs`, `fly.toml` (api) → [§2 Перевір staging-деплой API](#2-перевір-staging-деплой-api).
-- `Dockerfile.openclaw`, `railway.toml` (console / alloy) → [§3 Перевір Railway-сервіс](#3-перевір-railway-сервіс).
+- Coolify app-config (env, pre-deploy command, health-check, image tag) → [§3 Перевір Coolify prod-деплой](#3-перевір-coolify-prod-деплой).
 - Кілька — застосуй кожну релевантну секцію перед тим, як ставити лейбл.
 
 ```mermaid
@@ -46,11 +46,11 @@ flowchart TD
 
     Q2 -- "vercel.json" --> WEB["§1 Vercel preview"]
     Q2 -- "Dockerfile.api / build.mjs / fly.toml" --> API["§2 Staging API"]
-    Q2 -- "Dockerfile.openclaw / railway.toml" --> RAILWAY["§3 Railway-сервіс"]
+    Q2 -- "Coolify app-config" --> COOLIFY["§3 Coolify prod-деплой"]
 
     WEB --> LABEL["Постав verified-on-staging"]
     API --> LABEL
-    RAILWAY --> LABEL
+    COOLIFY --> LABEL
     EMERG --> LABEL_E["Постав verified-on-staging-emergency<br/>+ post-mortem"]
 ```
 
@@ -80,12 +80,15 @@ flowchart TD
 4. Подивись staging Fly-логи ~5 хвилин (або два deploy-цикли — що довше). Жодних 5xx, migration-loop або boot-loop.
 5. Якщо все зелене — постав лейбл `verified-on-staging`.
 
-### 3. Перевір Railway-сервіс
+### 3. Перевір Coolify prod-деплой
 
-1. Застосуй зміну до staging Railway-проекту (або тимчасового форку). Зміни конфігу в `railway.toml` (start commands, env, replica count) **обовʼязково** мають пройти через реальний deploy.
-2. Підтверди, що сервіс стартує чисто (Railway → Service → Deployments → latest → жодного restart-loop).
-3. Якщо сервіс — `tools/openclaw` (Telegram-бот), верифікуй `/help` ping-ом у staging Telegram-бот. Якщо `ops/grafana-alloy` — верифікуй ingestion метрик у staging Grafana.
-4. Постав лейбл `verified-on-staging`.
+> Окремого staging-VPS немає — прод-бекенд живе на одному Hetzner CX23 під Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Зміни Coolify app-config (env, pre-deploy command, health-check, image tag) верифікуються на живому деплої одразу після merge, тож stage-gate тут — про уважність, а не про окреме середовище.
+
+1. Після merge `deploy-api.yml` збирає образ (`ghcr.io/skords-02/sergeant-api`) і тригерить Coolify redeploy (auto-deploy).
+2. Підтверди, що застосунок стартує чисто: Coolify → `sergeant-api` → Deployments → latest → жодного restart-loop; контейнер `Up (running)`.
+3. Smoke: `/health` повертає 200; для проксі-шляху перевір `https://<prod-domain>/api/auth/get-session` → 200.
+4. Якщо зміна ризикована (env/pre-deploy migrate) — тримай напоготові попередній image-tag для миттєвого rollback (Coolify → Deployments → previous → Redeploy).
+5. Постав лейбл `verified-on-staging` (для Coolify-поверхні він означає «verified on prod deploy з rollback-планом»).
 
 ### 4. Emergency escape-hatch
 
@@ -103,8 +106,8 @@ flowchart TD
 
 ## Verification
 
-- [ ] Поверхню ідентифіковано (web / API / Railway-сервіс / кілька).
-- [ ] Smoke на відповідному staging-середовищі пройшов.
+- [ ] Поверхню ідентифіковано (web / API / Coolify / кілька).
+- [ ] Smoke на відповідному staging-середовищі (або на prod-деплої для Coolify) пройшов.
 - [ ] Логи / Sentry перевірено за відповідне вікно без аномалій.
 - [ ] Лейбл поставлено: `verified-on-staging` АБО `verified-on-staging-emergency` + зобовʼязання post-mortem.
 - [ ] CI-job `Deploy-config staging gate` зеленіє.

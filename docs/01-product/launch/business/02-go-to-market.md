@@ -408,7 +408,7 @@ Sergeant — це один додаток замість п'яти: фінанс
 | **Sharp**        | Image compositing      | Швидкий, composite з шарів           | Не підтримує text layout       |
 
 > **Рекомендація:** `@vercel/og` (Satori) для OG-images на Vercel Edge,
-> `node-canvas` для server-side share cards на Railway.
+> `node-canvas` для server-side share cards на бекенді (Coolify/Hetzner).
 > Детальніше про інструменти → [03-services-and-toolstack.md](./03-services-and-toolstack.md) §6.5.
 
 #### Модулі для share cards
