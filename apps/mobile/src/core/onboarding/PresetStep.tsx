@@ -34,10 +34,7 @@ import { writePresetPrefill } from "./presetPrefill";
  * card maps each to an Expo-Router push.
  */
 export type PresetAction =
-  | "add_habit"
-  | "add_expense"
-  | "add_meal"
-  | "start_workout";
+  "add_habit" | "add_expense" | "add_meal" | "start_workout";
 
 interface PresetItem {
   id: string;

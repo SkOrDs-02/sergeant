@@ -40,9 +40,7 @@ function buildDigestMemoryContent(
   const tag = weekRange ? `Тижневий звіт ${weekRange}` : "Тижневий звіт";
   for (const key of ["finyk", "fizruk", "nutrition", "routine"] as const) {
     const sec = safe[key] as
-      | { summary?: string; comment?: string }
-      | null
-      | undefined;
+      { summary?: string; comment?: string } | null | undefined;
     if (!sec) continue;
     const summary = (sec.summary || "").trim();
     const comment = (sec.comment || "").trim();

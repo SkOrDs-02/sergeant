@@ -23,11 +23,7 @@ import {
 } from "lucide-react-native";
 
 export type FinykPageId =
-  | "overview"
-  | "transactions"
-  | "budgets"
-  | "analytics"
-  | "assets";
+  "overview" | "transactions" | "budgets" | "analytics" | "assets";
 
 export interface FinykPageDef {
   id: FinykPageId;

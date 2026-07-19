@@ -7,10 +7,7 @@
 
 /** Trigger, що викликав OpenClaw. */
 export type OpenClawTrigger =
-  | "dm"
-  | "morning_ritual"
-  | "weekly_review"
-  | "monthly_okr";
+  "dm" | "morning_ritual" | "weekly_review" | "monthly_okr";
 
 /** Кінцевий status invocation-у. Усі fail-closed states присутні явно. */
 export type OpenClawStatus =

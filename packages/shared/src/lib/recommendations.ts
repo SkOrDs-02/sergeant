@@ -23,11 +23,7 @@ import type { ModuleAccent, StatusColor } from "@sergeant/design-tokens";
  * `@sergeant/insights/recommendations/types`.
  */
 export type HubModuleAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_meal_photo"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
 
 /** Module namespaces that can surface a recommendation. */
 export type RecModule = ModuleAccent | "hub";

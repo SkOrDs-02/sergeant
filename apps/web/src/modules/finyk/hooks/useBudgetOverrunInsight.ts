@@ -34,8 +34,7 @@ interface UseBudgetOverrunInsightArgs {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?:
-    | readonly { id: string; label?: string | undefined }[]
-    | undefined;
+    readonly { id: string; label?: string | undefined }[] | undefined;
 }
 
 export function useBudgetOverrunInsight({
@@ -49,18 +48,20 @@ export function useBudgetOverrunInsight({
     const limitBudgets = getLimitBudgets(budgets);
     if (!limitBudgets.length || !transactions.length) return null;
 
-    const { daysLeft } = getCurrentMonthContext(new Date());
+    const { daysLeft } = getCurrentMonthContext();
 
     // Score each limit budget and pick the worst offender.
     let worst: {
       budget: (typeof limitBudgets)[number];
+      categoryId: string;
       ratio: number;
       spent: number;
       limit: number;
     } | null = null;
 
     for (const b of limitBudgets) {
-      if (!b.categoryId || !(Number(b.limit) > 0)) continue;
+      const categoryId = b.categoryId;
+      if (!categoryId || !(Number(b.limit) > 0)) continue;
       const limit = Number(b.limit);
       const spent = calcCategorySpent(
         transactions,
@@ -72,20 +73,17 @@ export function useBudgetOverrunInsight({
       const ratio = spent / limit;
       if (ratio < OVERRUN_THRESHOLD) continue;
       if (!worst || ratio > worst.ratio) {
-        worst = { budget: b, ratio, spent, limit };
+        worst = { budget: b, categoryId, ratio, spent, limit };
       }
     }
 
     if (!worst) return null;
 
-    const { budget, ratio, spent, limit } = worst;
+    const { budget, categoryId, ratio, spent, limit } = worst;
     const pct = Math.round((ratio - 1) * 100);
     const overage = Math.round(spent - limit);
-    const catMeta = resolveExpenseCategoryMeta(
-      budget.categoryId!,
-      customCategories,
-    );
-    const catLabel = catMeta?.label ?? budget.categoryId ?? "Категорія";
+    const catMeta = resolveExpenseCategoryMeta(categoryId, customCategories);
+    const catLabel = catMeta?.label ?? categoryId;
 
     return {
       id: `finyk-budget-overrun-${budget.categoryId}`,

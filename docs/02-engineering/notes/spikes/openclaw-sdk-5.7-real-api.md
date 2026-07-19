@@ -43,8 +43,7 @@ type DefinePluginEntryOptions = {
   description: string;
   kind?: OpenClawPluginDefinition["kind"];
   configSchema?:
-    | OpenClawPluginConfigSchema
-    | (() => OpenClawPluginConfigSchema);
+    OpenClawPluginConfigSchema | (() => OpenClawPluginConfigSchema);
   reload?: OpenClawPluginDefinition["reload"];
   nodeHostCommands?: OpenClawPluginDefinition["nodeHostCommands"];
   securityAuditCollectors?: OpenClawPluginDefinition["securityAuditCollectors"];
@@ -404,9 +403,7 @@ api.registerHook("llm_input", async (event) => {
 ```jsonc
 {
   "agents": {
-    "defaults": {
-      /* keeps tools.alsoAllow as "common read-tools" baseline */
-    },
+    "defaults": {/* keeps tools.alsoAllow as "common read-tools" baseline */},
     "eng": {
       "tools": {
         "alsoAllow": [

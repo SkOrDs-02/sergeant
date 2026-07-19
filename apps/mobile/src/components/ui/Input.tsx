@@ -57,13 +57,7 @@ export type InputVariant = "default" | "filled" | "ghost";
  * with no type-aware defaults.
  */
 export type InputType =
-  | "text"
-  | "email"
-  | "password"
-  | "url"
-  | "tel"
-  | "number"
-  | "search";
+  "text" | "email" | "password" | "url" | "tel" | "number" | "search";
 
 const NON_PROSE_TYPES: ReadonlySet<InputType> = new Set<InputType>([
   "email",

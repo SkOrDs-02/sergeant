@@ -101,9 +101,9 @@ describe("requireCsrfHeader — допустимі запити", () => {
     async (method) => {
       const app = makeApp(requireCsrfHeader());
       const res = await request(app)
-        [
-          method.toLowerCase() as "post" | "put" | "patch" | "delete"
-        ]("/api/foo")
+        [method.toLowerCase() as "post" | "put" | "patch" | "delete"](
+          "/api/foo",
+        )
         .set("X-Requested-With", "XMLHttpRequest");
       expect(res.status).toBe(200);
     },

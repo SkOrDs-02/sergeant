@@ -275,8 +275,7 @@ export async function drainSyncOpOutbox(
 }
 
 type ParseResult =
-  | { kind: "ok"; row: DrainedOutboxRow }
-  | { kind: "poison"; reason: string };
+  { kind: "ok"; row: DrainedOutboxRow } | { kind: "poison"; reason: string };
 
 function tryParseDrainedRow(raw: OutboxRowFromDb): ParseResult {
   if (!SUPPORTED_OPS.has(raw.op)) {

@@ -27,10 +27,7 @@ export interface DailyLogEntry extends DomainDailyLogEntry {
 }
 
 export type DailyLogNumericField =
-  | "weightKg"
-  | "sleepHours"
-  | "energyLevel"
-  | "moodScore";
+  "weightKg" | "sleepHours" | "energyLevel" | "moodScore";
 
 // AI-DANGER: local id generation for daily-log entries. The `dl_` prefix
 // and time+random shape are relied on by the dual-write/cloud-sync pipeline

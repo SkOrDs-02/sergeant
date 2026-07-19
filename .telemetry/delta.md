@@ -44,10 +44,10 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 
 ## Rename — 2 events
 
-| Current Name                                                                   | Target Name              | Change                                                                              |
+| Current Name | Target Name | Change |
 | ------------------------------------------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header | settings_root                                                                                     | deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
-| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`)    | `biometric_auth_failed`  | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
+| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`) | `biometric_auth_failed` | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
 
 **Migration approach for renames:** dual-write for one release cycle. The old PostHog event name continues to fire alongside the new one; once dashboards switch, old fire is removed. Document in `.telemetry/changelog.md` (created by `product-tracking-instrument-new-feature` skill on first invocation).
 

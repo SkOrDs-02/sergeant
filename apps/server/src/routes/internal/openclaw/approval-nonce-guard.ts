@@ -49,10 +49,7 @@ export function readApprovalNonceConfig(): ApprovalNonceConfig {
 
 /** Reasons a nonce is rejected — verifier reasons plus guard-only ones. */
 export type GuardRejectReason =
-  | NonceVerifyReason
-  | "missing_nonce"
-  | "already_consumed"
-  | "ledger_mismatch";
+  NonceVerifyReason | "missing_nonce" | "already_consumed" | "ledger_mismatch";
 
 function pickHeader(value: unknown): string | undefined {
   if (typeof value === "string") return value;

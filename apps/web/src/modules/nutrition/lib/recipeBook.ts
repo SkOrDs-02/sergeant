@@ -36,8 +36,7 @@ export interface SavedRecipe {
 }
 
 export type SaveRecipeResult =
-  | { ok: true; recipe: SavedRecipe }
-  | { ok: false; error: string };
+  { ok: true; recipe: SavedRecipe } | { ok: false; error: string };
 
 const ensureMigrated = (): Promise<void> =>
   migrateLegacyDbOnce({

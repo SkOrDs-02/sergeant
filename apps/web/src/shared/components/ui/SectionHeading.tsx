@@ -40,11 +40,7 @@ export type SectionHeadingVariant =
  * by sheet sub-headers (see `apps/mobile/src/modules/finyk/pages/Transactions`).
  */
 export type SectionHeadingWeight =
-  | "normal"
-  | "medium"
-  | "semibold"
-  | "bold"
-  | "extrabold";
+  "normal" | "medium" | "semibold" | "bold" | "extrabold";
 
 // Size-only tokens (font-scale + casing + tracking). Weight is applied
 // separately so `weight` prop overrides can compose cleanly. The `2xs`

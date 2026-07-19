@@ -157,8 +157,7 @@ export const EMPTY_FINYK_STATE: FinykDualWriteState = {
 // -----------------------------------------------------------------------
 
 export type FinykIdTable =
-  | "finyk_hidden_accounts"
-  | "finyk_hidden_transactions";
+  "finyk_hidden_accounts" | "finyk_hidden_transactions";
 
 export type FinykBlobTable =
   | "finyk_budgets"

@@ -11,10 +11,7 @@ export type ModuleAccent = "finyk" | "fizruk" | "routine" | "nutrition";
 
 /** Soft (tinted-surface) variants of module accents. */
 export type ModuleSoftAccent =
-  | "finyk-soft"
-  | "fizruk-soft"
-  | "routine-soft"
-  | "nutrition-soft";
+  "finyk-soft" | "fizruk-soft" | "routine-soft" | "nutrition-soft";
 
 /** Status / semantic colour identifiers used for feedback UI. */
 export type StatusColor = "success" | "warning" | "danger" | "info";
@@ -81,13 +78,7 @@ export declare const statusHex: Readonly<Record<StatusColor, string>>;
 
 /** Semantic chart colour identifiers (kcal/protein/fat/carbs + structural). */
 export type ChartHexKey =
-  | "primary"
-  | "limit"
-  | "neutral"
-  | "kcal"
-  | "protein"
-  | "fat"
-  | "carbs";
+  "primary" | "limit" | "neutral" | "kcal" | "protein" | "fat" | "carbs";
 
 /** Chart hex tokens — semantic names for inline-styled chart primitives. */
 export declare const chartHex: Readonly<Record<ChartHexKey, string>>;
@@ -111,12 +102,7 @@ export declare const elevation: Readonly<Record<ElevationLevel, ElevationStep>>;
 
 /** Semantic z-index tiers — match an `elevation.eN` level to its tier. */
 export type ZTier =
-  | "base"
-  | "dropdown"
-  | "sticky"
-  | "overlay"
-  | "modal"
-  | "toast";
+  "base" | "dropdown" | "sticky" | "overlay" | "modal" | "toast";
 
 /** Z-index tier values (numeric strings) keyed by semantic tier. */
 export declare const zTier: Readonly<Record<ZTier, string>>;

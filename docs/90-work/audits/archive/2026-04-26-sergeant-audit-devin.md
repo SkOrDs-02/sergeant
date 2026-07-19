@@ -421,16 +421,16 @@
 
 ### Спринт 1-2 (3-4 тижні) — «закрити рутиний борг»
 
-| #   | PR                                                      | Effort | Імпакт                |
+| # | PR | Effort | Імпакт |
 | --- | ------------------------------------------------------- | ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 5   | `PR-6.B` — noImplicitAny phase 2                        | 3-5 д  | strict TS phase 2     | 🟡 partial: `routine`+`shared` ✅ [#923](https://github.com/Skords-01/Sergeant/pull/923), `nutrition` ✅ [#934](https://github.com/Skords-01/Sergeant/pull/934); ⏳ `core`/`finyk`/`fizruk` |
-| 6   | `PR-3.D` — top-3 localStorage migration                 | 1 д    | burn-down             | ✅ [#865](https://github.com/Skords-01/Sergeant/pull/865)                                                                                                                                   |
-| 7   | `PR-3.B` + `PR-3.C` — Assets.tsx + seedFoodsUk split    | 2 д    | top-LOC decomposition | `PR-3.B` ✅ [#887](https://github.com/Skords-01/Sergeant/pull/887); `PR-3.C` ✅ [#898](https://github.com/Skords-01/Sergeant/pull/898)                                                      |
-| 8   | `PR-2.B` — `no-bigint-string` ESLint rule               | 1-2 д  | автоматизує rule #1   | ✅ [#868](https://github.com/Skords-01/Sergeant/pull/868)                                                                                                                                   |
-| 9   | `PR-2.C` — `rq-keys-only-from-factory`                  | 1-2 д  | автоматизує rule #2   | ✅ [#869](https://github.com/Skords-01/Sergeant/pull/869)                                                                                                                                   |
-| 10  | `PR-12.B` — chatActions contract tests                  | 2 д    | safety net на tools   | ✅ [#885](https://github.com/Skords-01/Sergeant/pull/885)                                                                                                                                   |
-| 11  | `PR-7.A` + `PR-7.B` — recommendation + cloud-sync tests | 3 д    | critical paths        | `PR-7.A` ✅ [#886](https://github.com/Skords-01/Sergeant/pull/886); `PR-7.B` ✅ [#904](https://github.com/Skords-01/Sergeant/pull/904)                                                      |
-| 12  | `PR-5.A` — migration linter                             | 1 д    | автоматизує rule #4   | ✅ [#863](https://github.com/Skords-01/Sergeant/pull/863)                                                                                                                                   |
+| 5 | `PR-6.B` — noImplicitAny phase 2 | 3-5 д | strict TS phase 2 | 🟡 partial: `routine`+`shared` ✅ [#923](https://github.com/Skords-01/Sergeant/pull/923), `nutrition` ✅ [#934](https://github.com/Skords-01/Sergeant/pull/934); ⏳ `core`/`finyk`/`fizruk` |
+| 6 | `PR-3.D` — top-3 localStorage migration | 1 д | burn-down | ✅ [#865](https://github.com/Skords-01/Sergeant/pull/865) |
+| 7 | `PR-3.B` + `PR-3.C` — Assets.tsx + seedFoodsUk split | 2 д | top-LOC decomposition | `PR-3.B` ✅ [#887](https://github.com/Skords-01/Sergeant/pull/887); `PR-3.C` ✅ [#898](https://github.com/Skords-01/Sergeant/pull/898) |
+| 8 | `PR-2.B` — `no-bigint-string` ESLint rule | 1-2 д | автоматизує rule #1 | ✅ [#868](https://github.com/Skords-01/Sergeant/pull/868) |
+| 9 | `PR-2.C` — `rq-keys-only-from-factory` | 1-2 д | автоматизує rule #2 | ✅ [#869](https://github.com/Skords-01/Sergeant/pull/869) |
+| 10 | `PR-12.B` — chatActions contract tests | 2 д | safety net на tools | ✅ [#885](https://github.com/Skords-01/Sergeant/pull/885) |
+| 11 | `PR-7.A` + `PR-7.B` — recommendation + cloud-sync tests | 3 д | critical paths | `PR-7.A` ✅ [#886](https://github.com/Skords-01/Sergeant/pull/886); `PR-7.B` ✅ [#904](https://github.com/Skords-01/Sergeant/pull/904) |
+| 12 | `PR-5.A` — migration linter | 1 д | автоматизує rule #4 | ✅ [#863](https://github.com/Skords-01/Sergeant/pull/863) |
 
 ### Спринт 3-6 (2-3 місяці) — «масштабування»
 

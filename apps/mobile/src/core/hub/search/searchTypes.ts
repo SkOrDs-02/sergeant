@@ -28,10 +28,7 @@ export type SearchSurface =
 export type HubModuleId = "finyk" | "fizruk" | "routine" | "nutrition";
 
 export type HubModuleAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_habit";
 
 export type Hit = {
   id: string;
