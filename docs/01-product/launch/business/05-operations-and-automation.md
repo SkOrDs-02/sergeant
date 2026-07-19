@@ -36,10 +36,10 @@
 
 | #   | Зона                   | Стек                              | Власник | Daily? | Weekly? |
 | --- | ---------------------- | --------------------------------- | ------- | ------ | ------- |
-| 1   | **Product**            | Vercel + Railway + Sentry         | ти      | 1 хв   | 5 хв    |
+| 1   | **Product**            | Vercel + Coolify + Sentry         | ти      | 1 хв   | 5 хв    |
 | 2   | **Revenue**            | Stripe + Postgres `subscriptions` | ти      | 1 хв   | 5 хв    |
 | 3   | **Analytics & Growth** | PostHog + Loops + Buffer          | ти      | 1 хв   | 10 хв   |
-| 4   | **DevOps & CI**        | GitHub + Railway + Renovate       | ти      | 1 хв   | 5 хв    |
+| 4   | **DevOps & CI**        | GitHub + Coolify + Renovate       | ти      | 1 хв   | 5 хв    |
 | 5   | **Support**            | Crisp + Telegram bot + Canny      | ти      | 1 хв   | 5 хв    |
 | 6   | **Automation**         | n8n + OpenClaw                    | ти      | 0 хв   | 0 хв    |
 
@@ -53,7 +53,7 @@
 | Що               | Де                                   | Алерт у Telegram           |
 | ---------------- | ------------------------------------ | -------------------------- |
 | Frontend health  | Vercel deployments                   | Build failed               |
-| Backend uptime   | Railway / Prometheus `/metrics`      | API 5xx > 1 % за 5 хв      |
+| Backend uptime   | Coolify health + Sentry (Prometheus `/metrics` paused 2026-06) | API 5xx > 1 % за 5 хв      |
 | Errors           | Sentry (web + server)                | New issue / spike > 10/хв  |
 | Performance      | Vercel Speed Insights, Lighthouse CI | Core Web Vitals деградація |
 | PWA install rate | PostHog                              | < 5 % за тиждень           |
@@ -67,7 +67,7 @@
 | Symptom                               | Action                                                              | Owner | Escalation                                                                                                            |
 | ------------------------------------- | ------------------------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
 | Vercel build failed                   | Перевірити logs, rollback до останнього green deploy                | ти    | —                                                                                                                     |
-| API 5xx > 1 % протягом 5 хв           | Railway logs → знайти причину; якщо OOM — scale up або hotfix       | ти    | Якщо > 10 хв — rollback image                                                                                         |
+| API 5xx > 1 % протягом 5 хв           | Coolify logs → знайти причину; якщо OOM — scale up або hotfix       | ти    | Якщо > 10 хв — rollback image                                                                                         |
 | Sentry spike > 10 issues/хв           | Mute алерт; bisect останній deploy; hotfix або revert commit        | ти    | Якщо user-facing > 30 хв — [§4 incident response](./04-launch-readiness.md#3-operations-support-monitoring-incidents) |
 | Core Web Vitals деградація (LCP > 3s) | Lighthouse CI diff; перевірити bundle size + lazy loading           | ти    | Створити P1 issue в GitHub                                                                                            |
 | PWA install rate < 5 %                | Перевірити prompt timing, A2HS banner; A/B test у PostHog           | ти    | Переглянути UX install flow                                                                                           |
@@ -96,7 +96,7 @@
 | MRR drop > 10 % WoW             | Stripe → filter by cancelled; перевірити cancel survey responses         | ти    | Якщо системна причина — P0 issue          |
 | Spike failed payments (> 5/day) | Stripe → перевірити чи проблема з PSP; якщо ні — перевірити webhook flow | ти    | Звʼязатись зі Stripe support              |
 | Dispute/chargeback              | Stripe → зібрати evidence; respond протягом 24 год                       | ти    | Якщо > 3/міс — переглянути refund policy  |
-| Webhook не доходить (n8n down)  | Railway → перевірити n8n health; перезапустити                           | ти    | Stripe retry queue покриває до 72 год     |
+| Webhook не доходить             | Перевірити app logs у Coolify (Stripe/Mono вебхуки йдуть напряму в API; n8n виведено 2026-07) | ти    | Stripe retry queue покриває до 72 год     |
 | Неочікуваний refund request     | Перевірити Terms of Service; зробити refund якщо обґрунтовано            | ти    | Якщо fraud pattern — заблокувати + Stripe |
 
 ---
@@ -136,11 +136,11 @@
 | CI status          | GitHub Actions     | Failed workflow на main        |
 | PR queue           | GitHub             | Devin Review failed            |
 | Renovate PRs       | GitHub             | Major-version PR опен > 7 днів |
-| Migrations         | Railway pre-deploy | Migration failed               |
-| DB backups         | Railway            | Backup failed                  |
-| DB storage         | Railway metrics    | > 80 % capacity                |
-| Redis storage      | Railway metrics    | > 80 %                         |
-| Container restarts | Railway logs       | > 3/год                        |
+| Migrations         | Coolify pre-deploy | Migration failed               |
+| DB backups         | local `pg_dump` cron (VPS) | Backup failed          |
+| DB storage         | Coolify container stats | > 80 % capacity           |
+| Redis storage      | Coolify container stats | > 80 %                    |
+| Container restarts | Coolify logs       | > 3/год                        |
 | Secrets expiry     | Manual / GitHub    | < 30 днів до expiry            |
 
 **Daily check:** GitHub Actions main branch → green?
@@ -151,10 +151,10 @@
 | Symptom                          | Action                                                               | Owner | Escalation                                                          |
 | -------------------------------- | -------------------------------------------------------------------- | ----- | ------------------------------------------------------------------- |
 | CI failed on main                | GitHub Actions → перевірити logs; rerun якщо flaky; fix якщо реальне | ти    | Якщо блокує deploys > 1 год — hotfix                                |
-| Migration failed (Railway)       | Railway logs → SQL error; fix migration file; `pnpm db:migrate`      | ти    | Якщо data loss risk — [§4 two-phase rule](./04-launch-readiness.md) |
+| Migration failed (Coolify pre-deploy) | Coolify logs → SQL error; fix migration file; `pnpm db:migrate`  | ти    | Якщо data loss risk — [§4 two-phase rule](./04-launch-readiness.md) |
 | DB storage > 80 %                | `VACUUM FULL`; archive old data; scale disk                          | ти    | Якщо > 95 % — emergency scale up                                    |
-| Container restart loop (> 3/год) | Railway logs → OOM? crash? check memory limits                       | ти    | Scale up або hotfix memory leak                                     |
-| Secret expires in < 30 днів      | Rotate key; update env vars in Railway + GitHub                      | ти    | Calendar reminder 7 днів до expiry                                  |
+| Container restart loop (> 3/год) | Coolify logs → OOM? crash? check memory limits                       | ти    | Scale up або hotfix memory leak                                     |
+| Secret expires in < 30 днів      | Rotate key; update env vars in Coolify + GitHub                      | ти    | Calendar reminder 7 днів до expiry                                  |
 | Renovate major PR > 7 днів       | Рев'ю changelog; merge або закрити з коментарем                      | ти    | Якщо breaking — створити issue з планом                             |
 
 ---
@@ -214,8 +214,8 @@
 
 | Symptom                      | Action                                                         | Owner | Escalation                     |
 | ---------------------------- | -------------------------------------------------------------- | ----- | ------------------------------ |
-| n8n workflow зупинився       | Railway logs → restart; перевірити webhook endpoints           | ти    | Якщо > 1 год down — manual ops |
-| OpenClaw не відправив digest | Перевірити Railway logs; LLM API key valid?; cron schedule OK? | ти    | Manual digest до fix           |
+| n8n workflow зупинився       | Coolify logs → restart; перевірити webhook endpoints           | ти    | Якщо > 1 год down — manual ops |
+| OpenClaw не відправив digest | Перевірити Coolify logs; LLM API key valid?; cron schedule OK? | ти    | Manual digest до fix           |
 | n8n DB disk full             | Видалити старі execution logs; збільшити volume                | ти    | Migrate to larger Railway plan |
 | LLM API rate limit           | Перевірити usage; зменшити frequency або switch model          | ти    | Fallback на дешевшу модель     |
 
@@ -269,7 +269,7 @@
 ### Anti-pattern — як НЕ моніторити
 
 ```
-❌ 8 вкладок: Vercel + Railway + Sentry + Stripe + PostHog + GitHub + Crisp + Loops
+❌ 8 вкладок: Vercel + Coolify + Sentry + Stripe + PostHog + GitHub + Crisp + Loops
 ❌ Перевірка вранці: відкрив всі 8, по 30 секунд на кожну = 4 хв витратив, нічого не зрозумів
 ❌ Алерти на email — губляться у пошті
 ❌ Алерти у Slack без push — не побачиш до вечора
@@ -767,6 +767,8 @@ GitHub webhook (pull_request opened, NOT renovate)
 ---
 
 ## 7. Розгортання
+
+> ⚠️ **DEPRECATED (2026-07, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** §7.1–7.2 описують self-host n8n / OpenClaw на **Railway**, який виведено з експлуатації. Обидва сервіси retired (бекенд → Hetzner/Coolify; n8n і OpenClaw Gateway декомісовано). Кроки нижче збережені як історичний референс — це **не** актуальна deploy-процедура.
 
 ### 7.1 n8n — self-host на Railway
 

@@ -485,7 +485,7 @@ LTV (optimistic)   / CAC (blended min) = ₴3 080 / ₴20 = 154:1
   Domain + Cloudflare    ≈ $2/міс    = ₴88
   PostHog (analytics)    ≈ $0        = ₴0      (free tier до 1M events/міс)
   ──────────────────────────────────────────
-  Total fixed            ≈ $72/міс   = ₴3 168
+  Total fixed            ≈ $59/міс   = ₴2 596
 
 Змінні витрати per Pro subscriber:
   Payment provider fee   ≈ 3 % × ₴199  = ₴5.97/міс
@@ -495,10 +495,10 @@ LTV (optimistic)   / CAC (blended min) = ₴3 080 / ₴20 = 154:1
 
 Net revenue per Pro sub  = ₴199 − ₴8 = ₴191/міс
 
-Breakeven subscribers    = ₴3 168 / ₴91 ≈ 35 Pro subscribers
+Breakeven subscribers    = ₴2 596 / ₴191 ≈ 14 Pro subscribers
 ```
 
-> **Висновок:** з ~35 Pro-підписниками покриваємо всі фіксовані витрати. При 100 Pro subs: MRR = ₴9 900, net = ₴9 900 − ₴800 (variable) − ₴3 168 (fixed) = **₴5 932 profit/міс**. Детальна cost projection → [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
+> **Висновок:** з ~14 Pro-підписниками покриваємо всі фіксовані витрати (infra впала до ~$7/міс на Hetzner, ADR-0074). При 100 Pro subs: MRR = ₴19 900, net = ₴19 900 − ₴800 (variable) − ₴2 596 (fixed) = **₴16 504 profit/міс**. Детальна cost projection → [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
 
 ---
 

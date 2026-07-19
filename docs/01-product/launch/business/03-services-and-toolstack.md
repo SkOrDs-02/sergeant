@@ -17,18 +17,18 @@
                    FRONTEND                          BACKEND                          DATA
               +-------------------+             +---------------------+         +----------------+
               | apps/web          |    HTTPS    | apps/server         |         | PostgreSQL     |
-              | Vite + React 18   |------------>| Express + Node 22   |-------->| Railway managed|
+              | Vite + React 18   |------------>| Express + Node 22   |-------->| Coolify/Hetzner|
               | PWA (Workbox)     |   API       | Better Auth         |         | + pgvector ext.|
               | Tailwind CSS 4    |             | Pino logging        |         | Migrations 044+|
               | Sentry (@sentry/  |             | Helmet + CSP        |         +----------------+
               |   react)          |             | Sentry (@sentry/    |                |
               | TanStack Query    |             |   node)             |         +----------------+
               | PostHog (posthog- |             | prom-client         |         | Redis          |
-              |   js)             |             | OpenTelemetry SDK   |         | Railway        |
+              |   js)             |             | OpenTelemetry SDK   |         | Coolify        |
               | Vercel Analytics  |             | PostHog (server)    |         | Rate limiting  |
               +-------------------+             | BullMQ + ioredis    |         | BullMQ queues  |
               | Vercel (Hobby)    |             +---------------------+         | In-mem fallback|
-              +-------------------+             | Railway             |         +----------------+
+              +-------------------+             | Coolify (Hetzner)   |         +----------------+
                                                 | (Dockerfile.api)    |
                                                 +---------------------+
 
@@ -91,8 +91,8 @@
 | Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                                      | in use                       |
 | **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)          | in use                       |
 | **Telegram bot (grammy)**   | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                                      | in use                       |
-| **n8n workflows**           | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                          | in use                       |
-| **Grafana + Alloy**         | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                                     | in use                       |
+| **n8n workflows**           | `ops/n8n-workflows/` — конфіги в репо; self-host інстанс жив на Railway → **виведено 2026-07** (ADR-0074). ADR-0026        | retired                      |
+| **Grafana + Alloy**         | `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape) — **paused 2026-06-28, metrics DOWN** (deliberate cost-cut); логи (Loki) активні | paused                       |
 | **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                           | in use                       |
 | **Detox E2E**               | `.github/workflows/detox-{android,ios}.yml`                                                                               | in use                       |
 | **Drizzle ORM**             | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                | in use                       |
@@ -103,7 +103,7 @@
 | Tally                       | _немає в коді_                                                                                                            | to add                       |
 | UptimeRobot                 | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                       |
 | Termly / CookieYes          | _не використовується_                                                                                                     | to add                       |
-| Cloudflare R2               | _немає в коді_                                                                                                            | evaluated                    |
+| Cloudflare R2               | _немає в коді_ (розглядалось для БД-бекапів; бекап тепер local `pg_dump` cron + Hetzner snapshot, ADR-0074)                | evaluated                    |
 
 ---
 
@@ -367,10 +367,10 @@ DATABASE_URL_POOL=               # pgBouncer pool URL (optional, runtime queries
 DATABASE_URL_REPLICA=            # Read-replica (optional, analytics offload)
 REDIS_URL=                       # Redis (Coolify internal, optional — fallback in-memory)
 NODE_ENV=production
-PORT=3000                        # Railway auto
+PORT=3000                        # Coolify app env (fixed 3000)
 
 # Auth
-BETTER_AUTH_URL=                 # Railway API URL
+BETTER_AUTH_URL=                 # public origin (Vercel front, same-origin proxy)
 BETTER_AUTH_SECRET=              # 32+ char random
 ALLOWED_ORIGINS=                 # Vercel domain(s)
 
@@ -397,7 +397,7 @@ RESEND_API_KEY=                  # Transactional email
 # Mono
 MONO_WEBHOOK_ENABLED=
 MONO_TOKEN_ENC_KEY=              # 32-byte hex
-PUBLIC_API_BASE_URL=             # Railway public URL
+PUBLIC_API_BASE_URL=             # public API URL (api.<domain> / sslip.io — для Mono webhook)
 
 # Internal API (machine-to-machine, n8n)
 INTERNAL_API_KEY=                # Bearer для /api/internal/* з n8n

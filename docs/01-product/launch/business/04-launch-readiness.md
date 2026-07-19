@@ -33,7 +33,7 @@
 - [ ] **Перелік категорій даних:** PII, фінансові, здоров'я, поведінкові, AI-контекст. — _Ref:_ GDPR [Art. 13(1)(d)](https://gdpr-info.eu/art-13-gdpr/). _Owner:_ Founder.
 - [ ] **Правова підстава обробки:** consent для health-даних, legitimate interest для аналітики. — _Ref:_ GDPR [Art. 6](https://gdpr-info.eu/art-6-gdpr/). _Owner:_ Founder + юрист.
 - [ ] **Спеціальні категорії даних:** health data потребує explicit consent. — _Ref:_ GDPR [Art. 9](https://gdpr-info.eu/art-9-gdpr/). _Owner:_ Founder + юрист.
-- [ ] **Треті сторони та sub-processors:** Stripe, Anthropic, Sentry, PostHog, Resend, Monobank, Railway, Vercel, Firebase/APNs. — _Ref:_ GDPR [Art. 28](https://gdpr-info.eu/art-28-gdpr/). _Owner:_ Founder.
+- [ ] **Треті сторони та sub-processors:** Stripe, Anthropic, OpenRouter, Sentry, PostHog, Resend, Monobank, Hetzner, Vercel, Firebase/APNs. — _Ref:_ GDPR [Art. 28](https://gdpr-info.eu/art-28-gdpr/). _Owner:_ Founder.
 - [ ] **Права суб'єкта даних:** access, rectification, erasure, portability, restriction, objection. — _Ref:_ GDPR [Art. 15–22](https://gdpr-info.eu/art-15-gdpr/). _Owner:_ Dev.
 - [ ] **Міжнародні трансфери:** дані йдуть до US-серверів (Anthropic, Stripe, Sentry) — потрібен механізм (SCCs або рішення про адекватність). — _Ref:_ GDPR [Art. 46](https://gdpr-info.eu/art-46-gdpr/). _Owner:_ Founder + юрист.
 - [ ] **Data retention periods:** скільки зберігаються дані після видалення акаунту. — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/). _Owner:_ Founder.
@@ -315,7 +315,7 @@ Web Browser              Server                    Mobile App
 - [ ] Telegram канал/група для community. _Owner:_ Founder.
 - [ ] Status page — [uptimerobot.com](https://uptimerobot.com/) (безкоштовно) або [Instatus](https://instatus.com/). _Owner:_ Dev.
 - [ ] On-call Telegram alert channel створено. _Owner:_ Founder.
-- [ ] Rollback plan протестовано — Railway instant rollback на staging. _Owner:_ Dev.
+- [ ] Rollback plan протестовано — Coolify redeploy попереднього image-tag. _Owner:_ Dev.
 - [ ] DB backup verification — відновити бекап на test-інстансі. _Owner:_ Dev.
 - [ ] Sentry alerts configured (error rate, unhandled exceptions). _Owner:_ Dev.
 - [ ] Billing email templates (Resend) — welcome, invoice, payment failed, churn. _Owner:_ Dev.
@@ -328,7 +328,7 @@ Web Browser              Server                    Mobile App
 - [ ] Status page показує «Operational». _Owner:_ Dev.
 - [ ] Telegram alert channel моніториться в реальному часі. _Owner:_ Founder.
 - [ ] Свіжий DB backup створено перед деплоєм. _Owner:_ Dev.
-- [ ] Railway rollback протестовано на staging ще раз. _Owner:_ Dev.
+- [ ] Coolify rollback (redeploy попереднього image) протестовано ще раз. _Owner:_ Dev.
 - [ ] Stripe production webhooks активні та verified. _Owner:_ Dev.
 - [ ] Error rate baseline зафіксовано (Grafana / Sentry). _Owner:_ Dev.
 - [ ] PostHog dashboards для funnel та NSM відкриті. _Owner:_ Dev.
@@ -358,7 +358,7 @@ Sentry + Prometheus вже є. Потрібно додати **бізнес-ал
 | Payment failed rate | Stripe webhook `invoice.payment_failed` | > 10 % від усіх invoices за добу  | Grafana (custom metric)      | Telegram bot / email |
 | Signup rate drop    | PostHog daily cohort                    | > 50 % падіння vs попередній день | PostHog (trends)             | Email                |
 | API error rate      | Prometheus `http_request_errors_total`  | > 5 % від загального трафіку      | Grafana (Prometheus)         | Telegram             |
-| DB storage limit    | Railway metrics                         | > 80 % від ліміту плану           | Railway Dashboard (manual)   | Email                |
+| DB storage limit    | Coolify container stats                 | > 80 % від диску VPS (40 GB)      | Coolify (manual)             | Email                |
 | AI API budget       | Anthropic usage API                     | > $40/міс (80 % від бюджету $50)  | Anthropic Dashboard (manual) | Email                |
 | Churn spike         | Custom metric: `subscription_canceled`  | > 3 скасувань на день             | PostHog (custom event)       | Telegram             |
 
@@ -368,7 +368,7 @@ Sentry + Prometheus вже є. Потрібно додати **бізнес-ал
 
 - [ ] **Status page** — uptimerobot.com або Instatus. _Owner:_ Dev.
 - [ ] **On-call** — solo-founder, але потрібен Telegram alert channel. _Owner:_ Founder.
-- [ ] **Rollback plan** — Railway підтримує instant rollback. Тестувати заздалегідь. _Owner:_ Dev.
+- [ ] **Rollback plan** — Coolify: redeploy попереднього image-tag (миттєвий). Тестувати заздалегідь. _Owner:_ Dev.
 - [ ] **DB backup verification** — раз на місяць перевіряти що backup відновлюється. _Owner:_ Dev.
 
 **Runbook template (1 інцидент = 1 заповнений runbook):**
@@ -418,7 +418,7 @@ HH:MM  — Опубліковано postmortem
 5. RESOLUTION
 ------------------------------------------------------------
 Що зроблено:
-  - [ ] Rollback (Railway instant rollback)
+  - [ ] Rollback (Coolify: previous image-tag)
   - [ ] Hotfix (PR #____)
   - [ ] DB fix (migration #____)
   - [ ] Config change (env var: ____)
@@ -495,7 +495,7 @@ What was lucky:
 ```
 Breakeven деталізація:
   - Stripe fees:           ~3 % від revenue
-  - Server (Railway):      ~$20/міс = ~₴800/міс
+  - Server (Hetzner CX23): ~$7/міс  = ~₴308/міс
   - AI API (Anthropic):    ~$50/міс = ~₴2,000/міс при 500 active AI users
   - Total fixed:           ~$70/міс = ~₴2,800/міс
   - Breakeven:             ~15 Pro subscribers (₴199 × 15 = ₴2,985)
@@ -621,7 +621,7 @@ Low Likelihood      │                │ [R4] Конкурент   │        
 | 28  | Технічне   | Offline grace period flow (§2.1)                            | Dev     | Місяць 2 W3 | [ ]                                                       |
 | 29  | Технічне   | Multi-device plan sync + push (§2.2)                        | Dev     | Місяць 2 W3 | [ ]                                                       |
 | 30  | Операційне | Support email або Telegram                                  | Founder | Місяць 1 W1 | [ ]                                                       |
-| 31  | Операційне | Incident rollback tested (Railway) (§3.3)                   | Dev     | Місяць 1 W4 | [ ]                                                       |
+| 31  | Операційне | Incident rollback tested (Coolify) (§3.3)                   | Dev     | Місяць 1 W4 | [ ]                                                       |
 | 32  | Операційне | Billing email templates (Resend)                            | Dev     | Місяць 1 W3 | [ ]                                                       |
 | 33  | Операційне | Push notification strategy (не спамити)                     | Founder | Місяць 1 W4 | [ ]                                                       |
 | 34  | Операційне | Analytics (PostHog) working + dashboards (§4)               | Dev     | Місяць 1 W3 | [ ]                                                       |
