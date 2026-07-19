@@ -1,7 +1,9 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
+>
+> **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2) — історичний контекст доміграційного стеку; на Railway лишається тільки OpenClaw Gateway (`sergeant-openclaw-gateway`). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) — топологія з ADR-0009 не змінилась, переписано лише Vercel env `BACKEND_URL`.
 
 ## 1. PostgreSQL на Railway
 

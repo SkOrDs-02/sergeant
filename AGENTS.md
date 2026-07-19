@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-11 by @dimastahov16012003. **Next review:** 2026-10-09.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -21,7 +21,7 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI | `sergeant-server-api`               |
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile-expo`              |
 | Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations`      |
-| Railway / Vercel / Sentry / alerting/SLO / CI workflow change       | `sergeant-deploy-and-observability` |
+| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change       | `sergeant-deploy-and-observability` |
 | OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`                 |
 | HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`                  |
 | Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`              |

@@ -1,6 +1,6 @@
 # Playbook: Реліз
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.
@@ -142,7 +142,7 @@ flowchart TD
 
 - [ ] Основну поверхню названо у PR
 - [ ] Порядок деплою задокументовано, якщо зачеплено більше однієї поверхні
-- [ ] Rollback-шлях задокументовано (web/API: попередній Vercel/Railway деплой; shell: попередній store-білд; Expo: попередній channel-апдейт)
+- [ ] Rollback-шлях задокументовано (web/API: попередній Vercel/Coolify деплой; shell: попередній store-білд; Expo: попередній channel-апдейт)
 - [ ] Post-release smoke завершено для зачепленої поверхні (`/health` + критичний flow для web/API; install + auth для shell; auth + один mobile-only flow для Expo)
 - [ ] Будь-яке упорядкування міграцій/env зафіксовано у PR або release-нотатці
 - [ ] Build/version/channel identifier-и зафіксовано для мобільних релізів

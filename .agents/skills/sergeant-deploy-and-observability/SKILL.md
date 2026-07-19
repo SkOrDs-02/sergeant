@@ -1,30 +1,30 @@
 ---
 name: sergeant-deploy-and-observability
-description: Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n.
+description: Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry, n8n.
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
 # Деплой і обсервабіліті в Sergeant
 
-Production-facing зміни в Sergeant не вважаються завершеними, коли код збирається. Вони завершені, коли deploy-обвʼязка, доки і runtime-верифікація все ще відповідають очікуванням Railway, Vercel, Sentry і n8n.
+Production-facing зміни в Sergeant не вважаються завершеними, коли код збирається. Вони завершені, коли deploy-обвʼязка, доки і runtime-верифікація все ще відповідають очікуванням Coolify (Hetzner VPS), Vercel, Railway (OpenClaw), Sentry і n8n.
 
 ## Що покриває
 
-- `railway.toml`, `vercel.json`, deploy-доки, health-endpoints
+- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `railway.openclaw-gateway.toml`, `vercel.json`, deploy-доки, health-endpoints
 - env-зміни через web/server
 - Sentry, readiness/liveness, маршрутизація алертів, release-верифікація
 - operator-facing доки для деплою або реакції на інцидент
 
-## Railway services (актуально)
+## Deploy targets (актуально — ADR-0074)
 
-Sergeant має три Railway services:
+Бекенд-стек (API + Postgres + Redis) з 2026-07 живе на **Hetzner CX23 VPS під Coolify** (ADR-0074, superseded ADR-0009 у частині бекенду). Railway лишається **тільки** для OpenClaw:
 
-| Service | Repo source | Notes |
+| Target | Repo source | Notes |
 |---|---|---|
-| `sergeant-api` | `apps/server` via `Dockerfile.api` | Primary API + auth |
-| `sergeant-openclaw-gateway` | `packages/openclaw-plugin` via `Dockerfile.openclaw-gateway` | Зовнішній Telegram шлюз (ADR-0055, Node 24-alpine). Config-as-code з `ops/openclaw/` копіюється в runtime. |
-| (Vercel) | `apps/web` | Frontend — auto-deploy on push |
+| Coolify app `sergeant-api` (Hetzner) | `apps/server` via `Dockerfile.api` | Образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`; Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`). Health: `/health`. |
+| Railway `sergeant-openclaw-gateway` | `packages/openclaw-plugin` via `Dockerfile.openclaw-gateway` | Зовнішній Telegram шлюз (ADR-0055, Node 24-alpine). Config-as-code з `ops/openclaw/` копіюється в runtime. |
+| Vercel | `apps/web` | Frontend + edge-proxy `/api/*` — auto-deploy on push. Same-origin cookie топологія з ADR-0009 не змінилась. |
 
 При deploy зміни до OpenClaw Gateway: онови `ops/openclaw/` config → push → Railway auto-redeploys `sergeant-openclaw-gateway`. Детальніше — `sergeant-openclaw` скіл.
 
@@ -40,13 +40,14 @@ Sergeant має три Railway services:
 
 - релевантна локальна build- або test-команда
 - цільовий endpoint або healthcheck усе ще збігається з доками
-- env-доки оновлено у `docs/02-engineering/integrations/railway-vercel.md` або відповідному runbook
+- env-доки оновлено у `docs/02-engineering/integrations/railway-vercel.md` (hosting-частина superseded ADR-0074 — звіряй з ним) або відповідному runbook
 - припущення алертингу або Sentry усе ще тримаються, коли зміна торкається обсервабіліті
 - `pnpm lint:archive-move-depth` — якщо торкався docs/archives (Hard Rule #23)
 
 ## Корисні доки
 
-- [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md)
+- [docs/04-governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md) — актуальна backend-топологія (Hetzner + Coolify)
+- [docs/02-engineering/integrations/railway-vercel.md](../../../docs/02-engineering/integrations/railway-vercel.md) — Vercel/cookie контракт (Railway-секції історичні)
 - [docs/03-operations/observability/README.md](../../../docs/03-operations/observability/README.md)
 - [docs/04-governance/security/logging-redaction-policy.md](../../../docs/04-governance/security/logging-redaction-policy.md)
 - [docs/00-start/playbooks/investigate-alert.md](../../../docs/00-start/playbooks/investigate-alert.md)

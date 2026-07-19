@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
@@ -64,7 +64,7 @@
 ### F. Performance & locks
 
 - [ ] Якщо `ALTER TABLE` на великій таблиці (`finyk_transactions`, `fizruk_sets`): додано `CREATE INDEX CONCURRENTLY` (не `CREATE INDEX`) або міграція виконається < 1 секунди.
-- [ ] Якщо `UPDATE` на існуючих рядках: батчinг (`LIMIT` / `OFFSET`) для таблиць > 100k рядків. Інакше — Railway pre-deploy таймаут.
+- [ ] Якщо `UPDATE` на існуючих рядках: батчinг (`LIMIT` / `OFFSET`) для таблиць > 100k рядків. Інакше — Coolify pre-deploy таймаут.
 - [ ] Жодного `LOCK TABLE` без явної необхідності (блокує всі read/write на час міграції).
 
 ### G. RLS (Row-Level Security)
@@ -86,7 +86,7 @@
 
 ### J. Rollout-readiness
 
-- [ ] Pre-deploy команда Railway: автоматичний `pnpm db:migrate` перед стартом нового релізу — готовий до цієї міграції (немає кращого моменту для break-y migrations).
+- [ ] Pre-deploy команда Coolify (`node dist-server/migrate.js`): автоматичні міграції перед стартом нового релізу — готовий до цієї міграції (немає кращого моменту для break-y migrations).
 - [ ] Якщо це **breaking** для running код-у (наприклад, видалення колонки, на яку ще пише чинна версія): двофазний deploy (див. розділ B).
 - [ ] У `docs/90-work/tech-debt/backend.md` оновлено секцію "Database & migrations" якщо міграція змінює invariant-и (індекси, foreign keys, нові таблиці-домени).
 
@@ -121,7 +121,7 @@ Reviewer must confirm before approving merge:
 | ------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------- |
 | `DROP COLUMN amount` у тому самому PR, що `ADD COLUMN amount_minor` | На pre-deploy stage 1 (стара версія сервера) Read падає 500 | Two-phase deploy (B-секція)                       |
 | `BIGINT` без `Number()` coercion у serializer     | Клієнт бачить `"42"` замість `42`, арифметика мовчки ламається | Snapshot test (C-секція)                           |
-| `CREATE INDEX` без `CONCURRENTLY` на таблиці > 1M рядків | Railway pre-deploy timeout (>10 хв) → rollback           | `CONCURRENTLY` + перевірка таблиці > 100k          |
+| `CREATE INDEX` без `CONCURRENTLY` на таблиці > 1M рядків | Coolify pre-deploy timeout (>10 хв) → rollback           | `CONCURRENTLY` + перевірка таблиці > 100k          |
 | Відсутній `RLS`-policy на новій user-scoped таблиці | Один user через model-hallucination бачить чужі дані         | G-секція + automated test (planned, not yet implemented) |
 | Numbering `008` після `008_*` (duplicate)         | `pnpm db:migrate` падає з `migration already applied`         | A-секція + `migration-lint` CI                    |
 | Drift `api-client` types після server-shape зміни | TypeScript у `apps/web` компилиться, але runtime — `undefined` | D-секція + inline-snapshot                         |
