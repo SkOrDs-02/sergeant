@@ -121,6 +121,33 @@ export function HubReports() {
   const exportGate = useFeatureGate("analytics-export-pdf");
   const handleExportPdf = useCallback(() => {
     if (!exportGate.requireAccess()) return;
+    // Escape any `<`/`&`/`>` before embedding insight strings into the report
+    // HTML. Today insight fields are engine-formatted (numbers + fixed UA
+    // copy), but escaping keeps the report robust if a future insight ever
+    // interpolates user-entered text (e.g. a habit or transaction label).
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Render the real insights (title / stat / detail) rather than just their
+    // count — the earlier export only stated "Доступно інсайтів: N", which
+    // left the exported page nearly empty even when the user had data.
+    const insightsContent =
+      insights.length > 0
+        ? `<table>
+            <thead>
+              <tr><th>Показник</th><th>Значення</th><th>Деталі</th></tr>
+            </thead>
+            <tbody>
+              ${insights
+                .map(
+                  (ins) =>
+                    `<tr><td>${esc(ins.title)}</td><td>${esc(ins.stat)}</td><td>${esc(ins.detail)}</td></tr>`,
+                )
+                .join("")}
+            </tbody>
+          </table>`
+        : "<p>Поки замало даних для інсайтів. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>";
+
     setPreviewHtml(
       generatePDFReport({
         title: "Sergeant — звіт",
@@ -128,19 +155,16 @@ export function HubReports() {
         sections: [
           {
             title: "Період",
-            content: `<p>${label}</p>`,
+            content: `<p>${esc(label)}</p>`,
           },
           {
-            title: "Стан звіту",
-            content:
-              insights.length > 0
-                ? `<p>Звіт готовий. Доступно інсайтів: ${insights.length}.</p>`
-                : "<p>Звіт готовий, але для інсайтів поки замало даних. Додай записи в модулях, щоб наступний експорт містив більше висновків.</p>",
+            title: `Інсайти (${insights.length})`,
+            content: insightsContent,
           },
         ],
       }),
     );
-  }, [exportGate, insights.length, label]);
+  }, [exportGate, insights, label]);
 
   return (
     <div className="space-y-4">
