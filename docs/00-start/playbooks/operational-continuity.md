@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last validated:** 2026-07-12 by @claude. **Next review:** 2026-10-10.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -32,23 +32,23 @@ lang: en
 
 ## External systems & credential owners
 
-| System           | Purpose                        | Where credentials live                  | Primary contact |
-| ---------------- | ------------------------------ | --------------------------------------- | --------------- |
-| **Hetzner**      | VPS host (CX23) for backend    | 1Password vault `Sergeant / Hetzner`    | @Skords-01      |
-| **Coolify**      | Self-hosted PaaS on the VPS (API + Postgres + Redis) | Coolify admin login in `Sergeant / Hetzner` | @Skords-01      |
-| **Vercel**       | Web app deployment + edge-proxy | 1Password vault `Sergeant / Vercel`     | @Skords-01      |
-| **GHCR**         | API container registry         | GitHub Actions `GITHUB_TOKEN` (auto)    | @Skords-01      |
-| **Anthropic**    | Claude API (AI features)       | 1Password vault `Sergeant / Anthropic`  | @Skords-01      |
-| **OpenRouter**   | AI routing (coach/digest/classify) | 1Password vault `Sergeant / OpenRouter` | @Skords-01      |
-| **Voyage AI**    | Embeddings (RAG)               | 1Password vault `Sergeant / Voyage`     | @Skords-01      |
-| **Sentry**       | Error tracking                 | 1Password vault `Sergeant / Sentry`     | @Skords-01      |
-| **Grafana Cloud**| Loki log sink                  | 1Password vault `Sergeant / Grafana`    | @Skords-01      |
-| **PostHog**      | Analytics                      | 1Password vault `Sergeant / PostHog`    | @Skords-01      |
-| **Resend**       | Transactional email            | 1Password vault `Sergeant / Resend`     | @Skords-01      |
-| **Monobank**     | Webhook source (finyk)         | 1Password vault `Sergeant / Monobank`   | @Skords-01      |
-| **Apple APNs**   | iOS push (routine)             | 1Password vault `Sergeant / APNs`       | @Skords-01      |
-| **Firebase FCM** | Android push (routine)         | 1Password vault `Sergeant / Firebase`   | @Skords-01      |
-| **GitHub**       | Source + CI + GHCR             | GitHub App credentials                  | @Skords-01      |
+| System            | Purpose                                              | Where credentials live                      | Primary contact |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------- | --------------- |
+| **Hetzner**       | VPS host (CX23) for backend                          | 1Password vault `Sergeant / Hetzner`        | @Skords-01      |
+| **Coolify**       | Self-hosted PaaS on the VPS (API + Postgres + Redis) | Coolify admin login in `Sergeant / Hetzner` | @Skords-01      |
+| **Vercel**        | Web app deployment + edge-proxy                      | 1Password vault `Sergeant / Vercel`         | @Skords-01      |
+| **GHCR**          | API container registry                               | GitHub Actions `GITHUB_TOKEN` (auto)        | @Skords-01      |
+| **Anthropic**     | Claude API (AI features)                             | 1Password vault `Sergeant / Anthropic`      | @Skords-01      |
+| **OpenRouter**    | AI routing (coach/digest/classify)                   | 1Password vault `Sergeant / OpenRouter`     | @Skords-01      |
+| **Voyage AI**     | Embeddings (RAG)                                     | 1Password vault `Sergeant / Voyage`         | @Skords-01      |
+| **Sentry**        | Error tracking                                       | 1Password vault `Sergeant / Sentry`         | @Skords-01      |
+| **Grafana Cloud** | Loki log sink                                        | 1Password vault `Sergeant / Grafana`        | @Skords-01      |
+| **PostHog**       | Analytics                                            | 1Password vault `Sergeant / PostHog`        | @Skords-01      |
+| **Resend**        | Transactional email                                  | 1Password vault `Sergeant / Resend`         | @Skords-01      |
+| **Monobank**      | Webhook source (finyk)                               | 1Password vault `Sergeant / Monobank`       | @Skords-01      |
+| **Apple APNs**    | iOS push (routine)                                   | 1Password vault `Sergeant / APNs`           | @Skords-01      |
+| **Firebase FCM**  | Android push (routine)                               | 1Password vault `Sergeant / Firebase`       | @Skords-01      |
+| **GitHub**        | Source + CI + GHCR                                   | GitHub App credentials                      | @Skords-01      |
 
 > **Access escalation:** If you cannot get 1Password access, contact @Skords-01 directly. No credential is stored in the repository. The single SSH key that reaches the VPS lives in `Sergeant / Hetzner` — without it the server is unreachable (password login is disabled).
 
@@ -56,13 +56,13 @@ lang: en
 
 ## What breaks first (absence timeline)
 
-| Duration      | What breaks                                                 | Action                                                                             |
-| ------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **< 1 week**  | Nothing critical. CI runs, auto-deploy works.               | Monitor Sentry / Coolify.                                                           |
-| **1–2 weeks** | Monobank webhook token may expire (30-day validity).        | Renew via Monobank developer portal using credentials in 1Password.                |
-| **1 month**   | DNS / domain renewal reminder appears.                      | Check `sergeant.app` domain registrar (credentials in 1Password). Hetzner invoice. |
+| Duration      | What breaks                                                 | Action                                                                                |
+| ------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **< 1 week**  | Nothing critical. CI runs, auto-deploy works.               | Monitor Sentry / Coolify.                                                             |
+| **1–2 weeks** | Monobank webhook token may expire (30-day validity).        | Renew via Monobank developer portal using credentials in 1Password.                   |
+| **1 month**   | DNS / domain renewal reminder appears.                      | Check `sergeant.app` domain registrar (credentials in 1Password). Hetzner invoice.    |
 | **3 months**  | APNs key rotation may be needed (annual but good to check). | Re-generate APNs key in Apple Developer Portal; update `APNS_KEY` in Coolify app env. |
-| **6 months**  | Renovate PRs accumulate. Security advisories may stack up.  | Merge Renovate PRs in order (check CI passes). Review `pnpm audit`.                 |
+| **6 months**  | Renovate PRs accumulate. Security advisories may stack up.  | Merge Renovate PRs in order (check CI passes). Review `pnpm audit`.                   |
 
 ---
 
@@ -82,18 +82,18 @@ lang: en
 | Primary owner       | @Skords-01                                              | All                                                                                                                                                                                                                                                                     |
 | Secondary (TBD)     | Hire when team grows                                    | Per-module — see [AGENTS.md § Module ownership map](../../../AGENTS.md#module-ownership-map) `Secondary` column for placeholder roles (`frontend-engineer`, `backend-engineer`, `mobile-engineer`, `data-engineer`, `any-engineer`); enforced by `pnpm lint:codeowners` |
 | Monobank API issues | [developers.monobank.ua](https://api.monobank.ua/docs/) | finyk webhooks                                                                                                                                                                                                                                                          |
-| Hetzner support     | [console.hetzner.cloud](https://console.hetzner.cloud)  | VPS / infra outages                                                                                                                                                                                                                                                    |
+| Hetzner support     | [console.hetzner.cloud](https://console.hetzner.cloud)  | VPS / infra outages                                                                                                                                                                                                                                                     |
 | Anthropic support   | [support.anthropic.com](https://support.anthropic.com)  | API quota issues                                                                                                                                                                                                                                                        |
 
 ---
 
 ## Kill-switches (emergency)
 
-| Switch                    | How to activate                                                                              | Effect                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Disable AI features       | Set `AI_QUOTA_DISABLED=1` in the Coolify app env (dev/test only — blocked in production)     | All AI quota checks bypass                |
-| Disable AI quota DB check | Set `AI_QUOTA_CIRCUIT_THRESHOLD=0`                                                           | Circuit breaker disabled, quota fail-open |
-| Disable Monobank webhook  | Remove `MONO_TOKEN_ENC_KEY` / disable `MONO_WEBHOOK_ENABLED` in the Coolify app env          | Webhooks return 401                       |
+| Switch                    | How to activate                                                                                                                                        | Effect                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| Disable AI features       | Set `AI_QUOTA_DISABLED=1` in the Coolify app env (dev/test only — blocked in production)                                                               | All AI quota checks bypass                |
+| Disable AI quota DB check | Set `AI_QUOTA_CIRCUIT_THRESHOLD=0`                                                                                                                     | Circuit breaker disabled, quota fail-open |
+| Disable Monobank webhook  | Remove `MONO_TOKEN_ENC_KEY` / disable `MONO_WEBHOOK_ENABLED` in the Coolify app env                                                                    | Webhooks return 401                       |
 | Rollback deploy           | Coolify → `sergeant-api` → Deployments → pick previous image tag → Redeploy. Data rollback: restore latest `/root/db-backups/*.dump` via `pg_restore`. | Previous image goes live                  |
 
 > **Warning:** `AI_QUOTA_DISABLED=1` is hard-blocked in production (throws on startup). Use only in dev/staging. Any env change in Coolify requires a redeploy to take effect.
@@ -105,3 +105,14 @@ lang: en
 - `docs/03-operations/runbooks/operations-runbook.md` — full operations guide
 - `docs/04-governance/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
 - `docs/03-operations/observability/runbook.md` — metrics + alerting runbook
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                      | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------- |
+| [#320](https://github.com/Skords-01/Sergeant/pull/320) | docs(root): align operational playbooks + launch toolstack with Hetzner/Coolify (ADR-0074) | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
