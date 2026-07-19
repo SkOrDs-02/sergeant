@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-13",
+  "generated_at": "2026-07-19",
   "counts": {
     "adr": 71,
     "audit": 24,
@@ -619,7 +619,7 @@
       "tier": "core",
       "meta": {
         "number": 58,
-        "last_validated": "2026-06-09"
+        "last_validated": "2026-07-15"
       }
     },
     {
@@ -631,7 +631,7 @@
       "tier": "core",
       "meta": {
         "number": 59,
-        "last_validated": "2026-06-09"
+        "last_validated": "2026-07-15"
       }
     },
     {
@@ -643,7 +643,7 @@
       "tier": "core",
       "meta": {
         "number": 60,
-        "last_validated": "2026-06-09"
+        "last_validated": "2026-07-15"
       }
     },
     {
@@ -655,7 +655,7 @@
       "tier": "core",
       "meta": {
         "number": 61,
-        "last_validated": "2026-06-09"
+        "last_validated": "2026-07-15"
       }
     },
     {
@@ -712,7 +712,7 @@
       "tier": "core",
       "meta": {
         "number": 66,
-        "last_validated": "2026-06-22"
+        "last_validated": "2026-07-15"
       }
     },
     {
@@ -812,7 +812,7 @@
       "type": "audit",
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
       "path": "docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md",
-      "status": "Active",
+      "status": "Closed — execution-план завершено або розкладено у successor trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -821,7 +821,7 @@
       "type": "audit",
       "title": "Consolidated Page Audit — 2026-05-13",
       "path": "docs/90-work/audits/2026-05-13-consolidated-page-audit.md",
-      "status": "Active",
+      "status": "Closed — зведений історичний зріз; виконання ведеться у successor trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -875,7 +875,7 @@
       "type": "audit",
       "title": "Page Audit — Routine module + Strategy page",
       "path": "docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md",
-      "status": "Active",
+      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -884,7 +884,7 @@
       "type": "audit",
       "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
       "path": "docs/90-work/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md",
-      "status": "Active",
+      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -893,7 +893,7 @@
       "type": "audit",
       "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
       "path": "docs/90-work/audits/2026-05-13-testing-devx-roast.md",
-      "status": "Active",
+      "status": "Closed — findings виконано або перенесено у sprint/tech-debt trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -911,7 +911,7 @@
       "type": "audit",
       "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
       "path": "docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md",
-      "status": "Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).",
+      "status": "Closed — усі 4 теми виконано; незалежні follow-up-и мають власні trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -920,7 +920,7 @@
       "type": "audit",
       "title": "Independent Audit — Sergeant — 2026-06-11",
       "path": "docs/90-work/audits/2026-06-11-fable5-independent-audit.md",
-      "status": "Active",
+      "status": "Closed — усі P0/P1 потоки змерджено; залишок перенесено в канонічні trackers.",
       "tier": "core",
       "meta": {}
     },
@@ -929,7 +929,7 @@
       "type": "audit",
       "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
       "path": "docs/90-work/audits/2026-06-28-financial-launch-monetization-audit.md",
-      "status": "Active",
+      "status": "Reference — фінансовий snapshot; виконання ведеться в initiative 0010.",
       "tier": "core",
       "meta": {}
     },
@@ -938,7 +938,7 @@
       "type": "audit",
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "path": "docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md",
-      "status": "Active",
+      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
       "tier": "core",
       "meta": {}
     },
@@ -947,7 +947,7 @@
       "type": "audit",
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "path": "docs/90-work/audits/2026-08-XX-sync-engine-roast.md",
-      "status": "Draft",
+      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
       "tier": "core",
       "meta": {}
     },
@@ -956,7 +956,7 @@
       "type": "audit",
       "title": "Browser user journey execution log",
       "path": "docs/90-work/audits/browser-user-journey-execution-2026-06-30.md",
-      "status": "Active",
+      "status": "Closed — execution snapshot завершено.",
       "tier": "core",
       "meta": {}
     },
@@ -965,7 +965,7 @@
       "type": "audit",
       "title": "Browser user journey execution log — 2026-07-01",
       "path": "docs/90-work/audits/browser-user-journey-execution-2026-07-01.md",
-      "status": "Active",
+      "status": "Closed — execution snapshot завершено.",
       "tier": "core",
       "meta": {}
     },
@@ -974,7 +974,7 @@
       "type": "audit",
       "title": "Browser user journey loop",
       "path": "docs/90-work/audits/browser-user-journey-loop.md",
-      "status": "Active",
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
       "tier": "core",
       "meta": {}
     },
@@ -983,7 +983,7 @@
       "type": "audit",
       "title": "Deep module CRUD browser execution log",
       "path": "docs/90-work/audits/deep-module-crud-browser-execution-2026-06-30.md",
-      "status": "Active",
+      "status": "Closed — execution snapshot завершено.",
       "tier": "core",
       "meta": {}
     },
@@ -992,7 +992,7 @@
       "type": "audit",
       "title": "Deep module CRUD browser loop",
       "path": "docs/90-work/audits/deep-module-crud-browser-loop.md",
-      "status": "Active",
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
       "tier": "core",
       "meta": {}
     },
@@ -1001,7 +1001,7 @@
       "type": "audit",
       "title": "Production Readiness Execution — 2026-06-29",
       "path": "docs/90-work/audits/production-readiness-execution-2026-06-29.md",
-      "status": "Active",
+      "status": "Closed — execution snapshot завершено; нові прогони створюють окремий запис.",
       "tier": "core",
       "meta": {}
     },
@@ -1010,7 +1010,7 @@
       "type": "audit",
       "title": "Production readiness testing loop",
       "path": "docs/90-work/audits/production-readiness-testing-loop.md",
-      "status": "Active",
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
       "tier": "core",
       "meta": {}
     },
@@ -1019,7 +1019,7 @@
       "type": "audit",
       "title": "User Story QA Loop",
       "path": "docs/90-work/audits/user-story-loop.md",
-      "status": "Active",
+      "status": "Reference — повторюваний протокол; актуальні результати живуть у ledger.",
       "tier": "core",
       "meta": {}
     },
@@ -1414,7 +1414,7 @@
       "type": "initiative",
       "title": "0006 — Frontend routing migration + route-based code-split",
       "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.",
+      "status": "Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.",
       "tier": "core",
       "meta": {
         "number": 6,
@@ -1524,7 +1524,7 @@
       "type": "initiative",
       "title": "Overview — stack pulse 2026-05",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md",
-      "status": "Active",
+      "status": "Reference/carry-over — травневий зріз завершено; trigger-gated залишки мають окремі картки.",
       "tier": "core",
       "meta": {}
     },
@@ -1686,7 +1686,7 @@
       "type": "initiative",
       "title": "PR-17: 80+ env-vars → DB feature-flag toggle",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md",
-      "status": "Planned",
+      "status": "Reference — speculative trigger (90-та env-змінна) не настав; не брати в роботу зараз.",
       "tier": "core",
       "meta": {}
     },
@@ -1704,7 +1704,7 @@
       "type": "initiative",
       "title": "PR-19: Workers health-registry + `/api/health/workers` endpoint",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-19-workers-health-registry.md",
-      "status": "Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.",
+      "status": "Reference — базовий endpoint shipped; розширення активується лише після stalled-worker incident.",
       "tier": "core",
       "meta": {}
     },
@@ -1731,7 +1731,7 @@
       "type": "initiative",
       "title": "PR-22: Mobile Expo SDK 52 → 53 upgrade",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md",
-      "status": "Planned",
+      "status": "Deprecated — план SDK 53 застарів; dependency PR-и вже таргетять новіші Expo major-и.",
       "tier": "core",
       "meta": {}
     },
@@ -1740,7 +1740,7 @@
       "type": "initiative",
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md",
-      "status": "Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision.",
+      "status": "Reference — committed scope shipped; Schemathesis/full-route expansion потребує нового runtime decision.",
       "tier": "core",
       "meta": {}
     },
@@ -1749,7 +1749,7 @@
       "type": "initiative",
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md",
-      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
+      "status": "Reference — abstraction shipped; vendor switch активується лише після regression, pricing або outage trigger.",
       "tier": "core",
       "meta": {}
     },
@@ -1776,7 +1776,7 @@
       "type": "initiative",
       "title": "PR-27: `INTERNAL_API_KEY` rotation мechanism",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md",
-      "status": "Planned",
+      "status": "Reference — security-triggered design note; без audit finding або leak це не ready-now робота.",
       "tier": "core",
       "meta": {}
     },
@@ -1812,7 +1812,7 @@
       "type": "initiative",
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-31-eslint-config-split.md",
-      "status": "Phase 1 + Phase 2 scaffolding + Phase 2a + **Phase 2b shipped (2026-06-15).** Phase 1: baseline extracted into `eslint.baseline.js` (~180 рядків, byte-identical `--print-config`). Phase 2 scaffolding (2026-06-01): `scripts/eslint-print-config-diff.mjs` + surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Phase 2a (2026-06-05): per-surface extraction — блоки у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root manifest 1128 → 37 рядків. **Phase 2b (2026-06-15):** справжні standalone per-package `eslint.config.js` у 12 linted-пакетах (`apps/{web,server,mobile,mobile-shell}`, `packages/{shared,api-client,db-schema,finyk-domain,fizruk-domain,nutrition-domain,routine-domain,eslint-plugin-sergeant-design}`) — кожен re-export-ить root-manifest через `basePath`-wrapper (`eslint.per-package.js`), тож `turbo run lint` резолвить per-package config замість walk-up до root → unlocks per-package Turbo parallelism. Diff-gate переведено у cd-per-package режим; `normaliseConfig` пофікшено, щоб не корумпувати backslash у regex-селекторах на Windows. **Byte-neutral**: `lint:eslint-config-diff` — усі 7 fixtures match (5 снапшотів незмінні, 2 оновлені лише на pre-existing stale drift: server `max-lines` allowlist + 2 web i18n-allowlist записи). `turbo run lint` зелений: 15/15 tasks, 0 errors.",
+      "status": "Closed — Phase 1, 2a і 2b shipped; per-package lint resolution та drift gate працюють.",
       "tier": "core",
       "meta": {}
     },
@@ -4813,7 +4813,7 @@
       "path": ".agents/skills/sergeant-data-and-migrations/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних."
+        "description": "Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Coolify pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних."
       }
     },
     {
@@ -4833,7 +4833,7 @@
       "path": ".agents/skills/sergeant-deploy-and-observability/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n."
+        "description": "Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry, n8n."
       }
     },
     {
@@ -6104,16 +6104,6 @@
       "type": "references"
     },
     {
-      "from": "audit:2026-06-08-codebase-cleanup-audit",
-      "to": "initiative:0021",
-      "type": "references"
-    },
-    {
-      "from": "audit:2026-06-08-codebase-cleanup-audit",
-      "to": "pr:3470",
-      "type": "touched-by"
-    },
-    {
       "from": "audit:2026-06-11-fable5-independent-audit",
       "to": "hard-rule:1",
       "type": "references"
@@ -6207,6 +6197,11 @@
       "from": "audit:2026-06-11-fable5-independent-audit",
       "to": "pr:3522",
       "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-06-28-financial-launch-monetization-audit",
+      "to": "initiative:0010",
+      "type": "references"
     },
     {
       "from": "audit:2026-08-XX-sync-engine-roast",

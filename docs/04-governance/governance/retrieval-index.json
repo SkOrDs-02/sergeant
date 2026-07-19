@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-18",
+  "generated_at": "2026-07-19",
   "sourceHashes": {
-    "knowledge-graph": "b7c09b3239b726ec1be465f2a57564ff513fd2281c1cc4ad5546755ea884fae7",
-    "symbol-index": "7026ca476698caa4dfe747757c4528b3003c78c16761761897b7b471f7acb742"
+    "knowledge-graph": "e7f735456b29c965b5c3ac7d58c8034ef904bfb9e68c5d72e618fea0b26c50f2",
+    "symbol-index": "80686b8416ff60c7b73206b64ad955b77deba863ff4eb0fe2c8db031d32f1267"
   },
   "counts": {
     "adr": 71,
     "audit": 24,
-    "export": 304,
+    "export": 305,
     "hard-rule": 26,
     "initiative": 52,
     "playbook": 62,
     "skill": 24,
-    "total": 563
+    "total": 564
   },
   "chunks": [
     {
@@ -617,8 +617,8 @@
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "f9f00bfab8a89c24f2f1fd1f66366df0211e15e0adb5153becdd070437417f2e"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "51f380cd40f26e7926d4b21662c26a04f5fa54b85bb668d291479df6db8258b6"
     },
     {
       "id": "adr:0059",
@@ -628,8 +628,8 @@
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "d12ab611e744b3a2dd5a2f20be1b40956ba87fdcc985b72457e99da03226c20e"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "8b6d6e2fafa002957b3161b162750cbbae8692119ba3fdee2f4901b8636f75f0"
     },
     {
       "id": "adr:0060",
@@ -639,8 +639,8 @@
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "9203d466cce937b4fc4fef8015baad221a9aba9ba65fa8e8d91c1da7f44532c5"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "8eb1e4e2dd353a2396cef8ac347c9ea9ba5dd41f95f656ced93ed77fba4b3e15"
     },
     {
       "id": "adr:0061",
@@ -650,8 +650,8 @@
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "67e1a8970e2cc5f2628426941d4f24ead0b561b9d9e50eba807b0ddc5de880ae"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "f42cb61efbe66e03db39b96ef179e25facf70448ad1e275850bb3a65b2ebce6a"
     },
     {
       "id": "adr:0062",
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-06-22 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "613e6745d6258c7ff27cff6496698993962027159ea4329ae3813592a509f704"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "4817189b184a98cf98f370997b73e641178d3d0666bc95c11c41b5afbf610c30"
     },
     {
       "id": "adr:0067",
@@ -803,9 +803,9 @@
       "line": 1,
       "title": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)",
       "tier": "core",
-      "status": "Active",
-      "text": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06) · audit:2026-05-06-ux-roast-pr-plan · audit · Active · Status — shipped (станом на 2026-05-06) · Sprint 0 — Enabling · PR-0 · Telemetry & ADR foundation · Sprint 1 — P0 (trust + IA) · PR-1a · App-lock (base PIN-flow) [A1 — phase 1/2] · PR-1b · App-lock biometric add-on [A1 — phase 2/2] · PR-2 · Module settings shortcut [A2] · PR-3 · Bento subtitles [A3] · PR-4 · Уніфікація landing-табу до «Огляд» [C1] — ✅ DONE [#2103](https://github.com/Skords-01/Sergeant/pull/2103) · PR-5 · Copy fixes bundle (UA OfflineBanner + DataExport + Pricing) [C2 + C3 + §15] — ✅ DONE commit [bc4b9251](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102) · PR-6 · HubReports EmptyState [A4 + C16] · PR-7 · Permissions overview в Settings [A5 + R6 + A17] · Sprint 2 — P1 (empty/error/forms/permissions/perf) · PR-8 · Hub notifications sub-group [A6] · PR-9 · Reminder-time UI унифікація [C4] · PR-10 · Sessions: «Цей пристрій» + last-seen у людському форматі [A7] — ✅ DONE [#2187](https://github.com/Skords-01/Sergeant/pull/2187) · PR-11 · CSV export + email-mine-data [A8] · PR-12 · Keyboard accessibility for dnd-kit reorder [A9] — ✅ DONE [#2184](https://github.com/Skords-01/Sergeant/pull/2184) · PR-13 · Module-context у sync-error toast [A15] — ❌ OBSOLETE-BY-DRIFT · PR-14 · Request-ID в ModuleErrorBoundary [A16] · PR-15 · Password-strength entropy [C8] — ✅ DONE [#2156](https://github.com/Skords-01/Sergeant/pull/2156) · PR-16 · Memory Bank → Settings → Асистент [C9] · PR-17 · Logout primary в Profile [C10] — ✅ DONE [#2153](https://github.com/Skords-01/Sergeant/pull/2153)",
-      "contentHash": "235856bad2d73bb9994d877b030f3128c80baccd8685d804d29db0993285c86b"
+      "status": "Closed — execution-план завершено або розкладено у successor trackers.",
+      "text": "Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06) · audit:2026-05-06-ux-roast-pr-plan · audit · Closed — execution-план завершено або розкладено у successor trackers. · Status — shipped (станом на 2026-05-06) · Sprint 0 — Enabling · PR-0 · Telemetry & ADR foundation · Sprint 1 — P0 (trust + IA) · PR-1a · App-lock (base PIN-flow) [A1 — phase 1/2] · PR-1b · App-lock biometric add-on [A1 — phase 2/2] · PR-2 · Module settings shortcut [A2] · PR-3 · Bento subtitles [A3] · PR-4 · Уніфікація landing-табу до «Огляд» [C1] — ✅ DONE [#2103](https://github.com/Skords-01/Sergeant/pull/2103) · PR-5 · Copy fixes bundle (UA OfflineBanner + DataExport + Pricing) [C2 + C3 + §15] — ✅ DONE commit [bc4b9251](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102) · PR-6 · HubReports EmptyState [A4 + C16] · PR-7 · Permissions overview в Settings [A5 + R6 + A17] · Sprint 2 — P1 (empty/error/forms/permissions/perf) · PR-8 · Hub notifications sub-group [A6] · PR-9 · Reminder-time UI унифікація [C4] · PR-10 · Sessions: «Цей пристрій» + last-seen у людському форматі [A7] — ✅ DONE [#2187](https://github.com/Skords-01/Sergeant/pull/2187) · PR-11 · CSV export + email-mine-data [A8] · PR-12 · Keyboard accessibility for dnd-kit reorder [A9] — ✅ DONE [#2184](https://github.com/Skords-01/Sergeant/pull/2184) · PR-13 · Module-context у sync-error toast [A15] — ❌ OBSOLETE-BY-DRIFT · PR-14 · Request-ID в ModuleErrorBoundary [A16] · PR-15 · Password-strength entropy [C8] — ✅ DONE [#2156](https://github.com/Skords-01/Sergeant/pull/2156) · PR-16 · Memory Bank → Settings → Асистент [C9] · PR-17 · Logout primary в Profile [C10] — ✅ DONE [#2153](https://github.com/Skords-01/Sergeant/pull/2153)",
+      "contentHash": "09c560bfe5bb5b3240b391835b968a74a49ef8bdb8153ba13664f740e1b7f480"
     },
     {
       "id": "audit:2026-05-13-consolidated-page-audit",
@@ -814,9 +814,9 @@
       "line": 1,
       "title": "Consolidated Page Audit — 2026-05-13",
       "tier": "core",
-      "status": "Active",
-      "text": "Consolidated Page Audit — 2026-05-13 · audit:2026-05-13-consolidated-page-audit · audit · Active · Coverage · Critical findings (2) · C1 — useChatSend runs toolcalls from the model through executeActions with no runtime validation · C2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) · High-severity themes (50 findings) · Theme 1 — Timezone correctness (Domain invariant: Europe/Kyiv) ✅ DONE · Theme 2 — Touch targets below 44×44 px (WCAG 2.5.5 / Apple HIG) · Theme 3 — Tailwind tokens / palette violations (Hard Rule #11 / #13 / #9) · Theme 4 — Hard Rule #10 (lifecycle markers) systemically missing · Theme 5 — Hard Rule #2 (RQ keys via factories) — multiple inline queryKey: [...] and raw localStorage strings · Theme 6 — noUncheckedIndexedAccess bypassed via non-null assertions (Hard Rule #19) · Theme 7 — Bug hunting (correctness-impacting logic errors) · Recurring \"horizontal\" themes (medium/low severity) · Operational notes · Recommended next steps",
-      "contentHash": "dd1955fd68c57772c411125e9cdc2e1ae3f6c62327caeb39824a15cadd9b61b6"
+      "status": "Closed — зведений історичний зріз; виконання ведеться у successor trackers.",
+      "text": "Consolidated Page Audit — 2026-05-13 · audit:2026-05-13-consolidated-page-audit · audit · Closed — зведений історичний зріз; виконання ведеться у successor trackers. · Coverage · Critical findings (2) · C1 — useChatSend runs toolcalls from the model through executeActions with no runtime validation · C2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) · High-severity themes (50 findings) · Theme 1 — Timezone correctness (Domain invariant: Europe/Kyiv) ✅ DONE · Theme 2 — Touch targets below 44×44 px (WCAG 2.5.5 / Apple HIG) · Theme 3 — Tailwind tokens / palette violations (Hard Rule #11 / #13 / #9) · Theme 4 — Hard Rule #10 (lifecycle markers) systemically missing · Theme 5 — Hard Rule #2 (RQ keys via factories) — multiple inline queryKey: [...] and raw localStorage strings · Theme 6 — noUncheckedIndexedAccess bypassed via non-null assertions (Hard Rule #19) · Theme 7 — Bug hunting (correctness-impacting logic errors) · Recurring \"horizontal\" themes (medium/low severity) · Operational notes · Recommended next steps",
+      "contentHash": "764c4ec81620cff3aea1420a2b05a598643613205409b6a53240d7afb277817b"
     },
     {
       "id": "audit:2026-05-13-dead-code-hard-rules-roast",
@@ -880,9 +880,9 @@
       "line": 1,
       "title": "Page Audit — Routine module + Strategy page",
       "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Routine module + Strategy page · audit:2026-05-13-page-audit-09-routine-strategy · audit · Active · Summary · Findings · F1 — Strategy page calls /api/internal/strategic/ without internalFetch / bearer auth [severity: high] [perspective: security] · F2 — Strategy page leaks raw server error.message to the user [severity: high] [perspective: security] · F3 — Routine module setHours(12, 0, 0, 0) derives day keys in local device time, not Europe/Kyiv [severity: high] [perspective: bug] · F4 — RoutineCalendarPanel.tsx is 607 LOC — over Hard Rule #18's 600-line ceiling [severity: high] [perspective: rule] · F5 — Foreign module accents (sky-, emerald-) inside the routine subtree [severity: high] [perspective: rule] · F6 — Routine deep-link ?routineDay=… validates format only, not the calendar date [severity: high] [perspective: bug] · F7 — useRoutineReminders swallows every error via empty catch {} [severity: high] [perspective: bug] · F8 — useRoutineReminders scheduler is bound only to enabled flag; runtime permission flips are ignored [severity: medium] [perspective: bug] · F9 — Notification title contains habit name in plain text — no privacy opt-in [severity: medium] [perspective: security] · F10 — noUncheckedIndexedAccess bypassed via row! non-null assertion in drag-reorder [severity: medium] [perspective: ts] · F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n] · F12 — Strategy page uses raw Tailwind palette pairs (bg-blue-600, text-red-600, text-gray-200) [severity: medium] [perspective: tailwind] · F13 — Strategy page submit button has no minimum 44×44 touch target [severity: medium] [perspective: a11y] · F14 — Strategy page has no skeleton / retry CTA / empty-state polish [severity: medium] [perspective: ux] · F15 — Strategy page useQuery has no staleTime — refetches on every focus [severity: medium] [perspective: perf] · F16 — Strategy page goalsByPersona uses optional chaining on a fully-initialized map [severity: low] [perspective: ts] · F17 — Strategy page @scaffolded marker missing @owner and @addedIn per Rule #10 [severity: low] [perspective: ai-marker] · F18 — <button> close button inside the storage-error banner is below the 44 px touch floor [severity: medium] [perspective: a11y] · F19 — Routine UI shell files have no co-located tests [severity: medium] [perspective: test] · F20 — Routine module Banner \"Закрити\" + chip filters lack aria-pressed / aria-expanded [severity: medium] [perspective: a11y] · F21 — Notification storage cleanup uses cutoff.toISOString().slice(0, 10) — UTC, not Kyiv [severity: medium] [perspective: bug]",
-      "contentHash": "44a167a2e5294de8b9cae4b3da3b0be3b6d15f4924352d6504f383775885a8cf"
+      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
+      "text": "Page Audit — Routine module + Strategy page · audit:2026-05-13-page-audit-09-routine-strategy · audit · Closed — історичний зріз; незакриті пункти перенесено у поточні trackers. · Summary · Findings · F1 — Strategy page calls /api/internal/strategic/ without internalFetch / bearer auth [severity: high] [perspective: security] · F2 — Strategy page leaks raw server error.message to the user [severity: high] [perspective: security] · F3 — Routine module setHours(12, 0, 0, 0) derives day keys in local device time, not Europe/Kyiv [severity: high] [perspective: bug] · F4 — RoutineCalendarPanel.tsx is 607 LOC — over Hard Rule #18's 600-line ceiling [severity: high] [perspective: rule] · F5 — Foreign module accents (sky-, emerald-) inside the routine subtree [severity: high] [perspective: rule] · F6 — Routine deep-link ?routineDay=… validates format only, not the calendar date [severity: high] [perspective: bug] · F7 — useRoutineReminders swallows every error via empty catch {} [severity: high] [perspective: bug] · F8 — useRoutineReminders scheduler is bound only to enabled flag; runtime permission flips are ignored [severity: medium] [perspective: bug] · F9 — Notification title contains habit name in plain text — no privacy opt-in [severity: medium] [perspective: security] · F10 — noUncheckedIndexedAccess bypassed via row! non-null assertion in drag-reorder [severity: medium] [perspective: ts] · F11 — Strategy page UI strings are in English; product is Ukrainian-first [severity: medium] [perspective: i18n] · F12 — Strategy page uses raw Tailwind palette pairs (bg-blue-600, text-red-600, text-gray-200) [severity: medium] [perspective: tailwind] · F13 — Strategy page submit button has no minimum 44×44 touch target [severity: medium] [perspective: a11y] · F14 — Strategy page has no skeleton / retry CTA / empty-state polish [severity: medium] [perspective: ux] · F15 — Strategy page useQuery has no staleTime — refetches on every focus [severity: medium] [perspective: perf] · F16 — Strategy page goalsByPersona uses optional chaining on a fully-initialized map [severity: low] [perspective: ts] · F17 — Strategy page @scaffolded marker missing @owner and @addedIn per Rule #10 [severity: low] [perspective: ai-marker] · F18 — <button> close button inside the storage-error banner is below the 44 px touch floor [severity: medium] [perspective: a11y] · F19 — Routine UI shell files have no co-located tests [severity: medium] [perspective: test] · F20 — Routine module Banner \"Закрити\" + chip filters lack aria-pressed / aria-expanded [severity: medium] [perspective: a11y] · F21 — Notification storage cleanup uses cutoff.toISOString().slice(0, 10) — UTC, not Kyiv [severity: medium] [perspective: bug]",
+      "contentHash": "4ce96e730efe084fbcadf1f2cdaaa77b81ef7a09af30a159a096bb65c590a929"
     },
     {
       "id": "audit:2026-05-13-page-audit-10-errors-pwa-marketing",
@@ -891,9 +891,9 @@
       "line": 1,
       "title": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing",
       "tier": "core",
-      "status": "Active",
-      "text": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing · audit:2026-05-13-page-audit-10-errors-pwa-marketing · audit · Active · Summary · Findings · F1 — Service Worker has no offline navigation fallback to /offline [severity: high] [perspective: ux] · F2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) [severity: critical] [perspective: security] · F3 — Sentry Session Replay records text without maskAllText: true [severity: high] [perspective: security] · F4 — PricingPage redirects to checkout.url without origin allow-list [severity: high] [perspective: security] · F5 — ErrorFallback in main.tsx displays raw error.message to end-user [severity: medium] [perspective: security] · F6 — middleware.ts proxies arbitrary BACKENDURL with no scheme validation [severity: medium] [perspective: security] · F7 — middleware.ts forwards all request headers including potential secrets [severity: medium] [perspective: security] · F8 — SW notificationclick opens /?module=${module} with no allow-list on module [severity: medium] [perspective: security] · F9 — SW push handler renders payload.title/body verbatim with no length/charset clamp [severity: medium] [perspective: security] · F10 — StatusPage shows raw fetch err.message to anonymous visitors [severity: medium] [perspective: security] · F11 — StatusPage COMPONENTNAME is hardcoded English (\"API server\", \"Database\", \"n8n workflows\", \"OpenClaw bot\") [severity: medium] [perspective: i18n] · F12 — OfflinePage reload CTA blindly reloads regardless of navigator.onLine [severity: medium] [perspective: ux] · F13 — OfflinePage/NotFoundPage/ServerErrorPage have no .test.tsx coverage [severity: medium] [perspective: test] · F14 — analytics.ts writes every event to localStorage twice (read + slice + write) [severity: medium] [perspective: perf] · F15 — useAppLock idle reset listeners are unthrottled across pointermove/scroll/keydown/touchstart capture phase [severity: medium] [perspective: perf] · F16 — lockStorage.ts stores PIN hash under fixed key \"v1\" with no per-user scoping [severity: medium] [perspective: security] · F17 — sqlite.ts opens a single per-origin DB without per-user partitioning [severity: medium] [perspective: bug] · F18 — usePlan.ts combines staleTime: 60000 with refetchOnWindowFocus: \"always\" (contradictory) [severity: low] [perspective: perf] · F19 — PaywallModal fires PAYWALLVIEWED on every surface re-render via [open, surface] deps [severity: low] [perspective: bug] · F20 — useSyncStatus reads singleton at mount-time only; runtime changes are missed [severity: medium] [perspective: bug] · F21 — dualWriteTelemetry calls setSentryTag before SDK init (lazy no-op drops tags) [severity: low] [perspective: bug]",
-      "contentHash": "1ada0b27ca77df6557703806a7cbeaa616ef46e4f935f9a969293d76585067b1"
+      "status": "Closed — історичний зріз; незакриті пункти перенесено у поточні trackers.",
+      "text": "Page Audit — Error pages + PWA/SW + Marketing + Sync/Billing · audit:2026-05-13-page-audit-10-errors-pwa-marketing · audit · Closed — історичний зріз; незакриті пункти перенесено у поточні trackers. · Summary · Findings · F1 — Service Worker has no offline navigation fallback to /offline [severity: high] [perspective: ux] · F2 — /api/ GET responses cached across user sessions (cross-user data leak on shared device) [severity: critical] [perspective: security] · F3 — Sentry Session Replay records text without maskAllText: true [severity: high] [perspective: security] · F4 — PricingPage redirects to checkout.url without origin allow-list [severity: high] [perspective: security] · F5 — ErrorFallback in main.tsx displays raw error.message to end-user [severity: medium] [perspective: security] · F6 — middleware.ts proxies arbitrary BACKENDURL with no scheme validation [severity: medium] [perspective: security] · F7 — middleware.ts forwards all request headers including potential secrets [severity: medium] [perspective: security] · F8 — SW notificationclick opens /?module=${module} with no allow-list on module [severity: medium] [perspective: security] · F9 — SW push handler renders payload.title/body verbatim with no length/charset clamp [severity: medium] [perspective: security] · F10 — StatusPage shows raw fetch err.message to anonymous visitors [severity: medium] [perspective: security] · F11 — StatusPage COMPONENTNAME is hardcoded English (\"API server\", \"Database\", \"n8n workflows\", \"OpenClaw bot\") [severity: medium] [perspective: i18n] · F12 — OfflinePage reload CTA blindly reloads regardless of navigator.onLine [severity: medium] [perspective: ux] · F13 — OfflinePage/NotFoundPage/ServerErrorPage have no .test.tsx coverage [severity: medium] [perspective: test] · F14 — analytics.ts writes every event to localStorage twice (read + slice + write) [severity: medium] [perspective: perf] · F15 — useAppLock idle reset listeners are unthrottled across pointermove/scroll/keydown/touchstart capture phase [severity: medium] [perspective: perf] · F16 — lockStorage.ts stores PIN hash under fixed key \"v1\" with no per-user scoping [severity: medium] [perspective: security] · F17 — sqlite.ts opens a single per-origin DB without per-user partitioning [severity: medium] [perspective: bug] · F18 — usePlan.ts combines staleTime: 60000 with refetchOnWindowFocus: \"always\" (contradictory) [severity: low] [perspective: perf] · F19 — PaywallModal fires PAYWALLVIEWED on every surface re-render via [open, surface] deps [severity: low] [perspective: bug] · F20 — useSyncStatus reads singleton at mount-time only; runtime changes are missed [severity: medium] [perspective: bug] · F21 — dualWriteTelemetry calls setSentryTag before SDK init (lazy no-op drops tags) [severity: low] [perspective: bug]",
+      "contentHash": "3816d24b060450c69f0ebbaa84c29af12b6022c36b3d5194357647f7f91e07f1"
     },
     {
       "id": "audit:2026-05-13-testing-devx-roast",
@@ -902,9 +902,9 @@
       "line": 1,
       "title": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13)",
       "tier": "core",
-      "status": "Active",
-      "text": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) · audit:2026-05-13-testing-devx-roast · audit · Active · TL;DR — top-7 болів · P0 — критичне, без обхідних шляхів · P0-1. Empty .down.sql зливалися без жодної rollback-SQL — Hard Rule #4 enforcement gap · P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed · P1 — high-impact gaps з готовим планом · P1-1. Contract-fixture pattern застосовано тільки до /api/me · P1-2. Server AI-tool handlers — coverage 0–15% ✅ Closed · P1-3. Web smoke E2E — лише 4 спеки ✅ Closed · P1-4. Mobile Detox suite — лише 4 спеки ✅ Closed · P1-5. Pre-commit timing не вимірюється ✅ Closed · P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed · P2 — nice-to-have, ризик ≤ medium · P2-1. pnpm dedupe --check не в CI ✅ Зроблено в цьому PR · P2-2. ESLint plugin coverage · P2-3. Visual regression — Argos baseline розширення ✅ Closed (частково; /settings — follow-up) · P2-4. Property-based tests для парсерів · P2-5. pnpm check не паралелизує web/mobile/server · Прогрес виконання · Outstanding після цього PR — порядок наступних роастів · Outstanding count",
-      "contentHash": "bc53a0bd59a01e547ff37ae7ff113738b322274bfa2de0ca0799c5b668b3e8f1"
+      "status": "Closed — findings виконано або перенесено у sprint/tech-debt trackers.",
+      "text": "Sergeant — Прожарка #6/10: Testing & DevX (2026-05-13) · audit:2026-05-13-testing-devx-roast · audit · Closed — findings виконано або перенесено у sprint/tech-debt trackers. · TL;DR — top-7 болів · P0 — критичне, без обхідних шляхів · P0-1. Empty .down.sql зливалися без жодної rollback-SQL — Hard Rule #4 enforcement gap · P0-2. Mutation testing — config існує, але CI gate відсутній ✅ Closed · P1 — high-impact gaps з готовим планом · P1-1. Contract-fixture pattern застосовано тільки до /api/me · P1-2. Server AI-tool handlers — coverage 0–15% ✅ Closed · P1-3. Web smoke E2E — лише 4 спеки ✅ Closed · P1-4. Mobile Detox suite — лише 4 спеки ✅ Closed · P1-5. Pre-commit timing не вимірюється ✅ Closed · P1-6. Web coverage drift не повернувся до пре-крашу ✅ Closed · P2 — nice-to-have, ризик ≤ medium · P2-1. pnpm dedupe --check не в CI ✅ Зроблено в цьому PR · P2-2. ESLint plugin coverage · P2-3. Visual regression — Argos baseline розширення ✅ Closed (частково; /settings — follow-up) · P2-4. Property-based tests для парсерів · P2-5. pnpm check не паралелизує web/mobile/server · Прогрес виконання · Outstanding після цього PR — порядок наступних роастів · Outstanding count",
+      "contentHash": "1396f35ec19013af0b1e74e45ce2256c33f6c27ce8a352688701e643a964704b"
     },
     {
       "id": "audit:2026-05-25-hubsettings-cls-chunk-load",
@@ -924,9 +924,9 @@
       "line": 1,
       "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
       "tier": "core",
-      "status": "Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021).",
-      "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Active — all 4 audit themes executed (console-rename, grammy deletion #3470, doc-status reconcile, ai-marker gate). Residual is out-of-band: plop stale-branding rename + Sept KV→SQLite tombstone batch + react-hooks burndown (Initiative 0021). · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
-      "contentHash": "fd1eb9ea6e1637e91d58285803983f02a1347a37ca8b7e7f6c78a9bb172ed300"
+      "status": "Closed — усі 4 теми виконано; незалежні follow-up-и мають власні trackers.",
+      "text": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф · audit:2026-06-08-codebase-cleanup-audit · audit · Closed — усі 4 теми виконано; незалежні follow-up-и мають власні trackers. · Виконано в цьому PR (2026-06-08) · TL;DR · Тема 1 — console → openclaw rename (напів-зроблений) · 🔴 Реальний баг (не косметика) · 🟡 Stale-посилання, що збивають агентів (low-risk, high-clarity) · 🟡 Незавершений rename (потребує координації — це деплой) · Тема 2 — Audits/initiatives «Active», але робота закрита · Тема 3 — Застарілі рішення / ADR-дрейф · 🔴 P0-пастка: grammy-deletion (Locked Decision #17) — НЕ виконувати · 🟡 ADR-дрейф · Тема 4 — Lint / tech-debt suppressions без власника · Інфра / стек — інші знахідки (потребують рішення власника) · Свідома інфраструктура — НЕ чіпати · Запропонований план (окремими PR-ами за класом боргу) · Рішення власника (узгоджено 2026-06-08)",
+      "contentHash": "2674b305abb0b152703d3719ff6bdf03fa2f29358a43ad8c7676639afec01821"
     },
     {
       "id": "audit:2026-06-11-fable5-independent-audit",
@@ -935,9 +935,9 @@
       "line": 1,
       "title": "Independent Audit — Sergeant — 2026-06-11",
       "tier": "core",
-      "status": "Active",
-      "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Active · Статус виконання (update 2026-06-11 EOD) · Executive summary (стан на момент аудиту, 2026-06-11 ранок) · Вердикти за вимірами · Ключові верифіковані знахідки (стиснуто) · Закриті 2026-06-11 ✅ · Відкриті (пріоритезовано — це і є черга роботи) · Top 3 existential risks (оновлено) · Workflow delegation spec (remaining) · Що founder-у робити далі",
-      "contentHash": "eb72e7caef0158a36456de6a1e0a039af48dbca32810468f9e6c73eb351b2589"
+      "status": "Closed — усі P0/P1 потоки змерджено; залишок перенесено в канонічні trackers.",
+      "text": "Independent Audit — Sergeant — 2026-06-11 · audit:2026-06-11-fable5-independent-audit · audit · Closed — усі P0/P1 потоки змерджено; залишок перенесено в канонічні trackers. · Статус виконання (update 2026-06-11 EOD) · Executive summary (стан на момент аудиту, 2026-06-11 ранок) · Вердикти за вимірами · Ключові верифіковані знахідки (стиснуто) · Закриті 2026-06-11 ✅ · Відкриті (пріоритезовано — це і є черга роботи) · Top 3 existential risks (оновлено) · Workflow delegation spec (remaining) · Що founder-у робити далі",
+      "contentHash": "3185c2c13d651dc4b12d03ef885e4da90fc90491d2ac4c0b0fb3640536966af4"
     },
     {
       "id": "audit:2026-06-28-financial-launch-monetization-audit",
@@ -946,9 +946,9 @@
       "line": 1,
       "title": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28",
       "tier": "core",
-      "status": "Active",
-      "text": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28 · audit:2026-06-28-financial-launch-monetization-audit · audit · Active · TL;DR · 1. Що коштує запустити (one-time) · 2. Що коштує утримувати (recurring, $/міс) · 3. Активна модель монетизації (ADR-0068) · 4. Беззбитковість (перерахунок на активну ціну ₴199) · 4.1 Юніт-економіка одного Pro · 4.2 Точка беззбитковості · 4.3 Скільки треба MAU, щоб зібрати ~20 Pro · 5. Сценарії виходу в прибуток · 6. Альтернативні / додаткові шляхи монетизації · 7. Рекомендації (P0/P1/P2) · 8. Найбільші ризики моделі · Посилання",
-      "contentHash": "1b3d45427b07f3fb9299c525a9e1fdb91cc958201cdaa2c59c3f4dc1f8aa7d3a"
+      "status": "Reference — фінансовий snapshot; виконання ведеться в initiative 0010.",
+      "text": "Фінансовий аудит — старт, утримання, беззбитковість Sergeant — 2026-06-28 · audit:2026-06-28-financial-launch-monetization-audit · audit · Reference — фінансовий snapshot; виконання ведеться в initiative 0010. · TL;DR · 1. Що коштує запустити (one-time) · 2. Що коштує утримувати (recurring, $/міс) · 3. Активна модель монетизації (ADR-0068) · 4. Беззбитковість (перерахунок на активну ціну ₴199) · 4.1 Юніт-економіка одного Pro · 4.2 Точка беззбитковості · 4.3 Скільки треба MAU, щоб зібрати ~20 Pro · 5. Сценарії виходу в прибуток · 6. Альтернативні / додаткові шляхи монетизації · 7. Рекомендації (P0/P1/P2) · 8. Найбільші ризики моделі · Посилання",
+      "contentHash": "8312e3337a37c6260fe9757406ad14fa5e10848a39ffee604af5234c708ab4c6"
     },
     {
       "id": "audit:2026-08-XX-openclaw-internal-roast",
@@ -957,9 +957,9 @@
       "line": 1,
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "tier": "core",
-      "status": "Active",
-      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Active · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
-      "contentHash": "e88fadd9593c66e0aa821a4643d7d8653b5ae9cf922a04d6f54cf2ca7392e79f"
+      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
+      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Reference — заготовка майбутнього аудиту без дати й owner commitment. · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
+      "contentHash": "61ace1fd513f5f9e30f333a45d072c6e4e4f130a20ae1493ba8ad2143b716180"
     },
     {
       "id": "audit:2026-08-XX-sync-engine-roast",
@@ -968,9 +968,9 @@
       "line": 1,
       "title": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub)",
       "tier": "core",
-      "status": "Draft",
-      "text": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub) · audit:2026-08-XX-sync-engine-roast · audit · Draft · Sync Engine Deep Roast — apps/server/src/modules/sync/syncV2.ts (stub) · TL;DR · Scope · Methodology hints · Transaction-boundary trace (2026-06-06 code read) · Handler: syncV2Push (POST /api/v2/sync/push) · Handler: syncV2Pull (GET /api/v2/sync/pull) · DLQ-row TTL note · Cross-refs",
-      "contentHash": "f4c38dc725703b69696931342f5a289d7ff5eae771b878bb61b1c540d1ead316"
+      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
+      "text": "Sync Engine Deep Roast — `apps/server/src/modules/sync/syncV2.ts` (stub) · audit:2026-08-XX-sync-engine-roast · audit · Reference — заготовка майбутнього аудиту без дати й owner commitment. · Sync Engine Deep Roast — apps/server/src/modules/sync/syncV2.ts (stub) · TL;DR · Scope · Methodology hints · Transaction-boundary trace (2026-06-06 code read) · Handler: syncV2Push (POST /api/v2/sync/push) · Handler: syncV2Pull (GET /api/v2/sync/pull) · DLQ-row TTL note · Cross-refs",
+      "contentHash": "7adbf5678c0186add534b02bbf88b51d4b7641b0e535b12a64c8037b20a11081"
     },
     {
       "id": "audit:browser-user-journey-execution-2026-06-30",
@@ -979,9 +979,9 @@
       "line": 1,
       "title": "Browser user journey execution log",
       "tier": "core",
-      "status": "Active",
-      "text": "Browser user journey execution log · audit:browser-user-journey-execution-2026-06-30 · audit · Active · Мета · Контекст запуску · Самопромпт · Результати · Виправлення · BRJ-001: Ledger webServer timeout замалий · BRJ-002: Smoke API readiness timeout замалий · Відкриті ризики · BRJ-003: Fresh worktree install зависає на Windows · BRJ-004: Локальні env gaps очікувано деградують AI/push/backup paths · BRJ-005: Better Auth/Postgres connection timeout шум у extended run · Що можна чесно стверджувати",
-      "contentHash": "99133aa6972d66cd2358217b6b48033a4c9d40e97998edb9b3c8777c4d2ad5cc"
+      "status": "Closed — execution snapshot завершено.",
+      "text": "Browser user journey execution log · audit:browser-user-journey-execution-2026-06-30 · audit · Closed — execution snapshot завершено. · Мета · Контекст запуску · Самопромпт · Результати · Виправлення · BRJ-001: Ledger webServer timeout замалий · BRJ-002: Smoke API readiness timeout замалий · Відкриті ризики · BRJ-003: Fresh worktree install зависає на Windows · BRJ-004: Локальні env gaps очікувано деградують AI/push/backup paths · BRJ-005: Better Auth/Postgres connection timeout шум у extended run · Що можна чесно стверджувати",
+      "contentHash": "03802e84de01cd8857759c06bebafd4f6b9c4d814e3f0f01b0523ab04dc3e893"
     },
     {
       "id": "audit:browser-user-journey-execution-2026-07-01",
@@ -990,9 +990,9 @@
       "line": 1,
       "title": "Browser user journey execution log — 2026-07-01",
       "tier": "core",
-      "status": "Active",
-      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Active · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Fix-фаза: deep-CRUD dual-write races (BRJ2-005, E2E-гілка) · Підсумок",
-      "contentHash": "e4ade91d12bfd4e6cc7c8c8c875438a81695d6fab7ac6696a390b7bf7bfc7714"
+      "status": "Closed — execution snapshot завершено.",
+      "text": "Browser user journey execution log — 2026-07-01 · audit:browser-user-journey-execution-2026-07-01 · audit · Closed — execution snapshot завершено. · Мета прогону · Контекст запуску · Оркестрація · Evidence log · Знахідки · BRJ2-001: колізія номерів ADR 0066/0067/0068 ламає docs:gen-graph і ADR-gate · BRJ2-002: локальний PG без pgvector ≥0.7 блокує міграції · BRJ2-005: pnpm check / Test coverage / Critical-flow E2E червоні на main · BRJ2-003: 26 broken internal links у harness-доках (pre-existing) · BRJ2-004: 4 файли без freshness-маркерів (pre-existing, Rule #10) · Fix-фаза: deep-CRUD dual-write races (BRJ2-005, E2E-гілка) · Підсумок",
+      "contentHash": "b3d16c39eeff55342b56127c387953ae1ecbd572ccbfc59ceebe8332b23878b3"
     },
     {
       "id": "audit:browser-user-journey-loop",
@@ -1001,9 +1001,9 @@
       "line": 1,
       "title": "Browser user journey loop",
       "tier": "core",
-      "status": "Active",
-      "text": "Browser user journey loop · audit:browser-user-journey-loop · audit · Active · Мета · Жорсткі правила · Групи · Група 0 — Baseline and ledger map · Група A — Entry, auth, onboarding, shell · Група B — Core modules · Група C — Chat and AI UX · Група D — Offline, PWA, errors, accessibility · Fix loop · Evidence формат · Handoff prompt",
-      "contentHash": "5deee8b4085e19c0214766efe00f56f92f209fdfd3be8f1a8d4d517ac930e474"
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
+      "text": "Browser user journey loop · audit:browser-user-journey-loop · audit · Reference — повторюваний протокол; сам по собі не є відкритою роботою. · Мета · Жорсткі правила · Групи · Група 0 — Baseline and ledger map · Група A — Entry, auth, onboarding, shell · Група B — Core modules · Група C — Chat and AI UX · Група D — Offline, PWA, errors, accessibility · Fix loop · Evidence формат · Handoff prompt",
+      "contentHash": "00f84ff9946b0c80051df639a5e1e015520d98ef62691a6f5d9b548d91cdcced"
     },
     {
       "id": "audit:deep-module-crud-browser-execution-2026-06-30",
@@ -1012,9 +1012,9 @@
       "line": 1,
       "title": "Deep module CRUD browser execution log",
       "tier": "core",
-      "status": "Active",
-      "text": "Deep module CRUD browser execution log · audit:deep-module-crud-browser-execution-2026-06-30 · audit · Active · Контекст запуску · Code map · Results · Findings · Current status",
-      "contentHash": "00b2783cf7a71e99fc806db22ec49c1ebc6d3efde4ac9bcfbe1ec9e47def6ec3"
+      "status": "Closed — execution snapshot завершено.",
+      "text": "Deep module CRUD browser execution log · audit:deep-module-crud-browser-execution-2026-06-30 · audit · Closed — execution snapshot завершено. · Контекст запуску · Code map · Results · Findings · Current status",
+      "contentHash": "b2d0606c2f4d80eb06737b97d9b9f59dc4aaa7862b9a1722480ceebcd84409c5"
     },
     {
       "id": "audit:deep-module-crud-browser-loop",
@@ -1023,9 +1023,9 @@
       "line": 1,
       "title": "Deep module CRUD browser loop",
       "tier": "core",
-      "status": "Active",
-      "text": "Deep module CRUD browser loop · audit:deep-module-crud-browser-loop · audit · Active · Мета · Жорсткі правила · Покриття loop 4 · Порядок виконання · Handoff prompt",
-      "contentHash": "075bf13906390ec0d21fc950758b7bf61a3397dfeaaf3e4f033cd8d4a83d83ca"
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
+      "text": "Deep module CRUD browser loop · audit:deep-module-crud-browser-loop · audit · Reference — повторюваний протокол; сам по собі не є відкритою роботою. · Мета · Жорсткі правила · Покриття loop 4 · Порядок виконання · Handoff prompt",
+      "contentHash": "5455bb2cde6c1c76d218a022544875ac7a56aa8a2a45c37d727028178c8882a2"
     },
     {
       "id": "audit:production-readiness-execution-2026-06-29",
@@ -1034,9 +1034,9 @@
       "line": 1,
       "title": "Production Readiness Execution — 2026-06-29",
       "tier": "core",
-      "status": "Active",
-      "text": "Production Readiness Execution — 2026-06-29 · audit:production-readiness-execution-2026-06-29 · audit · Active · Context · Evidence Log · Findings · Open Questions / External Inputs",
-      "contentHash": "054af65a3bd2199d39f4fa123ddd4065925a8608c5208d09a935d4b5a90e5cb6"
+      "status": "Closed — execution snapshot завершено; нові прогони створюють окремий запис.",
+      "text": "Production Readiness Execution — 2026-06-29 · audit:production-readiness-execution-2026-06-29 · audit · Closed — execution snapshot завершено; нові прогони створюють окремий запис. · Context · Evidence Log · Findings · Open Questions / External Inputs",
+      "contentHash": "7580ec86f7e932efb3feea6ff1dd3b7428968929a965f9788aa2acf34601e862"
     },
     {
       "id": "audit:production-readiness-testing-loop",
@@ -1045,9 +1045,9 @@
       "line": 1,
       "title": "Production readiness testing loop",
       "tier": "core",
-      "status": "Active",
-      "text": "Production readiness testing loop · audit:production-readiness-testing-loop · audit · Active · Мета · Групи тестування · Група A — Chat resilience and load · Група B — Data, migrations, backup restore · Група C — Security launch audit · Група D — Observability and incident drill · Основний loop виконання · Evidence формат · Handoff prompt для наступної сесії",
-      "contentHash": "2387758bbc3898cf60762c1817b27b4f323c799aded1061a13c501d79fe9e8f1"
+      "status": "Reference — повторюваний протокол; сам по собі не є відкритою роботою.",
+      "text": "Production readiness testing loop · audit:production-readiness-testing-loop · audit · Reference — повторюваний протокол; сам по собі не є відкритою роботою. · Мета · Групи тестування · Група A — Chat resilience and load · Група B — Data, migrations, backup restore · Група C — Security launch audit · Група D — Observability and incident drill · Основний loop виконання · Evidence формат · Handoff prompt для наступної сесії",
+      "contentHash": "857699499bf294231b7e1f67bbcf78bc0727869cba01fd7e46335166e32f1cf2"
     },
     {
       "id": "audit:user-story-loop",
@@ -1056,9 +1056,18 @@
       "line": 1,
       "title": "User Story QA Loop",
       "tier": "core",
-      "status": "Active",
-      "text": "User Story QA Loop · audit:user-story-loop · audit · Active · Goal · Loop State Machine · Guardrails · Execution Notes · Exit Conditions",
-      "contentHash": "3e044ceb430d71b201ff3c0d7ec3995f13c085c036752bec2a95d9a981ec4a9d"
+      "status": "Reference — повторюваний протокол; актуальні результати живуть у ledger.",
+      "text": "User Story QA Loop · audit:user-story-loop · audit · Reference — повторюваний протокол; актуальні результати живуть у ledger. · Goal · Loop State Machine · Guardrails · Execution Notes · Exit Conditions",
+      "contentHash": "b52d16a38560dc7c8e46bf1e06b8d1bd3978a49c519a2d0cb308bf9adf4feca2"
+    },
+    {
+      "id": "export:@sergeant/api-client:AiMemoryClearResponse",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/me",
+      "title": "AiMemoryClearResponse (re-export)",
+      "tier": "extended",
+      "text": "AiMemoryClearResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/me · used 0× · dead export unused",
+      "contentHash": "29f259b35c13c2ed5d2a7a1317751f99a3e1aca409210c452e31586287b1c44b"
     },
     {
       "id": "export:@sergeant/api-client:ApiClient",
@@ -4074,9 +4083,9 @@
       "line": 1,
       "title": "0006 — Frontend routing migration + route-based code-split",
       "tier": "core",
-      "status": "In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и.",
-      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · In progress — Phases 1–4 done; Phase 5 **RootLayout + Outlet fix implemented** (2026-06-07): `RootLayout.tsx` + `HubShellContext.tsx` + `ModuleShell.tsx` + 4 per-module `route.tsx` files + `HubPage.tsx` + `router.tsx` rewrite. Location-context bug resolved — each child route renders a DIFFERENT component via `<Outlet />`. **Reconcile 2026-06-15:** insights/settings/onboarding мігровано off the catch-all у власні path-based lazy routes (`/insights/*`, `/settings/*`, `/onboarding/*` + `core/{insights,settings,onboarding}/route.tsx`); route-count тепер 7/8 (лишається свідомо-спільний Hub чанк). Playwright hash-compat e2e додано (`tests/smoke/hash-redirect-smoke.spec.ts`). Pending: native RR7 router-level `loader:` (unblocked, optional), bundle-budget tighten на нові chunk-prefix-и. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
-      "contentHash": "5ec05644838a464b072183e4544f8145cf0a725e94f654cd2fb043957c2ad44b"
+      "status": "Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.",
+      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
+      "contentHash": "540903f1098910a8a2dcfb0111166f2e17637f2d62bb56f59534fb9c7fbb1bb4"
     },
     {
       "id": "initiative:0010",
@@ -4184,9 +4193,9 @@
       "line": 1,
       "title": "Overview — stack pulse 2026-05",
       "tier": "core",
-      "status": "Active",
-      "text": "Overview — stack pulse 2026-05 · initiative:stack-pulse-2026-05/00-overview · initiative · Active · Сильні сторони (контекст) · Зрізова таблиця знахідок · Critical (PR-01..06) · High (PR-07..16) · Medium (PR-17..27, trigger-gated) · Low (PR-28..39, поліровка) · Redundancies (зайве) · Missing (відсутнє) · Метрики для трекінгу прогресу · Що НЕ міняти (контр-інтуїтивні рекомендації)",
-      "contentHash": "fa117da371000990ec8a68ac6a1912c9ff9085ed5f1bdbc4056f2c5c88011254"
+      "status": "Reference/carry-over — травневий зріз завершено; trigger-gated залишки мають окремі картки.",
+      "text": "Overview — stack pulse 2026-05 · initiative:stack-pulse-2026-05/00-overview · initiative · Reference/carry-over — травневий зріз завершено; trigger-gated залишки мають окремі картки. · Сильні сторони (контекст) · Зрізова таблиця знахідок · Critical (PR-01..06) · High (PR-07..16) · Medium (PR-17..27, trigger-gated) · Low (PR-28..39, поліровка) · Redundancies (зайве) · Missing (відсутнє) · Метрики для трекінгу прогресу · Що НЕ міняти (контр-інтуїтивні рекомендації)",
+      "contentHash": "31cfe86d71f56b2d46d5b86994a7bfd66d86f77b1585313cece1d471df2aab23"
     },
     {
       "id": "initiative:stack-pulse-2026-05/01-session-log-2026-05-03",
@@ -4382,9 +4391,9 @@
       "line": 1,
       "title": "PR-17: 80+ env-vars → DB feature-flag toggle",
       "tier": "core",
-      "status": "Planned",
-      "text": "PR-17: 80+ env-vars → DB feature-flag toggle · initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle · initiative · Planned · Контекст · Scope · 1. Класифікація · 2. featureflags table · 3. Runtime API · 4. Bootstrap-fallback · 5. Admin UI · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "31069cd066e31292c5d6e243b51840d84bbda9fbcc211a78c58b6ba5621c8205"
+      "status": "Reference — speculative trigger (90-та env-змінна) не настав; не брати в роботу зараз.",
+      "text": "PR-17: 80+ env-vars → DB feature-flag toggle · initiative:stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle · initiative · Reference — speculative trigger (90-та env-змінна) не настав; не брати в роботу зараз. · Контекст · Scope · 1. Класифікація · 2. featureflags table · 3. Runtime API · 4. Bootstrap-fallback · 5. Admin UI · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "255b142bd04c8a4cf56c0e808976dfa09dc1dac9b3a5eaee7fd96df119ff0ae1"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-18-detox-server-shape-trigger",
@@ -4404,9 +4413,9 @@
       "line": 1,
       "title": "PR-19: Workers health-registry + `/api/health/workers` endpoint",
       "tier": "core",
-      "status": "Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident.",
-      "text": "PR-19: Workers health-registry + `/api/health/workers` endpoint · initiative:stack-pulse-2026-05/pr-19-workers-health-registry · initiative · Active — `/health/workers` endpoint shipped via PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) з in-memory per-queue stats (`aiMemoryIngest` + `monoEnrichment` + `backgroundQueue`); запропонована `worker_health` DB-table + Grafana dashboards / `worker_lag_seconds` метрика — deferred (current in-memory підхід satisfies M3 monitoring need without DB writes), reactivation trigger — наступний stalled-worker incident. · PR-19: Workers health-registry + /api/health/workers endpoint · Outcome (2026-05 — частково shipped via #1995) · Контекст (історично) · Scope · 1. workerhealth table · 2. WorkerHealthRegistry API · 3. /api/health/workers endpoint · 4. Prometheus metrics · 5. Grafana alert · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "c63ce768b0d15f63b74f30332bce338daefa4807a022001facf764b3923cde04"
+      "status": "Reference — базовий endpoint shipped; розширення активується лише після stalled-worker incident.",
+      "text": "PR-19: Workers health-registry + `/api/health/workers` endpoint · initiative:stack-pulse-2026-05/pr-19-workers-health-registry · initiative · Reference — базовий endpoint shipped; розширення активується лише після stalled-worker incident. · PR-19: Workers health-registry + /api/health/workers endpoint · Outcome (2026-05 — частково shipped via #1995) · Контекст (історично) · Scope · 1. workerhealth table · 2. WorkerHealthRegistry API · 3. /api/health/workers endpoint · 4. Prometheus metrics · 5. Grafana alert · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "c3abb37fdb6feaa2d2dbfc20a23b39b78f4940ca1897c4686274a1f140d546d8"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-20-patches-readme",
@@ -4437,9 +4446,9 @@
       "line": 1,
       "title": "PR-22: Mobile Expo SDK 52 → 53 upgrade",
       "tier": "core",
-      "status": "Planned",
-      "text": "PR-22: Mobile Expo SDK 52 → 53 upgrade · initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53 · initiative · Planned · Контекст · Scope · 1. Pre-flight ADR · 2. Branch upgrade · 3. Manual fixes · 4. Detox + EAS rebuild · 5. Patches reapply · 6. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "11b605efd9c35e2d3ebdad9fbe3361bef99449e27334be740d70365148dff0e3"
+      "status": "Deprecated — план SDK 53 застарів; dependency PR-и вже таргетять новіші Expo major-и.",
+      "text": "PR-22: Mobile Expo SDK 52 → 53 upgrade · initiative:stack-pulse-2026-05/pr-22-mobile-expo-sdk-53 · initiative · Deprecated — план SDK 53 застарів; dependency PR-и вже таргетять новіші Expo major-и. · Контекст · Scope · 1. Pre-flight ADR · 2. Branch upgrade · 3. Manual fixes · 4. Detox + EAS rebuild · 5. Patches reapply · 6. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "b3bc93b08938d4b4da376c8301c9298ea4ed42211c63accb79f4b354b92eac13"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests",
@@ -4448,9 +4457,9 @@
       "line": 1,
       "title": "PR-23: OpenAPI spec contract-tested vs runtime",
       "tier": "core",
-      "status": "Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision.",
-      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Active — Phase 1 generation/freshness gate і Phase 2 representative runtime roundtrip shipped; [ADR-0062](../../../04-governance/adr/0062-openapi-source-of-truth.md) — canonical source-of-truth. Schemathesis property-based testing і full-route expansion залишаються deferred до окремого pinned runtime decision. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "966534ae3bfeb1cd88c63d8f5172e74b111e0834c2ae1183604ef658bd55b18c"
+      "status": "Reference — committed scope shipped; Schemathesis/full-route expansion потребує нового runtime decision.",
+      "text": "PR-23: OpenAPI spec contract-tested vs runtime · initiative:stack-pulse-2026-05/pr-23-openapi-contract-tests · initiative · Reference — committed scope shipped; Schemathesis/full-route expansion потребує нового runtime decision. · Outcome (Phase 1 shipped) · Контекст (історично) · Scope · 1. Source-of-truth decision (ADR) · 2. Generation pipeline · scripts/openapi/generate.mjs · Зчитує всі route registrations + Zod-output-schemas · Виводить apps/server/openapi.generated.json · 3. Contract tests · 4. Schemathesis property-based testing · .github/workflows/contract-tests.yml · 5. PR check: openapi-drift · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "8706d9778475bff17a0148a76d0bfbc87e1ce19280a2d98f39783b115c8cea03"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction",
@@ -4459,9 +4468,9 @@
       "line": 1,
       "title": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in)",
       "tier": "core",
-      "status": "Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера).",
-      "text": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in) · initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction · initiative · Active — groundwork done; abstraction вже в коді (2026-05-13 план передував поточній архітектурі). `EmbeddingProvider`/`VectorStore` vendor-agnostic інтерфейси (`types.ts`) + `createVoyageEmbeddingProvider` factory + per-row `embedding_provider`/`embedding_model`/`embedding_version` колонки вже існували; цей прохід додав active-model read-filter у `vectorStore.query` + `docs/00-start/playbooks/embedding-provider-migration.md`. **Лишилось — лише живий vendor-switch (rollout PR-3), genuinely trigger-gated** на voyage regression / pricing / outage. `047_model_id` міграція та env-router/OpenAI-adapter — superseded (redundant / speculative dead code до реального тригера). · Контекст · Scope · 1. Provider interface · 2. Concrete adapters · 3. Routing · 4. modelid в БД · 5. Migration playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "b1941953bc7d54a7e968e856d03821865b9889056d141d4d7b0f021ca25aa038"
+      "status": "Reference — abstraction shipped; vendor switch активується лише після regression, pricing або outage trigger.",
+      "text": "PR-24: Embedding-vendor abstraction (voyage-3.5-lite lock-in) · initiative:stack-pulse-2026-05/pr-24-embedding-vendor-abstraction · initiative · Reference — abstraction shipped; vendor switch активується лише після regression, pricing або outage trigger. · Контекст · Scope · 1. Provider interface · 2. Concrete adapters · 3. Routing · 4. modelid в БД · 5. Migration playbook · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "23c4cf015ebb78957c1a0a361d48cee506e7f7ee7da101377647c2a122b500c7"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
@@ -4492,9 +4501,9 @@
       "line": 1,
       "title": "PR-27: `INTERNAL_API_KEY` rotation мechanism",
       "tier": "core",
-      "status": "Planned",
-      "text": "PR-27: `INTERNAL_API_KEY` rotation мechanism · initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation · initiative · Planned · PR-27: INTERNALAPIKEY rotation мechanism · Контекст · Scope · 1. internalapikeys table · 2. Hash-based lookup · 3. Dual-key rotation pattern · 4. CLI tool · 5. Backward compatibility · 6. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "6aec2b4871a85865f767b55283f4f42827d45c3a5ab908de155726a0c213aab0"
+      "status": "Reference — security-triggered design note; без audit finding або leak це не ready-now робота.",
+      "text": "PR-27: `INTERNAL_API_KEY` rotation мechanism · initiative:stack-pulse-2026-05/pr-27-internal-api-key-rotation · initiative · Reference — security-triggered design note; без audit finding або leak це не ready-now робота. · PR-27: INTERNALAPIKEY rotation мechanism · Контекст · Scope · 1. internalapikeys table · 2. Hash-based lookup · 3. Dual-key rotation pattern · 4. CLI tool · 5. Backward compatibility · 6. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "471826d1b8bcb64b7deff7d226a8b1c7b23d908fc7d8142030e034cfc707b576"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-28-sw-build-id-import-meta",
@@ -4536,9 +4545,9 @@
       "line": 1,
       "title": "PR-31: ESLint config 1073 рядки → split per-app",
       "tier": "core",
-      "status": "Phase 1 + Phase 2 scaffolding + Phase 2a + **Phase 2b shipped (2026-06-15).** Phase 1: baseline extracted into `eslint.baseline.js` (~180 рядків, byte-identical `--print-config`). Phase 2 scaffolding (2026-06-01): `scripts/eslint-print-config-diff.mjs` + surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Phase 2a (2026-06-05): per-surface extraction — блоки у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root manifest 1128 → 37 рядків. **Phase 2b (2026-06-15):** справжні standalone per-package `eslint.config.js` у 12 linted-пакетах (`apps/{web,server,mobile,mobile-shell}`, `packages/{shared,api-client,db-schema,finyk-domain,fizruk-domain,nutrition-domain,routine-domain,eslint-plugin-sergeant-design}`) — кожен re-export-ить root-manifest через `basePath`-wrapper (`eslint.per-package.js`), тож `turbo run lint` резолвить per-package config замість walk-up до root → unlocks per-package Turbo parallelism. Diff-gate переведено у cd-per-package режим; `normaliseConfig` пофікшено, щоб не корумпувати backslash у regex-селекторах на Windows. **Byte-neutral**: `lint:eslint-config-diff` — усі 7 fixtures match (5 снапшотів незмінні, 2 оновлені лише на pre-existing stale drift: server `max-lines` allowlist + 2 web i18n-allowlist записи). `turbo run lint` зелений: 15/15 tasks, 0 errors.",
-      "text": "PR-31: ESLint config 1073 рядки → split per-app · initiative:stack-pulse-2026-05/pr-31-eslint-config-split · initiative · Phase 1 + Phase 2 scaffolding + Phase 2a + **Phase 2b shipped (2026-06-15).** Phase 1: baseline extracted into `eslint.baseline.js` (~180 рядків, byte-identical `--print-config`). Phase 2 scaffolding (2026-06-01): `scripts/eslint-print-config-diff.mjs` + surface snapshots під `scripts/__fixtures__/eslint-print-config/` + `pnpm lint:eslint-config-diff` gate. Phase 2a (2026-06-05): per-surface extraction — блоки у `eslint.web.js` / `eslint.server.js` / `eslint.mobile.js` / `eslint.shell.js` / `eslint.packages.js` / `eslint.cross-surface.js`; root manifest 1128 → 37 рядків. **Phase 2b (2026-06-15):** справжні standalone per-package `eslint.config.js` у 12 linted-пакетах (`apps/{web,server,mobile,mobile-shell}`, `packages/{shared,api-client,db-schema,finyk-domain,fizruk-domain,nutrition-domain,routine-domain,eslint-plugin-sergeant-design}`) — кожен re-export-ить root-manifest через `basePath`-wrapper (`eslint.per-package.js`), тож `turbo run lint` резолвить per-package config замість walk-up до root → unlocks per-package Turbo parallelism. Diff-gate переведено у cd-per-package режим; `normaliseConfig` пофікшено, щоб не корумпувати backslash у regex-селекторах на Windows. **Byte-neutral**: `lint:eslint-config-diff` — усі 7 fixtures match (5 снапшотів незмінні, 2 оновлені лише на pre-existing stale drift: server `max-lines` allowlist + 2 web i18n-allowlist записи). `turbo run lint` зелений: 15/15 tasks, 0 errors. · Контекст · Scope · 1. Spliting strategy · 2. Migration approach · 3. CI optimization · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Implementation notes (2026-06-05 — pre-exec recon) · 1. ~10 з ~28 блоків — cross-surface · 2. Execution-model: per-package eslint . + gate з кореня · 3. Snapshot-артефакти генеруються лише з робочим eslint · Рекомендований порядок (для виконавця в робочому env) · Refs",
-      "contentHash": "b12beb5f3ae3f58629914fb0fa1202f5d2b9e0ffcb8c8de5abb155e0038d5a94"
+      "status": "Closed — Phase 1, 2a і 2b shipped; per-package lint resolution та drift gate працюють.",
+      "text": "PR-31: ESLint config 1073 рядки → split per-app · initiative:stack-pulse-2026-05/pr-31-eslint-config-split · initiative · Closed — Phase 1, 2a і 2b shipped; per-package lint resolution та drift gate працюють. · Контекст · Scope · 1. Spliting strategy · 2. Migration approach · 3. CI optimization · 4. Documentation · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Implementation notes (2026-06-05 — pre-exec recon) · 1. ~10 з ~28 блоків — cross-surface · 2. Execution-model: per-package eslint . + gate з кореня · 3. Snapshot-артефакти генеруються лише з робочим eslint · Рекомендований порядок (для виконавця в робочому env) · Refs",
+      "contentHash": "58b6e9635c62f3412851b80fd273d5debbb7ff1698ea0fe1e381eacfd7a9b41d"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-32-pnpm-overrides-cleanup",
@@ -4779,8 +4788,8 @@
       "title": "Change an Auth Flow (Better Auth)",
       "tier": "core",
       "status": "Active",
-      "text": "Change an Auth Flow (Better Auth) · playbook:change-auth-flow · playbook · Active · Playbook: Change an Auth Flow (Better Auth) · Owner surface · Контекст · Decision Tree · Steps · 1. Звузити обсяг · 2. Сервер і клієнт в одній зміні · 3. Schema чи plugin — разом із міграцією · 4. Верифікувати на парі Vercel ↔ Railway · Verification · Notes · See also",
-      "contentHash": "5dc1b73efa1fb81c96c845906329779e3030b7218dd5a4017d46d7b501afd3b2"
+      "text": "Change an Auth Flow (Better Auth) · playbook:change-auth-flow · playbook · Active · Playbook: Change an Auth Flow (Better Auth) · Owner surface · Контекст · Decision Tree · Steps · 1. Звузити обсяг · 2. Сервер і клієнт в одній зміні · 3. Schema чи plugin — разом із міграцією · 4. Верифікувати на парі Vercel ↔ бекенд (Coolify) · Verification · Notes · See also",
+      "contentHash": "f423fef9cda6653e453705b5d7dd78dc9268698fe3d644f89c06290cdc8cca0a"
     },
     {
       "id": "playbook:cleanup-codex-branch-after-pr",
@@ -5357,8 +5366,8 @@
       "line": 1,
       "title": "sergeant-data-and-migrations",
       "tier": "core",
-      "text": "sergeant-data-and-migrations · skill:sergeant-data-and-migrations · skill · Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних. · Дані і міграції в Sergeant · Що покриває · Жорсткі правила · Postgres-правила · Performance, indexing, locking — references/ · Верифікація · Корисні доки",
-      "contentHash": "31bc7714bdb15ad7d04b21aaf51d69651f94133fb9e2921d0b1231f2468ced5e"
+      "text": "sergeant-data-and-migrations · skill:sergeant-data-and-migrations · skill · Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Coolify pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних. · Дані і міграції в Sergeant · Що покриває · Жорсткі правила · Postgres-правила · Performance, indexing, locking — references/ · Верифікація · Корисні доки",
+      "contentHash": "df2f9387648dffda990231d08c853e6298cb279affed4283dd69300b0598f853"
     },
     {
       "id": "skill:sergeant-deliver-squad",
@@ -5377,8 +5386,8 @@
       "line": 1,
       "title": "sergeant-deploy-and-observability",
       "tier": "core",
-      "text": "sergeant-deploy-and-observability · skill:sergeant-deploy-and-observability · skill · Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Railway, Vercel, Sentry, n8n. · Деплой і обсервабіліті в Sergeant · Що покриває · Railway services (актуально) · Жорсткі правила · Верифікація · Корисні доки",
-      "contentHash": "06d27874d22abdd836cb978f3eed82c6312504d35b835be4358cf16b4b1b181a"
+      "text": "sergeant-deploy-and-observability · skill:sergeant-deploy-and-observability · skill · Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry, n8n. · Деплой і обсервабіліті в Sergeant · Що покриває · Deploy targets (актуально — ADR-0074) · Жорсткі правила · Верифікація · Корисні доки",
+      "contentHash": "497fa69b0e42deb7c8d62c62e827d70db38d055e5d437c8ff05d8c5e1e738a1b"
     },
     {
       "id": "skill:sergeant-e2e-testing",

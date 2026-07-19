@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-07-13",
+  "generated_at": "2026-07-19",
   "summary": {
     "packages": 18,
-    "totalExports": 304,
-    "totalDeadExports": 198
+    "totalExports": 305,
+    "totalDeadExports": 199
   },
   "packages": [
     {
@@ -12,9 +12,9 @@
       "path": "packages/api-client",
       "entryFile": "packages/api-client/src/index.ts",
       "stats": {
-        "exportCount": 200,
+        "exportCount": 201,
         "totalImporters": 43,
-        "deadExports": 106
+        "deadExports": 107
       },
       "exports": [
         {
@@ -192,6 +192,13 @@
           "fromFile": "./endpoints/me",
           "usedBy": ["apps/web/src/test/contract/me.contract.test.ts"],
           "usageCount": 1
+        },
+        {
+          "name": "AiMemoryClearResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [],
+          "usageCount": 0
         },
         {
           "name": "MeDeleteResponse",
@@ -2073,7 +2080,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 377,
+        "totalImporters": 378,
         "deadExports": 0
       },
       "exports": [
