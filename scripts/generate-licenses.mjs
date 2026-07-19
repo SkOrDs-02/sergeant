@@ -167,6 +167,9 @@ const ALLOWED_LICENSES = new Set([
   // are already allowed individually.
   "(MPL-2.0 OR Apache-2.0)", // dual (dompurify, transitively via
   // posthog-js → @rrweb/*); both halves are already allowed individually.
+  "(Apache-2.0 AND MIT)", // conjunctive (posthog-js ≥1.399 repackaged its
+  // licence field); AND means both permissive licences apply simultaneously —
+  // each is already in this allowlist, so the conjunction adds no new terms.
   "(MIT OR WTFPL)", // dual (expand-template, transitively via
   // prebuild-install → better-sqlite3 → drizzle-orm@0.45 peer-chain).
   // MIT is already in the allowlist; WTFPL is a permissive
