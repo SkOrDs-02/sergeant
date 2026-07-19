@@ -2,14 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import {
-  useMemo,
-  useState,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -63,6 +56,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const didInitialScrollRef = useRef(false);
 
   useEffect(() => {
     if (!selected) return;
@@ -132,32 +126,27 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     }
     /* eslint-enable sergeant-design/prefer-kyiv-time */
 
-    // Mobile-first order: current week is the first visible column, followed
-    // by history newest→oldest. The four-week look-ahead remains available
-    // after the historical range without pushing today off the first screen.
-    // The user no longer has to rely on an imperative iOS scrollLeft jump.
-    const currentWeekIndex = HISTORY_WEEKS - 1;
-    const orderedWeeks = [
-      ...weeks.slice(currentWeekIndex, currentWeekIndex + 1),
-      ...weeks.slice(0, currentWeekIndex).reverse(),
-      ...weeks.slice(currentWeekIndex + 1),
-    ];
-    const orderedMonthMarkers: MonthMarker[] = [];
+    // Chronological, oldest→newest left-to-right. Today sits near the right
+    // edge with a ~1-month look-ahead trailing after it, so the grid never
+    // ends on a lone active-day square. The viewport opens scrolled to the
+    // recent end (see the scroll effect below); the user scrolls left to reach
+    // history — a natural timeline direction rather than a reversed jumble.
+    const monthMarkers: MonthMarker[] = [];
     let previousMonth = "";
-    orderedWeeks.forEach((week, weekIdx) => {
+    weeks.forEach((week, weekIdx) => {
       const first = week[0];
       if (!first) return;
       const firstKyiv = getKyivDateParts(first.dt);
       const monthKey = `${firstKyiv.year}-${firstKyiv.month}`;
       if (monthKey === previousMonth) return;
       previousMonth = monthKey;
-      orderedMonthMarkers.push({
+      monthMarkers.push({
         weekIdx,
         label: first.dt.toLocaleDateString("uk-UA", { month: "short" }),
       });
     });
 
-    return { weeks: orderedWeeks, monthMarkers: orderedMonthMarkers };
+    return { weeks, monthMarkers };
   }, [activeHabits, completions]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
@@ -234,9 +223,28 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   }, [weeks]);
   const detailCell = selectedCell ?? todayCell;
 
-  useLayoutEffect(() => {
-    if (viewportRef.current) viewportRef.current.scrollLeft = 0;
-  }, []);
+  // Open the viewport scrolled to the recent end (today + look-ahead). The
+  // scrollable width appears asynchronously — the grid lives inside a lazily
+  // shown tab — so a plain mount effect races the layout. Watch for the first
+  // non-zero overflow via ResizeObserver and scroll once. The one-time latch
+  // lives in a ref (not a local const) so a `weeks` recompute never re-fires
+  // the jump and yanks the user back from history they scrolled to.
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const scrollToEnd = () => {
+      if (didInitialScrollRef.current || vp.scrollWidth <= vp.clientWidth)
+        return;
+      vp.scrollLeft = vp.scrollWidth;
+      didInitialScrollRef.current = true;
+    };
+    scrollToEnd();
+    if (didInitialScrollRef.current || typeof ResizeObserver !== "function")
+      return;
+    const ro = new ResizeObserver(scrollToEnd);
+    ro.observe(vp);
+    return () => ro.disconnect();
+  }, [weeks]);
 
   return (
     <Card ref={rootRef} radius="lg">
@@ -245,7 +253,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       </SectionHeading>
 
       <div className="mb-2 text-style-caption text-subtle">
-        Горизонтальна історія за 12 місяців відкривається на сьогоднішньому дні.
+        Відкривається на сьогодні — гортай ліворуч, щоб побачити історію за рік.
       </div>
 
       <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
