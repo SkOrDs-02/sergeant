@@ -35,7 +35,7 @@ export { ACTIVE_WORKOUT_KV_KEY } from "./activeWorkout";
  * LWW guard).
  *
  * **ADR-0073 крок 9** — migrated onto `@sergeant/dualwrite-core`: the
- * op-loop is now `createApplyOps` (`errorPolicy: "best-effort"`, as-is —
+ * op-loop is now `createApplyOps` (best-effort, as-is —
  * this pipeline was never transactional, unlike former web-fizruk) and
  * every SQL op-kind's table SQL is emitted by the shared `buildLwwUpsert` /
  * `buildDelete` / `buildReconcileChildren` builders in each op-family
@@ -81,7 +81,6 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
 };
 
 const applyOps = createApplyOps<FizrukDualWriteOp>({
-  errorPolicy: "best-effort",
   handlers: {
     "workout-upsert": async (client, op, rt) => {
       await upsertWorkout(client, op.workout, rt);

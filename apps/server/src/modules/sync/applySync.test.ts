@@ -3,21 +3,13 @@ import type { Mock } from "vitest";
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../http/schemas.js";
 import {
-  applyFinykAssets,
-  applyFinykBudgets,
-  applyFinykCustomCategories,
-  applyFinykDebts,
   applyFinykHiddenAccounts,
   applyFinykHiddenTransactions,
-  applyFinykManualExpenses,
-  applyFinykMonoDebtLinks,
   applyFinykNetworthHistory,
+  applyFinykPerRowBlob,
+  applyFinykPerTxJsonbArray,
   applyFinykPrefs,
-  applyFinykReceivables,
-  applyFinykSubscriptions,
   applyFinykTxCategories,
-  applyFinykTxFilters,
-  applyFinykTxSplits,
 } from "./finyk/applySync.js";
 import {
   applyFizrukCustomExercises,
@@ -85,6 +77,28 @@ function existing(
 function sql(client: ClientStub, callIndex = 1): string {
   return String(client.query.mock.calls[callIndex]?.[0] ?? "");
 }
+
+// The sync registry (syncV2.ts) binds these tables to the shared per-row-blob /
+// per-tx-jsonb implementation curried by table name. Test-local bindings keep
+// the assertions below readable without production delegating wrappers.
+const applyFinykBudgets = (c: PoolClient, o: SyncV2Op, u: string, t: Date) =>
+  applyFinykPerRowBlob(c, o, u, t, "finyk_budgets");
+const applyFinykTxSplits = (c: PoolClient, o: SyncV2Op, u: string, t: Date) =>
+  applyFinykPerTxJsonbArray(c, o, u, t, "finyk_tx_splits", "splits_json");
+const applyFinykMonoDebtLinks = (
+  c: PoolClient,
+  o: SyncV2Op,
+  u: string,
+  t: Date,
+) =>
+  applyFinykPerTxJsonbArray(
+    c,
+    o,
+    u,
+    t,
+    "finyk_mono_debt_links",
+    "debt_ids_json",
+  );
 
 describe("finyk applySync", () => {
   it("applies hidden-account inserts after user and LWW validation", async () => {
@@ -233,21 +247,21 @@ describe("finyk applySync", () => {
     expect(sql(updateClient)).toContain("UPDATE finyk_budgets");
   });
 
-  it("routes all finyk per-row blob wrappers through the shared insert path", async () => {
-    const wrappers = [
-      [applyFinykSubscriptions, "finyk_subscriptions"],
-      [applyFinykAssets, "finyk_assets"],
-      [applyFinykDebts, "finyk_debts"],
-      [applyFinykReceivables, "finyk_receivables"],
-      [applyFinykCustomCategories, "finyk_custom_categories"],
-      [applyFinykManualExpenses, "finyk_manual_expenses"],
-      [applyFinykTxFilters, "finyk_tx_filters"],
+  it("routes all finyk per-row blob tables through the shared insert path", async () => {
+    const tables = [
+      "finyk_subscriptions",
+      "finyk_assets",
+      "finyk_debts",
+      "finyk_receivables",
+      "finyk_custom_categories",
+      "finyk_manual_expenses",
+      "finyk_tx_filters",
     ] as const;
 
-    for (const [apply, tableName] of wrappers) {
+    for (const tableName of tables) {
       const client = makeClient([]);
       await expect(
-        apply(
+        applyFinykPerRowBlob(
           client,
           op({
             id: `${tableName}-1`,
@@ -256,6 +270,7 @@ describe("finyk applySync", () => {
           }),
           USER_ID,
           CLIENT_TS,
+          tableName,
         ),
       ).resolves.toEqual({ status: "applied" });
       expect(sql(client)).toContain(`INSERT INTO ${tableName}`);

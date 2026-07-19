@@ -65,7 +65,6 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
 };
 
 const applyOps = createApplyOps<NutritionDualWriteOp>({
-  errorPolicy: "best-effort",
   handlers: {
     "meal-upsert": async (client, op, rt) => {
       await upsertMeal(client, op.meal, rt);

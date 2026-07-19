@@ -86,7 +86,6 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
 };
 
 const applyOps = createApplyOps<RoutineDualWriteOp>({
-  errorPolicy: "best-effort",
   handlers: {
     "completion-add": async (client, op, rt) => {
       await addCompletion(client, op.habitId, op.dateKey, op.habitName, rt);

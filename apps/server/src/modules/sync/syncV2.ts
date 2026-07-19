@@ -29,13 +29,12 @@ import {
   applyRoutineStreaks,
 } from "./routine/applySync.js";
 import {
-  applyRoutineCategories,
   applyRoutineCompletionNotes,
   applyRoutineHabitOrder,
   applyRoutineHabits,
   applyRoutinePrefs,
   applyRoutinePushups,
-  applyRoutineTags,
+  applyUuidNameScopeTable,
 } from "./routine/applySyncFullState.js";
 import {
   applyFizrukWorkouts,
@@ -66,17 +65,9 @@ import {
 import {
   applyFinykHiddenAccounts,
   applyFinykHiddenTransactions,
-  applyFinykBudgets,
-  applyFinykSubscriptions,
-  applyFinykAssets,
-  applyFinykDebts,
-  applyFinykReceivables,
-  applyFinykCustomCategories,
-  applyFinykManualExpenses,
-  applyFinykTxFilters,
+  applyFinykPerRowBlob,
+  applyFinykPerTxJsonbArray,
   applyFinykTxCategories,
-  applyFinykTxSplits,
-  applyFinykMonoDebtLinks,
   applyFinykNetworthHistory,
   applyFinykPrefs,
 } from "./finyk/applySync.js";
@@ -129,12 +120,33 @@ interface PullRow {
 
 const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
 
+// Tables whose apply logic is identical bar the table name (and, for tx-scoped
+// jsonb arrays, the payload column) bind the shared implementation directly in
+// the registry instead of each getting a one-line delegating wrapper.
+const perRowBlob =
+  (table: string): ApplyFn =>
+  (client, op, userId, clientTs) =>
+    applyFinykPerRowBlob(client, op, userId, clientTs, table);
+
+const perTxJsonb =
+  (
+    table: "finyk_tx_splits" | "finyk_mono_debt_links",
+    jsonColumn: "splits_json" | "debt_ids_json",
+  ): ApplyFn =>
+  (client, op, userId, clientTs) =>
+    applyFinykPerTxJsonbArray(client, op, userId, clientTs, table, jsonColumn);
+
+const uuidNameScope =
+  (table: "routine_tags" | "routine_categories"): ApplyFn =>
+  (client, op, userId, clientTs) =>
+    applyUuidNameScopeTable(client, table, op, userId, clientTs);
+
 const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_entries: applyRoutineEntries,
   routine_streaks: applyRoutineStreaks,
   routine_habits: applyRoutineHabits,
-  routine_tags: applyRoutineTags,
-  routine_categories: applyRoutineCategories,
+  routine_tags: uuidNameScope("routine_tags"),
+  routine_categories: uuidNameScope("routine_categories"),
   routine_prefs: applyRoutinePrefs,
   routine_pushups: applyRoutinePushups,
   routine_habit_order: applyRoutineHabitOrder,
@@ -159,17 +171,17 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_shopping_list: applyNutritionShoppingList,
   finyk_hidden_accounts: applyFinykHiddenAccounts,
   finyk_hidden_transactions: applyFinykHiddenTransactions,
-  finyk_budgets: applyFinykBudgets,
-  finyk_subscriptions: applyFinykSubscriptions,
-  finyk_assets: applyFinykAssets,
-  finyk_debts: applyFinykDebts,
-  finyk_receivables: applyFinykReceivables,
-  finyk_custom_categories: applyFinykCustomCategories,
-  finyk_manual_expenses: applyFinykManualExpenses,
-  finyk_tx_filters: applyFinykTxFilters,
+  finyk_budgets: perRowBlob("finyk_budgets"),
+  finyk_subscriptions: perRowBlob("finyk_subscriptions"),
+  finyk_assets: perRowBlob("finyk_assets"),
+  finyk_debts: perRowBlob("finyk_debts"),
+  finyk_receivables: perRowBlob("finyk_receivables"),
+  finyk_custom_categories: perRowBlob("finyk_custom_categories"),
+  finyk_manual_expenses: perRowBlob("finyk_manual_expenses"),
+  finyk_tx_filters: perRowBlob("finyk_tx_filters"),
   finyk_tx_categories: applyFinykTxCategories,
-  finyk_tx_splits: applyFinykTxSplits,
-  finyk_mono_debt_links: applyFinykMonoDebtLinks,
+  finyk_tx_splits: perTxJsonb("finyk_tx_splits", "splits_json"),
+  finyk_mono_debt_links: perTxJsonb("finyk_mono_debt_links", "debt_ids_json"),
   finyk_networth_history: applyFinykNetworthHistory,
   finyk_prefs: applyFinykPrefs,
 };
