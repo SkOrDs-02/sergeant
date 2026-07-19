@@ -277,6 +277,59 @@ describe("enqueueOutboxIncrement", () => {
     });
   });
 
+  it("rejects a missing/empty userId before touching the table", async () => {
+    await expect(
+      enqueueOutboxIncrement(client, {
+        userId: "",
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-no-user",
+      }),
+    ).rejects.toThrow(/userId is required/);
+
+    // No row was written for the rejected call.
+    const rows = db
+      .prepare(`SELECT id FROM sync_op_outbox WHERE idempotency_key = ?`)
+      .all("idem-no-user");
+    expect(rows).toHaveLength(0);
+  });
+
+  it("rejects a non-string userId", async () => {
+    await expect(
+      enqueueOutboxIncrement(client, {
+        userId: undefined as unknown as string,
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-undefined-user",
+      }),
+    ).rejects.toThrow(/userId is required/);
+  });
+
+  it("surfaces a defensive error when the post-insert SELECT finds no row (fake client)", async () => {
+    // Simulate a client whose INSERT silently no-ops (e.g. an unknown
+    // constraint) by having `all()` always return zero rows. This
+    // pins the helper's defensive throw rather than letting a
+    // phantom enqueue pass silently up to the sync engine.
+    const noopClient: SqliteMigrationClient = {
+      exec() {},
+      run() {},
+      all() {
+        return [];
+      },
+    };
+    await expect(
+      enqueueOutboxIncrement(noopClient, {
+        userId: "u-test",
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-phantom",
+      }),
+    ).rejects.toThrow(/expected exactly one row for idempotency_key/);
+  });
+
   it("propagates SQL errors verbatim when the schema rejects the row", async () => {
     // Drop the outbox table to simulate a corrupt/uninitialised
     // client. The helper must NOT swallow the resulting "no such

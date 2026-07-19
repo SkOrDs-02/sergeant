@@ -395,6 +395,101 @@ describe("assembleMorningBriefing — partial / error tolerance", () => {
     expect(data.prQueue.openCount).toBeUndefined();
     expect(data.prQueue.note).toContain("GitHub API повернув 404");
   });
+
+  it("n8n GET /workflows non-2xx throws inside listN8nWorkflows, mapped to a rejected-fetch note", async () => {
+    patchEnv({
+      STRIPE_SECRET_KEY: "sk_test",
+      POSTHOG_API_KEY: "phx",
+      POSTHOG_PROJECT_ID: "1",
+      SENTRY_AUTH_TOKEN: "sntryu",
+      N8N_API_URL: "https://n8n.example.com",
+      N8N_API_KEY: "n8n",
+    });
+    routes.push(
+      {
+        match: (u) => u.startsWith("https://api.stripe.com/"),
+        respond: () => makeJsonResponse({ data: [] }),
+      },
+      {
+        match: (u) => u.includes("app.posthog.com"),
+        respond: () => makeJsonResponse({ result: [] }),
+      },
+      {
+        match: (u) => u.startsWith("https://api.github.com/repos/"),
+        respond: () => makeJsonResponse([]),
+      },
+      {
+        match: (u) => u.includes("n8n.example.com"),
+        respond: () => new Response("internal error", { status: 500 }),
+      },
+      {
+        match: (u) => u.startsWith("https://sentry.io/"),
+        respond: () => makeJsonResponse([]),
+      },
+    );
+    const { data, markdown } = await assembleMorningBriefing({
+      nowMs: Date.parse("2026-05-13T06:00:00Z"),
+    });
+    expect(data.workflows.note).toBe(
+      "n8n manifest недоступний (fetch failed).",
+    );
+    expect(data.workflows.notConfigured).toBeUndefined();
+    expect(markdown).toContain("n8n manifest недоступний");
+  });
+
+  it("a network-level fetch failure (not just a non-2xx status) is captured as a rejected-fetch note per section", async () => {
+    patchEnv({
+      STRIPE_SECRET_KEY: "sk_test",
+      POSTHOG_API_KEY: "phx",
+      POSTHOG_PROJECT_ID: "1",
+      SENTRY_AUTH_TOKEN: "sntryu",
+      N8N_API_URL: undefined,
+      N8N_API_KEY: undefined,
+    });
+    routes.push(
+      {
+        match: (u) => u.startsWith("https://api.stripe.com/"),
+        respond: () => {
+          throw new Error("ECONNRESET: stripe unreachable");
+        },
+      },
+      {
+        match: (u) => u.includes("app.posthog.com") && u.includes("$pageview"),
+        respond: () => {
+          throw new Error("ECONNRESET: posthog unreachable");
+        },
+      },
+      {
+        match: (u) => u.startsWith("https://api.github.com/repos/"),
+        respond: () => {
+          throw new Error("ECONNRESET: github unreachable");
+        },
+      },
+      {
+        match: (u) => u.startsWith("https://sentry.io/"),
+        respond: () => {
+          throw new Error("ECONNRESET: sentry unreachable");
+        },
+      },
+    );
+
+    const { data, markdown } = await assembleMorningBriefing({
+      nowMs: Date.parse("2026-05-13T06:00:00Z"),
+    });
+
+    expect(data.stripe.note).toBe("Stripe-метрики недоступні (fetch failed).");
+    expect(data.signups.note).toBe(
+      "PostHog-метрики недоступні (fetch failed).",
+    );
+    expect(data.prQueue.note).toBe(
+      "GitHub PR-черга недоступна (fetch failed).",
+    );
+    expect(data.alerts.note).toBe("Sentry-issues недоступні (fetch failed).");
+    // subscription_started fetch failure is swallowed internally (best-effort)
+    // — it must not surface as a rejected-signups note nor throw.
+    expect(data.signups.subscriptionStartedCount).toBeUndefined();
+    expect(markdown).toContain("Stripe-метрики недоступні");
+  });
 });
 
 /**

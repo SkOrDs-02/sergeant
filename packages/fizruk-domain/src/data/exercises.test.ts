@@ -7,6 +7,7 @@ import {
   PRIMARY_GROUPS_UK,
   findExerciseById,
   getExercisesByPrimaryGroup,
+  getExerciseNamesByAtlasMuscle,
   mergeExerciseCatalog,
   searchExercises,
   toExerciseDef,
@@ -99,4 +100,43 @@ describe("toExerciseDef", () => {
     expect(toExerciseDef(null)).toBeNull();
     expect(toExerciseDef({} as never)).toBeNull();
   });
+});
+
+describe("getExerciseNamesByAtlasMuscle", () => {
+  it("returns an empty array for an empty atlas muscle id", () => {
+    expect(getExerciseNamesByAtlasMuscle("")).toEqual([]);
+  });
+
+  it("returns Ukrainian names for exercises whose primary muscles map to the atlas id", () => {
+    const names = getExerciseNamesByAtlasMuscle("chest");
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) expect(typeof name).toBe("string");
+  });
+
+  it("caps results at the default limit of 5", () => {
+    const names = getExerciseNamesByAtlasMuscle("quadriceps");
+    expect(names.length).toBeLessThanOrEqual(5);
+  });
+
+  it("honours a custom limit", () => {
+    const names = getExerciseNamesByAtlasMuscle("quadriceps", 2);
+    expect(names.length).toBeLessThanOrEqual(2);
+  });
+
+  it("returns an empty array for a muscle id with no matching exercises", () => {
+    expect(getExerciseNamesByAtlasMuscle("not-a-real-atlas-id")).toEqual([]);
+  });
+
+  it("does not duplicate names across exercises sharing the same primary muscle", () => {
+    const names = getExerciseNamesByAtlasMuscle("chest", 50);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  // NOTE: the `!Array.isArray(ex?.muscles?.primary)` continue-branch inside
+  // getExerciseNamesByAtlasMuscle is unreachable with the current catalog —
+  // every entry in exercises.gymup.json has a `muscles.primary` array, and
+  // the function has no pool parameter to inject a fixture without one.
+  // Skipped per instructions (would require a production source change to
+  // accept an injectable pool). Covered indirectly by `mergeExerciseCatalog`
+  // tests above, which do exercise catalogs with missing/partial shapes.
 });

@@ -213,6 +213,26 @@ describe("drainSyncOpOutbox", () => {
     });
   });
 
+  describe("userId validation (HIGH-#2 of the T3 audit)", () => {
+    it("rejects a missing/empty userId before issuing any query", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      await expect(
+        drainSyncOpOutbox(client, { userId: "", limit: 10, now }),
+      ).rejects.toThrow(/userId is required/);
+    });
+
+    it("rejects a non-string userId", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      await expect(
+        drainSyncOpOutbox(client, {
+          userId: undefined as unknown as string,
+          limit: 10,
+          now,
+        }),
+      ).rejects.toThrow(/userId is required/);
+    });
+  });
+
   describe("limit", () => {
     it("caps the batch to `limit`, preserving id ASC order", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
@@ -528,6 +548,53 @@ describe("drainSyncOpOutbox", () => {
       });
       expect(drained).toHaveLength(1);
       expect(events).toHaveLength(0);
+    });
+
+    it("still reports onQuarantine with a quarantine_failed reason when the UPDATE itself throws", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "{not-json",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-broken-2",
+      );
+
+      // Wrap the real client so the quarantine UPDATE (and only that
+      // statement) fails — the SELECT that reads the poison row must
+      // still succeed so we reach the best-effort quarantine path.
+      const failingUpdateClient: SqliteMigrationClient = {
+        exec: client.exec.bind(client),
+        all: client.all.bind(client),
+        run(sql, params) {
+          if (sql.trim().startsWith("UPDATE sync_op_outbox")) {
+            throw new Error("disk I/O error");
+          }
+          return client.run(sql, params);
+        },
+      };
+
+      const events: Array<{ id: number; reason: string }> = [];
+      const drained = await drainSyncOpOutbox(failingUpdateClient, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ id: e.id, reason: e.reason }),
+      });
+
+      expect(drained).toEqual([]);
+      expect(events).toHaveLength(1);
+      expect(events[0]!.reason).toBe("quarantine_failed:disk I/O error");
+
+      // The row's status was NOT actually updated since the UPDATE threw.
+      const row = db
+        .prepare(`SELECT status FROM sync_op_outbox WHERE idempotency_key = ?`)
+        .get("idem-broken-2") as { status: string };
+      expect(row.status).toBe("pending");
     });
 
     it("propagates SQL errors when the table is missing", async () => {

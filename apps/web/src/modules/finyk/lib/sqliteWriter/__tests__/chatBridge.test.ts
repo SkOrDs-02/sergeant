@@ -13,11 +13,15 @@ import {
   registerFinykDualWriteContext,
   type FinykDualWriteContext,
 } from "../index.js";
-import { mirrorFinykChatDualWrite } from "../chatBridge.js";
+import {
+  mirrorFinykChatDualWrite,
+  mirrorFinykChatMonthlyPlan,
+} from "../chatBridge.js";
 import { blobsFromArray, stateWithSlice } from "../extract.js";
 import {
   clearFinykSqliteCache,
   getCachedFinykSqliteState,
+  __setFinykSqliteStateCacheForTests,
 } from "../../sqliteReader.js";
 import { __resetFinykSqliteReadGateForTests } from "../../sqliteReadGate.js";
 import {
@@ -171,5 +175,117 @@ describe("mirrorFinykChatDualWrite", () => {
     );
     expect(rows).toHaveLength(0);
     expect(__peekDualWriteTelemetryForTests("finyk").applied).toBe(0);
+  });
+
+  it("records a read-fallback and no-ops when the migration client fails to open", async () => {
+    const ctx: FinykDualWriteContext = {
+      getUserId: () => USER_ID,
+      getMigrationClient: async () => {
+        throw new Error("sqlite-wasm boot failed");
+      },
+      getNow: () => new Date(clockMs++).toISOString(),
+    };
+    registerFinykDualWriteContext(ctx);
+
+    await mirrorFinykChatDualWrite(
+      stateWithSlice("debts", blobsFromArray([])),
+      stateWithSlice(
+        "debts",
+        blobsFromArray([{ id: "d_2", name: "Y", totalAmount: 20 }]),
+      ),
+    );
+
+    expect(__peekDualWriteTelemetryForTests("finyk").applied).toBe(0);
+  });
+});
+
+describe("mirrorFinykChatMonthlyPlan", () => {
+  it("is a no-op when no dual-write context is registered", async () => {
+    await mirrorFinykChatMonthlyPlan('{"income":"1000"}');
+    const rows = await handle.client.all<{ user_id: string }>(
+      "SELECT user_id FROM finyk_prefs",
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it("warms a cold cache, defaults the other prefs fields, and upserts monthlyPlanJson", async () => {
+    register();
+    // Cache is cold (never refreshed) — the function must warm it via a
+    // real refresh before merging, rather than assume LS defaults.
+    const planJson = JSON.stringify({
+      income: "1000",
+      expense: "500",
+      savings: "500",
+    });
+
+    await mirrorFinykChatMonthlyPlan(planJson);
+
+    const rows = await handle.client.all<{
+      monthly_plan_json: string;
+      show_balance: number;
+    }>(
+      "SELECT monthly_plan_json, show_balance FROM finyk_prefs WHERE user_id = ?",
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.monthly_plan_json).toBe(planJson);
+    // Default showBalance (cache had null) merges to `true`.
+    expect(rows[0]!.show_balance).toBe(1);
+    expect(getCachedFinykSqliteState().monthlyPlan).toEqual(
+      JSON.parse(planJson),
+    );
+  });
+
+  it("merges the new monthly plan onto an already-warm cache without clobbering the other prefs fields", async () => {
+    register();
+    __setFinykSqliteStateCacheForTests({
+      monthlyPlan: { income: "1", expense: "2", savings: "3" },
+      showBalance: false,
+      excludedStatTxIds: ["tx-9"],
+      dismissedRecurring: ["rec-9"],
+    });
+
+    const planJson = JSON.stringify({
+      income: "2000",
+      expense: "900",
+      savings: "1100",
+    });
+    await mirrorFinykChatMonthlyPlan(planJson);
+
+    const rows = await handle.client.all<{
+      monthly_plan_json: string;
+      show_balance: number;
+      excluded_stat_tx_ids_json: string;
+      dismissed_recurring_json: string;
+    }>(
+      "SELECT monthly_plan_json, show_balance, excluded_stat_tx_ids_json, dismissed_recurring_json FROM finyk_prefs WHERE user_id = ?",
+      [USER_ID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.monthly_plan_json).toBe(planJson);
+    // showBalance/excluded/dismissed came from the pre-seeded cache, not
+    // overwritten with defaults.
+    expect(rows[0]!.show_balance).toBe(0);
+    expect(JSON.parse(rows[0]!.excluded_stat_tx_ids_json)).toEqual(["tx-9"]);
+    expect(JSON.parse(rows[0]!.dismissed_recurring_json)).toEqual(["rec-9"]);
+  });
+
+  it("emits no ops (and does not write) when the plan JSON is unchanged", async () => {
+    register();
+    const planJson = JSON.stringify({
+      income: "500",
+      expense: "100",
+      savings: "400",
+    });
+    __setFinykSqliteStateCacheForTests({
+      monthlyPlan: JSON.parse(planJson),
+    });
+
+    await mirrorFinykChatMonthlyPlan(planJson);
+
+    const rows = await handle.client.all<{ user_id: string }>(
+      "SELECT user_id FROM finyk_prefs",
+    );
+    expect(rows).toHaveLength(0);
   });
 });

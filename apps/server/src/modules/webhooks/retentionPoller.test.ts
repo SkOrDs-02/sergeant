@@ -118,4 +118,48 @@ describe("WebhookEventsRetentionPoller", () => {
     vi.useRealTimers();
     await poller.stop();
   });
+
+  it("a failing scheduled tick is caught and logged, cron keeps running", async () => {
+    vi.useFakeTimers();
+    const pool = {
+      query: vi.fn().mockRejectedValue(new Error("delete failed")),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 1000,
+    });
+    poller.start();
+    // Should not throw even though the underlying DELETE rejects.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+    await poller.stop();
+  });
+
+  it("stop() waits for an in-flight runOnce to finish before resolving", async () => {
+    let resolveQuery!: (value: { rows: unknown[]; rowCount: number }) => void;
+    const pool = {
+      query: vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveQuery = resolve;
+        }),
+      ),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 0,
+    });
+
+    const runOncePromise = poller.runOnce();
+    const stopPromise = poller.stop();
+    // Give the stop()'s polling loop a couple of ticks to actually wait.
+    await new Promise((r) => setTimeout(r, 50));
+    resolveQuery({ rows: [{ id: "1" }], rowCount: 1 });
+
+    await runOncePromise;
+    await stopPromise;
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
 });

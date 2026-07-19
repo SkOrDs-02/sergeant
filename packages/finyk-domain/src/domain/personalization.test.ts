@@ -147,6 +147,37 @@ describe("getFrequentCategories", () => {
     });
     expect(res[0]!.id).toBe("entertainment");
   });
+
+  it("resolves an unrecognized manual category label via the manualLabel fallback", () => {
+    const manuals = [
+      manual({ category: "Кальян", amount: 50 }), // unmapped, not a canonical MCC id
+    ];
+    const res = getFrequentCategories([], manuals as never, { now });
+    expect(res[0]!.id).toBe("кальян");
+    expect(res[0]!.label).toBe("Кальян");
+  });
+
+  it("breaks a count tie by total spent, then by most-recent use", () => {
+    const txs = [
+      // "food" (mcc 5411): 1 use, small amount, oldest
+      bankTx({
+        id: "t1",
+        mcc: 5411,
+        amount: -5000,
+        dateMs: now.getTime() - 10 * 86400000,
+      }),
+      // "transport" (mcc 4121): 1 use, larger amount, more recent
+      bankTx({
+        id: "t2",
+        mcc: 4121,
+        amount: -50000,
+        dateMs: now.getTime() - 1 * 86400000,
+      }),
+    ];
+    const res = getFrequentCategories(txs as never, [], { now });
+    expect(res[0]!.id).toBe("transport"); // ties on count(1), wins on total
+    expect(res[1]!.id).toBe("food");
+  });
 });
 
 describe("getFrequentMerchants", () => {

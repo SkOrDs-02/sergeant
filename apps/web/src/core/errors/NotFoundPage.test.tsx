@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 
 // Stub the kvStoreBoot dependency — it requires @sergeant/db-schema/sqlite
 // (WASM artefact not built in test env).
@@ -97,5 +97,26 @@ describe("NotFoundPage", () => {
     const homeBtn = screen.getByRole("button", { name: /На головну/i });
     fireEvent.click(homeBtn);
     unmount();
+  });
+
+  it("'Назад' calls navigate(-1) and returns to the previous history entry", () => {
+    function LocationDisplay() {
+      const location = useLocation();
+      return <div data-testid="location">{location.pathname}</div>;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={["/home-marker", "/some/unknown/path"]}
+        initialIndex={1}
+      >
+        <LocationDisplay />
+        <NotFoundPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("location").textContent).toBe(
+      "/some/unknown/path",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Назад/i }));
+    expect(screen.getByTestId("location").textContent).toBe("/home-marker");
   });
 });

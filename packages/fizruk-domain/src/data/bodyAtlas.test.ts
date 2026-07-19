@@ -10,6 +10,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  aggregateRecoveryToAtlas,
   BODY_ATLAS_MUSCLE_IDS,
   BODY_ATLAS_MUSCLE_LABELS_UK,
   BODY_ATLAS_MUSCLE_SIDE,
@@ -19,6 +20,19 @@ import {
   type BodyAtlasMuscleId,
 } from "./bodyAtlas.js";
 import { EXERCISES, MUSCLES_UK } from "./index.js";
+import type { MuscleState } from "../domain/types.js";
+
+function muscle(overrides: Partial<MuscleState> & { id: string }): MuscleState {
+  return {
+    label: overrides.id,
+    lastAt: null,
+    daysSince: null,
+    load7d: 0,
+    fatigue: 0,
+    status: "green",
+    ...overrides,
+  };
+}
 
 describe("BODY_ATLAS_MUSCLE_IDS", () => {
   it("covers every web body-highlighter key used by Atlas.tsx", () => {
@@ -149,5 +163,93 @@ describe("statusToIntensity", () => {
     expect(r).toBe(1);
     expect(y).toBeGreaterThan(g);
     expect(y).toBeLessThan(r);
+  });
+});
+
+describe("aggregateRecoveryToAtlas", () => {
+  it("returns an empty object for an empty iterable", () => {
+    expect(aggregateRecoveryToAtlas([])).toEqual({});
+  });
+
+  it("skips domain muscles that have no atlas mapping", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({ id: "teres_major", fatigue: 5 }),
+    ]);
+    expect(out).toEqual({});
+  });
+
+  it("seeds a new atlas group from the first contributing muscle", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({
+        id: "biceps",
+        fatigue: 3,
+        load7d: 10,
+        daysSince: 2,
+        status: "yellow",
+      }),
+    ]);
+    expect(out.biceps).toEqual({
+      fatigue: 3,
+      load7d: 10,
+      daysSince: 2,
+      status: "yellow",
+    });
+  });
+
+  it("folds multiple domain muscles onto the same atlas group: max fatigue, summed load, worst status", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({
+        id: "biceps",
+        fatigue: 3,
+        load7d: 10,
+        daysSince: 5,
+        status: "green",
+      }),
+      muscle({
+        id: "brachialis",
+        fatigue: 7,
+        load7d: 4,
+        daysSince: 2,
+        status: "red",
+      }),
+    ]);
+    expect(out.biceps).toEqual({
+      fatigue: 7, // max(3, 7)
+      load7d: 14, // 10 + 4
+      daysSince: 2, // min(5, 2)
+      status: "red", // worst(green, red)
+    });
+  });
+
+  it("worstStatus treats yellow as worse than green but not as bad as red", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({ id: "biceps", status: "green" }),
+      muscle({ id: "brachialis", status: "yellow" }),
+    ]);
+    expect(out.biceps?.status).toBe("yellow");
+  });
+
+  it("keeps the previous daysSince when a later contributor has null", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({ id: "biceps", daysSince: 4 }),
+      muscle({ id: "brachialis", daysSince: null }),
+    ]);
+    expect(out.biceps?.daysSince).toBe(4);
+  });
+
+  it("adopts a later contributor's daysSince when the accumulator's is null", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({ id: "biceps", daysSince: null }),
+      muscle({ id: "brachialis", daysSince: 6 }),
+    ]);
+    expect(out.biceps?.daysSince).toBe(6);
+  });
+
+  it("leaves daysSince null when every contributor is null", () => {
+    const out = aggregateRecoveryToAtlas([
+      muscle({ id: "biceps", daysSince: null }),
+      muscle({ id: "brachialis", daysSince: null }),
+    ]);
+    expect(out.biceps?.daysSince).toBeNull();
   });
 });
