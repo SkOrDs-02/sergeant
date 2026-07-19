@@ -25,10 +25,13 @@ describe("deployConfigDialect", () => {
     assert.equal(deployConfigDialect("nested/deep/vercel.json"), "none");
   });
 
-  it("matches fly.toml and railway.toml as 'hash'", () => {
+  it("matches fly.toml as 'hash'", () => {
     assert.equal(deployConfigDialect("fly.toml"), "hash");
-    assert.equal(deployConfigDialect("railway.toml"), "hash");
-    assert.equal(deployConfigDialect("ops/grafana-alloy/railway.toml"), "hash");
+  });
+
+  it("no longer tracks railway.toml (Railway decommissioned — ADR-0074)", () => {
+    assert.equal(deployConfigDialect("railway.toml"), null);
+    assert.equal(deployConfigDialect("ops/grafana-alloy/railway.toml"), null);
   });
 
   it("matches Dockerfile and Dockerfile.* as 'hash'", () => {

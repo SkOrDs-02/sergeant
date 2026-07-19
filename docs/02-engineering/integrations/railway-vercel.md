@@ -3,7 +3,7 @@
 > **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
 > **Status:** Active
 >
-> **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2) — історичний контекст доміграційного стеку; на Railway лишається тільки OpenClaw Gateway (`sergeant-openclaw-gateway`). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) — топологія з ADR-0009 не змінилась, переписано лише Vercel env `BACKEND_URL`.
+> **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2) — історичний контекст доміграційного стеку; Railway виведено повністю (config-файли `railway*.toml` видалено з репо 2026-07-19), OpenClaw Gateway не задеплоєний — міграція на Coolify або deprecation TBD. **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) — топологія з ADR-0009 не змінилась, переписано лише Vercel env `BACKEND_URL`.
 
 ## 1. PostgreSQL на Railway
 
@@ -17,7 +17,7 @@
 ## 2. API на Railway (той самий репозиторій)
 
 1. **Add service** → **GitHub repo** → обери репозиторій Hub.
-2. У налаштуваннях сервісу: **Settings** → якщо не підхопився Dockerfile, вкажи **Dockerfile path**: `Dockerfile.api` (або використай [railway.toml](../../../railway.toml) у корені — вже налаштований).
+2. У налаштуваннях сервісу: **Settings** → якщо не підхопився Dockerfile, вкажи **Dockerfile path**: `Dockerfile.api` (або використай `railway.toml` у корені — файл видалено з репо 2026-07-19 після декомісії Railway, ADR-0074).
 
    > **Config-as-code (`railway.toml` → `[deploy]`).** Pre-deploy job (`preDeployCommand = "node dist-server/migrate.js"` — release-stage міграції) і health-probe (`healthcheckPath = "/health"`, `healthcheckTimeout = 300` с) тепер задані у файлі, а не лише в дашборді. **Правило пріоритету Railway:** значення з config-as-code завжди перекривають дашборд, але **лише для поточного деплою** — стор дашборду не мутується, а поля, яких у файлі немає, беруться з дашборду. Тому дашборд-значення pre-deploy/health чистити не обов'язково (файл їх однаково перекриє), але щоб уникнути дрейфу — тримай їх синхронними або лиши джерелом істини сам `railway.toml`. Pre-deploy потребує env `MIGRATE_DATABASE_URL` (public DB URL) — internal-networking на цій стадії ще не піднятий.
 
@@ -89,7 +89,7 @@ ALLOWED_ORIGINS=http://localhost:5173
 ## 6. Моніторинг і логи
 
 - **Healthcheck**:\n+ - **Uptime**: `GET /livez` кожні 1–5 хв.\n+ - **Readiness (з БД)**: `GET /readyz` (або `/health`) — корисно, якщо хочеш алертити саме проблеми з Postgres.\n+ - Алерт при **не 200** або тілі не `ok`.
-- **Railway-probe (config-as-code)**: власний probe самого Railway (рестарт unhealthy-контейнера) береться з `healthcheckPath = "/health"` у [`railway.toml`](../../../railway.toml) → `[deploy]`, а не з дашборду. Це окремо від зовнішнього uptime-моніторингу вище.
+- **Railway-probe (config-as-code)**: власний probe самого Railway (рестарт unhealthy-контейнера) береться з `healthcheckPath = "/health"` у `railway.toml` → `[deploy]` (файл видалено — ADR-0074), а не з дашборду. Це окремо від зовнішнього uptime-моніторингу вище.
 - **Логи Railway**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.
 

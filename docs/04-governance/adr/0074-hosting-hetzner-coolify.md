@@ -116,15 +116,15 @@ in-memory session-cache, Postgres з pgvector, стабільний публіч
 
 ## Implementation tracker
 
-| Arte-fact                                                               | Статус |
-| ----------------------------------------------------------------------- | ------ |
-| [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) → ghcr.io | live   |
-| Hetzner CX23 + Coolify + харденінг                                      | live   |
-| Postgres `pgvector:pg18` + перенос даних (`pg_dump`/`pg_restore`)       | live   |
-| Redis `redis:7.2`                                                       | live   |
-| API app (env + pre-deploy migrate + sslip.io HTTPS)                     | live   |
-| Vercel `BACKEND_URL` cutover                                            | live   |
-| Власний домен замість sslip.io                                          | TBD    |
-| `TRUST_PROXY` калібрування під Traefik                                  | TBD    |
-| Видалення Railway-проєкту                                               | TBD    |
-| Local Loki/Grafana на VPS (опційно; поки Grafana Cloud)                 | TBD    |
+| Arte-fact                                                                  | Статус |
+| -------------------------------------------------------------------------- | ------ |
+| [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) → ghcr.io    | live   |
+| Hetzner CX23 + Coolify + харденінг                                         | live   |
+| Postgres `pgvector:pg18` + перенос даних (`pg_dump`/`pg_restore`)          | live   |
+| Redis `redis:7.2`                                                          | live   |
+| API app (env + pre-deploy migrate + sslip.io HTTPS)                        | live   |
+| Vercel `BACKEND_URL` cutover                                               | live   |
+| Власний домен замість sslip.io                                             | TBD    |
+| `TRUST_PROXY` калібрування під Traefik                                     | TBD    |
+| Видалення Railway-проєкту (repo-side: `railway*.toml` видалено 2026-07-19) | TBD    |
+| Local Loki/Grafana на VPS (опційно; поки Grafana Cloud)                    | TBD    |

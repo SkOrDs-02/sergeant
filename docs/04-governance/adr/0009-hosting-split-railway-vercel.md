@@ -9,7 +9,7 @@
   - [`docs/02-engineering/integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — operator-орієнтована how-to для обох платформ.
   - [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) — стан web / native / capacitor-shell поверхонь.
   - [`apps/web/vercel.json`](../../../apps/web/vercel.json) — `installCommand`, `outputDirectory`, headers, rewrites.
-  - [`railway.toml`](../../../railway.toml), [`Dockerfile.api`](../../../Dockerfile.api) — build-контракт Railway.
+  - `railway.toml` (видалено з репо 2026-07-19 після декомісії Railway — ADR-0074), [`Dockerfile.api`](../../../Dockerfile.api) — build-контракт Railway.
   - [`apps/web/middleware.ts`](../../../apps/web/middleware.ts) — Edge middleware, що проксіює `/api/*` → Railway.
   - [`apps/server/src/auth.ts`](../../../apps/server/src/auth.ts) — CORS + Better Auth origin whitelist (`trustedOrigins`).
 
@@ -343,11 +343,11 @@ n/a (operational rule).
 
 ## Implementation tracker
 
-| Arte-fact                                                                             | Статус |
-| ------------------------------------------------------------------------------------- | ------ |
-| [`apps/web/vercel.json`](../../../apps/web/vercel.json) + `BACKEND_URL` env           | live   |
-| [`apps/web/middleware.ts`](../../../apps/web/middleware.ts) proxy                     | live   |
-| [`railway.toml`](../../../railway.toml) + [`Dockerfile.api`](../../../Dockerfile.api) | live   |
-| Pre-deploy `db:migrate` на Railway                                                    | live   |
-| `SERVER_MODE=railway` autodetect                                                      | live   |
-| Multi-instance / shared session store                                                 | TBD    |
+| Arte-fact                                                                                     | Статус |
+| --------------------------------------------------------------------------------------------- | ------ |
+| [`apps/web/vercel.json`](../../../apps/web/vercel.json) + `BACKEND_URL` env                   | live   |
+| [`apps/web/middleware.ts`](../../../apps/web/middleware.ts) proxy                             | live   |
+| `railway.toml` (видалено 2026-07-19 — ADR-0074) + [`Dockerfile.api`](../../../Dockerfile.api) | live   |
+| Pre-deploy `db:migrate` на Railway                                                            | live   |
+| `SERVER_MODE=railway` autodetect                                                              | live   |
+| Multi-instance / shared session store                                                         | TBD    |

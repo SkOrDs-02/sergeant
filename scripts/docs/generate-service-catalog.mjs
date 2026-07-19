@@ -4,7 +4,7 @@
 // Build a machine-readable mirror of `docs/02-engineering/architecture/service-catalog.md`
 // by enumerating production surfaces from:
 //   - Dockerfile.api / Dockerfile.openclaw / Dockerfile.openclaw-gateway
-//   - railway.toml / railway.openclaw.toml / railway.openclaw-gateway.toml
+//   - deploy artifacts (Dockerfile.api → Coolify via deploy-api.yml; Railway decommissioned — ADR-0074)
 //   - workspace folders (apps/web / apps/mobile / apps/mobile-shell)
 //
 // Output: `docs/04-governance/governance/service-catalog.auto.json`.
@@ -95,17 +95,6 @@ function ownerFor(workspaceRel, rules) {
   return candidates[0]?.handle || null;
 }
 
-/**
- * Read the comment block from a railway.*.toml and try to extract a
- * `Service name: <slug>` declaration. We don't ship a TOML parser; the
- * comment convention is enforced by review.
- */
-function railwayServiceName(tomlPath) {
-  const text = readSafe(tomlPath);
-  const m = text.match(/Service\s+name:\s*([\w-]+)/i);
-  return m?.[1] || null;
-}
-
 function dockerfileExists(name) {
   return existsSync(resolve(REPO_ROOT, name));
 }
@@ -119,7 +108,7 @@ function detectHealthcheckPath(workspaceRel) {
     const text = readSafe(routesIndex);
     if (text.includes("/health")) return "/health";
   }
-  // OpenClaw Gateway uses `/healthz` per railway.openclaw-gateway.toml conventions.
+  // OpenClaw Gateway convention (historically set via Railway config-as-code).
   if (workspaceRel === "ops/openclaw" || workspaceRel === "tools/openclaw") {
     return "/healthz";
   }
@@ -163,9 +152,9 @@ export function buildServiceCatalog() {
       id: "api",
       title: "API (apps/server)",
       workspace: "apps/server",
-      deployTarget: "railway",
+      deployTarget: "coolify",
       deployArtifact: "Dockerfile.api",
-      railwayService: railwayServiceName(resolve(REPO_ROOT, "railway.toml")),
+      railwayService: null,
       healthcheckPath: detectHealthcheckPath("apps/server"),
       owner: ownerFor("apps/server", owners),
     });
@@ -208,11 +197,9 @@ export function buildServiceCatalog() {
       id: "openclaw",
       title: "OpenClaw (Telegram bot)",
       workspace: "tools/openclaw",
-      deployTarget: "railway",
+      deployTarget: "decommissioned",
       deployArtifact: "Dockerfile.openclaw",
-      railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.openclaw.toml"),
-      ),
+      railwayService: null,
       healthcheckPath: null,
       owner: ownerFor("tools/openclaw", owners),
     });
@@ -226,11 +213,9 @@ export function buildServiceCatalog() {
       workspace: existsSync(resolve(REPO_ROOT, "ops/openclaw"))
         ? "ops/openclaw"
         : null,
-      deployTarget: "railway",
+      deployTarget: "decommissioned",
       deployArtifact: "Dockerfile.openclaw-gateway",
-      railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.openclaw-gateway.toml"),
-      ),
+      railwayService: null,
       healthcheckPath: detectHealthcheckPath("ops/openclaw"),
       owner: ownerFor("ops/openclaw", owners),
     });
