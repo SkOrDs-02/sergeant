@@ -1,8 +1,30 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-19",
   "prs": [
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 319,
+      "title": "docs(root): archive completed audits, plans, and shipped specs",
+      "merged_at": "2026-07-19T22:47:35Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/adr/0054-ux-roast-2026-q2.md",
+        "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/04-governance/governance/rules/kyiv-time-helpers.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
@@ -185,17 +207,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]

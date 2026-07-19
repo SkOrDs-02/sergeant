@@ -1,6 +1,6 @@
 # Theme 1 — Kyiv timezone discipline
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-19 by @github-actions[bot]. **Next review:** 2026-10-17.
 > **Status:** Active
 
 ## What the rule says
@@ -81,3 +81,14 @@ comment.
 - [`docs/02-engineering/architecture/domain-invariants.md`](../../../02-engineering/architecture/domain-invariants.md) — Europe/Kyiv invariant
 - [`docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md`](../../../90-work/audits/archive/2026-05-13-page-audit-03-hub-chat-search.md) F1/F2/F8 — first cluster of violations that motivated the rule
 - [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../../90-work/audits/archive/2026-05-13-page-audit-09-routine-strategy.md) F3 — Routine module's `setHours(12,…)` cluster
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                          | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------- | ---------- |
+| [#319](https://github.com/Skords-01/Sergeant/pull/319) | docs(root): archive completed audits, plans, and shipped specs | 2026-07-19 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
