@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { useCallback, useRef } from "react";
-import { Virtuoso } from "react-virtuoso";
+import { VirtualList } from "@shared/components/ui/VirtualList";
 import { pluralExercises } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -437,12 +437,14 @@ export function WorkoutJournalSection({
           )}
 
           {workoutList.length > 0 && (
-            <Virtuoso
-              style={{ height: listHeight }}
-              data={workoutList}
-              itemContent={(_, w) => (
+            <VirtualList
+              items={workoutList}
+              height={listHeight}
+              estimateSize={JOURNAL_ITEM_HEIGHT}
+              getItemKey={(_, w) => w.id}
+            >
+              {(w) => (
                 <SwipeToAction
-                  key={w.id}
                   onSwipeLeft={
                     w.id !== activeWorkoutId
                       ? () => handleSwipeDelete(w.id)
@@ -458,7 +460,7 @@ export function WorkoutJournalSection({
                   />
                 </SwipeToAction>
               )}
-            />
+            </VirtualList>
           )}
         </Card>
       </div>

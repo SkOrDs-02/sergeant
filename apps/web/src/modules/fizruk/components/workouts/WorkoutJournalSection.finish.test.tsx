@@ -14,19 +14,19 @@ vi.mock("../workouts/ActiveWorkoutPanel", () => ({
   ),
 }));
 
-// Virtuoso isn't relevant to the finish flow and needs ResizeObserver etc.
-// Replace it with a plain mapper so the journal list renders trivially.
-vi.mock("react-virtuoso", () => ({
-  Virtuoso: ({
-    data,
-    itemContent,
+// VirtualList isn't relevant to the finish flow and needs ResizeObserver etc.
+// Replace it with a synchronous flat-render mock so the journal list renders trivially.
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    data: Array<{ id?: string }> | undefined;
-    itemContent: (i: number, d: { id?: string }) => React.ReactNode;
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
   }) => (
-    <div data-testid="journal-list">
-      {(data || []).map((d: { id?: string }, i: number) => (
-        <div key={d?.id ?? i}>{itemContent(i, d)}</div>
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
       ))}
     </div>
   ),
