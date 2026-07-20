@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -10,10 +9,8 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
-import {
-  computeFloatingPosition,
-  type FloatingPlacement,
-} from "./floatingPosition";
+import { type FloatingPlacement } from "./floatingPosition";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
 /**
  * Sergeant Design System — Popover
@@ -101,11 +98,17 @@ export function Popover({
   const panelId = useId();
   const headerId = useId();
   const prevOpenRef = useRef(open);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
-    null,
-  );
 
   const effectiveRole: PopoverRole = role ?? (header ? "dialog" : "menu");
+
+  const coords = useFloatingPanelPosition({
+    open,
+    triggerRef,
+    panelRef,
+    placement,
+    offset: PANEL_OFFSET,
+    contentKey: `${header ? "h" : ""}${footer ? "f" : ""}`,
+  });
 
   const setOpen = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -158,61 +161,6 @@ export function Popover({
     }
     prevOpenRef.current = open;
   }, [open]);
-
-  // Position the panel after layout so the first paint already has
-  // the correct coordinates.
-  useLayoutEffect(() => {
-    if (!open) return;
-    const trig = triggerRef.current;
-    const panel = panelRef.current;
-    if (!trig || !panel) return;
-    const tRect = trig.getBoundingClientRect();
-    const pRect = panel.getBoundingClientRect();
-    const pos = computeFloatingPosition(
-      {
-        top: tRect.top,
-        left: tRect.left,
-        width: tRect.width,
-        height: tRect.height,
-      },
-      { width: pRect.width, height: pRect.height },
-      placement,
-      PANEL_OFFSET,
-    );
-    setCoords({ top: pos.top, left: pos.left });
-  }, [open, placement, children, header, footer]);
-
-  // Track the page reflowing under an open popover (scroll, resize,
-  // soft-keyboard show on iOS). Capture-phase scroll listener catches
-  // scrolls inside any ancestor.
-  useEffect(() => {
-    if (!open) return;
-    const reposition = () => {
-      const trig = triggerRef.current;
-      const panel = panelRef.current;
-      if (!trig || !panel) return;
-      const tRect = trig.getBoundingClientRect();
-      const pRect = panel.getBoundingClientRect();
-      const pos = computeFloatingPosition(
-        {
-          top: tRect.top,
-          left: tRect.left,
-          width: tRect.width,
-          height: tRect.height,
-        },
-        { width: pRect.width, height: pRect.height },
-        placement,
-        PANEL_OFFSET,
-      );
-      setCoords({ top: pos.top, left: pos.left });
-    };
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
-    return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
-    };
-  }, [open, placement]);
 
   const panel = open ? (
     <div

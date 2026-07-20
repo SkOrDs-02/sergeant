@@ -89,4 +89,21 @@ describe("ConfirmDialog", () => {
     fireEvent.click(cancelButtons[cancelButtons.length - 1] as HTMLElement);
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("portals to document.body with Sheet/Modal-aligned black scrim", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Portal?"
+        cancelLabel="Скасувати"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.ownerDocument.body.contains(dialog)).toBe(true);
+    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0];
+    expect(scrim?.className).toContain("bg-black/40");
+    expect(scrim?.className).not.toContain("bg-text/40");
+  });
 });

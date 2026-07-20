@@ -1017,8 +1017,9 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 1. ~~**Декомпозиція Hard Rule #18 leakers**~~ — **Done** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) / [#350](https://github.com/SkOrDs-02/Sergeant/pull/350).
 2. ~~**Storage-key / restricted-syntax WHY**~~ — **Done** [#351](https://github.com/SkOrDs-02/Sergeant/pull/351).
 3. ~~**`no-non-null-assertion` burndown (перша хвиля)**~~ — **Done** [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Подальший grep — опційно.
-4. **UI primitives consolidation (P4)** — 9 Radix-wrapper файлів (~2.6k LOC); не блокує max-lines gate.
-5. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.
-6. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
-7. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
-8. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
+4. ~~**Overlay positioning (P4 Phase 1)**~~ — **Done**: shared `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry in `floatingPosition.ts`; no Radix — size-limit).
+5. ~~**Overlay shell (P4 Phase 2)**~~ — **Done**: `ConfirmDialog` / `InputDialog` — `bg-black/40` scrim, `useBodyScrollLock`, InputDialog portaled; kept `alertdialog` / form semantics.
+6. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.
+7. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+8. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
+9. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
