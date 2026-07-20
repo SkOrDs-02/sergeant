@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last touched:** 2026-07-20 by @cursoragent (README sync after fast-forward archive). **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent (tech-debt archive catalog sync). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -92,16 +92,16 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Archive (read-only / superseded)
 
-| Path                                                                                | What                                                   |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [`audits/archive/`](./90-work/audits/archive)                                       | Closed audits / roasts (Batch 2026-07-20 fast-forward) |
-| [`initiatives/archive/`](./90-work/initiatives/archive)                             | Closed initiatives (incl. fast-forward batches)        |
-| [`stack-pulse-2026-05/archive/`](./90-work/initiatives/stack-pulse-2026-05/archive) | Closed stack-pulse PR cards (living: pr-25, pr-29)     |
-| [`launch/archive/`](./01-product/launch/archive)                                    | Frozen roadmaps, FTUX sprint-plan, sprint-retros       |
-| [`planning/archive/`](./90-work/planning/archive)                                   | Closed roadmaps / PR-plans / specs                     |
-| [`tech-debt/archive/`](./90-work/tech-debt/archive)                                 | Closed syncV2 / P1 / historical assessment             |
-| [`security/hardening/archive/`](./04-governance/security/hardening/archive)         | Closed hardening cards + sprint overviews              |
-| [`superpowers/plans/archive/`](./90-work/superpowers/plans/archive)                 | Closed superpowers implementation plans                |
+| Path                                                                                | What                                                             |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`audits/archive/`](./90-work/audits/archive)                                       | Closed audits / roasts (Batch 2026-07-20 fast-forward)           |
+| [`initiatives/archive/`](./90-work/initiatives/archive)                             | Closed initiatives (incl. fast-forward batches)                  |
+| [`stack-pulse-2026-05/archive/`](./90-work/initiatives/stack-pulse-2026-05/archive) | Closed stack-pulse PR cards (living: pr-25, pr-29)               |
+| [`launch/archive/`](./01-product/launch/archive)                                    | Frozen roadmaps, FTUX sprint-plan, sprint-retros                 |
+| [`planning/archive/`](./90-work/planning/archive)                                   | Closed roadmaps / PR-plans / specs                               |
+| [`tech-debt/archive/`](./90-work/tech-debt/archive)                                 | Closed syncV2 / P1 / Express 5 / historical assessment (md+json) |
+| [`security/hardening/archive/`](./04-governance/security/hardening/archive)         | Closed hardening cards + sprint overviews                        |
+| [`superpowers/plans/archive/`](./90-work/superpowers/plans/archive)                 | Closed superpowers implementation plans                          |
 
 ## Adding new docs
 

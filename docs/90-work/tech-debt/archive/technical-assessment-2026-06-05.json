@@ -1,11 +1,13 @@
-﻿{
+{
   "meta": {
     "generated": "2026-06-05T15:43:00+03:00",
     "methodology": "8 паралельних спеціалізованих підагентів з крос-валідацією",
     "scope": "full-monorepo",
     "repo": "sergeant",
     "version": "0.1.0",
-    "language": "uk"
+    "language": "uk",
+    "archived": "2026-07-20",
+    "archiveNote": "Historical snapshot; live burndown is tech-debt-assessment-2026-07-01.md"
   },
   "healthScores": {
     "overall": "B+",

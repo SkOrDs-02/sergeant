@@ -215,7 +215,7 @@ upgrade`).
   базовий образ distroless до спливу CVE 2026-07-02")
 - `docs/90-work/tech-debt/technical-assessment-2026-06-05.md` — SEC-003 finding + theme
   "Вплив CVE у базовому образі distroless"
-- `docs/90-work/tech-debt/technical-assessment-2026-06-05.json` — AP-03 JSON record
+- `docs/90-work/tech-debt/archive/technical-assessment-2026-06-05.json` — AP-03 JSON record
 - `docs/04-governance/security/audit-exceptions.md` — `pnpm`-level audit exceptions
   (різний scope; `.trivyignore` — runtime container scan)
 - `docs/04-governance/security/hardening/L13-docker-platform-pin.md` — platform pin policy
@@ -301,4 +301,4 @@ dist-server/migrate.js`).
 > - Тема "Вплив CVE у базовому образі distroless" у
 >   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.md`](../../90-work/tech-debt/archive/technical-assessment-2026-06-05.md)
 > - SEC-003 finding у
->   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.json`](../../90-work/tech-debt/technical-assessment-2026-06-05.json)
+>   [`docs/90-work/tech-debt/archive/technical-assessment-2026-06-05.json`](../../90-work/tech-debt/archive/technical-assessment-2026-06-05.json)
