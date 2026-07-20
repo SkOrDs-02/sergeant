@@ -1,104 +1,31 @@
 /**
- * Last validated: 2026-05-20
+ * Last validated: 2026-07-20
  * Status: Active
  */
 import { memo, useCallback, useMemo, useState } from "react";
-import { formatMoney } from "@sergeant/shared";
-import { getCategory, getIncomeCategory, fmtAmt, fmtDate } from "../utils";
+import { getCategory, getIncomeCategory } from "../utils";
 import {
   MCC_CATEGORIES,
   INCOME_CATEGORIES,
   INTERNAL_TRANSFER_ID,
-  CURRENCY,
   mergeExpenseCategoryDefinitions,
 } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
-import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { Badge } from "@shared/components/ui/Badge";
+import {
+  CATEGORY_ICON_MAP,
+  getAccountShortName,
+  type TxRowTx,
+} from "./txRowHelpers";
+import { TxRowAmountActions } from "./TxRowAmountActions";
+import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
+import { TxRowMetaChips } from "./TxRowMetaChips";
+import { TxRowSplitEditor } from "./TxRowSplitEditor";
 
-const splitInp =
-  "input-focus-finyk flex-1 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-text";
-
-function stripLeadingEmoji(label: string): string {
-  const firstLetterOrDigit = [...label].findIndex((char) =>
-    /[\p{L}\p{N}]/u.test(char),
-  );
-  return firstLetterOrDigit >= 0
-    ? [...label].slice(firstLetterOrDigit).join("").trim()
-    : label;
-}
-
-/**
- * Maps category IDs to Icon names for the tinted pill.
- * Falls back to "tag" for any unknown or custom category.
- * Phase 6.1 — Expensa-inspired category-tinted icon pill.
- */
-const CATEGORY_ICON_MAP: Record<string, IconName> = {
-  food: "shopping-cart",
-  restaurant: "coffee",
-  transport: "truck",
-  subscriptions: "bell",
-  health: "droplet",
-  shopping: "tag",
-  entertainment: "play",
-  sport: "dumbbell",
-  beauty: "tag",
-  smoking: "tag",
-  education: "package",
-  travel: "trending-up",
-  debt: "credit-card",
-  charity: "hand-coins",
-  [INTERNAL_TRANSFER_ID]: "trending-down",
-  // income
-  in_salary: "briefcase",
-  in_freelance: "briefcase",
-  in_cashback: "tag",
-  in_pension: "briefcase",
-  in_other: "trending-up",
-};
-
-function getAccountShortName(acc: MonoAccount | undefined): string | null {
-  if (!acc) return null;
-  const typeMap: Record<string, string> = {
-    black: "Чорна",
-    white: "Біла",
-    platinum: "Platinum",
-    iron: "Iron",
-    fop: "ФОП",
-    yellow: "Жовта",
-  };
-  const key = acc.type ?? "";
-  return typeMap[key] || acc.type || "Рахунок";
-}
-
-/**
- * Мінімальна форма транзакції, яку рендерить рядок. Свідомо НЕ імпортуємо
- * повний `Transaction` з finyk-domain — рядок бачить і нормалізовані, і
- * сирі monobank-записи (різні точки виклику persist різні shape-и: Mono
- * statement entries, manual-expenses, merged splits), тому лишаємо тільки
- * реально читані поля. Typing-guard тут важливий не для uniqueness схеми,
- * а щоб запобігти "silent-new-field" регресіям — як тоді, коли
- * `tx._accountId` раптом перейменували у `.accountId` і рядок тихо
- * втрачав прив'язку до рахунку.
- */
-export interface TxRowTx {
-  id: string;
-  amount: number;
-  description?: string | undefined;
-  mcc?: number | undefined;
-  time?: number | undefined;
-  currencyCode?: number | undefined;
-  operationAmount?: number | undefined;
-  _accountId?: string | null | undefined;
-  _source?: string | undefined;
-  _manual?: boolean | undefined;
-  _manualId?: string | undefined;
-  [k: string]: unknown;
-}
+export type { TxRowTx };
 
 interface TxRowProps {
   tx: TxRowTx;
@@ -204,6 +131,11 @@ function TxRowImpl({
     setSplitEditor(false);
   }, [draftSplits, onSplitChange, tx.id]);
 
+  const toggleCatPicker = useCallback(() => {
+    setCatPicker((v) => !v);
+    setSplitEditor(false);
+  }, []);
+
   // Resolve the icon name for the category pill (Phase 6.1).
   const pillIconName: IconName = CATEGORY_ICON_MAP[cat.id] ?? "tag";
 
@@ -239,68 +171,17 @@ function TxRowImpl({
         >
           {tx.description || "Транзакція"}
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <span className="text-xs text-subtle">{catName}</span>
-          {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
-              so users can tell which categorizations are inferred (MCC +
-              description match) vs explicit (user override, manual entry,
-              splits, transfers, fallback "other"). Sparkles icon-only
-              keeps the row uncluttered — category label is right next to it.
-              Skipped on:
-                – manual expenses (`_manual`): user typed the category
-                – overridden rows: explicit user choice, shows "змін." instead
-                – internal transfers: special routing, not categorization
-                – income rows: handled by separate income flow above
-                – "other" fallback: no real inference happened
-          */}
-          {!tx._manual &&
-            !overrideCatId &&
-            !isIncome &&
-            cat.id !== INTERNAL_TRANSFER_ID &&
-            cat.id !== "other" && (
-              <Badge
-                variant="finyk"
-                tone="soft"
-                size="xs"
-                className="shrink-0 inline-flex items-center gap-1 rounded-full"
-                title="Категорію визначив AI на основі опису + MCC"
-              >
-                <Icon name="sparkles" size={10} aria-hidden />
-                <span>AI</span>
-              </Badge>
-            )}
-          {cat.id === INTERNAL_TRANSFER_ID && (
-            <span className="text-style-caption bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
-              не в статистиці
-            </span>
-          )}
-          {overrideCatId && cat.id !== INTERNAL_TRANSFER_ID && (
-            <span className="text-style-caption bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
-              змін.
-            </span>
-          )}
-          {existingSplits.length > 0 && (
-            <span className="text-style-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
-              ⅔ спліт
-            </span>
-          )}
-          {isCreditCard && (
-            <span className="text-style-caption bg-danger/8 text-danger-strong dark:text-danger px-1.5 py-0.5 rounded-full font-semibold">
-              <Icon name="credit-card" size={12} aria-hidden /> {accountName}
-            </span>
-          )}
-          {!isCreditCard && account && (
-            <span className="text-style-caption bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
-              {accountName}
-            </span>
-          )}
-          {tx._source === "privatbank" && (
-            <span className="text-style-caption bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold shrink-0">
-              П24
-            </span>
-          )}
-          <span className="text-xs text-subtle">· {fmtDate(tx.time ?? 0)}</span>
-        </div>
+        <TxRowMetaChips
+          tx={tx}
+          catId={cat.id}
+          catName={catName}
+          isIncome={isIncome}
+          overrideCatId={overrideCatId}
+          existingSplitsCount={existingSplits.length}
+          isCreditCard={isCreditCard}
+          account={account}
+          accountName={accountName}
+        />
       </div>
     </>
   );
@@ -337,319 +218,50 @@ function TxRowImpl({
           </div>
         )}
 
-        <div className="flex items-center gap-1 shrink-0 ml-2">
-          <div className="text-right">
-            <div
-              className={cn(
-                "text-style-label tabular-nums",
-                tx.amount > 0
-                  ? "text-success-strong dark:text-success"
-                  : "text-text",
-              )}
-            >
-              {hideAmount ? "••••" : fmtAmt(tx.amount, CURRENCY.UAH)}
-            </div>
-            {tx.currencyCode !== CURRENCY.UAH && tx.operationAmount && (
-              <div className="text-style-caption text-muted tabular-nums">
-                {hideAmount
-                  ? "••••"
-                  : fmtAmt(tx.operationAmount, tx.currencyCode)}
-              </div>
-            )}
-          </div>
-          {onSplitChange && !isIncome && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openSplitEditor();
-              }}
-              className={cn(
-                "touch-target px-2 flex items-center justify-center gap-1 rounded-xl transition-colors text-style-label",
-                splitEditor
-                  ? "text-primary bg-primary/8"
-                  : existingSplits.length > 0
-                    ? "text-primary/70 bg-primary/5"
-                    : "text-subtle/60 hover:text-subtle hover:bg-panelHi",
-              )}
-              title="Розподілити транзакцію"
-              aria-label="Розподілити транзакцію"
-            >
-              <Icon name="shuffle" size={16} aria-hidden />
-              <span className="text-style-caption">Розділити</span>
-            </button>
-          )}
-          {onCatChange && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setCatPicker((v) => !v);
-                setSplitEditor(false);
-              }}
-              className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-xl transition-colors",
-                catPicker
-                  ? "text-primary bg-primary/8"
-                  : "text-subtle/60 hover:text-subtle hover:bg-panelHi",
-              )}
-              title="Змінити категорію"
-              aria-label="Змінити категорію"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-          )}
-          {onHide && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onHide(tx.id);
-              }}
-              className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-xl transition-colors",
-                hidden
-                  ? "text-success hover:bg-success/8"
-                  : "text-subtle/60 hover:text-danger hover:bg-danger/8",
-              )}
-              title={hidden ? "Відновити" : "Приховати"}
-              aria-label={hidden ? "Відновити" : "Приховати"}
-            >
-              {hidden ? (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M3 12s4-8 9-8 9 8 9 8-4 8-9 8-9-8-9-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                <Icon name="trash" size={14} />
-              )}
-            </button>
-          )}
-        </div>
+        <TxRowAmountActions
+          tx={tx}
+          hideAmount={hideAmount}
+          isIncome={isIncome}
+          splitEditor={splitEditor}
+          catPicker={catPicker}
+          hidden={hidden}
+          existingSplitsCount={existingSplits.length}
+          onSplitChange={onSplitChange}
+          onCatChange={onCatChange}
+          onHide={onHide}
+          onOpenSplitEditor={openSplitEditor}
+          onToggleCatPicker={toggleCatPicker}
+        />
       </div>
 
-      {/* Split editor */}
       {splitEditor && onSplitChange && (
-        <div className="pb-3 px-2 space-y-2">
-          <div className="text-style-caption text-subtle">
-            Розподіл · {formatMoney(totalAmt, { minFractionDigits: 2 })} всього
-          </div>
-          {draftSplits.map((sp, i) => (
-            <div key={i} className="relative flex items-center gap-2">
-              <button
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded={splitCategoryPicker === i}
-                onClick={() =>
-                  setSplitCategoryPicker((current) =>
-                    current === i ? null : i,
-                  )
-                }
-                className={cn(splitInp, "flex items-center gap-2 text-left")}
-              >
-                <Icon
-                  name={CATEGORY_ICON_MAP[sp.categoryId] ?? "tag"}
-                  size={15}
-                  aria-hidden
-                />
-                <span className="truncate">
-                  {stripLeadingEmoji(
-                    splitCategoryOptions.find((c) => c.id === sp.categoryId)
-                      ?.label ?? sp.categoryId,
-                  )}
-                </span>
-                <Icon
-                  name="chevron-down"
-                  size={13}
-                  className="ml-auto"
-                  aria-hidden
-                />
-              </button>
-              {splitCategoryPicker === i && (
-                <div
-                  role="listbox"
-                  aria-label="Категорія частини розподілу"
-                  className="absolute left-0 right-28 top-10 z-20 max-h-56 overflow-y-auto rounded-xl border border-line bg-panel p-1.5 shadow-lg"
-                >
-                  {splitCategoryOptions.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      role="option"
-                      aria-selected={category.id === sp.categoryId}
-                      onClick={() => {
-                        setDraftSplits((prev) =>
-                          prev.map((part, index) =>
-                            index === i
-                              ? { ...part, categoryId: category.id }
-                              : part,
-                          ),
-                        );
-                        setSplitCategoryPicker(null);
-                      }}
-                      className={cn(
-                        "flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-left text-style-caption",
-                        category.id === sp.categoryId
-                          ? "bg-primary/10 text-primary"
-                          : "text-text hover:bg-panelHi",
-                      )}
-                    >
-                      <Icon
-                        name={CATEGORY_ICON_MAP[category.id] ?? "tag"}
-                        size={16}
-                        aria-hidden
-                      />
-                      {stripLeadingEmoji(category.label)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <input
-                type="number"
-                value={sp.amount || ""}
-                onChange={(e) =>
-                  setDraftSplits((prev) =>
-                    prev.map((p, j) =>
-                      j === i
-                        ? { ...p, amount: parseFloat(e.target.value) || 0 }
-                        : p,
-                    ),
-                  )
-                }
-                className="input-focus-finyk w-24 text-xs h-9 rounded-xl border border-line bg-panelHi px-2 text-right text-text"
-                placeholder="₴"
-              />
-              {draftSplits.length > 2 && (
-                <button
-                  type="button"
-                  aria-label="Видалити частину розподілу"
-                  onClick={() =>
-                    setDraftSplits((prev) => prev.filter((_, j) => j !== i))
-                  }
-                  className="text-danger-strong/50 dark:text-danger/50 hover:text-danger text-sm shrink-0"
-                >
-                  <Icon name="trash" size={14} aria-hidden />
-                </button>
-              )}
-            </div>
-          ))}
-          <div
-            className={cn(
-              "text-xs px-1 tabular-nums",
-              Math.abs(remaining) < 0.01
-                ? "text-success-strong dark:text-success"
-                : "text-warning-strong dark:text-warning",
-            )}
-          >
-            {Math.abs(remaining) < 0.01 ? (
-              <span className="inline-flex items-center gap-1">
-                <Icon name="check" size={13} aria-hidden /> Суми збігаються
-              </span>
-            ) : (
-              `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`
-            )}
-          </div>
-          <button
-            onClick={() =>
-              setDraftSplits((prev) => [
-                ...prev,
-                {
-                  categoryId: "other",
-                  amount: Math.max(0, Math.round(remaining * 100) / 100),
-                },
-              ])
-            }
-            className="text-xs text-primary/70 hover:text-primary transition-colors"
-          >
-            + Додати частину
-          </button>
-          <div className="flex gap-2 pt-1">
-            <Button
-              variant="primary"
-              module="finyk"
-              size="xs"
-              onClick={saveSplits}
-              disabled={Math.abs(remaining) >= 0.01}
-              className="flex-1"
-            >
-              Зберегти
-            </Button>
-            {existingSplits.length > 0 && (
-              <button
-                onClick={() => {
-                  onSplitChange(tx.id, null);
-                  setSplitEditor(false);
-                }}
-                className="text-xs py-2 px-3 rounded-xl border border-danger/30 text-danger-strong/70 dark:text-danger/70 hover:text-danger transition-colors"
-              >
-                Видалити
-              </button>
-            )}
-            <button
-              type="button"
-              aria-label="Закрити редактор розподілу"
-              onClick={() => setSplitEditor(false)}
-              className="text-xs py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
-            >
-              <Icon name="close" size={14} aria-hidden />
-            </button>
-          </div>
-        </div>
+        <TxRowSplitEditor
+          totalAmt={totalAmt}
+          draftSplits={draftSplits}
+          setDraftSplits={setDraftSplits}
+          splitCategoryPicker={splitCategoryPicker}
+          setSplitCategoryPicker={setSplitCategoryPicker}
+          splitCategoryOptions={splitCategoryOptions}
+          remaining={remaining}
+          existingSplitsCount={existingSplits.length}
+          onSave={saveSplits}
+          onDelete={() => {
+            onSplitChange(tx.id, null);
+            setSplitEditor(false);
+          }}
+          onClose={() => setSplitEditor(false)}
+        />
       )}
 
-      {/* Category picker */}
       {catPicker && (
-        <div className="flex flex-wrap gap-1.5 pb-3 px-2">
-          {(isIncome ? INCOME_CATEGORIES : splitCategoryOptions).map((c) => (
-            <button
-              key={c.id}
-              onClick={() => {
-                onCatChange?.(
-                  tx.id,
-                  c.id === cat.id && overrideCatId ? null : c.id,
-                );
-                setCatPicker(false);
-              }}
-              className={cn(
-                "text-xs px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
-                c.id === cat.id
-                  ? "bg-text text-bg border-text"
-                  : "border-line text-subtle hover:border-muted hover:text-text",
-              )}
-            >
-              {stripLeadingEmoji(c.label)}
-            </button>
-          ))}
-          {overrideCatId && (
-            <button
-              onClick={() => {
-                onCatChange?.(tx.id, null);
-                setCatPicker(false);
-              }}
-              className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
-            >
-              <Icon name="close" size={13} aria-hidden /> Скинути
-            </button>
-          )}
-        </div>
+        <TxRowCategoryPicker
+          categories={isIncome ? INCOME_CATEGORIES : splitCategoryOptions}
+          currentCatId={cat.id}
+          overrideCatId={overrideCatId}
+          txId={tx.id}
+          onCatChange={onCatChange}
+          onClose={() => setCatPicker(false)}
+        />
       )}
     </div>
   );
