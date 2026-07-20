@@ -89,12 +89,12 @@
     "sergeant-deliver-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "39a6dcedc64a93b4d8dadd15f48b34b5e13baf7c97bf0037f6b54270cd478452"
+      "computedHash": "cd90f9046df348e720dd3fe18e3d78d278485c0ba3fd3bdf744a9ff08c713b7b"
     },
     "sergeant-qa-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "069e80bbd76fa5d2dc3c905b30f961b5f9d3c60390ae431a077e2579f2b043e5"
+      "computedHash": "07d999759d879baea8f6bb8f61b32ea8bfd5edbd6765b62ea24eae7d269aa46d"
     },
     "sergeant-council": {
       "source": "local",
