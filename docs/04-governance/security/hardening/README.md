@@ -1,11 +1,11 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
-> **Status:** Active — жива картка: [`C2-frontend-csp.md`](./C2-frontend-csp.md). Усі Closed-картки й sprint-overview перенесено у [`archive/`](./archive/) (fast-forward 2026-07-20).
+> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2026-10-18.
+> **Status:** Active — жива картка: [`C2-frontend-csp.md`](./C2-frontend-csp.md). Усі Closed-картки й sprint-overview — у [`archive/`](./archive/) (Batch 2026-07-20).
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
 
-Це **не** аудит у класичному сенсі (як файли у `docs/90-work/audits/`) — це **робочий беклог**: кожна картка має `Status` (`Open` / `In progress` / `Closed`), власника та точку виправлення. Закрита картка лишається як historical record і не видаляється.
+Це **не** аудит у класичному сенсі (як файли у `docs/90-work/audits/`) — це **робочий беклог**: кожна картка має `Status` (`Open` / `In progress` / `Closed`), власника та точку виправлення. Після `Closed` картка переїжджає у [`archive/`](./archive/) (historical record; не видаляється).
 
 ## Чому це не «audit»
 
@@ -120,6 +120,6 @@
 2. **Status: Open → In progress** + assignee у frontmatter картки.
 3. **Створюємо feature-branch + PR**. У PR-описі: `Closes docs/04-governance/security/hardening/<ID>-<slug>.md`.
 4. **Після merge**: `Status: Closed` + дата + коментар «Resolved in PR #NNN».
-5. **Картка не видаляється** — лишається як historical record (як ADR).
+5. **Картка не видаляється** — `git mv` у [`archive/`](./archive/) як historical record (як ADR). Оновити лінки в цьому README та inbound-посилання.
 
 Картки можна додавати **тільки** через PR (один тимчасовий branch може додавати кілька карток одночасно). Severity — за CVSS v3.1 з product-context override (як у [vulnerability-sla.md](../vulnerability-sla.md)).

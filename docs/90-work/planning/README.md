@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-20 by @cursor (fast-forward archive sweep). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -28,10 +28,10 @@
 
 ## Архів
 
-[`archive/`](./archive) — Closed / Reference / Deprecated плани (fast-forward 2026-07-20, 90-day gate skipped). Повний список — у каталозі; ключові переноси цього батчу:
+[`archive/`](./archive) — Closed / Reference / Deprecated плани. Індекс батчу — [`archive/README.md`](./archive/README.md). Ключові переноси Batch 2026-07-20 (90-day gate skipped):
 
 - `archive/storage-roadmap.md` + `archive/storage-roadmap/*` — усі 13 stages complete
-- `archive/sprint-roadmap-q2q3-2026.md`, `archive/pr-plan-*-2026-05.md`, `archive/tools-research-*`, `archive/tailwind-v4-migration.md`, `archive/dev-stack-roadmap-ff-2026-07-20.md`
+- `archive/sprint-roadmap-q2q3-2026.md`, `archive/pr-plan-*-2026-05.md`, `archive/tools-research-*`, `archive/tailwind-v4-migration.md`, `archive/dev-stack-roadmap*.md`
 - `archive/specs/ponytail-packages-cleanup-2026-07.md`, `archive/founder-feedback-regression-audit-2026-07-17.md`
 
-Конвенція архівації — як і раніше: Status → Archived (read-only), inbound-лінки оновлені на `archive/` шлях.
+Конвенція: Status → Archived (read-only), inbound-лінки на `archive/` шлях.

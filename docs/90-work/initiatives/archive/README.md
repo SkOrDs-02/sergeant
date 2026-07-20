@@ -1,33 +1,22 @@
 # Initiatives — Архів
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active — batch 2026-05-13 виконано (7 initiatives архівовано раніше запланованої дати 2026-08-02; 90-day waiting period skipped за рішенням founder-а).
+> **Last validated:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Active — каталог архіву (батчі 2026-05-13 … 2026-07-20).
 
-Цей каталог тримає **архівовані ініціативи** — файли, що пройшли повний lifecycle `Proposed → In progress → Done → Closed → Archived` та лежали ≥90 днів без регресій / нових follow-up-ів. Архівація — це **фізичний переніс** файлу з `docs/90-work/initiatives/<file>.md` сюди, з 1-рядковим redirect-stub-ом у [`../README.md` § Архів](../README.md#архів).
+Цей каталог тримає **архівовані ініціативи** — файли, що пройшли lifecycle до `Closed`/`Done`/`Archived` і перенесені з `docs/90-work/initiatives/`. Default gate — ≥90 днів без регресій; **fast-forward** (skip 90d) — за рішенням founder-а. Redirect-stub-и — у [`../README.md` § Архів](../README.md#архів).
 
 ## Чим це не є
 
-- **Не tombstone для Withdrawn-ініціатив.** `Withdrawn` означає «передумови зникли, ніколи не починали реалізувати». Такі файли лишаються в активному списку у `../README.md` зі статусом `Withdrawn` для аудит-сліду; сюди не переносяться.
-- **Не source of truth для канонічних правил.** Якщо ініціатива породила Hard Rule / lint-правило / ADR — канонічна копія живе у [`AGENTS.md`](../../../../AGENTS.md), [`docs/04-governance/governance/`](../../../04-governance/governance) або відповідному ESLint-плагіні. Архівований файл — це **історичний контекст**, а не контракт.
+- **Не tombstone для Withdrawn-ініціатив.** `Withdrawn` лишається в активному списку у `../README.md`.
+- **Не source of truth для канонічних правил.** Hard Rules / ADR / lint — у [`AGENTS.md`](../../../../AGENTS.md) і [`docs/04-governance/governance/`](../../../04-governance/governance). Архів — історичний контекст.
 
 ## Як архівувати ініціативу
 
-Покрокова процедура — у [`../README.md` § Гайдлайн → крок 6 (Архівація)](../README.md#гайдлайн-для-авторів). Коротко:
-
-1. Перевірити: статус у файлі = `Closed`, дата переходу у `Closed` ≥ 90 днів тому, у `follow-ups.md` немає нових unchecked-пунктів з цієї ініціативи.
-2. `git mv docs/90-work/initiatives/<NNNN-slug>.md docs/90-work/initiatives/archive/<NNNN-slug>.md`.
-3. У `../README.md`: видалити рядок з § Нещодавно завершені, додати 1-рядковий stub у § Архів формату:
-   ```
-   - [archive/<NNNN-slug>.md](./archive/<NNNN-slug>.md) — archived YYYY-MM-DD; superseded by <посилання на successor / canonical home>.
-   ```
-4. Перевірити, що канонічні правила (Hard Rules, lint-правила, ADR-и), які ініціатива породила, все ще живі у `AGENTS.md` / `docs/04-governance/governance/`. Якщо ні — спочатку винести їх туди, тоді архівувати.
-5. Запустити `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` локально перед PR-ом. CI-гейт `lint:initiative-status-sync` розуміє Archive-stub-формат і не падає на «row without file».
+Покрокова процедура — у [`../README.md` § Гайдлайн → крок 6](../README.md#гайдлайн-для-авторів). Коротко: `git mv` сюди з `_NNNN-` префіксом → stub у `../README.md` → `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm lint:archive-move-depth`.
 
 ## Batch archival schedule
 
 ### ✅ 2026-05-13 (executed early)
-
-Сім initiatives архівовано в одному PR-і — founder прийняв рішення про fast-forward, 90-day waiting period skipped:
 
 | Initiative                      | Done/Closed | Successor / Canonical                                                                                  | Archive path                                                                   |
 | ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
@@ -36,20 +25,10 @@
 | **0005** AI cost (prompt cache) | 2026-05-04  | [ADR-0039](../../../04-governance/adr/0039-anthropic-prompt-cache-policy.md)                           | [`_0005-ai-cost-and-prompt-cache.md`](./_0005-ai-cost-and-prompt-cache.md)     |
 | **0007** Design-system tooling  | 2026-05-05  | Storybook live deploy + [ADR-0046](../../../04-governance/adr/0046-storybook-vrt-scope.md)             | [`_0007-design-system-tooling.md`](./_0007-design-system-tooling.md)           |
 | **0008** Platform hardening     | 2026-05-04  | `RATE_LIMIT_POLICIES` registry + [ADR-0044](../../../04-governance/adr/0044-renovate-vs-dependabot.md) | [`_0008-platform-hardening.md`](./_0008-platform-hardening.md)                 |
-| **0009** Agent-OS hardening     | 2026-05-09  | AGENTS.md slim (907 → 137 LOC) + `docs/04-governance/governance/rules/` (canonical Hard Rule bodies)   | [`_0009-agent-os-hardening.md`](./_0009-agent-os-hardening.md)                 |
+| **0009** Agent-OS hardening     | 2026-05-09  | AGENTS.md slim + `docs/04-governance/governance/rules/`                                                | [`_0009-agent-os-hardening.md`](./_0009-agent-os-hardening.md)                 |
 | **0012** Perfect TS strictness  | 2026-05-04  | Hard Rule #19 + `tools/tsconfig-guard/allowlist.json`                                                  | [`_0012-perfect-strictness-rollout.md`](./_0012-perfect-strictness-rollout.md) |
 
-**Verification (2026-05-13):**
-
-- [x] Усі carry-over items закриті або передані successor-ам
-- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/04-governance/governance/
-- [x] Batch-PR побудовано (7 файлів + README оновлення + comment-refs)
-- [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` pass
-- [x] Merge виконано 2026-05-13
-
 ### ✅ 2026-06-01 (executed early)
-
-П'ять initiatives архівовано — founder прийняв рішення про fast-forward, 90-day waiting period skipped (усі `Done`/`Closed`, без активних регресій / follow-up-ів):
 
 | Initiative                      | Done/Closed | Successor / Canonical                                                                                                      | Archive path                                                                                                   |
 | ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -59,13 +38,27 @@
 | **0014** Knowledge graph        | 2026-05-15  | [ADR-0058](../../../04-governance/adr/0058-knowledge-graph-schema.md) + generated catalogs                                 | [`_0014-knowledge-graph-and-catalogs.md`](./_0014-knowledge-graph-and-catalogs.md)                             |
 | **0016** CHANGELOG release-cut  | 2026-05-29  | `changelog:cut` script + [CHANGELOG](../../../../CHANGELOG.md)                                                             | [`_0016-changelog-release-cut.md`](./_0016-changelog-release-cut.md)                                           |
 
-**Verification (2026-06-01):**
+### ✅ 2026-06-14 / 2026-06-15
 
-- [x] Усі carry-over items закриті або передані successor-ам
-- [x] Hard Rules / ADRs / lint-правила live у AGENTS.md / docs/04-governance/governance/
-- [x] internal relative links у перенесених файлах поглиблено на 1 рівень (`../` → `../../`, `./` → `../`)
-- [x] `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm lint:archive-move-depth` pass
+| Initiative                        | Archive path                                                               |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| **0018** Agent semantic retrieval | [`_0018-agent-semantic-retrieval.md`](./_0018-agent-semantic-retrieval.md) |
+| **0019** Agent routing            | [`_0019-agent-routing.md`](./_0019-agent-routing.md)                       |
+| **0020** Agent decisions log      | [`_0020-agent-decisions-log.md`](./_0020-agent-decisions-log.md)           |
+
+### ✅ 2026-07-20 (fast-forward — docs-drift reconcile)
+
+90-day gate skipped за рішенням founder-а:
+
+| Initiative / artifact              | Status    | Canonical / note                                 | Archive path                                                                         |
+| ---------------------------------- | --------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| **0003** Sync v2 rollout           | Closed    | ADR-0043/0047 + `apps/server/src/routes/sync.ts` | [`_0003-sync-v2-rollout-and-v1-sunset.md`](./_0003-sync-v2-rollout-and-v1-sunset.md) |
+| **0017** Hub tabs mount perf       | Closed    | Re-open only if aggregateReport P95 regresses    | [`_0017-hub-tabs-mount-perf.md`](./_0017-hub-tabs-mount-perf.md)                     |
+| **0021** React hooks v7 cleanup    | Done      | `eslint.baseline.js` react-hooks v7 `"error"`    | [`_0021-react-hooks-v7-cleanup.md`](./_0021-react-hooks-v7-cleanup.md)               |
+| session-log 0018 (find / semantic) | Reference | Measurement logs                                 | [`session-log-0018-*.md`](./session-log-0018-agent-find-measurement-2026-06-08.md)   |
+
+Паралельно: Closed stack-pulse картки → [`../stack-pulse-2026-05/archive/`](../stack-pulse-2026-05/archive/).
 
 ## Поточний вміст
 
-12 archived initiatives — див. таблиці вище. Канонічні правила з цих initiatives продовжують жити у [`AGENTS.md`](../../../../AGENTS.md) Hard Rules + [`docs/04-governance/governance/`](../../../04-governance/governance) — файли нижче — **історичний контекст**, не джерело правди.
+~19 archived initiative files + session logs + batch plan — див. таблиці вище. Канонічні правила живуть у [`AGENTS.md`](../../../../AGENTS.md) + [`docs/04-governance/governance/`](../../../04-governance/governance).

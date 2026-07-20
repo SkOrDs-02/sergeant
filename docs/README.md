@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last touched:** 2026-06-14 by @github-actions[bot]. **Next review:** 2026-09-12.
+> **Last touched:** 2026-07-20 by @cursoragent (README sync after fast-forward archive). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -79,25 +79,29 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
 
-| Section                                                               | Purpose                                                                                                   |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| [`open-work.md`](./open-work.md)                                      | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)               |
-| [`audits/`](./90-work/audits/README.md)                               | Code, architecture, UX audits with `Active → Closed → Archived` lifecycle and freshness gate              |
-| [`initiatives/`](./90-work/initiatives/README.md)                     | Numbered multi-PR initiatives with acceptance criteria, progress tables, and 90-day stabilization window  |
-| [`launch/`](./01-product/launch/README.md)                            | Go-to-market, monetization, ops, and product-OS roadmaps (FTUX master tracker + sprint plans)             |
-| [`planning/`](./90-work/planning/README.md)                           | Active roadmaps, infra plans, staged improvements                                                         |
-| [`security/hardening/`](./04-governance/security/hardening/README.md) | Living security hardening backlog (per-finding cards + sprint plans)                                      |
-| [`superpowers/`](./90-work/superpowers/README.md)                     | High-leverage one-page guides for cross-cutting capabilities (active implementation plans under `plans/`) |
-| [`tech-debt/`](./90-work/tech-debt/README.md)                         | Active debt registries and cleanup plans (per-platform, with freshness gate)                              |
+| Section                                                               | Purpose                                                                                         |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [`open-work.md`](./open-work.md)                                      | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)     |
+| [`audits/`](./90-work/audits/README.md)                               | Індекс аудитів; живих tracker-ів 0 — історія в `audits/archive/`                                |
+| [`initiatives/`](./90-work/initiatives/README.md)                     | Numbered multi-PR initiatives (living: 0006 Withdrawn, 0010, 0015, 0022 + stack-pulse residual) |
+| [`launch/`](./01-product/launch/README.md)                            | Go-to-market, monetization, ops, FTUX master tracker + phases                                   |
+| [`planning/`](./90-work/planning/README.md)                           | Active roadmaps, infra plans, staged improvements                                               |
+| [`security/hardening/`](./04-governance/security/hardening/README.md) | Living security hardening backlog (жива картка: C2; решта в `archive/`)                         |
+| [`superpowers/`](./90-work/superpowers/README.md)                     | High-leverage guides; завершені плани під `plans/archive/`                                      |
+| [`tech-debt/`](./90-work/tech-debt/README.md)                         | Active debt registries (backend/frontend/mobile + assessment)                                   |
 
 ### Archive (read-only / superseded)
 
-| Path                                                                                       | What                                                                            |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [`audits/archive/`](./90-work/audits/archive)                                              | Audits past their stabilization window; superseded historical scans             |
-| [`initiatives/archive/`](./90-work/initiatives/archive)                                    | Initiatives 90+ days past `Closed` without regressions                          |
-| [`launch/product-os/sprint-retros/`](./01-product/launch/archive/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
-| [`planning/archive/`](./90-work/planning/archive)                                          | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
+| Path                                                                                | What                                                   |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [`audits/archive/`](./90-work/audits/archive)                                       | Closed audits / roasts (Batch 2026-07-20 fast-forward) |
+| [`initiatives/archive/`](./90-work/initiatives/archive)                             | Closed initiatives (incl. fast-forward batches)        |
+| [`stack-pulse-2026-05/archive/`](./90-work/initiatives/stack-pulse-2026-05/archive) | Closed stack-pulse PR cards (living: pr-25, pr-29)     |
+| [`launch/archive/`](./01-product/launch/archive)                                    | Frozen roadmaps, FTUX sprint-plan, sprint-retros       |
+| [`planning/archive/`](./90-work/planning/archive)                                   | Closed roadmaps / PR-plans / specs                     |
+| [`tech-debt/archive/`](./90-work/tech-debt/archive)                                 | Closed syncV2 / P1 / historical assessment             |
+| [`security/hardening/archive/`](./04-governance/security/hardening/archive)         | Closed hardening cards + sprint overviews              |
+| [`superpowers/plans/archive/`](./90-work/superpowers/plans/archive)                 | Closed superpowers implementation plans                |
 
 ## Adding new docs
 
@@ -106,4 +110,4 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 3. If it is policy or machine-readable governance, use `docs/04-governance/governance/`.
 4. If it changes routing for agents, sync `docs/00-start/agents/*` and `AGENTS.md`.
 5. For docs with review cadence, include `Last validated` and `Status` headers.
-6. When a tracker doc reaches its stabilization milestone, move it to the section's `archive/` subdirectory (where one exists) and leave a one-line redirect from the old path.
+6. When a tracker doc reaches `Closed`/`Done`/`Reference`, move it to the section's `archive/` subdirectory and leave a one-line redirect from the old path (default ≥90d after Closed; fast-forward OK with founder approval).

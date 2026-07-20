@@ -63,5 +63,5 @@ Procedure / посилання: [`docs/04-governance/security/logging-redaction-
 
 ## Related
 
-- **doc** — docs/90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md
+- **doc** — docs/90-work/initiatives/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md
 - **agents** — #21

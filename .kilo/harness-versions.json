@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "0.1.7",
+  "current": "1.0.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -66,6 +66,14 @@
       "releasedAt": "2026-07-20",
       "changes": [
         "bump from 0.1.6 -> 0.1.7: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "1.0.0": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 0.1.7 -> 1.0.0: Hard Rule files changed; AGENTS.md modified; eslint-plugin-sergeant-design modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

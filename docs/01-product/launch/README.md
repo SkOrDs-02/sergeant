@@ -14,30 +14,26 @@
 ```
 docs/01-product/launch/
 ├── README.md  ← ви тут
+├── email-verification-sweep.md          living sweep tracker
 ├── business/                            бізнес-стратегія + операції (нумерована послідовність milestone-ів)
-│   ├── 01-monetization-and-pricing.md     бізнес-модель, тіри, paywall
-│   ├── 02-go-to-market.md                 фази запуску, growth, контент
-│   ├── 03-services-and-toolstack.md       стек, бюджет, week-by-week план
-│   ├── 04-launch-readiness.md             legal, edge cases, метрики, чеклист
-│   ├── 05-operations-and-automation.md    6 зон, n8n + OpenClaw, ритуали
-│   └── 06-monetization-architecture.md    технічний скелетон paywall, 10 PR-ів, ADR, risk register
-├── tech/                                independent product-surface roadmaps (живуть власним темпом)
-│   ├── ai-memory-activation.md            ADR-0028 rollout: pgvector, Voyage, recall flows
-│   ├── openclaw-roadmap.md                OpenClaw v0 → v1 поетапний план у 4 фази
-│   └── telegram-improvements-roadmap.md   Telegram-surfaces (DM + supergroup) — 4-wave PR-план
+│   ├── 01-monetization-and-pricing.md … 06-monetization-architecture.md
+├── tech/                                living product-surface roadmap
+│   └── ai-memory-activation.md            ADR-0028 rollout: pgvector, Voyage, recall flows
 ├── product-os/                          FTUX delivery (product-OS layer)
-│   ├── ftux-master-tracker.md             FTUX SSOT — стан, sprint registry, PR plan, hero copy, sketch, SLO, decisions
-│   ├── ftux-sprint-plan.md                (frozen reference — superseded by ftux-master-tracker.md)
-│   └── sprint-retros/                     Per-sprint launch retrospectives (postmortems завершених PR-серій)
-└── phases/                              послідовні execution phases для запуску з реальними юзерами (Web → Capacitor → Native)
-    ├── README.md                          master synthesis plan-guide (TLDR, timeline, лендінг, блокери)
-    ├── 00-readiness-audit.md              audit готовності 4 surface-ів (Web, Server, Capacitor, Native, Landing)
-    ├── 01-web-launch-with-users.md        Phase 1 — Web launch with users (W-4 .. W+12)
-    └── 02-capacitor-launch.md             Phase 2 — Capacitor launch with users (W+8 .. W+16)
-                                           (Phase 3 Native Expo — conditional gate, inline у phases/README.md § Phase 3)
+│   ├── ftux-master-tracker.md             FTUX SSOT
+│   └── paywall-ux-placement.md
+├── phases/                              execution phases (Web → Capacitor → Native)
+│   ├── README.md · 00-readiness-audit.md · 01-web-launch… · 02-capacitor-launch.md
+└── archive/                             Closed / Deprecated / frozen (Batch 2026-07-20)
+    ├── tech/openclaw-roadmap.md
+    ├── tech/telegram-improvements-roadmap.md
+    ├── product-os/ftux-sprint-plan.md
+    ├── product-os/paywall-implementation-plan.md
+    ├── product-os/sprint-retros/
+    └── landing-decision.md
 ```
 
-> **Конвенція:** `business/01-…06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли в `tech/` — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. `product-os/` — FTUX-program: master-tracker (SSOT) + frozen sprint-plan + per-sprint retros. `phases/` — **execution phases** запуску з реальними юзерами (Web → Capacitor → Native), з вхідними/вихідними критеріями і week-by-week планом.
+> **Конвенція:** `business/01-…06-` — **послідовний launch-milestone sequence**. У `tech/` лишився living `ai-memory-activation`; OpenClaw / Telegram roadmaps — у [`archive/tech/`](./archive/tech/). `product-os/` — FTUX SSOT + paywall UX; frozen sprint-plan і retros — у [`archive/product-os/`](./archive/product-os/). `phases/` — execution phases з реальними юзерами.
 
 ## Як читати
 
