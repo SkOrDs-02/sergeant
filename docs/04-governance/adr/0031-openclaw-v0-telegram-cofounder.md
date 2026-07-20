@@ -334,3 +334,14 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
 - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md)
 - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
 - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

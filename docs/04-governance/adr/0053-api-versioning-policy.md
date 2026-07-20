@@ -10,7 +10,7 @@
   - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
   - [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../../02-engineering/notes/spikes/2026-05-api-v1-usage.md)
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @github-actions[bot]. **Next review:** 2026-10-18.
 
 ## Context
 
@@ -95,3 +95,14 @@ upgrade-path-у (`/api/sync/*`). Зробимо після mobile-beta.
 - [`apps/server/src/routes/apiV1.test.ts`](../../../apps/server/src/routes/apiV1.test.ts) — supertest-покриття обох префіксів.
 - [Stripe API versioning guide](https://stripe.com/docs/api/versioning) — інспірація для header-based стратегії (rejected here).
 - [HTTP `Sunset` header — RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594) — потрібно буде, якщо в майбутньому видалятимемо префікс.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

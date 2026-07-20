@@ -49,3 +49,14 @@ Procedure для ротації / емержансі — [`docs/00-start/playboo
 
 - **doc** — docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md
 - **agents** — #20
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

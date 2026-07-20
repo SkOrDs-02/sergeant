@@ -227,3 +227,14 @@ Server тримає approval-state у DB; callback від Telegram — на serv
 - **ADR-0031 (OpenClaw v0):** Allowlist + budget cap + DM-only — не зачіпається. Compliant.
 - **ADR-0033 (multi-personas):** Persona-tool-filter extend-ається, не замінюється. Compliant.
 - **GDPR / data-handling:** Write-tools не зберігають PII founder-а у new locations — лише relay-ять у GitHub / Telegram / n8n / Sentry, які вже opted-in.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

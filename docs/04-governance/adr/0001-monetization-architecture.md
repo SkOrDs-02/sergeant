@@ -869,3 +869,14 @@ Thresholds — **initial heuristic**, ревалідуємо після перш
 - ~~Refund / dispute handling~~ → закрито у [ADR-0003](./0003-refund-and-dispute-handling.md): manual via Stripe Dashboard + dispute auto-deactivation на webhook-event, з 90-day fraud-blocklist для chargeback-pattern-у.
 - Family / team plans — shared subscription чи per-seat? (Phase 8.) TBD.
 - Referral / promo-code system. (Phase 8.) TBD.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

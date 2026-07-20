@@ -151,3 +151,14 @@ write-test pinning behaviour, (b) ESLint правило заборонити п�
 - [Lucia](https://lucia-auth.com/) — alternate fallback (lighter,
   expects more glue code)
 - [`pr-10-better-auth-security-review`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

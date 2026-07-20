@@ -153,3 +153,14 @@ silent data divergence без жодної помилки. Тому будь-я�
 - [`apps/server/src/modules/sync/audit.ts`](../../../apps/server/src/modules/sync/audit.ts) — нереалізований retention-намір
 - [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md) — PR-050 беклог
 - [`docs/90-work/audits/2026-08-XX-sync-engine-roast.md`](../../90-work/audits/archive/2026-08-XX-sync-engine-roast.md) — джерело findings
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

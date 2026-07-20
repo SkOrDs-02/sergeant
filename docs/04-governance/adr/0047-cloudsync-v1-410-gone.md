@@ -129,3 +129,14 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 - OpenAPI: `packages/shared/src/openapi/registry.ts:99-110` entries.
 
 **Risk after removal.** Late v1 client → 404 (raw Express), не 410 Gone. Acceptable trade-off після 8-week zero signal або 90-day deprecation window. Якщо клієнт критичний — додавати explicit `respondV1Gone` route на endpoint without middleware overhead.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

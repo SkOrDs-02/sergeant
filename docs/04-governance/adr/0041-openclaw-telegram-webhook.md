@@ -159,3 +159,14 @@ First activation hit a one-time race:
 - `tools/openclaw/src/index.ts` — boot-time mode selection.
 - grammy [`webhookCallback("http")`](https://grammy.dev/guide/deployment-types#webhooks) docs — adapter for Node's native `http`.
 - Telegram Bot API [`setWebhook`](https://core.telegram.org/bots/api#setwebhook) — `secret_token`, `allowed_updates`, `drop_pending_updates`.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#342](https://github.com/Skords-01/Sergeant/pull/342) | docs(docs): fast-forward archive Closed/Done trackers (skip 90d) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,8 +1,51 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-20",
   "prs": [
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 342,
+      "title": "docs(docs): fast-forward archive Closed/Done trackers (skip 90d)",
+      "merged_at": "2026-07-20T19:29:53Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/rotate-openclaw-credentials.md",
+        "docs/04-governance/adr/0001-monetization-architecture.md",
+        "docs/04-governance/adr/0011-local-first-storage.md",
+        "docs/04-governance/adr/0031-openclaw-v0-telegram-cofounder.md",
+        "docs/04-governance/adr/0032-console-consolidated-into-openclaw.md",
+        "docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md",
+        "docs/04-governance/adr/0036-openclaw-write-tools-with-approval.md",
+        "docs/04-governance/adr/0037-openclaw-write-audit-persistence.md",
+        "docs/04-governance/adr/0038-tg-alert-acks-and-escalation.md",
+        "docs/04-governance/adr/0041-openclaw-telegram-webhook.md",
+        "docs/04-governance/adr/0042-password-hashing-strategy.md",
+        "docs/04-governance/adr/0043-cloudsync-v1-sunset.md",
+        "docs/04-governance/adr/0044-renovate-vs-dependabot.md",
+        "docs/04-governance/adr/0047-cloudsync-v1-410-gone.md",
+        "docs/04-governance/adr/0048-apns-provider-library.md",
+        "docs/04-governance/adr/0049-auth-vendor-risk.md",
+        "docs/04-governance/adr/0050-typescript-major-version-policy.md",
+        "docs/04-governance/adr/0053-api-versioning-policy.md",
+        "docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md",
+        "docs/04-governance/adr/0062-openapi-source-of-truth.md",
+        "docs/04-governance/adr/0063-expo-sdk-53-upgrade.md",
+        "docs/04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
+        "docs/04-governance/governance/rules/20-no-openclaw-pats-in-production.md",
+        "docs/04-governance/governance/rules/21-pino-redaction-policy.md"
+      ]
+    },
     {
       "number": 3665,
       "title": "docs(web): add ADR-0067 engagement mechanism standardization",
@@ -185,17 +228,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]
