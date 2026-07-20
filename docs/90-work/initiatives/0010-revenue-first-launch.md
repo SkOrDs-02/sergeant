@@ -538,3 +538,14 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 - **m083** — `DROP TABLE billing_subscriptions` (orphan m047; TWO-PHASE-DROP after 2026-05-25 audit; founder: no prod users).
 - **Billing copy** — `/pricing` + PlanSection past_due LiqPay/Plata-first; Stripe portal wording тільки для legacy `provider=stripe`.
 - **OpenAPI Phase 2 (billing slice)** — `openapi-roundtrip.test.ts` валідує live `/api/billing/status` + `/api/billing/providers` (200/401) проти generated schema.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                        | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------ | ---------- |
+| [#360](https://github.com/Skords-01/Sergeant/pull/360) | docs(docs): refresh initiatives after m083 + billing hygiene | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
