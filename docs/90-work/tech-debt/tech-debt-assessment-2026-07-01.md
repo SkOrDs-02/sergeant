@@ -72,9 +72,9 @@
 
 Реальні цілі фіксу:
 
-1. **P1:** недокументовані `security/detect-non-literal-fs-filename` / non-null assertion без WHY — security-pass.
-2. `@typescript-eslint/no-non-null-assertion` — недокументовані сайти → guard / `?.`.
-3. `no-restricted-syntax` + `no-raw-storage-key` — міграція на дозволений API або WHY-коментар.
+1. ~~**P1:** недокументовані `security/detect-non-literal-fs-filename` / non-null assertion без WHY~~ — **Done** (#351 storage WHY; target-rule disables fully WHY'd).
+2. ~~`@typescript-eslint/no-non-null-assertion` — low-risk web batch~~ — **Done** (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData). Подальший `!` — opportunistic; AccentColorPicker / barcode / server sync — окремі PR.
+3. `no-restricted-syntax` + `no-raw-storage-key` — міграція на дозволений API або WHY-коментар (WHY batch #351).
 4. ~~**Catalog-sync (docs-only):** web exhaustive-deps~~ — **Done** (web=0); live list — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати

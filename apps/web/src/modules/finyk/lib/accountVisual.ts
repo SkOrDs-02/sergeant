@@ -40,14 +40,14 @@ const TONE_FOP =
 const TONE_EAID =
   "bg-info-soft text-info-strong dark:bg-info/15 dark:text-info";
 
-const LABEL_BY_TYPE: Record<string, string> = {
+const LABEL_BY_TYPE = {
   eAid: "Єпідтримка",
   black: "Чорна картка",
   white: "Біла картка",
   platinum: "Платинова",
   iron: "Залізна",
   fop: "ФОП",
-};
+} as const;
 
 export function getAccountVisual(acc: AccountLike): AccountVisual {
   const isCredit = (acc.creditLimit ?? 0) > 0;
@@ -69,32 +69,32 @@ export function getAccountVisual(acc: AccountLike): AccountVisual {
     return {
       iconName: "credit-card",
       tone: TONE_BLACK,
-      name: LABEL_BY_TYPE["black"]!,
+      name: LABEL_BY_TYPE.black,
     };
   }
   if (acc.type === "white") {
     return {
       iconName: "credit-card",
       tone: TONE_WHITE,
-      name: LABEL_BY_TYPE["white"]!,
+      name: LABEL_BY_TYPE.white,
     };
   }
   if (acc.type === "platinum") {
     return {
       iconName: "credit-card",
       tone: TONE_PLATINUM,
-      name: LABEL_BY_TYPE["platinum"]!,
+      name: LABEL_BY_TYPE.platinum,
     };
   }
   if (acc.type === "iron") {
     return {
       iconName: "credit-card",
       tone: TONE_IRON,
-      name: LABEL_BY_TYPE["iron"]!,
+      name: LABEL_BY_TYPE.iron,
     };
   }
   if (acc.type === "fop") {
-    return { iconName: "archive", tone: TONE_FOP, name: LABEL_BY_TYPE["fop"]! };
+    return { iconName: "archive", tone: TONE_FOP, name: LABEL_BY_TYPE.fop };
   }
   return { iconName: "credit-card", tone: TONE_NEUTRAL, name: "Картка" };
 }

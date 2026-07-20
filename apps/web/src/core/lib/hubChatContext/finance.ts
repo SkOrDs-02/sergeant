@@ -22,7 +22,7 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   const dayOfMonth = day;
   // days-in-month: calendar arithmetic on the Kyiv-resolved year/month;
   // .getDate() here yields the month length, not a host-local day boundary.
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- Kyiv year/month length; not a host day key
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysLeft = daysInMonth - dayOfMonth;
 
@@ -67,7 +67,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   const { year, month, day } = getKyivDateParts(now);
   const dayOfMonth = day;
   // days-in-month: calendar arithmetic on the Kyiv-resolved year/month (see above).
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- Kyiv year/month length; not a host day key
   const daysInMonth = new Date(year, month, 0).getDate();
   const spent = d.statTx
     .filter((t) => t.amount < 0)
