@@ -73,7 +73,6 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
 };
 
 const applyOps = createApplyOps<FinykDualWriteOp>({
-  errorPolicy: "best-effort",
   handlers: {
     "id-upsert": async (client, op, rt) => {
       await upsertIdEntry(client, op.table, op.entry, rt);

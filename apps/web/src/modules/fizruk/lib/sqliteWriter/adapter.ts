@@ -40,8 +40,8 @@ import {
  * Async SQLite-side adapter for the Fizruk dual-write layer.
  *
  * Stage 12 PR #070f-dualwrite. Migrated onto `@sergeant/dualwrite-core` in
- * ADR-0073 крок 4: the op-loop is now `createApplyOps` (`errorPolicy:
- * "best-effort"` — aligned with every other pipeline in Open Question #1,
+ * ADR-0073 крок 4: the op-loop is now `createApplyOps` (best-effort —
+ * aligned with every other pipeline in Open Question #1,
  * PR #112) and every table's SQL is emitted by the shared `buildLwwUpsert` /
  * `buildDelete` / `buildReconcileChildren` builders. Behaviour and emitted
  * SQL are byte-identical to the previous hand-written adapter — see
@@ -75,7 +75,6 @@ const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
 };
 
 const applyOps = createApplyOps<FizrukDualWriteOp>({
-  errorPolicy: "best-effort",
   handlers: {
     "workout-upsert": async (client, op, rt) => {
       await upsertWorkout(client, op.workout, rt);

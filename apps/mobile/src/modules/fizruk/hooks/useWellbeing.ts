@@ -32,6 +32,7 @@ import {
   type CachedWellbeingEntry,
 } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import { deepEqual } from "./jsonEqual";
 
 export interface WellbeingEntry {
   /** `YYYY-MM-DD` — primary key; one entry per calendar day. */
@@ -68,15 +69,6 @@ function loadInitialFromCache(): WellbeingEntry[] {
   const cache = getCachedFizrukSqliteState();
   if (cache.refreshedAt === null) return [];
   return cache.wellbeing.map(projectFromCache);
-}
-
-function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
-  }
 }
 
 export interface UseWellbeingResult {

@@ -4,8 +4,7 @@ import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../http/schemas.js";
 import {
   applyRoutineHabits,
-  applyRoutineTags,
-  applyRoutineCategories,
+  applyUuidNameScopeTable,
   applyRoutinePrefs,
   applyRoutinePushups,
   applyRoutineHabitOrder,
@@ -27,6 +26,18 @@ import { SYNC_V2_SUPPORTED_TABLES } from "./syncV2.js";
 
 const USER_ID = "user-phase2";
 const CLIENT_TS = new Date("2026-07-10T12:00:00.000Z");
+
+// The sync registry (syncV2.ts) binds these two tables to the shared
+// UUID+name+scope apply fn curried by table name. Test-local bindings keep the
+// assertions below readable without production delegating wrappers.
+const applyRoutineTags = (c: PoolClient, o: SyncV2Op, u: string, t: Date) =>
+  applyUuidNameScopeTable(c, "routine_tags", o, u, t);
+const applyRoutineCategories = (
+  c: PoolClient,
+  o: SyncV2Op,
+  u: string,
+  t: Date,
+) => applyUuidNameScopeTable(c, "routine_categories", o, u, t);
 
 function makeClient(
   ...rowSets: Array<Array<Record<string, unknown>>>
