@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-> **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. **Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) досі Railway-based** і чекає окремої CI-міграції — див. застереження у §6.
+> **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) теж мігровано — деталі у §6.
 
 > Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Coolify-керованому Postgres + smoke-test schema integrity. Ручний monthly drill лишається для operator rehearsal.
 >
@@ -236,20 +236,13 @@ UNION ALL SELECT 'mono_transaction orphan', COUNT(*) FROM mono_transaction t   L
 
 ## 6. Validation (rehearsal — PR #049b weekly CI)
 
-> **⚠️ Цей job досі Railway-based і чекає CI-міграції.** Кроки нижче описують
-> _поточну_ (застарілу після ADR-0074) реалізацію воркфлоу: він тягне дамп через
-> Railway CLI, якого вже нема в проді. Мігрувати на прямий `pg_dump` з Coolify-
-> Postgres (secret `MIGRATE_DATABASE_URL`) — окремий CI-таск. До того job або
-> падає у graceful-skip (`RAILWAY_TOKEN` не заданий → migration-only verify), або
-> лишається джерелом хибної впевненості. Ручний рестор із §2 — актуальний шлях.
-
 GitHub Action [`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)
-_(PR #049b — LANDED, pending Coolify-міграції)_ наразі робить:
+_(PR #049b — LANDED; мігровано на Coolify)_ робить:
 
-1. Pull найновішого Railway dump через CLI (потребує `RAILWAY_TOKEN` у GH Secrets) — **stale, див. застереження вище**.
-2. Restore у тимчасовий ephemeral pg-instance (testcontainers).
+1. `pg_dump` напряму з публічного Coolify-Postgres URL (secret `MIGRATE_DATABASE_URL` — окремий GH Actions secret, той самий connection string, що Coolify використовує внутрішньо для pre-deploy міграцій per [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md); секрет опційний — без нього job graceful-skip-ає у migration-only verify без production-даних).
+2. Restore у тимчасовий ephemeral pg-instance (GitHub Actions `services: postgres`, `pgvector/pgvector:pg17` — той самий образ, що й решта CI-флоту; **зверни увагу**: прод тепер `pg18`, тож pg18→pg17 restore — мажорний downgrade, сумісність не гарантована для всіх extension-schema differences; окремий tracked follow-up).
 3. Прогнати § 4 smoke-test.
-4. Failures → n8n/Telegram incidents + founder DM for page-level failures, or Sentry/backlog ticket for non-page failures.
+4. Failures → auto-created GitHub issue (label `db-backup-verify`) з посиланням на run + інвестигейт-чеклист; дубль-run коментує той самий issue замість дублювання.
 
 Manual rehearsal still runs monthly via
 [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md); the weekly CI
