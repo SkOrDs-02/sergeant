@@ -15,4 +15,10 @@ Fast-forward архівація 2026-07-20 (90-day gate skipped за рішен�
 - `specs/ponytail-packages-cleanup-2026-07.md`, `founder-feedback-regression-audit-2026-07-17.md`
 - інші Closed / Reference / Deprecated плани з кореня `planning/`
 
+**Code-reconcile 2026-07-20 (додатковий fast-forward):**
+
+- `specs/phase-7-ua-billing.md` — LiqPay + Plata shipped
+- `specs/coach-correlations-chat.md` — coach correlations у `/api/chat` + PAIRS 9
+- `specs/chornylo-visual-direction.md` + `specs/chornylo-post-merge-fixes.md` (+ `chornylo-assets/`) — «Чорнило» §§1–7 + post-merge A–D shipped
+
 Повний список — файли в цьому каталозі (+ `specs/`).
