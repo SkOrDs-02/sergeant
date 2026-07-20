@@ -77,4 +77,4 @@ Client → Commands/Queries → Handlers → Write Model → Events → Projecto
 - Idempotent activities для Temporal
 - Use `finykKeys`, `nutritionKeys` для RQ hooks
 - Bounded contexts перед мікросервісами
-See [docs/00-start/agents/agent-skills-catalog.md](docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.
+See [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md) for Sergeant skill routing.

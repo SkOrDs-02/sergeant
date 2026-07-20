@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # E2E Testing (Playwright) у Sergeant
 
-Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/` split into `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Config: `apps/web/playwright.config.ts`.
+Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/` split into `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Configs: `apps/web/playwright.smoke.config.ts` (smoke/critical-flow — boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`) and `apps/web/playwright.config.ts` (a11y only — self-managed build+preview `webServer`).
 
 ## 8 Golden Rules
 
@@ -31,13 +31,14 @@ For deeper guidance on specific scenarios:
 
 ## Running tests
 
+Both configs boot their own web server — do not start `pnpm build && pnpm preview` manually.
+
 ```bash
-cd apps/web
-pnpm build && pnpm preview &           # start preview server (required)
-pnpm playwright test tests/smoke/      # smoke suite
-pnpm playwright test tests/a11y/       # accessibility suite
-pnpm playwright test --ui              # interactive UI mode (local debug)
-pnpm playwright test --trace on        # force-enable traces locally
+pnpm --filter @sergeant/web e2e        # smoke lane (playwright.smoke.config.ts, --grep @critical)
+pnpm --filter @sergeant/web e2e:auth   # auth lane (--grep @auth)
+pnpm --filter @sergeant/web test:a11y  # accessibility suite (playwright.config.ts)
+pnpm --filter @sergeant/web exec playwright test --ui        # interactive UI mode (local debug)
+pnpm --filter @sergeant/web exec playwright test --trace on  # force-enable traces locally
 ```
 
 ## What NOT to do

@@ -51,6 +51,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
+| Перед заявою «done/green/fixed» — доказ свіжим повним прогоном   | `sergeant-verify-before-done`      |
 | Web-UI, PWA-shell, Tailwind, accessibility                       | `sergeant-web-ui`                  |
 | Server-роути, серіалізатори, api-client, контракти               | `sergeant-server-api`              |
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |

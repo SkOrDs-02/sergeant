@@ -28,7 +28,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - Сервер НЕ виконує chat-tool side-effect-и у `chat.ts`.
 - Клієнтські executor-и мають використовувати наявні storage-врапери або типовані API-клієнти, а не ad-hoc storage.
 - Результати tool-ів, що повертаються моделі, мають лишатися лаконічними і детермінованими.
-- **Prompt cache (ADR-0057):** зміна tool-визначень може інвалідовувати prompt-cache candidates (`@anthropic-ai/sdk` opt-in caching, `ANTHROPIC_PROMPT_CACHE=1`). Групуй wording-правки разом; не роби часткових tool-def змін між PR-ами.
+- **Prompt cache (ADR-0057):** зміна tool-визначень може інвалідовувати prompt-cache candidates — Anthropic-виклики з prompt caching живуть у `apps/server/src/lib/anthropic.ts`. Групуй wording-правки разом; не роби часткових tool-def змін між PR-ами.
 - **Hard Rule #20:** Ніяких OpenClaw PAT-ів у production. `assertStartupEnv()` захищає runtime; не обходь.
 
 ## Верифікація
@@ -36,7 +36,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - Протестуй executor-шлях і принаймні один error-шлях.
 - Використай задокументований curl- або local-UI flow для end-to-end виклику tool-а.
 - Перевір, чи tool слід позначити risky або відрендерити з action card.
-- Якщо зміна торкається tool def wording — перевір, чи не зламаний prompt-cache кандидат.
+- Якщо зміна торкається tool def wording — перевір, чи не зламаний prompt-cache кандидат у `apps/server/src/lib/anthropic.ts`.
 
 ## Корисні доки
 
