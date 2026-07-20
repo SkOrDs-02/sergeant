@@ -135,7 +135,7 @@ export async function applyRoutineHabits(
   return { status: "applied" };
 }
 
-async function applyUuidNameScopeTable(
+export async function applyUuidNameScopeTable(
   client: PoolClient,
   table: "routine_tags" | "routine_categories",
   op: SyncV2Op,
@@ -224,30 +224,6 @@ async function applyUuidNameScopeTable(
     }
   }
   return { status: "applied" };
-}
-
-export async function applyRoutineTags(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyUuidNameScopeTable(client, "routine_tags", op, userId, clientTs);
-}
-
-export async function applyRoutineCategories(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyUuidNameScopeTable(
-    client,
-    "routine_categories",
-    op,
-    userId,
-    clientTs,
-  );
 }
 
 export async function applyRoutinePrefs(

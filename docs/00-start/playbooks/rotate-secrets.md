@@ -1,13 +1,13 @@
 # Playbook: Rotate Secrets
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-12 by @claude. **Next review:** 2026-10-10.
 > **Status:** Active
 
 **Trigger:** "Secret leaked" / планова ротація / security audit / підозріла активність.
 
 ## Owner surface
 
-- Primary surface: Railway env vars, provider consoles (Anthropic, Mono, Voyage, …)
+- Primary surface: Coolify app env vars, provider consoles (Anthropic, Mono, Voyage, …)
 - Coupled surface: `.env.example`, `apps/server/src/config`
 - Governing skill: `sergeant-deploy-and-observability`
 
@@ -81,7 +81,7 @@ flowchart TD
 ### 1. Оцінити scope витоку
 
 - Який secret скомпрометовано?
-- Де він використовується? (Railway env, CI secrets, `.env` файли)
+- Де він використовується? (Coolify app env, CI secrets, `.env` файли)
 - Чи є ознаки зловживання? (логи, Sentry, незвичайні запити)
 
 ### 2. Згенерувати новий secret
@@ -99,16 +99,16 @@ pnpm exec web-push generate-vapid-keys
 
 ### 3. Оновити secret у середовищах
 
-**Railway (Production):**
+**Coolify (Production):**
 
-1. Відкрити Railway dashboard → Service → Variables
+1. Відкрити Coolify → застосунок `sergeant-api` → **Environment Variables**
 2. Оновити значення змінної
-3. Railway автоматично перезапустить сервіс
+3. **Redeploy** застосунку — Coolify застосовує env-зміни лише при новому деплої (не рестартить сам по собі при зміні змінної)
 
 **GitHub Actions (CI):**
 
 1. Settings → Secrets and variables → Actions
-2. Оновити відповідний secret
+2. Оновити відповідний secret (напр. `COOLIFY_DEPLOY_TOKEN`, якщо ротується Coolify API-token)
 
 **Локальна розробка:**
 
@@ -118,7 +118,7 @@ pnpm exec web-push generate-vapid-keys
 ### 4. Перевірити `/health` endpoint
 
 ```bash
-# Після того як Railway передеплоїть
+# Після того як Coolify передеплоїть
 curl -sS https://<prod-domain>/health | jq .
 ```
 
@@ -141,7 +141,7 @@ curl -sS https://<prod-domain>/health | jq .
 
 ## Verification
 
-- [ ] Новий secret встановлено у всіх середовищах (Railway, CI, local)
+- [ ] Новий secret встановлено у всіх середовищах (Coolify, CI, local)
 - [ ] `/health` — 200
 - [ ] Старий secret інвалідовано
 - [ ] `.env.example` оновлено (якщо формат змінився)
@@ -153,10 +153,10 @@ curl -sS https://<prod-domain>/health | jq .
 - **НІКОЛИ** не комітити secrets у git (навіть тимчасово).
 - `BETTER_AUTH_SECRET` ротація = всі сесії інвалідуються. Робити в low-traffic час.
 - `MONO_TOKEN_ENC_KEY` ротація — найскладніша, потребує re-encrypt всіх `mono_connection.token_ciphertext`. Окремий migration script.
-- Railway Variables з типом «Reference» (`${{ Postgres.DATABASE_URL }}`) — змінюються автоматично при зміні DB credentials.
+- Coolify: `DATABASE_URL` / `REDIS_URL` у застосунку вказують на internal Postgres/Redis-ресурси. При зміні DB/Redis-credentials онови значення в app env вручну (Coolify не має Railway-style reference-змінних) і зроби redeploy.
 
 ## See also
 
-- [railway-vercel.md](../../02-engineering/integrations/railway-vercel.md) — список env vars для Railway
+- [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — хостинг-топологія (Hetzner/Coolify); повний інвентар env-змінних — `apps/server/src/env/env.ts`
 - [AGENTS.md](../../../AGENTS.md) — ніколи не комітити credentials
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md) — якщо ротація зламала прод

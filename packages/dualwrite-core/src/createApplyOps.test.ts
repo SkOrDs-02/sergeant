@@ -34,7 +34,7 @@ const handlers = {
 
 describe("createApplyOps — best-effort", () => {
   it("returns zeros for an empty op list", async () => {
-    const apply = createApplyOps<Op>({ errorPolicy: "best-effort", handlers });
+    const apply = createApplyOps<Op>({ handlers });
     const { client } = makeClient();
     expect(await apply(client, [], OPTS)).toEqual({
       applied: 0,
@@ -44,7 +44,7 @@ describe("createApplyOps — best-effort", () => {
   });
 
   it("dispatches by kind and accumulates counters", async () => {
-    const apply = createApplyOps<Op>({ errorPolicy: "best-effort", handlers });
+    const apply = createApplyOps<Op>({ handlers });
     const { client } = makeClient();
     const result = await apply(
       client,
@@ -56,7 +56,7 @@ describe("createApplyOps — best-effort", () => {
 
   it("continues after a throwing op and logs it", async () => {
     const logger = vi.fn();
-    const apply = createApplyOps<Op>({ errorPolicy: "best-effort", handlers });
+    const apply = createApplyOps<Op>({ handlers });
     const { client } = makeClient();
     const result = await apply(
       client,

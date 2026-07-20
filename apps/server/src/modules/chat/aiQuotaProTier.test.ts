@@ -80,6 +80,34 @@ afterEach(() => {
   }
 });
 
+describe("resolveProTier — AI_TIERED_PRO_ENABLED default (unset env)", () => {
+  it("unset AI_TIERED_PRO_ENABLED defaults to ON (matches env.ts boolFromEnv(true))", async () => {
+    delete process.env["AI_TIERED_PRO_ENABLED"];
+    pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    // Flag defaulting OFF would short-circuit to premium without any DB
+    // roundtrip; defaulting ON runs the cascade, which — with both buckets
+    // exhausted — degrades to floor.
+    expect(r.tier).toBe("floor");
+    expect(pool.query).toHaveBeenCalledTimes(2);
+  });
+
+  it("empty-string AI_TIERED_PRO_ENABLED also defaults to ON", async () => {
+    process.env["AI_TIERED_PRO_ENABLED"] = "";
+    pool.query.mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('explicit "0" disables tiering (no DB roundtrip)', async () => {
+    process.env["AI_TIERED_PRO_ENABLED"] = "0";
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+});
+
 describe("resolveProTier — bypass paths return premium without touching DB", () => {
   it("flag off → premium, no DB roundtrip", async () => {
     process.env["AI_TIERED_PRO_ENABLED"] = "false";

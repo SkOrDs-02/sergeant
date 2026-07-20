@@ -44,7 +44,7 @@ const intFromEnv = (defaultValue: number) =>
 
 /**
  * `parseFloatEnv`-семантика — NaN guard критичний бо `prom-client` Gauge.set(NaN)
- * кидає (див. `RAILWAY_MONTHLY_COST_USD` та інші cost-метрики).
+ * кидає (див. `HETZNER_MONTHLY_COST_USD` та інші cost-метрики).
  */
 const floatFromEnv = (defaultValue: number) =>
   z
@@ -1145,10 +1145,10 @@ const envSchema = z.object({
   GCS_LOG_ARCHIVE_BUCKET: stringWithDefault(""),
 
   // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
-  /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
-  RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),
-  /** Railway plan tier label (`hobby` | `pro` | `team` | `enterprise`). */
-  RAILWAY_PLAN: stringWithDefault("hobby"),
+  /** Hetzner infra subscription monthly cost (USD). 0/empty → не репортимо. */
+  HETZNER_MONTHLY_COST_USD: floatFromEnv(0),
+  /** Hetzner instance label (`cx23` | `cx33` | `cpx31` | ...). */
+  HETZNER_PLAN: stringWithDefault("cx23"),
   /** Vercel hosting monthly cost (USD). */
   VERCEL_MONTHLY_COST_USD: floatFromEnv(0),
   /** Vercel plan tier (`hobby` | `pro` | `enterprise`). */
@@ -1288,6 +1288,21 @@ const envSchema = z.object({
   OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
+  /**
+   * Model-eval 2026-07: canonical model id used as the call-site `model`
+   * field for pipelines still pinned to a single default (the id sent
+   * directly to Anthropic, or forwarded as-is by `OpenRouterProvider` when
+   * the corresponding `OPENROUTER_*_MODEL` override above is empty). Kept
+   * separate from those OpenRouter overrides — this is the base literal
+   * itself, swappable without a code change ahead of the next eval pass.
+   */
+  NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** Weekly-digest AI-commentary section. */
+  DIGEST_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** Cheap-router classify — used by the Finyk transaction categorizer. */
+  CLASSIFY_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  /** Mono/Finyk MCC batch-enrichment worker (unknown-MCC fallback classify). */
+  MONO_ENRICHMENT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -15,7 +15,7 @@
 A static `tracesSampleRate` (the previous baseline `0.1`) creates two
 opposing failure modes at the same time:
 
-- **Quota burn on chatty routes.** `/api/health` (Railway/Vercel
+- **Quota burn on chatty routes.** `/api/health` (Coolify/Vercel
   liveness probe, ~1 hit/sec/instance) and `/api/sync/poll` (op-log
   pull, fires per active client) generate the bulk of traces. A flat
   10% rate means tens of thousands of identical health-check traces

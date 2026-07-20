@@ -17,6 +17,7 @@ vi.mock("../../env.js", () => ({
     MCC_BATCH_MAX_SIZE: 100,
     MCC_BATCH_INTERVAL_MS: 3_600_000,
     ANTHROPIC_API_KEY: "test-key",
+    MONO_ENRICHMENT_MODEL: "claude-haiku-4-5-20251001",
   },
 }));
 

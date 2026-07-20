@@ -14,8 +14,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 const ENV_VARS = [
-  "RAILWAY_MONTHLY_COST_USD",
-  "RAILWAY_PLAN",
+  "HETZNER_MONTHLY_COST_USD",
+  "HETZNER_PLAN",
   "VERCEL_MONTHLY_COST_USD",
   "VERCEL_PLAN",
   "POSTHOG_MONTHLY_COST_USD",
@@ -52,8 +52,8 @@ afterEach(() => {
 
 describe("applyInfraMonthlyCosts() — PR-33", () => {
   it("пушить виставлені env-vars у gauge з provider/plan лейблами", async () => {
-    process.env["RAILWAY_MONTHLY_COST_USD"] = "20";
-    process.env["RAILWAY_PLAN"] = "hobby";
+    process.env["HETZNER_MONTHLY_COST_USD"] = "20";
+    process.env["HETZNER_PLAN"] = "cx23";
     process.env["SENTRY_MONTHLY_COST_USD"] = "26";
     process.env["SENTRY_PLAN"] = "developer";
     process.env["ANTHROPIC_MONTHLY_BUDGET_USD"] = "200";
@@ -66,7 +66,7 @@ describe("applyInfraMonthlyCosts() — PR-33", () => {
     const text = await register.metrics();
     expect(text).toContain("# TYPE infra_monthly_cost_usd gauge");
     expect(text).toMatch(
-      /infra_monthly_cost_usd\{provider="railway",plan="hobby"\} 20/,
+      /infra_monthly_cost_usd\{provider="hetzner",plan="cx23"\} 20/,
     );
     expect(text).toMatch(
       /infra_monthly_cost_usd\{provider="sentry",plan="developer"\} 26/,
@@ -77,11 +77,11 @@ describe("applyInfraMonthlyCosts() — PR-33", () => {
   });
 
   it("НЕ пре-allocate серії для нульових / невиставлених env-vars", async () => {
-    // Тільки railway. Vercel/PostHog/Sentry/Anthropic/Voyage — без env →
+    // Тільки hetzner. Vercel/PostHog/Sentry/Anthropic/Voyage — без env →
     // у metrics-payload ці лейбли не з'являються (PromQL-фільтр стає
     // тривіальним: `infra_monthly_cost_usd > 0` не потрібно).
-    process.env["RAILWAY_MONTHLY_COST_USD"] = "20";
-    process.env["RAILWAY_PLAN"] = "hobby";
+    process.env["HETZNER_MONTHLY_COST_USD"] = "20";
+    process.env["HETZNER_PLAN"] = "cx23";
 
     const { applyInfraMonthlyCosts } = await import("./cost.js");
     const { register } = await import("./metrics.js");
@@ -95,7 +95,7 @@ describe("applyInfraMonthlyCosts() — PR-33", () => {
       .split("\n")
       .filter((l) => l.startsWith("infra_monthly_cost_usd{"))
       .join("\n");
-    expect(infraSeries).toMatch(/provider="railway"/);
+    expect(infraSeries).toMatch(/provider="hetzner"/);
     expect(infraSeries).not.toMatch(/provider="vercel"/);
     expect(infraSeries).not.toMatch(/provider="posthog"/);
     expect(infraSeries).not.toMatch(/provider="sentry"/);
@@ -161,7 +161,7 @@ describe("buildInfraCostConfig() — PR-33", () => {
     const { buildInfraCostConfig } = await import("./cost.js");
     const cfg = buildInfraCostConfig();
     expect(cfg.map((e) => e.provider)).toEqual([
-      "railway",
+      "hetzner",
       "vercel",
       "posthog",
       "sentry",

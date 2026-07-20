@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -354,7 +354,7 @@ JSDoc). PostHog-distinctId — `user.id` (UUID Better Auth), ніколи не e
 **Файл:** `scripts/ci/posthog-release-annotation.mjs`,
 **Workflow:** `.github/workflows/posthog-release-annotation.yml`.
 
-Кожен merge у `main` триггерить production deploy (Vercel + Railway). У
+Кожен merge у `main` триггерить production deploy (Vercel + Coolify). У
 той самий момент GitHub Actions постить release annotation у PostHog
 ([REST API](https://posthog.com/docs/data/annotations)) — анотація
 відмалюється вертикальною лінією поверх **усіх** PostHog-дашбордів (DAU,

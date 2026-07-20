@@ -1938,7 +1938,7 @@
     {
       "id": "playbook:deploy-config-change",
       "type": "playbook",
-      "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
+      "title": "Зміна deploy-конфігу (vercel / Dockerfile / Coolify)",
       "path": "docs/00-start/playbooks/deploy-config-change.md",
       "status": "Active",
       "tier": "core",

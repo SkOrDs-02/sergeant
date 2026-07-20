@@ -1,9 +1,9 @@
 /**
- * Op-loop factory with a parameterised error policy (ADR-0073, крок 2).
+ * Op-loop factory (ADR-0073, крок 2).
  *
- * `"best-effort"` — per-op try/catch; a single failed op is counted and
- * logged but never aborts the rest. All 8 module adapters (finyk/fizruk/
- * nutrition/routine × web/mobile) use this policy.
+ * Best-effort semantics: per-op try/catch; a single failed op is counted and
+ * logged but never aborts the rest. Shared by all 8 module adapters
+ * (finyk/fizruk/nutrition/routine × web/mobile).
  *
  * The handler map is keyed by `Op["kind"]`, so the type system enforces an
  * exhaustive handler set at the call site.
@@ -20,8 +20,6 @@ import type {
   DualWriteLogger,
 } from "./apply.js";
 
-export type ErrorPolicy = "best-effort";
-
 /** Runtime passed to every op handler. */
 export interface DualWriteRuntime {
   readonly userId: string;
@@ -36,7 +34,6 @@ export type OpHandler<Op, K extends string> = (
 ) => Promise<ApplyOutcome>;
 
 export interface ApplyOpsSpec<Op extends { readonly kind: string }> {
-  readonly errorPolicy: ErrorPolicy;
   /** One handler per op-kind; the mapped type enforces exhaustiveness. */
   readonly handlers: {
     readonly [K in Op["kind"]]: OpHandler<Op, K>;

@@ -1,6 +1,6 @@
 # CSP monitoring
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy
@@ -187,7 +187,7 @@ When an alert fires:
    `sum by (blocked_host) (increase(csp_violation_total{directive="<x>"}[1h]))`
    if a `blocked_host` panel is wired (currently only `directive` is
    labelled — the 5% sample log is the source of `blocked-uri`).
-2. **Check 5% sample logs** in Loki / Railway:
+2. **Check 5% sample logs** in Loki / Coolify container logs:
    `pino.fields.event="csp-violation"`. The handler logs
    `{ directive, disposition, blocked-uri }` for one in twenty
    reports.

@@ -33,6 +33,7 @@ import {
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
+import { getCoachCorrelationsBlock } from "./coach.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -417,13 +418,25 @@ export default async function handler(
     return;
   }
 
+  // Coach-correlations surfacing: підмішуємо ≤3 найсвіжіші крос-модульні
+  // кореляції з weekly-digest пам'яті коуча (`coach_memory`, WP3) у system
+  // context **тільки на першому турі**, тим самим шляхом що й RAG нижче.
+  // Дешевий point-lookup (<1мс) — на відміну від RAG не ходить у Voyage,
+  // тож fail-safe і без помітної затримки.
+  const correlationsBlock = sessionUser?.id
+    ? await getCoachCorrelationsBlock(sessionUser.id)
+    : "";
+  const contextWithCorrelations = correlationsBlock
+    ? `${context}\n${correlationsBlock}`
+    : context;
+
   // RAG-injection: підмішуємо top-K схожих ai_memories у system context
   // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
   // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
   // Anthropic. Failure-mode → no-op (повертає baseContext).
   const augmentedContext = await buildRagContext({
     userId: sessionUser?.id ?? null,
-    baseContext: context,
+    baseContext: contextWithCorrelations,
     messages: cleaned,
   });
 

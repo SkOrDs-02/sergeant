@@ -26,7 +26,7 @@ import { infraMonthlyCostUsd, voyageDailyBudgetUsd } from "./metrics.js";
  */
 interface InfraCostEntry {
   provider:
-    "railway" | "vercel" | "posthog" | "sentry" | "anthropic" | "voyage";
+    "hetzner" | "vercel" | "posthog" | "sentry" | "anthropic" | "voyage";
   plan: string;
   usdMonth: number;
 }
@@ -41,9 +41,9 @@ interface InfraCostEntry {
 export function buildInfraCostConfig(): InfraCostEntry[] {
   return [
     {
-      provider: "railway",
-      plan: env.RAILWAY_PLAN,
-      usdMonth: env.RAILWAY_MONTHLY_COST_USD,
+      provider: "hetzner",
+      plan: env.HETZNER_PLAN,
+      usdMonth: env.HETZNER_MONTHLY_COST_USD,
     },
     {
       provider: "vercel",

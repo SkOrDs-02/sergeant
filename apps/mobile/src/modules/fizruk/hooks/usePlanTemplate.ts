@@ -27,6 +27,7 @@ import {
 } from "../lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import { deepEqual } from "./jsonEqual";
 
 export interface PlanTemplate {
   id?: string;
@@ -63,15 +64,6 @@ function loadInitialPlan(): PlanTemplate | null {
   const cache = getCachedFizrukSqliteState();
   if (cache.refreshedAt === null) return null;
   return projectFromCache(cache.planTemplate);
-}
-
-function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
-  }
 }
 
 export interface UsePlanTemplateResult {
