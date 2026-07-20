@@ -10,8 +10,13 @@ vi.mock("../../http/validate.js", () => ({
   parseQuery: vi.fn(),
 }));
 
+vi.mock("../../obs/logger.js", () => ({
+  logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+
 import { bankProxyFetch as _bankProxyFetch } from "../../lib/bankProxy.js";
 import { parseQuery as _parseQuery } from "../../http/validate.js";
+import { logger } from "../../obs/logger.js";
 import handler from "./privat.js";
 
 const bankProxyFetch = _bankProxyFetch as unknown as Mock;
@@ -143,42 +148,91 @@ describe("privat handler — upstream delegation", () => {
     expect(call.query).toMatchObject({ foo: "bar" });
   });
 
-  it("maps a 429 upstream to a rate-limit message", async () => {
+  it("maps a 429 upstream to a rate-limit message and Retry-After", async () => {
     bankProxyFetch.mockResolvedValue({
       status: 429,
-      body: "",
-      contentType: "",
+      body: "<html>rate limited internals</html>",
+      contentType: "text/html",
+      retryAfter: "60",
     });
     const res = makeRes();
     await handler(makeReq(CREDS), res);
     expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "Занадто багато запитів" });
+    expect(res.body).toEqual({
+      error: "Занадто багато запитів",
+      code: "RATE_LIMIT",
+    });
+    expect(res.headers["Retry-After"]).toBe("60");
+    expect(JSON.stringify(res.body)).not.toContain("html");
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "privatbank_proxy_upstream_error",
+        status: 429,
+        upstreamBody: "<html>rate limited internals</html>",
+      }),
+    );
   });
 
   it.each([401, 403])(
-    "maps a %i upstream to an invalid-credentials message",
+    "maps a %i upstream to an invalid-credentials message (no body echo)",
     async (status) => {
-      bankProxyFetch.mockResolvedValue({ status, body: "", contentType: "" });
+      bankProxyFetch.mockResolvedValue({
+        status,
+        body: '{"err":"token dump xyz"}',
+        contentType: "application/json",
+      });
       const res = makeRes();
       await handler(makeReq(CREDS), res);
       expect(res.statusCode).toBe(status);
-      expect(res.body).toEqual({ error: "Невірні credentials PrivatBank" });
+      expect(res.body).toEqual({
+        error: "Невірні credentials PrivatBank",
+        code: "PRIVAT_CREDENTIALS_INVALID",
+      });
+      expect(JSON.stringify(res.body)).not.toContain("token dump");
     },
   );
 
-  it("passes through the upstream body for other error statuses", async () => {
+  it("scrubs upstream body for other error statuses into a stable shape", async () => {
     bankProxyFetch.mockResolvedValue({
       status: 500,
-      body: "upstream exploded",
-      contentType: "text/plain",
+      body: "<html>upstream exploded stack trace</html>",
+      contentType: "text/html",
     });
     const res = makeRes();
     await handler(makeReq(CREDS), res);
     expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: "upstream exploded" });
+    expect(res.body).toEqual({
+      error: "Помилка 500",
+      code: "PRIVAT_UPSTREAM_ERROR",
+    });
+    expect(JSON.stringify(res.body)).not.toContain("upstream exploded");
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "privatbank_proxy_upstream_error",
+        status: 500,
+        upstreamBody: "<html>upstream exploded stack trace</html>",
+      }),
+    );
   });
 
-  it("falls back to a generic message when an error body is empty", async () => {
+  it("includes requestId when present on the request", async () => {
+    bankProxyFetch.mockResolvedValue({
+      status: 502,
+      body: "bad gateway blob",
+      contentType: "text/plain",
+    });
+    const res = makeRes();
+    const req = makeReq(CREDS) as Request & { requestId?: string };
+    req.requestId = "req_test_1";
+    await handler(req, res);
+    expect(res.body).toEqual({
+      error: "Помилка 502",
+      code: "PRIVAT_UPSTREAM_ERROR",
+      requestId: "req_test_1",
+    });
+  });
+
+  it("uses a stable message when an error body is empty", async () => {
     bankProxyFetch.mockResolvedValue({
       status: 503,
       body: "",
@@ -186,7 +240,27 @@ describe("privat handler — upstream delegation", () => {
     });
     const res = makeRes();
     await handler(makeReq(CREDS), res);
-    expect(res.body).toEqual({ error: "Помилка 503" });
+    expect(res.body).toEqual({
+      error: "Помилка 503",
+      code: "PRIVAT_UPSTREAM_ERROR",
+    });
+  });
+
+  it("truncates a long upstream body in logs", async () => {
+    const longBody = "x".repeat(500);
+    bankProxyFetch.mockResolvedValue({
+      status: 500,
+      body: longBody,
+      contentType: "text/plain",
+    });
+    const res = makeRes();
+    await handler(makeReq(CREDS), res);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        upstreamBody: "x".repeat(200),
+      }),
+    );
+    expect(JSON.stringify(res.body)).not.toContain(longBody);
   });
 
   it("streams a non-JSON 200 body through with its content-type", async () => {

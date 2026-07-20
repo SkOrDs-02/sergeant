@@ -122,7 +122,7 @@ export async function connectHandler(
       msg: "mono_connect_client_info_failed",
       status: clientInfoRes.status,
       fingerprint: tokenFingerprint(token),
-      upstreamBody: body,
+      upstreamBody: body.slice(0, 200),
     });
     res.status(clientInfoRes.status === 401 ? 401 : 502).json({
       error:
@@ -173,7 +173,7 @@ export async function connectHandler(
       msg: "mono_webhook_register_failed",
       status: registerRes.status,
       fingerprint: tokenFingerprint(token),
-      upstreamBody: body,
+      upstreamBody: body.slice(0, 200),
     });
     res.status(502).json({
       error: "Failed to register webhook with Monobank",
