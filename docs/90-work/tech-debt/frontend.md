@@ -1016,8 +1016,15 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 ## Recommended next steps
 
 1. **Декомпозиція Hard Rule #18 leakers** — `ManualExpenseSheet.tsx` (~607 eff)
-   і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу.
-2. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
-3. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
-4. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
-5. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
+   і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу. _(На `main` після
+   waves уже Closed #348/#350 — див. follow-up docs sync.)_
+2. ~~**Overlay positioning consolidation (P4 Phase 1)**~~ — **Done**: shared
+   `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry
+   stays in `floatingPosition.ts`; no Radix — intentional size-limit choice).
+3. **Overlay shell Phase 2 (P4)** — Align `ConfirmDialog` / `InputDialog`
+   scrim + scroll-lock + portal with Sheet/Modal (`bg-black/40`,
+   `useBodyScrollLock`); keep `role="alertdialog"` / form semantics.
+4. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+5. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
+6. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
+7. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).

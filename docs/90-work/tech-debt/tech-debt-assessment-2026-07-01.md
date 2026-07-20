@@ -83,20 +83,20 @@
 
 ## Група 5 — Дрібні self-contained + заблоковані (+ нові з reconcile)
 
-| Пункт                                               | Статус                             | Дія                                              |
-| --------------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
-| `chat/tools.ts` console.log (F-008)                 | ✅                                 | —                                                |
-| Grafana Alloy Dockerfile digest-pin (INFRA-004)     | ✅                                 | —                                                |
-| `OptimizedImage.tsx` unused (UX-017)                | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти                      |
-| Lighthouse LCP warn→error (T5)                      | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms          |
-| Web max-lines: ManualExpenseSheet / TxRow           | **Відкрито, P1**                   | Декомпозиція (окремі PR) — див. `frontend.md` §4 |
-| Mobile coverage floor 30 (TC-03)                    | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`             |
-| UI-примітиви (~138 файлів у `shared/components/ui`) | Відкрито, P4                       | Консолідація — design-цикл                       |
-| `sync_op_log` партиціювання                         | 🚫 Blocked: multi-instance trigger | ADR-0065                                         |
-| Coolify env-var audit trail                         | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility            |
-| Push APNs/FCM credentials                           | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials                  |
-| Mobile Sentry DSN (M7)                              | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                              |
-| Expo SDK 53 (M9)                                    | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                         |
+| Пункт                                           | Статус                             | Дія                                                                                                                                                                                                      |
+| ----------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat/tools.ts` console.log (F-008)             | ✅                                 | —                                                                                                                                                                                                        |
+| Grafana Alloy Dockerfile digest-pin (INFRA-004) | ✅                                 | —                                                                                                                                                                                                        |
+| `OptimizedImage.tsx` unused (UX-017)            | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти                                                                                                                                                                              |
+| Lighthouse LCP warn→error (T5)                  | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms                                                                                                                                                                  |
+| Web max-lines: ManualExpenseSheet / TxRow       | **Відкрито, P1**                   | Декомпозиція (окремі PR) — див. `frontend.md` §4                                                                                                                                                         |
+| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`                                                                                                                                                                     |
+| UI-примітиви / overlay positioning (P4)         | **Partial** — Phase 1 done         | `useFloatingPanelPosition` shared by Popover/Tooltip/DropdownMenu. Phase 2: ConfirmDialog/InputDialog → Sheet/Modal shell (scrim/scroll). **Not** Radix factory — overlays are hand-rolled (size-limit). |
+| `sync_op_log` партиціювання                     | 🚫 Blocked: multi-instance trigger | ADR-0065                                                                                                                                                                                                 |
+| Coolify env-var audit trail                     | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility                                                                                                                                                                    |
+| Push APNs/FCM credentials                       | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials                                                                                                                                                                          |
+| Mobile Sentry DSN (M7)                          | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                                                                                                                                                                                      |
+| Expo SDK 53 (M9)                                | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                                                                                                                                                                                 |
 
 ## Довідка: що перевірено і чисте (не борг)
 

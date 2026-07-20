@@ -26,10 +26,11 @@
  *      bleeds off-screen on narrow viewports / orientation flips.
  *
  * This is intentionally tiny — heavy floating-ui or radix would add
- * ~12 kB gzip (per `@sergeant/web`'s `size-limit` 820 kB JS budget,
- * that's a 1.5 % chunk for two primitives). The collision-detection
- * we get for free from `clampToViewport` is enough for the in-app
- * use-cases (form-in-popover, info-card, menu, hover-tooltip).
+ * ~12 kB gzip (per `@sergeant/web`'s `size-limit` budget). The
+ * collision-detection we get for free from `clampToViewport` is enough
+ * for the in-app use-cases (form-in-popover, info-card, menu,
+ * hover-tooltip). React lifecycle (measure on open + scroll/resize)
+ * lives in `useFloatingPanelPosition.ts` — keep geometry pure here.
  */
 
 export type FloatingPlacement =
