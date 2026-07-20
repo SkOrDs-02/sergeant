@@ -1,6 +1,6 @@
 # Roadmap покращень AI-coding
 
-> **Last validated:** 2026-07-20 by @cursoragent (playbook routing eval → done). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (playbook routing + golden-task bench + freshness-janitor → done). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Roadmap для агентської інфраструктури Sergeant. Це не продуктовий roadmap; це план, як зробити AI-assisted development швидшим, безпечнішим і дисциплінованішим.
