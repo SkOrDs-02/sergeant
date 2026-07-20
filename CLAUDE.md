@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -22,7 +22,7 @@
 - Kilo `skill` → **`Read .agents/skills/<name>/SKILL.md`** (Claude `Skill` tool індексує лише plugin / `~/.claude/skills` скіли — Sergeant-скілів там НЕМА, тому Read, не `Skill`); Kilo `task` + agent-defs→`Agent`+`~/.claude/agents/*`, `Task*` для teams; `agent_manager`→`EnterWorktree`.
 - `kilo_local_recall`→auto-memory+`Explore`; Kilo MCP (context7/github/memory)→`ToolSearch` (`.mcp.json`); Kilo commands→`pnpm check` або `.claude/commands/*`.
 
-Спільне для всіх харнесів і валідне для тебе: routing-таблиця surface→skill і список hard rules / invariants нижче по AGENTS.md. Конфіг Kilo живе глобально в `~/.config/kilo/`, не в репо — у репо більше немає `.kilo/`.
+Спільне для всіх харнесів і валідне для тебе: routing-таблиця surface→skill і список hard rules / invariants нижче по AGENTS.md. Конфіг Kilo живе глобально в `~/.config/kilo/`, не в репо. У репо є лише `.kilo/harness-versions.json` — harness-нейтральна версійна метадата (§ Harness version в AGENTS.md), не Kilo-конфіг.
 
 ## Sub-tree CLAUDE.md
 

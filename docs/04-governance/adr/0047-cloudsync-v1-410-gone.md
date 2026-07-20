@@ -1,7 +1,9 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
+>
+> **⚠️ Superseded Phase 7 (2026-07-20, commit `d5cc2648c`):** 410-Gone handler `sunsetGone.ts` (+ survey middleware) **видалено** після завершення 90-денного deprecation-вікна. v1 sync тепер віддає **голий `404`**, не `410 Gone`. Цей ADR лишається як історичний запис T₀-виконання; актуальний стан — коментар у [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) і [`api-v1.md`](../../02-engineering/architecture/api-v1.md).
 
 - **Status:** Accepted
 - **Date:** 2026-05-06
@@ -10,9 +12,9 @@
 - **Related:**
   - [ADR-0043 — CloudSync v1 sunset (RFC 8594 deprecation headers + 6-phase rollout)](./0043-cloudsync-v1-sunset.md) — цей ADR виконує Phase 5 з ADR-0043.
   - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
-  - [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) — handler, який реалізує цей ADR.
-  - [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — wire-up `respondV1Gone` на v1 push/pull endpoint-ах.
-  - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) — Phase 2 middleware, лишається активним поверх 410 щоб клієнти могли read-ити RFC 8594 / 8288 headers разом із body.
+  - `apps/server/src/modules/sync/sunsetGone.ts` — handler, який реалізовував цей ADR (**видалено Phase 7**, commit `d5cc2648c`).
+  - [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — раніше wire-up `respondV1Gone`; після Phase 7 v1 push/pull endpoint-ів там уже нема (голий 404).
+  - `apps/server/src/modules/sync/sunsetHeaders.ts` — Phase 2 middleware, лишається активним поверх 410 щоб клієнти могли read-ити RFC 8594 / 8288 headers разом із body.
   - [Storage roadmap §3 — Stage 7 cleanup](../../90-work/planning/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
 
 ---

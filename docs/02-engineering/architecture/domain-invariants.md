@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -10,14 +10,16 @@
 - **Single source of truth: Europe/Kyiv.** All "today / yesterday / this week" UI logic computes day boundaries against `Europe/Kyiv` (UTC+2/+3 with DST).
 - **Storage:** `timestamptz` in Postgres (UTC at rest), but read with `timezone('Europe/Kyiv', ts)` when bucketing by day in SQL.
 - **Day key format:** `YYYY-MM-DD` interpreted in Kyiv local time. This is what `coachKeys.insight(dayKey)`, `digestKeys.byWeek(weekKey)`, and Routine streaks use.
-- **Week start:** Monday (ISO 8601). `weekKey` = `YYYY-Www`.
+- **Week start:** Monday (ISO 8601). `weekKey` = **`YYYY-MM-DD` (дата того понеділка)**, НЕ ISO `YYYY-Www` — див. `getWeekKey()` у [`packages/shared/src/lib/weeklyDigest.ts`](../../../packages/shared/src/lib/weeklyDigest.ts), який повертає `localDateKey(monday)`. (Парсер, що очікує `2026-W29`, зламається.)
 - **Don't** use `new Date().toISOString().slice(0,10)` — it gives a UTC day, which flips a day at 21:00–22:00 Kyiv time and breaks Routine streaks for late-evening users.
+
+> **⚠️ Web-виняток (tracked burn-down 2026-Q3).** Ідеал «Europe/Kyiv, never the runtime's local zone» тримається на **сервері**. На **вебі** частина «сьогодні»/week-window математики свідомо читає host-local `Date` parts (напр. `localDateKey()` у [`apps/web/src/core/insights/useCoachInsight.ts`](../../../apps/web/src/core/insights/useCoachInsight.ts) — з явним `eslint-disable sergeant-design/prefer-kyiv-time`): на Kyiv-хості wall-clock і так Kyiv, а `toISOString()` зсунув би межу дня. Поки клієнт не в Kyiv-таймзоні, день рахується в таймзоні пристрою. Kyiv-anchoring вебу — окремий burn-down, ще не закритий.
 
 ## Money (UAH)
 
 - **Database & API: minor units (kopiykas) as `number`** after bigint coercion. Mono webhook delivers minor units; we keep that representation through the stack.
 - **UI display:** divide by 100 at render time only. For Finyk transactions and balances use `fmtAmt(minor, currencyCode?)` from `@sergeant/finyk-domain/lib/formatting` — it handles `+`/`-` sign and currency symbol consistently. For other contexts (insights, dashboards) write a thin local helper that wraps `(minor / 100).toLocaleString("uk-UA", { minimumFractionDigits: 2 })` rather than re-inlining the math at every call site.
-- **Negative = expense, positive = income.** Match Mono's convention; transfers between own accounts come as a pair (-X on source, +X on destination) and are netted in budget calculations, not summed.
+- **Negative = expense, positive = income.** Match Mono's convention; transfers between own accounts come as a pair (-X on source, +X on destination). Обидві ноги несуть категорію `internal_transfer` і **виключаються зі spend/budget-розрахунків за категорією** — кожна нога пропускається окремо (`if (categoryId === INTERNAL_TRANSFER_ID) continue`), НЕ pair-matching/netting. Джерело: [`packages/finyk-domain/src/domain/selectors.ts`](../../../packages/finyk-domain/src/domain/selectors.ts), `lib/transactions.ts`, `lib/forecastEngine.ts`.
 
 ## Identity
 

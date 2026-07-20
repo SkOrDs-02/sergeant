@@ -1,8 +1,8 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
 > **Last validated:** 2026-05-13 by @Skords-01 (Phase 6 audit refresh — Phase 2 PR placeholder resolved; Phase 6 bullets now carry explicit commit/PR refs; Phase 7 exit-criteria pointer added per Stage 13 PR #079). **Next review:** 2026-08-11.
-> **Status:** In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)
-> **Code reconciliation (2026-07-13):** v1 handlers, `module_data` і client v1 facade вже видалені; підтверджені залишки — telemetry/rollout evidence і Phase 7 sunset-route observation. Не використовувати нижній historical checklist як live implementation status.
+> **Status:** ✅ Done (Phases 1-7 completed; Phase 7 sunset-routes-removal виконано 2026-07-20, commit `d5cc2648c`)
+> **Code reconciliation (2026-07-20):** Phase 7 закрито — sunset/survey модулі (`sunsetGone.ts`, `sunsetHeaders.ts`, `clientSurvey.ts`) + метрику `sync_v1_legacy_clients_total` видалено; v1 push/pull тепер віддає голий `404` (не `410 Gone`). Раніша нотатка (2026-07-13): v1 handlers, `module_data` і client v1 facade вже були видалені. Не використовувати нижній historical checklist як live implementation status.
 > **Agent-ready:** blocked
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
@@ -170,7 +170,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 - [ADR-0004 CloudSync LWW conflict resolution](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md)
 - [`docs/90-work/planning/storage-roadmap.md`](../planning/storage-roadmap.md) — Stage 5 sync-v2
 - [`docs/90-work/tech-debt/backend.md`](../tech-debt/backend.md) — запис «CloudSync v1/v2 dual-stack»
-- [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler
+- `apps/server/src/modules/sync/sunsetGone.ts` — v1 410 Gone handler
 - [`apps/web/src/core/cloudSync/`](../../../apps/web/src/core/cloudSync) — v2 outbox
 - RFC 8594 — `Sunset` HTTP header
 
@@ -180,7 +180,7 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 
 ### Phase 1 — observability — Done (PR #1621)
 
-- **Survey counter** [`sync_v1_legacy_clients_total{user_agent_class, app_version, op}`](../../../apps/server/src/obs/metrics.ts) — окремий від `sync_operations_total`, монтується middleware-ом ТІЛЬКИ на `/api/sync/*` (НЕ на v2). Cardinality bound: 5×20×4 = 400 series worst-case. Implementation у [`apps/server/src/modules/sync/clientSurvey.ts`](../../../apps/server/src/modules/sync/clientSurvey.ts) + 28 тестів (`clientSurvey.test.ts`).
+- **Survey counter** [`sync_v1_legacy_clients_total{user_agent_class, app_version, op}`](../../../apps/server/src/obs/metrics.ts) — окремий від `sync_operations_total`, монтується middleware-ом ТІЛЬКИ на `/api/sync/*` (НЕ на v2). Cardinality bound: 5×20×4 = 400 series worst-case. Implementation у `apps/server/src/modules/sync/clientSurvey.ts` + 28 тестів (`clientSurvey.test.ts`).
 - **Grafana panels** (id 6/7/8 у [`docs/03-operations/observability/dashboards/sync.json`](../../03-operations/observability/dashboards/sync.json)):
   - V1 vs V2 traffic split (5m rate, by `module` label)
   - V1 legacy clients by UA-class
@@ -194,7 +194,7 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 ### Phase 2 — Sunset header + ADR — Done (commit [`3e10d799`](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../04-governance/adr/0043-cloudsync-v1-sunset.md))
 
 - **ADR-0043** [CloudSync v1 sunset](../../04-governance/adr/0043-cloudsync-v1-sunset.md) — Accepted 2026-05-04. Фіксує: RFC 8594/8288 deprecation contract; 6-фазний rollout-план; T₀ controlled через env var `CLOUDSYNC_V1_SUNSET_AT` (ISO 8601), не code-constant.
-- **HTTP headers на `/api/sync/*`** ([`apps/server/src/modules/sync/sunsetHeaders.ts`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) + 20 тестів):
+- **HTTP headers на `/api/sync/*`** (`apps/server/src/modules/sync/sunsetHeaders.ts` + 20 тестів):
   - `Deprecation: true` — always (RFC 8594 §2.1.2 "true" form).
   - `Sunset: <RFC 7231 IMF-fixdate>` — only when env var set; malformed value → no header + log.warn once (cached).
   - `Link: </api/v2/sync/push>; rel="successor-version", </docs/90-work/initiatives/0003-...>; rel="deprecation"` — always (RFC 8288 §3).
@@ -206,7 +206,7 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 ### Phase 5 — T₀ executed (server-side) — Done 2026-05-06
 
 - **ADR-0047** [CloudSync v1 — T₀ executed (410 Gone)](../../04-governance/adr/0047-cloudsync-v1-410-gone.md) — Accepted 2026-05-06. Document-amendment до ADR-0043 фіксує T₀-execution: усі v1 push/pull endpoint-и повертають `410 Gone` з RFC-9110 body `{error, successor, since, guide}`.
-- **Handler** [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) + 11 тестів (`sunsetGone.test.ts`).
+- **Handler** `apps/server/src/modules/sync/sunsetGone.ts` + 11 тестів (`sunsetGone.test.ts`).
 - **Wire-up** [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — `r.post("/api/sync/push", asyncHandler(respondV1Gone))` для всіх 4-х legacy push/pull endpoint-ів (`push`, `pull`, `pull-all` GET+POST, `push-all`). `/api/sync/audit` лишається — це read-only audit, не sync-канал.
 - **Phase 1+2 middleware (survey + sunset-headers) лишається активним поверх 410-handler-а** — клієнти все ще читають `Sunset:` / `Deprecation:` / `Link:` headers разом із 410-body. Це дозволяє їм перевести retry-decay logic у "stop calling permanently".
 - **Env vars**:
@@ -253,9 +253,9 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 - `syncedKV.ts` 0 production imports — drop у Stage 13 PR #076.
 - `SYNC_EVENT`/`SYNC_STATUS_EVENT` — listener живий, диспатчер 0 callsites — drop у Stage 13 PR #076.
 
-### Phase 7 — Sunset routes final removal — Proposed
+### Phase 7 — Sunset routes final removal — ✅ Done (2026-07-20, commit `d5cc2648c`)
 
-> Mounted with 410 Gone since T₀ = 2026-05-06. Sunset/audit/headers middleware running on top.
+> Було mounted з 410 Gone від T₀ = 2026-05-06. Phase 7 зняв усі sunset/survey модулі — v1 push/pull тепер голий `404`.
 
 **Exit-criteria для final removal of `/api/sync/{push,pull,pull-all,push-all}` + sunset middleware:**
 
@@ -264,8 +264,8 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + 
 
 **Що видалити після exit-criteria met:**
 
-- `apps/server/src/modules/sync/sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts` (audit lookup лишається — `audit.ts` для read-only access). _(Still present — `respondV1Gone` мапиться у `routes/sync.ts`.)_
-- `apps/server/src/routes/sync.ts` — drop the `respondV1Gone` route handlers (`/api/sync/{push,pull,pull-all,push-all}`). _(Still present.)_
+- `apps/server/src/modules/sync/sunsetGone.ts` + `sunsetHeaders.ts` + `clientSurvey.ts` (audit lookup лишається — `audit.ts` для read-only access). _(✅ Removed — Phase 7, commit `d5cc2648c`.)_
+- `apps/server/src/routes/sync.ts` — drop the `respondV1Gone` route handlers (`/api/sync/{push,pull,pull-all,push-all}`). _(✅ Removed — v1 push/pull endpoint-ів у `routes/sync.ts` більше нема; лишився лише `/api/sync/audit`.)_
 - ~~`packages/shared/src/schemas/api.ts` — drop `SyncModuleEnum`, `SyncPushSchema`, `SyncPullSchema`, `SyncPushAllSchema`, `ClientUpdatedAtSchema`~~ — **already dropped in PR #076** (Stage 13); see the tombstone comment at `api.ts` § "Sync v2 (op-log)".
 - ~~`packages/shared/src/openapi/registry.ts` — drop entries~~ — **already dropped in PR #076** (together with the schemas above).
 

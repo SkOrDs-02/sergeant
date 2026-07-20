@@ -1,5 +1,7 @@
 # ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout
 
+> **⚠️ Rollout завершено, Phase 7 виконано (2026-07-20, commit `d5cc2648c`):** усі v1 sunset-модулі — `sunsetGone.ts` (410 handler), `sunsetHeaders.ts` (RFC 8594/8288 headers), `clientSurvey.ts` (survey counter) + метрику `sync_v1_legacy_clients_total` — **видалено** після завершення deprecation-вікна. v1 push/pull тепер віддає **голий `404`** (не `410 Gone`). Цей ADR лишається як історичний запис 6-фазного плану; посилання на видалені файли нижче збережені для контексту.
+
 - **Status:** Accepted
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-04
@@ -8,10 +10,10 @@
 - **Related:**
   - [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) — це v1, що ми збираємось sunset-нути.
   - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
-  - [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler after the legacy LWW handlers were removed.
+  - `apps/server/src/modules/sync/sunsetGone.ts` — v1 410 Gone handler after the legacy LWW handlers were removed.
   - [`apps/server/src/modules/sync/syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — v2 op-log handlers (Stage 2 / PR #021).
-  - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) — middleware, що реалізує цей ADR.
-  - [`apps/server/src/modules/sync/clientSurvey.ts`](../../../apps/server/src/modules/sync/clientSurvey.ts) — Phase 1 measurement counter.
+  - `apps/server/src/modules/sync/sunsetHeaders.ts` — middleware, що реалізує цей ADR.
+  - `apps/server/src/modules/sync/clientSurvey.ts` — Phase 1 measurement counter.
   - [RFC 8594 — The Sunset HTTP Header Field](https://datatracker.ietf.org/doc/html/rfc8594).
   - [RFC 8288 — Web Linking](https://datatracker.ietf.org/doc/html/rfc8288).
 
@@ -81,7 +83,7 @@ amend-нута document-update-ом коли:
 **HTTP semantic specification (Phase 2 — це те, що тут):**
 
 На всіх `/api/sync/*` routes (v1) middleware
-[`v1SunsetHeadersMiddleware`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) додає:
+`v1SunsetHeadersMiddleware` додає:
 
 - `Deprecation: true` — RFC 8594 §2 (always; не залежить від T₀).
 - `Sunset: <RFC 7231 IMF-fixdate>` — RFC 8594 §3 (only when env var
