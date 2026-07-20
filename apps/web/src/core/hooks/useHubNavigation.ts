@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
-import type { ModuleAccent } from "@sergeant/design-tokens";
+import type { HubModuleId } from "@shared/lib/modules/hubNav";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
@@ -23,7 +23,9 @@ const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
  */
 const PATH_BASED_MODULES = PATH_BASED_MODULE_IDS;
 
-export type HubModuleId = ModuleAccent;
+// `HubModuleId` живе у `@shared/lib/modules/hubNav`; реекспортуємо для
+// споживачів цього хука (ModuleShell / HubShellContext / useModuleRouteLoader).
+export type { HubModuleId };
 
 export interface OpenModuleOptions {
   hash?: string | null;

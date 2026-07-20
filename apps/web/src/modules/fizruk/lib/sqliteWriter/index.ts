@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import { logger as webLogger } from "@shared/lib";
 
 import {
@@ -216,14 +217,6 @@ export function triggerFizrukDualWrite(
     });
 }
 
-export type DualWriteOutcome =
-  | { status: "applied"; result: ApplyDualWriteResult }
-  | {
-      status: "skipped";
-      reason:
-        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
-    };
-
 function logSafe(
   ctx: FizrukDualWriteContext,
   level: "warn" | "info",
@@ -245,5 +238,6 @@ export {
   diffFizrukDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
+  type DualWriteOutcome,
   type FizrukDualWriteState,
 };

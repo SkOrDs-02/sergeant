@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import { logger as webLogger } from "@shared/lib";
 
 import {
@@ -222,14 +223,6 @@ export function triggerNutritionDualWrite(
     });
 }
 
-export type DualWriteOutcome =
-  | { status: "applied"; result: ApplyDualWriteResult }
-  | {
-      status: "skipped";
-      reason:
-        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
-    };
-
 function logSafe(
   ctx: NutritionDualWriteContext,
   level: "warn" | "info",
@@ -251,5 +244,6 @@ export {
   diffNutritionDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
+  type DualWriteOutcome,
   type NutritionDualWriteState,
 };

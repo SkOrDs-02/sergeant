@@ -1,5 +1,6 @@
 import type { RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import { logger as webLogger } from "@shared/lib";
 
 import {
@@ -201,14 +202,6 @@ export function triggerRoutineDualWrite(
   void Promise.resolve().then(() => dualWriteRoutineState(prev, next));
 }
 
-export type DualWriteOutcome =
-  | { status: "applied"; result: ApplyDualWriteResult }
-  | {
-      status: "skipped";
-      reason:
-        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
-    };
-
 function logSafe(
   ctx: RoutineDualWriteContext,
   level: "warn" | "info",
@@ -230,4 +223,5 @@ export {
   diffRoutineDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
+  type DualWriteOutcome,
 };
