@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -48,7 +48,8 @@ System architecture and runtime surface inventory for Sergeant.
 | [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                                              | 2026-05-05   |
 | [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                                           | 2026-05-03   |
 | [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages (active/stabilize/migration/legacy)                            | 2026-05-04   |
-| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance                                                                      | 2026-05-03   |
+| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance (production disables = 0)                                            | 2026-07-20   |
+| [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md) | Mobile live `exhaustive-deps` disable catalog (9 sites)                                            | 2026-07-20   |
 
 ---
 

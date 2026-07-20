@@ -3,7 +3,7 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Status:** Active
 
-> **Оновлено 2026-07-20.** Re-audit `apps/web/src`: **999** production source файлів / **~161k** raw LOC (без тестів, `__tests__/`, `.stories.*`); **875** test-файлів. Coverage floor lines = **89** (`coverage-thresholds.json`). Hard Rule #18 `max-lines` allowlist порожній; **2 нові leakers** над 600 effective LOC — `ManualExpenseSheet.tsx` (~607 eff) і `TxRow.tsx` (~605 eff). `no-eyebrow-drift` disables: **27** web / **10** mobile. Production `any`: **2** by-design (`parseFizrukWorkouts.ts`, `lazyImport.ts`) — `searchCache.ts` більше не тримає `LooseRecord`. `react-hooks/exhaustive-deps` disable sites: **9** (каталог `apps-web-exhaustive-deps.md` ще потребує sync — Group 3 у assessment). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint ініціативи, не active debt тут.
+> **Оновлено 2026-07-20.** Re-audit `apps/web/src`: **999** production source файлів / **~161k** raw LOC (без тестів, `__tests__/`, `.stories.*`); **875** test-файлів. Coverage floor lines = **89** (`coverage-thresholds.json`). Hard Rule #18 `max-lines` allowlist порожній; **2 нові leakers** над 600 effective LOC — `ManualExpenseSheet.tsx` (~607 eff) і `TxRow.tsx` (~605 eff). `no-eyebrow-drift` disables: **27** web / **10** mobile. Production `any`: **2** by-design (`parseFizrukWorkouts.ts`, `lazyImport.ts`) — `searchCache.ts` більше не тримає `LooseRecord`. `react-hooks/exhaustive-deps` у web production: **0** (каталог [`apps-web-exhaustive-deps.md`](../../02-engineering/architecture/apps-web-exhaustive-deps.md) закритий, wave 4); живі **9** — у mobile ([`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md)). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint ініціативи, не active debt тут.
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories). §6 follow-up виконано: `HubReports` / `useCoachInsight` / `useWeeklyDigest` coverage.
 
@@ -390,11 +390,11 @@ PR на кожен leaker; не змішувати з feature-дифами.
 
 ### 5. ~~`eslint-disable react-hooks/exhaustive-deps`~~ — Виконано (документація)
 
-21 disable-сайт залишається, але тепер кожен має явне обґрунтування поряд
-(intentional ref-based callback, mount-only effect, навмисне виключення
-залежності щоб не зациклитись тощо). Див. зведений каталог
-[`docs/02-engineering/architecture/apps-web-exhaustive-deps.md`](../../02-engineering/architecture/apps-web-exhaustive-deps.md). Якщо
-з'являється новий disable без коментаря — рев'ю має його блокувати.
+Web production disables знято (wave 4 → **0**); історія патернів —
+[`apps-web-exhaustive-deps.md`](../../02-engineering/architecture/apps-web-exhaustive-deps.md).
+Живі **9** сайтів — у mobile:
+[`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+Новий disable без WHY-коментаря / без рядка в каталозі — рев'ю блокує.
 
 </details>
 
@@ -1017,8 +1017,7 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 
 1. **Декомпозиція Hard Rule #18 leakers** — `ManualExpenseSheet.tsx` (~607 eff)
    і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу.
-2. **Catalog-sync** `docs/02-engineering/architecture/apps-web-exhaustive-deps.md`
-   — 9 live disable-сайтів vs застарілий каталог (Group 3 у assessment).
+2. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
 3. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
 4. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
 5. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
