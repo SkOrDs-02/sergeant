@@ -1,41 +1,38 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent (post-waves sync). **Next review:** 2026-10-18.
 > **Status:** Active
 
-> **Методологія (оригінал 2026-07-01):** повний прогін механічних гейтів + воркфло з підагентів. **Re-audit 2026-07-20:** повторне вимірювання ключових метрик на `main` (`a7a2814`) — LOC, allowlists, migrations, coverage floors, eslint-disable counts, hosting refs — без повторного повного lint/knip прогону (node_modules у cloud env може бути неповним; цифри з файлової системи + `coverage-thresholds.json` + eslint config).
+> **Методологія (оригінал 2026-07-01):** повний прогін механічних гейтів + воркфло з підагентів. **Re-audit 2026-07-20:** повторне вимірювання на `main` — потім **agent waves** закрили actionable P1 (див. нижче). Цей файл = живий burndown після хвиль.
 
 ## Executive summary
 
-Механічний стан репо загалом здоровий: **Knip/janitors/AI-LEGACY** на 2026-07-01 були чисті; Hard Rule #18 server allowlist **порожній**; Initiative **0021** (react-hooks v7) **закрита**; Express 5 + `asyncHandler` cleanup **done**. Re-audit 2026-07-20 виявив **документальний drift**, не новий критичний борг:
+Механічний стан репо здоровий. Re-audit виявив документальний drift + 2 max-lines leakers; **хвилі агентів закрили більшість actionable P1**:
 
-| Зсув                            | Було в доках      | Стало в коді (2026-07-20)                           |
-| ------------------------------- | ----------------- | --------------------------------------------------- |
-| Web source / tests              | 790 / 243         | **999** / **875**                                   |
-| Web coverage floor              | 85                | **89**                                              |
-| Web max-lines leakers           | 0 (claim)         | **2** (`ManualExpenseSheet` ~607, `TxRow` ~605 eff) |
-| Migrations                      | 73                | **82** (`082_plata_*`)                              |
-| Server max-lines allowlist      | 6 → [] (Jul 10)   | **[]** (підтверджено)                               |
-| `asyncHandler`                  | «opt-in leftover» | **видалено** (PR #134)                              |
-| Hosting ops copy                | Railway           | **Coolify/Hetzner** (ADR-0074)                      |
-| Mobile type-bypass allowlist    | 5–7 files         | **[]** / 0 casts                                    |
-| Mobile tests / shell tests      | 111 / 5–8         | **148** / **11**                                    |
-| eslint-disable production lines | 215               | **~195**                                            |
-| By-design `any` (web)           | 3                 | **2** (`searchCache` cleaned)                       |
+| Зсув / задача                         | Було (re-audit)                     | Стало після waves (main)                                                                                                                 |
+| ------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Web source / tests                    | 999 / 875                           | без змін (baseline)                                                                                                                      |
+| Web coverage floor                    | 89                                  | 89                                                                                                                                       |
+| Web max-lines leakers                 | ManualExpenseSheet ~607, TxRow ~605 | **Closed** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) / [#350](https://github.com/SkOrDs-02/Sergeant/pull/350) (~416 / ~270) |
+| Mobile exhaustive-deps catalog        | drift vs web catalog                | **Closed** [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                        |
+| Privat upstream body → client         | P2 leak risk                        | **Closed** [#347](https://github.com/SkOrDs-02/Sergeant/pull/347)                                                                        |
+| Storage-key WHY hygiene               | undocumented disables               | **Closed** [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                        |
+| Mobile Phase 6 NotificationsSection   | TODO wire `useMonthlyPlan`          | **Closed** [#352](https://github.com/SkOrDs-02/Sergeant/pull/352)                                                                        |
+| `no-non-null-assertion` (перша хвиля) | 4 undocumented disables             | **Closed** [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                        |
 
-**Відкритий actionable backlog (пріоритет):**
+**Відкритий actionable backlog (після waves):**
 
-1. Web Hard Rule #18 — декомпозиція `ManualExpenseSheet.tsx` + `TxRow.tsx` (окремі PR).
-2. Group 3 — eslint-disable burndown (не catalog-sync: web exhaustive-deps = 0; живі 9 — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md)).
-3. Mobile coverage floor 30 → ratchet; M7 Sentry DSN / M9 Expo 53 — blocked.
-4. Coolify env-var audit trail — owner-decision.
-5. Push APNs/FCM credentials — external-infra.
+1. UI primitives consolidation (P4) — design-цикл, не блокер CI.
+2. Mobile coverage floor 30 → ratchet (P3) — лише після headroom у CI.
+3. Подальший eslint-disable / `!` burndown — опційно, не P1.
+
+**Blocked (агент не закриє без власника / інфри / депів)** — простими словами див. [`README.md § Blocked простими словами`](./README.md#blocked-простими-словами).
 
 ---
 
 ## Група 1 — Server max-lines burndown (Hard Rule #18) — ✅ DONE (2026-07-10)
 
-**Верифіковано 2026-07-10 / підтверджено 2026-07-20:** `apps/server/eslint.server-maxlines-allowlist.json` = `[]`. Усі колишні allowlist-файли під 600 effective LOC (raw може бути вищим через коментарі/`env.ts` schema docs).
+**Верифіковано 2026-07-10 / підтверджено 2026-07-20:** `apps/server/eslint.server-maxlines-allowlist.json` = `[]`.
 
 | Файл                               | raw (до → після / now) | Результат                                   |
 | ---------------------------------- | ---------------------- | ------------------------------------------- |
@@ -66,37 +63,43 @@
 
 </details>
 
-## Група 3 — eslint-disable burndown — P2-P3, 4-5 PR (оновлено 2026-07-20)
+## Група 3 — eslint-disable burndown — частково Closed у waves
 
-Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design (`no-eyebrow-drift` ~37, `prefer-kyiv-time` ~22+, `no-restricted-syntax`, `no-raw-storage-key`, `no-cyrillic-jsx-literal`, `exhaustive-deps` **9** у **mobile** — web catalog closed на 0).
+Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design.
 
-Реальні цілі фіксу:
-
-1. **P1:** недокументовані `security/detect-non-literal-fs-filename` / non-null assertion без WHY — security-pass.
-2. `@typescript-eslint/no-non-null-assertion` — недокументовані сайти → guard / `?.`.
-3. `no-restricted-syntax` + `no-raw-storage-key` — міграція на дозволений API або WHY-коментар.
-4. ~~**Catalog-sync (docs-only):** web exhaustive-deps~~ — **Done** (web=0); live list — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+| Ціль                                                     | Статус                                                    |
+| -------------------------------------------------------- | --------------------------------------------------------- |
+| `no-raw-storage-key` / `no-restricted-syntax` WHY        | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351) |
+| `@typescript-eslint/no-non-null-assertion` (перша хвиля) | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353) |
+| Mobile exhaustive-deps catalog                           | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349) |
+| Подальший security-pass / `!` / FS disables без WHY      | Відкрито, P3 — opportunistic                              |
+| Web exhaustive-deps catalog                              | ✅ Done (web=0)                                           |
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 
 Без змін vs 2026-07-01: pairwise diff спростовує «dedup»; не брати як чистку дублікатів.
 
-## Група 5 — Дрібні self-contained + заблоковані (+ нові з reconcile)
+## Група 5 — Дрібні + заблоковані (після waves)
 
-| Пункт                                               | Статус                             | Дія                                              |
-| --------------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
-| `chat/tools.ts` console.log (F-008)                 | ✅                                 | —                                                |
-| Grafana Alloy Dockerfile digest-pin (INFRA-004)     | ✅                                 | —                                                |
-| `OptimizedImage.tsx` unused (UX-017)                | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти                      |
-| Lighthouse LCP warn→error (T5)                      | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms          |
-| Web max-lines: ManualExpenseSheet / TxRow           | **Відкрито, P1**                   | Декомпозиція (окремі PR) — див. `frontend.md` §4 |
-| Mobile coverage floor 30 (TC-03)                    | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`             |
-| UI-примітиви (~138 файлів у `shared/components/ui`) | Відкрито, P4                       | Консолідація — design-цикл                       |
-| `sync_op_log` партиціювання                         | 🚫 Blocked: multi-instance trigger | ADR-0065                                         |
-| Coolify env-var audit trail                         | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility            |
-| Push APNs/FCM credentials                           | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials                  |
-| Mobile Sentry DSN (M7)                              | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                              |
-| Expo SDK 53 (M9)                                    | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                         |
+| Пункт                                               | Статус                             | Дія                                     |
+| --------------------------------------------------- | ---------------------------------- | --------------------------------------- |
+| `chat/tools.ts` console.log (F-008)                 | ✅                                 | —                                       |
+| Grafana Alloy Dockerfile digest-pin (INFRA-004)     | ✅                                 | —                                       |
+| `OptimizedImage.tsx` unused (UX-017)                | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти             |
+| Lighthouse LCP warn→error (T5)                      | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms |
+| Web max-lines: ManualExpenseSheet / TxRow           | ✅ Closed #348 / #350              | —                                       |
+| Privat upstream body scrub                          | ✅ Closed #347                     | —                                       |
+| Mobile Phase 6 NotificationsSection                 | ✅ Closed #352                     | —                                       |
+| Mobile coverage floor 30 (TC-03)                    | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`    |
+| UI-примітиви (~138 файлів у `shared/components/ui`) | Відкрито, P4                       | Консолідація — design-цикл              |
+| `sync_op_log` партиціювання                         | 🚫 Blocked: multi-instance trigger | ADR-0065                                |
+| Coolify env-var audit trail                         | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility   |
+| Push APNs/FCM credentials                           | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials         |
+| Mobile Sentry DSN (M7)                              | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                     |
+| Expo SDK 53 (M9)                                    | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                |
+| Mobile hub-context Phase 8 (`useChatSend`)          | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                      |
+| HubReports billing / WeeklyDigestCard               | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                      |
+| `exportReport` expo-print                           | 🚫 Blocked-reason: dep-blocked     | `mobile.md` § TODO                      |
 
 ## Довідка: що перевірено і чисте (не борг)
 
