@@ -3,12 +3,14 @@
 
 # Audit runner report
 
-> **Last validated:** 2026-06-25 by audits-runner workflow. **Next review:** 2026-09-23.
-> **Status:** Reference
+> **Last validated:** 2026-06-25 by audits-runner workflow. **Next review:** ніколи (історичний знімок; living audits = 0 після Batch 2026-07-20).
+> **Status:** Reference — triage snapshot 2026-06-25. Після fast-forward archive усі згадані файли лежать у [`archive/`](./archive/); шляхи нижче без `archive/` — historical. Наступний runner-pass має регенерувати цей файл проти `open-work.md` (0 open audits).
 
 ## Triage digest — 2026-06-25
 
-Source: `docs/open-work.md §Аудити й прожарки` (9 open audits) + direct reads of all audit files. Audits with `Closed` / `Archived` / `Done` / `Reference` status excluded. Sorted by impact within each bucket.
+> **AI-NOTE:** Шляхи виду `docs/90-work/audits/YYYY-…` нижче — pre-archive. Канон: `docs/90-work/audits/archive/YYYY-…`.
+
+Source: `docs/open-work.md §Аудити й прожарки` (9 open audits на дату знімка) + direct reads of all audit files. Audits with `Closed` / `Archived` / `Done` / `Reference` status excluded. Sorted by impact within each bucket.
 
 Delta from 2026-06-22 pass: PRs **#3688–#3721** landed since last triage. Notable: **#3711** raises web test coverage to 75% line floor (closes the web coverage floor concern previously tracked from the fable5 audit and testing-devx-roast); **#3717** closes the react-hooks/use-memo baseline entry (burn-down progressing); **#3709** extends touch-target enforcement to `role=button/menuitem/option`; **#3702–#3707** close HC AA accessibility items (theme-aware ink for buttons, badges, tabs, dialog roles, landmarks) from `consolidated-page-audit`. No new audit files added this pass.
 

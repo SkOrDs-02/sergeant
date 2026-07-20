@@ -47,5 +47,5 @@ Procedure для ротації / емержансі — [`docs/00-start/playboo
 
 ## Related
 
-- **doc** — docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md
+- **doc** — docs/90-work/initiatives/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md
 - **agents** — #20
