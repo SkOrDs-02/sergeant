@@ -1,15 +1,15 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Reference
 
-| Field        | Value                                                                                                                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Initiative   | [`0011`](../../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.1                                                                      |
-| Cards        | [H5](../hardening/H5-trusted-origins-exp-scheme.md), [H6](../hardening/H6-email-verification.md), [H8](../hardening/H8-corp-per-route.md), [H9](../hardening/H9-transcribe-usd-cap.md) |
-| Source PRs   | #1604 (H5), #1608 (H6), #1606 (H8), #1567 + #1613 (H9)                                                                                                                                 |
-| Owner        | @Skords-01 (or external pen-tester as follow-up)                                                                                                                                       |
-| Audit window | 2026-05-04 → 2026-05-06                                                                                                                                                                |
+| Field        | Value                                                                                                                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Initiative   | [`0011`](../../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) Phase 3 PR 3.1                                                                                                      |
+| Cards        | [H5](../hardening/archive/H5-trusted-origins-exp-scheme.md), [H6](../hardening/archive/H6-email-verification.md), [H8](../hardening/archive/H8-corp-per-route.md), [H9](../hardening/archive/H9-transcribe-usd-cap.md) |
+| Source PRs   | #1604 (H5), #1608 (H6), #1606 (H8), #1567 + #1613 (H9)                                                                                                                                                                 |
+| Owner        | @Skords-01 (or external pen-tester as follow-up)                                                                                                                                                                       |
+| Audit window | 2026-05-04 → 2026-05-06                                                                                                                                                                                                |
 
 ## Why this document
 
@@ -59,7 +59,7 @@ Out of scope:
 
 ## H5 — Trusted-origins `exp://` leak in production
 
-**Reference:** [`docs/04-governance/security/hardening/H5-trusted-origins-exp-scheme.md`](../hardening/H5-trusted-origins-exp-scheme.md), PR #1604.
+**Reference:** [`docs/04-governance/security/hardening/H5-trusted-origins-exp-scheme.md`](../hardening/archive/H5-trusted-origins-exp-scheme.md), PR #1604.
 
 ### Threat model
 
@@ -141,7 +141,7 @@ pnpm --filter @sergeant/server dev
 
 ## H6 — Email verification not gating sensitive actions
 
-**Reference:** [`docs/04-governance/security/hardening/H6-email-verification.md`](../hardening/H6-email-verification.md), PR #1608.
+**Reference:** [`docs/04-governance/security/hardening/H6-email-verification.md`](../hardening/archive/H6-email-verification.md), PR #1608.
 
 ### Threat model
 
@@ -238,7 +238,7 @@ curl -i \
 
 ## H8 — `Cross-Origin-Resource-Policy` per-route override
 
-**Reference:** [`docs/04-governance/security/hardening/H8-corp-per-route.md`](../hardening/H8-corp-per-route.md), PR #1606.
+**Reference:** [`docs/04-governance/security/hardening/H8-corp-per-route.md`](../hardening/archive/H8-corp-per-route.md), PR #1606.
 
 ### Threat model
 
@@ -348,7 +348,7 @@ done
 
 ## H9 — `transcribe` USD-cap pre-charge + boot-time `AI_QUOTA_DISABLED` guard
 
-**Reference:** [`docs/04-governance/security/hardening/H9-transcribe-usd-cap.md`](../hardening/H9-transcribe-usd-cap.md), PRs #1567 and #1613.
+**Reference:** [`docs/04-governance/security/hardening/H9-transcribe-usd-cap.md`](../hardening/archive/H9-transcribe-usd-cap.md), PRs #1567 and #1613.
 
 ### Threat model
 

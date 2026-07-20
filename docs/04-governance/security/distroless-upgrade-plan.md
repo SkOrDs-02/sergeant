@@ -296,9 +296,9 @@ dist-server/migrate.js`).
 > ## Related
 >
 > - Tracked as `AP-03` у
->   [`docs/90-work/tech-debt/priority-1-executive.md`](../../90-work/tech-debt/priority-1-executive.md)
+>   [`docs/90-work/tech-debt/priority-1-executive.md`](../../90-work/tech-debt/archive/priority-1-executive.md)
 >   ("Перезібрати базовий образ distroless до спливу CVE 2026-07-02")
 > - Тема "Вплив CVE у базовому образі distroless" у
->   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.md`](../../90-work/tech-debt/technical-assessment-2026-06-05.md)
+>   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.md`](../../90-work/tech-debt/archive/technical-assessment-2026-06-05.md)
 > - SEC-003 finding у
 >   [`docs/90-work/tech-debt/technical-assessment-2026-06-05.json`](../../90-work/tech-debt/technical-assessment-2026-06-05.json)

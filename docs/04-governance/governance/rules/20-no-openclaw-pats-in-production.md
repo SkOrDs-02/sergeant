@@ -43,7 +43,7 @@
 - `OPENCLAW_GITHUB_PAT` у `NODE_ENV=development` / `NODE_ENV=test` — локальні dev-сервери і CI можуть мати legacy токен у `process.env`, hard-block спрацьовує лише у prod.
 - Відсутність `OPENCLAW_GITHUB_APP_*` змінних — це окрема failure mode (`getOpenclawGithubAuth()` повертає null, caller бачить `status: 'not_configured'`), не violation цього правила.
 
-Procedure для ротації / емержансі — [`docs/00-start/playbooks/rotate-openclaw-credentials.md`](../../../00-start/playbooks/rotate-openclaw-credentials.md). Migration-план — [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../../90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
+Procedure для ротації / емержансі — [`docs/00-start/playbooks/rotate-openclaw-credentials.md`](../../../00-start/playbooks/rotate-openclaw-credentials.md). Migration-план — [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../../90-work/initiatives/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md).
 
 ## Related
 

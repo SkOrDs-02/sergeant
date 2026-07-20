@@ -103,12 +103,12 @@ git mv docs/90-work/initiatives/0007-design-system-tooling.md \
 Для кожної ініціативи, перенести рядок із `## Нещодавно завершені` → `## Архів`:
 
 ```markdown
-- [archive/\_0001-module-decomposition.md](./archive/_0001-module-decomposition.md) — archived 2026-08-02; successor [0013-module-decomposition-round-2.md](./0013-module-decomposition-round-2.md), Hard Rule #18 (`max-lines: 600`) live
-- [archive/\_0004-server-observability.md](./archive/_0004-server-observability.md) — archived 2026-08-02; [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) + Sentry production, OTLP optional
-- [archive/\_0005-ai-cost-and-prompt-cache.md](./archive/_0005-ai-cost-and-prompt-cache.md) — archived 2026-08-02; [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md) production policy
-- [archive/\_0008-platform-hardening.md](./archive/_0008-platform-hardening.md) — archived 2026-08-02; `RATE_LIMIT_POLICIES` registry production, RFC-9239 live
-- [archive/\_0012-perfect-strictness-rollout.md](./archive/_0012-perfect-strictness-rollout.md) — archived 2026-08-02; Hard Rule #19 active, allowlist expires 2026-09-30
-- [archive/\_0007-design-system-tooling.md](./archive/_0007-design-system-tooling.md) — archived 2026-08-03; Storybook live, [ADR-0046](../adr/0046-storybook-vrt-scope.md) VRT scope
+- [archive/\_0001-module-decomposition.md](./_0001-module-decomposition.md) — archived 2026-08-02; successor [0013-module-decomposition-round-2.md](./0013-module-decomposition-round-2.md), Hard Rule #18 (`max-lines: 600`) live
+- [archive/\_0004-server-observability.md](./_0004-server-observability.md) — archived 2026-08-02; [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) + Sentry production, OTLP optional
+- [archive/\_0005-ai-cost-and-prompt-cache.md](./_0005-ai-cost-and-prompt-cache.md) — archived 2026-08-02; [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md) production policy
+- [archive/\_0008-platform-hardening.md](./_0008-platform-hardening.md) — archived 2026-08-02; `RATE_LIMIT_POLICIES` registry production, RFC-9239 live
+- [archive/\_0012-perfect-strictness-rollout.md](./_0012-perfect-strictness-rollout.md) — archived 2026-08-02; Hard Rule #19 active, allowlist expires 2026-09-30
+- [archive/\_0007-design-system-tooling.md](./_0007-design-system-tooling.md) — archived 2026-08-03; Storybook live, [ADR-0046](../adr/0046-storybook-vrt-scope.md) VRT scope
 ```
 
 ### Step 3: Verification (5 min)

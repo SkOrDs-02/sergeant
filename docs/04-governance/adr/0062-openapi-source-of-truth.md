@@ -5,7 +5,7 @@
 - **Last validated:** 2026-06-05 by Skords-01. **Next review:** 2026-09-05.
 - **Deciders:** @Skords-01
 - **Supersedes:** —
-- **Related:** [ADR-0053](./0053-api-versioning-policy.md) (API versioning), [ADR-0025](./0025-openapi-generation.md) (zod→OpenAPI generator — цей ADR підтверджує code-first як канонічне SoT, не суперечить 0025), PR-23 у [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md)
+- **Related:** [ADR-0053](./0053-api-versioning-policy.md) (API versioning), [ADR-0025](./0025-openapi-generation.md) (zod→OpenAPI generator — цей ADR підтверджує code-first як канонічне SoT, не суперечить 0025), PR-23 у [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
 
 ---
 
@@ -97,6 +97,6 @@ deferred, trigger-gated на перший production contract-bug:
 
 ## Links
 
-- PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md)
+- PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
 - [zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
 - [openapi-typescript](https://github.com/openapi-ts/openapi-typescript)

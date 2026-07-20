@@ -8,9 +8,9 @@ next_review: 2026-08-06
 # Postgres pool sizing — knobs, sizing rule, debugging
 
 > **Status:** active.
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > Виконує acceptance criteria stack-pulse PR-13
-> ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md)).
+> ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-13-postgres-pool-sizing.md)).
 > Перетинається з [`docs/03-operations/runbooks/database-connection-pooling.md`](../runbooks/database-connection-pooling.md)
 > (deploy-shape pgBouncer pooler) і [`docs/03-operations/observability/runbook.md`](./runbook.md)
 > (response для алертів `DbPoolWaitingSustained` / `DbPoolSaturated`).

@@ -1,9 +1,9 @@
 # Encryption key rotation — runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
-> Закриває action item з [`docs/04-governance/security/hardening/H4-encryption-key-rotation.md`](../../04-governance/security/hardening/H4-encryption-key-rotation.md).
+> Закриває action item з [`docs/04-governance/security/hardening/H4-encryption-key-rotation.md`](../../04-governance/security/hardening/archive/H4-encryption-key-rotation.md).
 > Доповнює "Compromised secret" сценарій у [`../security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md).
 
 ## Який ключ ротувати
@@ -270,7 +270,7 @@ Deploy. Тепер read-у row-а під v1 буде throw-ити з `keyRing` �
 
 ## Cross-references
 
-- [`../security/hardening/H4-encryption-key-rotation.md`](../../04-governance/security/hardening/H4-encryption-key-rotation.md) — origin card.
+- [`../security/hardening/H4-encryption-key-rotation.md`](../../04-governance/security/hardening/archive/H4-encryption-key-rotation.md) — origin card.
 - [`../security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md) — DR покриває "compromised key" поверх цього runbook-у.
 - [`../security/secret-ownership-register.md`](../../04-governance/security/secret-ownership-register.md) — owner-list для всіх AES-256-GCM ключів.
 - [`apps/server/src/lib/keyRing.ts`](../../../apps/server/src/lib/keyRing.ts) — реалізація.

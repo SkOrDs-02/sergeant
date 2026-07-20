@@ -307,10 +307,10 @@ railway logs --service sergeant-api | grep '"email"\|"password"'
 
 ## Cross-references
 
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
-- [`docs/04-governance/security/hardening/M3-pino-redact-paths.md`](./hardening/M3-pino-redact-paths.md) (round 14 closure)
-- [`docs/04-governance/security/hardening/L10-user-id-hash-in-logs.md`](./hardening/L10-user-id-hash-in-logs.md) (userId hashing)
-- [`docs/04-governance/security/hardening/C1-mono-webhook-secret-in-url.md`](./hardening/C1-mono-webhook-secret-in-url.md) (URL redaction)
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
+- [`docs/04-governance/security/hardening/M3-pino-redact-paths.md`](hardening/archive/M3-pino-redact-paths.md) (round 14 closure)
+- [`docs/04-governance/security/hardening/L10-user-id-hash-in-logs.md`](hardening/archive/L10-user-id-hash-in-logs.md) (userId hashing)
+- [`docs/04-governance/security/hardening/C1-mono-webhook-secret-in-url.md`](hardening/archive/C1-mono-webhook-secret-in-url.md) (URL redaction)
 - [`docs/03-operations/observability/logging.md`](../../03-operations/observability/logging.md) (logging conventions)
 - [`packages/shared/src/lib/pii.ts`](../../../packages/shared/src/lib/pii.ts) (canonical `REDACT_KEY_NAMES` + `scrubPII`)
 - [`apps/server/src/obs/logger.ts`](../../../apps/server/src/obs/logger.ts) (Pino config + back-compat alias)

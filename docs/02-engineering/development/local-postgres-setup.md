@@ -1,6 +1,6 @@
 # Local Postgres setup
 
-> **Last touched:** 2026-07-03 by @claude. **Next review:** 2026-10-01.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
@@ -117,4 +117,4 @@ linux/amd64`. Зменшіть platform-mismatch правкою в `docker-compo
 - Pool sizing runbook: [`docs/03-operations/observability/pg-pool-sizing.md`](../../03-operations/observability/pg-pool-sizing.md).
 - Backup/restore runbook: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md).
 - Renovate operations: [`docs/03-operations/ops/renovate.md`](../../03-operations/ops/renovate.md).
-- Initiative: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md).
+- Initiative: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md).

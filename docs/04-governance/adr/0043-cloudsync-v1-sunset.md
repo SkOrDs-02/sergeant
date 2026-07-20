@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) — це v1, що ми збираємось sunset-нути.
-  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
+  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/archive/_0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
   - `apps/server/src/modules/sync/sunsetGone.ts` — v1 410 Gone handler (historical; **removed** Phase 7 / [#326](https://github.com/Skords-01/Sergeant/pull/326)).
   - [`apps/server/src/modules/sync/syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — v2 op-log handlers (Stage 2 / PR #021).
   - `apps/server/src/modules/sync/sunsetHeaders.ts` — middleware, що реалізував цей ADR (historical; **removed** Phase 7 / #326).
@@ -60,7 +60,7 @@ deprecation-сигналів → клієнти не знають, що мают
 ## Decision
 
 **Прийнято Option 3.** CloudSync v1 sunset-имо за 6-фазним планом
-(специфікація — [Initiative 0003](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md)):
+(специфікація — [Initiative 0003](../../90-work/initiatives/archive/_0003-sync-v2-rollout-and-v1-sunset.md)):
 
 | Phase | Тривалість          | Що робимо                                                                                    |
 | ----- | ------------------- | -------------------------------------------------------------------------------------------- |

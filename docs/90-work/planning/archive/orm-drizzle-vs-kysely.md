@@ -4,10 +4,10 @@
 > **Status:** Archived (read-only).
 > **Created:** 2026-05-03.
 > **Owner:** @Skords-01.
-> **Source:** [`../dev-stack-roadmap.md`](../dev-stack-roadmap.md) — рядок «Drizzle» у таблиці Database / Migration tooling.
+> **Source:** [`../dev-stack-roadmap.md`](dev-stack-roadmap-ff-2026-07-20.md) — рядок «Drizzle» у таблиці Database / Migration tooling.
 > **Purpose:** зберегти rationale «чому Drizzle, а не Kysely», щоб майбутні агенти не пропонували повернутися до Kysely. Міграція виконана у гілці `devin/*-remove-kysely-use-drizzle` (2026-05-03) — Kysely + `@better-auth/kysely-adapter` прибрано, Drizzle лишився єдиним ORM/query builder.
 
-Цей файл — read-only. Для нових ORM/migration рішень редагуй [`../dev-stack-roadmap.md`](../dev-stack-roadmap.md) або заводь нову ADR у `docs/04-governance/adr/`.
+Цей файл — read-only. Для нових ORM/migration рішень редагуй [`../dev-stack-roadmap.md`](dev-stack-roadmap-ff-2026-07-20.md) або заводь нову ADR у `docs/04-governance/adr/`.
 
 ---
 

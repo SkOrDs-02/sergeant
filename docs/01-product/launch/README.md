@@ -1,6 +1,6 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів, Free AI 15 msg/day. У старих блоках нижче ₴99/₴799 — historical context.
@@ -54,18 +54,18 @@ docs/01-product/launch/
 | Чеклист «все готово до запуску»?                                  | [04 — Чеклист](./business/04-launch-readiness.md#7-pre-launch-чеклист)                               |
 | Як адмініструвати продукт і не вигоріти?                          | [05 — Операції](./business/05-operations-and-automation.md#1-шість-операційних-зон)                  |
 | Як налаштувати n8n + OpenClaw?                                    | [05 — Автоматизація](./business/05-operations-and-automation.md#6-зона-6-у-деталях-n8n--openclaw)    |
-| Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](./tech/openclaw-roadmap.md)                                                       |
-| Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](./tech/telegram-improvements-roadmap.md)                             |
+| Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](archive/tech/openclaw-roadmap.md)                                                 |
+| Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](archive/tech/telegram-improvements-roadmap.md)                       |
 | Який поточний стан FTUX (sprint registry, відкриті проблеми)?     | [ftux-master-tracker](./product-os/ftux-master-tracker.md)                                           |
 | Як саме запускати з реальними юзерами (Web → Capacitor → Native)? | [phases/README — master plan-guide](./phases/README.md)                                              |
 | Що готово, а що блокує запуск (readiness matrix)?                 | [phases/00 — Readiness audit](./phases/00-readiness-audit.md)                                        |
 | Тижневий план Web-launch з юзерами (W-4 .. W+12)?                 | [phases/01 — Web launch with users](./phases/01-web-launch-with-users.md)                            |
 | Як підключати бета-тестерів через TestFlight / Play?              | [phases/02 — Capacitor launch](./phases/02-capacitor-launch.md)                                      |
 | Чи варто запускати окремо Native Expo (apps/mobile)?              | [phases/README § Phase 3](./phases/README.md#phase-3--native-expo--conditional) _(conditional gate)_ |
-| Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](./product-os/ftux-sprint-plan.md) _(frozen)_                                      |
+| Як виправляти FTUX-онбординг (історичний sprint plan)?            | [ftux-sprint-plan](archive/product-os/ftux-sprint-plan.md) _(frozen)_                                |
 | Як активувати AI-memory: pgvector, Voyage, recall (ADR-0028)?     | [ai-memory-activation](./tech/ai-memory-activation.md)                                               |
-| S1 ретро — чесний value-prop, поточний стан спринту?              | [sprint-retros/s1-honest-valueprop](./product-os/sprint-retros/s1-honest-valueprop.md)               |
-| S3 ретро — reward у правильний момент, поточний стан спринту?     | [sprint-retros/s3-reward-moments](./product-os/sprint-retros/s3-reward-moments.md)                   |
+| S1 ретро — чесний value-prop, поточний стан спринту?              | [sprint-retros/s1-honest-valueprop](archive/product-os/sprint-retros/s1-honest-valueprop.md)         |
+| S3 ретро — reward у правильний момент, поточний стан спринту?     | [sprint-retros/s3-reward-moments](archive/product-os/sprint-retros/s3-reward-moments.md)             |
 | Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./business/06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)          |
 | Що може піти не так у monetization rollout?                       | [06 — Risk register](./business/06-monetization-architecture.md#7-risk-register)                     |
 

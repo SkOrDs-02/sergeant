@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 ## Контекст
@@ -15,7 +15,7 @@
 
 Цей doc — checklist готовності й operational guide.
 
-Roadmap-довідник: [`docs/90-work/audits/2026-05-03-web-deep-dive`](../../90-work/audits/2026-05-03-web-deep-dive/00-overview.md) item **#18** (score 0.67).
+Roadmap-довідник: [`docs/90-work/audits/2026-05-03-web-deep-dive`](../../90-work/audits/archive/2026-05-03-web-deep-dive/00-overview.md) item **#18** (score 0.67).
 
 ## Foundation (готово — round 10–14)
 

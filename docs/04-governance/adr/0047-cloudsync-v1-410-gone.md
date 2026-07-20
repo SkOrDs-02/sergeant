@@ -9,11 +9,11 @@
 - **Supersedes:** [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) (per-module LWW worldview engine; цей ADR + Stage 7 cleanup переключають production на per-row op-log v2).
 - **Related:**
   - [ADR-0043 — CloudSync v1 sunset (RFC 8594 deprecation headers + 6-phase rollout)](./0043-cloudsync-v1-sunset.md) — цей ADR виконує Phase 5 з ADR-0043.
-  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
+  - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/archive/_0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
   - `apps/server/src/modules/sync/sunsetGone.ts` — handler, який реалізував цей ADR (historical; **removed** Phase 7 / [#326](https://github.com/Skords-01/Sergeant/pull/326)).
   - [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — wire-up; після Phase 7 — лише v2 + audit (немає `respondV1Gone`).
   - `apps/server/src/modules/sync/sunsetHeaders.ts` — Phase 2 middleware (historical; **removed** Phase 7 / #326).
-  - [Storage roadmap §3 — Stage 7 cleanup](../../90-work/planning/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
+  - [Storage roadmap §3 — Stage 7 cleanup](../../90-work/planning/archive/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
 
 ---
 

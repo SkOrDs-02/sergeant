@@ -7,7 +7,7 @@
 
 ## Cross-refs (попередні прожарки/аудити цієї теми)
 
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](../2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело §1.0–2.4 working-list-у (343 рядки, 4 P0 + 6 P1 + кілька P2)
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело §1.0–2.4 working-list-у (343 рядки, 4 P0 + 6 P1 + кілька P2)
 - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](./2026-04-28-sergeant-comprehensive-audit.md) — оригінальна comprehensive прожарка
 - [`docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md) — sprint-roadmap по audit-items
 - [`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`](../../initiatives/0006-frontend-routing-and-code-split.md) — react-router migration (in progress, Phase 2 of 5)

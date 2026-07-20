@@ -1,6 +1,6 @@
 # Renovate maintainer runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
@@ -122,6 +122,6 @@ Per ADR-0044, Dependabot піднімає security-PR-и daily. Воркфлоу
 - [`.github/dependabot.yml`](../../../.github/dependabot.yml) — конфіг Dependabot (security-only npm + github-actions/docker overlap).
 - [`.github/workflows/dependabot-automerge.yml`](../../../.github/workflows/dependabot-automerge.yml) — auto-merge patch-only npm + github-actions.
 - [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — гід контриб'ютора (review-cheatsheet, FAQ).
-- [`docs/04-governance/security/hardening/H2-dependabot.md`](../../04-governance/security/hardening/H2-dependabot.md) — Sprint 1 setup card (Dependabot scope-reduction).
+- [`docs/04-governance/security/hardening/H2-dependabot.md`](../../04-governance/security/hardening/archive/H2-dependabot.md) — Sprint 1 setup card (Dependabot scope-reduction).
 - [`docs/04-governance/security/nightly-audit.md`](../../04-governance/security/nightly-audit.md) — реактивна частина (`pnpm audit` + OSV-Scanner).
 - [`docs/04-governance/security/vulnerability-sla.md`](../../04-governance/security/vulnerability-sla.md) — SLA для security-bumps.

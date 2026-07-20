@@ -18,7 +18,7 @@
   [`docs/90-work/audits/2026-05-13-security-observability-roast.md`](../../audits/archive/2026-05-13-security-observability-roast.md)
   — section IDs `S2..S11` нижче зберігаються 1-в-1 із roast-документом.
 - **Споріднені аудити (P0/P1 контекст):**
-  [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
+  [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md),
   [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md),
   [`docs/90-work/audits/2026-05-07-full-app-regression-ux-audit.md`](../../audits/archive/2026-05-07-full-app-regression-ux-audit.md),
   [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](../../audits/archive/2026-05-04-csp-disable-retrospective.md)

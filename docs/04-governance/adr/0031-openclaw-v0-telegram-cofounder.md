@@ -9,7 +9,7 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — security policy (allowlist, fail-closed, read-only by default).
   - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md) — vector store backend.
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + topics layout.
-  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md) — phasing + scope.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md) — phasing + scope.
   - [`docs/01-product/launch/business/05-operations-and-automation.md`](../../01-product/launch/business/05-operations-and-automation.md) — operations architecture.
 
 ---
@@ -333,4 +333,4 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
 - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md)
 - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md)
 - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
-- [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md)
+- [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md)

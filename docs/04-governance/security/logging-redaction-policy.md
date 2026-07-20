@@ -1,9 +1,9 @@
 # Pino logging redaction policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active.
 > **Hard rule:** [#21 — Pino redaction policy enforced](../../../AGENTS.md#21-pino-redaction-policy-enforced).
-> **Stack-pulse initiative:** [PR-16](../../90-work/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md).
+> **Stack-pulse initiative:** [PR-16](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md).
 > **Related:** [`docs/04-governance/security/pii-handling.md`](./pii-handling.md) — single source of truth для класифікації полів.
 
 ## TL;DR

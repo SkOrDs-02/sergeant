@@ -1,13 +1,13 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI 15 повідомлень/день + cloud-sync 2 пристрої. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
 >
 > **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — **Superseded by ADR-0068**. Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — не йдуть у код MVP (залишаються як historical context нижче).
 >
-> **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
+> **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../../90-work/planning/archive/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
 
 > Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:
 > `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.

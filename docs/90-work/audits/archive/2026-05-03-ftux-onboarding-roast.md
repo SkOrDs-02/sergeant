@@ -15,14 +15,14 @@
 > Перспектива: product-led growth, FTUX-оптимізація, behavioral design.
 >
 > **Cross-refs:**
-> [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/product-os/ftux-sprint-plan.md) — план реалізації рекомендацій ·
+> [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md) — план реалізації рекомендацій ·
 > [`docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній технічний UX-план ·
 > [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../../01-product/launch/business/01-monetization-and-pricing.md) — activation funnel & aha-moment hypotheses ·
 > [`docs/05-design/design/empty-states.md`](../../../05-design/design/empty-states.md) — 3-tier empty states.
 
 > ### Errata (2026-05-03 21:53 UTC)
 >
-> Початкова проджарка стверджувала, що «PostHog не підключений (analytics — stub з localStorage)». **Це неточно.** Перевірив код у `main` після спроби взяти S0.1 і виявив, що web-частину analytics уже зроблено: PostHog SDK lazy-mounted з [`apps/web/src/core/observability/posthog.ts`](../../../../apps/web/src/core/observability/posthog.ts), `initPostHog()` викликається з `main.tsx`, `identify`/`reset` з `AuthContext`, `<PageviewTracker />` змонтований у `App.tsx`, `posthog-js@^1.372.3` в deps. `.env.example` (root) уже має `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` коментовані; setup задокументований у [`docs/03-operations/observability/frontend.md`](../../../03-operations/observability/frontend.md). Реальні гепи лишаються: (а) mobile parity (apps/mobile = console-only stub без `posthog-js`), (б) ~9 канонічних подій з `ANALYTICS_EVENTS` визначені, але не fired у `trackEvent` call-sites — серед них `CELEBRATION_SHOWN`, `FIRST_REAL_ENTRY`, `FTUX_TIME_TO_VALUE`, `MODULE_CHECKLIST_*`, `ONBOARDING_STEP_VIEWED/COMPLETED/SKIPPED`, `BUDGET_SET`, `HINT_DISMISSED/COMPLETED`, `STREAK_MILESTONE_REACHED`, (в) PostHog FTUX dashboards docs не існує. Деталі — у [`ftux-sprint-plan.md` §2 «Status check»](../../../01-product/launch/product-os/ftux-sprint-plan.md#status-check-verified-2026-05-03). Висновки самої прожарки (P0–P3 рекомендації) лишаються в силі — вони про emotional design, не про transport.
+> Початкова проджарка стверджувала, що «PostHog не підключений (analytics — stub з localStorage)». **Це неточно.** Перевірив код у `main` після спроби взяти S0.1 і виявив, що web-частину analytics уже зроблено: PostHog SDK lazy-mounted з [`apps/web/src/core/observability/posthog.ts`](../../../../apps/web/src/core/observability/posthog.ts), `initPostHog()` викликається з `main.tsx`, `identify`/`reset` з `AuthContext`, `<PageviewTracker />` змонтований у `App.tsx`, `posthog-js@^1.372.3` в deps. `.env.example` (root) уже має `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` коментовані; setup задокументований у [`docs/03-operations/observability/frontend.md`](../../../03-operations/observability/frontend.md). Реальні гепи лишаються: (а) mobile parity (apps/mobile = console-only stub без `posthog-js`), (б) ~9 канонічних подій з `ANALYTICS_EVENTS` визначені, але не fired у `trackEvent` call-sites — серед них `CELEBRATION_SHOWN`, `FIRST_REAL_ENTRY`, `FTUX_TIME_TO_VALUE`, `MODULE_CHECKLIST_*`, `ONBOARDING_STEP_VIEWED/COMPLETED/SKIPPED`, `BUDGET_SET`, `HINT_DISMISSED/COMPLETED`, `STREAK_MILESTONE_REACHED`, (в) PostHog FTUX dashboards docs не існує. Деталі — у [`ftux-sprint-plan.md` §2 «Status check»](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md#status-check-verified-2026-05-03). Висновки самої прожарки (P0–P3 рекомендації) лишаються в силі — вони про emotional design, не про transport.
 
 > ### Errata v2 (2026-05-03 23:35 UTC) — Sprint 0 закрито
 >
@@ -292,7 +292,7 @@
 
 ## 4. Рекомендації (у порядку impact-friction)
 
-> **План реалізації:** [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/product-os/ftux-sprint-plan.md) — кожна рекомендація розписана як user-story + PR з AC і метриками.
+> **План реалізації:** [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md) — кожна рекомендація розписана як user-story + PR з AC і метриками.
 
 ### P0 (зробити в першу чергу — 1-2 спринти)
 
@@ -302,7 +302,7 @@
 4. **Замінити CTA «Відкрити Sergeant» / «Заповни мій хаб» на outcome-CTA.** «Зробити перший запис», «Налаштувати мій тиждень», «Подивитись як це виглядає» — щось, що обіцяє результат.
 5. **Goals → primary action.** Якщо користувач у GoalSheet вказав фінансовий бюджет → primary FirstAction = `finyk`, а не `routine`. Жорсткий PRIORITY-array проти goal-aware-вибору — це anti-personalization.
 6. **PresetSheet для nutrition/fizruk:** або прибрати sheet (відкривати add-sheet напряму з FirstActionHero), або додати реальні prefill-канали і тримати плитки. Поточний пустий sheet — best-of-both-worlds, but worst.
-7. **PostHog (або еквівалент).** Без funnel-метрик усе вищезазначене — це гіпотези. Це **передумова** до будь-якого A/B. _Web-частина закрита станом на 2026-05-03 — див. errata v2 угорі та [`ftux-sprint-plan.md` §2](../../../01-product/launch/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень) (S0.4 + S0.5 shipped). Mobile parity (S0.3) лишається._
+7. **PostHog (або еквівалент).** Без funnel-метрик усе вищезазначене — це гіпотези. Це **передумова** до будь-якого A/B. _Web-частина закрита станом на 2026-05-03 — див. errata v2 угорі та [`ftux-sprint-plan.md` §2](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень) (S0.4 + S0.5 shipped). Mobile parity (S0.3) лишається._
 
 ### P1 (другий спринт)
 
@@ -372,4 +372,4 @@
 
 Це — типова продуктова дисфункція **«engineer-built FTUX without product/UX co-design»**. Виправляється не переробленим кодом, а **переписаним copy + перенастроюваним event-таймінгом + перевіреним event-data flow**. P0-список вище — приблизно 2 тижні роботи з результатом 2-3× в activation funnel.
 
-> **Що далі:** [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/product-os/ftux-sprint-plan.md) розкладає всі 22 рекомендації по 5 спринтах із PR-розбивкою, AC, метриками і ризиками.
+> **Що далі:** [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md) розкладає всі 22 рекомендації по 5 спринтах із PR-розбивкою, AC, метриками і ризиками.

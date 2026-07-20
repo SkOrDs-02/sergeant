@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-> Закриває Stage 6 PR #046 із [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md):
+> Закриває Stage 6 PR #046 із [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md):
 > deploy-shape для **pgBouncer connection pooler** перед Railway Postgres,
 > ENV-перемикач `DATABASE_URL_POOL`, та правила, які API-маршрути / cron / міграції
 > ходять через який URL.
@@ -162,4 +162,4 @@ HTTP request ────┤
 - Runtime пул: `apps/server/src/db.ts` (`POOL_VIA_PGBOUNCER`, `getPoolStats`).
 - Migration runner: `apps/server/migrate.mjs` (`MIGRATE_DATABASE_URL` має пріоритет
   над `DATABASE_URL`).
-- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md) Stage 6.
+- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6.

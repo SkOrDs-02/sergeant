@@ -1,6 +1,6 @@
 # Sergeant — dead-code & stale-links аудит (2026-05-05)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Archived
 
 > Аудит виконано 2026-05-05 проти `main @ f6bc64aa` як прохід по «застарілих чи мертвих елементах» репо. Скоуп — те, що автоматичні гарди (`pnpm dead-code:files`, `pnpm knip`, `pnpm docs:check-links`, `pnpm lint:tech-debt-freshness`, `pnpm lint:ai-legacy`, `pnpm docs:check-freshness-coverage`) знаходять зараз. Усі fix-able findings закриті у супровідному PR — цей файл лишається як historical record + дашборд для outstanding hints.
@@ -175,4 +175,4 @@ pnpm knip --reporter=json | tee dist/knip-snapshot-$(date +%F).json
 - [`AGENTS.md` → Hard Rule #10](../../../../AGENTS.md) — лайфциклові маркери (`@scaffolded` / `@deprecated` / `@experimental`) як умова для dead-code:files гарду.
 - [`scripts/codemods/README.md`](../../../../scripts/codemods/README.md) — каталог одноразових міграційних скриптів.
 - [`docs/90-work/tech-debt/frontend.md`](../../tech-debt/frontend.md) — outstanding tech-debt по `apps/web`, на яке посилаються initiatives 0006/0007.
-- [`do./2026-05-03-web-deep-dive/02-architecture-and-state.md`](../2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело `@scaffolded` маркерів для `useApiForm` барелу та storage-roadmap PR-ів.
+- [`do./2026-05-03-web-deep-dive/02-architecture-and-state.md`](2026-05-03-web-deep-dive/02-architecture-and-state.md) — джерело `@scaffolded` маркерів для `useApiForm` барелу та storage-roadmap PR-ів.

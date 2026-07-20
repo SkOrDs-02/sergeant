@@ -1,6 +1,6 @@
 # Еволюція хостингу — що де хоститься і коли мігрувати
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Deprecated — рішення «коли мігрувати з Railway» вже прийняте й виконане.
 >
 > **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Документ зберігається як історичний контекст рішення; секції «поточний стан» нижче описують доміграційний Railway-стек і НЕ актуальні. Актуальна топологія — ADR-0074 + [`platforms.md`](./platforms.md).
@@ -14,7 +14,7 @@ Reference-документ: де зараз живе кожен сервіс Ser
 - [`docs/01-product/launch/business/03-services-and-toolstack.md`](../../01-product/launch/business/03-services-and-toolstack.md) — повний каталог сервісів з цінами.
 - [`docs/02-engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md) — як налаштувати поточний стек (Railway + Vercel).
 - [`docs/03-operations/observability/`](../../03-operations/observability) — SLO, метрики, runbook.
-- [`docs/90-work/planning/dev-stack-roadmap.md`](../../90-work/planning/dev-stack-roadmap.md) — топ-15 dev-інструментів.
+- [`docs/90-work/planning/dev-stack-roadmap.md`](../../90-work/planning/archive/dev-stack-roadmap-ff-2026-07-20.md) — топ-15 dev-інструментів.
 
 ---
 

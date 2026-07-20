@@ -22,7 +22,7 @@ PR-розкладка по решті open / Partial / Follow-up / Backlog items
 - [`docs/90-work/audits/archive/2026-05-13-backend-performance-roast.md`](../../audits/archive/2026-05-13-backend-performance-roast.md) — джерельна прожарка (P1-1…P1-6 закриті, P2-1…P2-8 + два TL;DR-винесення — open).
 - [`docs/90-work/tech-debt/backend.md`](../../tech-debt/backend.md) — running tech-debt log (606 рядків). Особливо `Summary — per-category`, `Observability & logging review`, `Tests coverage map`.
 - [`docs/90-work/audits/archive/2026-05-07-app-audit.md`](../../audits/archive/2026-05-07-app-audit.md) — повний product audit; §10 P0/P1/P2 матриця.
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../../audits/2026-05-03-web-deep-dive/03-backend-and-performance.md) — попередній backend deep-dive (370 рядків).
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/03-backend-and-performance.md`](../../audits/archive/2026-05-03-web-deep-dive/03-backend-and-performance.md) — попередній backend deep-dive (370 рядків).
 - [`docs/90-work/initiatives/stack-pulse-2026-05/`](../../initiatives/stack-pulse-2026-05/README.md) — паралельна 16-PR серія; PR-01 (env-уніфікація), PR-12 (Sentry tracesSampler), PR-13 (pg-pool sizing), PR-16 (Pino redaction) — найближчі за поверхнею.
 
 ### Дотичні ADR

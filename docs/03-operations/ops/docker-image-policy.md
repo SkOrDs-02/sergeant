@@ -150,6 +150,6 @@ Native-binding deps (наприклад `sharp`) — НЕ у поточному 
 - [`Dockerfile.api`](../../../Dockerfile.api) — Hub API multi-stage build.
 - `Dockerfile.openclaw` — Console / OpenClaw multi-stage build.
 - [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) — Trivy CI gate.
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
-- [`docs/04-governance/security/hardening/L13-docker-platform-pin.md`](../../04-governance/security/hardening/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
+- [`docs/04-governance/security/hardening/L13-docker-platform-pin.md`](../../04-governance/security/hardening/archive/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.
 - [Distroless images](https://github.com/GoogleContainerTools/distroless) — upstream README.

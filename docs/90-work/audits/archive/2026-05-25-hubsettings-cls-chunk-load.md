@@ -3,7 +3,7 @@
 > **Last validated:** 2026-06-09.
 > **Status:** Closed
 > **Source:** Code review of merged batch `chore/orchestrated-batch-2026-05-22` (рebase виявив, що всі коміти вже в main; знахідки актуальні для поточного main).
-> **Initiative:** [0017 — hub tabs mount perf](../../initiatives/0017-hub-tabs-mount-perf.md) — Sprint 1 PR-1.2 closeout.
+> **Initiative:** [0017 — hub tabs mount perf](../../initiatives/archive/_0017-hub-tabs-mount-perf.md) — Sprint 1 PR-1.2 closeout.
 
 ## Контекст
 

@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -50,7 +50,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 ## Lighthouse CI (perf-budget gate)
 
-T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90-work/planning/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
 
 **Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/nutrition/menu`. `/nutrition` redirects to `/nutrition/menu`, so LHCI audits the canonical path directly. `/routine` is temporarily excluded from LHCI after repeated CI-only `NO_FCP` runtime failures; keep Playwright smoke coverage for the route until the Lighthouse/Chrome trace failure is fixed. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
 

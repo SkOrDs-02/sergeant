@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
+> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і
