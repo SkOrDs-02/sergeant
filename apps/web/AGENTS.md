@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -33,7 +33,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`). No inline `queryKey: [...]`.
 - **Tailwind colour-opacity (Hard Rule #8):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion (Rule #9). No arbitrary hex in `className` (Rule #11). Use `focus-visible:` not `focus:` (Rule #14).
 - **Module accents (Rule #12):** module-accent containment — no foreign accents inside a module subtree.
-- **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Active initiative — split before crossing.
+- **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Permanent lint-enforced convention — split before crossing.
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` for `xs`/`sm`/`iconOnly`; opt out with `data-compact` only for intentionally small cells (heatmaps).
 - **Vitest prerequisite:** run `pnpm --filter @sergeant/db-schema build` before `pnpm --filter @sergeant/web test`. Without it, Vitest cannot resolve `@sergeant/db-schema/sqlite` and hundreds of suites fail at import time with `(0 test)`.
@@ -56,11 +56,11 @@ T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90
 
 **Budgets (median run):**
 
-| Метрика                          | Поріг   | Рівень (first pass)                                              |
-| -------------------------------- | ------- | ---------------------------------------------------------------- |
-| `largest-contentful-paint` (LCP) | 2000 ms | `warn` (target — після baseline tightening → `error` на 3000 ms) |
-| `first-contentful-paint` (FCP)   | 1500 ms | `warn`                                                           |
-| `total-blocking-time` (TBT)      | 200 ms  | `warn`                                                           |
+| Метрика                          | Поріг   | Рівень (first pass) |
+| -------------------------------- | ------- | ------------------- |
+| `largest-contentful-paint` (LCP) | 3000 ms | `error` (fail-stop) |
+| `first-contentful-paint` (FCP)   | 1500 ms | `warn`              |
+| `total-blocking-time` (TBT)      | 200 ms  | `warn`              |
 
 **Як читати reports:**
 
@@ -68,9 +68,9 @@ T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90
 2. В кінці кроку `Run Lighthouse CI` LHCI друкує `Open the report at <url>` — клік → HTML-репорт на `storage.googleapis.com/lighthouse-infrastructure...`. Один URL на route.
 3. Альтернативно: завантаж workflow-artifact `lighthouse-reports` (retention 14 днів) — містить `.lighthouseci/lhr-*.html` + `manifest.json` з тривалостями кожного run-у.
 4. Зелений job без warn-ів означає, що **median LCP / FCP / TBT всіх 4 LHCI routes** під порогами.
-5. `⚠ warning` біля метрики — поріг перевищено, але job-у не падає (поки first-pass `warn`).
+5. `⚠ warning` біля метрики — поріг перевищено, але job не падає (FCP/TBT — `warn`).
 6. `NO_FCP` / server-start runtime flake після retry — job soft-pass-ить із GitHub warning; дивись `lhci-attempt.log` у job output.
-7. `✗ error` (після tightening) — fail-stop; PR не мерджиться без зеленої метрики або temp-override.
+7. `✗ error` — fail-stop (LCP > 3000 ms); PR не мерджиться без зеленої метрики або temp-override.
 
 **Temp-overrides (regression patch / urgent merge):**
 
@@ -78,7 +78,7 @@ T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../docs/90
 
 1. **Preferred:** виправ regression перед merge — переглянь LHCI report → шукай `unused-javascript`, `largest-contentful-paint-element`, `render-blocking-resources`.
 2. **Якщо incident-bypass необхідний:** додай у PR-description `[skip-lighthouse-ci]` + причину; в follow-up PR (≤24h) — fix regression АБО bump поріг у [`apps/web/lighthouserc.json`](./lighthouserc.json) з justification у commit message (e.g. «major dep upgrade adds 50 KB → tier-2 chunk → LCP +200 ms; budget bump узгоджено з owner»).
-3. Workflow зараз `warn`-only — жодного hard-block-у не існує до tightening PR-а. Після нього: `pull_request` `lighthouse` job стане `required` через GitHub branch-protection rules (manual flip у settings).
+3. LCP уже `error`-gated (3000 ms); FCP/TBT — `warn`-only. Перевід `lighthouse` job у `required` через GitHub branch-protection rules — manual flip у settings.
 
 **Локальний прогон:**
 

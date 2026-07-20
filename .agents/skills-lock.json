@@ -29,7 +29,7 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0027b7c0434538c16178d78e1ed8b8f8034b6af7e0591d498a521f05507410ad"
+      "computedHash": "45652b5a85ffa557334d8a535a20f6043ed71778ee02840727e2b5e895de483f"
     },
     "sergeant-mobile-expo": {
       "source": "local",
@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "1a8e1c3ab3a994f88a2754ed51ba8bc7b21724e788de5d188e424cd89861e642"
+      "computedHash": "d55ec6633b9ea6a1b8035af4561524567e35af2c48882a372434d0baf74c988f"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -74,12 +74,12 @@
     "sergeant-e2e-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "48bee20133b6337d0b37ca8caed71270a54ce1283d9b57c30412ced466c24853"
+      "computedHash": "223467651210963ad9bb5cf9649dbf15e65183579c4882fc9c6db1088e41530c"
     },
     "sergeant-tech-debt": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "cdde92296d2cfc38cc0f887c5f3d32ce2d661f9c11ae2c1cb19e3218d43fa492"
+      "computedHash": "ea7baa76d4e7262039a20c4d6bfedbba14fc93f5b0ebfb8e765f2b4b6fafad1b"
     },
     "sergeant-review-squad": {
       "source": "local",
@@ -109,7 +109,7 @@
     "sergeant-backend-architecture": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b64c2b89b3bb50650e7dcc1963e8e28f70d8ef39429ed1d5ad2afccc23a02567"
+      "computedHash": "a281ad5c045fd049b250faf5fb7012c9690dc48bac8b86f583b28a6c32e4f34d"
     },
     "sergeant-verify-before-done": {
       "source": "local",
