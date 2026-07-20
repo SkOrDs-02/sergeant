@@ -220,7 +220,7 @@
 | ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. | in use  |
 | **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.     | in use  |
-| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-04      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                        | retired |
+| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-07      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                        | retired |
 
 > **Розподіл відповідальності:**
 >
@@ -370,7 +370,7 @@ NODE_ENV=production
 PORT=3000                        # Coolify auto
 
 # Auth
-BETTER_AUTH_URL=                 # Coolify API URL
+BETTER_AUTH_URL=                 # Coolify public HTTPS API URL
 BETTER_AUTH_SECRET=              # 32+ char random
 ALLOWED_ORIGINS=                 # Vercel domain(s)
 
@@ -494,7 +494,7 @@ Breakeven subs      ---          ~30 Pro      ~100 Pro     profitable
 | Vercel Analytics       | $0           | $0                       | 2.5K events/mo                                                                                                                                                          |
 | Stripe                 | ---          | 2.9% + 30c               | Per transaction; код інтегровано, prod config pending                                                                                                                   |
 | Firebase / FCM         | $0           | $0                       | Push (безлімітно)                                                                                                                                                       |
-| **TOTAL**              | **~$17-62**  | **~$62-222**             | Fixed-cost сума (Stripe % понад це). Breakeven ~30 Pro subs                                                                                                             |
+| **TOTAL**              | **~$17-62**  | **~$62-222**             | Оцінка витрат стека/міс (вкл. usage-based Anthropic/Voyage; Stripe % понад це). Breakeven ~30 Pro subs                                                                  |
 
 ---
 
@@ -535,7 +535,7 @@ CATEGORY         SERVICE                  COST           STATUS
 -----------      --------------------     -----------    ----------
 Dev              Vercel + Hetzner + GH    ~$7-14/mo      in use
                  Actions + Turborepo + n8n
-Payments         Stripe                   % per tx       to add
+Payments         Stripe                   % per tx       prod cfg
 Analytics        PostHog free tier        $0             in use
                  + Vercel Analytics       $0             in use
 Email            Resend                   $0             in use
@@ -559,7 +559,7 @@ Legal            Termly free              $0             to add
 Feedback         Tally + PostHog replay   $0             to add
 SEO              Google Search Console    $0             to add
 --------------------------------------------------------------
-TOTAL FIXED      ~$17-62/mo  (infrastructure already paid)
+TOTAL EST.       ~$17-69/mo  (infra fixed; AI usage-based)
                  + Stripe % from transactions
                  + ~5K UAH one-time (legal / FOP)
                  = Practically $0 additional fixed costs
