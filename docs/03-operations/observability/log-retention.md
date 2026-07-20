@@ -32,9 +32,9 @@ not just a SQL migration.
 | `LOG_ARCHIVE_BATCH_SIZE`       | `1000`            | Скільки рядків брати у батч на таблицю на tick. Великі backlog-и дренуються через кілька tick-ів. |
 | `GCS_LOG_ARCHIVE_BUCKET`       | _empty_           | Цільовий GCS бакет. Пусто → poller лоґує warning і пропускає upload-и (rows залишаються у DB).    |
 
-Авторизація — стандартні Google App Default Credentials. На Railway —
+Авторизація — стандартні Google App Default Credentials. На Coolify —
 зазвичай `GOOGLE_APPLICATION_CREDENTIALS` указує на service-account JSON
-у secret-mount-і (той самий механізм, що FCM-клієнт у
+у secret-file / env (той самий механізм, що FCM-клієнт у
 `apps/server/src/push/fcmClient.ts`).
 
 ## Об'єктний шлях у GCS

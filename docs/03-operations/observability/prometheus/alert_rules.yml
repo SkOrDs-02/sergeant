@@ -332,7 +332,7 @@ groups:
           summary: "Uncaught exception observed"
           description: |
             Synchronous exception escaped to process root. Process isn't
-            killed (Sentry captures + Railway restarts on health failure),
+            killed (Sentry captures + Coolify restarts the container on exit),
             but state may be inconsistent. Investigate immediately.
           runbook: "docs/03-operations/observability/runbook.md#uncaughtexception"
 

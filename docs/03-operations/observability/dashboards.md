@@ -77,8 +77,8 @@
   - `sum by (provider, model) (rate(ai_cost_estimate_usd_total[1d])) * 86400`
 - **Voyage embed run-rate per model** (USD/day):
   - `sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400`
-- **Fixed monthly subscription cost** (Railway/Vercel/PostHog/Sentry):
-  - `sum by (provider) (infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})`
+- **Fixed monthly subscription cost** (Hetzner/Vercel/PostHog/Sentry):
+  - `sum by (provider) (infra_monthly_cost_usd{provider=~"hetzner|vercel|posthog|sentry"})`
 - **AI budget envelope** (Anthropic/Voyage targets):
   - `sum by (provider) (infra_monthly_cost_usd{provider=~"anthropic|voyage"})`
 - **Combined 30-day run-rate** (AI + fixed):

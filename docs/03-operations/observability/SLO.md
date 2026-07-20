@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -20,7 +20,7 @@ multi-burn-rate** алерти (Google SRE Workbook, Ch. 5). Формули SLI 
 
 **Wired сьогодні ✅**
 
-- **Метрики → Grafana Cloud Prometheus.** Сервіс `grafana-alloy` (Railway-проєкт
+- **Метрики → Grafana Cloud Prometheus.** Сервіс `grafana-alloy` (колишній Railway-проєкт
   `SERGEANT_N8N`) скрейпить `/metrics` сервера (кожні 15s, bearer `METRICS_TOKEN`)
   і n8n (30s), `remote_write`-ить у Grafana Cloud
   (`prometheus-prod-39-prod-eu-north-0`). `up{project="sergeant"}=1` для обох
@@ -74,7 +74,7 @@ sum(rate(http_requests_total[w]))
 ```
 
 **Чому 99 %**: це персональний PWA, не SaaS із SLA. 99 % (≈7h/міс budget)
-пускає трохи повітря для майже-безкоштовного хостингу Railway і рідких
+пускає трохи повітря для майже-безкоштовного хостингу (Hetzner CX23, ~$7/міс) і рідких
 Anthropic outage-ів, які ми проксіюємо.
 
 **Виключення**: 4xx помилки не рахуються як відмови сервісу (це валідація /
@@ -117,7 +117,7 @@ Recording rule: `job:health_p95_5m` у
 
 Це не page, бо повільний health endpoint сам по собі не означає downtime; це
 ранній сигнал cold-start / DB pool / event-loop деградації, який треба
-розслідувати до того, як Railway почне флапати deploy-и. Route для
+розслідувати перш ніж Coolify почне рестартити unhealthy-контейнер. Route для
 `severity=ticket` уже є в [`alertmanager.yml`](./alertmanager.yml).
 
 ## 3. Sync (SLO 99.5 %)
@@ -250,7 +250,7 @@ sum(rate(web_vitals_duration_ms_count{metric="LCP"}[w]))
 
 ## Як підключити
 
-Prometheus `scrape_config` має тягти `GET /metrics` з Railway/Replit
+Prometheus `scrape_config` має тягти `GET /metrics` з Hetzner/Coolify
 entrypoint-у з `Authorization: Bearer $METRICS_TOKEN`. Приклад:
 
 ```yaml
@@ -260,7 +260,7 @@ scrape_configs:
     authorization:
       credentials: "${METRICS_TOKEN}"
     static_configs:
-      - targets: ["sergeant.railway.app"]
+      - targets: ["<sergeant-api-host>"]
 ```
 
 Потім у Prometheus конфіг додати rule_files:
