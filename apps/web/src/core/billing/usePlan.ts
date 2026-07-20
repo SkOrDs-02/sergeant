@@ -14,9 +14,10 @@ import type { BillingStatusResponse } from "@sergeant/shared";
  *
  * Invalidation: write paths (`POST /api/billing/checkout` redirect →
  * `/pricing?checkout=success`) explicitly invalidate `billingKeys.status`
- * via `queryClient.invalidateQueries`. The Stripe webhook handler also
- * NOTIFY-broadcasts `subscriptions.changed`; a listener PR will bridge
- * that to React Query (`docs/01-product/launch/business/06-monetization-architecture.md`).
+ * via `queryClient.invalidateQueries`. Provider webhooks (LiqPay/Plata;
+ * Stripe dormant for UA) may also NOTIFY-broadcast `subscriptions.changed`;
+ * a listener PR will bridge that to React Query
+ * (`docs/01-product/launch/business/06-monetization-architecture.md`).
  */
 
 export type Plan = "free" | "pro";

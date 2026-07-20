@@ -58,9 +58,10 @@ const PREMIUM_PRICE_MONTHLY = "₴199";
 
 // Defense-in-depth open-redirect guard (audit F4,
 // docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
-// returns checkout.url / portal.url від Stripe; додатково валідовуємо host
-// на клієнті — щоб контракт-дрифт чи компроментація бекенду не змогли
-// перевести юзера на довільний origin у high-trust моменті funnel-у.
+// returns checkout.url / portal.url (LiqPay / Plata / legacy Stripe);
+// додатково валідовуємо host на клієнті — щоб контракт-дрифт чи
+// компроментація бекенду не змогли перевести юзера на довільний origin
+// у high-trust моменті funnel-у.
 const ALLOWED_CHECKOUT_HOSTS: ReadonlySet<string> = new Set([
   "checkout.stripe.com",
   "billing.stripe.com",
@@ -174,13 +175,13 @@ export function PricingPage() {
   // саме від похідного `viewSource`-рядка, а не від усього `searchParams`-
   // обʼєкта: інакше чистка `?checkout=...` нижче (setSearchParams) міняла б
   // референс і повторно слала б PRICING_VIEWED з тим самим source (audit F25
-  // + cubic: дубль pageview при поверненні зі Stripe).
+  // + cubic: дубль pageview при поверненні з checkout).
   const viewSource = searchParams.get("source") ?? "direct";
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.PRICING_VIEWED, { source: viewSource });
   }, [viewSource]);
 
-  // Stripe Checkout повертає юзера на `/pricing?checkout=success` (success_url)
+  // Checkout повертає юзера на `/pricing?checkout=success` (success_url)
   // або `/pricing?checkout=cancel|cancelled` (cancel_url). `success` означає, що
   // webhook міг ще не долетіти / `billingApi.status` у кеші лишається stale →
   // інвалідовуємо `billingKeys.status` (Hard Rule #2), щоб `usePlan` пере-fetch-нувся
@@ -234,7 +235,7 @@ export function PricingPage() {
         plan: "pro",
         mode: checkout.mode,
       });
-      // Audit F4: refuse to navigate if server returned a non-Stripe host.
+      // Audit F4: refuse to navigate if server returned a non-allowlisted host.
       const safeUrl = assertAllowedCheckoutUrl(checkout.url);
       window.location.assign(safeUrl);
       return;
@@ -265,29 +266,30 @@ export function PricingPage() {
       tier: "free",
       cta: "free",
     });
-    // Downgrade flow з Premium → Free поки не існує (керується через
-    // Stripe customer portal в Settings). Кнопка disabled у такому стані.
+    // Downgrade Premium → Free: Stripe legacy — через Customer Portal у
+    // Settings; LiqPay/Plata — через «Скасувати Pro» у Settings. Тут Free
+    // CTA лишається disabled для Premium-юзерів.
     if (isPremiumActive) return;
     // Free-тір вже доступний за замовчуванням — нікуди не ведемо.
   }
 
-  // Stripe Customer Portal — initiative 0010 Phase 4.2 residual. Активний
+  // Manage subscription — initiative 0010 Phase 4.2 residual. Активний
   // subscriber бачить "Керувати підпискою" замість "Спробувати Premium":
-  // POST /api/billing/portal -> short-lived URL -> redirect. 409
-  // `NO_BILLING_CUSTOMER` означає, що у юзера є локальний plan='pro', але
-  // нема `provider_customer_id` (manual upgrade через internal endpoint,
-  // або pre-Stripe legacy) — кажемо звернутись у саппорт. 503 = billing
-  // вимкнено (Stripe env-и не задані), показуємо нейтральний fallback.
+  // POST /api/billing/portal → URL → redirect.
+  //   • Stripe legacy → Stripe Customer Portal.
+  //   • LiqPay/Plata → same-origin `/settings?billing=manage` (порталу нема).
+  // 409 `NO_BILLING_CUSTOMER` — локальний plan='pro' без provider customer
+  // (manual/internal upgrade) → саппорт. 503 = billing вимкнено → fallback.
   async function handleManageSubscription(): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
       tier: "pro",
-      cta: "stripe_portal",
+      cta: "manage_subscription",
     });
     setPortalLoading(true);
     setPortalError(null);
     try {
       const { url } = await billingApi.createPortal();
-      // Audit F4: refuse to navigate if server returned a non-Stripe host.
+      // Audit F4: refuse to navigate if server returned a non-allowlisted host.
       const safeUrl = assertAllowedCheckoutUrl(url);
       window.location.assign(safeUrl);
     } catch (err) {
@@ -376,11 +378,10 @@ export function PricingPage() {
                 (isPremium && isPremiumActive) ||
                 (!isPremium && !isPremiumActive);
               const checkoutLoading = checkoutPlan === tier.id;
-              // Для активного Premium-юзера Premium-CTA веде у Stripe
-              // Customer Portal (керування підпискою / скасування /
-              // оновлення картки) — це закриває Phase 4.2 residual з
-              // initiative 0010. Для не-subscriber це звичайний
-              // checkout-flow.
+              // Для активного Premium-юзера Premium-CTA веде у manage-flow
+              // (Stripe Portal або in-app Settings для LiqPay/Plata) —
+              // Phase 4.2 residual з initiative 0010. Для не-subscriber —
+              // звичайний checkout.
               const ctaLabel = isPremium
                 ? isPremiumActive
                   ? portalLoading
@@ -397,8 +398,8 @@ export function PricingPage() {
                   ? portalLoading
                   : checkoutLoading
                 : // Free CTA: disabled both для активного Free-юзера
-                  // (вже ваш план) і для Premium-юзера (downgrade flow
-                  // живе у Stripe portal через Settings, не тут).
+                  // (вже ваш план) і для Premium-юзера (downgrade /
+                  // cancel живе у Settings, не тут).
                   true;
               // NB: handlePremiumCta приймає optional `provider` — не можна
               // передавати його прямо в onClick (MouseEvent став би provider).

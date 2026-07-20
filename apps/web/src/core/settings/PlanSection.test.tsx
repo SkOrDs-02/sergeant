@@ -218,4 +218,44 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
       screen.getByTestId("plan-cancel-confirm-button"),
     ).toBeInTheDocument();
   });
+
+  it("shows provider-neutral past_due copy for LiqPay subscribers", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: 45,
+        provider: "liqpay",
+        plan: "pro",
+        status: "past_due",
+        active: true,
+        currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+      },
+    });
+    renderSection();
+    await openSection();
+
+    const pastDue = await screen.findByTestId("plan-past-due-info");
+    expect(pastDue).toHaveTextContent(/Останній платіж не пройшов/i);
+    expect(pastDue).toHaveTextContent(/спосіб оплати/i);
+    expect(pastDue).not.toHaveTextContent(/Stripe/i);
+    expect(screen.queryByTestId("plan-manage-button")).not.toBeInTheDocument();
+  });
+
+  it("shows Stripe portal past_due copy for legacy Stripe subscribers", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: 46,
+        provider: "stripe",
+        plan: "pro",
+        status: "past_due",
+        active: true,
+        currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+      },
+    });
+    renderSection();
+    await openSection();
+
+    const pastDue = await screen.findByTestId("plan-past-due-info");
+    expect(pastDue).toHaveTextContent(/платіжному порталі/i);
+    expect(screen.getByTestId("plan-manage-button")).toBeInTheDocument();
+  });
 });
