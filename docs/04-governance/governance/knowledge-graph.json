@@ -1221,7 +1221,7 @@
       "type": "initiative",
       "title": "0015 — Docs automation for daily ops",
       "path": "docs/90-work/initiatives/0015-docs-automation-daily-ops.md",
-      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes.",
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes.",
       "tier": "core",
       "meta": {
         "number": 15

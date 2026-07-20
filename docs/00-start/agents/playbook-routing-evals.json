@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "description": "Playbook routing evaluation cases. Each case verifies that a prompt routes to the correct playbook (or does not route to a forbidden one).",
+  "cases": [
+    {
+      "id": "match-add-api-endpoint",
+      "kind": "match",
+      "prompt": "Add a new REST API endpoint to the server with typed response and contract test.",
+      "expectedPlaybook": "add-api-endpoint.md",
+      "forbiddenPlaybooks": ["add-sql-migration.md", "add-hubchat-tool.md"]
+    },
+    {
+      "id": "match-add-sql-migration",
+      "kind": "match",
+      "prompt": "Add a sequential SQL migration to create a new Postgres table with no numbering gaps.",
+      "expectedPlaybook": "add-sql-migration.md",
+      "forbiddenPlaybooks": ["add-api-endpoint.md", "fix-failing-ci.md"]
+    },
+    {
+      "id": "match-add-hubchat-tool",
+      "kind": "match",
+      "prompt": "Add a new HubChat tool definition and executor for a user action with prompt caching.",
+      "expectedPlaybook": "add-hubchat-tool.md",
+      "forbiddenPlaybooks": ["add-api-endpoint.md", "write-e2e-test.md"]
+    },
+    {
+      "id": "match-fix-failing-ci",
+      "kind": "match",
+      "prompt": "Fix the red CI job that is failing on the open pull request due to a lint error.",
+      "expectedPlaybook": "fix-failing-ci.md",
+      "forbiddenPlaybooks": ["release.md", "add-sql-migration.md"]
+    },
+    {
+      "id": "match-release",
+      "kind": "match",
+      "prompt": "Ship a production release: tag the version, run the release checklist, and deploy.",
+      "expectedPlaybook": "release.md",
+      "forbiddenPlaybooks": ["fix-failing-ci.md", "add-api-endpoint.md"]
+    },
+    {
+      "id": "match-write-e2e-test",
+      "kind": "match",
+      "prompt": "Write a Playwright E2E smoke test for the onboarding flow using role selectors.",
+      "expectedPlaybook": "write-e2e-test.md",
+      "forbiddenPlaybooks": ["add-api-endpoint.md", "fix-failing-ci.md"]
+    },
+    {
+      "id": "match-change-auth-flow",
+      "kind": "match",
+      "prompt": "Change the Better Auth session cookie settings and account lifecycle for the new mobile flow.",
+      "expectedPlaybook": "change-auth-flow.md",
+      "forbiddenPlaybooks": ["add-api-endpoint.md", "add-sql-migration.md"]
+    },
+    {
+      "id": "match-author-skill",
+      "kind": "match",
+      "prompt": "Author a new SKILL.md file for the sergeant-analytics skill with correct frontmatter and lock hash.",
+      "expectedPlaybook": "author-skill.md",
+      "forbiddenPlaybooks": ["add-api-endpoint.md", "reconcile-doc-drift.md"]
+    },
+    {
+      "id": "match-reconcile-doc-drift",
+      "kind": "match",
+      "prompt": "Reconcile doc drift: find stale path references and archive completed planning docs.",
+      "expectedPlaybook": "reconcile-doc-drift.md",
+      "forbiddenPlaybooks": ["author-skill.md", "release.md"]
+    },
+    {
+      "id": "match-execute-planning-batch",
+      "kind": "match",
+      "prompt": "Execute the next batch of planning tasks from docs/90-work/planning in parallel using fan-out agents.",
+      "expectedPlaybook": "execute-planning-batch.md",
+      "forbiddenPlaybooks": ["release.md", "reconcile-doc-drift.md"]
+    },
+    {
+      "id": "anti-match-sql-not-api",
+      "kind": "anti-match",
+      "prompt": "Add a new REST API endpoint to the server with typed response and contract test.",
+      "expectedPlaybook": "add-api-endpoint.md",
+      "forbiddenPlaybooks": ["add-sql-migration.md"]
+    },
+    {
+      "id": "anti-match-release-not-ci",
+      "kind": "anti-match",
+      "prompt": "Ship a production release for the web and server apps today.",
+      "expectedPlaybook": "release.md",
+      "forbiddenPlaybooks": ["fix-failing-ci.md"]
+    }
+  ]
+}
