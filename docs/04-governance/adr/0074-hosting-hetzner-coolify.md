@@ -1,6 +1,7 @@
 # ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway)
 
 - **Status:** accepted
+- **Last validated:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-07-11
 - **Reviewers:** @SkOrDs-02
 - **Supersedes:** ADR-0009
@@ -114,10 +115,63 @@ in-memory session-cache, Postgres з pgvector, стабільний публіч
 
 ---
 
+## ADR-74.2 — Single canonical web origin
+
+### Status
+
+accepted (2026-07-20, stack-pulse PR-25 closed).
+
+### Context
+
+Після rebrand Sergeant історичний Vercel-host `fizruk.vercel.app` і canonical
+`sergeant.vercel.app` обидва обслуговували один SPA. Це дублювало:
+
+- CORS / Better Auth `trustedOrigins` entries у `apps/server/src/http/cors.ts`
+- OAuth redirect URI lists (Google, Apple)
+- Sentry release deduplication (release name залежав від deploy host)
+
+Drift між двома origins уже давав реальні incidents (див. ADR-0043).
+
+### Decision
+
+**Canonical production web origin — `https://sergeant.vercel.app`.**
+
+- `fizruk.vercel.app` → **301 permanent redirect** на canonical через
+  [`apps/web/vercel.json`](../../../apps/web/vercel.json) (deployed [#3392](https://github.com/Skords-01/Sergeant/pull/3392)).
+- Після soak: `fizruk.vercel.app` **не** входить до server CORS allowlist
+  ([#327](https://github.com/Skords-01/Sergeant/pull/327)).
+- OAuth provider consoles — лише canonical callback URIs (manual cleanup
+  @Skords-01, 2026-07-20).
+- Sentry release format — domain-agnostic `sergeant@${SHORT_SHA}` через
+  [`packages/shared/src/observability/release.ts`](../../../packages/shared/src/observability/release.ts).
+
+Preview deploys (`sergeant-git-*-*.vercel.app`) лишаються окремими origins за
+regex — це не другий production origin, а PR-preview lane.
+
+### Consequences
+
+**Позитивні:**
+
+- Одна правда для CORS, OAuth, Sentry, mobile-shell deep-link config.
+- Старі bookmarks на `fizruk.vercel.app` працюють через 301.
+
+**Нейтральні:**
+
+- 301 redirect rule залишається у `vercel.json` доки існує DNS/host alias —
+  не видаляти без metrics (<1% redirect traffic sustained).
+
+### Exit criteria
+
+Migration на custom domain (e.g. `app.sergeant.io`) — окремий ADR/PR; canonical
+policy переноситься, redirect chain оновлюється.
+
+---
+
 ## Implementation tracker
 
 | Arte-fact                                                                  | Статус |
 | -------------------------------------------------------------------------- | ------ |
+| Single canonical origin (PR-25)                                            | live   |
 | [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) → ghcr.io    | live   |
 | Hetzner CX23 + Coolify + харденінг                                         | live   |
 | Postgres `pgvector:pg18` + перенос даних (`pg_dump`/`pg_restore`)          | live   |
