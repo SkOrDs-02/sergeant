@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import { AssistantAdviceCard } from "./AssistantAdviceCard";
+import { publishAiTier, __resetAiTierForTests } from "@shared/api/aiTierBus";
 
 describe("AssistantAdviceCard — loading vs loaded", () => {
   afterEach(() => {
@@ -91,5 +92,55 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
     );
 
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("AssistantAdviceCard — Pro tier badge", () => {
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    __resetAiTierForTests();
+  });
+
+  it("shows no badge for the default premium tier (or before any tier is known)", () => {
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
+    expect(screen.queryByText(/економний режим/i)).toBeNull();
+
+    publishAiTier("premium");
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
+  });
+
+  it("shows a muted badge once the response carries a degraded standard tier", () => {
+    publishAiTier("standard");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Стандартна модель")).toBeInTheDocument();
+  });
+
+  it("shows the floor-tier label once degraded to the cheapest model", () => {
+    publishAiTier("floor");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Економний режим")).toBeInTheDocument();
   });
 });

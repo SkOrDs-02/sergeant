@@ -16,6 +16,7 @@ import { createApiClient } from "@sergeant/api-client";
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
 import { getBearerToken } from "@shared/lib/api/bearerToken";
 import { publishServerBuildId } from "./serverBuildIdBus";
+import { publishAiTier } from "./aiTierBus";
 
 export const apiClient = createApiClient({
   baseUrl: apiUrl(""),
@@ -32,9 +33,12 @@ export const apiClient = createApiClient({
   // `X-Server-Build-Id`. We forward observations into the SW auto-update
   // controller through `serverBuildIdBus`; the SW controller is the only
   // subscriber today, but the indirection keeps the api-client agnostic.
+  // Model-routing 2026-07 — chat/coach responses also carry `X-AI-Tier`
+  // (Pro tiered degradation); forwarded into `aiTierBus` for `useAiTier()`.
   onResponseHeaders: (headers) => {
     const buildId = headers.get("X-Server-Build-Id");
     if (buildId) publishServerBuildId(buildId);
+    publishAiTier(headers.get("X-AI-Tier"));
   },
 });
 
