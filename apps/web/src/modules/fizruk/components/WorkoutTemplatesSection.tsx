@@ -128,9 +128,12 @@ export function WorkoutTemplatesSection({
     setOrderIds((o) => {
       const j = idx + dir;
       if (j < 0 || j >= o.length) return o;
+      const a = o[idx];
+      const b = o[j];
+      if (a === undefined || b === undefined) return o;
       const next = [...o];
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      [next[idx], next[j]] = [next[j]!, next[idx]!];
+      next[idx] = b;
+      next[j] = a;
       return next;
     });
   };
