@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-07-18 by @codex. **Next review:** 2026-10-16.
+> **Last validated:** 2026-07-20 by @codex. **Next review:** 2026-10-18.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,7 +11,7 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **34** — Ініціативи: **7** · Планування: **7** · Launch / запуск: **14** · Аудити й прожарки: **0** · Security hardening: **2** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **34** — Ініціативи: **7** · Планування: **6** · Launch / запуск: **14** · Аудити й прожарки: **1** · Security hardening: **2** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
 ## Ініціативи (7)
 
@@ -27,7 +27,7 @@
 | [`stack-pulse-2026-05/pr-25-two-production-origins.md`](./90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md)                     | Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pendin… | [#3392](https://github.com/Skords-01/Sergeant/pull/3392)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | —                 | `sergeant-mobile-expo` | `release.md`               |
 | [`stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md`](./90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md) | Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` ли… | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | —                 | `sergeant-web-ui`      | —                          |
 
-## Планування (7)
+## Планування (6)
 
 > Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).
 
@@ -35,7 +35,6 @@
 | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`ai-coding-improvements.md`](./90-work/planning/ai-coding-improvements.md)                       | Active                                                                                                                                                                  | —                                                                                                                                                                          |
 | [`harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md)                       | Active                                                                                                                                                                  | [#3614](https://github.com/Skords-01/Sergeant/pull/3614)                                                                                                                   |
-| [`openclaw-user-guide.md`](./90-work/planning/openclaw-user-guide.md)                             | Scaffolded                                                                                                                                                              | —                                                                                                                                                                          |
 | [`sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md)                         | Active — кодова звірка 2026-07-13; виконані acceptance-пункти позначаються як shipped, а live Stripe/ФОП і production-gate залежності залишаються зовнішніми блокерами. | [#2012](https://github.com/Skords-01/Sergeant/pull/2012) [#2586](https://github.com/Skords-01/Sergeant/pull/2586) [#2599](https://github.com/Skords-01/Sergeant/pull/2599) |
 | [`sync-client-wiring-phase2-handoff.md`](./90-work/planning/sync-client-wiring-phase2-handoff.md) | Active                                                                                                                                                                  | —                                                                                                                                                                          |
 | [`sync-client-wiring-playbook.md`](./90-work/planning/sync-client-wiring-playbook.md)             | Active                                                                                                                                                                  | —                                                                                                                                                                          |
@@ -62,11 +61,13 @@
 | [`tech/ai-memory-activation.md`](./01-product/launch/tech/ai-memory-activation.md)                         | Active (operational activation runbook; behavior SSOT is architecture doc)                                                                                                       | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`tech/telegram-improvements-roadmap.md`](./01-product/launch/tech/telegram-improvements-roadmap.md)       | Active                                                                                                                                                                           | [#1449](https://github.com/Skords-01/Sergeant/pull/1449) [#1462](https://github.com/Skords-01/Sergeant/pull/1462) [#1469](https://github.com/Skords-01/Sergeant/pull/1469) [#1473](https://github.com/Skords-01/Sergeant/pull/1473) [#1480](https://github.com/Skords-01/Sergeant/pull/1480) [#1514](https://github.com/Skords-01/Sergeant/pull/1514) [#1517](https://github.com/Skords-01/Sergeant/pull/1517) [#2531](https://github.com/Skords-01/Sergeant/pull/2531) [#2534](https://github.com/Skords-01/Sergeant/pull/2534)                                                        |
 
-## Аудити й прожарки (0)
+## Аудити й прожарки (1)
 
 > Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).
 
-_Жодного відкритого документа._
+| Документ                                                                                          | Статус                                   | PR-згадки |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------- |
+| [`2026-08-XX-openclaw-internal-roast.md`](./90-work/audits/2026-08-XX-openclaw-internal-roast.md) | Resolved (target deleted — ADR-0075). ❓ | —         |
 
 ## Security hardening (2)
 

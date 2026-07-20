@@ -390,39 +390,6 @@
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     },
     {
-      "id": "sergeant-openclaw-trigger-gateway",
-      "skill": "sergeant-openclaw",
-      "kind": "trigger",
-      "prompt": "Change the OpenClaw Gateway config-as-code and verify no production path uses a plain PAT.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-openclaw"],
-      "forbiddenSkills": []
-    },
-    {
-      "id": "sergeant-openclaw-trigger-plugin",
-      "skill": "sergeant-openclaw",
-      "kind": "trigger",
-      "prompt": "Update the openclaw-plugin routing tests and persona skill allowlist for a new strategic mode.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-openclaw"],
-      "forbiddenSkills": []
-    },
-    {
-      "id": "sergeant-openclaw-anti-plain-web",
-      "skill": "sergeant-openclaw",
-      "kind": "anti-trigger",
-      "prompt": "Fix a normal web dashboard display bug with no OpenClaw Gateway, plugin, PAT, or console-agent change.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
-      "forbiddenSkills": ["sergeant-openclaw"]
-    },
-    {
-      "id": "sergeant-openclaw-workflow-pat-safety",
-      "skill": "sergeant-openclaw",
-      "kind": "workflow",
-      "prompt": "Before touching OpenClaw code, load start-here and then only the OpenClaw specialist for PAT safety.",
-      "expectedSkills": ["sergeant-start-here", "sergeant-openclaw"],
-      "forbiddenSkills": [],
-      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
-    },
-    {
       "id": "sergeant-qa-squad-trigger-full-qa",
       "skill": "sergeant-qa-squad",
       "kind": "trigger",

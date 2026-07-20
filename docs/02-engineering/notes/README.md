@@ -1,6 +1,6 @@
 # Notes
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Exploratory engineering notes that don't fit neatly into ADRs (decisions), playbooks (recipes), or planning (roadmaps). These are short-lived investigations — once the work lands, the spike doc is either archived in place with `Status: Completed & archived` or folded into a permanent home (ADR / planning / tech-debt registry).
@@ -18,16 +18,6 @@ Exploratory engineering notes that don't fit neatly into ADRs (decisions), playb
 | [`spikes/`](./spikes) | Time-boxed engineering spikes (technical investigations with a clear yes/no/migrate question) |
 
 ## Файли у spikes/
-
-### OpenClaw
-
-| Файл                                                                                                              | Статус   | Опис                                                                       |
-| ----------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| [`openclaw-poc.md`](./spikes/openclaw-poc.md)                                                                     | Archived | Spike — OpenClaw Plugin PoC (Phase 0.5)                                    |
-| [`openclaw-sdk-5.7-real-api.md`](./spikes/openclaw-sdk-5.7-real-api.md)                                           | Archived | Spike — openclaw 5.7 SDK reality-check (production crash-loop post-mortem) |
-| [`openclaw-stage-4b-debugging-handoff-2026-05-12.md`](./spikes/openclaw-stage-4b-debugging-handoff-2026-05-12.md) | Archived | Handoff-документ живого дебагу Stage 4b (2026-05-12)                       |
-| [`openclaw-stage-5b-pr-split-2026-05-12.md`](./spikes/openclaw-stage-5b-pr-split-2026-05-12.md)                   | Archived | Recap сесії розбиття PR Stage 5b — strategic-modes                         |
-| [`openclaw-session-2026-05-12-recap.md`](./spikes/openclaw-session-2026-05-12-recap.md)                           | Archived | Підсумок сесії 2026-05-12 — Stage 5b PR-4 `/okr` + Stage 5c Council        |
 
 ### Bus-factor walkthroughs
 

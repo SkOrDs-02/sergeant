@@ -62,7 +62,7 @@ import type { Pool } from "pg";
 
 import { logger, serializeError } from "../../obs/logger.js";
 import { Sentry } from "../../sentry.js";
-import { openInvocation, finalizeInvocation } from "../openclaw/store.js";
+import { openInvocation, finalizeInvocation } from "./invocation-audit.js";
 import { getAiMemory } from "./bootstrap.js";
 import type { MemoryQueryResult } from "./types.js";
 

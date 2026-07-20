@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -58,10 +58,9 @@
 ## Коли цей playbook НЕ використовувати
 
 - Треба змінити лише application code без n8n-артефактів — використовуй `feature-delivery` чи `add-feature-flag.md`.
-- Працюєш із console-агентом або HubChat orchestration, а не з n8n — використовуй `modify-console-agent.md` чи `add-hubchat-tool.md`.
+- Працюєш із HubChat orchestration, а не з n8n — використовуй `add-hubchat-tool.md`.
 
 ## Споріднені playbook-и та skills
 
-- [modify-console-agent.md](./modify-console-agent.md)
 - [investigate-alert.md](./investigate-alert.md)
 - Skill: `sergeant-deploy-and-observability`

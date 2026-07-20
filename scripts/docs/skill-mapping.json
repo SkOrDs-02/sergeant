@@ -8,11 +8,6 @@
       "keywords": ["hubchat", "hub chat", "assistant tool", "action card"]
     },
     {
-      "skill": "sergeant-openclaw",
-      "globs": ["packages/openclaw-plugin/**", "ops/openclaw/**"],
-      "keywords": ["openclaw", "gateway", "console agent", "console-agent"]
-    },
-    {
       "skill": "sergeant-data-and-migrations",
       "globs": [
         "apps/server/db/migrations/**",

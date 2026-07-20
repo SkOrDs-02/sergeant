@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -22,7 +22,6 @@ Sergeant is **tool-agnostic**. Any AI agent harness — Claude Code, Kilo Code, 
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS       | `sergeant-mobile-expo`              |
 | Touches `db-schema/`, migrations, drill-down, index audit           | `sergeant-data-and-migrations`      |
 | Coolify / Vercel / Sentry / alerting/SLO / CI workflow change       | `sergeant-deploy-and-observability` |
-| OpenClaw gateway / plugin / PAT lifecycle                           | `sergeant-openclaw`                 |
 | HubChat module / HubChat reset / HubChat E2E                        | `sergeant-hubchat`                  |
 | Writing or running E2E (Playwright/Vitest browser)                  | `sergeant-e2e-testing`              |
 | Security review, vuln triage, secret scan, dependency CVE           | `sergeant-security-audit`           |
@@ -192,7 +191,7 @@ If you legitimately need to raise a limit (e.g. a major new dependency), bump th
 
 ## Commit and PR conventions
 
-Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `openclaw`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `dualwrite-core`, `eslint-plugins`, `openclaw-plugin`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
+Conventional Commits with **explicit scope** (Hard Rule #5). Scope enum: `web`, `server`, `mobile`, `mobile-shell`, `shared`, `api-client`, `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `insights`, `design-tokens`, `config`, `db-schema`, `dualwrite-core`, `eslint-plugins`, `migrations`, `agents`, `deps`, `docs`, `ci`, `root` — canonical list in [`commitlint.config.js`](./commitlint.config.js). The `commit-msg` Husky hook + commitlint CI gate block invalid scopes.
 
 Example commit subjects (= squash-merge PR titles):
 

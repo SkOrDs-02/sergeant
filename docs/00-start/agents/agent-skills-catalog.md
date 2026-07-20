@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-07-05 by @dimastahov16012003. **Next review:** 2026-10-03.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -35,7 +35,6 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-data-and-migrations`](../../../.agents/skills/sergeant-data-and-migrations/SKILL.md)           | SQL, Postgres, migrations, rollout safety                        | Generator usage, sequential numbering, two-phase DROP                       |
 | [`sergeant-mobile-expo`](../../../.agents/skills/sergeant-mobile-expo/SKILL.md)                           | `apps/mobile`, `apps/mobile-shell`                               | Expo Router boundaries, NativeWind, MMKV, no DOM leakage                    |
 | [`sergeant-hubchat`](../../../.agents/skills/sergeant-hubchat/SKILL.md)                                   | HubChat tools and executors                                      | Tool/executor coordination, prompt cache, risky actions                     |
-| [`sergeant-openclaw`](../../../.agents/skills/sergeant-openclaw/SKILL.md)                                 | OpenClaw Gateway, console agent, openclaw-plugin                 | Hard Rule #20, gateway config-as-code, PAT safety                           |
 | [`sergeant-monorepo-boundaries`](../../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                                        | App vs package placement, shared logic boundaries                           |
 | [`sergeant-deploy-and-observability`](../../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n                           | Runtime verification, operator docs, release safety                         |
 | [`better-auth-best-practices`](../../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle                           | Better Auth wiring, cross-site cookies, auth env safety                     |
@@ -67,8 +66,6 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | Port a screen from web to Expo               | `sergeant-feature-delivery` + `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` |
 | Change auth or cookies                       | `better-auth-best-practices` and only then the touched surface skill                  |
 | Ship env or deploy changes                   | `sergeant-deploy-and-observability`                                                   |
-| OpenClaw Gateway or console agent change     | `sergeant-openclaw`                                                                   |
-| OpenClaw + HubChat tool coordination         | `sergeant-openclaw` + `sergeant-hubchat`                                              |
 
 ## Codex Agent Helpers
 

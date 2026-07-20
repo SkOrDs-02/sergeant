@@ -21,7 +21,7 @@ vi.mock("../../sentry.js", () => ({
   },
 }));
 
-vi.mock("../openclaw/store.js", () => ({
+vi.mock("./invocation-audit.js", () => ({
   openInvocation: vi.fn(async () => 42),
   finalizeInvocation: vi.fn(async () => undefined),
 }));
@@ -47,7 +47,7 @@ import {
   previewForget,
 } from "./forget.js";
 import { Sentry } from "../../sentry.js";
-import { finalizeInvocation, openInvocation } from "../openclaw/store.js";
+import { finalizeInvocation, openInvocation } from "./invocation-audit.js";
 
 const openMock = openInvocation as unknown as ReturnType<typeof vi.fn>;
 const finalizeMock = finalizeInvocation as unknown as ReturnType<typeof vi.fn>;

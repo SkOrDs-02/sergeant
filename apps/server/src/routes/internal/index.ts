@@ -13,7 +13,6 @@ import { createMarketingInternalRouter } from "./marketing.js";
 import { createEmailInternalRouter } from "./email.js";
 import { createUsersInternalRouter } from "./users.js";
 import { createGovernanceInternalRouter } from "./governance.js";
-import { createOpenClawInternalRouter } from "./openclaw.js";
 import { createAlertsInternalRouter } from "./alerts.js";
 import { createEvalRagInternalRouter } from "./eval-rag.js";
 import { createMonoInternalRouter } from "./mono.js";
@@ -81,7 +80,6 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createEmailInternalRouter({ pool }));
   router.use(createUsersInternalRouter({ pool }));
   router.use(createGovernanceInternalRouter({ pool }));
-  router.use(createOpenClawInternalRouter({ pool }));
   router.use(createAlertsInternalRouter({ pool }));
   router.use(createEvalRagInternalRouter({ pool }));
   router.use(createMonoInternalRouter({ pool }));

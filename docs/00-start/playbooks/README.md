@@ -1,6 +1,6 @@
 # Playbooks
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
@@ -55,7 +55,6 @@ Each playbook must include:
 - [restore-from-backup.md](./restore-from-backup.md)
 - [access-governance.md](./access-governance.md)
 - [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
-- [modify-console-agent.md](./modify-console-agent.md)
 - [modify-n8n-workflow.md](./modify-n8n-workflow.md)
 - [write-e2e-test.md](./write-e2e-test.md)
 - [change-auth-flow.md](./change-auth-flow.md)

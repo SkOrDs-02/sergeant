@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -23,9 +23,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Run a backup restore rehearsal                 | [`test-backup-restore.md`](./test-backup-restore.md)                                      | `sergeant-data-and-migrations`                          | Human + agent |
 | Run weekly operator review                     | [`run-weekly-operator-digest.md`](./run-weekly-operator-digest.md)                        | `sergeant-review-and-merge`                             | Human + agent |
 | Port a web screen to mobile                    | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)                          | `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` | Human + agent |
-| Modify or add a console agent                  | [`modify-console-agent.md`](./modify-console-agent.md)                                    | `sergeant-hubchat`                                      | Human + agent |
 | Modify or add an n8n workflow                  | [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                                      | `sergeant-deploy-and-observability`                     | Human + agent |
-| Cutover OpenClaw to external Gateway           | [`cutover-openclaw-gateway.md`](./cutover-openclaw-gateway.md)                            | `sergeant-deploy-and-observability`                     | Human + agent |
 | Clean up Codex branch after merged PR          | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)                  | `sergeant-review-and-merge`                             | Human + agent |
 | Review / merge gate                            | [`../governance/review-checklist.md`](../../04-governance/governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
 | PR review across 3+ governed surfaces          | [`run-squad-review.md`](./run-squad-review.md)                                            | `sergeant-review-squad`                                 | Human + agent |

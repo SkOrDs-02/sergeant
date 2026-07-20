@@ -1,7 +1,9 @@
 # OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`
 
-> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
-> **Status:** Reference — заготовка майбутнього аудиту без дати й owner commitment.
+> ⚠️ **Moot — target file deleted.** `apps/server/src/routes/internal/openclaw.ts` та весь `modules/openclaw/**` прибрано разом з декомісією OpenClaw Gateway ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20). Аудит лишається як історичний запис.
+
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Status:** Resolved (target deleted — ADR-0075).
 
 > **Owner:** @Skords-01 (backend)
 > **Trigger date:** **2026-08-11** (locked — next backend-roast cycle baseline).
@@ -37,7 +39,7 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 ## Methodology hints
 
-- **Permission-matrix audit** — пройти всі `r.post(...)`/`r.get(...)` колл-сайти, скласти таблицю `route → guard → audit-write → mutation-target`. Pattern mirror від [`store.ts`](../../../apps/server/src/modules/openclaw/store.ts) audit-log helpers.
+- **Permission-matrix audit** — пройти всі `r.post(...)`/`r.get(...)` колл-сайти, скласти таблицю `route → guard → audit-write → mutation-target`. Pattern mirror від `store.ts` audit-log helpers (файл видалено — ADR-0075).
 - **Approval-gate trace** — `rg "approval|approve|deny" apps/server/src/routes/internal/openclaw.ts` + walk через `tools/openclaw/src/agents/openclaw.ts` `before_tool_call` hook chain. Verify ADR-0033 §Approval contract.
 - **Rate-limit baseline** — Grafana panel для p95 latency + RPS на `/api/internal/openclaw/*`. Звіряти з expected n8n cron throughput.
 - **Smoke checklist** — для кожного write-tool: запустити staging Telegram → перевірити чи a) approval emit-нувся; b) post-approval audit-row записано; c) DB-mutation viewable; d) PostHog event fired.
@@ -154,7 +156,7 @@ ADR-0027 (OpenClaw, Console та MCP) визначає policy: write-scopes ок
 
 ## Cross-refs
 
-- **Code:** [`apps/server/src/routes/internal/openclaw.ts`](../../../apps/server/src/routes/internal/openclaw.ts) (1819 LOC, 57 POST-маршрутів).
+- **Code:** `apps/server/src/routes/internal/openclaw.ts` (1819 LOC, 57 POST-маршрутів; файл видалено — ADR-0075).
 - **Guard:** [`apps/server/src/routes/internal/index.ts`](../../../apps/server/src/routes/internal/index.ts) (shared bearer + HMAC).
 - **Policy ADR:** [`docs/04-governance/adr/0027-openclaw-console-mcp-policy.md`](../../04-governance/adr/0027-openclaw-console-mcp-policy.md) (allowlist + audit + approval).
 - **Gateway ADR:** [`docs/04-governance/adr/0055-openclaw-external-gateway.md`](../../04-governance/adr/0055-openclaw-external-gateway.md) (external bot identity + plugin architecture).

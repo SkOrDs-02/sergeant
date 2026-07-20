@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-19",
+  "generated_at": "2026-07-20",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -42,16 +42,6 @@
       "railwayService": null,
       "healthcheckPath": null,
       "owner": "@SkOrDs-02"
-    },
-    {
-      "id": "openclaw-gateway",
-      "title": "OpenClaw Gateway",
-      "workspace": "ops/openclaw",
-      "deployTarget": "decommissioned",
-      "deployArtifact": "Dockerfile.openclaw-gateway",
-      "railwayService": null,
-      "healthcheckPath": "/healthz",
-      "owner": null
     },
     {
       "id": "n8n-workflows",

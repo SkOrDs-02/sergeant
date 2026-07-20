@@ -113,7 +113,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.telegram.org/bot{{ $env.OPENCLAW_BOT_TOKEN }}/sendMessage",
+        "url": "=https://api.telegram.org/bot{{ $env.SERGEANT_ALERT_BOT_TOKEN }}/sendMessage",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -125,7 +125,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"{{ $env.OPENCLAW_FOUNDER_TG_USER_ID }}\",\n  \"text\": {{ JSON.stringify($json.text) }},\n  \"parse_mode\": \"HTML\",\n  \"disable_web_page_preview\": true\n}",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $env.SERGEANT_FOUNDER_TG_USER_ID }}\",\n  \"text\": {{ JSON.stringify($json.text) }},\n  \"parse_mode\": \"HTML\",\n  \"disable_web_page_preview\": true\n}",
         "options": {
           "response": {
             "response": {

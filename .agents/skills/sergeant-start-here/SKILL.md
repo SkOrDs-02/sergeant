@@ -16,7 +16,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - Прочитай [`docs/00-start/agents/decisions.md`](../../../docs/00-start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
 - Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
-- Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/openclaw` і спільними packages.
+- Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell` і спільними packages.
 
 ## 0.1 Dynamic context (always)
 
@@ -57,7 +57,6 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify)  | `sergeant-data-and-migrations`     |
 | Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
 | HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
-| OpenClaw Gateway, console agent, openclaw-plugin                 | `sergeant-openclaw`                |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Coolify/Vercel, n8n     | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |

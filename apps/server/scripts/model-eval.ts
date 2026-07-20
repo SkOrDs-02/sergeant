@@ -87,7 +87,7 @@ const oneOf = (options: string[]) => (text: string) =>
 const PIPELINES: Pipeline[] = [
   {
     key: "classify",
-    label: "OpenClaw/Finyk classify (cheap-router)",
+    label: "Finyk classify (cheap-router)",
     system:
       "Класифікуй повідомлення користувача в одну з категорій: chat, tool_use, question. Відповідай ЛИШЕ одним словом, без пунктуації.",
     user: "Онови мій бюджет на харчування до 5000 грн цього місяця.",

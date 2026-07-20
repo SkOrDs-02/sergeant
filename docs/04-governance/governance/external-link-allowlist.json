@@ -191,10 +191,6 @@
       "reason": "Telegram BotFather deep-link cited in ops/README.md for bot-token provisioning; t.me returns non-200 / fetch-failed to server-side HTTP clients (it is a client-side deep-link resolver) while opening correctly in Telegram/browsers."
     },
     {
-      "pattern": "^https?://openclaw\\.ai(/.*)?$",
-      "reason": "OpenClaw product homepage cited in packages/openclaw-plugin/README.md; returns 403 to the non-browser link-checker User-Agent while rendering in browsers. Canonical vendor domain, stable citation."
-    },
-    {
       "pattern": "^https?://developer\\.apple\\.com/account/resources/authkeys/",
       "reason": "Apple Developer auth-keys console cited in docs/90-work/tech-debt/backend.md for APNs key provisioning; the console gates everything behind Apple ID login and returns 403 to anonymous non-browser requests. Correct URL for authenticated account holders."
     },

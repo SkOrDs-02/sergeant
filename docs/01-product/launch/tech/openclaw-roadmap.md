@@ -1,7 +1,9 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
-> **Status:** Closed (historical grammy roadmap; canonical active owner is OpenClaw migration plan).
+> ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Gateway, `packages/openclaw-plugin`, серверний `modules/openclaw` та gateway-env прибрано з репо. Файл лишено як історичний запис (лінкується immutable-ADR 0031/0032/0033/0036/0037/0041). Не додавай нову роботу сюди.
+
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Status:** Deprecated (OpenClaw decommissioned — ADR-0075).
 > **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/90-work/planning/openclaw-migration-plan.md`](../../../90-work/planning/archive/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
 
 > **2026-05-12 — Reality update.** Phase 1…4.5 нижче описує feature-set, який raніше працював у grammy `tools/openclaw/src/openclaw/` і паралельно живе у Gateway-плагіні. У Gateway-плагіні станом на сьогодні **переписано тільки read-tools** (Stage 2 — 25 tools); write-tools (Phase 4) + hooks (Phase 4.5 audit/budget) + council orchestration (Phase 2.5) + strategic modes (Phase 3) — лежать у `packages/openclaw-plugin/src/legacy/` і чекають Stage 3/4/5 rewrite на real `openclaw@2026.5.7` SDK. У grammy-боті усі ці фічі залишаються активними як fallback до Phase 7 cutover.
