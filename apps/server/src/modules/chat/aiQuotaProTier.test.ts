@@ -169,12 +169,15 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     expect(pool.query).toHaveBeenCalledTimes(2);
   });
 
-  it("both buckets exhausted → floor tier (Haiku 3), never blocks", async () => {
+  it("both buckets exhausted → floor tier (Haiku 4.5, deduped with standard), never blocks", async () => {
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
     const res = makeRes();
     const r = await resolveProTier(makeReq(), res, "chat");
     expect(r.tier).toBe("floor");
-    expect(r.model).toBe("claude-3-haiku-20240307");
+    // Floor shares the model with standard (Haiku 4.5) after the retired
+    // claude-3-haiku-20240307 default was replaced. The tier label still
+    // differs — floor is a distinct bucket with its own daily budget.
+    expect(r.model).toBe("claude-haiku-4-5-20251001");
     expect(res.headers["X-AI-Tier"]).toBe("floor");
   });
 

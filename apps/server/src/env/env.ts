@@ -567,11 +567,16 @@ const envSchema = z.object({
   /** Chat standard-модель (Anthropic — tool-use працює). Haiku 4.5 за замовч. */
   AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
   /**
-   * Chat floor-модель. Anthropic Haiku 3 (~$0.25/$1.25 за 1M, ~12× дешевше
-   * Sonnet) — лишається Anthropic, бо chat прибитий до streaming + tool-use +
-   * prompt-cache, а безкоштовні OpenRouter-моделі tool-use не підтримують.
+   * Chat floor-модель. Дефолт = Haiku 4.5 (= standard): попередній
+   * `claude-3-haiku-20240307` знято з Anthropic API (model-eval 2026-07-20 —
+   * floor-запити падали з `anthropic_error`, тобто chat ламався при деградації
+   * Pro до floor). Дешевшої живої Anthropic-моделі за Haiku 4.5 наразі немає, а
+   * chat прибитий до streaming + tool-use + prompt-cache, тож OpenRouter-моделі
+   * сюди не підходять. Floor лишається окремим tier-логічно (нижчий ліміт,
+   * власний bucket), просто ділить model зі standard, поки не з'явиться
+   * дешевша сумісна опція — тоді достатньо env-override.
    */
-  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-3-haiku-20240307"),
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
   /** Coach standard-модель (через factory/OpenRouter). Gemini Flash Lite. */
   AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
     "google/gemini-2.5-flash-lite",
