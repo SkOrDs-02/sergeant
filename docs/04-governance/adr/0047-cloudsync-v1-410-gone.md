@@ -2,6 +2,8 @@
 
 > **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
 > **Status:** Active
+>
+> **⚠️ Superseded Phase 7 (2026-07-20, commit `d5cc2648c`):** 410-Gone handler `sunsetGone.ts` (+ survey middleware) **видалено** після завершення 90-денного deprecation-вікна. v1 sync тепер віддає **голий `404`**, не `410 Gone`. Цей ADR лишається як історичний запис T₀-виконання; актуальний стан — коментар у [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) і [`api-v1.md`](../../02-engineering/architecture/api-v1.md).
 
 - **Status:** Accepted
 - **Date:** 2026-05-06

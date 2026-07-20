@@ -19,7 +19,7 @@
 
 ## Why / What is enforced
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–049). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–082, sequential, no gaps). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 > **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg17`, not stock `postgres:17-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `visual-regression.yml`) already pin the same image.
 

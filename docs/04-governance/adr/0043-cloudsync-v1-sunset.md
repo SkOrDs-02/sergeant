@@ -1,5 +1,7 @@
 # ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout
 
+> **⚠️ Rollout завершено, Phase 7 виконано (2026-07-20, commit `d5cc2648c`):** усі v1 sunset-модулі — `sunsetGone.ts` (410 handler), `sunsetHeaders.ts` (RFC 8594/8288 headers), `clientSurvey.ts` (survey counter) + метрику `sync_v1_legacy_clients_total` — **видалено** після завершення deprecation-вікна. v1 push/pull тепер віддає **голий `404`** (не `410 Gone`). Цей ADR лишається як історичний запис 6-фазного плану; посилання на видалені файли нижче збережені для контексту.
+
 - **Status:** Accepted
 - **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
 - **Date:** 2026-05-04
