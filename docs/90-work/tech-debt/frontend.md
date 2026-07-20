@@ -3,13 +3,13 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Status:** Active
 
-> **Оновлено 2026-07-20.** Re-audit `apps/web/src`: **999** production source файлів / **~161k** raw LOC (без тестів, `__tests__/`, `.stories.*`); **875** test-файлів. Coverage floor lines = **89** (`coverage-thresholds.json`). Hard Rule #18 `max-lines` allowlist порожній; **2 нові leakers** над 600 effective LOC — `ManualExpenseSheet.tsx` (~607 eff) і `TxRow.tsx` (~605 eff). `no-eyebrow-drift` disables: **27** web / **10** mobile. Production `any`: **2** by-design (`parseFizrukWorkouts.ts`, `lazyImport.ts`) — `searchCache.ts` більше не тримає `LooseRecord`. `react-hooks/exhaustive-deps` у web production: **0** (каталог [`apps-web-exhaustive-deps.md`](../../02-engineering/architecture/apps-web-exhaustive-deps.md) закритий, wave 4); живі **9** — у mobile ([`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md)). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint ініціативи, не active debt тут.
+> **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 27 web / 10 mobile; production `any` **2** by-design; web exhaustive-deps **0**; mobile **9** — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories). §6 follow-up виконано: `HubReports` / `useCoachInsight` / `useWeeklyDigest` coverage.
 
 Аналіз кодової бази `apps/web/src` (999 source файлів, ~161k рядків — без тестів, `__tests__/` і `.stories.*`; 2026-07-20 re-audit).
 
-> **Оновлено 2026-07-01 (tech-debt reconcile).** Історичний зріз: `FinykApp.tsx` тоді 647/586; `dualWrite/adapter.ts` декомпозовано. **Перезаписано 2026-07-20** — див. §4 актуальну таблицю (нові leakers `ManualExpenseSheet` / `TxRow`).
+> **Оновлено 2026-07-01 (tech-debt reconcile).** Історичний зріз: `FinykApp.tsx` тоді 647/586; `dualWrite/adapter.ts` декомпозовано. **Перезаписано 2026-07-20** — §4: leakers `ManualExpenseSheet` / `TxRow` спочатку знову Active, потім **Closed** у wave PR #348 / #350.
 
 > **Оновлено 2026-05-20.** Додано §2.5 «Hub Settings & Reports tab cold-mount cost» як новий critical item — user-facing 10+ s freeze при tab-switch, з відкритою [Initiative 0017](../initiatives/archive/_0017-hub-tabs-mount-perf.md). Root cause не у chunk download (вже 31 ms cache-hit), а в синхронному mount-і 14 секцій у одному render burst. План — per-section `React.lazy()` + `useInView` gate на cross-module queries + Web Worker для Reports aggregation (stretch).
 
@@ -245,16 +245,15 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — allowlist порожній; **2 active leakers (2026-07-20)**
+### 4. Великі файли (>600 рядків) — allowlist порожній; **leakers Closed (post-waves 2026-07-20)**
 
-> **Status (2026-07-20 re-audit):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
+> **Status (2026-07-20 post-waves):** [`Initiative 0001 — Module decomposition`](../initiatives/archive/_0001-module-decomposition.md)
 > закрита як **Done**. Lint guard `max-lines: [error, 600]` (`skipBlankLines` +
 > `skipComments`) для `apps/web/src/**/*.{ts,tsx}` активний; allowlist **порожній**.
 >
-> **Нові leakers (effective LOC > 600):** `ManualExpenseSheet.tsx` (~713 raw /
-> ~607 eff) і `TxRow.tsx` (~658 raw / ~605 eff) — окремі decomposition PR.
-> Попередня claim «ManualExpenseSheet fixed 2026-05-29» — стейл (файл знову
-> перетнув поріг). Monitor-лист (raw >600, eff ≤600) — у таблиці нижче.
+> ~~Active leakers~~ **Closed:** `ManualExpenseSheet.tsx` (~416 raw, [#348](https://github.com/SkOrDs-02/Sergeant/pull/348))
+> і `TxRow.tsx` (~270 raw, [#350](https://github.com/SkOrDs-02/Sergeant/pull/350)).
+> Monitor-лист (raw >600, eff ≤600) — у таблиці нижче.
 >
 > Історичний лог декомпозицій (Assets / Profile / Voice / chatActions / …)
 > збережено нижче як audit trail; свіжі цифри — лише в таблиці §4.
@@ -362,26 +361,26 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
 > (mobile tracker — `docs/90-work/tech-debt/mobile.md`).
 
-| Рядків (raw / effective) | Файл                                                  | Категорія                                                    |
-| ------------------------ | ----------------------------------------------------- | ------------------------------------------------------------ |
-| **713 / ~607**           | `modules/finyk/components/ManualExpenseSheet.tsx`     | **Active leaker** — декомпозиція (sheet sections / hooks)    |
-| **658 / ~605**           | `modules/finyk/components/TxRow.tsx`                  | **Active leaker** — винести sub-rows / swipe / account chips |
-| 675 / ~568               | `modules/nutrition/NutritionApp.tsx`                  | Monitor (passes rule)                                        |
-| 655 / ~598               | `modules/fizruk/pages/Body.tsx`                       | Monitor (headroom ~2)                                        |
-| 646 / ~550               | `modules/nutrition/lib/sqliteWriter/adapter.ts`       | Monitor                                                      |
-| 638 / ~525               | `shared/components/ui/CelebrationModal.tsx`           | Monitor                                                      |
-| 634 / ~512               | `shared/components/layout/ModuleHeader.tsx`           | Monitor                                                      |
-| 623 / ~586               | `modules/routine/components/RoutineCalendarPanel.tsx` | Monitor                                                      |
-| 615 / ~558               | `modules/finyk/FinykApp.tsx`                          | Monitor                                                      |
-| 606 / ~474               | `shared/components/ui/EmptyState.tsx`                 | Monitor                                                      |
-| 912 / ~593               | `shared/i18n/uk.ts`                                   | Monitor (i18n catalog — не feature-моноліт)                  |
-| 653 / ~551               | `shared/i18n/en.ts`                                   | Monitor                                                      |
+| Рядків (raw / effective) | Файл                                                  | Категорія                                                                                          |
+| ------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **~416 / ≤600**          | `modules/finyk/components/ManualExpenseSheet.tsx`     | **Closed** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) — sections + model extracted     |
+| **~270 / ≤600**          | `modules/finyk/components/TxRow.tsx`                  | **Closed** [#350](https://github.com/SkOrDs-02/Sergeant/pull/350) — menu / edit / format extracted |
+| 675 / ~568               | `modules/nutrition/NutritionApp.tsx`                  | Monitor (passes rule)                                                                              |
+| 655 / ~598               | `modules/fizruk/pages/Body.tsx`                       | Monitor (headroom ~2)                                                                              |
+| 646 / ~550               | `modules/nutrition/lib/sqliteWriter/adapter.ts`       | Monitor                                                                                            |
+| 638 / ~525               | `shared/components/ui/CelebrationModal.tsx`           | Monitor                                                                                            |
+| 634 / ~512               | `shared/components/layout/ModuleHeader.tsx`           | Monitor                                                                                            |
+| 623 / ~586               | `modules/routine/components/RoutineCalendarPanel.tsx` | Monitor                                                                                            |
+| 615 / ~558               | `modules/finyk/FinykApp.tsx`                          | Monitor                                                                                            |
+| 606 / ~474               | `shared/components/ui/EmptyState.tsx`                 | Monitor                                                                                            |
+| 912 / ~593               | `shared/i18n/uk.ts`                                   | Monitor (i18n catalog — не feature-моноліт)                                                        |
+| 653 / ~551               | `shared/i18n/en.ts`                                   | Monitor                                                                                            |
 
-**Імпакт:** повільніший code review, важче тестувати окремі частини, можливі
-circular deps; leakers ламають / близькі до Hard Rule #18.
+**Імпакт (для monitor-ряду):** повільніший code review біля порогу 600;
+Hard Rule #18 leakers з re-audit **закриті** (#348 / #350).
 
-**Fix:** поступовий split — витягувати sub-components, hooks, utils. Окремі
-PR на кожен leaker; не змішувати з feature-дифами.
+**Fix (якщо знову >600):** поступовий split — sub-components / hooks / utils;
+окремі PR без feature-міксу.
 
 ---
 
@@ -1015,9 +1014,11 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 
 ## Recommended next steps
 
-1. **Декомпозиція Hard Rule #18 leakers** — `ManualExpenseSheet.tsx` (~607 eff)
-   і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу.
-2. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
-3. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
-4. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
-5. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
+1. ~~**Декомпозиція Hard Rule #18 leakers**~~ — **Done** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) / [#350](https://github.com/SkOrDs-02/Sergeant/pull/350).
+2. ~~**Storage-key / restricted-syntax WHY**~~ — **Done** [#351](https://github.com/SkOrDs-02/Sergeant/pull/351).
+3. ~~**`no-non-null-assertion` burndown (перша хвиля)**~~ — **Done** [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Подальший grep — опційно.
+4. **UI primitives consolidation (P4)** — 9 Radix-wrapper файлів (~2.6k LOC); не блокує max-lines gate.
+5. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.
+6. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+7. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
+8. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
