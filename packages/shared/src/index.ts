@@ -164,5 +164,5 @@ export * from "./shell/deepLinkChannel";
 // Origin-agnostic Sentry release tag (`sergeant@<short-sha>`) — single source
 // of truth shared across server / web / mobile SDKs so one deploy maps to one
 // Sentry release regardless of origin. See PR-25 in
-// `docs/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md` (R3).
+// `docs/90-work/initiatives/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`.
 export * from "./observability/release";

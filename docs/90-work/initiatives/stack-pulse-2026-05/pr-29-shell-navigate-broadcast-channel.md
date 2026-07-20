@@ -1,7 +1,7 @@
 # PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026)
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-08-11.
+> **Status:** Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window).
 
 |                    |                                                                                                       |
 | ------------------ | ----------------------------------------------------------------------------------------------------- |

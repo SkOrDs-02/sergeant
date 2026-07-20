@@ -3,17 +3,17 @@
   "version": 1,
   "generated_at": "2026-07-20",
   "sourceHashes": {
-    "knowledge-graph": "43c14aa3ccb414bcee053b19c57e09757f384515a94455cdc0548550c1fc974d",
+    "knowledge-graph": "320587cd44a187555b2fbe8d92e16a5634ea66abbeeb00fdbae810c66ee16da8",
     "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
   },
   "counts": {
     "adr": 72,
     "export": 286,
     "hard-rule": 26,
-    "initiative": 8,
+    "initiative": 7,
     "playbook": 60,
     "skill": 23,
-    "total": 475
+    "total": 474
   },
   "chunks": [
     {
@@ -539,8 +539,8 @@
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-10 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "87db36d888981530f8bbb3db8b0fd2898d393417c0e34c199961a8866194d1c0"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-20 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "aa7fb7af98fd5b44cdbf98aa7aa28fe5f7dcf802e113876f288f49e74758fe2d"
     },
     {
       "id": "adr:0051",
@@ -572,8 +572,8 @@
       "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-06-09 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
-      "contentHash": "b2d444eeca0dd68e7d0d81e46671159adfe3e0584cf15807c069950ee3d45679"
+      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-07-20 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
+      "contentHash": "32887b2db280b3e968f67733d0caa01ff8f712904a924b831b71afcf5e4e4803"
     },
     {
       "id": "adr:0054",
@@ -671,8 +671,8 @@
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-06-09 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "c7513da9abf54806d19bbab41e12ce6df55e1fccff6e7a77fc77214c5853cb6c"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-07-20 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "705231849f29f8767e9fc19a8d330e64d6e438aa50cf8a8afd8d11b79c85868e"
     },
     {
       "id": "adr:0064",
@@ -792,8 +792,8 @@
       "title": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway)",
       "tier": "core",
       "status": "accepted",
-      "text": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway) · adr:0074 · adr · accepted · 74 · 0. TL;DR · ADR-74.1 — VPS + Coolify замість Railway · Context · Decision · Consequences · Alternatives considered · Exit criteria · Implementation tracker",
-      "contentHash": "c41bd13362bc4890687a1d3b6ee2029e559d7e285955a1c607f97e168376a906"
+      "text": "ADR-0074: Backend hosting — Hetzner VPS + Coolify (замість Railway) · adr:0074 · adr · accepted · 74 · 0. TL;DR · ADR-74.1 — VPS + Coolify замість Railway · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-74.2 — Single canonical web origin · Status · Implementation tracker",
+      "contentHash": "fa3d7fb54bd7336efe08e9c1b8030eda58ce0f7e7e8364c5fed9fedb0bdcd12d"
     },
     {
       "id": "adr:0075",
@@ -3707,26 +3707,15 @@
       "contentHash": "cc6dcb906a6a4a52414eaed47090d27f4fa7fe70e05f1f33386d3da8dd75fad6"
     },
     {
-      "id": "initiative:stack-pulse-2026-05/pr-25-two-production-origins",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md",
-      "line": 1,
-      "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
-      "tier": "core",
-      "status": "Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk` origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth console cleanup + ADR-0009 «Single origin policy» section.",
-      "text": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin · initiative:stack-pulse-2026-05/pr-25-two-production-origins · initiative · Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk` origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth console cleanup + ADR-0009 «Single origin policy» section. · PR-25: Consolidate fizruk.vercel.app + sergeant.vercel.app → один production origin · Контекст · Scope · 1. Decision: keep sergeant.vercel.app · 2. CORS / CSRF / OAuth cleanup · 3. Sentry releases unification · 4. Capacitor / mobile-shell · 5. ADR update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "dfdb69f1b9e404a510548ea9576cd61894b64dad8ffe32874d3ccdb828d9fcae"
-    },
-    {
       "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
       "type": "initiative",
       "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
       "line": 1,
       "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
       "tier": "core",
-      "status": "Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026)",
-      "text": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel · initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel · initiative · Active (PR-1 shipped — BroadcastChannel sender + listener в `apps/mobile-shell/src/index.ts` і `apps/web/src/core/app/ShellDeepLinkBridge.tsx`; `window.__sergeantShellNavigate` лишається як backward-compat alias до PR-2 у serpni 2026) · PR-29: window.sergeantShellNavigate global → BroadcastChannel · Контекст · Scope · 1. BroadcastChannel-based bridge · 2. Web side · 3. Shell side · 4. Pre-mount queue · 5. Backward-compat shim · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "a67d6334c26eac9c6acbf529a67d991ec2644b02a00652db74579f00c2dfc1e4"
+      "status": "Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window).",
+      "text": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel · initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel · initiative · Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window). · PR-29: window.sergeantShellNavigate global → BroadcastChannel · Контекст · Scope · 1. BroadcastChannel-based bridge · 2. Web side · 3. Shell side · 4. Pre-mount queue · 5. Backward-compat shim · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "1d557dcec60c0b5e072b0e16ef73b5941c3192118080dd11bd4ea5b128a006f7"
     },
     {
       "id": "playbook:access-governance",
