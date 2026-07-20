@@ -1,11 +1,11 @@
-# Railway (API + PostgreSQL) + Vercel (фронт)
+# Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 >
 > **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2) — історичний контекст доміграційного стеку; Railway виведено повністю (config-файли `railway*.toml` видалено з репо 2026-07-19), OpenClaw Gateway не задеплоєний — міграція на Coolify або deprecation TBD. **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) — топологія з ADR-0009 не змінилась, переписано лише Vercel env `BACKEND_URL`.
 
-## 1. PostgreSQL на Railway
+## 1. PostgreSQL на Railway (історичне — актуальний бекенд-деплой у [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md))
 
 1. У [Railway](https://railway.app) створи **New project** → **Empty project** або **Deploy from GitHub** (спочатку можна лише БД).
 2. **Add service** → **Database** → **PostgreSQL**.
@@ -14,7 +14,7 @@
 
 Цей URL потрібен **тільки бекенду** (Node на Railway), не Vercel.
 
-## 2. API на Railway (той самий репозиторій)
+## 2. API на Railway (історичне — актуальний бекенд-деплой у [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md))
 
 1. **Add service** → **GitHub repo** → обери репозиторій Hub.
 2. У налаштуваннях сервісу: **Settings** → якщо не підхопився Dockerfile, вкажи **Dockerfile path**: `Dockerfile.api` (або використай `railway.toml` у корені — файл видалено з репо 2026-07-19 після декомісії Railway, ADR-0074).
@@ -46,7 +46,7 @@
 
 | Змінна                           | Значення                                                                                                                               |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `BACKEND_URL`                    | Публічний URL API (Railway), напр. `https://sergeant-production.up.railway.app`                                                        |
+| `BACKEND_URL`                    | Публічний URL API (Coolify), напр. `https://<sergeant-api-host>` (sslip.io / власний домен)                                            |
 | `VITE_SENTRY_DSN`                | DSN фронт-проєкту в Sentry (платформа `javascript-react`). Без нього `@sentry/react` не підвантажується — економія ~30–40 KB у бандлі. |
 | `VITE_SENTRY_ENVIRONMENT`        | Опційно: `production` / `preview`. Дефолт — `MODE`.                                                                                    |
 | `VITE_SENTRY_TRACES_SAMPLE_RATE` | Опційно: `0..1`. Дефолт `0.1`.                                                                                                         |
@@ -81,16 +81,16 @@ ALLOWED_ORIGINS=http://localhost:5173
 
 ## 5. Перевірка
 
-- `GET https://<твій-api>.up.railway.app/readyz` (або історичний аліас `/health`) → тіло `ok`, якщо PostgreSQL доступний; інакше **503** і `unhealthy`.
-- `GET https://<твій-api>.up.railway.app/livez` → завжди `200 ok`, якщо процес живий (не чіпає БД) — зручно для простого uptime-моніторингу.
+- `GET https://<твій-api-host>/readyz` (або історичний аліас `/health`) → тіло `ok`, якщо PostgreSQL доступний; інакше **503** і `unhealthy`.
+- `GET https://<твій-api-host>/livez` → завжди `200 ok`, якщо процес живий (не чіпає БД) — зручно для простого uptime-моніторингу.
 - У відповідях API є заголовок `X-Request-Id` (або передай свій `X-Request-Id` з клієнта).
 - Реєстрація в застосунку з прод-фронту: куки й CORS мають відповідати `ALLOWED_ORIGINS` і домену API. Safari (ITP) блокує third-party cookie — Edge Middleware у `apps/web/middleware.ts` проксіює `/api/*` через Vercel, роблячи cookie same-origin. Якщо сесія «не тримається» — перевір, що `BACKEND_URL` задано на Vercel і `VITE_API_BASE_URL` **видалено**.
 
 ## 6. Моніторинг і логи
 
 - **Healthcheck**:\n+ - **Uptime**: `GET /livez` кожні 1–5 хв.\n+ - **Readiness (з БД)**: `GET /readyz` (або `/health`) — корисно, якщо хочеш алертити саме проблеми з Postgres.\n+ - Алерт при **не 200** або тілі не `ok`.
-- **Railway-probe (config-as-code)**: власний probe самого Railway (рестарт unhealthy-контейнера) береться з `healthcheckPath = "/health"` у `railway.toml` → `[deploy]` (файл видалено — ADR-0074), а не з дашборду. Це окремо від зовнішнього uptime-моніторингу вище.
-- **Логи Railway**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
+- **Coolify health-probe**: `/health` віддає сам Node через Coolify proxy (див. [`apps/server/AGENTS.md`](../../../apps/server/AGENTS.md)). Container-level health-check вимкнено для distroless-образу (без curl/wget). Pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js`. Це окремо від зовнішнього uptime-моніторингу вище.
+- **Логи (Coolify container logs)**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.
 
 ## 7. Sentry → n8n → Telegram
@@ -118,7 +118,7 @@ Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api
 ADR — [`docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md`](../../04-governance/adr/0026-n8n-workflow-source-of-truth.md).
 У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
 
-## 8. Railway → n8n → Telegram (deploy notify)
+## 8. Railway → n8n → Telegram (deploy notify) (історичне — Railway виведено; n8n-decommission)
 
 Railway шле webhook-події про деплої у self-hosted n8n (Railway) → воркфлоу
 `15 — Railway Deployment Notify` → Telegram (`Sergeant_alert_bot`).

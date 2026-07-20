@@ -1,6 +1,6 @@
 # Логування (Pino JSON + ALS + Sentry / Loki)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Цей документ описує **як** і **чому** бекенд Sergeant логує саме так, як
@@ -12,7 +12,7 @@
 
 ## 1. Чому Pino JSON stdout
 
-Railway, Loki і Grafana розбирають JSON-рядки з `stdout` без будь-якої
+Coolify, Loki і Grafana розбирають JSON-рядки з `stdout` без будь-якої
 трансформації ([logger.ts:6-13](../../../apps/server/src/obs/logger.ts#L6)).
 Один рядок = один лог-запис, `service`, `env`, `release` додаються автоматично
 у `base` ([logger.ts:54-61](../../../apps/server/src/obs/logger.ts#L54)).
@@ -24,7 +24,7 @@ Pino (нема redaction, нема ALS-полів, нема level). Єдиний
 тому лише там дозволено `console.log` з ручним `JSON.stringify`.
 
 ```jsonc
-// Типовий рядок у Railway stdout
+// Типовий рядок у stdout (Coolify container logs)
 {
   "level": "info",
   "time": "2026-04-27T10:32:01.123Z",
@@ -266,9 +266,9 @@ app_errors_total{kind="operational|programmer", status="4xx|5xx", code="...", mo
    ```
    {service="sergeant-api"} |= "a1b2c3d4"
    ```
-   Або через Railway CLI:
+   Або через Coolify UI (app → Logs) / `docker` на VPS:
    ```bash
-   railway logs --filter 'requestId=a1b2c3d4'
+   docker logs <sergeant-api-container> 2>&1 | grep a1b2c3d4
    ```
 3. У логах знайдеш повний `err.cause` ланцюг — корисно, якщо Sentry
    згрупував різні причини в одну issue.

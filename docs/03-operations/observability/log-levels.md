@@ -1,16 +1,16 @@
 # Log-level policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 ## Default levels
 
-| Environment | Default | Rationale                                                               |
-| ----------- | ------- | ----------------------------------------------------------------------- |
-| Production  | `info`  | Cost + noise floor; Railway log storage ~10× more expensive at `debug`. |
-| Development | `debug` | Full visibility locally. `NODE_ENV !== "production"` → auto-downgrade.  |
+| Environment | Default | Rationale                                                              |
+| ----------- | ------- | ---------------------------------------------------------------------- |
+| Production  | `info`  | Cost + noise floor; Loki storage ~10× more expensive at `debug`.       |
+| Development | `debug` | Full visibility locally. `NODE_ENV !== "production"` → auto-downgrade. |
 
-Override via the `LOG_LEVEL` environment variable (Railway service var).  
+Override via the `LOG_LEVEL` environment variable (Coolify app env var).  
 Valid values: `fatal` `error` `warn` `info` `debug` `trace`
 
 ## Runtime debug-window
@@ -50,7 +50,7 @@ Lowering to `debug` does **not** leak PII; it only surfaces internal flow events
 
 ## Cost guidance
 
-Each log line is stored in Railway + shipped to Grafana Loki.  
+Each log line is stored in Coolify container logs + shipped to Grafana Loki.  
 `debug` can produce 50–100× more lines than `info` under load.  
 Use the debug-window for targeted troubleshooting sessions only; do not set `LOG_LEVEL=debug` as a permanent env var in production.
 
