@@ -830,7 +830,7 @@ export const messages = {
       headlineLine1: "Sergeant безкоштовний для базового користування.",
       headlineLine2: "Premium — коли треба все одразу.",
       subtitle:
-        "Один платний план. Без рівнів, без довічної підписки, без trial-таймера. Натиснеш Premium — відкриється Stripe Checkout.",
+        "Один платний план. Без рівнів, без довічної підписки, без trial-таймера. Натиснеш Premium — відкриється оплата (LiqPay / Plata).",
     },
     tiers: {
       freeName: "Free",
@@ -868,25 +868,25 @@ export const messages = {
     },
     cta: {
       tryPremium: "Спробувати Premium",
-      openingCheckout: "Відкриваємо checkout…",
+      openingCheckout: "Відкриваємо оплату…",
       manageSubscription: "Керувати підпискою",
-      openingPortal: "Відкриваємо портал…",
+      openingPortal: "Відкриваємо керування…",
       switchToFree: "Перейти на Free",
       currentPlan: "Зараз ваш план",
     },
     status: {
-      // Renders як «Checkout session створено (test mode).» — caller appends `(${mode} mode).`.
-      checkoutCreatedPrefix: "Checkout session створено",
+      // Renders як «Сесію оплати створено (test mode).» — caller appends `(${mode} mode).`.
+      checkoutCreatedPrefix: "Сесію оплати створено",
     },
     errors: {
       checkoutUnavailable:
-        "Оплата тимчасово недоступна. Можеш залишити email нижче, і ми повернемось з checkout-link.",
+        "Оплата тимчасово недоступна. Можеш залишити email нижче — напишемо, коли можна буде оплатити.",
       portalNoBillingCustomer:
-        "Не знайдено платіжний профіль Stripe. Напиши у підтримку — підключимо вручну.",
+        "Не знайдено платіжний профіль. Напиши у підтримку — підключимо вручну.",
       portalUnavailable:
         "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
       portalGeneric:
-        "Не вдалося відкрити портал. Перевір зв'язок і спробуй ще раз.",
+        "Не вдалося відкрити керування підпискою. Перевір зв'язок і спробуй ще раз.",
     },
     toast: {
       subscriptionActive: "Підписку активовано — ласкаво просимо в Premium!",
@@ -898,7 +898,7 @@ export const messages = {
       subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
     },
     footer:
-      "Ціни у гривні. При оплаті через Stripe можливе конвертування відповідно до налаштувань твого банку.",
+      "Ціни у гривні. Оплата через українські провайдери (LiqPay / Plata). Legacy Stripe-підписки керуються окремим платіжним порталом.",
   },
 } as const satisfies MessageCatalog;
 
