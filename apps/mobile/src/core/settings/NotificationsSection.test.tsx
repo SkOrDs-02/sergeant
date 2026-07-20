@@ -15,7 +15,8 @@
  *    nutrition prefs via the SQLite-backed dual-write trigger (the
  *    MMKV `nutrition_prefs_v1` slice was tombstoned in Stage 8 PR #073,
  *    so the assertion targets the dual-write payload, not MMKV);
- *  - the Fizruk sub-group surfaces its deferred-port placeholder string.
+ *  - the Fizruk monthly-plan reminder toggle/hour/minute picker drives
+ *    `useMonthlyPlan.setReminderEnabled` / `setReminder` (Phase 6 wire).
  */
 
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
@@ -62,6 +63,30 @@ jest.mock("@/modules/routine/lib/routineStore", () => {
   };
 });
 
+const mockMonthlyPlanState = {
+  reminderEnabled: false,
+  reminderHour: 9,
+  reminderMinute: 0,
+  days: {} as Record<string, unknown>,
+  state: {
+    reminderEnabled: false,
+    reminderHour: 9,
+    reminderMinute: 0,
+    days: {},
+  },
+  getTemplateForDate: jest.fn(() => null),
+  todayTemplateId: null as string | null,
+  getTodayDateKey: jest.fn(() => "2026-07-20"),
+  setDayTemplate: jest.fn(),
+  setReminder: jest.fn(),
+  setReminderEnabled: jest.fn(),
+  refresh: jest.fn(),
+};
+
+jest.mock("@/modules/fizruk/hooks/useMonthlyPlan", () => ({
+  useMonthlyPlan: () => mockMonthlyPlanState,
+}));
+
 jest.mock("expo-notifications", () => {
   const getPermissionsAsync = jest.fn();
   const requestPermissionsAsync = jest.fn();
@@ -99,6 +124,11 @@ beforeEach(() => {
   mockTriggerNutritionDualWrite.mockReset();
   mockIsNutritionDualWriteRegistered.mockReset().mockReturnValue(true);
   mockSaveRoutineState.mockReset();
+  mockMonthlyPlanState.reminderEnabled = false;
+  mockMonthlyPlanState.reminderHour = 9;
+  mockMonthlyPlanState.reminderMinute = 0;
+  mockMonthlyPlanState.setReminder.mockReset();
+  mockMonthlyPlanState.setReminderEnabled.mockReset();
   mockedGetPerms.mockResolvedValue({
     granted: false,
     status: "undetermined",
@@ -112,7 +142,7 @@ describe("NotificationsSection", () => {
     expect(queryByText("Push-сповіщення")).toBeNull();
   });
 
-  it("expands to reveal the permission card, toggles and deferred sub-groups", async () => {
+  it("expands to reveal the permission card, toggles and Fizruk/Nutrition sub-groups", async () => {
     mockedGetPerms.mockResolvedValueOnce({
       granted: true,
       status: "granted",
@@ -131,11 +161,8 @@ describe("NotificationsSection", () => {
     expect(getByText("Рутина (звички)")).toBeTruthy();
     expect(getByText("Нагадування про звички")).toBeTruthy();
     expect(getByText("Фізрук (тренування)")).toBeTruthy();
-    expect(
-      getByText(
-        "Нагадування про тренування підключаться з портом модуля Фізрук (Phase 6).",
-      ),
-    ).toBeTruthy();
+    expect(getByText("Нагадування про тренування")).toBeTruthy();
+    expect(getByTestId("notifications-fizruk-toggle")).toBeTruthy();
     expect(getByText("Харчування")).toBeTruthy();
     expect(getByText("Нагадування про їжу")).toBeTruthy();
     expect(getByTestId("notifications-nutrition-toggle")).toBeTruthy();
@@ -205,8 +232,47 @@ describe("NotificationsSection", () => {
     expect(savedState.prefs.routineRemindersEnabled).toBe(true);
   });
 
-  it("persists nutrition reminder toggle and hour through the dual-write trigger (no MMKV write)", async () => {
+  it("wires Fizruk reminder toggle and time to useMonthlyPlan", async () => {
     mockedGetPerms.mockResolvedValueOnce({
+      granted: true,
+      status: "granted",
+    });
+    mockMonthlyPlanState.reminderEnabled = true;
+    mockMonthlyPlanState.reminderHour = 8;
+    mockMonthlyPlanState.reminderMinute = 30;
+
+    const { getByText, getByTestId } = render(<NotificationsSection />);
+
+    fireEvent.press(getByText("Сповіщення"));
+
+    await waitFor(() => {
+      expect(getByTestId("notifications-fizruk-hour")).toBeTruthy();
+    });
+
+    expect(getByTestId("notifications-fizruk-minute").props.value).toBe("30");
+
+    await act(async () => {
+      fireEvent(
+        getByTestId("notifications-fizruk-toggle"),
+        "valueChange",
+        false,
+      );
+    });
+    expect(mockMonthlyPlanState.setReminderEnabled).toHaveBeenCalledWith(false);
+
+    fireEvent.changeText(getByTestId("notifications-fizruk-hour"), "25");
+    expect(mockMonthlyPlanState.setReminder).toHaveBeenCalledWith(23, 30);
+
+    fireEvent.changeText(getByTestId("notifications-fizruk-minute"), "99");
+    expect(mockMonthlyPlanState.setReminder).toHaveBeenCalledWith(8, 59);
+  });
+
+  it("persists nutrition reminder toggle and hour through the dual-write trigger (no MMKV write)", async () => {
+    mockedGetPerms.mockResolvedValue({
+      granted: true,
+      status: "granted",
+    });
+    mockedRequestPerms.mockResolvedValue({
       granted: true,
       status: "granted",
     });
@@ -215,7 +281,9 @@ describe("NotificationsSection", () => {
     fireEvent.press(getByText("Сповіщення"));
 
     await waitFor(() => {
-      expect(getByTestId("notifications-nutrition-toggle")).toBeTruthy();
+      expect(
+        getByTestId("notifications-permission-status").props.children,
+      ).toBe("Дозволено");
     });
 
     await act(async () => {
