@@ -69,7 +69,7 @@
   "panels": [
     {
       "title": "Estimated 30-day run-rate (USD)",
-      "description": "Sum of: AI cost over last 30d (Anthropic + Voyage) + fixed monthly subscriptions (Railway + Vercel + PostHog + Sentry). Reference for monthly burn against budget.",
+      "description": "Sum of: AI cost over last 30d (Anthropic + Voyage) + fixed monthly subscriptions (Hetzner + Vercel + PostHog + Sentry). Reference for monthly burn against budget.",
       "type": "stat",
       "gridPos": {
         "h": 6,
@@ -221,7 +221,7 @@
       },
       "targets": [
         {
-          "expr": "sum(infra_monthly_cost_usd{provider=~\"railway|vercel|posthog|sentry\"})",
+          "expr": "sum(infra_monthly_cost_usd{provider=~\"hetzner|vercel|posthog|sentry\"})",
           "legendFormat": "fixed monthly",
           "refId": "A"
         }
@@ -276,7 +276,7 @@
     },
     {
       "title": "Fixed cost by provider (USD/mo) — pie",
-      "description": "Static monthly subscriptions for non-AI infrastructure (Railway, Vercel) and observability stack (PostHog, Sentry). Set via *_MONTHLY_COST_USD env-vars.",
+      "description": "Static monthly subscriptions for non-AI infrastructure (Hetzner, Vercel) and observability stack (PostHog, Sentry). Set via *_MONTHLY_COST_USD env-vars.",
       "type": "piechart",
       "gridPos": {
         "h": 9,
@@ -315,7 +315,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (provider) (infra_monthly_cost_usd{provider=~\"railway|vercel|posthog|sentry\"})",
+          "expr": "sum by (provider) (infra_monthly_cost_usd{provider=~\"hetzner|vercel|posthog|sentry\"})",
           "legendFormat": "{{provider}} ({{plan}})",
           "refId": "A"
         }
@@ -736,7 +736,7 @@
   },
   "timepicker": {},
   "timezone": "Europe/Kyiv",
-  "title": "Sergeant — Cost monitoring (Anthropic + Voyage + Railway + Vercel + PostHog + Sentry)",
+  "title": "Sergeant — Cost monitoring (Anthropic + Voyage + Hetzner + Vercel + PostHog + Sentry)",
   "uid": "sergeant-cost-monitoring",
   "version": 1
 }

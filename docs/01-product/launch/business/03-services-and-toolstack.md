@@ -216,11 +216,11 @@
 
 ### 2.12 Cron / Scheduled jobs / workflow automation
 
-| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                          | Status    |
-| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. | in use    |
-| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.     | in use    |
-| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-04      | Альтернатива для простих per-час задач. Зараз не використовується — replaceable через BullMQ repeatable jobs / n8n schedule trigger.                                                                        | evaluated |
+| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                          | Status   |
+| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. | in use   |
+| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.     | in use   |
+| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-04      | Railway виведено 2026-07 (ADR-0074) — не застосовне. Per-час задачі йдуть через BullMQ repeatable jobs / n8n schedule trigger; на Hetzner+Coolify — системний `cron` на VPS (напр. `db-backup.sh`).         | rejected |
 
 > **Розподіл відповідальності:**
 >
@@ -298,12 +298,12 @@
 
 ### 4.1 Database (PostgreSQL)
 
-| Зміна                          | Пріоритет | Деталі                                                                                                                    |
-| ------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Додати таблицю `subscriptions` | P0        | Міграція `009_subscriptions.sql` — основа paywall. Деталі тірів — [01](./01-monetization-and-pricing.md#2-тарифні-плани). |
-| Railway backups                | P0        | Перевірити що automated daily backups увімкнені. Для production з платежами — обов'язково.                                |
-| Connection pooling             | P2        | Зараз `pg Pool` direct. При >50 юзерів — PgBouncer (окремий Coolify-ресурс) / Supavisor.                                  |
-| Read replicas                  | P3        | Не потрібно до ~10K MAU.                                                                                                  |
+| Зміна                          | Пріоритет | Деталі                                                                                                                                              |
+| ------------------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Додати таблицю `subscriptions` | P0        | Міграція `009_subscriptions.sql` — основа paywall. Деталі тірів — [01](./01-monetization-and-pricing.md#2-тарифні-плани).                           |
+| Hetzner/Coolify backups        | P0        | Перевірити daily `pg_dump` cron на VPS (`/root/db-backup.sh`, retention 14д) + baseline Hetzner snapshot. Для production з платежами — обов'язково. |
+| Connection pooling             | P2        | Зараз `pg Pool` direct. При >50 юзерів — PgBouncer (окремий Coolify-ресурс) / Supavisor.                                                            |
+| Read replicas                  | P3        | Не потрібно до ~10K MAU.                                                                                                                            |
 
 ### 4.2 Backend (Express / Coolify on Hetzner)
 
@@ -315,7 +315,7 @@
 | Stripe webhook security    | P0        | `stripe.webhooks.constructEvent(body, sig, secret)` — захист від спуфінгу.                                                                                   |
 | Health check розширити     | P2        | Додати в `/health` перевірку Redis, Stripe connectivity.                                                                                                     |
 | Structured billing logs    | P2        | Pino вже є — додати structured events (`subscription_created`, `payment_failed`, ...).                                                                       |
-| Railway horizontal scaling | P3        | При >1K MAU. Перевірити що rate-limit через Redis (не in-memory).                                                                                            |
+| Hetzner vertical scaling   | P3        | При >1K MAU — resize VPS (CX23 → CX33/CPX31) або винести Postgres на окремий сервер. Перевірити що rate-limit через Redis (не in-memory).                    |
 
 ### 4.3 Frontend (Vite / React / Vercel)
 
@@ -339,11 +339,11 @@
 
 ### 4.5 CI / CD
 
-| Зміна                 | Пріоритет | Деталі                                                                   |
-| --------------------- | --------- | ------------------------------------------------------------------------ |
-| Stripe test keys в CI | P1        | GitHub Secrets: `STRIPE_SECRET_KEY_TEST`. Для integration tests billing. |
-| Staging environment   | P2        | Railway staging (Stripe test mode). Зараз тільки production.             |
-| E2E billing test      | P3        | Playwright: free user -> paywall -> Stripe test checkout -> verify Pro.  |
+| Зміна                 | Пріоритет | Деталі                                                                         |
+| --------------------- | --------- | ------------------------------------------------------------------------------ |
+| Stripe test keys в CI | P1        | GitHub Secrets: `STRIPE_SECRET_KEY_TEST`. Для integration tests billing.       |
+| Staging environment   | P2        | Coolify staging-app на тому ж VPS (Stripe test mode). Зараз тільки production. |
+| E2E billing test      | P3        | Playwright: free user -> paywall -> Stripe test checkout -> verify Pro.        |
 
 ### 4.6 Security
 
@@ -522,7 +522,7 @@ WEEK 3: Frontend + analytics
 WEEK 4: Legal + polish + E2E
   +-- Privacy Policy + Terms of Service сторінки
   +-- Billing email templates (Resend + React Email)
-  +-- Staging environment на Railway
+  +-- Staging environment на Coolify (той самий VPS)
   +-- E2E тестування повного flow
 ```
 
@@ -533,8 +533,8 @@ WEEK 4: Legal + polish + E2E
 ```
 CATEGORY         SERVICE                  COST           STATUS
 -----------      --------------------     -----------    ----------
-Dev              Vercel + Railway + GH    ~$13-26/mo     in use
-                 Actions + Turborepo + n8n
+Dev              Vercel + Hetzner + GH    ~$7/mo         in use
+                 Actions + Turborepo
 Payments         Stripe                   % per tx       to add
 Analytics        PostHog free tier        $0             in use
                  + Vercel Analytics       $0             in use

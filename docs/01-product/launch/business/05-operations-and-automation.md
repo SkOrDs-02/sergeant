@@ -229,7 +229,7 @@
 | ------------------------------ | ------------------------------------------------ | ------------- |
 | **Telegram #sergeant-alerts**  | Всі критичні алерти автоматично, push на телефон | Тебе          |
 | **Grafana / Notion dashboard** | MRR, DAU, errors, queue depth — одним поглядом   | —             |
-| **GitHub / Railway**           | Тільки коли реально кодиш / деплоїш              | —             |
+| **GitHub / Coolify**           | Тільки коли реально кодиш / деплоїш              | —             |
 
 **З OpenClaw — можна скоротити до 1 вкладки (Telegram).** OpenClaw сам приходить вранці з digest `«За ніч: 3 нові підписки, 0 інцидентів, 1 PR від Renovate (auto-merge готовий), 12 сігнапів. Усе зелене»`. Тоді ти відкриваєш дашборд тільки якщо OpenClaw сказав щось ненормальне.
 
@@ -251,7 +251,7 @@
   curl "https://api.telegram.org/bot<BOT_TOKEN>/getUpdates"
   ```
   Знайди `"chat":{"id":-100XXXXXXXXXX}` — це твій `CHAT_ID`
-- [ ] **Env vars** (Railway + n8n):
+- [ ] **Env vars** (Coolify + n8n):
   ```env
   TELEGRAM_BOT_TOKEN=<BOT_TOKEN>
   TELEGRAM_ALERT_CHAT_ID=<CHAT_ID>
@@ -350,7 +350,7 @@
 | `/errors`      | Sentry issues за 24h                | `3 нових issues, 0 fatal. Top: "TypeError in DashboardPage" (12 events)` |
 | `/signups`     | Кількість сігнапів за 24h з PostHog | `Signups: 23 (avg 7d: 18, +28%). Top source: DOU article.`               |
 | `/churn`       | Churn stats за тиждень              | `Cancel: 4 (1.2%). Top причина: "не користувався" (2). LTV avg: ₴594`    |
-| `/deploy`      | Статус останнього deploy            | `Vercel: ✓ 2h ago (abc1234). Railway: ✓ 3h ago. All green.`              |
+| `/deploy`      | Статус останнього deploy            | `Vercel: ✓ 2h ago (abc1234). Coolify: ✓ 3h ago. All green.`              |
 | `/ci`          | GitHub Actions статус main          | `CI main: ✓ all passing. PRs: 2 open (1 Renovate auto-merge ready).`     |
 | `/backup`      | Статус останнього DB backup         | `Last backup: today 03:00 UTC, 142MB, verified ✓.`                       |
 | `/ops <query>` | Ad-hoc запит до OpenClaw            | `/ops чому signups впали?` → AI-аналіз з гіпотезою + лінками             |
@@ -488,9 +488,8 @@ Sentry webhook (new issue OR spike)
 
 ```
 Cron 03:00 UTC
-  → Railway API: list latest backup
-  → Spin up staging instance (на Railway, ephemeral)
-  → Restore backup
+  → Список свіжих pg_dump (`/root/backups/*.dump` на VPS) або Hetzner snapshot
+  → Restore у throwaway Postgres-контейнер (docker run pgvector, ephemeral)
   → Run sanity SQL: SELECT count(*) FROM users
   → IF success: Telegram "✓ Backup OK ($DATE)"
   → IF fail: Telegram CRITICAL alert

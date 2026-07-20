@@ -37,7 +37,7 @@
       "tags": [],
       "targetBlank": true,
       "title": "cost-monitoring (всі провайдери)",
-      "tooltip": "PR-33 — Anthropic + Voyage + Railway + Vercel + PostHog + Sentry",
+      "tooltip": "PR-33 — Anthropic + Voyage + Hetzner + Vercel + PostHog + Sentry",
       "type": "link",
       "url": "/d/sergeant-cost-monitoring"
     },
