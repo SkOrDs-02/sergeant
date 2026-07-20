@@ -2,13 +2,13 @@
 
 > **Last validated:** 2026-07-10 by @cursoragent (decision frame; billing scaffold shipped). **Next review:** 2026-10-08.
 > **Status:** In progress
-> **Code reconciliation (2026-07-13):** billing routes, LandingPage, local EN catalog, activation capture, PlanSection і paywall уже landed. Open acceptance — live Stripe webhook/paid-user evidence, production CI/a11y/Lighthouse gates та founder-owned APPLE_* / ФОП rollout; нижній checklist зберігає historical launch criteria.
-> **Update 2026-07-10:** TL;DR нижче — **historical decision snapshot** (2026-05-04). Фактичний стан: billing scaffold shipped (`subscriptions` migrations, Stripe routes, paywall UI); pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (₴199/₴1490); `tools/openclaw` removed → external gateway (ADR-0055). Founder blockers: live Stripe + ФОП.
+> **Code reconciliation (2026-07-20):** billing routes, LandingPage, local EN catalog, activation capture, PlanSection і paywall уже landed. **Платіжний провайдер — LiqPay** (власник підтвердив 2026-07-20): у коді multi-provider (`modules/billing/{provider,registry,liqpay,plata,stripeProvider}.ts`), `getEnabledProviders({country:'UA'})` повертає лише `liqpay`+`plata`, Stripe dormant (тільки cancel/status наявних підписок). Open acceptance — live LiqPay webhook/paid-user evidence, production CI/a11y/Lighthouse gates та founder-owned APPLE_* / ФОП rollout; нижній checklist зберігає historical launch criteria.
+> **Update 2026-07-10:** TL;DR нижче — **historical decision snapshot** (2026-05-04). Фактичний стан: billing landed (`subscriptions` migrations, multi-provider routes, paywall UI); pricing canon — [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (₴199/₴1490); `tools/openclaw` removed → external gateway (ADR-0055). Founder blockers: live LiqPay (ключі + ФОП). Нижче історичний план говорить «Stripe» — це заморожений snapshot до pivot-у на LiqPay (2026-07-10/20).
 > **✅ Completed:** Phases 0, 1, 2, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6 (including 6.2 EN-locale wiring)
 > **⏳ Pending (founder-блокери only):**
 >
 > - APPLE\_\* env vars in Railway/local
-> - ФОП-реєстрація для live Stripe
+> - ФОП-реєстрація + `LIQPAY_ENABLED`/`LIQPAY_PUBLIC_KEY`/`LIQPAY_PRIVATE_KEY` для live LiqPay
 > - Rollout/decision metrics
 >   **Agent-ready:** needs-decision
 >   **Priority:** P0 (Sprint 1–4)
@@ -518,6 +518,8 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 - **Pending:** EN-локаль (uk.ts існує, i18n config відсутній); sitemap.xml + robots.txt (тільки security.txt у apps/web/public/); Customer Portal link у PricingPage для Pro users.
 
 ### PR-8 — LiqPay multi-provider scaffold ✅ (2026-06-03)
+
+> **Update 2026-07-20 — знято зі scaffold-only.** Код пішов далі за цей історичний запис: `liqpayProvider`/`plataProvider` реалізовані (не `NotImplementedError`-stub), додано `registry.ts` (`providerRegistry`) і `plata.ts` (mig 081/082). Resolver перейменовано на `getEnabledProviders({country})` і **для `UA` повертає лише `liqpay`+`plata` — Stripe свідомо dormant, ніколи не для українців** (`provider.ts:126-142`), тобто «resolver у проді завжди повертає stripe» нижче — застаріле. Лишилось власнику (ops, не код): ФОП для LiqPay-мерчанта + `LIQPAY_ENABLED`/`LIQPAY_PUBLIC_KEY`/`LIQPAY_PRIVATE_KEY` у prod.
 
 Закриває `P1-5` (LiqPay placeholder) у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
 

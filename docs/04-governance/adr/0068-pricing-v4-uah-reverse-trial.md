@@ -110,7 +110,7 @@ ADR-0051 зафіксував модель Free + Pro з ціною \$7/міс /
 
 ### Neutral
 
-- Stripe price IDs потребують перестворення — окремий ops-крок перед production rollout.
+- Платіжний провайдер для UA — **LiqPay** (власник підтвердив 2026-07-20), не Stripe (Stripe dormant, тільки cancel/status наявних підписок — `modules/billing/provider.ts`). Ціни ₴199/₴1490 налаштовуються на боці LiqPay-мерчанта; production rollout потребує ФОП + `LIQPAY_ENABLED`/`LIQPAY_PUBLIC_KEY`/`LIQPAY_PRIVATE_KEY` (ops-крок власника).
 - Paywall-копія «Спробуй Pro — 7 днів» досі актуальна за UX-моделлю (reverse trial теж 7 днів), але тепер показується як попередження перед downgrade, а не як opt-in CTA.
 
 ## Compliance
