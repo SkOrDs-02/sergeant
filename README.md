@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -68,7 +68,8 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | `apps/server`       | API server (backend)     | Express + PostgreSQL    | Hetzner + Coolify       |
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
-| `tools/openclaw`    | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
+
+> The legacy `tools/openclaw` grammy bot was removed from the repo; its Gateway logic now lives in the `@sergeant/openclaw-plugin` package (see the Packages table below). The OpenClaw Gateway is **not currently deployed** — Railway was decommissioned per [ADR-0074](./docs/04-governance/adr/0074-hosting-hetzner-coolify.md); re-home on Coolify or deprecation is TBD.
 
 ### Tooling (`tools/`)
 
@@ -123,10 +124,10 @@ Architecture overview lives in [docs/02-engineering/architecture/README.md](./do
         └───────────┬───────────┘
                     │
                     ▼
-        ┌───────────────────────┐     ┌─────────────────┐
-        │   PostgreSQL          │     │  tools/openclaw   │
-        │ (Coolify / pgvector)  │     │  (Telegram bot)  │
-        └───────────────────────┘     └─────────────────┘
+        ┌───────────────────────┐     ┌──────────────────────┐
+        │   PostgreSQL          │     │  OpenClaw gateway    │
+        │ (Coolify / pgvector)  │     │  (plugin; undeployed)│
+        └───────────────────────┘     └──────────────────────┘
 ```
 
 Fizruk and Routine modules follow a **local-first** approach: data is stored locally first (localStorage on web, MMKV on mobile), then synced to the server via CloudSync using LWW (Last-Write-Wins) conflict resolution. The app works offline.
@@ -224,13 +225,13 @@ pnpm --filter @sergeant/mobile start
 # First build web, then open in Xcode / Android Studio
 ```
 
-#### 6. (Optional) Telegram bot
+#### 6. (Optional) OpenClaw Telegram gateway
 
-```bash
-pnpm --filter @sergeant/openclaw dev
-```
-
-Requires a Telegram Bot Token in `tools/openclaw/.env`.
+The standalone `@sergeant/openclaw` grammy bot (`tools/openclaw`) was removed; its
+Gateway tools/hooks now live in [`packages/openclaw-plugin`](./packages/openclaw-plugin)
+and run against the server-side OpenClaw gateway (`apps/server/src/modules/openclaw`).
+There is **no standalone bot dev-server** to start here, and the gateway is not
+currently deployed (Railway decommissioned — [ADR-0074](./docs/04-governance/adr/0074-hosting-hetzner-coolify.md)).
 
 ## Core commands
 

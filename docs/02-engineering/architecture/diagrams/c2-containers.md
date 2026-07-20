@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -31,8 +31,8 @@ flowchart TB
         end
     end
 
-    subgraph Railway["Railway (OpenClaw only — поза ADR-0074)"]
-        Console["tools/openclaw<br/><i>Telegram bot (grammy)</i>"]
+    subgraph OpenClawHost["OpenClaw Gateway — НЕ задеплоєний (Railway виведено, ADR-0074)"]
+        Console["packages/openclaw-plugin<br/><i>Telegram gateway — re-home на Coolify TBD</i>"]
     end
 
     N8N["n8n<br/><i>cron, mono enrich, morning briefing<br/>(self-host; статус — див. observability-нотатки)</i>"]

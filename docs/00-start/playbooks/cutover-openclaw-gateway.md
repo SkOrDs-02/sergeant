@@ -1,7 +1,9 @@
 # Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7)
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
+
+> **⚠️ Інфраструктура застаріла ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11).** Cutover нижче виконано у травні 2026 на Railway; відтоді **Railway виведено повністю** (`railway*.toml` видалено 2026-07-19), і `sergeant-openclaw-gateway` **наразі ніде не задеплоєний** — re-home на Coolify або deprecation TBD (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Усі Railway-специфічні кроки, дашборд-посилання, `*.railway.app` URL-и та `RAILWAY_TOKEN`-виклики нижче — **історичні**; не виконуй їх проти live-інфри. Документ лишається як шаблон для майбутнього re-cutover на Coolify.
 
 > **Мовна примітка:** назви команд, сервісів і змінних середовища залишені в оригіналі, бо це буквальні ідентифікатори рантайму; рішення, перевірки та послідовність дій описані українською.
 

@@ -1,7 +1,9 @@
 # Playbook: Ротація OpenClaw GitHub credentials
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
+
+> **⚠️ Gateway наразі не задеплоєний ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)).** GitHub-App-частина (§ основний flow — креди в Vercel/API env) чинна. Але **бот-токен-ротація нижче через Railway-дашборд застаріла**: Railway виведено (2026-07-19), `sergeant-openclaw-gateway` ніде не крутиться. Коли Gateway re-home на Coolify — онови env через Coolify → app → Environment замість Railway Dashboard.
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
 
@@ -138,10 +140,10 @@ flowchart TD
    - `/revoke` → обери `@OpenClaw_sergeant_v2_bot` → підтверди. Старий токен стає недійсним миттєво.
 2. **Збережи новий токен.**
    - @BotFather надасть новий токен у тому самому чаті. Скопіюй його.
-3. **Онови Railway env var.**
-   - Railway Dashboard → service `sergeant-openclaw-gateway` → Variables → `OPENCLAW_GATEWAY_BOT_TOKEN` → вклей новий токен.
-4. **Restart Gateway сервісу.**
-   - Railway Dashboard → `sergeant-openclaw-gateway` → Deploy → Restart (або новий deploy автоматично підхопить змінений env).
+3. **Онови env var Gateway-хоста** _(історично Railway; після re-home на Coolify — Coolify → app → Environment)._
+   - `OPENCLAW_GATEWAY_BOT_TOKEN` → вклей новий токен. **Наразі no-op** — Gateway не задеплоєний (див. банер угорі).
+4. **Restart Gateway сервісу** _(коли задеплоєний)._
+   - Redeploy/restart на хості Gateway-а, щоб підхопити змінений env.
 5. **Smoke-test.**
    - Надішли DM до `@OpenClaw_sergeant_v2_bot`: Gateway має відповісти протягом 30 секунд.
    - Перевір `GET /healthz` Gateway-а — має повернути 200.
