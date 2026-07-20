@@ -1,42 +1,31 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-07-20
  * Status: Active
  */
 /**
  * Module bento grid for the Hub Dashboard (T1 decomposition).
  *
- * Drag-and-drop reordering, edit mode, and inactive-module toggle.
+ * Native pointer/keyboard drag-and-drop reordering, edit mode, and
+ * inactive-module toggle (S10-T2 — no `@dnd-kit`).
  */
 
+import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { isActiveModule, type DashboardModuleId } from "@sergeant/shared";
-import {
-  DndContext,
-  closestCenter,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { SortableCard } from "./dashboard/BentoCard";
 import { type ModuleId } from "./dashboard/moduleConfigs";
+import type { NativeSortableHandlers } from "./dashboard/nativeSortable";
 import type { DashboardDensity } from "./hub.types";
 import { DENSITY_BENTO_GAP } from "./hub.types";
-
-// ─────────────────────────────────────────────────────────────────────
-// Props
-// ─────────────────────────────────────────────────────────────────────
 
 export interface HubModulesGridProps {
   density: DashboardDensity;
   editMode: boolean;
   toggleEditMode: () => void;
   displayOrder: readonly string[];
-  sensors: ReturnType<typeof useSensors>;
-  handleDragStart: (event: DragStartEvent) => void;
-  handleDragEnd: (event: DragEndEvent) => void;
+  sortableHandlers: NativeSortableHandlers;
   onOpenModule: (module: string) => void;
   activeModules: readonly string[];
   adaptive: { liftedId: ModuleId | null; reason: string | null };
@@ -45,14 +34,18 @@ export interface HubModulesGridProps {
   toggleHideInactive: () => void;
 }
 
+function columnsForDensity(_density: DashboardDensity): number {
+  // Matches `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`. Keyboard ArrowUp/Down
+  // uses the mobile 2-col baseline (most common coarse-pointer case).
+  return 2;
+}
+
 export function HubModulesGrid({
   density,
   editMode,
   toggleEditMode,
   displayOrder,
-  sensors,
-  handleDragStart,
-  handleDragEnd,
+  sortableHandlers,
   onOpenModule,
   activeModules,
   adaptive,
@@ -60,6 +53,8 @@ export function HubModulesGrid({
   hideInactive,
   toggleHideInactive,
 }: HubModulesGridProps) {
+  const columns = useMemo(() => columnsForDensity(density), [density]);
+
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between gap-2 px-0.5">
@@ -94,42 +89,32 @@ export function HubModulesGrid({
         </button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
+      <div
+        data-testid="native-sortable-grid"
+        className={cn(
+          "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+          DENSITY_BENTO_GAP[density],
+        )}
       >
-        <SortableContext
-          items={displayOrder as string[]}
-          strategy={rectSortingStrategy}
-        >
-          <div
-            className={cn(
-              "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-              DENSITY_BENTO_GAP[density],
-            )}
-          >
-            {displayOrder.map((id) => (
-              <SortableCard
-                key={id}
-                id={id as ModuleId}
-                onOpenModule={onOpenModule}
-                inactive={
-                  !isActiveModule(
-                    activeModules as DashboardModuleId[],
-                    id as DashboardModuleId,
-                  )
-                }
-                editMode={editMode}
-                adaptiveReason={
-                  id === adaptive.liftedId ? adaptive.reason : null
-                }
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+        {displayOrder.map((id) => (
+          <SortableCard
+            key={id}
+            id={id as ModuleId}
+            onOpenModule={onOpenModule}
+            inactive={
+              !isActiveModule(
+                activeModules as DashboardModuleId[],
+                id as DashboardModuleId,
+              )
+            }
+            editMode={editMode}
+            adaptiveReason={id === adaptive.liftedId ? adaptive.reason : null}
+            displayOrder={displayOrder}
+            sortableHandlers={sortableHandlers}
+            columns={columns}
+          />
+        ))}
+      </div>
 
       {hasInactive && (
         <button

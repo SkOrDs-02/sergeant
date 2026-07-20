@@ -194,7 +194,7 @@ pnpm check
 - [ ] Web nutrition recipes IndexedDB → SQLite or sync `nutrition_recipes` only.
 - [ ] Mono mirror multi-month backfill (`useMonobankWebhook.ts` fetch window).
 - [ ] Nutrition backup `.data/` → durable storage.
-- [ ] Drop orphan `billing_subscriptions` (two-phase, Hard Rule #4).
+- [x] Drop orphan `billing_subscriptions` (two-phase, Hard Rule #4) — done in `083_drop_billing_subscriptions.sql` (2026-07-20).
 
 ---
 

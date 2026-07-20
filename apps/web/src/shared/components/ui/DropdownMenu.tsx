@@ -43,6 +43,9 @@ import {
   DropdownMenuEntryView,
   type DropdownMenuEntryViewProps,
 } from "./DropdownMenu.entry";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
+
+const DROPDOWN_PANEL_OFFSET = 6;
 
 export type DropdownMenuPlacement =
   "bottom-start" | "bottom-end" | "top-start" | "top-end";
@@ -326,47 +329,27 @@ function DropdownMenuPanel({
     lastAt: 0,
   });
 
-  // Position relative to the trigger; recompute on resize / scroll.
-  const [position, setPosition] = useState<CSSProperties>({
-    top: 0,
-    left: 0,
-    visibility: "hidden",
+  // Position via shared floating helper (same geometry as Popover /
+  // Tooltip). Panel only mounts while the menu is open → `open: true`.
+  const coords = useFloatingPanelPosition({
+    open: true,
+    triggerRef: anchorRef,
+    panelRef,
+    placement,
+    offset: DROPDOWN_PANEL_OFFSET,
+    contentKey: width,
   });
 
-  useEffect(() => {
-    const update = () => {
-      const a = anchorRef.current;
-      const p = panelRef.current;
-      if (!a || !p) return;
-      const rect = a.getBoundingClientRect();
-      const panelW = p.offsetWidth || 220;
-      const panelH = p.offsetHeight || 0;
-      let top = placement.startsWith("bottom")
-        ? rect.bottom + 6
-        : rect.top - panelH - 6;
-      let left = placement.endsWith("start") ? rect.left : rect.right - panelW;
-      const margin = 8;
-      if (left < margin) left = margin;
-      if (left + panelW > window.innerWidth - margin) {
-        left = Math.max(margin, window.innerWidth - panelW - margin);
-      }
-      if (top < margin) top = margin;
-      if (top + panelH > window.innerHeight - margin && panelH > 0) {
-        top = Math.max(margin, window.innerHeight - panelH - margin);
-      }
-      const styles: CSSProperties = { top, left, visibility: "visible" };
-      if (width === "trigger") styles.width = rect.width;
-      else if (typeof width === "number") styles.width = width;
-      setPosition(styles);
-    };
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [anchorRef, placement, width]);
+  const position: CSSProperties = {
+    top: coords?.top ?? 0,
+    left: coords?.left ?? 0,
+    visibility: coords ? "visible" : "hidden",
+    ...(width === "trigger" && coords
+      ? { width: coords.triggerWidth }
+      : typeof width === "number"
+        ? { width }
+        : null),
+  };
 
   // Focus the currently active menu item.
   useEffect(() => {

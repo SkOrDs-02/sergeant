@@ -684,7 +684,6 @@ const SQL_ONLY_TABLES = [
   // Billing / subscriptions / revenue — керуються серверними billing-воркерами
   // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.
   "apple_iap_receipts",
-  "billing_subscriptions",
   "billing_webhook_events",
   // Plata recurring-payment credential: encrypted secret consumed only by
   // the server scheduler/raw-pg billing layer; never exposed through Drizzle.

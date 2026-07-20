@@ -1,7 +1,7 @@
 # Backend Tech Debt Inventory
 
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
-> **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
+> **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). **Post-waves:** Privat/Mono upstream body scrub — **Closed** [#347](https://github.com/SkOrDs-02/sergeant/pull/347). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
 > **Оновлено 2026-06-01.** PR E/F закрито (див. Status log).
 > **Status:** Active
 
@@ -227,15 +227,15 @@
 
 ## Bank integrations deep-dive
 
-| Вимога                     | Mono / Privat (після PR B)                                                                                                                                       | Примітки                                            |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Fetch timeout              | ✅ `bankProxy.ts` — `BANK_FETCH_TIMEOUT_MS` (default 15s)                                                                                                        |                                                     |
-| Retry + jitter             | ✅ 5xx / timeout / network; respect `Retry-After`                                                                                                                |                                                     |
-| Circuit breaker            | ✅ 5 fails / 30s open per upstream                                                                                                                               |                                                     |
-| 60s cache (GET)            | ✅ TTL cache з ключем без збереження сирого токена                                                                                                               |                                                     |
-| Validation (zod)           | ✅ `MonoQuerySchema` / `PrivatQuerySchema` + path whitelist у handler-ах                                                                                         |                                                     |
-| Помилки upstream → клієнту | ⚠️ Частково: 429 мапиться на зрозуміле повідомлення + `Retry-After`; інші коди можуть прокидати `body` upstream у JSON — **середній** ризик leak (P2 hardening). |                                                     |
-| Наявні тести               | ✅ `modules/mono/bankProxy.test.ts`                                                                                                                              | Розширення: cache-hit / breaker-open — за бажанням. |
+| Вимога                     | Mono / Privat (після PR B)                                                                                                                                                                                  | Примітки                                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Fetch timeout              | ✅ `bankProxy.ts` — `BANK_FETCH_TIMEOUT_MS` (default 15s)                                                                                                                                                   |                                                     |
+| Retry + jitter             | ✅ 5xx / timeout / network; respect `Retry-After`                                                                                                                                                           |                                                     |
+| Circuit breaker            | ✅ 5 fails / 30s open per upstream                                                                                                                                                                          |                                                     |
+| 60s cache (GET)            | ✅ TTL cache з ключем без збереження сирого токена                                                                                                                                                          |                                                     |
+| Validation (zod)           | ✅ `MonoQuerySchema` / `PrivatQuerySchema` + path whitelist у handler-ах                                                                                                                                    |                                                     |
+| Помилки upstream → клієнту | ✅ **Closed** [#347](https://github.com/SkOrDs-02/Sergeant/pull/347): клієнту лише стабільний `{ error, code, requestId? }` (`BANK_UPSTREAM_ERROR` / `BANK_UNAVAILABLE`); сирий body банку не прокидається. |                                                     |
+| Наявні тести               | ✅ `modules/mono/bankProxy.test.ts`                                                                                                                                                                         | Розширення: cache-hit / breaker-open — за бажанням. |
 
 Реалізація (фактична): **`apps/server/src/lib/bankProxy.ts`** + тонкі **`modules/mono/mono.ts`** / **`modules/mono/privat.ts`** (делегують `bankProxyFetch`).
 
@@ -367,17 +367,17 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Secret-logging audit
 
-| Шар         | Ризик                  | Поточна поведінка                                                                                                                                                                                           | Статус       |
-| ----------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| Sentry      | send request body      | `sendDefaultPii: false`, `beforeSend` стрипає `request.data`/`cookies`, breadcrumbs стрипає `request_body_size`                                                                                             | **OK**       |
-| Pino        | log request headers    | `requestLog.js` пише лише `method/path/status/ms/userAgent` (перевірено), НЕ `authorization`/`cookie`                                                                                                       | **OK**       |
-| Pino        | log error objects      | `serializeError()` стрипає `err.cause`/`err.response.data` для operational; `includeStack=true` лише для 5xx                                                                                                | **OK**       |
-| Mono/Privat | upstream body → client | 429 — локалізоване повідомлення + `Retry-After`; інші статуси можуть містити сирий `body` у JSON (`mono.ts`) — **середній** (P2 whitelist / scrub). PR B закрив transport-ризики, не семантику повідомлень. | **Середній** |
-| Anthropic   | api-key у logs         | `anthropicMessages` не логує key; `authorization` header ставиться inline                                                                                                                                   | **OK**       |
-| Web-push    | VAPID key у logs       | web-push.setVapidDetails() — не логується                                                                                                                                                                   | **OK**       |
-| Auth        | email                  | `emailFingerprint = SHA-256(email).slice(0,12)` у метриках і логах                                                                                                                                          | **OK**       |
-| Auth        | password               | Better Auth не логує; body-stream стрипається у Sentry                                                                                                                                                      | **OK**       |
-| Database    | connection string      | ніде не логується (перевірено)                                                                                                                                                                              | **OK**       |
+| Шар         | Ризик                  | Поточна поведінка                                                                                                                                                   | Статус     |
+| ----------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Sentry      | send request body      | `sendDefaultPii: false`, `beforeSend` стрипає `request.data`/`cookies`, breadcrumbs стрипає `request_body_size`                                                     | **OK**     |
+| Pino        | log request headers    | `requestLog.js` пише лише `method/path/status/ms/userAgent` (перевірено), НЕ `authorization`/`cookie`                                                               | **OK**     |
+| Pino        | log error objects      | `serializeError()` стрипає `err.cause`/`err.response.data` для operational; `includeStack=true` лише для 5xx                                                        | **OK**     |
+| Mono/Privat | upstream body → client | ✅ **Closed** [#347](https://github.com/Skords-01/Sergeant/pull/347) — scrub у `privat.ts` (+ узгоджений контракт з mono): клієнту не віддаємо сирий upstream body. | **Closed** |
+| Anthropic   | api-key у logs         | `anthropicMessages` не логує key; `authorization` header ставиться inline                                                                                           | **OK**     |
+| Web-push    | VAPID key у logs       | web-push.setVapidDetails() — не логується                                                                                                                           | **OK**     |
+| Auth        | email                  | `emailFingerprint = SHA-256(email).slice(0,12)` у метриках і логах                                                                                                  | **OK**     |
+| Auth        | password               | Better Auth не логує; body-stream стрипається у Sentry                                                                                                              | **OK**     |
+| Database    | connection string      | ніде не логується (перевірено)                                                                                                                                      | **OK**     |
 
 ### `.env.example` — аудит
 

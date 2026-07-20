@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-20 by @cursoragent (code-reconcile: archive shipped specs). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-20 by @cursoragent (S10-Q1 + harness follow-ups closed). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -26,7 +26,7 @@
 | [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) | Phase 2 verification handoff                                    | Active                                                                    |
 | [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md)             | Операційний playbook sync wiring                                | Active                                                                    |
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md)                       | План покращення AI-coding workflow                              | Active — skill-trigger evals done; 4 next-blocks open                     |
-| [`harness-engineering-v1.md`](./harness-engineering-v1.md)                       | Harness-engineering v1 rollout + follow-ups                     | Active — v1.0.0 shipped; golden-task / freshness-janitor open             |
+| [`harness-engineering-v1.md`](./harness-engineering-v1.md)                       | Harness-engineering v1 rollout + follow-ups                     | Active — v1.0.0 + golden-task / freshness-janitor / playbook evals done   |
 
 ## Архів
 

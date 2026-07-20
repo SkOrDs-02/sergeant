@@ -1,32 +1,42 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-07-20
  * Status: Active
  */
-import { memo, useCallback, useMemo } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import {
+  memo,
+  useCallback,
+  useMemo,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
-import { getModulePrefetchProps } from "../../lib/intentPrefetch";
+import {
+  getModulePrefetchProps,
+  type ModuleIntentProps,
+} from "../../lib/intentPrefetch";
 import {
   MODULE_CONFIGS,
   type ModuleConfig,
   type ModuleId,
 } from "./moduleConfigs";
+import {
+  beginNativeSortablePointerDrag,
+  handleNativeSortableKeyDown,
+  type NativeSortableHandlers,
+} from "./nativeSortable";
 
 export interface BentoCardProps {
   config: ModuleConfig;
   onClick: () => void;
   /**
-   * Ref/props applied to the inner primary `<button>` so dnd-kit can use it
-   * as the drag activator. Keeping the activator on the primary button (not
-   * the wrapper) keeps the drag-handle a sibling of the primary button
-   * rather than a nested interactive control — see the `nested-interactive`
-   * axe rule (#839).
+   * Ref/props applied to the inner primary `<button>` for intent-prefetch.
+   * Drag activation lives on the grip handle in edit mode (native pointer).
    */
   primaryRef?: ((node: HTMLButtonElement | null) => void) | undefined;
-  primaryProps?: Record<string, unknown> | undefined;
+  primaryProps?: Record<string, unknown> | ModuleIntentProps | undefined;
   isDragging?: boolean | undefined;
   /**
    * When `true`, the card is rendered in a muted/greyed-out state
@@ -38,9 +48,9 @@ export interface BentoCardProps {
   /**
    * When `true`, the card is in dashboard "edit mode": it wiggles to
    * signal it is draggable and exposes a visible top-right grip handle.
-   * The grip handle uses `handleRef` / `handleProps` as the dnd-kit
-   * activator so the whole card body can keep navigating to the module
-   * on tap.
+   * The grip handle uses `handleRef` / `handleProps` as the native
+   * pointer/keyboard activator so the whole card body can keep navigating
+   * to the module on tap.
    */
   editMode?: boolean | undefined;
   handleRef?: ((node: HTMLButtonElement | null) => void) | undefined;
@@ -92,7 +102,7 @@ export const BentoCard = memo(function BentoCard({
         isDragging && "opacity-70 z-50",
         inactive && "opacity-60",
         // Edit-mode wiggle. Suppressed while a card is being dragged so
-        // the dnd-kit transform is not fighting the rotation keyframes.
+        // the pointer drag is not fighting the rotation keyframes.
         editMode && !isDragging && "motion-safe:animate-wiggle",
       )}
     >
@@ -259,21 +269,25 @@ export interface SortableCardProps {
   onOpenModule: (id: ModuleId) => void;
   inactive?: boolean;
   /**
-   * When `true`, dnd-kit listeners attach to the visible drag handle
-   * instead of the primary card button — taps on the body still navigate
-   * to the module, while drag is gated to the explicit grip affordance.
+   * When `true`, native pointer/keyboard listeners attach to the visible
+   * drag handle — taps on the body still navigate to the module.
    */
   editMode?: boolean;
   /**
    * Forwarded to `BentoCard` — adaptive-bento "lifted" reason chip.
    */
   adaptiveReason?: string | null;
+  /** Visual order used for drop-target hit-testing + keyboard moves. */
+  displayOrder: readonly string[];
+  sortableHandlers: NativeSortableHandlers;
+  /** Grid column count for ArrowUp/Down keyboard moves. */
+  columns?: number;
 }
 
 /**
- * Drag-sortable wrapper around `BentoCard` that wires up `@dnd-kit/sortable`
- * transforms / listeners. Rendered inside `<SortableContext>` from the
- * parent dashboard so the order persists via `saveDashboardOrder`.
+ * Drag-sortable wrapper around `BentoCard` using native pointer + keyboard
+ * reorder (S10-T2 — no `@dnd-kit`). Order persists via `saveDashboardOrder`
+ * in the parent dashboard state hook.
  */
 export const SortableCard = memo(function SortableCard({
   id,
@@ -281,58 +295,17 @@ export const SortableCard = memo(function SortableCard({
   inactive,
   editMode,
   adaptiveReason,
+  displayOrder,
+  sortableHandlers,
+  columns = 2,
 }: SortableCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = useMemo(
-    () => ({
-      transform: CSS.Transform.toString(transform),
-      transition,
-    }),
-    [transform, transition],
-  );
-
-  // AI-NOTE: spread dnd-kit attributes/listeners on the *inner* primary button
-  // (via `primaryProps` + `setActivatorNodeRef`). Spreading them on the wrapper
-  // would either nest interactive controls (button-in-button with quick-add)
-  // or attach `role="button"` to a `<div>` whose only focusable child is the
-  // primary `<button>` — both fail axe a11y rules.
-  // In edit mode the same listeners move to the visible grip handle so
-  // accidental drags from the card body don't fight the explicit handle.
-  // We also fold in `getModulePrefetchProps(id)` (intent-prefetch on hover/
-  // focus) when not editing — the same primary button is the user's "I'm
-  // about to open this module" affordance, so warming its chunk on hover
-  // shaves the next dynamic-import RTT off the click handler. Suppressed
-  // in edit mode because hovers there are about reordering, not opening.
-  const dndProps = useMemo(
-    () => ({ ...attributes, ...listeners }),
-    [attributes, listeners],
-  );
+  const [isDragging, setIsDragging] = useState(false);
 
   const intentProps = useMemo(
     () => (editMode ? null : getModulePrefetchProps(id)),
     [editMode, id],
   );
 
-  const primaryProps = useMemo(
-    () => (editMode ? undefined : { ...dndProps, ...intentProps }),
-    [editMode, dndProps, intentProps],
-  );
-
-  // Inactive cards route the user to Hub Settings → Дашборд → "Модулі
-  // дашборду" instead of opening the module itself. The card's copy
-  // already promises «Неактивний — увімкнути в налаштуваннях» and the
-  // quick-add affordance is suppressed for the same reason; navigating
-  // back to the toggle list is the affordance the user is being told
-  // about. See HubSettingsPage.tsx for the `#settings-dashboard` anchor.
   const handleClick = useCallback(() => {
     if (inactive) {
       openHubSettingsSection("dashboard");
@@ -341,18 +314,61 @@ export const SortableCard = memo(function SortableCard({
     onOpenModule(id);
   }, [inactive, onOpenModule, id]);
 
+  const onHandlePointerDown = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      if (!editMode) return;
+      beginNativeSortablePointerDrag({
+        event,
+        activeId: id,
+        getOrder: () => displayOrder,
+        handlers: sortableHandlers,
+        onDraggingChange: setIsDragging,
+      });
+    },
+    [displayOrder, editMode, id, sortableHandlers],
+  );
+
+  const onHandleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>) => {
+      if (!editMode) return;
+      handleNativeSortableKeyDown({
+        event,
+        activeId: id,
+        order: displayOrder,
+        columns,
+        handlers: sortableHandlers,
+      });
+    },
+    [columns, displayOrder, editMode, id, sortableHandlers],
+  );
+
+  const handleProps = useMemo(
+    () =>
+      editMode
+        ? {
+            onPointerDown: onHandlePointerDown,
+            onKeyDown: onHandleKeyDown,
+          }
+        : undefined,
+    [editMode, onHandleKeyDown, onHandlePointerDown],
+  );
+
   const cfg = MODULE_CONFIGS[id];
   if (!cfg) return null;
 
   return (
-    <div ref={setNodeRef} style={style} className="min-w-0 h-full">
+    <div
+      data-sortable-id={id}
+      className={cn(
+        "min-w-0 h-full",
+        isDragging && "ring-2 ring-focus/40 rounded-3xl",
+      )}
+    >
       <BentoCard
         config={cfg}
         onClick={handleClick}
-        primaryRef={editMode ? undefined : setActivatorNodeRef}
-        primaryProps={primaryProps}
-        handleRef={editMode ? setActivatorNodeRef : undefined}
-        handleProps={editMode ? dndProps : undefined}
+        primaryProps={intentProps ?? undefined}
+        handleProps={handleProps}
         isDragging={isDragging}
         inactive={inactive}
         editMode={editMode}

@@ -209,7 +209,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     expect(submitMock).not.toHaveBeenCalled();
   });
 
-  it("opens Stripe Checkout when Pro CTA is pressed and tracks CHECKOUT_OPENED", async () => {
+  it("opens checkout when Pro CTA is pressed and tracks CHECKOUT_OPENED", async () => {
     const assignMock = vi.fn();
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -249,8 +249,8 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     expect(document.getElementById("waitlist-anchor")).not.toBeNull();
   });
 
-  // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): Stripe Checkout
-  // повертає юзера на `/pricing?checkout=success|cancel|cancelled`. На success ми
+  // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): checkout return
+  // URL `/pricing?checkout=success|cancel|cancelled`. На success ми
   // інвалідовуємо `billingKeys.status` (щоб `usePlan` перевірив новий plan
   // без очікування на webhook) + success-toast із "Перейти у налаштування" action.
   // На cancelled виводимо нейтральний info-toast (без invalidate — підписка
@@ -337,10 +337,10 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
   });
 
   // Initiative 0010 Phase 4.2 residual — active Premium subscriber sees a
-  // "Керувати підпискою" CTA that redirects to the Stripe Customer Portal
-  // (`POST /api/billing/portal` → short-lived URL). Free-tier users keep
+  // "Керувати підпискою" CTA → POST /api/billing/portal (Stripe Portal або
+  // in-app Settings URL для LiqPay/Plata). Free-tier users keep
   // the "Спробувати Premium" checkout CTA.
-  describe("Customer Portal CTA (Phase 4.2 residual)", () => {
+  describe("Manage subscription CTA (Phase 4.2 residual)", () => {
     function withActiveSubscription(): void {
       statusMock.mockResolvedValue({
         subscription: {
@@ -366,7 +366,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       ).toBeNull();
     });
 
-    it("opens Stripe Customer Portal when Premium subscriber clicks 'Керувати підпискою'", async () => {
+    it("opens billing manage URL when Premium subscriber clicks 'Керувати підпискою'", async () => {
       withActiveSubscription();
       const assignMock = vi.fn();
       Object.defineProperty(window, "location", {
@@ -386,7 +386,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       );
       expect(trackEventMock).toHaveBeenCalledWith(
         ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
-        expect.objectContaining({ cta: "stripe_portal" }),
+        expect.objectContaining({ cta: "manage_subscription" }),
       );
     });
 
@@ -402,7 +402,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       });
       fireEvent.click(portalBtn);
       const alert = await screen.findByRole("alert");
-      expect(alert.textContent).toMatch(/платіжний профіль Stripe/i);
+      expect(alert.textContent).toMatch(/платіжний профіль/i);
     });
   });
 });

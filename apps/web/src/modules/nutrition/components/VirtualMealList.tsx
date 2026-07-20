@@ -1,12 +1,12 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-20
  * Status: Active
  */
 import { useMemo } from "react";
-import { Virtuoso } from "react-virtuoso";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
+import { VirtualList } from "@shared/components/ui/VirtualList";
 import { type Meal, type MealTypeId } from "@sergeant/nutrition-domain";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
 import { MealRow } from "./MealRow";
@@ -43,7 +43,7 @@ export function VirtualMealList({
     const items: MealListItem[] = [];
     for (const type of activeTypes) {
       items.push({ kind: "header", type });
-      for (const meal of groups[type]) {
+      for (const meal of groups[type] ?? []) {
         items.push({ kind: "meal", type, meal });
       }
     }
@@ -56,10 +56,19 @@ export function VirtualMealList({
   );
 
   return (
-    <Virtuoso
-      style={{ height: listHeight }}
-      data={flatItems}
-      itemContent={(_, item) => {
+    <VirtualList
+      items={flatItems}
+      height={listHeight}
+      estimateSize={(index) =>
+        flatItems[index]?.kind === "header"
+          ? MEAL_HEADER_HEIGHT
+          : MEAL_ROW_HEIGHT
+      }
+      getItemKey={(_index, item) =>
+        item.kind === "header" ? `h-${item.type}` : item.meal.id
+      }
+    >
+      {(item) => {
         if (item.kind === "header") {
           const meta = MEAL_META[item.type];
           return (
@@ -96,6 +105,6 @@ export function VirtualMealList({
           </div>
         );
       }}
-    />
+    </VirtualList>
   );
 }

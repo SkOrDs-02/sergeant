@@ -45,14 +45,6 @@ import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
-import {
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import {
@@ -61,6 +53,10 @@ import {
   saveDashboardOrder,
 } from "./dashboard/dashboardStore";
 import { type ModuleId } from "./dashboard/moduleConfigs";
+import {
+  arrayMove,
+  type NativeSortableHandlers,
+} from "./dashboard/nativeSortable";
 import {
   applyAdaptiveLift,
   pickAdaptiveLift,
@@ -162,12 +158,7 @@ export interface HubDashboardState {
   toggleEditMode: () => void;
   displayOrder: readonly string[];
   order: readonly string[];
-  sensors: ReturnType<typeof useSensors>;
-  handleDragStart: (event: { active: { id: string | number } }) => void;
-  handleDragEnd: (event: {
-    active: { id: string | number };
-    over: { id: string | number } | null;
-  }) => void;
+  sortableHandlers: NativeSortableHandlers;
   adaptive: { liftedId: ModuleId | null; reason: string | null };
 
   // Focus / Insights
@@ -378,29 +369,15 @@ export function useHubDashboardState(props: {
     [visibleOrder, adaptive.liftedId],
   );
 
-  // MouseSensor (not PointerSensor) for the desktop pointer + a separate
-  // TouchSensor for coarse pointers. PointerSensor handles touch-pointer
-  // events too, but with its distance-only activation (no delay) the first
-  // few px of a finger scroll or an imprecise tap on a card body started a
-  // reorder drag — hijacking scroll and "moving" the module on every touch.
-  // Splitting the sensors lets touch require a deliberate 250ms long-press
-  // (tap → open module, swipe → scroll, hold → drag) while the mouse keeps
-  // its instant 8px drag threshold.
-  const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
+  // Native pointer DnD (S10-T2): mouse activates after 8px movement;
+  // touch requires a 250ms long-press (see beginNativeSortablePointerDrag).
+  // Keyboard Arrow*/Home/End reorder when the grip handle is focused.
   const { announce } = useAnnounce();
 
   const handleDragStart = useCallback(
-    (event: { active: { id: string | number } }) => {
-      const activeId = String(event.active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
+    ({ activeId }: { activeId: string }) => {
+      const id = activeId as ModuleId;
+      const label = SHARED_DASHBOARD_MODULE_LABELS[id] ?? activeId;
       announce(
         `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
       );
@@ -409,18 +386,16 @@ export function useHubDashboardState(props: {
   );
 
   const handleDragEnd = useCallback(
-    (event: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) => {
-      const { active, over } = event;
-      if (!active) return;
-      const activeId = String(active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      if (over && active.id !== over.id) {
-        const overId = String(over.id) as ModuleId;
-        const oldIndex = order.indexOf(activeId);
-        const newIndex = order.indexOf(overId);
+    ({ activeId, overId }: { activeId: string; overId: string | null }) => {
+      const id = activeId as ModuleId;
+      const label = SHARED_DASHBOARD_MODULE_LABELS[id] ?? activeId;
+      if (overId && overId !== activeId) {
+        const oldIndex = order.indexOf(id);
+        const newIndex = order.indexOf(overId as ModuleId);
+        if (oldIndex < 0 || newIndex < 0) {
+          announce(`${label} залишилось на тому ж місці.`);
+          return;
+        }
         const next = arrayMove(order, oldIndex, newIndex);
         setOrder(next);
         saveDashboardOrder(next);
@@ -432,6 +407,14 @@ export function useHubDashboardState(props: {
       }
     },
     [announce, order],
+  );
+
+  const sortableHandlers = useMemo<NativeSortableHandlers>(
+    () => ({
+      onDragStart: handleDragStart,
+      onDragEnd: handleDragEnd,
+    }),
+    [handleDragEnd, handleDragStart],
   );
 
   const [digestExpanded, setDigestExpanded] = useState(false);
@@ -497,9 +480,7 @@ export function useHubDashboardState(props: {
     toggleEditMode,
     displayOrder,
     order,
-    sensors,
-    handleDragStart,
-    handleDragEnd,
+    sortableHandlers,
     adaptive,
     focus,
     rest,
