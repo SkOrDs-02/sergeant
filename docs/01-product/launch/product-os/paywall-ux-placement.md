@@ -1,6 +1,6 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 >
 > **Update 2026-07-10:** trial-механіка в коді — ADR-0068 **reverse trial 7 днів** (авто Pro → downgrade), не 14d opt-in trial без картки з §1 нижче. Placement sketch (post-first-real-entry sheet) лишається валідним; trial copy оновити під ADR-0068.
@@ -264,7 +264,7 @@ PR-20 НЕ merge-ається без:
 - [ ] 5 PostHog events з §5 firing з правильними props (тести у `apps/web/src/core/paywall/PostFtuxPaywallSheet.test.tsx`).
 - [ ] Frequency cap (14d) + hard-stop (2 dismissals) implemented + tested.
 - [ ] A11y: focus trap, ESC=secondary, focus-return — playwright/RTL tests.
-- [ ] `usePlan()` hook використовується з 0010 PR (не stub) — ЯКЩО PR-20 виходить після 0010 фази 3. Якщо до — stub з `'free'` + TODO-comment-anchor.
+- [x] `usePlan()` hook використовується з 0010 PR (не stub) — `apps/web/src/core/billing/usePlan.ts` + `billingKeys`.
 - [ ] PR description посилається на цей doc (`docs/01-product/launch/product-os/paywall-ux-placement.md`).
 - [ ] Master-tracker §3.4 PR-20 рядок змінено на ✅ Closed з лінком.
 

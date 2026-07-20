@@ -2,8 +2,8 @@
 
 > ⚠️ **Moot — target file deleted.** `apps/server/src/routes/internal/openclaw.ts` та весь `modules/openclaw/**` прибрано разом з декомісією OpenClaw Gateway ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20). Аудит лишається як історичний запис.
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
-> **Status:** Resolved (target deleted — ADR-0075).
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Closed (target deleted — ADR-0075).
 
 > **Owner:** @Skords-01 (backend)
 > **Trigger date:** **2026-08-11** (locked — next backend-roast cycle baseline).

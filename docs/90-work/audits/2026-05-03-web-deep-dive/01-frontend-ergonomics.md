@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Closed — історичний audit slice; нова робота має окремі trackers.
 > **Scope:** Forms, loading/empty/error states, Toast, Modal, mobile safe-area, PWA install banner, auth error translation, i18n readiness, feature-reveal pattern.
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/90-work/audits/2026-04-28-ux-improvement-plan.md`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md`.
 
 Це найбільш недоінвестований шар системи. Архітектура й сервер — на 8.5/10, форм-стек — десь 6/10. Нижче — точкова прожарка з конкретними fix points.
 
@@ -56,7 +56,7 @@
    - Routine task create
 4. Додати ESLint custom rule (через `sergeant-design`-plugin): «JSX `<form>` має мати `data-form-id` атрибут АБО використовувати `useApiForm`». Це створить тиск довести міграцію до кінця.
 
-**Tracker hook.** Після того, як вибір зроблено, винести план у `docs/90-work/audits/2026-04-28-ux-improvement-plan.md` з KPI «N out of 30 forms migrated».
+**Tracker hook.** Після того, як вибір зроблено, винести план у `docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md` з KPI «N out of 30 forms migrated».
 
 ---
 
@@ -315,4 +315,4 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 | i18n key extraction (UA-only)                  | §3.8        |
 | `prefers-reduced-motion` global gate           | §3.9        |
 
-> **Tracker hook.** Коли з'явиться чек-лист реалізації, винеси у `docs/90-work/audits/2026-04-28-ux-improvement-plan.md` (Active) з KPI на квартал.
+> **Tracker hook.** Коли з'явиться чек-лист реалізації, винеси у `docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md` з KPI на квартал.

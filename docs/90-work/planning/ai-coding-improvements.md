@@ -1,6 +1,6 @@
 # Roadmap покращень AI-coding
 
-> **Last validated:** 2026-06-14 by Claude (drift fix: discoverability gate `next` → `done` — `pnpm lint:discoverability` уже в CI). **Next review:** 2026-08-17.
+> **Last validated:** 2026-07-20 by @cursor (skill-trigger eval harness → done). **Next review:** 2026-10-18.
 > **Status:** Active
 
 Roadmap для агентської інфраструктури Sergeant. Це не продуктовий roadmap; це план, як зробити AI-assisted development швидшим, безпечнішим і дисциплінованішим.
@@ -24,13 +24,13 @@ Roadmap для агентської інфраструктури Sergeant. Це 
 
 ## Наступні блоки
 
-| Блок                               | Статус | Нотатки                                                                                                                                        |
-| ---------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Eval harness для skill trigger-ів  | active | `docs/00-start/agents/skill-trigger-evals.json` + `pnpm eval:skills`: 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на кожен skill |
-| Eval harness для playbook routing  | next   | один очевидний playbook match для priority-сценаріїв (частково покрито `check-discoverability.mjs`, але obvious-match routing-eval окремо)     |
-| Sampling відповідності PR template | next   | dry-run quality gate для PR descriptions                                                                                                       |
-| Автоматизація operator dashboards  | next   | saved searches / issue views для lead time, stale flags, postmortem actions                                                                    |
-| Privacy and data-rights operations | next   | перетворити launch/privacy draft на канонічні retention, consent, export, delete surface-и                                                     |
+| Блок                               | Статус | Нотатки                                                                                                                                                                     |
+| ---------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Eval harness для skill trigger-ів  | done   | `docs/00-start/agents/skill-trigger-evals.json` + `pnpm eval:skills` (wired у `pnpm lint:skills`): 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на кожен skill |
+| Eval harness для playbook routing  | next   | один очевидний playbook match для priority-сценаріїв (частково покрито `check-discoverability.mjs`, але obvious-match routing-eval окремо)                                  |
+| Sampling відповідності PR template | next   | dry-run quality gate для PR descriptions                                                                                                                                    |
+| Автоматизація operator dashboards  | next   | saved searches / issue views для lead time, stale flags, postmortem actions                                                                                                 |
+| Privacy and data-rights operations | next   | перетворити launch/privacy draft на канонічні retention, consent, export, delete surface-и                                                                                  |
 
 ## План оцінювання
 

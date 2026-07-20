@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-07-20",
   "sourceHashes": {
-    "knowledge-graph": "418dfcce78f6ac235b596b7e9bbc349b8a86819b814911c110253eb6cc7629e5",
-    "symbol-index": "b0bd5320be4a4993ea42496101b3542061d8f515acf1ea9fcb4b3c4debf1628b"
+    "knowledge-graph": "ab5429809fca5a780c4b254eacfa6bbbeab91d656bee09ef3872943122f26e0d",
+    "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
   },
   "counts": {
     "adr": 72,
@@ -847,9 +847,9 @@
       "line": 1,
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "tier": "core",
-      "status": "Resolved (target deleted — ADR-0075).",
-      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Resolved (target deleted — ADR-0075). · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
-      "contentHash": "2b9d44c029e24ada1ac576868c41c17e65d0b35323b58b178509b9789714a94e"
+      "status": "Closed (target deleted — ADR-0075).",
+      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Closed (target deleted — ADR-0075). · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
+      "contentHash": "f13a8f4a41cbecdf5abd1bf588d4c90b65667730003667daa561c0973ce0c4dd"
     },
     {
       "id": "audit:2026-08-XX-sync-engine-roast",
@@ -2811,8 +2811,8 @@
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 17×",
-      "contentHash": "b8fc95cfb164a7458365df1ae05032e108b1bcd2dabc7ee534ee57ee762d5822"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 15×",
+      "contentHash": "9552f16011ba00356a502bf599fd2fe612dd1c6e0503643079b345491206f3cb"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",
@@ -3747,9 +3747,9 @@
       "line": 1,
       "title": "0003 — Sync v2 rollout & v1 sunset",
       "tier": "core",
-      "status": "In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first)",
-      "text": "0003 — Sync v2 rollout & v1 sunset · initiative:0003 · initiative · In progress (Phases 1-6 done; Phase 7 sunset-routes-removal Proposed — exit-criteria 8-week zero signal OR 2026-08-04, whichever first) · 3 · @Skords-01 · P0 (Sprint 1–2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — observability (1 PR) · Фаза 2 — Sunset: header + ADR (1 PR) · Фаза 3 — feature-flag + shadow mode (1 PR) · Фаза 4 — backfill (1 PR) · Фаза 5 — sunset (1 PR) · Фаза 6 — clean-up (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 1 — observability — Done (PR #1621) · Phase 2 — Sunset header + ADR — Done (commit [3e10d799](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../04-governance/adr/0043-cloudsync-v1-sunset.md)) · Phase 5 — T₀ executed (server-side) — Done 2026-05-06 · Phase 5 — client-side cutover — Done 2026-05-06 · Phase 6 — Client cleanup — Done 2026-05-06 · Phase 6 — Remaining server/data cleanup — ✅ Done (2026-05-10 audit refresh) · Phase 7 — Sunset routes final removal — Proposed",
-      "contentHash": "42049bbe2bf9aea5644680f33f715bcb5541061f679d0a0287f91263f62cbd67"
+      "status": "Closed — Phases 1–7 shipped. Phase 7 sunset-routes removal early-landed у PR #326 (`chore(server): remove CloudSync v1 sunset routes`); `apps/server/src/routes/sync.ts` лишає лише v2 + audit (голий 404 замість 410 після deprecation window).",
+      "text": "0003 — Sync v2 rollout & v1 sunset · initiative:0003 · initiative · Closed — Phases 1–7 shipped. Phase 7 sunset-routes removal early-landed у PR #326 (`chore(server): remove CloudSync v1 sunset routes`); `apps/server/src/routes/sync.ts` лишає лише v2 + audit (голий 404 замість 410 після deprecation window). · 3 · @Skords-01 · P0 (Sprint 1–2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — observability (1 PR) · Фаза 2 — Sunset: header + ADR (1 PR) · Фаза 3 — feature-flag + shadow mode (1 PR) · Фаза 4 — backfill (1 PR) · Фаза 5 — sunset (1 PR) · Фаза 6 — clean-up (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 1 — observability — Done (PR #1621) · Phase 2 — Sunset header + ADR — Done (commit [3e10d799](https://github.com/Skords-01/Sergeant/commit/3e10d7997e9b43bc94b93a33555b33b7c82baac5), [ADR-0043](../../04-governance/adr/0043-cloudsync-v1-sunset.md)) · Phase 5 — T₀ executed (server-side) — Done 2026-05-06 · Phase 5 — client-side cutover — Done 2026-05-06 · Phase 6 — Client cleanup — Done 2026-05-06 · Phase 6 — Remaining server/data cleanup — ✅ Done (2026-05-10 audit refresh) · Phase 7 — Sunset routes final removal — Proposed",
+      "contentHash": "cfed0c79f35b28b8dd6cbddc7cd1c3c3c336224badfe26f256f3776580fe01d6"
     },
     {
       "id": "initiative:0006",
@@ -3780,9 +3780,9 @@
       "line": 1,
       "title": "0015 — Docs automation for daily ops",
       "tier": "core",
-      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes.",
-      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The \"7 consecutive cron days\" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання · Recent PRs",
-      "contentHash": "1c5c93509763c6dd28dc2582995aa356daecc23b9d234809094ba152c2c61336"
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes.",
+      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання · Recent PRs",
+      "contentHash": "d25ab6f9064a3ace55efa3961fd3ee1c790c18956361072cedb5bcc17ed1e285"
     },
     {
       "id": "initiative:0017",
@@ -4154,9 +4154,9 @@
       "line": 1,
       "title": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin",
       "tier": "core",
-      "status": "Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO.",
-      "text": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin · initiative:stack-pulse-2026-05/pr-25-two-production-origins · initiative · Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO. · PR-25: Consolidate fizruk.vercel.app + sergeant.vercel.app → один production origin · Контекст · Scope · 1. Decision: keep sergeant.vercel.app · 2. CORS / CSRF / OAuth cleanup · 3. Sentry releases unification · 4. Capacitor / mobile-shell · 5. ADR update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "8764c786b6e49cc785b524d13988778ab69f0215c01523b5071ef20fa1dd6889"
+      "status": "Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk` origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth console cleanup + ADR-0009 «Single origin policy» section.",
+      "text": "PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin · initiative:stack-pulse-2026-05/pr-25-two-production-origins · initiative · Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk` origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth console cleanup + ADR-0009 «Single origin policy» section. · PR-25: Consolidate fizruk.vercel.app + sergeant.vercel.app → один production origin · Контекст · Scope · 1. Decision: keep sergeant.vercel.app · 2. CORS / CSRF / OAuth cleanup · 3. Sentry releases unification · 4. Capacitor / mobile-shell · 5. ADR update · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
+      "contentHash": "dfdb69f1b9e404a510548ea9576cd61894b64dad8ffe32874d3ccdb828d9fcae"
     },
     {
       "id": "initiative:stack-pulse-2026-05/pr-26-csp-report-uri",
@@ -4526,11 +4526,11 @@
       "type": "playbook",
       "path": "docs/00-start/playbooks/deploy-config-change.md",
       "line": 1,
-      "title": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)",
+      "title": "Зміна deploy-конфігу (vercel / Dockerfile / Coolify)",
       "tier": "core",
       "status": "Active",
-      "text": "Зміна deploy-конфігу (vercel / fly / railway / Dockerfile) · playbook:deploy-config-change · playbook · Active · Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile) · Owner surface · Required context · Чому існує цей playbook · Дерево рішень · Кроки · 1. Перевір Vercel preview · 2. Перевір staging-деплой API · 3. Перевір Railway-сервіс · 4. Emergency escape-hatch · Verification · Коли цей playbook не застосовний · Суміжні playbook'и і скіли · Нотатки",
-      "contentHash": "fcf92163c1ea9539f3b295335f0dbbed755085b4e55a57cf91bb569de055109c"
+      "text": "Зміна deploy-конфігу (vercel / Dockerfile / Coolify) · playbook:deploy-config-change · playbook · Active · Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify) · Owner surface · Required context · Чому існує цей playbook · Дерево рішень · Кроки · 1. Перевір Vercel preview · 2. Перевір staging-деплой API · 3. Перевір Coolify prod-деплой · 4. Emergency escape-hatch · Verification · Коли цей playbook не застосовний · Суміжні playbook'и і скіли · Нотатки",
+      "contentHash": "f5a94eee552d68deddbc862e6bbf81b64bf9b38c62dd5a1f6d06d71c7cc42a2f"
     },
     {
       "id": "playbook:embedding-provider-migration",
@@ -4826,8 +4826,8 @@
       "title": "Rotate Secrets",
       "tier": "core",
       "status": "Active",
-      "text": "Rotate Secrets · playbook:rotate-secrets · playbook · Active · Playbook: Rotate Secrets · Owner surface · Decision Tree · Background (Original Steps) · 1. Оцінити scope витоку · 2. Згенерувати новий secret · Для загальних secrets (BETTERAUTHSECRET, etc.) · Для VAPID keys · Для Monobank webhook secret (per-user, зберігається в DB) · Це server-side — потребує код-зміну якщо ротація всіх юзерів · 3. Оновити secret у середовищах · 4. Перевірити /health endpoint · Після того як Railway передеплоїть · 5. Інвалідувати старий secret · 6. Post-mortem (якщо leak) · Verification · Notes · See also",
-      "contentHash": "ee45623718b15a51e2f5ef37cef29b6d8c1d7b4f7da599752846a780ba05d922"
+      "text": "Rotate Secrets · playbook:rotate-secrets · playbook · Active · Playbook: Rotate Secrets · Owner surface · Decision Tree · Background (Original Steps) · 1. Оцінити scope витоку · 2. Згенерувати новий secret · Для загальних secrets (BETTERAUTHSECRET, etc.) · Для VAPID keys · Для Monobank webhook secret (per-user, зберігається в DB) · Це server-side — потребує код-зміну якщо ротація всіх юзерів · 3. Оновити secret у середовищах · 4. Перевірити /health endpoint · Після того як Coolify передеплоїть · 5. Інвалідувати старий secret · 6. Post-mortem (якщо leak) · Verification · Notes · See also",
+      "contentHash": "163b3f62030f479216d2d787ee4aea176ce69898c924c3d76c5bff85d5913963"
     },
     {
       "id": "playbook:run-access-review",
@@ -5169,8 +5169,8 @@
       "line": 1,
       "title": "sergeant-tech-debt",
       "tier": "core",
-      "text": "sergeant-tech-debt · skill:sergeant-tech-debt · skill · Use when reducing technical debt, cleaning dead code with Knip, lowering ESLint baseline violations, or tackling Hard Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний борг, dead code, рефакторинг. · Technical Debt у Sergeant · Debt inventory tools · 1. ESLint baseline (eslint.baseline.js) · 2. Dead code (Knip) · 3. Module size (Hard Rule #18 — active-initiative) · 4. TypeScript strictness (Hard Rule #19 — active-initiative) · Prioritization · Separate PRs for separate classes of debt · What NOT to do · Scheduled janitors · Playbooks",
-      "contentHash": "53ff6576bd2f791fdb4131e1285bd62f31f94aa46c694affa33bbca7028e85c8"
+      "text": "sergeant-tech-debt · skill:sergeant-tech-debt · skill · Use when reducing technical debt, cleaning dead code with Knip, lowering ESLint baseline violations, or tackling Hard Rule #18 (module-size) refactor sprints in Sergeant; UA: технічний борг, dead code, рефакторинг. · Technical Debt у Sergeant · Debt inventory tools · 1. ESLint baseline (eslint.baseline.js) · 2. Dead code (Knip) · 3. Module size (Hard Rule #18 — lint-enforced-convention) · 4. TypeScript strictness (Hard Rule #19 — lint-enforced-convention) · Prioritization · Separate PRs for separate classes of debt · What NOT to do · Scheduled janitors · Playbooks",
+      "contentHash": "977c56e52cfcaf77200eb3cc9e423a5047304ecfb2335bb592204f7e9984b638"
     },
     {
       "id": "skill:sergeant-verify-before-done",

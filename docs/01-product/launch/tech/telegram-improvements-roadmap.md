@@ -1,9 +1,11 @@
 # Telegram surfaces — план покращень
 
-> **Last touched:** 2026-07-12 by @dimastahov16012003. **Next review:** 2026-10-10.
-> **Status:** Active
+> ⚠️ **OpenClaw decommissioned ([ADR-0075](../../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Gateway / `packages/openclaw-plugin` / server `modules/openclaw` прибрано. Цей файл лишається історичним зрізом Telegram/OpenClaw waves; не додавай нову OpenClaw-роботу сюди. Alert-bot / n8n follow-up — окреме рішення власника.
+
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Deprecated (OpenClaw decommissioned — ADR-0075).
 >
-> **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03**. Перед імплементацією нових пунктів звіряй з `tools/openclaw/` і [openclaw-migration-plan](../../../90-work/planning/archive/openclaw-migration-plan.md).
+> **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03** (до ADR-0075). Canonical pointer: [openclaw-roadmap.md](./openclaw-roadmap.md) + [openclaw-migration-plan](../../../90-work/planning/archive/openclaw-migration-plan.md).
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
 > (`@Sergeant_alert_bot`, `@OpenClaw_sergeant_bot`), супергрупи

@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-07-18 by docs:gen-status. **Next review:** 2026-07-18.
+> **Last validated:** 2026-07-20 by docs:gen-status. **Next review:** 2026-07-20.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,25 +30,25 @@
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 - [#3567](https://github.com/Skords-01/Sergeant/pull/3567) — docs(agents): record 0018 semantic measurement + drop orphan 0019 README row _(2026-06-14)_
 
-## 🔵 В роботі — 34 відкритих
+## 🔵 В роботі — 30 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 7        |
-| Планування                       | 7        |
-| Launch / запуск                  | 14       |
+| Ініціативи                       | 6        |
+| Планування                       | 6        |
+| Launch / запуск                  | 13       |
 | Аудити й прожарки                | 0        |
-| Security hardening               | 2        |
+| Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
 
 **Найактивніше (8, за останніми PR):**
 
 - [`90-work/initiatives/hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md) — Зведена матриця hardening-карток — Active _(Ініціативи)_
-- [`90-work/planning/harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md) — Harness Engineering v1 — Rollout Summary — Active _(Планування)_
+- [`90-work/planning/harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md) — Harness Engineering v1 — Rollout Summary — Active — rollout v1 shipped (2026-06-29); follow-ups (golden-task suite, 0.1→1.0) лишаються відкритими. _(Планування)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
-- [`90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md`](./90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md) — PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin — Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/se _(Ініціативи)_
+- [`90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md`](./90-work/initiatives/stack-pulse-2026-05/pr-25-two-production-origins.md) — PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin — Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk _(Ініціативи)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
 - [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_

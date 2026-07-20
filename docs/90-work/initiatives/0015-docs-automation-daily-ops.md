@@ -1,7 +1,7 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-06-13 by @claude (freshness stamp refreshed during a CI-heal sweep; the observation-window status below is unchanged — not a fresh cron re-verification). **Next review:** 2026-09-11.
-> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **The "7 consecutive cron days" streak BROKE on 2026-06-06.** Verified against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03 / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the regen-and-push job died on `node adr:0062: duplicate`, i.e. a duplicate-ADR-id check, **not** on the `today.md`/trust-badge generators themselves), then green again 06-07 / 06-08. The original 06-03 → 06-09 window therefore can no longer be all-green; **current consecutive-green run = 2 (06-07 → 06-08)**, 06-09 still pending. The maintainer 5/7-day usage self-report is also still unrecorded. Stays In progress until both signals close; the 7-consecutive-green counter has **reset** and needs a fresh clean 7-day streak. Not 90-day-gated; archival deferred until the observation window closes.
+> **Last validated:** 2026-07-20 by @cursor (cron streak re-verified via `gh run list --workflow=docs-daily-brief.yml`). **Next review:** 2026-10-18.
+> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes.
 > **Agent-ready:** yes
 
 ## TL;DR
@@ -88,7 +88,7 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 - [x] `docs/today.md` генерується (`pnpm docs:gen-today`), містить top items + overdue + WIP warnings
 - [x] `pnpm docs:check-wip-limits` запускається в CI; soft = warn, hard = fail
 - [x] `docs/README.md` має auto-updated trust badge section з 🟢/🟡/🔴 + лічильник
-- [ ] Daily cron не падає 7 днів поспіль _(observational — **streak зламався 06-06**: green 06-03/04/05, **fail 06-06** [run `27057370680`, regen-job впав на `node adr:0062: duplicate`, не на самих today.md/trust-badge генераторах], знову green 06-07/08; поточний consecutive-green run = 2 (06-07→06-08), counter скинуто, треба свіжий чистий 7-денний streak)_
+- [x] Daily cron не падає 7 днів поспіль _(observational — **streak MET 2026-07-02→07-09** = 8 greens після fail 07-01; earlier June window зламався 06-06 на `node adr:0062: duplicate`. Після 07-09 до 07-20 runs у GH не видно — окремий ops follow-up)_
 - [ ] Maintainer звітує що відкривав `today.md` принаймні 5 з 7 днів першого тижня _(self-report — чекає на тиждень usage)_
 
 ### Phase 2

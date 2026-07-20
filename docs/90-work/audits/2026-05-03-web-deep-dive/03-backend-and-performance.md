@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01.
 > **Status:** Closed — історичний audit slice; нова робота має окремі trackers.
 > **Scope:** Express factory, request validation, route registry, error handling + `requestId`, rate limiting, graceful shutdown, OpenAPI / typed client drift, Vite chunking, lazy module FCP, Service Worker reminder loop.
-> **Related:** [`00-overview.md`](./00-overview.md), `docs/02-engineering/architecture/`, `docs/90-work/audits/2026-04-28-implementation-roadmap.md`.
+> **Related:** [`00-overview.md`](./00-overview.md), `docs/02-engineering/architecture/`, `docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md`.
 
 Бекенд — найсильніша частина проєкту: factory `createApp`, granular auth-guards, graceful shutdown з hard timer. Слабкі точки — у contract-шарі (web↔server) і у performance-нюансах (lazy chunks, SW dedup-prune). Ось точкова прожарка.
 
@@ -210,7 +210,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 3. **Етап 3 (1 тиждень).** Contract tests web↔server — детально у `04-security-observability-testing-devx.md` §7.4.
 4. **Side-effect.** Можна викинути `validateBody`-sentinel pattern (§4.2) на користь throw-based (бо тепер у нас є типобезпечний контракт).
 
-> **Tracker.** Винести у `docs/90-work/audits/2026-04-28-implementation-roadmap.md` як новий Stage. Це найважче з усіх 18 roadmap-items, але одне з найвищих impact-ів.
+> **Tracker.** Винести у `docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md` як новий Stage. Це найважче з усіх 18 roadmap-items, але одне з найвищих impact-ів.
 
 ---
 
