@@ -1321,6 +1321,17 @@ const envSchema = z.object({
   CLASSIFY_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
   /** Mono/Finyk MCC batch-enrichment worker (unknown-MCC fallback classify). */
   MONO_ENRICHMENT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  /**
+   * Provider for the mono MCC batch-enrichment worker. Default `openrouter` —
+   * model-eval 2026-07-20: Gemini 2.5 Flash Lite ≈15× cheaper than Haiku 4.5
+   * on this one-word classification. Anthropic stays the fallback via
+   * `LLM_FALLBACK_ENABLED`. The per-row categorizer (`categorizeTransaction`,
+   * shared with OpenClaw classify) reuses `LLM_READONLY_PROVIDER` instead —
+   * this toggle is batch-specific.
+   */
+  LLM_MONO_PROVIDER: llmProviderEnum("openrouter"),
+  /** OpenRouter model for mono batch-enrichment when `LLM_MONO_PROVIDER=openrouter`. */
+  OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1401,6 +1412,7 @@ export function assertStartupEnv(): void {
     env.LLM_DIGEST_PROVIDER,
     env.LLM_COACH_PROVIDER,
     env.LLM_NUTRITION_PROVIDER,
+    env.LLM_MONO_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(

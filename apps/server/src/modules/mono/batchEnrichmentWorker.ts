@@ -15,7 +15,8 @@
  * Контракт за один tick:
  *   1. `drainBatch(MCC_BATCH_MAX_SIZE)` → items із буфера. Якщо пусто —
  *      no-op (idempotency).
- *   2. `buildBatchPrompt(items)` → один Anthropic-виклик на ВЕСЬ batch.
+ *   2. `buildBatchPrompt(items)` → один AI-виклик на ВЕСЬ batch (через
+ *      `getLLMProvider()` — Anthropic чи OpenRouter, `LLM_MONO_PROVIDER`).
  *      Promise з timeout-ом = `intervalMs / 6` (макс 10 хв), щоб не
  *      перекривати наступний tick.
  *   3. `parseBatchResponse(text, items)` → `{ ok, missing }`.
@@ -23,9 +24,9 @@
  *        + `MARK_DONE_SQL` для queue.row.id.
  *      Для кожного `missing` item: `returnToBuffer` (повторна спроба
  *        наступного tick-у).
- *   4. Якщо Anthropic-call throw-ить (5xx, timeout, parse-throw на
- *      response level) — ВЕСЬ batch redirect-имо назад у per-row queue
- *      через `MARK_RETRY_SQL` (status='pending', available_at=NOW(),
+ *   4. Якщо AI-call throw-ить (5xx, timeout, parse-throw на response
+ *      level) — ВЕСЬ batch redirect-имо назад у per-row queue через
+ *      `MARK_RETRY_SQL` (status='pending', available_at=NOW(),
  *      attempts++). Це і є fallback із specs PR-18 п.4.
  *
  * Safety:
@@ -37,7 +38,11 @@
 
 import type { Pool } from "pg";
 import { env } from "../../env.js";
-import { anthropicMessages } from "../../lib/anthropic.js";
+import {
+  getLLMProvider,
+  invokeLLM,
+  type LLMProvider,
+} from "../../lib/llm/provider.js";
 import {
   buildBatchPrompt,
   parseBatchResponse,
@@ -83,8 +88,8 @@ UPDATE mono_ai_enrichment_queue
 `;
 
 /**
- * Скільки разів item може провалити Anthropic-batch parse (бути у `missing`)
- * перш ніж його redirect у per-row queue. Без цього cap-у item, який Claude
+ * Скільки разів item може провалити batch-parse (бути у `missing`)
+ * перш ніж його redirect у per-row queue. Без цього cap-у item, який AI
  * чомусь не може класифікувати, висітиме у буфер-і навіки.
  */
 const MAX_BUFFER_MISSED_TICKS = 3;
@@ -95,7 +100,7 @@ export interface BatchWorkerOptions {
   /** Інтервал між tick-ами (мс); за замовч. — `env.MCC_BATCH_INTERVAL_MS`. */
   intervalMs?: number;
   /** Override для DI у тестах. */
-  anthropic?: typeof anthropicMessages;
+  provider?: LLMProvider;
   /** Override для DI у тестах. */
   now?: () => Date;
 }
@@ -122,8 +127,12 @@ export async function runMccBatchTick(
   };
 
   const batchSize = opts.batchSize ?? env.MCC_BATCH_MAX_SIZE;
-  const anthropic = opts.anthropic ?? anthropicMessages;
-  const apiKey = env.ANTHROPIC_API_KEY;
+  const provider =
+    opts.provider ??
+    getLLMProvider({
+      provider: env.LLM_MONO_PROVIDER,
+      openrouterModel: env.OPENROUTER_MONO_MODEL,
+    });
 
   const items = drainBatch(batchSize);
   result.drained = items.length;
@@ -133,10 +142,13 @@ export async function runMccBatchTick(
   }
   monoMccBatchSize.observe(items.length);
 
-  if (!apiKey) {
-    // Anthropic не сконфігурований — повертаємо ВСЕ у per-row queue (там
-    // worker сам розбереться, або відмовиться). Логіруємо як warn, бо це
-    // теоретично можливо при config-drift-і у Railway.
+  // Config-drift guard: `getLLMProvider` fail-softs до `StubProvider`, коли в
+  // резолвленого provider-а відсутній API-ключ — мовчки (Stub-текст не
+  // спарситься `parseBatchResponse`, усі items підуть у "missing" і згорять
+  // кілька retry-тіків перш ніж requeue). Ловимо це наперед і requeue-имо
+  // одразу — той самий швидкий явний сигнал, що давав старий `if (!apiKey)`,
+  // узагальнений поза Anthropic.
+  if (provider.name === "stub") {
     await requeueAll(pool, items, "no_api_key", result);
     monoMccBatchDurationMs.observe({ outcome: "failed" }, Date.now() - t0);
     return result;
@@ -144,39 +156,29 @@ export async function runMccBatchTick(
 
   const prompt = buildBatchPrompt(items);
   try {
-    const { response, data } = await anthropic(
-      apiKey,
-      {
-        model: env.MONO_ENRICHMENT_MODEL,
-        // ~10 tokens per output item: `{"i":N,"c":"X","conf":0.9}` ≈ 25 chars
-        // ≈ 8-12 tokens (incl. JSON syntax). 100 items × 12 + buffer = 1500.
-        max_tokens: Math.min(2_000, Math.max(200, items.length * 15)),
-        system: prompt.system,
-        messages: [{ role: "user", content: prompt.user }],
-      },
-      {
-        endpoint: "internal/mcc-batch",
-        // Більший timeout ніж per-row (15s), бо output довший. Все ще
-        // менший за `intervalMs / 6` для типового 1h-tick-у.
-        timeoutMs: 60_000,
-        // AI-NOTE: НЕ передаємо `userId` навмисно. Один batch-виклик
-        // класифікує транзакції БАГАТЬОХ юзерів (`item.userId` різний
-        // per-item), тож приписати його cost одному юзеру було б хибним
-        // обліком. Лишаємо лише global-aggregate (`provider:anthropic`).
-      },
-    );
+    const invokeResult = await invokeLLM(provider, {
+      model: env.MONO_ENRICHMENT_MODEL,
+      // ~10 tokens per output item: `{"i":N,"c":"X","conf":0.9}` ≈ 25 chars
+      // ≈ 8-12 tokens (incl. JSON syntax). 100 items × 12 + buffer = 1500.
+      maxTokens: Math.min(2_000, Math.max(200, items.length * 15)),
+      system: prompt.system,
+      messages: [{ role: "user", content: prompt.user }],
+      endpoint: "internal/mcc-batch",
+      // Більший timeout ніж per-row (15s), бо output довший. Все ще
+      // менший за `intervalMs / 6` для типового 1h-tick-у.
+      timeoutMs: 60_000,
+      // AI-NOTE: НЕ передаємо `userId` навмисно. Один batch-виклик
+      // класифікує транзакції БАГАТЬОХ юзерів (`item.userId` різний
+      // per-item), тож приписати його cost одному юзеру було б хибним
+      // обліком. Лишаємо лише global-aggregate (`provider:<name>`).
+    });
 
-    if (!response?.ok) {
+    if (!invokeResult.ok) {
       throw new Error(
-        `mcc_batch: upstream not ok (status=${response?.status ?? 0})`,
+        `mcc_batch: upstream not ok (status=${invokeResult.status ?? 0})`,
       );
     }
-    const text =
-      (
-        data as {
-          content?: Array<{ type: string; text?: string }>;
-        }
-      ).content?.[0]?.text ?? "";
+    const text = invokeResult.text;
 
     const parsed = parseBatchResponse(text, items);
 
@@ -236,7 +238,7 @@ export async function runMccBatchTick(
     monoMccBatchDurationMs.observe({ outcome: "ok" }, Date.now() - t0);
     return result;
   } catch (err) {
-    // Anthropic-fail → ВЕСЬ batch у per-row queue, як specs.
+    // AI-call fail → ВЕСЬ batch у per-row queue, як specs.
     const lastError = (err instanceof Error ? err.message : String(err)).slice(
       0,
       500,
