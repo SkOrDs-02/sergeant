@@ -126,3 +126,14 @@ ADR-0051 зафіксував модель Free + Pro з ціною \$7/міс /
 - [ADR-0001](./0001-monetization-architecture.md) — базова архітектура монетизації
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md)
 - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                            | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
+| [#338](https://github.com/Skords-01/Sergeant/pull/338) | docs(root): reconcile revenue docs with LiqPay provider decision | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
