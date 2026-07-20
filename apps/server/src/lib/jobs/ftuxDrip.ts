@@ -1,6 +1,7 @@
 import { Queue, Worker, type Job } from "bullmq";
 import type { Redis as IORedisClient } from "ioredis";
 
+import type { FtuxDripDay } from "../../email/ftuxDripCopy.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import {
   ftuxDripJobsEnqueuedTotal,
@@ -35,7 +36,9 @@ import { BULLMQ_QUEUE_PREFIX, createBullConnection } from "./connection.js";
  * як `FtuxDripSkip` і завершують job як completed з відповідним outcome-ом.
  */
 
-export type FtuxDripDay = "day_0" | "day_1" | "day_3";
+// `FtuxDripDay` живе у `../../email/ftuxDripCopy` (там campaign-key / delay
+// records по кожному дню). Імпортуємо звідти, щоб не дублювати оголошення
+// (aislop `ai-slop/duplicate-type-declaration`).
 
 export interface FtuxDripJobData {
   kind: "ftux_drip";

@@ -33,6 +33,10 @@
  */
 import { Sentry } from "../../sentry.js";
 import { chatToolResultTruncatedTotal } from "../../obs/metrics.js";
+// `NormalizedToolResult` живе у `./toolOutputWrapping` (канонічний shape
+// нормалізованого tool_result). Імпортуємо звідти, щоб не дублювати оголошення
+// (aislop `ai-slop/duplicate-type-declaration`).
+import type { NormalizedToolResult } from "./toolOutputWrapping.js";
 
 /** Максимальний розмір (chars) для того, щоб НЕ зачіпати content. */
 export const TOOL_RESULT_TRUNCATE_THRESHOLD = 2000;
@@ -45,11 +49,6 @@ const TAIL_BYTES = 400;
 export interface RawToolResult {
   tool_use_id: string;
   content?: unknown;
-}
-
-export interface NormalizedToolResult {
-  tool_use_id: string;
-  content: string;
 }
 
 /**
