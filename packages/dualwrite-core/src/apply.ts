@@ -27,6 +27,23 @@ export interface ApplyDualWriteResult {
 }
 
 /**
+ * Причини, з яких fire-and-forget dual-write пропускається без застосування
+ * жодної операції. Спільні для всіх модульних пайплайнів.
+ */
+export type DualWriteSkipReason =
+  "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
+
+/**
+ * Результат одного fire-and-forget dual-write прогону: або застосовано (з
+ * підсумком `ApplyDualWriteResult`), або пропущено з причиною. Канонічний дім
+ * для 4 модульних пайплайнів (finyk/fizruk/nutrition/routine) — раніше
+ * дублювався в кожному `sqliteWriter/index.ts`.
+ */
+export type DualWriteOutcome =
+  | { status: "applied"; result: ApplyDualWriteResult }
+  | { status: "skipped"; reason: DualWriteSkipReason };
+
+/**
  * Generic outcome type for apply operations.
  */
 export type ApplyOutcome = "applied" | "skipped";
