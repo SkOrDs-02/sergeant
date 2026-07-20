@@ -1,6 +1,6 @@
 # 0022 — Імпорт даних з зовнішніх трекерів (CSV-onboarding)
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent (migration # reconcile). **Next review:** 2026-10-08.
 > **Status:** Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).
 > **Agent-ready:** needs-decision
 > **Priority:** P2 (growth / activation lever — не блокер launch-у 0010)
@@ -56,7 +56,7 @@
 
 **Чому першими:** формат експорту силових трекерів майже 1:1 з нашою схемою сетів (`fizruk_workout_sets`: `weight_kg REAL`, `reps INTEGER`, `rpe REAL`), безкоштовний експорт, велика аудиторія ліфтерів. Один парсер покриває обидва (схожі CSV).
 
-- **Міграція (за потреби):** імпорт-журнал для ідемпотентності/дедуплікації — нова таблиця `import_batches` (`source`, `user_id`, `file_hash`, row counts, `status`). Наступний вільний номер — `078_*.sql` (поточний максимум — `077`; Hard Rule #4 — послідовно, без пропусків, two-phase для DROP).
+- **Міграція (за потреби):** імпорт-журнал для ідемпотентності/дедуплікації — нова таблиця `import_batches` (`source`, `user_id`, `file_hash`, row counts, `status`). Наступний вільний номер — `083_*.sql` (поточний максимум — `082_plata_card_token`; Hard Rule #4 — послідовно, без пропусків, two-phase для DROP).
 - **Server:** `apps/server/src/modules/import/` — `upload.ts` (multipart + ZIP unwrap + delimiter/encoding detect), `parseCsv.ts` (Zod), `adapters/strong.ts`, `adapters/hevy.ts`. Запис через наявні [`apps/server/src/modules/sync/fizruk/applySync.ts`](../../../apps/server/src/modules/sync/fizruk/applySync.ts).
 - **Адаптер-приклади (мапа колонок → наше поле):**
   - Strong: `Date → started_at`, `Exercise Name → name_uk`, `Weight → weight_kg` (з конвертацією lb→kg за заголовком), `Reps → reps`, `RPE → rpe`. **Гача:** роздільник `;`, одиниця ваги в заголовку.

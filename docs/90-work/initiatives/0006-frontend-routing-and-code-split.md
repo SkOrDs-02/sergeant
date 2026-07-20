@@ -1,8 +1,8 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last touched:** 2026-06-16 by @github-actions[bot]. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-09-14.
 > **Status:** Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.
-> **Agent-ready:** needs-decision
+> **Agent-ready:** blocked
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks

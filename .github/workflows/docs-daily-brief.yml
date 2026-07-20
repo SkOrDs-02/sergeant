@@ -8,9 +8,12 @@ name: Docs daily brief
 # morning" maintainer routine — Status headers and Next review dates change
 # silently as time passes.
 #
-# Schedule rationale: 06:00 UTC = ~08:00 / 09:00 Kyiv time, before the
-# maintainer's working day. Aligned with existing observability cron blocks
-# so a single morning glance covers product + docs health.
+# Schedule: intentionally removed 2026-07-09 (`dca267eeb`) to cut Actions
+# minutes for a solo maintainer. Trigger is `workflow_dispatch` only — run
+# manually when you want a fresh `today.md` / `open-work.md` without a PR.
+# Do NOT re-add `schedule:` without an explicit maintainer decision.
+#
+# Schedule rationale (historical): 06:00 UTC = ~08:00 / 09:00 Kyiv time.
 #
 # Safety:
 #   - The commit step uses the GITHUB_TOKEN with `contents: write` scoped
