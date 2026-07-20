@@ -46,8 +46,8 @@ fallback, `<50 KB` cap. Інтегровано в `sergeant-start-here` як §0
 promoted 2026-07-20), PR-time bumper `scripts/ci-bump-harness-version.mjs`
 з auto-detect `patch`/`minor`/`major` за diff від `origin/main`,
 weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
-`[main, experimental/loop-detect]`. Bench-step поки `if: false` — чекає
-на golden-task suite (follow-up).
+`[main, experimental/loop-detect]`. Bench-step активний: `pnpm harness:bench`
+проти `docs/00-start/agents/harness-golden-tasks.json` (12 tasks).
 
 **Entropy Janitors (PR #74, ADR-0070).** Workspace package
 `tools/entropy-janitors/` з трьома незалежними скриптами:
