@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -33,3 +33,4 @@ Root вантажиться при старті; вкладені `CLAUDE.md` �
 - OpenClaw/Gateway → `sergeant-openclaw`, не `sergeant-hubchat`. Каталоги: [agent-workflows.md](./docs/00-start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
 - SKILL.md зміни: спершу `sergeant-writing-skills`, потім `pnpm lint:skills && pnpm skills:lock`. Heavy local commands — лише за потреби чи на прохання.
 - Глобальні `~/.claude/agents/` subagent-и через `Agent` — для self-contained задач (ad copy, generic review, research), коли немає specialist skill-у.
+- Глобальні engineering-агенти (Frontend Developer, Mobile App Builder, Backend Architect, Database Optimizer, Code Reviewer тощо) ЗАБОРОНЕНІ для кодових правок у `apps/**` і `packages/**` — вони не знають Hard Rules (RQ-фабрики, дизайн-лінти, bigint-коерція, 44px touch targets). Для коду в цих директоріях — тільки репо-агенти (`.claude/agents/`) і specialist-скіли з `AGENTS.md`.

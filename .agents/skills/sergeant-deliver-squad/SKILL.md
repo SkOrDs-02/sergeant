@@ -41,7 +41,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 2. Звіт попереднього агента (що вже зроблено?)
 3. Своє завдання (що конкретно зробити на цій surface?)
 
-Запускай subagent через `Task` tool (або як Agent Team teammate). **Не запускай наступний subagent до отримання звіту попереднього** — за винятком паралельного web/mobile кроку.
+Запускай subagent через subagent-механізм твого харнесу (Claude Code: `Agent` tool; або як Agent Team teammate). **Не запускай наступний subagent до отримання звіту попереднього** — за винятком паралельного web/mobile кроку.
 
 ## Завжди покривай
 

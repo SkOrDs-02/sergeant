@@ -33,11 +33,11 @@ Spawn 3 teammates using these subagent definitions:
 All surfaces run independently. Ask each to report to the lead when done.
 ```
 
-**Варіант 2 — паралельні subagents через Task tool:**
+**Варіант 2 — паралельні subagents через subagent-механізм твого харнесу (Claude Code: `Agent` tool):**
 
 ```
 Use the qa-server, qa-web, and qa-mobile subagent definitions.
-Run all 3 in parallel via the Task tool. Collect all reports before synthesizing.
+Run all 3 in parallel as subagents (Claude Code: via the Agent tool). Collect all reports before synthesizing.
 ```
 
 ## Synthesis protocol
