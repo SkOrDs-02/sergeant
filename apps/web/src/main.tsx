@@ -282,13 +282,9 @@ if (typeof window !== "undefined") {
 // Dynamic import ⇒ Vite кладе `@sergeant/mobile-shell` та всі `@capacitor/*`
 // плагіни в окремий chunk, тож browser-бандл не тягне їх зовсім.
 //
-// Deep-link bridge підʼєднується НЕ через `options.navigate` (який викликає
-// `history.pushState` out-of-component і плутає React Router з «перший render
-// уже завершився» сценарієм), а через namespaced `window.__sergeantShellNavigate`,
-// який виставляє `<ShellDeepLinkBridge/>` у `core/App.tsx` після маунту
-// роутера. Якщо `appUrlOpen` прилітає ДО маунту (cold start через deep link),
-// shell буферизує path у `window.__sergeantShellDeepLinkQueue` і bridge
-// drain-ить його при install-і.
+// Deep-link bridge підʼєднується через BroadcastChannel + pre-mount queue
+// (`ShellDeepLinkBridge` у web). Shell не викликає `options.navigate` з
+// `main.tsx` — навмисно, щоб не плутати React Router з out-of-band pushState.
 if (isCapacitor()) {
   import("@sergeant/mobile-shell")
     .then(({ initNativeShell }) => initNativeShell())

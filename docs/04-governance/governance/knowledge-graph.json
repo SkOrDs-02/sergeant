@@ -5,7 +5,7 @@
   "counts": {
     "adr": 72,
     "hard-rule": 26,
-    "initiative": 7,
+    "initiative": 6,
     "playbook": 60,
     "pr": 146,
     "skill": 23
@@ -1255,15 +1255,6 @@
       "title": "Зведена матриця hardening-карток",
       "path": "docs/90-work/initiatives/hardening-matrix.md",
       "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
-      "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
-      "type": "initiative",
-      "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
-      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
-      "status": "Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window).",
       "tier": "core",
       "meta": {}
     },
@@ -4437,11 +4428,6 @@
     {
       "from": "initiative:hardening-matrix",
       "to": "pr:3649",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
-      "to": "pr:2526",
       "type": "touched-by"
     },
     {

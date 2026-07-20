@@ -13,10 +13,10 @@
 
 | Джерело                                             | Всього | Closed / Merged / Done | Open / Planned | Partial / Unknown |
 | --------------------------------------------------- | ------ | ---------------------- | -------------- | ----------------- |
-| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 33                     | 0              | 6                 |
+| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 39                     | 0              | 0                 |
 | \_0008-platform-hardening (фази 1–5)                | 5      | 5                      | 0              | 0                 |
 | \_0009-agent-os-hardening (PR 1.1–5.3)              | 18     | 17                     | 1              | 0                 |
-| **Разом**                                           | **62** | **55**                 | **1**          | **6**             |
+| **Разом**                                           | **62** | **61**                 | **1**          | **0**             |
 
 ---
 
@@ -69,20 +69,20 @@
 
 ### Low (L1–L12)
 
-| ID  | Назва                                                         | Source-файл                                                                                                        | Статус                 | GitHub PR                                                |
-| --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------- | -------------------------------------------------------- |
-| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [`pr-28-sw-build-id-import-meta.md`](./stack-pulse-2026-05/archive/pr-28-sw-build-id-import-meta.md)               | Closed                 | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
-| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [`pr-29-shell-navigate-broadcast-channel.md`](./stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md)     | Partial (PR-1 shipped) | [#2526](https://github.com/Skords-01/Sergeant/pull/2526) |
-| L3  | Dockerfile post-install cleanup для CVE-shrink                | [`pr-30-dockerfile-cleanup-cve.md`](./stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md)                 | Closed                 | [#2543](https://github.com/Skords-01/Sergeant/pull/2543) |
-| L4  | ESLint config 1073 рядки — розділити на per-app               | [`pr-31-eslint-config-split.md`](./stack-pulse-2026-05/archive/pr-31-eslint-config-split.md)                       | Closed                 | —                                                        |
-| L5  | `pnpm.overrides` — стара кодова база pinning                  | [`pr-32-pnpm-overrides-cleanup.md`](./stack-pulse-2026-05/archive/pr-32-pnpm-overrides-cleanup.md)                 | Closed                 | —                                                        |
-| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [`pr-33-hard-rules-categorization.md`](./stack-pulse-2026-05/archive/pr-33-hard-rules-categorization.md)           | Closed                 | —                                                        |
-| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [`pr-34-demo-seed-cleanup-gate.md`](./stack-pulse-2026-05/archive/pr-34-demo-seed-cleanup-gate.md)                 | Closed                 | —                                                        |
-| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [`pr-35-log-level-debug-window.md`](./stack-pulse-2026-05/archive/pr-35-log-level-debug-window.md)                 | Closed                 | —                                                        |
-| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [`pr-36-lazy-import-chunk-reload-guard.md`](./stack-pulse-2026-05/archive/pr-36-lazy-import-chunk-reload-guard.md) | Closed                 | [#2311](https://github.com/Skords-01/Sergeant/pull/2311) |
-| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [`pr-37-postgres-image-sha-pin.md`](./stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md)                 | Closed                 | [#2308](https://github.com/Skords-01/Sergeant/pull/2308) |
-| L11 | PWA precache — перевірити що всі assets 1st-party             | [`pr-38-pwa-precache-first-party.md`](./stack-pulse-2026-05/archive/pr-38-pwa-precache-first-party.md)             | Closed                 | [#2312](https://github.com/Skords-01/Sergeant/pull/2312) |
-| L12 | `tools/openclaw` SDK Anthropic 0.36.3 outdated                | [`pr-39-tools-console-anthropic-sdk.md`](./stack-pulse-2026-05/archive/pr-39-tools-console-anthropic-sdk.md)       | Closed                 | [#2527](https://github.com/Skords-01/Sergeant/pull/2527) |
+| ID  | Назва                                                         | Source-файл                                                                                                            | Статус                          | GitHub PR                                                |
+| --- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------------- |
+| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [`pr-28-sw-build-id-import-meta.md`](./stack-pulse-2026-05/archive/pr-28-sw-build-id-import-meta.md)                   | Closed                          | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
+| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [`pr-29-shell-navigate-broadcast-channel.md`](./stack-pulse-2026-05/archive/pr-29-shell-navigate-broadcast-channel.md) | Closed                          | [#2526](https://github.com/Skords-01/Sergeant/pull/2526) |
+| L3  | Dockerfile post-install cleanup для CVE-shrink                | [`pr-30-dockerfile-cleanup-cve.md`](./stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md)                     | Closed                          | [#2543](https://github.com/Skords-01/Sergeant/pull/2543) |
+| L4  | ESLint config 1073 рядки — розділити на per-app               | [`pr-31-eslint-config-split.md`](./stack-pulse-2026-05/archive/pr-31-eslint-config-split.md)                           | Closed                          | —                                                        |
+| L5  | `pnpm.overrides` — стара кодова база pinning                  | [`pr-32-pnpm-overrides-cleanup.md`](./stack-pulse-2026-05/archive/pr-32-pnpm-overrides-cleanup.md)                     | Closed                          | —                                                        |
+| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [`pr-33-hard-rules-categorization.md`](./stack-pulse-2026-05/archive/pr-33-hard-rules-categorization.md)               | Closed                          | —                                                        |
+| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [`pr-34-demo-seed-cleanup-gate.md`](./stack-pulse-2026-05/archive/pr-34-demo-seed-cleanup-gate.md)                     | Closed                          | —                                                        |
+| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [`pr-35-log-level-debug-window.md`](./stack-pulse-2026-05/archive/pr-35-log-level-debug-window.md)                     | Closed                          | —                                                        |
+| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [`pr-36-lazy-import-chunk-reload-guard.md`](./stack-pulse-2026-05/archive/pr-36-lazy-import-chunk-reload-guard.md)     | Closed                          | [#2311](https://github.com/Skords-01/Sergeant/pull/2311) |
+| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [`pr-37-postgres-image-sha-pin.md`](./stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md)                     | Closed                          | [#2308](https://github.com/Skords-01/Sergeant/pull/2308) |
+| L11 | PWA precache — перевірити що всі assets 1st-party             | [`pr-38-pwa-precache-first-party.md`](./stack-pulse-2026-05/archive/pr-38-pwa-precache-first-party.md)                 | Closed                          | [#2312](https://github.com/Skords-01/Sergeant/pull/2312) |
+| L12 | `tools/openclaw` SDK Anthropic 0.36.3 outdated                | [`pr-39-tools-console-anthropic-sdk.md`](./stack-pulse-2026-05/archive/pr-39-tools-console-anthropic-sdk.md)           | Closed (N/A — OpenClaw removed) | [#2527](https://github.com/Skords-01/Sergeant/pull/2527) |
 
 ---
 

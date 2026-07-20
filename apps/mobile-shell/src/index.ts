@@ -14,18 +14,21 @@
  * (`App.addListener('appUrlOpen', ...)` інакше зростає на кожному ре-імпорті).
  *
  * Deep-link bridge: `appUrlOpen` парситься через `parseDeepLink()` і
- * диспатчиться у web-шар БЕЗ compile-time залежності — через namespaced
- * `window.__sergeantShellNavigate` (виставляється React-компонентом після
- * маунту роутера) з буфером `window.__sergeantShellDeepLinkQueue` для
- * cold-start сценарію, коли native-подія прилетіла ДО того, як веб встиг
- * зареєструвати bridge. Web-сторона програє буфер при install-і.
+ * диспатчиться у web-шар через BroadcastChannel (canonical) з буфером
+ * `window.__sergeantShellDeepLinkQueue` для cold-start / BC-less WebView.
  */
 
 import { App, type URLOpenListenerEvent } from "@capacitor/app";
 import { Keyboard, KeyboardResize } from "@capacitor/keyboard";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
-import { createDeepLinkChannel, type DeepLinkChannel } from "@sergeant/shared";
+import {
+  createDeepLinkChannel,
+  SHELL_DEEPLINK_BRIDGE_READY_KEY,
+  SHELL_DEEPLINK_QUEUE_EVENT,
+  SHELL_DEEPLINK_QUEUE_KEY,
+  type DeepLinkChannel,
+} from "@sergeant/shared";
 
 /** Колір status bar-а у light-темі — збігається з `--c-bg` (#fdf9f3). */
 const STATUS_BAR_COLOR_LIGHT = "#fdf9f3";
@@ -170,32 +173,15 @@ export const DEEP_LINK_HTTPS_HOSTS: readonly string[] = Object.freeze([
 
 export interface InitNativeShellOptions {
   /**
-   * Хук навігації з web-side (зазвичай обгортка над React Router
-   * `navigate()`). Викликається з відносним шляхом, витягнутим з
-   * `com.sergeant.shell://<path>`. Якщо не передано — deep-link
-   * диспатчиться через window-bridge (`__sergeantShellNavigate`) з
-   * буферизацією у `__sergeantShellDeepLinkQueue` для cold-start.
+   * Хук навігації з web-side (тестова ін'єкція). Якщо передано — єдиний
+   * шлях dispatch-у; BroadcastChannel і queue пропускаються.
    */
   navigate?: (path: string) => void;
 }
 
-/**
- * Ключ на `window`, який виставляє React-компонент веб-шару (`useNavigate()`
- * обгортка) після маунту роутера. Shell викликає його, щоби програмно
- * навігувати по React Router без full-reload.
- */
-const SHELL_NAVIGATE_KEY = "__sergeantShellNavigate" as const;
-
-/**
- * Буфер deep-link шляхів, що прилетіли ДО того, як web-шар встиг виставити
- * `__sergeantShellNavigate` (cold start через deep link). Веб при install-і
- * drain-ить цей масив і програє накопичені шляхи через React Router.
- */
-const SHELL_QUEUE_KEY = "__sergeantShellDeepLinkQueue" as const;
-
 type DeepLinkBridgeWindow = Window & {
-  [SHELL_NAVIGATE_KEY]?: (path: string) => void;
-  [SHELL_QUEUE_KEY]?: string[];
+  [SHELL_DEEPLINK_QUEUE_KEY]?: string[];
+  [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: boolean;
 };
 
 /**
@@ -218,20 +204,11 @@ function getDeepLinkChannel(): DeepLinkChannel {
 }
 
 /**
- * Диспатчер deep-link шляху у web-сторону. Порядок:
- *   1. `options.navigate(path)` — явно переданий callback (тестова ін'єкція
- *      або legacy-caller, що сам тримає навігаційний хук). Якщо переданий —
- *      ТІЛЬКИ він використовується; BroadcastChannel і window-global шляхи
- *      пропускаються, щоб тести не отримували дубль-події.
- *   2. **Паралельно**: BroadcastChannel + (window-global або pre-mount
- *      queue). Web-bridge (`ShellDeepLinkBridge.tsx`) має coalescing-вікно
- *      по `(path, timestamp)`, тому одна і та сама deep-link подія,
- *      доставлена обома шляхами, призводить рівно до одного `navigate()`.
- *      Подвійний dispatch свідомий — async-deploy-сценарій (нова shell
- *      проти старого web або навпаки) ловиться на будь-якій із двох сторін.
- *
- * Помилки виклику navigate не шкодять shell — залоговане попередження, але
- * подія все одно проковтнута (не падає з listener-у `appUrlOpen`).
+ * Диспатчер deep-link шляху у web-сторону:
+ *   1. `options.navigate` — тестова ін'єкція (short-circuit).
+ *   2. BroadcastChannel — canonical path.
+ *   3. Pre-mount queue (+ optional queue event коли bridge уже mounted,
+ *      але BC недоступний).
  */
 function dispatchDeepLink(path: string, options: InitNativeShellOptions): void {
   if (options.navigate) {
@@ -243,34 +220,32 @@ function dispatchDeepLink(path: string, options: InitNativeShellOptions): void {
     return;
   }
 
-  // Canonical PR-29 path — BroadcastChannel. No-op у legacy WebView без
-  // BroadcastChannel-у (`getDeepLinkChannel()` повертає null-channel).
-  const channel = getDeepLinkChannel();
-  if (channel.isOpen) {
-    channel.post({ url: path, source: "shell" });
-  }
-
-  // Legacy/backward-compat path — window.__sergeantShellNavigate. Залишається
-  // 3 місяці після PR-29 ship-у (PR-2 у stack-pulse-2026-05 dropає його
-  // після iOS / Android Vault adoption). Працює як fallback для змішаного
-  // async-deploy-у і повністю обходить старі WebView без BroadcastChannel-у.
   if (typeof window === "undefined") return;
   const w = window as DeepLinkBridgeWindow;
 
-  const bridgeNavigate = w[SHELL_NAVIGATE_KEY];
-  if (typeof bridgeNavigate === "function") {
-    try {
-      bridgeNavigate(path);
-    } catch (err) {
-      console.warn("[mobile-shell] window.__sergeantShellNavigate failed", err);
+  const channel = getDeepLinkChannel();
+  const posted = channel.isOpen && channel.post({ url: path, source: "shell" });
+
+  const bridgeReady = w[SHELL_DEEPLINK_BRIDGE_READY_KEY] === true;
+
+  if (!bridgeReady || !channel.isOpen) {
+    if (!Array.isArray(w[SHELL_DEEPLINK_QUEUE_KEY])) {
+      w[SHELL_DEEPLINK_QUEUE_KEY] = [];
+    }
+    w[SHELL_DEEPLINK_QUEUE_KEY]!.push(path);
+    if (bridgeReady && !channel.isOpen) {
+      w.dispatchEvent(new CustomEvent(SHELL_DEEPLINK_QUEUE_EVENT));
     }
     return;
   }
 
-  if (!Array.isArray(w[SHELL_QUEUE_KEY])) {
-    w[SHELL_QUEUE_KEY] = [];
+  if (!posted) {
+    if (!Array.isArray(w[SHELL_DEEPLINK_QUEUE_KEY])) {
+      w[SHELL_DEEPLINK_QUEUE_KEY] = [];
+    }
+    w[SHELL_DEEPLINK_QUEUE_KEY]!.push(path);
+    w.dispatchEvent(new CustomEvent(SHELL_DEEPLINK_QUEUE_EVENT));
   }
-  w[SHELL_QUEUE_KEY]!.push(path);
 }
 
 let initialized = false;

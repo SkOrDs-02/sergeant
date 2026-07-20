@@ -1,7 +1,7 @@
 # PR-35: `LOG_LEVEL=info` default + 5-min debug-window toggle
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** ніколи (read-only архів).
-> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/initiatives/stack-pulse-2026-05/pr-35-log-level-debug-window.md`.
+> **Status:** Closed — server-side merged [#2423](https://github.com/Skords-01/Sergeant/pull/2423). OpenClaw tooling decommissioned з репо (2026-07); CLI follow-up N/A.
 
 |                    |                                                                                 |
 | ------------------ | ------------------------------------------------------------------------------- |
