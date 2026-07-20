@@ -1,6 +1,6 @@
 # C1 — System Context
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Sergeant у контексті користувача та зовнішніх систем.
@@ -15,7 +15,7 @@ flowchart TB
         MobileApp["apps/mobile<br/><i>Expo (iOS / Android)</i>"]
         ShellApp["apps/mobile-shell<br/><i>Capacitor wrapper</i>"]
         Server["apps/server<br/><i>Express API + BullMQ workers</i>"]
-        Console["tools/openclaw<br/><i>Telegram бот (ops + marketing)</i>"]
+        Console["OpenClaw gateway<br/><i>Telegram ops-бот — не задеплоєний</i>"]
     end
 
     Postgres[("🗄️ PostgreSQL 18<br/><i>Coolify (Hetzner), pgvector</i>")]
@@ -62,9 +62,9 @@ flowchart TB
 
 ## Зауваження
 
-- Хостинг: бекенд (API + Postgres + Redis) — Hetzner CX23 + Coolify (self-host PaaS, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)); Vercel (web hosting + edge-proxy); Sentry SaaS, Anthropic SaaS, Monobank — банк-партнер. OpenClaw-бот лишається на Railway.
+- Хостинг: бекенд (API + Postgres + Redis) — Hetzner CX23 + Coolify (self-host PaaS, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)); Vercel (web hosting + edge-proxy); Sentry SaaS, Anthropic SaaS, Monobank — банк-партнер. OpenClaw-бот **наразі не задеплоєний** (Railway виведено; re-home на Coolify або deprecation TBD — див. [`service-catalog.md`](../service-catalog.md)).
 - Sergeant як software system НЕ зберігає секрети у браузері; cookies сесії — `httpOnly` + `secure` (Better Auth standard).
-- `tools/openclaw` — окремий surface для внутрішніх ops/marketing задач, не для kінцевого користувача.
+- OpenClaw gateway (`packages/openclaw-plugin`; попередній `tools/openclaw` grammy-бот видалено з репо) — окремий surface для внутрішніх ops/marketing задач, не для kінцевого користувача.
 - `apps/mobile-shell` обгортає `apps/web` через Capacitor; це той самий фронтенд-bundle, тільки з нативними API (camera, push).
 
 ## Поверхні-каталог

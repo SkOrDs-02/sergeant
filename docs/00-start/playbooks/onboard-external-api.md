@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -55,7 +55,7 @@ SERVICE_BASE_URL=https://api.example.com
 Оновити:
 
 - `.env.example` — з placeholder-ами
-- Railway Variables — реальні значення
+- Coolify env vars (API-app → Environment) — реальні значення
 - CI secrets — якщо потрібні для тестів
 
 ### 3. Створити module в server
@@ -153,7 +153,7 @@ async function healthCheck() {
 - [ ] Prometheus metrics додано
 - [ ] `.env.example` оновлено (без реальних secrets!)
 - [ ] Типи в `packages/api-client` додані (rule #3)
-- [ ] Railway Variables задокументовані
+- [ ] Coolify env vars задокументовані
 
 ## Notes
 
@@ -166,5 +166,5 @@ async function healthCheck() {
 
 - [monobank-roadmap.md](../../02-engineering/integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
 - [backend-tech-debt.md](../../90-work/tech-debt/backend.md) — §Bank integrations deep-dive
-- [railway-vercel.md](../../02-engineering/integrations/railway-vercel.md) — як додати env vars у Railway
+- [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — бекенд-топологія; env vars бекенду живуть у Coolify (API-app → Environment)
 - [AGENTS.md](../../../AGENTS.md) — rule #3 (API contract)
