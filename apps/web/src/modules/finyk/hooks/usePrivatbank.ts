@@ -310,9 +310,7 @@ export function usePrivatbank(enabled = true) {
 
       setTransactions(unique);
       saveTxCache(unique);
-      // UTC-anchored wall-clock instant: the moment this sync completed
-      // (lastUpdated / lastSuccess), not a day boundary — Kyiv anchoring N/A.
-      // eslint-disable-next-line no-restricted-syntax
+      // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock sync-completed stamp (lastUpdated/lastSuccess), not a Kyiv day boundary
       const now2 = new Date();
       setLastUpdated(now2);
       setSyncState({

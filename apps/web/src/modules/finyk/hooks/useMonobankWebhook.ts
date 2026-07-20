@@ -222,10 +222,7 @@ export function useMonobankWebhook({
   useEffect(() => {
     if (!mirrorEnabled || !userId || accounts.length === 0) return;
     let cancelled = false;
-    // UTC-anchored wall-clock instant: the exact moment this account snapshot
-    // is written, not a day boundary — a true timestamp, so Kyiv anchoring
-    // does not apply here.
-    // eslint-disable-next-line no-restricted-syntax
+    // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock account-snapshot instant, not a Kyiv day boundary
     const snapshotAt = new Date().toISOString();
     void (async () => {
       try {

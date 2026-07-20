@@ -53,7 +53,9 @@ function searchFinyk(tokens: string[]): Hit[] {
     }
   }
 
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
+  // Hub search reads the finyk_subs LS shard; STORAGE_KEYS.FINYK_* is banned
+  // outside module wrappers by the no-restricted-syntax retirement guard.
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- intentional LS-shard read; STORAGE_KEYS.FINYK_* banned in hub/search (retirement guard)
   const subs = safeParseLS<FinykSub[]>("finyk_subs", []);
   if (Array.isArray(subs)) {
     for (const s of subs) {

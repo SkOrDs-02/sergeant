@@ -26,7 +26,7 @@ function readHasMonoData(): boolean {
   // Intentional LS-backed preview signal; this hook's source of truth is
   // localStorage by design (see header). Key centralized to STORAGE_KEYS via
   // #3171; full SQLite-overlay migration is separate storage-roadmap work.
-  // eslint-disable-next-line no-restricted-syntax
+  // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard preview via STORAGE_KEYS; SQLite overlay is storage-roadmap work
   const parsed = safeReadLS<{ txs?: unknown[] }>(STORAGE_KEYS.FINYK_TX_CACHE);
   return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
 }
@@ -41,7 +41,7 @@ export function useFinykHubPreview() {
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       // Comparing against the same LS preview key (see readHasMonoData above).
-      // eslint-disable-next-line no-restricted-syntax
+      // eslint-disable-next-line no-restricted-syntax -- storage-event key match for FINYK_TX_CACHE preview shard (same intentional LS read)
       if (e.key === null || e.key === STORAGE_KEYS.FINYK_TX_CACHE) {
         queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
       }

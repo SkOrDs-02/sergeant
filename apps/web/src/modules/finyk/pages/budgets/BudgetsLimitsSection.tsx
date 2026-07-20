@@ -205,8 +205,7 @@ export function BudgetsLimitsSection({
                             x.type === "limit" &&
                             !x.createdAt
                               ? {
-                                  // UTC creation instant; period math converts it to Kyiv boundaries.
-                                  // eslint-disable-next-line no-restricted-syntax
+                                  // eslint-disable-next-line no-restricted-syntax -- UTC creation instant; period math converts it to Kyiv boundaries
                                   createdAt: new Date().toISOString(),
                                 }
                               : {}),
