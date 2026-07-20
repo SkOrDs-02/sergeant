@@ -224,7 +224,7 @@ export async function classifyMessage(
       // claude-haiku-4-5 — найдешевший актуальний tier ($1 / $5 per M tokens
       // на 2026-05; ~$0.0002 / classification з 200/80 input/output split).
       // Той самий model, що використовує `routes/internal/categorize.ts`.
-      model: "claude-haiku-4-5-20251001",
+      model: env.CLASSIFY_MODEL,
       maxTokens: 200,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],

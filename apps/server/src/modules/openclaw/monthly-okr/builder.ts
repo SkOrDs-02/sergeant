@@ -339,7 +339,7 @@ Risks: ${input.risks.sentryUnresolvedCount ?? 0} Sentry unresolved + ${input.ris
     const llmResult = await invokeLLM(
       provider,
       {
-        model: "claude-sonnet-4-6",
+        model: env.OPENCLAW_MONTHLY_OKR_MODEL,
         maxTokens: 360,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],

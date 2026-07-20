@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "db:migrate": "node dist-server/migrate.js",
     "db:migrate:dev": "node --import tsx ./migrate.mjs",
-    "reencrypt:tokens": "node --env-file-if-exists=.env --import tsx scripts/token-reencrypt-rollover.ts"
+    "reencrypt:tokens": "node --env-file-if-exists=.env --import tsx scripts/token-reencrypt-rollover.ts",
+    "eval:models": "node --env-file-if-exists=.env --import tsx scripts/model-eval.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.23",

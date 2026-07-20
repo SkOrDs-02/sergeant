@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { RefinePhotoSchema } from "../../http/schemas.js";
@@ -84,7 +85,7 @@ export default async function handler(
 Перерахуй і поверни JSON.`;
 
   const payload = {
-    model: "claude-sonnet-4-6",
+    model: env.NUTRITION_MODEL,
     max_tokens: 650,
     temperature: 0.2,
     system: SYSTEM,

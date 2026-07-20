@@ -114,8 +114,13 @@ export interface ProTierResult {
 }
 
 function tieredProEnabled(): boolean {
-  const v = process.env["AI_TIERED_PRO_ENABLED"]?.toLowerCase();
-  return v === "1" || v === "true";
+  const v = process.env["AI_TIERED_PRO_ENABLED"];
+  // Unset/empty → default ON, mirroring the zod `boolFromEnv(true)` default
+  // declared in `env.ts` (AI_TIERED_PRO_ENABLED). Explicit "false"/"0" opts
+  // out; any other explicit value falls back to the same default-true.
+  if (v === undefined || v === "") return true;
+  const lower = v.toLowerCase();
+  return lower !== "0" && lower !== "false";
 }
 
 /**

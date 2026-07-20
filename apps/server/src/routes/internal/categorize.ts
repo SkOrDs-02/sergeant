@@ -106,7 +106,7 @@ export async function categorizeTransaction(
   const { response, data } = await anthropicMessages(
     apiKey,
     {
-      model: "claude-haiku-4-5-20251001",
+      model: env.CLASSIFY_MODEL,
       max_tokens: 120,
       system:
         "You are a transaction categorizer for a Ukrainian personal finance app. " +
