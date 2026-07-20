@@ -7,11 +7,11 @@
 
 ## Cross-refs (active planning surface)
 
-- **Sprint tracker:** [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../planning/sprint-roadmap-q2q3-2026.md) — Спринти 5–8, T1–T7 + O1–O9; T5 (Lighthouse warn→error) tighten — baseline-gathered follow-up.
+- **Sprint tracker:** [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../../planning/archive/sprint-roadmap-q2q3-2026.md) — Спринти 5–8, T1–T7 + O1–O9; T5 (Lighthouse warn→error) tighten — baseline-gathered follow-up.
 - **Revenue:** [`2026-05-13-revenue-monetization-roast.md`](./2026-05-13-revenue-monetization-roast.md) — P0-1..P0-7 (включно зі **Stripe price_id env-config + validation, P0-7**) усі **Done у PR**. Outstanding — P1-2 activation v2 capture, P1-4 EN locale, P2 polish.
 - **Dead-code + Hard Rules:** [`2026-05-13-dead-code-hard-rules-roast.md`](./2026-05-13-dead-code-hard-rules-roast.md) — P0.1 (11 unmarked unused files → `@scaffolded`/delete), P0.2 (53 broken markdown links → 0), P1.2 (Lighthouse CI workflow shipped, `cb459c08`). 18 файлів живуть під свідомим `@scaffolded` маркером.
 - **Doc hygiene:** [`2026-05-13-documentation-hygiene-roast.md`](./2026-05-13-documentation-hygiene-roast.md) — 7 пунктів закриті у відповідному PR, включно з archive-move depth fix.
-- **Storage / sync v2:** [`docs/90-work/planning/storage-roadmap.md`](../../planning/storage-roadmap.md), [`docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../../initiatives/0003-sync-v2-rollout-and-v1-sunset.md), [`docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`](../../../04-governance/adr/0047-cloudsync-v1-410-gone.md). CloudSync engine закрито (#1929–#1941); v1 410-Gone від 2026-05-06; engine-tree видалено PR #052b/#052c.
+- **Storage / sync v2:** [`docs/90-work/planning/storage-roadmap.md`](../../planning/archive/storage-roadmap.md), [`docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md`](../../initiatives/archive/_0003-sync-v2-rollout-and-v1-sunset.md), [`docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`](../../../04-governance/adr/0047-cloudsync-v1-410-gone.md). CloudSync engine закрито (#1929–#1941); v1 410-Gone від 2026-05-06; engine-tree видалено PR #052b/#052c.
 - **Security:** [`docs/04-governance/security/audit-exceptions.md`](../../../04-governance/security/audit-exceptions.md), [`vulnerability-sla.md`](../../../04-governance/security/vulnerability-sla.md), [`nightly-audit.md`](../../../04-governance/security/nightly-audit.md), [`docs/04-governance/security/hardening/`](../../../04-governance/security/hardening).
 - **Governance:** [`docs/04-governance/governance/hard-rules.json`](../../../04-governance/governance/hard-rules.json) (23 правила, усі enforced), [`hard-rules-matrix.md`](../../../04-governance/governance/hard-rules-matrix.md), `pnpm lint:governance-sync`, `pnpm lint:codeowners`, `pnpm lint:hard-rules-registry`, freshness-dashboard.
 
@@ -84,7 +84,7 @@
 | `OptimizedImage`, `PullToRefreshIndicator`, `shared/lib/log` як dead-code (P2) | **Closed**                         | Усі під `@scaffolded` маркером з `@nextStep` JSDoc.                                                                                                                                                       |
 | AI Memory silent no-op при відсутньому `VOYAGE_API_KEY` (P2)                   | **By-design**                      | `AI_MEMORY_ENABLED=false` за замовчуванням — master-switch. Activation runbook вимагає key. Fail-loud guard — D3.                                                                                         |
 | `audit-exception` процес (P2)                                                  | **Closed**                         | [`docs/04-governance/security/audit-exceptions.md`](../../../04-governance/security/audit-exceptions.md) існує; SLA + nightly-audit у тому ж розділі.                                                     |
-| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../../planning/pr-plan-testing-devx-2026-05.md).                                                                                                          |
+| Visual-regression pgvector fallback (P2)                                       | **Tracked в pr-plan-testing-devx** | див. [planning/pr-plan-testing-devx-2026-05.md](../../planning/archive/pr-plan-testing-devx-2026-05.md).                                                                                                  |
 | Stryker removal decision-record (P2)                                           | **Closed**                         | Already covered: `docs/02-engineering/testing/README.md:12`, `2026-05-05-tests-review.md:40`, ADR-0020:235 містять explicit decision. Підтверджено second-pass executor 2026-05-15 — див. D2 ✅.          |
 | Admin seed-скрипт (P2)                                                         | **By-design (Better Auth)**        | Перша адмін-учетка створюється через web-форму + manual DB-update. Якщо команда хоче формалізувати — окремий PR.                                                                                          |
 
@@ -98,7 +98,7 @@
 
 **Original concern:** наскрізний integration test з фейковим Stripe webhook signature → DB insert → user role update. Поточне покриття на момент аудиту: 3 unit-тести на lifecycle (`subscription_started`/`renewed`/`canceled`) + checkout/portal endpoints. Не вистачало тесту, який ловить регресію signature-validation flow.
 
-**Suggested home (historical):** [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](../../planning/pr-plan-testing-devx-2026-05.md) — реалізовано як route-level supertest.
+**Suggested home (historical):** [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](../../planning/archive/pr-plan-testing-devx-2026-05.md) — реалізовано як route-level supertest.
 
 ### D2 — Stryker removal decision-record (P2) ✅ Closed
 

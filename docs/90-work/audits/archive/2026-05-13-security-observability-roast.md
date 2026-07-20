@@ -4,7 +4,7 @@
 > **Status:** Archived
 
 > **Cross-refs:**
-> [`2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — головне джерело попередніх P0/P1 рекомендацій (CSP, Pino redact, Sentry, contract-тести) ·
+> [`2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) — головне джерело попередніх P0/P1 рекомендацій (CSP, Pino redact, Sentry, contract-тести) ·
 > [`archive/2026-05-04-csp-disable-retrospective.md`](./2026-05-04-csp-disable-retrospective.md) — постмортем `CSP_DISABLE`-killswitch (A1–A5 closed 2026-05-06) ·
 > [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний аудит зі security-related блокерами ·
 > [`2026-05-07-full-app-regression-ux-audit.md`](./2026-05-07-full-app-regression-ux-audit.md) — регресійний UX-аудит (CSRF, CORS traceparent, CSP dev, Vercel Analytics bypass) ·

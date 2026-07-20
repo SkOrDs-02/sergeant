@@ -1,6 +1,6 @@
 # Sergeant — жорстка прожарка: маркетинг, монетизація, цінність продукту, growth
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Archived
 
 > **Скоуп:** маркетинг · монетизація · цінність продукту · потенціал розвитку.
@@ -8,7 +8,7 @@
 > **Сорс-комміт:** `f684d87e` (main, 2026-05-04).
 >
 > **Cross-refs:**
-> [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md) — canonical delivery PR-plan, що виходить з цієї прожарки ·
+> [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../planning/archive/pr-plan-revenue-2026-05.md) — canonical delivery PR-plan, що виходить з цієї прожарки ·
 > [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../initiatives/0010-revenue-first-launch.md) — reference initiative/decision frame ·
 > [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../../01-product/launch/business/01-monetization-and-pricing.md) — поточна модель ціноутворення (буде оновлена) ·
 > [`docs/01-product/launch/business/02-go-to-market.md`](../../../01-product/launch/business/02-go-to-market.md) — поточний GTM (буде звужений) ·

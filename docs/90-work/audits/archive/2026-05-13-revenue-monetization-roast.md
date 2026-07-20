@@ -1,10 +1,10 @@
 # Revenue, Monetization & Marketing Roast (2026-05-13)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Archived
 >
 > _Update 2026-05-13: P1-9 closed — `apps/web/src/core/billing/TrialBanner.tsx` scaffolded + mounted in `HubMainContent` banner stack._
-> **Canonical delivery owner:** [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../planning/pr-plan-revenue-2026-05.md). Keep this file as evidence/reference only.
+> **Canonical delivery owner:** [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../../planning/archive/pr-plan-revenue-2026-05.md). Keep this file as evidence/reference only.
 
 ## Cross-refs
 

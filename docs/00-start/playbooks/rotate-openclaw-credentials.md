@@ -2,7 +2,7 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Цей playbook більше не діє — OpenClaw GitHub-інтеграції немає. Лишається лише fail-closed guard проти залишкового `OPENCLAW_GITHUB_PAT` у prod (Hard Rule #20). Для загальної ротації секретів див. [`rotate-secrets.md`](./rotate-secrets.md). Файл лишено як історичний запис (лінкується immutable-ADR-0055).
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
@@ -20,7 +20,7 @@ Phase 2 (stack-pulse-2026-05 PR-06) видалив legacy PAT-flow: `OPENCLAW_GI
 - Primary surface: OpenClaw → GitHub auth (GitHub App-flow only after Phase 2).
 - Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `apps/server/src/env/env.ts` (assertStartupEnv hard-block), `docs/02-engineering/integrations/env-vars.md`.
 - Governing skill: `sergeant-deploy-and-observability` (secrets + env-vars rollout).
-- Governing ADR / план: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
+- Governing ADR / план: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md).
 
 ## Required context
 
@@ -158,4 +158,4 @@ flowchart TD
 - [`declare-incident.md`](./declare-incident.md) — escalation для emergency-кейсу.
 - [`docs/04-governance/governance/security-incident-policy.md`](../../04-governance/governance/security-incident-policy.md) — що рахується security-інцидентом, а що — звичайною ротацією.
 - ADR-0031 — оригінальна архітектура OpenClaw (PAT-епоха).
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.

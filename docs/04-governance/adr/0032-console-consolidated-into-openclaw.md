@@ -9,7 +9,7 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — оригінальна політика console + OpenClaw.
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + 7 топіків.
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md) — v0 scope, allowlist, audit-log.
-  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md) — phasing.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md) — phasing.
   - [`docs/02-engineering/architecture/apps-status-matrix.md`](../../02-engineering/architecture/apps-status-matrix.md) — console deployment row.
 
 ---
@@ -73,7 +73,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 ### Naming + deployment
 
-- Railway service для bot-процесу: `sergeant-openclaw` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Раніше сервіс називався `sergeant-hubchat` (epoch `tools/console`); перейменовано у PR-47 (Pain P10 з [`telegram-improvements-roadmap.md` §C.5](../../01-product/launch/tech/telegram-improvements-roadmap.md#c-5)). Рунбук самого rename-у — [`docs/03-operations/deploy/openclaw.md` §«Railway service rename runbook»](../../03-operations/deploy/openclaw.md).
+- Railway service для bot-процесу: `sergeant-openclaw` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Раніше сервіс називався `sergeant-hubchat` (epoch `tools/console`); перейменовано у PR-47 (Pain P10 з [`telegram-improvements-roadmap.md` §C.5](../../01-product/launch/archive/tech/telegram-improvements-roadmap.md#c-5)). Рунбук самого rename-у — [`docs/03-operations/deploy/openclaw.md` §«Railway service rename runbook»](../../03-operations/deploy/openclaw.md).
 - Логи: `console.log("Sergeant Console starting…")` лишається у `index.ts` під `if (botToken)` гілкою — спрощує grep-по-логах. Коли console-код буде видалено повністю, замінимо на `console.log("OpenClaw bot starting…")`.
 
 ## Consequences

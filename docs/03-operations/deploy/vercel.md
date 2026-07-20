@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface lives on Railway —
@@ -21,7 +21,7 @@ Why this specific path:
 1. **The Vercel project's "Root Directory" is `apps/web`.** Vercel reads
    `vercel.json` only from the configured Root Directory; any file outside
    that directory (notably a stray one at the monorepo root) is dead config
-   that silently ages out. The drift problem is [hardening card H7](../../04-governance/security/hardening/H7-vercel-config-drift.md);
+   that silently ages out. The drift problem is [hardening card H7](../../04-governance/security/hardening/archive/H7-vercel-config-drift.md);
    this page is the long-term remediation.
 2. **The build still spans the workspace.** Even though Root Directory is
    `apps/web`, `installCommand` and `buildCommand` in `vercel.json` run from
@@ -74,7 +74,7 @@ policy without a Report-Only canary first.
 
 ## Third-party iframe / cross-origin compatibility
 
-> Tracked by [M21 — `docs/04-governance/security/hardening/M21-coep-stripe-compatibility.md`](../../04-governance/security/hardening/M21-coep-stripe-compatibility.md).
+> Tracked by [M21 — `docs/04-governance/security/hardening/M21-coep-stripe-compatibility.md`](../../04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md).
 > This section is the canonical compatibility matrix for the
 > `Cross-Origin-Embedder-Policy: require-corp` posture set in
 > `apps/web/vercel.json`.
@@ -102,7 +102,7 @@ version or when COEP / CSP is widened.
 | Integration                  | Surface                                                      | Used today                                                    | COEP `require-corp` compatible | Notes / verification                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ---------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sentry SDK + session replay  | JS bundle from `*.sentry-cdn.com` / `*.sentry.io`; no iframe | Yes (`apps/web/src/core/observability/sentry.ts`)             | Yes                            | Loaded as a JS module; egress over `connect-src https://*.sentry.io https://*.ingest.sentry.io` — does not need CORP. Replay payloads ride the same `connect-src` channel.                                                                                                                                                                                                                                                                                                                                       |
-| PostHog SDK + session replay | JS bundle from `*.posthog.com`; no iframe                    | Yes (`apps/web/src/core/observability/posthog.ts`)            | Yes                            | Same as Sentry — JS module, no iframe. CSP `connect-src` allowlists `https://*.posthog.com` (covered by [L11](../../04-governance/security/hardening/L11-csp-monitoring-allowlist.md)).                                                                                                                                                                                                                                                                                                                          |
+| PostHog SDK + session replay | JS bundle from `*.posthog.com`; no iframe                    | Yes (`apps/web/src/core/observability/posthog.ts`)            | Yes                            | Same as Sentry — JS module, no iframe. CSP `connect-src` allowlists `https://*.posthog.com` (covered by [L11](../../04-governance/security/hardening/archive/L11-csp-monitoring-allowlist.md)).                                                                                                                                                                                                                                                                                                                  |
 | Mono webhook surface         | Server-side only (Railway)                                   | Yes                                                           | N/A                            | No browser iframe. Mono dashboards are accessed by the operator, not embedded.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | OpenFoodFacts (OFF) lookup   | `fetch` over HTTPS                                           | Yes (nutrition module)                                        | Yes                            | `connect-src` only; not an iframe.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Stripe Checkout / Elements   | Cross-origin iframe from `js.stripe.com`                     | **No** (planned, see `apps/web/src/core/PricingPage.tsx:12`)  | **No without changes**         | Stripe.js loads `js.stripe.com` then injects a `<iframe>` from `https://hooks.stripe.com` / `https://m.stripe.com`. These origins do not advertise CORP — under `require-corp` the iframe fails with `ERR_BLOCKED_BY_RESPONSE`. Decision when Stripe ships: switch COEP to `credentialless` for `/(.*)` _or_ scope `unsafe-none` to billing routes via a `vercel.json` source-glob. Record the decision in this matrix and add an [audit-exceptions.md](../../04-governance/security/audit-exceptions.md) entry. |
@@ -158,7 +158,7 @@ fails outright (e.g. rolldown cannot resolve a workspace package):
 
 ## Cross-references
 
-- [`../security/hardening/H7-vercel-config-drift.md`](../../04-governance/security/hardening/H7-vercel-config-drift.md)
+- [`../security/hardening/H7-vercel-config-drift.md`](../../04-governance/security/hardening/archive/H7-vercel-config-drift.md)
 - [`../security/hardening/C2-frontend-csp.md`](../../04-governance/security/hardening/C2-frontend-csp.md)
 - [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md)
 - [`../adr/0009-hosting-split-railway-vercel.md`](../../04-governance/adr/0009-hosting-split-railway-vercel.md)

@@ -3,7 +3,7 @@
 > **Last validated:** 2026-07-10 by @cursoragent (OpenClaw consumer path → external gateway). **Next review:** 2026-10-08.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
-> **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md).
+> **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md).
 
 > **Scaffolded, not live.** Today `INTERNAL_API_KEY` is a single shared bearer secret with **no** rotation tooling, **no** TTL, and **no** per-call audit. This runbook documents the _current_ manual procedure that works now, plus the _planned_ `internal_api_keys` table + `/internal-key` CLI from stack-pulse PR-27. Sections tagged **(planned — not yet live)** describe behaviour that does not exist in the codebase yet; update this doc to remove the tags after the implementing PR merges.
 
@@ -30,12 +30,12 @@ The bearer is defined once and consumed by a single shared guard:
 
 All four consume the same shared bearer via the `index.ts` guard (PR-27 §Context):
 
-| Consumer route group        | File                                                                   | What it serves                                                                                                                                                                    |
-| --------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces                                                                                                                             |
-| Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                                                                                                                                                         |
-| OpenClaw bot callback       | `apps/server/src/routes/internal/openclaw.ts`                          | 57 read/write/ritual/n8n/mute/reminder/seo routes (see [`docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`](../../90-work/audits/2026-08-XX-openclaw-internal-roast.md)) |
-| Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                                                                                                                                                       |
+| Consumer route group        | File                                                                   | What it serves                                                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces                                                                                                                                     |
+| Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                                                                                                                                                                 |
+| OpenClaw bot callback       | `apps/server/src/routes/internal/openclaw.ts`                          | 57 read/write/ritual/n8n/mute/reminder/seo routes (see [`docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`](../../90-work/audits/archive/2026-08-XX-openclaw-internal-roast.md)) |
+| Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                                                                                                                                                               |
 
 > n8n workflows (`ops/n8n-workflows/*`) are the largest external consumer of the bearer — ~25 workflows send `Authorization: Bearer <INTERNAL_API_KEY>` (see the HMAC rollout playbook). They are not a server route but must be re-pointed on every rotation.
 
@@ -60,7 +60,7 @@ Because it is a single shared secret, a rotation is a coordinated, brief-downtim
 
 ## Planned: `internal_api_keys` table + per-name keys (planned — not yet live)
 
-PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored hashed in Postgres. **None of this exists in the codebase yet.** Summary of the design (full detail in [PR-27](../../90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)):
+PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored hashed in Postgres. **None of this exists in the codebase yet.** Summary of the design (full detail in [PR-27](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md)):
 
 - **`internal_api_keys` table** — `key_hash` (bcrypt), unique `name` (`mono-webhook` / `n8n-alerts` / `openclaw-callback` / `admin-cli` / `bootstrap`), `scopes TEXT[]`, mandatory `expires_at` TTL, `created_by`, `last_used_at`, `revoked_at`.
 - **Hash-based lookup middleware** — the current `apps/server/src/http/requireInternalIp.ts`, renamed to `requireInternalApiKey.ts`: header `X-Internal-Api-Key: <raw-key>`, `bcrypt.compare` against the active row for the expected `name`, update `last_used_at` (throttled — only if `now - last_used > 60s`).
@@ -97,7 +97,7 @@ Planned rotation with dual-key (once live):
 - HMAC signing (defence-in-depth on top of the bearer): [`api-internal-hmac.md`](./api-internal-hmac.md)
 - General secret rotation: [`secret-rotation.md`](./secret-rotation.md)
 - Secret ownership / blast radius: [`secret-ownership-register.md`](./secret-ownership-register.md)
-- Source design: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)
-- OpenClaw internal-route surface (audit): [`docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`](../../90-work/audits/2026-08-XX-openclaw-internal-roast.md)
+- Source design: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md)
+- OpenClaw internal-route surface (audit): [`docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md`](../../90-work/audits/archive/2026-08-XX-openclaw-internal-roast.md)
 - Guard implementation: `apps/server/src/routes/internal/index.ts`
 - [OWASP API Security — Broken Authentication](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)

@@ -92,12 +92,12 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Archive (read-only / superseded)
 
-| Path                                                                               | What                                                                            |
-| ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| [`audits/archive/`](./90-work/audits/archive)                                      | Audits past their stabilization window; superseded historical scans             |
-| [`initiatives/archive/`](./90-work/initiatives/archive)                            | Initiatives 90+ days past `Closed` without regressions                          |
-| [`launch/product-os/sprint-retros/`](./01-product/launch/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
-| [`planning/archive/`](./90-work/planning/archive)                                  | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
+| Path                                                                                       | What                                                                            |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| [`audits/archive/`](./90-work/audits/archive)                                              | Audits past their stabilization window; superseded historical scans             |
+| [`initiatives/archive/`](./90-work/initiatives/archive)                                    | Initiatives 90+ days past `Closed` without regressions                          |
+| [`launch/product-os/sprint-retros/`](./01-product/launch/archive/product-os/sprint-retros) | Per-sprint launch retrospectives (frozen after sprint closes)                   |
+| [`planning/archive/`](./90-work/planning/archive)                                          | Historical roadmap journals (e.g. `dev-stack-roadmap` session log from 2026-04) |
 
 ## Adding new docs
 

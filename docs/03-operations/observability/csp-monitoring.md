@@ -1,11 +1,11 @@
 # CSP monitoring
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy
 звітів. Закриває останній відкритий пункт DoD у
-[`docs/90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md).
+[`docs/90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-26-csp-report-uri.md).
 
 ## Architecture
 
@@ -216,4 +216,4 @@ When an alert fires:
 - [MDN: CSP `report-to`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/report-to)
 - [W3C: Reporting API spec](https://www.w3.org/TR/reporting/)
 - [C2 hardening card](../../04-governance/security/hardening/C2-frontend-csp.md)
-- [PR-26 initiative](../../90-work/initiatives/stack-pulse-2026-05/pr-26-csp-report-uri.md)
+- [PR-26 initiative](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-26-csp-report-uri.md)

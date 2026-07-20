@@ -15,7 +15,7 @@ Parent session: див. URL у PR-description-і.
 
 ## Cross-refs (попередні аудити цієї теми)
 
-- [`2026-05-03-web-deep-dive/03-backend-and-performance.md`](../2026-05-03-web-deep-dive/03-backend-and-performance.md) — найбільший backend-deep-dive, 370 рядків, §4.1–§5.4.
+- [`2026-05-03-web-deep-dive/03-backend-and-performance.md`](2026-05-03-web-deep-dive/03-backend-and-performance.md) — найбільший backend-deep-dive, 370 рядків, §4.1–§5.4.
 - [`archive/2026-04-26-sergeant-audit-devin.md`](./2026-04-26-sergeant-audit-devin.md) — генеральний аудит, 30/31 пунктів закрито.
 - [`2026-05-07-app-audit.md`](./2026-05-07-app-audit.md) — повний аудит застосунку, P0/P1/P2 матриця у §10.
 - [`../tech-debt/backend.md`](../../tech-debt/backend.md) — running tech-debt log (606 рядків), більшість P0 уже DONE.

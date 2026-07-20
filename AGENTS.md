@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -206,7 +206,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Verification before PR
 
-`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
+`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test`, which fans both pipelines out in parallel — see [D-3 у pr-plan-testing-devx-2026-05.md](docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md)). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
 
 ## Deployment & test users
 

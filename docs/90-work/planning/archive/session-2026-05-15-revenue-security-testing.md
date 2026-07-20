@@ -35,7 +35,7 @@ uses the same criteria as the previous selection: P-level, revenue launch impact
 security exposure, dependency unblocking, and effort-to-impact.
 
 1. **Revenue PR-5: Activation v2 web-side capture**
-   - Source: [`pr-plan-revenue-2026-05.md`](../pr-plan-revenue-2026-05.md#pr-5--p1--activation-v2-web-side-capture)
+   - Source: [`pr-plan-revenue-2026-05.md`](pr-plan-revenue-2026-05.md#pr-5--p1--activation-v2-web-side-capture)
    - Why next: PR-4 makes paywall surfaces real; now the product needs
      `ACTIVATION_V2_HIT` capture to correlate activation with paid conversion.
 
@@ -55,7 +55,7 @@ security exposure, dependency unblocking, and effort-to-impact.
      analytics path and prevents web-vitals/debug logging from becoming a leak.
 
 5. **Revenue PR-6: landing page scaffold + email capture**
-   - Source: [`pr-plan-revenue-2026-05.md`](../pr-plan-revenue-2026-05.md#pr-6--p1--landing-page-scaffold-phase-61--email-capture)
+   - Source: [`pr-plan-revenue-2026-05.md`](pr-plan-revenue-2026-05.md#pr-6--p1--landing-page-scaffold-phase-61--email-capture)
    - Why next: after checkout, portal, paywall, and activation measurement, the
      public acquisition loop needs `/` plus email capture to make launch traffic
      measurable.

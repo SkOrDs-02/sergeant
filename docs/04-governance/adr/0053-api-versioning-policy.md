@@ -7,10 +7,10 @@
 - **Related:**
   - [ADR-0018](./0018-api-versioning-policy.md)
   - [`docs/02-engineering/architecture/api-v1.md`](../../02-engineering/architecture/api-v1.md)
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../../90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
   - [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../../02-engineering/notes/spikes/2026-05-api-v1-usage.md)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0008 — Platform hardening: rate-limit, health endpoints, Renovate, supply-chain
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Closed (5/5 phases merged 2026-05-04; carry-overs у § Що НЕ увійшло)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
@@ -24,7 +24,7 @@
 - Auth-flow атакували brute-force (~ 200 req/sec за 5 хв) — rate-limit спрацював, але без `Retry-After` клієнти retry-ять у тугому циклі. Кращий UX — `Retry-After: 60`.
 - За 2026-04 був CVE у `@anthropic-ai/sdk` (medium); ми його взяли на третій день після disclosure. Renovate / Dependabot би в auto-PR за годину.
 - Supply-chain: ми вже pin-нули actions по SHA, але **тільки під час** Q4 2025 incident response. Немає policy. `pnpm audit` running-у в CI нема.
-- Готуємось до growth (FTUX rollout згідно [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/product-os/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
+- Готуємось до growth (FTUX rollout згідно [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../../01-product/launch/archive/product-os/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
 
 ## Скоуп
 

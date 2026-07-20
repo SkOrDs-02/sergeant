@@ -1,6 +1,6 @@
 # Access Policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Canonical policy for privileged access in Sergeant. This policy is optimized for a Founder+1 operating model: minimal ceremony, explicit ownership, and zero reliance on tribal memory.
@@ -51,7 +51,7 @@ Canonical policy for privileged access in Sergeant. This policy is optimized for
 
 ## Runtime security knobs
 
-- **No runtime CSP kill switch.** As of 2026-05-04 ([M1](./hardening/M1-csp-disable-runtime-flag.md)),
+- **No runtime CSP kill switch.** As of 2026-05-04 ([M1](hardening/archive/M1-csp-disable-runtime-flag.md)),
   `CSP_DISABLE` env-var is removed from `apps/server/src/http/security.ts`.
   Disabling Content-Security-Policy in production now requires a code change +
   redeploy (PR + CI), which enforces a git audit trail and four-eyes review.

@@ -10,9 +10,9 @@
 
 ## Cross-refs
 
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md`](../2026-05-03-web-deep-dive/00-overview.md) — master 18-item roadmap (web deep-dive).
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](../2026-05-03-web-deep-dive/01-frontend-ergonomics.md) — §3.1–§3.12 з ергономікою (форми, DataState, toast, modal, safe-area, PWA, i18n, reduced-motion, PTR, shortcuts, dark mode).
-- [`docs/90-work/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](../2026-05-03-web-deep-dive/round-13-burndown-sprint.md) — sprint plan (Superseded — статуси перенесені в `00-overview.md` § 11.5 round 14).
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md`](2026-05-03-web-deep-dive/00-overview.md) — master 18-item roadmap (web deep-dive).
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](2026-05-03-web-deep-dive/01-frontend-ergonomics.md) — §3.1–§3.12 з ергономікою (форми, DataState, toast, modal, safe-area, PWA, i18n, reduced-motion, PTR, shortcuts, dark mode).
+- [`docs/90-work/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](2026-05-03-web-deep-dive/round-13-burndown-sprint.md) — sprint plan (Superseded — статуси перенесені в `00-overview.md` § 11.5 round 14).
 - [`docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — execution tracker для базових UX-покращень (форми, dark mode, sheet gestures).
 - [`docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md) — генеральний UX/UI аудит 2026-04-28 (historical record).
 - [`docs/90-work/audits/2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md) — UX-прожарка post-onboarding day 0-7.
@@ -36,7 +36,7 @@
 
 ### F1: `toast.error(...)` без `action` — P0 [FIXED]
 
-**З 2026-05-03 §3.4** ([`01-frontend-ergonomics.md:60-90`](../2026-05-03-web-deep-dive/01-frontend-ergonomics.md)) — Toast-policy анти-патерн.
+**З 2026-05-03 §3.4** ([`01-frontend-ergonomics.md:60-90`](2026-05-03-web-deep-dive/01-frontend-ergonomics.md)) — Toast-policy анти-патерн.
 
 **Поточний стан коду** (2026-05-13):
 

@@ -2,7 +2,7 @@
 
 > **Status:** Active
 > **Last touched:** 2026-07-20 by @cursor (docs-drift: Phase 1/2 code shipped; gap section refreshed). **Next review:** 2026-10-17.
-> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](./storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops.
+> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](archive/storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops.
 
 ---
 
@@ -231,8 +231,8 @@ pnpm check
 - [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) — **операційна інструкція** (фази, агенти, метрики, E2E)
 - [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) — Phase 2 cloud/local handoff
 - [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) — SQLite SoT на клієнті (виконано)
-- [`storage-roadmap.md`](./storage-roadmap.md) — historical 13 stages
-- [`storage-roadmap/01-overview.md`](./storage-roadmap/01-overview.md) — цільова архітектура sync
+- [`storage-roadmap.md`](archive/storage-roadmap.md) — historical 13 stages
+- [`storage-roadmap/01-overview.md`](archive/storage-roadmap/01-overview.md) — цільова архітектура sync
 - [`data-exchange-storage-audit.md`](../../02-engineering/architecture/data-exchange-storage-audit.md) — audit (§4.1 оновлено 2026-07-10)
 - [ADR-0004](../../04-governance/adr/0004-cloudsync-lww-conflict-resolution.md) — LWW
 - [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md) — retention + NOTIFY

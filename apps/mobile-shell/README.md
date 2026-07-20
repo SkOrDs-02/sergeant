@@ -1,6 +1,6 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
@@ -116,7 +116,7 @@ WebView мовчки би пропустив http-трафік незалежн�
 і на Linux-боксах розробників (`node --test apps/mobile-shell/scripts/__tests__/check-info-plist.test.mjs`).
 Per-domain винятки (`NSExceptionDomains`) дозволені — додавай їх разом
 із записом у [`docs/04-governance/security/audit-exceptions.md`](../../docs/04-governance/security/audit-exceptions.md).
-Деталі — у [`docs/04-governance/security/hardening/L12-ios-app-transport-security.md`](../../docs/04-governance/security/hardening/L12-ios-app-transport-security.md).
+Деталі — у [`docs/04-governance/security/hardening/L12-ios-app-transport-security.md`](../../docs/04-governance/security/hardening/archive/L12-ios-app-transport-security.md).
 
 ## Що НЕ зроблено
 

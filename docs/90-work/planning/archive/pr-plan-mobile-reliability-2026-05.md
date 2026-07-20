@@ -7,7 +7,7 @@ PR-розклад на closeout відкритих/partial item-ів з прож
 [`docs/90-work/audits/2026-05-13-mobile-reliability-ux-roast.md`](../../audits/archive/2026-05-13-mobile-reliability-ux-roast.md)
 для скоупу `apps/mobile/**` (Expo 52 + RN 0.76) та `apps/mobile-shell/**`
 (Capacitor 7 wrapper). **Out-of-scope:** SQLite-міграція Stage 8/9
-(трекається у [`storage-roadmap.md`](../storage-roadmap.md) — окремі сесії).
+(трекається у [`storage-roadmap.md`](storage-roadmap.md) — окремі сесії).
 Canonical mobile debt owner: [`docs/90-work/tech-debt/mobile.md`](../../tech-debt/mobile.md). Keep this file as source PR-card context only.
 
 ## Cross-refs
@@ -17,7 +17,7 @@ Canonical mobile debt owner: [`docs/90-work/tech-debt/mobile.md`](../../tech-deb
 - **Mobile-strategy ADR:** [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor primary, Expo parallel; жоден стек не deprecate-иться до окремого ADR на feature parity (≥18/22 у `docs/02-engineering/architecture/platforms.md`).
 - **Dual-track initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../initiatives/archive/_0002-mobile-platform-decision.md) — sunset-дати **не active commitments** на час 0010 revenue launch; quarterly recount shell-tax трекається тут.
 - **Surface AGENTS:** [`apps/mobile/AGENTS.md`](../../../../apps/mobile/AGENTS.md) — NativeWind, MMKV-only, Expo Router gotchas; flaky-tests T7 verification (`mobile-flaky-verify.yml`).
-- **Sprint context:** [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](../sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).
+- **Sprint context:** [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](sprint-roadmap-q2q3-2026.md) (§1.1 тех-борг, T7 verification, lighthouse budget).
 
 ## Глобальний sequencing
 
@@ -233,7 +233,7 @@ PR-10 (S,   Shell-tax recount)       (parallel; updates 0002 trend)
 
 ## Out-of-scope (зафіксовано, не у цьому плані)
 
-- **SQLite Stage 8/9 migrations** — okремий трек у [`docs/90-work/planning/storage-roadmap.md`](../storage-roadmap.md) (Stage 8/9 dual-write quartet, MMKV tombstones, residual-import).
+- **SQLite Stage 8/9 migrations** — okремий трек у [`docs/90-work/planning/storage-roadmap.md`](storage-roadmap.md) (Stage 8/9 dual-write quartet, MMKV tombstones, residual-import).
 - **M9 — TS 6 bump для mobile + console** — `BLOCKED on Expo SDK 53` (tech-debt M9). Не actionable до SDK 53 release; track only.
 - **AGENTS.md sub-tree refresh** — `apps/mobile/AGENTS.md` Last validated 2026-05-13, next review 2026-08-11; recount-нуто разом з прожаркою. Окремого PR не потребує.
 - **`docs/02-engineering/architecture/platforms.md` feature-parity recount** — частково покривається PR-10, але full re-audit (≥18/22 ✅) — окремий ADR-trigger PR коли cell-count перейде поріг.

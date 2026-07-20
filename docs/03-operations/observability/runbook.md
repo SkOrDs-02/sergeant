@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -493,7 +493,7 @@ SBOM (Software Bill of Materials) — це machine-readable список **вс�
 2. Запусти `trivy sbom sergeant-v<tag>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а.
 3. Це **швидше** за full re-scan і відповідає на питання "is prod affected by this CVE" без redeploy.
 
-**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](../../04-governance/security/hardening/I3-sbom-generation.md) Phase 3 Open).
+**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](../../04-governance/security/hardening/archive/I3-sbom-generation.md) Phase 3 Open).
 
 ## RagQualityGateDegraded
 

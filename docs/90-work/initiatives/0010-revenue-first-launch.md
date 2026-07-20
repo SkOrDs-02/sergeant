@@ -273,7 +273,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
   - **Variant B (test):** goal-first single-screen wizard: «Яку фінансову мету хочете досягти?» (3 варіанти: «Зекономити ₴X», «Стати фінансово грамотним», «Контролювати витрати») → одразу Mono OAuth + 5 categorize → dashboard.
 - Перенести fitness/nutrition/routine модулі в «cross-sell» картки на dashboard (для обох variants).
 - PostHog події: `ACTIVATION_V2_HIT`, `ONBOARDING_GOAL_PICKED`, `ONBOARDING_VIBE_PICKED` з dimension `variant`.
-- Carry-over від [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/product-os/ftux-sprint-plan.md) S5.
+- Carry-over від [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/archive/product-os/ftux-sprint-plan.md) S5.
 - **Decision rule (через 2 тижні після rollout):** залишити variant з вищим `activation_v2` rate. Втрачений variant видалити окремим cleanup-PR.
 
 **Залежить від:** PR 5.1.
@@ -394,10 +394,10 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - **Поточна pricing-модель (буде оновлена):** [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md).
 - **GTM (буде звужений):** [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md).
 - **Технічний skeleton білінгу:** [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md).
-- **FTUX carry-over:** [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/product-os/ftux-sprint-plan.md).
+- **FTUX carry-over:** [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/archive/product-os/ftux-sprint-plan.md).
 - **Mobile picks:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](./archive/_0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../../.agents/skills/better-auth-best-practices/SKILL.md).
-- **OpenClaw roadmap (active parallel, not in scope):** [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md).
+- **OpenClaw roadmap (active parallel, not in scope):** [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.
 
 ---
@@ -521,7 +521,7 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 
 > **Update 2026-07-20 — знято зі scaffold-only.** Код пішов далі за цей історичний запис: `liqpayProvider`/`plataProvider` реалізовані (не `NotImplementedError`-stub), додано `registry.ts` (`providerRegistry`) і `plata.ts` (mig 081/082). Resolver перейменовано на `getEnabledProviders({country})` і **для `UA` повертає лише `liqpay`+`plata` — Stripe свідомо dormant, ніколи не для українців** (`provider.ts:126-142`), тобто «resolver у проді завжди повертає stripe» нижче — застаріле. Лишилось власнику (ops, не код): ФОП для LiqPay-мерчанта + `LIQPAY_ENABLED`/`LIQPAY_PUBLIC_KEY`/`LIQPAY_PRIVATE_KEY` у prod.
 
-Закриває `P1-5` (LiqPay placeholder) у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../planning/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
+Закриває `P1-5` (LiqPay placeholder) у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../planning/archive/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
 
 - `apps/server/src/modules/billing/provider.ts` — `BillingProvider` interface (checkout / portal / status / webhook verify+process) + `getProviderForCountry({ country, liqpayEnabled })` resolver. Правило: UA + `LIQPAY_ENABLED` → `liqpay`; інакше → `stripe`.
 - `apps/server/src/modules/billing/liqpay.ts` — `liqpayProvider` stub реалізує `BillingProvider`; кожен метод кидає `NotImplementedError` (async-методи через rejected Promise). `verifyWebhookSignature` — sync throw.

@@ -9,7 +9,7 @@
   - [ADR-0031 — OpenClaw v0 Telegram co-founder](./0031-openclaw-v0-telegram-cofounder.md) — DM bot baseline.
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md) — `tools/openclaw` is OpenClaw's home process.
   - [ADR-0036 — OpenClaw write-tools with approval](./0036-openclaw-write-tools-with-approval.md) — inline-keyboard approval flow whose latency we're reducing.
-  - [`docs/01-product/launch/tech/openclaw-roadmap.md` §3.5](../../01-product/launch/tech/openclaw-roadmap.md) — pain "approval-кнопки 2-3 с".
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md` §3.5](../../01-product/launch/archive/tech/openclaw-roadmap.md) — pain "approval-кнопки 2-3 с".
   - [`docs/03-operations/deploy/openclaw.md`](../../03-operations/deploy/openclaw.md) — Railway env vars + healthcheck.
 
 ---

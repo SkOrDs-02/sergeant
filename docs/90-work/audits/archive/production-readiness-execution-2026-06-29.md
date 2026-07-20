@@ -5,7 +5,7 @@
 > **Last validated:** 2026-07-19 by Codex. **Next review:** 2026-10-17.
 > **Status:** Closed — execution snapshot завершено; нові прогони створюють окремий запис.
 
-Canonical loop: [`production-readiness-testing-loop.md`](../production-readiness-testing-loop.md).
+Canonical loop: [`production-readiness-testing-loop.md`](production-readiness-testing-loop.md).
 
 ## Context
 

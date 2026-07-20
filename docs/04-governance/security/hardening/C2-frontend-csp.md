@@ -1,12 +1,12 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-06-19 by @Skords-01. **Next review:** 2026-09-17.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
 
 | Field              | Value                                                                                             |
 | ------------------ | ------------------------------------------------------------------------------------------------- |
 | **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                       |
-| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                         |
+| **Sprint**         | [Sprint 1](archive/sprint-1.md)                                                                   |
 | **Owner**          | frontend                                                                                          |
 | **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                               |
 | **Status**         | Phase 1 closed — frontend Report-Only canary live; Phase 2 (strict/enforce + nonce) tracked below |
@@ -259,7 +259,7 @@ Diff vs Phase-1 Report-Only header in the new enforce header:
 
 ## Cross-references
 
-- [docs/04-governance/security/hardening/sprint-1.md](./sprint-1.md) — sprint context.
-- [docs/04-governance/security/hardening/C1-mono-webhook-secret-in-url.md](./C1-mono-webhook-secret-in-url.md) — обидві Critical.
+- [docs/04-governance/security/hardening/sprint-1.md](archive/sprint-1.md) — sprint context.
+- [docs/04-governance/security/hardening/C1-mono-webhook-secret-in-url.md](archive/C1-mono-webhook-secret-in-url.md) — обидві Critical.
 - [MDN: CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) — reference policy syntax.
 - [OWASP Cheat Sheet: Content Security Policy](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html).

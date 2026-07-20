@@ -1,6 +1,6 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
 >
 > **Update 2026-07-10:** in-app landing (`LandingPage` на `/`) і billing scaffold shipped; public launch блокується legal/live Stripe env/cookie consent, не відсутністю коду. Окремий marketing-домен `sergeant.com.ua` — ще TBD.
@@ -316,7 +316,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 - [`docs/01-product/launch/business/02-go-to-market.md`](../business/02-go-to-market.md)
 - [`docs/01-product/launch/business/04-launch-readiness.md`](../business/04-launch-readiness.md)
 - [`docs/01-product/launch/product-os/ftux-master-tracker.md`](../product-os/ftux-master-tracker.md)
-- [`docs/01-product/launch/product-os/paywall-implementation-plan.md`](../product-os/paywall-implementation-plan.md)
+- [`docs/01-product/launch/product-os/paywall-implementation-plan.md`](../archive/product-os/paywall-implementation-plan.md)
 
 ### Architecture / ADRs
 

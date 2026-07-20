@@ -4,7 +4,7 @@
 > **Status:** Archived
 
 > **Owner:** @SkOrDs-02 · **Created:** 2026-05-02 ·
-> **Roadmap reference:** [`docs/90-work/planning/storage-roadmap/02-stages-0-3.md` PR #022](../../../90-work/planning/storage-roadmap/02-stages-0-3.md#stage-3--spike-на-routine) ·
+> **Roadmap reference:** [`docs/90-work/planning/storage-roadmap/02-stages-0-3.md` PR #022](../../../90-work/planning/archive/storage-roadmap/02-stages-0-3.md#stage-3--spike-на-routine) ·
 > **Branch:** `devin/1777743313-spike-routine-sqlite-v2` (library) →
 > `devin/1777752068-fix-adr-0031-readme-index` and `devin/1777753778-strict-ts-docs-sync`
 > for follow-up panel landings → this branch (`devin/1777755997-close-routine-sqlite-spike`)
@@ -31,7 +31,7 @@ whole-blob `/v1/sync` path; the SPIKE only writes a parallel SQLite
 mirror inside a runtime `if (flag) {…}` branch.
 
 The SPIKE answers a specific go/no-go question for **Stage 3** of
-[`docs/90-work/planning/storage-roadmap/02-stages-0-3.md`](../../../90-work/planning/storage-roadmap/02-stages-0-3.md#stage-3--spike-на-routine).
+[`docs/90-work/planning/storage-roadmap/02-stages-0-3.md`](../../../90-work/planning/archive/storage-roadmap/02-stages-0-3.md#stage-3--spike-на-routine).
 A "go" signal unlocks Stage 4 (per-module migration of the rest of the
 app — habits, scratchpad, focus, settings — onto the same pattern).
 A "no-go" signal makes us delete the SPIKE library and stop on

@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/90-work/initiatives/archive/_0008-platform-hardening.md`](../../90-work/initiatives/archive/_0008-platform-hardening.md) §Phase 3
-  - [`docs/04-governance/security/hardening/H2-dependabot.md`](../security/hardening/H2-dependabot.md) (Dependabot setup card)
+  - [`docs/04-governance/security/hardening/H2-dependabot.md`](../security/hardening/archive/H2-dependabot.md) (Dependabot setup card)
   - [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md)
   - [`renovate.json`](../../../renovate.json), [`.github/dependabot.yml`](../../../.github/dependabot.yml)
 

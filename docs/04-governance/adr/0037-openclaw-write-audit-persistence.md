@@ -10,7 +10,7 @@
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md)
   - [ADR-0033 — OpenClaw multi-personas + `/council`](./0033-openclaw-multi-personas-and-council.md)
   - [ADR-0036 — OpenClaw write-tools with approval flow](./0036-openclaw-write-tools-with-approval.md) — Phase 4 baseline.
-  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md) — Phase 4.5 section.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md) — Phase 4.5 section.
 
 ---
 

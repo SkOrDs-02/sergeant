@@ -1,6 +1,6 @@
 # CodeQL — SAST taint-flow analysis для TypeScript
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 ## Огляд
@@ -9,7 +9,7 @@ Workflow [`.github/workflows/codeql.yml`](../../../.github/workflows/codeql.yml)
 запускає [CodeQL](https://codeql.github.com/) — статичний taint-flow
 analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
 `apps/server`, `tools/openclaw`, `apps/mobile`, `packages/**`). Закриває
-[`hardening/I1-codeql-workflow.md`](./hardening/I1-codeql-workflow.md)
+[`hardening/I1-codeql-workflow.md`](hardening/archive/I1-codeql-workflow.md)
 і завершує SAST/SCA trio:
 
 | Інструмент      | Шар                                                                                    | Тригер                                                                   |
@@ -19,7 +19,7 @@ analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
 | **OSV-Scanner** | Lockfile залежностей (SCA по всьому npm tree)                                          | nightly 03:00 UTC ([`nightly-audit.md`](./nightly-audit.md))             |
 
 Це доповнює `eslint-plugin-security` (див.
-[`hardening/M11-eslint-plugin-security.md`](./hardening/M11-eslint-plugin-security.md))
+[`hardening/M11-eslint-plugin-security.md`](hardening/archive/M11-eslint-plugin-security.md))
 — ESLint ловить очевидні locally-syntactic патерни за O(file), CodeQL
 ходить cross-procedure / cross-module taint-flow за O(repo).
 
@@ -83,11 +83,11 @@ analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
    в окремому PR, alert закривається автоматично після resolve.
 4. Baseline ≤ 5 алертів (audit verification): якщо перший scheduled run
    видає більше — кожен додатковий триаж робиться у в окремому PR в межах
-   sprint-у згідно з [`hardening/I1-codeql-workflow.md`](./hardening/I1-codeql-workflow.md).
+   sprint-у згідно з [`hardening/I1-codeql-workflow.md`](hardening/archive/I1-codeql-workflow.md).
 
 ## Зв'язок з іншими інструментами
 
-- [`hardening/M11-eslint-plugin-security.md`](./hardening/M11-eslint-plugin-security.md)
+- [`hardening/M11-eslint-plugin-security.md`](hardening/archive/M11-eslint-plugin-security.md)
   — ESLint per-PR review-time signal (швидко, syntactic, on every save).
 - [`container-scan.md`](./container-scan.md) — Trivy для container CVE.
 - [`nightly-audit.md`](./nightly-audit.md) — OSV-Scanner для lockfile CVE.

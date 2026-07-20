@@ -260,6 +260,6 @@ pnpm docs:check-links               # markdown internal links (HR-4 overlap)
 - [`docs/04-governance/governance/rules/10-lifecycle-markers.md`](../../../04-governance/governance/rules/10-lifecycle-markers.md) — canonical body для `@scaffolded` маркерів (use-case у DC-2).
 - [`docs/04-governance/governance/rules/18-module-size-discipline-600.md`](../../../04-governance/governance/rules/18-module-size-discipline-600.md) — Hard Rule #18 (DC-5 AuthPage decision).
 - [`docs/90-work/initiatives/archive/_0013-module-decomposition-round-2.md`](../../initiatives/archive/_0013-module-decomposition-round-2.md) — Sprint-2 backlog для DC-5 delete-branch fallback.
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md`](../../initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md) — origin для HR-1/HR-2/HR-3 budget ratchet.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md`](../../initiatives/stack-pulse-2026-05/archive/pr-01-unify-env-modules.md) — origin для HR-1/HR-2/HR-3 budget ratchet.
 - [`scripts/knip-respects-scaffolded.mjs`](../../../../scripts/knip-respects-scaffolded.mjs), [`scripts/check-env-single-source.mjs`](../../../../scripts/check-env-single-source.mjs), [`scripts/check-imports.mjs`](../../../../scripts/check-imports.mjs), [`scripts/check-hard-rules-registry.mjs`](../../../../scripts/check-hard-rules-registry.mjs).
 - [`knip.json`](../../../../knip.json), [`packages/eslint-plugin-sergeant-design/index.js`](../../../../packages/eslint-plugin-sergeant-design/index.js).

@@ -10,7 +10,7 @@
 > **Замінює (як SSOT для FTUX):**
 >
 > - [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
-> - [`docs/01-product/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — sprint-roadmap (історія, frozen).
+> - [`docs/01-product/launch/ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md) — sprint-roadmap (історія, frozen).
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
 > **Cross-refs:**
@@ -119,7 +119,7 @@
 | S6.12 | _(P2-14 на streaks-as-mechanism)_              | ⏳ Open | _Sprint 6 carryover — частково покривається PR-09 (outcome-card)_                                                                            |
 | S6.13 | _(P2-19 на push permission timing)_            | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
 
-> Деталі sprint-items та status оригінально жили в [`ftux-sprint-plan.md`](./ftux-sprint-plan.md) §3-7a — там залишається **frozen reference**. Оновлення статусів — тут.
+> Деталі sprint-items та status оригінально жили в [`ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md) §3-7a — там залишається **frozen reference**. Оновлення статусів — тут.
 
 ---
 
@@ -169,12 +169,12 @@
 
 ### 3.4. Хвиля 4 — Paywall + Polish (Week 5-6, 4 PR)
 
-| PR        | Назва                                                                                                                                                                     | LOC             | Deps                                   | Метрика                                                                 |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------- | ----------------------------------------------------------------------- |
-| **PR-19** | docs(paywall): UX placement sketch + decision doc → [`paywall-ux-placement.md`](./paywall-ux-placement.md)                                                                | ~280 doc        | —                                      | Paywall placement clearly defined ✅ landed                             |
-| **PR-20** | feat(paywall): in-product placement (post-FTUX moment) — **plan landed** [`paywall-implementation-plan.md`](./paywall-implementation-plan.md); impl gated на 0010 phase 3 | ~510 (4 sub-PR) | PR-19, 0010 phase 3 (`usePlan()` hook) | Paywall conversion ≥ 3% за перші 30 днів (start-clock = real flag-flip) |
-| **PR-21** | feat(mobile): FTUX parity sweep                                                                                                                                           | ~350            | PR-09, PR-11, PR-15                    | Mobile FTUX coverage ≥ 90%                                              |
-| **PR-22** | docs(agents): TOC + read-time annotations + quick-reference                                                                                                               | ~180            | —                                      | New-agent first-PR success rate (subjective)                            |
+| PR        | Назва                                                                                                                                                                                         | LOC             | Deps                                   | Метрика                                                                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------- | ----------------------------------------------------------------------- |
+| **PR-19** | docs(paywall): UX placement sketch + decision doc → [`paywall-ux-placement.md`](./paywall-ux-placement.md)                                                                                    | ~280 doc        | —                                      | Paywall placement clearly defined ✅ landed                             |
+| **PR-20** | feat(paywall): in-product placement (post-FTUX moment) — **plan landed** [`paywall-implementation-plan.md`](../archive/product-os/paywall-implementation-plan.md); impl gated на 0010 phase 3 | ~510 (4 sub-PR) | PR-19, 0010 phase 3 (`usePlan()` hook) | Paywall conversion ≥ 3% за перші 30 днів (start-clock = real flag-flip) |
+| **PR-21** | feat(mobile): FTUX parity sweep                                                                                                                                                               | ~350            | PR-09, PR-11, PR-15                    | Mobile FTUX coverage ≥ 90%                                              |
+| **PR-22** | docs(agents): TOC + read-time annotations + quick-reference                                                                                                                                   | ~180            | —                                      | New-agent first-PR success rate (subjective)                            |
 
 ### 3.5. Module-level інфраструктура — вже в `main` (FTUX-relevant context)
 
@@ -435,7 +435,7 @@ slos:
 - **Cold-start outcome-card:** додаємо behind FF (PR-09). Incremental: 4 bento лишаються, але TODO + Progress прибираються.
 - **Empty-state A/B:** 3 варіант��, PostHog FF (PR-10).
 - **A11y manual:** Devin — web (Linux + Orca). Founder — mobile (1× recording). PR-16.
-- **Paywall:** sketch session founder ↔ Devin → [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19, merged #1989) → impl plan [`paywall-implementation-plan.md`](./paywall-implementation-plan.md) (PR-20 plan, merged #1993). Selected placement: **post-first-real-entry sheet** (soft, non-blocking, FF-gated `paywall_post_ftux_v1`); 14-day Pro trial без payment method; 3 copy variants (α outcome-anchored / β disciplined / γ self-sovereignty) для A/B post-launch. Conversion-метрика — `STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%` за 30-day cohort (start-clock = real `paywall_post_ftux_v1=on` flag-flip у production). **Path A selected (2026-05-06, founder)** — full impl розбитий на 4 sub-PR (~510 LOC, `PR-20a/b/c/d`), стартує тільки після merge 0010 phase 3 (`usePlan()` RQ-hook у `apps/web/src/core/billing/hooks/usePlan.ts`). Path B (FF-gated UI-stub) і Path C (defer) — зняті з розгляду (re-decision вимагає append у [`paywall-implementation-plan.md` §10](./paywall-implementation-plan.md#10-path-decision-audit-trail-append-only)). Next-action owner: Devin → моніторить merge-event 0010 phase 3 → відкриває PR-20a draft.
+- **Paywall:** sketch session founder ↔ Devin → [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19, merged #1989) → impl plan [`paywall-implementation-plan.md`](../archive/product-os/paywall-implementation-plan.md) (PR-20 plan, merged #1993). Selected placement: **post-first-real-entry sheet** (soft, non-blocking, FF-gated `paywall_post_ftux_v1`); 14-day Pro trial без payment method; 3 copy variants (α outcome-anchored / β disciplined / γ self-sovereignty) для A/B post-launch. Conversion-метрика — `STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%` за 30-day cohort (start-clock = real `paywall_post_ftux_v1=on` flag-flip у production). **Path A selected (2026-05-06, founder)** — full impl розбитий на 4 sub-PR (~510 LOC, `PR-20a/b/c/d`), стартує тільки після merge 0010 phase 3 (`usePlan()` RQ-hook у `apps/web/src/core/billing/hooks/usePlan.ts`). Path B (FF-gated UI-stub) і Path C (defer) — зняті з розгляду (re-decision вимагає append у [`paywall-implementation-plan.md` §10](../archive/product-os/paywall-implementation-plan.md#10-path-decision-audit-trail-append-only)). Next-action owner: Devin → моніторить merge-event 0010 phase 3 → відкриває PR-20a draft.
 
 ### Документація
 
@@ -537,7 +537,7 @@ slos:
 > **Frozen references** (NE редагуємо вище ↑ — вищі відмітки оновлюються тут).
 
 - [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
-- [`docs/01-product/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — оригінальний sprint-plan з повним PR-розписом (Sprint 0-5 + 6 cleanup batch). Деталі implementation per sprint-item — там. Має redirect-banner на цей master tracker.
+- [`docs/01-product/launch/ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md) — оригінальний sprint-plan з повним PR-розписом (Sprint 0-5 + 6 cleanup batch). Деталі implementation per sprint-item — там. Має redirect-banner на цей master tracker.
 - `reports/sergeant-onboarding-ux-roast-2026-05-05.md` (поза репо) — мега-прожарка 2026-05-05. Інкорпорована в §8.4.
 - `reports/sergeant-pr-plan-2026-05-05.md` (поза репо) — PR-план. Інкорпорований в §3.
 
@@ -548,7 +548,7 @@ slos:
 ## Editing rules (для майбутніх агентів)
 
 1. **Редагуй тут** — оновлення статусів, нові findings (post-freeze), нові decisions.
-2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](./ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
+2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
 3. **Status legend:**
    - ✅ Closed — shipped to `main`
    - 🚧 Partial / Mitigation — частково або в роботі

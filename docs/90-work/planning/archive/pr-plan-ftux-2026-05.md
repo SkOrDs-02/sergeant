@@ -303,7 +303,7 @@ gantt
 
 ## Що НЕ покрито цим планом
 
-- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/01-product/launch/product-os/paywall-implementation-plan.md`](../../../01-product/launch/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
+- **Paywall (PR-19/PR-20)** — окрема ініціатива у [`docs/01-product/launch/product-os/paywall-implementation-plan.md`](../../../01-product/launch/archive/product-os/paywall-implementation-plan.md). PR-20 чекає Stripe scaffold (0010 phase 3 — `usePlan()` RQ-hook).
 - **What's new modal (PR-18)** — in-flight, окремий surface.
 - **SQLite migration (Stage 8/9)** — поза скоупом per parent prompt і audit `§ Що НЕ покрито`.
 - **Goal-first wizard A/B (PR-13 / S5.1)** — у master tracker Wave 2, але прив'язано до результатів PR-11 cohort-analysis. Не дублюємо тут.

@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
@@ -27,7 +27,7 @@ cp .env.example .env
 pnpm dev:db
 ```
 
-### `pnpm install --frozen-lockfile` як дефолт ([L14](./docs/04-governance/security/hardening/L14-pnpm-frozen-lockfile-dev.md))
+### `pnpm install --frozen-lockfile` як дефолт ([L14](docs/04-governance/security/hardening/archive/L14-pnpm-frozen-lockfile-dev.md))
 
 CI завжди ставить deps через `--frozen-lockfile` — тобто падає, якщо `pnpm-lock.yaml` хоч на байт відрізняється від того, що зафіксовано в репі. Це supply-chain hardening: `pnpm install` без прапорця може мовчки переписати lockfile (наприклад, після `pnpm add foo` без `pnpm-lock.yaml` у staged-files), і регресія/malicious-bump просочиться у feature-гілку без рев'ю diff-а в lock-файлі.
 
@@ -49,7 +49,7 @@ pnpm update -r
 
 Якщо `pnpm install` (без `--frozen-lockfile`) залишив `git diff pnpm-lock.yaml` непустим, а ти не додавав/оновлював deps свідомо — значить, drift. Скинь зміни (`git checkout -- pnpm-lock.yaml`) і перерозберись, чому твоє локальне дерево не сходиться з lockfile (типово — нова версія `pnpm` сама, або забутий `pnpm install --frozen-lockfile` після `git pull`).
 
-Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](./docs/04-governance/security/hardening/L1-uuid-override.md)).
+Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](docs/04-governance/security/hardening/archive/L1-uuid-override.md)).
 
 ### Worktrees: тримай на тому ж томі, що й pnpm store
 
@@ -75,7 +75,7 @@ pnpm dev:web
 
 ### Локальний secret-scan (gitleaks)
 
-Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни — це той самий сканер, що і у CI (`.github/workflows/ci.yml :: secret-scan`, [I5](./docs/04-governance/security/hardening/I5-pre-commit-secret-detection.md)). Catching секретів локально (перед тим, як коміт потрапить у reflog) дешевше, ніж на PR-boundary — attacker timeline стартує з моменту локального коміту.
+Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни — це той самий сканер, що і у CI (`.github/workflows/ci.yml :: secret-scan`, [I5](docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md)). Catching секретів локально (перед тим, як коміт потрапить у reflog) дешевше, ніж на PR-boundary — attacker timeline стартує з моменту локального коміту.
 
 Встанови `gitleaks` один раз:
 
@@ -124,14 +124,14 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](./docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](docs/90-work/initiatives/stack-pulse-2026-05/archive/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`. Migration-only PR теж тригерить Detox через `apps/server/src/migrations/**` — schema-change майже завжди передує перейменуванню serializer-а.
 - `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR торкає `apps/server/src/routes/**` або `apps/server/src/migrations/**`, Detox iOS + Android jobs запускаються автоматично (stack-pulse PR-18 / M2: response-shape change без зміни `apps/mobile/**` ламала mobile у prod). Якщо тести впадуть, перегенеруй `packages/api-client/**` типи у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
 - `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
-- `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](./docs/90-work/planning/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
+- `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
 
 Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.
 
@@ -167,7 +167,7 @@ Playbooks - це канонічні покрокові рецепти викон
 Husky `pre-commit` запускає два кроки послідовно:
 
 1. `lint-staged` з пайплайнами для staged-файлів (таблиця нижче).
-2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](./docs/04-governance/security/hardening/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
+2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).
 
 | Pattern                      | Команди                                                                  |
 | ---------------------------- | ------------------------------------------------------------------------ |

@@ -10,7 +10,7 @@
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md)
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md)
-  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/tech/openclaw-roadmap.md) — Phase 2.5 section.
+  - [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md) — Phase 2.5 section.
 
 ---
 
