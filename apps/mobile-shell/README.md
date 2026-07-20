@@ -161,11 +161,12 @@ Per-domain винятки (`NSExceptionDomains`) дозволені — дода
   `src/index.ts` готовий і `App.addListener('appUrlOpen', ...)`
   викликає callback, але коннект з `useNavigate()` з
   `@sergeant/web` ще не прокинутий.~~ **Зроблено**: bridge
-  реалізований через `window.__sergeantShellNavigate` —
-  `ShellDeepLinkBridge` (`apps/web/src/core/app/ShellDeepLinkBridge.tsx`)
-  виставляє navigate-хук після маунту роутера і drain-ить cold-start
-  чергу з `window.__sergeantShellDeepLinkQueue`. Свідомо без
-  `options.navigate`, щоб уникнути out-of-component `history.pushState`.
+  реалізований через `BroadcastChannel("sergeant-shell-deeplink")` +
+  pre-mount queue — `ShellDeepLinkBridge`
+  (`apps/web/src/core/app/ShellDeepLinkBridge.tsx`) слухає канал і
+  drain-ить cold-start чергу `window.__sergeantShellDeepLinkQueue`.
+  Свідомо без `options.navigate`, щоб уникнути out-of-component
+  `history.pushState`.
 - **iOS safe-area + splash race.** CSS `env(safe-area-inset-*)` з
   web-side покриває 99% кейсів, але якщо splash візьметься
   триматись довше 3с (дивись `SplashScreen.hide({ fadeOutDuration })`

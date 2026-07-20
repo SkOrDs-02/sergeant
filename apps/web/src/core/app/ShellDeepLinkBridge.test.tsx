@@ -1,13 +1,16 @@
 /** @vitest-environment jsdom */
 /**
  * Colocated shell smoke for `ShellDeepLinkBridge`. Full BroadcastChannel /
- * coalescing behaviour is covered in `test/integration/shell-deeplink.test.tsx`;
- * here we pin the browser no-op contract and unsafe-path rejection at the
- * component boundary.
+ * queue behaviour is covered in `test/integration/shell-deeplink.test.tsx`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  SHELL_DEEPLINK_BRIDGE_READY_KEY,
+  SHELL_DEEPLINK_CHANNEL,
+  SHELL_DEEPLINK_QUEUE_KEY,
+} from "@sergeant/shared";
 
 const { isCapacitorMock } = vi.hoisted(() => ({
   isCapacitorMock: vi.fn(() => false),
@@ -39,8 +42,6 @@ function renderBridge(initialEntries: string[] = ["/"]) {
 describe("ShellDeepLinkBridge — browser shell", () => {
   beforeEach(() => {
     isCapacitorMock.mockReturnValue(false);
-    delete (window as Window & { __sergeantShellNavigate?: unknown })
-      .__sergeantShellNavigate;
   });
 
   afterEach(() => {
@@ -51,10 +52,6 @@ describe("ShellDeepLinkBridge — browser shell", () => {
   it("is a no-op in the browser and leaves navigation unchanged", () => {
     const { getByTestId } = renderBridge();
     expect(getByTestId("loc").textContent).toBe("/");
-    expect(
-      (window as Window & { __sergeantShellNavigate?: unknown })
-        .__sergeantShellNavigate,
-    ).toBeUndefined();
   });
 });
 
@@ -63,12 +60,13 @@ describe("ShellDeepLinkBridge — Capacitor install", () => {
     isCapacitorMock.mockReturnValue(true);
     delete (
       window as Window & {
-        __sergeantShellNavigate?: unknown;
-        __sergeantShellDeepLinkQueue?: unknown;
+        [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: unknown;
+        [SHELL_DEEPLINK_QUEUE_KEY]?: unknown;
       }
-    ).__sergeantShellNavigate;
-    delete (window as Window & { __sergeantShellDeepLinkQueue?: unknown })
-      .__sergeantShellDeepLinkQueue;
+    )[SHELL_DEEPLINK_BRIDGE_READY_KEY];
+    delete (window as Window & { [SHELL_DEEPLINK_QUEUE_KEY]?: unknown })[
+      SHELL_DEEPLINK_QUEUE_KEY
+    ];
   });
 
   afterEach(async () => {
@@ -79,44 +77,50 @@ describe("ShellDeepLinkBridge — Capacitor install", () => {
     vi.restoreAllMocks();
   });
 
-  it("exposes the backward-compat navigate shim on window", () => {
+  it("sets bridge-ready flag on window after mount", () => {
     renderBridge();
     expect(
-      typeof (
-        window as Window & { __sergeantShellNavigate?: (p: string) => void }
-      ).__sergeantShellNavigate,
-    ).toBe("function");
+      (window as Window & { [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: boolean })[
+        SHELL_DEEPLINK_BRIDGE_READY_KEY
+      ],
+    ).toBe(true);
   });
 
-  it("navigates to a whitelisted path via the window shim", async () => {
+  it("navigates to a whitelisted path via BroadcastChannel", async () => {
     const { getByTestId } = renderBridge();
-    const nav = (
-      window as Window & { __sergeantShellNavigate?: (p: string) => void }
-    ).__sergeantShellNavigate;
-    act(() => {
-      nav?.("/finyk/budgets");
+    const sender = new BroadcastChannel(SHELL_DEEPLINK_CHANNEL);
+    sender.postMessage({
+      protocolVersion: 1,
+      url: "/finyk/budgets",
+      source: "shell",
+      timestamp: Date.now(),
     });
     await waitFor(() =>
       expect(getByTestId("loc").textContent).toBe("/finyk/budgets"),
     );
+    sender.close();
   });
 
   it("rejects unsafe paths without navigating", async () => {
     const { getByTestId } = renderBridge();
-    const nav = (
-      window as Window & { __sergeantShellNavigate?: (p: string) => void }
-    ).__sergeantShellNavigate;
-    act(() => {
-      nav?.("javascript:alert(1)");
-      nav?.("//evil.example");
+    const sender = new BroadcastChannel(SHELL_DEEPLINK_CHANNEL);
+    sender.postMessage({
+      protocolVersion: 1,
+      url: "javascript:alert(1)",
+      source: "shell",
+      timestamp: Date.now(),
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
     expect(getByTestId("loc").textContent).toBe("/");
+    sender.close();
   });
 
   it("drains the cold-start queue on mount", async () => {
-    (
-      window as Window & { __sergeantShellDeepLinkQueue?: string[] }
-    ).__sergeantShellDeepLinkQueue = ["/welcome"];
+    (window as Window & { [SHELL_DEEPLINK_QUEUE_KEY]?: string[] })[
+      SHELL_DEEPLINK_QUEUE_KEY
+    ] = ["/welcome"];
     const { getByTestId } = renderBridge();
     await waitFor(() =>
       expect(getByTestId("loc").textContent).toBe("/welcome"),

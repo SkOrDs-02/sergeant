@@ -66,7 +66,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 ### 3.3 Capacitor shell (`apps/mobile-shell`)
 
 - **Стан:** `stabilize` (MVP) — Capacitor 7 wrapper навколо `@sergeant/web`. ADR-0052 фіксує: **Capacitor primary** до Expo feature parity, T₀/T₁/T₂ sunset — НЕ active commitments.
-- **Готове:** bearer-auth у Keychain/EncryptedSharedPrefs (PR #505), native barcode (`@capacitor-mlkit/barcode-scanning`, PR #504), status-bar/splash/keyboard/deep-links (PR #506), native push (`@capacitor/push-notifications`, PR #512+#524), Android hardware-back → web-history. Deep-link bridge через `window.__sergeantShellNavigate`.
+- **Готове:** bearer-auth у Keychain/EncryptedSharedPrefs (PR #505), native barcode (`@capacitor-mlkit/barcode-scanning`, PR #504), status-bar/splash/keyboard/deep-links (PR #506), native push (`@capacitor/push-notifications`, PR #512+#524), Android hardware-back → web-history. Deep-link bridge через BroadcastChannel + pre-mount queue (PR-29).
 - **Release pipeline:**
   - **Android:** [`.github/workflows/mobile-shell-android-release.yml`](../../../../.github/workflows/mobile-shell-android-release.yml) — повний AAB (Play) + APK (sideload) з `SERGEANT_RELEASE_*` env-secrets. Signing config у [`apps/mobile-shell/android/app/build.gradle`](../../../../apps/mobile-shell/android/app/build.gradle), ProGuard/R8 ввімкнено.
   - **iOS:** [`.github/workflows/mobile-shell-ios-release.yml`](../../../../.github/workflows/mobile-shell-ios-release.yml) — **scaffold готовий**, але без Apple-секретів job логує `::warning::iOS release secrets not configured` і падає у unsigned-simulator-фолбек. Setup-контракт — [`docs/02-engineering/mobile/shell.md` § Release — iOS](../../../02-engineering/mobile/shell.md#release--ios).

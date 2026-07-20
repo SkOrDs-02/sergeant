@@ -3,17 +3,17 @@
   "version": 1,
   "generated_at": "2026-07-20",
   "sourceHashes": {
-    "knowledge-graph": "320587cd44a187555b2fbe8d92e16a5634ea66abbeeb00fdbae810c66ee16da8",
+    "knowledge-graph": "5d3dacf5b1ae5833a9000c7268ef87f434974fd39f08bdd4cfd9c998116a1012",
     "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
   },
   "counts": {
     "adr": 72,
     "export": 286,
     "hard-rule": 26,
-    "initiative": 7,
+    "initiative": 6,
     "playbook": 60,
     "skill": 23,
-    "total": 474
+    "total": 473
   },
   "chunks": [
     {
@@ -3705,17 +3705,6 @@
       "status": "Active",
       "text": "Зведена матриця hardening-карток · initiative:hardening-matrix · initiative · Active · Зведена статистика · Джерело 1 — stack-pulse-2026-05 · Critical (C1–C6) · High (H1–H10) · Medium (M1–M12) · Low (L1–L12) · Джерело 2 — \\0008-platform-hardening · Джерело 3 — \\0009-agent-os-hardening · Recent PRs",
       "contentHash": "cc6dcb906a6a4a52414eaed47090d27f4fa7fe70e05f1f33386d3da8dd75fad6"
-    },
-    {
-      "id": "initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel.md",
-      "line": 1,
-      "title": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel",
-      "tier": "core",
-      "status": "Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window).",
-      "text": "PR-29: `window.__sergeantShellNavigate` global → BroadcastChannel · initiative:stack-pulse-2026-05/pr-29-shell-navigate-broadcast-channel · initiative · Active — PR-1 Closed [#2526](https://github.com/Skords-01/Sergeant/pull/2526). **PR-2 pending** (drop `window.__sergeantShellNavigate` global shim; earliest **2026-08-11** per 3-month compat window). · PR-29: window.sergeantShellNavigate global → BroadcastChannel · Контекст · Scope · 1. BroadcastChannel-based bridge · 2. Web side · 3. Shell side · 4. Pre-mount queue · 5. Backward-compat shim · Out of scope · Acceptance criteria (DoD) · Тести · Rollout · Risks & mitigations · Touchpoints (file:line) · Refs",
-      "contentHash": "1d557dcec60c0b5e072b0e16ef73b5941c3192118080dd11bd4ea5b128a006f7"
     },
     {
       "id": "playbook:access-governance",

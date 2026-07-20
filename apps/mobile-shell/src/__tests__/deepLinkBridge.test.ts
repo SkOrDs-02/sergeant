@@ -1,18 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  SHELL_DEEPLINK_BRIDGE_READY_KEY,
+  SHELL_DEEPLINK_QUEUE_KEY,
+} from "@sergeant/shared";
 
 /**
  * Тести deep-link bridge: як `initNativeShell()` передає parsed-path у
- * web-шар. Три сценарії preference-у:
- *   1. `options.navigate` (явний callback) — має бути single source of
- *      truth, shell не ліз у `window.*` bridge.
- *   2. `window.__sergeantShellNavigate` (React-встановлений bridge) —
- *      викликається, якщо options.navigate відсутній.
- *   3. Буферизація в `window.__sergeantShellDeepLinkQueue` — cold start,
- *      коли ні callback, ні bridge ще не встановлені.
- *
- * Покриваємо також resilience: якщо bridge-виклик кидає, shell лише
- * warn-ає у console — listener `appUrlOpen` повинен лишитись живим.
+ * web-шар через BroadcastChannel + pre-mount queue.
  */
 
 type CapacitorMocks = {
@@ -31,8 +26,8 @@ type CapacitorMocks = {
 type UrlOpenCallback = (event: { url: string }) => void;
 
 type BridgeWindow = Window & {
-  __sergeantShellNavigate?: (path: string) => void;
-  __sergeantShellDeepLinkQueue?: string[];
+  [SHELL_DEEPLINK_QUEUE_KEY]?: string[];
+  [SHELL_DEEPLINK_BRIDGE_READY_KEY]?: boolean;
 };
 
 function installCapacitorMocks(): CapacitorMocks {
@@ -84,8 +79,8 @@ async function captureUrlOpenCallback(
 
 function resetBridgeGlobals(): void {
   const w = window as BridgeWindow;
-  delete w.__sergeantShellNavigate;
-  delete w.__sergeantShellDeepLinkQueue;
+  delete w[SHELL_DEEPLINK_QUEUE_KEY];
+  delete w[SHELL_DEEPLINK_BRIDGE_READY_KEY];
 }
 
 async function waitForBroadcast(
@@ -113,44 +108,36 @@ afterEach(() => {
 });
 
 describe("deep-link bridge — preference order", () => {
-  it("`options.navigate` має пріоритет над `window.__sergeantShellNavigate`", async () => {
+  it("`options.navigate` short-circuits BroadcastChannel and queue", async () => {
     const mocks = installCapacitorMocks();
-    const w = window as BridgeWindow;
-    const bridgeNav = vi.fn();
-    w.__sergeantShellNavigate = bridgeNav;
-
     const optionsNav = vi.fn();
     const cb = await captureUrlOpenCallback(mocks, { navigate: optionsNav });
     cb({ url: "com.sergeant.shell://profile" });
 
     expect(optionsNav).toHaveBeenCalledTimes(1);
     expect(optionsNav).toHaveBeenCalledWith("/profile");
-    expect(bridgeNav).not.toHaveBeenCalled();
+    expect((window as BridgeWindow)[SHELL_DEEPLINK_QUEUE_KEY]).toBeUndefined();
   });
 
-  it("`window.__sergeantShellNavigate` викликається, якщо `options.navigate` відсутній", async () => {
-    const mocks = installCapacitorMocks();
-    const w = window as BridgeWindow;
-    const bridgeNav = vi.fn();
-    w.__sergeantShellNavigate = bridgeNav;
-
-    const cb = await captureUrlOpenCallback(mocks);
-    cb({ url: "com.sergeant.shell://nutrition/scan" });
-
-    expect(bridgeNav).toHaveBeenCalledTimes(1);
-    expect(bridgeNav).toHaveBeenCalledWith("/nutrition/scan");
-    // Черга не використовується, коли bridge уже встановлений.
-    expect(w.__sergeantShellDeepLinkQueue).toBeUndefined();
-  });
-
-  it("без bridge — path потрапляє у `__sergeantShellDeepLinkQueue`", async () => {
+  it("cold start — path потрапляє у queue коли bridge ще не ready", async () => {
     const mocks = installCapacitorMocks();
     const w = window as BridgeWindow;
 
     const cb = await captureUrlOpenCallback(mocks);
     cb({ url: "com.sergeant.shell://finyk" });
 
-    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/finyk"]);
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual(["/finyk"]);
+  });
+
+  it("bridge ready + BroadcastChannel — не пише у queue", async () => {
+    const mocks = installCapacitorMocks();
+    const w = window as BridgeWindow;
+    w[SHELL_DEEPLINK_BRIDGE_READY_KEY] = true;
+
+    const cb = await captureUrlOpenCallback(mocks);
+    cb({ url: "com.sergeant.shell://nutrition/scan" });
+
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toBeUndefined();
   });
 
   it("множинні cold-start події акумулюються у черзі (FIFO)", async () => {
@@ -162,17 +149,14 @@ describe("deep-link bridge — preference order", () => {
     cb({ url: "com.sergeant.shell://fizruk" });
     cb({ url: "com.sergeant.shell://routine#today" });
 
-    expect(w.__sergeantShellDeepLinkQueue).toEqual([
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual([
       "/finyk",
       "/fizruk",
       "/routine#today",
     ]);
   });
 
-  it("коли bridge встановлюється ПІСЛЯ кількох подій, черга не очищається shell-ем (це робить web)", async () => {
-    // Shell — чесний producer: він тільки пише у чергу. Консьюмер
-    // (web ShellDeepLinkBridge) — єдиний, хто її drain-ить. Так ми
-    // не гонимося з React-render-ом і не програємо події двічі.
+  it("shell не drain-ить queue — це робить web bridge", async () => {
     const mocks = installCapacitorMocks();
     const w = window as BridgeWindow;
 
@@ -180,17 +164,10 @@ describe("deep-link bridge — preference order", () => {
     cb({ url: "com.sergeant.shell://finyk" });
     cb({ url: "com.sergeant.shell://fizruk" });
 
-    // Тепер web «встановлюється».
-    const bridgeNav = vi.fn();
-    w.__sergeantShellNavigate = bridgeNav;
-
-    // Чергу shell НЕ чистить — це контракт.
-    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/finyk", "/fizruk"]);
-
-    // Нова подія ПІСЛЯ install-у — йде напряму у bridge, минаючи чергу.
+    w[SHELL_DEEPLINK_BRIDGE_READY_KEY] = true;
     cb({ url: "com.sergeant.shell://routine" });
-    expect(bridgeNav).toHaveBeenCalledWith("/routine");
-    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/finyk", "/fizruk"]);
+
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual(["/finyk", "/fizruk"]);
   });
 });
 
@@ -198,15 +175,14 @@ describe("deep-link bridge — відкидання чужих URL", () => {
   it("чужа схема (https://…) НЕ попадає ні в navigate, ні в чергу", async () => {
     const mocks = installCapacitorMocks();
     const w = window as BridgeWindow;
-    const bridgeNav = vi.fn();
-    w.__sergeantShellNavigate = bridgeNav;
+    const optionsNav = vi.fn();
 
-    const cb = await captureUrlOpenCallback(mocks);
+    const cb = await captureUrlOpenCallback(mocks, { navigate: optionsNav });
     cb({ url: "https://sergeant.app/home" });
     cb({ url: "javascript:alert(1)" });
 
-    expect(bridgeNav).not.toHaveBeenCalled();
-    expect(w.__sergeantShellDeepLinkQueue).toBeUndefined();
+    expect(optionsNav).not.toHaveBeenCalled();
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toBeUndefined();
   });
 });
 
@@ -227,43 +203,20 @@ describe("deep-link bridge — resilience", () => {
     expect(warnArg).toContain("options.navigate");
   });
 
-  it("якщо `window.__sergeantShellNavigate` кидає — shell warn-ає і НЕ фоллбеч-ить у чергу (подія вже «доставлена»)", async () => {
-    const mocks = installCapacitorMocks();
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const w = window as BridgeWindow;
-    w.__sergeantShellNavigate = vi.fn(() => {
-      throw new Error("router-err");
-    });
-
-    const cb = await captureUrlOpenCallback(mocks);
-    expect(() => cb({ url: "com.sergeant.shell://profile" })).not.toThrow();
-
-    expect(warnSpy).toHaveBeenCalled();
-    const warnArg = String(warnSpy.mock.calls[0]?.[0]);
-    expect(warnArg).toContain("__sergeantShellNavigate");
-    // Черга лишається undefined — ми не дублюємо у fallback, бо
-    // напівдоставлена подія (виняток вже ПІСЛЯ виклику) виглядає для
-    // shell-а як доставлена. Повторювати її у чергу → ризик подвійної
-    // навігації при наступному install-і bridge-а.
-    expect(w.__sergeantShellDeepLinkQueue).toBeUndefined();
-  });
-
   it("існуюча (preserved) черга не перезаписується — pushes акумулюються", async () => {
-    // Страхуємось від бажання ненароком зробити `w.queue = [path]`,
-    // яке стирало б раніше накопичені cold-start події.
     const mocks = installCapacitorMocks();
     const w = window as BridgeWindow;
-    w.__sergeantShellDeepLinkQueue = ["/welcome"];
+    w[SHELL_DEEPLINK_QUEUE_KEY] = ["/welcome"];
 
     const cb = await captureUrlOpenCallback(mocks);
     cb({ url: "com.sergeant.shell://profile" });
 
-    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/welcome", "/profile"]);
+    expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual(["/welcome", "/profile"]);
   });
 });
 
-describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
-  it("publishes parsed path on `sergeant-shell-deeplink` channel alongside window-global fallback", async () => {
+describe("deep-link bridge — BroadcastChannel (PR-29)", () => {
+  it("publishes parsed path on `sergeant-shell-deeplink` channel", async () => {
     const mocks = installCapacitorMocks();
     const bcReceiver = new BroadcastChannel("sergeant-shell-deeplink");
     const received: Array<{
@@ -298,7 +251,7 @@ describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
     }
   });
 
-  it("does NOT post to BroadcastChannel when `options.navigate` is provided (test-injection short-circuit)", async () => {
+  it("does NOT post to BroadcastChannel when `options.navigate` is provided", async () => {
     const mocks = installCapacitorMocks();
     const bcReceiver = new BroadcastChannel("sergeant-shell-deeplink");
     const received: unknown[] = [];
@@ -320,23 +273,17 @@ describe("deep-link bridge — BroadcastChannel canonical path (PR-29)", () => {
     }
   });
 
-  it("falls back gracefully when BroadcastChannel constructor is absent in the WebView", async () => {
-    // Симулюємо iOS <15.4 / дуже стару Android System WebView: API
-    // повністю відсутня у globalThis. dispatchDeepLink має тихо
-    // пройти через window-global path.
+  it("BC-less WebView — queue fallback замість BroadcastChannel", async () => {
     const mocks = installCapacitorMocks();
     const originalBC = globalThis.BroadcastChannel;
     delete (globalThis as { BroadcastChannel?: unknown }).BroadcastChannel;
 
     try {
       const w = window as BridgeWindow;
-      const bridgeNav = vi.fn();
-      w.__sergeantShellNavigate = bridgeNav;
-
       const cb = await captureUrlOpenCallback(mocks);
       cb({ url: "com.sergeant.shell://welcome" });
 
-      expect(bridgeNav).toHaveBeenCalledWith("/welcome");
+      expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual(["/welcome"]);
     } finally {
       (
         globalThis as { BroadcastChannel?: typeof BroadcastChannel }

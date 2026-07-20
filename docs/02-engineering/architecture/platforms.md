@@ -1,6 +1,6 @@
 # 🎯 Статус трьох поверхонь — Web / RN mobile / Capacitor shell
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active.  
 > **Mobile strategy:** [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor shell **primary**, Expo/RN **parallel** (без активного sunset ADR-0010). Історичний sunset schedule — лише в [`mobile/shell.md`](../mobile/shell.md) § Historical sunset note.  
 > **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md).
@@ -132,7 +132,7 @@
 **Auth & Deep links:**
 
 - Bearer у `auth-storage.ts`, barcode у `barcodeNative.ts` — підключаються динамічним `import()` за guard-ом `isCapacitor()`
-- Deep links: shell дублює parsed path через два канали — стандартний `BroadcastChannel("sergeant-shell-deeplink")` (canonical з PR-29 [#2526](https://github.com/Skords-01/Sergeant/pull/2526)) і `window.__sergeantShellNavigate` (backward-compat shim до PR-2 у серпні 2026), з буфером `window.__sergeantShellDeepLinkQueue` для cold-start; web-bridge `apps/web/src/core/app/ShellDeepLinkBridge.tsx` слухає обидва і coalesce-ить дублі по `(path, timestamp)` у вікні 500 ms
+- Deep links: shell диспатчить parsed path через `BroadcastChannel("sergeant-shell-deeplink")` (PR-29) з pre-mount queue `window.__sergeantShellDeepLinkQueue` для cold-start / BC-less WebView; web-bridge `apps/web/src/core/app/ShellDeepLinkBridge.tsx` слухає канал, drain-ить queue і coalesce-ить дублі у вікні 500 ms
 - HTTPS Universal Links / App Links теж підтримуються — див. `docs/02-engineering/mobile/capacitor-deep-links.md`
 
 **Android:**

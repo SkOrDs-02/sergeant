@@ -1,7 +1,7 @@
 # PR-39: `tools/openclaw` Anthropic SDK 0.36.3 → latest
 
 > **Last validated:** 2026-05-14 by Devin. **Next review:** ніколи (read-only архів).
-> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`.
+> **Status:** Closed — merged [#2527](https://github.com/Skords-01/Sergeant/pull/2527). `tools/openclaw` decommissioned з репо (2026-07); SDK v1 bump N/A.
 
 > **Path-rename note (2026-05-13):** Каталог `tools/console/` перейменовано на `tools/openclaw/` (workspace `@sergeant/console` → `@sergeant/openclaw`) через PR [#2573](https://github.com/Skords-01/Sergeant/pull/2573) (commit [`eea1ce84`](https://github.com/Skords-01/Sergeant/commit/eea1ce84)). Всі path-посилання нижче відображають **новий** layout; історичні `tools/console/...` paths у git log до травня-2026 — це той самий код.
 
