@@ -1,11 +1,11 @@
 # Web: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.
 
-**Поточний стан (2026-07-10, wave 4):** **0 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Усі колишні винятки знято; нижче — історія хвиль і патерни, які замінили disable.
+**Поточний стан (2026-07-10, wave 4):** **0 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Усі колишні винятки знято; нижче — історія хвиль і патерни, які замінили disable. Живий список production-disable — у mobile: [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md).
 
 ---
 

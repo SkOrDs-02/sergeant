@@ -26,7 +26,7 @@
 **Відкритий actionable backlog (пріоритет):**
 
 1. Web Hard Rule #18 — декомпозиція `ManualExpenseSheet.tsx` + `TxRow.tsx` (окремі PR).
-2. Group 3 — eslint-disable / exhaustive-deps catalog sync.
+2. Group 3 — eslint-disable burndown (не catalog-sync: web exhaustive-deps = 0; живі 9 — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md)).
 3. Mobile coverage floor 30 → ratchet; M7 Sentry DSN / M9 Expo 53 — blocked.
 4. Coolify env-var audit trail — owner-decision.
 5. Push APNs/FCM credentials — external-infra.
@@ -68,14 +68,14 @@
 
 ## Група 3 — eslint-disable burndown — P2-P3, 4-5 PR (оновлено 2026-07-20)
 
-Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design (`no-eyebrow-drift` ~37, `prefer-kyiv-time` ~22+, `no-restricted-syntax`, `no-raw-storage-key`, `no-cyrillic-jsx-literal`, `exhaustive-deps` **9**).
+Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design (`no-eyebrow-drift` ~37, `prefer-kyiv-time` ~22+, `no-restricted-syntax`, `no-raw-storage-key`, `no-cyrillic-jsx-literal`, `exhaustive-deps` **9** у **mobile** — web catalog closed на 0).
 
 Реальні цілі фіксу:
 
 1. **P1:** недокументовані `security/detect-non-literal-fs-filename` / non-null assertion без WHY — security-pass.
 2. `@typescript-eslint/no-non-null-assertion` — недокументовані сайти → guard / `?.`.
 3. `no-restricted-syntax` + `no-raw-storage-key` — міграція на дозволений API або WHY-коментар.
-4. **Catalog-sync (docs-only):** `docs/02-engineering/architecture/apps-web-exhaustive-deps.md` vs **9** live disable-сайтів — синхронізувати каталог.
+4. ~~**Catalog-sync (docs-only):** web exhaustive-deps~~ — **Done** (web=0); live list — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 
