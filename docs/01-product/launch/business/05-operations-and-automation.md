@@ -1,6 +1,6 @@
 # 05. Operations і автоматизація: як контролювати, відстежувати, організовувати
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > Як адмініструвати весь стек, не вигорівши: 6 операційних зон, правило «3 вкладки», daily/weekly ритуал, автоматизація через n8n + OpenClaw.
@@ -50,14 +50,14 @@
 
 ### Зона 1 — Product
 
-| Що               | Де                                   | Алерт у Telegram           |
-| ---------------- | ------------------------------------ | -------------------------- |
-| Frontend health  | Vercel deployments                   | Build failed               |
+| Що               | Де                                                             | Алерт у Telegram           |
+| ---------------- | -------------------------------------------------------------- | -------------------------- |
+| Frontend health  | Vercel deployments                                             | Build failed               |
 | Backend uptime   | Coolify health + Sentry (Prometheus `/metrics` paused 2026-06) | API 5xx > 1 % за 5 хв      |
-| Errors           | Sentry (web + server)                | New issue / spike > 10/хв  |
-| Performance      | Vercel Speed Insights, Lighthouse CI | Core Web Vitals деградація |
-| PWA install rate | PostHog                              | < 5 % за тиждень           |
-| API latency      | Prometheus `http_request_duration`   | p95 > 1 с протягом 10 хв   |
+| Errors           | Sentry (web + server)                                          | New issue / spike > 10/хв  |
+| Performance      | Vercel Speed Insights, Lighthouse CI                           | Core Web Vitals деградація |
+| PWA install rate | PostHog                                                        | < 5 % за тиждень           |
+| API latency      | Prometheus `http_request_duration`                             | p95 > 1 с протягом 10 хв   |
 
 **Daily check:** Vercel dashboard (1 deployment column) → Sentry Issues (Today) → готово.
 **Weekly:** прогнати по 5 ключових ендпоінтах метрики p50/p95/p99, переглянути top-5 Sentry issues.
@@ -91,13 +91,13 @@
 
 #### Incident playbook — Revenue
 
-| Symptom                         | Action                                                                   | Owner | Escalation                                |
-| ------------------------------- | ------------------------------------------------------------------------ | ----- | ----------------------------------------- |
-| MRR drop > 10 % WoW             | Stripe → filter by cancelled; перевірити cancel survey responses         | ти    | Якщо системна причина — P0 issue          |
-| Spike failed payments (> 5/day) | Stripe → перевірити чи проблема з PSP; якщо ні — перевірити webhook flow | ти    | Звʼязатись зі Stripe support              |
-| Dispute/chargeback              | Stripe → зібрати evidence; respond протягом 24 год                       | ти    | Якщо > 3/міс — переглянути refund policy  |
+| Symptom                         | Action                                                                                        | Owner | Escalation                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------- | ----- | ----------------------------------------- |
+| MRR drop > 10 % WoW             | Stripe → filter by cancelled; перевірити cancel survey responses                              | ти    | Якщо системна причина — P0 issue          |
+| Spike failed payments (> 5/day) | Stripe → перевірити чи проблема з PSP; якщо ні — перевірити webhook flow                      | ти    | Звʼязатись зі Stripe support              |
+| Dispute/chargeback              | Stripe → зібрати evidence; respond протягом 24 год                                            | ти    | Якщо > 3/міс — переглянути refund policy  |
 | Webhook не доходить             | Перевірити app logs у Coolify (Stripe/Mono вебхуки йдуть напряму в API; n8n виведено 2026-07) | ти    | Stripe retry queue покриває до 72 год     |
-| Неочікуваний refund request     | Перевірити Terms of Service; зробити refund якщо обґрунтовано            | ти    | Якщо fraud pattern — заблокувати + Stripe |
+| Неочікуваний refund request     | Перевірити Terms of Service; зробити refund якщо обґрунтовано                                 | ти    | Якщо fraud pattern — заблокувати + Stripe |
 
 ---
 
@@ -131,31 +131,31 @@
 
 ### Зона 4 — DevOps & CI
 
-| Що                 | Де                 | Алерт у Telegram               |
-| ------------------ | ------------------ | ------------------------------ |
-| CI status          | GitHub Actions     | Failed workflow на main        |
-| PR queue           | GitHub             | Devin Review failed            |
-| Renovate PRs       | GitHub             | Major-version PR опен > 7 днів |
-| Migrations         | Coolify pre-deploy | Migration failed               |
-| DB backups         | local `pg_dump` cron (VPS) | Backup failed          |
-| DB storage         | Coolify container stats | > 80 % capacity           |
-| Redis storage      | Coolify container stats | > 80 %                    |
-| Container restarts | Coolify logs       | > 3/год                        |
-| Secrets expiry     | Manual / GitHub    | < 30 днів до expiry            |
+| Що                 | Де                         | Алерт у Telegram               |
+| ------------------ | -------------------------- | ------------------------------ |
+| CI status          | GitHub Actions             | Failed workflow на main        |
+| PR queue           | GitHub                     | Devin Review failed            |
+| Renovate PRs       | GitHub                     | Major-version PR опен > 7 днів |
+| Migrations         | Coolify pre-deploy         | Migration failed               |
+| DB backups         | local `pg_dump` cron (VPS) | Backup failed                  |
+| DB storage         | Coolify container stats    | > 80 % capacity                |
+| Redis storage      | Coolify container stats    | > 80 %                         |
+| Container restarts | Coolify logs               | > 3/год                        |
+| Secrets expiry     | Manual / GitHub            | < 30 днів до expiry            |
 
 **Daily check:** GitHub Actions main branch → green?
 **Weekly:** Renovate queue, dependency audit (`pnpm audit`), backup verification.
 
 #### Incident playbook — DevOps & CI
 
-| Symptom                          | Action                                                               | Owner | Escalation                                                          |
-| -------------------------------- | -------------------------------------------------------------------- | ----- | ------------------------------------------------------------------- |
-| CI failed on main                | GitHub Actions → перевірити logs; rerun якщо flaky; fix якщо реальне | ти    | Якщо блокує deploys > 1 год — hotfix                                |
-| Migration failed (Coolify pre-deploy) | Coolify logs → SQL error; fix migration file; `pnpm db:migrate`  | ти    | Якщо data loss risk — [§4 two-phase rule](./04-launch-readiness.md) |
-| DB storage > 80 %                | `VACUUM FULL`; archive old data; scale disk                          | ти    | Якщо > 95 % — emergency scale up                                    |
-| Container restart loop (> 3/год) | Coolify logs → OOM? crash? check memory limits                       | ти    | Scale up або hotfix memory leak                                     |
-| Secret expires in < 30 днів      | Rotate key; update env vars in Coolify + GitHub                      | ти    | Calendar reminder 7 днів до expiry                                  |
-| Renovate major PR > 7 днів       | Рев'ю changelog; merge або закрити з коментарем                      | ти    | Якщо breaking — створити issue з планом                             |
+| Symptom                               | Action                                                               | Owner | Escalation                                                          |
+| ------------------------------------- | -------------------------------------------------------------------- | ----- | ------------------------------------------------------------------- |
+| CI failed on main                     | GitHub Actions → перевірити logs; rerun якщо flaky; fix якщо реальне | ти    | Якщо блокує deploys > 1 год — hotfix                                |
+| Migration failed (Coolify pre-deploy) | Coolify logs → SQL error; fix migration file; `pnpm db:migrate`      | ти    | Якщо data loss risk — [§4 two-phase rule](./04-launch-readiness.md) |
+| DB storage > 80 %                     | `VACUUM FULL`; archive old data; scale disk                          | ти    | Якщо > 95 % — emergency scale up                                    |
+| Container restart loop (> 3/год)      | Coolify logs → OOM? crash? check memory limits                       | ти    | Scale up або hotfix memory leak                                     |
+| Secret expires in < 30 днів           | Rotate key; update env vars in Coolify + GitHub                      | ти    | Calendar reminder 7 днів до expiry                                  |
+| Renovate major PR > 7 днів            | Рев'ю changelog; merge або закрити з коментарем                      | ти    | Якщо breaking — створити issue з планом                             |
 
 ---
 

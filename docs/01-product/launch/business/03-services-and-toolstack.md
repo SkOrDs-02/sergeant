@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -59,51 +59,51 @@
 
 ### Верифікація стеку проти кодової бази
 
-| Сервіс / бібліотека         | Де в коді                                                                                                                 | Статус                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                       |
-| Express + Node 22           | `apps/server/package.json` → `express ^4.22`; root `package.json` → Node 22.x (Volta 22.19.0)                             | in use                       |
-| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                  | in use                       |
-| Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                       |
-| Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                       |
-| Anthropic Claude            | `apps/server/src/lib/anthropic.ts`                                                                                        | in use                       |
-| **Voyage AI (embeddings)**  | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                             | in use                       |
-| Sentry (web + server)       | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                               | in use                       |
-| **PostHog (web + server)**  | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`                       | in use                       |
-| **PostHog (mobile)**        | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                                | in use                       |
-| Vercel Analytics            | `@vercel/analytics ^2.0` у `apps/web`                                                                                     | in use                       |
-| **OpenTelemetry**           | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                         | in use                       |
-| Web Push (VAPID)            | `apps/server/package.json` → `web-push ^3.6`                                                                              | in use                       |
-| APNs                        | `@parse/node-apn ^8.1`                                                                                                    | in use                       |
-| FCM                         | `google-auth-library ^10.6`                                                                                               | in use                       |
-| Prometheus                  | `prom-client ^15.1`; `ops/prometheus/`                                                                                    | in use                       |
-| Pino                        | `pino ^10.3`, `pino-http ^11.0`                                                                                           | in use                       |
-| Helmet                      | `helmet ^8.1`                                                                                                             | in use                       |
-| Resend                      | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                          | in use                       |
-| Monobank webhook            | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                                | in use                       |
-| USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`                                                                                | in use                       |
-| PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                                                                                                 | in use                       |
-| Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                                                                                         | in use                       |
-| Hetzner + Coolify (Dockerfile.api) | `deploy-api.yml` → `ghcr.io` → Coolify (ADR-0074; Railway виведено 2026-07)                                        | in use                       |
-| Turborepo                   | root `package.json` → `turbo ^2.9`                                                                                        | in use                       |
-| TanStack Query              | `@tanstack/react-query ^5.99`                                                                                             | in use                       |
-| Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                                | in use                       |
-| Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                                      | in use                       |
-| **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)          | in use                       |
-| **Telegram bot (grammy)**   | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                                      | in use                       |
-| **n8n workflows**           | `ops/n8n-workflows/` — конфіги в репо; self-host інстанс жив на Railway → **виведено 2026-07** (ADR-0074). ADR-0026        | retired                      |
-| **Grafana + Alloy**         | `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape) — **paused 2026-06-28, metrics DOWN** (deliberate cost-cut); логи (Loki) активні | paused                       |
-| **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                           | in use                       |
-| **Detox E2E**               | `.github/workflows/detox-{android,ios}.yml`                                                                               | in use                       |
-| **Drizzle ORM**             | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                | in use                       |
-| Stripe                      | `apps/server/src/modules/billing/**`, `apps/server/src/routes/billing.ts`, `packages/api-client/src/endpoints/billing.ts` | in use / prod config pending |
-| React Email                 | _немає в коді_                                                                                                            | to add                       |
-| Loops (drip)                | _немає в коді_                                                                                                            | to add                       |
-| Crisp                       | _немає в коді_                                                                                                            | to add                       |
-| Tally                       | _немає в коді_                                                                                                            | to add                       |
-| UptimeRobot                 | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                       |
-| Termly / CookieYes          | _не використовується_                                                                                                     | to add                       |
-| Cloudflare R2               | _немає в коді_ (розглядалось для БД-бекапів; бекап тепер local `pg_dump` cron + Hetzner snapshot, ADR-0074)                | evaluated                    |
+| Сервіс / бібліотека                | Де в коді                                                                                                                                 | Статус                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Vite + React 18 SPA                | `apps/web/package.json` → `vite`, `react ^18`                                                                                             | in use                       |
+| Express + Node 22                  | `apps/server/package.json` → `express ^4.22`; root `package.json` → Node 22.x (Volta 22.19.0)                                             | in use                       |
+| PostgreSQL (pg + pgvector)         | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                                  | in use                       |
+| Redis (ioredis)                    | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                                            | in use                       |
+| Better Auth                        | `apps/server/package.json` → `better-auth ^1.6`                                                                                           | in use                       |
+| Anthropic Claude                   | `apps/server/src/lib/anthropic.ts`                                                                                                        | in use                       |
+| **Voyage AI (embeddings)**         | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                                             | in use                       |
+| Sentry (web + server)              | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                                               | in use                       |
+| **PostHog (web + server)**         | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`                                       | in use                       |
+| **PostHog (mobile)**               | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                                                | in use                       |
+| Vercel Analytics                   | `@vercel/analytics ^2.0` у `apps/web`                                                                                                     | in use                       |
+| **OpenTelemetry**                  | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                                         | in use                       |
+| Web Push (VAPID)                   | `apps/server/package.json` → `web-push ^3.6`                                                                                              | in use                       |
+| APNs                               | `@parse/node-apn ^8.1`                                                                                                                    | in use                       |
+| FCM                                | `google-auth-library ^10.6`                                                                                                               | in use                       |
+| Prometheus                         | `prom-client ^15.1`; `ops/prometheus/`                                                                                                    | in use                       |
+| Pino                               | `pino ^10.3`, `pino-http ^11.0`                                                                                                           | in use                       |
+| Helmet                             | `helmet ^8.1`                                                                                                                             | in use                       |
+| Resend                             | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                                          | in use                       |
+| Monobank webhook                   | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                                                | in use                       |
+| USDA / OpenFoodFacts               | `apps/server/src/lib/nutritionResponse.ts`                                                                                                | in use                       |
+| PWA (vite-plugin-pwa)              | `apps/web/vite.config.js`                                                                                                                 | in use                       |
+| Vercel (Hobby)                     | `vercel.json` (root + `apps/web`)                                                                                                         | in use                       |
+| Hetzner + Coolify (Dockerfile.api) | `deploy-api.yml` → `ghcr.io` → Coolify (ADR-0074; Railway виведено 2026-07)                                                               | in use                       |
+| Turborepo                          | root `package.json` → `turbo ^2.9`                                                                                                        | in use                       |
+| TanStack Query                     | `@tanstack/react-query ^5.99`                                                                                                             | in use                       |
+| Expo 52 + React Native 0.76        | `apps/mobile/package.json`                                                                                                                | in use                       |
+| Capacitor (mobile-shell)           | `apps/mobile-shell/`                                                                                                                      | in use                       |
+| **BullMQ**                         | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)                          | in use                       |
+| **Telegram bot (grammy)**          | `tools/openclaw` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                                                      | in use                       |
+| **n8n workflows**                  | `ops/n8n-workflows/` — конфіги в репо; self-host інстанс жив на Railway → **виведено 2026-07** (ADR-0074). ADR-0026                       | retired                      |
+| **Grafana + Alloy**                | `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape) — **paused 2026-06-28, metrics DOWN** (deliberate cost-cut); логи (Loki) активні | paused                       |
+| **Storybook + Argos**              | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                                           | in use                       |
+| **Detox E2E**                      | `.github/workflows/detox-{android,ios}.yml`                                                                                               | in use                       |
+| **Drizzle ORM**                    | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                                | in use                       |
+| Stripe                             | `apps/server/src/modules/billing/**`, `apps/server/src/routes/billing.ts`, `packages/api-client/src/endpoints/billing.ts`                 | in use / prod config pending |
+| React Email                        | _немає в коді_                                                                                                                            | to add                       |
+| Loops (drip)                       | _немає в коді_                                                                                                                            | to add                       |
+| Crisp                              | _немає в коді_                                                                                                                            | to add                       |
+| Tally                              | _немає в коді_                                                                                                                            | to add                       |
+| UptimeRobot                        | _не налаштовано_ (згадано в ops-доках)                                                                                                    | to add                       |
+| Termly / CookieYes                 | _не використовується_                                                                                                                     | to add                       |
+| Cloudflare R2                      | _немає в коді_ (розглядалось для БД-бекапів; бекап тепер local `pg_dump` cron + Hetzner snapshot, ADR-0074)                               | evaluated                    |
 
 ---
 
@@ -111,13 +111,13 @@
 
 ### 2.1 Хостинг і деплой
 
-| Сервіс            | Сайт                                                                  | Free tier                                                                       | Paid tier                                                                                                       | Date checked | Why this / Why not                                                                                      | Status    |
-| ----------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------- | --------- |
-| **Vercel**        | [vercel.com](https://vercel.com)                                      | Hobby: 100 GB bandwidth, 1M invocations, 6 000 build-min/mo, 1 concurrent build | Pro: $20/user/mo + usage; 1 TB bandwidth, 12 concurrent builds                                                  | 2026-04      | CDN + preview deploys + immutable caching; ідеально для SPA/PWA. Для одного розробника Hobby вистачає.  | in use    |
-| **Hetzner + Coolify** | [hetzner.com](https://www.hetzner.com/cloud)                      | —                                                                               | CX23: ~$7/міс фіксовано (2 vCPU / 4 GB / 40 GB)                                                                 | 2026-07      | Backend + Postgres(pgvector) + Redis на одному VPS під self-hosted Coolify; auto-deploy з ghcr.io. Фікс-ціна замість usage. [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md). | in use    |
-| ~~**Railway**~~   | [railway.app](https://railway.app)                                    | Trial: $5 credit                                                                | Hobby: $5/mo + usage; Pro: $20/mo + usage                                                                       | 2026-04      | **Виведено 2026-07** — usage-білінг $20-50/міс при нульовому трафіку невиправданий → Hetzner/Coolify (ADR-0074).                     | retired   |
-| **EAS Build**     | [expo.dev/eas](https://expo.dev/eas)                                  | Free: 15 Android + 15 iOS builds/mo, low-priority queue, 45-min timeout         | Starter: $19/mo ($45 credit); Production: $199/mo ($225 credit), 50K MAU                                        | 2026-04      | Потрібен для нативних білдів Expo 52. Free tier достатній для розробки; Production — для CI/CD.         | to add    |
-| **Cloudflare R2** | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | 10 GB storage, 1M Class A ops, 10M Class B ops/mo, $0 egress                    | $0.015/GB-mo storage, $4.50/1M Class A, $0.36/1M Class B                                                        | 2026-04      | S3-compatible + нуль egress fees. Для фото їжі, PDF-експорту. Не MVP — Phase 2+.                        | evaluated |
+| Сервіс                | Сайт                                                                  | Free tier                                                                       | Paid tier                                                                | Date checked | Why this / Why not                                                                                                                                                                                  | Status    |
+| --------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **Vercel**            | [vercel.com](https://vercel.com)                                      | Hobby: 100 GB bandwidth, 1M invocations, 6 000 build-min/mo, 1 concurrent build | Pro: $20/user/mo + usage; 1 TB bandwidth, 12 concurrent builds           | 2026-04      | CDN + preview deploys + immutable caching; ідеально для SPA/PWA. Для одного розробника Hobby вистачає.                                                                                              | in use    |
+| **Hetzner + Coolify** | [hetzner.com](https://www.hetzner.com/cloud)                          | —                                                                               | CX23: ~$7/міс фіксовано (2 vCPU / 4 GB / 40 GB)                          | 2026-07      | Backend + Postgres(pgvector) + Redis на одному VPS під self-hosted Coolify; auto-deploy з ghcr.io. Фікс-ціна замість usage. [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md). | in use    |
+| ~~**Railway**~~       | [railway.app](https://railway.app)                                    | Trial: $5 credit                                                                | Hobby: $5/mo + usage; Pro: $20/mo + usage                                | 2026-04      | **Виведено 2026-07** — usage-білінг $20-50/міс при нульовому трафіку невиправданий → Hetzner/Coolify (ADR-0074).                                                                                    | retired   |
+| **EAS Build**         | [expo.dev/eas](https://expo.dev/eas)                                  | Free: 15 Android + 15 iOS builds/mo, low-priority queue, 45-min timeout         | Starter: $19/mo ($45 credit); Production: $199/mo ($225 credit), 50K MAU | 2026-04      | Потрібен для нативних білдів Expo 52. Free tier достатній для розробки; Production — для CI/CD.                                                                                                     | to add    |
+| **Cloudflare R2**     | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | 10 GB storage, 1M Class A ops, 10M Class B ops/mo, $0 egress                    | $0.015/GB-mo storage, $4.50/1M Class A, $0.36/1M Class B                 | 2026-04      | S3-compatible + нуль egress fees. Для фото їжі, PDF-експорту. Не MVP — Phase 2+.                                                                                                                    | evaluated |
 
 ### 2.2 CI / CD
 
@@ -481,20 +481,20 @@ Breakeven subs      ---          ~30 Pro      ~100 Pro     profitable
 
 ### Поточні сервіси: зараз vs після монетизації
 
-| Сервіс             | Зараз ($/mo) | Після монетизації ($/mo) | Примітки                                               |
-| ------------------ | ------------ | ------------------------ | ------------------------------------------------------ |
-| Vercel (frontend)  | $0           | $0                       | Hobby до 100 GB bandwidth                              |
-| Hetzner CX23 (Coolify) | ~$7      | ~$7                      | API + Postgres + Redis на одному VPS, фікс-ціна ([ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)). n8n виведено разом з Railway. |
-| Anthropic (AI)     | ~$10-50      | $50-200                  | Залежить від MAU та моделі                             |
-| Voyage (embed)     | ~$0-5        | $5-15                    | $0.02/1M tokens, lite-tier                             |
-| Resend (email)     | $0           | $0                       | Free tier: 3K emails/mo                                |
-| Sentry             | $0           | $0                       | Developer: 5K errors/mo                                |
-| Grafana Cloud      | $0           | $0                       | Forever-free tier: 10K metrics                         |
-| PostHog            | $0           | $0                       | Free tier: 1M events/mo (вже активний)                 |
-| Vercel Analytics   | $0           | $0                       | 2.5K events/mo                                         |
-| Stripe             | ---          | 2.9% + 30c               | Per transaction (НЕ інтегровано)                       |
-| Firebase / FCM     | $0           | $0                       | Push (безлімітно)                                      |
-| **TOTAL**          | **~$26-68**  | **~$76-260**             | Breakeven ~30 Pro subs                                 |
+| Сервіс                 | Зараз ($/mo) | Після монетизації ($/mo) | Примітки                                                                                                                                                |
+| ---------------------- | ------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel (frontend)      | $0           | $0                       | Hobby до 100 GB bandwidth                                                                                                                               |
+| Hetzner CX23 (Coolify) | ~$7          | ~$7                      | API + Postgres + Redis на одному VPS, фікс-ціна ([ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)). n8n виведено разом з Railway. |
+| Anthropic (AI)         | ~$10-50      | $50-200                  | Залежить від MAU та моделі                                                                                                                              |
+| Voyage (embed)         | ~$0-5        | $5-15                    | $0.02/1M tokens, lite-tier                                                                                                                              |
+| Resend (email)         | $0           | $0                       | Free tier: 3K emails/mo                                                                                                                                 |
+| Sentry                 | $0           | $0                       | Developer: 5K errors/mo                                                                                                                                 |
+| Grafana Cloud          | $0           | $0                       | Forever-free tier: 10K metrics                                                                                                                          |
+| PostHog                | $0           | $0                       | Free tier: 1M events/mo (вже активний)                                                                                                                  |
+| Vercel Analytics       | $0           | $0                       | 2.5K events/mo                                                                                                                                          |
+| Stripe                 | ---          | 2.9% + 30c               | Per transaction (НЕ інтегровано)                                                                                                                        |
+| Firebase / FCM         | $0           | $0                       | Push (безлімітно)                                                                                                                                       |
+| **TOTAL**              | **~$26-68**  | **~$76-260**             | Breakeven ~30 Pro subs                                                                                                                                  |
 
 ---
 
