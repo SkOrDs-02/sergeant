@@ -1,6 +1,6 @@
 # Playbook: Додати HubChat Tool
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 **Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна серверного tool definition, клієнтського executor-а або action card для HubChat orchestration.
@@ -61,11 +61,9 @@
 ## When not to use this playbook
 
 - Потрібно лише підкрутити формулювання системного промпта без нової tool-поверхні.
-- Потрібно змінити внутрішнього Telegram-агента в `tools/openclaw`, а не HubChat — це інша поверхня з власним playbook-ом.
 
 ## Related playbooks and skills
 
-- [modify-console-agent.md](./modify-console-agent.md)
 - Skill: `sergeant-hubchat`
 - Skill: `sergeant-web-ui`
 - Skill: `sergeant-server-api`

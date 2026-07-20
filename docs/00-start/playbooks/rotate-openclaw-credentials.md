@@ -1,7 +1,9 @@
 # Playbook: Ротація OpenClaw GitHub credentials
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** Active
+> ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Цей playbook більше не діє — OpenClaw GitHub-інтеграції немає. Лишається лише fail-closed guard проти залишкового `OPENCLAW_GITHUB_PAT` у prod (Hard Rule #20). Для загальної ротації секретів див. [`rotate-secrets.md`](./rotate-secrets.md). Файл лишено як історичний запис (лінкується immutable-ADR-0055).
+
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
 

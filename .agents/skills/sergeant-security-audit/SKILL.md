@@ -21,7 +21,7 @@ pnpm typecheck                        # catches unsafe type coercions
 
 | Rule | What to verify |
 |---|---|
-| **Hard Rule #20 — No OpenClaw PATs in production** | Grep diff for any literal `OPENCLAW_PAT_*` not in env-var context; check `ops/openclaw/` config-as-code for hardcoded tokens |
+| **Hard Rule #20 — No OpenClaw PATs in production** | Grep diff for any literal `OPENCLAW_GITHUB_PAT` / `Git_PAT` not in env-var context; `assertStartupEnv()` fail-closes if either leaks into prod `process.env` (defense-in-depth after the OpenClaw Gateway decommission — ADR-0075) |
 | **Hard Rule #21 — Pino redaction policy** | New logging path → verify key is covered by `REDACT_KEY_NAMES` in `packages/shared/src/lib/pii.ts`; check `apps/server/src/obs/logger.ts` redaction walker |
 | **Hard Rule #22 — Skill body security scan** | When reviewing `.agents/skills/**/SKILL.md` changes run `pnpm lint:skills` — 7-category threat scanner |
 

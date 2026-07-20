@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last touched:** 2026-06-13 by @claude. **Next review:** 2026-09-11.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 ## Огляд
@@ -13,10 +13,10 @@ runtime-рівня на CVE рівнів **CRITICAL/HIGH**.
 
 - `hub-api` з [`Dockerfile.api`](../../../Dockerfile.api)
 
-Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470 — його окрему
-Trivy-джобу прибрано разом із ним. Сканування нового OpenClaw Gateway образу
-([`Dockerfile.openclaw-gateway`](../../../Dockerfile.openclaw-gateway)) —
-окремий follow-up.
+Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470. OpenClaw Gateway
+(`Dockerfile.openclaw-gateway`) decommissioned повністю
+([ADR-0075](../adr/0075-openclaw-gateway-decommissioned.md)) — окремої
+Trivy-джоби для нього ніколи не було потреби заводити.
 
 Це окремий шар від [nightly-audit](./nightly-audit.md), який сканує лише
 **lockfile-залежності** (pnpm audit, OSV-Scanner, Snyk). Trivy дивиться на

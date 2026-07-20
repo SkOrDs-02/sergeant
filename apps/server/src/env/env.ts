@@ -1088,53 +1088,6 @@ const envSchema = z.object({
    */
   MONO_AI_MEMORY_DIGEST_ENABLED: boolFromEnv(false),
 
-  // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
-  /** Better Auth user.id founder-а. */
-  OPENCLAW_FOUNDER_USER_ID: stringWithDefault(""),
-  /** Денний USD cap на Anthropic-token-и через OpenClaw (string — NUMERIC у БД). */
-  OPENCLAW_DAILY_USD_BUDGET: stringWithDefault("5"),
-  /** Hard cap на Plan→Act→Reflect ітерації у одному виклику. */
-  OPENCLAW_MAX_ITERATIONS: intFromEnv(8),
-  /** Daily ritual schedule (`HH:MM TZ`). */
-  OPENCLAW_DAILY_MORNING_AT: stringWithDefault("08:30 Europe/Kyiv"),
-  /** Weekly review schedule (`DOW HH:MM TZ`). */
-  OPENCLAW_WEEKLY_REVIEW_AT: stringWithDefault("Fri 18:00 Europe/Kyiv"),
-  /** Monthly OKR schedule (`D HH:MM TZ`). */
-  OPENCLAW_MONTHLY_OKR_AT: stringWithDefault("1 09:00 Europe/Kyiv"),
-  /** Broadcast policy: `dm` | `digest` | `all`. */
-  OPENCLAW_BROADCAST_MODE: z
-    .string()
-    .optional()
-    .transform((v) => (v ?? "digest").toLowerCase() as "dm" | "digest" | "all"),
-  /** Feature flag for the GitHub App auth-flow (PR-06 Phase 2). */
-  OPENCLAW_USE_GITHUB_APP: boolFromEnv(true),
-  /** GitHub App ID (numeric, stored as string). */
-  OPENCLAW_GITHUB_APP_ID: stringWithDefault(""),
-  /** GitHub App private key (PEM, may be `\\n`-escaped). */
-  OPENCLAW_GITHUB_APP_PRIVATE_KEY: stringWithDefault(""),
-  /** GitHub App installation id (numeric, stored as string). */
-  OPENCLAW_GITHUB_APP_INSTALLATION_ID: stringWithDefault(""),
-  /** Repo target для decision PR-ів. */
-  OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
-  /**
-   * Comma-separated allowlist of `owner/repo` strings that OpenClaw
-   * read/write GitHub tools may target. Empty (default) collapses to
-   * just `OPENCLAW_GITHUB_REPO`, so the default config is the
-   * single-repo behaviour callers expect. T2 audit finding #3 — the
-   * console used to pass through whatever `repo` the LLM picked.
-   */
-  OPENCLAW_GITHUB_REPO_ALLOWLIST: stringWithDefault(""),
-  /** Default branch у repo (для decision PR-ів). */
-  OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
-  /**
-   * n8n REST API base URL (e.g. `https://n8n.example.com`). Empty disables
-   * the n8n delegation surface (`n8n_list/describe/trigger/activate`,
-   * `refresh_business_snapshot`); server returns `notConfigured: true` and
-   * the tools surface a friendly "not configured" message.
-   */
-  N8N_API_URL: stringWithDefault(""),
-  /** n8n personal API key sent as `X-N8N-API-KEY` header. */
-  N8N_API_KEY: stringWithDefault(""),
   /**
    * Base URL n8n-інстансу для webhook-replay-у (PR-29). Replay-CLI /
    * admin-API формує `${N8N_WEBHOOK_BASE_URL}/webhook/{path}` коли
@@ -1146,83 +1099,16 @@ const envSchema = z.object({
    */
   N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
-  // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
-  /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
-  OPENCLAW_PSI_API_KEY: stringWithDefault(""),
-  /** Google Search Console API key (read-only). Empty → seo_gsc_query → `not_configured`. */
-  OPENCLAW_GSC_API_KEY: stringWithDefault(""),
-  /** GSC site URL (наприклад `sc-domain:sergeant.app`). Empty → `not_configured`. */
-  OPENCLAW_GSC_SITE_URL: stringWithDefault(""),
-  /** SerpAPI key (читай-only SERP-snapshots). Empty → seo_serp_lookup → `not_configured`. */
-  OPENCLAW_SERP_API_KEY: stringWithDefault(""),
-
-  // ── PR-35 — read_telegram_topic_history (Pain P8) ──────────────────
+  // ── Telegram alert channel (alerts shipper + security-events room) ──
   /**
-   * Maximum messages returned by `read_telegram_topic_history` per call.
-   * Clamped 1..100 by the route-side Zod schema; this env var sets the
-   * **default** when the tool caller omits `limit`. Default 100 keeps
-   * historical reads bounded for the LLM context budget.
-   */
-  TELEGRAM_TOPIC_HISTORY_LIMIT: intFromEnv(100),
-  /**
-   * Opt-in flag for merging live `Bot API getUpdates` payloads into
-   * `read_telegram_topic_history` (PR-35). Must be left `false`
-   * (default) when the bot is in long-poll mode — a parallel
-   * `getUpdates` call would steal updates from the running consumer.
-   * Safe to enable for webhook-mode bots.
-   */
-  OPENCLAW_TELEGRAM_FETCH_UPDATES: boolFromEnv(false),
-  /**
-   * Bot API token used by `read_telegram_topic_history` for the
-   * `getChat` access probe and (when `OPENCLAW_TELEGRAM_FETCH_UPDATES`
-   * is on) for `getUpdates`. Shares the same token as `postToTopic`
-   * write-tool. Empty → skip the Bot API probe entirely.
+   * Bot API token used to ship alerts / security-events to the Sergeant
+   * Ops Telegram supergroup. Empty → Telegram shipping is skipped.
    */
   SERGEANT_ALERT_BOT_TOKEN: stringWithDefault(""),
   /** Supergroup chat id for the Sergeant Ops chat (negative integer). */
   SERGEANT_OPS_CHAT_ID: stringWithDefault(""),
-  /** Forum-topic message_thread_id mappings (PR-35 / write-tools.ts). */
-  TELEGRAM_TOPIC_OPS: stringWithDefault(""),
+  /** Forum-topic message_thread_id for the engineering topic. */
   TELEGRAM_TOPIC_ENGINEERING: stringWithDefault(""),
-  TELEGRAM_TOPIC_GROWTH: stringWithDefault(""),
-
-  // ── PR-C1b — Reminder cron-poller (in-process) ─────────────────────
-  /** Інтервал в мілісекундах для poll-а `openclaw_reminders` (default 60s; 0 → off). */
-  OPENCLAW_REMINDER_POLL_INTERVAL_MS: intFromEnv(60_000),
-  /** Max attempts перед позначенням reminder як `failed`. */
-  OPENCLAW_REMINDER_MAX_ATTEMPTS: intFromEnv(3),
-  /** Скільки reminder-ів брати за один poll (batch). */
-  OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
-
-  // ── OpenClaw write-tool approval nonce (ADR-0036 Phase 4 hardening) ──
-  /**
-   * HMAC-SHA256 shared secret for signing single-use approval nonces on
-   * OpenClaw `/write/*` endpoints. The console requests a nonce from
-   * `/api/internal/openclaw/approval-nonce` at the moment it shows the
-   * founder the Approve keyboard, then replays it on the write call via the
-   * `X-OpenClaw-Approval` header. Empty string disables the feature
-   * entirely (mint returns `not_configured`, verification is a no-op) —
-   * exactly the `WEBHOOK_HMAC_SECRET=""` posture.
-   */
-  OPENCLAW_APPROVAL_NONCE_SECRET: stringWithDefault(""),
-  /**
-   * Enforce the approval nonce on OpenClaw `/write/*`. Default `false`
-   * ships the same staged grace window as `WEBHOOK_HMAC_REQUIRED`: when a
-   * secret is set the server verifies + consumes any nonce present, logs
-   * `openclaw_write_nonce_invalid` on a bad/missing one, but still lets the
-   * write through so the console (separate repo — `tools/openclaw`) can
-   * ship its Approve-flow change without breaking prod writes. Flip to
-   * `true` only AFTER the console reliably mints + forwards nonces; then a
-   * missing/invalid nonce → 401.
-   */
-  OPENCLAW_WRITE_NONCE_REQUIRED: boolFromEnv(false),
-  /**
-   * Approval-nonce lifetime in seconds. A nonce minted at approval time is
-   * only valid for this window on the subsequent write call (single-use,
-   * regardless of expiry). 5 min matches the founder's realistic
-   * approve→execute latency and the OWASP webhook-replay default.
-   */
-  OPENCLAW_APPROVAL_NONCE_TTL_SEC: intFromEnv(300),
 
   // ── PR-28 — n8n_webhook_events retention ───────────────────────────
   /**
@@ -1669,16 +1555,15 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // Hard Rule #20 (stack-pulse-2026-05 PR-06 Phase 2): OpenClaw must
-  // authenticate to GitHub via the GitHub App-flow only. The legacy PAT
-  // (`OPENCLAW_GITHUB_PAT`) and its `Git_PAT` fallback have been removed
-  // from the env schema, but a stale value in Railway / Vercel
-  // environment storage still leaks into `process.env`. We hard-block
-  // production startup if either is present so the misconfig is caught
-  // at boot — and so the operator is forced to scrub the secret-store
-  // instead of leaving a long-lived token sitting around. Read raw
-  // `process.env` (not the zod-typed `env`) precisely because the
-  // schema dropped these keys; we need to spot the leftover regardless.
+  // Hard Rule #20 (defense-in-depth, retained after the OpenClaw Gateway
+  // decommission): a legacy GitHub PAT (`OPENCLAW_GITHUB_PAT`) or its
+  // `Git_PAT` fallback must never sit in production secret-storage. The
+  // OpenClaw surface is gone, but a stale value in Coolify / Vercel
+  // environment storage still leaks into `process.env`, so we hard-block
+  // production startup if either is present — forcing the operator to
+  // scrub the secret-store instead of leaving a long-lived token around.
+  // Read raw `process.env` (not the zod-typed `env`) because the schema
+  // never declared these keys.
   if (isProduction) {
     const leftoverPats: string[] = [];
     if (process.env["OPENCLAW_GITHUB_PAT"]) {
@@ -1689,7 +1574,7 @@ export function assertStartupEnv(): void {
     }
     if (leftoverPats.length > 0) {
       throw new Error(
-        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. OpenClaw must authenticate via the GitHub App-flow only — set OPENCLAW_GITHUB_APP_{ID,PRIVATE_KEY,INSTALLATION_ID} and remove the legacy PAT(s) from the secret-store. See docs/00-start/playbooks/rotate-openclaw-credentials.md.`,
+        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. Remove the legacy PAT(s) from the secret-store — the OpenClaw Gateway is decommissioned and no component authenticates with these tokens. See docs/00-start/playbooks/rotate-secrets.md.`,
       );
     }
   }

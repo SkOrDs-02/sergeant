@@ -85,13 +85,6 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // it, `app/_layout.tsx`'s `import "../global.css"` (NativeWind v4)
   // trips TS2882 the moment any sibling .ts(x) file is staged.
   "apps/mobile/tsconfig.json": ["nativewind-env.d.ts", "expo-env.d.ts"],
-  // openclaw-plugin keeps the SDK shape behind ambient `declare module`
-  // statements (`src/types/openclaw-ambient.d.ts`) because both `openclaw`
-  // and `typebox` are installed only inside the Gateway Docker image at
-  // runtime — they're not workspace dependencies. Without the ambient
-  // file, staged typecheck on any plugin .ts fails TS2307 for both
-  // imports + downstream TS7006 implicit-any on `api`/`params`.
-  "packages/openclaw-plugin/tsconfig.json": ["src/types/openclaw-ambient.d.ts"],
   // `vite-env.d.ts` narrows `ImportMetaEnv` (VITE_BUILD_ID / VITE_TARGET) to
   // explicit interface members. Without it, `tsc-files` (which strips the
   // project `include`) sees only the open-set index signature, so
@@ -108,13 +101,10 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
  * `exclude` list — so without this skip the staged typecheck force-loads code
  * that the canonical `pnpm typecheck` correctly leaves out of scope.
  *
- * Currently used by `packages/openclaw-plugin`, whose `src/legacy/**` subtree
- * is intentionally excluded (it uses ESM `./foo.js` import specifiers against
- * `.ts` sources via the legacy NodeNext convention and would otherwise fail
- * `tsc-files --noEmit` with TS2307 for every relative import).
+ * Currently used by `apps/web`, whose service-worker subtree is excluded from
+ * the main `tsconfig.json` and typechecked separately.
  */
 const SKIP_PREFIXES_BY_TSCONFIG = {
-  "packages/openclaw-plugin/tsconfig.json": ["src/legacy/"],
   // The service-worker subtree is excluded from `apps/web/tsconfig.json`
   // (`exclude: ["src/sw.ts", "src/sw"]`) and typechecked separately by
   // `tsconfig.sw.json` (standalone `strict: false`, WebWorker lib). Without

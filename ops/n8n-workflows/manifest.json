@@ -256,22 +256,6 @@
       "requiredCredentials": [],
       "notes": "Telegram console webhook dispatcher. Receives approved/read-only agent commands from tools/openclaw and returns a task acceptance payload; keep inactive until N8N_AGENT_DISPATCHER_WEBHOOK_URL is configured for the console."
     },
-    "25-morning-briefing-cron.json": {
-      "owner": "ops",
-      "status": "experimental",
-      "riskTier": "P2",
-      "telegramTopic": "dm",
-      "audienceTier": "P2",
-      "hmacSigned": false,
-      "requiredEnv": [
-        "PUBLIC_API_BASE_URL",
-        "INTERNAL_API_KEY",
-        "OPENCLAW_BOT_TOKEN",
-        "OPENCLAW_FOUNDER_TG_USER_ID"
-      ],
-      "requiredCredentials": [],
-      "notes": "Daily 07:00 Kyiv → POST /api/internal/openclaw/briefing/morning (PR-26 hardcoded-template; 5 sections: Stripe / PostHog / GitHub PR-queue / n8n workflows / Sentry) → POST /api/internal/webhook-events/record (PR-28 exec audit log) + DM founder via @OpenClaw_sergeant_bot raw HTTP. Activate after OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID set on n8n Railway. Briefing endpoint завжди 200 з graceful-degrade — секції з missing env-vars рендерять notConfigured-hint замість failing 5xx. LLM-summarization (PR-27 next-up у roadmap-у) поки НЕ підключений; cron шле raw template markdown."
-    },
     "26-strategic-weekly.json": {
       "owner": "ops",
       "status": "experimental",
@@ -286,38 +270,6 @@
       ],
       "requiredCredentials": [],
       "notes": "PR-34 (pr-plan-2026-05) strategic mode skeleton. Weekly Mon 09:00 Kyiv → fan-out across 4 personas (finyk/fizruk/nutrition/routine) → POST /api/internal/strategic/weekly-checkin для кожної; кожен запит INSERT-ить placeholder-goal у `strategic_goals` (migration 062). Поки що — лише datalayer marker, без LLM conversation. Activate after STRATEGIC_FOUNDER_USER_ID set on n8n Railway (Better Auth opaque founder ID). PR-35+ replace placeholder з real planning conversation."
-    },
-    "27-monthly-okr-cron.json": {
-      "owner": "ops",
-      "status": "experimental",
-      "riskTier": "P2",
-      "telegramTopic": "dm",
-      "audienceTier": "P2",
-      "hmacSigned": false,
-      "requiredEnv": [
-        "PUBLIC_API_BASE_URL",
-        "INTERNAL_API_KEY",
-        "OPENCLAW_BOT_TOKEN",
-        "OPENCLAW_FOUNDER_TG_USER_ID"
-      ],
-      "requiredCredentials": [],
-      "notes": "1st of month 09:00 Kyiv → POST /api/internal/openclaw/ritual/monthly (O3 Phase 2.B; 4 sections: narrative / OKR progress per KR / monthly wins / risks & blockers) → POST /api/internal/webhook-events/record + DM founder. Reporting month = previous calendar month. OKR-список — INTERIM_OKRS hardcoded (apps/server/src/modules/openclaw/monthly-okr/okrs.ts) як fallback; PR-34 strategic_goals DB-table (migration 062) merged — наступний follow-up може замінити INTERIM_OKRS на DB-query. Wins/risks через GitHub closed PRs (30d window) + Sentry unresolved + stale open PRs (>30d). LLM narrative — claude-sonnet-4-6 з StubProvider fallback."
-    },
-    "28-weekly-review-cron.json": {
-      "owner": "ops",
-      "status": "experimental",
-      "riskTier": "P2",
-      "telegramTopic": "dm",
-      "audienceTier": "P2",
-      "hmacSigned": false,
-      "requiredEnv": [
-        "PUBLIC_API_BASE_URL",
-        "INTERNAL_API_KEY",
-        "OPENCLAW_BOT_TOKEN",
-        "OPENCLAW_FOUNDER_TG_USER_ID"
-      ],
-      "requiredCredentials": [],
-      "notes": "Friday 18:00 Kyiv → POST /api/internal/openclaw/ritual/weekly (O3 Phase 2.B; 5 sections: narrative / shipped / metrics with delta vs prev week / open commitments / Sentry alerts) → POST /api/internal/webhook-events/record + DM founder via @OpenClaw_sergeant_bot. LLM narrative — claude-sonnet-4-6 via LLMProvider (PR-23), StubProvider fallback (PR-25 pattern). Endpoint 200 з graceful-degrade на missing env-vars (sections рендерять notConfigured-hint). Активуй після OPENCLAW_BOT_TOKEN + OPENCLAW_FOUNDER_TG_USER_ID + LLM_DIGEST_PROVIDER на n8n Railway. Slot 28 — slot 26 зайняв PR-34 strategic_weekly cron (Mon 09:00 per-persona DB writes); 27 — місячний OKR ritual нижче."
     },
     "29-rag-eval-weekly-cron.json": {
       "owner": "ops",
@@ -442,11 +394,11 @@
       "requiredEnv": [
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
-        "OPENCLAW_BOT_TOKEN",
-        "OPENCLAW_FOUNDER_TG_USER_ID"
+        "SERGEANT_ALERT_BOT_TOKEN",
+        "SERGEANT_FOUNDER_TG_USER_ID"
       ],
       "requiredCredentials": [],
-      "notes": "Cron */5 min → POST /api/internal/alerts/pending (olderThanMinutes=15, notYetEscalated=true) → filter to P0/P1 → for each: POST /alerts/escalate → DM founder via @OpenClaw_sergeant_bot raw HTTP. ADR-0038 §3.2 — closes pain P2 (alerts without accountability) by giving every unacked P0/P1 a persistent push notification. Activate after WF-104 + WF-04 are smoke-tested in n8n staging."
+      "notes": "Cron */5 min → POST /api/internal/alerts/pending (olderThanMinutes=15, notYetEscalated=true) → filter to P0/P1 → for each: POST /alerts/escalate → DM founder via the Sergeant alert bot raw HTTP. ADR-0038 §3.2 — closes pain P2 (alerts without accountability) by giving every unacked P0/P1 a persistent push notification. Post-ADR-0075: retargeted off the decommissioned OpenClaw bot to SERGEANT_ALERT_BOT_TOKEN + SERGEANT_FOUNDER_TG_USER_ID. Activate after WF-104 + WF-04 are smoke-tested in n8n staging."
     },
     "104-alert-callback-router.json": {
       "owner": "ops",

@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-19",
+  "generated_at": "2026-07-20",
   "sourceHashes": {
-    "knowledge-graph": "f483f61148bdc950a8efc6aa9c7ff5131ac0133e4cdb3812b9a7c88ae8d327a7",
-    "symbol-index": "990a78f3556aaa7386f0054300070c3ed452e67aa30d63b2242cab7d0219523f"
+    "knowledge-graph": "418dfcce78f6ac235b596b7e9bbc349b8a86819b814911c110253eb6cc7629e5",
+    "symbol-index": "b0bd5320be4a4993ea42496101b3542061d8f515acf1ea9fcb4b3c4debf1628b"
   },
   "counts": {
-    "adr": 71,
+    "adr": 72,
     "audit": 9,
-    "export": 305,
+    "export": 286,
     "hard-rule": 26,
     "initiative": 52,
-    "playbook": 62,
-    "skill": 24,
-    "total": 549
+    "playbook": 60,
+    "skill": 23,
+    "total": 528
   },
   "chunks": [
     {
@@ -594,9 +594,9 @@
       "line": 1,
       "title": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover",
       "tier": "core",
-      "status": "Active",
-      "text": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover · adr:0055 · adr · Active · 55 · 2026-05-11 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "15fd829a9deb8ceb090bcaaa0409a4ec45890dec7f0375d3d72e412a34c61680"
+      "status": "Superseded",
+      "text": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover · adr:0055 · adr · Superseded · 55 · 2026-05-11 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "ab17ed7f31d3bb18f61038121d1abbec8aecc0f243b8c421a0ebddce9b4e10fb"
     },
     {
       "id": "adr:0057",
@@ -797,6 +797,17 @@
       "contentHash": "c41bd13362bc4890687a1d3b6ee2029e559d7e285955a1c607f97e168376a906"
     },
     {
+      "id": "adr:0075",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md",
+      "line": 1,
+      "title": "ADR-0075: OpenClaw Gateway decommissioned",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0075: OpenClaw Gateway decommissioned · adr:0075 · adr · accepted · 75 · 0. TL;DR · Context and Problem Statement · Decision · Що свідомо лишається · Immutable-ADR link-graph · Consequences · Positive · Neutral · Negative",
+      "contentHash": "110cc63634f585d7154a55aa587d14d5fe87fe5ae767e057326e0d8dc4fdc908"
+    },
+    {
       "id": "audit:2026-06-08-codebase-cleanup-audit",
       "type": "audit",
       "path": "docs/90-work/audits/2026-06-08-codebase-cleanup-audit.md",
@@ -836,9 +847,9 @@
       "line": 1,
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "tier": "core",
-      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
-      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Reference — заготовка майбутнього аудиту без дати й owner commitment. · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
-      "contentHash": "61ace1fd513f5f9e30f333a45d072c6e4e4f130a20ae1493ba8ad2143b716180"
+      "status": "Resolved (target deleted — ADR-0075).",
+      "text": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts` · audit:2026-08-XX-openclaw-internal-roast · audit · Resolved (target deleted — ADR-0075). · OpenClaw Internal Routes Deep Roast — apps/server/src/routes/internal/openclaw.ts · TL;DR · Scope · Methodology hints · Permission matrix — route → guard → audit-write → mutation-target · Read / memory family · Observability / metrics / ritual family · Write-tool family (ADR-0036 — approval-gated на Gateway-side ПЕРЕД викликом) · Write-audit family (ADR-0037 — append-only lifecycle log) · n8n delegation family (PR-C1c — tier-gated) · Mute family (PR /mute Phase 5b — founder DND) · Whois / code-understanding / SEO families (read-only) · Reminder family (PR-C1b — FSM store) · Перше прочитання матриці (raw signal, не recommendations) · Cross-refs",
+      "contentHash": "2b9d44c029e24ada1ac576868c41c17e65d0b35323b58b178509b9789714a94e"
     },
     {
       "id": "audit:2026-08-XX-sync-engine-roast",
@@ -3020,177 +3031,6 @@
       "contentHash": "1205b70da598f3b22e8bd99173c56af74c522521d58d776c6773809804305aa6"
     },
     {
-      "id": "export:@sergeant/openclaw-plugin:ALL_SHORTCUTS",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/index.js",
-      "title": "ALL_SHORTCUTS (re-export)",
-      "tier": "extended",
-      "text": "ALL_SHORTCUTS · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/index.js · used 0× · dead export unused",
-      "contentHash": "f0e89baf2cc503f3079f1291f10ba9c9aec0810097b740bab6facdc9a9258d25"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:createShortcutRouterHook",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/hooks/shortcut-router.js",
-      "title": "createShortcutRouterHook (re-export)",
-      "tier": "extended",
-      "text": "createShortcutRouterHook · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/hooks/shortcut-router.js · used 0× · dead export unused",
-      "contentHash": "060b16c894320855f5f558806ceae79c6bdaef0f675a2cd356e4ed07678ab5f4"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:default",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/index.ts",
-      "title": "default (default-export)",
-      "tier": "extended",
-      "text": "default · default-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/index.ts · used 0× · dead export unused",
-      "contentHash": "5d211ae25bc77246b1f7812e1e3baf8877877fa1b9c8e7c36926b2d3b2bc0299"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ESCALATE_PREFIX",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/hooks/shortcut-router.js",
-      "title": "ESCALATE_PREFIX (re-export)",
-      "tier": "extended",
-      "text": "ESCALATE_PREFIX · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/hooks/shortcut-router.js · used 0× · dead export unused",
-      "contentHash": "27a745d56e181373eb2278f31c806b1cba7e1cb7ba68e4fb00fc3d07e579661d"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:extractText",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/router.js",
-      "title": "extractText (re-export)",
-      "tier": "extended",
-      "text": "extractText · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/router.js · used 0× · dead export unused",
-      "contentHash": "885e4537178803c6c761edcfca140d3cef1ceb229dee1656dffe8c0beffd1799"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:HttpClientOptions",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/http-client.js",
-      "title": "HttpClientOptions (re-export)",
-      "tier": "extended",
-      "text": "HttpClientOptions · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/http-client.js · used 0× · dead export unused",
-      "contentHash": "e2da0e2590340ca4f4fde290a7180166bb726f283ebe15da5616b6a54e87a18c"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:OpenClawHttpClient",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/http-client.js",
-      "title": "OpenClawHttpClient (re-export)",
-      "tier": "extended",
-      "text": "OpenClawHttpClient · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/http-client.js · used 0× · dead export unused",
-      "contentHash": "7774131d6d8ff9b9da23e6b300f59b508415a15e25e63b6621af662da7b7fe0f"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:OpenClawHttpError",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/http-client.js",
-      "title": "OpenClawHttpError (re-export)",
-      "tier": "extended",
-      "text": "OpenClawHttpError · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/http-client.js · used 0× · dead export unused",
-      "contentHash": "5237e7a006d8dee674d350d71af2f1e5ba8dc0e8538c1fa38d9eced34de6c505"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:parsePluginConfig",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/config.js",
-      "title": "parsePluginConfig (re-export)",
-      "tier": "extended",
-      "text": "parsePluginConfig · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/config.js · used 0× · dead export unused",
-      "contentHash": "7df2fe6fd37fbae74393b67e6757da1375b2fda518e000ef9c3741e2da781180"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:PluginConfig",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/config.js",
-      "title": "PluginConfig (re-export)",
-      "tier": "extended",
-      "text": "PluginConfig · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/config.js · used 0× · dead export unused",
-      "contentHash": "acc8008ee6003b4db188728fc5b2af9437b36742dfe4f8669580b30fa317502a"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:PluginConfigSchema",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/config.js",
-      "title": "PluginConfigSchema (re-export)",
-      "tier": "extended",
-      "text": "PluginConfigSchema · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/config.js · used 0× · dead export unused",
-      "contentHash": "a24ec5b67ed51451c2e79c4442ba7cea709b0d28134609e8d16cc49903d9c967"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ShortcutDefinition",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ShortcutDefinition (re-export)",
-      "tier": "extended",
-      "text": "ShortcutDefinition · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "5c902a40c9713d759a90fe41f0a9632e657f024946beb3aad89553d2a4d77fb1"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ShortcutMatchResult",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ShortcutMatchResult (re-export)",
-      "tier": "extended",
-      "text": "ShortcutMatchResult · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "be754c96debd57c1998ecdce00873b6c05e5892b7cd7902806dfbd6cc62dc4d6"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ShortcutParams",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ShortcutParams (re-export)",
-      "tier": "extended",
-      "text": "ShortcutParams · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "773f12998d6b3be5e48a86d1dd4f0fe7f35efa515cf704b8ce2183549dbfb5d2"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ShortcutRouter",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/router.js",
-      "title": "ShortcutRouter (re-export)",
-      "tier": "extended",
-      "text": "ShortcutRouter · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/router.js · used 0× · dead export unused",
-      "contentHash": "ecf9c5b6fd51167b641823915051f99173d1d835b8ddc4196cc2252fe8c1e35e"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ShortcutToolCall",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ShortcutToolCall (re-export)",
-      "tier": "extended",
-      "text": "ShortcutToolCall · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "7ccb7a2c6f6188d2415d9e42039c0e54ae747770c80b7aaba832487cda0135c6"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:TemplateRenderer",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "TemplateRenderer (re-export)",
-      "tier": "extended",
-      "text": "TemplateRenderer · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "e387c3f90a5137a1bf41c545efaa6df380f1fbb8ead1229afdc7acf9bee4f3b9"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ToolExecutor",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ToolExecutor (re-export)",
-      "tier": "extended",
-      "text": "ToolExecutor · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "24a8bc88332aa431ad5a1fed15d67f657f3b7f512fa9b67918ad996aed0fe02e"
-    },
-    {
-      "id": "export:@sergeant/openclaw-plugin:ToolResult",
-      "type": "export",
-      "path": "packages/openclaw-plugin/src/shortcuts/types.js",
-      "title": "ToolResult (re-export)",
-      "tier": "extended",
-      "text": "ToolResult · re-export · @sergeant/openclaw-plugin · packages/openclaw-plugin/src/shortcuts/types.js · used 0× · dead export unused",
-      "contentHash": "4f6de5595aec270dfbcc012ef2fe0764b74ccf8b05fac94ac17a6aece5cae7a7"
-    },
-    {
       "id": "export:@sergeant/routine-domain:*",
       "type": "export",
       "path": "packages/routine-domain/src/types.js",
@@ -4649,17 +4489,6 @@
       "contentHash": "43d61b367223dab2823b69e9f4c6d2a35319557a9427c4712220a9a39a27fdf8"
     },
     {
-      "id": "playbook:cutover-openclaw-gateway",
-      "type": "playbook",
-      "path": "docs/00-start/playbooks/cutover-openclaw-gateway.md",
-      "line": 1,
-      "title": "Cutover OpenClaw на зовнішній Gateway (Stage 7)",
-      "tier": "core",
-      "status": "Active",
-      "text": "Cutover OpenClaw на зовнішній Gateway (Stage 7) · playbook:cutover-openclaw-gateway · playbook · Active · Playbook: Cutover OpenClaw на зовнішній Gateway (Stage 7) · Owner surface · Decision Tree · Background (Original Steps) · 1. Pre-cutover checklist · Health-check Gateway · Telegram bot identity · Webhook active · 2. Cutover-day · Надішли тестове повідомлення через Gateway бот · Founder: /metrics → має повернути canned Markdown ≤2 сек · Founder: /plan тест → має активувати strategic mode · Railway Dashboard → Project: Sergeant → Service: Sergeant → Variables · Видали: OPENCLAWBOTTOKEN · Redeploy service · Unset OPENCLAWBOTTOKEN on main Sergeant service · Зніми webhook зі старого бот-токена (щоб Telegram не слав updates у порожнечу) · 3. DNS / webhook верифікація · 1. Gateway webhook жива · Очікуємо: · \"url\": \"https://sergeant-openclaw-gateway-production.up.railway.app/webhook/openclaw\" · \"hascustomcertificate\": false · \"pendingupdatecount\": 0 (або мале число) · 2. Старий бот без webhook",
-      "contentHash": "ebdd04187ff79ab267f81b18d9fb2e0661d0527c198a2dcfe73d431021e9af69"
-    },
-    {
       "id": "playbook:debug-chat-tool",
       "type": "playbook",
       "path": "docs/00-start/playbooks/debug-chat-tool.md",
@@ -4801,17 +4630,6 @@
       "status": "Active",
       "text": "Migrate localStorage to typedStore · playbook:migrate-localstorage-to-typedstore · playbook · Active · Playbook: Migrate localStorage to typedStore · Owner surface · Steps · 1. Знайти всі прямі виклики у файлі · 2. Визначити правильну обгортку · 3. Замінити прямі виклики · 4. Видалити файл з ESLint allowlist · 5. Тести · Запустити тести файла (якщо є) · Перевірити що лінтер тепер не дозволяє прямий localStorage в цьому файлі · 6. Створити PR · Verification · Notes · See also",
       "contentHash": "1a739e8730eaec62302e0d00ac5f4d55e2fe2f3b06a5db99849e8d303cf6f5d9"
-    },
-    {
-      "id": "playbook:modify-console-agent",
-      "type": "playbook",
-      "path": "docs/00-start/playbooks/modify-console-agent.md",
-      "line": 1,
-      "title": "Зміна або додавання console-агента",
-      "tier": "core",
-      "status": "Active",
-      "text": "Зміна або додавання console-агента · playbook:modify-console-agent · playbook · Active · Playbook: Зміна або додавання console-агента · Owner surface · Required context · Кроки · 1. Визнач тип зміни · 2. Тримай роутинг прозорим · 3. Тримай tools безпечними · 4. Онови промпт і constraints разом · Verification · Коли цей playbook НЕ використовувати · Споріднені playbook-и та skills",
-      "contentHash": "1943aac0c095afad680ef1cd4e12a30c5a8139938bc1f4df2659e945d0d56267"
     },
     {
       "id": "playbook:modify-n8n-workflow",
@@ -4995,10 +4813,10 @@
       "path": "docs/00-start/playbooks/rotate-openclaw-credentials.md",
       "line": 1,
       "title": "Ротація OpenClaw GitHub credentials",
-      "tier": "core",
-      "status": "Active",
-      "text": "Ротація OpenClaw GitHub credentials · playbook:rotate-openclaw-credentials · playbook · Active · Playbook: Ротація OpenClaw GitHub credentials · Owner surface · Required context · Decision tree — який тип ротації? · § Планова: ротація private key GitHub App (квартально) · Rollback · § Emergency: підозра витоку / компрометація · § Hand-off: зміна GitHub-org admin · Де живе кожне значення · Verification · § Gateway Telegram bot token (OPENCLAWGATEWAYBOTTOKEN) · Споріднені документи",
-      "contentHash": "19320cedd0add830d93e4c16e19311e41b8455360e9e337cde0bb093f4d27c65"
+      "tier": "extended",
+      "status": "Deprecated (OpenClaw decommissioned — ADR-0075)",
+      "text": "Ротація OpenClaw GitHub credentials · playbook:rotate-openclaw-credentials · playbook · Deprecated (OpenClaw decommissioned — ADR-0075) · Playbook: Ротація OpenClaw GitHub credentials · Owner surface · Required context · Decision tree — який тип ротації? · § Планова: ротація private key GitHub App (квартально) · Rollback · § Emergency: підозра витоку / компрометація · § Hand-off: зміна GitHub-org admin · Де живе кожне значення · Verification · § Gateway Telegram bot token (OPENCLAWGATEWAYBOTTOKEN) · Споріднені документи",
+      "contentHash": "3b4c179e34639d3b0378c7ae2940befe5c6ae8b245cb5c37252319f6535af585"
     },
     {
       "id": "playbook:rotate-secrets",
@@ -5251,8 +5069,8 @@
       "line": 1,
       "title": "sergeant-hubchat",
       "tier": "core",
-      "text": "sergeant-hubchat · skill:sergeant-hubchat · skill · Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool defs, executors, action cards, or chat side effects; also when editing AI prompts or stream; UA: правиш HubChat tool/executor/action card/chat. · HubChat у Sergeant · Топологія (станом на ADR-0055) · Обовʼязкова координація · Жорсткі правила · Верифікація · Корисні доки",
-      "contentHash": "2bc497c2c1dd2855fdd44fba030953da660f541569b47228a5b201b28aead253"
+      "text": "sergeant-hubchat · skill:sergeant-hubchat · skill · Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool defs, executors, action cards, or chat side effects; also when editing AI prompts or stream; UA: правиш HubChat tool/executor/action card/chat. · HubChat у Sergeant · Топологія · Обовʼязкова координація · Жорсткі правила · Верифікація · Корисні доки",
+      "contentHash": "3d54be2a4fdbffcf878c0d2668eac092321558e8014b6b713421d3b5d2d80d4d"
     },
     {
       "id": "skill:sergeant-mobile-expo",
@@ -5275,16 +5093,6 @@
       "contentHash": "16e180b7d7b6ab1b30aa4e16f86e0f87973a971f6d6b2d07f320e9ae25a18cf5"
     },
     {
-      "id": "skill:sergeant-openclaw",
-      "type": "skill",
-      "path": ".agents/skills/sergeant-openclaw/SKILL.md",
-      "line": 1,
-      "title": "sergeant-openclaw",
-      "tier": "core",
-      "text": "sergeant-openclaw · skill:sergeant-openclaw · skill · Use when working on the OpenClaw Gateway service, console agent, @sergeant/openclaw-plugin package, ops/openclaw config, or Telegram bot identity; UA: OpenClaw / gateway / console-agent / openclaw-plugin / Telegram-бот. · OpenClaw Gateway у Sergeant · Топологія (ADR-0055) · Жорсткі правила · Деплой · Генератор нового specialist-а · Куди роутити далі · Корисні доки",
-      "contentHash": "be292d86f4c69600f83374c1fb67e62de485dbd61f9fcc99dbe7014f47435dac"
-    },
-    {
       "id": "skill:sergeant-planning-batch",
       "type": "skill",
       "path": ".agents/skills/sergeant-planning-batch/SKILL.md",
@@ -5301,8 +5109,8 @@
       "line": 1,
       "title": "sergeant-qa-squad",
       "tier": "core",
-      "text": "sergeant-qa-squad · skill:sergeant-qa-squad · skill · Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces. · QA squad для повного coverage · Коли завантажувати · Spawn рецепт · Synthesis protocol · Завжди покривай · Червоні прапорці · Playbooks",
-      "contentHash": "6e58f04a53125aa68ec4981ac3ccf04cf894abfc0eaa987dc9746064b5af1eb0"
+      "text": "sergeant-qa-squad · skill:sergeant-qa-squad · skill · Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces. · QA squad для повного coverage · Коли завантажувати · Spawn рецепт · Synthesis protocol · Завжди покривай · Червоні прапорці · Playbooks",
+      "contentHash": "83907b1b420361a40a377ae7ea8728bf86627522ac91526d26fb6e775a9ba266"
     },
     {
       "id": "skill:sergeant-review-and-merge",

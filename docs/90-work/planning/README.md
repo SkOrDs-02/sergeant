@@ -23,7 +23,6 @@
 | [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)       | План спринтів 9–10: продовження performance / reliability / product-surface робіт         | Active                                                     |
 | [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)               | Технічний roadmap стеку (інструменти, інтеграції, практики, CI/CD, security, performance) | Active (живий журнал)                                      |
 | [`storage-roadmap.md`](./storage-roadmap.md)                   | Storage & Sync roadmap до production-ready (SQLite + op-log)                              | Reference (all 13 stages complete; Redis #045 opt-in tail) |
-| [`openclaw-user-guide.md`](./openclaw-user-guide.md)           | Операційний user guide для OpenClaw / Telegram control-plane                              | Active                                                     |
 
 ### PR-плани з прожарок 2026-05-13
 

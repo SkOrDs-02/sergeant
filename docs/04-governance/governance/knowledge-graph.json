@@ -1,15 +1,15 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-19",
+  "generated_at": "2026-07-20",
   "counts": {
-    "adr": 71,
+    "adr": 72,
     "audit": 9,
     "hard-rule": 26,
     "initiative": 52,
-    "playbook": 62,
-    "pr": 188,
-    "skill": 24
+    "playbook": 60,
+    "pr": 186,
+    "skill": 23
   },
   "nodes": [
     {
@@ -592,7 +592,7 @@
       "type": "adr",
       "title": "ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover",
       "path": "docs/04-governance/adr/0055-openclaw-external-gateway.md",
-      "status": "Active",
+      "status": "Superseded",
       "tier": "core",
       "meta": {
         "number": 55,
@@ -808,6 +808,17 @@
       }
     },
     {
+      "id": "adr:0075",
+      "type": "adr",
+      "title": "ADR-0075: OpenClaw Gateway decommissioned",
+      "path": "docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 75
+      }
+    },
+    {
       "id": "audit:2026-06-08-codebase-cleanup-audit",
       "type": "audit",
       "title": "Codebase Cleanup Audit — мертвий код, застарілі рішення та інфра-дрейф",
@@ -839,7 +850,7 @@
       "type": "audit",
       "title": "OpenClaw Internal Routes Deep Roast — `apps/server/src/routes/internal/openclaw.ts`",
       "path": "docs/90-work/audits/2026-08-XX-openclaw-internal-roast.md",
-      "status": "Reference — заготовка майбутнього аудиту без дати й owner commitment.",
+      "status": "Resolved (target deleted — ADR-0075).",
       "tier": "core",
       "meta": {}
     },
@@ -1898,15 +1909,6 @@
       "meta": {}
     },
     {
-      "id": "playbook:cutover-openclaw-gateway",
-      "type": "playbook",
-      "title": "Cutover OpenClaw на зовнішній Gateway (Stage 7)",
-      "path": "docs/00-start/playbooks/cutover-openclaw-gateway.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
       "id": "playbook:debug-chat-tool",
       "type": "playbook",
       "title": "Debug HubChat Tool",
@@ -2019,15 +2021,6 @@
       "type": "playbook",
       "title": "Migrate localStorage to typedStore",
       "path": "docs/00-start/playbooks/migrate-localstorage-to-typedstore.md",
-      "status": "Active",
-      "tier": "core",
-      "meta": {}
-    },
-    {
-      "id": "playbook:modify-console-agent",
-      "type": "playbook",
-      "title": "Зміна або додавання console-агента",
-      "path": "docs/00-start/playbooks/modify-console-agent.md",
       "status": "Active",
       "tier": "core",
       "meta": {}
@@ -2181,8 +2174,8 @@
       "type": "playbook",
       "title": "Ротація OpenClaw GitHub credentials",
       "path": "docs/00-start/playbooks/rotate-openclaw-credentials.md",
-      "status": "Active",
-      "tier": "core",
+      "status": "Deprecated (OpenClaw decommissioned — ADR-0075)",
+      "tier": "extended",
       "meta": {}
     },
     {
@@ -3682,26 +3675,6 @@
       }
     },
     {
-      "id": "pr:3611",
-      "type": "pr",
-      "title": "PR #3611",
-      "tier": "extended",
-      "meta": {
-        "number": 3611,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3611"
-      }
-    },
-    {
-      "id": "pr:3638",
-      "type": "pr",
-      "title": "PR #3638",
-      "tier": "extended",
-      "meta": {
-        "number": 3638,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3638"
-      }
-    },
-    {
       "id": "pr:3640",
       "type": "pr",
       "title": "PR #3640",
@@ -4312,16 +4285,6 @@
       }
     },
     {
-      "id": "skill:sergeant-openclaw",
-      "type": "skill",
-      "title": "sergeant-openclaw",
-      "path": ".agents/skills/sergeant-openclaw/SKILL.md",
-      "tier": "core",
-      "meta": {
-        "description": "Use when working on the OpenClaw Gateway service, console agent, @sergeant/openclaw-plugin package, ops/openclaw config, or Telegram bot identity; UA: OpenClaw / gateway / console-agent / openclaw-plugin / Telegram-бот."
-      }
-    },
-    {
       "id": "skill:sergeant-planning-batch",
       "type": "skill",
       "title": "sergeant-planning-batch",
@@ -4338,7 +4301,7 @@
       "path": ".agents/skills/sergeant-qa-squad/SKILL.md",
       "tier": "core",
       "meta": {
-        "description": "Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces."
+        "description": "Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web, qa-mobile as Agent Team in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces."
       }
     },
     {
@@ -5012,6 +4975,16 @@
       "from": "adr:0074",
       "to": "adr:0009",
       "type": "supersedes"
+    },
+    {
+      "from": "adr:0075",
+      "to": "hard-rule:20",
+      "type": "references"
+    },
+    {
+      "from": "adr:0075",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
       "from": "audit:2026-06-08-codebase-cleanup-audit",
@@ -5954,26 +5927,6 @@
       "type": "touched-by"
     },
     {
-      "from": "playbook:cutover-openclaw-gateway",
-      "to": "hard-rule:20",
-      "type": "references"
-    },
-    {
-      "from": "playbook:cutover-openclaw-gateway",
-      "to": "pr:3610",
-      "type": "touched-by"
-    },
-    {
-      "from": "playbook:cutover-openclaw-gateway",
-      "to": "pr:3611",
-      "type": "touched-by"
-    },
-    {
-      "from": "playbook:cutover-openclaw-gateway",
-      "to": "pr:3638",
-      "type": "touched-by"
-    },
-    {
       "from": "playbook:deploy-config-change",
       "to": "pr:1595",
       "type": "touched-by"
@@ -6110,16 +6063,6 @@
     },
     {
       "from": "skill:sergeant-monorepo-boundaries",
-      "to": "pr:1848",
-      "type": "touched-by"
-    },
-    {
-      "from": "skill:sergeant-openclaw",
-      "to": "hard-rule:20",
-      "type": "references"
-    },
-    {
-      "from": "skill:sergeant-openclaw",
       "to": "pr:1848",
       "type": "touched-by"
     },

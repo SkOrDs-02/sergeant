@@ -3,7 +3,7 @@
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
-    <title>Sergeant — Knowledge Graph (2026-07-19)</title>
+    <title>Sergeant — Knowledge Graph (2026-07-20)</title>
     <style>
       body {
         font-family:
@@ -97,21 +97,21 @@
   <body>
     <h1>Sergeant — Knowledge Graph</h1>
     <p class="auto-gen">
-      Generated 2026-07-19 · schema v1 · do not edit by hand — regenerate via
+      Generated 2026-07-20 · schema v1 · do not edit by hand — regenerate via
       <code>pnpm docs:gen-graph</code>.
     </p>
     <div class="summary">
-      <span class="chip chip-adr">adr: <b>71</b></span>
+      <span class="chip chip-adr">adr: <b>72</b></span>
       <span class="chip chip-audit">audit: <b>9</b></span>
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>52</b></span>
-      <span class="chip chip-playbook">playbook: <b>62</b></span>
-      <span class="chip chip-pr">pr: <b>188</b></span>
-      <span class="chip chip-skill">skill: <b>24</b></span>
+      <span class="chip chip-playbook">playbook: <b>60</b></span>
+      <span class="chip chip-pr">pr: <b>186</b></span>
+      <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
     <details open>
-      <summary>Nodes (237 core)</summary>
+      <summary>Nodes (234 core)</summary>
       <table>
         <thead>
           <tr>
@@ -781,7 +781,7 @@
                 cutover</a
               >
             </td>
-            <td>Active</td>
+            <td>Superseded</td>
             <td>number=55 · last_validated=2026-05-11</td>
           </tr>
           <tr>
@@ -1010,6 +1010,18 @@
             <td>number=74</td>
           </tr>
           <tr>
+            <td>adr</td>
+            <td><code>adr:0075</code></td>
+            <td>
+              <a
+                href="../../docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md"
+                >ADR-0075: OpenClaw Gateway decommissioned</a
+              >
+            </td>
+            <td>accepted</td>
+            <td>number=75</td>
+          </tr>
+          <tr>
             <td>audit</td>
             <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
             <td>
@@ -1068,10 +1080,7 @@
                 `apps/server/src/routes/internal/openclaw.ts`</a
               >
             </td>
-            <td>
-              Reference — заготовка майбутнього аудиту без дати й owner
-              commitment.
-            </td>
+            <td>Resolved (target deleted — ADR-0075).</td>
             <td></td>
           </tr>
           <tr>
@@ -2781,18 +2790,6 @@
           </tr>
           <tr>
             <td>playbook</td>
-            <td><code>playbook:cutover-openclaw-gateway</code></td>
-            <td>
-              <a
-                href="../../docs/00-start/playbooks/cutover-openclaw-gateway.md"
-                >Cutover OpenClaw на зовнішній Gateway (Stage 7)</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>playbook</td>
             <td><code>playbook:debug-chat-tool</code></td>
             <td>
               <a href="../../docs/00-start/playbooks/debug-chat-tool.md"
@@ -2927,17 +2924,6 @@
           </tr>
           <tr>
             <td>playbook</td>
-            <td><code>playbook:modify-console-agent</code></td>
-            <td>
-              <a href="../../docs/00-start/playbooks/modify-console-agent.md"
-                >Зміна або додавання console-агента</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>playbook</td>
             <td><code>playbook:modify-n8n-workflow</code></td>
             <td>
               <a href="../../docs/00-start/playbooks/modify-n8n-workflow.md"
@@ -3052,18 +3038,6 @@
             <td>
               <a href="../../docs/00-start/playbooks/retire-feature-flag.md"
                 >Retire Feature Flag</a
-              >
-            </td>
-            <td>Active</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>playbook</td>
-            <td><code>playbook:rotate-openclaw-credentials</code></td>
-            <td>
-              <a
-                href="../../docs/00-start/playbooks/rotate-openclaw-credentials.md"
-                >Ротація OpenClaw GitHub credentials</a
               >
             </td>
             <td>Active</td>
@@ -3413,22 +3387,6 @@
           </tr>
           <tr>
             <td>skill</td>
-            <td><code>skill:sergeant-openclaw</code></td>
-            <td>
-              <a href="../../.agents/skills/sergeant-openclaw/SKILL.md"
-                >sergeant-openclaw</a
-              >
-            </td>
-            <td></td>
-            <td>
-              description=Use when working on the OpenClaw Gateway service,
-              console agent, @sergeant/openclaw-plugin package, ops/openclaw
-              config, or Telegram bot identity; UA: OpenClaw / gateway /
-              console-agent / openclaw-plugin / Telegram-бот.
-            </td>
-          </tr>
-          <tr>
-            <td>skill</td>
             <td><code>skill:sergeant-planning-batch</code></td>
             <td>
               <a href="../../.agents/skills/sergeant-planning-batch/SKILL.md"
@@ -3454,9 +3412,9 @@
             <td></td>
             <td>
               description=Use when running full QA across all Sergeant surfaces
-              — spawns qa-server, qa-web, qa-mobile, qa-openclaw as Agent Team
-              in parallel and synthesizes per-surface results; UA: повний QA по
-              всіх surfaces.
+              — spawns qa-server, qa-web, qa-mobile as Agent Team in parallel
+              and synthesizes per-surface results; UA: повний QA по всіх
+              surfaces.
             </td>
           </tr>
           <tr>
@@ -3608,7 +3566,7 @@
     </details>
 
     <details>
-      <summary>Edges (358 total, first 500 core-to-core)</summary>
+      <summary>Edges (354 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -3824,6 +3782,16 @@
             <td><code>adr:0009</code></td>
           </tr>
           <tr>
+            <td><code>adr:0075</code></td>
+            <td>references</td>
+            <td><code>hard-rule:20</code></td>
+          </tr>
+          <tr>
+            <td><code>adr:0075</code></td>
+            <td>references</td>
+            <td><code>hard-rule:4</code></td>
+          </tr>
+          <tr>
             <td><code>audit:2026-06-08-codebase-cleanup-audit</code></td>
             <td>references</td>
             <td><code>hard-rule:10</code></td>
@@ -3992,11 +3960,6 @@
             <td><code>hard-rule:15</code></td>
           </tr>
           <tr>
-            <td><code>playbook:cutover-openclaw-gateway</code></td>
-            <td>references</td>
-            <td><code>hard-rule:20</code></td>
-          </tr>
-          <tr>
             <td><code>playbook:modify-n8n-workflow</code></td>
             <td>references</td>
             <td><code>hard-rule:15</code></td>
@@ -4010,11 +3973,6 @@
             <td><code>playbook:release</code></td>
             <td>references</td>
             <td><code>hard-rule:4</code></td>
-          </tr>
-          <tr>
-            <td><code>playbook:rotate-openclaw-credentials</code></td>
-            <td>references</td>
-            <td><code>hard-rule:20</code></td>
           </tr>
           <tr>
             <td><code>skill:sergeant-deliver-squad</code></td>
@@ -4033,11 +3991,6 @@
           </tr>
           <tr>
             <td><code>skill:sergeant-hubchat</code></td>
-            <td>references</td>
-            <td><code>hard-rule:20</code></td>
-          </tr>
-          <tr>
-            <td><code>skill:sergeant-openclaw</code></td>
             <td>references</td>
             <td><code>hard-rule:20</code></td>
           </tr>

@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -665,41 +665,13 @@ Web `traceparent` (api-client) лишається для cross-boundary correlat
 Sentry. Якщо distributed tracing знадобиться — відновити OTel з git history
 ADR-0035.
 
-## WF-25 — Morning briefing cron (07:00 Kyiv → founder DM)
-
-**Що це.** n8n cron-workflow [`25-morning-briefing-cron.json`](../../../ops/n8n-workflows/25-morning-briefing-cron.json) щоранку о 07:00 Kyiv (`0 7 * * *`, `settings.timezone="Europe/Kyiv"`) дергає server endpoint [`POST /api/internal/openclaw/briefing/morning`](../runbooks/openclaw-morning-briefing.md) (PR-26), парсить `{markdown, data}`, паралельно запускає (а) запис у `n8n_webhook_events` через [`POST /api/internal/webhook-events/record`](../../../apps/server/src/routes/internal/webhook-events.ts) і (b) DM founder-у через raw HTTP до `api.telegram.org/bot{OPENCLAW_BOT_TOKEN}/sendMessage`. LLM-summarization ще НЕ підключено — cron шле raw hardcoded-template markdown.
-
-**Як monitorити.**
-
-- **Healthy:** один Telegram DM від `@OpenClaw_sergeant_bot` щоранку ~07:00 Kyiv. Усі 5 секцій або `notConfigured: true` (env-var unset на API side) або з реальними даними.
-- **Stuck pending:** `SELECT COUNT(*) FROM n8n_webhook_events WHERE workflow_id='25-morning-briefing-cron' AND processed_at IS NULL AND error IS NULL AND received_at < NOW() - INTERVAL '15 minutes';` — `> 0` означає, що `recordWebhookEvent` помітив запис, але PR-29 retention/replay-CLI ще не відмітив його як processed. На сьогодні `processed_at` для cron-ів ніколи не set — це експлуатаційний baseline; alert тільки коли `error IS NOT NULL`.
-- **Telegram delivery fail:** перевір `error` рядок у `n8n_webhook_events`: якщо `OPENCLAW_BOT_TOKEN`/`OPENCLAW_FOUNDER_TG_USER_ID` не виставлені на n8n Railway → Telegram-нода поверне 401/400 (workflow продовжує завдяки `onError: continueRegularOutput`, але DM не дійшов). Аудит-row однакою INSERT-ний, видно у `SELECT * FROM n8n_webhook_events WHERE workflow_id='25-morning-briefing-cron' ORDER BY received_at DESC LIMIT 5;`.
-- **Heartbeat:** WF-99 `*/3h` heartbeat дасть знати, що n8n живий навіть якщо WF-25 silent. WF-98 error-handler ловить runtime errors WF-25 через `errorWorkflow=iC82EFJzqBny9kxI` і ескалит у `#meta`.
-
-**Як disable.**
-
-- **На день/тиждень:** у n8n UI (`Sergeant Ops n8n`) → відкрий workflow `25 — Morning Briefing Cron (07:00 Kyiv → founder DM)` → toggle `Active` → OFF. Git-version залишає `active: false` для всіх workflow-ів, тому це не perdana — наступний `n8n:import` не reactivate-нe її.
-- **Назавжди:** змінити `status` у `ops/n8n-workflows/manifest.json` з `"experimental"` на `"draft"` (або вилучити рядок) і видалити з `REPORTING-MATRIX.md`. У n8n UI workflow залишиться, але `pnpm n8n:export` напише `active: false` в git і `pnpm n8n:import` deactivate-нe.
-- **Hot-disable без UI:** на n8n Railway встанови `OPENCLAW_FOUNDER_TG_USER_ID=""` — endpoint-call і audit-INSERT все ще пройдуть, але raw Telegram HTTP-call отримає `Bad Request: chat not found` і повідомлення тихо не доставиться. Audit-row у `n8n_webhook_events` лишиться, тому ти бачиш intentional-disable у логах.
-
-**Env-vars на n8n Railway.**
-
-| Var                           | Призначення                                                          |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `PUBLIC_API_BASE_URL`         | Base URL до Sergeant API (`https://api.sergeant.app` / staging URL). |
-| `INTERNAL_API_KEY`            | Bearer для `/api/internal/*` routes. Mathing з server-side env.      |
-| `OPENCLAW_BOT_TOKEN`          | Token для `@OpenClaw_sergeant_bot` (cofounder bot, не alert bot).    |
-| `OPENCLAW_FOUNDER_TG_USER_ID` | Telegram user_id founder-а (private DM target).                      |
-
-API-side env-vars для briefing-секцій (Stripe / PostHog / GitHub / n8n / Sentry) — у [`docs/03-operations/runbooks/openclaw-morning-briefing.md`](../runbooks/openclaw-morning-briefing.md). Якщо API-side env-var missing — briefing рендерить `notConfigured: true` hint у відповідній секції, cron виконується успішно.
-
 ## Alert-bot escalation ladder (T1 → T2 → T3)
 
 **Що це.** Trois-tier ladder для unACKed alerts на `tg_alert_acks`, кожен рівень — окремий n8n cron + idempotency-stamp у DB. ADR-0038 §3.2 ladder, перші колонки — `escalated_at` (T1, PR-O9), решта — `repeated_at` / `sentry_warned_at` / `snoozed_until_at` (Sprint 6 alert-escalation; migration `063_tg_alert_acks_escalation_tiers.sql`).
 
 | Tier   | Trigger                                                                                           | Action                                                                                                                                                                                                         | Marker column      | n8n workflow                                                                                                 |
 | ------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `@OpenClaw_sergeant_bot` (raw HTTP)                                                                                                                                                             | `escalated_at`     | [`103-alert-escalation-cron.json`](../../../ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
+| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `SERGEANT_ALERT_BOT_TOKEN` bot (raw HTTP)                                                                                                                                                       | `escalated_at`     | [`103-alert-escalation-cron.json`](../../../ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
 | **T2** | `posted_at < NOW() - 60 min` AND `ack_at IS NULL` AND `repeated_at IS NULL` AND not-snoozed       | Re-post original alert у same topic з prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h)                                                                            | `repeated_at`      | [`105-alert-repeat-ping-cron.json`](../../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (`*/15 min`) |
 | **T3** | `posted_at < NOW() - 120 min` AND `ack_at IS NULL` AND `sentry_warned_at IS NULL` AND not-snoozed | Server-side `Sentry.captureMessage("unacked-alert-escalation:<id>", level=warning, tags.kind=unacked-alert-escalation)` — Sentry dashboard + email є off-channel fallback коли founder offline / Telegram down | `sentry_warned_at` | [`106-alert-sentry-warn-cron.json`](../../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (`*/15 min`) |
 

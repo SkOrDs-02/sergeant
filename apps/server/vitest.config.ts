@@ -31,8 +31,6 @@ export default defineConfig({
         //  - apps/server/src/modules/nutrition/{day-hint,day-plan,food-search,
         //    parse-pantry,find-recipes,shopping-list,week-plan}.ts (Anthropic
         //    tool handlers, ~0–15% covered each)
-        //  - apps/server/src/modules/openclaw/{tools,write-tools}.ts
-        //    (Anthropic tool handlers, branchy)
         //  - apps/server/src/modules/sync/syncV2.ts and apps/server/src/
         //    modules/digest/weekly-digest.ts (~0–1% covered, large)
         //

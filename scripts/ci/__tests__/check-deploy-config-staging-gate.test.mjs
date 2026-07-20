@@ -37,7 +37,6 @@ describe("deployConfigDialect", () => {
   it("matches Dockerfile and Dockerfile.* as 'hash'", () => {
     assert.equal(deployConfigDialect("Dockerfile"), "hash");
     assert.equal(deployConfigDialect("Dockerfile.api"), "hash");
-    assert.equal(deployConfigDialect("Dockerfile.openclaw"), "hash");
     assert.equal(deployConfigDialect("ops/grafana-alloy/Dockerfile"), "hash");
   });
 

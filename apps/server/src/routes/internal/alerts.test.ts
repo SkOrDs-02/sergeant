@@ -66,14 +66,9 @@ vi.mock("../../sentry.js", () => ({
   },
 }));
 
-vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("../../modules/openclaw/index.js")>();
-  return {
-    ...actual,
-    isFounderMuted: isFounderMutedMock,
-  };
-});
+vi.mock("../../modules/alerts/mute-state.js", () => ({
+  isFounderMuted: isFounderMutedMock,
+}));
 
 const ALERT_ROUTE_COLD_IMPORT_TIMEOUT_MS = 60_000;
 

@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-07-19",
+  "generated_at": "2026-07-20",
   "summary": {
-    "packages": 18,
-    "totalExports": 305,
-    "totalDeadExports": 199
+    "packages": 17,
+    "totalExports": 286,
+    "totalDeadExports": 181
   },
   "packages": [
     {
@@ -1901,150 +1901,6 @@
       ]
     },
     {
-      "name": "@sergeant/openclaw-plugin",
-      "path": "packages/openclaw-plugin",
-      "entryFile": "packages/openclaw-plugin/src/index.ts",
-      "stats": {
-        "exportCount": 19,
-        "totalImporters": 0,
-        "deadExports": 18
-      },
-      "exports": [
-        {
-          "name": "default",
-          "kind": "default-export",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "OpenClawHttpClient",
-          "kind": "re-export",
-          "fromFile": "./http-client.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "OpenClawHttpError",
-          "kind": "re-export",
-          "fromFile": "./http-client.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "HttpClientOptions",
-          "kind": "re-export",
-          "fromFile": "./http-client.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "parsePluginConfig",
-          "kind": "re-export",
-          "fromFile": "./config.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "PluginConfigSchema",
-          "kind": "re-export",
-          "fromFile": "./config.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "PluginConfig",
-          "kind": "re-export",
-          "fromFile": "./config.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ESCALATE_PREFIX",
-          "kind": "re-export",
-          "fromFile": "./hooks/shortcut-router.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "createShortcutRouterHook",
-          "kind": "re-export",
-          "fromFile": "./hooks/shortcut-router.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ShortcutRouter",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/router.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "extractText",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/router.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ShortcutDefinition",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ShortcutMatchResult",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ShortcutParams",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ShortcutToolCall",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "TemplateRenderer",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ToolExecutor",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ToolResult",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/types.js",
-          "usedBy": [],
-          "usageCount": 0
-        },
-        {
-          "name": "ALL_SHORTCUTS",
-          "kind": "re-export",
-          "fromFile": "./shortcuts/index.js",
-          "usedBy": [],
-          "usageCount": 0
-        }
-      ]
-    },
-    {
       "name": "@sergeant/routine-domain",
       "path": "packages/routine-domain",
       "entryFile": "packages/routine-domain/src/index.ts",
@@ -2080,7 +1936,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 378,
+        "totalImporters": 376,
         "deadExports": 0
       },
       "exports": [

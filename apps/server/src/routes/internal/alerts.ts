@@ -46,7 +46,7 @@ import {
   recordAlertPost,
   type TelegramApiClient,
 } from "../../modules/alerts/index.js";
-import { isFounderMuted } from "../../modules/openclaw/index.js";
+import { isFounderMuted } from "../../modules/alerts/mute-state.js";
 import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────

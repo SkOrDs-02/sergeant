@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-07-13",
+  "generated_at": "2026-07-20",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -406,30 +406,6 @@
         {
           "name": "vitest",
           "version": "^4.1.10"
-        }
-      ],
-      "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
-    },
-    {
-      "name": "@sergeant/openclaw-plugin",
-      "path": "packages/openclaw-plugin",
-      "category": "package",
-      "private": true,
-      "version": "0.1.0",
-      "type": "module",
-      "frameworkDeps": [
-        {
-          "name": "typescript",
-          "version": "^6.0.3"
-        },
-        {
-          "name": "vitest",
-          "version": "^4.1.10"
-        },
-        {
-          "name": "zod",
-          "version": "^4.3.6"
         }
       ],
       "testRunner": "vitest",

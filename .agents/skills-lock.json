@@ -19,7 +19,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ccedfdcb0e8fad86fccf48d2248132ece00eb7a6eee764e4d63ae23480662e9b"
+      "computedHash": "3d919b46b858706169c4cbe9c9205430fdde91e43274419341e1c5647c91cc55"
     },
     "sergeant-feature-delivery": {
       "source": "local",
@@ -29,7 +29,7 @@
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "87eca1a26a2a9a49d2a1f0e6d8eb07bb60cba9987b17dda755bbcba0ab046d5f"
+      "computedHash": "0027b7c0434538c16178d78e1ed8b8f8034b6af7e0591d498a521f05507410ad"
     },
     "sergeant-mobile-expo": {
       "source": "local",
@@ -54,7 +54,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "bd0cced3c6ae5d847a90cf7bc570b9b226ff038a8f9c3bada7b10ce2c44ae53d"
+      "computedHash": "1a8e1c3ab3a994f88a2754ed51ba8bc7b21724e788de5d188e424cd89861e642"
     },
     "sergeant-web-ui": {
       "source": "local",
@@ -66,15 +66,10 @@
       "sourceType": "local",
       "computedHash": "1a9ea1de7b38e99b417ac58c0805af2ceea66d0f2aa4d42ddee475ef6b219d21"
     },
-    "sergeant-openclaw": {
-      "source": "local",
-      "sourceType": "local",
-      "computedHash": "bf50b17169d5ea58515cb6b309916d9fbb016b07f95ba68f512524f82ca1a799"
-    },
     "sergeant-security-audit": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "c139f8a90617ad6351fa68104b744913fd4aa8ddfa425e0f6c711bcdc7064793"
+      "computedHash": "6fb2e65510fc02f948ed1a4d042c449e5811db1dece3708f6a58d2de9f24b1ec"
     },
     "sergeant-e2e-testing": {
       "source": "local",
@@ -99,7 +94,7 @@
     "sergeant-qa-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "84df10f180e9be7720df570a3751517a60a30a2339b3974f38cc7dada0bd54cd"
+      "computedHash": "069e80bbd76fa5d2dc3c905b30f961b5f9d3c60390ae431a077e2579f2b043e5"
     },
     "sergeant-council": {
       "source": "local",
