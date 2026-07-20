@@ -155,6 +155,30 @@ function mergeMemory(
   };
 }
 
+/**
+ * Найсвіжіші дедупльовані кореляції з тижневих дайджестів (найновіші тижні
+ * першими). Спільна вибірка для weekly-insight prompt-у (`buildMemorySummary`)
+ * і `/api/chat` surfacing-у (`getCoachCorrelationsBlock`) — обидва хочуть той
+ * самий порядок і дедуп, різниться лише формат навколо.
+ */
+function pickRecentCorrelations(
+  digests: readonly WeeklyDigestEntry[],
+  max: number,
+): string[] {
+  const seen = new Set<string>();
+  const picked: string[] = [];
+  for (const d of digests) {
+    for (const c of d.correlations || []) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      picked.push(c);
+      if (picked.length >= max) break;
+    }
+    if (picked.length >= max) break;
+  }
+  return picked;
+}
+
 function buildMemorySummary(memory: CoachMemory | null): string {
   if (
     !memory ||
@@ -203,17 +227,7 @@ function buildMemorySummary(memory: CoachMemory | null): string {
   // Помічені зв'язки — крос-модульні кореляції, пораховані КОДОМ на клієнті
   // (не LLM) під час weekly-digest. Даємо коучу «у дні тренувань ти витрачаєш
   // менше» без окремого виклику моделі. Найсвіжіші тижні першими, дедуп.
-  const seenCorr = new Set<string>();
-  const correlations: string[] = [];
-  for (const d of digests) {
-    for (const c of d.correlations || []) {
-      if (seenCorr.has(c)) continue;
-      seenCorr.add(c);
-      correlations.push(c);
-      if (correlations.length >= 4) break;
-    }
-    if (correlations.length >= 4) break;
-  }
+  const correlations = pickRecentCorrelations(digests, 4);
   if (correlations.length) {
     lines.push("Помічені зв'язки:");
     correlations.forEach((c) => lines.push(`  • ${c}`));
@@ -228,6 +242,44 @@ function buildMemorySummary(memory: CoachMemory | null): string {
   }
 
   return lines.join("\n");
+}
+
+/** Максимум кореляцій у /api/chat system-блоці — коротко, щоб не роздувати prompt на кожному турі. */
+const CHAT_CORRELATIONS_MAX = 3;
+
+/**
+ * Готовий system-prompt блок із найсвіжішими крос-модульними кореляціями для
+ * `/api/chat` (перший тур, дзеркалить `buildRagContext`). Дані вже пораховані
+ * КОДОМ на клієнті під час weekly-digest (WP3) і персистовані в
+ * `coach_memory` — тут лише читаємо й форматуємо, нової математики немає.
+ * Fail-safe: будь-яка помилка (в т.ч. відсутній userId) → "", чат лишається
+ * працездатним без блоку.
+ */
+export async function getCoachCorrelationsBlock(
+  userId: string,
+): Promise<string> {
+  try {
+    const memory = await getMemory(userId);
+    const digests = memory?.weeklyDigests;
+    if (!Array.isArray(digests) || digests.length === 0) return "";
+    const latest = digests[0];
+    if (!latest) return "";
+    const picked = pickRecentCorrelations(digests, CHAT_CORRELATIONS_MAX);
+    if (picked.length === 0) return "";
+    const asOf = latest.weekRange || latest.weekKey;
+    return [
+      "",
+      `ПОМІЧЕНІ ЗАКОНОМІРНОСТІ (станом на ${asOf}, з тижневого дайджесту):`,
+      ...picked.map((c) => `- ${c}`),
+    ].join("\n");
+  } catch (err) {
+    logger.warn({
+      msg: "coach_correlations_chat_block_error",
+      userId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return "";
+  }
 }
 
 /**

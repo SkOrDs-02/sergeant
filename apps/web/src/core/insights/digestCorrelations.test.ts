@@ -95,6 +95,35 @@ describe("correlationsFromSeries", () => {
     // With all |r|=1 and stable order, the 4th pair (weight↔kcal) is dropped.
     expect(out.join("\n")).not.toContain("вага росте");
   });
+
+  it("emits the expanded wellbeing↔habit_rate pair above the threshold", () => {
+    const out = correlationsFromSeries(
+      series(
+        {
+          habit_rate: [10, 30, 50, 70, 90],
+          wellbeing: [1, 2, 3, 4, 5],
+        },
+        5,
+      ),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]).toContain("коли тримаєш звички — почуваєшся краще");
+  });
+
+  it("skips the expanded workouts↔habit_rate pair below the threshold", () => {
+    const out = correlationsFromSeries(
+      series(
+        {
+          // Same near-orthogonal ordering as the spending↔workout_volume
+          // weak-correlation case above → |r| well under 0.4.
+          workouts: [1, 2, 3, 4, 5, 6],
+          habit_rate: [3, 1, 4, 1, 5, 2],
+        },
+        6,
+      ),
+    );
+    expect(out).toEqual([]);
+  });
 });
 
 describe("buildDigestCorrelations", () => {
