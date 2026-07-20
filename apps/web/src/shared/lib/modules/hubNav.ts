@@ -14,6 +14,9 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 
 export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 
+// Канонічне оголошення `HubModuleId` — `moduleLabels.ts` та
+// `core/hooks/useHubNavigation.ts` реекспортують його звідси, щоб уникнути
+// дубльованих декларацій (aislop `ai-slop/duplicate-type-declaration`).
 export type HubModuleId = ModuleAccent;
 export type HubModuleAction =
   "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";

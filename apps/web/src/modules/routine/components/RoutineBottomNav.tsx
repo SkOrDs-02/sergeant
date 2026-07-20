@@ -4,8 +4,10 @@ import {
   type ModuleBottomNavItem,
 } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
-
-export type RoutineMainTab = "calendar" | "stats";
+// `RoutineMainTab` живе у `../context/RoutineCalendarContext` (там решта
+// routine view-state типів). Імпортуємо звідти, щоб не дублювати оголошення
+// (aislop `ai-slop/duplicate-type-declaration`).
+import type { RoutineMainTab } from "../context/RoutineCalendarContext";
 
 interface RoutineNavItem extends ModuleBottomNavItem {
   id: RoutineMainTab;

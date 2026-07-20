@@ -1,8 +1,8 @@
 import {
   createApplyOps,
-  type ApplyDualWriteOptions as CoreApplyDualWriteOptions,
-  type ApplyDualWriteResult as CoreApplyDualWriteResult,
-  type DualWriteLogger as CoreDualWriteLogger,
+  type ApplyDualWriteOptions,
+  type ApplyDualWriteResult,
+  type DualWriteLogger,
   type DualWriteRuntime,
 } from "@sergeant/dualwrite-core";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -75,9 +75,7 @@ import {
  *   newer than the local `updated_at`.
  */
 
-export type ApplyDualWriteOptions = CoreApplyDualWriteOptions;
-export type DualWriteLogger = CoreDualWriteLogger;
-export type ApplyDualWriteResult = CoreApplyDualWriteResult;
+export type { ApplyDualWriteOptions, ApplyDualWriteResult, DualWriteLogger };
 
 const DEFAULT_LOGGER: DualWriteLogger = (level, message, meta) => {
   if (level === "warn") {

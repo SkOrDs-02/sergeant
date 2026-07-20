@@ -1,4 +1,5 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import { logger as webLogger } from "@shared/lib";
 
 import {
@@ -420,14 +421,6 @@ export function triggerHiddenTransactionSqliteMirror(txId: string): void {
   void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
 }
 
-export type DualWriteOutcome =
-  | { status: "applied"; result: ApplyDualWriteResult }
-  | {
-      status: "skipped";
-      reason:
-        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
-    };
-
 function logSafe(
   ctx: FinykDualWriteContext,
   level: "warn" | "info",
@@ -448,5 +441,6 @@ export {
   EMPTY_FINYK_STATE,
   type ApplyDualWriteResult,
   type DualWriteLogger,
+  type DualWriteOutcome,
   type FinykDualWriteState,
 };

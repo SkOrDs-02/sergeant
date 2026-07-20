@@ -9,9 +9,9 @@
 // Тримаємо константу у `shared/lib`, щоб імпорт не тягнув за собою
 // увесь onboarding-модуль.
 
-import type { ModuleAccent } from "@sergeant/design-tokens";
+import type { HubModuleId } from "./hubNav";
 
-export type HubModuleId = ModuleAccent;
+export type { HubModuleId };
 
 export const MODULE_LABELS: Record<HubModuleId, string> = {
   finyk: "Фінік",

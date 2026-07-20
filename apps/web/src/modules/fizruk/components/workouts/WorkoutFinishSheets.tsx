@@ -10,25 +10,16 @@ import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
 } from "@shared/lib/modules/crossModulePrompt";
-import {
-  formatDurShort,
-  type WorkoutFinishSummary,
-} from "@sergeant/fizruk-domain";
+import { formatDurShort } from "@sergeant/fizruk-domain";
 import { WorkoutStatTile } from "./WorkoutStatTile";
+// `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
+// setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
+// оголошення (aislop `ai-slop/duplicate-type-declaration`).
+import type { FinishFlashState } from "../../pages/Workouts.types";
 
-/**
- * Mirrors `FinishFlashState` in `Workouts.tsx` /
- * `WorkoutJournalSection.tsx`; kept locally so this component does not
- * import a sibling page just to read the shape.
- */
-export interface FinishFlashState extends WorkoutFinishSummary {
-  step: "wellbeing" | "summary";
-  collapsed: boolean;
-  workoutId: string;
-  energy: number | null;
-  mood: number | null;
-  savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
-}
+// Реекспорт для споживачів цього компонента (тест + orchestrator), що вже
+// імпортують `FinishFlashState` звідси.
+export type { FinishFlashState };
 
 interface WorkoutFinishSheetsProps {
   finishFlash: FinishFlashState | null;
