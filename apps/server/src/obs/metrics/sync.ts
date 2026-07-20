@@ -42,25 +42,6 @@ export const syncStreamConnectionsActive = new client.Gauge({
 });
 
 /**
- * Pre-sunset measurement для CloudSync v1 (Initiative 0003 Phase 1).
- *
- * Окремий counter (а не label-extension на `sync_operations_total`), бо:
- *   - інкрементиться **тільки на v1**-routes (`/api/sync/*`);
- *   - дозволяє pull-ити топ user-agent-classes / app-versions, що ще ходять
- *     у v1 → адресно push-ити update-нагадування перед T₀ (sunset date).
- *
- * Кардинальність: 5 (`user_agent_class`) × ≤20 (`app_version`) × 4 (`op`) =
- * ≤400 series. Logic у `apps/server/src/modules/sync/clientSurvey.ts` накладає
- * hard cap.
- */
-export const syncV1LegacyClientsTotal = new client.Counter({
-  name: "sync_v1_legacy_clients_total",
-  help: "CloudSync v1 (LWW-blob) clients by UA-class and app-version (sunset survey)",
-  labelNames: ["user_agent_class", "app_version", "op"],
-  registers: [register],
-});
-
-/**
  * Per-op apply outcome для v2 op-log (PR #048, Stage 5 DoD #10).
  *
  * `syncOperationsTotal{op="v2_push"}` рахує **запит** (`ok|partial|conflict`),

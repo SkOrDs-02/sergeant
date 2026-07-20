@@ -1,15 +1,10 @@
-// T2 audit finding #7 — v1 sync 410-stub ordering.
-// The whole point of RFC 8594 Sunset / RFC 8288 Link headers is for
-// legacy clients (mobile builds with expired sessions, anonymous probes)
-// to discover "stop calling permanently" without first authenticating.
-// Before the ordering fix, `requireSession()` ran BEFORE the 410-stubs
-// and returned 401 to unauth-ed clients — they kept retrying forever.
-//
-// These tests assert the public-410 contract via supertest. We mock the
-// rate-limit + session-survey middleware to no-ops so the assertions
-// focus purely on the auth-vs-410 ordering.
+// `/api/sync/audit` auth ordering.
+// The read-only audit log is the only surviving `/api/sync/*` (v1) route
+// after the CloudSync v1 push/pull endpoints were removed (Initiative 0003
+// Phase 7). It stays behind `requireSession()` and must return 401 for
+// unauthenticated requests.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
@@ -35,8 +30,6 @@ vi.mock("../http/index.js", async () => {
     setModule: () => (_req: unknown, _res: unknown, next: () => void) => next(),
     rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
       next(),
-    // Default `requireSession()` stub for unauth case — 401 just like
-    // the real middleware. Individual tests override per-route as needed.
     requireSession:
       () =>
       (
@@ -49,18 +42,6 @@ vi.mock("../http/index.js", async () => {
         res.status(401).json({ error: "Unauthorized" }),
   };
 });
-
-vi.mock("../modules/sync/clientSurvey.js", () => ({
-  v1ClientSurveyMiddleware:
-    () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
-}));
-
-vi.mock("../modules/sync/sunsetHeaders.js", () => ({
-  v1SunsetHeadersMiddleware:
-    () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
-}));
 
 vi.mock("../modules/sync/syncV2.js", () => ({
   syncV2Push: () => undefined,
@@ -84,7 +65,7 @@ function mkApp() {
   return app;
 }
 
-describe("createSyncRouter — v1 410 ordering (T2 audit #7)", () => {
+describe("createSyncRouter — /api/sync/audit auth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -93,39 +74,20 @@ describe("createSyncRouter — v1 410 ordering (T2 audit #7)", () => {
     vi.clearAllMocks();
   });
 
-  it("POST /api/sync/push returns 410 for unauthenticated requests (NOT 401)", async () => {
+  it("GET /api/sync/audit returns 401 for unauthenticated requests (auth-protected)", async () => {
+    const res = await request(mkApp()).get("/api/sync/audit");
+    expect(res.status).toBe(401);
+  });
+
+  // After Phase 7 removed the v1 410-stubs, the old push/pull paths no longer
+  // have a dedicated handler. `requireSession()` is mounted as `.use` on the
+  // whole `/api/sync` prefix, so unauthenticated hits now get 401 (not the
+  // former 410 Gone, and not a raw 404) — no sunset payload is emitted.
+  it("POST /api/sync/push no longer returns 410 for unauthenticated requests", async () => {
     const res = await request(mkApp())
       .post("/api/sync/push")
       .send({ payload: "anything" });
-    expect(res.status).toBe(410);
-    expect(res.body).toMatchObject({
-      error: "cloudsync_v1_sunset",
-      successor: "/api/v2/sync",
-    });
-  });
-
-  it("POST /api/sync/pull returns 410 for unauthenticated requests", async () => {
-    const res = await request(mkApp()).post("/api/sync/pull");
-    expect(res.status).toBe(410);
-  });
-
-  it("GET /api/sync/pull-all returns 410 for unauthenticated requests", async () => {
-    const res = await request(mkApp()).get("/api/sync/pull-all");
-    expect(res.status).toBe(410);
-  });
-
-  it("POST /api/sync/pull-all returns 410 for unauthenticated requests", async () => {
-    const res = await request(mkApp()).post("/api/sync/pull-all");
-    expect(res.status).toBe(410);
-  });
-
-  it("POST /api/sync/push-all returns 410 for unauthenticated requests", async () => {
-    const res = await request(mkApp()).post("/api/sync/push-all");
-    expect(res.status).toBe(410);
-  });
-
-  it("GET /api/sync/audit STILL returns 401 for unauthenticated requests (auth-protected)", async () => {
-    const res = await request(mkApp()).get("/api/sync/audit");
+    expect(res.status).not.toBe(410);
     expect(res.status).toBe(401);
   });
 });

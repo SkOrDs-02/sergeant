@@ -528,7 +528,6 @@ export {
   syncDurationMs,
   syncPayloadBytes,
   syncStreamConnectionsActive,
-  syncV1LegacyClientsTotal,
   syncOpLogApplyTotal,
   syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
