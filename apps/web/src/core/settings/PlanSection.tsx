@@ -20,10 +20,11 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  *   • Trial-дату (`status === "trialing"` → `currentPeriodEnd` = trial-end),
  *     дату наступного списання (`active`), warning при `canceled`/`past_due`.
  *   • CTA: «Перейти на Pro» (→ `/pricing?source=settings`) для Free;
- *     «Керувати підпискою» (→ `/api/billing/portal`) для Pro.
+ *     для legacy `provider === "stripe"` — «Керувати підпискою»
+ *     (→ `/api/billing/portal` → Stripe Customer Portal);
+ *     для LiqPay/Plata — «Скасувати Pro» (власний cancel, порталу нема).
  *
- * `/api/billing/portal` створює Stripe Customer Portal session і повертає
- * Stripe-hosted URL. Browser redirect робимо тільки після успішного POST-а:
+ * Portal redirect робимо тільки після успішного POST `/api/billing/portal`:
  * endpoint не має GET-форми, тож прямий `location.assign("/api/...")` ламає
  * self-serve billing flow.
  */
@@ -137,8 +138,9 @@ export function PlanSection() {
             data-testid="plan-past-due-info"
             className="text-sm text-danger-strong leading-snug"
           >
-            Останній платіж не пройшов. Онови картку у Stripe Portal, щоб не
-            втратити доступ.
+            {subscription?.provider === "stripe"
+              ? "Останній платіж не пройшов. Онови картку в платіжному порталі, щоб не втратити доступ."
+              : "Останній платіж не пройшов. Онови спосіб оплати або спробуй списання знову, щоб не втратити доступ."}
           </p>
         )}
 

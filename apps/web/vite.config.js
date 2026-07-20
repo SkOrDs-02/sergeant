@@ -237,7 +237,6 @@ export default defineConfig(({ mode }) => {
               if (id.includes("/node_modules/use-sync-external-store/"))
                 return "vendor-react";
               if (id.includes("react-router")) return "vendor-router";
-              if (id.includes("react-virtuoso")) return "vendor-virtuoso";
               if (id.includes("@zxing")) return "vendor-zxing";
               // `react-markdown` (та весь стек remark/mdast/hast/micromark)
               // прибрано у T4-B: `AssistantMessageBody.tsx` тепер містить

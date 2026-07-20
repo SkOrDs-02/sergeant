@@ -1,7 +1,7 @@
 # Playbook: Sync client wiring — виконання фаз 0–4
 
 > **Status:** Active
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
 > **Trigger:** Потрібно wire-ити client pull + outbox enqueue після SQLite cut-over ([`sync-client-wiring.md`](./sync-client-wiring.md)). Цей playbook — **операційна інструкція** для кожної фази: дизайн роботи, правила, метрики, підтвердження, перепровірки, розподіл між агентами.
 
 **Governing skills:** [`sergeant-feature-delivery`](../../../.agents/skills/sergeant-feature-delivery/SKILL.md) (координація) + [`sergeant-deliver-squad`](../../../.agents/skills/sergeant-deliver-squad/SKILL.md) (коли PR торкається ≥2 surfaces з contract deps).
@@ -331,13 +331,13 @@ pnpm check
 
 Не блокує Phase 1 DoD. Окремі PR без deliver-squad unless schema change.
 
-| Item                                       | Owner skill                    | Gate                              |
-| ------------------------------------------ | ------------------------------ | --------------------------------- |
-| `fizruk_rest_settings_v1` → SQLite         | `sergeant-web-ui` + mobile     | grep janitor clean                |
-| Web nutrition recipes IDB → SQLite or sync | `sergeant-web-ui`              | R4 IndexedDB scope decision in PR |
-| Mono multi-month backfill                  | `sergeant-server-api`          | Reports show history              |
-| Nutrition backup `.data/`                  | `sergeant-data-and-migrations` | Backup restore drill              |
-| Drop `billing_subscriptions` orphan        | `migration-agent`              | Two-phase DROP (R8)               |
+| Item                                       | Owner skill                    | Gate                                                        |
+| ------------------------------------------ | ------------------------------ | ----------------------------------------------------------- |
+| `fizruk_rest_settings_v1` → SQLite         | `sergeant-web-ui` + mobile     | grep janitor clean                                          |
+| Web nutrition recipes IDB → SQLite or sync | `sergeant-web-ui`              | R4 IndexedDB scope decision in PR                           |
+| Mono multi-month backfill                  | `sergeant-server-api`          | Reports show history                                        |
+| Nutrition backup `.data/`                  | `sergeant-data-and-migrations` | Backup restore drill                                        |
+| Drop `billing_subscriptions` orphan        | `migration-agent`              | ✅ Done — `083_drop_billing_subscriptions.sql` (2026-07-20) |
 
 ---
 

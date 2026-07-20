@@ -2,24 +2,24 @@
 /**
  * Last validated: 2026-06-24
  * Status: Active
- * Unit tests for the virtualized grouped meal list. Virtuoso, SwipeToAction
+ * Unit tests for the virtualized grouped meal list. VirtualList, SwipeToAction
  * and MealRow are stubbed so the test focuses on flattening + callbacks.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("react-virtuoso", () => ({
-  Virtuoso: ({
-    data,
-    itemContent,
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    data: unknown[] | undefined;
-    itemContent: (i: number, d: unknown) => ReactNode;
+    items: unknown[];
+    children: (item: unknown, index: number) => ReactNode;
   }) => (
     <div data-testid="virtual-list">
-      {(data || []).map((d, i) => (
-        <div key={i}>{itemContent(i, d)}</div>
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
       ))}
     </div>
   ),

@@ -581,7 +581,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       headlineLine1: "Sergeant is free for everyday use.",
       headlineLine2: "Premium — when you need everything at once.",
       subtitle:
-        "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and Stripe Checkout opens.",
+        "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and payment opens (LiqPay / Plata).",
     },
     tiers: {
       freeName: "Free",
@@ -619,24 +619,24 @@ export const messagesEn: Partial<MessageCatalog> = {
     },
     cta: {
       tryPremium: "Try Premium",
-      openingCheckout: "Opening checkout…",
+      openingCheckout: "Opening payment…",
       manageSubscription: "Manage subscription",
-      openingPortal: "Opening portal…",
+      openingPortal: "Opening management…",
       switchToFree: "Switch to Free",
       currentPlan: "Your current plan",
     },
     status: {
-      checkoutCreatedPrefix: "Checkout session created",
+      checkoutCreatedPrefix: "Payment session created",
     },
     errors: {
       checkoutUnavailable:
-        "Checkout is temporarily unavailable. Leave your email below and we'll get back with a checkout link.",
+        "Payment is temporarily unavailable. Leave your email below and we'll follow up when you can pay.",
       portalNoBillingCustomer:
-        "No Stripe billing profile found. Reach out to support — we'll set it up manually.",
+        "No billing profile found. Reach out to support — we'll set it up manually.",
       portalUnavailable:
         "Subscription management is temporarily unavailable. Try again later.",
       portalGeneric:
-        "Couldn't open the portal. Check your connection and try again.",
+        "Couldn't open subscription management. Check your connection and try again.",
     },
     toast: {
       subscriptionActive: "Subscription active — welcome to Premium!",
@@ -648,6 +648,6 @@ export const messagesEn: Partial<MessageCatalog> = {
       subtitle: "One email when Premium launches. No spam, no auto-charges.",
     },
     footer:
-      "Prices in UAH. Stripe may apply currency conversion depending on your bank's settings.",
+      "Prices in UAH. UA payments go through LiqPay / Plata. Legacy Stripe subscriptions use a separate billing portal.",
   },
 };

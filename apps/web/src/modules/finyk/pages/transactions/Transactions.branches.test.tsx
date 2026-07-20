@@ -23,28 +23,20 @@ const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("react-virtuoso", () => ({
-  GroupedVirtuoso: ({
-    groupCounts,
-    groupContent,
-    itemContent,
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    groupCounts: number[];
-    groupContent: (i: number) => React.ReactNode;
-    itemContent: (i: number) => React.ReactNode;
-  }) => {
-    const total = groupCounts.reduce((s, n) => s + n, 0);
-    return (
-      <div data-testid="grouped-virtuoso">
-        {groupCounts.map((_, gi) => (
-          <div key={`g-${gi}`}>{groupContent(gi)}</div>
-        ))}
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={`i-${i}`}>{itemContent(i)}</div>
-        ))}
-      </div>
-    );
-  },
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
+  }) => (
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock("@shared/lib/modules/cloudPullRequest", () => ({
