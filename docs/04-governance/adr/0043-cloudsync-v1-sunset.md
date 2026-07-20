@@ -178,3 +178,14 @@ DROP COLUMN — point-of-no-return.
 - [RFC 8288 — Web Linking](https://datatracker.ietf.org/doc/html/rfc8288)
 - [Apigee deprecation pattern](https://cloud.google.com/apigee/docs/api-platform/develop/deprecation-policy) — industry reference
 - [Stripe API versioning model](https://stripe.com/docs/api/versioning) — alternative approach (versioned URL paths) — НЕ обрано, бо v2 уже на окремому prefix.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#341](https://github.com/Skords-01/Sergeant/pull/341) | docs(docs): reconcile tracker drift across open-work surfaces | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
