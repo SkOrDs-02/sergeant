@@ -1,16 +1,16 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-07-20 by @cursor (cron streak re-verified via `gh run list --workflow=docs-daily-brief.yml`). **Next review:** 2026-10-18.
-> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes.
+> **Last validated:** 2026-07-20 by @cursoragent (code↔doc reconcile). **Next review:** 2026-10-18.
+> **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes.
 > **Agent-ready:** yes
 
 ## TL;DR
 
-Sergeant має ~250 trackable документів, 21 active initiative, 30 active audits — single-maintainer ловить decision fatigue, не information access fatigue. Інфраструктура (Status headers, `open-work.md` rollup, freshness dashboard) уже працює; бракує **виведених поверх неї views**, що відповідають за тебе на питання "що сьогодні робити" і "коли зупинитися заводити нове". Ця ініціатива докручує **daily-ops layer**: щоденний brief, WIP overload guard, trust badge — Phase 1; agent-dispatch suggestions і `agent-ready` tagging — Phase 2.
+Sergeant має ~250 trackable документів, **4 numbered active/proposed initiatives** (+ hardening-matrix index; більшість історичних ініціатив уже в `archive/`) — single-maintainer ловить decision fatigue, не information access fatigue. Інфраструктура (Status headers, `open-work.md` rollup, freshness dashboard) уже працює; бракує **виведених поверх неї views**, що відповідають за тебе на питання "що сьогодні робити" і "коли зупинитися заводити нове". Ця ініціатива докручує **daily-ops layer**: щоденний brief, WIP overload guard, trust badge — Phase 1; agent-dispatch suggestions і `agent-ready` tagging — Phase 2.
 
 ## Чому зараз
 
-- 21 active initiative × 1 maintainer = **3x Dunbar's overload** — natural impulse заводити нові ініціативи не закриваючи старих
+- 4 open initiative-docs × 1 maintainer + великий launch/planning surface = **decision fatigue** — natural impulse заводити нові ініціативи не закриваючи старих
 - `open-work.md` показує 106 open items, але без ranking — maintainer щоразу руками визначає що пріоритетно
 - Немає feedback loop "WIP занадто великий" — ніщо у CI не сигналить про violation
 - Trust gap: maintainer не довіряє auto-rollup (Phase 0 audit 2026-05-17 показав 0 contradictions, але maintainer ще не звик читати rollup замість 7 trackers)
@@ -88,13 +88,13 @@ Sergeant має ~250 trackable документів, 21 active initiative, 30 ac
 - [x] `docs/today.md` генерується (`pnpm docs:gen-today`), містить top items + overdue + WIP warnings
 - [x] `pnpm docs:check-wip-limits` запускається в CI; soft = warn, hard = fail
 - [x] `docs/README.md` має auto-updated trust badge section з 🟢/🟡/🔴 + лічильник
-- [x] Daily cron не падає 7 днів поспіль _(observational — **streak MET 2026-07-02→07-09** = 8 greens після fail 07-01; earlier June window зламався 06-06 на `node adr:0062: duplicate`. Після 07-09 до 07-20 runs у GH не видно — окремий ops follow-up)_
+- [x] Daily cron не падає 7 днів поспіль _(observational — **streak MET 2026-07-02→07-09** = 8 greens після fail 07-01; earlier June window зламався 06-06. Schedule **свідомо знято** 2026-07-09 у `dca267eeb` — workflow лишився `workflow_dispatch`-only; daily regen тепер manual або PR-triggered)_
 - [ ] Maintainer звітує що відкривав `today.md` принаймні 5 з 7 днів першого тижня _(self-report — чекає на тиждень usage)_
 
 ### Phase 2
 
 - [x] `open-work.md` має колонки `Skill` + `Playbook` для кожного item у Ініціативах і Plansах _(score-based skill mapping у `scripts/docs/skill-mapping.json` + `generate-open-work.mjs`; enriched-tracker рядки несуть `Agent-ready`/`Skill`/`Playbook` колонки)_
-- [x] Усі active initiatives мають `agent-ready` field _(5/5: 0003 `blocked`, 0006 `blocked`, 0010 `needs-decision`, 0015 `yes`, 0017 `blocked`)_
+- [x] Усі numbered initiatives мають `agent-ready` field _(lint `4/4`: 0006 `blocked` (Withdrawn), 0010 `needs-decision`, 0015 `yes`, 0022 `needs-decision`; archived 0003/0017 більше не в active set)_
 - [x] Items з `agent-ready: yes` сорtяться першими в open-work tables _(`sortByAgentReady`: yes → needs-decision → blocked → unset)_
 - [x] CI gate `lint:initiative-agent-ready` блокує новий initiative без поля _(`scripts/docs/lint-initiative-agent-ready.mjs` + `pnpm lint:initiative-agent-ready`, wired у aggregate `lint`)_
 
