@@ -142,3 +142,14 @@
 **Звички (Фаза-out на потім):**
 
 - [Habitica & Loop Habit Tracker — Data Export](https://habitica.fandom.com/wiki/Data_Export) — `history.csv` / CSV-ZIP по звичці.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#354](https://github.com/Skords-01/Sergeant/pull/354) | docs(docs): reconcile initiatives vs code (LiqPay pivot + cron note) | 2026-07-20 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

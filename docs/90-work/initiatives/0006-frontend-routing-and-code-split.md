@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-09-14.
+> **Last touched:** 2026-07-20 by @github-actions[bot]. **Next review:** 2026-09-14.
 > **Status:** Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.
 > **Agent-ready:** blocked
 > **Priority:** P1 (Sprint 2)
@@ -272,8 +272,9 @@ DOR для Phase 1 (`feat-react-router-setup`): після введення `<Ro
 
 | PR                                                       | Title                                                                         | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#354](https://github.com/Skords-01/Sergeant/pull/354)   | docs(docs): reconcile initiatives vs code (LiqPay pivot + cron note)          | 2026-07-20 |
 | [#3640](https://github.com/Skords-01/Sergeant/pull/3640) | fix(docs): accept "Last touched" label + bot handles in playbook schema check | 2026-06-18 |
 | [#3610](https://github.com/Skords-01/Sergeant/pull/3610) | chore(config): per-package eslint configs — PR-31 Phase 2b                    | 2026-06-16 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

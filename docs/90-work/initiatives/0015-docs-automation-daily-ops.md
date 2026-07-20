@@ -160,7 +160,8 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 | PR                                                       | Title                                                                               | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#354](https://github.com/Skords-01/Sergeant/pull/354)   | docs(docs): reconcile initiatives vs code (LiqPay pivot + cron note)                | 2026-07-20 |
 | [#3551](https://github.com/Skords-01/Sergeant/pull/3551) | fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp | 2026-06-13 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
