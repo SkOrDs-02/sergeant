@@ -105,7 +105,7 @@ describe("isOriginAllowed (ALLOWED_ORIGIN_REGEX)", () => {
 
   it("accepts Vercel previews matching the regex", () => {
     process.env["ALLOWED_ORIGIN_REGEX"] =
-      "^https://(?:sergeant|fizruk)(?:-[a-z0-9-]+)?\\.vercel\\.app$";
+      "^https://sergeant(?:-[a-z0-9-]+)?\\.vercel\\.app$";
     expect(isOriginAllowed("https://sergeant-git-branch-user.vercel.app")).toBe(
       true,
     );

@@ -9,7 +9,7 @@ import { logger } from "../obs/logger.js";
  * (`sergeant-git-branch-user.vercel.app`) перераховувати кожен URL в
  * ALLOWED_ORIGINS незручно — для цього додана змінна `ALLOWED_ORIGIN_REGEX`
  * (один regex, що тестується проти `req.headers.origin`). Приклад значення:
- *   `^https://(?:sergeant|fizruk)(?:-[a-z0-9-]+)?\.vercel\.app$`
+ *   `^https://sergeant(?:-[a-z0-9-]+)?\.vercel\.app$`
  *
  * Жодних wild-card defaults — щоб випадково не відкрити CORS на чуже
  * Vercel-тенант. Regex треба явно виставити.
@@ -25,7 +25,6 @@ const DEFAULT_ORIGINS = [
   // клієнти CORS не перевіряють (Origin не шлють), але Expo-web симулятор
   // і браузерна прев'юшка у dev-режимі — шлють, тому явно дозволяємо.
   "http://localhost:8081",
-  "https://fizruk.vercel.app",
   "https://sergeant.vercel.app",
   "https://sergeant.2dmanager.com.ua",
 ];
