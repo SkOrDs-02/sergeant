@@ -2,7 +2,10 @@ name: Weekly DB backup verify
 
 # Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Railway Postgres restore + smoke-test schema integrity.
+# Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Postgres
+# restore + smoke-test schema integrity. Backend moved Railway → Hetzner +
+# Coolify (ADR-0074); this job now dumps directly from the public Coolify
+# Postgres URL instead of going through the (now-removed) Railway CLI.
 # Ref: docs/03-operations/runbooks/database-backup-restore.md § 4 + § 6.
 
 on:
@@ -21,7 +24,7 @@ concurrency:
 
 jobs:
   backup-verify:
-    name: Restore & smoke-test Railway Postgres backup
+    name: Restore & smoke-test Postgres backup
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -30,6 +33,11 @@ jobs:
       # workflows (ci.yml, extended-e2e.yml, visual-regression.yml).
       # Migration 025_ai_memories_pgvector.sql requires the `vector`
       # extension which stock postgres:17-alpine does not ship.
+      # NOTE: prod is pgvector:pg18 (ADR-0074) — a pg18 -> pg17 pg_restore is
+      # a major-version downgrade and may not be fully compatible depending
+      # on what changed in pgvector/pg18. Tracked separately; this ephemeral
+      # image intentionally stays aligned with the rest of the CI fleet for
+      # now rather than diverging on its own.
       postgres:
         image: pgvector/pgvector:pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
@@ -63,45 +71,29 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # ── Step 1: Pull latest Railway dump ──────────────────────────
-      # Requires RAILWAY_TOKEN in GH Secrets (scoped to the production
-      # project). When absent the workflow gracefully falls back to a
-      # migration-only verify (schema integrity without production data).
-      - name: Install Railway CLI
-        # NOTE: install.sh has `#!/usr/bin/env bash` shebang and uses bash parameter
-        # substitution (e.g. `${value//pat/repl}` at line 141), so piping it to `sh`
-        # (dash on Ubuntu runners) aborts with `sh: 141: Bad substitution` and the
-        # whole step exits 2. Pipe to `bash` explicitly.
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/master/install.sh | bash
-          export PATH="$HOME/.railway/bin:$PATH"
-          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
-          railway --version
-
-      - name: Pull latest Railway dump
+      # ── Step 1: Dump production database ───────────────────────────
+      # Requires MIGRATE_DATABASE_URL in GH Secrets — the public Coolify
+      # Postgres connection string (same value Coolify's own pre-deploy
+      # migration step uses internally, per ADR-0074; add it here as a
+      # separate GH Actions secret so this job's blast radius/rotation is
+      # independent of Coolify's own env store). When absent, the workflow
+      # gracefully falls back to a migration-only verify (schema integrity
+      # without production data).
+      - name: Dump production database
         id: dump
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          PROD_DATABASE_URL: ${{ secrets.MIGRATE_DATABASE_URL }}
         run: |
-          if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "::warning::RAILWAY_TOKEN not configured — falling back to migration-only verify (no production data)."
+          if [ -z "$PROD_DATABASE_URL" ]; then
+            echo "::warning::MIGRATE_DATABASE_URL not configured — falling back to migration-only verify (no production data)."
             echo "has_dump=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "Pulling latest backup from Railway..."
-          # Railway CLI does not expose pg_dump directly; we connect to
-          # the public Postgres URL and dump locally.
-          PGURL=$(railway variable list --kv 2>/dev/null | awk -F= '$1 == "DATABASE_PUBLIC_URL" { print substr($0, length($1) + 2); exit }')
-          if [ -z "$PGURL" ]; then
-            echo "::warning::Could not resolve DATABASE_PUBLIC_URL from Railway — falling back to migration-only verify."
-            echo "has_dump=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
+          echo "Dumping production database..."
           ts=$(date -u +%Y%m%dT%H%M%SZ)
           pg_dump --format=custom --no-owner --no-privileges \
-            --file="sergeant-prod-${ts}.dump" "$PGURL"
+            --file="sergeant-prod-${ts}.dump" "$PROD_DATABASE_URL"
 
           echo "dump_file=sergeant-prod-${ts}.dump" >> "$GITHUB_OUTPUT"
           echo "has_dump=true" >> "$GITHUB_OUTPUT"
@@ -249,7 +241,7 @@ jobs:
               `**Date:** ${new Date().toISOString()}`,
               '',
               'The weekly backup-verify workflow failed. This means one of:',
-              '1. Railway dump could not be pulled (check `RAILWAY_TOKEN` secret)',
+              '1. Production dump could not be pulled (check `MIGRATE_DATABASE_URL` secret)',
               '2. Restore into ephemeral Postgres failed',
               '3. Migration ledger has gaps or skew',
               '4. Critical tables have unexpected row-counts',
