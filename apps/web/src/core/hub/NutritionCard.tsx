@@ -73,15 +73,18 @@ function BarChart({
     return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
   }
 
+  const selectedDate = selected !== null ? dates[selected] : undefined;
+  const selectedVal = selected !== null ? vals[selected] : undefined;
+
   return (
     <div>
-      {selected !== null && (
+      {selectedDate !== undefined && selectedVal !== undefined ? (
         <div className="text-style-caption text-center text-text mb-1 h-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-          {formatTooltip(dates[selected]!, vals[selected]!)}
+          {formatTooltip(selectedDate, selectedVal)}
         </div>
+      ) : (
+        <div className="h-4 mb-1" />
       )}
-      {selected === null && <div className="h-4 mb-1" />}
       <div
         className="flex items-end gap-0.5 h-20"
         aria-label={messages.hub.reportChartAria}
