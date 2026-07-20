@@ -4,14 +4,10 @@ import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { WeekPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
-type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -102,27 +98,29 @@ ${pantrySec}
 Запропонуй приблизний план харчування на 7 днів (коротко, реалістично).
 Не створюй список покупок: користувач генерує його окремо у «Коморі».`;
 
-  const payload = {
+  const provider = getLLMProvider({
+    provider: env.LLM_NUTRITION_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_NUTRITION_MODEL,
+  });
+  const result = await invokeLLM(provider, {
     model: env.NUTRITION_MODEL,
-    max_tokens: 2000,
+    maxTokens: 2000,
     temperature: 0.25,
     system: SYSTEM,
     messages: [{ role: "user", content: prompt }],
-  };
-
-  const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.weekPlan,
     endpoint: "week-plan",
     ...(userId ? { userId } : {}),
   });
-  if (!response || !response.ok) {
+  if (!result.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
-      status: response?.status,
+      rawProviderMessage: result.error,
+      status: result.status,
     });
   }
 
-  const out = extractAnthropicText(data);
+  const out = result.text;
   let plan: NormalizedWeekPlan = { days: [], shoppingList: [] };
   try {
     const jsonParsed = extractJsonFromText(out);

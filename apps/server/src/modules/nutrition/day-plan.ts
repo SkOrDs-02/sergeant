@@ -4,14 +4,10 @@ import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
-type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -171,27 +167,29 @@ ${pantrySec}
 
 ${regenStr}`;
 
-  const payload = {
+  const provider = getLLMProvider({
+    provider: env.LLM_NUTRITION_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_NUTRITION_MODEL,
+  });
+  const result = await invokeLLM(provider, {
     model: env.NUTRITION_MODEL,
-    max_tokens: 1500,
+    maxTokens: 1500,
     temperature: 0.3,
     system: SYSTEM,
     messages: [{ role: "user", content: prompt }],
-  };
-
-  const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.dayPlan,
     endpoint: "day-plan",
     ...(userId ? { userId } : {}),
   });
-  if (!response || !response.ok) {
+  if (!result.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
-      status: response?.status,
+      rawProviderMessage: result.error,
+      status: result.status,
     });
   }
 
-  const out = extractAnthropicText(data);
+  const out = result.text;
   const jsonParsed = extractJsonFromText(out);
   const plan = normalizeDayPlan(jsonParsed);
 

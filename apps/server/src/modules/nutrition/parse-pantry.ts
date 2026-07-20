@@ -4,13 +4,9 @@ import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { ParsePantrySchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { normalizePantryItems } from "../../lib/nutritionResponse.js";
 
-type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -52,9 +48,14 @@ export default async function handler(
 
   const { text: raw, locale } = parseBody(ParsePantrySchema, req);
 
-  const payload = {
+  const provider = getLLMProvider({
+    provider: env.LLM_NUTRITION_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_NUTRITION_MODEL,
+  });
+  const result = await invokeLLM(provider, {
     model: env.NUTRITION_MODEL,
-    max_tokens: 500,
+    maxTokens: 500,
     temperature: 0.2,
     system: SYSTEM,
     messages: [
@@ -63,21 +64,18 @@ export default async function handler(
         content: `Мова: ${locale || "uk-UA"}.\nОсь список продуктів:\n${raw}`,
       },
     ],
-  };
-
-  const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "parse-pantry",
     ...(userId ? { userId } : {}),
   });
-  if (!response || !response.ok) {
+  if (!result.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
-      status: response?.status,
+      rawProviderMessage: result.error,
+      status: result.status,
     });
   }
 
-  const out = extractAnthropicText(data);
+  const out = result.text;
 
   const jsonParsed = extractJsonFromText(out);
   const items = normalizePantryItems(jsonParsed);

@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Request, Response } from "express";
-import {
-  anthropicError,
-  anthropicResponses,
-  createAnthropicMockHandle,
-} from "../../test/__mocks__/anthropic.js";
+import { anthropicError } from "../../test/__mocks__/anthropic.js";
 
-vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
+vi.mock("../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: vi.fn(),
+}));
 
-import { anthropicMessages as anthropicMessagesMock } from "../../lib/anthropic.js";
+import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
 import handler from "./week-plan.js";
+
+const invokeLLM = _invokeLLM as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -48,31 +49,28 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-const anthropicMessages = anthropicMessagesMock as unknown as Mock;
-
 beforeEach(() => {
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
 });
 
 describe("week-plan handler", () => {
   it("returns a normalized 7-day plan without generating shopping items", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          days: Array.from({ length: 8 }, (_, i) => ({
-            label: i === 0 ? "Понеділок".repeat(10) : `День ${i + 1}`,
-            note: i === 0 ? "коротко".repeat(100) : `нотатка ${i + 1}`,
-            meals: ["омлет", "", " обід — рис ", "вечеря — риба"],
-          })),
-          shoppingList: [
-            "рис",
-            "",
-            "риба",
-            ...Array.from({ length: 60 }, () => "x"),
-          ],
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        days: Array.from({ length: 8 }, (_, i) => ({
+          label: i === 0 ? "Понеділок".repeat(10) : `День ${i + 1}`,
+          note: i === 0 ? "коротко".repeat(100) : `нотатка ${i + 1}`,
+          meals: ["омлет", "", " обід — рис ", "вечеря — риба"],
+        })),
+        shoppingList: [
+          "рис",
+          "",
+          "риба",
+          ...Array.from({ length: 60 }, () => "x"),
+        ],
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -99,22 +97,21 @@ describe("week-plan handler", () => {
       }),
     );
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(payload["max_tokens"]).toBe(2000);
-    expect(JSON.stringify(payload["messages"])).toContain("Ціль: protein");
-    expect(JSON.stringify(payload["messages"])).toContain("яйця");
-    expect(JSON.stringify(payload["messages"])).toContain("гречка");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["maxTokens"]).toBe(2000);
+    expect(JSON.stringify(opts["messages"])).toContain("Ціль: protein");
+    expect(JSON.stringify(opts["messages"])).toContain("яйця");
+    expect(JSON.stringify(opts["messages"])).toContain("гречка");
   });
 
   it("falls back to default labels for malformed day entries", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          days: [null, { meals: ["сніданок"] }],
-          shoppingList: ["молоко"],
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        days: [null, { meals: ["сніданок"] }],
+        shoppingList: ["молоко"],
+      }),
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
@@ -132,10 +129,11 @@ describe("week-plan handler", () => {
     });
   });
 
-  it("returns raw text when Anthropic emits invalid JSON", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text("не json відповідь"),
-    );
+  it("returns raw text when the provider emits invalid JSON", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: "не json відповідь",
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: ["рис"], locale: "uk-UA" }), res);
@@ -147,7 +145,7 @@ describe("week-plan handler", () => {
     });
   });
 
-  it("throws ValidationError for invalid pantry item without calling Anthropic", async () => {
+  it("throws ValidationError for invalid pantry item without calling the provider", async () => {
     await expect(
       handler(
         makeReq({ pantry: [{ name: "x", qty: {} }], locale: "uk-UA" }),
@@ -157,13 +155,14 @@ describe("week-plan handler", () => {
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
-  it("throws ExternalServiceError when Anthropic returns non-ok response", async () => {
-    anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 500 },
-      data: { error: { message: "model failed" } },
+  it("throws ExternalServiceError when the provider returns a non-ok response", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: false,
+      error: "model failed",
+      status: 500,
     });
 
     await expect(
@@ -176,8 +175,8 @@ describe("week-plan handler", () => {
     });
   });
 
-  it("propagates rejected Anthropic transport errors", async () => {
-    anthropicMessages.mockRejectedValueOnce(
+  it("propagates rejected provider transport errors", async () => {
+    invokeLLM.mockRejectedValueOnce(
       anthropicError("network down", { status: 502 }),
     );
 
@@ -194,9 +193,10 @@ describe("week-plan handler", () => {
     vi.spyOn(jsonSafe, "extractJsonFromText").mockImplementationOnce(() => {
       throw new Error("parse exploded");
     });
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text("не json відповідь"),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: "не json відповідь",
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
@@ -208,10 +208,11 @@ describe("week-plan handler", () => {
     });
   });
 
-  it("passes userId to anthropicMessages when session user is present", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify({ days: [], shoppingList: [] })),
-    );
+  it("passes userId to the provider when session user is present", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ days: [], shoppingList: [] }),
+    });
 
     await handler(
       {
@@ -222,7 +223,7 @@ describe("week-plan handler", () => {
       makeRes(),
     );
 
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options["userId"]).toBe("u_week_plan");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["userId"]).toBe("u_week_plan");
   });
 });

@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Request, Response } from "express";
-import {
-  anthropicError,
-  anthropicResponses,
-  createAnthropicMockHandle,
-} from "../../test/__mocks__/anthropic.js";
+import { anthropicError } from "../../test/__mocks__/anthropic.js";
 
-vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
+vi.mock("../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: vi.fn(),
+}));
 
-import { anthropicMessages as anthropicMessagesMock } from "../../lib/anthropic.js";
+import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
 import handler from "./recommend-recipes.js";
+
+const invokeLLM = _invokeLLM as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -48,36 +49,33 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-const anthropicMessages = anthropicMessagesMock as unknown as Mock;
-
 beforeEach(() => {
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
 });
 
 describe("recommend-recipes handler", () => {
-  it("returns normalized recipes from Anthropic JSON", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          recipes: [
-            {
-              title: "Омлет зі шпинатом",
-              timeMinutes: "15",
-              servings: 2,
-              ingredients: ["яйця", "шпинат", ""],
-              steps: ["Збити яйця", "Посмажити"],
-              tips: ["Не перегрівай пательню"],
-              macros: {
-                kcal: 420,
-                protein_g: "28",
-                fat_g: 18,
-                carbs_g: -3,
-              },
+  it("returns normalized recipes from provider JSON", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        recipes: [
+          {
+            title: "Омлет зі шпинатом",
+            timeMinutes: "15",
+            servings: 2,
+            ingredients: ["яйця", "шпинат", ""],
+            steps: ["Збити яйця", "Посмажити"],
+            tips: ["Не перегрівай пательню"],
+            macros: {
+              kcal: 420,
+              protein_g: "28",
+              fat_g: 18,
+              carbs_g: -3,
             },
-          ],
-        }),
-      ),
-    );
+          },
+        ],
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -118,22 +116,21 @@ describe("recommend-recipes handler", () => {
       rawText: null,
     });
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(payload["model"]).toBe("claude-sonnet-4-6");
-    expect(payload["max_tokens"]).toBe(2800);
-    expect(String(payload["system"])).toContain("рецепт");
-    expect(JSON.stringify(payload["messages"])).toContain("Ціль: protein");
-    expect(JSON.stringify(payload["messages"])).toContain("Порції: 2");
-    expect(JSON.stringify(payload["messages"])).toContain(
-      "яйця — 6 шт — домашні",
-    );
-    expect(JSON.stringify(payload["messages"])).toContain("Не використовувати");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["model"]).toBe("claude-sonnet-4-6");
+    expect(opts["maxTokens"]).toBe(2800);
+    expect(String(opts["system"])).toContain("рецепт");
+    expect(JSON.stringify(opts["messages"])).toContain("Ціль: protein");
+    expect(JSON.stringify(opts["messages"])).toContain("Порції: 2");
+    expect(JSON.stringify(opts["messages"])).toContain("яйця — 6 шт — домашні");
+    expect(JSON.stringify(opts["messages"])).toContain("Не використовувати");
   });
 
   it("uses prompt defaults when preferences are omitted", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify({ recipes: [] })),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ recipes: [] }),
+    });
 
     const res = makeRes();
     await handler(
@@ -146,16 +143,17 @@ describe("recommend-recipes handler", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ recipes: [], rawText: '{"recipes":[]}' });
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(JSON.stringify(payload["messages"])).toContain("Ціль: balanced");
-    expect(JSON.stringify(payload["messages"])).toContain("Порції: 1");
-    expect(JSON.stringify(payload["messages"])).toContain("Час: 25 хв.");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(JSON.stringify(opts["messages"])).toContain("Ціль: balanced");
+    expect(JSON.stringify(opts["messages"])).toContain("Порції: 1");
+    expect(JSON.stringify(opts["messages"])).toContain("Час: 25 хв.");
   });
 
-  it("returns raw text when Anthropic response cannot be normalized", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text("не json відповідь"),
-    );
+  it("returns raw text when provider response cannot be normalized", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: "не json відповідь",
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: ["рис"], locale: "uk-UA" }), res);
@@ -164,20 +162,21 @@ describe("recommend-recipes handler", () => {
     expect(res.body).toEqual({ recipes: [], rawText: "не json відповідь" });
   });
 
-  it("throws ValidationError for invalid request body without calling Anthropic", async () => {
+  it("throws ValidationError for invalid request body without calling the provider", async () => {
     await expect(
       handler(makeReq({ count: 999, locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
-  it("throws ExternalServiceError when Anthropic returns non-ok response", async () => {
-    anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 503 },
-      data: { error: { message: "anthropic overloaded" } },
+  it("throws ExternalServiceError when the provider returns a non-ok response", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: false,
+      error: "anthropic overloaded",
+      status: 503,
     });
 
     await expect(
@@ -190,8 +189,8 @@ describe("recommend-recipes handler", () => {
     });
   });
 
-  it("propagates rejected Anthropic transport errors", async () => {
-    anthropicMessages.mockRejectedValueOnce(
+  it("propagates rejected provider transport errors", async () => {
+    invokeLLM.mockRejectedValueOnce(
       anthropicError("network down", { status: 502 }),
     );
 
@@ -204,9 +203,10 @@ describe("recommend-recipes handler", () => {
   });
 
   it("renders exclude placeholder and string pantry items in the prompt", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify({ recipes: [] })),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ recipes: [] }),
+    });
 
     await handler(
       makeReq({
@@ -217,18 +217,19 @@ describe("recommend-recipes handler", () => {
       makeRes(),
     );
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    const messages = JSON.stringify(payload["messages"]);
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = JSON.stringify(opts["messages"]);
     expect(messages).toContain("Не використовувати/алергени: —");
     expect(messages).toContain("гречка");
     expect(messages).toContain("рис");
     expect(messages).toContain("Ціль: low-carb");
   });
 
-  it("passes userId to anthropicMessages when session user is present", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify({ recipes: [] })),
-    );
+  it("passes userId to the provider when session user is present", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ recipes: [] }),
+    });
 
     await handler(
       {
@@ -239,7 +240,7 @@ describe("recommend-recipes handler", () => {
       makeRes(),
     );
 
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options["userId"]).toBe("u_recipes");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["userId"]).toBe("u_recipes");
   });
 });

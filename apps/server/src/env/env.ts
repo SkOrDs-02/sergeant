@@ -81,6 +81,15 @@ const stringWithDefault = (defaultValue: string) =>
     .transform((v) => v ?? defaultValue);
 
 /**
+ * Спільний enum для `LLM_*_PROVIDER`-toggle-ів (chat/classify/digest/coach/
+ * nutrition). Три дискримінатори збігаються з `LLMProviderName`; default —
+ * per-path. DRY: інакше кожен toggle повторював би той самий 3-рядковий
+ * `z.enum([...]).default(...)`.
+ */
+const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
+  z.enum(["anthropic", "openrouter", "stub"]).default(d);
+
+/**
  * URL-валідне поле, що толерує `undefined` / порожній рядок як «не задано».
  * Емуляція legacy `process.env["FOO"] || ""` семантики: коли рядок є —
  * валідуємо як URL, інакше повертаємо `""`. Тести нерідко передають
@@ -387,9 +396,7 @@ const envSchema = z.object({
    * зарезервовано під майбутню імплементацію (поки що деградує у stub).
    * Wire-up call-sites — окремі PR-24/25.
    */
-  LLM_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+  LLM_PROVIDER: llmProviderEnum("anthropic"),
   /**
    * PR-24 — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch`
    * classify; пізніше — інші read-only flows). Дозволяє перемкнути саме classifier
@@ -404,12 +411,10 @@ const envSchema = z.object({
    *   решта endpoints працює як раніше.
    * - E2E-тести — детермінований шлях без витрат токенів.
    */
-  LLM_READONLY_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    // Default = PROD (Railway, 2026-06-27): classify живе на OpenRouter. Без
-    // OPENROUTER_API_KEY factory деградує у Stub (`{"class":"chat"}`) — для
-    // local-dev/CI на Anthropic вистав `LLM_READONLY_PROVIDER=anthropic`.
-    .default("openrouter"),
+  // Default = PROD (Railway, 2026-06-27): classify живе на OpenRouter. Без
+  // OPENROUTER_API_KEY factory деградує у Stub (`{"class":"chat"}`) — для
+  // local-dev/CI на Anthropic вистав `LLM_READONLY_PROVIDER=anthropic`.
+  LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),
   /**
    * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
    * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
@@ -423,12 +428,10 @@ const envSchema = z.object({
    * - Local-dev без `ANTHROPIC_API_KEY` — endpoint не падає.
    * - E2E-тести — детермінований template-вихід без витрат токенів.
    */
-  LLM_DIGEST_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    // Default = PROD (Railway, 2026-06-27): weekly-digest на OpenRouter. Без
-    // OPENROUTER_API_KEY factory деградує у Stub (template-звіт без LLM-коментарів);
-    // для local-dev/CI на Anthropic вистав `LLM_DIGEST_PROVIDER=anthropic`.
-    .default("openrouter"),
+  // Default = PROD (Railway, 2026-06-27): weekly-digest на OpenRouter. Без
+  // OPENROUTER_API_KEY factory деградує у Stub (template-звіт без LLM-коментарів);
+  // для local-dev/CI на Anthropic вистав `LLM_DIGEST_PROVIDER=anthropic`.
+  LLM_DIGEST_PROVIDER: llmProviderEnum("openrouter"),
   /**
    * Окремий provider для coach-insight (`POST /api/coach/insight`). Перемикає
    * генерацію проактивного коуч-повідомлення на OpenRouter (model-eval
@@ -437,12 +440,10 @@ const envSchema = z.object({
    * (`LLM_DIGEST_PROVIDER`). Anthropic лишається фолбеком через
    * `LLM_FALLBACK_ENABLED` (default true). Stub → детермінований тест/incident.
    */
-  LLM_COACH_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    // Default = PROD (Railway, 2026-06-27): coach-insight на OpenRouter (gpt-5.1).
-    // Без OPENROUTER_API_KEY factory деградує у Stub; для local-dev/CI на Anthropic
-    // вистав `LLM_COACH_PROVIDER=anthropic`. Anthropic — фолбек (LLM_FALLBACK_ENABLED).
-    .default("openrouter"),
+  // Default = PROD (Railway, 2026-06-27): coach-insight на OpenRouter (gpt-5.1).
+  // Без OPENROUTER_API_KEY factory деградує у Stub; для local-dev/CI на Anthropic
+  // вистав `LLM_COACH_PROVIDER=anthropic`. Anthropic — фолбек (LLM_FALLBACK_ENABLED).
+  LLM_COACH_PROVIDER: llmProviderEnum("openrouter"),
   /**
    * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
    * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
@@ -1411,6 +1412,18 @@ const envSchema = z.object({
    * itself, swappable without a code change ahead of the next eval pass.
    */
   NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /**
+   * Provider for the 6 TEXT-ONLY nutrition endpoints (day-hint, day-plan,
+   * parse-pantry, recommend-recipes, shopping-list, week-plan). Default
+   * `openrouter` — model-eval 2026-07-20: Gemini 2.5 Flash Lite ≈53× cheaper
+   * and ~7× faster than Sonnet with comparable UA output. Anthropic stays the
+   * fallback via `LLM_FALLBACK_ENABLED`. The two VISION endpoints
+   * (analyze-photo / refine-photo) ignore this and stay on Anthropic — the
+   * text LLMProvider is text-only. Set to `anthropic` to route back.
+   */
+  LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
+  /** OpenRouter model for text-only nutrition when `LLM_NUTRITION_PROVIDER=openrouter`. */
+  OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   /** Weekly-digest AI-commentary section. */
   DIGEST_MODEL: stringWithDefault("claude-sonnet-4-6"),
   /** Cheap-router classify — shared by OpenClaw `before_dispatch` and the Finyk transaction categorizer (same model choice, same cost profile). */
@@ -1502,6 +1515,7 @@ export function assertStartupEnv(): void {
     env.LLM_READONLY_PROVIDER,
     env.LLM_DIGEST_PROVIDER,
     env.LLM_COACH_PROVIDER,
+    env.LLM_NUTRITION_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(

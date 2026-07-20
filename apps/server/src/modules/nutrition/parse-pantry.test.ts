@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { Request, Response } from "express";
-import {
-  anthropicResponses,
-  createAnthropicMockHandle,
-} from "../../test/__mocks__/anthropic.js";
 
-vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
+vi.mock("../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: vi.fn(),
+}));
 
-import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
+import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
 import handler from "./parse-pantry.js";
 
-const anthropicMessages = _anthropicMessages as unknown as Mock;
+const invokeLLM = _invokeLLM as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -44,7 +43,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 beforeEach(() => {
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
 });
 
 describe("nutrition parse-pantry handler", () => {
@@ -56,7 +55,7 @@ describe("nutrition parse-pantry handler", () => {
         { name: "", qty: 5, unit: "шт" },
       ],
     });
-    anthropicMessages.mockResolvedValueOnce(anthropicResponses.text(rawText));
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: rawText });
 
     const res = makeRes();
     await handler(
@@ -75,30 +74,27 @@ describe("nutrition parse-pantry handler", () => {
       ],
       rawText,
     });
-    expect(anthropicMessages).toHaveBeenCalledTimes(1);
-    expect(anthropicMessages.mock.calls[0]?.[0]).toBe("sk-test");
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(payload["model"]).toBe("claude-sonnet-4-6");
-    expect(payload["temperature"]).toBe(0.2);
-    expect(payload["messages"]).toEqual([
+    expect(invokeLLM).toHaveBeenCalledTimes(1);
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["model"]).toBe("claude-sonnet-4-6");
+    expect(opts["temperature"]).toBe(0.2);
+    expect(opts["messages"]).toEqual([
       {
         role: "user",
         content: expect.stringContaining("3 яблука, молоко 1 л"),
       },
     ]);
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options).toMatchObject({
+    expect(opts).toMatchObject({
       timeoutMs: 20000,
       endpoint: "parse-pantry",
     });
   });
 
-  it("extracts JSON embedded in surrounding Anthropic text", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        'Готово:\n{"items":[{"name":"Гречка","qty":"500","unit":"г","notes":null}]}',
-      ),
-    );
+  it("extracts JSON embedded in surrounding provider text", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: 'Готово:\n{"items":[{"name":"Гречка","qty":"500","unit":"г","notes":null}]}',
+    });
 
     const res = makeRes();
     await handler(makeReq({ text: "гречка 500 г", locale: "uk-UA" }), res);
@@ -109,15 +105,14 @@ describe("nutrition parse-pantry handler", () => {
   });
 
   it("limits normalized pantry items to eighty", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          items: Array.from({ length: 90 }, (_, index) => ({
-            name: `Продукт ${index + 1}`,
-          })),
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        items: Array.from({ length: 90 }, (_, index) => ({
+          name: `Продукт ${index + 1}`,
+        })),
+      }),
+    });
 
     const res = makeRes();
     await handler(makeReq({ text: "багато продуктів", locale: "uk-UA" }), res);
@@ -126,31 +121,30 @@ describe("nutrition parse-pantry handler", () => {
   });
 
   it("uses default locale in the prompt when locale is omitted", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text('{"items":[]}'),
-    );
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"items":[]}' });
 
     await handler(makeReq({ text: "яблука" }), makeRes());
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    const messages = payload["messages"] as Array<{ content: string }>;
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain("Мова: uk-UA.");
   });
 
-  it("throws ValidationError and skips Anthropic for invalid args", async () => {
+  it("throws ValidationError and skips the provider for invalid args", async () => {
     await expect(
       handler(makeReq({ text: "", locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
-  it("throws ExternalServiceError when Anthropic returns an error response", async () => {
-    anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 502 },
-      data: { error: { message: "bad gateway" } },
+  it("throws ExternalServiceError when the provider returns an error result", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: false,
+      error: "bad gateway",
+      status: 502,
     });
 
     await expect(
@@ -163,10 +157,8 @@ describe("nutrition parse-pantry handler", () => {
     });
   });
 
-  it("passes userId to anthropicMessages when session user is present", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text('{"items":[]}'),
-    );
+  it("passes userId to the provider when session user is present", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"items":[]}' });
 
     await handler(
       {
@@ -177,7 +169,7 @@ describe("nutrition parse-pantry handler", () => {
       makeRes(),
     );
 
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options["userId"]).toBe("u_parse_pantry");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["userId"]).toBe("u_parse_pantry");
   });
 });
