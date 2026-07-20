@@ -181,8 +181,7 @@ function AddBudgetFormComponent({
         categoryId: values.categoryId,
         limit: Number(values.limit),
         period: values.period,
-        // UTC timestamp for one-time limit anchoring, not a calendar day key.
-        // eslint-disable-next-line no-restricted-syntax
+        // eslint-disable-next-line no-restricted-syntax -- UTC creation instant for one-time limit anchoring, not a Kyiv day key
         createdAt: new Date().toISOString(),
       });
     },
