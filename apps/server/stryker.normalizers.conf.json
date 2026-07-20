@@ -1,0 +1,29 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/lib/normalizers/mono.ts",
+    "src/lib/normalizers/off.ts",
+    "src/lib/normalizers/upcitemdb.ts",
+    "src/lib/normalizers/usda.ts"
+  ],
+  "vitest": {
+    "configFile": "vitest.mutation.normalizers.config.ts"
+  },
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/normalizers/index.html"
+  },
+  "jsonReporter": {
+    "fileName": "reports/mutation/normalizers/mutation-report.json"
+  },
+  "thresholds": {
+    "high": 80,
+    "low": 70,
+    "break": 70
+  },
+  "timeoutMS": 15000,
+  "concurrency": 2
+}
