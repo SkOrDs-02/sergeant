@@ -299,7 +299,7 @@ UI/UX:            A-  (відмінне дотримання дизайн-сис
 ### D. Формати звіту
 
 - **Markdown:** Цей документ
-- **JSON:** `docs/90-work/tech-debt/technical-assessment-2026-06-05.json` (машиночитабельний)
+- **JSON:** `docs/90-work/tech-debt/archive/technical-assessment-2026-06-05.json` (машиночитабельний; archived 2026-07-20)
 
 ---
 

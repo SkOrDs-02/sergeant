@@ -1,10 +1,11 @@
 # Backend Tech Debt Inventory
 
-> **Last validated:** 2026-07-10 by @claude (CodeRabbit PR #134 findings — усі 6 закриті; see «Оновлено 2026-07-09 (CodeRabbit pre-existing findings)» section). **Next review:** 2026-10-10.
-> **Оновлено 2026-06-01.** PR E закрито: `app_build_info` gauge вже був у `obs/metrics.ts` (version/commit/release/env/node_version labels, value=1 при старті), `.env.example` оновлено з документацією `BANK_FETCH_TIMEOUT_MS`, `BANK_CACHE_TTL_MS`, `AI_DAILY_TOOL_LIMIT`, `AI_TOOL_COST`, `RAILWAY_GIT_COMMIT_SHA`, `GIT_COMMIT`, `SENTRY_RELEASE`, `METRICS_TOKEN`. PR F закрито: додано тести `coach.test.ts` (mergeMemory LWW-upsert / сортування / 12-запис retention) та `food-search.test.ts` (контракт `FoodSearchSuccessSchema`, порожній upstream, prefix-match «молок»→«milk», точний переклад «яйце»→«egg»); snapshot `registerRoutes.test.ts.snap` синхронізовано з 3 новими debug-window ендпоінтами. Тест-сюїт: 2839 passed, 7 pre-existing billing failures, typecheck чистий.
+> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
+> **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
+> **Оновлено 2026-06-01.** PR E/F закрито (див. Status log).
 > **Status:** Active
 
-> **Оновлено 2026-07-09 (CodeQL rate-limit finding).** [PR #134](https://github.com/SkOrDs-02/sergeant/pull/134) (asyncHandler cleanup) отримав 40 CodeQL high-severity `missing rate limiting` алертів — CodeQL позначає їх «new in this PR», бо prettier переформатував (де-індентував) майже кожен route-registration блок після зняття `asyncHandler`-обгортки. Перевірено 2 конкретні приклади (`routes/billing.ts` § `/api/billing/stripe-webhook`, `routes/mono-webhook.ts`) — в обох умова (authorized/webhook-роут без `rateLimitExpress()` у middleware-ланцюжку) існувала **до** PR #134; сам PR не додав і не прибрав жодного rate-limiter-виклику. Це diff-атрибуційний false-positive CodeQL, не регрес. **Новий backlog-пункт:** чи є серед цих ~40 роутів реальні прогалини (напр. session-protected mono/ai-memory endpoints без rate-limit) — потребує окремого аудиту й, можливо, окремого PR з `rateLimitExpress()` на дійсно незахищених роутах. Webhook-роути (`stripe-webhook`, `mono/webhook`) можуть бути навмисним винятком — їхня межа безпеки це signature-verification, не rate-limit — але це рішення варто задокументувати explicit, не мовчки. Не блокує #134 (сам PR не регресить security posture).
+> **Оновлено 2026-07-09 (CodeQL rate-limit finding).** [PR #134](https://github.com/SkOrDs-02/sergeant/pull/134) (asyncHandler cleanup) отримав 40 CodeQL high-severity `missing rate limiting` алертів — CodeQL позначає їх «new in this PR», бо prettier переформатував (де-індентував) майже кожен route-registration блок після зняття `asyncHandler`-обгортки. Перевірено 2 конкретні приклади (`routes/billing.ts` § `/api/billing/stripe-webhook`, `routes/mono-webhook.ts`) — в обох умова (authorized/webhook-роут без `rateLimitExpress()` у middleware-ланцюжку) існувала **до** PR #134; сам PR не додав і не прибрав жодного rate-limiter-виклику. Це diff-атрибуційний false-positive CodeQL, не регрес.
 >
 > **Резолюція 2026-07-09 (rate-limit audit).** Аудит проведено — знахідка accepted-by-design. Увесь `/api/internal/*` за спільним bearer-guard-ом (`INTERNAL_API_KEY`, constant-time, fail-closed — `routes/internal/index.ts`): M2M, ніколи не публічне, лімітер дав би нуль безпеки й зламав n8n-батчі. Публічні webhooks — signature-verified (межа безпеки = підпис). User-роути — session-auth + `rateLimitExpress` де треба. Рішення git-tracked у [`audit-exceptions.md` § CodeQL alert exceptions](../../04-governance/security/audit-exceptions.md#codeql-alert-exceptions-i1) за протоколом `codeql.md`. Опційний DiD-лімітер на публічні webhooks — окремий PR за sign-off власника (payment-path). Backlog-пункт закрито.
 >
@@ -19,11 +20,11 @@
 >
 > Усі 6 знахідок закриті. Жодних відкритих backlog-пунктів з CodeRabbit PR #134 не залишилось.
 >
-> **Оновлено 2026-07-09.** `express-5-migration-plan.md` виконано ([PR #131](https://github.com/SkOrDs-02/sergeant/pull/131)): `express` 4.22 → 5.2, `@types/express` 4 → 5. Реальний breaking-change surface — 4 wildcard-роути (path-to-regexp v8), портовані на root-inclusive `RegExp`/named-wildcard форми; `@types/express@5` дав нуль type-drift. Повний server unit-suite (3308 тестів) зелений. `asyncHandler` (62 файли / 170 call-sites) навмисно лишений як окремий opt-in cleanup — Express 5 нативно проброшує async-reject, обгортка більше не обов'язкова, але видалення не блокер. Scope-рядок нижче (§ Scope) оновлено з «Express 4» на «Express 5».
+> **Оновлено 2026-07-09.** `express-5-migration-plan.md` виконано ([PR #131](https://github.com/SkOrDs-02/sergeant/pull/131)): `express` 4.22 → 5.2, `@types/express` 4 → 5. Реальний breaking-change surface — 4 wildcard-роути (path-to-regexp v8), портовані на root-inclusive `RegExp`/named-wildcard форми; `@types/express@5` дав нуль type-drift. Повний server unit-suite (3308 тестів) зелений. **Follow-up:** `asyncHandler` cleanup виконано в [PR #134](https://github.com/SkOrDs-02/sergeant/pull/134) — `apps/server/src/http/asyncHandler.ts` видалено; production call-sites = 0. Scope-рядок нижче (§ Scope) — Express 5.
 >
-> **Оновлено 2026-07-01 (tech-debt reconcile).** Два stale-open пункти позначено shipped після звірки з кодом: **(1)** metrics-label split — `aiQuotaBlocksTotal{reason,cost}` (`obs/metrics.ts:310`) + `ai_cost_consumed_total{subject_type,bucket_type}` (`obs/metrics.ts:339`) вже в коді, § «Per-tool limits» повністю закрита; **(2)** OFF/USDA normalizers (§G) — уніфіковано в `apps/server/src/lib/normalizers/` (off/usda/upcitemdb/mono/uk-to-en + index re-exports), обидва nutrition-handler-и імпортують спільний модуль. Додатково: з `eslint.server-maxlines-allowlist.json` знято 6 файлів, що вже під 600 effective LOC (`rateLimit.ts` 435, `alerts/store.ts` 517, `auth.ts` 419, `strategicGoals.ts` 490, `ingestQueue.ts` 453, `env/env.ts` 559) — allowlist 12 → 6; залишок під декомпозицію: `routes/internal/openclaw.ts` (1379 eff), `modules/openclaw/tools.ts` (994), `billing/stripe.ts` (835), `obs/metrics.ts` (673), `sync/fizruk/applySync.ts` (623), `chat/chat.ts` (рівно 600, zero headroom). План — [tech-debt-assessment-2026-07-01.md](./tech-debt-assessment-2026-07-01.md).
+> **Оновлено 2026-07-01 (tech-debt reconcile).** Metrics-label split + OFF/USDA normalizers shipped. **2026-07-10 / 2026-07-20:** server `max-lines` allowlist повністю очищено (`[]`); колишні 6 залишків (`openclaw` routes/tools, `stripe`, `metrics`, `applySync`, `chat`) декомпозовані / під 600 effective. План — [tech-debt-assessment-2026-07-01.md](./tech-debt-assessment-2026-07-01.md).
 
-> **Оновлено 2026-06-01.** Не-actionable секції тепер несуть токен `🚫 Blocked-reason: <category>`: «Operational visibility — Railway env-var changes» (`owner-decision`) та «Push credentials» (`external-infra`). Легенда + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
+> **Оновлено 2026-06-01.** Не-actionable секції тепер несуть токен `🚫 Blocked-reason: <category>`: «Operational visibility — Coolify env-var changes» (`owner-decision`) та «Push credentials» (`external-infra`). Легенда + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
 >
 > **Оновлено 2026-06-01 (annex reconcile).** Із 2026-05-15 code-debt annex закрито два пункти: **(a)** `TODO(token-reencrypt)` — є proactive sweep CLI `apps/server/scripts/token-reencrypt-rollover.ts` (`pnpm reencrypt:tokens`), key-rotation playbook більше не заблокований (H4 Closed); **(c)** `sessionProtection.ts` із 2 `as unknown as X` кастами **видалено** — session-логіка переїхала в `auth/sessionFingerprint.ts` + `http/requireSession.ts`, bypass-патернів у non-test server-src — 0. Пункт **(b)** (`sync_op_log` партиціювання, roadmap PR-050) лишається відкритим — **план зафіксовано в [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md)** (PG `LISTEN/NOTIFY` fan-out + retention-за-курсором; реалізація gated на multi-instance тригер). Суміжний client-side DLQ TTL вже закрито окремо (`purgeStaleTerminalOutbox` у `packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts`).
 
@@ -63,7 +64,7 @@
 | Категорія               | Статус               | Короткий висновок                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Валідація (zod)         | ~~Високий~~ → **OK** | ✅ PR A. `RefinePhotoSchema` синхронізована з handler-ом (`prior_result`/`portion_grams`/`qna`). `mono`/`privat`/`sync` використовують централізовані `*QuerySchema`/`*BodySchema`. Ручна перевірка `req.body` не знайдена у `apps/server/src` (grep `req\.body\.` поза `validate*` → 0).                                                                                                                                                                                                |
-| Error handling          | ~~Високий~~ → **OK** | ✅ PR A. Широкі `catch { res.status(500).json({ error: e.message }) }` не знайдені (grep `catch\s*\([^)]*\)\s*\{[^}]*res\.(status\|json)` у `apps/server/src` → 0). Handler-и йдуть через `asyncHandler` + `ExternalServiceError`/`ValidationError`/`RateLimitError` + central `errorHandler` (рідкісні прямі `res.status` у edge-case гілках — див. `modules/chat/chat.ts`).                                                                                                            |
+| Error handling          | ~~Високий~~ → **OK** | ✅ PR A + Express 5. Широкі `catch { res.status(500).json({ error: e.message }) }` не знайдені. Handler-и — native async + `ExternalServiceError`/`ValidationError`/`RateLimitError` + central `errorHandler` (рідкісні прямі `res.status` у edge-case гілках — див. `modules/chat/chat.ts`). `asyncHandler` обгортку знято в PR #134.                                                                                                                                                   |
 | Банки (mono/privat)     | ~~Блокер~~ → **OK**  | ✅ PR B. `apps/server/src/lib/bankProxy.ts` — timeout=15s (`BANK_FETCH_TIMEOUT_MS`), retry з jitter (5xx/timeout/network, respect `Retry-After`), circuit breaker 5-fails / 30s per-upstream, TTL-cache 60s для GET. `modules/mono/mono.ts` / `modules/mono/privat.ts` — тонкі адаптери.                                                                                                                                                                                                 |
 | Web-push (sendPush)     | ~~Блокер~~ → **OK**  | ✅ [PR #335](https://github.com/Skords-01/Sergeant/pull/335). `apps/server/src/lib/webpushSend.ts` — timeout=10s (AbortController+Promise.race), retry [0, 500ms+jitter] на 5xx/timeout, per-origin circuit breaker 5-fails / 30s (FCM/Apple/Mozilla ізольовані). Outcome-класифікація: `ok`/`invalid_endpoint`/`rate_limited`/`timeout`/`circuit_open`/`error` → `external_http_requests_total{upstream="push"}`.                                                                       |
 | AI-квоти                | ~~Високий~~ → **OK** | ✅ PR C. `consumeQuota` — один атомарний `INSERT … ON CONFLICT DO UPDATE WHERE t.request_count + EXCLUDED.request_count <= $5 RETURNING request_count`. Pre-check `cost > limit` → 429 без TX. Per-cost параметр імплементовано (tool-use = 2, text-only = 1).                                                                                                                                                                                                                           |
@@ -73,7 +74,7 @@
 | Логи                    | **Переважно OK**     | Структурний Pino + ALS (`requestId`/`userId`/`module`) підтягуються автоматично. `X-Request-Id` в response-header + у JSON-тілі помилки. Метрики RED/USE по маршрутах — покриті.                                                                                                                                                                                                                                                                                                         |
 | Таймаути / retry (HTTP) | **OK**               | ✅ Anthropic: `timeoutMs` + 3 retry. Barcode/food-search: `AbortSignal.timeout`. Банки: `bankProxy.ts` timeout+retry+breaker+cache. Web-push: [PR #335](https://github.com/Skords-01/Sergeant/pull/335) timeout+retry+per-origin breaker.                                                                                                                                                                                                                                                |
 | Дублювання логіки       | **Середній**         | OFF/USDA нормалізатори, pantry→string map, dual-metric `record*` — повторюються у 2–3 файлах.                                                                                                                                                                                                                                                                                                                                                                                            |
-| Секрети в логах         | **OK**               | Sentry `sendDefaultPii=false` + `beforeSend` стрипає body/cookies. Логер не дампить headers. Email логується як SHA-256[:12]. Anthropic key не логується. `SENTRY_DSN` ✅ активовано на Railway production.                                                                                                                                                                                                                                                                              |
+| Секрети в логах         | **OK**               | Sentry `sendDefaultPii=false` + `beforeSend` стрипає body/cookies. Логер не дампить headers. Email логується як SHA-256[:12]. Anthropic key не логується. `SENTRY_DSN` ✅ активовано на Coolify production (ADR-0074).                                                                                                                                                                                                                                                                   |
 | Тести                   | **Середній**         | ✅ [PR #336](https://github.com/Skords-01/Sergeant/pull/336) + розширення: `apps/server/src/smoke.test.ts`, `modules/chat/chat.test.ts`, `modules/push/push.test.ts`, `lib/webpushSend.test.ts`, `push/send.test.ts`, `modules/nutrition/food-search.test.ts`, `modules/nutrition/barcode.test.ts`, `modules/sync/sync.test.ts` тощо. Залишок: **SSE chat end-to-end**, **route-level coach / nutrition contract tests** (окрім unit на `nutritionResponse`) — PR F / інкрементальні PR. |
 
 ---
@@ -96,9 +97,9 @@
 
 ### `http/` (infra)
 
-- **OK** — `validate.ts`, `asyncHandler.ts`, `errorHandler.ts`, `jsonSafe.ts`, barrel `index.ts`.
+- **OK** — `validate.ts`, `errorHandler.ts`, `jsonSafe.ts`, barrel `index.ts`. (`asyncHandler.ts` видалено в PR #134.)
 - **`schemas.ts` — OK (post-PR A):** `RefinePhotoSchema` та nutrition/sync/mono/privat схеми **використовуються** у відповідних handler-ах (`validateBody` / `validateQuery`); попередній аудит про розсинхрон — закритий.
-- **`rateLimit.ts` — середній:** in-memory fixed-window ×N при multi-instance (Redis — на майбутнє).
+- **`rateLimit.ts` — середній:** in-memory fixed-window ×N при multi-instance (Redis — на майбутнє). `TODO(M9)` ASN-keying — dep-blocked.
 
 ### `obs/` + `lib/`
 
@@ -109,7 +110,7 @@
 
 ### `routes/*`
 
-- **OK** — `setModule` → rate-limit → `asyncHandler(handler)`.
+- **OK** — `setModule` → rate-limit → handler (Express 5 native async).
 
 ### `modules/chat/chat.ts` + `modules/chat/tools.ts`
 
@@ -180,7 +181,7 @@
 
 ### B. Центральний error handler — ~~потребує PR A~~ **✅ DONE**
 
-Широкі `catch → res.status(500).json({ error: e.message })` зняті з доменних handler-ів на користь **`asyncHandler`** + **`ExternalServiceError`** / **`ValidationError`** / **`RateLimitError`** + центральний **`errorHandler`** (див. `http/errorHandler.ts`). Залишкові прямі `res.status` — лише в узгоджених гілках (наприклад, passthrough HTTP-коду від upstream у `mono.ts` / stream edge-case у `chat.ts`).
+Широкі `catch → res.status(500).json({ error: e.message })` зняті з доменних handler-ів на користь **`ExternalServiceError`** / **`ValidationError`** / **`RateLimitError`** + центральний **`errorHandler`** (див. `http/errorHandler.ts`). Express 5 проброшує async reject нативно (`asyncHandler` видалено в PR #134). Залишкові прямі `res.status` — лише в узгоджених гілках (наприклад, passthrough HTTP-коду від upstream у `mono.ts` / stream edge-case у `chat.ts`).
 
 ### C. Банки — ~~потребує PR B~~ **✅ DONE**
 
@@ -307,7 +308,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Міграції (`apps/server/src/migrations/`)
 
-На 2026-05-29 — **73** файли міграцій (lex order, без `.down.sql`-компаньйонів), найновіша `073_subscriptions_trial_and_grace.sql`. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», поки реально вже 73). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
+На 2026-07-20 — **82** файли міграцій (lex order, без `.down.sql`-компаньйонів), найновіша `082_plata_card_token.sql`. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», на 2026-05-29 — «73»). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
 
 ### Індекси — по реальних query-патернах
 
@@ -360,7 +361,7 @@ Webhook-based server-side integration added in PR2. Key components:
 - **Високий** — метрики відсутні на nutrition-handler-ах (лише загальна RED через Express-middleware; немає per-endpoint ms-histogram для AI-викликів з breakdown по endpoint/model/tokens).
 - **Середній** — немає `app_build_info` gauge (version/commit/release) — корисно для readiness-dashboard.
 - **Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).
-- **Низький** — Sentry release береться з `RAILWAY_GIT_COMMIT_SHA`, але Replit не має еквіваленту — ок для дев-режиму.
+- **Низький** — Sentry release береться з `RAILWAY_GIT_COMMIT_SHA` / `GIT_COMMIT` / `SENTRY_RELEASE` (див. `.env.example`); Coolify може інжектити commit через build-args — перевірити mapping при зміні deploy pipeline (ADR-0074).
 
 ---
 
@@ -428,8 +429,8 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Що ще лишилось (`Phase 6+`) — це **strictness-тюнінг**, не міграція
 
-- `noUncheckedIndexedAccess` rollout — 8 / 13 пакетів done; залишок (5) трекається у [`frontend.md` §11.1](./frontend.md).
-- Інші opt-in-прапори (`exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`) — теж у [`frontend.md` §11.1](./frontend.md).
+- `noUncheckedIndexedAccess` rollout — **Done** (Hard Rule #19); див. [`frontend.md` §11.1](./frontend.md).
+- Інші opt-in-прапори (`exactOptionalPropertyTypes`, `noImplicitReturns`, …) — теж ✅ у [`frontend.md` §11.1](./frontend.md).
 - Білд-pipeline сервера — поточний `tsx` + `tsc --noEmit` достатній; project references не потрібні (typecheck-час у CI бюджет тримає).
 
 > Цей розділ свідомо лишається як archive-marker, щоб PR-описи з 2026-Q1, що лінкують сюди, не били 404. Будь-яке посилання на «допиляти TS-міграцію» з 2026-04-XX і пізніше — стейл; реальні залишки — strictness, а не file-rename.
@@ -453,35 +454,29 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ---
 
-## Operational visibility — Railway env-var changes
+## Operational visibility — Coolify env-var changes
 
-> 🚫 **Blocked-reason: owner-decision** — backlog, не брати зараз. Тригер → ініціатива власника `@Skords-01` після Phase 3 ініціативи 0011 (≥ 2026-06-02), або новий env-var incident / плановий SOC2-audit. Деталі owner/trigger — нижче у секції.
+> 🚫 **Blocked-reason: owner-decision** — backlog, не брати зараз. Тригер → ініціатива власника `@Skords-01` після env-var incident / плановий SOC2-audit. Деталі owner/trigger — нижче у секції.
 
-> **Контекст.** Action item §A5 з [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md) — закриття A5 показало, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) ловить deploy-config drift у репо (`vercel.json`, `fly.toml`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у Railway dashboard. Це окремий клас ризику; його повний fix — окрема ініціатива; поки тримаємо тут у backlog.
+> **Контекст.** Action item §A5 з [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md) — staging-gate ловить deploy-config drift у репо (`vercel.json`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у PaaS dashboard. Бекенд переїхав з Railway на **Hetzner + Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); gap лишився: Coolify UI/API env edits теж поза git.
 
-**Gap-у поточного tier-у Railway** (community/team), підтверджені під час A2-перевірки 2026-05-06:
+**Gap (перенесено з Railway-ери; актуальний для Coolify):**
 
-- `auditLogs` GraphQL API трекає лише `Shared Variable.{created,updated,deleted}` (workspace-scope) — service-level env-vars НЕ потрапляють у audit-log. Якщо runtime-flag типу `CSP_DISABLE` був би виставлений як service-var — у audit-log його б не було.
-- Немає webhook-події «env-var changed in production project». Найближчий аналог — Sentry breadcrumb через manual integration; не існує з коробки.
-- Немає built-in change-detection-ом dashboard-у Railway («показати мені зараз різницю між env-state-ом сьогодні і тиждень тому»). Тільки snapshot-режим у CLI/GraphQL.
+- Немає автоматичного audit-trail «env-var changed in production project» у репо.
+- Немає built-in change-detection dashboard («різниця між env-state сьогодні і тиждень тому») у git-tracked формі — лише snapshot у Coolify UI.
 
 **Що зробити (high-level — деталі ініціативи пізніше):**
 
-| Крок | Дія                                                                                                                                                                                                                                  | Артефакт                                                                                                                                      |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Periodic snapshot (e.g. cron-job у новому `apps/server/scripts/<railway-env-snapshot>.ts`) Railway env-vars → SHA-256-hash-set, зберігається у Redis або postgres-таблиці `railway_env_snapshots`. Запит — щогодини або раз на день. | новий cron-script + інтеграція через існуючий worker або n8n-workflow                                                                         |
-| 2    | Diff-detection vs попереднього snapshot-у; на change → Sentry breadcrumb level=`info` + Slack/email-alert на `@Skords-01`.                                                                                                           | Новий Sentry-tag `railway_env_change`; alert-rule у Slack-webhook.                                                                            |
-| 3    | Persist diff (без значень — лише keys + hash + timestamp) у `railway_env_changelog` таблиці для governance/SOC2-evidence — окремий audit-log, який compensate-ить tier-limitation.                                                   | Migration `XXX_railway_env_changelog.sql` + admin-endpoint для перегляду.                                                                     |
-| 4    | Hard-rule або lint-gate: будь-який новий `*_DISABLE` / `*_BYPASS` / `*_OVERRIDE` env-var у `EnvSchema.ts` MUST мати entry у `secret-ownership-register.md` retroactively, якщо runtime-config не cover-нутий audit-ом.               | Розширити `docs/04-governance/governance/hard-rules.json` категорією `security-flag-sunset` (вже згаданий у audit Process recommendation №1). |
+| Крок | Дія                                                                                                                           | Артефакт                                                |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 1    | Periodic snapshot Coolify env-vars (API/CLI) → SHA-256-hash-set у Redis/Postgres `coolify_env_snapshots`.                     | новий cron-script + n8n / worker                        |
+| 2    | Diff-detection vs попереднього snapshot-у; на change → Sentry breadcrumb + Slack/email `@Skords-01`.                          | Sentry-tag `coolify_env_change`                         |
+| 3    | Persist diff (без значень — лише keys + hash + timestamp) для governance/SOC2-evidence.                                       | Migration + admin endpoint                              |
+| 4    | Hard-rule/lint: новий `*_DISABLE` / `*_BYPASS` / `*_OVERRIDE` у `EnvSchema` MUST мати entry у `secret-ownership-register.md`. | Розширити hard-rules категорією `security-flag-sunset`. |
 
-**Owner:** `@Skords-01` після Phase 3 ініціативи 0011 (≥ 2026-06-02). **Trigger перетворення на ініціативу** — або новий env-var-related incident, або плановий SOC2-audit в межах 6 місяців.
+**Owner:** `@Skords-01`. **Trigger** — новий env-var-related incident або плановий SOC2-audit.
 
-**Альтернативи розглянуті і відкинуті:**
-
-- _Upgrade Railway tier для service-level audit-log_ — вартість vs. value не виправдана для solo-dev стадії; повертаємось коли > 1 contributor matter-ить.
-- _Перенесення runtime-flag-ів у Vault/Doppler_ — overengineering для поточного surface; зайвий operational overhead для одного env-source.
-- _Forbid runtime security-knobs повністю_ — частково вже зроблено через `access-policy.md` § «Runtime security knobs»; повна заборона неможлива (legitimate use-cases типу `CSP_REPORT_ONLY` toggle).
-
+**Альтернативи розглянуті і відкинуті:** Vault/Doppler overengineering; повна заборона runtime security-knobs (частково вже в `access-policy.md`).
 ---
 
 ## Status log
@@ -511,9 +506,9 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### P1 (наступний спринт)
 
-- ~~Розпил 5 найтовщих компонентів: `Assets.jsx` (928), `ActiveWorkoutPanel.tsx` (949), `WeeklyDigestStories.tsx` (867), `Transactions.jsx` (737), `HubDashboard.tsx` (663).~~ **4 з 5 декомпозовані станом на 2026-05-04** — синк з реальним кодом: `apps/web/src/modules/finyk/pages/Assets.tsx` = 40 LOC; `modules/fizruk/components/workouts/ActiveWorkoutPanel.tsx` = 240 LOC; `core/stories/WeeklyDigestStories.tsx` = 122 LOC; `modules/finyk/pages/transactions/Transactions.tsx` = 288 LOC. Залишається тільки `core/hub/HubDashboard.tsx` (715 LOC, ще зріс на ~50 LOC від оригінальних 663) — далі трекається у [`frontend.md` §4 Initiative 0001 carry-over](./frontend.md).
+- ~~Розпил 5 найтовщих компонентів: `Assets.jsx` … `HubDashboard.tsx`.~~ **Усі декомпозовані** — `HubDashboard.tsx` зараз ~150 LOC (див. [`frontend.md` §4](./frontend.md)).
 - `vitest --coverage` у CI.
-- ~~TS-міграція `finyk/domain+lib` та `nutrition/hooks+lib` (Хвиля 3 для domain; утилітарна частина готова).~~ **Done** — див. § «Gradual TypeScript migration plan» вище. У production-source `apps/web/src` + `apps/server/src` `.js`/`.jsx` файлів — 0; усі domain-pkg-и вже на TS.
+- ~~TS-міграція~~ **Done**.
 - 3–4 E2E happy-path у Playwright.
 - CSP `report-uri` + explicit `Permissions-Policy`.
 
@@ -537,7 +532,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Push credentials
 
-> 🚫 **Blocked-reason: external-infra** — код-pipeline готовий; це провізія секретів поза репо (Apple Developer APNs `.p8` key + Google FCM service-account). Розблокування — створити/завантажити credentials і виставити env-vars у Railway. Чек-ліст нижче.
+> 🚫 **Blocked-reason: external-infra** — код-pipeline готовий; це провізія секретів поза репо (Apple Developer APNs `.p8` key + Google FCM service-account). Розблокування — створити/завантажити credentials і виставити env-vars у **Coolify** (ADR-0074). Чек-ліст нижче.
 
 Native push-send pipeline (`apps/server/src/push/send.ts::sendToUser` →
 APNs через `@parse/node-apn`, FCM HTTP v1 через `google-auth-library`)
@@ -552,18 +547,18 @@ APNs через `@parse/node-apn`, FCM HTTP v1 через `google-auth-library`)
    → Register. Завантаж `AuthKey_XXXXXXXX.p8` (одноразово — повторно не дають!).
 2. На тій самій сторінці скопіюй `Key ID` (10-символьний) і `Team ID`
    (у правому верхньому кутку будь-якої сторінки Apple Developer).
-3. У Railway → `apps/server` service → Variables додай:
+3. У Coolify → `apps/server` / API service → Environment Variables додай:
 
    | Env var           | Значення                                                                                                                                                       |
    | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `APNS_P8_KEY`     | Вміст `.p8` файлу як є (з `-----BEGIN PRIVATE KEY-----`). Railway приймає багаторядкові значення.                                                              |
+   | `APNS_P8_KEY`     | Вміст `.p8` файлу як є (з `-----BEGIN PRIVATE KEY-----`). Coolify приймає багаторядкові значення.                                                              |
    | `APNS_KEY_ID`     | 10-символьний Key ID з кроку 2.                                                                                                                                |
    | `APNS_TEAM_ID`    | 10-символьний Team ID з кроку 2.                                                                                                                               |
    | `APNS_BUNDLE_ID`  | `com.sergeant.shell` (Capacitor) або `com.sergeant.app` (Expo RN) — має співпадати з bundle-id-ом клієнта, що реєструється через `POST /api/v1/push/register`. |
    | `APNS_PRODUCTION` | `true` для App Store / TestFlight, `false` або unset для debug-build-ів на локальному девайсі.                                                                 |
 
    Якщо PEM потрапив у single-line env-змінну з `\n`-escape-ами
-   (наприклад, через `railway env set`), сервер нормалізує їх автоматично
+   (наприклад, через CLI export), сервер нормалізує їх автоматично
    (див. `loadApnsKey` у `apnsClient.ts`).
 
 ### FCM (Android)
@@ -580,7 +575,7 @@ APNs через `@parse/node-apn`, FCM HTTP v1 через `google-auth-library`)
    base64 -i firebase-adminsdk-XXXXX.json | tr -d '\n'
    ```
 
-3. Railway → `apps/server` service → Variables:
+3. Coolify → API service → Environment Variables:
 
    | Env var                    | Значення                                         |
    | -------------------------- | ------------------------------------------------ |
@@ -596,7 +591,7 @@ APNs через `@parse/node-apn`, FCM HTTP v1 через `google-auth-library`)
 Після деплою з усіма env-ами:
 
 ```bash
-# локально або через Railway CLI
+# локально або через Coolify / curl до prod URL
 curl -X POST https://<server>/api/v1/push/test \
   -H "authorization: Bearer <session-token>" \
   -H "content-type: application/json" \
@@ -607,7 +602,7 @@ curl -X POST https://<server>/api/v1/push/test \
 `{ delivered: { ios, android, web }, cleaned, errors }`. `delivered.*`
 повинні бути > 0 для платформ, на яких у юзера є зареєстровані пристрої.
 Якщо `errors[]` містить `"apns_disabled"` / `"fcm_disabled"` — відповідний
-env-набір не підхопився; переглянь Railway logs на `apns_disabled_log` /
+env-набір не підхопився; переглянь Coolify logs на `apns_disabled_log` /
 `fcm_init_failed` на boot-і.
 
 ### Legacy web-push HTTP (`/api/push/subscribe`) — прибрати після метрик
