@@ -1,16 +1,15 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { Request, Response } from "express";
-import {
-  anthropicResponses,
-  createAnthropicMockHandle,
-} from "../../test/__mocks__/anthropic.js";
 
-vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
+vi.mock("../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: vi.fn(),
+}));
 
-import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
+import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
 import handler from "./day-plan.js";
 
-const anthropicMessages = _anthropicMessages as unknown as Mock;
+const invokeLLM = _invokeLLM as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -44,35 +43,34 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 beforeEach(() => {
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
 });
 
 describe("nutrition day-plan handler", () => {
-  it("returns a normalized day plan from Anthropic JSON", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          meals: [
-            {
-              type: "breakfast",
-              label: "Сніданок",
-              name: "Вівсянка",
-              description: "З ягодами",
-              ingredients: ["вівсянка 60 г", "йогурт 150 г"],
-              kcal: "420",
-              protein_g: 24,
-              fat_g: 12,
-              carbs_g: 58,
-            },
-          ],
-          totalKcal: "420",
-          totalProtein_g: 24,
-          totalFat_g: 12,
-          totalCarbs_g: 58,
-          note: "Додай ще овочі в обід.",
-        }),
-      ),
-    );
+  it("returns a normalized day plan from provider JSON", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        meals: [
+          {
+            type: "breakfast",
+            label: "Сніданок",
+            name: "Вівсянка",
+            description: "З ягодами",
+            ingredients: ["вівсянка 60 г", "йогурт 150 г"],
+            kcal: "420",
+            protein_g: 24,
+            fat_g: 12,
+            carbs_g: 58,
+          },
+        ],
+        totalKcal: "420",
+        totalProtein_g: 24,
+        totalFat_g: 12,
+        totalCarbs_g: 58,
+        note: "Додай ще овочі в обід.",
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -113,29 +111,25 @@ describe("nutrition day-plan handler", () => {
       },
       rawText: null,
     });
-    expect(anthropicMessages).toHaveBeenCalledTimes(1);
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(payload["model"]).toBe("claude-sonnet-4-6");
-    expect(payload["temperature"]).toBe(0.3);
-    expect(payload["system"]).toEqual(
-      expect.stringContaining("Ти нутріціолог"),
-    );
-    expect(payload["messages"]).toEqual([
+    expect(invokeLLM).toHaveBeenCalledTimes(1);
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["model"]).toBe("claude-sonnet-4-6");
+    expect(opts["temperature"]).toBe(0.3);
+    expect(opts["system"]).toEqual(expect.stringContaining("Ти нутріціолог"));
+    expect(opts["messages"]).toEqual([
       {
         role: "user",
         content: expect.stringContaining("вівсянка — 500 г"),
       },
     ]);
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options).toMatchObject({ timeoutMs: 30000, endpoint: "day-plan" });
+    expect(opts).toMatchObject({ timeoutMs: 30000, endpoint: "day-plan" });
   });
 
   it("normalizes malformed meal fields and exposes raw text when no meals survive", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        '{"meals":[{"type":"brunch","ingredients":"x"}]}',
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: '{"meals":[{"type":"brunch","ingredients":"x"}]}',
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
@@ -157,7 +151,7 @@ describe("nutrition day-plan handler", () => {
       rawText: null,
     });
 
-    anthropicMessages.mockResolvedValueOnce(anthropicResponses.text("{}"));
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: "{}" });
     const emptyRes = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), emptyRes);
 
@@ -165,16 +159,15 @@ describe("nutrition day-plan handler", () => {
   });
 
   it("limits normalized meals to six entries", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          meals: Array.from({ length: 8 }, (_, index) => ({
-            type: "snack",
-            name: `Перекус ${index + 1}`,
-          })),
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        meals: Array.from({ length: 8 }, (_, index) => ({
+          type: "snack",
+          name: `Перекус ${index + 1}`,
+        })),
+      }),
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
@@ -183,7 +176,7 @@ describe("nutrition day-plan handler", () => {
     expect(plan["meals"]).toHaveLength(6);
   });
 
-  it("throws ValidationError and skips Anthropic for invalid args", async () => {
+  it("throws ValidationError and skips the provider for invalid args", async () => {
     await expect(
       handler(
         makeReq({ regenerateMealType: "brunch", locale: "uk-UA" }),
@@ -193,13 +186,11 @@ describe("nutrition day-plan handler", () => {
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
   it("passes regenerateMealType into the prompt", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text('{"meals":[]}'),
-    );
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 
     await handler(
       makeReq({
@@ -209,15 +200,16 @@ describe("nutrition day-plan handler", () => {
       makeRes(),
     );
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    const messages = payload["messages"] as Array<{ content: string }>;
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain('ТІЛЬКИ прийом їжі типу: "dinner"');
   });
 
-  it("throws ExternalServiceError when Anthropic returns an error response", async () => {
-    anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 429 },
-      data: { error: { message: "quota exceeded" } },
+  it("throws ExternalServiceError when the provider returns an error result", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: false,
+      error: "quota exceeded",
+      status: 429,
     });
 
     await expect(
@@ -231,9 +223,7 @@ describe("nutrition day-plan handler", () => {
   });
 
   it("uses default targets prompt when kcal target is absent", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text('{"meals":[]}'),
-    );
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 
     await handler(
       makeReq({
@@ -244,17 +234,16 @@ describe("nutrition day-plan handler", () => {
       makeRes(),
     );
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    const messages = payload["messages"] as Array<{ content: string }>;
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    const messages = opts["messages"] as Array<{ content: string }>;
     expect(messages[0]?.content).toContain("Цілі не задані");
   });
 
   it("filters null meal entries from normalization", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        '{"meals":[null,{"type":"lunch","name":"Суп","label":"Обід"}]}',
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: '{"meals":[null,{"type":"lunch","name":"Суп","label":"Обід"}]}',
+    });
 
     const res = makeRes();
     await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
@@ -265,10 +254,8 @@ describe("nutrition day-plan handler", () => {
     ]);
   });
 
-  it("passes userId to anthropicMessages when session user is present", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text('{"meals":[]}'),
-    );
+  it("passes userId to the provider when session user is present", async () => {
+    invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 
     await handler(
       {
@@ -279,7 +266,7 @@ describe("nutrition day-plan handler", () => {
       makeRes(),
     );
 
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options["userId"]).toBe("u_day_plan");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["userId"]).toBe("u_day_plan");
   });
 });

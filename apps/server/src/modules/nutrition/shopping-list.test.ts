@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Request, Response } from "express";
-import {
-  anthropicError,
-  anthropicResponses,
-  createAnthropicMockHandle,
-} from "../../test/__mocks__/anthropic.js";
+import { anthropicError } from "../../test/__mocks__/anthropic.js";
 
-vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
+vi.mock("../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: vi.fn(),
+}));
 
-import { anthropicMessages as anthropicMessagesMock } from "../../lib/anthropic.js";
+import { invokeLLM as _invokeLLM } from "../../lib/llm/provider.js";
 import handler from "./shopping-list.js";
+
+const invokeLLM = _invokeLLM as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -48,36 +49,33 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-const anthropicMessages = anthropicMessagesMock as unknown as Mock;
-
 beforeEach(() => {
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
   vi.spyOn(Date, "now").mockReturnValue(1_778_000_000_000);
   vi.spyOn(Math, "random").mockReturnValue(0.123456);
 });
 
 describe("shopping-list handler", () => {
   it("normalizes categories and de-duplicates items by name", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          categories: [
-            {
-              name: "Овочі та гриби",
-              items: [
-                { name: "Печериці", quantity: "400 г", note: "свіжі" },
-                { name: " печериці ", quantity: "200 г", note: "дублікат" },
-                { name: "", quantity: "1 шт", note: "skip" },
-              ],
-            },
-            {
-              name: "",
-              items: [{ name: "Кефір", quantity: "1 л", note: "" }],
-            },
-          ],
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        categories: [
+          {
+            name: "Овочі та гриби",
+            items: [
+              { name: "Печериці", quantity: "400 г", note: "свіжі" },
+              { name: " печериці ", quantity: "200 г", note: "дублікат" },
+              { name: "", quantity: "1 шт", note: "skip" },
+            ],
+          },
+          {
+            name: "",
+            items: [{ name: "Кефір", quantity: "1 л", note: "" }],
+          },
+        ],
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -125,26 +123,25 @@ describe("shopping-list handler", () => {
       rawText: null,
     });
 
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(JSON.stringify(payload["messages"])).toContain(
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(JSON.stringify(opts["messages"])).toContain(
       "• Грибний омлет: печериці, яйця, кефір",
     );
-    expect(JSON.stringify(payload["messages"])).toContain("яйця");
+    expect(JSON.stringify(opts["messages"])).toContain("яйця");
   });
 
   it("builds ingredient prompt from weekPlan when recipes are absent", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          categories: [
-            {
-              name: "Крупи та злаки",
-              items: [{ name: "Рис", quantity: "500 г", note: "" }],
-            },
-          ],
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        categories: [
+          {
+            name: "Крупи та злаки",
+            items: [{ name: "Рис", quantity: "500 г", note: "" }],
+          },
+        ],
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -161,11 +158,11 @@ describe("shopping-list handler", () => {
     expect(res.body).toMatchObject({
       categories: [{ name: "Крупи та злаки" }],
     });
-    const payload = asRecord(anthropicMessages.mock.calls[0]?.[1]);
-    expect(JSON.stringify(payload["messages"])).toContain(
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(JSON.stringify(opts["messages"])).toContain(
       "• Пн: сніданок — омлет; обід — рис",
     );
-    expect(JSON.stringify(payload["messages"])).toContain("нічого");
+    expect(JSON.stringify(opts["messages"])).toContain("нічого");
   });
 
   it("throws ValidationError when neither recipes nor weekPlan are useful", async () => {
@@ -175,13 +172,14 @@ describe("shopping-list handler", () => {
       name: "ValidationError",
       message: "Потрібно передати рецепти або тижневий план.",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
   it("returns raw text when no shopping items survive normalization", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify({ categories: [{ items: [] }] })),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({ categories: [{ items: [] }] }),
+    });
 
     const res = makeRes();
     await handler(
@@ -214,13 +212,14 @@ describe("shopping-list handler", () => {
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(anthropicMessages).not.toHaveBeenCalled();
+    expect(invokeLLM).not.toHaveBeenCalled();
   });
 
-  it("throws ExternalServiceError for non-ok Anthropic response", async () => {
-    anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 429 },
-      data: { error: { message: "quota exceeded" } },
+  it("throws ExternalServiceError for a non-ok provider response", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: false,
+      error: "quota exceeded",
+      status: 429,
     });
 
     await expect(
@@ -239,8 +238,8 @@ describe("shopping-list handler", () => {
     });
   });
 
-  it("propagates rejected Anthropic transport errors", async () => {
-    anthropicMessages.mockRejectedValueOnce(
+  it("propagates rejected provider transport errors", async () => {
+    invokeLLM.mockRejectedValueOnce(
       anthropicError("network down", { status: 502 }),
     );
 
@@ -256,20 +255,19 @@ describe("shopping-list handler", () => {
   });
 
   it("skips non-object categories and items during normalization", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          categories: [
-            null,
-            {
-              name: "Яйця",
-              items: [null, { name: "Яйця", quantity: "10 шт", note: "свіжі" }],
-            },
-            { name: "Порожня", items: [] },
-          ],
-        }),
-      ),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        categories: [
+          null,
+          {
+            name: "Яйця",
+            items: [null, { name: "Яйця", quantity: "10 шт", note: "свіжі" }],
+          },
+          { name: "Порожня", items: [] },
+        ],
+      }),
+    });
 
     const res = makeRes();
     await handler(
@@ -298,19 +296,18 @@ describe("shopping-list handler", () => {
     });
   });
 
-  it("passes userId to anthropicMessages when session user is present", async () => {
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(
-        JSON.stringify({
-          categories: [
-            {
-              name: "Яйця",
-              items: [{ name: "Яйця", quantity: "6 шт", note: "" }],
-            },
-          ],
-        }),
-      ),
-    );
+  it("passes userId to the provider when session user is present", async () => {
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify({
+        categories: [
+          {
+            name: "Яйця",
+            items: [{ name: "Яйця", quantity: "6 шт", note: "" }],
+          },
+        ],
+      }),
+    });
 
     await handler(
       {
@@ -324,7 +321,7 @@ describe("shopping-list handler", () => {
       makeRes(),
     );
 
-    const options = asRecord(anthropicMessages.mock.calls[0]?.[2]);
-    expect(options["userId"]).toBe("u_shopping");
+    const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
+    expect(opts["userId"]).toBe("u_shopping");
   });
 });

@@ -4,12 +4,8 @@ import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayHintSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 
-type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -69,26 +65,28 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
 Дай 2–4 речення: коротко порівняй з цілями (якщо цілі задані), що добре / що звернути увагу завтра. Без моралізаторства. Відповідь ТІЛЬКИ JSON: {"hint":"..."}`;
   /* eslint-enable sergeant-design/no-ellipsis-dots */
 
-  const payload = {
+  const provider = getLLMProvider({
+    provider: env.LLM_NUTRITION_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_NUTRITION_MODEL,
+  });
+  const result = await invokeLLM(provider, {
     model: env.NUTRITION_MODEL,
-    max_tokens: 400,
+    maxTokens: 400,
     temperature: 0.3,
     messages: [{ role: "user", content: prompt }],
-  };
-
-  const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "day-hint",
     ...(userId ? { userId } : {}),
   });
-  if (!response || !response.ok) {
+  if (!result.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
-      status: response?.status,
+      rawProviderMessage: result.error,
+      status: result.status,
     });
   }
 
-  const out = extractAnthropicText(data);
+  const out = result.text;
   let hint = "";
   try {
     const jsonParsed = extractJsonFromText(out);
