@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { useState, useMemo, type ReactNode } from "react";
-import { GroupedVirtuoso } from "react-virtuoso";
+import { VirtualList } from "@shared/components/ui/VirtualList";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
@@ -29,22 +29,25 @@ import type {
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { TxAccount } from "./Transactions";
 
-/** Typical rendered height of one `TxListItem` row, in px. Used only to
- * seed `GroupedVirtuoso`'s `defaultItemHeight` so it skips the zero-height
- * probe render — the real heights are measured once rows mount. */
+/** Typical rendered height of one `TxListItem` row, in px. */
 const ROW_HEIGHT_PX = 64;
 
+/** Typical rendered height of a `TransactionDayHeader` row, in px. */
+const HEADER_HEIGHT_PX = 48;
+
 /**
- * 1px-tall filler returned from `groupContent` / `itemContent` for an
- * index that is briefly out of range (e.g. mid-mutation, before the new
- * `groupCounts` / `flatItems` propagate). Returning `null` here renders a
- * zero-height `data-index` node that react-virtuoso's resize loop measures
- * as `offsetHeight: 0` and logs as a `Zero-sized element` error on every
- * tick. A non-zero, visually-empty filler keeps the measurement valid.
+ * 1px-tall filler returned when a row index is briefly out of range
+ * (e.g. mid-mutation, before the new counts/items propagate). A non-zero,
+ * visually-empty filler keeps the measurement valid.
  */
 function ListPlaceholder() {
   return <div aria-hidden className="h-px" />;
 }
+
+/** Discriminated union for the flat render list fed to `VirtualList`. */
+type RenderRow =
+  | { kind: "header"; groupIndex: number; key: string }
+  | { kind: "item"; flatIndex: number; tx: Transaction };
 
 export interface TransactionListProps {
   /** Whether the underlying month is still loading (real or history). */
@@ -54,7 +57,7 @@ export interface TransactionListProps {
   activeTx: Transaction[];
   /** Filtered + sorted list of transactions to render in the virtual list. */
   filtered: Transaction[];
-  /** `GroupedVirtuoso` group spec — one entry per visible day. */
+  /** Virtual list group spec — one entry per visible day. */
   groupedByDate: { key: string; items: Transaction[] }[];
   groupCounts: number[];
   flatItems: Transaction[];
@@ -96,7 +99,7 @@ export interface TransactionListProps {
 
 /**
  * Virtualized transaction list. Owns:
- *   - the scroll-parent attachment for `GroupedVirtuoso`
+ *   - the scroll-parent attachment for `VirtualList`
  *   - skeleton block while the first month load is in flight
  *   - empty state when filters yield zero rows
  *   - day-group headers + the row renderer
@@ -138,6 +141,24 @@ export function TransactionList({
   const cloudPullPending = useCloudPullPending();
   // Read onboarding goals once per render — stable across the session.
   const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
+
+  // Build a flat render list of alternating headers + item rows.
+  // groupCounts[i] is 0 when the day is collapsed (set by the parent), so
+  // collapsed days contribute only their header row.
+  const renderRows = useMemo<RenderRow[]>(() => {
+    const rows: RenderRow[] = [];
+    let flatIdx = 0;
+    groupedByDate.forEach((group, gi) => {
+      rows.push({ kind: "header", groupIndex: gi, key: group.key });
+      const count = groupCounts[gi] ?? 0;
+      for (let k = 0; k < count; k++) {
+        const tx = flatItems[flatIdx];
+        if (tx) rows.push({ kind: "item", flatIndex: flatIdx, tx });
+        flatIdx++;
+      }
+    });
+    return rows;
+  }, [groupedByDate, groupCounts, flatItems]);
 
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
@@ -215,50 +236,53 @@ export function TransactionList({
       >
         {() => (
           <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
-            <GroupedVirtuoso
-              {...(scrollParent ? { customScrollParent: scrollParent } : {})}
-              groupCounts={groupCounts}
-              // Seed measurement with a typical row height so react-virtuoso
-              // skips its zero-height "probe" render. Without it, the all-
-              // collapsed default state (every `groupCounts` entry is 0) and
-              // the brief post-mutation window (a stale index renders before
-              // the new `groupCounts`/`flatItems` settle) leave the list
-              // region measuring `offsetHeight: 0`, which virtuoso logs as a
-              // repeated `Zero-sized element` console error.
-              defaultItemHeight={ROW_HEIGHT_PX}
-              increaseViewportBy={{ top: 400, bottom: 400 }}
-              groupContent={(groupIndex) => {
-                const group = groupedByDate[groupIndex];
-                if (!group) return <ListPlaceholder />;
-                const key = group.key;
-                const collapsed = collapsedKeys.has(key);
-                const summary = daySummaries[key] ?? {
-                  total: 0,
-                  count: 0,
-                  statCount: 0,
-                };
-                // Коли у день є тільки «не в статистиці» транзакції, сховати
-                // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
-                // перекази у вигляді доходу.
-                const showTotal = showBalance && summary.statCount > 0;
-                return (
-                  <TransactionDayHeader
-                    dayKey={key}
-                    collapsed={collapsed}
-                    summary={summary}
-                    showTotal={showTotal}
-                    onToggle={toggleDay}
-                  />
-                );
+            <VirtualList
+              items={renderRows}
+              estimateSize={(index) => {
+                const row = renderRows[index];
+                return row?.kind === "header"
+                  ? HEADER_HEIGHT_PX
+                  : ROW_HEIGHT_PX;
               }}
-              itemContent={(index) => {
-                const t = flatItems[index];
+              scrollElement={scrollParent}
+              overscan={8}
+              getItemKey={(_, row) =>
+                row.kind === "header" ? `h-${row.key}` : `i-${row.flatIndex}`
+              }
+            >
+              {(row) => {
+                if (row.kind === "header") {
+                  const group = groupedByDate[row.groupIndex];
+                  if (!group) return <ListPlaceholder />;
+                  const key = group.key;
+                  const collapsed = collapsedKeys.has(key);
+                  const summary = daySummaries[key] ?? {
+                    total: 0,
+                    count: 0,
+                    statCount: 0,
+                  };
+                  // Коли у день є тільки «не в статистиці» транзакції, сховати
+                  // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
+                  // перекази у вигляді доходу.
+                  const showTotal = showBalance && summary.statCount > 0;
+                  return (
+                    <TransactionDayHeader
+                      dayKey={key}
+                      collapsed={collapsed}
+                      summary={summary}
+                      showTotal={showTotal}
+                      onToggle={toggleDay}
+                    />
+                  );
+                }
+                // row.kind === "item"
+                const t = row.tx;
                 if (!t) return <ListPlaceholder />;
                 const rowTx = t as TxRowTx;
                 return (
                   <TxListItem
                     tx={rowTx}
-                    rowIndex={index}
+                    rowIndex={row.flatIndex}
                     selectMode={selectMode}
                     selected={selectMode && selectedIds.has(t.id)}
                     hidden={hiddenTxIdSet.has(t.id)}
@@ -279,7 +303,7 @@ export function TransactionList({
                   />
                 );
               }}
-            />
+            </VirtualList>
           </div>
         )}
       </DataState>

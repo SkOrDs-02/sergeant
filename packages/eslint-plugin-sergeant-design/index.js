@@ -3221,6 +3221,12 @@ const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
   // sibling provider/hook module and share that module's stories.
   "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
   "apps/web/src/shared/components/ui/KeyboardShortcutsModalUI.tsx",
+  // S10-T2 bundle-cut — thin @tanstack/react-virtual wrapper. Relies on
+  // ResizeObserver + real scroll-container geometry to compute virtual
+  // items; non-functional in Storybook iframe without a fixed-height
+  // scroll parent. Visual shape is identical to any plain scrollable
+  // list (no custom chrome), so story coverage adds no value.
+  "apps/web/src/shared/components/ui/VirtualList.tsx",
 ]);
 
 const REQUIRE_STORIES_TEST_RE = /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;

@@ -14,28 +14,20 @@ const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("react-virtuoso", () => ({
-  GroupedVirtuoso: ({
-    groupCounts,
-    groupContent,
-    itemContent,
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    groupCounts: number[];
-    groupContent: (i: number) => React.ReactNode;
-    itemContent: (i: number) => React.ReactNode;
-  }) => {
-    const total = groupCounts.reduce((s, n) => s + n, 0);
-    return (
-      <div data-testid="grouped-virtuoso">
-        {groupCounts.map((_, gi) => (
-          <div key={`g-${gi}`}>{groupContent(gi)}</div>
-        ))}
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={`i-${i}`}>{itemContent(i)}</div>
-        ))}
-      </div>
-    );
-  },
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
+  }) => (
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock("@shared/lib/modules/cloudPullRequest", () => ({
@@ -214,7 +206,7 @@ describe("Transactions page shell", () => {
     expect(
       document.querySelectorAll('[aria-busy="true"]').length,
     ).toBeGreaterThan(0);
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("routes the list to the filter-empty slot when filters hide every row", () => {
@@ -223,7 +215,7 @@ describe("Transactions page shell", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
     expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("routes the list to the first-run empty hero when activeTx is empty and not loading", () => {
@@ -231,14 +223,14 @@ describe("Transactions page shell", () => {
       mono: buildMono({ loadingTx: false, realTx: [] }),
     });
     expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("renders the virtualized list when filtered rows exist", () => {
     renderTransactions({
       mono: buildMono({ realTx: [SAMPLE_TX] }),
     });
-    expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
   });
 
   it("handlePullRefresh calls monoRefresh and requestCloudPull(2500)", async () => {

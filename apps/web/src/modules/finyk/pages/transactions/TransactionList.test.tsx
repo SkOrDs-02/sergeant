@@ -3,32 +3,23 @@ import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
-// `GroupedVirtuoso` needs ResizeObserver / a real layout to render its
-// items. For the DataState routing test we only care which slot is
-// rendered (skeleton / empty / list) — a trivial mock that surfaces
-// children via `groupContent` + `itemContent` is enough.
-vi.mock("react-virtuoso", () => ({
-  GroupedVirtuoso: ({
-    groupCounts,
-    groupContent,
-    itemContent,
+// `VirtualList` needs ResizeObserver / a real layout to compute virtual items.
+// For the DataState routing test we only care which slot is rendered
+// (skeleton / empty / list) — a synchronous flat-render mock is enough.
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    groupCounts: number[];
-    groupContent: (i: number) => React.ReactNode;
-    itemContent: (i: number) => React.ReactNode;
-  }) => {
-    const total = groupCounts.reduce((s, n) => s + n, 0);
-    return (
-      <div data-testid="grouped-virtuoso">
-        {groupCounts.map((_, gi) => (
-          <div key={`g-${gi}`}>{groupContent(gi)}</div>
-        ))}
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={`i-${i}`}>{itemContent(i)}</div>
-        ))}
-      </div>
-    );
-  },
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
+  }) => (
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
+      ))}
+    </div>
+  ),
 }));
 
 import { TransactionList } from "./TransactionList";
@@ -98,7 +89,7 @@ describe("TransactionList — DataState routing", () => {
     // The empty-state title and the virtualized list must NOT be
     // rendered while skeleton is on.
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("renders the empty slot when not loading and filtered list is empty (with activeTx present)", () => {
@@ -112,7 +103,7 @@ describe("TransactionList — DataState routing", () => {
     );
 
     expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("renders the tier-1 ModuleEmptyState when not loading and activeTx itself is empty (first-run)", () => {
@@ -135,7 +126,7 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
     // The filter-empty copy must NOT also render at the same time.
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("renders the virtualized list when filtered has rows", () => {
@@ -151,7 +142,7 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
   });
 
@@ -172,7 +163,7 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
   });
 
