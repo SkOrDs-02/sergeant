@@ -1,6 +1,6 @@
 # C3 — Workspace dependency graph
 
-> **Last validated:** 2026-07-19 by @Skords-01. **Next review:** 2026-10-17.
+> **Last validated:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-architecture-diagrams`. -->
@@ -33,7 +33,6 @@ flowchart LR
         packages_fizruk_domain["@sergeant/fizruk-domain"]
         packages_insights["@sergeant/insights"]
         packages_nutrition_domain["@sergeant/nutrition-domain"]
-        packages_openclaw_plugin["@sergeant/openclaw-plugin"]
         packages_routine_domain["@sergeant/routine-domain"]
         packages_shared["@sergeant/shared"]
     end
@@ -70,12 +69,12 @@ flowchart LR
     classDef package fill:#15803d,stroke:#166534,color:#fff
     class apps_mobile,apps_mobile_shell,apps_server,apps_web app
     class tools_entropy_janitors tool
-    class packages_api_client,packages_config,packages_db_schema,packages_design_tokens,packages_dualwrite_core,packages_eslint_plugin_sergeant_design,packages_finyk_domain,packages_fizruk_domain,packages_insights,packages_nutrition_domain,packages_openclaw_plugin,packages_routine_domain,packages_shared package
+    class packages_api_client,packages_config,packages_db_schema,packages_design_tokens,packages_dualwrite_core,packages_eslint_plugin_sergeant_design,packages_finyk_domain,packages_fizruk_domain,packages_insights,packages_nutrition_domain,packages_routine_domain,packages_shared package
 ```
 
 ## Stats
 
-- **18** workspaces total — 4 apps, 13 packages, 1 tool.
+- **17** workspaces total — 4 apps, 12 packages, 1 tool.
 - **27** cross-workspace import edges.
 
 ## Top imported workspaces
@@ -84,7 +83,7 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 378       | 1       |
+| 1    | `@sergeant/shared`           | 376       | 1       |
 | 2    | `@sergeant/nutrition-domain` | 97        | 1       |
 | 3    | `@sergeant/fizruk-domain`    | 90        | 1       |
 | 4    | `@sergeant/routine-domain`   | 71        | 1       |

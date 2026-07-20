@@ -1,7 +1,7 @@
 # Web deep-dive — Overview
 
-> **Last touched:** 2026-07-18 by @dimastahov16012003. **Next review:** 2026-10-16.
-> **Status:** Active (rounds 1–13 tracker; new follow-ups land as numbered round updates inline).
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Closed — rounds 1–13 завершено; нові findings не додаються в цей snapshot (round 14+ residual = 0 mandatory PR).
 >
 > **Update 2026-05-04 (round 4):** Tier 1 закрито у foundation-формі — items #8, #9. Roadmap-таблиця нижче помічена done з PR-лінками.
 >
@@ -85,7 +85,7 @@
 > **Related:**
 >
 > - `docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md` — попередній комплексний аудит (Closed).
-> - `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/90-work/audits/2026-04-28-ux-improvement-plan.md` — UX план.
+> - `docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md`, `docs/90-work/audits/archive/2026-04-28-ux-improvement-plan.md` — UX план.
 > - `docs/90-work/tech-debt/frontend.md`, `docs/90-work/tech-debt/backend.md` — поточний tech-debt.
 
 Це **fresh second opinion**: автор свідомо читав код первинно, а не існуючі звіти, щоб бачити те, що могло «закам'яніти» в командному рутіні. Звірка з попередніми аудитами — у §11.

@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2026-10-17.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
@@ -85,7 +85,7 @@
 
 > **Закриті sprint-items** (27): S0.1, S0.2, S0.3 (web), S0.3 (mobile parity), S0.4, S0.5, S1.3, S1.4, S1.5, S2.1, S2.3 (web), S2.3 (mobile parity), S2.4, S3.1, S3.2, S3.3a, S3.3b, S3.3 (mobile parity #1905), S3.4, S3.5, S4.1, S4.3, S4.4, S4.5, S6.1, S6.2, S6.4 (web #1875), S6.4 (mobile parity #1907), S6.6 (#1854), S6.7 (#1852), S6.9 (#1870).
 >
-> **Open sprint-items** (5): S5.1-S5.3 (goal-first wizard, optional), S6.3, S6.5, S6.8, S6.10-S6.13 (Sprint 6 cleanup carryovers).
+> **Open sprint-items** (3): S5.1-S5.3 (goal-first wizard, optional), S6.5, S6.8, S6.10, S6.12-S6.13 (Sprint 6 cleanup carryovers).
 >
 > **Closed 2026-05-07 (copy-review pass):** S1.1 (hero copy benefit-driven — "зум"→"запис", "cloud-у"→"хмари"), S1.2 (CTA на welcome — "хаб"→"дашборд"), S2.2a/S2.2b (PresetSheet prefill — finyk desc без застарілих цін).
 
@@ -99,7 +99,7 @@
 | **S3** (2 т.)  | Reward у правильний момент + value-progress  | Confetti на real entry · CelebrationModal → next-action promise         | Day-1 retention ↑ 5pp · % users з 2+ entries у session 1 ↑ 8pp        | ✅ Done — 6/6                                                                                                                                                     |
 | **S4** (2 т.)  | Demo-first + day-1-7 retention loop          | "Подивитись приклад" як first-class · push day-2/3 · email drip 0/1/3   | D7 retention ↑ 3pp · share-of-traffic що пройшов demo ≥ 15%           | 🚧 Partial — S4.1, S4.3, S4.4, S4.5 done; **demo-first CTA shipped via PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)**; **email drip → backlog** |
 | **S5** (1 т.)? | Goal-first wizard A/B (опц.)                 | Onboarding починається з outcome, модулі — під ціль                     | A/B виграв ≥5pp retention → раскат                                    | ⏳ Open — **PR-13** у Wave 2                                                                                                                                      |
-| **S6** (2 т.)  | Cleanup batch — раніше прогавлене            | 13 пунктів, прогавлених у S1-S5                                         | Activation funnel ↑ 2-4pp (cumulative)                                | 🚧 Partial — S6.1, S6.2, S6.4, S6.6, S6.7, S6.9 done; **S6.3, S6.5, S6.8, S6.10-S6.13 open**                                                                      |
+| **S6** (2 т.)  | Cleanup batch — раніше прогавлене            | 13 пунктів, прогавлених у S1-S5                                         | Activation funnel ↑ 2-4pp (cumulative)                                | 🚧 Partial — S6.1–S6.4, S6.6, S6.7, S6.9, S6.11 done; **S6.5, S6.8, S6.10, S6.12–S6.13 open**                                                                     |
 
 ### 2.2. Sprint 6 cleanup batch — статус 2026-05-05
 
@@ -107,7 +107,7 @@
 | ----- | ---------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | S6.1  | feat(onboarding): default-picks experiment     | ✅ Done | (in-tree, see ftux-sprint-plan.md §7a)                                                                                                       |
 | S6.2  | feat(onboarding): tour-replay improvements     | ✅ Done | —                                                                                                                                            |
-| S6.3  | _(P2-15 на CelebrationModal CTA promise)_      | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
+| S6.3  | _(P2-15 на CelebrationModal CTA promise)_      | ✅ Done | Module-aware `primaryCtaLabel` у `packages/shared/src/lib/onboardingCelebrations.ts` (2026-05-13)                                            |
 | S6.4  | feat(onboarding): web parity for mobile        | ✅ Done | [PR #1875](https://github.com/Skords-01/Sergeant/pull/1875) (web) + [#1907](https://github.com/Skords-01/Sergeant/pull/1907) (mobile parity) |
 | S6.5  | _(B-2 на «~10 сек» badge removal)_             | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
 | S6.6  | feat(onboarding): hint-orchestrator priority   | ✅ Done | [PR #1854](https://github.com/Skords-01/Sergeant/pull/1854)                                                                                  |
@@ -115,7 +115,7 @@
 | S6.8  | _(P2-19 на DailyNudge primary)_                | ⏳ Open | _Sprint 6 carryover — переходить у PR-12 (orchestrator state)_                                                                               |
 | S6.9  | feat(insights): cross-module insight surfacing | ✅ Done | [PR #1870](https://github.com/Skords-01/Sergeant/pull/1870)                                                                                  |
 | S6.10 | _(B-10 на insights timing)_                    | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
-| S6.11 | _(B-11 на CelebrationModal «Що далі» tips)_    | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
+| S6.11 | _(B-11 на CelebrationModal «Що далі» tips)_    | ✅ Done | Module-aware `nextStepTip` у `onboardingCelebrations.ts` (2026-05-13)                                                                        |
 | S6.12 | _(P2-14 на streaks-as-mechanism)_              | ⏳ Open | _Sprint 6 carryover — частково покривається PR-09 (outcome-card)_                                                                            |
 | S6.13 | _(P2-19 на push permission timing)_            | ⏳ Open | _Sprint 6 carryover_                                                                                                                         |
 
@@ -150,13 +150,13 @@
 | **PR-09** | feat(hub): cold-start outcome-card behind FF        | ~280 | PR-06        | First-real-entry rate per active module ↑ 10pp      |
 | **PR-10** | feat(empty): empty-state copy A/B per module        | ~150 | PR-06, PR-09 | 14-day winner за `first_real_entry conversion`      |
 | **PR-11** | feat(onboarding): goal-aware first-action priority  | ~100 | —            | Per-module first-entry rate variance ↓              |
-| **PR-12** | refactor(onboarding): OnboardingState shared store  | ~290 | —            | Single-hero rule enforced: ≤1 prompt-card одночасно |
+| **PR-12** | refactor(onboarding): OnboardingState shared store  | ~290 | ✅ #2014     | Single-hero rule enforced: ≤1 prompt-card одночасно |
 | **PR-13** | feat(experiments): goal-first wizard variant (S5.1) | ~250 | PR-11        | D7 retention за goal-first arm vs current ≥ +5pp    |
 | **PR-14** | feat(observability): FTUX SLO + dashboard + alert   | ~100 | —            | Self-referential — alert fires when SLO breaches    |
 
 > **PR-11 status (2026-05-06):** ✅ [Merged #1991](https://github.com/Skords-01/Sergeant/pull/1991) — додав `rankFirstActionCandidates`, vibe-pick-order tie-break серед goal-set picks та `primary_reason` faceting field у `onboarding_first_action_*` події (Sentry/PostHog). Static fallback (без goals) — байт-в-байт як до S2.1.
 >
-> **PR-12 status (2026-05-06):** in-flight як [#2014](https://github.com/Skords-01/Sergeant/pull/2014) — `resolveOnboardingHero` (shared, pure) + `useOnboardingState` (web hook) + `HubDashboard` рефакторинг. 4-tier priority ladder (`reengagement > first-action > soft-auth > today-focus`) централізує single-hero rule в одному tested місці; mobile parity — Wave 4 PR-21.
+> **PR-12 status (2026-07-20):** ✅ Merged [#2014](https://github.com/Skords-01/Sergeant/pull/2014) — `resolveOnboardingHero` (shared, pure) + `useOnboardingState` (web hook) + `HubDashboard` рефакторинг. 4-tier priority ladder (`reengagement > first-action > soft-auth > today-focus`) централізує single-hero rule; mobile parity — Wave 4 PR-21.
 
 ### 3.3. Хвиля 3 — Platform parity (Week 3-4, 4 PR)
 
@@ -463,14 +463,14 @@ slos:
 
 ### 8.1. P0 з 2026-05-03 roast
 
-| #   | Проблема                                          | Файл                           | Стан       | Кроки                                                                                                          |
-| --- | ------------------------------------------------- | ------------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------- |
-| 1   | Hero copy продає features, не результат           | `OnboardingWizard.tsx:237-264` | ✅ Closed  | [PR-04 #1944](https://github.com/Skords-01/Sergeant/pull/1944) (disciplined arm у v2 split, merged 2026-05-05) |
-| 2   | Confetti до першої цінності (wizard finish)       | `OnboardingWizard.tsx:388-401` | ✅ Closed  | S1.3 / [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609)                                             |
-| 3   | «Відкрити Sergeant» закидає на порожній dashboard | post-wizard navigation         | ⏳ Open    | PR-09 (outcome-card replaces empty TODO)                                                                       |
-| 4   | Жорсткий пріоритет `routine` ігнорує goals        | `FirstActionSheet.tsx:59-75`   | ✅ Closed  | S2.1 / [PR #1740](https://github.com/Skords-01/Sergeant/pull/1740)                                             |
-| 5   | Peek backdrop disclaimer                          | `WelcomeScreen.tsx:78-81`      | ✅ Closed  | S1.4 / [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610)                                             |
-| 6   | PresetSheet bait-and-switch                       | `PresetSheet.tsx:80-145`       | 🚧 Partial | S2.2a/S2.2b — blocked by S1.1 copy-reviewer                                                                    |
+| #   | Проблема                                          | Файл                           | Стан      | Кроки                                                                                                          |
+| --- | ------------------------------------------------- | ------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------- |
+| 1   | Hero copy продає features, не результат           | `OnboardingWizard.tsx:237-264` | ✅ Closed | [PR-04 #1944](https://github.com/Skords-01/Sergeant/pull/1944) (disciplined arm у v2 split, merged 2026-05-05) |
+| 2   | Confetti до першої цінності (wizard finish)       | `OnboardingWizard.tsx:388-401` | ✅ Closed | S1.3 / [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609)                                             |
+| 3   | «Відкрити Sergeant» закидає на порожній dashboard | post-wizard navigation         | ⏳ Open   | PR-09 (outcome-card replaces empty TODO)                                                                       |
+| 4   | Жорсткий пріоритет `routine` ігнорує goals        | `FirstActionSheet.tsx:59-75`   | ✅ Closed | S2.1 / [PR #1740](https://github.com/Skords-01/Sergeant/pull/1740)                                             |
+| 5   | Peek backdrop disclaimer                          | `WelcomeScreen.tsx:78-81`      | ✅ Closed | S1.4 / [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610)                                             |
+| 6   | PresetSheet bait-and-switch                       | `PresetSheet.tsx:80-145`       | ✅ Closed | S2.2a/S2.2b closed 2026-05-07 (S1.1 copy-review also closed)                                                   |
 
 ### 8.2. P1 з 2026-05-03 roast
 

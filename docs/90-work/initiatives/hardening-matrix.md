@@ -1,9 +1,9 @@
 # Зведена матриця hardening-карток
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-20 by @cursor (matrix rows synced to card Status headers). **Next review:** 2026-10-18.
 > **Status:** Active
 
-> **Попередження:** Ручний знімок станом на 2026-06-12; source of truth — самі картки, цей файл НЕ auto-generated і може дрейфувати.
+> **Попередження:** Ручний знімок; source of truth — самі картки. Оновлено 2026-07-20 під Status карток (M1/M3/M6/M7/M12 → Reference/Deprecated; M9 CORS PR-2 shipped).
 
 Цей документ зводить в одному місці всі hardening-картки з трьох джерел: серія `stack-pulse-2026-05` (39 карток C/H/M/L), архівна ініціатива `_0008-platform-hardening` (5 фаз), та архівна ініціатива `_0009-agent-os-hardening` (18 PR-трекерів). Призначення — швидкий огляд «що зроблено / що висить» без необхідності відкривати кожну картку окремо.
 
@@ -13,10 +13,10 @@
 
 | Джерело                                             | Всього | Closed / Merged / Done | Open / Planned | Partial / Unknown |
 | --------------------------------------------------- | ------ | ---------------------- | -------------- | ----------------- |
-| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 32                     | 3              | 4                 |
+| stack-pulse-2026-05 (C1–C6, H1–H10, M1–M12, L1–L12) | 39     | 32                     | 0              | 7                 |
 | \_0008-platform-hardening (фази 1–5)                | 5      | 5                      | 0              | 0                 |
 | \_0009-agent-os-hardening (PR 1.1–5.3)              | 18     | 17                     | 1              | 0                 |
-| **Разом**                                           | **62** | **54**                 | **4**          | **4**             |
+| **Разом**                                           | **62** | **54**                 | **1**          | **7**             |
 
 ---
 
@@ -52,20 +52,20 @@
 
 ### Medium (M1–M12)
 
-| ID  | Назва                                                                | Source-файл                                                                                            | Статус                            | GitHub PR                                                |
-| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------- | -------------------------------------------------------- |
-| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [`pr-17-env-vars-feature-flag-toggle.md`](./stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md) | Planned                           | —                                                        |
-| M2  | Detox path-trigger пропускає server-shape changes                    | [`pr-18-detox-server-shape-trigger.md`](./stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)     | Closed                            | —                                                        |
-| M3  | Workers без централізованого health-registry                         | [`pr-19-workers-health-registry.md`](./stack-pulse-2026-05/pr-19-workers-health-registry.md)           | Partial (/health/workers shipped) | —                                                        |
-| M4  | `patches/` — patch debt без README                                   | [`pr-20-patches-readme.md`](./stack-pulse-2026-05/pr-20-patches-readme.md)                             | Closed                            | [#2193](https://github.com/Skords-01/Sergeant/pull/2193) |
-| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [`pr-21-sw-prompt-mode-auto-update.md`](./stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md)     | Closed                            | [#2309](https://github.com/Skords-01/Sergeant/pull/2309) |
-| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [`pr-22-mobile-expo-sdk-53.md`](./stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md)                     | Planned                           | —                                                        |
-| M7  | OpenAPI-spec не contract-tested vs runtime                           | [`pr-23-openapi-contract-tests.md`](./stack-pulse-2026-05/pr-23-openapi-contract-tests.md)             | Partial (Phase 1 shipped)         | —                                                        |
-| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [`pr-24-embedding-vendor-abstraction.md`](./stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md) | Closed                            | —                                                        |
-| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [`pr-25-two-production-origins.md`](./stack-pulse-2026-05/pr-25-two-production-origins.md)             | Partial (PR-1 shipped)            | —                                                        |
-| M10 | DR runbook documented                                                | [`00-overview.md`](./stack-pulse-2026-05/00-overview.md)                                               | Closed                            | —                                                        |
-| M11 | CSP без `report-uri` / `report-to`                                   | [`pr-26-csp-report-uri.md`](./stack-pulse-2026-05/pr-26-csp-report-uri.md)                             | Closed                            | —                                                        |
-| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [`pr-27-internal-api-key-rotation.md`](./stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)       | Planned                           | —                                                        |
+| ID  | Назва                                                                | Source-файл                                                                                            | Статус                                     | GitHub PR                                                                                                       |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [`pr-17-env-vars-feature-flag-toggle.md`](./stack-pulse-2026-05/pr-17-env-vars-feature-flag-toggle.md) | Reference                                  | —                                                                                                               |
+| M2  | Detox path-trigger пропускає server-shape changes                    | [`pr-18-detox-server-shape-trigger.md`](./stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md)     | Closed                                     | —                                                                                                               |
+| M3  | Workers без централізованого health-registry                         | [`pr-19-workers-health-registry.md`](./stack-pulse-2026-05/pr-19-workers-health-registry.md)           | Reference                                  | —                                                                                                               |
+| M4  | `patches/` — patch debt без README                                   | [`pr-20-patches-readme.md`](./stack-pulse-2026-05/pr-20-patches-readme.md)                             | Closed                                     | [#2193](https://github.com/Skords-01/Sergeant/pull/2193)                                                        |
+| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [`pr-21-sw-prompt-mode-auto-update.md`](./stack-pulse-2026-05/pr-21-sw-prompt-mode-auto-update.md)     | Closed                                     | [#2309](https://github.com/Skords-01/Sergeant/pull/2309)                                                        |
+| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [`pr-22-mobile-expo-sdk-53.md`](./stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md)                     | Deprecated                                 | —                                                                                                               |
+| M7  | OpenAPI-spec не contract-tested vs runtime                           | [`pr-23-openapi-contract-tests.md`](./stack-pulse-2026-05/pr-23-openapi-contract-tests.md)             | Reference                                  | —                                                                                                               |
+| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [`pr-24-embedding-vendor-abstraction.md`](./stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md) | Closed                                     | —                                                                                                               |
+| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [`pr-25-two-production-origins.md`](./stack-pulse-2026-05/pr-25-two-production-origins.md)             | Partial (PR-1+#327 CORS; OAuth+ADR remain) | [#3392](https://github.com/Skords-01/Sergeant/pull/3392) [#327](https://github.com/Skords-01/Sergeant/pull/327) |
+| M10 | DR runbook documented                                                | [`00-overview.md`](./stack-pulse-2026-05/00-overview.md)                                               | Closed                                     | —                                                                                                               |
+| M11 | CSP без `report-uri` / `report-to`                                   | [`pr-26-csp-report-uri.md`](./stack-pulse-2026-05/pr-26-csp-report-uri.md)                             | Closed                                     | —                                                                                                               |
+| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [`pr-27-internal-api-key-rotation.md`](./stack-pulse-2026-05/pr-27-internal-api-key-rotation.md)       | Reference                                  | —                                                                                                               |
 
 ### Low (L1–L12)
 

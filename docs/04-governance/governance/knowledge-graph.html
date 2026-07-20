@@ -106,7 +106,7 @@
       <span class="chip chip-hard-rule">hard-rule: <b>26</b></span>
       <span class="chip chip-initiative">initiative: <b>52</b></span>
       <span class="chip chip-playbook">playbook: <b>60</b></span>
-      <span class="chip chip-pr">pr: <b>186</b></span>
+      <span class="chip chip-pr">pr: <b>187</b></span>
       <span class="chip chip-skill">skill: <b>23</b></span>
     </div>
 
@@ -1080,7 +1080,7 @@
                 `apps/server/src/routes/internal/openclaw.ts`</a
               >
             </td>
-            <td>Resolved (target deleted — ADR-0075).</td>
+            <td>Closed (target deleted — ADR-0075).</td>
             <td></td>
           </tr>
           <tr>
@@ -1544,9 +1544,10 @@
               >
             </td>
             <td>
-              In progress (Phases 1-6 done; Phase 7 sunset-routes-removal
-              Proposed — exit-criteria 8-week zero signal OR 2026-08-04,
-              whichever first)
+              Closed — Phases 1–7 shipped. Phase 7 sunset-routes removal
+              early-landed у PR #326 (`chore(server): remove CloudSync v1 sunset
+              routes`); `apps/server/src/routes/sync.ts` лишає лише v2 + audit
+              (голий 404 замість 410 після deprecation window).
             </td>
             <td>number=3 · owner=@Skords-01 · priority=P0 (Sprint 1–2)</td>
           </tr>
@@ -1591,20 +1592,14 @@
               In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle
               Beta) shipped: skill+playbook columns + `agent-ready` field on all
               initiatives + `lint:initiative-agent-ready` gate. Remaining =
-              Phase 1 **observational acceptance only**. **The &quot;7
-              consecutive cron days&quot; streak BROKE on 2026-06-06.** Verified
-              against GitHub Actions runs of `docs-daily-brief.yml`: green 06-03
-              / 06-04 / 06-05, then **failed 06-06** (run `27057370680` — the
-              regen-and-push job died on `node adr:0062: duplicate`, i.e. a
-              duplicate-ADR-id check, **not** on the `today.md`/trust-badge
-              generators themselves), then green again 06-07 / 06-08. The
-              original 06-03 → 06-09 window therefore can no longer be
-              all-green; **current consecutive-green run = 2 (06-07 → 06-08)**,
-              06-09 still pending. The maintainer 5/7-day usage self-report is
-              also still unrecorded. Stays In progress until both signals close;
-              the 7-consecutive-green counter has **reset** and needs a fresh
-              clean 7-day streak. Not 90-day-gated; archival deferred until the
-              observation window closes.
+              Phase 1 **observational acceptance only**. **7-day
+              consecutive-green streak MET** for `docs-daily-brief.yml`: green
+              2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier
+              June streak had broken on 06-06. **Note:** після 2026-07-09
+              schedule runs у GH Actions не видно до 2026-07-20 — потребує human
+              check (paused/broken cron?). Maintainer 5/7-day `today.md` usage
+              self-report досі unrecorded. Stays In progress until self-report
+              closes.
             </td>
             <td>number=15</td>
           </tr>
@@ -2286,11 +2281,10 @@
               >
             </td>
             <td>
-              Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect +
-              Sentry release unification); PR-2 (drop fizruk from
-              apps/server/src/http/cors.ts + Google/Apple OAuth consoles)
-              pending 30-day soak + manual OAuth-console step; ADR-0009
-              single-origin section TODO.
+              Active — PR-1 shipped (#3392: 301 redirect + Sentry release
+              unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk`
+              origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth
+              console cleanup + ADR-0009 «Single origin policy» section.
             </td>
             <td></td>
           </tr>
@@ -3566,7 +3560,7 @@
     </details>
 
     <details>
-      <summary>Edges (354 total, first 500 core-to-core)</summary>
+      <summary>Edges (359 total, first 500 core-to-core)</summary>
       <table>
         <thead>
           <tr>
@@ -4053,6 +4047,11 @@
             <td><code>skill:sergeant-tech-debt</code></td>
             <td>references</td>
             <td><code>hard-rule:19</code></td>
+          </tr>
+          <tr>
+            <td><code>skill:sergeant-tech-debt</code></td>
+            <td>references</td>
+            <td><code>initiative:0021</code></td>
           </tr>
           <tr>
             <td><code>skill:sergeant-web-ui</code></td>

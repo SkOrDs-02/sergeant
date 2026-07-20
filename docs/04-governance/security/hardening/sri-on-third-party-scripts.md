@@ -1,7 +1,7 @@
 # SRI на сторонні `<script src>` (S3)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
-> **Status:** Active
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Closed — enforcement live (`sergeant-design/sri-on-third-party-script` + `pnpm lint:html-sri`); `apps/web/index.html` без CDN `<script src>`.
 
 | Поле               | Значення                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------- |

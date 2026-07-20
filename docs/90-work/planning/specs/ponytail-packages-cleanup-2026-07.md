@@ -1,7 +1,7 @@
 # Spec: Ponytail-cleanup packages/* (over-engineering purge)
 
-> **Last touched:** 2026-07-11 by @dimastahov16012003. **Next review:** 2026-10-09.
-> **Status:** Active
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Closed — WP1–WP5 merged у PR #322 (`97bb430a0`, 2026-07-20). Опційний WP4.3 свідомо skipped (коментар у `packages/db-schema/src/sqlite/syncOpOutboxRecover.ts`).
 
 ## Контекст
 

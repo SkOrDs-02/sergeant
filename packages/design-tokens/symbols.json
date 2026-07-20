@@ -6,7 +6,7 @@
   "entryFile": "packages/design-tokens/index.d.ts",
   "stats": {
     "exportCount": 21,
-    "totalImporters": 20,
+    "totalImporters": 18,
     "deadExports": 19
   },
   "exports": [
@@ -14,7 +14,6 @@
       "name": "ModuleAccent",
       "kind": "type",
       "usedBy": [
-        "apps/web/src/core/hooks/useHubNavigation.ts",
         "apps/web/src/core/hub/dashboard/moduleConfigs.tsx",
         "apps/web/src/core/hub/search/searchTypes.ts",
         "apps/web/src/core/lib/chatActions/types.cross.ts",
@@ -28,11 +27,10 @@
         "apps/web/src/shared/lib/api/queryKeys.ts",
         "apps/web/src/shared/lib/insights/types.ts",
         "apps/web/src/shared/lib/modules/hubNav.ts",
-        "apps/web/src/shared/lib/modules/moduleLabels.ts",
         "packages/insights/src/recommendations/types.ts",
         "packages/shared/src/lib/recommendations.ts"
       ],
-      "usageCount": 17
+      "usageCount": 15
     },
     {
       "name": "ModuleSoftAccent",

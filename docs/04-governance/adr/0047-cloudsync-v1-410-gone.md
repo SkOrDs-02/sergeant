@@ -1,6 +1,6 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -10,9 +10,9 @@
 - **Related:**
   - [ADR-0043 — CloudSync v1 sunset (RFC 8594 deprecation headers + 6-phase rollout)](./0043-cloudsync-v1-sunset.md) — цей ADR виконує Phase 5 з ADR-0043.
   - [Initiative 0003 — Sync v2 rollout & v1 sunset](../../90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
-  - [`apps/server/src/modules/sync/sunsetGone.ts`](../../../apps/server/src/modules/sync/sunsetGone.ts) — handler, який реалізує цей ADR.
-  - [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — wire-up `respondV1Gone` на v1 push/pull endpoint-ах.
-  - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../../apps/server/src/modules/sync/sunsetHeaders.ts) — Phase 2 middleware, лишається активним поверх 410 щоб клієнти могли read-ити RFC 8594 / 8288 headers разом із body.
+  - `apps/server/src/modules/sync/sunsetGone.ts` — handler, який реалізував цей ADR (historical; **removed** Phase 7 / [#326](https://github.com/Skords-01/Sergeant/pull/326)).
+  - [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) — wire-up; після Phase 7 — лише v2 + audit (немає `respondV1Gone`).
+  - `apps/server/src/modules/sync/sunsetHeaders.ts` — Phase 2 middleware (historical; **removed** Phase 7 / #326).
   - [Storage roadmap §3 — Stage 7 cleanup](../../90-work/planning/storage-roadmap.md) — наступні PR-и (#051 drop module_data, #052 видалення v1 коду) gate-нуто на цей ADR.
 
 ---

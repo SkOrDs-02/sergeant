@@ -1,8 +1,8 @@
 # Sync client wiring — multi-device op-log після SQLite cut-over
 
 > **Status:** Active
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
-> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](./storage-roadmap.md) (Stage 5 sync v2 server-side). **Проблема:** server push/pull/SSE готові, але клієнт майже не enqueue-ить у `sync_op_outbox` і не має pull/SSE consumer — фактично **single-device local-first**, не multi-device sync.
+> **Last touched:** 2026-07-20 by @cursor (docs-drift: Phase 1/2 code shipped; gap section refreshed). **Next review:** 2026-10-17.
+> Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](./storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops.
 
 ---
 
@@ -10,24 +10,24 @@
 
 ### Що вже зроблено (baseline 2026-07-10)
 
-| Шар                                                    | Стан                                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) | ✅ SoT для finyk / fizruk / nutrition / routine                                 |
-| **`sqliteWriter/`** (колишній dualWrite)               | ✅ Усі production-мутації модульних даних                                       |
-| **Server sync v2 API**                                 | ✅ `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream` |
-| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ 27 таблиць з apply-функціями на сервері                                      |
-| **Push scheduler**                                     | ✅ Boot на web (`main.tsx`) і mobile (`_layout.tsx`)                            |
-| **CloudSync v1**                                       | ✅ Видалено (`module_data` dropped, `/api/sync/*` → 410)                        |
+| Шар                                                    | Стан                                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) | ✅ SoT для finyk / fizruk / nutrition / routine                                   |
+| **`sqliteWriter/`** (колишній dualWrite)               | ✅ Усі production-мутації модульних даних                                         |
+| **Server sync v2 API**                                 | ✅ `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream`   |
+| **`OP_LOG_TABLE_REGISTRY`**                            | ✅ **42** таблиць з apply-функціями на сервері (Phase 2 expansion)                |
+| **Push scheduler**                                     | ✅ Boot на web (`main.tsx`) і mobile (`_layout.tsx`)                              |
+| **Client pull loop**                                   | ✅ `syncEngineReader` / `pullOnce` (web + mobile)                                 |
+| **Outbox enqueue**                                     | ✅ sqliteWriter adapters enqueue для registry tables                              |
+| **CloudSync v1**                                       | ✅ Видалено (`module_data` dropped; sunset routes removed — Initiative 0003 #326) |
 
-### Що не зроблено (gap)
+### Що не зроблено (gap — post Phase 1/2)
 
-| Gap                                   | Наслідок                                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Client pull loop відсутній**        | Другий пристрій не отримує зміни                                                                          |
-| **Outbox producers ≈ 0**              | Push scheduler працює вхолосту                                                                            |
-| **Mobile routine без outbox enqueue** | Навіть web-only completion sync не parity                                                                 |
-| **Registry ⊂ SQLite schema**          | Багато локальних таблиць (routine habits/tags/…, fizruk misc, nutrition water/shopping) **не** sync-яться |
-| **SSE consumer відсутній**            | Real-time pull — design-only на клієнті                                                                   |
+| Gap                           | Наслідок                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| **Local/CI dual-device E2E**  | Немає повного acceptance-доказу multi-device на Testcontainers / двох профілях      |
+| **SSE consumer відсутній**    | Real-time push від сервера — design-only на клієнті (Phase 3)                       |
+| **Деякі SQLite-only таблиці** | Поза registry лишаються локальні таблиці без sync (документовано в Phase 2 handoff) |
 
 **Мета ініціативи:** зробити **end-to-end multi-device sync** для продуктового модульного стану: мутація на device A → Postgres op-log → pull на device B → SQLite apply → UI overlay.
 
@@ -74,20 +74,19 @@
 │  UI mutation → sqliteWriter → SQLite (module tables)               │
 │       │                    → in-memory cache (sqliteReader)        │
 │       │                                                            │
-│       ├─ enqueueOutboxUpsert ──► ТІЛЬКИ routine completion (web)  │
-│       │                          2 call sites в adapter.ts         │
+│       ├─ enqueueOutboxUpsert ──► registry table adapters ✅        │
 │       │                                                            │
 │       ├─ sync_op_outbox ──► Push scheduler ✅ boots                │
 │       │         └──► POST /api/v2/sync/push ✅                     │
 │       │                                                            │
-│       ├─ GET /api/v2/sync/pull  ❌ NO CONSUMER                     │
-│       └─ GET /api/v2/sync/stream ❌ NO CONSUMER                    │
+│       ├─ GET /api/v2/sync/pull  ✅ syncEngineReader / pullOnce     │
+│       └─ GET /api/v2/sync/stream ❌ NO CONSUMER (Phase 3)          │
 └────────────────────────────────────────────────────────────────────┘
                               │
 ┌──────────── SERVER ────────────────────────────────────────────────┐
 │  syncV2Push / syncV2Pull / syncV2Stream ✅                         │
-│  OP_LOG_TABLE_REGISTRY — 27 tables (syncV2.ts:112–140)              │
-│  SSE: in-process EventEmitter (single Railway instance)              │
+│  OP_LOG_TABLE_REGISTRY — 42 tables (Phase 2 expansion)              │
+│  SSE: in-process EventEmitter (Coolify/Hetzner; ADR-0074)            │
 │  sync_op_log retention: ADR-0065 Proposed                          │
 └────────────────────────────────────────────────────────────────────┘
 ```

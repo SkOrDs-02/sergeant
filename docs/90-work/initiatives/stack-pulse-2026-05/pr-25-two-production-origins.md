@@ -1,7 +1,7 @@
 # PR-25: Consolidate `fizruk.vercel.app` + `sergeant.vercel.app` → один production origin
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
-> **Status:** Active — PR-1 shipped (#3392: 301 fizruk→sergeant redirect + Sentry release unification); PR-2 (drop fizruk from apps/server/src/http/cors.ts + Google/Apple OAuth consoles) pending 30-day soak + manual OAuth-console step; ADR-0009 single-origin section TODO.
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Active — PR-1 shipped (#3392: 301 redirect + Sentry release unification); CORS PR-2 shipped (#327 / `00d465ddb`: `fizruk` origin dropped з `cors.ts`). Remaining = manual Google/Apple OAuth console cleanup + ADR-0009 «Single origin policy» section.
 
 |                    |                                                                               |
 | ------------------ | ----------------------------------------------------------------------------- |
@@ -74,12 +74,12 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] `apps/web/vercel.json` має 301 redirect.
-- [ ] `apps/server/src/http/cors.ts` без `fizruk.vercel.app` (через 30d soak).
+- [x] `apps/web/vercel.json` має 301 redirect.
+- [x] `apps/server/src/http/cors.ts` без `fizruk.vercel.app` (через 30d soak) — #327.
 - [ ] Google / Apple OAuth allowlists без fizruk callback (manual step + screenshot).
-- [ ] Sentry releases єдиного формату `sergeant@${SHORT_SHA}` через 3 SDK (server, web, mobile).
+- [x] Sentry releases єдиного формату `sergeant@${SHORT_SHA}` через shared `formatRelease` (`packages/shared/src/observability/release.ts`).
 - [ ] ADR-0009 оновлений з single-origin rationale.
-- [ ] Тест: `apps/web/src/test/integration/redirect.test.ts` перевіряє 301 на `fizruk.vercel.app`.
+- [x] Тест: `apps/web/src/test/integration/redirect.test.ts` перевіряє 301 на `fizruk.vercel.app`.
 
 ## Тести
 
