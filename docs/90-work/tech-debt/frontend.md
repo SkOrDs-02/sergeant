@@ -1016,8 +1016,13 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 ## Recommended next steps
 
 1. **Декомпозиція Hard Rule #18 leakers** — `ManualExpenseSheet.tsx` (~607 eff)
-   і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу.
-2. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
-3. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
-4. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
-5. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
+   і `TxRow.tsx` (~605 eff); окремі PR, без feature-міксу. _(На `main` після
+   waves уже Closed #348/#350.)_
+2. ~~**`!` burndown batch (web low-risk)**~~ — **Done** (Avatar, FocusTrap,
+   AnimatedList, KeyboardAccessory, accountVisual, DailyPlanMealRow,
+   LogCardAnalytics, cleanupDemoData + prefer-kyiv-time WHY). Подальший —
+   opportunistic; AccentColorPicker / barcode / server sync — окремі PR.
+3. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
+4. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
+5. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
+6. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
