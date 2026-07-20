@@ -1402,6 +1402,27 @@ const envSchema = z.object({
   OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
+  /**
+   * Model-eval 2026-07: canonical model id used as the call-site `model`
+   * field for pipelines still pinned to a single default (the id sent
+   * directly to Anthropic, or forwarded as-is by `OpenRouterProvider` when
+   * the corresponding `OPENROUTER_*_MODEL` override above is empty). Kept
+   * separate from those OpenRouter overrides — this is the base literal
+   * itself, swappable without a code change ahead of the next eval pass.
+   */
+  NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** Weekly-digest AI-commentary section. */
+  DIGEST_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** Cheap-router classify — shared by OpenClaw `before_dispatch` and the Finyk transaction categorizer (same model choice, same cost profile). */
+  CLASSIFY_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  /** OpenClaw morning-briefing priority-synthesis. */
+  OPENCLAW_BRIEFING_MODEL: stringWithDefault("claude-sonnet-4-5-20250929"),
+  /** OpenClaw weekly-review narrative. */
+  OPENCLAW_WEEKLY_REVIEW_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** OpenClaw monthly-OKR recalibration narrative. */
+  OPENCLAW_MONTHLY_OKR_MODEL: stringWithDefault("claude-sonnet-4-6"),
+  /** Mono/Finyk MCC batch-enrichment worker (unknown-MCC fallback classify). */
+  MONO_ENRICHMENT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
 });
 
 export type Env = z.infer<typeof envSchema>;

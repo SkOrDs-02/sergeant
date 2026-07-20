@@ -312,7 +312,7 @@ ${dataContext}`;
     const llmResult = await invokeLLM(
       provider,
       {
-        model: "claude-sonnet-4-6",
+        model: env.DIGEST_MODEL,
         maxTokens: 2500,
         system: systemPrompt,
         messages: [{ role: "user", content: userPrompt }],

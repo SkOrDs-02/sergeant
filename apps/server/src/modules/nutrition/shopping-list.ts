@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { ShoppingListSchema } from "../../http/schemas.js";
@@ -124,7 +125,7 @@ ${ingredientsList}
 Склади список покупок, виключи все що вже є в коморі, згрупуй за категоріями.`;
 
   const payload = {
-    model: "claude-sonnet-4-6",
+    model: env.NUTRITION_MODEL,
     max_tokens: 1200,
     temperature: 0.15,
     system: SYSTEM,

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayHintSchema } from "../../http/schemas.js";
@@ -69,7 +70,7 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
   /* eslint-enable sergeant-design/no-ellipsis-dots */
 
   const payload = {
-    model: "claude-sonnet-4-6",
+    model: env.NUTRITION_MODEL,
     max_tokens: 400,
     temperature: 0.3,
     messages: [{ role: "user", content: prompt }],

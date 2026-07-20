@@ -3,11 +3,21 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
+import { Badge } from "@shared/components/ui/Badge";
+import { useAiTier } from "@shared/api/useAiTier";
 import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
+
+// Pro tiered model degradation (premium → standard → floor). `premium` is
+// the expected default and stays invisible — only degraded tiers get a
+// badge, so most Pro users never see this.
+const DEGRADED_TIER_LABEL: Record<"standard" | "floor", string> = {
+  standard: "Стандартна модель",
+  floor: "Економний режим",
+};
 
 interface AssistantAdviceCardProps {
   insight: string | null;
@@ -34,6 +44,11 @@ export function AssistantAdviceCard({
   onRefresh,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const aiTier = useAiTier();
+  const degradedLabel =
+    aiTier === "standard" || aiTier === "floor"
+      ? DEGRADED_TIER_LABEL[aiTier]
+      : null;
 
   const toggle = () => {
     setCollapsed((prev) => {
@@ -72,6 +87,11 @@ export function AssistantAdviceCard({
             <SectionHeading as="span" size="xs" variant="muted">
               Порада асистента
             </SectionHeading>
+            {degradedLabel && (
+              <Badge variant="neutral" size="xs">
+                {degradedLabel}
+              </Badge>
+            )}
           </div>
           <Icon
             name={collapsed ? "chevron-down" : "chevron-up"}

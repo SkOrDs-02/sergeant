@@ -257,9 +257,9 @@ export async function generateProposalsSection(
   const result = await invokeLLM(
     provider,
     {
-      // claude-sonnet-4-6 — сильний reasoning model для priority-синтезу;
-      // ~300 вхідних / ~150 вихідних токенів на briefing.
-      model: "claude-sonnet-4-5-20250929",
+      // Сильний reasoning model для priority-синтезу; ~300 вхідних /
+      // ~150 вихідних токенів на briefing.
+      model: env.OPENCLAW_BRIEFING_MODEL,
       maxTokens: 400,
       system: MORNING_BRIEFING_SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],

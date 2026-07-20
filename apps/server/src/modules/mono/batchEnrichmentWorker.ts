@@ -147,7 +147,7 @@ export async function runMccBatchTick(
     const { response, data } = await anthropic(
       apiKey,
       {
-        model: "claude-haiku-4-5-20251001",
+        model: env.MONO_ENRICHMENT_MODEL,
         // ~10 tokens per output item: `{"i":N,"c":"X","conf":0.9}` ≈ 25 chars
         // ≈ 8-12 tokens (incl. JSON syntax). 100 items × 12 + buffer = 1500.
         max_tokens: Math.min(2_000, Math.max(200, items.length * 15)),
