@@ -22,7 +22,7 @@
       }
     ]
   },
-  "description": "Sergeant Ops home — єдина точка входу: кнопки переходу в інші сервіси (Sentry / PostHog / Railway / Vercel) + ключові живі KPI здоров'я. Зроби стартовим дашбордом (Star → Set as home).",
+  "description": "Sergeant Ops home — єдина точка входу: кнопки переходу в інші сервіси (Sentry / PostHog / Coolify / Vercel) + ключові живі KPI здоров'я. Зроби стартовим дашбордом (Star → Set as home).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -53,12 +53,12 @@
       "tooltip": "Events, воронки, скільки активних"
     },
     {
-      "title": "Railway — бекенд/БД/деплой",
+      "title": "Coolify — бекенд/БД/деплой",
       "type": "link",
       "icon": "cloud",
-      "url": "https://railway.com/project/eaa696f9-e197-4b76-9645-0e62ce51bb18",
+      "url": "http://167.233.98.92:8000",
       "targetBlank": true,
-      "tooltip": "API, Postgres, Redis, env, деплої"
+      "tooltip": "API, Postgres, Redis, env, деплої (Hetzner + Coolify)"
     },
     {
       "title": "Vercel — фронтенд",
@@ -84,7 +84,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry · API ↗](https://dima-dk.sentry.io/issues/?project=4511311028879440)** · **[Web ↗](https://dima-dk.sentry.io/issues/?project=4511311094480976)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Railway ↗](https://railway.com/project/eaa696f9-e197-4b76-9645-0e62ce51bb18)** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
+        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry · API ↗](https://dima-dk.sentry.io/issues/?project=4511311028879440)** · **[Web ↗](https://dima-dk.sentry.io/issues/?project=4511311094480976)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Coolify ↗](http://167.233.98.92:8000)** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
       },
       "title": "Швидка навігація",
       "type": "text",
