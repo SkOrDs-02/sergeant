@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { anthropicMessages } from "../../lib/anthropic.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { monoMccMatchTotal } from "../../obs/metrics.js";
@@ -103,36 +103,31 @@ export async function categorizeTransaction(
     .filter(Boolean)
     .join("\n");
 
-  const { response, data } = await anthropicMessages(
-    apiKey,
-    {
-      model: env.CLASSIFY_MODEL,
-      max_tokens: 120,
-      system:
-        "You are a transaction categorizer for a Ukrainian personal finance app. " +
-        "Categorize the transaction into exactly one of: groceries, transport, dining, " +
-        "entertainment, utilities, health, shopping, education, subscriptions, income, " +
-        'transfer, other. Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}',
-      messages: [{ role: "user", content: userContent }],
-    },
-    { endpoint: "internal/categorize", timeoutMs: 15_000 },
-  );
+  const provider = getLLMProvider({
+    provider: env.LLM_READONLY_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_READONLY_MODEL,
+  });
+  const result = await invokeLLM(provider, {
+    model: env.CLASSIFY_MODEL,
+    maxTokens: 120,
+    system:
+      "You are a transaction categorizer for a Ukrainian personal finance app. " +
+      "Categorize the transaction into exactly one of: groceries, transport, dining, " +
+      "entertainment, utilities, health, shopping, education, subscriptions, income, " +
+      'transfer, other. Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}',
+    messages: [{ role: "user", content: userContent }],
+    endpoint: "internal/categorize",
+    timeoutMs: 15_000,
+  });
 
-  if (!response?.ok) {
-    const status = response?.status ?? 0;
+  if (!result.ok) {
     throw new Error(
-      `categorizeTransaction: upstream not ok (status=${status})`,
+      `categorizeTransaction: upstream not ok (status=${result.status ?? 0})`,
     );
   }
 
-  const text =
-    (
-      data as {
-        content?: Array<{ type: string; text?: string }>;
-      }
-    ).content?.[0]?.text ?? "";
-
-  return parseCategory(text);
+  return parseCategory(result.text);
 }
 
 export function createCategorizeInternalRouter(): Router {

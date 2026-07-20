@@ -3,20 +3,24 @@
  *
  * Unit tests для `runMccBatchTick` (PR-18 hourly batch fallback).
  * Перевіряє: empty buffer → no-op; happy path → write-back + MARK_DONE;
- * Anthropic-throw → ВСЕ у per-row queue через MARK_RETRY_SQL;
+ * AI-call throw → ВСЕ у per-row queue через MARK_RETRY_SQL;
  * partial response → ok-items закриваються, missing-items повертаються
- * у буфер; idempotency.
+ * у буфер; idempotency; config-drift guard (stub provider → requeue).
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { Pool } from "pg";
+import type {
+  LLMGenerateOpts,
+  LLMGenerateResult,
+  LLMProvider,
+} from "../../lib/llm/provider.js";
 
 vi.mock("../../env.js", () => ({
   env: {
     MCC_BATCH_MAX_SIZE: 100,
     MCC_BATCH_INTERVAL_MS: 3_600_000,
-    ANTHROPIC_API_KEY: "test-key",
     MONO_ENRICHMENT_MODEL: "claude-haiku-4-5-20251001",
   },
 }));
@@ -76,19 +80,38 @@ function mkItem(overrides: Partial<UnknownMccItem> = {}): UnknownMccItem {
   };
 }
 
+/**
+ * Тестова реалізація `LLMProvider` (мирор `classify.test.ts`'s makeFakeProvider).
+ * Дозволяє асерти `.calls[0]` для перевірки переданих args без мок-фреймворків
+ * над глобальним module-import-ом.
+ */
+function makeFakeProvider(
+  next: () => LLMGenerateResult | Promise<LLMGenerateResult>,
+): LLMProvider & { calls: LLMGenerateOpts[] } {
+  const calls: LLMGenerateOpts[] = [];
+  return {
+    name: "anthropic",
+    calls,
+    async generate(opts: LLMGenerateOpts): Promise<LLMGenerateResult> {
+      calls.push(opts);
+      return Promise.resolve(next());
+    },
+  };
+}
+
 describe("runMccBatchTick — empty buffer", () => {
   beforeEach(() => {
     __resetForTests();
     vi.clearAllMocks();
   });
 
-  it("повертає zeros, не викликає Anthropic, не торкає БД", async () => {
+  it("повертає zeros, не викликає provider, не торкає БД", async () => {
     const pool = makePool();
-    const anthropic = vi.fn();
-
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
+    const provider = makeFakeProvider(() => {
+      throw new Error("should not be called");
     });
+
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result).toEqual({
       drained: 0,
@@ -97,7 +120,7 @@ describe("runMccBatchTick — empty buffer", () => {
       requeued: 0,
       failedTotal: 0,
     });
-    expect(anthropic).not.toHaveBeenCalled();
+    expect(provider.calls).toHaveLength(0);
     expect((pool.query as Mock).mock.calls).toHaveLength(0);
   });
 });
@@ -108,7 +131,7 @@ describe("runMccBatchTick — happy path", () => {
     vi.clearAllMocks();
   });
 
-  it("дренаж → Anthropic-виклик → write-back + MARK_DONE для ok-items", async () => {
+  it("дренаж → provider-виклик → write-back + MARK_DONE для ok-items", async () => {
     enqueueUnknownMcc(mkItem({ queueId: 11, monoTxId: "a" }), 100);
     enqueueUnknownMcc(mkItem({ queueId: 22, monoTxId: "b" }), 100);
 
@@ -116,33 +139,20 @@ describe("runMccBatchTick — happy path", () => {
     // 2 items × 2 queries (WRITE_BACK + MARK_DONE) = 4 successful UPDATE.
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
 
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: true, status: 200 },
-      data: {
-        content: [
-          {
-            type: "text",
-            text: '[{"i":0,"c":"groceries","conf":0.9},{"i":1,"c":"transport","conf":0.8}]',
-          },
-        ],
-      },
-    });
+    const provider = makeFakeProvider(() => ({
+      ok: true,
+      text: '[{"i":0,"c":"groceries","conf":0.9},{"i":1,"c":"transport","conf":0.8}]',
+    }));
 
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
-    });
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.drained).toBe(2);
     expect(result.ok).toBe(2);
     expect(result.missing).toBe(0);
     expect(result.requeued).toBe(0);
 
-    expect(anthropic).toHaveBeenCalledTimes(1);
-    const [_apiKey, payload] = anthropic.mock.calls[0] as [
-      string,
-      Record<string, unknown>,
-    ];
-    expect(payload["model"]).toBe("claude-haiku-4-5-20251001");
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0]?.model).toBe("claude-haiku-4-5-20251001");
 
     // WRITE_BACK + MARK_DONE для item-1 (queueId=11)
     const calls = (pool.query as Mock).mock.calls;
@@ -170,21 +180,12 @@ describe("runMccBatchTick — happy path", () => {
       .mockRejectedValueOnce(new Error("write failed"))
       .mockResolvedValueOnce({ rowCount: 1 });
 
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: true, status: 200 },
-      data: {
-        content: [
-          {
-            type: "text",
-            text: '[{"i":0,"c":"groceries","conf":0.9}]',
-          },
-        ],
-      },
-    });
+    const provider = makeFakeProvider(() => ({
+      ok: true,
+      text: '[{"i":0,"c":"groceries","conf":0.9}]',
+    }));
 
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
-    });
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.ok).toBe(0);
     expect(result.requeued).toBe(1);
@@ -195,24 +196,49 @@ describe("runMccBatchTick — happy path", () => {
   });
 });
 
-describe("runMccBatchTick — Anthropic fail → requeue all", () => {
+describe("runMccBatchTick — config-drift guard (stub provider)", () => {
   beforeEach(() => {
     __resetForTests();
     vi.clearAllMocks();
   });
 
-  it("на Anthropic-throw — ВСЕ повертається у per-row queue через MARK_RETRY_SQL", async () => {
+  it("requeues immediately without calling generate() when the resolved provider is stub", async () => {
+    enqueueUnknownMcc(mkItem({ queueId: 55 }), 100);
+    const pool = makePool();
+    (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
+
+    const generate = vi.fn();
+    const stubProvider: LLMProvider = { name: "stub", generate };
+
+    const result = await runMccBatchTick(pool, { provider: stubProvider });
+
+    expect(result.requeued).toBe(1);
+    expect(result.ok).toBe(0);
+    expect(generate).not.toHaveBeenCalled();
+    const calls = (pool.query as Mock).mock.calls;
+    expect(calls[0]?.[0]).toMatch(/SET status = 'pending'/);
+    expect(calls[0]?.[1]).toEqual([55, "no_api_key"]);
+  });
+});
+
+describe("runMccBatchTick — AI-call fail → requeue all", () => {
+  beforeEach(() => {
+    __resetForTests();
+    vi.clearAllMocks();
+  });
+
+  it("на provider-throw — ВСЕ повертається у per-row queue через MARK_RETRY_SQL", async () => {
     enqueueUnknownMcc(mkItem({ queueId: 100 }), 100);
     enqueueUnknownMcc(mkItem({ queueId: 200 }), 100);
 
     const pool = makePool();
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
 
-    const anthropic = vi.fn().mockRejectedValueOnce(new Error("ETIMEDOUT"));
-
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
+    const provider = makeFakeProvider(() => {
+      throw new Error("ETIMEDOUT");
     });
+
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.drained).toBe(2);
     expect(result.ok).toBe(0);
@@ -233,18 +259,17 @@ describe("runMccBatchTick — Anthropic fail → requeue all", () => {
     expect(currentBufferSize()).toBe(0);
   });
 
-  it("response.ok=false (5xx) — теж requeue all", async () => {
+  it("result.ok=false (5xx) — теж requeue all", async () => {
     enqueueUnknownMcc(mkItem(), 100);
     const pool = makePool();
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: false, status: 502 },
-      data: null,
-    });
+    const provider = makeFakeProvider(() => ({
+      ok: false,
+      error: "upstream 502",
+      status: 502,
+    }));
 
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
-    });
+    const result = await runMccBatchTick(pool, { provider });
     expect(result.requeued).toBe(1);
     expect(result.ok).toBe(0);
   });
@@ -253,11 +278,11 @@ describe("runMccBatchTick — Anthropic fail → requeue all", () => {
     enqueueUnknownMcc(mkItem({ queueId: 404 }), 100);
     const pool = makePool();
     (pool.query as Mock).mockRejectedValue(new Error("retry write failed"));
-    const anthropic = vi.fn().mockRejectedValueOnce(new Error("ETIMEDOUT"));
-
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
+    const provider = makeFakeProvider(() => {
+      throw new Error("ETIMEDOUT");
     });
+
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.requeued).toBe(0);
     expect(result.failedTotal).toBe(1);
@@ -279,22 +304,13 @@ describe("runMccBatchTick — partial response", () => {
     const pool = makePool();
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
 
-    // Claude поклав тільки index=0 і index=2 → index=1 (b) — missing.
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: true, status: 200 },
-      data: {
-        content: [
-          {
-            type: "text",
-            text: '[{"i":0,"c":"groceries","conf":0.9},{"i":2,"c":"dining","conf":0.7}]',
-          },
-        ],
-      },
-    });
+    // Provider поклав тільки index=0 і index=2 → index=1 (b) — missing.
+    const provider = makeFakeProvider(() => ({
+      ok: true,
+      text: '[{"i":0,"c":"groceries","conf":0.9},{"i":2,"c":"dining","conf":0.7}]',
+    }));
 
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
-    });
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.drained).toBe(3);
     expect(result.ok).toBe(2);
@@ -311,15 +327,10 @@ describe("runMccBatchTick — partial response", () => {
     const pool = makePool();
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
 
-    // Anthropic відповідає нічим валідним для index=0
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: true, status: 200 },
-      data: { content: [{ type: "text", text: "[]" }] },
-    });
+    // Provider відповідає нічим валідним для index=0.
+    const provider = makeFakeProvider(() => ({ ok: true, text: "[]" }));
 
-    const result = await runMccBatchTick(pool, {
-      anthropic: anthropic as never,
-    });
+    const result = await runMccBatchTick(pool, { provider });
 
     expect(result.drained).toBe(1);
     expect(result.missing).toBe(0);
@@ -336,11 +347,13 @@ describe("runMccBatchTick — idempotency", () => {
 
   it("повторний tick з порожнім буфером — no-op (idempotent)", async () => {
     const pool = makePool();
-    const anthropic = vi.fn();
+    const provider = makeFakeProvider(() => {
+      throw new Error("should not be called");
+    });
 
-    const a = await runMccBatchTick(pool, { anthropic: anthropic as never });
-    const b = await runMccBatchTick(pool, { anthropic: anthropic as never });
-    const c = await runMccBatchTick(pool, { anthropic: anthropic as never });
+    const a = await runMccBatchTick(pool, { provider });
+    const b = await runMccBatchTick(pool, { provider });
+    const c = await runMccBatchTick(pool, { provider });
 
     for (const r of [a, b, c]) {
       expect(r).toEqual({
@@ -351,7 +364,7 @@ describe("runMccBatchTick — idempotency", () => {
         failedTotal: 0,
       });
     }
-    expect(anthropic).not.toHaveBeenCalled();
+    expect(provider.calls).toHaveLength(0);
   });
 });
 
@@ -368,18 +381,20 @@ describe("startMonoMccBatchWorker", () => {
 
   it("schedules non-overlapping ticks and stops cleanly", async () => {
     const pool = makePool();
-    const anthropic = vi.fn();
+    const provider = makeFakeProvider(() => {
+      throw new Error("should not be called");
+    });
 
     const worker = startMonoMccBatchWorker(pool, {
       intervalMs: 10,
-      anthropic: anthropic as never,
+      provider,
     });
 
     await vi.advanceTimersByTimeAsync(10);
     await worker.stop();
     await vi.advanceTimersByTimeAsync(30);
 
-    expect(anthropic).not.toHaveBeenCalled();
+    expect(provider.calls).toHaveLength(0);
     expect((pool.query as Mock).mock.calls).toHaveLength(0);
   });
 
@@ -387,21 +402,14 @@ describe("startMonoMccBatchWorker", () => {
     enqueueUnknownMcc(mkItem({ queueId: 88 }), 100);
     const pool = makePool();
     (pool.query as Mock).mockResolvedValue({ rowCount: 1 });
-    const anthropic = vi.fn().mockResolvedValueOnce({
-      response: { ok: true, status: 200 },
-      data: {
-        content: [
-          {
-            type: "text",
-            text: '[{"i":0,"c":"groceries","conf":0.9}]',
-          },
-        ],
-      },
-    });
+    const provider = makeFakeProvider(() => ({
+      ok: true,
+      text: '[{"i":0,"c":"groceries","conf":0.9}]',
+    }));
 
     const worker = startMonoMccBatchWorker(pool, {
       intervalMs: 10,
-      anthropic: anthropic as never,
+      provider,
     });
 
     const stopPromise = vi
@@ -409,7 +417,7 @@ describe("startMonoMccBatchWorker", () => {
       .then(() => worker.stop());
     await stopPromise;
 
-    expect(anthropic).toHaveBeenCalledOnce();
+    expect(provider.calls).toHaveLength(1);
     expect((pool.query as Mock).mock.calls.length).toBeGreaterThan(0);
   });
 });
