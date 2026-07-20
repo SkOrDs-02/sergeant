@@ -153,7 +153,10 @@ const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
       envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },
   floor: {
-    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-3-haiku-20240307"),
+    // Was `claude-3-haiku-20240307` — retired from the Anthropic API
+    // (model-eval 2026-07-20). Defaults to Haiku 4.5 (= standard) to keep
+    // floor-degraded chat working; kept in sync with env.ts `AI_PRO_FLOOR_CHAT_MODEL`.
+    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-haiku-4-5-20251001"),
     coach: () =>
       envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },

@@ -224,9 +224,21 @@ const PIPELINES: Pipeline[] = [
 const PRICE_PER_1M: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5-20251001": { input: 1, output: 5 },
-  "claude-3-haiku-20240307": { input: 0.25, output: 1.25 },
   "google/gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
   "openai/gpt-5.1": { input: 1.25, output: 10 },
+  // OpenRouter candidates priced from the live catalog (2026-07-20). Reverify
+  // before trusting — provider prices drift. Thinking models (kimi*, glm-5*,
+  // qwen3.7*) returned empty content at these pipelines' small token budgets,
+  // so their cost is academic here; kept for reference only.
+  "google/gemini-3.1-flash-lite": { input: 0.25, output: 1.5 },
+  "deepseek/deepseek-v3.2": { input: 0.269, output: 0.4 },
+  "deepseek/deepseek-v4-flash": { input: 0.098, output: 0.196 },
+  "z-ai/glm-4.7-flash": { input: 0.061, output: 0.4 },
+  "z-ai/glm-5.2": { input: 0.974, output: 3.062 },
+  "qwen/qwen3.5-flash-02-23": { input: 0.07, output: 0.26 },
+  "qwen/qwen3.7-plus": { input: 0.32, output: 1.28 },
+  "moonshotai/kimi-k2.6": { input: 0.684, output: 3.42 },
+  "moonshotai/kimi-k3": { input: 3, output: 15 },
 };
 
 interface RunResult {
