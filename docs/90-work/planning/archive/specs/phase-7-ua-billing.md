@@ -1,7 +1,7 @@
 # SPEC: Phase 7 — український еквайринг (LiqPay + Plata by mono), Stripe у dormant
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
-> **Status:** Scaffolded
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/planning/specs/phase-7-ua-billing.md`. Purpose: реалізація LiqPay + Plata shipped у `apps/server/src/modules/billing/` + routes/tests; live-ключі в prod — ops-крок поза кодом.
 
 <!-- Самодостатня спека. Виконавець (свіжа сесія) реалізує фічу, читаючи лише її +
 названі файли + першоджерела в § «API-контракти». Owner-скіли: sergeant-server-api

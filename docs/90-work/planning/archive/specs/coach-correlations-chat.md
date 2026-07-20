@@ -1,7 +1,7 @@
 # SPEC: Проактивні coach-кореляції в чаті + розширення метрик-пар
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
-> **Status:** Scaffolded
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/planning/specs/coach-correlations-chat.md`. Purpose: `getCoachCorrelationsBlock` у chat + PAIRS 4→9 у `digestCorrelations.ts` shipped; RAG-boost лишився deferred як у спеки.
 
 <!-- Самодостатня спека. Ground truth зібрано code-розвідкою 2026-07-20 —
 переважна частина «розумного чату» ВЖЕ в проді; ця спека закриває вужчу

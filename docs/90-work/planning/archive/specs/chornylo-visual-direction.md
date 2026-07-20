@@ -1,7 +1,7 @@
 # SPEC: «Чорнило» — dark-first візуальний напрям для apps/web
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
-> **Status:** Scaffolded
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/planning/specs/chornylo-visual-direction.md`. Purpose: кроки 1–7 «Чорнило» змерджені (#235/#237); токени/theme.css/Card hero-ink у main.
 
 <!-- Джерело: Claude Design проєкт «Оцінка дизайну Сержанта»
      (claude.ai/design/p/533ee825-ad53-40fc-80ec-21c74dcbf183), файли

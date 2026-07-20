@@ -1,7 +1,7 @@
 # SPEC: «Чорнило» v3.1 — фікси після мерджу кроків 1–7
 
-> **Last touched:** 2026-07-11 by @dimastahov16012003. **Next review:** 2026-10-09.
-> **Status:** Scaffolded
+> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
+> **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/planning/specs/chornylo-post-merge-fixes.md`. Purpose: §§1–7 (PR A–D) shipped — ModuleShell MeshBackground, hero-ink Card, light §5 hero, Toast/Segmented/hub-primary.
 
 <!-- Джерело: Claude Design проєкт «Оцінка дизайну Сержанта»
      (claude.ai/design/p/533ee825-ad53-40fc-80ec-21c74dcbf183), файл
@@ -182,7 +182,7 @@ Owner-скіл: `sergeant-web-ui`.
 ## Інструкція для виконавчої сесії
 
 Промпт для чистої сесії: «Реалізуй фікси "Чорнило" v3.1 за спекою
-`docs/90-work/planning/specs/chornylo-post-merge-fixes.md` — вона самодостатня».
+`docs/90-work/planning/archive/specs/chornylo-post-merge-fixes.md` — вона самодостатня».
 
 **Порядок і групування (не змінювати):**
 
