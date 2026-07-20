@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "description": "Reproducible harness-sensitive golden tasks for A/B benchmark. Each covers a real Sergeant scenario: bigint coercion, RQ keys, migration, HubChat, a11y, mobile Expo, billing, sync, skill authoring, and deploy.",
+  "tasks": [
+    {
+      "id": "bigint-coercion-server-serializer",
+      "title": "Coerce bigint balance to number in /sync serializer",
+      "prompt": "The /sync endpoint returns a bigint balance field that breaks JSON serialization in the browser. Coerce it to number inside the server serializer and update the api-client contract test to reflect the corrected response shape.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-server-api"],
+      "expectedPlaybook": "add-api-endpoint.md",
+      "surface": "server",
+      "acceptance": "bigint coerced to number in serializer; api-client type updated; contract test green; Hard Rule #1 satisfied"
+    },
+    {
+      "id": "rq-keys-inline-violation-nutrition",
+      "title": "Replace inline React Query key in nutrition dashboard",
+      "prompt": "The nutrition dashboard queryKey is an inline array literal instead of the centralized nutritionKeys factory from queryKeys.ts. Replace it with the correct factory call and run the web lint gate to confirm no remaining inline keys.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "expectedPlaybook": "add-react-query-hook.md",
+      "surface": "web",
+      "acceptance": "nutritionKeys factory used; no inline queryKey arrays; Hard Rule #2 satisfied; pnpm lint green"
+    },
+    {
+      "id": "sequential-migration-add-column",
+      "title": "Add sequential SQL migration for new users table column",
+      "prompt": "Add a new nullable text column to the users table using a sequential SQL migration with no numbering gaps. Verify rollout safety for existing rows and run the pre-merge migration checklist.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "expectedPlaybook": "add-sql-migration.md",
+      "surface": "server",
+      "acceptance": "migration file numbered correctly; no gaps; column nullable; two-phase plan confirmed; pre-merge checklist passed"
+    },
+    {
+      "id": "hubchat-tool-def-balance-read",
+      "title": "Add HubChat tool definition and executor for balance read",
+      "prompt": "Add a new HubChat tool definition and executor for reading the latest user balance, with prompt-cache headers on the tool block and typed executor output. Register it in the tool registry and write a debug test.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "expectedPlaybook": "add-hubchat-tool.md",
+      "surface": "server",
+      "acceptance": "HubChat tool definition registered; executor typed; prompt-cache header present; debug test passes"
+    },
+    {
+      "id": "web-a11y-focus-visible-icon-button",
+      "title": "Fix accessibility: use focus-visible on icon button, verify 44px touch target",
+      "prompt": "The transaction delete icon button uses focus: ring instead of focus-visible: ring, violating the Sergeant accessibility convention. Fix the Tailwind className and verify the minimum 44px touch target is met per WCAG 2.5.5.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "expectedPlaybook": null,
+      "surface": "web",
+      "acceptance": "focus-visible: used; touch target ≥44px; eslint-plugin-sergeant-design passes; no focus: ring"
+    },
+    {
+      "id": "mobile-expo-deep-link-crash",
+      "title": "Fix Expo deep-link navigation crash when auth token missing",
+      "prompt": "The Expo deep-link handler crashes on Android when the Better Auth token is missing from MMKV storage. Fix the mobile navigation guard so it redirects to login and verify MMKV persistence works after a cold restart.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "expectedPlaybook": null,
+      "surface": "mobile",
+      "acceptance": "navigation guard handles missing token; MMKV read is null-safe; no DOM-only API imported; Expo Go test passes"
+    },
+    {
+      "id": "billing-server-route-bigint-coercion",
+      "title": "Add billing summary API endpoint with bigint price coercion",
+      "prompt": "Add a new billing summary server route that returns subscription price as a bigint from Postgres. Coerce all money fields to number in the serializer, update the api-client billing types, and add a contract test.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-server-api"],
+      "expectedPlaybook": "add-api-endpoint.md",
+      "surface": "server",
+      "acceptance": "bigint money fields coerced to number; api-client billing type updated; contract test green; Hard Rule #1 satisfied"
+    },
+    {
+      "id": "sync-outbox-table-migration",
+      "title": "Add sync outbox table via sequential SQL migration",
+      "prompt": "Create a sync outbox table using a sequential SQL migration with no numbering gaps. Add the server endpoint that drains the outbox and update the api-client sync types to match the new response shape.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "expectedPlaybook": "add-sql-migration.md",
+      "surface": "cross",
+      "acceptance": "migration sequential; outbox table created; server drains outbox; api-client sync types updated; two-phase plan if DROP"
+    },
+    {
+      "id": "skill-authoring-new-analytics-skill",
+      "title": "Author a new sergeant-analytics SKILL.md",
+      "prompt": "Create a new sergeant-analytics skill file in .agents/skills/ with correct SKILL.md frontmatter (name, description, lang, lang-reason), trigger routing table, and then regenerate the skills lock hash with pnpm skills:lock.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-writing-skills"],
+      "expectedPlaybook": "author-skill.md",
+      "surface": "docs",
+      "acceptance": "SKILL.md has valid frontmatter; trigger descriptions present; skills lock updated; security body scan passes"
+    },
+    {
+      "id": "deploy-coolify-env-health-check",
+      "title": "Add Coolify environment variable and verify /health endpoint",
+      "prompt": "Add a new runtime environment variable to the Coolify deploy config for the server app. Update the operator runbook, redeploy via the Coolify pipeline, and verify the /health endpoint still returns 200 after deploy.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-deploy-and-observability"
+      ],
+      "expectedPlaybook": "deploy-config-change.md",
+      "surface": "server",
+      "acceptance": "env var added to Coolify config; operator docs updated; /health green post-deploy; no secret committed"
+    },
+    {
+      "id": "fix-ci-failing-eslint-lint",
+      "title": "Fix red CI caused by ESLint regression in apps/web",
+      "prompt": "The CI lint job is failing on main with an ESLint violation in apps/web. Identify the regression, fix the underlying code without downgrading the rule, and verify pnpm lint passes locally before pushing.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "expectedPlaybook": "fix-failing-ci.md",
+      "surface": "web",
+      "acceptance": "ESLint violation fixed at source; no rule downgraded in eslint.baseline.js; pnpm lint green; CI passes"
+    },
+    {
+      "id": "rq-keys-billing-factory-hook",
+      "title": "Add billingKeys.summary factory entry and useBillingSummary hook",
+      "prompt": "Add a new billingKeys.summary() factory entry in apps/web/src/shared/lib/api/queryKeys.ts and create a useBillingSummary React Query hook that uses only that factory key. Run pnpm lint to confirm no inline queryKey arrays.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "expectedPlaybook": "add-react-query-hook.md",
+      "surface": "web",
+      "acceptance": "billingKeys.summary in queryKeys.ts; useBillingSummary uses factory key; no inline key; Hard Rule #2 satisfied"
+    }
+  ]
+}
