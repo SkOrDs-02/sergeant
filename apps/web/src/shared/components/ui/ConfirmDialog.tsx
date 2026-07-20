@@ -1,12 +1,13 @@
 import {
   memo,
-  useEffect,
+  useId,
   useRef,
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
@@ -25,6 +26,14 @@ export interface ConfirmDialogProps {
 
 /**
  * Reusable confirmation dialog (bottom sheet style).
+ *
+ * Shell aligned with Sheet / Modal (P4 Phase 2):
+ * - `bg-black/40` scrim (not `bg-text/40` — that *lightens* in dark mode)
+ * - `useBodyScrollLock` (iOS-safe; not bare `overflow: hidden`)
+ * - portaled to `document.body`
+ *
+ * Keeps `role="alertdialog"` — confirmations interrupt the flow and
+ * must announce the warning before the action buttons.
  */
 export const ConfirmDialog = memo(function ConfirmDialog({
   open,
@@ -37,6 +46,8 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descId = useId();
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
 
   // Pulling the sheet down to dismiss is the same gesture users already
@@ -47,14 +58,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
     onDismiss: () => onCancel?.(),
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  useBodyScrollLock(open);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;
@@ -68,7 +72,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
       role="presentation"
     >
       {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT. */}
@@ -77,7 +81,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm motion-safe:animate-fade-in"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
 
       {/* Sheet */}
@@ -85,8 +89,8 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         ref={ref}
         role="alertdialog"
         aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby={description ? "confirm-desc" : undefined}
+        aria-labelledby={titleId}
+        aria-describedby={description ? descId : undefined}
         style={
           swipe.dragging
             ? ({
@@ -116,16 +120,13 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         )}
       >
         <h2
-          id="confirm-title"
+          id={titleId}
           className="text-style-title text-text mb-2 leading-snug"
         >
           {title}
         </h2>
         {description && (
-          <p
-            id="confirm-desc"
-            className="text-sm text-muted leading-relaxed mb-5"
-          >
+          <p id={descId} className="text-sm text-muted leading-relaxed mb-5">
             {description}
           </p>
         )}

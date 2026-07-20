@@ -6,7 +6,9 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { z } from "zod";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
@@ -36,6 +38,17 @@ const inputDialogSchema = z.object({
 
 type InputDialogValues = z.infer<typeof inputDialogSchema>;
 
+/**
+ * Prompt-style dialog with a single text field.
+ *
+ * Shell aligned with Sheet / Modal (P4 Phase 2):
+ * - portaled to `document.body` (escapes `.page-enter` transform traps)
+ * - `bg-black/40` scrim
+ * - `useBodyScrollLock` (iOS-safe)
+ *
+ * Keeps `role="dialog"` + form/`useApiForm` semantics — this is a
+ * value prompt, not an interrupting alertdialog.
+ */
 export function InputDialog({
   open,
   title = "Введи значення",
@@ -55,6 +68,7 @@ export function InputDialog({
   // hence the `| null` to opt into the mutable variant.
   const inputRef = useRef<HTMLInputElement | null>(null);
   const titleId = useId();
+  const descId = useId();
 
   const { register, submit, reset, isSubmitting } = useApiForm<
     InputDialogValues,
@@ -68,6 +82,7 @@ export function InputDialog({
   });
 
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -76,16 +91,8 @@ export function InputDialog({
     return () => clearTimeout(timer);
   }, [open, defaultValue, reset]);
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   const handleScrimKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -96,9 +103,9 @@ export function InputDialog({
 
   const valueRegister = register("value");
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
       role="presentation"
     >
       <button
@@ -106,7 +113,7 @@ export function InputDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
 
       <form
@@ -114,6 +121,7 @@ export function InputDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={description ? descId : undefined}
         onSubmit={submit}
         onPointerDown={(e) => e.stopPropagation()}
         noValidate
@@ -130,7 +138,7 @@ export function InputDialog({
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-muted leading-relaxed mb-4">
+          <p id={descId} className="text-sm text-muted leading-relaxed mb-4">
             {description}
           </p>
         )}
@@ -170,6 +178,7 @@ export function InputDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

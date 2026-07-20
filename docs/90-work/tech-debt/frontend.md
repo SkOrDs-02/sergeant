@@ -1021,9 +1021,10 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 2. ~~**Overlay positioning consolidation (P4 Phase 1)**~~ — **Done**: shared
    `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry
    stays in `floatingPosition.ts`; no Radix — intentional size-limit choice).
-3. **Overlay shell Phase 2 (P4)** — Align `ConfirmDialog` / `InputDialog`
-   scrim + scroll-lock + portal with Sheet/Modal (`bg-black/40`,
-   `useBodyScrollLock`); keep `role="alertdialog"` / form semantics.
+3. ~~**Overlay shell Phase 2 (P4)**~~ — **Done**: `ConfirmDialog` /
+   `InputDialog` aligned with Sheet/Modal — `bg-black/40` scrim,
+   `useBodyScrollLock`, InputDialog portaled to `document.body`; kept
+   `role="alertdialog"` / form semantics.
 4. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done** (web=0); живий список у [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md).
 5. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
 6. ~~**File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.~~ **Done**.
