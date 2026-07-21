@@ -2,7 +2,7 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Цей playbook більше не діє — OpenClaw GitHub-інтеграції немає. Лишається лише fail-closed guard проти залишкового `OPENCLAW_GITHUB_PAT` у prod (Hard Rule #20). Для загальної ротації секретів див. [`rotate-secrets.md`](./rotate-secrets.md). Файл лишено як історичний запис (лінкується immutable-ADR-0055).
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
@@ -157,3 +157,14 @@ flowchart TD
 - [`docs/04-governance/governance/security-incident-policy.md`](../../04-governance/governance/security-incident-policy.md) — що рахується security-інцидентом, а що — звичайною ротацією.
 - ADR-0031 — оригінальна архітектура OpenClaw (PAT-епоха).
 - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -168,3 +168,14 @@ async function healthCheck() {
 - [backend-tech-debt.md](../../90-work/tech-debt/backend.md) — §Bank integrations deep-dive
 - [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — бекенд-топологія; env vars бекенду живуть у Coolify (API-app → Environment)
 - [AGENTS.md](../../../AGENTS.md) — rule #3 (API contract)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

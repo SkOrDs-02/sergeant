@@ -1,38 +1,32 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-21",
   "prs": [
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
     {
       "number": 334,
       "title": "docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants)",
-      "merged_at": "PENDING",
-      "author": "@claude",
+      "merged_at": "2026-07-21T00:32:09Z",
+      "author": "@SkOrDs-02",
       "touchedDocs": [
-        "AGENTS.md",
-        "CLAUDE.md",
-        "README.md",
-        "apps/server/AGENTS.md",
-        "apps/web/AGENTS.md",
-        "docs/00-start/playbooks/cutover-openclaw-gateway.md",
         "docs/00-start/playbooks/modify-n8n-workflow.md",
         "docs/00-start/playbooks/onboard-external-api.md",
         "docs/00-start/playbooks/rotate-openclaw-credentials.md",
-        "docs/02-engineering/architecture/api-v1.md",
-        "docs/02-engineering/architecture/diagrams/c1-system-context.md",
-        "docs/02-engineering/architecture/diagrams/c2-containers.md",
-        "docs/02-engineering/architecture/domain-invariants.md",
-        "docs/02-engineering/integrations/env-vars.md",
-        "docs/03-operations/deploy/monorepo-deploy-filtering.md",
-        "docs/03-operations/deploy/vercel.md",
-        "docs/03-operations/runbooks/database-backup-restore.md",
         "docs/04-governance/adr/0043-cloudsync-v1-sunset.md",
         "docs/04-governance/adr/0047-cloudsync-v1-410-gone.md",
         "docs/04-governance/adr/0073-dualwrite-generic-framework.md",
-        "docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
-        "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
-        "packages/api-client/README.md",
-        "packages/dualwrite-core/README.md"
+        "docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md"
       ]
     },
     {
@@ -217,17 +211,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]
