@@ -1,6 +1,6 @@
 # Playbook: Restore from Backup
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.
@@ -52,7 +52,7 @@
 
 ## Related playbooks and skills
 
-- Concrete commands: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md) — Railway `pg_dump` / `pg_restore`, smoke-test SQL, migration-skew handling.
+- Concrete commands: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md) — Coolify Postgres `pg_dump` / `pg_restore` (historical Railway notes у runbook), smoke-test SQL, migration-skew handling.
 - [test-backup-restore.md](./test-backup-restore.md)
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [declare-incident.md](./declare-incident.md)

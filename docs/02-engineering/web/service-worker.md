@@ -45,7 +45,7 @@ Stack-pulse 2026-05 / [PR-21](../../90-work/initiatives/stack-pulse-2026-05/arch
 - Cascade SENTRY_RELEASE → RAILWAY_GIT_COMMIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID (resolve-стратегія консистентна з [`resolveSentryRelease`](../../../apps/server/src/sentry.ts)).
 - Значення обрізається до 7 char (`git rev-parse --short HEAD`-стандарт).
 - Якщо cascade повертає `null` (локальний dev без жодного SHA) — header не виставляється, клієнт трактує відсутність як «unknown server build» і НЕ форсить prompt.
-- [`apps/server/src/http/apiCors.ts`](../../../apps/server/src/http/apiCors.ts) виставляє `X-Server-Build-Id` у `Access-Control-Expose-Headers`, інакше cross-origin Vercel → Railway не побачив би заголовок.
+- [`apps/server/src/http/apiCors.ts`](../../../apps/server/src/http/apiCors.ts) виставляє `X-Server-Build-Id` у `Access-Control-Expose-Headers`, інакше cross-origin Vercel → Coolify backend не побачив би заголовок.
 
 ## Capacitor-shell (mobile)
 

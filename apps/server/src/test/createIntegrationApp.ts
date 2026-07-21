@@ -156,21 +156,40 @@ export async function seedIntegrationUser(
 
 /**
  * Truncate all public tables except `schema_migrations`.
+ *
+ * One multi-table TRUNCATE (not a per-table loop) shrinks the lock window.
+ * Retries on 40P01 — Vitest forks can still race two connections inside the
+ * same container when a previous test's pool client holds a brief lock.
  */
 export async function truncateIntegrationTables(pool: pg.Pool): Promise<void> {
-  await pool.query(`
-    DO $$
-    DECLARE r RECORD;
-    BEGIN
-      FOR r IN (
-        SELECT tablename FROM pg_tables
-        WHERE schemaname = 'public'
-          AND tablename <> 'schema_migrations'
-      ) LOOP
-        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' CASCADE';
-      END LOOP;
-    END $$;
-  `);
+  const maxAttempts = 5;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await pool.query(`
+        DO $$
+        DECLARE stmt text;
+        BEGIN
+          SELECT 'TRUNCATE TABLE ' || string_agg(quote_ident(tablename), ', ')
+                 || ' CASCADE'
+            INTO stmt
+            FROM pg_tables
+           WHERE schemaname = 'public'
+             AND tablename <> 'schema_migrations';
+          IF stmt IS NOT NULL THEN
+            EXECUTE stmt;
+          END IF;
+        END $$;
+      `);
+      return;
+    } catch (err) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
+      if (code !== "40P01" || attempt === maxAttempts) throw err;
+      await new Promise((r) => setTimeout(r, 50 * attempt));
+    }
+  }
 }
 
 /**

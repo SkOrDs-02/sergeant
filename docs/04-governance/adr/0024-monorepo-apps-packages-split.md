@@ -10,7 +10,7 @@
   - [`AGENTS.md`](../../../AGENTS.md) — module ownership map (рядки apps/_ + packages/_).
   - [`docs/02-engineering/architecture/apps-status-matrix.md`](../../02-engineering/architecture/apps-status-matrix.md) — поточний статус кожного app/package.
   - ADR-0023 — Turborepo як task-runner поверх цього split-у.
-  - ADR-0009 — hosting-split (Railway/Vercel) — наслідок цього boundaries-вибору.
+  - ADR-0009 — hosting-split (historical Railway/Vercel; backend → Hetzner/Coolify per ADR-0074) — наслідок цього boundaries-вибору.
   - ADR-0010 — mobile dual-track (Capacitor + Expo) — пояснює `apps/mobile` + `apps/mobile-shell`.
 
 ---
@@ -90,13 +90,13 @@ packages:
 
 ### `apps/*` (5)
 
-| App                 | Deployable target                                          | Bundle-ID / domain   |
-| ------------------- | ---------------------------------------------------------- | -------------------- |
-| `apps/web`          | Vite SPA → Vercel + Capacitor + Replit                     | `app.sergeant.local` |
-| `apps/server`       | Express API → Railway (Docker)                             | `*.up.railway.app`   |
-| `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM                           | `com.sergeant.app`   |
-| `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web`                    | `com.sergeant.shell` |
-| `tools/openclaw`    | Telegram bot (grammy + Anthropic) — internal ops/marketing | n/a                  |
+| App                  | Deployable target                                            | Bundle-ID / domain   |
+| -------------------- | ------------------------------------------------------------ | -------------------- |
+| `apps/web`           | Vite SPA → Vercel + Capacitor + Replit                       | `app.sergeant.local` |
+| `apps/server`        | Express API → Hetzner/Coolify (Docker, ghcr.io)              | Coolify app URL      |
+| `apps/mobile`        | Expo SDK 52 (RN 0.76) → APNs/FCM                             | `com.sergeant.app`   |
+| `apps/mobile-shell`  | Capacitor 7 WebView shell of `apps/web`                      | `com.sergeant.shell` |
+| ~~`tools/openclaw`~~ | _(removed — ADR-0075)_ Telegram bot — internal ops/marketing | n/a                  |
 
 ### `packages/*` (10)
 

@@ -1,10 +1,9 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
-> Закриває action item з [`docs/04-governance/security/hardening/H4-encryption-key-rotation.md`](../../04-governance/security/hardening/archive/H4-encryption-key-rotation.md).
-> Доповнює "Compromised secret" сценарій у [`../security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md).
+> **Update 2026-07-21:** Server env vars (`BETTER_AUTH_*`, `MONO_*`) — **Coolify** app `sergeant-api` ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Кроки нижче з «Railway Variables» — заміни на Coolify → app → Environment Variables + Redeploy. n8n env (legacy Railway) — окремо, якщо workflow торкається n8n.
 
 ## Який ключ ротувати
 

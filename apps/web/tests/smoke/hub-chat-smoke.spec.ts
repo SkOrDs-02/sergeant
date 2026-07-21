@@ -6,7 +6,7 @@ import { collectPageErrors } from "./smokeHelpers";
 /**
  * Module smoke — Hub chat (the dedicated `/chat` route).
  *
- * S10-X1: cold-load mount + empty-state suggestion chip → composer prefilled.
+ * S10-X1: cold-load mount + quick-action chip → composer prefilled.
  * Audit `2026-05-13-testing-devx-roast.md` §P1-3.
  */
 
@@ -22,16 +22,17 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
     .getByRole("region")
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
-
-  // The authenticated smoke user keeps chat sessions between CI runs. Start a
-  // fresh conversation so this test exercises the empty-state suggestions
-  // instead of depending on whether an earlier run left messages behind.
-  await page.getByRole("button", { name: "Нова бесіда" }).click();
-  await expect(page.getByTestId("chat-empty-suggestion-finyk")).toBeVisible();
-  await page.getByTestId("chat-empty-suggestion-finyk").click();
+  await expect(page.locator("#hub-chat-title")).toHaveText("Асистент");
 
   const input = page.getByLabel("Повідомлення асистенту");
-  await expect(input).not.toHaveValue("");
+  await expect(input).toBeVisible();
+  await expect(input).toHaveValue("");
+
+  // Fresh sessions seed an intro assistant message via
+  // `normalizeStoredMessages`, so `<ChatEmpty>` never renders on cold load.
+  // Exercise the composer prefill path through a quick-action chip instead.
+  await page.getByTestId("chat-quick-action-create_transaction").click();
+  await expect(input).toHaveValue("Додай витрату: ");
 
   expect(errors, "Uncaught page errors on /chat cold load").toEqual([]);
 });

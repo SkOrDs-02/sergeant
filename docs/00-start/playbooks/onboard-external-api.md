@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
@@ -55,7 +55,7 @@ SERVICE_BASE_URL=https://api.example.com
 Оновити:
 
 - `.env.example` — з placeholder-ами
-- Coolify env vars (API-app → Environment) — реальні значення
+- Coolify app env (API) + Vercel env (web) — реальні значення; див. [`env-vars.md`](../../02-engineering/integrations/env-vars.md)
 - CI secrets — якщо потрібні для тестів
 
 ### 3. Створити module в server
@@ -153,7 +153,7 @@ async function healthCheck() {
 - [ ] Prometheus metrics додано
 - [ ] `.env.example` оновлено (без реальних secrets!)
 - [ ] Типи в `packages/api-client` додані (rule #3)
-- [ ] Coolify env vars задокументовані
+- [ ] Coolify/Vercel env vars задокументовані в `env-vars.md`
 
 ## Notes
 
@@ -166,5 +166,17 @@ async function healthCheck() {
 
 - [monobank-roadmap.md](../../02-engineering/integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
 - [backend-tech-debt.md](../../90-work/tech-debt/backend.md) — §Bank integrations deep-dive
-- [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — бекенд-топологія; env vars бекенду живуть у Coolify (API-app → Environment)
+- [env-vars.md](../../02-engineering/integrations/env-vars.md) — канонічний реєстр env vars (Coolify + Vercel)
+- [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — backend hosting (Coolify)
 - [AGENTS.md](../../../AGENTS.md) — rule #3 (API contract)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | PENDING |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

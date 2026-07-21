@@ -1,13 +1,13 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-20",
+  "generated_at": "2026-07-21",
   "counts": {
     "adr": 72,
     "hard-rule": 26,
     "initiative": 6,
     "playbook": 60,
-    "pr": 146,
+    "pr": 143,
     "skill": 23
   },
   "nodes": [
@@ -130,7 +130,7 @@
       "tier": "core",
       "meta": {
         "number": 11,
-        "last_validated": "2026-05-13"
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -345,7 +345,7 @@
       "type": "adr",
       "title": "ADR-0032: Sergeant Console зливається в OpenClaw bot",
       "path": "docs/04-governance/adr/0032-console-consolidated-into-openclaw.md",
-      "status": "Accepted",
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
       "tier": "core",
       "meta": {
         "number": 32
@@ -356,7 +356,7 @@
       "type": "adr",
       "title": "ADR-0033: OpenClaw multi-personas + `/council` round-table",
       "path": "docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md",
-      "status": "Accepted",
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
       "tier": "core",
       "meta": {
         "number": 33
@@ -400,7 +400,7 @@
       "type": "adr",
       "title": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log",
       "path": "docs/04-governance/adr/0037-openclaw-write-audit-persistence.md",
-      "status": "Accepted",
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
       "tier": "core",
       "meta": {
         "number": 37
@@ -719,11 +719,10 @@
       "type": "adr",
       "title": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state)",
       "path": "docs/04-governance/adr/0067-engagement-mechanism-standardization.md",
-      "status": "Active",
+      "status": "Proposed",
       "tier": "core",
       "meta": {
-        "number": 67,
-        "last_validated": "2026-06-20"
+        "number": 67
       }
     },
     {
@@ -742,11 +741,11 @@
       "type": "adr",
       "title": "ADR-0069: AI-PR Checklist and validation workflow",
       "path": "docs/04-governance/adr/0069-ai-pr-checklist.md",
-      "status": "Proposed",
+      "status": "Accepted",
       "tier": "core",
       "meta": {
         "number": 69,
-        "last_validated": "2026-06-29"
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -765,10 +764,11 @@
       "type": "adr",
       "title": "ADR-0071: Dynamic agent snapshot for harness context",
       "path": "docs/04-governance/adr/0071-dynamic-agent-snapshot.md",
-      "status": "Proposed",
+      "status": "Accepted",
       "tier": "core",
       "meta": {
-        "number": 71
+        "number": 71,
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -792,7 +792,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-19"
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -2729,6 +2729,16 @@
       }
     },
     {
+      "id": "pr:334",
+      "type": "pr",
+      "title": "PR #334",
+      "tier": "extended",
+      "meta": {
+        "number": 334,
+        "url": "https://github.com/Skords-01/Sergeant/pull/334"
+      }
+    },
+    {
       "id": "pr:3392",
       "type": "pr",
       "title": "PR #3392",
@@ -2836,46 +2846,6 @@
       "meta": {
         "number": 3649,
         "url": "https://github.com/Skords-01/Sergeant/pull/3649"
-      }
-    },
-    {
-      "id": "pr:3653",
-      "type": "pr",
-      "title": "PR #3653",
-      "tier": "extended",
-      "meta": {
-        "number": 3653,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3653"
-      }
-    },
-    {
-      "id": "pr:3654",
-      "type": "pr",
-      "title": "PR #3654",
-      "tier": "extended",
-      "meta": {
-        "number": 3654,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3654"
-      }
-    },
-    {
-      "id": "pr:3655",
-      "type": "pr",
-      "title": "PR #3655",
-      "tier": "extended",
-      "meta": {
-        "number": 3655,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3655"
-      }
-    },
-    {
-      "id": "pr:3656",
-      "type": "pr",
-      "title": "PR #3656",
-      "tier": "extended",
-      "meta": {
-        "number": 3656,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3656"
       }
     },
     {
@@ -3781,6 +3751,11 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0043",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0047",
       "to": "hard-rule:4",
       "type": "references"
@@ -3793,6 +3768,11 @@
     {
       "from": "adr:0047",
       "to": "pr:326",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:334",
       "type": "touched-by"
     },
     {
@@ -3957,26 +3937,6 @@
     },
     {
       "from": "adr:0067",
-      "to": "pr:3653",
-      "type": "touched-by"
-    },
-    {
-      "from": "adr:0067",
-      "to": "pr:3654",
-      "type": "touched-by"
-    },
-    {
-      "from": "adr:0067",
-      "to": "pr:3655",
-      "type": "touched-by"
-    },
-    {
-      "from": "adr:0067",
-      "to": "pr:3656",
-      "type": "touched-by"
-    },
-    {
-      "from": "adr:0067",
       "to": "pr:3665",
       "type": "touched-by"
     },
@@ -4053,6 +4013,11 @@
     {
       "from": "adr:0073",
       "to": "pr:169",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:334",
       "type": "touched-by"
     },
     {
@@ -4516,6 +4481,16 @@
       "type": "references"
     },
     {
+      "from": "playbook:modify-n8n-workflow",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:onboard-external-api",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
       "from": "playbook:playbook-catalog",
       "to": "pr:447",
       "type": "touched-by"
@@ -4544,6 +4519,11 @@
       "from": "playbook:rotate-openclaw-credentials",
       "to": "hard-rule:20",
       "type": "references"
+    },
+    {
+      "from": "playbook:rotate-openclaw-credentials",
+      "to": "pr:334",
+      "type": "touched-by"
     },
     {
       "from": "playbook:stabilize-flaky-test",

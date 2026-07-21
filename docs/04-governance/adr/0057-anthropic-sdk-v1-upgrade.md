@@ -1,8 +1,10 @@
 # ADR-0057: Upgrade @anthropic-ai/sdk 0.36.3 → 0.95.x у tools/console
 
+> **Historical (2026-05-11).** `tools/console` видалено; OpenClaw stack decommissioned ([ADR-0075](./0075-openclaw-gateway-decommissioned.md)). Рішення про bump SDK лишається записом на момент ухвалення.
+
 - **Status:** Accepted
 - **Date:** 2026-05-11
-- **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:** PR-39 у [`docs/90-work/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-39-tools-console-anthropic-sdk.md)

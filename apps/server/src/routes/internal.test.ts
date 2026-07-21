@@ -2,20 +2,12 @@ import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { anthropicMessagesMock, getLLMProviderMock, invokeLLMMock } = vi.hoisted(
-  () => ({
-    anthropicMessagesMock: vi.fn(),
-    getLLMProviderMock: vi.fn(),
-    invokeLLMMock: vi.fn(),
-  }),
-);
-
-vi.mock("../lib/anthropic.js", () => ({
-  anthropicMessages: anthropicMessagesMock,
+const { invokeLLMMock } = vi.hoisted(() => ({
+  invokeLLMMock: vi.fn(),
 }));
 
 vi.mock("../lib/llm/provider.js", () => ({
-  getLLMProvider: getLLMProviderMock,
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
   invokeLLM: invokeLLMMock,
 }));
 
@@ -29,15 +21,9 @@ function makePool() {
 
 async function makeApp(internalKey: string | undefined, pool = makePool()) {
   vi.resetModules();
-  anthropicMessagesMock.mockReset();
-  getLLMProviderMock.mockReset();
   invokeLLMMock.mockReset();
-  getLLMProviderMock.mockReturnValue({ provider: "mock-llm" });
-  vi.doMock("../lib/anthropic.js", () => ({
-    anthropicMessages: anthropicMessagesMock,
-  }));
   vi.doMock("../lib/llm/provider.js", () => ({
-    getLLMProvider: getLLMProviderMock,
+    getLLMProvider: vi.fn(() => ({ name: "stub" })),
     invokeLLM: invokeLLMMock,
   }));
   if (internalKey === undefined) delete process.env["INTERNAL_API_KEY"];
@@ -189,7 +175,11 @@ describe("/api/internal/*", () => {
 
   it("returns 502 when internal categorization cannot reach the AI service", async () => {
     const { app } = await makeApp("secret");
-    invokeLLMMock.mockResolvedValueOnce({ ok: false, status: 503, text: "" });
+    invokeLLMMock.mockResolvedValueOnce({
+      ok: false,
+      error: "Anthropic error",
+      status: 502,
+    });
 
     const res = await request(app)
       .post("/api/internal/categorize")
@@ -199,8 +189,8 @@ describe("/api/internal/*", () => {
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: "AI service error" });
     expect(invokeLLMMock).toHaveBeenCalledTimes(1);
-    const [, payload] = invokeLLMMock.mock.calls[0]!;
-    expect(JSON.stringify(payload)).not.toContain("test@example.com");
+    const [, opts] = invokeLLMMock.mock.calls[0]!;
+    expect(JSON.stringify(opts)).not.toContain("test@example.com");
   });
 
   it("rule-based MCC fast-path skips Anthropic for known supermarket MCC", async () => {
@@ -214,7 +204,7 @@ describe("/api/internal/*", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ category: "groceries", confidence: 1 });
     // Critical: AI fallback MUST NOT be invoked when MCC is known.
-    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+    expect(invokeLLMMock).not.toHaveBeenCalled();
   });
 
   it("rule-based MCC fast-path skips Anthropic for known fuel-station MCC", async () => {
@@ -227,7 +217,7 @@ describe("/api/internal/*", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ category: "transport", confidence: 1 });
-    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+    expect(invokeLLMMock).not.toHaveBeenCalled();
   });
 
   it("falls through to Anthropic when MCC is unknown", async () => {
@@ -240,7 +230,7 @@ describe("/api/internal/*", () => {
     const res = await request(app)
       .post("/api/internal/categorize")
       .set("Authorization", "Bearer secret")
-      .send({ description: "some merchant", amount: -1000, mcc: 999999 });
+      .send({ description: "some merchant", amount: -1000, mcc: 1234 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ category: "other", confidence: 0.42 });
