@@ -137,3 +137,14 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 7. ✅ Update `tools/console/.env.example`: 5 нових tool-ENV (Stripe / Sentry / PostHog / GitHub PAT) як optional.
 8. Sprint 1 (окремий PR): видалити `tools/console/src/agents/`, `tools/console/src/dispatcher/`, `tools/console/src/router*.ts` і перейменувати package на `@sergeant/openclaw-bot`.
 9. ✅ PR-47 (Pain P10): rename Railway service `sergeant-hubchat` → `sergeant-openclaw` (config-as-code посилання, runbook-и, webhook URL у ADR-0041). Набор команд для фактичної зміни на Railway side — у [`docs/03-operations/deploy/openclaw.md`](../../03-operations/deploy/openclaw.md) §«Railway service rename runbook».
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#365](https://github.com/Skords-01/Sergeant/pull/365) | fix(ci): restore green main after OpenClaw decommission drift | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

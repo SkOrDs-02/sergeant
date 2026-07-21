@@ -212,3 +212,14 @@ Format відповіді — таблиця `recorded | tool | action | persona
 - `apps/server/src/modules/openclaw/store.ts` — `recordWriteAudit`, `listRecentWriteAudits`.
 - `apps/server/src/routes/internal/openclaw.ts` — `/write-audit/log` + `/write-audit/list`.
 - `tools/openclaw/src/openclaw/handler.ts` — callback handler wiring + `/audit` slash command.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#365](https://github.com/Skords-01/Sergeant/pull/365) | fix(ci): restore green main after OpenClaw decommission drift | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

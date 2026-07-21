@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -105,3 +105,14 @@ lang: en
 - `docs/03-operations/runbooks/operations-runbook.md` — full operations guide
 - `docs/04-governance/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
 - `docs/03-operations/observability/runbook.md` — metrics + alerting runbook
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#365](https://github.com/Skords-01/Sergeant/pull/365) | fix(ci): restore green main after OpenClaw decommission drift | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

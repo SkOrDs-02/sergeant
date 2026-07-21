@@ -351,3 +351,14 @@ Snooze, на відміну, **latest-write-wins** (`SET snoozed_until_at = $2`
 - Workflows: [`105-alert-repeat-ping-cron.json`](../../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (T2), [`106-alert-sentry-warn-cron.json`](../../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (T3); [`104-alert-callback-router.json`](../../../ops/n8n-workflows/104-alert-callback-router.json) updated with snooze branch.
 - Runbook: [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md) § "Alert-bot escalation ladder".
 - Lifecycle diagram + keyboard spec: [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md) § "Acknowledgment lifecycle" + § "T2 repeat-ping inline keyboard".
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#365](https://github.com/Skords-01/Sergeant/pull/365) | fix(ci): restore green main after OpenClaw decommission drift | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
