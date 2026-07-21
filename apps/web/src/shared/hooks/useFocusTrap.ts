@@ -45,10 +45,11 @@ export function useFocusTrap<T extends HTMLElement>(
 
     // Focus first focusable element
     const focusables = getFocusableElements();
-    if (focusables.length > 0) {
+    const initial = focusables[0];
+    if (initial) {
       // Small delay to ensure modal is fully rendered
       requestAnimationFrame(() => {
-        focusables[0]!.focus();
+        initial.focus();
       });
     }
 
@@ -62,23 +63,24 @@ export function useFocusTrap<T extends HTMLElement>(
 
       // Handle Tab
       if (e.key === "Tab") {
-        const focusables = getFocusableElements();
-        if (focusables.length === 0) return;
+        const tabbables = getFocusableElements();
+        if (tabbables.length === 0) return;
 
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
+        const first = tabbables[0];
+        const last = tabbables[tabbables.length - 1];
+        if (!first || !last) return;
 
         // Shift+Tab on first element -> focus last
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
-          last!.focus()!;
+          last.focus();
           return;
         }
 
         // Tab on last element -> focus first
         if (!e.shiftKey && document.activeElement === last) {
           e.preventDefault();
-          first!.focus()!;
+          first.focus();
           return;
         }
       }

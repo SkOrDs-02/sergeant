@@ -23,7 +23,7 @@
 **Відкритий actionable backlog (після waves):**
 
 1. Mobile coverage floor 30 → ratchet (P3) — лише після headroom у CI.
-2. Подальший eslint-disable / `!` burndown — опційно, не P1.
+2. Подальший `!` / eslint burndown (AccentColorPicker, barcode, server sync) — опційно, P3; low-risk web batch уже Done.
 
 **Blocked (агент не закриє без власника / інфри / депів)** — простими словами див. [`README.md § Blocked простими словами`](./README.md#blocked-простими-словами).
 
@@ -66,13 +66,14 @@
 
 Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design.
 
-| Ціль                                                     | Статус                                                    |
-| -------------------------------------------------------- | --------------------------------------------------------- |
-| `no-raw-storage-key` / `no-restricted-syntax` WHY        | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351) |
-| `@typescript-eslint/no-non-null-assertion` (перша хвиля) | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353) |
-| Mobile exhaustive-deps catalog                           | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349) |
-| Подальший security-pass / `!` / FS disables без WHY      | Відкрито, P3 — opportunistic                              |
-| Web exhaustive-deps catalog                              | ✅ Done (web=0)                                           |
+| Ціль                                                                         | Статус                                                                                                                             |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `no-raw-storage-key` / `no-restricted-syntax` WHY                            | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                          |
+| `@typescript-eslint/no-non-null-assertion` (перша хвиля)                     | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                          |
+| `!` low-risk web batch                                                       | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData) |
+| Mobile exhaustive-deps catalog                                               | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                          |
+| Подальший security-pass / `!` / FS (AccentColorPicker, barcode, server sync) | Відкрито, P3 — opportunistic                                                                                                       |
+| Web exhaustive-deps catalog                                                  | ✅ Done (web=0)                                                                                                                    |
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 

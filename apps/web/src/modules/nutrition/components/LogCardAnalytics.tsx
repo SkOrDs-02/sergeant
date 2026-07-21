@@ -157,20 +157,23 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             <ul className="space-y-1">
               {MEAL_ORDER.filter(
                 (t) => (statsMealTypes[t]?.count ?? 0) > 0,
-              ).map((t) => (
-                <li
-                  key={t}
-                  className="flex items-baseline justify-between gap-2"
-                >
-                  <span className="text-xs text-text">
-                    {MEAL_META[t]?.emoji} {MEAL_META[t]?.label || t}
-                  </span>
-                  <span className="text-xs text-subtle shrink-0">
-                    {statsMealTypes[t]!.count}× ·{" "}
-                    {Math.round(statsMealTypes[t]!.kcal)} ккал
-                  </span>
-                </li>
-              ))}
+              ).map((t) => {
+                const s = statsMealTypes[t];
+                if (!s) return null;
+                return (
+                  <li
+                    key={t}
+                    className="flex items-baseline justify-between gap-2"
+                  >
+                    <span className="text-xs text-text">
+                      {MEAL_META[t]?.emoji} {MEAL_META[t]?.label || t}
+                    </span>
+                    <span className="text-xs text-subtle shrink-0">
+                      {s.count}× · {Math.round(s.kcal)} ккал
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
