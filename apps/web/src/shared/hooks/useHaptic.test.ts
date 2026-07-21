@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { hapticCancel } from "@shared/lib/adapters/haptic";
 import { useHaptic } from "./useHaptic";
 
 function setMatchMediaReduced(reduced: boolean): void {
@@ -147,5 +148,24 @@ describe("useHaptic", () => {
     });
     const { result } = renderHook(() => useHaptic());
     expect(() => act(() => result.current.heavy())).not.toThrow();
+  });
+
+  it("cancel bypasses reduced motion and remains safe across browser fallbacks", () => {
+    setMatchMediaReduced(true);
+
+    expect(() => hapticCancel()).not.toThrow();
+    expect(vibrate).toHaveBeenCalledWith(0);
+
+    vibrate.mockImplementation(() => {
+      throw new Error("NotAllowedError");
+    });
+    expect(() => hapticCancel()).not.toThrow();
+
+    Object.defineProperty(navigator, "vibrate", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    expect(() => hapticCancel()).not.toThrow();
   });
 });
