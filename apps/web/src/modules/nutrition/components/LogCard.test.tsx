@@ -74,6 +74,28 @@ describe("LogCard", () => {
     expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
   });
 
+  it("formats yesterday, tomorrow, and custom dates", () => {
+    renderLog({ selectedDate: addDaysISODate(today, -1) });
+    expect(screen.getByText("Вчора")).toBeInTheDocument();
+
+    renderLog({ selectedDate: addDaysISODate(today, 1) });
+    expect(screen.getByText("Завтра")).toBeInTheDocument();
+
+    renderLog({ selectedDate: "2026-01-02" });
+    expect(screen.getByText("02.01.2026")).toBeInTheDocument();
+  });
+
+  it("falls back to the label-derived meal type for legacy meals", () => {
+    renderLog({
+      log: {
+        [today]: {
+          meals: [{ id: "m1", name: "Сирники", label: "Сніданок" }],
+        },
+      } as never,
+    });
+    expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
+  });
+
   it("invokes onAddMeal", () => {
     const onAddMeal = vi.fn();
     renderLog({ onAddMeal });
@@ -99,6 +121,23 @@ describe("LogCard", () => {
     expect(onDuplicateYesterday).toHaveBeenCalled();
   });
 
+  it("cancels the duplicate-yesterday flow", () => {
+    const onDuplicateYesterday = vi.fn();
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday,
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+      } as never,
+    });
+    fireEvent.click(screen.getByText(/Скопіювати з попереднього дня/));
+    fireEvent.click(screen.getByText("Скасувати"));
+    expect(onDuplicateYesterday).not.toHaveBeenCalled();
+    expect(screen.queryByText("Скопіювати прийоми?")).not.toBeInTheDocument();
+  });
+
   it("shows the big-log warning and confirms trim", () => {
     (estimateLogBytes as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       400_000,
@@ -108,5 +147,19 @@ describe("LogCard", () => {
     fireEvent.click(screen.getByText(/Залишити лише останні 365 днів/));
     fireEvent.click(screen.getByText("Видалити"));
     expect(onTrimLog).toHaveBeenCalledWith(365);
+  });
+
+  it("cancels the big-log trim flow", () => {
+    (estimateLogBytes as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      400_000,
+    );
+    const onTrimLog = vi.fn();
+    renderLog({ onTrimLog });
+    fireEvent.click(screen.getByText(/Залишити лише останні 365 днів/));
+    fireEvent.click(screen.getByText("Скасувати"));
+    expect(onTrimLog).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("Видалити стару історію?"),
+    ).not.toBeInTheDocument();
   });
 });

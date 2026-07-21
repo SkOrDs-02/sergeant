@@ -23,6 +23,7 @@ type BarcodeResult = { code: string; format: string } | null;
 const scanBarcodeNativeMock = vi.fn(
   (): Promise<BarcodeResult> => new Promise(() => {}), // hangs by default
 );
+const toastErrorMock = vi.fn();
 
 vi.mock("../hooks/useBarcodeScanner", () => ({
   useBarcodeScanner: () => ({ isNative: isNativeMock() }),
@@ -31,7 +32,7 @@ vi.mock("../hooks/useBarcodeScanner", () => ({
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({ error: vi.fn(), success: vi.fn() }),
+  useToast: () => ({ error: toastErrorMock, success: vi.fn() }),
 }));
 
 beforeEach(() => {
@@ -91,6 +92,25 @@ describe("BarcodeScanner — web variant", () => {
     render(<BarcodeScanner onDetected={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText(/Наведи камеру на штрих-код/)).toBeInTheDocument();
   });
+
+  it("deactivates web scanning and reports the detected code", () => {
+    const onDetected = vi.fn();
+    render(<BarcodeScanner onDetected={onDetected} onClose={vi.fn()} />);
+    const options = useWebScannerMock.mock.calls[0]?.[0] as {
+      active: boolean;
+      onDetected: (result: { code: string }) => void;
+    };
+
+    expect(options.active).toBe(true);
+    act(() => {
+      options.onDetected({ code: "4820000000012" });
+    });
+
+    expect(onDetected).toHaveBeenCalledWith("4820000000012");
+    expect(useWebScannerMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ active: false }),
+    );
+  });
 });
 
 describe("BarcodeScanner — native variant", () => {
@@ -136,6 +156,40 @@ describe("BarcodeScanner — native variant", () => {
       await Promise.resolve();
     });
 
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the permission toast and closes when native camera access is denied", async () => {
+    isNativeMock.mockReturnValue(true);
+    const onClose = vi.fn();
+    scanBarcodeNativeMock.mockRejectedValue(
+      new Error("camera-permission-denied"),
+    );
+
+    await act(async () => {
+      render(<BarcodeScanner onDetected={vi.fn()} onClose={onClose} />);
+      await Promise.resolve();
+    });
+
+    expect(toastErrorMock).toHaveBeenCalledWith(
+      "Потрібен дозвіл на камеру. Увімкни його в налаштуваннях додатку.",
+    );
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the fallback unavailable toast for other native scan failures", async () => {
+    isNativeMock.mockReturnValue(true);
+    const onClose = vi.fn();
+    scanBarcodeNativeMock.mockRejectedValue(new Error("native-unavailable"));
+
+    await act(async () => {
+      render(<BarcodeScanner onDetected={vi.fn()} onClose={onClose} />);
+      await Promise.resolve();
+    });
+
+    expect(toastErrorMock).toHaveBeenCalledWith(
+      "Сканер недоступний. Введи код вручну.",
+    );
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

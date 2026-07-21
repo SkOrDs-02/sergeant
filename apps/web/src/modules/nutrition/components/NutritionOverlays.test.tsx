@@ -29,8 +29,18 @@ vi.mock("./PantryManagerSheet", () => ({
 }));
 
 vi.mock("./ItemEditSheet", () => ({
-  ItemEditSheet: ({ itemEdit }: { itemEdit: { open: boolean } }) =>
-    itemEdit?.open ? <div data-testid="item-edit-sheet" /> : null,
+  ItemEditSheet: ({
+    itemEdit,
+    onClose,
+  }: {
+    itemEdit: { open: boolean };
+    onClose: () => void;
+  }) =>
+    itemEdit?.open ? (
+      <div data-testid="item-edit-sheet">
+        <button onClick={onClose}>close-item-edit</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("./BarcodeScanner", () => ({
@@ -47,8 +57,12 @@ vi.mock("./BarcodeScanner", () => ({
 }));
 
 vi.mock("./AddMealSheet", () => ({
-  AddMealSheet: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="add-meal-sheet" /> : null,
+  AddMealSheet: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div data-testid="add-meal-sheet">
+        <button onClick={onClose}>close-add-meal</button>
+      </div>
+    ) : null,
 }));
 
 vi.mock("@shared/components/ui/InputDialog", () => ({
@@ -229,6 +243,54 @@ describe("NutritionOverlays", () => {
     expect(screen.getByTestId("add-meal-sheet")).toBeInTheDocument();
   });
 
+  it("clears meal-editing state when AddMealSheet closes", () => {
+    const setAddMealSheetOpen = vi.fn();
+    const setAddMealPhotoResult = vi.fn();
+    const setEditingMeal = vi.fn();
+
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          log: makeLog({
+            addMealSheetOpen: true,
+            setAddMealSheetOpen,
+            setAddMealPhotoResult,
+          }),
+          setEditingMeal,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("close-add-meal"));
+
+    expect(setAddMealSheetOpen).toHaveBeenCalledWith(false);
+    expect(setAddMealPhotoResult).toHaveBeenCalledWith(null);
+    expect(setEditingMeal).toHaveBeenCalledWith(null);
+  });
+
+  it("closes ItemEditSheet by marking the edit state closed", () => {
+    const setItemEdit = vi.fn();
+
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          pantry: makePantry({
+            itemEdit: { open: true, item: { name: "Рис" }, idx: 0 },
+            setItemEdit,
+          }),
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("close-item-edit"));
+
+    const updater = setItemEdit.mock.calls[0]?.[0] as (
+      state: Record<string, unknown>,
+    ) => Record<string, unknown>;
+    expect(updater({ open: true, item: { name: "Рис" } })).toEqual({
+      open: false,
+      item: { name: "Рис" },
+    });
+  });
+
   it("shows InputDialog when backupPasswordDialog is set", () => {
     render(
       <NutritionOverlays
@@ -279,6 +341,28 @@ describe("NutritionOverlays", () => {
     expect(restoreDialog).toBeTruthy();
   });
 
+  it("closes restore confirmation when cancelled", () => {
+    const setRestoreConfirm = vi.fn();
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          restoreConfirm: { payload: { version: 1 } },
+          setRestoreConfirm,
+        })}
+      />,
+    );
+    const restoreDialog = screen
+      .getAllByTestId("confirm-dialog")
+      .find((el) => el.getAttribute("data-title") === "Відновити бекап?")!;
+    fireEvent.click(
+      Array.from(restoreDialog.querySelectorAll("button")).find(
+        (button) => button.textContent === "cancel",
+      )!,
+    );
+
+    expect(setRestoreConfirm).toHaveBeenCalledWith(null);
+  });
+
   it("calls applyRestorePayload and setRestoreConfirm(null) on restore confirm", () => {
     const applyRestorePayload = vi.fn();
     const setRestoreConfirm = vi.fn();
@@ -317,6 +401,27 @@ describe("NutritionOverlays", () => {
       (el) => el.getAttribute("data-title") === "Видалити комору?",
     );
     expect(deleteDialog).toBeTruthy();
+  });
+
+  it("closes delete confirmation when cancelled", () => {
+    const setConfirmDeleteOpen = vi.fn();
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          pantry: makePantry({ confirmDeleteOpen: true, setConfirmDeleteOpen }),
+        })}
+      />,
+    );
+    const deleteDialog = screen
+      .getAllByTestId("confirm-dialog")
+      .find((el) => el.getAttribute("data-title") === "Видалити комору?")!;
+    fireEvent.click(
+      Array.from(deleteDialog.querySelectorAll("button")).find(
+        (button) => button.textContent === "cancel",
+      )!,
+    );
+
+    expect(setConfirmDeleteOpen).toHaveBeenCalledWith(false);
   });
 
   it("swallows delete confirm when only one pantry remains (guard)", () => {
