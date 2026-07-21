@@ -275,6 +275,35 @@ describe("repairPartialOutboxMigration", () => {
     expect(second.recovered).toBe(false);
   });
 
+  it("recovers a legacy-only table even when the ledger table is absent", async () => {
+    db.exec(`
+      CREATE TABLE sync_op_outbox_legacy (
+        id INTEGER PRIMARY KEY,
+        idempotency_key TEXT NOT NULL
+      );
+      INSERT INTO sync_op_outbox_legacy (id, idempotency_key)
+      VALUES (1, 'idem-no-ledger');
+    `);
+
+    const result = await repairPartialOutboxMigration(client, {
+      ledgerTable: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+    });
+
+    expect(result.recovered).toBe(true);
+    const tables = db
+      .prepare(
+        `SELECT name FROM sqlite_master
+           WHERE type='table' AND name NOT LIKE 'sqlite_%'
+           ORDER BY name`,
+      )
+      .all() as { name: string }[];
+    expect(tables.map((r) => r.name)).toEqual(["sync_op_outbox"]);
+    const rows = db
+      .prepare(`SELECT idempotency_key FROM sync_op_outbox`)
+      .all() as { idempotency_key: string }[];
+    expect(rows).toEqual([{ idempotency_key: "idem-no-ledger" }]);
+  });
+
   it("rejects ledger table names that do not match the runner's allowed shape", async () => {
     await expect(
       repairPartialOutboxMigration(client, {
