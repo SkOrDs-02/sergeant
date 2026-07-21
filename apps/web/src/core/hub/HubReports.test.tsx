@@ -156,7 +156,7 @@ describe("HubReports — render smoke (F23)", () => {
         title: "Sergeant — звіт",
         sections: expect.arrayContaining([
           expect.objectContaining({ title: "Період" }),
-          expect.objectContaining({ title: "Стан звіту" }),
+          expect.objectContaining({ title: "Інсайти (0)" }),
         ]),
       }),
     );
