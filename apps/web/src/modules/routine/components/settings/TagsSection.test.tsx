@@ -9,7 +9,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
-import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import type { RoutineState, Tag } from "../../lib/types";
 import { TagsSection } from "./TagsSection";
 
@@ -32,6 +32,24 @@ function makeRoutineWithTags(tags: Tag[]): RoutineState {
   return { ...defaultRoutineState(), tags };
 }
 
+function ToastProbe() {
+  const { toasts } = useToast();
+  return (
+    <div aria-label="toast probe">
+      {toasts.map((toast) => (
+        <div key={toast.id}>
+          <span>{toast.msg}</span>
+          {toast.action && (
+            <button type="button" onClick={toast.action.onClick}>
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Harness({ initial }: { initial: RoutineState }) {
   const [routine, setRoutine] = useState(initial);
   const [tagDraft, setTagDraft] = useState("");
@@ -43,6 +61,7 @@ function Harness({ initial }: { initial: RoutineState }) {
         tagDraft={tagDraft}
         setTagDraft={setTagDraft}
       />
+      <ToastProbe />
     </ToastProvider>
   );
 }
@@ -157,5 +176,75 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
     expect(
       screen.getByRole("button", { name: "Змінити обід" }),
     ).toBeInTheDocument();
+  });
+
+  it("updates the draft input and creates a new tag", async () => {
+    render(<Harness initial={makeRoutineWithTags([])} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
+      target: { value: " вечір " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("вечір")).toBeInTheDocument();
+    });
+    expect(screen.getByPlaceholderText("Новий тег")).toHaveValue("");
+  });
+
+  it("ignores empty add attempts without creating a tag", () => {
+    render(<Harness initial={makeRoutineWithTags([])} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+
+    expect(screen.queryByRole("button", { name: /Змінити/ })).toBeNull();
+  });
+
+  it("shows duplicate feedback when adding an existing tag", async () => {
+    const initial = makeRoutineWithTags([{ id: "tag-1", name: "Ранок" }]);
+    render(<Harness initial={initial} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
+      target: { value: " ранок " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+" }));
+
+    expect(
+      await screen.findByText("Тег з такою назвою вже існує"),
+    ).toBeInTheDocument();
+  });
+
+  it("soft-deletes a tag with usage count and restores it via undo", async () => {
+    const initial: RoutineState = {
+      ...makeRoutineWithTags([{ id: "tag-1", name: "ранок" }]),
+      habits: [
+        {
+          id: "habit-1",
+          name: "Вода",
+          emoji: "💧",
+          tagIds: ["tag-1"],
+          archived: false,
+          recurrence: "daily",
+          timeOfDay: "morning",
+          reminderTimes: [],
+        },
+      ],
+    };
+    render(<Harness initial={initial} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Видалити ранок" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("ранок")).not.toBeInTheDocument();
+    });
+    expect(
+      await screen.findByText("Видалено тег «ранок» (відʼєднано від 1)"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
+    expect(await screen.findByText("ранок")).toBeInTheDocument();
   });
 });
