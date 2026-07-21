@@ -331,6 +331,15 @@ export const messages = {
     reportNoData: "Немає даних",
     reportChartAria: "Графік",
     reportPrevious: "Минулий:",
+
+    // PR-42 — Free-tier chat-usage counter pill (`ChatUsageCounter.tsx`,
+    // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
+    // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
+    // (no Cyrillic-string placeholders needed for plain digits).
+    chatUsageUnit: "повідомлень",
+    chatUsageAriaPrefix: "Використано",
+    chatUsageAriaSuffix: "повідомлень на сьогодні",
+    chatUsageExhausted: "Ліміт повідомлень на сьогодні. Подивись плани",
   },
 
   onboarding: {

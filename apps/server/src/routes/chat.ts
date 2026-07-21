@@ -3,12 +3,20 @@ import {
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
+  requireSession,
   setModule,
 } from "../http/index.js";
 import chatHandler from "../modules/chat/chat.js";
+import chatUsageHandler from "../modules/chat/usage.js";
 
 export function createChatRouter(): Router {
   const r = Router();
+  r.get(
+    "/api/chat/usage",
+    setModule("chat"),
+    requireSession(),
+    chatUsageHandler,
+  );
   r.post(
     "/api/chat",
     setModule("chat"),

@@ -98,6 +98,12 @@ export const pushKeys = {
   vapid: ["push", "vapid"] as const,
 };
 
+// ─── Chat (Free-tier daily usage counter — PR-42) ──────────────────────────
+export const chatKeys = {
+  all: ["chat"] as const,
+  usage: ["chat", "usage"] as const,
+};
+
 // ─── Hub (dashboard previews, shared state) ───────────────────────────────
 export const hubKeys = {
   all: ["hub"] as const,

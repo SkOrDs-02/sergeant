@@ -113,6 +113,44 @@
         }
       }
     },
+    "/api/chat/usage": {
+      "get": {
+        "summary": "Денний Free-tier ліміт AI-чату (PR-42 chat counter)",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Плюс/Pro → limit/remaining=null (unlimited); Free → поточний денний рахунок.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatUsageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/ai-memory": {
       "delete": {
         "summary": "Очистити серверну памʼять ШІ поточного користувача.",
@@ -4807,6 +4845,49 @@
         ],
         "additionalProperties": false,
         "description": "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію)."
+      },
+      "ChatUsageResponse": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro"
+            ]
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "plan",
+          "limit",
+          "remaining"
+        ],
+        "additionalProperties": false,
+        "description": "GET /api/chat/usage — денний Free-tier ліміт AI-чату (PR-42 chat counter)."
       },
       "AiMemoryClearResponse": {
         "type": "object",

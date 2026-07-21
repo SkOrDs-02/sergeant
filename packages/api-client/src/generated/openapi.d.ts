@@ -109,6 +109,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Денний Free-tier ліміт AI-чату (PR-42 chat counter) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Плюс/Pro → limit/remaining=null (unlimited); Free → поточний денний рахунок. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChatUsageResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai-memory": {
         parameters: {
             query?: never;
@@ -3169,6 +3214,13 @@ export interface components {
                 path: string;
                 message: string;
             }[];
+        };
+        /** @description GET /api/chat/usage — денний Free-tier ліміт AI-чату (PR-42 chat counter). */
+        ChatUsageResponse: {
+            /** @enum {string} */
+            plan: "free" | "pro";
+            limit: number | null;
+            remaining: number | null;
         };
         /** @description Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів. */
         AiMemoryClearResponse: {

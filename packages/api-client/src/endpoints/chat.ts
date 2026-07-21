@@ -1,4 +1,8 @@
+import { ChatUsageResponseSchema } from "@sergeant/shared";
+import type { ChatUsageResponse } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
+
+export type { ChatUsageResponse };
 
 export interface ChatMessage {
   role: "user" | "assistant" | string;
@@ -34,6 +38,8 @@ export interface ChatEndpoints {
     payload: ChatRequestPayload,
     opts?: ChatCallOpts,
   ) => Promise<Response>;
+  /** GET /api/chat/usage — Free-tier daily counter (PR-42 chat counter). */
+  usage: (opts?: ChatCallOpts) => Promise<ChatUsageResponse>;
 }
 
 export function createChatEndpoints(http: HttpClient): ChatEndpoints {
@@ -46,5 +52,11 @@ export function createChatEndpoints(http: HttpClient): ChatEndpoints {
         body: payload,
         signal: opts.signal,
       }),
+    usage: async (opts = {}) => {
+      const raw = await http.get<unknown>("/api/chat/usage", {
+        signal: opts.signal,
+      });
+      return ChatUsageResponseSchema.parse(raw);
+    },
   };
 }

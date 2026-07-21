@@ -33,6 +33,11 @@ const ChatRequest = schemas.ChatRequestSchema.meta({
   description:
     "POST /api/chat — Anthropic-чат із tool-results і опційним streaming.",
 });
+const ChatUsageResponse = schemas.ChatUsageResponseSchema.meta({
+  id: "ChatUsageResponse",
+  description:
+    "GET /api/chat/usage — денний Free-tier ліміт AI-чату (PR-42 chat counter).",
+});
 const RecallMemoryRequest = schemas.RecallMemoryRequestSchema.meta({
   id: "RecallMemoryRequest",
   description:
@@ -300,6 +305,7 @@ export const namedSchemas = {
   User,
   MeResponse,
   ChatRequest,
+  ChatUsageResponse,
   RecallMemoryRequest,
   RecallMemoryResult,
   RecallMemoryResponse,
