@@ -99,6 +99,7 @@ describe("HubInsightsPanel", () => {
   it("renders a raw emoji icon as text", () => {
     render(
       <HubInsightsPanel
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback), see TodayFocusCard.tsx
         items={[rec({ id: "a", title: "Емодзі", icon: "🔥" })]}
         onOpenModule={vi.fn()}
       />,

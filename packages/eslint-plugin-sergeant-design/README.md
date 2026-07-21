@@ -40,6 +40,20 @@
 <div className="bg-success-soft text-success-strong" />
 ```
 
+### `sergeant-design/no-emoji-icon`
+
+Забороняє emoji-гліфи в `icon`-object-property та JSX `icon=`-атрибутах. Sergeant має справжній SVG Icon-каталог (`@shared/components/ui/Icon`) з module-accented гліфами — сирий emoji замість системної іконки не успадковує accent-колір і виглядає inconsistent поруч з рештою іконок (design-audit F4). Правило дивиться лише на властивість/атрибут з іменем `icon` — emoji як user-content (власний emoji звички, AI-згенерований рекомендаційний гліф) — інша історія, не в скоупі. Severity: **error** (`apps/web/**`).
+
+```tsx
+// ❌ BAD — сирий emoji замість системної іконки
+<div>{icon}</div>; // icon: "🏋️"
+<Row icon="🥗" />;
+
+// ✅ GOOD — ім'я з Icon-каталогу, accent-колір адаптується per-module
+<Icon name="dumbbell" className="text-fizruk" />;
+<Row icon="utensils" />;
+```
+
 ### `sergeant-design/no-raw-dark-palette`
 
 Забороняє className, що парує сиру palette-light-утиліту (`bg-amber-50`, `text-coral-100`, `border-teal-200/50`, …) з `dark:`-сирим palette-override-ом (`dark:bg-amber-500/15`, `dark:text-coral-900/30`, `dark:border-teal-800/30`). Обидві половини кодують palette-знання у call-site, тож наступна palette-міграція тихо викине одну половину, а навколишній override провалиться у неправильний колір (саме баг [#814](https://github.com/Skords-01/Sergeant/pull/814)). Фікс завжди той самий: підняти (light, dark)-пару у токен-шар дизайн-системи (`bg-success-soft`, `bg-finyk-surface`, `text-brand-strong`, `border-routine-soft-border`, …), щоб preset володів swap-ом, а call-site не мав жодного `dark:`-palette-override-у.

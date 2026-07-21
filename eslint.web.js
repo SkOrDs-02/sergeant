@@ -157,6 +157,14 @@ export const webBlocks = [
       // so this is a tripwire for accidental v1 re-introduction.
       // See docs/design/redesign-v2-migration.md.
       "sergeant-design/no-v1-gradient": "error",
+      // `no-emoji-icon` — design-audit F4: forbid emoji in `icon`
+      // object-properties and JSX `icon=` attributes. Sergeant's SVG Icon
+      // catalog (`@shared/components/ui/Icon`) is the canonical system-icon
+      // source; a raw emoji standing in for one can't inherit the module
+      // accent color. Emoji as user content (habit names, AI-generated
+      // recommendation glyphs) uses a different field name and isn't
+      // flagged. See `packages/eslint-plugin-sergeant-design/README.md`.
+      "sergeant-design/no-emoji-icon": "error",
       // `no-bare-empty-text` — enforce empty-state tier discipline.
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
       // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.

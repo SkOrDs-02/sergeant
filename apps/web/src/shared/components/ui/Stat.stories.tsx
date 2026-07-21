@@ -87,6 +87,7 @@ export const WithIcon: Story = {
     label: "Кроки",
     value: "11 240",
     sublabel: "+1.2k vs учора",
+    // eslint-disable-next-line sergeant-design/no-emoji-icon -- Stat `icon` is typed ReactNode (decorative leading glyph, not the SVG Icon catalog)
     icon: "🏃",
     variant: "fizruk",
   },

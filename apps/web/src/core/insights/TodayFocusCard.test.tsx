@@ -165,6 +165,7 @@ describe("TodayFocusCard", () => {
       severity: "danger" as const,
       title: 'Бюджет "Продукти" перевищено на 80%',
       body: "Витрачено 900 ₴ з 500 ₴",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "💸",
       action: "finyk",
       pwaAction: "add_expense" as const,
@@ -191,6 +192,7 @@ describe("TodayFocusCard", () => {
       severity: "danger" as const,
       title: "Бюджет перевищено",
       body: "Дані",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "💸",
       action: "finyk",
     };
@@ -215,6 +217,7 @@ describe("TodayFocusCard", () => {
       severity: "warning" as const,
       title: "Ліміт майже вичерпано",
       body: "95% бюджету",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "⚠️",
       action: "finyk",
     };
@@ -269,6 +272,7 @@ describe("TodayFocusCard", () => {
       module: "fizruk" as const,
       title: "10 днів без тренування",
       body: "Пора тренуватися",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "🏋️",
       action: "fizruk",
       pwaAction: "start_workout" as const,
@@ -301,6 +305,7 @@ describe("TodayFocusCard", () => {
       module: "finyk" as const,
       title: "Витрати на 50% вище",
       body: "За такий же проміжок",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "📈",
       action: "finyk",
     };
@@ -328,6 +333,7 @@ describe("TodayFocusCard", () => {
       module: "nutrition" as const,
       title: "Немає записів",
       body: "Зафіксуй їжу",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "🥗",
       action: "nutrition",
       pwaAction: "add_meal" as const,
@@ -352,6 +358,7 @@ describe("TodayFocusCard", () => {
       module: "routine" as const,
       title: "2 звичок ще не виконано",
       body: "Вечір — ще не пізно",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "✅",
       action: "routine",
     };
@@ -424,6 +431,7 @@ describe("TodayFocusCard", () => {
       module: "nutrition" as const,
       title: "Лише 400 ккал з 2000 ккал цілі",
       body: "Недостатнє споживання калорій",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
       icon: "⚡",
       action: "nutrition",
       pwaAction: "add_meal" as const,
@@ -476,6 +484,7 @@ describe("useDashboardFocus", () => {
         id: "r1",
         module: "finyk",
         priority: 90,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "💸",
         title: "High priority",
         body: "body",
@@ -485,6 +494,7 @@ describe("useDashboardFocus", () => {
         id: "r2",
         module: "fizruk",
         priority: 50,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "🏋️",
         title: "Low priority",
         body: "body",
@@ -505,6 +515,7 @@ describe("useDashboardFocus", () => {
         id: "r1",
         module: "finyk",
         priority: 90,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "💸",
         title: "Rec 1",
         body: "body",
@@ -514,6 +525,7 @@ describe("useDashboardFocus", () => {
         id: "r2",
         module: "fizruk",
         priority: 50,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "🏋️",
         title: "Rec 2",
         body: "body",
@@ -540,6 +552,7 @@ describe("useDashboardFocus", () => {
         id: "r1",
         module: "finyk",
         priority: 90,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "💸",
         title: "Rec 1",
         body: "body",
@@ -572,6 +585,7 @@ describe("useDashboardFocus", () => {
         id: "r1",
         module: "finyk",
         priority: 90,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "💸",
         title: "Should be hidden",
         body: "body",
@@ -581,6 +595,7 @@ describe("useDashboardFocus", () => {
         id: "r2",
         module: "fizruk",
         priority: 50,
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- recommendation `icon` intentionally dual-convention (registered Icon name OR raw emoji fallback)
         icon: "🏋️",
         title: "Visible",
         body: "body",
