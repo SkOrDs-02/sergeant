@@ -1,6 +1,6 @@
 # Service Catalog
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/service-catalog.auto.json`](../../04-governance/governance/service-catalog.auto.json) (auto-gen via `pnpm docs:gen-service-catalog`; CI gate `pnpm docs:check-service-catalog` enforces that every surface listed here is mentioned in this file). Editorial columns (runbook, alerts, rollback, data-sensitivity) stay hand-maintained — the auto-mirror only covers fields derivable from Dockerfile / deploy artifacts / workspace folder.
@@ -26,7 +26,7 @@ Runtime-oriented inventory for the production surfaces that Sergeant operates to
 
 | Billing (`apps/server` billing module) | `sergeant-server-api` | Coolify app (in-process з API) | LiqPay/Plata/Stripe API, PostgreSQL (`subscriptions`, `billing_webhook_events`; legacy `billing_subscriptions` dropped in m083) | `LIQPAY_*`, `PLATA_*`, `STRIPE_*` (legacy) | Webhook delivery success rate; checkout conversion; subscription status in DB | [observability/runbook.md](../../03-operations/observability/runbook.md) | [release.md § Web + API](../../00-start/playbooks/release.md#1-web--api) | Revert endpoint, disable provider webhooks in dashboard | Tier 1: billing/payment data |
 | Transcribe (`/api/transcribe`) | `sergeant-server-api` | Coolify app (in-process з API) | Groq Whisper provider, `ai_usage_daily` USD-cap ledger | `GROQ_API_KEY`, `TRANSCRIBE_USD_CAP_DAILY_MICROS` | 429 rate on cap hit; USD spend gauge у Prometheus | [observability/metrics.md](../../03-operations/observability/metrics.md) | n/a | Disable endpoint via feature flag | Tier 2: audio input, usage metrics |
-| OpenClaw Gateway *(decommissioned)* | — | **Removed** ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20). Historical tables/migrations only. |
+| OpenClaw Gateway _(decommissioned)_ | — | **Removed** ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20). Historical tables/migrations only. |
 
 ## Operating rules
 

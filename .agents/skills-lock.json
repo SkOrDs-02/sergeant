@@ -109,7 +109,7 @@
     "sergeant-backend-architecture": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "a281ad5c045fd049b250faf5fb7012c9690dc48bac8b86f583b28a6c32e4f34d"
+      "computedHash": "c1fed491c0f1e588ca2b7fbd4eff843ff9bfbbd33403de859a838cd8cbc078a8"
     },
     "sergeant-verify-before-done": {
       "source": "local",

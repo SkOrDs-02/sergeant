@@ -11,7 +11,7 @@ Step-by-step deploy walkthroughs for Sergeant runtime surfaces. **Current backen
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`openclaw.md`](./openclaw.md)                                   | **Archived** — historical OpenClaw deploy (removed ADR-0075)                  |
 | [`vercel.md`](./vercel.md)                                       | Vercel project settings, headers contract, COEP compatibility matrix          |
-| [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand`; historical Railway notes)   |
+| [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand`; historical Railway notes) |
 
 ## Related
 
