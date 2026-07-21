@@ -540,7 +540,11 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     expect(waterCalls.length).toBeGreaterThanOrEqual(1);
     const [, input] = waterCalls[0]!;
     expect(input.op).toBe("insert");
-    expect(input.row).toMatchObject({ user_id: UID, date_key: "2026-07-01" });
+    expect(input.row).toMatchObject({
+      user_id: UID,
+      date_key: "2026-07-01",
+      volume_ml: 500,
+    });
   });
 
   it("does NOT reject dualWrite when enqueueOutboxUpsert throws (fire-and-forget)", async () => {

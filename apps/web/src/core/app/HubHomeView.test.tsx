@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { User } from "@sergeant/shared";
 
 const gates = vi.hoisted(() => ({
@@ -32,13 +32,25 @@ vi.mock("../whatsNew", () => ({
 // FTUX-suppression / update / install logic without rendering the real bell.
 const captured = vi.hoisted(
   () =>
-    ({ notifications: undefined }) as {
+    ({
+      notifications: undefined,
+      onOpenSearch: undefined,
+      onOpenPrivacy: undefined,
+    }) as {
       notifications: { id: string }[] | undefined;
+      onOpenSearch: (() => void) | undefined;
+      onOpenPrivacy: (() => void) | undefined;
     },
 );
 vi.mock("./HubHeader", () => ({
-  HubHeader: (props: { notifications?: { id: string }[] }) => {
+  HubHeader: (props: {
+    notifications?: { id: string }[];
+    onOpenSearch: () => void;
+    onOpenPrivacy: () => void;
+  }) => {
     captured.notifications = props.notifications;
+    captured.onOpenSearch = props.onOpenSearch;
+    captured.onOpenPrivacy = props.onOpenPrivacy;
     return <div data-testid="hub-header" />;
   },
 }));
@@ -61,8 +73,29 @@ vi.mock("@shared/components/layout/MeshBackground", () => ({
     <div>{children}</div>
   ),
 }));
-vi.mock("@shared/lib/modules/hubNav", () => ({
+const hubNav = vi.hoisted(() => ({
   openHubSettingsSection: vi.fn(),
+}));
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubSettingsSection: hubNav.openHubSettingsSection,
+}));
+vi.mock("@shared/components/ui/KeyboardShortcutsModalUI", () => ({
+  KeyboardShortcutsModal: ({
+    open,
+    onClose,
+  }: {
+    open: boolean;
+    onClose: () => void;
+  }) =>
+    open ? (
+      <button
+        type="button"
+        data-testid="keyboard-shortcuts-modal"
+        onClick={onClose}
+      >
+        shortcuts
+      </button>
+    ) : null,
 }));
 
 import { HubHomeView, type HubHomeViewProps } from "./HubHomeView";
@@ -105,6 +138,8 @@ describe("HubHomeView", () => {
     gates.isFirstRealEntryDone.mockReturnValue(true);
     gates.shouldShowOnboarding.mockReturnValue(false);
     captured.notifications = undefined;
+    captured.onOpenSearch = undefined;
+    captured.onOpenPrivacy = undefined;
   });
 
   afterEach(() => cleanup());
@@ -131,6 +166,17 @@ describe("HubHomeView", () => {
     expect(captured.notifications?.map((n) => n.id)).toContain("pwa-install");
   });
 
+  it("wires header search and privacy callbacks", () => {
+    const ui = makeUi();
+    render(<HubHomeView {...props({ ui })} />);
+
+    captured.onOpenSearch?.();
+    captured.onOpenPrivacy?.();
+
+    expect(ui.setSearchOpen).toHaveBeenCalledWith(true);
+    expect(hubNav.openHubSettingsSection).toHaveBeenCalledWith("privacy");
+  });
+
   it("suppresses notifications during the FTUX session", () => {
     // No real entry yet AND first-real-entry not done → inFtuxSession = true.
     gates.hasAnyRealEntry.mockReturnValue(false);
@@ -149,5 +195,16 @@ describe("HubHomeView", () => {
       "data-hidden",
       "true",
     );
+  });
+
+  it("renders the shortcuts modal branch and wires close", async () => {
+    const onCloseShortcuts = vi.fn();
+    render(
+      <HubHomeView {...props({ shortcutsOpen: true, onCloseShortcuts })} />,
+    );
+
+    fireEvent.click(await screen.findByTestId("keyboard-shortcuts-modal"));
+
+    expect(onCloseShortcuts).toHaveBeenCalledTimes(1);
   });
 });

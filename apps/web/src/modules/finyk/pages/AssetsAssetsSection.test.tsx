@@ -151,6 +151,14 @@ describe("AssetsAssetsSection", () => {
     const state = makeState();
     render(wrap(<AssetsAssetsSection state={state} />));
     fireEvent.click(screen.getByText("+ Додати актив «мені винні»"));
+    expect(state.setEditingRecvId).toHaveBeenCalledWith(null);
+    expect(state.setNewRecv).toHaveBeenCalledWith({
+      name: "",
+      emoji: "",
+      amount: "",
+      note: "",
+      dueDate: "",
+    });
     expect(state.setShowRecvForm).toHaveBeenCalledWith(true);
   });
 
@@ -158,6 +166,13 @@ describe("AssetsAssetsSection", () => {
     const state = makeState();
     render(wrap(<AssetsAssetsSection state={state} />));
     fireEvent.click(screen.getByText("+ Додати актив"));
+    expect(state.setEditingAssetId).toHaveBeenCalledWith(null);
+    expect(state.setNewAsset).toHaveBeenCalledWith({
+      name: "",
+      amount: "",
+      currency: "UAH",
+      emoji: "",
+    });
     expect(state.setShowAssetForm).toHaveBeenCalledWith(true);
   });
 
@@ -191,6 +206,40 @@ describe("AssetsAssetsSection", () => {
     expect(screen.getByText("Monobank")).toBeInTheDocument();
     // Balance is shown (1000 UAH); the thousands-separator may be locale-specific
     expect(screen.getByText(/1[\s\S]*000,00[\s\S]*₴/)).toBeInTheDocument();
+  });
+
+  it("skips hidden accounts and formats non-UAH card balances", () => {
+    const state = makeState({
+      accounts: [
+        {
+          id: "hidden",
+          balance: 100000,
+          currencyCode: 980,
+          type: "black",
+        },
+        {
+          id: "usd",
+          balance: 4250,
+          currencyCode: 840,
+          type: "white",
+        },
+        {
+          id: "eur",
+          balance: 9900,
+          currencyCode: 978,
+          type: "eAid",
+        },
+      ] as unknown as State["accounts"],
+      hiddenAccounts: ["hidden"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    expect(screen.getByText(/42,50 \$/)).toBeInTheDocument();
+    expect(screen.getByText(/99,00 €/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/1[\s\S]*000,00[\s\S]*₴/),
+    ).not.toBeInTheDocument();
   });
 
   it("hides balance amounts when showBalance is false", () => {
@@ -243,5 +292,120 @@ describe("AssetsAssetsSection", () => {
       currency: "UAH",
     });
     expect(state.setShowAssetForm).toHaveBeenCalledWith(true);
+  });
+
+  it("expands long receivable and manual-asset lists", () => {
+    const state = makeState({
+      receivables: Array.from({ length: 4 }, (_, index) => ({
+        id: `recv-${index + 1}`,
+        name: `Борг ${index + 1}`,
+        emoji: "",
+        amount: 1000,
+        linkedTxIds: [],
+      })) as unknown as State["receivables"],
+      manualAssets: Array.from({ length: 4 }, (_, index) => ({
+        id: `asset-${index + 1}`,
+        name: `Актив ${index + 1}`,
+        emoji: "",
+        amount: 5000,
+        currency: "UAH",
+      })) as unknown as State["manualAssets"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    expect(screen.queryByText("Борг 4")).not.toBeInTheDocument();
+    expect(screen.queryByText("Актив 4")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText("Показати всі (4)")[0]!);
+    fireEvent.click(screen.getAllByText("Показати всі (4)")[0]!);
+
+    expect(screen.getByText("Борг 4")).toBeInTheDocument();
+    expect(screen.getByText("Актив 4")).toBeInTheDocument();
+  });
+
+  it("edits, links, and deletes receivables through DebtCard actions", () => {
+    const setReceivables = vi.fn((updater) => {
+      if (typeof updater === "function") {
+        updater([
+          {
+            id: "recv-1",
+            name: "Повернення",
+            emoji: "🤝",
+            amount: 1500,
+            linkedTxIds: ["tx-in"],
+          },
+        ]);
+      }
+    });
+    const state = makeState({
+      setReceivables,
+      receivables: [
+        {
+          id: "recv-1",
+          name: "Повернення",
+          emoji: "🤝",
+          amount: 1500,
+          note: "готівка",
+          dueDate: "2026-08-10",
+          linkedTxIds: ["tx-in"],
+        },
+      ] as unknown as State["receivables"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Редагувати Повернення" }),
+    );
+    expect(state.setEditingRecvId).toHaveBeenCalledWith("recv-1");
+    expect(state.setNewRecv).toHaveBeenCalledWith({
+      name: "Повернення",
+      emoji: "🤝",
+      amount: "1500",
+      note: "готівка",
+      dueDate: "2026-08-10",
+    });
+    expect(state.setShowRecvForm).toHaveBeenCalledWith(true);
+
+    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    expect(state.setTxPicker).toHaveBeenCalledWith({
+      id: "recv-1",
+      type: "recv",
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити Повернення" }),
+    );
+    expect(setReceivables).toHaveBeenCalled();
+  });
+
+  it("deletes manual assets through the inline action", () => {
+    const setManualAssets = vi.fn((updater) => {
+      if (typeof updater === "function") {
+        updater([
+          { id: "asset-1", name: "Готівка", amount: 5000, currency: "UAH" },
+        ]);
+      }
+    });
+    const state = makeState({
+      setManualAssets,
+      manualAssets: [
+        {
+          id: "asset-1",
+          name: "Готівка",
+          emoji: "",
+          amount: 5000,
+          currency: "UAH",
+        },
+      ] as unknown as State["manualAssets"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити актив Готівка" }),
+    );
+    expect(setManualAssets).toHaveBeenCalled();
   });
 });

@@ -10,6 +10,14 @@ vi.mock("./connectionGate", () => ({
 }));
 vi.mock("./intentPrefetch", () => ({ setModulePrefetcher }));
 vi.mock("./recentModules", () => ({ getRecentModules }));
+vi.mock("../../modules/finyk/FinykApp", () => ({ default: {} }));
+vi.mock("../../modules/fizruk/FizrukApp", () => ({ default: {} }));
+vi.mock("../../modules/routine/RoutineApp", () => ({ default: {} }));
+vi.mock("../../modules/nutrition/NutritionApp", () => ({ default: {} }));
+vi.mock("../AssistantCataloguePage", () => ({ default: {} }));
+vi.mock("../auth/ResetPasswordPage", () => ({ default: {} }));
+vi.mock("../hub/HubReports", () => ({ HubReports: () => null }));
+vi.mock("../hub/HubSettingsPage", () => ({ HubSettingsPage: () => null }));
 
 import {
   prefetchModule,
@@ -34,8 +42,16 @@ beforeEach(() => {
     ricSpy;
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
+
+function runIdleCallbacksImmediately() {
+  ricSpy.mockImplementation((cb: IdleRequestCallback) => {
+    cb({ didTimeout: false, timeRemaining: () => 50 });
+    return 1;
+  });
+}
 
 describe("prefetchModule", () => {
   it("skips entirely on Save-Data / slow connections", () => {
@@ -83,6 +99,25 @@ describe("prefetchPage / prefetchPageOnIntent / isPagePrefetched", () => {
     prefetchPage("reports");
     expect(ricSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("executes idle page prefetch callbacks", () => {
+    runIdleCallbacksImmediately();
+
+    prefetchPage("assistant");
+
+    expect(isPagePrefetched("assistant")).toBe(true);
+  });
+
+  it("executes setTimeout page prefetch callbacks when idle callback is missing", () => {
+    vi.useFakeTimers();
+    delete (window as unknown as { requestIdleCallback?: unknown })
+      .requestIdleCallback;
+
+    prefetchPage("resetPassword");
+    vi.runAllTimers();
+
+    expect(isPagePrefetched("resetPassword")).toBe(true);
+  });
 });
 
 describe("prefetchCriticalModules", () => {
@@ -97,6 +132,15 @@ describe("prefetchCriticalModules", () => {
     prefetchCriticalModules();
     // 4 modules total, each scheduled on its own idle callback.
     expect(ricSpy).toHaveBeenCalledTimes(4);
+  });
+
+  it("executes idle callbacks for critical module prefetches", () => {
+    runIdleCallbacksImmediately();
+    getRecentModules.mockReturnValue(["finyk"]);
+
+    prefetchCriticalModules();
+
+    expect(ricSpy).toHaveBeenCalled();
   });
 
   it("falls back to staggered setTimeout without requestIdleCallback", () => {
@@ -118,6 +162,14 @@ describe("prefetchHubNavigationPages", () => {
   it("schedules reports + settings idle prefetches", () => {
     prefetchHubNavigationPages();
     expect(ricSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("executes reports + settings idle prefetch callbacks", () => {
+    runIdleCallbacksImmediately();
+
+    prefetchHubNavigationPages();
+
+    expect(isPagePrefetched("settings")).toBe(true);
   });
 
   it("falls back to setTimeout without requestIdleCallback", () => {

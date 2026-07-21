@@ -17,6 +17,7 @@
 //     «Інше».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { Dispatch, SetStateAction } from "react";
 import type { Pantry } from "@sergeant/nutrition-domain";
 
 import { PantryManagerSheet, type PantryForm } from "./PantryManagerSheet";
@@ -30,6 +31,8 @@ function makeProps(overrides: {
     name: string,
     mode: Exclude<PantryForm["mode"], "idle">,
   ) => void;
+  setActivePantryId?: (id: string) => void;
+  setPantryForm?: Dispatch<SetStateAction<PantryForm>>;
   pantryForm?: PantryForm;
 }) {
   return {
@@ -37,11 +40,11 @@ function makeProps(overrides: {
     onClose: overrides.onClose ?? vi.fn(),
     pantries: overrides.pantries,
     activePantryId: overrides.activePantryId,
-    setActivePantryId: vi.fn(),
+    setActivePantryId: overrides.setActivePantryId ?? vi.fn(),
     pantryForm:
       overrides.pantryForm ??
       ({ mode: "rename", name: "Дім", err: "" } as const),
-    setPantryForm: vi.fn(),
+    setPantryForm: overrides.setPantryForm ?? vi.fn(),
     onSavePantryForm: overrides.onSavePantryForm ?? vi.fn(),
     onBeginCreate: vi.fn(),
     onBeginRename: vi.fn(),
@@ -134,6 +137,25 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
     expect(onBeginRename).toHaveBeenCalledTimes(1);
   });
 
+  it("sets another pantry active when tapping an inactive pantry row", () => {
+    const setActivePantryId = vi.fn();
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [
+            { id: "home", name: "Дім", items: [], text: "" },
+            { id: "work", name: "Робота", items: [], text: "" },
+          ],
+          activePantryId: "home",
+          setActivePantryId,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Робота/ }));
+    expect(setActivePantryId).toHaveBeenCalledWith("work");
+  });
+
   it("invokes setPantryForm with idle when Cancel is clicked", () => {
     const setPantryForm = vi.fn();
     render(
@@ -151,6 +173,111 @@ describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(setPantryForm).toHaveBeenCalledWith({
+      mode: "idle",
+      name: "",
+      err: "",
+    });
+  });
+
+  it("clears the inline error while editing the pantry name", () => {
+    let currentForm: PantryForm = {
+      mode: "create",
+      name: "Стара",
+      err: "Вкажи назву.",
+    };
+    const setPantryForm = vi.fn((update: SetStateAction<PantryForm>) => {
+      currentForm = typeof update === "function" ? update(currentForm) : update;
+    });
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+          activePantryId: "home",
+          pantryForm: currentForm,
+          setPantryForm,
+        })}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Назва комори"), {
+      target: { value: "Нова" },
+    });
+    expect(currentForm).toEqual({ mode: "create", name: "Нова", err: "" });
+  });
+
+  it("validates an empty create name before saving", () => {
+    const setPantryForm = vi.fn();
+    const onSavePantryForm = vi.fn();
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+          activePantryId: "home",
+          pantryForm: { mode: "create", name: "   ", err: "" },
+          setPantryForm,
+          onSavePantryForm,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Створити" }));
+    const update = setPantryForm.mock.calls[0]?.[0] as (
+      form: PantryForm,
+    ) => PantryForm;
+    expect(update({ mode: "create", name: "   ", err: "" })).toEqual({
+      mode: "create",
+      name: "   ",
+      err: "Вкажи назву.",
+    });
+    expect(onSavePantryForm).not.toHaveBeenCalled();
+  });
+
+  it("saves a trimmed pantry name from the button and Enter key", () => {
+    const onSavePantryForm = vi.fn();
+    const { rerender } = render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+          activePantryId: "home",
+          pantryForm: { mode: "create", name: "  Дача  ", err: "" },
+          onSavePantryForm,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Створити" }));
+    expect(onSavePantryForm).toHaveBeenCalledWith("Дача", "create");
+
+    rerender(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+          activePantryId: "home",
+          pantryForm: { mode: "rename", name: "  Робота  ", err: "" },
+          onSavePantryForm,
+        })}
+      />,
+    );
+    fireEvent.keyDown(screen.getByLabelText("Нова назва"), { key: "Enter" });
+    expect(onSavePantryForm).toHaveBeenCalledWith("Робота", "rename");
+  });
+
+  it("resets a visible form when the sheet closes", () => {
+    const setPantryForm = vi.fn();
+    const props = makeProps({
+      pantries: [{ id: "home", name: "Дім", items: [], text: "" }],
+      activePantryId: "home",
+      pantryForm: { mode: "rename", name: "Дім", err: "Помилка" },
+      setPantryForm,
+    });
+    const { rerender } = render(<PantryManagerSheet {...props} />);
+
+    rerender(<PantryManagerSheet {...props} open={false} />);
+
+    const update = setPantryForm.mock.calls[0]?.[0] as (
+      form: PantryForm,
+    ) => PantryForm;
+    expect(update({ mode: "rename", name: "Дім", err: "Помилка" })).toEqual({
       mode: "idle",
       name: "",
       err: "",

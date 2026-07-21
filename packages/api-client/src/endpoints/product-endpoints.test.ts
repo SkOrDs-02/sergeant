@@ -128,5 +128,19 @@ describe("transcribe endpoints", () => {
         mimeType: "audio/webm",
       }),
     ).rejects.toThrow("offline");
+
+    const parseFailurePost = vi.fn(async () => {
+      throw new ApiError({
+        kind: "parse",
+        message: "bad json",
+        url: "/api/transcribe",
+      });
+    });
+    await expect(
+      createTranscribeEndpoints(httpClient(parseFailurePost)).send({
+        audio: new ArrayBuffer(1),
+        mimeType: "audio/webm",
+      }),
+    ).rejects.toMatchObject({ kind: "parse" });
   });
 });

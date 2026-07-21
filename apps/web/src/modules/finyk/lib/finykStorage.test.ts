@@ -138,6 +138,25 @@ describe("Domain API", () => {
     expect(getBudget()).toEqual([b1]);
   });
 
+  it("budget: sanitizes malformed entries while keeping valid rows", () => {
+    const valid = {
+      id: "b1",
+      type: "limit" as const,
+      categoryId: "food",
+      limit: 100,
+    };
+    writeJSON(FINYK_STORAGE_KEYS.budget, [
+      valid,
+      { id: "bad", type: "limit", categoryId: "food", limit: "oops" },
+      null,
+    ]);
+
+    expect(getBudget()).toEqual([
+      valid,
+      { id: "bad", type: "limit", categoryId: "food", limit: undefined },
+    ]);
+  });
+
   it("коректно обробляє биті дані у storage", () => {
     localStorage.setItem(FINYK_STORAGE_KEYS.transactions, "corrupted");
     localStorage.setItem(FINYK_STORAGE_KEYS.categories, "{bad");
