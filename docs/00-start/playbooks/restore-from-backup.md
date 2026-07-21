@@ -1,6 +1,6 @@
 # Playbook: Restore from Backup
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.
@@ -57,3 +57,14 @@
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [declare-incident.md](./declare-incident.md)
 - Skill: `sergeant-deploy-and-observability`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#364](https://github.com/Skords-01/Sergeant/pull/364) | docs(adr): sync ADR registry and operator docs with Coolify/ADR-0075 | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # ADR-0071: Dynamic agent snapshot for harness context
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-18.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -117,3 +117,14 @@ gets the static sections.
 ## Links
 
 - Source plan: `E:\Temp\kilo\harness-plan.md` §2 (Dynamic Snapshot)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#364](https://github.com/Skords-01/Sergeant/pull/364) | docs(adr): sync ADR registry and operator docs with Coolify/ADR-0075 | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

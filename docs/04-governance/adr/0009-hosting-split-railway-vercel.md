@@ -353,3 +353,14 @@ n/a (operational rule).
 | Pre-deploy `db:migrate` на Railway                                                            | live   |
 | `SERVER_MODE=railway` autodetect                                                              | live   |
 | Multi-instance / shared session store                                                         | TBD    |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#364](https://github.com/Skords-01/Sergeant/pull/364) | docs(adr): sync ADR registry and operator docs with Coolify/ADR-0075 | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

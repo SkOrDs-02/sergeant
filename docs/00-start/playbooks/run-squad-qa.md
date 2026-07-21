@@ -2,7 +2,7 @@
 
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
@@ -31,7 +31,8 @@ Spawn 3 teammates:
 
 All run independently. Report to the lead when done.
 ```
-*(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)*
+
+_(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)_
 
 ### Крок 3 — Чекай на всі 3 звіти
 
@@ -69,3 +70,14 @@ All run independently. Report to the lead when done.
 ## Governing skill
 
 [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#364](https://github.com/Skords-01/Sergeant/pull/364) | docs(adr): sync ADR registry and operator docs with Coolify/ADR-0075 | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

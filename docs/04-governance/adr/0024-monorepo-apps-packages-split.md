@@ -90,13 +90,13 @@ packages:
 
 ### `apps/*` (5)
 
-| App                 | Deployable target                                          | Bundle-ID / domain   |
-| ------------------- | ---------------------------------------------------------- | -------------------- |
-| `apps/web`          | Vite SPA → Vercel + Capacitor + Replit                     | `app.sergeant.local` |
-| `apps/server`       | Express API → Hetzner/Coolify (Docker, ghcr.io)            | Coolify app URL      |
-| `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM                           | `com.sergeant.app`   |
-| `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web`                    | `com.sergeant.shell` |
-| ~~`tools/openclaw`~~ | *(removed — ADR-0075)* Telegram bot — internal ops/marketing | n/a                  |
+| App                  | Deployable target                                            | Bundle-ID / domain   |
+| -------------------- | ------------------------------------------------------------ | -------------------- |
+| `apps/web`           | Vite SPA → Vercel + Capacitor + Replit                       | `app.sergeant.local` |
+| `apps/server`        | Express API → Hetzner/Coolify (Docker, ghcr.io)              | Coolify app URL      |
+| `apps/mobile`        | Expo SDK 52 (RN 0.76) → APNs/FCM                             | `com.sergeant.app`   |
+| `apps/mobile-shell`  | Capacitor 7 WebView shell of `apps/web`                      | `com.sergeant.shell` |
+| ~~`tools/openclaw`~~ | _(removed — ADR-0075)_ Telegram bot — internal ops/marketing | n/a                  |
 
 ### `packages/*` (10)
 
@@ -227,3 +227,14 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
 - [Monorepo Tools — comparison matrix](https://monorepo.tools/) — навіщо `apps/`+`packages/` стандартизована форма.
 - [`docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`](../../90-work/audits/archive/2026-04-26-sergeant-audit-devin.md) — пункт 1, "Архітектура монорепи".
 - ADR-0023 — Turbo task-runner, що залежить від цього split-у.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| [#364](https://github.com/Skords-01/Sergeant/pull/364) | docs(adr): sync ADR registry and operator docs with Coolify/ADR-0075 | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
