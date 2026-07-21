@@ -1,6 +1,6 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 - **Status:** Accepted

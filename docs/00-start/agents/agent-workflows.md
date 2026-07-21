@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -91,7 +91,7 @@
 5. Implement only after the auditor returns concrete file/status recommendations.
 6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-graph`) and run the matching `--check` scripts.
 
-## 6. OpenClaw Gateway Change *(historical — decommissioned ADR-0075)*
+## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
 
 OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-hubchat`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
 

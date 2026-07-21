@@ -2,7 +2,7 @@
 
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
@@ -31,7 +31,8 @@ Spawn 3 teammates:
 
 All run independently. Report to the lead when done.
 ```
-*(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)*
+
+_(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)_
 
 ### Крок 3 — Чекай на всі 3 звіти
 

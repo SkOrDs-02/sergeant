@@ -90,13 +90,13 @@ packages:
 
 ### `apps/*` (5)
 
-| App                 | Deployable target                                          | Bundle-ID / domain   |
-| ------------------- | ---------------------------------------------------------- | -------------------- |
-| `apps/web`          | Vite SPA → Vercel + Capacitor + Replit                     | `app.sergeant.local` |
-| `apps/server`       | Express API → Hetzner/Coolify (Docker, ghcr.io)            | Coolify app URL      |
-| `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM                           | `com.sergeant.app`   |
-| `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web`                    | `com.sergeant.shell` |
-| ~~`tools/openclaw`~~ | *(removed — ADR-0075)* Telegram bot — internal ops/marketing | n/a                  |
+| App                  | Deployable target                                            | Bundle-ID / domain   |
+| -------------------- | ------------------------------------------------------------ | -------------------- |
+| `apps/web`           | Vite SPA → Vercel + Capacitor + Replit                       | `app.sergeant.local` |
+| `apps/server`        | Express API → Hetzner/Coolify (Docker, ghcr.io)              | Coolify app URL      |
+| `apps/mobile`        | Expo SDK 52 (RN 0.76) → APNs/FCM                             | `com.sergeant.app`   |
+| `apps/mobile-shell`  | Capacitor 7 WebView shell of `apps/web`                      | `com.sergeant.shell` |
+| ~~`tools/openclaw`~~ | _(removed — ADR-0075)_ Telegram bot — internal ops/marketing | n/a                  |
 
 ### `packages/*` (10)
 
