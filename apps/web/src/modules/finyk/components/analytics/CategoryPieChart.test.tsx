@@ -41,6 +41,17 @@ describe("CategoryPieChart", () => {
     expect(screen.getByText("FUN")).toBeInTheDocument();
   });
 
+  it("renders a valid full-ring sector for a single category", () => {
+    render(<CategoryPieChart data={[slice("food", 5000)]} />);
+
+    const path = document.querySelector("path");
+    expect(path).toBeTruthy();
+    const d = path?.getAttribute("d") ?? "";
+    expect(d).toContain("A 79 79");
+    expect(d).toContain("A 48.98 48.98");
+    expect(screen.getAllByText("100%").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("collapses to top-5 + Інше and toggles to expanded", () => {
     const data = Array.from({ length: 8 }, (_, i) =>
       slice(`c${i}`, 1000 - i * 50),
