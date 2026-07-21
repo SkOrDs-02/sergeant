@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-21",
   "sourceHashes": {
-    "knowledge-graph": "233e9f64a4eece66b64e8f4d6d5bdd3ac1d1f2e08734805d67fb5fdd0df581c1",
+    "knowledge-graph": "c0174d92366c77ac8e414f082a2c67f08f2ed2e6c980083b5e36134f492a7b4c",
     "symbol-index": "34750b6eccb08dbe2f3f7b58ab40e58f26abe96989d9aa651fd8b5b2638c8eb9"
   },
   "counts": {
@@ -781,8 +781,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-20 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
-      "contentHash": "858c41ebe5f09ee87297664a231469a50d0c6f6fb6c0951dbcbd8c0bac5d2bf3"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-21 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
+      "contentHash": "0b73dd6255d4e935dc8e872575ce50eb7164520808fabedae705cb3dfb9cfa39"
     },
     {
       "id": "adr:0074",
