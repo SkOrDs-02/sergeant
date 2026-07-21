@@ -69,6 +69,24 @@ describe("getLatestMeasurement / getLatestMeasurementValue", () => {
     ];
     expect(getLatestMeasurementValue(entries, "weightKg")).toBe(80);
   });
+
+  it("pushes invalid timestamps behind dated entries", () => {
+    const entries: MobileMeasurementEntry[] = [
+      { id: "bad", at: "not-a-date", weightKg: 99 },
+      entry("dated", 1, { weightKg: 80 }),
+    ];
+
+    expect(getLatestMeasurement(entries, "weightKg")?.entry.id).toBe("dated");
+  });
+
+  it("keeps same-invalid-date entries stable", () => {
+    const entries: MobileMeasurementEntry[] = [
+      { id: "bad-a", at: "not-a-date", weightKg: 79 },
+      { id: "bad-b", at: "also-not-a-date", weightKg: 80 },
+    ];
+
+    expect(getLatestMeasurement(entries, "weightKg")?.entry.id).toBe("bad-a");
+  });
 });
 
 describe("getMeasurementDeltaWithinDays", () => {
@@ -122,6 +140,9 @@ describe("getMeasurementDeltaWithinDays", () => {
     ).toBeNull();
     expect(
       getMeasurementDeltaWithinDays(entries, "weightKg", -1, NOW),
+    ).toBeNull();
+    expect(
+      getMeasurementDeltaWithinDays(entries, "weightKg", Number.NaN, NOW),
     ).toBeNull();
     expect(
       getMeasurementDeltaWithinDays(entries, "weightKg", 7, "not-iso"),

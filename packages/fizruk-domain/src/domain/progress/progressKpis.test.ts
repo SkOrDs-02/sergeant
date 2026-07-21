@@ -76,6 +76,34 @@ describe("countExercisePRs", () => {
     ];
     expect(countExercisePRs(workouts)).toBe(0);
   });
+
+  it("handles missing item/set arrays and non-finite set values", () => {
+    const workouts = [
+      {},
+      {
+        items: [
+          { exerciseId: "empty", type: "strength" },
+          {
+            exerciseId: "bad",
+            type: "strength",
+            sets: [
+              { weightKg: null, reps: 5 },
+              { weightKg: 50, reps: null },
+              { weightKg: "abc", reps: 5 },
+              { weightKg: 50, reps: Number.POSITIVE_INFINITY },
+            ],
+          },
+          {
+            exerciseId: "string-values",
+            type: "strength",
+            sets: [{ weightKg: "50", reps: "5" }],
+          },
+        ],
+      },
+    ];
+
+    expect(countExercisePRs(workouts)).toBe(1);
+  });
 });
 
 describe("computeProgressKpis", () => {
@@ -147,6 +175,24 @@ describe("computeProgressKpis", () => {
     ];
     const kpis = computeProgressKpis(workouts, 0);
     expect(kpis.latestWorkoutIso).toBe("2026-01-05T10:00:00Z");
+  });
+
+  it("ignores completed workouts with missing startedAt when picking latest", () => {
+    const kpis = computeProgressKpis(
+      [{ endedAt: "2026-01-10T11:00:00Z", items: [] }],
+      0,
+    );
+
+    expect(kpis.doneCount).toBe(1);
+    expect(kpis.latestWorkoutIso).toBeNull();
+  });
+
+  it("accepts nullish workout input and preserves NaN entry counts", () => {
+    const kpis = computeProgressKpis(null, Number.NaN);
+    expect(kpis.doneCount).toBe(0);
+    expect(kpis.prsCount).toBe(0);
+    expect(Number.isNaN(kpis.entriesCount)).toBe(true);
+    expect(kpis.latestWorkoutIso).toBeNull();
   });
 });
 

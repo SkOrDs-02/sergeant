@@ -118,6 +118,18 @@ describe("listRecentCompletedWorkouts", () => {
     expect(rows[0]!.durationSec).toBe(0);
   });
 
+  it("clamps negative durations to 0", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-20T12:00:00Z",
+        endedAt: "2026-04-20T11:00:00Z",
+        items: [],
+      },
+    ];
+
+    expect(listRecentCompletedWorkouts(workouts)[0]!.durationSec).toBe(0);
+  });
+
   it("falls back to the first item's name when the note is blank/whitespace", () => {
     const workouts = [
       {
@@ -159,6 +171,43 @@ describe("listRecentCompletedWorkouts", () => {
     ];
     const rows = listRecentCompletedWorkouts(workouts);
     expect(rows[0]!.tonnageKg).toBe(0);
+  });
+
+  it("ignores blank / non-finite tonnage inputs but accepts numeric strings", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-20T10:00:00Z",
+        endedAt: "2026-04-20T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [
+              { weightKg: "", reps: 10 },
+              { weightKg: 50, reps: "abc" },
+              { weightKg: "60", reps: "5" },
+            ],
+          },
+        ],
+      },
+    ];
+
+    expect(listRecentCompletedWorkouts(workouts)[0]!.tonnageKg).toBe(300);
+  });
+
+  it("sorts invalid endedAt values behind valid dates", () => {
+    const workouts = [
+      { startedAt: "2026-04-20T10:00:00Z", endedAt: "not-a-date", items: [] },
+      {
+        startedAt: "2026-04-19T10:00:00Z",
+        endedAt: "2026-04-19T11:00:00Z",
+        items: [],
+      },
+    ];
+
+    expect(listRecentCompletedWorkouts(workouts)[0]!.endedAt).toBe(
+      "2026-04-19T11:00:00Z",
+    );
   });
 
   it("counts itemsCount as 0 when items is not an array", () => {

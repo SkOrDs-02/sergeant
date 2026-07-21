@@ -156,6 +156,43 @@ describe("computeTopPRs", () => {
     expect(result[0]!.nameUk).toBeNull();
   });
 
+  it("handles completed workouts with missing items and strength items with missing sets", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-09T10:00:00Z",
+        endedAt: "2026-04-09T11:00:00Z",
+      },
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [{ exerciseId: "bench", type: "strength" }],
+      },
+    ];
+
+    expect(computeTopPRs(workouts)).toEqual([]);
+  });
+
+  it("does not replace an existing PR with a lower 1RM set", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [
+              { weightKg: 100, reps: 5 },
+              { weightKg: 80, reps: 5 },
+            ],
+          },
+        ],
+      },
+    ];
+
+    expect(computeTopPRs(workouts)[0]!.weightKg).toBe(100);
+  });
+
   it("on a tie in 1RM, the more recent workout wins", () => {
     const workouts = [
       {
@@ -237,5 +274,65 @@ describe("computeTopPRs", () => {
       },
     ];
     expect(computeTopPRs(workouts)).toEqual([]);
+  });
+
+  it("ignores blank and non-finite set values", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-10T10:00:00Z",
+        endedAt: "2026-04-10T11:00:00Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [
+              { weightKg: "", reps: 5 },
+              { weightKg: 50, reps: "abc" },
+              { weightKg: "60", reps: "5" },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const result = computeTopPRs(workouts);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      exerciseId: "bench",
+      weightKg: 60,
+      reps: 5,
+    });
+  });
+
+  it("keeps insertion order for equal PRs when one PR date is invalid", () => {
+    const workouts = [
+      {
+        startedAt: "2026-04-01T10:00:00Z",
+        endedAt: "not-a-date",
+        items: [
+          {
+            exerciseId: "invalid-date",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+      {
+        startedAt: "2026-04-02T10:00:00Z",
+        endedAt: "2026-04-02T11:00:00Z",
+        items: [
+          {
+            exerciseId: "dated",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+    ];
+
+    expect(computeTopPRs(workouts).map((item) => item.exerciseId)).toEqual([
+      "invalid-date",
+      "dated",
+    ]);
   });
 });
