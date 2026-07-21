@@ -134,7 +134,7 @@
 
     /* Module glow drop-shadows for bottom nav icons (active state). */
     --shadow-finyk-nav: 0 0 8px rgba(16, 185, 129, 0.3);
-    --shadow-fizruk-nav: 0 0 8px rgba(20, 184, 166, 0.3);
+    --shadow-fizruk-nav: 0 0 8px rgba(14, 116, 144, 0.3);
     --shadow-routine-nav: 0 0 8px rgba(249, 112, 102, 0.3);
     --shadow-nutrition-nav: 0 0 8px rgba(132, 204, 22, 0.3);
 
@@ -272,17 +272,17 @@
     --c-finyk-soft-border: 167 243 208; /* emerald-200 */
     --c-finyk-soft-hover: 209 250 229; /* emerald-100 */
 
-    --c-fizruk-soft: 240 253 250; /* teal-50 — parity with `brandColors.teal[50]` */
-    --c-fizruk-soft-border: 153 246 228; /* teal-200 */
-    --c-fizruk-soft-hover: 204 251 241; /* teal-100 */
+    --c-fizruk-soft: 236 254 255; /* cyan-50 — parity with `brandColors.cyan[50]` */
+    --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
+    --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
 
     /* `tile` + `tile-border` — subtle stat-tile wash on the fizruk hero
-       gradient (`bg-hero-teal`). Used by `<WorkoutStatTile>` and the
-       fizruk summary-sheet close button. Light=teal-800 (so a 10% wash
-       reads as a slightly darker tile on the bright teal gradient);
+       gradient (`bg-hero-cyan`). Used by `<WorkoutStatTile>` and the
+       fizruk summary-sheet close button. Light=cyan-800 (so a 10% wash
+       reads as a slightly darker tile on the bright cyan gradient);
        dark=white (10% wash on dark panel reads as a subtle bright tile). */
-    --c-fizruk-tile: 17 94 89; /* teal-800 */
-    --c-fizruk-tile-border: 17 94 89; /* teal-800 */
+    --c-fizruk-tile: 21 94 117; /* cyan-800 */
+    --c-fizruk-tile-border: 21 94 117; /* cyan-800 */
 
     --c-routine-soft: 255 245 243; /* coral-50 — parity with `brandColors.coral[50]` */
     --c-routine-soft-border: 255 210 200; /* coral-200 */
@@ -530,9 +530,9 @@
     --c-finyk-soft-border: 6 95 70; /* emerald-800 */
     --c-finyk-soft-hover: 6 95 70; /* emerald-800 */
 
-    --c-fizruk-soft: 19 78 74; /* teal-900 */
-    --c-fizruk-soft-border: 17 94 89; /* teal-800 */
-    --c-fizruk-soft-hover: 17 94 89; /* teal-800 */
+    --c-fizruk-soft: 22 78 99; /* cyan-900 */
+    --c-fizruk-soft-border: 21 94 117; /* cyan-800 */
+    --c-fizruk-soft-hover: 21 94 117; /* cyan-800 */
 
     /* Dark-mode flip of the stat-tile token: white wash reads as a
        subtle bright tile on dark panel (matches the legacy
@@ -730,8 +730,8 @@
     --c-brand-soft-border: 6 95 70; /* emerald-800 — solid edge */
     --c-finyk-soft: 167 243 208;
     --c-finyk-soft-border: 6 95 70;
-    --c-fizruk-soft: 153 246 228; /* teal-200 */
-    --c-fizruk-soft-border: 17 94 89;
+    --c-fizruk-soft: 165 243 252; /* cyan-200 */
+    --c-fizruk-soft-border: 21 94 117;
     --c-routine-soft: 255 210 200; /* coral-200 */
     --c-routine-soft-border: 159 36 30;
     --c-nutrition-soft: 217 249 157; /* lime-200 */
@@ -789,8 +789,8 @@
     --c-brand-soft-border: 16 185 129;
     --c-finyk-soft: 4 120 87;
     --c-finyk-soft-border: 16 185 129;
-    --c-fizruk-soft: 15 118 110; /* teal-700 */
-    --c-fizruk-soft-border: 20 184 166;
+    --c-fizruk-soft: 14 116 144; /* cyan-700 */
+    --c-fizruk-soft-border: 6 182 212; /* cyan-500 */
     --c-routine-soft: 185 54 48; /* coral-800 */
     --c-routine-soft-border: 255 140 120;
     --c-nutrition-soft: 86 124 15; /* lime-700 */
@@ -931,8 +931,8 @@
     --hero-grad-fizruk: linear-gradient(
       135deg,
       #0e7490,
-      #14b8a6
-    ); /* cyan-700 → teal-500 */
+      #22d3ee
+    ); /* cyan-700 → cyan-400 */
     --hero-grad-routine: linear-gradient(
       135deg,
       #a13333,

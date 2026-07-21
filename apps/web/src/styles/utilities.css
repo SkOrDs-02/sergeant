@@ -250,10 +250,10 @@
      FOCUS STATES — Accessible, branded
      ═══════════════════════════════════════════════════════════════════════ */
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
   }
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
   }
 }
 
@@ -340,10 +340,7 @@
 }
 
 @utility badge-neutral {
-  @apply badge bg-stone-100 text-stone-600;
-  .dark & {
-    @apply bg-stone-800 text-stone-400;
-  }
+  @apply badge bg-panelHi text-muted;
 }
 
 @utility transition-interactive {

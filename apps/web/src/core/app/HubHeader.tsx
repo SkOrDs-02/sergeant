@@ -113,7 +113,11 @@ export function HubHeader({
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <BrandLogo as="span" size="lg" variant="mark" />
-          <span className="truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
+          {/* На вузьких екранах wordmark не вміщається поруч із 4-кнопковим
+              action-кластером і обрізався до «Sergea…» (design-audit F6) —
+              нижче sm лишаємо тільки mark — стандартний mobile-патерн
+              header-а. */}
+          <span className="hidden sm:block truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
             Sergeant
           </span>
         </div>

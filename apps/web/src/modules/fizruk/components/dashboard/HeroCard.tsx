@@ -464,10 +464,10 @@ function EmptyState({
       </p>
       <div className="mt-6 flex flex-col gap-3">
         {/*
-          Primary CTA uses the raw `bg-fizruk-strong` surface (teal-600,
-          #0d9488) rather than the `variant="fizruk"` default (teal-500,
-          #14b8a6). The latter ships contrast 2.48:1 against white text —
-          below WCAG AA — and so the axe-core check flags it. teal-600 +
+          Primary CTA uses the raw `bg-fizruk-strong` surface (cyan-800,
+          #155e75) rather than the `variant="fizruk"` default (cyan-700,
+          #0e7490). The latter ships contrast 2.48:1 against white text —
+          below WCAG AA — and so the axe-core check flags it. cyan-800 +
           white clears 4.5:1 comfortably.
         */}
         <button

@@ -85,7 +85,9 @@ describe("Button", () => {
 
   it.each([
     ["finyk", "hover:bg-emerald-800", "active:bg-emerald-900"],
-    ["fizruk", "hover:bg-teal-800", "active:bg-teal-900"],
+    // fizruk's registered `cyan` scale tops out at 900 (no 950 tier), so
+    // hover and active share the same darkest step.
+    ["fizruk", "hover:bg-cyan-900", "active:bg-cyan-900"],
     ["routine", "hover:bg-coral-800", "active:bg-coral-900"],
     // nutrition's `-strong` is lime-800 already, so hover only goes to lime-900.
     ["nutrition", "hover:bg-lime-900", null],

@@ -15,7 +15,7 @@ import { cn } from "../../lib/ui/cn";
  *
  * Module-specific variants:
  * - finyk: Emerald finance theme
- * - fizruk: Teal fitness theme
+ * - fizruk: Cyan fitness theme
  * - routine: Coral habit theme
  * - nutrition: Lime nutrition theme
  *
@@ -90,7 +90,7 @@ const variants: Record<ButtonVariant, string> = {
   finyk:
     "bg-finyk-strong text-white shadow-sm hover:bg-emerald-800 hover:shadow-glow active:bg-emerald-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-emerald",
   fizruk:
-    "bg-fizruk-strong text-white shadow-sm hover:bg-teal-800 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
+    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
   routine:
     "bg-routine-strong text-white shadow-sm hover:bg-coral-800 hover:shadow-glow-coral active:bg-coral-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-coral",
   nutrition:
@@ -110,7 +110,7 @@ const variants: Record<ButtonVariant, string> = {
   "finyk-soft":
     "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk/15 border border-finyk-ring/50 dark:border-finyk/30 hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.98]",
   "fizruk-soft":
-    "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-teal-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
+    "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk/15 border border-fizruk-ring/50 dark:border-fizruk/30 hover:bg-cyan-100 dark:hover:bg-fizruk/25 active:scale-[0.98]",
   "routine-soft":
     "bg-routine-surface text-routine-soft-fg dark:bg-routine/15 border border-routine-ring/50 dark:border-routine/30 hover:bg-coral-100 dark:hover:bg-routine/25 active:scale-[0.98]",
   "nutrition-soft":

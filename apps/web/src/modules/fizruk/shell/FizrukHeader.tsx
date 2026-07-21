@@ -96,8 +96,8 @@ function DumbbellBadge() {
     <div
       className={cn(
         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-linear-to-br from-teal-100 to-cyan-100",
-        "dark:from-teal-900/40 dark:to-cyan-900/30",
+        "bg-linear-to-br from-cyan-100 to-cyan-200",
+        "dark:from-cyan-900/40 dark:to-cyan-900/30",
         "text-fizruk-strong dark:text-fizruk-300",
         "border border-fizruk-soft-border/60",
         "shadow-sm",

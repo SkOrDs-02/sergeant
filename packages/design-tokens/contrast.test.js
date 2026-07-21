@@ -53,7 +53,7 @@ const PAIRS = [
     true,
   ],
   ["finyk-strong on white", brandColors.emerald[700], "#ffffff", true],
-  ["fizruk-strong on white", brandColors.teal[700], "#ffffff", true],
+  ["fizruk-strong on white", brandColors.cyan[800], "#ffffff", true],
 ];
 
 describe("@sergeant/design-tokens — WCAG AA contrast", () => {
