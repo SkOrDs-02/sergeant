@@ -37,10 +37,10 @@ flowchart TB
 
 ## План правок (виконано в цьому PR)
 
-1. **Прибрати мертвий OpenClaw CI** — job + `scripts/validate-openclaw-config.mjs`.
+1. **Прибрати мертвий OpenClaw CI** — job + `scripts/validate-openclaw-config.mjs` (видалено).
 2. **Audit overrides** — `tar>=7.5.19`, brace-expansion 1.1.16/2.1.2/5.0.7, `js-yaml@4.3.0`, `shell-quote>=1.9.0`, `axios>=1.18.0`.
 3. **Knip** — drop unused dep; ignore Stryker vitest-runner by name; clean hints.
-4. **Docs** — ADR link depth, catalog без deprecated OpenClaw playbook, regen STATUS + retrieval index + licenses.
+4. **Docs** — ADR link depth, catalog без deprecated OpenClaw playbook, regen STATUS + retrieval index + licenses; governance-sync exemptions для Superseded/Historical ADR.
 5. **Tests** — mock `lib/llm/provider.js` замість `anthropic.js`.
 6. **E2E** — smoke під поточний UX (auto-skip sheet, quick-action chips).
 

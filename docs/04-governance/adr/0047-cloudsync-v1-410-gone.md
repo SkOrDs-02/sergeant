@@ -6,6 +6,7 @@
 > **⚠️ Superseded Phase 7 (2026-07-20, commit `d5cc2648c`):** 410-Gone handler `sunsetGone.ts` (+ survey middleware) **видалено** після завершення 90-денного deprecation-вікна. v1 sync тепер віддає **голий `404`**, не `410 Gone`. Цей ADR лишається як історичний запис T₀-виконання; актуальний стан — коментар у [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) і [`api-v1.md`](../../02-engineering/architecture/api-v1.md).
 
 - **Status:** Accepted
+- **Note:** Historical — inline paths name sunset modules removed in Phase 7 (2026-07-20); see [ADR-0043](./0043-cloudsync-v1-sunset.md) banner.
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) (per-module LWW worldview engine; цей ADR + Stage 7 cleanup переключають production на per-row op-log v2).
