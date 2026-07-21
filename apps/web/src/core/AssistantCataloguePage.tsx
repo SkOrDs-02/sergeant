@@ -461,7 +461,7 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
     tone === "brand"
       ? "text-brand-strong dark:text-brand bg-brand-500/8 border-brand-500/25"
       : tone === "warning"
-        ? "text-warning-strong dark:text-warning bg-warning/15 border-warning/25"
+        ? "text-warning-strong dark:text-warning bg-panel border-warning/25"
         : "text-success-strong dark:text-success bg-success/8 border-success/25";
   // UX-feedback 2026-05-08: previously rendered uppercase + bold + 10px
   // tracking-wide which made the chips visually compete with the
