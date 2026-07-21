@@ -46,4 +46,16 @@ describe("Banner", () => {
     expect(banner.className).toContain("mt-2");
     expect(banner.className).toContain("shadow-sm");
   });
+
+  it("falls back to info tokens for an unknown variant at runtime", () => {
+    render(
+      <Banner data-testid="banner" variant={"legacy" as never}>
+        Legacy
+      </Banner>,
+    );
+
+    const banner = screen.getByTestId("banner");
+    expect(banner.className).toContain("bg-panelHi/60");
+    expect(banner.className).toContain("text-text");
+  });
 });

@@ -7,12 +7,17 @@ import {
   cleanup,
   renderHook,
   act,
+  waitFor,
 } from "@testing-library/react";
 import {
   useKeyboardShortcutsModal,
+  useRegisterShortcuts,
+  ShortcutRegistryContext,
+  ShortcutRegistryProvider,
   type KeyboardShortcut,
 } from "./KeyboardShortcutsModal";
 import { KeyboardShortcutsModal } from "./KeyboardShortcutsModalUI";
+import { useContext } from "react";
 
 afterEach(cleanup);
 
@@ -94,5 +99,99 @@ describe("useKeyboardShortcutsModal", () => {
       fireEvent.keyDown(document, { key: "?", metaKey: true });
     });
     expect(result.current.open).toBe(false);
+  });
+});
+
+describe("ShortcutRegistryProvider + useRegisterShortcuts", () => {
+  const moduleShortcuts: KeyboardShortcut[] = [
+    { keys: ["G", "F"], description: "Перейти до Фініка", category: "Finyk" },
+  ];
+
+  function RegistryReader() {
+    const registry = useContext(ShortcutRegistryContext);
+    return (
+      <div data-testid="registered-shortcuts">
+        {registry
+          ?.getAll()
+          .map((shortcut) => shortcut.description)
+          .join("|") ?? "none"}
+      </div>
+    );
+  }
+
+  function RegisteringProbe({
+    id = "finyk",
+    shortcuts = moduleShortcuts,
+  }: {
+    id?: string;
+    shortcuts?: KeyboardShortcut[];
+  }) {
+    useRegisterShortcuts(id, shortcuts);
+    return null;
+  }
+
+  it("registers module shortcuts and unregisters them on unmount", async () => {
+    const { rerender } = render(
+      <ShortcutRegistryProvider>
+        <RegisteringProbe />
+        <RegistryReader />
+      </ShortcutRegistryProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("registered-shortcuts")).toHaveTextContent(
+        "Перейти до Фініка",
+      ),
+    );
+
+    rerender(
+      <ShortcutRegistryProvider>
+        <RegistryReader />
+      </ShortcutRegistryProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("registered-shortcuts").textContent).toBe(""),
+    );
+  });
+
+  it("updates a registration when the shortcut signature changes", async () => {
+    const { rerender } = render(
+      <ShortcutRegistryProvider>
+        <RegisteringProbe shortcuts={moduleShortcuts} />
+        <RegistryReader />
+      </ShortcutRegistryProvider>,
+    );
+
+    rerender(
+      <ShortcutRegistryProvider>
+        <RegisteringProbe
+          shortcuts={[
+            {
+              keys: ["G", "N"],
+              description: "Перейти до харчування",
+              category: "Nutrition",
+            },
+          ]}
+        />
+        <RegistryReader />
+      </ShortcutRegistryProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("registered-shortcuts")).toHaveTextContent(
+        "Перейти до харчування",
+      ),
+    );
+  });
+
+  it("is a no-op outside the provider and with empty shortcut lists", () => {
+    function EmptyProbe() {
+      useRegisterShortcuts("empty", []);
+      return <span>ok</span>;
+    }
+
+    expect(() => render(<EmptyProbe />)).not.toThrow();
+    expect(screen.getByText("ok")).toBeInTheDocument();
   });
 });

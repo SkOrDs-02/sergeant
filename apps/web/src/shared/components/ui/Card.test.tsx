@@ -2,7 +2,14 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import { createRef } from "react";
-import { Card } from "./Card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./Card";
 
 afterEach(cleanup);
 
@@ -229,5 +236,27 @@ describe("Card", () => {
       expect(cls).toContain("bg-panel");
       expect(cls).not.toContain("bg-finyk-soft");
     });
+  });
+
+  it("renders compound card sections with caller classes and semantic title tag", () => {
+    const { getByText } = render(
+      <Card>
+        <CardHeader className="header-extra">
+          <CardTitle as="h2" className="title-extra">
+            Назва
+          </CardTitle>
+          <CardDescription className="desc-extra">Опис</CardDescription>
+        </CardHeader>
+        <CardContent className="content-extra">Контент</CardContent>
+        <CardFooter className="footer-extra">Футер</CardFooter>
+      </Card>,
+    );
+
+    expect(getByText("Назва").tagName).toBe("H2");
+    expect(getByText("Назва").className).toContain("title-extra");
+    expect(getByText("Опис").className).toContain("desc-extra");
+    expect(getByText("Контент").className).toContain("content-extra");
+    expect(getByText("Футер").className).toContain("footer-extra");
+    expect(getByText("Футер").className).toContain("border-t");
   });
 });

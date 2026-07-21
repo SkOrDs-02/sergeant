@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ModuleBottomNav } from "./ModuleBottomNav";
 
 const items = [
@@ -64,5 +64,70 @@ describe("ModuleBottomNav", () => {
     expect(activeTab.className).toContain("text-bg");
     expect(activeTab.className).toContain("border-transparent");
     expect(inactiveTab.className).not.toContain("dark:bg-brand-400");
+  });
+
+  it("calls onChange when a nav item is clicked", () => {
+    const onChange = vi.fn();
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={onChange}
+        module="fizruk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Stats" }));
+    expect(onChange).toHaveBeenCalledWith("stats");
+  });
+
+  it("renders tablist semantics with aria-selected and panel controls", () => {
+    const tabItems = items.map((item) => ({
+      ...item,
+      panelId: `${item.id}-panel`,
+    }));
+    render(
+      <ModuleBottomNav
+        items={tabItems}
+        activeId="stats"
+        onChange={vi.fn()}
+        module="routine"
+        role="tablist"
+        ariaLabel="Module tabs"
+      />,
+    );
+
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    const activeTab = screen.getByRole("tab", { name: "Stats" });
+    expect(activeTab).toHaveAttribute("aria-selected", "true");
+    expect(activeTab).toHaveAttribute("aria-controls", "stats-panel");
+    expect(activeTab).toHaveAttribute("tabindex", "0");
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+  });
+
+  it("shows the unread badge only on inactive items", () => {
+    render(
+      <ModuleBottomNav
+        items={[
+          { ...items[0], badge: true },
+          { ...items[1], badge: true },
+        ]}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="nutrition"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const inactiveIcon = screen.getByRole("button", { name: "Stats" })
+      .firstElementChild as HTMLElement;
+    expect(inactiveIcon.querySelector(".bg-nutrition")).toBeInTheDocument();
+    const activeIcon = screen.getByRole("button", { name: "Overview" })
+      .firstElementChild as HTMLElement;
+    expect(activeIcon.querySelector(".bg-nutrition")).toBeNull();
   });
 });

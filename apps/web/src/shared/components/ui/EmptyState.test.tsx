@@ -145,4 +145,74 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
     const { queryByRole } = render(<ModuleEmptyState module="finyk" />);
     expect(queryByRole("button", { name: "Закрити" })).toBeNull();
   });
+
+  it.each([
+    [
+      "finyk",
+      {
+        finykBudget: 12000,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: null,
+        nutritionGoal: null,
+      },
+      /Встанови бюджет 12\s000₴ — додай першу витрату\./,
+    ],
+    [
+      "fizruk",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: 3,
+        routineFirstHabit: null,
+        nutritionGoal: null,
+      },
+      "3× на тиждень — починай із першого тренування.",
+    ],
+    [
+      "routine",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: "reading",
+        nutritionGoal: null,
+      },
+      "Відстеж «Читання» — серія днів покаже правду.",
+    ],
+    [
+      "nutrition",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: null,
+        nutritionGoal: "gain",
+      },
+      "Ціль «набрати масу» — залогай перший прийом їжі.",
+    ],
+  ] as const)(
+    "personalises %s empty-state copy from onboarding goals",
+    (module, goalContext, expected) => {
+      const { getByText } = render(
+        <ModuleEmptyState module={module} goalContext={goalContext} />,
+      );
+
+      expect(getByText(expected)).toBeInTheDocument();
+    },
+  );
+
+  it("falls back to generic habit copy for unknown routine presets", () => {
+    const { getByText } = render(
+      <ModuleEmptyState
+        module="routine"
+        goalContext={{
+          finykBudget: null,
+          fizrukWeeklyGoal: null,
+          routineFirstHabit: "stretch",
+          nutritionGoal: null,
+        }}
+      />,
+    );
+
+    expect(
+      getByText("Відстеж свою звичку — серія днів покаже правду."),
+    ).toBeInTheDocument();
+  });
 });

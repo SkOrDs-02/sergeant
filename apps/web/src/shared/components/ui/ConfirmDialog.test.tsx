@@ -106,4 +106,39 @@ describe("ConfirmDialog", () => {
     expect(scrim?.className).toContain("bg-black/40");
     expect(scrim?.className).not.toContain("bg-text/40");
   });
+
+  it("keyboard-activating the scrim cancels the dialog", () => {
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Cancel?"
+        cancelLabel="Скасувати"
+        onConfirm={() => {}}
+        onCancel={onCancel}
+      />,
+    );
+
+    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0]!;
+    fireEvent.keyDown(scrim, { key: "Enter" });
+    fireEvent.keyDown(scrim, { key: " " });
+    expect(onCancel).toHaveBeenCalledTimes(2);
+  });
+
+  it("supports non-danger confirmations with the primary button variant", () => {
+    render(
+      <ConfirmDialog
+        open
+        danger={false}
+        title="Зберегти зміни?"
+        confirmLabel="Зберегти"
+        onConfirm={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Зберегти" }).className,
+    ).toContain("bg-brand-strong");
+  });
 });

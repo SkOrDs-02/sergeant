@@ -63,7 +63,6 @@ export function ShortcutRegistryProvider({
     }
     return all;
   }, []);
-
   return (
     <ShortcutRegistryContext.Provider value={{ register, unregister, getAll }}>
       {children}
@@ -85,6 +84,8 @@ export function useRegisterShortcuts(
   shortcuts: KeyboardShortcut[],
 ) {
   const registry = useContext(ShortcutRegistryContext);
+  const register = registry?.register;
+  const unregister = registry?.unregister;
   const shortcutsRef = useRef(shortcuts);
   const shortcutsRevision = useMemo(
     () =>
@@ -100,13 +101,19 @@ export function useRegisterShortcuts(
   });
 
   useEffect(() => {
-    if (!registry || shortcutsRef.current.length === 0) return;
-    registry.register({
+    if (!register || !unregister || shortcutsRef.current.length === 0) return;
+    register({
       id: registrationId,
       shortcuts: shortcutsRef.current,
     });
-    return () => registry.unregister(registrationId);
-  }, [registry, registrationId, shortcutsRevision, shortcuts.length]);
+    return () => unregister(registrationId);
+  }, [
+    register,
+    unregister,
+    registrationId,
+    shortcutsRevision,
+    shortcuts.length,
+  ]);
 }
 
 /**
