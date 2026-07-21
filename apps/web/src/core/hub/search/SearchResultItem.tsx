@@ -1,3 +1,4 @@
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import type { Hit } from "./searchTypes";
 
@@ -64,12 +65,12 @@ export function SearchResultItem({
     >
       <span
         className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0",
+          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
           MODULE_COLORS[hit.module],
         )}
         aria-hidden
       >
-        {hit.icon}
+        <Icon name={hit.icon} size="md" />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm text-text truncate">{hit.title}</p>

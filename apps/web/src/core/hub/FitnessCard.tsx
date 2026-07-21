@@ -4,6 +4,7 @@
  * the Reports page can show this card without blocking on other domains.
  */
 import { useMemo, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
@@ -238,9 +239,12 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           "-m-1 p-1 hover:bg-panelHi transition-colors",
         )}
       >
-        <span className="text-lg shrink-0" aria-hidden>
-          🏋️
-        </span>
+        <Icon
+          name="dumbbell"
+          size="lg"
+          className="shrink-0 text-fizruk"
+          aria-hidden
+        />
         <SectionHeading
           as="span"
           size="xs"

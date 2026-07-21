@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import {
   DataState,
   type DataStateQueryLike,
@@ -34,7 +34,7 @@ export { hasLiveWeeklyDigest } from "@shared/lib/storage/weeklyDigestStorage";
 const MODULE_CONFIG: Record<
   ModuleKey,
   {
-    icon: string;
+    icon: IconName;
     label: string;
     colorClass: string;
     bgClass: string;
@@ -42,28 +42,28 @@ const MODULE_CONFIG: Record<
   }
 > = {
   finyk: {
-    icon: "💳",
+    icon: "credit-card",
     label: "Фінанси",
     colorClass: "text-brand-strong dark:text-brand",
     bgClass: "bg-finyk-soft",
     borderClass: "border-finyk-soft-border/60",
   },
   fizruk: {
-    icon: "🏋️",
+    icon: "dumbbell",
     label: "Тренування",
     colorClass: "text-fizruk-strong dark:text-fizruk-300",
     bgClass: "bg-fizruk-soft",
     borderClass: "border-fizruk-soft-border/60",
   },
   nutrition: {
-    icon: "🥗",
+    icon: "utensils",
     label: "Їжа",
     colorClass: "text-nutrition-strong dark:text-nutrition",
     bgClass: "bg-nutrition-soft",
     borderClass: "border-nutrition-soft-border/60",
   },
   routine: {
-    icon: "✅",
+    icon: "check-circle",
     label: "Звички",
     colorClass: "text-routine-strong dark:text-routine",
     bgClass: "bg-routine-soft",
@@ -127,11 +127,12 @@ function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
       >
         <div
           className={cn(
-            "w-6 h-6 rounded-xl flex items-center justify-center text-xs shrink-0",
+            "w-6 h-6 rounded-xl flex items-center justify-center shrink-0",
             cfg.bgClass,
+            cfg.colorClass,
           )}
         >
-          {cfg.icon}
+          <Icon name={cfg.icon} size="sm" aria-hidden />
         </div>
         <div className="flex-1 min-w-0 text-left">
           <span className="text-xs font-semibold text-text">{cfg.label}</span>
