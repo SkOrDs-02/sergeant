@@ -1,7 +1,7 @@
 # CI на main → green (2026-07-21)
 
 > **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
-> **Status:** Active
+> **Status:** Closed
 
 ## Діагноз
 
@@ -42,10 +42,13 @@ flowchart TB
 3. **Knip** — drop unused dep; ignore Stryker vitest-runner by name; clean hints.
 4. **Docs** — ADR link depth, catalog без deprecated OpenClaw playbook, regen STATUS + retrieval index + licenses; governance-sync exemptions для Superseded/Historical ADR.
 5. **Tests** — mock `lib/llm/provider.js` замість `anthropic.js`.
-6. **E2E** — smoke під поточний UX (auto-skip sheet, quick-action chips).
+6. **E2E** — smoke під поточний UX (auto-skip sheet, quick-action chips, finyk TxRow locator).
+7. **Web unit drift** — dual-write registry snapshots/integration, Фізрук title, HubReports, HabitHeatmap.
+8. **Post-build gates** — TODO sample date у `ci.yml`, JS size-limit 1.2→1.25 MB, axe contrast на `/assistant`.
 
 ## Верифікація
 
-Локально: audit prod/full, knip, playbook 3-way, STATUS --check, retrieval --check,
-licenses:check, provider+internal vitest. Повний `pnpm check` / Playwright smoke —
-на CI після push.
+CI run `29803459124` на tip `7bc51e7f7`: **conclusion success**.
+Required: `check`, `Test coverage (vitest)`, `Critical-flow E2E` — pass.
+Також green: Knip, server integration, Accessibility (axe), Docs automation.
+PR: https://github.com/SkOrDs-02/sergeant/pull/365 (`mergeStateStatus: CLEAN`).
