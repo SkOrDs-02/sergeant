@@ -18,21 +18,18 @@ import {
 import {
   BillingConfigurationError,
   NoBillingCustomerError,
-} from "../modules/billing/stripe.js";
-import {
   ProviderNotAvailableError,
   getEnabledProviders,
   providerRegistry,
   resolveProvider,
   type ProviderId,
-} from "../modules/billing/index.js";
-import {
   liqpayProvider,
   verifyStripeSignature,
   processStripeWebhook,
+  isFounderUser,
+  ensurePlataPubkey,
+  plataProvider,
 } from "../modules/billing/index.js";
-import { isFounderUser } from "../modules/billing/getUserPlan.js";
-import { ensurePlataPubkey, plataProvider } from "../modules/billing/plata.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";

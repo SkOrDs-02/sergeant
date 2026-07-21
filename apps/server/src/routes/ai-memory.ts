@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { requirePlan } from "../modules/billing/requirePlan.js";
+import { requirePlan } from "../modules/billing/index.js";
 import { buildEventSyncHandler } from "../modules/ai-memory/eventSyncRoute.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";

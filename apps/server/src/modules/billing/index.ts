@@ -1,13 +1,10 @@
 /**
  * Public barrel for the server billing module.
  *
- * @scaffolded
- * @nextStep Migrate `apps/server/src/routes/{ai-memory,billing}.ts` and
- *   future routes from `../modules/billing/{getUserPlan,requirePlan,stripe}.js`
- *   deep-import to barrel `../modules/billing`. Tracked in dead-code roast
- *   2026-05-13.
+ * Caller-и (`apps/server/src/routes/{ai-memory,billing,nutrition}.ts`)
+ * імпортують лише звідси — не з `./{getUserPlan,requirePlan,stripe,plata}.js`.
  */
-export { getUserPlan } from "./getUserPlan.js";
+export { getUserPlan, isFounderUser } from "./getUserPlan.js";
 export type { Plan, UserPlanResult } from "./getUserPlan.js";
 export { requirePlan } from "./requirePlan.js";
 export { effectiveLimits } from "./effectiveLimits.js";
@@ -18,6 +15,7 @@ export {
   processStripeWebhook,
   verifyStripeSignature,
   BillingConfigurationError,
+  NoBillingCustomerError,
 } from "./stripe.js";
 // Multi-provider billing (Phase 7 UA billing — LiqPay + Plata live).
 export {
@@ -34,6 +32,6 @@ export type {
   EnabledProvidersOptions,
 } from "./provider.js";
 export { liqpayProvider } from "./liqpay.js";
-export { plataProvider } from "./plata.js";
+export { plataProvider, ensurePlataPubkey } from "./plata.js";
 export { stripeProvider } from "./stripeProvider.js";
 export { providerRegistry } from "./registry.js";
