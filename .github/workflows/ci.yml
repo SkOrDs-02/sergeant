@@ -252,8 +252,9 @@ jobs:
 
       - name: TODO freshness gate
         # Fails CI if any TODO/FIXME/HACK/XXX comments have expired deadlines
-        # or are missing deadlines for tech-debt items. Format:
-        # TODO(T5-feature): 2026-07-15 — description
+        # or are missing deadlines for tech-debt items. Format example
+        # (keep the sample date ≥ today so this comment itself is not gated):
+        # TODO(T5-feature): 2099-01-01 — description
         # See scripts/check-todo-freshness.mjs for implementation details.
         run: pnpm lint:todo-freshness
 
