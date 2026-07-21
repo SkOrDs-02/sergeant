@@ -36,7 +36,7 @@ import {
 } from "../lib/monoMirrorReader";
 import {
   notifyFinykMonoMirrorRefresh,
-  useFinykMonoMirrorGate,
+  useFinykMonoMirrorTick,
 } from "../lib/monoMirrorGate";
 
 const SYNC_STATE_STALE = 30_000;
@@ -89,7 +89,7 @@ export function useMonobankWebhook({
   const meData =
     queryClient.getQueryData<MeResponse>(apiQueryKeys.me.current()) ?? null;
   const userId = meData?.user?.id ?? null;
-  const { enabled: mirrorEnabled, tick: mirrorTick } = useFinykMonoMirrorGate();
+  const mirrorTick = useFinykMonoMirrorTick();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState("");
   const [authError, setAuthError] = useState("");
@@ -195,7 +195,7 @@ export function useMonobankWebhook({
   // swallowed — the LS write above remains the source-of-truth until
   // the read overlay flag is flipped on per-user.
   useEffect(() => {
-    if (!mirrorEnabled || !userId || transactions.length === 0) return;
+    if (!userId || transactions.length === 0) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -217,10 +217,10 @@ export function useMonobankWebhook({
     return () => {
       cancelled = true;
     };
-  }, [transactions, userId, mirrorEnabled]);
+  }, [transactions, userId]);
 
   useEffect(() => {
-    if (!mirrorEnabled || !userId || accounts.length === 0) return;
+    if (!userId || accounts.length === 0) return;
     let cancelled = false;
     // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock account-snapshot instant, not a Kyiv day boundary
     const snapshotAt = new Date().toISOString();
@@ -246,14 +246,13 @@ export function useMonobankWebhook({
     return () => {
       cancelled = true;
     };
-  }, [accounts, userId, mirrorEnabled]);
+  }, [accounts, userId]);
 
   // Read overlay — when the network slice is empty (cold start, fetch
   // pending) and the flag is on, return the mirrored transactions so
   // the UI can paint cached data immediately. Live data wins as soon
   // as the first successful fetch lands.
   const overlayTransactions: Transaction[] = useMemo(() => {
-    if (!mirrorEnabled) return transactions;
     if (transactions.length > 0) return transactions;
     // `mirrorTick` is intentionally listed even though `useMemo`
     // doesn't reference it directly — bumping the tick is the signal
@@ -263,7 +262,7 @@ export function useMonobankWebhook({
     void mirrorTick;
     const cached = getCachedFinykMonoMirrorState();
     return cached.transactions.length > 0 ? cached.transactions : transactions;
-  }, [mirrorEnabled, transactions, mirrorTick]);
+  }, [transactions, mirrorTick]);
 
   // Narrow the memo inputs to the exact scalar fields it reads. Depending on
   // the optional-chained properties directly (rather than the whole

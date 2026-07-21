@@ -14,7 +14,6 @@ import type { ReactNode } from "react";
 // ── Stable hoisted state for per-test control ─────────────────────────────────
 
 const mirrorState = vi.hoisted(() => ({
-  enabled: true,
   tick: 0,
 }));
 
@@ -50,12 +49,9 @@ vi.mock("./monoTransactionsLoader", () => ({
     fetchAllMonoTransactions(...args),
 }));
 
-// Mirror gate — controlled via mirrorState
+// Mirror gate — tick controlled via mirrorState
 vi.mock("../lib/monoMirrorGate", () => ({
-  useFinykMonoMirrorGate: () => ({
-    enabled: mirrorState.enabled,
-    tick: mirrorState.tick,
-  }),
+  useFinykMonoMirrorTick: () => mirrorState.tick,
   notifyFinykMonoMirrorRefresh: vi.fn(),
 }));
 
@@ -149,7 +145,6 @@ function makeMigrationClient() {
 beforeEach(() => {
   vi.clearAllMocks();
 
-  mirrorState.enabled = true;
   mirrorState.tick = 0;
 
   fetchAllMonoTransactions.mockResolvedValue([]);
@@ -461,51 +456,12 @@ describe("useMonobankWebhook — overlay transactions (mirrorEnabled=true)", () 
 
     expect(result.current.transactions).toHaveLength(0);
   });
-
-  it("returns empty transactions (not cache) when mirrorEnabled=false", async () => {
-    mirrorState.enabled = false;
-    const { Wrapper } = makeWrapper(false);
-    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
-    fetchAllMonoTransactions.mockResolvedValue([]);
-
-    getCachedFinykMonoMirrorState.mockReturnValue({
-      transactions: [
-        {
-          id: "should-not-appear",
-          time: 0,
-          amount: 0,
-          source: "monobank" as const,
-          accountId: "acc1",
-          description: "Nope",
-          mcc: 0,
-          category: "other" as const,
-          categoryOverride: null,
-          splitFrom: null,
-          manualEntry: false,
-          linkedBudgetId: null,
-        },
-      ],
-    });
-
-    const { result } = renderHook(() => useMonobankWebhook(), {
-      wrapper: Wrapper,
-    });
-
-    await waitFor(() => {
-      expect(result.current.syncState.status).toBe("success");
-    });
-
-    // mirrorEnabled=false → overlay bypassed, getCachedFinykMonoMirrorState NOT called
-    expect(getCachedFinykMonoMirrorState).not.toHaveBeenCalled();
-    expect(result.current.transactions).toHaveLength(0);
-  });
 });
 
 // ── fetchMonth — December year-wrap boundary ──────────────────────────────────
 
 describe("useMonobankWebhook — fetchMonth December boundary", () => {
   it("resolves for December month (month=11) without throwing", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     fetchAllMonoTransactions.mockResolvedValue([]);
@@ -532,7 +488,6 @@ describe("useMonobankWebhook — fetchMonth December boundary", () => {
   });
 
   it("resolves for November (month=10) without year-wrap", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     fetchAllMonoTransactions.mockResolvedValue([]);
@@ -555,7 +510,6 @@ describe("useMonobankWebhook — fetchMonth December boundary", () => {
   });
 
   it("setHistoryTx is called, sorted by time desc, and loadingHistory flips back to false", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     // Two transactions out of chronological order — verifies the sort comparator runs
@@ -606,7 +560,6 @@ describe("useMonobankWebhook — fetchMonth December boundary", () => {
 
 describe("useMonobankWebhook — clientInfo populated from accounts", () => {
   it("clientInfo is non-null when connected with UAH accounts", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     mockedAccounts.mockResolvedValue([
@@ -639,7 +592,6 @@ describe("useMonobankWebhook — clientInfo populated from accounts", () => {
   });
 
   it("clientInfo is null when connected but accounts list is empty", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     mockedAccounts.mockResolvedValue([]);
@@ -656,7 +608,6 @@ describe("useMonobankWebhook — clientInfo populated from accounts", () => {
   });
 
   it("filters out non-UAH accounts (e.g. USD currency code)", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     mockedAccounts.mockResolvedValue([
@@ -691,7 +642,6 @@ describe("useMonobankWebhook — clientInfo populated from accounts", () => {
 
 describe("useMonobankWebhook — current-month tx sort and legacy cache", () => {
   it("sorts current-month transactions descending by time when 3+ exist", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
 
@@ -749,7 +699,6 @@ describe("useMonobankWebhook — current-month tx sort and legacy cache", () => 
 
 describe("useMonobankWebhook — syncState accountsOk field", () => {
   it("returns accountsTotal=0 and accountsOk=0 when disconnected", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue(DISCONNECTED_STATE);
 
@@ -768,7 +717,6 @@ describe("useMonobankWebhook — syncState accountsOk field", () => {
   });
 
   it("returns accountsOk=0 when status is pending (not active)", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue({
       status: "pending",
@@ -792,7 +740,6 @@ describe("useMonobankWebhook — syncState accountsOk field", () => {
   });
 
   it("returns accountsOk=accountsTotal when status is active", async () => {
-    mirrorState.enabled = false;
     const { Wrapper } = makeWrapper(false);
     mockedSyncState.mockResolvedValue({
       ...ACTIVE_STATE,
