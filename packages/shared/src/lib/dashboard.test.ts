@@ -1,16 +1,35 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  DASHBOARD_DENSITIES,
+  DEFAULT_DASHBOARD_DENSITY,
   DASHBOARD_MODULE_IDS,
   DASHBOARD_MODULE_LABELS,
   DEFAULT_DASHBOARD_ORDER,
   arrayMoveImmutable,
+  isDashboardDensity,
   isDashboardModuleId,
+  normalizeDashboardDensity,
   normalizeDashboardOrder,
   reorderWithHidden,
   selectVisibleModules,
   type DashboardModuleId,
 } from "./dashboard";
+
+describe("dashboard density helpers", () => {
+  it("accepts only registered density ids", () => {
+    for (const density of DASHBOARD_DENSITIES) {
+      expect(isDashboardDensity(density)).toBe(true);
+    }
+    expect(isDashboardDensity("dense")).toBe(false);
+    expect(isDashboardDensity(null)).toBe(false);
+  });
+
+  it("normalizes unknown density values to the default", () => {
+    expect(normalizeDashboardDensity("compact")).toBe("compact");
+    expect(normalizeDashboardDensity("dense")).toBe(DEFAULT_DASHBOARD_DENSITY);
+  });
+});
 
 describe("DASHBOARD_MODULE_IDS", () => {
   it("exposes exactly the four Hub modules in the expected order", () => {

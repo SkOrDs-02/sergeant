@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryKVStore } from "../test-utils";
 import {
@@ -30,6 +30,11 @@ describe("normalizeOriginDeviceId", () => {
 });
 
 describe("resolveOriginDeviceId", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("mints + persists a fresh ID when the store is empty", () => {
     const store = createMemoryKVStore();
     let calls = 0;
@@ -84,6 +89,24 @@ describe("resolveOriginDeviceId", () => {
     expect(store.getString(STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID)).toHaveLength(
       ORIGIN_DEVICE_ID_MAX_LENGTH,
     );
+  });
+
+  it("uses global crypto.randomUUID when no factory is injected", () => {
+    const store = createMemoryKVStore();
+    vi.stubGlobal("crypto", {
+      randomUUID: () => "global-random-id",
+    });
+
+    expect(resolveOriginDeviceId({ store })).toBe("global-random-id");
+  });
+
+  it("falls back when global crypto.randomUUID is unavailable", () => {
+    const store = createMemoryKVStore();
+    vi.spyOn(Date, "now").mockReturnValue(0x19a9e0);
+    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.5);
+    vi.stubGlobal("crypto", {});
+
+    expect(resolveOriginDeviceId({ store })).toBe("d19a9e0-7fffffff00000000");
   });
 
   it("falls back when randomUUID returns whitespace-only", () => {
