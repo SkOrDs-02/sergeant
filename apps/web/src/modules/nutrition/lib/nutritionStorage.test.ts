@@ -36,6 +36,8 @@ import {
   normalizePantries,
   persistNutritionLog,
   persistNutritionPrefs,
+  persistNutritionShoppingList,
+  persistNutritionWaterLog,
   persistPantries,
   type Pantry,
 } from "./nutritionStorage";
@@ -205,6 +207,40 @@ describe("persistPantries — dual-write only (no LS write)", () => {
     expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("serializes pantry items into stable dual-write item snapshots", () => {
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [
+        {
+          id: "home",
+          name: "Дім",
+          text: "молоко 1л",
+          items: [{ name: "Молоко", qty: 1, unit: "л", notes: "тепле" }],
+        },
+      ],
+      "home",
+    );
+
+    const [, next] = triggerSpy.mock.calls[0]!;
+    expect(next).toMatchObject({
+      pantries: [
+        {
+          id: "home",
+          items: [
+            {
+              id: "home::0::Молоко",
+              name: "Молоко",
+              qty: 1,
+              unit: "л",
+              notes: "тепле",
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it("no-ops silently when dual-write context is not registered", () => {
     dualWriteRegistered = false;
     persistPantries(
@@ -265,6 +301,88 @@ describe("persistNutritionPrefs — dual-write only", () => {
       NUTRITION_PREFS_KEY,
     );
     expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("persistNutritionWaterLog — dual-write only", () => {
+  it("sanitizes the water log and sends it through dual-write", () => {
+    persistNutritionWaterLog({
+      "2026-07-01": 750.6,
+      "2026-07-02": -10,
+      "2026-07-03": Number.NaN,
+      "2026-07-04": 0,
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [prev, next] = triggerSpy.mock.calls[0]!;
+    expect(prev).toMatchObject({ waterLog: {} });
+    expect(next).toMatchObject({
+      waterLog: { "2026-07-01": 751, "2026-07-04": 0 },
+    });
+  });
+
+  it("no-ops before the dual-write context is registered", () => {
+    dualWriteRegistered = false;
+
+    expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(true);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("persistNutritionShoppingList — dual-write only", () => {
+  it("normalizes the shopping-list document and sends it through dual-write", () => {
+    persistNutritionShoppingList({
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "i1",
+              name: " Огірок ",
+              quantity: "2 шт",
+              note: "",
+              checked: false,
+            },
+            {
+              id: "i2",
+              name: "",
+              quantity: "skip",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [, next] = triggerSpy.mock.calls[0]!;
+    const shoppingList = JSON.parse(
+      next.shoppingList.dataJson as string,
+    ) as unknown;
+    expect(shoppingList).toEqual({
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "i1",
+              name: "Огірок",
+              quantity: "2 шт",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("no-ops before the dual-write context is registered", () => {
+    dualWriteRegistered = false;
+
+    expect(persistNutritionShoppingList({ categories: [] })).toBe(true);
+    expect(triggerSpy).not.toHaveBeenCalled();
   });
 });
 
