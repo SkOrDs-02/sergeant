@@ -89,6 +89,16 @@ describe("routine-domain/streaks", () => {
     expect(maxStreakAllTime(h, completions)).toBe(5);
   });
 
+  it("maxStreakAllTime bridges unscheduled days between weekly completions", () => {
+    const h: Habit = {
+      ...dailyHabit("weekly"),
+      recurrence: "weekly",
+      weekdays: [0, 4], // Monday + Friday.
+    };
+
+    expect(maxStreakAllTime(h, ["2026-01-05", "2026-01-09"])).toBe(2);
+  });
+
   it("streakForHabit terminates for monthly habits with long history", () => {
     // Раніше магічний ліміт 500 ітерацій обривав multi-year monthly-стрік.
     const h: Habit = {
@@ -163,6 +173,21 @@ describe("routine-domain/streaks", () => {
       scheduled: 3,
       completed: 2,
       rate: 2 / 3,
+    });
+  });
+
+  it("habitCompletionRate returns 0-rate when the habit is never scheduled", () => {
+    const r = habitCompletionRate(
+      { ...dailyHabit("paused"), paused: true },
+      ["2026-01-08"],
+      "2026-01-08",
+      "2026-01-10",
+    );
+
+    expect(r).toEqual({
+      scheduled: 0,
+      completed: 0,
+      rate: 0,
     });
   });
 });

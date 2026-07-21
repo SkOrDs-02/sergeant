@@ -247,6 +247,20 @@ describe("grid aggregates", () => {
     expect(cell?.cnt).toBe(1);
   });
 
+  it("findCellByDateKey returns null for an in-window key missing from a sparse grid", () => {
+    const grid = buildHeatmapGrid(habits, completions, TODAY, 1);
+
+    expect(
+      findCellByDateKey(
+        {
+          ...grid,
+          weeks: [grid.weeks[0]?.slice(0, 2) ?? []],
+        },
+        "2025-01-15",
+      ),
+    ).toBeNull();
+  });
+
   it("is deterministic given the same input", () => {
     const g1 = buildHeatmapGrid(habits, completions, TODAY);
     const g2 = buildHeatmapGrid(habits, completions, TODAY);
