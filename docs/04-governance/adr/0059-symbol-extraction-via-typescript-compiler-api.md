@@ -17,7 +17,7 @@
 
 ## Context and Problem Statement
 
-Phase 2 ініціативи 0014 потребує per-workspace symbol catalog (`packages/*/symbols.json`, `apps/*/symbols.json`, `tools/openclaw/symbols.json`) — це разблоковує точніший dead-code detection, convention-drift detection і feed-ить C4 діаграми (Phase 4) через cross-package usage counts.
+Phase 2 ініціативи 0014 потребує per-workspace symbol catalog (`packages/*/symbols.json`, `apps/*/symbols.json`) — ~~`tools/openclaw/symbols.json` видалено разом із OpenClaw (ADR-0075)~~ — це разблоковує точніший dead-code detection, convention-drift detection і feed-ить C4 діаграми (Phase 4) через cross-package usage counts.
 
 Для парсингу TypeScript-експортів є три реалістичні підходи:
 

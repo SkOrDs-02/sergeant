@@ -1,9 +1,9 @@
 # ADR-0069: AI-PR Checklist and validation workflow
 
-> **Last touched:** 2026-06-29 by @Kilo-session. **Next review:** 2026-09-27.
-> **Status:** Proposed
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Status:** Accepted
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-06-29
 - **Deciders:** @Skords-01
 - **Supersedes:** —
@@ -37,13 +37,13 @@ AI-генерований код має інші патерни помилок, 
 від додаткового gate (false positives), тому guard має вміти
 **розрізняти**.
 
-Станом на сьогодні:
+Станом на 2026-07-21 (після merge Harness Engineering v1):
 
 - AI markers (`AI-NOTE` / `AI-CONTEXT` / `AI-DANGER` / `AI-LEGACY`)
   enforced by `eslint-plugin-sergeant-design/ai-marker-syntax`.
-- `AGENTS.md` описує marker convention, але **не** перевіряє їх наявність.
-- PR template має секції Summary / Verification / Docs and Governance,
-  але **немає** AI-specific checklist.
+- `AGENTS.md` описує marker convention; перевірка наявності markers — через PR checklist для AI-PR.
+- `.github/PULL_REQUEST_TEMPLATE.md` має секцію **AI-Generation Signals** (6 пунктів).
+- `.github/workflows/ai-pr-checklist.yml` detect-ить AI authorship за trailers і вимагає checklist лише для AI-генерованих PR.
 
 ---
 

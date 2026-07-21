@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-21",
   "sourceHashes": {
-    "knowledge-graph": "c0174d92366c77ac8e414f082a2c67f08f2ed2e6c980083b5e36134f492a7b4c",
+    "knowledge-graph": "f17b0a28ea36aa5312deea02b611dbf72b3102eed90ba14d3751dd819fbab0cd",
     "symbol-index": "34750b6eccb08dbe2f3f7b58ab40e58f26abe96989d9aa651fd8b5b2638c8eb9"
   },
   "counts": {
@@ -134,8 +134,8 @@
       "title": "ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор · adr:0011 · adr · Active · 11 · 2026-05-13 · Amendment (2026-05-10) — local-first контракт збережений, blob-sync engine замінений · 0. TL;DR · ADR-11.1 — Архітектурне рішення: client-first, не server-first · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-11.2 — Storage abstraction: KVStore + platform адаптери · ADR-11.3 — CloudSync: LWW-reconciler з module-level gran-ularity · ADR-11.4 — Offline queue з обмеженням довжини",
-      "contentHash": "817b545d3114a1cdbf2df88071366c9e653648520dc27bd62db245edf46a6f96"
+      "text": "ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор · adr:0011 · adr · Active · 11 · 2026-07-21 · Amendment (2026-05-10) — local-first контракт збережений, blob-sync engine замінений · 0. TL;DR · ADR-11.1 — Архітектурне рішення: client-first, не server-first · Status · Context · Decision · Consequences · Alternatives considered · Exit criteria · ADR-11.2 — Storage abstraction: KVStore + platform адаптери · ADR-11.3 — CloudSync: LWW-reconciler з module-level gran-ularity · ADR-11.4 — Offline queue з обмеженням довжини",
+      "contentHash": "896e666de0ea723e065ca921139fd1fcacb8ffc5f654d7eea9e075f5ea3022d9"
     },
     {
       "id": "adr:0012",
@@ -351,9 +351,9 @@
       "line": 1,
       "title": "ADR-0032: Sergeant Console зливається в OpenClaw bot",
       "tier": "core",
-      "status": "Accepted",
-      "text": "ADR-0032: Sergeant Console зливається в OpenClaw bot · adr:0032 · adr · Accepted · 32 · Context · Decision · Що міняється у коді · Що НЕ міняється · Naming + deployment · Consequences · Positive · Negative / debt · Re-evaluation triggers · Alternatives considered · A. Залишити три боти (status quo, нічого не міняти) · B. Повне видалення tools/console/src/agents/ і dispatcher/ зараз · C. Console як \"deterministic command relay\" перед OpenClaw · D. OpenClaw як \"second brain\" + console як \"ops surface\" · Migration steps",
-      "contentHash": "f19e1915a9fef4d5dd841c40c32496245ba0a524dc69e5ee357892e89a5e482b"
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
+      "text": "ADR-0032: Sergeant Console зливається в OpenClaw bot · adr:0032 · adr · Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20) · 32 · Context · Decision · Що міняється у коді · Що НЕ міняється · Naming + deployment · Consequences · Positive · Negative / debt · Re-evaluation triggers · Alternatives considered · A. Залишити три боти (status quo, нічого не міняти) · B. Повне видалення tools/console/src/agents/ і dispatcher/ зараз · C. Console як \"deterministic command relay\" перед OpenClaw · D. OpenClaw як \"second brain\" + console як \"ops surface\" · Migration steps",
+      "contentHash": "e9981fc5c47911755ce5caf7231662800267685fa866da6e8015b9f6710bcdc4"
     },
     {
       "id": "adr:0033",
@@ -362,9 +362,9 @@
       "line": 1,
       "title": "ADR-0033: OpenClaw multi-personas + `/council` round-table",
       "tier": "core",
-      "status": "Accepted",
-      "text": "ADR-0033: OpenClaw multi-personas + `/council` round-table · adr:0033 · adr · Accepted · 33 · ADR-0033: OpenClaw multi-personas + /council round-table · Context · Decision · 1. Persona registry (tools/openclaw/src/agents/personas.ts) · 2. /council round-table (sequential) · 3. UI-zoom: persona slash-команди · 4. Що НЕ міняється · Consequences · Positive · Negative / debt · Re-evaluation triggers · Alternatives considered · A. Single persona з instructed-tool-pruning у prompt · B. Окремі Anthropic-clients per persona · C. Parallel council з Promise.all · D. Ad-hoc \"uvuyi sebe ops-engineer-om\" prompt-ом без code · E. Persona-specific Anthropic models · Migration steps",
-      "contentHash": "d697a5660c428628e25efe4e6382ae6d3f38671ffa278af5f66cb72b467f9d98"
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
+      "text": "ADR-0033: OpenClaw multi-personas + `/council` round-table · adr:0033 · adr · Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20) · 33 · ADR-0033: OpenClaw multi-personas + /council round-table · Context · Decision · 1. Persona registry (tools/openclaw/src/agents/personas.ts) · 2. /council round-table (sequential) · 3. UI-zoom: persona slash-команди · 4. Що НЕ міняється · Consequences · Positive · Negative / debt · Re-evaluation triggers · Alternatives considered · A. Single persona з instructed-tool-pruning у prompt · B. Окремі Anthropic-clients per persona · C. Parallel council з Promise.all · D. Ad-hoc \"uvuyi sebe ops-engineer-om\" prompt-ом без code · E. Persona-specific Anthropic models · Migration steps",
+      "contentHash": "e28ab6e4125927b8967172e8658a7def0129495a3a2e7708523665fea3d62e94"
     },
     {
       "id": "adr:0034",
@@ -406,9 +406,9 @@
       "line": 1,
       "title": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log",
       "tier": "core",
-      "status": "Accepted",
-      "text": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log · adr:0037 · adr · Accepted · 37 · Context and Problem Statement · Considered Options · Decision · 1. Schema (apps/server/src/migrations/030openclawwriteaudit.sql) · 2. Server endpoints · 3. Console wiring · 4. /audit slash-команда · 5. Що НЕ міняється · Rationale · Consequences · Positive · Negative · Neutral · Migration / rollout · Compliance · Links",
-      "contentHash": "a1fe7ab058a9ee5d2f6fe4201295b853300ef627eecf634b883206daa5b37fe2"
+      "status": "Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)",
+      "text": "ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log · adr:0037 · adr · Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20) · 37 · Context and Problem Statement · Considered Options · Decision · 1. Schema (apps/server/src/migrations/030openclawwriteaudit.sql) · 2. Server endpoints · 3. Console wiring · 4. /audit slash-команда · 5. Що НЕ міняється · Rationale · Consequences · Positive · Negative · Neutral · Migration / rollout · Compliance · Links",
+      "contentHash": "ebfa87d36f410435013ed87626e88ee307491f6c42639a29ebe94d5b8bf501e5"
     },
     {
       "id": "adr:0038",
@@ -714,9 +714,9 @@
       "line": 1,
       "title": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state)",
       "tier": "core",
-      "status": "Active",
-      "text": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state) · adr:0067 · adr · Active · 67 · 2026-06-20 · Context and Problem Statement · Шар 1 — compute (engagement-сигнали) · Шар 2 — reminders (планування нотифікацій) · Шар 3 — dismiss / snooze state · Чому це ADR, а не просто рефактор · Considered Options · Decision · Цільова архітектура (3 шари) · Поетапність (4 кроки, кожен окремим PR) · Що НЕ чіпаємо (явні non-goals) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "f84d30c0b1c1cebcd1dc28a742568ff96905d2a931bbad71c2bee79d7ab31013"
+      "status": "Proposed",
+      "text": "ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state) · adr:0067 · adr · Proposed · 67 · Context and Problem Statement · Шар 1 — compute (engagement-сигнали) · Шар 2 — reminders (планування нотифікацій) · Шар 3 — dismiss / snooze state · Чому це ADR, а не просто рефактор · Considered Options · Decision · Цільова архітектура (3 шари) · Поетапність (4 кроки, кожен окремим PR) · Що НЕ чіпаємо (явні non-goals) · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "4146bd8c93863422dda93636fea0dda415e30169c2703d0347869315e8b8fcd0"
     },
     {
       "id": "adr:0068",
@@ -736,9 +736,9 @@
       "line": 1,
       "title": "ADR-0069: AI-PR Checklist and validation workflow",
       "tier": "core",
-      "status": "Proposed",
-      "text": "ADR-0069: AI-PR Checklist and validation workflow · adr:0069 · adr · Proposed · 69 · 2026-06-29 · Context and Problem Statement · Decision · Consequences · Positive · Negative · Neutral · Alternatives Considered · Alt A: probot/ai-pr-checklist GitHub App · Alt B: Перевіряти AI markers у коді, а не trailer · Alt C: Завжди вимагати checklist, без bypass · Alt D: AI-marker у commit message + bypass через label · Acceptance Criteria (з §4.5 плану) · Follow-up / Open Questions",
-      "contentHash": "d9bfb0fde9f11f9aec19ee8362caf23bcfcebbd19a039d840f835432f1755d2d"
+      "status": "Accepted",
+      "text": "ADR-0069: AI-PR Checklist and validation workflow · adr:0069 · adr · Accepted · 69 · 2026-07-21 · Context and Problem Statement · Decision · Consequences · Positive · Negative · Neutral · Alternatives Considered · Alt A: probot/ai-pr-checklist GitHub App · Alt B: Перевіряти AI markers у коді, а не trailer · Alt C: Завжди вимагати checklist, без bypass · Alt D: AI-marker у commit message + bypass через label · Acceptance Criteria (з §4.5 плану) · Follow-up / Open Questions",
+      "contentHash": "44e16b965cc7c7986e9d59bf84a9a819e73c2a66fa8af561accbd2230a3f8f00"
     },
     {
       "id": "adr:0070",
@@ -758,9 +758,9 @@
       "line": 1,
       "title": "ADR-0071: Dynamic agent snapshot for harness context",
       "tier": "core",
-      "status": "Proposed",
-      "text": "ADR-0071: Dynamic agent snapshot for harness context · adr:0071 · adr · Proposed · 71 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "fe41e2f714c8e50886eede2bb4930dcf83ac77917a689f131e466aabb48ea062"
+      "status": "Accepted",
+      "text": "ADR-0071: Dynamic agent snapshot for harness context · adr:0071 · adr · Accepted · 71 · 2026-07-21 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "31634c890443136ae9dd65e7aec42cda51cb27d7142505ab424d18a73e6eb809"
     },
     {
       "id": "adr:0072",
@@ -4264,8 +4264,8 @@
       "title": "Squad QA — паралельний QA по всіх surfaces",
       "tier": "core",
       "status": "Active",
-      "text": "Squad QA — паралельний QA по всіх surfaces · playbook:run-squad-qa · playbook · Active · Playbook: Squad QA — паралельний QA по всіх surfaces · Prerequisites · Кроки · Крок 1 — Завантаж skill · Крок 2 — Запусти Agent Team · Крок 3 — Чекай на всі 4 звіти · Крок 4 — Synthesis · Крок 5 — Fix failures · Owner surface · Verification · Коли НЕ використовувати · Governing skill",
-      "contentHash": "feed3f4043e6c0c69e7da2a6621fac5effa1495208b046811b982b4861737e7a"
+      "text": "Squad QA — паралельний QA по всіх surfaces · playbook:run-squad-qa · playbook · Active · Playbook: Squad QA — паралельний QA по всіх surfaces · Prerequisites · Кроки · Крок 1 — Завантаж skill · Крок 2 — Запусти Agent Team · Крок 3 — Чекай на всі 3 звіти · Крок 4 — Synthesis · Крок 5 — Fix failures · Owner surface · Verification · Коли НЕ використовувати · Governing skill",
+      "contentHash": "2dee16c21bd3d2dc3f3ad6d1bcbe8af116885839c8656381a9fc0f69571ffae1"
     },
     {
       "id": "playbook:run-squad-review",

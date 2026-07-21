@@ -1,10 +1,10 @@
 # ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout
 
-> **⚠️ Rollout завершено, Phase 7 виконано (2026-07-20, commit `d5cc2648c`):** усі v1 sunset-модулі — `sunsetGone.ts` (410 handler), `sunsetHeaders.ts` (RFC 8594/8288 headers), `clientSurvey.ts` (survey counter) + метрику `sync_v1_legacy_clients_total` — **видалено** після завершення deprecation-вікна. v1 push/pull тепер віддає **голий `404`** (не `410 Gone`). Цей ADR лишається як історичний запис 6-фазного плану; посилання на видалені файли нижче збережені для контексту.
+> **⚠️ Rollout завершено, Phase 7 виконано (2026-07-20, commit `d5cc2648c`):** усі v1 sunset-модулі — `sunsetGone.ts` (410 handler), `sunsetHeaders.ts` (RFC 8594/8288 headers), `clientSurvey.ts` (survey counter) + метрику `sync_v1_legacy_clients_total` — **видалено** після завершення deprecation-вікна. v1 push/pull тепер віддає **голий `404`** (не `410 Gone`). Phase 5 (410 Gone) задокументовано в [ADR-0047](./0047-cloudsync-v1-410-gone.md). Цей ADR лишається як історичний запис 6-фазного плану; посилання на видалені файли нижче збережені для контексту.
 
 - **Status:** Accepted
 - **Note:** Historical — inline paths name Phase 1–6 sunset modules removed in Phase 7 (2026-07-20); v1 sync now returns bare `404`.
-- **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-04
 - **Deciders:** @Skords-01
 - **Supersedes:** —

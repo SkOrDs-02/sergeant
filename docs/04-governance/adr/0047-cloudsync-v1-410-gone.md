@@ -111,7 +111,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 - Client v1 cleanup landed in follow-up work: web/mobile no longer expose
   `useCloudSync`/`CloudSyncProvider` network facades or manual `/api/sync/*`
   push/pull controls. Server-side 410/audit compatibility remains by design.
-- Production env vars (`CLOUDSYNC_V1_GONE_SINCE`, `CLOUDSYNC_V1_SUNSET_AT`) — Дмитро виставить у Railway після merge.
+- Production env vars (`CLOUDSYNC_V1_GONE_SINCE`, `CLOUDSYNC_V1_SUNSET_AT`) — виставлено в production env на **Hetzner/Coolify** (historical note: раніше Railway).
 - Initiative 0003 status оновлений: Phase 5 server-side complete; Phase 6 client cleanup complete; remaining work is server/data cleanup.
 
 ## Amendment (2026-05-10): Final removal exit-criteria

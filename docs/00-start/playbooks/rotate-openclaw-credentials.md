@@ -5,13 +5,13 @@
 > **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
-**Trigger:** ротація будь-якого OpenClaw GitHub credential —
+**Trigger:** _(deprecated — OpenClaw decommissioned ADR-0075)_ ротація будь-якого OpenClaw GitHub credential —
 
-- планова квартальна ротація private key GitHub App (`OPENCLAW_GITHUB_APP_PRIVATE_KEY`),
-- emergency-ротація після підозри витоку (App private key, App ID або installation),
-- передача GitHub-org membership (founder hand-off), коли новий адмін має перевипустити App.
+---
 
-Phase 2 (stack-pulse-2026-05 PR-06) видалив legacy PAT-flow: `OPENCLAW_GITHUB_PAT` / `Git_PAT` більше не приймаються кодом, а `assertStartupEnv()` у `apps/server/src/env/env.ts` тепер хард-блокує production-старт, якщо хоч один з них досі в `process.env` (Hard Rule #20). Якщо ти ротуєш у відповідь на витік старого PAT-у — див. § Emergency.
+> **STOP.** Кроки нижче — **історичний запис** (immutable ADR-0055 / stack-pulse PR-06). Не виконуй. Актуальна ротація секретів: [`rotate-secrets.md`](./rotate-secrets.md).
+
+---
 
 Цей runbook покриває **лише** OpenClaw → GitHub auth surface. Ширша privileged-access posture (які ще інтеграції Sergeant потребують ротації, хто за яку відповідає, як планується ревʼю) — у [`access-governance.md`](./access-governance.md).
 

@@ -1,20 +1,20 @@
 # Deploy
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
-Step-by-step deploy walkthroughs for Sergeant runtime surfaces. These are operational recipes — for the current backend hosting (Hetzner CX23 + Coolify) see [`../../04-governance/adr/0074-hosting-hetzner-coolify.md`](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (supersedes [ADR-0009](../../04-governance/adr/0009-hosting-split-railway-vercel.md)), and for the runtime inventory see [`../architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md). ⚠️ Backend деплой-рецепти нижче ще описують Railway — оновлюються під Coolify окремим follow-up (див. ADR-0074). Railway виведено повністю (config-файли `railway*.toml` видалено з репо 2026-07-19); OpenClaw-сервіси не задеплоєні — міграція на Coolify або deprecation TBD.
+Step-by-step deploy walkthroughs for Sergeant runtime surfaces. **Current backend:** Hetzner CX23 + Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). **OpenClaw:** decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 ## Documents
 
 | Document                                                         | Purpose                                                                       |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`openclaw.md`](./openclaw.md)                                   | Deploy `tools/openclaw` (Telegram bot) on Railway via `Dockerfile.openclaw`   |
+| [`openclaw.md`](./openclaw.md)                                   | **Archived** — historical OpenClaw deploy (removed ADR-0075)                  |
 | [`vercel.md`](./vercel.md)                                       | Vercel project settings, headers contract, COEP compatibility matrix          |
-| [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand` + Railway `watchPatterns`) |
+| [`monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md) | Per-surface deploy filters (Vercel `ignoreCommand`; historical Railway notes)   |
 
 ## Related
 
-- [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — Railway/Vercel platform setup
+- [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — legacy Railway setup + Vercel/cookie contract
 - [`../playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) — emergency rollback recipe
 - [`../observability/runbook.md`](../observability/runbook.md) — production incident runbook

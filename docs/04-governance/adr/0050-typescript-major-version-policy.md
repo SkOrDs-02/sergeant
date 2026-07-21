@@ -14,7 +14,7 @@
 
 ## Context and Problem Statement
 
-Sergeant uses **TypeScript 6.x** across the monorepo (including `apps/mobile` on `~6.0.3`). Production runtime is **Node 22.x** (Volta `22.19.0`, `Dockerfile.api` → `node:22.16.0-alpine`). `@types/node` remains pinned to `^20.19.x` via `pnpm.overrides` until a dedicated bump to `@types/node@22` in the same PR as any further runtime pin change. Historical `tools/openclaw` TS pin removed — directory deleted; OpenClaw lives in external gateway + `packages/openclaw-plugin` per ADR-0055.
+Sergeant uses **TypeScript 6.x** across the monorepo (including `apps/mobile` on `~6.0.3`). Production runtime is **Node 22.x** (Volta `22.19.0`, `Dockerfile.api` → `node:22.16.0-alpine`). `@types/node` remains pinned to `^20.19.x` via `pnpm.overrides` until a dedicated bump to `@types/node@22` in the same PR as any further runtime pin change. Historical `tools/openclaw` / `tools/console` TS pin removed — directories deleted; OpenClaw stack fully decommissioned per [ADR-0075](./0075-openclaw-gateway-decommissioned.md).
 
 Stack-pulse finding C5 identified this as a Critical risk.
 

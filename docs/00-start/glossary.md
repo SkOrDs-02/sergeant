@@ -1,6 +1,6 @@
 # Глосарій — доменні й платформні терміни Sergeant
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 > Один екран, щоб новачок (людина чи агент) розшифрував жаргон, який
@@ -26,8 +26,8 @@
 | Термін          | Що це                                                                                                                                                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **HubChat**     | Web-**Асистент** для кінцевого користувача: tool-defs, executors, prompt cache, action cards. **HubChat ≠ OpenClaw.** Skill: `sergeant-hubchat`.                                                                          |
-| **OpenClaw**    | Зовнішній **OpenClaw Gateway** (Telegram-бот / console agent) + `@sergeant/openclaw-plugin`, окремий Railway-сервіс. ADR → [`0055-openclaw-external-gateway.md`](../04-governance/adr/0055-openclaw-external-gateway.md). |
-| **Gateway**     | Інстанс OpenClaw Gateway (open-source runtime), на якому крутиться Sergeant-плагін. Skill: `sergeant-openclaw`.                                                                                                           |
+| **OpenClaw**    | *(Decommissioned 2026-07-20 — [ADR-0075](../04-governance/adr/0075-openclaw-gateway-decommissioned.md).)* Історично — Telegram co-founder bot / external Gateway. **Не плутати з HubChat** (web-асистент для юзерів). |
+| **Gateway**     | *(Historical.)* Колишній OpenClaw Gateway runtime — повністю прибрано з репо. |
 | **Memory Bank** | Local-first сховище AI-фактів про користувача. ADR → [`0021-memory-bank.md`](../04-governance/adr/0021-memory-bank.md).                                                                                                   |
 
 ## Дані, sync, час, гроші

@@ -126,7 +126,7 @@ SELECT embedding_model, COUNT(*) FROM ai_memories GROUP BY 1 ORDER BY 2 DESC;
 
 1. Зміни `VOYAGE_EMBEDDING_MODEL` (у production env (Coolify) + `.env`) на нове значення нової моделі.
 2. Задеплой сервер — `vectorStore.query` автоматично почне фільтрувати за новою моделлю.
-3. Переконайся, що recall працює коректно (smoke-тест через `/api/ai-memory/recall` або openclaw tool).
+3. Переконайся, що recall працює коректно (smoke-тест через `/api/ai-memory/recall` або HubChat tool).
 
 **Rollback:** якщо якість recall деградувала, поверни `VOYAGE_EMBEDDING_MODEL` до старого значення — read-filter автоматично повернеться до старих рядків.
 

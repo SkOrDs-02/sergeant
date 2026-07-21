@@ -24,22 +24,22 @@ Load skill: sergeant-qa-squad
 
 ```
 Create an agent team for full QA across all Sergeant surfaces.
-Spawn 4 teammates:
+Spawn 3 teammates:
 1. qa-server — apps/server tests and typecheck
 2. qa-web — apps/web tests and typecheck
-3. qa-mobile — apps/mobile unit tests and typecheck
-4. qa-openclaw — tools/openclaw tests and typecheck
+3. qa-mobile — apps/mobile + mobile-shell tests and typecheck
 
 All run independently. Report to the lead when done.
 ```
+*(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)*
 
-### Крок 3 — Чекай на всі 4 звіти
+### Крок 3 — Чекай на всі 3 звіти
 
-Не роби synthesis поки всі 4 не відзвітували. В `in-process` mode: `Shift+Down` для навігації між teammates.
+Не роби synthesis поки всі 3 не відзвітували.
 
 ### Крок 4 — Synthesis
 
-Після отримання всіх 4 звітів:
+Після отримання всіх 3 звітів:
 
 - Зведений статус: `🟢 All surfaces green` або `🔴 Failures in: [список]`
 - Per-surface таблиця: Tests / Typecheck / Failures
@@ -51,13 +51,13 @@ All run independently. Report to the lead when done.
 
 ## Owner surface
 
-- Primary surface: `apps/server`, `apps/web`, `apps/mobile`, `tools/openclaw`
+- Primary surface: `apps/server`, `apps/web`, `apps/mobile`, `apps/mobile-shell`
 - Coupled surface: n/a — паралельна перевірка незалежних surfaces
 - Governing skill: `sergeant-qa-squad`
 
 ## Verification
 
-- [ ] Всі 4 qa-агенти (server, web, mobile, openclaw) завершили і надіслали звіт
+- [ ] Всі 3 qa-агенти (server, web, mobile) завершили і надіслали звіт
 - [ ] Synthesis містить per-surface таблицю Tests / Typecheck / Failures
 - [ ] Зелений статус (`🟢 All surfaces green`) або failures передані до `sergeant-bugfix-and-regression`
 
