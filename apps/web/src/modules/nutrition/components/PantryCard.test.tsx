@@ -72,6 +72,15 @@ describe("PantryCard add modes", () => {
     expect(upsertItem).toHaveBeenCalledWith("Рис");
   });
 
+  it("routes single-item input changes through setNewItemName", () => {
+    const setNewItemName = vi.fn();
+    render(<Card {...baseProps({ setNewItemName })} />);
+    fireEvent.change(screen.getByPlaceholderText(/лосось/), {
+      target: { value: "Авокадо" },
+    });
+    expect(setNewItemName).toHaveBeenCalledWith("Авокадо");
+  });
+
   it("switches to list mode and parses pantry text", () => {
     const parsePantry = vi.fn();
     render(
@@ -85,6 +94,16 @@ describe("PantryCard add modes", () => {
     fireEvent.click(screen.getByText("Список"));
     fireEvent.click(screen.getByText("Розібрати"));
     expect(parsePantry).toHaveBeenCalled();
+  });
+
+  it("routes list-mode text edits through setPantryText", () => {
+    const setPantryText = vi.fn();
+    render(<Card {...baseProps({ setPantryText })} />);
+    fireEvent.click(screen.getByText("Список"));
+    fireEvent.change(screen.getByPlaceholderText(/2 яйця/), {
+      target: { value: "банани, молоко" },
+    });
+    expect(setPantryText).toHaveBeenCalledWith("банани, молоко");
   });
 
   it("renders the barcode scan affordance when handler provided", () => {
@@ -119,5 +138,61 @@ describe("PantryCard inventory", () => {
     expect(editItemAt).toHaveBeenCalledWith(0);
     fireEvent.click(screen.getByLabelText("Прибрати Молоко"));
     expect(removeItemAtOrByName).toHaveBeenCalledWith(0, "Молоко");
+  });
+
+  it("collapses the inventory card when the heading is toggled", () => {
+    render(
+      <Card
+        {...baseProps({
+          effectiveItems: [{ name: "Молоко", qty: 1, unit: "л" }],
+          pantryItemsLength: 1,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Моя комора/ }));
+    expect(
+      screen.queryByLabelText("Редагувати Молоко"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens a large inventory category before routing item actions", () => {
+    const editItemAt = vi.fn();
+    const effectiveItems = Array.from({ length: 13 }, (_, idx) => ({
+      name: `Продукт ${idx + 1}`,
+      unit: idx === 0 ? "шт" : undefined,
+    }));
+
+    render(
+      <Card
+        {...baseProps({
+          effectiveItems,
+          pantryItemsLength: effectiveItems.length,
+          editItemAt,
+        })}
+      />,
+    );
+    expect(
+      screen.queryByLabelText("Редагувати Продукт 1"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Інше/ }));
+    fireEvent.click(screen.getByLabelText("Редагувати Продукт 1"));
+    expect(editItemAt).toHaveBeenCalledWith(0);
+  });
+
+  it("renders fallback labels for unnamed inventory items", () => {
+    const removeItemAtOrByName = vi.fn();
+    render(
+      <Card
+        {...baseProps({
+          effectiveItems: [{ qty: 3 }],
+          pantryItemsLength: 1,
+          removeItemAtOrByName,
+        })}
+      />,
+    );
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Прибрати продукт"));
+    expect(removeItemAtOrByName).toHaveBeenCalledWith(0, undefined);
   });
 });

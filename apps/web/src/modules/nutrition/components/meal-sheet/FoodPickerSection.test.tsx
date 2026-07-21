@@ -80,18 +80,48 @@ describe("FoodPickerSection — search mode", () => {
   it("picks a local food hit", () => {
     const setPickedFood = vi.fn();
     const setPickedGrams = vi.fn();
+    const setFoodQuery = vi.fn();
     render(
       <Section
         {...baseProps({
           foodHits: [{ id: "f1", name: "Курка", defaultGrams: 150 }],
           setPickedFood,
           setPickedGrams,
+          setFoodQuery,
         })}
       />,
     );
     fireEvent.click(screen.getByText("hit:Курка"));
     expect(setPickedFood).toHaveBeenCalled();
     expect(setPickedGrams).toHaveBeenCalledWith("150");
+    expect(setFoodQuery).toHaveBeenCalledWith("");
+  });
+
+  it("picks an OFF hit and falls back to 100 grams", () => {
+    const setPickedFood = vi.fn();
+    const setPickedGrams = vi.fn();
+    const setFoodQuery = vi.fn();
+    render(
+      <Section
+        {...baseProps({
+          offHits: [{ id: "o1", name: "Йогурт", defaultGrams: 0 }],
+          setPickedFood,
+          setPickedGrams,
+          setFoodQuery,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("hit:Йогурт"));
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Йогурт" }),
+    );
+    expect(setPickedGrams).toHaveBeenCalledWith("100");
+    expect(setFoodQuery).toHaveBeenCalledWith("");
+  });
+
+  it("shows a busy search indicator", () => {
+    render(<Section {...baseProps({ foodBusy: true })} />);
+    expect(screen.getByText("пошук…")).toBeInTheDocument();
   });
 
   it("shows the OFF group separator when both hit lists are non-empty", () => {
@@ -132,6 +162,45 @@ describe("FoodPickerSection — picked mode", () => {
     expect(screen.getAllByTestId("macro-chip").length).toBe(4);
   });
 
+  it("recalculates form macros from picked food and comma grams", () => {
+    const setForm = vi.fn();
+    render(
+      <Section
+        {...baseProps({
+          pickedFood: {
+            ...picked,
+            per100: { kcal: 120, protein_g: 20, fat_g: 5, carbs_g: 10 },
+          },
+          pickedGrams: "50,5",
+          setForm,
+        })}
+      />,
+    );
+
+    const updater = setForm.mock.calls[0]?.[0] as (
+      state: MealFormState,
+    ) => MealFormState;
+    expect(updater(form({ name: "Стара назва" }))).toMatchObject({
+      name: "Курка Наша Ряба",
+      kcal: "61",
+      protein_g: "10",
+      fat_g: "3",
+      carbs_g: "5",
+      err: "",
+    });
+  });
+
+  it("renders the OFF badge for a picked Open Food Facts product", () => {
+    render(
+      <Section
+        {...baseProps({
+          pickedFood: { ...picked, source: "off" },
+        })}
+      />,
+    );
+    expect(screen.getByText("🌍")).toBeInTheDocument();
+  });
+
   it("increments and decrements the gram portion", () => {
     const setPickedGrams = vi.fn();
     render(
@@ -147,6 +216,23 @@ describe("FoodPickerSection — picked mode", () => {
     expect(setPickedGrams).toHaveBeenCalledWith("110");
     fireEvent.click(screen.getByLabelText("Зменшити"));
     expect(setPickedGrams).toHaveBeenCalledWith("90");
+  });
+
+  it("uses smaller portion steps below 50 grams", () => {
+    const setPickedGrams = vi.fn();
+    render(
+      <Section
+        {...baseProps({
+          pickedFood: picked,
+          pickedGrams: "25",
+          setPickedGrams,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Збільшити"));
+    expect(setPickedGrams).toHaveBeenCalledWith("30");
+    fireEvent.click(screen.getByLabelText("Зменшити"));
+    expect(setPickedGrams).toHaveBeenCalledWith("20");
   });
 
   it("applies a quick-portion preset", () => {
