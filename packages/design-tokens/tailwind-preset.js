@@ -419,7 +419,6 @@ const preset = {
         // ─── Celebration / Gamification ──────────────────────────────────
         celebration: "rgb(var(--c-celebration) / <alpha-value>)",
         "streak-glow": "rgb(var(--c-streak-glow) / <alpha-value>)",
-        xp: "rgb(var(--c-xp) / <alpha-value>)",
 
         // ═══════════════════════════════════════════════════════════════════
         // SERGEANT v2 REDESIGN TOKENS (introduced 2026-05)
