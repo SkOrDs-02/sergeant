@@ -38,6 +38,12 @@ function textResponse(text: string, init: ResponseInit = {}): Response {
   });
 }
 
+function responseWithFailingText(): Response {
+  const res = jsonResponse({ ok: true });
+  vi.spyOn(res, "text").mockRejectedValue(new TypeError("body stream lost"));
+  return res;
+}
+
 let originalFetch: typeof fetch;
 
 beforeEach(() => {
@@ -124,6 +130,51 @@ describe("httpClient — успішні запити", () => {
     const out = await http.get("/api/noop");
     expect(out).toBeNull();
   });
+
+  it("ізолює помилки onResponseHeaders від основного request flow", async () => {
+    const client = createHttpClient({
+      onResponseHeaders: () => {
+        throw new Error("tracker failed");
+      },
+    });
+    mockFetchOnce(jsonResponse({ ok: true }));
+
+    await expect(client.get("/api/ping")).resolves.toEqual({ ok: true });
+  });
+
+  it("ігнорує помилку getToken і не ставить Authorization", async () => {
+    const client = createHttpClient({
+      getToken: () => {
+        throw new Error("secure storage unavailable");
+      },
+    });
+    const fn = mockFetchOnce(jsonResponse({ ok: true }));
+
+    await expect(client.get("/api/ping")).resolves.toEqual({ ok: true });
+    const headers = (firstCall(fn)[1] as RequestInit).headers as Headers;
+    expect(headers.get("Authorization")).toBeNull();
+  });
+
+  it("додає defaultHeaders до кожного запиту", async () => {
+    const client = createHttpClient({
+      defaultHeaders: { "X-Client": "api-client-test" },
+    });
+    const fn = mockFetchOnce(jsonResponse({ ok: true }));
+
+    await expect(client.get("/api/ping")).resolves.toEqual({ ok: true });
+    const headers = (firstCall(fn)[1] as RequestInit).headers as Headers;
+    expect(headers.get("X-Client")).toBe("api-client-test");
+  });
+
+  it("PUT серіалізує body і виставляє method", async () => {
+    const fn = mockFetchOnce(jsonResponse({ ok: true }));
+
+    await http.put("/api/x", { value: 1 });
+
+    const init = firstCall(fn)[1] as RequestInit;
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({ value: 1 }));
+  });
 });
 
 describe("httpClient — помилки", () => {
@@ -183,6 +234,31 @@ describe("httpClient — помилки", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).kind).toBe("parse");
     expect((err as ApiError).bodyText).toContain("<html>");
+  });
+
+  it("некоректний JSON з application/json → ApiError.kind='parse'", async () => {
+    mockFetchOnce(
+      new Response("{not-json", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).kind).toBe("parse");
+    expect((err as ApiError).bodyText).toBe("{not-json");
+  });
+
+  it("помилка читання response body мапиться у network ApiError", async () => {
+    mockFetchOnce(responseWithFailingText());
+
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).kind).toBe("network");
+    expect((err as ApiError).message).toBe("body stream lost");
   });
 
   it("isAuth для 401/403 HTTP-помилки", async () => {
