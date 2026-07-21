@@ -1,6 +1,6 @@
 # Playbook: Embedding Provider Migration
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.
@@ -126,7 +126,7 @@ SELECT embedding_model, COUNT(*) FROM ai_memories GROUP BY 1 ORDER BY 2 DESC;
 
 1. Зміни `VOYAGE_EMBEDDING_MODEL` (у production env (Coolify) + `.env`) на нове значення нової моделі.
 2. Задеплой сервер — `vectorStore.query` автоматично почне фільтрувати за новою моделлю.
-3. Переконайся, що recall працює коректно (smoke-тест через `/api/ai-memory/recall` або openclaw tool).
+3. Переконайся, що recall працює коректно (smoke-тест через `/api/ai-memory/recall` або HubChat tool).
 
 **Rollback:** якщо якість recall деградувала, поверни `VOYAGE_EMBEDDING_MODEL` до старого значення — read-filter автоматично повернеться до старих рядків.
 

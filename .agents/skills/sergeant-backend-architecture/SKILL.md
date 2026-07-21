@@ -60,7 +60,7 @@ Client → Commands/Queries → Handlers → Write Model → Events → Projecto
 
 - `sergeant-server-api` — API роутери, серіалізатори
 - `sergeant-data-and-migrations` — SQL schema, міграції
-- `sergeant-hubchat` — OpenClaw інтеграція
+- `sergeant-hubchat` — HubChat tool-defs, executors, prompt cache
 
 ## Hard Rules в Sergeant
 

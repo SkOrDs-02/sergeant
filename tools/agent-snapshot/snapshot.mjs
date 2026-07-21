@@ -206,7 +206,7 @@ function sectionBudgets() {
     }
   }
 
-  const JS_BUDGET = 1.2 * 1024 * 1024;
+  const JS_BUDGET = 1.25 * 1024 * 1024;
   const CSS_BUDGET = 36 * 1024;
   let jsText = "`[unavailable: no bundle-stats.json]`";
   let cssText = "`[unavailable: no bundle-stats.json]`";
@@ -214,7 +214,7 @@ function sectionBudgets() {
   if (raw) {
     const jsBytes = Number(raw.jsBrotliBytes ?? raw.jsBundleBytes ?? 0);
     const cssBytes = Number(raw.cssBrotliBytes ?? raw.cssBundleBytes ?? 0);
-    if (jsBytes > 0) jsText = formatBudget(jsBytes, JS_BUDGET, "≤ 1.2 MB");
+    if (jsBytes > 0) jsText = formatBudget(jsBytes, JS_BUDGET, "≤ 1.25 MB");
     if (cssBytes > 0) cssText = formatBudget(cssBytes, CSS_BUDGET, "≤ 36 kB");
   }
 

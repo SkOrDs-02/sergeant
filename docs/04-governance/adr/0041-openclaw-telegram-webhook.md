@@ -1,5 +1,7 @@
 # ADR-0041: OpenClaw Telegram delivery via webhook
 
+> **Superseded by [ADR-0055](./0055-openclaw-external-gateway.md) → [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20).** OpenClaw runtime повністю прибрано з репо. Тіло нижче — історичний запис.
+
 - **Status:** Superseded by [ADR-0055](./0055-openclaw-external-gateway.md)
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-03

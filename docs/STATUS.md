@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-07-20 by docs:gen-status. **Next review:** 2026-07-20.
+> **Last validated:** 2026-07-21 by docs:gen-status. **Next review:** 2026-07-21.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
+- [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(PENDING)_
 - [#4521](https://github.com/Skords-01/Sergeant/pull/4521) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(PENDING)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 - [#3638](https://github.com/Skords-01/Sergeant/pull/3638) — Audit triage digest (auto, twice-weekly) _(2026-06-19)_
@@ -28,7 +29,6 @@
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
-- [#3567](https://github.com/Skords-01/Sergeant/pull/3567) — docs(agents): record 0018 semantic measurement + drop orphan 0019 README row _(2026-06-14)_
 
 ## 🔵 В роботі — 28 відкритих
 
@@ -45,13 +45,13 @@
 **Найактивніше (8, за останніми PR):**
 
 - [`90-work/initiatives/hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md) — Зведена матриця hardening-карток — Active _(Ініціативи)_
-- [`90-work/planning/harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md) — Harness Engineering v1 — Rollout Summary — Active — rollout v1 shipped (2026-06-29); follow-ups (golden-task suite, 0.1→1.0) лишаються відкритими. _(Планування)_
+- [`90-work/planning/harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md) — Harness Engineering v1 — Rollout Summary — Active — rollout v1 shipped (2026-06-29); harness `1.0.0` + skill-trigger evals + golden-task suite + freshness-janitor _(Планування)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
 - [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
-- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — кодова звірка 2026-07-13; виконані acceptance-пункти позначаються як shipped, а live Stripe/ФОП і production-ga _(Планування)_
+- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — Sprint 9 code-side closed; Sprint 10: S10-T2 + S10-Q1 + S10-X1 + S10-T3 (JSON) shipped; відкриті залишки: S10-R _(Планування)_
 
 ## ⏭️ Наступний крок / заблоковано
 

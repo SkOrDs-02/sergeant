@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -43,7 +43,7 @@
 ### 4. Зафіксуй operational impact у PR-описі
 
 - Що саме запускає воркфлоу (cron, webhook, manual trigger).
-- Які env / credentials потрібні і де вони мають бути виставлені (Coolify env vars для бекенду, n8n-хост, локальний `.env`).
+- Які env / credentials потрібні і де вони мають бути виставлені (Coolify app env для API, n8n-хост, локальний `.env`).
 - Який blast radius при помилці — кого зачепить, які системи можуть зламатися.
 - Чи потребує окремого ревʼю від owner-а суміжного домену (наприклад фінанси, безпека).
 
@@ -64,3 +64,14 @@
 
 - [investigate-alert.md](./investigate-alert.md)
 - Skill: `sergeant-deploy-and-observability`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | PENDING |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

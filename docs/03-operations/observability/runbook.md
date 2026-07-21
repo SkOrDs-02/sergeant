@@ -1,7 +1,9 @@
 # Observability-runbook
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
+
+> **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 Інструкції "що робити, коли спрацював алерт" для правил з
 [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Тримай коротко:

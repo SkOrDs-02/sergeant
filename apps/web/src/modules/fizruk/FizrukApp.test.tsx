@@ -132,8 +132,8 @@ describe("FizrukApp smoke tests", () => {
 
   it("renders the FizrukHeader title text for the dashboard page", () => {
     render(<FizrukApp />);
-    // FizrukHeader renders the localized module title on the dashboard page.
-    expect(screen.getAllByText("Фізрук").length).toBeGreaterThan(0);
+    // FizrukHeader renders "Фізрук" as the module heading on the dashboard page
+    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
   });
 
   it("renders with optional props left undefined without crashing", () => {
