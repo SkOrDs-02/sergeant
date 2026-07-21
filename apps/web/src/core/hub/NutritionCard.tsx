@@ -3,6 +3,7 @@
  * Reads its own localStorage shard and aggregates independently.
  */
 import { useMemo, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -249,9 +250,12 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
           "-m-1 p-1 hover:bg-panelHi transition-colors",
         )}
       >
-        <span className="text-lg shrink-0" aria-hidden>
-          🥗
-        </span>
+        <Icon
+          name="utensils"
+          size="lg"
+          className="shrink-0 text-nutrition"
+          aria-hidden
+        />
         <SectionHeading
           as="span"
           size="xs"

@@ -37,7 +37,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.finyk.action,
     title: MODULE_PRIMARY_ACTION.finyk.label,
     subtitle: "Фінік · одна команда замість FAB",
-    icon: "💳",
+    icon: "credit-card",
     keywords:
       "витрата витрати кошти гроші платіж кав каву кафе spend spent expense add transaction trans tx finyk фінік",
   },
@@ -46,7 +46,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.fizruk.action,
     title: MODULE_PRIMARY_ACTION.fizruk.label,
     subtitle: "Фізрук · стартує сесію без переходу",
-    icon: "🏋️",
+    icon: "dumbbell",
     keywords:
       "тренування трен зал гим жим кардіо біг workout train start gym lift run fizruk фізрук",
   },
@@ -55,7 +55,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.routine.action,
     title: MODULE_PRIMARY_ACTION.routine.label,
     subtitle: "Рутина · нова звичка одним тапом",
-    icon: "✅",
+    icon: "check-circle",
     keywords: "звичка habit рутина streak серія додати add new daily routine",
   },
   {
@@ -63,7 +63,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.nutrition.action,
     title: MODULE_PRIMARY_ACTION.nutrition.label,
     subtitle: "Їжа · прийом їжі без модалки",
-    icon: "🥗",
+    icon: "utensils",
     keywords:
       "їжа їсти прийом сніданок обід вечеря перекус калорії білок meal eat food breakfast lunch dinner snack ккал nutrition харчування",
   },
@@ -132,7 +132,7 @@ export function searchAiHandoff(query: string): Hit[] {
       moduleLabel: "AI-помічник",
       title: `Запитати AI: «${trimmed}»`,
       subtitle: "Відкрити чат з готовим запитом",
-      icon: "✨",
+      icon: "sparkles",
       target: { kind: "ai-handoff", query: trimmed },
       // Constant low score so AI handoff sits at the bottom of its
       // group regardless of query — it's the fallback, not the answer.
