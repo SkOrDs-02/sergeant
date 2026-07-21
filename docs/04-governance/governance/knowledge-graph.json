@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-20",
+  "generated_at": "2026-07-21",
   "counts": {
     "adr": 72,
     "hard-rule": 26,
@@ -792,7 +792,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-19"
+        "last_validated": "2026-07-20"
       }
     },
     {
