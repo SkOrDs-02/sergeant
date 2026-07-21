@@ -110,6 +110,13 @@ describe("AssetsLiabilitiesSection", () => {
     const state = makeState();
     render(wrap(<AssetsLiabilitiesSection state={state} />));
     fireEvent.click(screen.getByText("+ Додати пасив"));
+    expect(state.setEditingDebtId).toHaveBeenCalledWith(null);
+    expect(state.setNewDebt).toHaveBeenCalledWith({
+      name: "",
+      emoji: "",
+      totalAmount: "",
+      dueDate: "",
+    });
     expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
   });
 
@@ -134,6 +141,30 @@ describe("AssetsLiabilitiesSection", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders linked Monobank debt progress and opens the transaction picker", () => {
+    const state = makeState({
+      monoDebtAccounts: [
+        { id: "credit1", balance: -500000, currencyCode: 980, type: "black" },
+      ] as unknown as State["monoDebtAccounts"],
+      monoDebtLinkedTxIds: { credit1: ["tx-pay"] },
+      transactions: [
+        { id: "tx-pay", amount: -125000 },
+        { id: "tx-other", amount: -99900 },
+      ] as unknown as State["transactions"],
+    });
+
+    render(wrap(<AssetsLiabilitiesSection state={state} />));
+
+    expect(screen.getByText(/Прив.язати транзакції \(1\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Сплачено/)).toHaveTextContent(/1[\s\S]*250/);
+
+    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    expect(state.setTxPicker).toHaveBeenCalledWith({
+      id: "credit1",
+      type: "monoDebt",
+    });
+  });
+
   it("renders manual debt cards when manualDebts are present", () => {
     const state = makeState({
       manualDebts: [
@@ -151,6 +182,57 @@ describe("AssetsLiabilitiesSection", () => {
     // The name may be rendered with an emoji prefix in the same span.
     // Use a regex matcher so the partial match works across text nodes.
     expect(screen.getByText(/МійКредит/)).toBeInTheDocument();
+  });
+
+  it("edits, links, and deletes manual debt cards", () => {
+    const setManualDebts = vi.fn((updater) => {
+      if (typeof updater === "function") {
+        updater([
+          {
+            id: "d1",
+            name: "Кредит",
+            emoji: "💳",
+            totalAmount: 10000,
+            linkedTxIds: ["tx-pay"],
+          },
+        ]);
+      }
+    });
+    const state = makeState({
+      setManualDebts,
+      manualDebts: [
+        {
+          id: "d1",
+          name: "Кредит",
+          emoji: "💳",
+          totalAmount: 10000,
+          amount: 9000,
+          dueDate: "2026-09-01",
+          linkedTxIds: ["tx-pay"],
+        },
+      ] as unknown as State["manualDebts"],
+      transactions: [
+        { id: "tx-pay", amount: -100000 },
+      ] as unknown as State["transactions"],
+    });
+
+    render(wrap(<AssetsLiabilitiesSection state={state} />));
+
+    fireEvent.click(screen.getByRole("button", { name: "Редагувати Кредит" }));
+    expect(state.setEditingDebtId).toHaveBeenCalledWith("d1");
+    expect(state.setNewDebt).toHaveBeenCalledWith({
+      name: "Кредит",
+      emoji: "💳",
+      totalAmount: "10000",
+      dueDate: "2026-09-01",
+    });
+    expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
+
+    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    expect(state.setTxPicker).toHaveBeenCalledWith({ id: "d1", type: "debt" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
+    expect(setManualDebts).toHaveBeenCalled();
   });
 
   it("hides the empty-state placeholder when manualDebts are present", () => {
