@@ -72,7 +72,7 @@ describe("SearchResultItem", () => {
           moduleLabel: "Налаштування",
           title: "Налаштування Hub",
           subtitle: "Дашборд",
-          icon: "⚙",
+          icon: "settings",
           target: { kind: "settings" },
         })}
         index={0}
