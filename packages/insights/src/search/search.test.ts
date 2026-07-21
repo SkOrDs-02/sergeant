@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { normalize, tokenize, scoreMatch, scoreAndSort } from "./index.js";
 
 describe("normalize", () => {
@@ -14,6 +14,20 @@ describe("normalize", () => {
 
   it("повертає пустий рядок на falsy input", () => {
     expect(normalize("")).toBe("");
+  });
+
+  it("falls back to lowercase when Unicode normalization throws", () => {
+    const normalizeSpy = vi
+      .spyOn(String.prototype, "normalize")
+      .mockImplementation(() => {
+        throw new Error("normalize unavailable");
+      });
+
+    try {
+      expect(normalize("CAFÉ")).toBe("café");
+    } finally {
+      normalizeSpy.mockRestore();
+    }
   });
 });
 
