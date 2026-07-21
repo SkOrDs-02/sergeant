@@ -3,6 +3,7 @@
 > **⚠️ Rollout завершено, Phase 7 виконано (2026-07-20, commit `d5cc2648c`):** усі v1 sunset-модулі — `sunsetGone.ts` (410 handler), `sunsetHeaders.ts` (RFC 8594/8288 headers), `clientSurvey.ts` (survey counter) + метрику `sync_v1_legacy_clients_total` — **видалено** після завершення deprecation-вікна. v1 push/pull тепер віддає **голий `404`** (не `410 Gone`). Цей ADR лишається як історичний запис 6-фазного плану; посилання на видалені файли нижче збережені для контексту.
 
 - **Status:** Accepted
+- **Note:** Historical — inline paths name Phase 1–6 sunset modules removed in Phase 7 (2026-07-20); v1 sync now returns bare `404`.
 - **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
 - **Date:** 2026-05-04
 - **Deciders:** @Skords-01
@@ -180,3 +181,14 @@ DROP COLUMN — point-of-no-return.
 - [RFC 8288 — Web Linking](https://datatracker.ietf.org/doc/html/rfc8288)
 - [Apigee deprecation pattern](https://cloud.google.com/apigee/docs/api-platform/develop/deprecation-policy) — industry reference
 - [Stripe API versioning model](https://stripe.com/docs/api/versioning) — alternative approach (versioned URL paths) — НЕ обрано, бо v2 уже на окремому prefix.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | PENDING |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

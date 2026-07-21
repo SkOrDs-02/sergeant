@@ -10,9 +10,9 @@ name: Container image scan (Trivy)
 # скануються лише lockfile-залежності, тут — реальний runtime-image
 # (alpine layers, transitive npm у рантайм-вузлі тощо).
 #
-# Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470; його окрему
-# Trivy-джобу прибрано разом із ним. Сканування нового OpenClaw Gateway
-# образу (`Dockerfile.openclaw-gateway`) — окремий follow-up.
+# Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470; OpenClaw
+# Gateway (`Dockerfile.openclaw-gateway`) — decommissioned ADR-0075
+# (2026-07-20). Єдиний образ у цьому workflow: `Dockerfile.api`.
 
 on:
   pull_request:

@@ -34,8 +34,11 @@
 //      - docs/02-engineering/notes/spikes/                    (exploratory spike walkthroughs;
 //                                               file refs may describe imagined
 //                                               module shape pre-refactor)
-//    Files in ADRs with Status: proposed are exempt (future refs OK).
-//    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
+//    Files in ADRs with Status: proposed or Status: Superseded (case-
+//    insensitive) are exempt — future or historical decision records.
+//    ADRs with `- **Note:** Historical` / `- **Note:** Історичн…` in the
+//    header (first ~30 lines) are also exempt. All other dangling refs are
+//    reported as ERRORS (Hard Rule #15 — docs
 //    that describe current behaviour must move with code).
 //
 // Usage:
@@ -373,27 +376,10 @@ function checkDanglingRefs() {
     const relPath = relative(ROOT, file).replace(/\\/g, "/");
     const content = readFileSync(file, "utf-8");
 
-    // Check if this is a "proposed" ADR (future refs are OK)
-    if (
-      relPath.startsWith("docs/04-governance/adr/") &&
-      /Status:\*?\*?\s*proposed/i.test(content)
-    ) {
+    // Proposed / superseded / header-flagged historical ADRs: inline file
+    // refs describe future or legacy layout, not current code contracts.
+    if (isAdrExemptFromDanglingRefCheck(content, relPath)) {
       continue;
-    }
-    // Historical ADRs explicitly flagged with a `- **Note:**`
-    // metadata line in the front-of-file ADR header (first ~30 lines)
-    // indicating supersession describe legacy file paths. Same
-    // semantics as a proposed ADR — refs are descriptive, not
-    // contractual. Scoped to the header so a body-level narrative
-    // mention of "Note: ... historical" can't accidentally exempt
-    // the whole document (CodeRabbit feedback on PR #3026).
-    if (relPath.startsWith("docs/04-governance/adr/")) {
-      const adrHeader = content.split("\n").slice(0, 30).join("\n");
-      if (
-        /^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)
-      ) {
-        continue;
-      }
     }
 
     // Check if this is the RN migration tracker (target-state refs are OK)
@@ -443,6 +429,18 @@ function checkDanglingRefs() {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** @param {string} content @param {string} relPath */
+export function isAdrExemptFromDanglingRefCheck(content, relPath) {
+  if (!relPath.startsWith("docs/04-governance/adr/")) return false;
+  if (/Status:\*?\*?\s*proposed/i.test(content)) return true;
+  if (/Status:\*?\*?\s*Superseded/i.test(content)) return true;
+  const adrHeader = content.split("\n").slice(0, 30).join("\n");
+  if (/^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)) {
+    return true;
+  }
+  return false;
+}
 
 function findMdFiles(dir) {
   const results = [];

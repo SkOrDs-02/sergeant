@@ -1,13 +1,13 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-20",
+  "generated_at": "2026-07-21",
   "counts": {
     "adr": 72,
     "hard-rule": 26,
     "initiative": 6,
     "playbook": 60,
-    "pr": 146,
+    "pr": 147,
     "skill": 23
   },
   "nodes": [
@@ -792,7 +792,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-19"
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -2729,6 +2729,16 @@
       }
     },
     {
+      "id": "pr:334",
+      "type": "pr",
+      "title": "PR #334",
+      "tier": "extended",
+      "meta": {
+        "number": 334,
+        "url": "https://github.com/Skords-01/Sergeant/pull/334"
+      }
+    },
+    {
       "id": "pr:3392",
       "type": "pr",
       "title": "PR #3392",
@@ -3781,6 +3791,11 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0043",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0047",
       "to": "hard-rule:4",
       "type": "references"
@@ -3793,6 +3808,11 @@
     {
       "from": "adr:0047",
       "to": "pr:326",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:334",
       "type": "touched-by"
     },
     {
@@ -4053,6 +4073,11 @@
     {
       "from": "adr:0073",
       "to": "pr:169",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:334",
       "type": "touched-by"
     },
     {
@@ -4516,6 +4541,16 @@
       "type": "references"
     },
     {
+      "from": "playbook:modify-n8n-workflow",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:onboard-external-api",
+      "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
       "from": "playbook:playbook-catalog",
       "to": "pr:447",
       "type": "touched-by"
@@ -4544,6 +4579,11 @@
       "from": "playbook:rotate-openclaw-credentials",
       "to": "hard-rule:20",
       "type": "references"
+    },
+    {
+      "from": "playbook:rotate-openclaw-credentials",
+      "to": "pr:334",
+      "type": "touched-by"
     },
     {
       "from": "playbook:stabilize-flaky-test",

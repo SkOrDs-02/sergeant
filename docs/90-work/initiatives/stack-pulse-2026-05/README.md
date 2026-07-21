@@ -11,12 +11,12 @@
 
 ## Де шукати
 
-| Артефакт                  | Шлях                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Архів усіх PR-планів      | [`archive/`](./archive/)                                                                                                  |
-| Зведена матриця           | [`../hardening-matrix.md`](../hardening-matrix.md)                                                                        |
-| Single web origin (PR-25) | [`docs/04-governance/adr/0074-hosting-hetzner-coolify.md`](../../04-governance/adr/0074-hosting-hetzner-coolify.md) §74.2 |
-| Deep-link bridge (PR-29)  | `packages/shared/src/shell/deepLinkChannel.ts`                                                                            |
+| Артефакт                  | Шлях                                                                                                                         |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Архів усіх PR-планів      | [`archive/`](./archive/)                                                                                                     |
+| Зведена матриця           | [`../hardening-matrix.md`](../hardening-matrix.md)                                                                           |
+| Single web origin (PR-25) | [`docs/04-governance/adr/0074-hosting-hetzner-coolify.md`](../../../04-governance/adr/0074-hosting-hetzner-coolify.md) §74.2 |
+| Deep-link bridge (PR-29)  | `packages/shared/src/shell/deepLinkChannel.ts`                                                                               |
 
 ---
 

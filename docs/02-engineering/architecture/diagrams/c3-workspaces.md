@@ -83,7 +83,7 @@ The packages most other workspaces depend on. `Importers` = unique file count ac
 
 | Rank | Workspace                    | Importers | Exports |
 | ---- | ---------------------------- | --------- | ------- |
-| 1    | `@sergeant/shared`           | 376       | 1       |
+| 1    | `@sergeant/shared`           | 380       | 1       |
 | 2    | `@sergeant/nutrition-domain` | 97        | 1       |
 | 3    | `@sergeant/fizruk-domain`    | 90        | 1       |
 | 4    | `@sergeant/routine-domain`   | 71        | 1       |
