@@ -141,7 +141,7 @@
 | **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ✅ [Merged #1986](https://github.com/Skords-01/Sergeant/pull/1986)                                   |
 | **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ✅ [Merged #1998](https://github.com/Skords-01/Sergeant/pull/1998)                                   |
 | **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ✅ [Merged #2011](https://github.com/Skords-01/Sergeant/pull/2011)                                   |
-| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/90-work/audits -maxdepth 1 -name '*.md'` ≤ 6    | ⏳ Wave 1                                                                                            |
+| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/90-work/audits -maxdepth 1 -name '*.md'` ≤ 6    | ✅ [Merged #2768](https://github.com/Skords-01/Sergeant/pull/2768)                                   |
 
 ### 3.2. Хвиля 2 — Product UX (Week 2-3, 6 PR)
 
