@@ -35,7 +35,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 - **Module accents (Rule #12):** module-accent containment — no foreign accents inside a module subtree.
 - **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Permanent lint-enforced convention — split before crossing.
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
-- **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` for `xs`/`sm`/`iconOnly`; opt out with `data-compact` only for intentionally small cells (heatmaps).
+- **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` (на fine-pointer/desktop-миші floor навмисно не діє — `Button.tsx` `pointer-coarse:` варіант); opt out with `data-compact` only for intentionally small cells (heatmaps).
 - **Vitest prerequisite:** run `pnpm --filter @sergeant/db-schema build` before `pnpm --filter @sergeant/web test`. Without it, Vitest cannot resolve `@sergeant/db-schema/sqlite` and hundreds of suites fail at import time with `(0 test)`.
 
 ## Bundle budget

@@ -3,19 +3,19 @@
 > **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
-> **Update 2026-07-21:** Postgres переїхав на **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Coolify має scheduled backups для Postgres resource. Команди нижче з Railway-епохи **частково застарілі** — використовуй Coolify UI → Postgres → Backups для restore; `pg_dump`/`pg_restore` через internal connection string з Coolify. Railway-приклади лишено як historical reference до повного rewrite runbook-у.
+> **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) теж мігровано — деталі у §6.
 
-> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
+> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Coolify-керованому Postgres + smoke-test schema integrity. Ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і
 > [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md) (rehearsal cadence) —
-> вони описують `що` і `коли`, а тут лежить точне `як` для Postgres-сетапу (Coolify з 2026-07; historical Railway notes нижче).
+> вони описують `що` і `коли`, а тут лежить точне `як` для нашого Coolify+pg-сетапу.
 > RPO/RTO targets: див. [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md) (RPO ≤ 24h, RTO ≤ 4h для Postgres).
 
 ## Що ми бекапимо
 
-Один Postgres instance на Coolify (`pgvector/pgvector:pg18`, ADR-0074). Historical: Railway `Postgres` service у production project.
+Один Coolify-керований Postgres (`pgvector/pgvector:pg18`, ресурс на Hetzner VPS).
 Дані: usage analytics, finyk transactions, mono cache, fizruk workouts,
 nutrition meals, routine streaks, sync_op_log + sync_audit_log, Better Auth
 sessions/accounts. Все, що не лежить у `module_data`-blob-ах, лежить тут.
@@ -34,21 +34,24 @@ sessions/accounts. Все, що не лежить у `module_data`-blob-ах, л
 
 | Шар                                       | Cadence               | Retention       | Hold-time для restore                                      |
 | ----------------------------------------- | --------------------- | --------------- | ---------------------------------------------------------- |
-| Coolify scheduled Postgres backups      | за розкладом Coolify  | per Coolify retention | restore через Coolify UI → Postgres → Backups |
-| Railway automated PG snapshots          | *(historical)*        | 7 днів                | decommissioned з ADR-0074                       |
+| Coolify scheduled DB backups              | щодоби (UTC midnight) | 7 днів          | ~5–15 хв на `pg_restore` у свіжий Coolify-Postgres ресурс  |
 | Manual `pg_dump`-snapshot перед міграцією | per release           | до 30 днів у S3 | див. § «Pre-migration snapshot» нижче                      |
 | WAL streaming / PITR                      | **не налаштовано**    | —               | поза scope-ом цього runbook-у — TODO Stage 6 PR (separate) |
 
-> **Reality-check (2026-07-21).** Primary backup channel — **Coolify scheduled backups** на Postgres resource. Railway daily snapshots — historical. Мінімально валідовано: ручний рестор у staging ≤ 1 раз на місяць. Weekly verify CI (PR #049b) автоматизує smoke-verify між ручними drills.
+> **Reality-check.** Сьогодні єдиний staffed backup channel — Coolify scheduled
+> backups (Coolify → Postgres-ресурс → **Backups** → schedule + retention, target
+> local disk / S3). Мінімально валідовано: ручний рестор у окремий Postgres-ресурс
+> ≤ 1 раз на місяць. Weekly verify CI (PR #049b) автоматизує smoke-verify між ручними drills.
 
 ## 1. Pre-migration snapshot (recommended перед кожним release)
 
-Виконати **перед** `pnpm db:migrate` у release-pipeline-і (Railway pre-deploy
-не робить цього автоматично).
+Виконати **перед** `pnpm db:migrate` у release-pipeline-і (Coolify pre-deploy
+`node dist-server/migrate.js` не робить snapshot автоматично).
 
 ```bash
-# 1. Дізнатись DATABASE_PUBLIC_URL із Railway (Variables tab → Postgres service).
-export PGURL='postgresql://postgres:<pass>@<host>.railway.app:5432/railway'
+# 1. Взяти публічний DB URL. У проді це секрет MIGRATE_DATABASE_URL
+#    (Coolify → API-app → Environment); або Coolify → Postgres-ресурс → Connect.
+export PGURL="$MIGRATE_DATABASE_URL"  # postgresql://postgres:<pass>@<api-host>:5432/postgres
 
 # 2. Зняти кастом-format dump (стискається + дозволяє selective restore).
 ts=$(date -u +%Y%m%dT%H%M%SZ)
@@ -75,16 +78,22 @@ pg_restore --list "sergeant-prod-${ts}.dump" | head -40
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) — зупини
 > webhook-инжестори, поставив web-серви в read-only / maintenance mode.
 
-### 2.1. Через Railway dashboard (швидкий шлях, ≤ 15 хв)
+### 2.1. Через Coolify backup + свіжий Postgres-ресурс (швидкий шлях, ≤ 15 хв)
 
-1. Railway dashboard → `Postgres` service → **Backups** tab.
-2. Обрати найновіший snapshot, що передує incident-window-ові.
-3. **Restore to a new database** (не overwrite — це безповоротно знищить current state, який ти ще можеш потім forensically переглянути).
-4. Дочекатись `Healthy` стану нового PG-сервісу (~5 хв).
-5. Налаштувати ENV у web/api сервісах: тимчасово підкласти `DATABASE_URL` нового сервісу.
-6. Прогнати `pnpm db:migrate` — перевіряє, що `schema_migrations` сходиться з кодовою версією; якщо ні, restore-point був **до** некоторої необхідної міграції — див. § 5.
-7. Прогнати smoke-tests із § 4.
-8. Якщо все ОК — переключити web/api на нову БД (Railway Variables → linked service).
+Coolify **не** має Railway-style «restore snapshot into a new DB» у один клік —
+restore йде через `pg_restore` бекап-файлу в окремий Postgres-ресурс:
+
+1. Coolify → існуючий `Postgres`-ресурс → **Backups** → завантажити найновіший
+   бекап-файл, що передує incident-window-ові (Coolify тримає їх на диску/S3).
+2. Створити **новий** Coolify Postgres-ресурс (`pgvector/pgvector:pg18`) — це
+   restore-target; **не** відновлюй поверх live-ресурсу (знищиш current state,
+   який ще потрібен для forensics).
+3. `pg_restore` бекап-файлу в новий ресурс (див. § 2.2 нижче — прапорці ті самі).
+4. Дочекатись `Healthy` стану нового ресурсу (~5 хв).
+5. Прогнати `pnpm db:migrate` проти нового URL — перевіряє, що `schema_migrations` сходиться з кодовою версією; якщо ні, restore-point був **до** некоторої необхідної міграції — див. § 5.
+6. Прогнати smoke-tests із § 4.
+7. Якщо все ОК — переключити API на нову БД: Coolify → API-app → Environment →
+   `DATABASE_URL` (+ `MIGRATE_DATABASE_URL`) на новий ресурс → redeploy.
 
 ### 2.2. Через локальний `pg_restore` (slower, але повний контроль)
 
@@ -93,7 +102,7 @@ pg_restore --list "sergeant-prod-${ts}.dump" | head -40
 
 ```bash
 # Проти нової / staging-БД (НЕ проти production!):
-export PGURL_TARGET='postgresql://postgres:<pass>@<staging-host>:5432/railway'
+export PGURL_TARGET='postgresql://postgres:<pass>@<staging-host>:5432/postgres'
 
 # Full restore.
 pg_restore --no-owner --no-privileges --clean --if-exists \
@@ -106,7 +115,7 @@ pg_restore --no-owner --no-privileges --table=mono_connection \
 
 **Прапорці й чому:**
 
-- `--no-owner --no-privileges` — Railway-провайдений `postgres`-юзер не має суперюзерських прав на створення інших ролей; ці прапорці гарантують, що restore не падає на `ALTER TABLE … OWNER TO …`.
+- `--no-owner --no-privileges` — Coolify-керований `postgres`-юзер не має суперюзерських прав на створення інших ролей; ці прапорці гарантують, що restore не падає на `ALTER TABLE … OWNER TO …`.
 - `--clean --if-exists` — drop-then-recreate об'єкти; **використовуй тільки на staging / новій БД**, ніколи на live.
 
 ## 3. Restore — selective row-level (sync-aware)
@@ -228,12 +237,12 @@ UNION ALL SELECT 'mono_transaction orphan', COUNT(*) FROM mono_transaction t   L
 ## 6. Validation (rehearsal — PR #049b weekly CI)
 
 GitHub Action [`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)
-_(PR #049b — LANDED)_ робить:
+_(PR #049b — LANDED; мігровано на Coolify)_ робить:
 
-1. Pull найновішого Railway dump через CLI (потребує `RAILWAY_TOKEN` у GH Secrets).
-2. Restore у тимчасовий ephemeral pg-instance (testcontainers / Railway temp service).
+1. `pg_dump` напряму з публічного Coolify-Postgres URL (secret `MIGRATE_DATABASE_URL` — окремий GH Actions secret, той самий connection string, що Coolify використовує внутрішньо для pre-deploy міграцій per [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md); секрет опційний — без нього job graceful-skip-ає у migration-only verify без production-даних).
+2. Restore у тимчасовий ephemeral pg-instance (GitHub Actions `services: postgres`, `pgvector/pgvector:pg17` — той самий образ, що й решта CI-флоту; **зверни увагу**: прод тепер `pg18`, тож pg18→pg17 restore — мажорний downgrade, сумісність не гарантована для всіх extension-schema differences; окремий tracked follow-up).
 3. Прогнати § 4 smoke-test.
-4. Failures → n8n/Telegram incidents + founder DM for page-level failures, or Sentry/backlog ticket for non-page failures.
+4. Failures → auto-created GitHub issue (label `db-backup-verify`) з посиланням на run + інвестигейт-чеклист; дубль-run коментує той самий issue замість дублювання.
 
 Manual rehearsal still runs monthly via
 [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md); the weekly CI
@@ -242,8 +251,8 @@ job is the automated smoke, not a replacement for operator practice.
 ## 7. Escalation
 
 - Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити Skords-01 у Telegram + [postmortem.md](../../00-start/playbooks/write-postmortem.md).
-- Усі 7 Railway-snapshot-ів corrupted → catastrophic event; перейти на manual reconstitute з op-log реплеїв клієнтських БД (best-effort, ≤ 24h data loss expected).
-- pgvector extension не доступний на restore-target → див. note у [AGENTS.md](../../../AGENTS.md) hard-rule #4 — restore-image має бути `pgvector/pgvector:pg17`, не stock `postgres:17-alpine`.
+- Усі Coolify-бекапи в retention-вікні corrupted → catastrophic event; перейти на manual reconstitute з op-log реплеїв клієнтських БД (best-effort, ≤ 24h data loss expected).
+- pgvector extension не доступний на restore-target → restore-image має бути `pgvector/pgvector:pg18` (мажорна версія збігається з проду per [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)), не stock `postgres:18-alpine`.
 
 ## Related
 

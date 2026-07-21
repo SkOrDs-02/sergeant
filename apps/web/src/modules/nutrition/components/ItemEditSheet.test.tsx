@@ -6,6 +6,7 @@
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { SetStateAction } from "react";
 
 import { ItemEditSheet, type ItemEditState } from "./ItemEditSheet";
 
@@ -107,5 +108,31 @@ describe("ItemEditSheet", () => {
       />,
     );
     expect(screen.getByText("Некоректна кількість.")).toBeInTheDocument();
+  });
+
+  it("clears the error when qty or unit fields change", () => {
+    let current = state({ err: "Некоректна кількість." });
+    const setItemEdit = vi.fn((update: SetStateAction<ItemEditState>) => {
+      current = typeof update === "function" ? update(current) : update;
+    });
+    render(
+      <ItemEditSheet
+        itemEdit={current}
+        setItemEdit={setItemEdit}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Кількість"), {
+      target: { value: "4" },
+    });
+    expect(current).toMatchObject({ qty: "4", err: "" });
+
+    current = state({ err: "Некоректна кількість." });
+    fireEvent.change(screen.getByLabelText("Одиниця"), {
+      target: { value: "кг" },
+    });
+    expect(current).toMatchObject({ unit: "кг", err: "" });
   });
 });

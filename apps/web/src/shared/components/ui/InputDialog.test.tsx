@@ -83,4 +83,13 @@ describe("InputDialog — useApiForm + zod (Item #8 round-13)", () => {
     expect(onCancel).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it("portals to document.body with Sheet/Modal-aligned black scrim", () => {
+    render(<InputDialog open title="Portal?" cancelLabel="Скасувати" />);
+    const dialog = screen.getByRole("dialog");
+    expect(document.body.contains(dialog)).toBe(true);
+    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0];
+    expect(scrim?.className).toContain("bg-black/40");
+    expect(scrim?.className).not.toContain("bg-text/40");
+  });
 });

@@ -1,6 +1,6 @@
 # API v1 + v2 — версіонування і контракт
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.
@@ -11,7 +11,7 @@
 - Web-клієнт (div. `apps/web/src/shared/lib/api/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`
 - Mobile/Expo-клієнт — зобов'язаний шле в `/api/v1/*`
 - Жодного дублювання роутерів: сервер переписує `req.url` на канонічний `/api/...` ще до маршрутизації (div. `apiVersionRewrite` у `apps/server/src/app.ts`)
-- **v1 blob sync — повертає `410 Gone`** (ADR-0047) на п'яти sub-path-ах: `POST /api/sync/push`, `POST /api/sync/pull`, `GET /api/sync/pull-all`, `POST /api/sync/pull-all`, `POST /api/sync/push-all`. Sync вибудовується виключно через v2: `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream` (SSE long-poll).
+- **v1 blob sync — endpoints ВИДАЛЕНО** (Initiative 0003 Phase 7, ADR-0047): роути `POST /api/sync/push`, `POST /api/sync/pull`, `GET/POST /api/sync/pull-all`, `POST /api/sync/push-all` разом із sunset/survey middleware знято; старі клієнти тепер отримують **голий `404`** (не `410 Gone` — 90-денне deprecation-вікно минуло, див. коментар у `apps/server/src/routes/sync.ts`). Лишається лише `GET /api/sync/audit` (read-only). Sync вибудовується виключно через v2: `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream` (SSE long-poll).
 
 ## 🎯 Чому саме так
 
@@ -69,15 +69,19 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 | `/api/v2/sync/pull`   | GET    | Pull remote ops. Query: `?since=<cursor>`                                                     |
 | `/api/v2/sync/stream` | GET    | SSE long-poll для realtime pull (PR #041). Окремий rate-limit.                                |
 
-### Знято (410 Gone)
+### Видалено (тепер голий 404)
 
-| Endpoint                  | Причина                                              |
-| ------------------------- | ---------------------------------------------------- |
-| `POST /api/sync/push`     | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
-| `POST /api/sync/pull`     | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
-| `GET /api/sync/pull-all`  | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
-| `POST /api/sync/pull-all` | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
-| `POST /api/sync/push-all` | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+Роути та їхнє sunset/survey middleware **видалено** в Initiative 0003 Phase 7
+(commit `d5cc2648c`) після 90-денного deprecation-вікна. Раніше вони віддавали
+`410 Gone` (ADR-0047); тепер — стандартний `404`, бо handler-а більше нема.
+
+| Endpoint                  | Причина                                                       |
+| ------------------------- | ------------------------------------------------------------- |
+| `POST /api/sync/push`     | v1 blob sync видалено (ADR-0047, Phase 7). Тепер голий `404`. |
+| `POST /api/sync/pull`     | v1 blob sync видалено (ADR-0047, Phase 7). Тепер голий `404`. |
+| `GET /api/sync/pull-all`  | v1 blob sync видалено (ADR-0047, Phase 7). Тепер голий `404`. |
+| `POST /api/sync/pull-all` | v1 blob sync видалено (ADR-0047, Phase 7). Тепер голий `404`. |
+| `POST /api/sync/push-all` | v1 blob sync видалено (ADR-0047, Phase 7). Тепер голий `404`. |
 
 ## 🧪 Як ми це тестуємо
 
@@ -100,9 +104,9 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 
 Мінімум 6 місяців (до наступної версії сервера). Breaking changes — тільки через ADR + оповіщення мобільним клієнтам за місяць.
 
-**Чому v1 sync повертає 410 Gone, а не 404?**
+**Чому v1 sync тепер `404`, а не `410 Gone`?**
 
-`410 Gone` — HTTP-семантика для "ресурс свідомо видалений, клієнт не повинен retry". Це явний сигнал старим клієнтам (якщо такі є) зупинити polling. `404` був би двозначним.
+Під час deprecation-вікна v1 sync навмисно віддавав `410 Gone` (явний сигнал «ресурс свідомо видалений, не retry-й»). Після 90-денного вікна sunset/survey middleware **видалили повністю** (Initiative 0003 Phase 7, commit `d5cc2648c`) — тепер це стандартний `404`, бо handler-а більше не існує. Прийнятно: жоден активний клієнт уже не ходить у v1. Джерело істини — коментар у `apps/server/src/routes/sync.ts`.
 
 ---
 

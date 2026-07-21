@@ -67,7 +67,7 @@ function cleanRoutine(): void {
   }>(ROUTINE_STATE_KEY);
   if (!raw || !Array.isArray(raw.habits)) return;
   const demoIds = new Set(
-    raw.habits.filter((h) => h?.demo === true && h.id).map((h) => h.id!),
+    raw.habits.flatMap((h) => (h?.demo === true && h.id ? [h.id] : [])),
   );
   if (demoIds.size === 0) return;
   const habits = raw.habits.filter((h) => !demoIds.has(h?.id ?? ""));

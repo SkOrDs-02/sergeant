@@ -22,9 +22,8 @@
 
 **Відкритий actionable backlog (після waves):**
 
-1. UI primitives consolidation (P4) — design-цикл, не блокер CI.
-2. Mobile coverage floor 30 → ratchet (P3) — лише після headroom у CI.
-3. Подальший eslint-disable / `!` burndown — опційно, не P1.
+1. Mobile coverage floor 30 → ratchet (P3) — лише після headroom у CI.
+2. Подальший `!` / eslint burndown (AccentColorPicker, barcode, server sync) — опційно, P3; low-risk web batch уже Done.
 
 **Blocked (агент не закриє без власника / інфри / депів)** — простими словами див. [`README.md § Blocked простими словами`](./README.md#blocked-простими-словами).
 
@@ -67,13 +66,14 @@
 
 Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design.
 
-| Ціль                                                     | Статус                                                    |
-| -------------------------------------------------------- | --------------------------------------------------------- |
-| `no-raw-storage-key` / `no-restricted-syntax` WHY        | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351) |
-| `@typescript-eslint/no-non-null-assertion` (перша хвиля) | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353) |
-| Mobile exhaustive-deps catalog                           | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349) |
-| Подальший security-pass / `!` / FS disables без WHY      | Відкрито, P3 — opportunistic                              |
-| Web exhaustive-deps catalog                              | ✅ Done (web=0)                                           |
+| Ціль                                                                         | Статус                                                                                                                             |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `no-raw-storage-key` / `no-restricted-syntax` WHY                            | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                          |
+| `@typescript-eslint/no-non-null-assertion` (перша хвиля)                     | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                          |
+| `!` low-risk web batch                                                       | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData) |
+| Mobile exhaustive-deps catalog                                               | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                          |
+| Подальший security-pass / `!` / FS (AccentColorPicker, barcode, server sync) | Відкрито, P3 — opportunistic                                                                                                       |
+| Web exhaustive-deps catalog                                                  | ✅ Done (web=0)                                                                                                                    |
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 
@@ -81,25 +81,25 @@
 
 ## Група 5 — Дрібні + заблоковані (після waves)
 
-| Пункт                                               | Статус                             | Дія                                     |
-| --------------------------------------------------- | ---------------------------------- | --------------------------------------- |
-| `chat/tools.ts` console.log (F-008)                 | ✅                                 | —                                       |
-| Grafana Alloy Dockerfile digest-pin (INFRA-004)     | ✅                                 | —                                       |
-| `OptimizedImage.tsx` unused (UX-017)                | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти             |
-| Lighthouse LCP warn→error (T5)                      | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms |
-| Web max-lines: ManualExpenseSheet / TxRow           | ✅ Closed #348 / #350              | —                                       |
-| Privat upstream body scrub                          | ✅ Closed #347                     | —                                       |
-| Mobile Phase 6 NotificationsSection                 | ✅ Closed #352                     | —                                       |
-| Mobile coverage floor 30 (TC-03)                    | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`    |
-| UI-примітиви (~138 файлів у `shared/components/ui`) | Відкрито, P4                       | Консолідація — design-цикл              |
-| `sync_op_log` партиціювання                         | 🚫 Blocked: multi-instance trigger | ADR-0065                                |
-| Coolify env-var audit trail                         | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility   |
-| Push APNs/FCM credentials                           | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials         |
-| Mobile Sentry DSN (M7)                              | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                     |
-| Expo SDK 53 (M9)                                    | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                |
-| Mobile hub-context Phase 8 (`useChatSend`)          | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                      |
-| HubReports billing / WeeklyDigestCard               | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                      |
-| `exportReport` expo-print                           | 🚫 Blocked-reason: dep-blocked     | `mobile.md` § TODO                      |
+| Пункт                                           | Статус                             | Дія                                                                                                                                           |
+| ----------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat/tools.ts` console.log (F-008)             | ✅                                 | —                                                                                                                                             |
+| Grafana Alloy Dockerfile digest-pin (INFRA-004) | ✅                                 | —                                                                                                                                             |
+| `OptimizedImage.tsx` unused (UX-017)            | 🚫 Blocked-reason: by-design       | `@scaffolded` — НЕ видаляти                                                                                                                   |
+| Lighthouse LCP warn→error (T5)                  | ✅                                 | `lighthouserc.json` LCP error @ 3000 ms                                                                                                       |
+| Web max-lines: ManualExpenseSheet / TxRow       | ✅ Closed #348 / #350              | —                                                                                                                                             |
+| Privat upstream body scrub                      | ✅ Closed #347                     | —                                                                                                                                             |
+| Mobile Phase 6 NotificationsSection             | ✅ Closed #352                     | —                                                                                                                                             |
+| Mobile coverage floor 30 (TC-03)                | Відкрито, P3                       | Ratchet у `coverage-thresholds.json`                                                                                                          |
+| UI-примітиви / overlay family (P4)              | ✅ Phase 1+2 done                  | Phase 1: `useFloatingPanelPosition`. Phase 2: ConfirmDialog/InputDialog — `bg-black/40`, `useBodyScrollLock`, portal. Not Radix (size-limit). |
+| `sync_op_log` партиціювання                     | 🚫 Blocked: multi-instance trigger | ADR-0065                                                                                                                                      |
+| Coolify env-var audit trail                     | 🚫 Blocked-reason: owner-decision  | `backend.md` § Operational visibility                                                                                                         |
+| Push APNs/FCM credentials                       | 🚫 Blocked-reason: external-infra  | `backend.md` § Push credentials                                                                                                               |
+| Mobile Sentry DSN (M7)                          | 🚫 Blocked-reason: external-infra  | `mobile.md` roadmap                                                                                                                           |
+| Expo SDK 53 (M9)                                | 🚫 Blocked-reason: dep-blocked     | ADR-0063                                                                                                                                      |
+| Mobile hub-context Phase 8 (`useChatSend`)      | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                                                                                                                            |
+| HubReports billing / WeeklyDigestCard           | 🚫 Blocked-reason: owner-decision  | `mobile.md` § TODO                                                                                                                            |
+| `exportReport` expo-print                       | 🚫 Blocked-reason: dep-blocked     | `mobile.md` § TODO                                                                                                                            |
 
 ## Довідка: що перевірено і чисте (не борг)
 

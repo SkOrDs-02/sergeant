@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "1.0.0",
+  "current": "1.0.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -74,6 +74,14 @@
       "releasedAt": "2026-07-20",
       "changes": [
         "bump from 0.1.7 -> 1.0.0: Hard Rule files changed; AGENTS.md modified; eslint-plugin-sergeant-design modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "1.0.1": {
+      "releasedAt": "2026-07-20",
+      "changes": [
+        "bump from 1.0.0 -> 1.0.1: docs-vs-code reconciliation — Railway→Coolify (ADR-0074) purge across ops/runbooks/playbooks/diagrams, CloudSync v1 410→404, LCP gate warn→error, dual-write progress, domain-invariant fixes. Rebased onto ADR-0075 (OpenClaw Gateway fully decommissioned) — superseded this branch's own 'not deployed yet' framing. Prose/link/freshness-only; no normative Hard Rule change (rules/04 body: migration range 001-049→001-082 + Railway→Coolify pre-deploy) — patch."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

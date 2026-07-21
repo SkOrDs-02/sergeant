@@ -159,3 +159,69 @@ describe("createPushEndpoints.unregister", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("createPushEndpoints legacy wrappers", () => {
+  it("отримує legacy VAPID public key через версіонований шлях", async () => {
+    const fetchMock = mockFetchOnce({ publicKey: "vapid-public-key" });
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.getVapidPublic();
+
+    expect(res).toEqual({ publicKey: "vapid-public-key" });
+    expect(firstCall(fetchMock)[0]).toBe("/api/v1/push/vapid-public");
+  });
+
+  it("проксіює legacy subscribe payload без додаткової трансформації", async () => {
+    const fetchMock = mockFetchOnce({ ok: true });
+    const subscription: PushSubscriptionJSON = {
+      endpoint: "https://push.example/subscription",
+      expirationTime: null,
+      keys: { p256dh: "p256dh-value", auth: "auth-value" },
+    };
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.subscribe(subscription);
+
+    expect(res).toEqual({ ok: true });
+    expect(firstCall(fetchMock)[0]).toBe("/api/v1/push/subscribe");
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(JSON.parse(init.body as string)).toEqual(subscription);
+  });
+
+  it("проксіює legacy unsubscribe endpoint у DELETE body", async () => {
+    const fetchMock = mockFetchOnce({ ok: true });
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.unsubscribe("https://push.example/subscription");
+
+    expect(res).toEqual({ ok: true });
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.method).toBe("DELETE");
+    expect(JSON.parse(init.body as string)).toEqual({
+      endpoint: "https://push.example/subscription",
+    });
+  });
+});
+
+describe("createPushEndpoints.test", () => {
+  it("валідує відповідь `/api/push/test` і прокидає AbortSignal", async () => {
+    const summary = {
+      delivered: { ios: 1, android: 1, web: 0 },
+      cleaned: 1,
+      errors: [],
+    };
+    const fetchMock = mockFetchOnce(summary);
+    const ctrl = new AbortController();
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.test(
+      { title: "Перевірка", body: "Тестовий push" },
+      { signal: ctrl.signal },
+    );
+
+    expect(res).toEqual(summary);
+    expect(firstCall(fetchMock)[0]).toBe("/api/v1/push/test");
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.signal).toBe(ctrl.signal);
+  });
+});

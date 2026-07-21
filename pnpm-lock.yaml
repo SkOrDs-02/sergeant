@@ -469,6 +469,12 @@ importers:
       '@sergeant/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@stryker-mutator/core':
+        specifier: ^9.6.1
+        version: 9.6.1(@types/node@20.19.43)
+      '@stryker-mutator/vitest-runner':
+        specifier: ^9.6.1
+        version: 9.6.1(@stryker-mutator/core@9.6.1(@types/node@20.19.43))(vitest@4.1.10)
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
@@ -490,6 +496,9 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
       esbuild:
         specifier: ^0.28.1
         version: 0.28.1

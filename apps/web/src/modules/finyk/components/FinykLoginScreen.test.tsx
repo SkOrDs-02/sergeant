@@ -46,6 +46,39 @@ describe("FinykLoginScreen", () => {
     expect(input).toHaveAttribute("type", "password");
     fireEvent.click(screen.getByLabelText("Показати токен"));
     expect(input).toHaveAttribute("type", "text");
+    fireEvent.click(screen.getByLabelText("Приховати токен"));
+    expect(input).toHaveAttribute("type", "password");
+  });
+
+  it("pastes a trimmed token from the clipboard", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { readText: vi.fn().mockResolvedValue("  pasted-token  ") },
+    });
+
+    render(<FinykLoginScreen {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText("Вставити з буфера обміну"));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("API токен Monobank")).toHaveValue(
+        "pasted-token",
+      ),
+    );
+  });
+
+  it("keeps manual token entry available when clipboard read fails", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { readText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+
+    render(<FinykLoginScreen {...baseProps()} />);
+    fireEvent.click(screen.getByLabelText("Вставити з буфера обміну"));
+
+    await waitFor(() =>
+      expect(navigator.clipboard.readText).toHaveBeenCalledTimes(1),
+    );
+    expect(screen.getByLabelText("API токен Monobank")).toHaveValue("");
   });
 
   it("fires onContinueWithoutBank", () => {

@@ -140,10 +140,8 @@ flowchart TD
    - `/revoke` → обери `@OpenClaw_sergeant_v2_bot` → підтверди. Старий токен стає недійсним миттєво.
 2. **Збережи новий токен.**
    - @BotFather надасть новий токен у тому самому чаті. Скопіюй його.
-3. **Онови Railway env var.**
-   - Railway Dashboard → service `sergeant-openclaw-gateway` → Variables → `OPENCLAW_GATEWAY_BOT_TOKEN` → вклей новий токен.
-4. **Restart Gateway сервісу.**
-   - Railway Dashboard → `sergeant-openclaw-gateway` → Deploy → Restart (або новий deploy автоматично підхопить змінений env).
+3. **Онови env var Gateway-хоста** _(історично Railway)._ — **N/A**, Gateway повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)), крок історичний.
+4. **Restart Gateway сервісу.** — **N/A**, той самий привід.
 5. **Smoke-test.**
    - Надішли DM до `@OpenClaw_sergeant_v2_bot`: Gateway має відповісти протягом 30 секунд.
    - Перевір `GET /healthz` Gateway-а — має повернути 200.

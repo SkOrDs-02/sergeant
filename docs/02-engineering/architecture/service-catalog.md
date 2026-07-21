@@ -1,6 +1,6 @@
 # Service Catalog
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/service-catalog.auto.json`](../../04-governance/governance/service-catalog.auto.json) (auto-gen via `pnpm docs:gen-service-catalog`; CI gate `pnpm docs:check-service-catalog` enforces that every surface listed here is mentioned in this file). Editorial columns (runbook, alerts, rollback, data-sensitivity) stay hand-maintained — the auto-mirror only covers fields derivable from Dockerfile / deploy artifacts / workspace folder.

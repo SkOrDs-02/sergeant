@@ -211,6 +211,23 @@ describe("TxRow", () => {
       expect(categoryPickers()).toHaveLength(3);
     });
 
+    it("changes a split category from the split picker", () => {
+      const onSplitChange = vi.fn();
+      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
+      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
+
+      fireEvent.click(categoryPickers()[0]!);
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+      const option = screen
+        .getAllByRole("option")
+        .find((button) => /Транспорт/.test(button.textContent ?? ""));
+      fireEvent.click(option!);
+
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+      expect(categoryPickers()[0]).toHaveAccessibleName("Транспорт");
+    });
+
     it("saves a balanced split via onSplitChange", () => {
       const onSplitChange = vi.fn();
       render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);

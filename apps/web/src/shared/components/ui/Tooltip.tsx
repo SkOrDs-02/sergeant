@@ -12,10 +12,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
-import {
-  computeFloatingPosition,
-  type FloatingPlacementInput,
-} from "./floatingPosition";
+import { type FloatingPlacementInput } from "./floatingPosition";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
 /**
  * Sergeant Design System — Tooltip
@@ -99,13 +97,18 @@ export function Tooltip({
 }: TooltipProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
-    null,
-  );
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLSpanElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openRef = useRef(open);
+
+  const coords = useFloatingPanelPosition({
+    open,
+    triggerRef: wrapperRef,
+    panelRef,
+    placement,
+    contentKey: content,
+  });
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -176,64 +179,6 @@ export function Tooltip({
       triggerEl.removeEventListener("keydown", onKeyDown);
     };
   }, [children, scheduleOpen, closeNow]);
-
-  // Measure trigger + panel and place the panel after layout. We use
-  // a layout effect so the user never sees a one-frame flash at (0,0)
-  // before reposition.
-  if (!open && coords !== null) {
-    setCoords(null);
-  }
-  useLayoutEffect(() => {
-    if (!open) {
-      return;
-    }
-    const trigger = wrapperRef.current;
-    const panel = panelRef.current;
-    if (!trigger || !panel) return;
-    const tRect = trigger.getBoundingClientRect();
-    const pRect = panel.getBoundingClientRect();
-    const pos = computeFloatingPosition(
-      {
-        top: tRect.top,
-        left: tRect.left,
-        width: tRect.width,
-        height: tRect.height,
-      },
-      { width: pRect.width, height: pRect.height },
-      placement,
-    );
-    setCoords({ top: pos.top, left: pos.left });
-  }, [open, placement, content]);
-
-  // Reposition on scroll / resize so the tooltip tracks its trigger
-  // when the page reflows underneath an open tooltip.
-  useEffect(() => {
-    if (!open) return;
-    const reposition = () => {
-      const trigger = wrapperRef.current;
-      const panel = panelRef.current;
-      if (!trigger || !panel) return;
-      const tRect = trigger.getBoundingClientRect();
-      const pRect = panel.getBoundingClientRect();
-      const pos = computeFloatingPosition(
-        {
-          top: tRect.top,
-          left: tRect.left,
-          width: tRect.width,
-          height: tRect.height,
-        },
-        { width: pRect.width, height: pRect.height },
-        placement,
-      );
-      setCoords({ top: pos.top, left: pos.left });
-    };
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
-    return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
-    };
-  }, [open, placement]);
 
   // Outside-click closes the tooltip — guards against a tap on the
   // trigger that briefly held focus and then lost it without

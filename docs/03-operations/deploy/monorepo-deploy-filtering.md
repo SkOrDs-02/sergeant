@@ -1,16 +1,16 @@
-# Monorepo deploy filtering — Vercel ignoreCommand + Railway watchPatterns
+# Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
 > **Status:** Active
+>
+> **⚠️ Бекенд-тригер переписано ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.
 
-Sergeant ships three production surfaces from one `main` branch:
+Sergeant ships production surfaces from one `main` branch:
 
-- `apps/web` → Vercel
-- `apps/server` → Railway service `Sergeant`
-- `tools/openclaw` → Railway service `sergeant-openclaw` (config-as-code path
-  `railway.openclaw.toml`)
+- `apps/web` → Vercel (`ignoreCommand` + `turbo-ignore`)
+- `apps/server` → образ на `ghcr.io` → Coolify на Hetzner VPS (GitHub Actions `on.push.paths`)
 
-Without filtering, **every push to `main` triggers all three deploys**, even
+Without filtering, **every push to `main` triggers both deploys**, even
 for `docs/**`-only or `apps/mobile/**`-only changes. That wastes build
 minutes, churns Sentry release annotations, and creates unnecessary deploy
 events in `#deploys` Telegram alerts (n8n routes them per [`../observability/runbook.md`](../observability/runbook.md)).
@@ -64,121 +64,67 @@ exactly the value above in `apps/web/vercel.json`. Vercel UI must NOT
 override it (the "Ignored Build Step" field in **Settings → Git** stays
 empty — config-as-code wins).
 
-## Railway — `watchPatterns` per service / environment
+## Backend — GitHub Actions `on.push.paths` in `deploy-api.yml`
 
-Railway honours `watchPatterns` on the **service-instance** level (per
-service × environment). When non-empty, a push triggers a deploy only if
-at least one changed path matches at least one pattern.
+The API deploy is a GitHub Actions workflow, not a platform-side git trigger.
+[`.github/workflows/deploy-api.yml`](../../../.github/workflows/deploy-api.yml)
+runs on `push` to `main` **only if a changed path matches its `paths:` filter**
+(GitHub's native path filter — a push whose diff touches nothing on the list is
+skipped entirely). On match it builds the image → `ghcr.io/<owner>/sergeant-api`
+→ triggers the Coolify deploy webhook. `workflow_dispatch` allows a manual run.
 
-Both production services have explicit watch patterns set via the Railway
-GraphQL API. **They are NOT in `railway.toml` / `railway.openclaw.toml`** —
-Railway intentionally only allows config-as-code for build/runtime fields,
-not for source/git-trigger settings (those live in the project DB only).
+The state of record is the workflow file itself; this doc is the human-readable
+mirror. **Edit `deploy-api.yml`, not a dashboard**, to change the trigger.
 
-The state of record is the GraphQL API; this doc is the human-readable
-mirror.
-
-### Service `Sergeant` (api) — service id `accea0e9-a138-45a3-bff1-58a9bae8ff6c`
+### Path filter (from `deploy-api.yml` `on.push.paths`)
 
 ```
-apps/server/**
-packages/config/**
-packages/db-schema/**
-packages/design-tokens/**
-packages/finyk-domain/**
-packages/shared/**
 Dockerfile.api
-railway.toml
-package.json
+.dockerignore
 pnpm-lock.yaml
 pnpm-workspace.yaml
-turbo.json
-.npmrc
-.nvmrc
+package.json
 patches/**
+apps/server/**
+packages/shared/**
+packages/config/**
+packages/db-schema/**
+packages/finyk-domain/**
+.github/workflows/deploy-api.yml
 ```
 
 Rationale:
 
 - `apps/server` is the unit being deployed.
-- The package list is the **transitive closure of `apps/server/package.json`'s `@sergeant/*` deps**: `apps/server` → `{config, db-schema, finyk-domain, shared}`; `shared` → `design-tokens`. If a new direct or transitive `@sergeant/*` dep is added, **append it here** (and update this doc).
-- `Dockerfile.api`, `railway.toml`, root manifest files (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `turbo.json`), `.npmrc`, `.nvmrc`, `patches/**` — anything that affects the build but lives at repo root.
+- The package list is the **transitive closure of `apps/server/package.json`'s `@sergeant/*` deps**: `apps/server` → `{config, db-schema, finyk-domain, shared}`. If a new direct or transitive `@sergeant/*` dep is added, **append it here** (and to `container-scan.yml`, which mirrors this surface).
+- `Dockerfile.api`, `.dockerignore`, root manifest files (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`), `patches/**` — anything that affects the built image but lives at repo root.
+- The workflow lists **itself** so that changes to the deploy pipeline redeploy on merge.
 
-### Service `sergeant-openclaw` (console) — service id `5f3248d1-5a67-4702-81ee-1371f9d31191`
+> **Coarse-filter caveat.** GitHub path filters are prefix-glob, not workspace-aware:
+> any change under `apps/server/**` (including `apps/server/AGENTS.md` and other
+> docs) matches and triggers a rebuild. The build is idempotent (same code → same
+> image), so a doc-only change just churns one no-op-ish deploy — acceptable, but
+> worth knowing before you bundle server-tree docs into a big PR.
 
-```
-tools/openclaw/**
-packages/config/**
-Dockerfile.openclaw
-railway.openclaw.toml
-package.json
-pnpm-lock.yaml
-pnpm-workspace.yaml
-turbo.json
-.npmrc
-.nvmrc
-patches/**
-```
+### OpenClaw — decommissioned, not in the filter
 
-Rationale:
-
-- `tools/openclaw/package.json` only depends on `@sergeant/config`. Keep this list narrower than `Sergeant`'s on purpose — long-poll grammy bots are sensitive to needless restarts (per [`./openclaw.md`](./openclaw.md) §Build / runtime, the service is `restartPolicyType=ON_FAILURE` for exactly this reason).
-- `railway.openclaw.toml` is the config-as-code file; `Dockerfile.openclaw` is the build input.
-
-### Read / update via GraphQL
-
-Set the following environment variables (look up the IDs in the
-[`./openclaw.md`](./openclaw.md) §«Project / environment» section and in the
-service-IDs noted in the per-service subsections above):
-
-```text
-RAILWAY_TOKEN  — workspace-scoped Railway API token
-PROJECT_ID     — humorous-eagerness project id
-ENV_ID         — production environment id
-SERVICE_ID     — service id (api or console — pick one)
-```
-
-Read current state:
-
-```bash
-curl -sS -X POST https://backboard.railway.com/graphql/v2 \
-  -H "Authorization: Bearer $RAILWAY_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\":\"{ serviceInstance(serviceId: \\\"$SERVICE_ID\\\", environmentId: \\\"$ENV_ID\\\") { watchPatterns } }\"}"
-```
-
-Update:
-
-```bash
-curl -sS -X POST https://backboard.railway.com/graphql/v2 \
-  -H "Authorization: Bearer $RAILWAY_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "mutation Update($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) { serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input) }",
-    "variables": {
-      "serviceId": "'"$SERVICE_ID"'",
-      "environmentId": "'"$ENV_ID"'",
-      "input": { "watchPatterns": ["apps/server/**", "…"] }
-    }
-  }'
-```
-
-The mutation returns `{"data":{"serviceInstanceUpdate": true}}` on success
-and applies immediately (no service restart required — Railway recomputes
-the deploy trigger on the next push).
+There is **no** OpenClaw deploy in the filter. Both the former `tools/openclaw`
+grammy bot and its successor, the OpenClaw Gateway (`packages/openclaw-plugin`),
+have been fully removed from the repo — decommissioned per
+[ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md).
+There is no pending re-home; nothing to add a filter for.
 
 ## Adding a new service to the filter
 
-When you add a fourth Railway service (e.g. a worker) or a second Vercel
+When you add a new deployable service (e.g. a worker) or a second Vercel
 project (e.g. a marketing site):
 
 1. **Vercel**: in the new project's `vercel.json`, set
    `"ignoreCommand": "npx --yes turbo-ignore @sergeant/<workspace-name> --fallback=HEAD^1"`.
-2. **Railway**: figure out the transitive closure of the new service's
-   `@sergeant/*` deps (`pnpm list --filter @sergeant/<name>` or read its
-   `package.json`), then call `serviceInstanceUpdate` with the
-   corresponding `watchPatterns`.
-3. Document the new service's pattern set under its own subsection above.
+2. **GitHub Actions**: give the service its own deploy workflow, figure out the
+   transitive closure of its `@sergeant/*` deps (`pnpm list --filter @sergeant/<name>`
+   or read its `package.json`), and put that path list under `on.push.paths`.
+3. Document the new service's path set under its own subsection above.
 4. Land the policy change in the same PR as the service creation so the
    filter exists from day one (avoids a transient "every push deploys"
    period).
@@ -187,10 +133,10 @@ project (e.g. a marketing site):
 
 If a real bug-fix landed in `main` but the corresponding service didn't
 deploy because its pattern didn't match the change set (e.g. the fix was
-a follow-up tweak in a path nobody added to `watchPatterns`):
+a follow-up tweak in a path nobody added to `on.push.paths`):
 
-- **Manual redeploy**: in Railway UI for the affected service, **Deploy → Deploy** the latest commit. In Vercel, **Deployments → Redeploy** without the cache.
-- **Append the missing path** to the service's `watchPatterns` (Railway) or check whether the path is reachable from `@sergeant/web` (Vercel `turbo-ignore`).
+- **Manual redeploy**: for the API, re-run [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) via **Actions → Deploy API image → Run workflow** (`workflow_dispatch`), or dernути Coolify deploy-webhook напряму. In Vercel, **Deployments → Redeploy** without the cache.
+- **Append the missing path** to `deploy-api.yml` `on.push.paths` (API) or check whether the path is reachable from `@sergeant/web` (Vercel `turbo-ignore`).
 - **Update this doc** with the added path and the rationale (one-line PR comment is enough).
 
 The point of the filter is to stop **needless** deploys, not to gatekeep
@@ -199,7 +145,7 @@ real changes — when in doubt, widen the pattern set.
 ## Related
 
 - [`./vercel.md`](./vercel.md) — Vercel project settings + headers contract
-- [`./openclaw.md`](./openclaw.md) — `sergeant-openclaw` deploy walkthrough
-- [`../integrations/railway-vercel.md`](../../02-engineering/integrations/railway-vercel.md) — platform setup
-- [`../adr/0009-hosting-split-railway-vercel.md`](../../04-governance/adr/0009-hosting-split-railway-vercel.md) — why Railway + Vercel
+- [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md) — актуальний перелік сервісів і статус OpenClaw Gateway
+- [`../../04-governance/adr/0074-hosting-hetzner-coolify.md`](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — чинна бекенд-топологія (Hetzner + Coolify)
+- [`../adr/0009-hosting-split-railway-vercel.md`](../../04-governance/adr/0009-hosting-split-railway-vercel.md) — попередній Railway + Vercel split (superseded ADR-0074)
 - [`../playbooks/hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) — emergency rollback
