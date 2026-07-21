@@ -12,10 +12,59 @@ import type { ReactNode } from "react";
 // AssetsForm imports useFeatureGate (→ react-query) — stub to avoid provider
 // wrapping in every test.
 vi.mock("./AssetsForm", () => ({
-  ReceivableForm: () => <div data-testid="receivable-form" />,
-  AssetForm: () => <div data-testid="asset-form" />,
+  ReceivableForm: ({
+    setShowRecvForm,
+    onUpdate,
+  }: {
+    setShowRecvForm: (next: boolean) => void;
+    onUpdate: (id: string, value: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="receivable-form">
+      <button type="button" onClick={() => setShowRecvForm(false)}>
+        close-receivable-form
+      </button>
+      <button
+        type="button"
+        onClick={() => onUpdate("recv-1", { name: "Оновлено", amount: 2500 })}
+      >
+        update-receivable-form
+      </button>
+    </div>
+  ),
+  AssetForm: ({
+    setShowAssetForm,
+    onUpdate,
+  }: {
+    setShowAssetForm: (next: boolean) => void;
+    onUpdate: (id: string, value: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="asset-form">
+      <button type="button" onClick={() => setShowAssetForm(false)}>
+        close-asset-form
+      </button>
+      <button
+        type="button"
+        onClick={() => onUpdate("asset-1", { name: "Оновлений актив" })}
+      >
+        update-asset-form
+      </button>
+    </div>
+  ),
   DebtForm: () => null,
   SubscriptionForm: () => null,
+}));
+
+vi.mock("@shared/lib/ui/undoToast", () => ({
+  showUndoToast: vi.fn((_toast, opts: { msg: string; onUndo: () => void }) => {
+    const btn = document.createElement("button");
+    btn.setAttribute(
+      "data-testid",
+      opts.msg.includes("актив") ? "undo-asset-btn" : "undo-receivable-btn",
+    );
+    btn.textContent = "undo";
+    btn.addEventListener("click", opts.onUndo);
+    document.body.appendChild(btn);
+  }),
 }));
 
 import { AssetsAssetsSection } from "./AssetsAssetsSection";
@@ -23,7 +72,12 @@ import type { useAssetsState } from "./useAssetsState";
 
 type State = ReturnType<typeof useAssetsState>;
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document
+    .querySelectorAll('[data-testid^="undo-"]')
+    .forEach((el) => el.remove());
+});
 
 function wrap(children: ReactNode) {
   return <ToastProvider>{children}</ToastProvider>;
@@ -183,11 +237,75 @@ describe("AssetsAssetsSection", () => {
     expect(screen.getByTestId("receivable-form")).toBeInTheDocument();
   });
 
+  it("closes and updates receivables through the form callbacks", () => {
+    const setReceivables = vi.fn();
+    const state = makeState({
+      showRecvForm: true,
+      editingRecvId: "recv-1",
+      setReceivables,
+      receivables: [
+        {
+          id: "recv-1",
+          name: "Старий борг",
+          linkedTxIds: ["tx-1"],
+        },
+      ] as unknown as State["receivables"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    fireEvent.click(screen.getByText("close-receivable-form"));
+    expect(state.setShowRecvForm).toHaveBeenCalledWith(false);
+    expect(state.setEditingRecvId).toHaveBeenCalledWith(null);
+
+    fireEvent.click(screen.getByText("update-receivable-form"));
+    const updater = setReceivables.mock.calls[0]![0] as (
+      receivables: State["receivables"],
+    ) => State["receivables"];
+    expect(updater(state.receivables)[0]).toMatchObject({
+      id: "recv-1",
+      name: "Оновлено",
+      amount: 2500,
+      linkedTxIds: ["tx-1"],
+    });
+    expect(state.setEditingRecvId).toHaveBeenCalledWith(null);
+  });
+
   it("renders AssetForm when showAssetForm is true", () => {
     render(
       wrap(<AssetsAssetsSection state={makeState({ showAssetForm: true })} />),
     );
     expect(screen.getByTestId("asset-form")).toBeInTheDocument();
+  });
+
+  it("closes and updates manual assets through the form callbacks", () => {
+    const setManualAssets = vi.fn();
+    const state = makeState({
+      showAssetForm: true,
+      editingAssetId: "asset-1",
+      setManualAssets,
+      manualAssets: [
+        {
+          id: "asset-1",
+          name: "Старий актив",
+          amount: 1000,
+          currency: "UAH",
+        },
+      ] as unknown as State["manualAssets"],
+    });
+
+    render(wrap(<AssetsAssetsSection state={state} />));
+
+    fireEvent.click(screen.getByText("close-asset-form"));
+    expect(state.setShowAssetForm).toHaveBeenCalledWith(false);
+    expect(state.setEditingAssetId).toHaveBeenCalledWith(null);
+
+    fireEvent.click(screen.getByText("update-asset-form"));
+    const updater = setManualAssets.mock.calls[0]![0] as (
+      assets: State["manualAssets"],
+    ) => State["manualAssets"];
+    expect(updater(state.manualAssets)[0]).toEqual({ name: "Оновлений актив" });
+    expect(state.setEditingAssetId).toHaveBeenCalledWith(null);
   });
 
   it("renders Monobank account cards when accounts are present", () => {
@@ -378,6 +496,8 @@ describe("AssetsAssetsSection", () => {
       screen.getByRole("button", { name: "Видалити Повернення" }),
     );
     expect(setReceivables).toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("undo-receivable-btn"));
+    expect(setReceivables).toHaveBeenCalledTimes(2);
   });
 
   it("deletes manual assets through the inline action", () => {
@@ -407,5 +527,7 @@ describe("AssetsAssetsSection", () => {
       screen.getByRole("button", { name: "Видалити актив Готівка" }),
     );
     expect(setManualAssets).toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("undo-asset-btn"));
+    expect(setManualAssets).toHaveBeenCalledTimes(2);
   });
 });

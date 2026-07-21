@@ -141,6 +141,24 @@ describe("Analytics page", () => {
     expect(await screen.findByTestId("pie")).toBeInTheDocument();
   });
 
+  it("renders skeleton placeholders while current-month transactions load", async () => {
+    let container!: HTMLElement;
+    await act(async () => {
+      ({ container } = render(
+        <Analytics
+          mono={buildMono({ loadingTx: true })}
+          storage={buildStorage()}
+        />,
+      ));
+    });
+
+    expect(screen.queryByText("Поки немає витрат")).toBeNull();
+    expect(screen.queryByText("Поки немає мерчантів")).toBeNull();
+    expect(
+      container.querySelectorAll('[class*="animate-pulse"]').length,
+    ).toBeGreaterThanOrEqual(7);
+  });
+
   it("shows a fetch error and retries on click", async () => {
     const fetchMonth = vi
       .fn()

@@ -5,6 +5,35 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { AssetsNetworthCard, AssetsTable } from "./AssetsTable";
 import type { SectionOpenState } from "./useAssetsState";
 
+vi.mock("../components/FinykStatsStrip", () => ({
+  FinykStatsStrip: ({
+    onOpenLiabilities,
+  }: {
+    onOpenLiabilities?: () => void;
+  }) => (
+    <button type="button" onClick={onOpenLiabilities}>
+      stats-liabilities
+    </button>
+  ),
+}));
+vi.mock("../components/RecurringSuggestions", () => ({
+  RecurringSuggestions: ({
+    onAdd,
+    onDismiss,
+  }: {
+    onAdd: (candidate: { key: string }) => void;
+    onDismiss: (key: string) => void;
+  }) => (
+    <div>
+      <button type="button" onClick={() => onAdd({ key: "candidate-1" })}>
+        add-recurring
+      </button>
+      <button type="button" onClick={() => onDismiss("candidate-1")}>
+        dismiss-recurring
+      </button>
+    </div>
+  ),
+}));
 vi.mock("./AssetsSubscriptionsSection", () => ({
   AssetsSubscriptionsSection: ({
     state,
@@ -168,6 +197,39 @@ describe("AssetsTable", () => {
     expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
     expect(screen.queryByTestId("assets-section")).toBeNull();
     expect(screen.queryByTestId("liabilities-section")).toBeNull();
+  });
+
+  it("toggles the subscriptions section open via the SectionBar click", () => {
+    render(<Harness subscriptions={[{ id: "s1" }]} />);
+    expect(screen.queryByTestId("subs-section")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { expanded: false, name: /Підписки/ }),
+    );
+    expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
+  });
+
+  it("opens liabilities from the stats strip", () => {
+    render(<Harness />);
+    expect(screen.queryByTestId("liabilities-section")).toBeNull();
+    fireEvent.click(screen.getByText("stats-liabilities"));
+    expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
+  });
+
+  it("passes recurring suggestion add and dismiss callbacks through", () => {
+    const addSubscriptionFromRecurring = vi.fn();
+    const dismissRecurring = vi.fn();
+    render(
+      <Harness
+        addSubscriptionFromRecurring={addSubscriptionFromRecurring}
+        dismissRecurring={dismissRecurring}
+      />,
+    );
+    fireEvent.click(screen.getByText("add-recurring"));
+    fireEvent.click(screen.getByText("dismiss-recurring"));
+    expect(addSubscriptionFromRecurring).toHaveBeenCalledWith({
+      key: "candidate-1",
+    });
+    expect(dismissRecurring).toHaveBeenCalledWith("candidate-1");
   });
 
   it("toggles the assets section open via the SectionBar click", () => {
