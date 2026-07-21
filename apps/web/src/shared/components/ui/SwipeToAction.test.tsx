@@ -26,6 +26,7 @@ function touches(x: number, y: number) {
 describe("SwipeToAction — mobile gesture regressions", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    localStorage.clear();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -248,5 +249,42 @@ describe("SwipeToAction — mobile gesture regressions", () => {
 
     expect(onSwipeRight).not.toHaveBeenCalled();
     expect(target.getAttribute("style") || "").toMatch(/translateX\(0px\)/);
+  });
+
+  it("правий свайп за threshold викликає onSwipeRight", () => {
+    const onSwipeRight = vi.fn();
+    const { container } = render(
+      <SwipeToAction onSwipeRight={onSwipeRight}>
+        <div>tx</div>
+      </SwipeToAction>,
+    );
+    const target = getTouchTarget(container);
+
+    fireEvent.touchStart(target, { touches: touches(100, 50) });
+    fireEvent.touchMove(target, { touches: touches(190, 50) });
+    fireEvent.touchEnd(target);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onSwipeRight).toHaveBeenCalledTimes(1);
+  });
+
+  it("показує first-use hint із кастомним текстом і ховає його таймером", () => {
+    const { queryByText } = render(
+      <SwipeToAction onSwipeLeft={vi.fn()} showHint hintText="Потягни картку">
+        <div>tx</div>
+      </SwipeToAction>,
+    );
+
+    expect(queryByText("Потягни картку")).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(queryByText("Потягни картку")).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(queryByText("Потягни картку")).toBeNull();
   });
 });

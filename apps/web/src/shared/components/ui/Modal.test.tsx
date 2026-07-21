@@ -1,6 +1,12 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  fireEvent,
+  cleanup,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { Modal } from "./Modal";
 
 afterEach(cleanup);
@@ -117,5 +123,58 @@ describe("Modal", () => {
     const dialog = getByRole("dialog");
     expect(container.contains(dialog)).toBe(false);
     expect(document.body.contains(dialog)).toBe(true);
+  });
+
+  it("keyboard-activating the overlay closes the modal", () => {
+    const onClose = vi.fn();
+    const { getAllByRole, getByRole } = render(
+      <Modal open onClose={onClose} title="Dismissible">
+        body
+      </Modal>,
+    );
+    const overlay = getAllByRole("button")[0]!;
+
+    fireEvent.keyDown(overlay, { key: "Enter" });
+    fireEvent.keyDown(overlay, { key: " " });
+    fireEvent.pointerDown(getByRole("dialog"));
+
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the Sheet presentation on coarse-pointer devices", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === "(pointer: coarse)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia;
+    try {
+      render(
+        <Modal
+          open
+          onClose={() => {}}
+          title="Touch sheet"
+          description="Coarse pointer path"
+          footer={<button type="button">Done</button>}
+          panelClassName="sheet-sentinel"
+        >
+          body
+        </Modal>,
+      );
+
+      await waitFor(() =>
+        expect(document.querySelector(".sheet-sentinel")).toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole("dialog", { name: "Touch sheet" }).className,
+      ).toContain("rounded-t-3xl");
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 });

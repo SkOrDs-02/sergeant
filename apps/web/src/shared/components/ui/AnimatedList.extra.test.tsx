@@ -92,6 +92,17 @@ describe("AnimatedList", () => {
     expect(disconnectSpy).toHaveBeenCalled();
   });
 
+  it("stays hidden when the observer reports a non-intersecting entry", () => {
+    render(<AnimatedList>{[<span key="1">A</span>]}</AnimatedList>);
+    act(() => {
+      ioCallback?.([{ isIntersecting: false }]);
+    });
+
+    const wrapper = screen.getByText("A").parentElement as HTMLElement;
+    expect(wrapper.className).toContain("opacity-0");
+    expect(disconnectSpy).not.toHaveBeenCalled();
+  });
+
   it("triggerOnView=false animates immediately without an observer", () => {
     render(
       <AnimatedList triggerOnView={false}>
