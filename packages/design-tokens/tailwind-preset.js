@@ -553,6 +553,7 @@ const preset = {
         float: "var(--shadow-e3)",
         glow: "0 0 0 3px rgba(16, 185, 129, 0.15)", // emerald glow
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
+        "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
         // «Чорнило» accent glow — a luminescent tier-400 halo for solid
@@ -649,6 +650,10 @@ const preset = {
           "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%)",
         "hero-teal":
           "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%)",
+        // Fizruk pastel hero header (F5 teal→cyan sweep) — same 3-stop
+        // structure as `hero-teal`, re-hued to the module's `cyan` scale.
+        "hero-cyan":
+          "linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%)",
         "hero-coral":
           "linear-gradient(135deg, #fff5f3 0%, #ffe8e3 50%, #ffd4cb 100%)",
         "hero-lime":

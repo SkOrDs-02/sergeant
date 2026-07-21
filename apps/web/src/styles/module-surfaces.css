@@ -47,10 +47,10 @@
   );
 }
 
-/* ── Fizruk (teal) ───────────────────────────────────────────────────── */
+/* ── Fizruk (cyan) ───────────────────────────────────────────────────── */
 
 .module-card-fizruk {
-  @apply module-card bg-linear-to-br from-teal-50 via-cyan-50/50 to-white;
+  @apply module-card bg-linear-to-br from-cyan-50 via-cyan-50/50 to-white;
   border-color: rgba(153, 246, 228, 0.6);
 }
 
@@ -180,20 +180,20 @@
 /* ── Fizruk-specific surface helpers ─────────────────────────────────── */
 
 .fizruk-cta-accent {
-  @apply bg-teal-500 text-white font-semibold rounded-2xl
+  @apply bg-fizruk-strong text-white font-semibold rounded-2xl
          transition-interactive
-         hover:bg-teal-600 hover:shadow-glow-teal
+         hover:bg-cyan-900 hover:shadow-glow-cyan
          active:scale-[0.98];
 }
 
 .fizruk-summary-header {
-  @apply p-4 bg-hero-teal;
+  @apply p-4 bg-hero-cyan;
 }
 .dark .fizruk-summary-header {
   @apply bg-panel;
   background-image: linear-gradient(
     135deg,
-    rgba(20, 184, 166, 0.15) 0%,
+    rgba(34, 211, 238, 0.15) 0%,
     transparent 100%
   );
 }
