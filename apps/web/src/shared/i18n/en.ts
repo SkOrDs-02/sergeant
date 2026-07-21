@@ -148,6 +148,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     profile: "Profile",
     chat: "Assistant chat",
     nutritionOverview: "Overview",
+    finykOverview: "Overview",
+    fizrukOverview: "Overview",
     nutritionLog: "Journal",
     reports: "Reports",
     openAssistant: "Open AI assistant",

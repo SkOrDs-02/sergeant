@@ -47,6 +47,12 @@ describe("no-emoji-icon", () => {
     assert.equal(messages[0].ruleId, RULE_ID);
   });
 
+  it("flags an emoji in a JSXExpressionContainer wrapped literal", () => {
+    const messages = lint(`const el = <Row icon={"🥗"} />;`, { jsx: true });
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
   it("does NOT flag a registered Icon-catalog name", () => {
     const messages = lint(`const x = { icon: "dumbbell" };`);
     assert.equal(messages.length, 0);

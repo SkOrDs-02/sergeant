@@ -399,7 +399,7 @@ export function Dashboard({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
-        <h1 className="sr-only">{messages.nav.nutritionOverview}</h1>
+        <h1 className="sr-only">{messages.nav.fizrukOverview}</h1>
         <HeroCard
           state={heroState}
           greeting={greeting}

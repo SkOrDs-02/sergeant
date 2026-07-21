@@ -1545,8 +1545,18 @@ const noEmojiIcon = {
         report(node.value, node.value.value);
       },
       "JSXAttribute[name.name='icon']"(node) {
-        if (!node.value || node.value.type !== "Literal") return;
-        report(node.value, node.value.value);
+        if (!node.value) return;
+        if (node.value.type === "Literal") {
+          report(node.value, node.value.value);
+        } else if (
+          // `icon={"🥗"}` — wrapped-literal form (JSXExpressionContainer);
+          // семантично еквівалентна `icon="🥗"` і має ловитись так само
+          // (ultrareview bug_004).
+          node.value.type === "JSXExpressionContainer" &&
+          node.value.expression.type === "Literal"
+        ) {
+          report(node.value.expression, node.value.expression.value);
+        }
       },
     };
   },
