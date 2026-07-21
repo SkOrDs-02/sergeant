@@ -76,6 +76,18 @@ describe("budgetLimitsRule", () => {
     expect(recs[0]?.title).toContain("18%");
   });
 
+  it("показує кастомний label у бюджетному ліміті", () => {
+    const ctx = baseCtx({
+      limits: [{ id: "b", type: "limit", categoryId: "pets", limit: 100 }],
+      customCategories: [{ id: "pets", label: "Песики" }],
+      canonicalMonthSpend: new Map([["pets", 95]]),
+    });
+
+    const rec = budgetLimitsRule.evaluate(ctx)[0];
+    expect(rec?.id).toBe("budget_warn_pets");
+    expect(rec?.title).toContain('"Песики"');
+  });
+
   it("додає actionHash з категорією для глибокого лінка на Планування", () => {
     const ctx = baseCtx({
       limits: [{ id: "b", type: "limit", categoryId: "smoking", limit: 100 }],
@@ -285,6 +297,11 @@ describe("dailyVsWeeklyPaceRule", () => {
     amount: -Math.round(uah * 100),
     time: Math.floor((now.getTime() - daysAgo * DAY) / 1000),
   });
+  const mkManual = (daysAgo: number, uah: number) => ({
+    id: `me-${daysAgo}`,
+    amount: uah,
+    date: new Date(now.getTime() - daysAgo * DAY).toISOString(),
+  });
 
   it("тригериться коли сьогодні > 1.5× середньої за 7 днів", () => {
     // prev7 = 7 × 200 = 1400 ₴ (avg=200); today = 500 ₴ → ratio=2.5.
@@ -306,6 +323,26 @@ describe("dailyVsWeeklyPaceRule", () => {
     expect(recs[0]?.id).toBe("finyk_daily_vs_weekly_pace");
     expect(recs[0]?.pwaAction).toBe("add_expense");
     expect(recs[0]?.title).toMatch(/500.*₴/);
+  });
+
+  it("рахує manual expenses у today/prev7 темпі", () => {
+    const ctx = baseCtx({
+      now,
+      manualExpenses: [
+        mkManual(1, 100),
+        mkManual(2, 100),
+        mkManual(3, 100),
+        mkManual(4, 100),
+        mkManual(5, 100),
+        mkManual(6, 100),
+        mkManual(7, 100),
+        mkManual(0, 250),
+      ],
+    });
+
+    const rec = dailyVsWeeklyPaceRule.evaluate(ctx)[0];
+    expect(rec?.id).toBe("finyk_daily_vs_weekly_pace");
+    expect(rec?.title).toMatch(/250.*₴/);
   });
 
   it("мовчить до 14:00", () => {
