@@ -96,4 +96,13 @@ describe("routine-domain/schedule", () => {
     expect(habitScheduledOnDate(h, "2026-02-27")).toBe(false);
     expect(habitScheduledOnDate(h, "2026-03-31")).toBe(true);
   });
+
+  it("falls back to scheduled for unknown recurrence values", () => {
+    expect(
+      habitScheduledOnDate(
+        habit({ recurrence: "custom-experimental" }),
+        "2026-01-05",
+      ),
+    ).toBe(true);
+  });
 });
