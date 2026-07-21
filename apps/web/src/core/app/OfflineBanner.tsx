@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { useSyncStatus } from "../cloudSync/hook/useSyncStatus";
+import { useSyncStatus } from "../cloudSync";
 import { pluralUa } from "@sergeant/shared";
 import { SyncStatusSheet } from "./SyncStatusSheet";
 

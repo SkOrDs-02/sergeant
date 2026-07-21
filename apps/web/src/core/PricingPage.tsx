@@ -14,7 +14,7 @@ import { useLocale } from "@shared/i18n/useLocale";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
-import { usePlan } from "./billing/usePlan";
+import { usePlan } from "./billing";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 import { LegalLinks } from "./legal/LegalLinks";
 

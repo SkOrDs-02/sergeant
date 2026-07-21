@@ -1,10 +1,5 @@
 import { memo } from "react";
-import {
-  chartAxis,
-  chartGrid,
-  chartTick,
-  statusColors,
-} from "@shared/charts/chartTheme";
+import { chartAxis, chartGrid, chartTick, statusColors } from "@shared/charts";
 
 interface NetworthPoint {
   month: string;

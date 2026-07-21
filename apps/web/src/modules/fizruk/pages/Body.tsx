@@ -10,7 +10,7 @@ import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Label } from "@shared/components/ui/FormField";
 import { cn } from "@shared/lib/ui/cn";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { Card } from "@shared/components/ui/Card";

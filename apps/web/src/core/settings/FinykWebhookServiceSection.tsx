@@ -13,8 +13,7 @@ import { messages } from "@shared/i18n/uk";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
-import { PaywallModal } from "../billing/PaywallModal";
-import { usePlan } from "../billing/usePlan";
+import { PaywallModal, usePlan } from "../billing";
 import { ConfirmModal, SettingsSubGroup } from "./SettingsPrimitives";
 
 type ConfirmKind = "cache" | "disconnect" | null;

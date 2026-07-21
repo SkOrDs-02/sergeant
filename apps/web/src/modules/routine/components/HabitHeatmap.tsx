@@ -6,7 +6,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { chartHeatmap } from "@shared/charts/chartTheme";
+import { chartHeatmap } from "@shared/charts";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Habit, RoutineState } from "../lib/types";
 

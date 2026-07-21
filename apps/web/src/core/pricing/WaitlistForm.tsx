@@ -4,7 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { waitlistApi } from "@shared/api";
 import { isApiError } from "@sergeant/api-client";

@@ -18,7 +18,7 @@ import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
-import { TrialBanner } from "../billing/TrialBanner";
+import { TrialBanner } from "../billing";
 
 /**
  * Mounts only after the parent Suspense boundary resolves. Inside a

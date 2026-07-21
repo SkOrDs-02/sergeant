@@ -9,7 +9,7 @@ import {
   chartGrid,
   chartSeries,
   chartTick,
-} from "@shared/charts/chartTheme";
+} from "@shared/charts";
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
