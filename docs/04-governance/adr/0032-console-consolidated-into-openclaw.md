@@ -3,6 +3,7 @@
 > **Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)** — OpenClaw runtime повністю прибрано з репо. Тіло нижче — історичний запис консолідації console→OpenClaw на момент 2026-05-02.
 
 - **Status:** Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)
+- **Note:** Historical — paths describe pre-decommission layout; see [ADR-0075](./0075-openclaw-gateway-decommissioned.md).
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-02
 - **Deciders:** @Skords-01

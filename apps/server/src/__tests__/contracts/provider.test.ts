@@ -48,26 +48,29 @@ import request from "supertest";
 
 // ── Mocks (must be hoisted ABOVE `import { createApp }`) ─────────────────────
 
-const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
-  // Some handlers (`/api/mono/sync-state`, anything gated by the
-  // Anthropic stack) read env vars at MODULE-LOAD time, not per-request.
-  // Set them here so the imports below see a consistent configuration.
-  process.env["MONO_WEBHOOK_ENABLED"] = "true";
-  process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
-  process.env["AI_QUOTA_DISABLED"] = "true";
+const { mockPool, queryMock, getSessionUserMock, invokeLLMMock } = vi.hoisted(
+  () => {
+    // Some handlers (`/api/mono/sync-state`, anything gated by the
+    // Anthropic stack) read env vars at MODULE-LOAD time, not per-request.
+    // Set them here so the imports below see a consistent configuration.
+    process.env["MONO_WEBHOOK_ENABLED"] = "true";
+    process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
+    process.env["AI_QUOTA_DISABLED"] = "true";
 
-  const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
-  const mockPool = {
-    query: queryMock,
-    connect: vi.fn(),
-    on: vi.fn(),
-    totalCount: 0,
-    idleCount: 0,
-    waitingCount: 0,
-  };
-  const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  return { mockPool, queryMock, getSessionUserMock };
-});
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
+    const mockPool = {
+      query: queryMock,
+      connect: vi.fn(),
+      on: vi.fn(),
+      totalCount: 0,
+      idleCount: 0,
+      waitingCount: 0,
+    };
+    const getSessionUserMock = vi.fn().mockResolvedValue(null);
+    const invokeLLMMock = vi.fn();
+    return { mockPool, queryMock, getSessionUserMock, invokeLLMMock };
+  },
+);
 
 vi.mock("./../../db.js", () => ({
   default: mockPool,
@@ -97,23 +100,18 @@ vi.mock("./../../http/rateLimit.js", async () => {
   };
 });
 
-// Anthropic handle for the day-plan replay. Reuses the shared mock
-// harness (`apps/server/src/test/__mocks__/anthropic.ts`) — same shape
-// every other handler test uses — so the day-plan handler's call to
-// `anthropicMessages` returns the exact JSON the pact expects without
-// ever touching api.anthropic.com.
-vi.mock("./../../lib/anthropic.js", async () =>
-  (
-    await import("./../../test/__mocks__/anthropic.js")
-  ).createAnthropicMockHandle(),
-);
+// Day-plan replay goes through `invokeLLM()` (nutrition uses
+// `LLM_NUTRITION_PROVIDER`, default openrouter → stub without a key).
+// Mock the provider layer — same pattern as `day-plan.test.ts`.
+vi.mock("./../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: invokeLLMMock,
+}));
 
 import { createApp } from "./../../app.js";
-import { anthropicMessages as _anthropicMessages } from "./../../lib/anthropic.js";
-import { anthropicResponses } from "./../../test/__mocks__/anthropic.js";
 import type { Mock } from "vitest";
 
-const anthropicMessages = _anthropicMessages as unknown as Mock;
+const invokeLLM = invokeLLMMock as unknown as Mock;
 
 // ── Pact file loading ────────────────────────────────────────────────────────
 
@@ -191,7 +189,7 @@ beforeEach(() => {
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
   for (const k of ENV_KEYS) delete process.env[k];
 });
 
@@ -610,12 +608,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
   // ── POST /api/v1/nutrition/day-plan (Anthropic-stubbed) ────────────────────
   //
-  // Anthropic-gated. We stub `anthropicMessages` (via the shared mock
-  // harness) to return the canned plan JSON the consumer pact recorded.
-  // The pact's `rawText: null` enforces that the handler's "JSON parse
-  // succeeded" branch fires (otherwise rawText would be the raw model
-  // output). `AI_QUOTA_DISABLED=true` + `ANTHROPIC_API_KEY=…` are
-  // pinned at module load via `vi.hoisted`.
+  // LLM-gated. We stub `invokeLLM` to return the canned plan JSON the
+  // consumer pact recorded. The pact's `rawText: null` enforces that the
+  // handler's "JSON parse succeeded" branch fires (otherwise rawText would
+  // be the raw model output). `AI_QUOTA_DISABLED=true` +
+  // `ANTHROPIC_API_KEY=…` are pinned at module load via `vi.hoisted`.
   it("POST /api/v1/nutrition/day-plan replays against the real handler with Anthropic stub (nutrition persona)", async () => {
     const interaction = findInteraction(
       pact,
@@ -650,9 +647,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // model output — for rawText to be `null` the model JSON must
     // already match the plan shape so `extractJsonFromText` succeeds.
     // We hand the mock exactly that JSON.
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify(expected.plan)),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify(expected.plan),
+    });
 
     const app = createApp();
     const res = await request(app)
@@ -671,8 +669,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
     expect(res.status).toBe(interaction.response.status);
     expect(res.body).toEqual(expected);
-    // Sanity: the Anthropic stub was actually called (no real upstream).
-    expect(anthropicMessages).toHaveBeenCalledTimes(1);
+    // Sanity: the LLM stub was actually called (no real upstream).
+    expect(invokeLLM).toHaveBeenCalledTimes(1);
   });
 
   // ── AI-flow endpoints — explicit gap markers ───────────────────────────────

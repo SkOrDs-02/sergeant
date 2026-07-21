@@ -6,6 +6,7 @@
 > **⚠️ Superseded Phase 7 (2026-07-20, commit `d5cc2648c`):** 410-Gone handler `sunsetGone.ts` (+ survey middleware) **видалено** після завершення 90-денного deprecation-вікна. v1 sync тепер віддає **голий `404`**, не `410 Gone`. Цей ADR лишається як історичний запис T₀-виконання; актуальний стан — коментар у [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) і [`api-v1.md`](../../02-engineering/architecture/api-v1.md).
 
 - **Status:** Accepted
+- **Note:** Historical — inline paths name sunset modules removed in Phase 7 (2026-07-20); see [ADR-0043](./0043-cloudsync-v1-sunset.md) banner.
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) (per-module LWW worldview engine; цей ADR + Stage 7 cleanup переключають production на per-row op-log v2).
@@ -131,3 +132,14 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 - OpenAPI: `packages/shared/src/openapi/registry.ts:99-110` entries.
 
 **Risk after removal.** Late v1 client → 404 (raw Express), не 410 Gone. Acceptable trade-off після 8-week zero signal або 90-day deprecation window. Якщо клієнт критичний — додавати explicit `respondV1Gone` route на endpoint without middleware overhead.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                                   | Merged  |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------- |
+| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | PENDING |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

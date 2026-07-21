@@ -3,6 +3,7 @@
 > **Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)** — OpenClaw runtime і `/audit` slash-command прибрано. Таблиця `openclaw_write_audit` лишається в схемі (immutable migration); тіло нижче — історичний запис.
 
 - **Status:** Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)
+- **Note:** Historical — paths describe pre-decommission layout; write-audit persistence now lives under `apps/server/src/modules/ai-memory/invocation-audit/`; see [ADR-0075](./0075-openclaw-gateway-decommissioned.md).
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01

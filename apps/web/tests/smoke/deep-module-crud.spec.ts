@@ -148,6 +148,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
       await page.getByRole("button", { name: "Зберегти" }).click();
     });
     await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
+    // Dual-write: дочекатися flush у sync-queue ПЕРЕД full reload,
+    // інакше cold SQLite boot підтягне stale server snapshot без edit.
+    await waitForSyncQueueIdle(page);
 
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
     // Harness correction: після full reload лічильник refresh-ів
@@ -159,12 +162,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
       timeoutMs: 60_000,
     });
 
-    // Harness correction: рядок живе у GroupedVirtuoso зі sticky
-    // day-header-ом — реальний .click() зависає у scroll-into-view
-    // циклі (sticky перекриває hit-point, virtuoso ремонтує ноду).
-    // dispatchEvent виконує той самий продуктовий onClick без hit-test.
+    // Harness correction: TxRow button name = description + meta chips
+    // (сума — sibling TxRowAmountActions, не в accessible name).
+    // filter({ hasText }) стійкіший за name-regex з датою/категорією.
+    // Рядок у GroupedVirtuoso зі sticky day-header: реальний .click()
+    // зависає у scroll-into-view; dispatchEvent обходить hit-test.
     await page
-      .getByRole("button", { name: /DCRUD кава оновлено/ })
+      .getByRole("button")
+      .filter({ hasText: "DCRUD кава оновлено" })
       .dispatchEvent("click");
     await expect(
       page.getByRole("dialog", { name: "Редагувати витрату" }),

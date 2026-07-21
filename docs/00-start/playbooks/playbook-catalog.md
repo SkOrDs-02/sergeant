@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -73,15 +73,15 @@ Curated table вище лишається швидким роутером для
 
 Ці файли збережені для старих посилань і PR-контексту. Для виконання відкривай canonical playbook у другій колонці.
 
-| Historical file                              | Canonical owner                                                                                                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `grant-privileged-access.md`                 | [`access-governance.md` § Grant privileged access](./access-governance.md#1-grant-privileged-access)           |
-| `release-expo-mobile.md`                     | [`release.md` § Expo](./release.md#3-expo)                                                                     |
-| `release-mobile-shell.md`                    | [`release.md` § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor)                               |
-| `release-web-and-api.md`                     | [`release.md` § Web + API](./release.md#1-web--api)                                                            |
-| `respond-to-suspected-account-compromise.md` | [`access-governance.md` § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) |
-| `revoke-privileged-access.md`                | [`access-governance.md` § Revoke privileged access](./access-governance.md#2-revoke-privileged-access)         |
-| `run-access-review.md`                       | [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review)             |
+| Historical file                              | Canonical owner                                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grant-privileged-access.md`                 | [`access-governance.md` § Grant privileged access](./access-governance.md#1-grant-privileged-access)                                               |
+| `release-expo-mobile.md`                     | [`release.md` § Expo](./release.md#3-expo)                                                                                                         |
+| `release-mobile-shell.md`                    | [`release.md` § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor)                                                                   |
+| `release-web-and-api.md`                     | [`release.md` § Web + API](./release.md#1-web--api)                                                                                                |
+| `respond-to-suspected-account-compromise.md` | [`access-governance.md` § Suspected account compromise](./access-governance.md#4-suspected-account-compromise)                                     |
+| `revoke-privileged-access.md`                | [`access-governance.md` § Revoke privileged access](./access-governance.md#2-revoke-privileged-access)                                             |
+| `run-access-review.md`                       | [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review)                                                 |
 | `rotate-openclaw-credentials.md`             | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)) |
 
 ## Notes

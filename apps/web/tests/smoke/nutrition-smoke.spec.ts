@@ -41,7 +41,14 @@ test("@critical nutrition: today dashboard → add-meal CTA opens sheet", async 
   );
 
   await page.getByRole("button", { name: /Додати прийом їжі/ }).click();
-  await expect(page.getByText("Звідки страва?")).toBeVisible();
+  // With no saved templates the sheet auto-skips "source" → "fill"
+  // (title "Додати прийом їжі" + backtrack link). With templates it
+  // stays on "source" (title "Звідки страва?"). Either means the sheet opened.
+  const addMealDialog = page.getByRole("dialog");
+  await expect(addMealDialog).toBeVisible({ timeout: 10_000 });
+  await expect(addMealDialog).toContainText(
+    /Звідки страва\?|Додати прийом їжі/,
+  );
 
   expect(errors, "Uncaught page errors on nutrition CTA happy path").toEqual(
     [],
