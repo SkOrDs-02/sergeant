@@ -132,6 +132,12 @@ export default function App({
     firstRunNavHandledRef.current = true;
     if (!firstRunFinyk) return;
     if (pwaAction === "add_expense") return;
+    // Only steer the module ROOT (`/finyk`) to the first-run фінплан.
+    // An explicit deep-link (`/finyk/transactions`, `/finyk/overview`, …)
+    // must win over first-run onboarding — otherwise every deep-link is
+    // hijacked to /finyk/budgets until the first-run flag persists.
+    const path = window.location.pathname.replace(/\/+$/, "");
+    if (path !== "/finyk") return;
     if (page !== "budgets") navigate("budgets");
   }, [firstRunFinyk, pwaAction, page, navigate]);
 
