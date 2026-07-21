@@ -1,6 +1,6 @@
 # Playbook: Embedding Provider Migration
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.
@@ -194,3 +194,14 @@ Active-model read-filter (`embedding_model = $N`) сьогодні behavior-neut
 - [onboard-external-api.md](./onboard-external-api.md) — якщо новий vendor потребує нового HTTP-клієнта.
 - Skill: `sergeant-server-api`
 - Skill: `sergeant-data-and-migrations`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                      | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------- | ---------- |
+| [#382](https://github.com/Skords-01/Sergeant/pull/382) | test(server): raise business module coverage (+1.45pp lines, branch lifts) | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
