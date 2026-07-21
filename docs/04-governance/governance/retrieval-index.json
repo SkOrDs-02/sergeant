@@ -3,8 +3,8 @@
   "version": 1,
   "generated_at": "2026-07-21",
   "sourceHashes": {
-    "knowledge-graph": "5815e7361368f897f3c6cfaa0130aa3479e5188ae41c91c51ec1741d1030bdaa",
-    "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
+    "knowledge-graph": "233e9f64a4eece66b64e8f4d6d5bdd3ac1d1f2e08734805d67fb5fdd0df581c1",
+    "symbol-index": "34750b6eccb08dbe2f3f7b58ab40e58f26abe96989d9aa651fd8b5b2638c8eb9"
   },
   "counts": {
     "adr": 72,
@@ -462,8 +462,8 @@
       "title": "ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout · adr:0043 · adr · Accepted · 43 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "963ac5dcff36cdc0499a7c2a9d1c1d7b444ca65e4ced54133e6a7908cab1c44c"
+      "text": "ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout · adr:0043 · adr · Accepted · 43 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "ae8f8aaacc6cd052dd39098e7d56769c4fb1b4862bc5c059230ea904a3f21791"
     },
     {
       "id": "adr:0044",
@@ -506,8 +506,8 @@
       "title": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-07-20 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria",
-      "contentHash": "2b5eb7b9cd6531b8a24ebbdac26effc79ef0852b84aae19c52991f82c9cebf9a"
+      "text": "ADR-0047: CloudSync v1 — T₀ executed (410 Gone) · adr:0047 · adr · Active · 47 · 2026-07-20 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Risks / Followups · Status (2026-05-06) · Amendment (2026-05-10): Final removal exit-criteria · Recent PRs",
+      "contentHash": "a7aba2b6f09dc7b245e140448f669ee271582e07c78cdd43cfe79d42f1eb3100"
     },
     {
       "id": "adr:0048",
@@ -781,8 +781,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-20 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "be067600829a55fbd505b9de80ca26118da7cc1b1ae2371b0e7583f9fe74c28b"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-20 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
+      "contentHash": "858c41ebe5f09ee87297664a231469a50d0c6f6fb6c0951dbcbd8c0bac5d2bf3"
     },
     {
       "id": "adr:0074",
@@ -4033,8 +4033,8 @@
       "title": "Зміна або додавання n8n-воркфлоу",
       "tier": "core",
       "status": "Active",
-      "text": "Зміна або додавання n8n-воркфлоу · playbook:modify-n8n-workflow · playbook · Active · Playbook: Зміна або додавання n8n-воркфлоу · Owner surface · Required context · Кроки · 1. Визнач клас воркфлоу · 2. Онови артефакт воркфлоу і метадані разом · 3. Перевір безпечний шлях імпорту · 4. Зафіксуй operational impact у PR-описі · Verification · Коли цей playbook НЕ використовувати · Споріднені playbook-и та skills",
-      "contentHash": "4c5c5ff86925bc82d97d036405ed620528310f8de845091bcb6859e5f0f41839"
+      "text": "Зміна або додавання n8n-воркфлоу · playbook:modify-n8n-workflow · playbook · Active · Playbook: Зміна або додавання n8n-воркфлоу · Owner surface · Required context · Кроки · 1. Визнач клас воркфлоу · 2. Онови артефакт воркфлоу і метадані разом · 3. Перевір безпечний шлях імпорту · 4. Зафіксуй operational impact у PR-описі · Verification · Коли цей playbook НЕ використовувати · Споріднені playbook-и та skills · Recent PRs",
+      "contentHash": "c82768043a954e5b853bb6f62893093c23f8c7b160918dc18242dc7477926643"
     },
     {
       "id": "playbook:onboard-external-api",
@@ -4044,8 +4044,8 @@
       "title": "Onboard External API",
       "tier": "core",
       "status": "Active",
-      "text": "Onboard External API · playbook:onboard-external-api · playbook · Active · Playbook: Onboard External API · Owner surface · Steps · 1. Створити HTTP-клієнт з resilience · 2. Додати env vars · .env.example — документація формату (без реальних значень!) · 3. Створити module в server · 4. Prometheus metrics · 5. Оновити packages/api-client · 6. Тести з MSW · 7. Health check · 8. Створити PR · Verification · Notes · See also",
-      "contentHash": "216a89a8f28eec50acd5bc846f42863f9b604af5eaead90975f31339056398d6"
+      "text": "Onboard External API · playbook:onboard-external-api · playbook · Active · Playbook: Onboard External API · Owner surface · Steps · 1. Створити HTTP-клієнт з resilience · 2. Додати env vars · .env.example — документація формату (без реальних значень!) · 3. Створити module в server · 4. Prometheus metrics · 5. Оновити packages/api-client · 6. Тести з MSW · 7. Health check · 8. Створити PR · Verification · Notes · See also · Recent PRs",
+      "contentHash": "93eb6cf09771d6c895b49f5da535090cc3f847dd8c584fde6322dac21b643a04"
     },
     {
       "id": "playbook:operational-continuity",
@@ -4209,8 +4209,8 @@
       "title": "Ротація OpenClaw GitHub credentials",
       "tier": "extended",
       "status": "Deprecated (OpenClaw decommissioned — ADR-0075)",
-      "text": "Ротація OpenClaw GitHub credentials · playbook:rotate-openclaw-credentials · playbook · Deprecated (OpenClaw decommissioned — ADR-0075) · Playbook: Ротація OpenClaw GitHub credentials · Owner surface · Required context · Decision tree — який тип ротації? · § Планова: ротація private key GitHub App (квартально) · Rollback · § Emergency: підозра витоку / компрометація · § Hand-off: зміна GitHub-org admin · Де живе кожне значення · Verification · § Gateway Telegram bot token (OPENCLAWGATEWAYBOTTOKEN) · Споріднені документи",
-      "contentHash": "3b4c179e34639d3b0378c7ae2940befe5c6ae8b245cb5c37252319f6535af585"
+      "text": "Ротація OpenClaw GitHub credentials · playbook:rotate-openclaw-credentials · playbook · Deprecated (OpenClaw decommissioned — ADR-0075) · Playbook: Ротація OpenClaw GitHub credentials · Owner surface · Required context · Decision tree — який тип ротації? · § Планова: ротація private key GitHub App (квартально) · Rollback · § Emergency: підозра витоку / компрометація · § Hand-off: зміна GitHub-org admin · Де живе кожне значення · Verification · § Gateway Telegram bot token (OPENCLAWGATEWAYBOTTOKEN) · Споріднені документи · Recent PRs",
+      "contentHash": "35aef189244f85a8782794d42b75ec42fc334c62dfcfc3b0c53161b262d3d0ad"
     },
     {
       "id": "playbook:rotate-secrets",
