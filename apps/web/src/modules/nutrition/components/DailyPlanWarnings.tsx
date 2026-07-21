@@ -47,9 +47,12 @@ export function MacroKcalWarning({
       data-testid="macro-kcal-warning"
     >
       <div className="flex items-start gap-2">
-        <span className={cn("shrink-0 font-bold", iconTone)} aria-hidden>
-          {overshoot ? "⚠" : "ℹ"}
-        </span>
+        <Icon
+          name={overshoot ? "alert-triangle" : "info"}
+          size="sm"
+          className={cn("shrink-0", iconTone)}
+          aria-hidden
+        />
         <p className="text-text leading-snug">
           {overshoot ? (
             <>

@@ -1595,16 +1595,43 @@ const noEmojiIcon = {
         const children = node.children.filter(
           (child) => child.type !== "JSXText" || child.value.trim().length > 0,
         );
-        if (children.length !== 1 || children[0].type !== "JSXText") return;
-        const body = children[0].value.trim();
-        if (!EMOJI_ONLY_RE.test(body)) return;
-        const emoji = findEmojiInIconValue(body);
-        if (emoji) {
-          context.report({
-            node: children[0],
-            messageId: "emojiGlyph",
-            data: { emoji },
-          });
+        if (children.length !== 1) return;
+        const only = children[0];
+        // Plain text body: `<span aria-hidden>💳</span>`.
+        if (only.type === "JSXText") {
+          const body = only.value.trim();
+          if (!EMOJI_ONLY_RE.test(body)) return;
+          const emoji = findEmojiInIconValue(body);
+          if (emoji) {
+            context.report({
+              node: only,
+              messageId: "emojiGlyph",
+              data: { emoji },
+            });
+          }
+          return;
+        }
+        // Expression body — the same glyph picked inline:
+        // `<span aria-hidden>{"💧"}</span>` or the ternary form
+        // `<span aria-hidden>{over ? "⚠" : "ℹ"}</span>`.
+        if (only.type !== "JSXExpressionContainer") return;
+        const expr = only.expression;
+        const literals =
+          expr.type === "ConditionalExpression"
+            ? [expr.consequent, expr.alternate]
+            : [expr];
+        for (const lit of literals) {
+          if (lit.type !== "Literal") continue;
+          if (typeof lit.value !== "string") continue;
+          if (!EMOJI_ONLY_RE.test(lit.value.trim())) continue;
+          const emoji = findEmojiInIconValue(lit.value);
+          if (emoji) {
+            context.report({
+              node: lit,
+              messageId: "emojiGlyph",
+              data: { emoji },
+            });
+          }
         }
       },
     };
