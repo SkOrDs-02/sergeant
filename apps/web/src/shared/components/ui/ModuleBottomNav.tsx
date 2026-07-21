@@ -115,7 +115,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line dark:border-white/8 bg-panel shadow-lg",
+        "bottom-nav-shell border border-line bg-panel shadow-lg",
         className,
       )}
     >

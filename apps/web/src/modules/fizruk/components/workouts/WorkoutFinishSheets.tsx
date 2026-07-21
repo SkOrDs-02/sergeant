@@ -202,13 +202,13 @@ export function WorkoutFinishSheets({
                   <SectionHeading size="sm" variant="fizruk" as="div">
                     Завершено
                   </SectionHeading>
-                  <div className="text-style-title text-teal-900 dark:text-white mt-1 leading-tight">
+                  <div className="text-style-title text-fizruk-soft-fg mt-1 leading-tight">
                     Тренування виконано
                   </div>
                 </div>
                 <button
                   type="button"
-                  className="w-9 h-9 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-teal-700 dark:text-white/70 hover:text-teal-900 dark:hover:text-white text-lg"
+                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70 text-lg"
                   aria-label="Закрити"
                   onClick={() => setFinishFlash(null)}
                 >
