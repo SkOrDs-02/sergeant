@@ -79,6 +79,19 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     expect(numbered.length).toBe(10);
   });
 
+  it("closes from the dialog focus-trap escape handler", async () => {
+    const { useDialogFocusTrap } =
+      await import("@shared/hooks/useDialogFocusTrap");
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+
+    const options = vi.mocked(useDialogFocusTrap).mock.calls.at(-1)?.[2] as
+      { onEscape?: () => void } | undefined;
+    options?.onEscape?.();
+
+    expect(setFinishFlash).toHaveBeenCalledWith(null);
+  });
+
   it("clicking 'Пропустити' advances step to summary", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
@@ -99,6 +112,19 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     const threes = screen.getAllByRole("button", { name: "3" });
     fireEvent.click(threes[0]!);
     expect(setFinishFlash).toHaveBeenCalled();
+  });
+
+  it("clicking a mood button updates mood value through the state updater", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+
+    const twos = screen.getAllByRole("button", { name: "2" });
+    fireEvent.click(twos[1]!);
+
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(makeFlash({ step: "wellbeing" })).mood).toBe(2);
   });
 
   it("clicking 'Зберегти' without any rating advances step without calling updateWorkout", () => {
@@ -127,6 +153,26 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
       wellbeing: { energy: 4 },
     });
     expect(setFinishFlash).toHaveBeenCalled();
+  });
+
+  it("saving both wellbeing ratings stores both values in the summary state", () => {
+    const setFinishFlash = vi.fn();
+    const updateWorkout = vi.fn();
+    const flash = makeFlash({ step: "wellbeing", energy: 4, mood: 5 });
+    renderSheets(flash, setFinishFlash, updateWorkout);
+
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+    expect(updateWorkout).toHaveBeenCalledWith("w-1", {
+      wellbeing: { energy: 4, mood: 5 },
+    });
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(flash)).toMatchObject({
+      step: "summary",
+      savedWellbeing: { energy: 4, mood: 5 },
+    });
   });
 });
 

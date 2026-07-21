@@ -61,10 +61,20 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenSession,
     onOpenCatalog,
     onOpenTemplates,
+    onOpenJournal,
+    onRequestStart,
+    onOpenRetro,
+    onOpenSchedule,
+    onOpenPrograms,
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
     onOpenTemplates: () => void;
+    onOpenJournal: () => void;
+    onRequestStart: () => void;
+    onOpenRetro: () => void;
+    onOpenSchedule?: () => void;
+    onOpenPrograms?: () => void;
   }) => (
     <div data-testid="workouts-home">
       <button type="button" onClick={onOpenSession} data-testid="open-session">
@@ -79,6 +89,33 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
         data-testid="open-templates"
       >
         Шаблони
+      </button>
+      <button type="button" onClick={onOpenJournal} data-testid="open-journal">
+        Історія
+      </button>
+      <button
+        type="button"
+        onClick={onRequestStart}
+        data-testid="request-start"
+      >
+        Почати
+      </button>
+      <button type="button" onClick={onOpenRetro} data-testid="open-retro">
+        Внести проведене
+      </button>
+      <button
+        type="button"
+        onClick={onOpenSchedule}
+        data-testid="open-schedule"
+      >
+        Розклад
+      </button>
+      <button
+        type="button"
+        onClick={onOpenPrograms}
+        data-testid="open-programs"
+      >
+        Програми
       </button>
     </div>
   ),
@@ -99,23 +136,118 @@ vi.mock("../components/WorkoutTemplatesSection", () => ({
 }));
 
 vi.mock("../components/workouts/ExerciseDetailSheet", () => ({
-  ExerciseDetailSheet: () => null,
+  ExerciseDetailSheet: ({
+    onClose,
+    onDeleteRequest,
+  }: {
+    onClose: () => void;
+    onDeleteRequest: () => void;
+  }) => (
+    <div data-testid="exercise-detail-sheet">
+      <button type="button" data-testid="close-detail" onClick={onClose}>
+        Закрити
+      </button>
+      <button
+        type="button"
+        data-testid="delete-exercise"
+        onClick={onDeleteRequest}
+      >
+        Видалити
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../components/workouts/AddExerciseSheet", () => ({
-  AddExerciseSheet: () => null,
+  AddExerciseSheet: ({ onClose }: { onClose: () => void }) => (
+    <button type="button" data-testid="close-add-exercise" onClick={onClose}>
+      Закрити вправу
+    </button>
+  ),
 }));
 
 vi.mock("../components/workouts/QuickStartSheet", () => ({
-  QuickStartSheet: () => null,
+  QuickStartSheet: ({
+    onClose,
+    onPickTemplate,
+  }: {
+    onClose: () => void;
+    onPickTemplate: () => void;
+  }) => (
+    <div data-testid="quick-start-sheet">
+      <button type="button" data-testid="close-quick-start" onClick={onClose}>
+        Закрити старт
+      </button>
+      <button
+        type="button"
+        data-testid="pick-template"
+        onClick={onPickTemplate}
+      >
+        З шаблону
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../components/workouts/WorkoutFinishSheets", () => ({
-  WorkoutFinishSheets: () => null,
+  WorkoutFinishSheets: ({
+    setFinishFlash,
+  }: {
+    setFinishFlash: (value: null) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="clear-finish-flash"
+      onClick={() => setFinishFlash(null)}
+    >
+      Закрити фініш
+    </button>
+  ),
 }));
 
 vi.mock("../components/workouts/WorkoutsConfirmDialogs", () => ({
-  WorkoutsConfirmDialogs: () => null,
+  WorkoutsConfirmDialogs: ({
+    onDeleteExerciseConfirm,
+    onDeleteExerciseCancel,
+    onRiskyTemplateConfirm,
+    onRiskyTemplateCancel,
+  }: {
+    onDeleteExerciseConfirm: () => void;
+    onDeleteExerciseCancel: () => void;
+    onRiskyTemplateConfirm: () => void;
+    onRiskyTemplateCancel: () => void;
+  }) => (
+    <div data-testid="confirm-dialogs">
+      <button
+        type="button"
+        data-testid="confirm-delete-exercise"
+        onClick={onDeleteExerciseConfirm}
+      >
+        Так, видалити
+      </button>
+      <button
+        type="button"
+        data-testid="cancel-delete-exercise"
+        onClick={onDeleteExerciseCancel}
+      >
+        Скасувати видалення
+      </button>
+      <button
+        type="button"
+        data-testid="confirm-risky-template"
+        onClick={onRiskyTemplateConfirm}
+      >
+        Стартувати ризиковий
+      </button>
+      <button
+        type="button"
+        data-testid="cancel-risky-template"
+        onClick={onRiskyTemplateCancel}
+      >
+        Скасувати шаблон
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@shared/components/ui/DataState", () => ({
@@ -398,5 +530,110 @@ describe("Workouts page — home action wiring", () => {
     render(<Workouts />);
     fireEvent.click(screen.getByTestId("open-templates"));
     expect(setView).toHaveBeenCalledWith("templates");
+  });
+
+  it("passes routine and programs deep-link callbacks through home tiles", () => {
+    const onOpenRoutine = vi.fn();
+    const onOpenPrograms = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+
+    render(
+      <Workouts
+        onOpenRoutine={onOpenRoutine}
+        onOpenPrograms={onOpenPrograms}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("open-schedule"));
+    fireEvent.click(screen.getByTestId("open-programs"));
+
+    expect(onOpenRoutine).toHaveBeenCalledTimes(1);
+    expect(onOpenPrograms).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens quick start and retro logging from home actions", () => {
+    const setView = vi.fn();
+    const setQuickStartOpen = vi.fn();
+    const setRetroOpen = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", {
+        setView,
+        setQuickStartOpen,
+        setRetroOpen,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("request-start"));
+    fireEvent.click(screen.getByTestId("open-retro"));
+
+    expect(setQuickStartOpen).toHaveBeenCalledWith(true);
+    expect(setRetroOpen).toHaveBeenCalledWith(true);
+    expect(setView).toHaveBeenCalledWith("log");
+  });
+});
+
+describe("Workouts page — sheet and confirm callback wiring", () => {
+  it("wires close/delete callbacks for always-mounted sheets", () => {
+    const setSelected = vi.fn();
+    const setAddOpen = vi.fn();
+    const setQuickStartOpen = vi.fn();
+    const setDeleteExerciseConfirm = vi.fn();
+    const setView = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", {
+        setSelected,
+        setAddOpen,
+        setQuickStartOpen,
+        setDeleteExerciseConfirm,
+        setView,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("close-detail"));
+    fireEvent.click(screen.getByTestId("delete-exercise"));
+    fireEvent.click(screen.getByTestId("close-add-exercise"));
+    fireEvent.click(screen.getByTestId("close-quick-start"));
+    fireEvent.click(screen.getByTestId("pick-template"));
+
+    expect(setSelected).toHaveBeenCalledWith(null);
+    expect(setDeleteExerciseConfirm).toHaveBeenCalledWith(true);
+    expect(setAddOpen).toHaveBeenCalledWith(false);
+    expect(setQuickStartOpen).toHaveBeenCalledWith(false);
+    expect(setView).toHaveBeenCalledWith("templates");
+  });
+
+  it("wires finish flash and confirmation dialog callbacks", () => {
+    const setFinishFlash = vi.fn();
+    const setDeleteExerciseConfirm = vi.fn();
+    const setRiskyTemplateConfirm = vi.fn();
+    const handleDeleteExerciseConfirm = vi.fn();
+    const handleRiskyTemplateConfirm = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", {
+        setFinishFlash,
+        setDeleteExerciseConfirm,
+        setRiskyTemplateConfirm,
+        handleDeleteExerciseConfirm,
+        handleRiskyTemplateConfirm,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+
+    render(<Workouts />);
+    fireEvent.click(screen.getByTestId("clear-finish-flash"));
+    fireEvent.click(screen.getByTestId("confirm-delete-exercise"));
+    fireEvent.click(screen.getByTestId("cancel-delete-exercise"));
+    fireEvent.click(screen.getByTestId("confirm-risky-template"));
+    fireEvent.click(screen.getByTestId("cancel-risky-template"));
+
+    expect(setFinishFlash).toHaveBeenCalledWith(null);
+    expect(handleDeleteExerciseConfirm).toHaveBeenCalledTimes(1);
+    expect(setDeleteExerciseConfirm).toHaveBeenCalledWith(false);
+    expect(handleRiskyTemplateConfirm).toHaveBeenCalledTimes(1);
+    expect(setRiskyTemplateConfirm).toHaveBeenCalledWith(null);
   });
 });

@@ -16,8 +16,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { BUILTIN_PROGRAMS } from "@sergeant/fizruk-domain";
+import type { FizrukData } from "@sergeant/fizruk-domain";
 
 const mockMondayIndex = vi.fn<() => number>(() => 0);
+const mockExercises = vi.fn<() => FizrukData.RawExerciseDef[]>(() => []);
 
 vi.mock("@shared/lib/time/kyivTime", async () => {
   const actual = await vi.importActual<
@@ -27,7 +29,7 @@ vi.mock("@shared/lib/time/kyivTime", async () => {
 });
 
 vi.mock("../hooks/useExerciseCatalog", () => ({
-  useExerciseCatalog: () => ({ exercises: [], musclesUk: {} }),
+  useExerciseCatalog: () => ({ exercises: mockExercises(), musclesUk: {} }),
 }));
 
 const captureException = vi.fn();
@@ -52,6 +54,7 @@ function baseProps() {
 
 beforeEach(() => {
   mockMondayIndex.mockReturnValue(0);
+  mockExercises.mockReturnValue([]);
 });
 
 afterEach(() => {
@@ -138,5 +141,40 @@ describe("Programs page", () => {
     render(<Programs {...props} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Зупинити" })[0]!);
     expect(props.deactivateProgram).toHaveBeenCalled();
+  });
+
+  it("expands program details and shows the missing-exercises fallback", () => {
+    render(<Programs {...baseProps()} />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Деталі" })[0]!);
+
+    expect(screen.getByText("Згорнути")).toBeInTheDocument();
+    expect(screen.getByText("Розклад та вправи")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "Вправи з програми відсутні в каталозі — додайте вправи з відповідними ID вручну.",
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("renders resolved exercise names inside expanded program details", () => {
+    const firstSessionKey = firstProgram.schedule[0]!.sessionKey;
+    const firstSession = firstProgram.sessions[firstSessionKey]!;
+    const firstExerciseId = firstSession.exerciseIds[0]!;
+    mockExercises.mockReturnValue([
+      {
+        id: firstExerciseId,
+        name: { uk: "Тестова вправа", en: "Test exercise" },
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        equipment: [],
+      },
+    ]);
+
+    render(<Programs {...baseProps()} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "Деталі" })[0]!);
+
+    expect(screen.getAllByText("Тестова вправа").length).toBeGreaterThan(0);
   });
 });

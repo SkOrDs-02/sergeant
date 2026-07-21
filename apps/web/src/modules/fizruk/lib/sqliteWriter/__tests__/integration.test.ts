@@ -11,6 +11,7 @@ import { enqueueOutboxUpsert } from "../../../../../core/syncEngine/enqueueOutbo
 import {
   registerFizrukDualWriteContext,
   dualWriteFizrukState,
+  triggerFizrukDualWrite,
   __clearFizrukDualWriteContextForTests,
   type FizrukDualWriteContext,
   type FizrukDualWriteState,
@@ -73,6 +74,18 @@ describe("dualWriteFizrukState integration", () => {
     };
     const result = await dualWriteFizrukState(state, state);
     expect(result).toEqual({ status: "skipped", reason: "no-ops" });
+    teardown();
+  });
+
+  it("queues fire-and-forget trigger work when context is registered", async () => {
+    const logger = vi.fn();
+    const teardown = registerFizrukDualWriteContext(makeCtx({ logger }));
+
+    triggerFizrukDualWrite(EMPTY, EMPTY);
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 5));
+    await Promise.resolve();
+
+    expect(logger).not.toHaveBeenCalled();
     teardown();
   });
 
@@ -477,7 +490,7 @@ describe("dualWriteFizrukState — outbox enqueue wiring", () => {
     teardown();
   });
 
-  it("does NOT enqueue for non-registry ops (daily-log, monthly-plan, workout-template)", async () => {
+  it("enqueues stage-12 local tables (daily-log, monthly-plan, workout-template)", async () => {
     const teardown = registerFizrukDualWriteContext(makeCtx());
     const next: FizrukDualWriteState = {
       ...EMPTY,
@@ -509,15 +522,18 @@ describe("dualWriteFizrukState — outbox enqueue wiring", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    // None of the non-registry tables should have enqueue calls.
-    const nonRegistryCalls = enqueueMock.mock.calls.filter(([, i]) =>
+    const stage12Calls = enqueueMock.mock.calls.filter(([, i]) =>
       [
         "fizruk_daily_log",
         "fizruk_monthly_plan",
         "fizruk_workout_templates",
       ].includes(i.table),
     );
-    expect(nonRegistryCalls).toHaveLength(0);
+    expect(stage12Calls.map(([, i]) => [i.table, i.op])).toEqual([
+      ["fizruk_daily_log", "insert"],
+      ["fizruk_monthly_plan", "insert"],
+      ["fizruk_workout_templates", "insert"],
+    ]);
 
     teardown();
   });
