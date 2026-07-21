@@ -30,12 +30,12 @@
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 
-## 🔵 В роботі — 29 відкритих
+## 🔵 В роботі — 28 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 4        |
-| Планування                       | 7        |
+| Планування                       | 6        |
 | Launch / запуск                  | 13       |
 | Аудити й прожарки                | 0        |
 | Security hardening               | 1        |
