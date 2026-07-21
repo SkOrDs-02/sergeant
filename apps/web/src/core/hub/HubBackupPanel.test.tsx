@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 // ─── Collaborator mocks ───────────────────────────────────────────────────────
 
@@ -147,12 +153,8 @@ describe("HubBackupPanel", () => {
       fireEvent.change(fileInput);
     });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-
     expect(applyPayloadMock).not.toHaveBeenCalled();
-    expect(toastErrorMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledTimes(1));
     expect(reloadMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
@@ -186,12 +188,10 @@ describe("HubBackupPanel", () => {
       fireEvent.change(fileInput);
     });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-
-    expect(toastErrorMock).toHaveBeenCalledWith(
-      "Некоректний файл резервної копії Hub.",
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Некоректний файл резервної копії Hub.",
+      ),
     );
     expect(reloadMock).not.toHaveBeenCalled();
 

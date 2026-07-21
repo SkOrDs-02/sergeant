@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -29,8 +30,11 @@ vi.mock("../onboarding/onboardingGate", () => ({
   isDemoActive: () => false,
 }));
 
+const { mockRenderStandaloneRoute } = vi.hoisted(() => ({
+  mockRenderStandaloneRoute: vi.fn<(args: unknown) => ReactNode>(() => null),
+}));
 vi.mock("./StandaloneRoutes", () => ({
-  renderStandaloneRoute: () => null,
+  renderStandaloneRoute: (args: unknown) => mockRenderStandaloneRoute(args),
 }));
 
 vi.mock("./HubHomeView", () => ({
@@ -49,12 +53,16 @@ import {
   markStorageReady,
 } from "../db/storageReady";
 
-function renderHubAtRoot() {
+function renderHubAtEntry(entry = "/") {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <HubPage />
     </MemoryRouter>,
   );
+}
+
+function renderHubAtRoot() {
+  return renderHubAtEntry("/");
 }
 
 describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
@@ -62,6 +70,8 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     mockNavigate.mockClear();
     mockShouldShowOnboarding.mockClear();
     mockShouldShowOnboarding.mockReturnValue(false);
+    mockRenderStandaloneRoute.mockClear();
+    mockRenderStandaloneRoute.mockReturnValue(null);
     mockShell.activeModule = null;
     __resetStorageReadyForTests();
   });
@@ -104,5 +114,31 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
       replace: true,
     });
+  });
+
+  it("redirects legacy ?module URLs to the active path while preserving hash", async () => {
+    mockShell.activeModule = "finyk";
+    renderHubAtEntry("/?module=legacy#cashflow");
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/finyk#cashflow", {
+        replace: true,
+      }),
+    );
+    expect(mockRenderStandaloneRoute).not.toHaveBeenCalled();
+  });
+
+  it("renders standalone route output before onboarding checks", () => {
+    mockRenderStandaloneRoute.mockReturnValue(
+      <div data-testid="standalone-route">standalone</div>,
+    );
+
+    renderHubAtEntry("/pricing");
+
+    expect(screen.getByTestId("standalone-route")).toBeInTheDocument();
+    expect(mockRenderStandaloneRoute).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: "/pricing" }),
+    );
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
   });
 });
