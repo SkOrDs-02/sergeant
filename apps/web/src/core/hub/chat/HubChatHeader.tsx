@@ -10,6 +10,7 @@ import {
   PopoverItem,
 } from "@shared/components/ui/Popover";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { ChatUsageCounter } from "./ChatUsageCounter";
 
 export interface HubChatHeaderProps {
   detailsOpen: boolean;
@@ -147,6 +148,7 @@ export function HubChatHeader({
         </PopoverItem>
       </Popover>
       <div className="flex items-center gap-1 shrink-0">
+        <ChatUsageCounter />
         <Tooltip content="Почати нову бесіду" placement="bottom-center">
           <button
             type="button"

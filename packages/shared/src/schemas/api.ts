@@ -113,6 +113,18 @@ export const ChatRequestSchema = z.object({
 });
 
 /**
+ * GET /api/chat/usage (PR-42 chat counter). `limit`/`remaining` are `null`
+ * for Pro (unlimited `aiRequestsPerDay` — see `billing/effectiveLimits`);
+ * the frontend counter pill hides itself in that case.
+ */
+export const ChatUsageResponseSchema = z.object({
+  plan: z.enum(["free", "pro"]),
+  limit: z.number().int().nonnegative().nullable(),
+  remaining: z.number().int().nonnegative().nullable(),
+});
+export type ChatUsageResponse = z.infer<typeof ChatUsageResponseSchema>;
+
+/**
  * Допустимі `source`-фільтри для `POST /api/ai-memory/recall`. Дзеркалить
  * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
  * літерали тут (а не enum-import з server-only модуля), щоб

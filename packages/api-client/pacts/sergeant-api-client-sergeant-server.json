@@ -148,6 +148,60 @@
       }
     },
     {
+      "description": "a GET /api/v1/chat/usage request",
+      "providerStates": [
+        {
+          "name": "authenticated Free-plan user-pact-001 has sent 3 of 5 daily AI messages"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/chat/usage"
+      },
+      "response": {
+        "body": {
+          "limit": 5,
+          "plan": "free",
+          "remaining": 2
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/chat/usage request (Pro plan)",
+      "providerStates": [
+        {
+          "name": "authenticated Pro-plan user-pact-002 exists"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/chat/usage"
+      },
+      "response": {
+        "body": {
+          "limit": null,
+          "plan": "pro",
+          "remaining": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/coach/memory request",
       "providerStates": [
         {

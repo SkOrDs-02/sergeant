@@ -88,6 +88,23 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/chat/usage": {
+    get: {
+      summary: "Денний Free-tier ліміт AI-чату (PR-42 chat counter)",
+      tags: ["chat"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Плюс/Pro → limit/remaining=null (unlimited); Free → поточний денний рахунок.",
+          content: {
+            "application/json": { schema: namedSchemas.ChatUsageResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
 
   // ────────────────────── /api/ai-memory/* ──────────────────────
   "/api/ai-memory": {

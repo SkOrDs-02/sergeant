@@ -332,8 +332,13 @@ async function safeSessionUser(req: Request): Promise<SessionUser> {
   }
 }
 
+/** Subject key for a logged-in user — shared by quota consume/refund and read-only usage lookups. */
+function subjectForUser(userId: string): string {
+  return `u:${userId}`;
+}
+
 function subjectFor(sessionUser: SessionUser, req: Request): string {
-  return sessionUser ? `u:${sessionUser.id}` : `ip:${getIp(req)}`;
+  return sessionUser ? subjectForUser(sessionUser.id) : `ip:${getIp(req)}`;
 }
 
 function today(): string {
@@ -433,6 +438,27 @@ export async function assertAiQuota(
     }
     setRemainingHeader(res, "unknown");
     return true;
+  }
+}
+
+/**
+ * Read-only lookup of today's consumed `default`-bucket count for a logged-in
+ * user. Used by `GET /api/chat/usage` (PR-42 chat counter) — never mutates.
+ * Fail-open to 0 on missing DB / query error: an unreadable counter renders
+ * as "0 used" in the UI rather than breaking the pricing page.
+ */
+export async function getTodayChatUsage(userId: string): Promise<number> {
+  if (!process.env["DATABASE_URL"]) return 0;
+  try {
+    const r = await pool.query<ConsumeQuotaRow>(
+      `SELECT request_count FROM ai_usage_daily
+        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3`,
+      [subjectForUser(userId), today(), DEFAULT_BUCKET],
+    );
+    return r.rows[0]?.request_count ?? 0;
+  } catch (e) {
+    logQuotaStoreUnavailable("db_error", e);
+    return 0;
   }
 }
 
