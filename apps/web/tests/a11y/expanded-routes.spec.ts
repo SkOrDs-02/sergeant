@@ -6,6 +6,7 @@ import { seedFTUX } from "../utils/seedFTUX";
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
 
 const ROUTES: ReadonlyArray<{ name: string; path: string }> = [
+  { name: "assistant-catalogue", path: "/assistant" },
   { name: "finyk-budgets", path: "/finyk/budgets" },
   { name: "finyk-assets", path: "/finyk/assets" },
   { name: "fizruk-workouts", path: "/fizruk/workouts" },

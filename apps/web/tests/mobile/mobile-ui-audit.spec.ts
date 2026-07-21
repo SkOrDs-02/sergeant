@@ -15,6 +15,7 @@ import { seedFTUX } from "../utils/seedFTUX";
 // Reports/Finyk surfaces neither overflow nor truncate at mobile width;
 // reliable demo-content mobile checks belong on a real device/emulator.
 const ROUTES: ReadonlyArray<{ id: string; path: string }> = [
+  { id: "ASSISTANT", path: "/assistant" },
   { id: "HUB", path: "/" },
   { id: "FINYK", path: "/finyk/budgets" },
   { id: "FIZRUK", path: "/fizruk" },
