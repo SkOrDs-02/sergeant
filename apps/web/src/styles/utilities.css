@@ -63,14 +63,14 @@
 
 @utility input-focus-finyk {
   @apply outline-hidden transition-colors
-           focus-visible:border-primary/60
-           focus-visible:ring-2 focus-visible:ring-primary/25;
+           focus-visible:border-finyk/60
+           focus-visible:ring-2 focus-visible:ring-finyk/25;
 }
 
 @utility input-focus-fizruk {
   @apply outline-hidden transition-colors
-           focus-visible:border-success/60
-           focus-visible:ring-2 focus-visible:ring-success/25;
+           focus-visible:border-fizruk/60
+           focus-visible:ring-2 focus-visible:ring-fizruk/25;
 }
 
 @utility input-focus-nutrition {
