@@ -7,7 +7,7 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
-import { requirePlan } from "../modules/billing/requirePlan.js";
+import { requirePlan } from "../modules/billing/index.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
