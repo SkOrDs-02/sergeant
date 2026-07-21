@@ -16,9 +16,25 @@ vi.mock("@sergeant/shared", async () => {
 });
 // Stub the voice button — it has its own coverage and pulls in adapters.
 vi.mock("@shared/components/ui/VoiceMicButton", () => ({
-  VoiceMicButton: () => <button type="button">mic</button>,
+  VoiceMicButton: ({
+    onError,
+    onResult,
+  }: {
+    onError: (message: string) => void;
+    onResult: (transcript: string) => void;
+  }) => (
+    <>
+      <button type="button" onClick={() => onResult("омлет 250 ккал")}>
+        mic
+      </button>
+      <button type="button" onClick={() => onError("voice failed")}>
+        mic error
+      </button>
+    </>
+  ),
 }));
 
+import { parseMealSpeech } from "@sergeant/shared";
 import { currentTime } from "./mealFormUtils";
 import { NameTimeRow } from "./NameTimeRow";
 import type { MealFormState } from "./mealFormUtils";
@@ -73,5 +89,61 @@ describe("NameTimeRow", () => {
       target: { value: "Салат" },
     });
     expect(setName).toHaveBeenCalledWith("Салат");
+  });
+
+  it("routes time input changes through the field setter", () => {
+    const setTime = vi.fn();
+    const field = vi.fn((key: string) => (key === "time" ? setTime : vi.fn()));
+    render(
+      <NameTimeRow
+        form={makeForm({ time: "08:15" })}
+        field={field}
+        setForm={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Час"), {
+      target: { value: "09:30" },
+    });
+    expect(setTime).toHaveBeenCalledWith("09:30");
+  });
+
+  it("applies parsed voice meal fields and clears the form error", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue({
+      name: "Омлет",
+      kcal: 249.6,
+      protein: 30.4,
+      grams: null,
+      raw: "омлет 250 ккал",
+    });
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm({ err: "old error" }))).toMatchObject({
+      name: "Омлет",
+      kcal: "250",
+      protein_g: "30",
+      err: "",
+    });
+  });
+
+  it("ignores unparsed voice transcripts and records voice errors", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue(null);
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+    expect(setForm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "mic error" }));
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm())).toMatchObject({ err: "voice failed" });
   });
 });
