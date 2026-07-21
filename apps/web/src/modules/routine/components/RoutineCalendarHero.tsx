@@ -71,13 +71,13 @@ export function RoutineCalendarHero({
           />
         </div>
         <div className="min-w-0 flex-1 pr-12">
-          <p className="text-style-caption font-semibold text-hero-ink/65">
+          <p className="text-style-caption font-semibold text-hero-ink/95">
             Сьогоднішні звички
           </p>
           <p className="mt-1 text-style-headline text-hero-ink">
             {headlineDate}
           </p>
-          <p className="mt-2 text-style-body-sm text-hero-ink/75">
+          <p className="mt-2 text-style-body-sm text-hero-ink">
             {progressText}
             {currentStreak > 0
               ? ` · серія ${currentStreak} ${pluralDays(currentStreak)}`

@@ -935,9 +935,13 @@
     ); /* cyan-700 → teal-500 */
     --hero-grad-routine: linear-gradient(
       135deg,
-      #c23a3a,
-      #ff8c78
-    ); /* coral-700 → coral-400 */
+      #a13333,
+      #c23a3a
+    ); /* coral-800 → coral-700 — design-audit F2: light-theme hero text
+          (hero-ink #fdf9f3) needs ≥4.5:1 for caption/body; the old
+          →coral-400 light end capped even full-opacity ink at 2.16:1
+          (виміряно наживо 2.12–2.26:1). coral-700 is also the registered
+          `-strong` companion for routine (Hard Rule #9). */
     --hero-grad-nutrition: linear-gradient(
       135deg,
       #567c0f,

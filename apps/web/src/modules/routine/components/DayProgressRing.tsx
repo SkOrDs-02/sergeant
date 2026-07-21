@@ -70,7 +70,7 @@ export function DayProgressRing({
           </span>
         </div>
       </div>
-      <span className="text-style-caption text-hero-ink/60 font-medium group-hover:text-hero-ink transition-colors">
+      <span className="text-style-caption text-hero-ink/95 font-medium group-hover:text-hero-ink transition-colors">
         {messages.routine.dayReport}
       </span>
     </button>
