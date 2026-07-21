@@ -88,6 +88,22 @@ describe("Calendar (mobile)", () => {
     expect(getAllByText("Місяць").length).toBeGreaterThan(0);
   });
 
+  it("opens month mode and wires month navigation controls", () => {
+    const { getByLabelText } = render(<Calendar />);
+
+    fireEvent.press(getByLabelText("Місяць"));
+    fireEvent.press(getByLabelText("Попередній місяць"));
+    fireEvent.press(getByLabelText("Наступний місяць"));
+    fireEvent.press(getByLabelText("Перейти на сьогодні"));
+
+    expect(getByLabelText("Місяць").props.accessibilityState).toEqual({
+      selected: false,
+    });
+    expect(getByLabelText("Сьогодні").props.accessibilityState).toEqual({
+      selected: true,
+    });
+  });
+
   it("renders a seeded daily habit in today's list", () => {
     seedHabit();
     const { getByText } = render(<Calendar />);
@@ -105,6 +121,20 @@ describe("Calendar (mobile)", () => {
     // updates the SQLite completions cache (write-through) and
     // triggers the dual-write pipeline. MMKV no longer holds the
     // routine blob, so we assert against the warm cache directly.
+    const completions = getCachedSqliteCompletions();
+    expect(completions.refreshedAt).not.toBeNull();
+    expect(completions.completions.h1 ?? []).toContain(todayKey);
+  });
+
+  it("bulk-marks all scheduled habits for the focused day", () => {
+    seedHabit();
+    const todayKey = dateKeyFromDate(todayDate());
+    const { getByLabelText } = render(<Calendar />);
+
+    fireEvent.press(
+      getByLabelText("Позначити всі заплановані звички виконаними"),
+    );
+
     const completions = getCachedSqliteCompletions();
     expect(completions.refreshedAt).not.toBeNull();
     expect(completions.completions.h1 ?? []).toContain(todayKey);
