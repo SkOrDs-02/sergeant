@@ -49,7 +49,7 @@ import {
 } from "./monoMirrorReader";
 import {
   notifyFinykMonoMirrorRefresh,
-  useFinykMonoMirrorGate,
+  useFinykMonoMirrorTick,
 } from "./monoMirrorGate";
 
 const KEY_MANUAL = FINYK_STORAGE_KEYS.transactions;
@@ -338,26 +338,18 @@ export function useFinykTransactionsStore(
     }
   }
 
-  // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache when
-  // `feature.finyk.sqlite_v2.mono_mirror` is on. The MMKV first-paint
-  // hydration above stays as a synchronous fallback; this effect only
-  // fires after `useFinykMonoMirrorBoot` has refreshed the cache.
+  // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache. The
+  // MMKV first-paint hydration above stays as a synchronous fallback;
+  // this effect only fires after `useFinykMonoMirrorBoot` has refreshed
+  // the cache.
   // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
-  const { enabled: monoMirrorEnabled, tick: monoMirrorTick } =
-    useFinykMonoMirrorGate();
+  const monoMirrorTick = useFinykMonoMirrorTick();
   const [prevMonoTick, setPrevMonoTick] = useState(monoMirrorTick);
-  const [prevMonoEnabled, setPrevMonoEnabled] = useState(monoMirrorEnabled);
-  if (
-    monoMirrorTick !== prevMonoTick ||
-    monoMirrorEnabled !== prevMonoEnabled
-  ) {
+  if (monoMirrorTick !== prevMonoTick) {
     setPrevMonoTick(monoMirrorTick);
-    setPrevMonoEnabled(monoMirrorEnabled);
-    if (monoMirrorEnabled) {
-      const cache = getCachedFinykMonoMirrorState();
-      if (cache.refreshedAt !== null && cache.transactions.length > 0) {
-        setRealTxState(cache.transactions);
-      }
+    const cache = getCachedFinykMonoMirrorState();
+    if (cache.refreshedAt !== null && cache.transactions.length > 0) {
+      setRealTxState(cache.transactions);
     }
   }
 
@@ -371,7 +363,7 @@ export function useFinykTransactionsStore(
   });
   const userId = meData?.user?.id ?? null;
   useEffect(() => {
-    if (!monoMirrorEnabled || !userId || realTx.length === 0) return;
+    if (!userId || realTx.length === 0) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -392,7 +384,7 @@ export function useFinykTransactionsStore(
     return () => {
       cancelled = true;
     };
-  }, [realTx, userId, monoMirrorEnabled]);
+  }, [realTx, userId]);
 
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);

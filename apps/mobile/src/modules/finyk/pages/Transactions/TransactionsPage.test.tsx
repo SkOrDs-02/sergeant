@@ -85,7 +85,7 @@ jest.mock("@/components/ui/SwipeToAction", () => {
 
 jest.mock("../../lib/monoMirrorGate", () => ({
   notifyFinykMonoMirrorRefresh: jest.fn(),
-  useFinykMonoMirrorGate: () => ({ enabled: false, tick: 0 }),
+  useFinykMonoMirrorTick: () => 0,
 }));
 
 import { ToastProvider } from "@/components/ui/Toast";

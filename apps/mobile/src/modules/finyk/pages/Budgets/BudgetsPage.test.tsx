@@ -38,7 +38,7 @@ jest.mock("victory-native", () => {
 
 jest.mock("../../lib/monoMirrorGate", () => ({
   notifyFinykMonoMirrorRefresh: jest.fn(),
-  useFinykMonoMirrorGate: () => ({ enabled: false, tick: 0 }),
+  useFinykMonoMirrorTick: () => 0,
 }));
 
 import { BudgetsPage } from "./BudgetsPage";
