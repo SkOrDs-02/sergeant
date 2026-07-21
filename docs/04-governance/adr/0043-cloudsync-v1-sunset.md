@@ -1,7 +1,9 @@
 # ADR-0043: CloudSync v1 sunset — RFC 8594 deprecation headers + 6-phase rollout
 
+> **Rollout complete (2026-05-06).** Phase 5 (410 Gone) виконано в [ADR-0047](./0047-cloudsync-v1-410-gone.md). Тіло нижче — історичний 6-фазний план на момент ухвалення.
+
 - **Status:** Accepted
-- **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-04
 - **Deciders:** @Skords-01
 - **Supersedes:** —

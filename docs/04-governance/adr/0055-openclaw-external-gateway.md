@@ -12,7 +12,7 @@
 - **Related:**
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — security policy (allowlist, fail-closed).
   - [ADR-0033 — OpenClaw multi-personas and council](./0033-openclaw-multi-personas-and-council.md)
-  - [ADR-0037 — OpenClaw write-audit persistence](./0037-openclaw-write-audit-persistence.md) — server-side write-audit (remains Active).
+  - [ADR-0037 — OpenClaw write-audit persistence](./0037-openclaw-write-audit-persistence.md) — server-side write-audit schema (runtime removed per ADR-0075; table retained).
   - [`docs/90-work/planning/openclaw-migration-plan.md`](../../90-work/planning/archive/openclaw-migration-plan.md) — full 18 Locked decisions + PR-A…PR-F tracker.
 
 ---

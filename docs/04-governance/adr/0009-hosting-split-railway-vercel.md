@@ -1,7 +1,9 @@
 # ADR-0009: Hosting split — Railway (API + Postgres) + Vercel (web)
 
+> **Superseded by [ADR-0074](./0074-hosting-hetzner-coolify.md) (backend, 2026-07-11)** — API + Postgres + Redis переїхали з Railway на Hetzner/Coolify. Vercel + edge-proxy топологія збережена. Тіло нижче — історичний запис на момент ухвалення.
+
 - **Status:** superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01
 - **Supersedes:** —

@@ -1,7 +1,9 @@
 # ADR-0037: OpenClaw Phase 4.5 — DB-persistent write-audit log
 
-- **Status:** Accepted
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+> **Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)** — OpenClaw runtime і `/audit` slash-command прибрано. Таблиця `openclaw_write_audit` лишається в схемі (immutable migration); тіло нижче — історичний запис.
+
+- **Status:** Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01
 - **Supersedes:** —
