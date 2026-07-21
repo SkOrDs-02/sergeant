@@ -1,9 +1,9 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-20",
+  "generated_at": "2026-07-21",
   "sourceHashes": {
-    "knowledge-graph": "5d3dacf5b1ae5833a9000c7268ef87f434974fd39f08bdd4cfd9c998116a1012",
+    "knowledge-graph": "1ef9e4f867cb3c475210e9c555830bfd75f787d284f95f4a09776e879a116a19",
     "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
   },
   "counts": {
@@ -3669,9 +3669,9 @@
       "line": 1,
       "title": "0015 — Docs automation for daily ops",
       "tier": "core",
-      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes.",
-      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only**. **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01; earlier June streak had broken on 06-06. **Note:** після 2026-07-09 schedule runs у GH Actions не видно до 2026-07-20 — потребує human check (paused/broken cron?). Maintainer 5/7-day `today.md` usage self-report досі unrecorded. Stays In progress until self-report closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання · Recent PRs",
-      "contentHash": "d25ab6f9064a3ace55efa3961fd3ee1c790c18956361072cedb5bcc17ed1e285"
+      "status": "In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes.",
+      "text": "0015 — Docs automation for daily ops · initiative:0015 · initiative · In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes. · 15 · TL;DR · Чому зараз · Скоуп · In scope · Out of scope · План змін · Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31 · Phase 2 — Bundle Beta (committed) — ETA 2026-06-30 · Критерії DONE · Phase 1 · Phase 2 · Ризики · Власник / ETA · Backlog — Можливі доповнення (NOT committed) · Bundle Zeta — External-blocker detection у today.md (~2h, proposed) · Bundle Gamma — Review Hygiene (~4h, proposed) · Bundle Delta — Surface Dashboards (~6h, proposed) · Bundle Epsilon — Audit Discipline (~3h, proposed) · Посилання · Recent PRs",
+      "contentHash": "709752be257c3b665200e4619757292d2bb4ee46da6ef1b8a80fab7dac53112b"
     },
     {
       "id": "initiative:0022",
