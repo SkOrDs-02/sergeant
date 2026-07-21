@@ -1,6 +1,6 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
-> **Last touched:** 2026-07-15 by @dimastahov16012003. **Next review:** 2026-10-13.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 - **Status:** Accepted
@@ -17,7 +17,7 @@
 
 ## Context and Problem Statement
 
-Phase 2 ініціативи 0014 потребує per-workspace symbol catalog (`packages/*/symbols.json`, `apps/*/symbols.json`, `tools/openclaw/symbols.json`) — це разблоковує точніший dead-code detection, convention-drift detection і feed-ить C4 діаграми (Phase 4) через cross-package usage counts.
+Phase 2 ініціативи 0014 потребує per-workspace symbol catalog (`packages/*/symbols.json`, `apps/*/symbols.json`) — ~~`tools/openclaw/symbols.json` видалено разом із OpenClaw (ADR-0075)~~ — це разблоковує точніший dead-code detection, convention-drift detection і feed-ить C4 діаграми (Phase 4) через cross-package usage counts.
 
 Для парсингу TypeScript-експортів є три реалістичні підходи:
 

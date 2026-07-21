@@ -526,7 +526,7 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     expect(input.row).toMatchObject({ id: "r-del", user_id: UID });
   });
 
-  it("enqueues nutrition_water_log insert on water-log-set", async () => {
+  it("enqueues nutrition_water_log insert on water-log-set (via fireSyncOutboxUpsert)", async () => {
     await applyNutritionDualWriteOps(
       handle.client,
       [{ kind: "water-log-set", dateKey: "2026-07-01", volumeMl: 500 }],
@@ -534,13 +534,15 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     );
     await Promise.resolve();
     await Promise.resolve();
-    expect(enqueueMock).toHaveBeenCalledOnce();
-    const [, input] = enqueueMock.mock.calls[0]!;
-    expect(input.table).toBe("nutrition_water_log");
+    const waterCalls = enqueueMock.mock.calls.filter(
+      ([, i]) => i.table === "nutrition_water_log",
+    );
+    expect(waterCalls.length).toBeGreaterThanOrEqual(1);
+    const [, input] = waterCalls[0]!;
     expect(input.op).toBe("insert");
     expect(input.row).toMatchObject({
-      date_key: "2026-07-01",
       user_id: UID,
+      date_key: "2026-07-01",
       volume_ml: 500,
     });
   });

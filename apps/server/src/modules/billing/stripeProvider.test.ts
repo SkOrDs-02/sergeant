@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Pool } from "pg";
 import type { BillingProvider, ProviderCheckoutInput } from "./provider.js";
 
 const mockStripe = vi.hoisted(() => ({
@@ -54,8 +55,7 @@ describe("stripeProvider adapter", () => {
 
   it("cancelSubscription is a no-op when the user has no Stripe row", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = { query } as any;
+    const pool = { query } as unknown as Pool;
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(
@@ -74,8 +74,7 @@ describe("stripeProvider adapter", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 
     await expect(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      stripeProvider.cancelSubscription({ query } as any, "user_1"),
+      stripeProvider.cancelSubscription({ query } as unknown as Pool, "user_1"),
     ).resolves.toBeUndefined();
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(query).toHaveBeenCalledTimes(1);
@@ -93,9 +92,10 @@ describe("stripeProvider adapter", () => {
         new Response(JSON.stringify({ id: "sub_1" }), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetchMock);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await stripeProvider.cancelSubscription({ query } as any, "user_1");
+    await stripeProvider.cancelSubscription(
+      { query } as unknown as Pool,
+      "user_1",
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -126,8 +126,7 @@ describe("stripeProvider adapter", () => {
     );
 
     await expect(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      stripeProvider.cancelSubscription({ query } as any, "user_1"),
+      stripeProvider.cancelSubscription({ query } as unknown as Pool, "user_1"),
     ).rejects.toThrow("Stripe cancel failed: HTTP 500");
     // No DB update on failure — only the initial SELECT.
     expect(query).toHaveBeenCalledTimes(1);
@@ -157,8 +156,7 @@ describe("stripeProvider adapter", () => {
       ok: true,
       url: "https://billing.stripe.com/x",
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const pool = {} as Pool;
 
     const result = await stripeProvider.createCustomerPortalSession({
       pool,
@@ -183,8 +181,7 @@ describe("stripeProvider adapter", () => {
         currentPeriodEnd: null,
       },
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const pool = {} as Pool;
 
     await stripeProvider.getSubscriptionStatus(pool, "user_1");
 
@@ -214,8 +211,7 @@ describe("stripeProvider adapter", () => {
       ok: true,
       duplicate: false,
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const pool = {} as Pool;
     const rawBody = JSON.stringify({
       id: "evt_1",
       type: "checkout.session.completed",
@@ -237,8 +233,7 @@ describe("stripeProvider adapter", () => {
   });
 
   it("processWebhook omits `data` when the parsed event has no object-shaped data", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const pool = {} as Pool;
     const rawBody = JSON.stringify({ id: "evt_2", type: "ping" });
 
     await stripeProvider.processWebhook(pool, rawBody);
@@ -251,8 +246,7 @@ describe("stripeProvider adapter", () => {
   });
 
   it("processWebhook is a no-op when id or type is missing/non-string", async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pool = {} as any;
+    const pool = {} as Pool;
 
     await stripeProvider.processWebhook(pool, JSON.stringify({ type: "ping" }));
     await stripeProvider.processWebhook(

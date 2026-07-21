@@ -1,7 +1,9 @@
 # ADR-0033: OpenClaw multi-personas + `/council` round-table
 
-- **Status:** Accepted
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+> **Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)** — OpenClaw runtime повністю прибрано з репо. Persona/council архітектура нижче — історичний запис.
+
+- **Status:** Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)
+- **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-05-02
 - **Deciders:** @Skords-01
 - **Supersedes:** —

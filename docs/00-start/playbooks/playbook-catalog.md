@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -63,7 +63,6 @@ Curated table вище лишається швидким роутером для
 | [`pre-merge-migration-checklist.md`](./pre-merge-migration-checklist.md)           | PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).                                                                                                                      |
 | [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md)                           | `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).                                                    |
 | [`reconcile-doc-drift.md`](./reconcile-doc-drift.md)                               | «Актуалізуй документацію» / «Знайди дрифт і не позначені виконані таски» / «Заархівуй завершені плани/ініціативи/аудити» / періодична гігієна docs, щоб у кожному документі було видно стан і залишок роботи.               |
-| [`rotate-openclaw-credentials.md`](./rotate-openclaw-credentials.md)               | ротація будь-якого OpenClaw GitHub credential.                                                                                                                                                                              |
 | [`rotate-secrets.md`](./rotate-secrets.md)                                         | "Secret leaked" / планова ротація / security audit / підозріла активність.                                                                                                                                                  |
 | [`security-pen-test-checklist.md`](./security-pen-test-checklist.md)               | треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у. |
 | [`stabilize-flaky-test.md`](./stabilize-flaky-test.md)                             | «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.                                                                                                           |
@@ -74,15 +73,16 @@ Curated table вище лишається швидким роутером для
 
 Ці файли збережені для старих посилань і PR-контексту. Для виконання відкривай canonical playbook у другій колонці.
 
-| Historical file                              | Canonical owner                                                                                                |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `grant-privileged-access.md`                 | [`access-governance.md` § Grant privileged access](./access-governance.md#1-grant-privileged-access)           |
-| `release-expo-mobile.md`                     | [`release.md` § Expo](./release.md#3-expo)                                                                     |
-| `release-mobile-shell.md`                    | [`release.md` § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor)                               |
-| `release-web-and-api.md`                     | [`release.md` § Web + API](./release.md#1-web--api)                                                            |
-| `respond-to-suspected-account-compromise.md` | [`access-governance.md` § Suspected account compromise](./access-governance.md#4-suspected-account-compromise) |
-| `revoke-privileged-access.md`                | [`access-governance.md` § Revoke privileged access](./access-governance.md#2-revoke-privileged-access)         |
-| `run-access-review.md`                       | [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review)             |
+| Historical file                              | Canonical owner                                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grant-privileged-access.md`                 | [`access-governance.md` § Grant privileged access](./access-governance.md#1-grant-privileged-access)                                               |
+| `release-expo-mobile.md`                     | [`release.md` § Expo](./release.md#3-expo)                                                                                                         |
+| `release-mobile-shell.md`                    | [`release.md` § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor)                                                                   |
+| `release-web-and-api.md`                     | [`release.md` § Web + API](./release.md#1-web--api)                                                                                                |
+| `respond-to-suspected-account-compromise.md` | [`access-governance.md` § Suspected account compromise](./access-governance.md#4-suspected-account-compromise)                                     |
+| `revoke-privileged-access.md`                | [`access-governance.md` § Revoke privileged access](./access-governance.md#2-revoke-privileged-access)                                             |
+| `run-access-review.md`                       | [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review)                                                 |
+| `rotate-openclaw-credentials.md`             | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)) |
 
 ## Notes
 

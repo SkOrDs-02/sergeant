@@ -1,21 +1,19 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-20.
 > **Status:** Active
 
-> **Статус автоматизації:** `.github/workflows/post-deploy-smoke.yml` **відсутній** у репо (лише CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json)). Прогін — вручну або після ручного додавання workflow через GH UI (шаблон у § Workflow YAML).
+> **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).
 
 Цей runbook описує, як працюють **post-deploy smoke tests** для Sergeant API — і що робити, коли cron / deploy-hook каже, що щось зламалось.
 
 Sister-сторінки:
 
-- [`docs/02-engineering/testing/pact-drift-runbook.md`](./pact-drift-runbook.md) — optional daily staging drift check (CLI; workflow не закомічений).
+- [`docs/02-engineering/testing/pact-drift-runbook.md`](./pact-drift-runbook.md) — daily staging Pact drift check.
 - [`docs/02-engineering/architecture/api-contracts.md`](../architecture/api-contracts.md) — як працює Pact pipeline загалом.
-- `.github/workflows/post-deploy-smoke.yml` — **не в репо**; створити вручну з § Workflow YAML (якщо потрібна автоматизація).
+- [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) — cron + deploy hook.
 - [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) — CLI runner.
 - [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json) — конфіг із списком endpoint-ів.
-
-> **Why the YAML lives in docs and not under `.github/workflows/`:** PR-42 (#2675), #2737 і ця PR використовують OAuth App без `workflow` scope, тож автоматизований push нового workflow-файла remote rejected-иться. До отримання scope-а — скопіюй YAML із § Workflow YAML у `.github/workflows/post-deploy-smoke.yml` вручну через GH UI.
 
 ## TL;DR
 
@@ -28,7 +26,7 @@ Sister-сторінки:
 
 ## Як працює workflow
 
-- Файл (потрібно створити вручну — див. § Workflow YAML): `.github/workflows/post-deploy-smoke.yml`.
+- Файл: [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) (§ Workflow YAML — дзеркало).
 - Тригери:
   - `workflow_dispatch` з `base_url` / `tier` / `strict` inputs (ad-hoc прогон з UI Actions).
   - `deployment_status` — стартує одразу після успішного GitHub deployment-у (e.g. Vercel preview / Railway prod). `if: deployment_status.state == 'success'`.
@@ -164,7 +162,7 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 
 ## Workflow YAML
 
-Закомить як `.github/workflows/post-deploy-smoke.yml`:
+Workflow YAML (дзеркало [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) — редагуй workflow у `.github/`, потім синхронізуй секцію нижче):
 
 ```yaml
 name: Post-deploy smoke

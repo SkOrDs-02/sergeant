@@ -477,7 +477,7 @@ describe("dualWriteFizrukState — outbox enqueue wiring", () => {
     teardown();
   });
 
-  it("does NOT enqueue for non-registry ops (daily-log, monthly-plan, workout-template)", async () => {
+  it("enqueues for daily-log, monthly-plan, and workout-template ops (via fireSyncOutboxUpsert)", async () => {
     const teardown = registerFizrukDualWriteContext(makeCtx());
     const next: FizrukDualWriteState = {
       ...EMPTY,
@@ -509,15 +509,10 @@ describe("dualWriteFizrukState — outbox enqueue wiring", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    // None of the non-registry tables should have enqueue calls.
-    const nonRegistryCalls = enqueueMock.mock.calls.filter(([, i]) =>
-      [
-        "fizruk_daily_log",
-        "fizruk_monthly_plan",
-        "fizruk_workout_templates",
-      ].includes(i.table),
-    );
-    expect(nonRegistryCalls).toHaveLength(0);
+    const tables = enqueueMock.mock.calls.map(([, i]) => i.table);
+    expect(tables).toContain("fizruk_daily_log");
+    expect(tables).toContain("fizruk_monthly_plan");
+    expect(tables).toContain("fizruk_workout_templates");
 
     teardown();
   });
