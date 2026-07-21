@@ -6,6 +6,13 @@ on:
       - "apps/server/src/**"
       - "packages/shared/src/openapi/**"
       - "scripts/api/**"
+      - "scripts/pact-drift-check.mjs"
+      - "scripts/post-deploy-smoke.mjs"
+      - "scripts/smoke-tests.json"
+      - "scripts/__tests__/pact-drift-check.test.mjs"
+      - "scripts/__tests__/post-deploy-smoke.test.mjs"
+      - ".github/workflows/pact-drift.yml"
+      - ".github/workflows/post-deploy-smoke.yml"
       - "docs/02-engineering/api/openapi.json"
       - "packages/api-client/src/generated/openapi.d.ts"
       - "apps/server/src/__tests__/contracts/**"
@@ -54,3 +61,6 @@ jobs:
 
       - name: Run runtime response roundtrip tests
         run: pnpm --filter @sergeant/server exec vitest run src/__tests__/contracts/openapi-roundtrip.test.ts --pool=forks --maxWorkers=1 --no-file-parallelism
+
+      - name: Run pact-drift and post-deploy-smoke unit tests
+        run: pnpm test:contract-drift-cli

@@ -52,6 +52,7 @@
     "api:check-openapi": "node scripts/api/check-openapi-fresh.mjs",
     "api:generate-openapi-types": "node scripts/api/generate-openapi-types.mjs",
     "api:check-openapi-types": "node scripts/api/check-openapi-types-fresh.mjs",
+    "test:contract-drift-cli": "node --test scripts/__tests__/pact-drift-check.test.mjs scripts/__tests__/post-deploy-smoke.test.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
     "lint:bundle-size-guard": "node --test scripts/__tests__/check-bundle-size.test.mjs",
     "lint:discoverability": "node scripts/check-discoverability.mjs",
