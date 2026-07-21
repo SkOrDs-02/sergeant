@@ -1,9 +1,9 @@
 # Pact contract drift — runbook
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-20.
 > **Status:** Active
 
-> **Статус автоматизації:** `.github/workflows/pact-drift.yml` **відсутній** у репо. Drift-перевірка — через CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs) (вручну / cron поза GH). Шаблон workflow — § Workflow YAML.
+> **Статус автоматизації:** [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) закомічений — cron 06:00 UTC + `workflow_dispatch`. Локально/ad-hoc — CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs). § Workflow YAML — дзеркало для review у docs.
 
 > **Single source of truth → [`docs/02-engineering/architecture/api-contracts.md`](../architecture/api-contracts.md).** Той файл описує **що** живе у Pact-контракті і **як** працює consumer/provider pipeline. Цей runbook описує **що робити**, коли daily-cron детектує drift проти live staging.
 
@@ -17,13 +17,11 @@
 
 ## Як workflow працює
 
-- Файл (потрібно створити вручну — див. § Workflow YAML): `.github/workflows/pact-drift.yml`.
+- Файл: [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) (§ Workflow YAML — дзеркало).
 - Тригери: cron `0 6 * * *` (06:00 UTC щодня) + `workflow_dispatch` з опціями (`base_url`, `include_mutations`, `strict`).
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
 - Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 22 інтеракціями).
 - Idempotent issue logic: один open issue `[Pact drift] …` із label `contract-drift`. Наступні детекції → comment у той самий issue, а не дубльований issue. Mirrors `db-backup-verify.yml`.
-
-> **Why the YAML lives in docs and not under `.github/workflows/`:** PR-42 (#2675) і ця PR використовують OAuth App без `workflow` scope, тож автоматизований push нової workflow-файла remote rejected-иться (`refusing to allow an OAuth App to create or update workflow … without 'workflow' scope`). До отримання scope-а — скопіюй YAML нижче у `.github/workflows/pact-drift.yml` вручну (через GH UI: "Add file" → "Create new file" → шлях `.github/workflows/pact-drift.yml`).
 
 ### Як читається verdict
 
@@ -125,7 +123,7 @@ node scripts/pact-drift-check.mjs --base-url http://127.0.0.1:3000
 
 ## Workflow YAML
 
-Закомить як `.github/workflows/pact-drift.yml`:
+Workflow YAML (дзеркало [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) — редагуй workflow у `.github/`, потім синхронізуй секцію нижче):
 
 ```yaml
 name: Pact contract drift (daily cron)

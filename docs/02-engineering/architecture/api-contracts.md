@@ -176,7 +176,7 @@ OpenClaw — це Telegram-бот, який є **отримувачем webhook-
 Поверх per-PR `provider.test.ts` (handler logic vs pact) працює окремий daily-cron, що ганяє ті самі pact-контракти проти **live staging**. Це ловить infra-level drift (WAF / CDN / middleware ordering / feature-flag rollout, що змінює shape per environment) — handler може бути правильним, але деплоєна копія може мати іншу wire-shape.
 
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
-- Workflow: `.github/workflows/pact-drift.yml` — `cron: "0 6 * * *"` + `workflow_dispatch`. YAML inline у [`docs/02-engineering/testing/pact-drift-runbook.md § Workflow YAML`](../testing/pact-drift-runbook.md#workflow-yaml) (OAuth-scope blocker — див. PR-42 #2675 для контексту).
+- Workflow: [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) — `cron: "0 6 * * *"` + `workflow_dispatch`. Дзеркало для review — [`pact-drift-runbook.md § Workflow YAML`](../testing/pact-drift-runbook.md#workflow-yaml).
 - Runbook (triage / fix): [`docs/02-engineering/testing/pact-drift-runbook.md`](../testing/pact-drift-runbook.md).
 
 На failure → idempotent issue з label `contract-drift` (same pattern as `db-backup-verify.yml`). Шейп-diff: missing field = FAIL, type mismatch = FAIL, extra field = WARN, порожні vs populated масиви = WARN (data drift, не schema drift). Mutation endpoints (POST/PUT/PATCH/DELETE) пропускаються за замовчуванням — opt-in через `--include-mutations` для ad-hoc deeper check.
