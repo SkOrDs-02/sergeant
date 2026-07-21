@@ -197,3 +197,23 @@
     transparent 100%
   );
 }
+
+/* ── Module-scoped input focus (design-audit F3) ─────────────────────────
+   Shared `Input` defaults to the brand focus treatment
+   (`focus-visible:border-brand-400 ring-focus/30`), so every input inside
+   a module lit up EMERALD regardless of the host accent — a Rule #12
+   containment breach measured live on fizruk/routine/nutrition (кадри
+   t42-* в audit-shots/). `ModuleAccentProvider` already writes
+   `--module-accent-rgb` on its wrapper, so one cascade-level override
+   recolours border, ring and caret for every input in every module —
+   no per-call-site work. Error state keeps the danger treatment
+   (`aria-invalid` opt-out). Specificity (0,2,1) beats the Tailwind
+   focus-visible classes (0,2,0). */
+[data-module-accent]
+  :is(input, textarea, select):focus-visible:not([aria-invalid="true"]) {
+  border-color: rgb(var(--module-accent-rgb) / 0.6);
+  --tw-ring-color: rgb(var(--module-accent-rgb) / 0.25);
+}
+[data-module-accent] :is(input, textarea) {
+  caret-color: rgb(var(--module-accent-rgb));
+}
