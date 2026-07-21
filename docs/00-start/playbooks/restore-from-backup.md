@@ -52,7 +52,7 @@
 
 ## Related playbooks and skills
 
-- Concrete commands: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md) — Railway `pg_dump` / `pg_restore`, smoke-test SQL, migration-skew handling.
+- Concrete commands: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md) — Coolify Postgres `pg_dump` / `pg_restore` (historical Railway notes у runbook), smoke-test SQL, migration-skew handling.
 - [test-backup-restore.md](./test-backup-restore.md)
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [declare-incident.md](./declare-incident.md)

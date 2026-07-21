@@ -55,7 +55,7 @@ SERVICE_BASE_URL=https://api.example.com
 Оновити:
 
 - `.env.example` — з placeholder-ами
-- Railway Variables — реальні значення
+- Coolify app env (API) + Vercel env (web) — реальні значення; див. [`env-vars.md`](../../02-engineering/integrations/env-vars.md)
 - CI secrets — якщо потрібні для тестів
 
 ### 3. Створити module в server
@@ -153,7 +153,7 @@ async function healthCheck() {
 - [ ] Prometheus metrics додано
 - [ ] `.env.example` оновлено (без реальних secrets!)
 - [ ] Типи в `packages/api-client` додані (rule #3)
-- [ ] Railway Variables задокументовані
+- [ ] Coolify/Vercel env vars задокументовані в `env-vars.md`
 
 ## Notes
 
@@ -166,5 +166,6 @@ async function healthCheck() {
 
 - [monobank-roadmap.md](../../02-engineering/integrations/monobank-roadmap.md) — приклад повної Monobank-інтеграції
 - [backend-tech-debt.md](../../90-work/tech-debt/backend.md) — §Bank integrations deep-dive
-- [railway-vercel.md](../../02-engineering/integrations/railway-vercel.md) — як додати env vars у Railway
+- [env-vars.md](../../02-engineering/integrations/env-vars.md) — канонічний реєстр env vars (Coolify + Vercel)
+- [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) — backend hosting (Coolify)
 - [AGENTS.md](../../../AGENTS.md) — rule #3 (API contract)

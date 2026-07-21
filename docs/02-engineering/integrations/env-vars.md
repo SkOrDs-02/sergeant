@@ -179,7 +179,7 @@ Console → n8n dispatcher webhook для Telegram-controlled AI agents. Ско�
 
 ### `ANTHROPIC_PROMPT_CACHE` _(optional, default off)_
 
-Опт-ін для prompt caching у `tools/openclaw` agent-loop (PR-39, ADR-0057). Truthy values: `1`, `true`, `yes` (case-insensitive). Коли увімкнено, `tools/openclaw/src/agents/run-agent-loop.ts` додає `cache_control: { type: "ephemeral" }` на (a) system prompt і (b) останній tool у `tools[]`. Cache TTL — 5 хвилин; net-cost-win починається з ≥2 викликів у вікні (tool-use loop або кілька slash-команд підряд). Affects лише `tools/openclaw` (Telegram-bot процес у окремому Railway service); не впливає на `apps/server` Anthropic-клієнт.
+Опт-ін для prompt caching (historical `tools/openclaw`, ADR-0057 — **workspace removed ADR-0075**). Env var may still exist in Coolify but has **no runtime consumer**. For HubChat/server caching see ADR-0039 (`apps/server` chat paths).
 
 ---
 
@@ -577,7 +577,7 @@ PostHog для mobile FTUX activation funnel (парний до web — той �
 
 ### `SERGEANT_ALERT_BOT_TOKEN` _(optional, required for `/alerts/send`)_
 
-Telegram bot-token для alert-бота. Той самий env-var, що його використовує OpenClaw broadcast (`apps/server/src/modules/openclaw/write-tools.ts`); єдиний bot обслуговує і операторні алерти, і broadcast-и. Format: `123456:ABC-DEF…`.
+Telegram bot-token для alert-бота (`Sergeant_alert_bot`, n8n WF-98 fan-out). Format: `123456:ABC-DEF…`. *(Historical OpenClaw broadcast via `apps/server/src/modules/openclaw/write-tools.ts` — module removed ADR-0075.)*
 
 Без цього env-var-а:
 

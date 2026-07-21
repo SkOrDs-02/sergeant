@@ -1,11 +1,10 @@
 # Runbooks
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Operational runbooks для on-call та incident-flow-ів — точне «як» для нашого
-конкретного infra-сетапу (Railway Postgres, pgBouncer, key-ring, replica).
-Доповнюють концептуальні плейбуки в [`docs/00-start/playbooks/`](../../00-start/playbooks/README.md):
+конкретного infra-сетапу (**Coolify Postgres/Redis/API** на Hetzner — [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md); legacy Railway notes де ще не переписано). Доповнюють концептуальні плейбуки в [`docs/00-start/playbooks/`](../../00-start/playbooks/README.md):
 playbook каже **що** і **коли**, runbook — **як саме** виконати на нашому стеку.
 
 ## Документи

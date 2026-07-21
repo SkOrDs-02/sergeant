@@ -43,7 +43,7 @@
 ### 4. Зафіксуй operational impact у PR-описі
 
 - Що саме запускає воркфлоу (cron, webhook, manual trigger).
-- Які env / credentials потрібні і де вони мають бути виставлені (Railway, n8n cloud, локальний `.env`).
+- Які env / credentials потрібні і де вони мають бути виставлені (Coolify app env, legacy n8n Railway, локальний `.env`).
 - Який blast radius при помилці — кого зачепить, які системи можуть зламатися.
 - Чи потребує окремого ревʼю від owner-а суміжного домену (наприклад фінанси, безпека).
 

@@ -1,19 +1,21 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 > **Status:** Active
 
-> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Railway Postgres + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
+> **Update 2026-07-21:** Postgres переїхав на **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Coolify має scheduled backups для Postgres resource. Команди нижче з Railway-епохи **частково застарілі** — використовуй Coolify UI → Postgres → Backups для restore; `pg_dump`/`pg_restore` через internal connection string з Coolify. Railway-приклади лишено як historical reference до повного rewrite runbook-у.
+
+> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup + smoke-test schema integrity. Weekly verify CI вже live через PR #049b; ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і
 > [`test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md) (rehearsal cadence) —
-> вони описують `що` і `коли`, а тут лежить точне `як` для нашого Railway+pg-сетапу.
+> вони описують `що` і `коли`, а тут лежить точне `як` для Postgres-сетапу (Coolify з 2026-07; historical Railway notes нижче).
 > RPO/RTO targets: див. [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md) (RPO ≤ 24h, RTO ≤ 4h для Postgres).
 
 ## Що ми бекапимо
 
-Один Railway-провайдений Postgres (`Postgres` service у production project).
+Один Postgres instance на Coolify (`pgvector/pgvector:pg18`, ADR-0074). Historical: Railway `Postgres` service у production project.
 Дані: usage analytics, finyk transactions, mono cache, fizruk workouts,
 nutrition meals, routine streaks, sync_op_log + sync_audit_log, Better Auth
 sessions/accounts. Все, що не лежить у `module_data`-blob-ах, лежить тут.
@@ -32,13 +34,12 @@ sessions/accounts. Все, що не лежить у `module_data`-blob-ах, л
 
 | Шар                                       | Cadence               | Retention       | Hold-time для restore                                      |
 | ----------------------------------------- | --------------------- | --------------- | ---------------------------------------------------------- |
-| Railway automated PG snapshots            | щодоби (UTC midnight) | 7 днів          | ~5–15 хв на full-restore через Railway dashboard / CLI     |
+| Coolify scheduled Postgres backups      | за розкладом Coolify  | per Coolify retention | restore через Coolify UI → Postgres → Backups |
+| Railway automated PG snapshots          | *(historical)*        | 7 днів                | decommissioned з ADR-0074                       |
 | Manual `pg_dump`-snapshot перед міграцією | per release           | до 30 днів у S3 | див. § «Pre-migration snapshot» нижче                      |
 | WAL streaming / PITR                      | **не налаштовано**    | —               | поза scope-ом цього runbook-у — TODO Stage 6 PR (separate) |
 
-> **Reality-check.** Сьогодні єдиний staffed backup channel — Railway daily
-> snapshots. Мінімально валідовано: ручний рестор у staging-проект ≤ 1 раз на
-> місяць. Weekly verify CI (PR #049b) автоматизує smoke-verify між ручними drills.
+> **Reality-check (2026-07-21).** Primary backup channel — **Coolify scheduled backups** на Postgres resource. Railway daily snapshots — historical. Мінімально валідовано: ручний рестор у staging ≤ 1 раз на місяць. Weekly verify CI (PR #049b) автоматизує smoke-verify між ручними drills.
 
 ## 1. Pre-migration snapshot (recommended перед кожним release)
 

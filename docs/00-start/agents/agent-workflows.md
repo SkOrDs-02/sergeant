@@ -91,14 +91,9 @@
 5. Implement only after the auditor returns concrete file/status recommendations.
 6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-graph`) and run the matching `--check` scripts.
 
-## 6. OpenClaw Gateway Change
+## 6. OpenClaw Gateway Change *(historical — decommissioned ADR-0075)*
 
-1. Start with `sergeant-start-here`.
-2. Load `sergeant-openclaw`.
-3. If the change also modifies HubChat tool defs or executors → also load `sergeant-hubchat`.
-4. If the change requires Coolify env vars or health verification → also load `sergeant-deploy-and-observability`.
-5. `pnpm --filter @sergeant/openclaw-plugin build` locally before pushing.
-6. After deploy (коли Gateway знову задеплоєно — Railway декомісовано, hosting TBD): verify `sergeant-openclaw-gateway` health + test `@OpenClaw_sergeant_v2_bot` responds.
+OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-hubchat`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
 
 ## 11. Docs-Sync Sweep (parallel reconcile across `docs/`)
 
