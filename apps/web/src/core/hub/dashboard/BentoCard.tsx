@@ -223,7 +223,7 @@ export const BentoCard = memo(function BentoCard({
 
         {showProgress && (
           <div
-            className="w-full h-1.5 rounded-full bg-line/25 overflow-hidden mt-2"
+            className="w-full h-1.5 rounded-full bg-panelHi overflow-hidden mt-2"
             aria-hidden
           >
             <div

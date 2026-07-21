@@ -26,7 +26,7 @@ export const SETTINGS_INDEX: ReadonlyArray<{
     description: "Підказки, щільність, активні модулі",
     keywords:
       "дашборд dashboard підказки щільність density вигляд активні модулі порядок упорядкувати reorder hide inactive приховати",
-    icon: "layout-grid",
+    icon: "grid",
   },
   {
     id: "general",
@@ -110,7 +110,7 @@ export const SETTINGS_INDEX: ReadonlyArray<{
     title: "Експериментальні",
     description: "Lab, beta, debug",
     keywords: "experimental lab beta debug розробка розробник developer",
-    icon: "flask-conical",
+    icon: "sparkles",
   },
 ];
 

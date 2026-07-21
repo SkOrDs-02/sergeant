@@ -207,6 +207,7 @@ export const messages = {
     // семантичний copy-paste, який маскував модуль для скрінрідера
     // (design-audit P3/D6).
     finykOverview: "Огляд",
+    fizrukOverview: "Огляд",
     nutritionLog: "Журнал",
     reports: "Звіти",
     finykSections: "Розділи Фініка",
