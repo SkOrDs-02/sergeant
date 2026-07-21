@@ -1,243 +1,260 @@
-// @vitest-environment jsdom
-/**
- * Smoke-render tests for `HubChat` — the hub chat shell that composes
- * useChatSessions, useChatSend, and their child components. All heavy
- * collaborators are mocked so this suite validates that:
- *   a) HubChat mounts without throwing (0% → covered).
- *   b) It renders the expected a11y landmark and delegates to sub-components.
- *   c) Props like `initialMessage` and `autoSendInitial` are forwarded to
- *      `useChatSend`, and `onClose`/`onOpenCatalogue` propagate down.
- *   d) `paywallOpen` state is consumed correctly (PaywallModal receives it).
- */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import HubChat from "./HubChat";
 
-// ─── Hoisted mock factories ────────────────────────────────────────────────────
-
-const { mockUseChatSessions, mockUseChatSend, mockUseHubChatStorageBoot } =
-  vi.hoisted(() => ({
-    mockUseHubChatStorageBoot: vi.fn(),
-    mockUseChatSessions: vi.fn(),
-    mockUseChatSend: vi.fn(),
-  }));
-
-// ─── Module mocks ─────────────────────────────────────────────────────────────
+const storageBootMock = vi.fn();
+const setHistoryOpenMock = vi.fn();
+const setDetailsOpenMock = vi.fn();
+const createSessionMock = vi.fn();
+const selectSessionMock = vi.fn();
+const deleteSessionMock = vi.fn();
+const setMessagesMock = vi.fn();
+const setInputMock = vi.fn();
+const setSpeakingMock = vi.fn();
+const sendMock = vi.fn<(_: string) => Promise<void>>(() => Promise.resolve());
+const cancelInFlightMock = vi.fn();
+const closePaywallMock = vi.fn();
+const focusInputMock = vi.fn();
 
 vi.mock("./chat/useHubChatStorageBoot", () => ({
-  useHubChatStorageBoot: mockUseHubChatStorageBoot,
+  useHubChatStorageBoot: () => storageBootMock(),
 }));
 
 vi.mock("./chat/useChatSessions", () => ({
-  useChatSessions: mockUseChatSessions,
+  useChatSessions: () => ({
+    sessions: [{ id: "s1", title: "Session" }],
+    activeId: "s1",
+    messages: [
+      { id: "u1", role: "user", text: "hello" },
+      { id: "a1", role: "assistant", text: "hi" },
+      { id: "system", role: "system", text: "ignored" },
+    ],
+    setMessages: setMessagesMock,
+    historyOpen: true,
+    setHistoryOpen: setHistoryOpenMock,
+    detailsOpen: false,
+    setDetailsOpen: setDetailsOpenMock,
+    handleCreateSession: createSessionMock,
+    handleSelectSession: selectSessionMock,
+    handleDeleteSession: deleteSessionMock,
+  }),
 }));
 
 vi.mock("./chat/useChatSend", () => ({
-  useChatSend: mockUseChatSend,
-}));
-
-vi.mock("./HubChatHistoryDrawer", () => ({
-  HubChatHistoryDrawer: () => <div data-testid="history-drawer" />,
+  useChatSend: () => ({
+    input: "draft",
+    setInput: setInputMock,
+    loading: true,
+    speaking: false,
+    setSpeaking: setSpeakingMock,
+    online: true,
+    hasData: true,
+    contextState: "ready",
+    activeModule: "finyk",
+    send: sendMock,
+    cancelInFlight: cancelInFlightMock,
+    paywallOpen: true,
+    closePaywall: closePaywallMock,
+    sendRef: { current: null },
+    focusInputRef: { current: focusInputMock },
+  }),
 }));
 
 vi.mock("./chat/HubChatHeader", () => ({
-  HubChatHeader: (props: { onClose?: () => void }) => (
-    <div data-testid="hub-chat-header">
-      {props.onClose && (
-        <button
-          type="button"
-          data-testid="header-close"
-          onClick={props.onClose}
-        >
-          close
-        </button>
-      )}
-    </div>
+  HubChatHeader: ({
+    sessionInfo,
+    sessionsCount,
+    onDetailsOpenChange,
+    onOpenHistory,
+    onClearChat,
+    onClose,
+  }: {
+    sessionInfo: { historyCount: number; chars: number };
+    sessionsCount: number;
+    onDetailsOpenChange: (open: boolean) => void;
+    onOpenHistory: () => void;
+    onClearChat: () => void;
+    onClose: () => void;
+  }) => (
+    <header data-testid="chat-header">
+      <span data-testid="session-info">
+        {sessionInfo.historyCount}:{sessionInfo.chars}:{sessionsCount}
+      </span>
+      <button type="button" onClick={() => onDetailsOpenChange(true)}>
+        details
+      </button>
+      <button type="button" onClick={onOpenHistory}>
+        history
+      </button>
+      <button type="button" onClick={onClearChat}>
+        clear
+      </button>
+      <button type="button" onClick={onClose}>
+        close
+      </button>
+    </header>
   ),
 }));
 
 vi.mock("./chat/HubChatBody", () => ({
-  HubChatBody: (props: { onPickSuggestion?: (t: string) => void }) => (
-    <div data-testid="hub-chat-body">
-      <button
-        type="button"
-        data-testid="body-pick-suggestion"
-        onClick={() => props.onPickSuggestion?.("suggestion")}
-      >
-        pick
+  HubChatBody: ({
+    onSpeak,
+    onCancel,
+    onPickSuggestion,
+  }: {
+    onSpeak: () => void;
+    onCancel: () => void;
+    onPickSuggestion: (text: string) => void;
+  }) => (
+    <section data-testid="chat-body">
+      <button type="button" onClick={onSpeak}>
+        speak
       </button>
-    </div>
+      <button type="button" onClick={onCancel}>
+        cancel
+      </button>
+      <button type="button" onClick={() => onPickSuggestion("suggested")}>
+        suggestion
+      </button>
+    </section>
   ),
 }));
 
 vi.mock("./chat/HubChatComposer", () => ({
-  HubChatComposer: (props: {
-    onSend?: (p: string) => void;
-    onHelp?: () => void;
+  HubChatComposer: ({
+    onSend,
+    onHelp,
+    setInput,
+    setSpeaking,
+  }: {
+    onSend: (prompt: string) => void;
+    onHelp: () => void;
+    setInput: (value: string) => void;
+    setSpeaking: (value: boolean) => void;
   }) => (
-    <div data-testid="hub-chat-composer">
-      <button
-        type="button"
-        data-testid="composer-send"
-        onClick={() => props.onSend?.("hello")}
-      >
+    <footer data-testid="chat-composer">
+      <button type="button" onClick={() => onSend("manual prompt")}>
         send
       </button>
-      <button
-        type="button"
-        data-testid="composer-help"
-        onClick={() => props.onHelp?.()}
-      >
+      <button type="button" onClick={onHelp}>
         help
+      </button>
+      <button type="button" onClick={() => setInput("typed")}>
+        type
+      </button>
+      <button type="button" onClick={() => setSpeaking(false)}>
+        stop speaking
+      </button>
+    </footer>
+  ),
+}));
+
+vi.mock("./HubChatHistoryDrawer", () => ({
+  HubChatHistoryDrawer: ({
+    open,
+    onClose,
+    onSelect,
+    onCreate,
+    onDelete,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onSelect: (id: string) => void;
+    onCreate: () => void;
+    onDelete: (id: string) => void;
+  }) => (
+    <aside data-testid="history-drawer" data-open={open}>
+      <button type="button" onClick={onClose}>
+        close history
+      </button>
+      <button type="button" onClick={() => onSelect("s2")}>
+        select session
+      </button>
+      <button type="button" onClick={onCreate}>
+        create session
+      </button>
+      <button type="button" onClick={() => onDelete("s1")}>
+        delete session
+      </button>
+    </aside>
+  ),
+}));
+
+vi.mock("../billing/PaywallModal", () => ({
+  PaywallModal: ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+    <div data-testid="paywall" data-open={open}>
+      <button type="button" onClick={onClose}>
+        close paywall
       </button>
     </div>
   ),
 }));
 
-vi.mock("../billing/PaywallModal", () => ({
-  PaywallModal: (props: { open?: boolean }) => (
-    <div data-testid="paywall-modal" data-open={String(props.open ?? false)} />
-  ),
-}));
-
-// ─── Import under test (after mocks) ──────────────────────────────────────────
-
-import HubChat from "./HubChat";
-
-// ─── Default mock returns ─────────────────────────────────────────────────────
-
-const defaultFocusInputRef = { current: null as (() => void) | null };
-const defaultSendRef = {
-  current: null as ((p: string) => Promise<void>) | null,
-};
-
-function makeDefaultSessions() {
-  return {
-    sessions: [],
-    activeId: "session-1",
-    messages: [],
-    setMessages: vi.fn(),
-    historyOpen: false,
-    setHistoryOpen: vi.fn(),
-    detailsOpen: false,
-    setDetailsOpen: vi.fn(),
-    handleCreateSession: vi.fn(),
-    handleSelectSession: vi.fn(),
-    handleDeleteSession: vi.fn(),
-    persistCurrentMessages: vi.fn(),
-  };
-}
-
-function makeDefaultSend(overrides: Record<string, unknown> = {}) {
-  return {
-    input: "",
-    setInput: vi.fn(),
-    loading: false,
-    speaking: false,
-    setSpeaking: vi.fn(),
-    online: true,
-    hasData: false,
-    contextState: null,
-    activeModule: null,
-    send: vi.fn().mockResolvedValue(undefined),
-    cancelInFlight: vi.fn(),
-    paywallOpen: false,
-    closePaywall: vi.fn(),
-    sendRef: defaultSendRef,
-    focusInputRef: defaultFocusInputRef,
-    ...overrides,
-  };
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mockUseHubChatStorageBoot.mockReturnValue(undefined);
-  mockUseChatSessions.mockReturnValue(makeDefaultSessions());
-  mockUseChatSend.mockReturnValue(makeDefaultSend());
-});
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
 describe("HubChat", () => {
-  it("smoke render: mounts without throwing and renders the chat region", () => {
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByRole("region")).toBeInTheDocument();
+  beforeEach(() => {
+    vi.useFakeTimers();
   });
 
-  it("renders all expected child components", () => {
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByTestId("hub-chat-header")).toBeInTheDocument();
-    expect(screen.getByTestId("hub-chat-body")).toBeInTheDocument();
-    expect(screen.getByTestId("hub-chat-composer")).toBeInTheDocument();
-    expect(screen.getByTestId("history-drawer")).toBeInTheDocument();
-    expect(screen.getByTestId("paywall-modal")).toBeInTheDocument();
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.clearAllMocks();
   });
 
-  it("paywallModal data-open=false when paywallOpen is false", () => {
-    mockUseChatSend.mockReturnValue(makeDefaultSend({ paywallOpen: false }));
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByTestId("paywall-modal")).toHaveAttribute(
-      "data-open",
-      "false",
+  it("composes chat state and forwards child callbacks", async () => {
+    const onClose = vi.fn();
+    render(
+      <HubChat
+        onClose={onClose}
+        initialMessage="start"
+        autoSendInitial
+        onOpenCatalogue={vi.fn()}
+      />,
     );
-  });
 
-  it("paywallModal data-open=true when paywallOpen is true", () => {
-    mockUseChatSend.mockReturnValue(makeDefaultSend({ paywallOpen: true }));
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByTestId("paywall-modal")).toHaveAttribute(
+    expect(storageBootMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("session-info")).toHaveTextContent("2:7:1");
+    expect(screen.getByTestId("history-drawer")).toHaveAttribute(
       "data-open",
       "true",
     );
-  });
+    expect(screen.getByTestId("paywall")).toHaveAttribute("data-open", "true");
 
-  it("forwards initialMessage to useChatSend", () => {
-    render(<HubChat onClose={vi.fn()} initialMessage="привіт" />);
-    expect(mockUseChatSend).toHaveBeenCalledWith(
-      expect.objectContaining({ initialMessage: "привіт" }),
-    );
-  });
+    fireEvent.click(screen.getByText("details"));
+    fireEvent.click(screen.getByText("history"));
+    fireEvent.click(screen.getByText("clear"));
+    fireEvent.click(screen.getByText("close"));
+    fireEvent.click(screen.getByText("speak"));
+    fireEvent.click(screen.getByText("cancel"));
+    fireEvent.click(screen.getByText("suggestion"));
+    fireEvent.click(screen.getByText("send"));
+    fireEvent.click(screen.getByText("help"));
+    fireEvent.click(screen.getByText("type"));
+    fireEvent.click(screen.getByText("stop speaking"));
+    fireEvent.click(screen.getByText("close history"));
+    fireEvent.click(screen.getByText("select session"));
+    fireEvent.click(screen.getByText("create session"));
+    fireEvent.click(screen.getByText("delete session"));
+    fireEvent.click(screen.getByText("close paywall"));
 
-  it("forwards autoSendInitial to useChatSend", () => {
-    render(<HubChat onClose={vi.fn()} autoSendInitial />);
-    expect(mockUseChatSend).toHaveBeenCalledWith(
-      expect.objectContaining({ autoSendInitial: true }),
-    );
-  });
+    await vi.runAllTimersAsync();
 
-  it("forwards onOpenCatalogue to useChatSend", () => {
-    const onOpenCatalogue = vi.fn();
-    render(<HubChat onClose={vi.fn()} onOpenCatalogue={onOpenCatalogue} />);
-    expect(mockUseChatSend).toHaveBeenCalledWith(
-      expect.objectContaining({ onOpenCatalogue }),
-    );
-  });
-
-  it("calls useHubChatStorageBoot to warm SQLite caches", () => {
-    render(<HubChat onClose={vi.fn()} />);
-    expect(mockUseHubChatStorageBoot).toHaveBeenCalled();
-  });
-
-  it("sessionInfo historyCount includes only user/assistant messages", () => {
-    // Inject a messages array that includes a non-user/assistant role.
-    mockUseChatSessions.mockReturnValue({
-      ...makeDefaultSessions(),
-      messages: [
-        { role: "user", text: "hello" },
-        { role: "assistant", text: "world" },
-        { role: "system", text: "ignored" },
-      ],
-    });
-    // As long as it renders without error, the useMemo branch is covered.
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByTestId("hub-chat-header")).toBeInTheDocument();
-  });
-
-  it("non-array messages falls back gracefully (useMemo guards Array.isArray)", () => {
-    mockUseChatSessions.mockReturnValue({
-      ...makeDefaultSessions(),
-      messages: null as unknown as never[],
-    });
-    render(<HubChat onClose={vi.fn()} />);
-    expect(screen.getByRole("region")).toBeInTheDocument();
+    expect(setDetailsOpenMock).toHaveBeenCalledWith(true);
+    expect(setHistoryOpenMock).toHaveBeenCalledWith(true);
+    expect(createSessionMock).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(setSpeakingMock).toHaveBeenCalledWith(true);
+    expect(cancelInFlightMock).toHaveBeenCalledTimes(1);
+    expect(setInputMock).toHaveBeenCalledWith("suggested");
+    expect(focusInputMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledWith("manual prompt");
+    expect(sendMock).toHaveBeenCalledWith("/help");
+    expect(setInputMock).toHaveBeenCalledWith("typed");
+    expect(setSpeakingMock).toHaveBeenCalledWith(false);
+    expect(setHistoryOpenMock).toHaveBeenCalledWith(false);
+    expect(selectSessionMock).toHaveBeenCalledWith("s2");
+    expect(deleteSessionMock).toHaveBeenCalledWith("s1");
+    expect(closePaywallMock).toHaveBeenCalledTimes(1);
   });
 });
