@@ -2,7 +2,7 @@
 
 # Playbook: Squad QA — паралельний QA по всіх surfaces
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-21 by @github-actions[bot]. **Next review:** 2026-10-19.
 > **Status:** Active
 
 **Trigger:** Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).
@@ -70,3 +70,14 @@ _(OpenClaw `qa-openclaw` removed — ADR-0075 decommission.)_
 ## Governing skill
 
 [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                             | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------- | ---------- |
+| [#384](https://github.com/Skords-01/Sergeant/pull/384) | test(web): raise fizruk module coverage (+3.01pp) | 2026-07-21 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

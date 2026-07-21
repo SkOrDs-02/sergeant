@@ -1,7 +1,7 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-21",
   "prs": [
     {
       "number": 334,
@@ -33,6 +33,32 @@
         "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
         "packages/api-client/README.md",
         "packages/dualwrite-core/README.md"
+      ]
+    },
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 384,
+      "title": "test(web): raise fizruk module coverage (+3.01pp)",
+      "merged_at": "2026-07-21T11:47:13Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/embedding-provider-migration.md",
+        "docs/00-start/playbooks/restore-from-backup.md",
+        "docs/00-start/playbooks/run-squad-qa.md",
+        "docs/04-governance/adr/0024-monorepo-apps-packages-split.md",
+        "docs/04-governance/adr/0050-typescript-major-version-policy.md",
+        "docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
+        "docs/04-governance/adr/0067-engagement-mechanism-standardization.md"
       ]
     },
     {
@@ -217,17 +243,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]
