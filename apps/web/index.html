@@ -67,6 +67,43 @@
       content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss: ws:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
     <title>Sergeant — Твій персональний хаб життя</title>
+    <!--
+      S10-R1 (sprint-9-10-plan-2026.md § Sprint 10) — OG/Twitter meta for
+      link-preview crawlers. Static tags in index.html rather than a
+      per-route head library: `/` (LandingPage) is the only public
+      pre-auth surface, crawlers read the initial HTML without executing
+      JS, and no react-helmet-like mechanism exists in this app (see
+      RootLayout.tsx's `document.title` effect for the in-app pattern).
+      og:image falls back to the PWA icon — no dedicated 1200x630 social
+      card asset exists yet in apps/web/public; add one and swap this if
+      a real social-share card is needed later.
+    -->
+    <meta
+      name="description"
+      content="Sergeant обʼєднує чотири модулі — Фінік, Фізрук, Їжа, Рутина — в один local-first помічник з AI, без прихованих платежів."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sergeant" />
+    <meta
+      property="og:title"
+      content="Sergeant — Твій персональний хаб життя"
+    />
+    <meta
+      property="og:description"
+      content="Один помічник для фінансів, тренувань, харчування і рутини. Local-first, з AI, без прихованих платежів."
+    />
+    <meta property="og:image" content="https://sergeant.app/icon-512.png" />
+    <meta property="og:url" content="https://sergeant.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Sergeant — Твій персональний хаб життя"
+    />
+    <meta
+      name="twitter:description"
+      content="Один помічник для фінансів, тренувань, харчування і рутини. Local-first, з AI, без прихованих платежів."
+    />
+    <meta name="twitter:image" content="https://sergeant.app/icon-512.png" />
   </head>
   <body>
     <div id="root"></div>
