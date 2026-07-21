@@ -79,4 +79,29 @@ describe("shared file-import contract", () => {
 
     await expect(pickJson()).rejects.toBe(boom);
   });
+
+  it("keeps the no-op adapter silent if process env detection throws", async () => {
+    const originalProcess = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "process",
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    Object.defineProperty(globalThis, "process", {
+      configurable: true,
+      get() {
+        throw new Error("blocked process access");
+      },
+    });
+    try {
+      await expect(pickJson()).resolves.toBeNull();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+      if (originalProcess) {
+        Object.defineProperty(globalThis, "process", originalProcess);
+      } else {
+        Reflect.deleteProperty(globalThis, "process");
+      }
+    }
+  });
 });
