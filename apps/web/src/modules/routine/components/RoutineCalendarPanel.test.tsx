@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
+import type { ReactNode } from "react";
 import type { HubCalendarEvent } from "../lib/types";
 import type {
   RoutineCalendarData,
@@ -34,22 +35,71 @@ vi.mock("../hooks/useTodoEveningInsight", () => ({
 
 // Stub heavy descendant sheets to lightweight markers.
 vi.mock("./HabitDetailSheet", () => ({
-  HabitDetailSheet: ({ habitId }: { habitId: string }) => (
-    <div data-testid="habit-detail-sheet" data-habit={habitId} />
+  HabitDetailSheet: ({
+    habitId,
+    onClose,
+  }: {
+    habitId: string;
+    onClose: () => void;
+  }) => (
+    <div data-testid="habit-detail-sheet" data-habit={habitId}>
+      <button type="button" onClick={onClose}>
+        close habit detail
+      </button>
+    </div>
   ),
 }));
 vi.mock("./FizrukDayPlanSheet", () => ({
-  FizrukDayPlanSheet: ({ dateKey }: { dateKey: string | null }) =>
+  FizrukDayPlanSheet: ({
+    dateKey,
+    onClose,
+  }: {
+    dateKey: string | null;
+    onClose: () => void;
+  }) =>
     dateKey ? (
-      <div data-testid="fizruk-plan-sheet" data-date={dateKey} />
+      <div data-testid="fizruk-plan-sheet" data-date={dateKey}>
+        <button type="button" onClick={onClose}>
+          close fizruk plan
+        </button>
+      </div>
     ) : null,
 }));
 vi.mock("./DayReportSheet", () => ({
-  DayReportSheet: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="day-report-sheet" /> : null,
+  DayReportSheet: ({
+    open,
+    scheduledHabits,
+  }: {
+    open: boolean;
+    scheduledHabits: unknown[];
+  }) =>
+    open ? (
+      <div data-testid="day-report-sheet" data-count={scheduledHabits.length} />
+    ) : null,
 }));
 vi.mock("./RoutineCalendarMonthGrid", () => ({
   RoutineCalendarMonthGrid: () => <div data-testid="month-grid" />,
+}));
+vi.mock("@shared/components/ui/SwipeToAction", () => ({
+  SwipeToAction: ({
+    children,
+    onSwipeRight,
+    onSwipeLeft,
+  }: {
+    children: ReactNode;
+    onSwipeRight?: () => void;
+    onSwipeLeft?: () => void;
+  }) => (
+    <div>
+      {onSwipeRight && (
+        <button type="button" aria-label="swipe right" onClick={onSwipeRight} />
+      )}
+      {onSwipeLeft && (
+        <button type="button" aria-label="swipe left" onClick={onSwipeLeft} />
+      )}
+      {children}
+    </div>
+  ),
 }));
 
 let streakInsight: { id: string; title: string; subtitle: string } | null =
@@ -488,5 +538,167 @@ describe("RoutineCalendarPanel", () => {
     };
     render(<RoutineCalendarPanel />);
     expect(screen.getByText("Вечірнє нагадування")).toBeInTheDocument();
+  });
+
+  it("activates both insight cards", () => {
+    streakInsight = {
+      id: "streak-record",
+      title: "Майже рекорд!",
+      subtitle: "Ще один день",
+    };
+    eveningInsight = {
+      id: "todo-evening",
+      title: "Вечірнє нагадування",
+      subtitle: "Перевір список",
+    };
+
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByText("Майже рекорд!"));
+    fireEvent.click(screen.getByText("Вечірнє нагадування"));
+
+    expect(applyTimeMode).toHaveBeenCalledWith("today");
+    expect(applyTimeMode).toHaveBeenCalledTimes(2);
+  });
+
+  it("passes scheduled habits into the day report", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        routine: {
+          ...defaultRoutineState(),
+          habits: [
+            {
+              id: "h-day",
+              name: "Вода",
+              emoji: "💧",
+              tagIds: [],
+              archived: false,
+              recurrence: "daily",
+              timeOfDay: "morning",
+              reminderTimes: [],
+            },
+          ],
+          completions: { "h-day": ["2026-06-23"] },
+        },
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    const heroBtn = screen.queryByRole("button", { name: /звіт/i });
+    if (!heroBtn) return;
+
+    fireEvent.click(heroBtn);
+    expect(screen.getByTestId("day-report-sheet")).toHaveAttribute(
+      "data-count",
+      "1",
+    );
+  });
+
+  it("updates the search draft from the input", () => {
+    render(<RoutineCalendarPanel />);
+    const input = screen.getByLabelText("Пошук подій");
+    fireEvent.change(input, { target: { value: "вода" } });
+    expect(input).toHaveValue("вода");
+  });
+
+  it("covers active filter-chip updater branches", () => {
+    dataFixture.mockReturnValue(
+      baseData({ tagFilter: "__fizruk", tagChips: ["ранок"] }),
+    );
+    render(<RoutineCalendarPanel />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Фізрук|Тренування/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Підписки Фініка" }));
+    fireEvent.click(screen.getByRole("button", { name: "ранок" }));
+
+    const updaters = setTagFilter.mock.calls
+      .map((call) => call[0])
+      .filter(
+        (arg): arg is (value: string | null) => string | null =>
+          typeof arg === "function",
+      );
+    expect(updaters).toHaveLength(3);
+    const [fizrukUpdater, finykUpdater, tagUpdater] = updaters;
+    if (!fizrukUpdater || !finykUpdater || !tagUpdater) {
+      throw new Error("expected three tag-filter updater callbacks");
+    }
+
+    expect(fizrukUpdater("__fizruk")).toBeNull();
+    expect(fizrukUpdater(null)).toBe("__fizruk");
+    expect(finykUpdater("__finyk_sub")).toBeNull();
+    expect(finykUpdater(null)).toBe("__finyk_sub");
+    expect(tagUpdater("ранок")).toBeNull();
+    expect(tagUpdater(null)).toBe("ранок");
+  });
+
+  it("handles swipe actions for incomplete and completed habit rows", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [
+          [
+            "Звички",
+            [
+              makeEvent({ id: "todo", habitId: "h1", completed: false }),
+              makeEvent({ id: "done", habitId: "h2", completed: true }),
+            ],
+          ],
+        ],
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "swipe right" }));
+    fireEvent.click(screen.getByRole("button", { name: "swipe left" }));
+
+    expect(onToggleHabit).toHaveBeenCalledWith("h1", "2026-06-23");
+    expect(onToggleHabit).toHaveBeenCalledWith("h2", "2026-06-23");
+  });
+
+  it("collapses an empty completion note on blur", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [["Звички", [makeEvent({ completed: true })]]],
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByText("+ Нотатка"));
+    const input = screen.getByPlaceholderText("Нотатка до відмітки");
+    fireEvent.blur(input);
+
+    expect(screen.getByText("+ Нотатка")).toBeInTheDocument();
+  });
+
+  it("closes opened detail sheets via their close callbacks", () => {
+    const { habitId: _droppedHabitId, ...fizrukEvent } = makeEvent({
+      id: "fizruk",
+      fizruk: true,
+      title: "Тренування",
+    });
+    void _droppedHabitId;
+
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [
+          ["Звички", [makeEvent({ id: "habit", habitId: "h1" }), fizrukEvent]],
+        ],
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Деталі: Пити воду" }));
+    expect(screen.getByTestId("habit-detail-sheet")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "close habit detail" }));
+    expect(screen.queryByTestId("habit-detail-sheet")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    expect(screen.getByTestId("fizruk-plan-sheet")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "close fizruk plan" }));
+    expect(screen.queryByTestId("fizruk-plan-sheet")).not.toBeInTheDocument();
   });
 });

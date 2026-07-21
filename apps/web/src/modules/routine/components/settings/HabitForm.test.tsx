@@ -55,6 +55,8 @@ function Harness({
   errors,
   initialDraft,
   routine = emptyRoutine,
+  onSaveSpy,
+  onCancelSpy,
 }: {
   editingId?: string | null;
   hideHeading?: boolean;
@@ -62,13 +64,15 @@ function Harness({
   errors?: { name?: string; weekdays?: string };
   initialDraft?: Partial<HabitDraft>;
   routine?: RoutineState;
+  onSaveSpy?: () => void;
+  onCancelSpy?: () => void;
 }) {
   const [draft, setDraft] = useState<HabitDraft>(() => ({
     ...emptyHabitDraft(),
     ...initialDraft,
   }));
-  const onSave = vi.fn();
-  const onCancel = vi.fn();
+  const onSave = onSaveSpy ?? vi.fn();
+  const onCancel = onCancelSpy ?? vi.fn();
   // exactOptionalPropertyTypes: only spread errors into props when defined.
   const errorsProps = errors !== undefined ? { errors } : {};
   return (
@@ -112,6 +116,24 @@ describe("HabitForm – editing mode", () => {
     expect(
       screen.getByRole("button", { name: "Додати звичку" }),
     ).toBeInTheDocument();
+  });
+
+  it("wires save and cancel actions", () => {
+    const onSaveSpy = vi.fn();
+    const onCancelSpy = vi.fn();
+    render(
+      <Harness
+        editingId="h1"
+        onSaveSpy={onSaveSpy}
+        onCancelSpy={onCancelSpy}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+
+    expect(onCancelSpy).toHaveBeenCalledTimes(1);
+    expect(onSaveSpy).toHaveBeenCalledTimes(1);
   });
 
   it("opens the advanced section automatically in editing mode", () => {
@@ -183,6 +205,25 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(
       screen.getByRole("option", { name: /Здоров'я/ }),
     ).toBeInTheDocument();
+  });
+
+  it("updates dates, tag, and category from advanced controls", () => {
+    render(<Harness editingId="h1" routine={routineWithTagsAndCategories()} />);
+
+    const start = screen.getByLabelText(/Початок/) as HTMLInputElement;
+    const end = screen.getByLabelText(/Кінець/) as HTMLInputElement;
+    const tag = screen.getByRole("combobox", { name: /Тег/ });
+    const category = screen.getByRole("combobox", { name: /Категорія/ });
+
+    fireEvent.change(start, { target: { value: "2026-06-01" } });
+    fireEvent.change(end, { target: { value: "2026-06-30" } });
+    fireEvent.change(tag, { target: { value: "t1" } });
+    fireEvent.change(category, { target: { value: "c1" } });
+
+    expect(start).toHaveValue("2026-06-01");
+    expect(end).toHaveValue("2026-06-30");
+    expect(tag).toHaveValue("t1");
+    expect(category).toHaveValue("c1");
   });
 });
 

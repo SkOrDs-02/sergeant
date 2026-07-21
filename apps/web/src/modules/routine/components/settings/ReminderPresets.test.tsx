@@ -42,4 +42,21 @@ describe("ReminderPresets", () => {
     );
     expect(screen.getAllByDisplayValue(/\d{2}:\d{2}/)).toHaveLength(1);
   });
+
+  it("updates a custom reminder time", () => {
+    render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+    const input = screen.getByDisplayValue("08:00");
+
+    fireEvent.change(input, { target: { value: "09:30" } });
+
+    expect(screen.getByDisplayValue("09:30")).toBeInTheDocument();
+  });
+
+  it("adds another reminder time while under the limit", () => {
+    render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Додати час" }));
+
+    expect(screen.getByDisplayValue("12:00")).toBeInTheDocument();
+  });
 });

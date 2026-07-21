@@ -70,6 +70,18 @@ describe("HabitHeatmap interactions", () => {
     expect(today).toHaveAttribute("tabindex", "-1");
   });
 
+  it("moves the roving tab stop right into the next week", () => {
+    render(<HabitHeatmap habits={habits} completions={completions} />);
+    const today = screen.getByLabelText("2026-06-16: 1 з 1 звички");
+    // Today is the default tab stop.
+    expect(today).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(today, { key: "ArrowRight" });
+    // One week forward = 2026-06-23; it becomes the focused/roving cell.
+    const nextWeek = screen.getByLabelText("2026-06-23: 0 з 1 звички");
+    expect(nextWeek).toHaveAttribute("tabindex", "0");
+    expect(today).toHaveAttribute("tabindex", "-1");
+  });
+
   it("ignores non-arrow keydown without changing the roving cell", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
     const today = screen.getByLabelText("2026-06-16: 1 з 1 звички");
