@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { chatApi } from "@shared/api";
 
 // ─── Dependency mocks ─────────────────────────────────────────────────────────
 //
@@ -34,6 +35,7 @@ vi.mock("../../lib/finykStorage", () => ({
 import {
   proactiveCacheKey,
   PROACTIVE_CACHE_TTL,
+  fetchProactiveAdvice,
   loadProactiveAdviceFromLS,
   saveProactiveAdviceToLS,
 } from "./budgetsLib";
@@ -132,5 +134,64 @@ describe("saveProactiveAdviceToLS", () => {
     expect(loadProactiveAdviceFromLS("transport", "2026-05")?.text).toBe(
       "Advice B",
     );
+  });
+});
+
+describe("fetchProactiveAdvice", () => {
+  beforeEach(() => {
+    clearStore();
+    vi.clearAllMocks();
+  });
+
+  it("sends a Ukrainian prompt and caches non-empty AI advice", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({
+      text: "Залиш каву на завтра.",
+    });
+
+    await expect(
+      fetchProactiveAdvice({
+        categoryId: "coffee",
+        monthKey: "2026-07",
+        catLabel: "Кава",
+        spent: 1200,
+        limit: 1500,
+        remaining: 300,
+        pct: 80,
+        daysRemaining: 5,
+      }),
+    ).resolves.toBe("Залиш каву на завтра.");
+
+    expect(chatApi.send).toHaveBeenCalledWith({
+      context:
+        "[Проактивна AI-порада] Категорія: Кава, витрачено: 1200 ₴, ліміт: 1500 ₴, залишок: 300 ₴, днів до кінця місяця: 5",
+      messages: [
+        {
+          role: "user",
+          content: expect.stringContaining("Відповідь виключно українською"),
+        },
+      ],
+    });
+    expect(loadProactiveAdviceFromLS("coffee", "2026-07")?.text).toBe(
+      "Залиш каву на завтра.",
+    );
+  });
+
+  it("returns null and skips cache writes for empty AI responses", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({ text: "" });
+
+    await expect(
+      fetchProactiveAdvice({
+        categoryId: "food",
+        monthKey: "2026-07",
+        catLabel: "Їжа",
+        spent: 100,
+        limit: 1000,
+        remaining: 900,
+        pct: 10,
+        daysRemaining: 12,
+      }),
+    ).resolves.toBeNull();
+
+    expect(loadProactiveAdviceFromLS("food", "2026-07")).toBeNull();
   });
 });
