@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { BillingProvider } from "./provider.js";
+import type { BillingProvider, ProviderCheckoutInput } from "./provider.js";
 
 const mockStripe = vi.hoisted(() => ({
   createCheckoutSession: vi.fn(),
@@ -140,9 +140,8 @@ describe("stripeProvider adapter", () => {
       sessionId: "cs_1",
       url: "https://checkout.stripe.com/cs_1",
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const input = {
-      pool: {} as any,
+    const input: ProviderCheckoutInput = {
+      pool: {} as ProviderCheckoutInput["pool"],
       user: { id: "user_1" },
       plan: "pro" as const,
     };
