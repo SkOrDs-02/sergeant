@@ -14,6 +14,7 @@
  * @last-validated 2026-05-19
  */
 import { useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -391,7 +392,7 @@ export function AddMealSheet({
                   }}
                   aria-label="Сфотографувати страву"
                 >
-                  <span aria-hidden>📷</span>
+                  <Icon name="camera" size="sm" aria-hidden />
                   <span>Сфотографувати страву</span>
                 </Button>
               </div>

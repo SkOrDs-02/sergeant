@@ -121,4 +121,21 @@ export const CONTENT_PATHS: Record<string, ReactNode> = {
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </>
   ),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Added by the design-audit F4 re-pass (2026-07): these two replaced raw
+  // emoji glyphs (📷 / 💧) that stood in as system icons in the Nutrition
+  // module — see `sergeant-design/no-emoji-icon`.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // `camera` — Lucide `camera`. Nutrition "Сфотографувати страву" CTA.
+  camera: (
+    <>
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </>
+  ),
+
+  // `droplet` — Lucide `droplet`. Nutrition water tracker.
+  droplet: <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />,
 };

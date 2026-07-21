@@ -181,3 +181,22 @@
     line-height: 1.2;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DEMO-BADGE CLEARANCE — `DemoModeBadge` pins a status pill above the
+   bottom-nav on phones (it moves to the top band from `sm:` up, where it
+   sits in the header row and clears nothing). The pill is `fixed`, so the
+   scroll region kept running underneath it and card content read straight
+   through the banner (design-audit re-audit §7.2 — measured at 375×812:
+   pill 688→732, scroll region 107→740).
+
+   Shrinking the scroll region by the pill's height + gap moves the pill
+   OUT of the scrollable band entirely. Padding alone would not do it:
+   padding only clears the END of the scroll, while the overlap happens
+   mid-scroll, wherever a card passes under the pill.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 639px) {
+  html[data-demo-badge] main {
+    margin-bottom: calc(2.75rem + 0.5rem); /* pill 44px + 8px gap */
+  }
+}

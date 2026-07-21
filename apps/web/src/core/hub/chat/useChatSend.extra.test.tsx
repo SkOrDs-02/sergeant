@@ -303,7 +303,7 @@ describe("useChatSend — TTS in tool-call path", () => {
       await result.current.send("голосом запиши воду", true /* fromVoice */);
     });
 
-    // followUpText="" so speakTarget falls back to actionsText ("✅ Записав 200 мл").
+    // followUpText="" so speakTarget falls back to actionsText ("✓ Записав 200 мл").
     expect(speakMock).toHaveBeenCalledTimes(1);
     const spokenText = speakMock.mock.calls[0]![0] as string;
     expect(spokenText).toContain("Записав 200 мл");
