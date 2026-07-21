@@ -319,7 +319,7 @@ export function HubBottomNav({
       aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line dark:border-white/8 bg-panel shadow-lg",
+        "bottom-nav-shell border border-line bg-panel shadow-lg",
       )}
     >
       <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
