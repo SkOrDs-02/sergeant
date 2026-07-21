@@ -54,6 +54,29 @@ const PAIRS = [
   ],
   ["finyk-strong on white", brandColors.emerald[700], "#ffffff", true],
   ["fizruk-strong on white", brandColors.cyan[800], "#ffffff", true],
+  // Routine hero (light) — реальні пари з рендера (design-audit F2):
+  // світлий градієнт стиснуто до coral-800→700, текст hero-ink #fdf9f3.
+  // Пари фіксують обидва стопи, щоб майбутнє «освітлення» героя знову
+  // не впустило дрібний текст під 4.5:1 (виміряний фейл був 2.12:1 на
+  // старому стопі coral-400).
+  [
+    "routine hero-ink on coral-700 (hero light end)",
+    "#fdf9f3",
+    brandColors.coral[700],
+    true,
+  ],
+  [
+    "routine hero-ink on coral-800 (hero dark end)",
+    "#fdf9f3",
+    brandColors.coral[800],
+    true,
+  ],
+  [
+    "routine hero-ink on coral-400 (старий стоп — задокументований фейл)",
+    "#fdf9f3",
+    brandColors.coral[400],
+    false,
+  ],
 ];
 
 describe("@sergeant/design-tokens — WCAG AA contrast", () => {

@@ -203,6 +203,10 @@ export const messages = {
     profile: "Профіль",
     chat: "Чат з асистентом",
     nutritionOverview: "Огляд",
+    // Окремий ключ для фініка: Overview фініка позичав nutritionOverview —
+    // семантичний copy-paste, який маскував модуль для скрінрідера
+    // (design-audit P3/D6).
+    finykOverview: "Огляд",
     nutritionLog: "Журнал",
     reports: "Звіти",
     finykSections: "Розділи Фініка",

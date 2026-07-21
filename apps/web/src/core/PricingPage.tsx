@@ -52,9 +52,11 @@ interface Tier {
   readonly highlight: boolean;
 }
 
-// Canonical monthly price for the Premium tier (₴199/міс, ₴1490/рік).
+// Canonical monthly price for the Premium tier (199 ₴/міс, 1490 ₴/рік).
 // Cadence line carries the billing period text from the locale catalog.
-const PREMIUM_PRICE_MONTHLY = "₴199";
+// Знак ПІСЛЯ числа — гривнева конвенція решти продукту (Free = «0 ₴»);
+// «₴199» ламав паритет двох карток (design-audit P3).
+const PREMIUM_PRICE_MONTHLY = "199 ₴";
 
 // Defense-in-depth open-redirect guard (audit F4,
 // docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
