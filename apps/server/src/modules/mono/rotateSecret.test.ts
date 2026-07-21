@@ -444,6 +444,53 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
       }),
     ).rejects.toThrow(/alertAfterDays/);
 
+    await expect(
+      rotateStaleMonoWebhookSecrets({
+        ring: ENC_RING,
+        publicApiBaseUrl: PUBLIC_API_BASE_URL,
+        limit: 0,
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        query,
+      }),
+    ).rejects.toThrow(/limit/);
+
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it("captures unexpected per-candidate errors and continues the batch", async () => {
+    const query = makeQueryMock([
+      { rows: [{ user_id: "u1" }, { user_id: "u2" }] },
+      () => {
+        throw new Error("select exploded");
+      },
+      { rows: [] },
+      { rows: [{ count: "0" }] },
+    ]);
+    const fetchMock = vi.fn();
+
+    const result = await rotateStaleMonoWebhookSecrets({
+      ring: ENC_RING,
+      publicApiBaseUrl: PUBLIC_API_BASE_URL,
+      olderThanDays: 90,
+      alertAfterDays: 100,
+      fetchImpl: fetchMock as unknown as typeof fetch,
+      query,
+    });
+
+    expect(result.candidates).toBe(2);
+    expect(result.rotated).toBe(0);
+    expect(result.failed).toBe(2);
+    expect(result.results[0]).toMatchObject({
+      userId: "u1",
+      rotated: false,
+      reason: "monobank_register_failed",
+    });
+    expect(result.results[1]).toMatchObject({
+      userId: "u2",
+      rotated: false,
+      reason: "not_found",
+    });
+    expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
