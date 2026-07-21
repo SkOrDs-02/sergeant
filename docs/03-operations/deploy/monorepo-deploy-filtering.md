@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
 > **Status:** Active
 >
 > **⚠️ Бекенд-тригер переписано ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.
@@ -106,13 +106,13 @@ Rationale:
 > image), so a doc-only change just churns one no-op-ish deploy — acceptable, but
 > worth knowing before you bundle server-tree docs into a big PR.
 
-### OpenClaw — not deployed
+### OpenClaw — decommissioned, not in the filter
 
-There is **no** OpenClaw deploy in the filter. The former `tools/openclaw` grammy
-bot was removed from the repo (replaced by [`packages/openclaw-plugin`](../../../packages/openclaw-plugin)),
-and `sergeant-openclaw-gateway` is not deployed anywhere — migration to Coolify
-or deprecation is TBD (see [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). When it
-lands, add its own workflow/path-filter here.
+There is **no** OpenClaw deploy in the filter. Both the former `tools/openclaw`
+grammy bot and its successor, the OpenClaw Gateway (`packages/openclaw-plugin`),
+have been fully removed from the repo — decommissioned per
+[ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md).
+There is no pending re-home; nothing to add a filter for.
 
 ## Adding a new service to the filter
 

@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -31,10 +31,6 @@ flowchart TB
         end
     end
 
-    subgraph OpenClawHost["OpenClaw Gateway — НЕ задеплоєний (Railway виведено, ADR-0074)"]
-        Console["packages/openclaw-plugin<br/><i>Telegram gateway — re-home на Coolify TBD</i>"]
-    end
-
     N8N["n8n<br/><i>cron, mono enrich, morning briefing<br/>(self-host; статус — див. observability-нотатки)</i>"]
 
     Anthropic{{"Anthropic API"}}
@@ -49,7 +45,6 @@ flowchart TB
     User -->|HTTPS| Web
     User -->|app store| Shell
     User -->|app store| Mobile
-    User <-->|chat| Telegram
 
     Web -->|/api/* fetch<br/>cookies| Server
     Mobile -->|/api/* fetch<br/>cookies| Server
@@ -64,18 +59,15 @@ flowchart TB
     Server -->|sign-in mail| SMTP
     Server -->|web-push / device tokens| APNs
     Server -->|web-push / device tokens| FCM
+    Server -->|alert delivery, telegramShipper.ts| Telegram
 
     N8N -->|HTTP `/api/internal/*`<br/>internal token| Server
     Mono -->|webhook| Server
 
-    Console <-->|long-poll| Telegram
-    Console -->|SQL| PG
-    Console -->|messages| Anthropic
-
     classDef cont fill:#0f766e,stroke:#0d9488,color:#fff
     classDef store fill:#7c2d12,stroke:#b45309,color:#fff
     classDef ext fill:#1f2937,stroke:#475569,color:#e5e7eb
-    class Web,Shell,Mobile,Server,N8N,Console cont
+    class Web,Shell,Mobile,Server,N8N cont
     class PG,R store
     class Anthropic,Sentry,Mono,OFF,SMTP,APNs,FCM,Telegram ext
 ```
@@ -103,7 +95,6 @@ flowchart TB
 | `billing`       | `/api/billing/*`                     | UA checkout (LiqPay/Plata) + subscription state. `subscriptions` (056) — canonical; legacy `billing_subscriptions` (047) dropped in 083. |
 | `transcribe`    | `/api/transcribe`                    | Whisper audio → text з USD-cap per user/day (bucket `transcribe:<model>`, fixed 049).                                                    |
 | `waitlist`      | `/api/waitlist`                      | Waitlist sign-up і management.                                                                                                           |
-| `openclaw`      | internal (console bot)               | GitHub App-flow авторизація (Hard Rule #20) + tools для co-founder bot.                                                                  |
 | `topic-archive` | internal                             | `tg_topic_archive` — append-only history для Sergeant_ops supergroup topics (048).                                                       |
 | `alerts`        | `/api/csp-report`, `/api/web-vitals` | CSP report endpoint + web-vitals ingestion.                                                                                              |
 | `observability` | internal                             | Server-side observability helpers: prom-client metrics, store wrappers.                                                                  |
