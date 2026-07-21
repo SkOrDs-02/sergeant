@@ -77,7 +77,7 @@ export function RecentWorkoutsSection({
           <button
             type="button"
             onClick={onSeeAll}
-            className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            className="text-style-caption text-fizruk-strong dark:text-fizruk hover:underline active:opacity-70 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             aria-label="Усі тренування"
           >
             Усі →
@@ -93,7 +93,7 @@ export function RecentWorkoutsSection({
           <p className="text-style-label text-text">
             Ще жодного завершеного тренування
           </p>
-          <p className="text-xs text-subtle mt-1">
+          <p className="text-xs text-muted mt-1">
             Почни сесію — результати з&apos;являться тут автоматично.
           </p>
         </div>
@@ -108,16 +108,16 @@ export function RecentWorkoutsSection({
                 <p className="text-style-label text-text truncate">
                   {row.label}
                 </p>
-                <p className="text-meta text-subtle mt-0.5">
+                <p className="text-meta text-muted mt-0.5">
                   {formatDateShort(row.endedAt)} ·{" "}
                   {formatDuration(row.durationSec)}
                 </p>
               </div>
               <div className="flex flex-col items-end shrink-0">
-                <span className="text-style-label text-fizruk-strong">
+                <span className="text-style-label text-fizruk-strong dark:text-fizruk">
                   {formatTonnage(row.tonnageKg)}
                 </span>
-                <span className="text-style-caption text-subtle">тоннаж</span>
+                <span className="text-style-caption text-muted">тоннаж</span>
               </div>
             </li>
           ))}
