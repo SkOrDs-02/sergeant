@@ -13,8 +13,36 @@ import type { ReactNode } from "react";
 vi.mock("./AssetsForm", () => ({
   ReceivableForm: () => null,
   AssetForm: () => null,
-  DebtForm: () => <div data-testid="debt-form" />,
+  DebtForm: ({
+    setShowDebtForm,
+    onUpdate,
+  }: {
+    setShowDebtForm: (next: boolean) => void;
+    onUpdate: (id: string, value: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="debt-form">
+      <button type="button" onClick={() => setShowDebtForm(false)}>
+        close-debt-form
+      </button>
+      <button
+        type="button"
+        onClick={() => onUpdate("d1", { name: "Оновлений борг" })}
+      >
+        update-debt-form
+      </button>
+    </div>
+  ),
   SubscriptionForm: () => null,
+}));
+
+vi.mock("@shared/lib/ui/undoToast", () => ({
+  showUndoToast: vi.fn((_toast, opts: { msg: string; onUndo: () => void }) => {
+    const btn = document.createElement("button");
+    btn.setAttribute("data-testid", "undo-debt-btn");
+    btn.textContent = "undo";
+    btn.addEventListener("click", opts.onUndo);
+    document.body.appendChild(btn);
+  }),
 }));
 
 import { AssetsLiabilitiesSection } from "./AssetsLiabilitiesSection";
@@ -22,7 +50,12 @@ import type { useAssetsState } from "./useAssetsState";
 
 type State = ReturnType<typeof useAssetsState>;
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document
+    .querySelectorAll('[data-testid="undo-debt-btn"]')
+    .forEach((el) => el.remove());
+});
 
 function wrap(children: ReactNode) {
   return <ToastProvider>{children}</ToastProvider>;
@@ -129,6 +162,39 @@ describe("AssetsLiabilitiesSection", () => {
     expect(screen.getByTestId("debt-form")).toBeInTheDocument();
   });
 
+  it("closes and updates manual debts through the form callbacks", () => {
+    const setManualDebts = vi.fn();
+    const state = makeState({
+      showDebtForm: true,
+      editingDebtId: "d1",
+      setManualDebts,
+      manualDebts: [
+        {
+          id: "d1",
+          name: "Старий борг",
+          linkedTxIds: ["tx-1"],
+        },
+      ] as unknown as State["manualDebts"],
+    });
+
+    render(wrap(<AssetsLiabilitiesSection state={state} />));
+
+    fireEvent.click(screen.getByText("close-debt-form"));
+    expect(state.setShowDebtForm).toHaveBeenCalledWith(false);
+    expect(state.setEditingDebtId).toHaveBeenCalledWith(null);
+
+    fireEvent.click(screen.getByText("update-debt-form"));
+    const updater = setManualDebts.mock.calls[0]![0] as (
+      debts: State["manualDebts"],
+    ) => State["manualDebts"];
+    expect(updater(state.manualDebts)[0]).toMatchObject({
+      id: "d1",
+      name: "Оновлений борг",
+      linkedTxIds: ["tx-1"],
+    });
+    expect(state.setEditingDebtId).toHaveBeenCalledWith(null);
+  });
+
   it("does not show the empty-state placeholder when monoDebtAccounts are present", () => {
     const state = makeState({
       monoDebtAccounts: [
@@ -233,6 +299,8 @@ describe("AssetsLiabilitiesSection", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
     expect(setManualDebts).toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("undo-debt-btn"));
+    expect(setManualDebts).toHaveBeenCalledTimes(2);
   });
 
   it("hides the empty-state placeholder when manualDebts are present", () => {

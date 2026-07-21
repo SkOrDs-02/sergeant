@@ -16,6 +16,7 @@ vi.mock("../../components/budgets/LimitBudgetCard", () => ({
     onDismissAdvice,
     onBeginEdit,
     onChangeLimit,
+    onChangePeriod,
     onSave,
     onDelete,
   }: {
@@ -25,6 +26,7 @@ vi.mock("../../components/budgets/LimitBudgetCard", () => ({
     onDismissAdvice?: (() => void) | null;
     onBeginEdit: () => void;
     onChangeLimit?: (n: number) => void;
+    onChangePeriod?: (period: "month" | "one_time") => void;
     onSave: () => void;
     onDelete: () => void;
   }) => (
@@ -45,6 +47,9 @@ vi.mock("../../components/budgets/LimitBudgetCard", () => ({
       </button>
       <button type="button" onClick={() => onChangeLimit?.(4500)}>
         change-limit-{budget.categoryId ?? budget.id}
+      </button>
+      <button type="button" onClick={() => onChangePeriod?.("one_time")}>
+        change-period-{budget.categoryId ?? budget.id}
       </button>
       <button type="button" onClick={onSave}>
         save-{budget.categoryId ?? budget.id}
@@ -217,6 +222,45 @@ describe("BudgetsLimitsSection (branches)", () => {
     expect(updater(budgets)[0]).toMatchObject({ limit: 4500 });
   });
 
+  it("onChangePeriod stores one-time limits with a creation timestamp", () => {
+    const limit = makeLimit("b1", "food");
+    const budgets = [limit] as unknown as Budget[];
+    const setBudgets = vi.fn();
+    render(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitsOpen: true,
+          limitBudgets: [limit],
+          budgets,
+          setBudgets,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("change-period-food"));
+    const updater = setBudgets.mock.calls[0]![0] as (bs: Budget[]) => Budget[];
+    const updated = updater(budgets)[0] as LimitBudget;
+    expect(updated).toMatchObject({ period: "one_time" });
+    expect(updated.createdAt).toEqual(expect.any(String));
+  });
+
+  it("onSave clears edit mode", () => {
+    const limit = makeLimit("b1", "food");
+    const budgets = [limit] as unknown as Budget[];
+    const setEditIdx = vi.fn();
+    render(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitsOpen: true,
+          limitBudgets: [limit],
+          budgets,
+          setEditIdx,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("save-food"));
+    expect(setEditIdx).toHaveBeenCalledWith(null);
+  });
+
   it("onDelete removes the limit and exposes undo", () => {
     const limit = makeLimit("b1", "food");
     const budgets = [limit] as unknown as Budget[];
@@ -236,7 +280,16 @@ describe("BudgetsLimitsSection (branches)", () => {
     fireEvent.click(screen.getByText("delete-food"));
     expect(setBudgets).toHaveBeenCalled();
     expect(setEditIdx).toHaveBeenCalledWith(null);
+    const deleteUpdater = setBudgets.mock.calls[0]![0] as (
+      bs: Budget[],
+    ) => Budget[];
+    expect(deleteUpdater(budgets)).toEqual([]);
     expect(screen.getByTestId("undo-limit-btn")).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("undo-limit-btn"));
+    const undoUpdater = setBudgets.mock.calls[1]![0] as (
+      bs: Budget[],
+    ) => Budget[];
+    expect(undoUpdater([])).toEqual([limit]);
   });
 
   it("dismisses proactive advice when monthKey and advice text exist", () => {

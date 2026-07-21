@@ -186,14 +186,24 @@ describe("AssetsSubscriptionsSection", () => {
 
   it("deletes a subscription and notifies routine sync", () => {
     const state = makeState({ subscriptions: [makeSub("s1")] });
+    const setSubscriptions = state.setSubscriptions as unknown as ReturnType<
+      typeof vi.fn
+    >;
     render(<AssetsSubscriptionsSection state={state} />);
     fireEvent.click(screen.getByText("delete-s1"));
-    expect(state.setSubscriptions).toHaveBeenCalled();
+    expect(setSubscriptions).toHaveBeenCalled();
+    const updater = setSubscriptions.mock.calls[0]![0] as (
+      subscriptions: Subscription[],
+    ) => Subscription[];
+    expect(updater([makeSub("s1"), makeSub("s2")])).toEqual([makeSub("s2")]);
     expect(notifySyncMock).toHaveBeenCalled();
   });
 
   it("undo after delete restores the subscription and notifies sync", () => {
     const state = makeState({ subscriptions: [makeSub("s1")] });
+    const setSubscriptions = state.setSubscriptions as unknown as ReturnType<
+      typeof vi.fn
+    >;
     render(<AssetsSubscriptionsSection state={state} />);
     fireEvent.click(screen.getByText("delete-s1"));
 
@@ -203,15 +213,26 @@ describe("AssetsSubscriptionsSection", () => {
     fireEvent.click(undoBtn!);
 
     // setSubscriptions is called again for the undo splice
-    expect(state.setSubscriptions).toHaveBeenCalledTimes(2);
+    expect(setSubscriptions).toHaveBeenCalledTimes(2);
+    const undoUpdater = setSubscriptions.mock.calls[1]![0] as (
+      subscriptions: Subscription[],
+    ) => Subscription[];
+    expect(undoUpdater([])).toEqual([makeSub("s1")]);
     expect(notifySyncMock).toHaveBeenCalledTimes(2);
   });
 
   it("edits a subscription and notifies routine sync", () => {
     const state = makeState({ subscriptions: [makeSub("s1")] });
+    const setSubscriptions = state.setSubscriptions as unknown as ReturnType<
+      typeof vi.fn
+    >;
     render(<AssetsSubscriptionsSection state={state} />);
     fireEvent.click(screen.getByText("edit-s1"));
-    expect(state.setSubscriptions).toHaveBeenCalled();
+    expect(setSubscriptions).toHaveBeenCalled();
+    const updater = setSubscriptions.mock.calls[0]![0] as (
+      subscriptions: Subscription[],
+    ) => Subscription[];
+    expect(updater([makeSub("s1")])).toEqual([makeSub("s1", "edited")]);
     expect(notifySyncMock).toHaveBeenCalled();
   });
 
