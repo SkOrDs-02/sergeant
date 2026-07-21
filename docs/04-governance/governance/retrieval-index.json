@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-21",
   "sourceHashes": {
-    "knowledge-graph": "1ef9e4f867cb3c475210e9c555830bfd75f787d284f95f4a09776e879a116a19",
+    "knowledge-graph": "5815e7361368f897f3c6cfaa0130aa3479e5188ae41c91c51ec1741d1030bdaa",
     "symbol-index": "2b061fb525ab2d8ab300914675b7e35a802309c65b0d2e847ea3603935cf1235"
   },
   "counts": {
@@ -781,8 +781,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-19 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
-      "contentHash": "95904ea296bc9eb595a1afd741a297a8c17406b9f64e9d85a452a0fb92ff4b78"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-20 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links",
+      "contentHash": "be067600829a55fbd505b9de80ca26118da7cc1b1ae2371b0e7583f9fe74c28b"
     },
     {
       "id": "adr:0074",
