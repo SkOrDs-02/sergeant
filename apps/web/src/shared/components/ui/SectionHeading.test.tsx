@@ -11,7 +11,7 @@ afterEach(cleanup);
  * wrapper.
  */
 describe("SectionHeading", () => {
-  it("default size='xs' renders as <h3> with bold + uppercase + text-subtle", () => {
+  it("default size='xs' renders as <h3> with bold + uppercase + text-muted", () => {
     const { container } = render(<SectionHeading>Розділ</SectionHeading>);
     const el = container.querySelector("h3")!;
     expect(el).not.toBeNull();
@@ -19,7 +19,9 @@ describe("SectionHeading", () => {
     expect(el.className).toContain("uppercase");
     expect(el.className).toContain("tracking-wider");
     expect(el.className).toContain("font-bold");
-    expect(el.className).toContain("text-subtle");
+    // `muted`, не `subtle`: 12px bold subtle у dark = 3.13:1 (axe serious,
+    // design-audit F9); muted = 6.03:1.
+    expect(el.className).toContain("text-muted");
   });
 
   it("size='md' drops the uppercase/tracking treatment and uses font-semibold", () => {
@@ -94,7 +96,7 @@ describe("SectionHeading", () => {
     expect(cls).toContain("uppercase");
     expect(cls).toContain("tracking-wide");
     expect(cls).toContain("font-bold");
-    expect(cls).toContain("text-subtle");
+    expect(cls).toContain("text-muted");
   });
 
   it("weight='medium' / weight='normal' override the size-default bold", () => {

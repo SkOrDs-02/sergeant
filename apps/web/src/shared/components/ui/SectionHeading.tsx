@@ -93,13 +93,15 @@ const variants: Record<SectionHeadingVariant, string> = {
   nutrition: "text-nutrition-strong dark:text-nutrition/70",
 };
 
-// Default variant per size — eyebrow sizes (xs/sm) are muted/subtle;
+// Default variant per size — eyebrow sizes (xs/sm) are muted;
 // body-size headings default to the foreground text colour.
+// `muted`, не `subtle`: eyebrow — 12px bold, а `text-subtle` у dark дає
+// 3.13:1 на панелі (axe serious, design-audit F9); `text-muted` = 6.03:1.
 const defaultVariantForSize: Record<SectionHeadingSize, SectionHeadingVariant> =
   {
-    "2xs": "subtle",
-    xs: "subtle",
-    sm: "subtle",
+    "2xs": "muted",
+    xs: "muted",
+    sm: "muted",
     md: "text",
     lg: "text",
     xl: "text",
