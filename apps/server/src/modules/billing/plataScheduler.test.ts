@@ -11,7 +11,10 @@ vi.mock("../../env/env.js", () => ({
 }));
 
 import { encryptToken } from "../mono/crypto.js";
-import { chargeDuePlataSubscriptions } from "./plataScheduler.js";
+import {
+  chargeDuePlataSubscriptions,
+  PlataRecurringPoller,
+} from "./plataScheduler.js";
 
 const ENC_KEY = "b".repeat(64);
 
@@ -44,6 +47,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("chargeDuePlataSubscriptions", () => {
@@ -76,11 +80,135 @@ describe("chargeDuePlataSubscriptions", () => {
     expect(calls.some((c) => c.sql.includes("past_due"))).toBe(true);
   });
 
+  it("marks past_due when Monopay accepts the request but does not return success", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ status: "created" }))),
+    );
+    const { pool, calls } = mockPool([dueRow("usr_pending", "tok_pending")]);
+
+    const result = await chargeDuePlataSubscriptions(pool);
+
+    expect(result).toEqual({ processed: 1, charged: 0, pastDue: 1 });
+    expect(calls.some((c) => c.sql.includes("past_due"))).toBe(true);
+  });
+
+  it("marks past_due and skips fetch when the stored card token cannot be decrypted", async () => {
+    const fetchImpl = vi.fn();
+    vi.stubGlobal("fetch", fetchImpl);
+    const { pool, calls } = mockPool([
+      {
+        user_id: "usr_corrupt",
+        wallet_id: "wal_corrupt",
+        card_token_ciphertext: Buffer.from("not-ciphertext"),
+        card_token_iv: Buffer.from("bad-iv"),
+        card_token_tag: Buffer.from("bad-tag"),
+      },
+    ]);
+
+    const result = await chargeDuePlataSubscriptions(pool);
+
+    expect(result).toEqual({ processed: 1, charged: 0, pastDue: 1 });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(calls.some((c) => c.sql.includes("past_due"))).toBe(true);
+  });
+
+  it("rejects before charging when the token encryption key is missing", async () => {
+    delete process.env["MONO_TOKEN_ENC_KEY"];
+    const fetchImpl = vi.fn();
+    vi.stubGlobal("fetch", fetchImpl);
+    const { pool } = mockPool([dueRow("usr_missing_key", "tok_missing_key")]);
+
+    await expect(chargeDuePlataSubscriptions(pool)).rejects.toThrow(
+      /MONO_TOKEN_ENC_KEY/,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("no-ops when nothing is due", async () => {
     vi.stubGlobal("fetch", vi.fn());
     const { pool } = mockPool([]);
     const result = await chargeDuePlataSubscriptions(pool);
     expect(result).toEqual({ processed: 0, charged: 0, pastDue: 0 });
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("PlataRecurringPoller", () => {
+  it("start() is a no-op when disabled or interval is zero", async () => {
+    const disabled = mockPool([]);
+    new PlataRecurringPoller({
+      pool: disabled.pool,
+      enabled: false,
+      intervalMs: 1,
+    }).start();
+    expect(disabled.calls).toEqual([]);
+
+    const intervalOff = mockPool([]);
+    new PlataRecurringPoller({
+      pool: intervalOff.pool,
+      enabled: true,
+      intervalMs: 0,
+    }).start();
+    expect(intervalOff.calls).toEqual([]);
+  });
+
+  it("runOnce returns zeros while another charge pass is in progress", async () => {
+    let releaseSelect:
+      | ((value: {
+          rowCount: number;
+          rows: ReturnType<typeof dueRow>[];
+        }) => void)
+      | undefined;
+    const query = vi.fn(async (sql: string) => {
+      if (sql.includes("JOIN plata_card_token")) {
+        return await new Promise<{
+          rowCount: number;
+          rows: ReturnType<typeof dueRow>[];
+        }>((resolve) => {
+          releaseSelect = resolve;
+        });
+      }
+      return { rowCount: 1, rows: [] };
+    });
+    const poller = new PlataRecurringPoller({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pool: { query } as any,
+      enabled: true,
+      intervalMs: 1,
+    });
+
+    const firstRun = poller.runOnce();
+    await vi.waitFor(() => expect(releaseSelect).toBeDefined());
+
+    await expect(poller.runOnce()).resolves.toEqual({
+      processed: 0,
+      charged: 0,
+      pastDue: 0,
+    });
+
+    releaseSelect?.({ rowCount: 0, rows: [] });
+    await expect(firstRun).resolves.toEqual({
+      processed: 0,
+      charged: 0,
+      pastDue: 0,
+    });
+  });
+
+  it("runOnce returns zeros while stopping is set", async () => {
+    const { pool, calls } = mockPool([]);
+    const poller = new PlataRecurringPoller({
+      pool,
+      enabled: true,
+      intervalMs: 1,
+    });
+    (poller as unknown as { stopping: boolean }).stopping = true;
+
+    await expect(poller.runOnce()).resolves.toEqual({
+      processed: 0,
+      charged: 0,
+      pastDue: 0,
+    });
+    expect(calls).toEqual([]);
   });
 });

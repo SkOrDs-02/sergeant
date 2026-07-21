@@ -11,8 +11,23 @@
  *      через `encodeURIComponent`.
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { uploadGzippedJsonl } from "./gcsUpload.js";
+import { afterEach, describe, it, expect, vi } from "vitest";
+
+const googleAuthMock = vi.hoisted(() => ({
+  getAccessToken: vi.fn(),
+  getClient: vi.fn(),
+}));
+
+vi.mock("google-auth-library", () => ({
+  GoogleAuth: vi.fn(function GoogleAuth() {
+    return {
+      getClient: googleAuthMock.getClient,
+    };
+  }),
+}));
+
+import { GoogleAuth } from "google-auth-library";
+import { defaultGetAccessToken, uploadGzippedJsonl } from "./gcsUpload.js";
 
 function makeSuccessResponse(): Response {
   return {
@@ -37,6 +52,10 @@ function makeFailureResponse(
 }
 
 describe("uploadGzippedJsonl", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("успішно завантажує об'єкт і виставляє правильні заголовки", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(makeSuccessResponse());
     const getAccessToken = vi.fn().mockResolvedValue("my-bearer-token");
@@ -126,5 +145,52 @@ describe("uploadGzippedJsonl", () => {
     expect(url).toContain(
       encodeURIComponent("archive/2026-05-15/table__1-2.jsonl.gz"),
     );
+  });
+
+  it("uses global fetch when fetchImpl is omitted", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(makeSuccessResponse());
+    vi.stubGlobal("fetch", fetchImpl);
+
+    await uploadGzippedJsonl(
+      { bucket: "b", objectName: "obj", gzippedBody: Buffer.from("x") },
+      { getAccessToken: async () => "tok" },
+    );
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to <unreadable> when an error response body cannot be read", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      text: async () => {
+        throw new Error("body stream already consumed");
+      },
+    } as unknown as Response);
+
+    await expect(
+      uploadGzippedJsonl(
+        { bucket: "b", objectName: "obj", gzippedBody: Buffer.from("x") },
+        { getAccessToken: async () => "tok", fetchImpl },
+      ),
+    ).rejects.toThrow(/<unreadable>/);
+  });
+});
+
+describe("defaultGetAccessToken", () => {
+  it("lazily caches GoogleAuth and rejects empty tokens", async () => {
+    googleAuthMock.getClient.mockResolvedValue({
+      getAccessToken: googleAuthMock.getAccessToken,
+    });
+    googleAuthMock.getAccessToken
+      .mockResolvedValueOnce({ token: "tok-1" })
+      .mockResolvedValueOnce({ token: "tok-2" })
+      .mockResolvedValueOnce({});
+
+    await expect(defaultGetAccessToken()).resolves.toBe("tok-1");
+    await expect(defaultGetAccessToken()).resolves.toBe("tok-2");
+    expect(vi.mocked(GoogleAuth)).toHaveBeenCalledTimes(1);
+    await expect(defaultGetAccessToken()).rejects.toThrow(/empty token/);
   });
 });

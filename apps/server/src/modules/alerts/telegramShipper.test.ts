@@ -16,9 +16,10 @@
  * Стратегія: мокаємо `pg.Pool` (як у `store.test.ts`) + `TelegramApiClient`
  * port. Жодних реальних HTTP-викликів.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import {
+  createTelegramApiClient,
   DEFAULT_DEDUP_WINDOW_MS,
   formatOccurrenceCounterText,
   postOrEditDedupedAlert,
@@ -658,6 +659,125 @@ describe("postOrEditDedupedAlert — recordTelegramMessage non-fatal failure", (
     expect(result).toMatchObject({
       action: "sent",
       messageId: 12,
+    });
+  });
+});
+
+describe("createTelegramApiClient", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sendMessage posts the expected Telegram payload and preserves optional fields", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, result: { message_id: 321 } }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, result: {} }),
+      } as unknown as Response);
+    vi.stubGlobal("fetch", fetchImpl);
+    const client = createTelegramApiClient("bot-token");
+
+    await expect(
+      client.sendMessage({
+        chatId: -100123,
+        messageThreadId: 42,
+        text: "hello",
+        disableNotification: true,
+      }),
+    ).resolves.toEqual({ ok: true, messageId: 321 });
+    await expect(
+      client.sendMessage({ chatId: "@channel", text: "minimal" }),
+    ).resolves.toEqual({ ok: true, messageId: undefined });
+
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.telegram.org/botbot-token/sendMessage");
+    expect(JSON.parse(init.body as string)).toEqual({
+      chat_id: -100123,
+      message_thread_id: 42,
+      text: "hello",
+      disable_notification: true,
+    });
+    const [, minimalInit] = fetchImpl.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(minimalInit.body as string)).toEqual({
+      chat_id: "@channel",
+      text: "minimal",
+    });
+  });
+
+  it("sendMessage maps HTTP failures and unreadable JSON to a fallback error", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new Error("bad json");
+      },
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchImpl);
+
+    await expect(
+      createTelegramApiClient("token").sendMessage({
+        chatId: -100,
+        text: "boom",
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      errorCode: 502,
+      description: "HTTP 502",
+    });
+  });
+
+  it("editMessageText maps success and Telegram API errors", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          ok: false,
+          error_code: 400,
+          description: "message is not modified",
+        }),
+      } as unknown as Response);
+    vi.stubGlobal("fetch", fetchImpl);
+    const client = createTelegramApiClient("token");
+
+    await expect(
+      client.editMessageText({
+        chatId: -100,
+        messageId: 12,
+        text: "updated",
+      }),
+    ).resolves.toEqual({ ok: true });
+    await expect(
+      client.editMessageText({
+        chatId: -100,
+        messageId: 12,
+        text: "updated",
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      errorCode: 400,
+      description: "message is not modified",
+    });
+
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.telegram.org/bottoken/editMessageText");
+    expect(JSON.parse(init.body as string)).toEqual({
+      chat_id: -100,
+      message_id: 12,
+      text: "updated",
     });
   });
 });
