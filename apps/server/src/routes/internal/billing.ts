@@ -21,6 +21,13 @@ import {
 export function createBillingInternalRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
 
+  function serializeSubscription<T extends { id: number | string }>(
+    row: T | undefined,
+  ): (Omit<T, "id"> & { id: number }) | undefined {
+    if (!row) return undefined;
+    return { ...row, id: Number(row.id) };
+  }
+
   r.post("/api/internal/billing/upgrade", async (req, res) => {
     const { userId } = req.body as { userId?: string };
     if (!userId) {
@@ -41,7 +48,7 @@ export function createBillingInternalRouter({ pool }: { pool: Pool }): Router {
            RETURNING id, plan, status, provider`,
         [userId],
       );
-      res.json({ ok: true, subscription: rows[0] });
+      res.json({ ok: true, subscription: serializeSubscription(rows[0]) });
     } catch (err) {
       // 23503 = FK violation: user_id не існує в "user".
       if ((err as { code?: string }).code === "23503") {
@@ -89,7 +96,7 @@ export function createBillingInternalRouter({ pool }: { pool: Pool }): Router {
       res.status(404).json({ error: "No active subscription" });
       return;
     }
-    res.json({ ok: true, subscription: rows[0] });
+    res.json({ ok: true, subscription: serializeSubscription(rows[0]) });
   });
 
   return r;
