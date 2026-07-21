@@ -45,10 +45,10 @@ vi.mock("./monoTransactionsLoader", () => ({
     fetchAllMonoTransactions(...args),
 }));
 
-// Keep the SQLite mirror dormant — the gate stays disabled so the mirror
-// write-effects short-circuit before touching getSqliteDb.
+// These tests never hydrate a userId, so the mirror write-effects short-circuit
+// on `!userId` before touching getSqliteDb — no gate stub needed beyond the tick.
 vi.mock("../lib/monoMirrorGate", () => ({
-  useFinykMonoMirrorGate: () => ({ enabled: false, tick: 0 }),
+  useFinykMonoMirrorTick: () => 0,
   notifyFinykMonoMirrorRefresh: vi.fn(),
 }));
 
