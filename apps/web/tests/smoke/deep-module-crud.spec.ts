@@ -167,29 +167,23 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // filter({ hasText }) стійкіший за name-regex з датою/категорією.
     // Рядок у GroupedVirtuoso зі sticky day-header: реальний .click()
     // зависає у scroll-into-view; dispatchEvent обходить hit-test.
-    await page
-      .getByRole("button")
-      .filter({ hasText: "DCRUD кава оновлено" })
-      .dispatchEvent("click");
-    await expect(
-      page.getByRole("dialog", { name: "Редагувати витрату" }),
-    ).toBeVisible();
-    // Harness correction: dual-write final-notify пульс (~1-2с після
-    // boot) може транзитно перемонтувати ноду кнопки в момент
-    // actionability-перевірки — Playwright-retry після detach зависає,
-    // чекаючи фантомної навігації. dispatchEvent виконує той самий
-    // продуктовий onClick без hit-test (модалка, не віртуалізований ряд).
-    // Scope to the dialog so we dispatch to the delete button in the
-    // correct sheet even if a SQLite refresh fires between the dialog-open
-    // assertion and this click — a mid-flight SQLite overlay can replace
-    // storage.manualExpenses, flipping the dialog from "Редагувати витрату"
-    // to "Додати витрату" and removing the "Видалити" button from the DOM.
-    // The scoped locator naturally waits for the button to reappear inside
-    // the expected dialog, surfacing a clear timeout if the dialog flipped.
-    await page
-      .getByRole("dialog", { name: "Редагувати витрату" })
-      .getByRole("button", { name: "Видалити" })
-      .dispatchEvent("click");
+    // Harness correction: SQLite refresh після reload може транзитно
+    // перемонтувати sheet з «Редагувати витрату» на «Додати витрату» —
+    // атомарний toPass повторює open+delete, поки edit-dialog стабільний.
+    await waitForSyncQueueIdle(page);
+    await expect(async () => {
+      await page
+        .getByRole("button")
+        .filter({ hasText: "DCRUD кава оновлено" })
+        .dispatchEvent("click");
+      const editDialog = page.getByRole("dialog", {
+        name: "Редагувати витрату",
+      });
+      await expect(editDialog).toBeVisible({ timeout: 5000 });
+      await editDialog
+        .getByRole("button", { name: "Видалити" })
+        .dispatchEvent("click");
+    }).toPass({ timeout: 45_000 });
     // Harness correction: ловимо undo-тост одразу після delete — його TTL
     // (~5с) інакше сплине, поки полінгується toHaveCount(0) під
     // навантаженням повної сюїти.

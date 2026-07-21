@@ -403,7 +403,7 @@ export function HubSettingsPage({
             placeholder="Пошук налаштувань…"
             className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-r-lg text-base md:text-sm text-ink placeholder:text-muted"
           />
-          {query && (
+          {query && visible.length > 0 && (
             <Button
               variant="ghost"
               size="xs"

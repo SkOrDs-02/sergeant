@@ -94,7 +94,11 @@ export function PrivacySection() {
   };
 
   return (
-    <SettingsGroup title={m.sectionTitle} icon="lock">
+    <SettingsGroup
+      title={m.sectionTitle}
+      icon="lock"
+      anchorId="settings-privacy"
+    >
       <ToggleRow
         label={m.enableLabel}
         description={m.enableDescription}

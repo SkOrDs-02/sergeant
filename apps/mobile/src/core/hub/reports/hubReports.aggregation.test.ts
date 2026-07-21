@@ -15,9 +15,9 @@ describe("hub reports aggregation helpers", () => {
 
     expect(localDateKey(now)).toBe("2026-07-23");
     expect(localDateKey(addDays(now, 2))).toBe("2026-07-25");
-    expect(datesInRange(new Date("2026-07-20"), new Date("2026-07-22"))).toEqual(
-      ["2026-07-20", "2026-07-21", "2026-07-22"],
-    );
+    expect(
+      datesInRange(new Date("2026-07-20"), new Date("2026-07-22")),
+    ).toEqual(["2026-07-20", "2026-07-21", "2026-07-22"]);
 
     const week = getPeriodRange("week", 0, now);
     expect(localDateKey(week.start)).toBe("2026-07-20");
@@ -100,11 +100,12 @@ describe("hub reports aggregation helpers", () => {
       count: 0,
       daily: {},
     });
-    expect(aggregateWorkouts(JSON.stringify({ nope: [] }), ["2026-07-20"]))
-      .toEqual({
-        count: 0,
-        daily: {},
-      });
+    expect(
+      aggregateWorkouts(JSON.stringify({ nope: [] }), ["2026-07-20"]),
+    ).toEqual({
+      count: 0,
+      daily: {},
+    });
   });
 
   it("sums outgoing finyk spending while excluding hidden and transfer ids", () => {
@@ -120,7 +121,9 @@ describe("hub reports aggregation helpers", () => {
             {
               id: "groceries",
               amount: -20_000,
-              time: Math.floor(new Date("2026-07-21T10:00:00Z").getTime() / 1000),
+              time: Math.floor(
+                new Date("2026-07-21T10:00:00Z").getTime() / 1000,
+              ),
             },
             {
               id: "income",
@@ -197,10 +200,7 @@ describe("hub reports aggregation helpers", () => {
       aggregateKcal(
         {
           "2026-07-20": {
-            meals: [
-              { macros: { kcal: 800 } },
-              { macros: { kcal: 600 } },
-            ],
+            meals: [{ macros: { kcal: 800 } }, { macros: { kcal: 600 } }],
           },
           "2026-07-21": {
             meals: [{ macros: { kcal: 1000 } }, {}],

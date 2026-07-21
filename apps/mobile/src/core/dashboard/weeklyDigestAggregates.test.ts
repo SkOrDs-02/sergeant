@@ -284,8 +284,10 @@ describe("weekly digest aggregates", () => {
 
     const payload = buildWeeklyDigestPayload(WEEK_KEY);
 
-    expect(payload.weekRange).toBe(getWeekRange(new Date("2026-07-20T12:00:00")));
-    expect(payload.finyk.totalSpent).toBe(50);
+    expect(payload.weekRange).toBe(
+      getWeekRange(new Date("2026-07-20T12:00:00")),
+    );
+    expect(payload.finyk?.totalSpent).toBe(50);
     expect(payload.fizruk).toBeNull();
     expect(payload.nutrition).toBeNull();
     expect(payload.routine).toBeNull();
