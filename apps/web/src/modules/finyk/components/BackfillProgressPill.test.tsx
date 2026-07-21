@@ -40,6 +40,46 @@ describe("BackfillProgressPill", () => {
     expect(screen.getByText("1 240 тр.")).toBeInTheDocument();
   });
 
+  it("keeps progressbar math safe for zero totals and over-complete counters", () => {
+    const { rerender } = renderPill({
+      className: "extra-class",
+      progress: {
+        status: "running",
+        startedAt: "2026-05-05T08:30:00.000Z",
+        completedAt: null,
+        accountsTotal: 0,
+        accountsProcessed: 0,
+        currentAccountId: null,
+        transactionsProcessed: 0,
+        lastError: null,
+      },
+    });
+
+    const emptyProgressbar = screen.getByRole("progressbar");
+    expect(emptyProgressbar).toHaveAttribute("aria-valuenow", "0");
+    expect(emptyProgressbar.firstElementChild).toHaveStyle({ width: "0%" });
+    expect(screen.getByRole("status")).toHaveClass("extra-class");
+
+    rerender(
+      <BackfillProgressPill
+        progress={{
+          status: "running",
+          startedAt: "2026-05-05T08:30:00.000Z",
+          completedAt: null,
+          accountsTotal: 2,
+          accountsProcessed: 3,
+          currentAccountId: null,
+          transactionsProcessed: 10,
+          lastError: null,
+        }}
+      />,
+    );
+
+    const cappedProgressbar = screen.getByRole("progressbar");
+    expect(cappedProgressbar).toHaveAttribute("aria-valuenow", "100");
+    expect(cappedProgressbar.firstElementChild).toHaveStyle({ width: "100%" });
+  });
+
   it("renders completed and failed terminal states without a progressbar", () => {
     const { rerender } = renderPill(
       Completed.args as BackfillProgressPillProps,
@@ -58,6 +98,24 @@ describe("BackfillProgressPill", () => {
       screen.getByText("Mono API: 429 Too Many Requests"),
     ).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("falls back to a generic failed detail when Mono does not return an error", () => {
+    renderPill({
+      progress: {
+        status: "failed",
+        startedAt: "2026-05-05T08:30:00.000Z",
+        completedAt: "2026-05-05T08:34:12.000Z",
+        accountsTotal: 1,
+        accountsProcessed: 0,
+        currentAccountId: null,
+        transactionsProcessed: 0,
+        lastError: null,
+      },
+    });
+
+    expect(screen.getByText("Помилка backfill")).toBeInTheDocument();
+    expect(screen.getByText("невідома помилка")).toBeInTheDocument();
   });
 
   it("hides idle and transient completed snapshots", () => {
