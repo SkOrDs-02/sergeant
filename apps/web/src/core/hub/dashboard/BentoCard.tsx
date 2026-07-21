@@ -133,6 +133,18 @@ export const BentoCard = memo(function BentoCard({
           isDragging && "shadow-float cursor-grabbing",
         )}
       >
+        {/* Мова «Папір» П3/П4: модульний акцент повертається як видима
+            2px-риска по верхньому краю замість пастельної заливки всієї
+            плити. Заливка тягнула картку до кольору сторінки (виміряно
+            1.03:1 плита↔фон); риска дає край, який видно, і лишає
+            композиційну вагу цифрі під ним. */}
+        {!inactive && (
+          <span
+            aria-hidden
+            className={cn("absolute inset-x-0 top-0 h-0.5", config.accentClass)}
+          />
+        )}
+
         <div className="flex items-center justify-between mb-2">
           <div
             aria-hidden
@@ -203,7 +215,12 @@ export const BentoCard = memo(function BentoCard({
         ) : hasData ? (
           <>
             {preview.main && (
-              <span className="text-style-title text-text tabular-nums mt-1 truncate">
+              <span
+                className={cn(
+                  "text-style-title tabular-nums mt-1 truncate",
+                  config.inkClass,
+                )}
+              >
                 {preview.main}
               </span>
             )}

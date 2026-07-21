@@ -318,7 +318,11 @@
     /* Celebration / gamification tokens */
     --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
     --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
-    --c-xp: 139 92 246; /* violet-500 — XP / level-up accent */
+    /* --c-xp (violet-500) знято 2026-07-21, бриф «Папір» §3: п'ятий hue
+       поза чотирма модульними не узаконюємо, а святкування — подія, не
+       модуль, і має власний токен `--c-celebration` (amber-400). Токен,
+       утиліта `text-xp` і колір `xp` у preset не мали жодного споживача,
+       тож видалені, а не перефарбовані. */
 
     /* Chart series CSS vars — mirror the Tailwind preset `chart-{module}`
        utilities so Recharts SVG `fill="..."` / `stroke="..."` (which take
@@ -886,10 +890,18 @@
        3 = bottom-right). «Чорнило» collapsed the old 4-corner mesh to 3
        (spec § Рішення — cheaper on mobile). § 4 (PR D): retuned to the
        §5 tier-500/700 palette — mirrors the dark mesh structure, alpha
-       lowered so the light mesh reads quieter than the dark one. */
-    --bg-mesh-1: rgba(16, 185, 129, 0.14); /* emerald-500 — top-right */
-    --bg-mesh-2: rgba(14, 116, 144, 0.09); /* cyan-700 — left */
-    --bg-mesh-3: rgba(249, 112, 102, 0.1); /* coral-500 — bottom-right */
+       lowered so the light mesh reads quieter than the dark one.
+
+       Мова «Папір» П5 (2026-07-21): три плями на кремі не читались як
+       глибина — піксельний семпл дав ΔE≈4.6 для emerald (під порогом)
+       і ΔE≈13.2 для cyan, тобто найпомітнішою на брендовому хабі була
+       НЕ брендова пляма. Лишається одна спрямована зона — emerald
+       top-right, піднята до порога сприйняття (ΔE≈9 на кремі); cyan і
+       coral знято, бо три однакові за силою плями = розфарбовування,
+       а не композиція. Темна тема не змінюється (там mesh працює). */
+    --bg-mesh-1: rgba(16, 185, 129, 0.28); /* emerald-500 — top-right */
+    --bg-mesh-2: rgba(0, 0, 0, 0); /* знято — П5, одна зона на екран */
+    --bg-mesh-3: rgba(0, 0, 0, 0); /* знято — П5, одна зона на екран */
     /* Shared by `.bg-mesh` and the root canvas. iOS standalone can expose
        the canvas below a full-height child while safe-area geometry settles;
        using the exact same composite prevents that region from becoming a

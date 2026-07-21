@@ -207,14 +207,21 @@ export function HubHeader({
       {/* greeting+date, бо це справжній сигнальний шар (час доби, */}
       {/* персональне звернення), а тег «оперативний центр» — */}
       {/* брендовий шум, який забирав вертикальний простір. */}
-      <p className="mt-1.5 ml-[3px] text-sm leading-snug text-muted truncate">
-        {greetingText}
+      {/* Мова «Папір» П2/П3: на світлій темі хаб не мав композиційного
+          якоря — привітання шепотіло `text-sm text-muted`, і найсильнішим
+          елементом екрана випадково ставав демо-банер. Привітання стає
+          ink-якорем (display-вага), дата — mono-мета: число живе в
+          JetBrains Mono, як усі технічні значення Sergeant. */}
+      <p className="mt-2 ml-[3px] truncate">
+        <span className="text-style-title-lg text-text">{greetingText}</span>
         {dateStr && (
           <>
-            <span className="mx-1.5 text-subtle" aria-hidden="true">
+            <span className="mx-2 text-subtle" aria-hidden="true">
               ·
             </span>
-            <span className="text-subtle">{dateStr}</span>
+            <span className="font-mono text-style-caption text-muted tabular-nums">
+              {dateStr}
+            </span>
           </>
         )}
       </p>
