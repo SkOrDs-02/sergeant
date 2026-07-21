@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -68,7 +68,8 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | `apps/server`       | API server (backend)     | Express + PostgreSQL    | Hetzner + Coolify       |
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
-| `tools/openclaw`    | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
+
+> The legacy `tools/openclaw` grammy bot and its successor, the OpenClaw Gateway (`@sergeant/openclaw-plugin` + `apps/server/src/modules/openclaw`), are both **fully removed from the repo** — decommissioned along with Railway per [ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md). There is no OpenClaw surface to run or deploy.
 
 ### Tooling (`tools/`)
 
@@ -82,20 +83,19 @@ Non-app workspaces that support lint / build invariants. Not deployed.
 
 Packages are shared code reused across apps. Instead of copy-pasting between web and mobile, we put shared code in `packages/` and import from there.
 
-| Package                         | Purpose                                                                         |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| `@sergeant/shared`              | Shared business logic, Zod schemas, types — used by ALL apps                    |
-| `@sergeant/api-client`          | Type-safe HTTP client for talking to the server                                 |
-| `@sergeant/config`              | Shared configs (ESLint, TypeScript, etc.)                                       |
-| `@sergeant/design-tokens`       | Design tokens, Tailwind preset, colors, typography                              |
-| `@sergeant/insights`            | Cross-module analytics (pure functions over data)                               |
-| `@sergeant/finyk-domain`        | Finance domain logic (calculations, amount formatting)                          |
-| `@sergeant/fizruk-domain`       | Fitness domain logic (calories, load calculations)                              |
-| `@sergeant/nutrition-domain`    | Nutrition domain logic                                                          |
-| `@sergeant/routine-domain`      | Habits domain logic                                                             |
-| `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                                   |
-| `@sergeant/openclaw-plugin`     | OpenClaw Gateway tools/hooks plugin (Gateway-only — NOT consumed by web/mobile) |
-| `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                                       |
+| Package                         | Purpose                                                      |
+| ------------------------------- | ------------------------------------------------------------ |
+| `@sergeant/shared`              | Shared business logic, Zod schemas, types — used by ALL apps |
+| `@sergeant/api-client`          | Type-safe HTTP client for talking to the server              |
+| `@sergeant/config`              | Shared configs (ESLint, TypeScript, etc.)                    |
+| `@sergeant/design-tokens`       | Design tokens, Tailwind preset, colors, typography           |
+| `@sergeant/insights`            | Cross-module analytics (pure functions over data)            |
+| `@sergeant/finyk-domain`        | Finance domain logic (calculations, amount formatting)       |
+| `@sergeant/fizruk-domain`       | Fitness domain logic (calories, load calculations)           |
+| `@sergeant/nutrition-domain`    | Nutrition domain logic                                       |
+| `@sergeant/routine-domain`      | Habits domain logic                                          |
+| `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                |
+| `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                    |
 
 Architecture overview lives in [docs/02-engineering/architecture/README.md](./docs/02-engineering/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 
@@ -123,10 +123,10 @@ Architecture overview lives in [docs/02-engineering/architecture/README.md](./do
         └───────────┬───────────┘
                     │
                     ▼
-        ┌───────────────────────┐     ┌─────────────────┐
-        │   PostgreSQL          │     │  tools/openclaw   │
-        │ (Coolify / pgvector)  │     │  (Telegram bot)  │
-        └───────────────────────┘     └─────────────────┘
+        ┌───────────────────────┐
+        │   PostgreSQL          │
+        │ (Coolify / pgvector)  │
+        └───────────────────────┘
 ```
 
 Fizruk and Routine modules follow a **local-first** approach: data is stored locally first (localStorage on web, MMKV on mobile), then synced to the server via CloudSync using LWW (Last-Write-Wins) conflict resolution. The app works offline.
@@ -224,13 +224,13 @@ pnpm --filter @sergeant/mobile start
 # First build web, then open in Xcode / Android Studio
 ```
 
-#### 6. (Optional) Telegram bot
+#### 6. OpenClaw Telegram gateway — removed
 
-```bash
-pnpm --filter @sergeant/openclaw dev
-```
-
-Requires a Telegram Bot Token in `tools/openclaw/.env`.
+Both the standalone `@sergeant/openclaw` grammy bot (`tools/openclaw`) and its
+successor, the OpenClaw Gateway (`packages/openclaw-plugin` +
+`apps/server/src/modules/openclaw`), have been fully removed from the repo —
+decommissioned per [ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md).
+There is no OpenClaw dev-server to start.
 
 ## Core commands
 

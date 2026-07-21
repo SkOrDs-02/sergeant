@@ -1,21 +1,21 @@
 # @sergeant/dualwrite-core
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/04-governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
 
-## Що всередині (крок 1)
+## Що всередині
 
-- **`applyDualWriteOps`** — best-effort op-loop з per-op try/catch і лічильниками `{applied, errored, skipped}`, перенесений з `apps/web/src/shared/lib/sqliteWriter/core.ts` (web-шлях лишився re-export-ом).
-- **`toIntOrNull` / `toRealOrNull`** — nullable числові конвертери для SQLite bind-параметрів.
+Міграцію завершено — усі примітиви нижче реалізовані й спожиті всіма 4 пайплайнами (web + mobile):
+
+- **`applyDualWriteOps`** (`apply.ts`) — best-effort op-loop з per-op try/catch і лічильниками `{applied, errored, skipped}`. _(Історично жив у `apps/web/src/shared/lib/sqliteWriter/core.ts`; той файл **видалено** — web імпортує напряму з цього пакета.)_
+- **`createApplyOps`** (`createApplyOps.ts`) — фабрика op-applier-ів з параметризованою error policy (`best-effort` / `atomic-batch`).
+- **`TableSpec` + SQL-білдери** (`tableSpec.ts`: `buildLwwUpsert`, `buildDelete`, `buildReconcileChildren`) — LWW-guard `>` строго, як enum, не рядок.
+- **`toIntOrNull` / `toRealOrNull`** (`convert.ts`) — nullable числові конвертери для SQLite bind-параметрів.
 - Типи: `ApplyDualWriteOptions`, `ApplyDualWriteResult`, `ApplyOutcome`, `DualWriteLogger`.
 
-## Що приїде наступними кроками (ADR-0073 § Decision)
-
-- `createApplyOps` з параметризованою error policy (`best-effort` / `atomic-batch`).
-- `TableSpec` + SQL-білдери (`buildLwwUpsert`, `buildDelete`, `buildReconcileChildren`) — LWW-guard `>` строго, як enum, не рядок.
-- Orchestrator-фабрика (registration-контекст, parity-probe, телеметрія-ін'єкція).
+> Boot-path orchestrator-фабрику (крок 10 з ADR-0073) **скасовано** (Open Q #6) — не додається.
 
 ## Інваріанти
 

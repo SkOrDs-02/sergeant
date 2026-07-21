@@ -100,7 +100,7 @@
 #### Оновити
 
 - **Локально:** заміни `RAILWAY_TOKEN` у `.env`
-- **GitHub Actions:** якщо Railway CLI використовується у CI → repo Settings → Secrets → Actions → `RAILWAY_TOKEN`
+- **GitHub Actions:** більше не потрібно — `db-backup-verify.yml` мігровано на прямий `pg_dump` з Coolify (secret `MIGRATE_DATABASE_URL`, [ADR-0074](../adr/0074-hosting-hetzner-coolify.md)); це був останній CI-споживач Railway CLI. Якщо `RAILWAY_TOKEN` ще лежить у repo Secrets → Actions, його можна видалити.
 
 ---
 

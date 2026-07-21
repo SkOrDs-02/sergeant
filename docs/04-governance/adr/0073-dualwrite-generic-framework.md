@@ -1,6 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -188,12 +188,12 @@ export function createDualWriteOrchestrator<S, Op>(
 | 2         | nutrition web + примітиви `createApplyOps`/`TableSpec`/білдери                               | ✅ merged                | #107     |
 | 3         | routine web (+ `alignSetColumns` вісь у `buildLwwUpsert`)                                    | ✅ merged                | #109     |
 | Open Q #1 | web-fizruk `atomic-batch`→`best-effort` (**semantic**, передумова кр.4)                      | ✅ merged                | #112     |
-| 4         | fizruk web (мехмиграція на білдери; після Open Q #1)                                         | 🔍 in review             | #116     |
-| 5         | finyk web (5 сімейств таблиць, hard-DELETE `upsertGuard:"none"`, single-flight orchestrator) | 🔍 in review             | #116     |
-| 6         | mobile finyk                                                                                 | 🔍 in review             | #116     |
-| 7         | mobile nutrition                                                                             | 🔍 in review             | #116     |
-| 8         | mobile routine                                                                               | 🔍 in review             | #116     |
-| 9         | mobile fizruk (власні op-kinds: `active-workout-set` → KV)                                   | 🔍 in review             | #116     |
+| 4         | fizruk web (мехмиграція на білдери; після Open Q #1)                                         | ✅ merged                | #116     |
+| 5         | finyk web (5 сімейств таблиць, hard-DELETE `upsertGuard:"none"`, single-flight orchestrator) | ✅ merged                | #116     |
+| 6         | mobile finyk                                                                                 | ✅ merged                | #116     |
+| 7         | mobile nutrition                                                                             | ✅ merged                | #116     |
+| 8         | mobile routine                                                                               | ✅ merged                | #116     |
+| 9         | mobile fizruk (власні op-kinds: `active-workout-set` → KV)                                   | ✅ merged                | #116     |
 | 10        | ~~residualImport skeleton~~                                                                  | ❌ скасовано (Open Q #6) | —        |
 
 Легенда: ✅ у `main` · 🔍 PR відкритий, чекає review/merge · ⏳ ще не почато · ❌ не робимо.

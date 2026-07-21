@@ -177,9 +177,9 @@ PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` 
 
 Console → n8n dispatcher webhook для Telegram-controlled AI agents. Скопіюйте production webhook URL з workflow 20 після імпорту в n8n. Приклад: `https://n8n.your-domain.com/webhook/agent-dispatcher`.
 
-### `ANTHROPIC_PROMPT_CACHE` _(optional, default off)_
+### `ANTHROPIC_PROMPT_CACHE` _(dead — OpenClaw gateway decommissioned)_
 
-Опт-ін для prompt caching у `tools/openclaw` agent-loop (PR-39, ADR-0057). Truthy values: `1`, `true`, `yes` (case-insensitive). Коли увімкнено, `tools/openclaw/src/agents/run-agent-loop.ts` додає `cache_control: { type: "ephemeral" }` на (a) system prompt і (b) останній tool у `tools[]`. Cache TTL — 5 хвилин; net-cost-win починається з ≥2 викликів у вікні (tool-use loop або кілька slash-команд підряд). Affects лише `tools/openclaw` (Telegram-bot процес у окремому Railway service); не впливає на `apps/server` Anthropic-клієнт.
+> ⚠️ **OpenClaw gateway повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Ця змінна конфігурувала prompt caching у gateway agent-loop, якого більше не існує ні в цьому репо, ні деінде (`git grep ANTHROPIC_PROMPT_CACHE -- apps/server` → 0 hits). Секція лишена як історичний запис (PR-39, ADR-0057); нового еквівалента немає.
 
 ---
 

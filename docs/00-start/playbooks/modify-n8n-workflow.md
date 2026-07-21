@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -43,7 +43,7 @@
 ### 4. Зафіксуй operational impact у PR-описі
 
 - Що саме запускає воркфлоу (cron, webhook, manual trigger).
-- Які env / credentials потрібні і де вони мають бути виставлені (Railway, n8n cloud, локальний `.env`).
+- Які env / credentials потрібні і де вони мають бути виставлені (Coolify env vars для бекенду, n8n-хост, локальний `.env`).
 - Який blast radius при помилці — кого зачепить, які системи можуть зламатися.
 - Чи потребує окремого ревʼю від owner-а суміжного домену (наприклад фінанси, безпека).
 

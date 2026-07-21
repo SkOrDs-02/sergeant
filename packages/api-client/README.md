@@ -38,16 +38,17 @@ packages/api-client/src/
 │   └── index.ts       — `@sergeant/api-client/react`
 └── endpoints/
     ├── barcode.ts
+    ├── billing.ts
     ├── chat.ts
     ├── coach.ts
+    ├── finyk.ts
     ├── foodSearch.ts
     ├── me.ts
     ├── mono.ts
     ├── nutrition.ts
     ├── privat.ts
     ├── push.ts
-    ├── sync.ts
-    ├── syncV2.ts
+    ├── syncV2.ts    — (+ syncV2.increment / .pushLoop / .pushScheduler / .flushOnReconnect)
     ├── transcribe.ts
     ├── waitlist.ts
     ├── webVitals.ts
