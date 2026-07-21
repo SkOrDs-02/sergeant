@@ -9,7 +9,7 @@
  *      entry (no "ghost" tools the user can never discover).
  *   4. Token budget guard (≤10% growth vs. baseline) — handoff requirement.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ASSISTANT_CAPABILITIES,
   getCapabilityServerTool,
@@ -120,6 +120,32 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(list).toMatch(/- Аналітика: /);
     expect(list).toMatch(/- Утиліти: /);
     expect(list).toMatch(/- Пам'ять: /);
+  });
+
+  it("skips a module bullet when every capability is prompt-only", async () => {
+    vi.resetModules();
+    vi.doMock("@sergeant/shared", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@sergeant/shared")>();
+      return {
+        ...actual,
+        ASSISTANT_CAPABILITIES: actual.ASSISTANT_CAPABILITIES.map(
+          (capability) =>
+            capability.module === "memory"
+              ? { ...capability, serverTool: null }
+              : capability,
+        ),
+      };
+    });
+
+    const { buildModuleToolList: buildModuleToolListWithEmptyMemory } =
+      await import("./systemPrompt.js");
+
+    const list = buildModuleToolListWithEmptyMemory();
+    expect(list).toMatch(/- Фінанси: /);
+    expect(list).not.toMatch(/- Пам'ять: /);
+
+    vi.doUnmock("@sergeant/shared");
+    vi.resetModules();
   });
 
   it("aiHints are rendered in parentheses next to the tool name", () => {
