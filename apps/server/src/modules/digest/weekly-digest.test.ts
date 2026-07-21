@@ -287,6 +287,33 @@ describe("weekly-digest handler · prompt assembly", () => {
       expect(sys).toContain("Йога: 60% (3/5 днів)");
     }
   });
+
+  it("рендерить zero/default fallback-и для всіх секцій коли optional поля відсутні", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({
+        anthropicKey: "k",
+        body: {
+          finyk: {},
+          fizruk: {},
+          nutrition: {},
+          routine: {},
+        },
+      }),
+      makeRes(),
+    );
+
+    const sys = provider.calls[0]!.system!;
+    expect(sys).toContain("Витрати: 0 грн | Надходження: 0 грн");
+    expect(sys).toContain("Транзакцій: 0");
+    expect(sys).toContain("Тренувань завершено: 0");
+    expect(sys).toContain("Загальний об'єм: 0 кг");
+    expect(sys).toContain("Стан відновлення: Немає даних");
+    expect(sys).toContain("Середньодобово: 0 ккал (ціль 2000 ккал");
+    expect(sys).toContain("Днів із записами: 0 з 7");
+    expect(sys).toContain("Загальний відсоток: 0%");
+    expect(sys).toContain("Активних звичок: 0");
+  });
 });
 
 describe("weekly-digest handler · response & errors (strict mode)", () => {
@@ -965,6 +992,23 @@ describe("buildTemplateReport (PR-25)", () => {
       routine: { habitCount: 5, overallRate: 92 },
     });
     expect(r.routine!.summary).toBe("5 звичок, загальний відсоток 92%.");
+  });
+
+  it("підставляє нулі у template-report коли секції є, але числа відсутні", () => {
+    const r = buildTemplateReport({
+      finyk: {},
+      fizruk: {},
+      nutrition: {},
+      routine: {},
+    });
+    expect(r.finyk!.summary).toBe(
+      "Витрати 0 грн, надходження 0 грн, 0 транзакцій.",
+    );
+    expect(r.fizruk!.summary).toBe("0 тренувань, обсяг 0 кг.");
+    expect(r.nutrition!.summary).toBe(
+      "Середньодобово 0 ккал з 0/7 днів записів.",
+    );
+    expect(r.routine!.summary).toBe("0 звичок, загальний відсоток 0%.");
   });
 
   it("дотримується WeeklyDigestReportSchema (валідний shape)", async () => {

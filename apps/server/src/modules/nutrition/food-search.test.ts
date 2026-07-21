@@ -360,6 +360,23 @@ describe("food-search handler", () => {
     );
   });
 
+  it("prefers USDA_FDC_API_KEY over the legacy USDA_API_KEY env var", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "fdc-key");
+    vi.stubEnv("USDA_API_KEY", "legacy-key");
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [usdaPear] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "5" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(String(fetchMock.mock.calls[2]?.[0])).toContain("api_key=fdc-key");
+    expect(String(fetchMock.mock.calls[2]?.[0])).not.toContain("legacy-key");
+  });
+
   it("deduplicates by normalized name and brand before applying limit", async () => {
     const duplicate = {
       ...offPear,
@@ -401,6 +418,44 @@ describe("food-search handler", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ products: [] });
+  });
+
+  it("returns 504 when response validation is interrupted by an abort-like error", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+    vi.spyOn(FoodSearchSuccessSchema, "parse").mockImplementationOnce(() => {
+      const err = new Error("aborted");
+      err.name = "AbortError";
+      throw err;
+    });
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "3" }), res);
+
+    expect(res.statusCode).toBe(504);
+    expect(res.body).toMatchObject({
+      error: expect.stringMatching(/таймаут/i),
+    });
+  });
+
+  it("returns 500 when response validation throws a generic error", async () => {
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }))
+      .mockResolvedValueOnce(jsonResponse(true, { foods: [] }));
+    vi.spyOn(FoodSearchSuccessSchema, "parse").mockImplementationOnce(() => {
+      throw new Error("schema drift");
+    });
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "3" }), res);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toEqual({ error: "schema drift" });
   });
 
   it("skips English fallback sources when the query is not translatable", async () => {

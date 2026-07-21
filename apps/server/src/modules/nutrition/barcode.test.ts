@@ -276,6 +276,86 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
+    it("OFF повертає HTTP 404 → cascade продовжує на USDA without transient failure", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 404 }))
+        .mockResolvedValueOnce(USDA_HIT);
+      const req = asReq({ barcode: "0818290015938" });
+      const res = mockRes();
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({ product: { source: "usda" } });
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("USDA повертає HTTP 404 → cascade продовжує на UPCitemdb", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 404 }))
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const req = asReq({ barcode: "1234567890123" });
+      const res = mockRes();
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({ product: { source: "upcitemdb" } });
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("UPCitemdb повертає HTTP 404 → handler returns a normal miss", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 404 }));
+      const req = asReq({ barcode: "1234567890123" });
+      const res = mockRes();
+      await handler(req, res);
+      expect(res.statusCode).toBe(404);
+      expect(res.body).toMatchObject({
+        error: expect.stringMatching(/не знайдено/i),
+      });
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("USDA hit falls back to the first food when gtinUpc is not an exact barcode match", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(
+          mockFetchResponse({
+            body: {
+              foods: [
+                {
+                  description: "Fallback Yogurt",
+                  brandOwner: "Fallback Dairy",
+                  gtinUpc: "0000000000000",
+                  foodNutrients: [
+                    { nutrientId: 1008, value: 61 },
+                    { nutrientId: 1003, value: 9 },
+                    { nutrientId: 1004, value: 1 },
+                    { nutrientId: 1005, value: 4 },
+                  ],
+                },
+              ],
+            },
+          }),
+        );
+      const req = asReq({ barcode: "0818290015938" });
+      const res = mockRes();
+      await handler(req, res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({
+        product: {
+          name: "Fallback Yogurt",
+          brand: "Fallback Dairy",
+          source: "usda",
+        },
+      });
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
     it("OFF повертає продукт без жодного макроса — нормалізатор віддає null, cascade продовжує", async () => {
       global.fetch = vi
         .fn()
