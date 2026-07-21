@@ -11,6 +11,10 @@ export interface SkeletonProps {
    *  `prefers-reduced-motion: reduce` both shimmer and pulse collapse
    *  to a static muted block (WCAG 2.3.3 + Apple HIG). */
   shimmer?: boolean | undefined;
+  /** Set `false` when a PARENT container already carries the pulse
+   *  (one Animation object for the whole group замість N синхронних —
+   *  анімаційний бюджет Hard Rule #17; див. PageLoader). */
+  pulse?: boolean | undefined;
   /** Shape preset. Defaults to `rect`. Other variants (`text`,
    *  `avatar`, `card`) are also exposed as their own components for
    *  ergonomic call-sites. */
@@ -49,6 +53,7 @@ export function Skeleton({
   className,
   shimmer = false,
   variant = "rect",
+  pulse = true,
   style,
 }: SkeletonProps) {
   const variantClass =
@@ -65,7 +70,9 @@ export function Skeleton({
       className={cn(
         "bg-panelHi",
         variantClass,
-        shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
+        shimmer
+          ? "relative overflow-hidden"
+          : pulse && "motion-safe:animate-pulse",
         className,
       )}
       style={style}
