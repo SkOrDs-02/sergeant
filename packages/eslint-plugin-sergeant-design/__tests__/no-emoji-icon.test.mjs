@@ -47,6 +47,27 @@ describe("no-emoji-icon", () => {
     assert.equal(messages[0].ruleId, RULE_ID);
   });
 
+  it("flags an emoji that is the sole content of an aria-hidden element", () => {
+    const messages = lint(
+      `const el = <span className="text-lg" aria-hidden>💳</span>;`,
+      { jsx: true },
+    );
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
+  it("does NOT flag an aria-hidden element whose text also has letters", () => {
+    const messages = lint(`const el = <span aria-hidden>💳 Картка</span>;`, {
+      jsx: true,
+    });
+    assert.equal(messages.length, 0);
+  });
+
+  it("does NOT flag a visible (non-aria-hidden) emoji — user content", () => {
+    const messages = lint(`const el = <span>🥗</span>;`, { jsx: true });
+    assert.equal(messages.length, 0);
+  });
+
   it("flags an emoji in a JSXExpressionContainer wrapped literal", () => {
     const messages = lint(`const el = <Row icon={"🥗"} />;`, { jsx: true });
     assert.equal(messages.length, 1);

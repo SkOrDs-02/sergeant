@@ -1516,6 +1516,33 @@ const noHexInClassname = {
 const NO_EMOJI_ICON_MESSAGE =
   "Emoji `{{emoji}}` in an `icon` field — use a name from the SVG Icon catalog (`@shared/components/ui/Icon`) instead of a raw emoji glyph.";
 
+// Second shape of the same defect, found by the re-audit (§7.2): the emoji
+// never touches an `icon` field, it IS the whole content of a decorative
+// element — `<span className="text-lg shrink-0" aria-hidden>💳</span>`.
+// `aria-hidden` + emoji-only body is exactly "a glyph standing in for an
+// icon", so it belongs to this rule rather than a separate one.
+const NO_EMOJI_GLYPH_MESSAGE =
+  "Emoji `{{emoji}}` as the sole content of an `aria-hidden` element — it is standing in for an icon; use the SVG Icon catalog (`@shared/components/ui/Icon`) so it inherits the module accent and stroke weight.";
+
+/** Whole trimmed body is emoji (+ VS16 / ZWJ / whitespace), no letters. */
+const EMOJI_ONLY_RE = /^[\p{Extended_Pictographic}️‍\p{Emoji_Modifier}\s]+$/u;
+
+function hasTruthyAriaHidden(openingElement) {
+  return openingElement.attributes.some((attr) => {
+    if (attr.type !== "JSXAttribute" || attr.name.name !== "aria-hidden") {
+      return false;
+    }
+    // `aria-hidden` (bare), `aria-hidden="true"`, `aria-hidden={true}`.
+    if (attr.value === null) return true;
+    if (attr.value.type === "Literal") return attr.value.value !== "false";
+    return (
+      attr.value.type === "JSXExpressionContainer" &&
+      attr.value.expression.type === "Literal" &&
+      attr.value.expression.value === true
+    );
+  });
+}
+
 function findEmojiInIconValue(value) {
   if (typeof value !== "string") return null;
   const match = value.match(/\p{Extended_Pictographic}/u);
@@ -1530,7 +1557,10 @@ const noEmojiIcon = {
         "Forbid emoji in `icon` object-properties and JSX `icon=` attributes — use the SVG Icon catalog instead.",
     },
     schema: [],
-    messages: { emoji: NO_EMOJI_ICON_MESSAGE },
+    messages: {
+      emoji: NO_EMOJI_ICON_MESSAGE,
+      emojiGlyph: NO_EMOJI_GLYPH_MESSAGE,
+    },
   },
   create(context) {
     function report(node, rawValue) {
@@ -1556,6 +1586,25 @@ const noEmojiIcon = {
           node.value.expression.type === "Literal"
         ) {
           report(node.value.expression, node.value.expression.value);
+        }
+      },
+      JSXElement(node) {
+        if (!hasTruthyAriaHidden(node.openingElement)) return;
+        // Exactly one non-empty text child and no element children — a bare
+        // decorative glyph, not a label that happens to contain an emoji.
+        const children = node.children.filter(
+          (child) => child.type !== "JSXText" || child.value.trim().length > 0,
+        );
+        if (children.length !== 1 || children[0].type !== "JSXText") return;
+        const body = children[0].value.trim();
+        if (!EMOJI_ONLY_RE.test(body)) return;
+        const emoji = findEmojiInIconValue(body);
+        if (emoji) {
+          context.report({
+            node: children[0],
+            messageId: "emojiGlyph",
+            data: { emoji },
+          });
         }
       },
     };

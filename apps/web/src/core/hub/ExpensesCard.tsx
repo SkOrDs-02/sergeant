@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
@@ -246,9 +247,12 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           "-m-1 p-1 hover:bg-panelHi transition-colors",
         )}
       >
-        <span className="text-lg shrink-0" aria-hidden>
-          💳
-        </span>
+        <Icon
+          name="credit-card"
+          size="lg"
+          className="shrink-0 text-finyk"
+          aria-hidden
+        />
         <SectionHeading
           as="span"
           size="xs"

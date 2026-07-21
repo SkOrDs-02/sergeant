@@ -2,7 +2,7 @@
  * Last validated: 2026-06-28
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
@@ -28,6 +28,21 @@ export function DemoModeBadge() {
   // only changes via a hard reload (seed / reset both call
   // `window.location`), so a one-shot mount read is sufficient.
   const [demo] = useState<boolean>(() => isDemoMode());
+
+  // Mark the document while the pill is up so the scroll regions can shrink
+  // by its height (see `html[data-demo-badge] main` in mobile.css). The pill
+  // is `fixed`, so without that the phone layout scrolls card content
+  // straight underneath it — re-audit §7.2 rejected the "it floats like a
+  // FAB" argument: a FAB is a corner action with its own safe zone, this is
+  // a centred system banner sitting on live data.
+  useEffect(() => {
+    if (!demo) return;
+    const root = document.documentElement;
+    root.dataset["demoBadge"] = "";
+    return () => {
+      delete root.dataset["demoBadge"];
+    };
+  }, [demo]);
 
   if (!demo) return null;
 

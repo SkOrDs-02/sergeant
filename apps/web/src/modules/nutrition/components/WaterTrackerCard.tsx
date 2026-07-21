@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useWaterTracker } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
@@ -70,9 +71,12 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
     <Card radius="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg leading-none" aria-hidden="true">
-            💧
-          </span>
+          <Icon
+            name="droplet"
+            size="lg"
+            className="text-nutrition"
+            aria-hidden
+          />
           <div>
             <div className="text-style-label text-text leading-none">Вода</div>
             <div className="text-xs text-subtle mt-0.5">
