@@ -275,7 +275,9 @@ function warnIfNotCrossOriginIsolated(): boolean {
 
   if (isolated) return true;
 
-  logger.warn(
+  // debug, не warn: очікуваний фолбек у dev/preview без COOP/COEP —
+  // шумів на кожному boot (design-audit P3); Sentry-breadcrumb лишається.
+  logger.debug(
     "[sqlite] Page is not crossOriginIsolated — Cross-Origin-Opener-Policy " +
       "and Cross-Origin-Embedder-Policy headers are missing. The plain OPFS " +
       "VFS (worker-backed) cannot install without SharedArrayBuffer; falling " +
@@ -364,7 +366,7 @@ async function openDb(
         },
       };
     } catch (err) {
-      logger.warn("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
+      logger.debug("[sqlite] OPFS-SAH Pool VFS unavailable, falling back", err);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",

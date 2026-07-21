@@ -80,7 +80,9 @@ export function DemoModeBanner() {
           <Icon name="sparkles" size={18} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-style-label text-text">Це приклад</h3>
+          {/* h2, не h3: банер іде одразу після sr-only h1 «Головна», і h3
+              розривав heading-order (axe moderate, design-audit P3). */}
+          <h2 className="text-style-label text-text">Це приклад</h2>
           <p className="text-xs text-muted mt-1 leading-snug">
             Цифри й категорії — для демонстрації. Натисни «Створити свій», щоб
             почати з чистого аркуша.
