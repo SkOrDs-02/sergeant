@@ -179,7 +179,7 @@ Console → n8n dispatcher webhook для Telegram-controlled AI agents. Ско�
 
 ### `ANTHROPIC_PROMPT_CACHE` _(dead — OpenClaw gateway decommissioned)_
 
-> ⚠️ **OpenClaw gateway повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Ця змінна конфігурувала prompt caching у gateway agent-loop, якого більше не існує ні в цьому репо, ні деінде (`git grep ANTHROPIC_PROMPT_CACHE -- apps/server` → 0 hits). Env var може лишатися в Coolify, але **runtime consumer відсутній**. Для HubChat/server prompt caching див. [ADR-0039](../../04-governance/adr/0039-anthropic-prompt-caching.md). Секція лишена як історичний запис (PR-39, ADR-0057).
+> ⚠️ **OpenClaw gateway повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Ця змінна конфігурувала prompt caching у gateway agent-loop, якого більше не існує ні в цьому репо, ні деінде (`git grep ANTHROPIC_PROMPT_CACHE -- apps/server` → 0 hits). Env var може лишатися в Coolify, але **runtime consumer відсутній**. Для HubChat/server prompt caching див. [ADR-0039](../../04-governance/adr/0039-anthropic-prompt-cache-policy.md). Секція лишена як історичний запис (PR-39, ADR-0057).
 
 ---
 
