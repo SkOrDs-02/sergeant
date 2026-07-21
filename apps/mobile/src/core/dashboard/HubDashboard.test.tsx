@@ -12,8 +12,10 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { Animated } from "react-native";
 
 import {
+  ANALYTICS_EVENTS,
   FIRST_ACTION_PENDING_KEY,
   FIRST_REAL_ENTRY_KEY,
+  FIRST_REAL_ENTRY_SOURCES,
   SOFT_AUTH_DISMISSED_KEY,
 } from "@sergeant/shared";
 
@@ -226,6 +228,32 @@ describe("HubDashboard one-hero rule", () => {
     expect(mockUseRoutineSqliteReadBoot).toHaveBeenCalled();
     expect(mockUseFizrukSqliteReadBoot).toHaveBeenCalled();
     expect(mockUseNutritionSqliteReadBoot).toHaveBeenCalled();
+  });
+
+  it("fires first_action_completed when a module gains its first real entry", () => {
+    const mmkv = _getMMKVInstance();
+    mmkv.set(
+      FIRST_REAL_ENTRY_SOURCES.ROUTINE,
+      JSON.stringify({ habits: [{ id: "h1", title: "Вода" }] }),
+    );
+
+    renderDashboard();
+
+    const { trackEvent } = jest.requireMock("@/lib/analytics") as {
+      trackEvent: jest.Mock;
+    };
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "routine" },
+    );
+
+    // Second render must not re-fire — the per-module flag is persisted.
+    trackEvent.mockClear();
+    renderDashboard();
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      expect.anything(),
+    );
   });
 
   it("navigates to sign-in when SoftAuthPromptCard CTA is tapped", () => {

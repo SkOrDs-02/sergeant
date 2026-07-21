@@ -45,6 +45,8 @@ import { colors } from "@/theme";
 
 import { useUser } from "@sergeant/api-client/react";
 import {
+  detectFirstActionCompletedPerModule,
+  detectFirstRealEntry,
   getActiveModules,
   getFirstRealEntryModule,
   getHideInactiveModules,
@@ -53,7 +55,6 @@ import {
   hasSeenCrossModulePreview,
   isActiveModule,
   isFirstActionPending,
-  isFirstRealEntryDone,
   isSoftAuthDismissed,
   setHideInactiveModules,
   type DashboardModuleId,
@@ -67,6 +68,8 @@ import {
 } from "./dashboardModuleConfig";
 import { FirstActionHeroCard } from "./FirstActionHeroCard";
 import type { PresetAction } from "@/core/onboarding/PresetStep";
+import { FirstEntryCelebrationModal } from "@/core/onboarding/FirstEntryCelebrationModal";
+import { useFirstEntryCelebration } from "@/core/onboarding/useFirstEntryCelebration";
 import { HubInsightsPanel, type InsightItem } from "./HubInsightsPanel";
 import { SoftAuthPromptCard } from "./SoftAuthPromptCard";
 import { TodayFocusCard } from "./TodayFocusCard";
@@ -299,7 +302,17 @@ export function HubDashboard() {
   void heroTick;
   const firstActionPending = isFirstActionPending(mmkvStore);
   const softAuthDismissed = isSoftAuthDismissed(mmkvStore);
-  const hasFirstRealEntry = isFirstRealEntryDone(mmkvStore);
+  // `detectFirstRealEntry` is idempotent: it flips the persisted flag and
+  // fires the `first_real_entry` analytics event exactly once, then
+  // degenerates to a cheap read on every later render — must run on the
+  // render path (not in an effect) so the flag and the celebration below
+  // see the same frame's value, mirroring web's `useHubDashboardState.ts`.
+  const hasFirstRealEntry = detectFirstRealEntry(mmkvStore, { trackEvent });
+  // Fire `first_action_completed { module }` once per module that just got its
+  // first non-demo entry — must run alongside detectFirstRealEntry on the render
+  // path, else the event never emits and the activation funnel stays at 0%.
+  detectFirstActionCompletedPerModule(mmkvStore, { trackEvent });
+  const celebration = useFirstEntryCelebration(hasFirstRealEntry);
   useHints({
     store: mmkvStore,
     inFtuxSession: firstActionPending && !hasFirstRealEntry,
@@ -599,6 +612,13 @@ export function HubDashboard() {
       {/* Assistant FAB — thumb-reach entry to AI chat with pulse glow.
           Always visible so user can reach assistant from anywhere. */}
       <AssistantFab onPress={openAssistant} />
+
+      <FirstEntryCelebrationModal
+        open={celebration.open}
+        onClose={celebration.close}
+        ttvMs={celebration.ttvMs}
+        moduleId={celebration.moduleId}
+      />
     </SafeAreaView>
   );
 }
