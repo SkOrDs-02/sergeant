@@ -284,4 +284,17 @@ describe("purgeStaleTerminalOutbox", () => {
     expect(purged).toBe(0);
     expect(totalRows(db)).toBe(1);
   });
+
+  it("throws when COUNT(*) coerces to a non-integer", async () => {
+    const brokenClient: SqliteMigrationClient = {
+      ...client,
+      all<R extends Record<string, unknown>>(): R[] {
+        return [{ count: Number.NaN }] as unknown as R[];
+      },
+    };
+
+    await expect(
+      purgeStaleTerminalOutbox(brokenClient, { olderThanDays: 30 }),
+    ).rejects.toThrow(/COUNT\(\*\) coerced to a non-integer/);
+  });
 });

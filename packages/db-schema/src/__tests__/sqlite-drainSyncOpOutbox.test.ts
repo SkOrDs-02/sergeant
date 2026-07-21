@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createSqliteAdapter,
@@ -479,6 +479,38 @@ describe("drainSyncOpOutbox", () => {
       expect(events[0]?.reason).toBe("non_object_payload:null");
     });
 
+    it("quarantines a scalar payload without requiring an onQuarantine callback", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "42",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-number",
+      );
+
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+      });
+
+      expect(drained).toEqual([]);
+      const row = db
+        .prepare(
+          `SELECT status, reject_reason FROM sync_op_outbox WHERE idempotency_key = ?`,
+        )
+        .get("idem-number") as { status: string; reject_reason: string };
+      expect(row).toEqual({
+        status: "quarantined",
+        reject_reason: "non_object_payload:number",
+      });
+    });
+
     it("quarantines a row whose op sits outside SYNC_OP_OUTBOX_OPS", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       // The CHECK constraint blocks an out-of-tuple INSERT, so drop
@@ -595,6 +627,78 @@ describe("drainSyncOpOutbox", () => {
         .prepare(`SELECT status FROM sync_op_outbox WHERE idempotency_key = ?`)
         .get("idem-broken-2") as { status: string };
       expect(row.status).toBe("pending");
+    });
+
+    it("reports a raw-string quarantine UPDATE failure reason", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "{not-json",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-broken-string-throw",
+      );
+
+      const failingUpdateClient: SqliteMigrationClient = {
+        exec: client.exec.bind(client),
+        all: client.all.bind(client),
+        run(sql, params) {
+          if (sql.trim().startsWith("UPDATE sync_op_outbox")) {
+            const rawFailure: unknown = "disk full";
+            throw rawFailure;
+          }
+          return client.run(sql, params);
+        },
+      };
+
+      const events: Array<{ reason: string }> = [];
+      const drained = await drainSyncOpOutbox(failingUpdateClient, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ reason: e.reason }),
+      });
+
+      expect(drained).toEqual([]);
+      expect(events).toEqual([{ reason: "quarantine_failed:disk full" }]);
+    });
+
+    it("reports a raw-string JSON.parse failure reason", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        JSON.stringify({ delta: 1 }),
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-raw-parse",
+      );
+      const parseSpy = vi.spyOn(JSON, "parse").mockImplementationOnce(() => {
+        const rawFailure: unknown = "raw parse failure";
+        throw rawFailure;
+      });
+
+      try {
+        const events: Array<{ reason: string }> = [];
+        const drained = await drainSyncOpOutbox(client, {
+          userId: "u-test",
+          limit: 10,
+          now,
+          onQuarantine: (e) => events.push({ reason: e.reason }),
+        });
+
+        expect(drained).toEqual([]);
+        expect(events).toEqual([{ reason: "parse_failed:raw parse failure" }]);
+      } finally {
+        parseSpy.mockRestore();
+      }
     });
 
     it("propagates SQL errors when the table is missing", async () => {
