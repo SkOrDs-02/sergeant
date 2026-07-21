@@ -526,7 +526,7 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     expect(input.row).toMatchObject({ id: "r-del", user_id: UID });
   });
 
-  it("does NOT enqueue for water-log-set (not in registry)", async () => {
+  it("enqueues nutrition_water_log insert on water-log-set", async () => {
     await applyNutritionDualWriteOps(
       handle.client,
       [{ kind: "water-log-set", dateKey: "2026-07-01", volumeMl: 500 }],
@@ -534,7 +534,15 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     );
     await Promise.resolve();
     await Promise.resolve();
-    expect(enqueueMock).not.toHaveBeenCalled();
+    expect(enqueueMock).toHaveBeenCalledOnce();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.table).toBe("nutrition_water_log");
+    expect(input.op).toBe("insert");
+    expect(input.row).toMatchObject({
+      date_key: "2026-07-01",
+      user_id: UID,
+      volume_ml: 500,
+    });
   });
 
   it("does NOT reject dualWrite when enqueueOutboxUpsert throws (fire-and-forget)", async () => {
