@@ -6,7 +6,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
-import { usePlan } from "../billing/usePlan";
+import { usePlan } from "../billing";
 import { SettingsGroup } from "./SettingsPrimitives";
 import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
 

@@ -6,7 +6,7 @@ import { Input } from "@shared/components/ui/Input";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { CategorySelector } from "../CategorySelector";

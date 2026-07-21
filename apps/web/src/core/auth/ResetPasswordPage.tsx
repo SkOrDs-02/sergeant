@@ -10,7 +10,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
 import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
