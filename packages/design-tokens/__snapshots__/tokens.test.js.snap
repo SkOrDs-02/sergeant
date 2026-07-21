@@ -212,8 +212,8 @@ exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical f
   "fizruk": {
     "accent": "#c8f264",
     "primary": "#0e7490",
-    "secondary": "#0d9488",
-    "surface": "#f0fdfa",
+    "secondary": "#0891b2",
+    "surface": "#ecfeff",
   },
   "nutrition": {
     "primary": "#92cc17",

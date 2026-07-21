@@ -122,8 +122,8 @@ export const moduleColors = {
   },
   fizruk: {
     primary: "#0e7490", // cyan-700 — disambiguates from finyk emerald (was teal-500 #14b8a6)
-    secondary: "#0d9488", // teal-600 — retained as accent for hero gradients
-    surface: "#f0fdfa", // teal-50
+    secondary: "#0891b2", // cyan-600 — same family as primary (design-audit F5)
+    surface: "#ecfeff", // cyan-50
     accent: "#c8f264", // lime-300 (CTA highlight)
   },
   routine: {

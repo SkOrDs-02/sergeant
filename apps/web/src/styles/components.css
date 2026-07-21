@@ -98,10 +98,6 @@
   box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
 }
 
-.hover-glow-teal:hover {
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
-}
-
 .hover-glow-coral:hover {
   box-shadow: 0 0 0 4px rgba(249, 112, 102, 0.15);
 }

@@ -51,7 +51,7 @@ const MODULE_COLORS: Record<ModuleTheme, string[]> = {
 
 const MODULE_GRADIENTS: Record<ModuleTheme, string> = {
   finyk: "from-emerald-500/20 to-teal-500/10",
-  fizruk: "from-teal-500/20 to-cyan-500/10",
+  fizruk: "from-cyan-500/20 to-cyan-400/10",
   routine: "from-coral-500/20 to-orange-500/10",
   nutrition: "from-lime-500/20 to-green-500/10",
   default: "from-brand-500/20 to-emerald-500/10",

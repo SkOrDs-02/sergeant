@@ -13,7 +13,7 @@ import {
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
-/** Легкий area-chart без залежностей; акцент — module accent (fizruk/teal). */
+/** Легкий area-chart без залежностей; акцент — module accent (fizruk/cyan). */
 interface WeeklyVolumeChartProps {
   volumeKg?: number[];
   className?: string;

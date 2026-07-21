@@ -57,17 +57,17 @@
 .module-card-fizruk::before {
   background: linear-gradient(
     135deg,
-    rgba(20, 184, 166, 0.08) 0%,
+    rgba(6, 182, 212, 0.08) 0%,
     transparent 60%
   );
 }
 
 .dark .module-card-fizruk {
   @apply bg-panel;
-  border-color: rgba(20, 184, 166, 0.2);
+  border-color: rgba(6, 182, 212, 0.2);
   background-image: linear-gradient(
     135deg,
-    rgba(20, 184, 166, 0.12) 0%,
+    rgba(6, 182, 212, 0.12) 0%,
     transparent 60%
   );
 }
