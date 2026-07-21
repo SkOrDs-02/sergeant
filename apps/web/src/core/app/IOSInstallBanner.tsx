@@ -38,6 +38,10 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
           <p className="text-xs text-muted mt-0.5 leading-snug">
             Щоб отримувати push-сповіщення на iOS, відкрий меню{" "}
             <span className="font-semibold">Поділитися</span>{" "}
+            {/* eslint-disable-next-line sergeant-design/no-emoji-icon -- навмисна
+                репліка СИСТЕМНОЇ iOS-іконки Share: інструкція вчить знайти
+                конкретний глиф у Safari, тож наш SVG тут зашкодив би
+                впізнаваності. Не системна іконка Sergeant. */}
             <span aria-hidden>⬆️</span> і обери{" "}
             <span className="font-semibold">На початковий екран</span>.
           </p>

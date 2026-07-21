@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -152,9 +153,12 @@ export function MissingMacrosHint({
       data-testid="missing-macros-hint"
     >
       <div className="flex items-start gap-2">
-        <span className="shrink-0 font-bold text-warn" aria-hidden>
-          ℹ
-        </span>
+        <Icon
+          name="info"
+          size="sm"
+          className="shrink-0 text-warn"
+          aria-hidden
+        />
         <p className="text-text leading-snug">
           Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
           що тобі важливо — білок, жир чи вуглеводи. Підстав середні стартові
@@ -201,9 +205,12 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
       data-testid="goal-range-warning"
     >
       <div className="flex items-start gap-2">
-        <span className="shrink-0 font-bold text-warn" aria-hidden>
-          ⚠
-        </span>
+        <Icon
+          name="alert-triangle"
+          size="sm"
+          className="shrink-0 text-warn"
+          aria-hidden
+        />
         <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">
           {issues.map((issue) => (
             <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>

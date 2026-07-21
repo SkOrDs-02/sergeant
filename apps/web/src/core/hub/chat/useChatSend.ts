@@ -393,7 +393,10 @@ export function useChatSend({
           }
 
           const actionsText = toolResults
-            .map((r) => `✅ ${r.content}`)
+            // U+2713 CHECK MARK — типографічний символ, не emoji: наслідує
+            // колір/шрифт повідомлення (emoji ✅ завжди зелена й чужа
+            // токенам). Re-audit §7.2 — системний статус-маркер.
+            .map((r) => `✓ ${r.content}`)
             .join("\n");
           const prefix = `${actionsText}\n\n`;
 

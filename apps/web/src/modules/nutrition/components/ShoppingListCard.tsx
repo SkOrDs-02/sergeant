@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -293,7 +294,7 @@ export function ShoppingListCard({
           onClick={() => openHubModule("finyk", "/analytics")}
           className="w-full text-xs text-muted hover:text-text transition-colors pt-1 flex items-center justify-center gap-1.5"
         >
-          <span aria-hidden>💸</span>
+          <Icon name="wallet" size="sm" aria-hidden />
           <span>Скільки витратив на їжу цього місяця?</span>
           <span aria-hidden>→</span>
         </button>
