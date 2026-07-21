@@ -3,6 +3,7 @@ import {
   compareIsoDesc,
   completedWorkoutsCount,
   countCompletedInCurrentWeek,
+  epley1rm,
   formatCompactKg,
   getExercisePR,
   personalRecordsExerciseCount,
@@ -12,6 +13,19 @@ import {
   workoutTonnageKg,
   weeklyVolumeSeriesNow,
 } from "./workoutStats";
+
+describe("epley1rm", () => {
+  it("returns 0 for nullish, zero, or negative inputs", () => {
+    expect(epley1rm(null, 5)).toBe(0);
+    expect(epley1rm(100, undefined)).toBe(0);
+    expect(epley1rm(-100, 5)).toBe(0);
+    expect(epley1rm(100, -1)).toBe(0);
+  });
+
+  it("estimates 1RM for positive weight and reps", () => {
+    expect(epley1rm(100, 5)).toBeCloseTo(100 * (1 + 5 / 30));
+  });
+});
 
 describe("workoutTonnageKg", () => {
   it("sums strength sets", () => {
@@ -32,6 +46,18 @@ describe("workoutTonnageKg", () => {
   it("returns 0 for empty", () => {
     expect(workoutTonnageKg({ items: [] })).toBe(0);
   });
+
+  it("ignores null workouts, non-strength items, and missing sets", () => {
+    expect(workoutTonnageKg(null)).toBe(0);
+    expect(
+      workoutTonnageKg({
+        items: [
+          { type: "distance", sets: [{ weightKg: 100, reps: 100 }] },
+          { type: "strength" },
+        ],
+      }),
+    ).toBe(0);
+  });
 });
 
 describe("workoutDurationSec", () => {
@@ -46,6 +72,15 @@ describe("workoutDurationSec", () => {
 
   it("returns 0 when startedAt is unparsable", () => {
     expect(workoutDurationSec({ startedAt: "not-a-date" })).toBe(0);
+  });
+
+  it("clamps negative elapsed time to 0", () => {
+    expect(
+      workoutDurationSec({
+        startedAt: "2026-01-01T10:05:00Z",
+        endedAt: "2026-01-01T10:00:00Z",
+      }),
+    ).toBe(0);
   });
 
   it("computes elapsed seconds between startedAt and endedAt", () => {
@@ -85,6 +120,32 @@ describe("personalRecordsExerciseCount", () => {
     ];
     expect(personalRecordsExerciseCount(workouts)).toBe(2);
   });
+
+  it("ignores missing ids, non-strength items, and zero-load sets", () => {
+    const workouts = [
+      {
+        items: [
+          {
+            exerciseId: "",
+            type: "strength",
+            sets: [{ weightKg: 50, reps: 5 }],
+          },
+          {
+            exerciseId: "run",
+            type: "distance",
+            sets: [{ weightKg: 50, reps: 5 }],
+          },
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 0, reps: 0 }],
+          },
+        ],
+      },
+    ];
+
+    expect(personalRecordsExerciseCount(workouts)).toBe(0);
+  });
 });
 
 describe("weeklyVolumeSeriesNow", () => {
@@ -95,6 +156,19 @@ describe("weeklyVolumeSeriesNow", () => {
   it("returns 7 volume slots", () => {
     const { volumeKg } = weeklyVolumeSeriesNow([]);
     expect(volumeKg).toHaveLength(7);
+  });
+
+  it("skips incomplete and malformed workout rows", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
+
+    const { volumeKg } = weeklyVolumeSeriesNow([
+      { startedAt: "2026-06-10T10:00:00Z", items: [] },
+      { startedAt: "not-a-date", endedAt: "2026-06-10T11:00:00Z", items: [] },
+      { endedAt: "2026-06-10T11:00:00Z", items: [] },
+    ]);
+
+    expect(volumeKg).toEqual([0, 0, 0, 0, 0, 0, 0]);
   });
 
   function done(startedAt: string, weightKg: number, reps: number) {
@@ -304,6 +378,37 @@ describe("getExercisePR", () => {
   it("returns null for empty workouts", () => {
     const pr = getExercisePR([], "bench");
     expect(pr.best1rm).toBe(0);
+  });
+
+  it("ignores unrelated item shapes and records null date when startedAt is missing", () => {
+    const pr = getExercisePR(
+      [
+        {
+          items: [
+            {
+              exerciseId: "bench",
+              type: "distance",
+              sets: [{ weightKg: 999, reps: 999 }],
+            },
+            {
+              exerciseId: "squat",
+              type: "strength",
+              sets: [{ weightKg: 999, reps: 999 }],
+            },
+            { exerciseId: "bench", type: "strength" },
+            {
+              exerciseId: "bench",
+              type: "strength",
+              sets: [{ weightKg: 60, reps: 5 }],
+            },
+          ],
+        },
+      ],
+      "bench",
+    );
+
+    expect(pr.bestSet).toEqual({ weightKg: 60, reps: 5 });
+    expect(pr.date).toBeNull();
   });
 });
 

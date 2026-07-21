@@ -143,6 +143,22 @@ describe("getProgramSessionForDay", () => {
   it("returns null for a rest day", () => {
     expect(getProgramSessionForDay(ppl, 6)).toBeNull();
   });
+
+  it("returns null for nullish programs and missing session keys", () => {
+    const broken: TrainingProgramDef = {
+      id: "broken",
+      name: "Broken",
+      description: "",
+      days: 1,
+      durationWeeks: 1,
+      schedule: [{ day: 1, sessionKey: "ghost", name: "Ghost" }],
+      sessions: {},
+    };
+
+    expect(getProgramSessionForDay(null, 0)).toBeNull();
+    expect(getProgramSessionForDay(undefined, 0)).toBeNull();
+    expect(getProgramSessionForDay(broken, 0)).toBeNull();
+  });
 });
 
 describe("resolveTodaySession", () => {
@@ -263,6 +279,12 @@ describe("formatFrequency / formatProgramCadence", () => {
   it("formats days-per-week", () => {
     expect(formatFrequency(ppl)).toBe("6 дн/тиждень");
     expect(formatFrequency(startingStrength)).toBe("3 дн/тиждень");
+  });
+
+  it("clamps invalid and negative day counts to zero", () => {
+    const base = PROGRAM_CATALOGUE[0]!;
+    expect(formatFrequency({ ...base, days: Number.NaN })).toBe("0 дн/тиждень");
+    expect(formatFrequency({ ...base, days: -2 })).toBe("0 дн/тиждень");
   });
 
   it("combines frequency + duration for the card line", () => {

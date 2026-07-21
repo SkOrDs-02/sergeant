@@ -9,6 +9,7 @@ import {
   getExercisesByPrimaryGroup,
   getExerciseNamesByAtlasMuscle,
   mergeExerciseCatalog,
+  matchesExerciseSearch,
   searchExercises,
   toExerciseDef,
 } from "./index";
@@ -61,6 +62,22 @@ describe("searchExercises", () => {
     const res = searchExercises("SQUAT");
     expect(res.some((ex) => ex.id.includes("squat"))).toBe(true);
   });
+
+  it("matches aliases, descriptions, and primary-group labels", () => {
+    const ex = {
+      name: { uk: "Тестова вправа", en: "Fixture lift" },
+      aliases: ["Жим лежачи"],
+      description: "Контрольований рух для тесту",
+      primaryGroup: "chest",
+      primaryGroupUk: "Груди",
+    };
+
+    expect(matchesExerciseSearch(ex, "лежачи")).toBe(true);
+    expect(matchesExerciseSearch(ex, "контрольований")).toBe(true);
+    expect(matchesExerciseSearch(ex, "chest")).toBe(true);
+    expect(matchesExerciseSearch(ex, "груди")).toBe(true);
+    expect(matchesExerciseSearch(null, "груди")).toBe(false);
+  });
 });
 
 describe("mergeExerciseCatalog", () => {
@@ -85,6 +102,17 @@ describe("mergeExerciseCatalog", () => {
     // довжина не зросла (custom переписав base)
     expect(merged.length).toBe(EXERCISES.length);
   });
+
+  it("ignores non-array custom input and entries without ids", () => {
+    const base = [
+      { id: "base", name: { uk: "Base" }, primaryGroup: "misc" },
+      { name: { uk: "No id" }, primaryGroup: "misc" },
+    ] as never;
+
+    expect(
+      mergeExerciseCatalog(null as never, base).map((ex) => ex.id),
+    ).toEqual(["base"]);
+  });
 });
 
 describe("toExerciseDef", () => {
@@ -99,6 +127,24 @@ describe("toExerciseDef", () => {
   it("returns null for missing id", () => {
     expect(toExerciseDef(null)).toBeNull();
     expect(toExerciseDef({} as never)).toBeNull();
+  });
+
+  it("falls back to id and empty muscle arrays for partial raw entries", () => {
+    expect(
+      toExerciseDef({
+        id: "custom_partial",
+        name: {} as never,
+        primaryGroup: "misc",
+        muscles: { primary: undefined as never, secondary: undefined as never },
+      }),
+    ).toEqual({
+      id: "custom_partial",
+      nameUk: "custom_partial",
+      primaryGroup: "misc",
+      musclesPrimary: [],
+      musclesSecondary: [],
+      type: "strength",
+    });
   });
 });
 
