@@ -77,6 +77,24 @@ const PAIRS = [
     brandColors.coral[400],
     false,
   ],
+  // Макро-шкала (бриф «Папір» §3). Сегменти несуть `text-white`, тому
+  // тир обирався за AA, а не за яскравістю: -600 із пропозиції аудиту
+  // фейлить (пари нижче фіксують і це), -700 проходить.
+  ["macro protein — white on cyan-700", "#ffffff", brandColors.cyan[700], true],
+  ["macro fat — white on coral-700", "#ffffff", brandColors.coral[700], true],
+  ["macro carbs — white on lime-700", "#ffffff", brandColors.lime[700], true],
+  [
+    "macro protein — white on cyan-600 (відхилений тир)",
+    "#ffffff",
+    brandColors.cyan[600],
+    false,
+  ],
+  [
+    "macro carbs — white on lime-600 (відхилений тир)",
+    "#ffffff",
+    brandColors.lime[600],
+    false,
+  ],
 ];
 
 describe("@sergeant/design-tokens — WCAG AA contrast", () => {

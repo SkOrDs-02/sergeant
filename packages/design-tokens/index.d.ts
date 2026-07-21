@@ -76,9 +76,8 @@ export declare const statusColors: Readonly<Record<StatusColor, string>>;
  */
 export declare const statusHex: Readonly<Record<StatusColor, string>>;
 
-/** Semantic chart colour identifiers (kcal/protein/fat/carbs + structural). */
-export type ChartHexKey =
-  "primary" | "limit" | "neutral" | "kcal" | "protein" | "fat" | "carbs";
+/** Semantic chart colour identifiers (macro scale + structural). */
+export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";
 
 /** Chart hex tokens — semantic names for inline-styled chart primitives. */
 export declare const chartHex: Readonly<Record<ChartHexKey, string>>;

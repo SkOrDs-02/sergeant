@@ -328,11 +328,19 @@ export const zTier = {
  * source of truth.
  */
 export const chartHex = {
-  primary: "#6366f1", // indigo-500 — budget trend default
-  limit: statusColors.danger, // #ef4444 — over-budget / limit line
-  neutral: "#94a3b8", // slate-400 — "Other" slice / unused category
-  kcal: "#f97316", // orange-500
-  protein: "#3b82f6", // blue-500
-  fat: "#eab308", // yellow-500
-  carbs: "#22c55e", // green-500
+  limit: statusColors.danger, // #ef4444 — over-budget / limit line (статус, не бренд)
+  neutral: inkTheme.text.muted, // #8a968e — "Інше"/невикористана категорія; була slate-400 (холодна синя нейтраль, чужа теплій ink-системі)
+  // Макро-шкала. Раніше — blue-500 / yellow-500 / green-500: жодного з цих
+  // hue немає в палітрі Sergeant, і на lime-модулі бар читався як чужий
+  // віджет. Шкала переведена на бренд-hue із семантикою:
+  //   білки  → cyan  (сила, hue Фізрука)
+  //   жири   → coral (щільна енергія, hue Рутини)
+  //   вуглеводи → lime (паливо, рідний hue Їжі)
+  // Тир -700, а не -600/-500 із пропозиції аудиту: сегменти несуть
+  // `text-white`, і -600 не витягує 4.5:1 (cyan-600 3.68:1, lime-600
+  // 3.03:1) — це був би прямий Hard Rule #9. Пари зафіксовані в
+  // `contrast.test.js`, склад шкали — в `chartHex.contract.test.js`.
+  protein: brandColors.cyan[700], // #0e7490 — 5.42:1 з text-white
+  fat: brandColors.coral[700], // #c23a3a — 5.34:1 з text-white
+  carbs: brandColors.lime[700], // #567c0f — 4.90:1 з text-white
 };
