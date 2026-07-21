@@ -162,12 +162,13 @@ test.describe("@critical deep module CRUD browser loop", () => {
       timeoutMs: 60_000,
     });
 
-    // Harness correction: TxRow accessible name = aria-label суми
-    // ("Витрата N грн"), не description — filter по тексту опису.
+    // Harness correction: TxRow button name = description + meta chips
+    // (сума — sibling TxRowAmountActions, не в accessible name).
+    // filter({ hasText }) стійкіший за name-regex з датою/категорією.
     // Рядок у GroupedVirtuoso зі sticky day-header: реальний .click()
     // зависає у scroll-into-view; dispatchEvent обходить hit-test.
     await page
-      .getByRole("button", { name: /Витрата/i })
+      .getByRole("button")
       .filter({ hasText: "DCRUD кава оновлено" })
       .dispatchEvent("click");
     await expect(
