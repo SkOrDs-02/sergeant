@@ -68,6 +68,22 @@ describe("no-emoji-icon", () => {
     assert.equal(messages.length, 0);
   });
 
+  it("flags an emoji picked by a ternary inside an aria-hidden element", () => {
+    const messages = lint(
+      `const el = <span aria-hidden>{over ? "⚠" : "ℹ"}</span>;`,
+      { jsx: true },
+    );
+    assert.equal(messages.length, 2);
+    assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
+  it("does NOT flag a dynamic value inside an aria-hidden element", () => {
+    const messages = lint(`const el = <span aria-hidden>{glyph}</span>;`, {
+      jsx: true,
+    });
+    assert.equal(messages.length, 0);
+  });
+
   it("flags an emoji in a JSXExpressionContainer wrapped literal", () => {
     const messages = lint(`const el = <Row icon={"🥗"} />;`, { jsx: true });
     assert.equal(messages.length, 1);
