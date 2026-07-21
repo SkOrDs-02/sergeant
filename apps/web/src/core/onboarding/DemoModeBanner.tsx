@@ -100,9 +100,13 @@ export function DemoModeBanner() {
         </Button>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        {/* Мова «Папір» П2 (один якір на екран): повнозаливна emerald-CTA
+            робила системний банер найгучнішим елементом хаба — гучнішим за
+            дані, заради яких екран існує. `primary-ink` лишає банеру силу
+            дії, але повертає насичену модульну поверхню даним. */}
         <Button
           type="button"
-          variant="primary"
+          variant="primary-ink"
           size="sm"
           className="flex-1"
           onClick={goToWizard}

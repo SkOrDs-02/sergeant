@@ -180,12 +180,6 @@
   color: rgb(var(--c-celebration));
 }
 
-@utility text-xp {
-  /* XP / level chip */
-  @apply text-[0.8125rem] leading-none font-bold tracking-[0.02em] tabular-nums;
-  color: rgb(var(--c-xp));
-}
-
 @utility panel {
   /* ═══════════════════════════════════════════════════════════════════════
      PANELS & CARDS — Core UI surfaces
