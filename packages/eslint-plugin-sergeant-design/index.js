@@ -25,6 +25,14 @@
  *     shells (`core/`, `shared/`, `stories/`) remain free to reference
  *     all four module accents.
  *
+ *   - no-emoji-icon: forbid emoji in `icon` object-properties and JSX
+ *     `icon=` attributes. Sergeant has a real SVG icon catalog
+ *     (`@shared/components/ui/Icon`) with module-accented glyphs — an
+ *     emoji standing in as a *system* icon can't inherit the accent
+ *     color and reads as a design-audit slop marker. Emoji as *user
+ *     content* (a habit's own emoji, a model-generated recommendation
+ *     glyph) is not this rule's concern.
+ *
  * Motion / reduced-motion (convention — not auto-enforced yet):
  *   - Prefer `motion-safe:` on `animate-*` and decorative transitions so
  *     `prefers-reduced-motion: reduce` users get calmer UI; pair with
@@ -1483,6 +1491,62 @@ const noHexInClassname = {
       TemplateElement(node) {
         const cooked = node.value && node.value.cooked;
         if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-emoji-icon` — forbid emoji in system icon fields
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant ships a real SVG icon catalog (`@shared/components/ui/Icon`)
+// with module-accented glyphs — used everywhere from the bento grid to
+// the chat empty-state. A raw emoji standing in as a *system* icon
+// (`icon: "🏋️"`, `<Row icon="🥗" />`) can't inherit the module accent
+// color, doesn't match the stroke weight of every other icon on screen,
+// and renders inconsistently across platforms/fonts — a design-audit
+// slop marker (design-audit F4). The rule only looks at the `icon`
+// property/attribute: emoji as *user content* (a habit's own emoji, a
+// model-generated recommendation glyph) is a different concern and is
+// not flagged — e.g. `TodayFocusCard`'s dual-convention `focus.icon`
+// field, which intentionally falls back to rendering trusted model-authored emoji
+// as text when the value isn't a registered Icon name.
+
+const NO_EMOJI_ICON_MESSAGE =
+  "Emoji `{{emoji}}` in an `icon` field — use a name from the SVG Icon catalog (`@shared/components/ui/Icon`) instead of a raw emoji glyph.";
+
+function findEmojiInIconValue(value) {
+  if (typeof value !== "string") return null;
+  const match = value.match(/\p{Extended_Pictographic}/u);
+  return match ? match[0] : null;
+}
+
+const noEmojiIcon = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid emoji in `icon` object-properties and JSX `icon=` attributes — use the SVG Icon catalog instead.",
+    },
+    schema: [],
+    messages: { emoji: NO_EMOJI_ICON_MESSAGE },
+  },
+  create(context) {
+    function report(node, rawValue) {
+      const emoji = findEmojiInIconValue(rawValue);
+      if (emoji) {
+        context.report({ node, messageId: "emoji", data: { emoji } });
+      }
+    }
+    return {
+      "Property[key.name='icon'], Property[key.value='icon']"(node) {
+        if (node.value.type !== "Literal") return;
+        report(node.value, node.value.value);
+      },
+      "JSXAttribute[name.name='icon']"(node) {
+        if (!node.value || node.value.type !== "Literal") return;
+        report(node.value, node.value.value);
       },
     };
   },
@@ -5100,6 +5164,7 @@ const plugin = {
     "ai-marker-syntax": aiMarkerSyntax,
     "valid-tailwind-opacity": validTailwindOpacity,
     "no-hex-in-classname": noHexInClassname,
+    "no-emoji-icon": noEmojiIcon,
     "no-foreign-module-accent": noForeignModuleAccent,
     "no-low-contrast-text-on-fill": noLowContrastTextOnFill,
     "no-bigint-string": noBigintString,

@@ -113,6 +113,7 @@ describe("CelebrationModal", () => {
         open
         onClose={vi.fn()}
         title="Досягнення"
+        // eslint-disable-next-line sergeant-design/no-emoji-icon -- reward `icon` is typed ReactNode (decorative badge, not the SVG Icon catalog)
         rewards={[{ icon: "🎖", label: "Медаль" }]}
       />,
     );

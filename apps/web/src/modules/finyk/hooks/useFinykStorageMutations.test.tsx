@@ -351,12 +351,14 @@ describe("custom categories", () => {
   it("adds a custom category with optional fields", () => {
     const { slots, state } = makeSlots();
     const { result } = renderMutations(slots);
+    // eslint-disable-next-line sergeant-design/no-emoji-icon -- custom category `icon` is a user-picked emoji, not a system icon
     result.current.addCustomCategory("Coffee", { color: "#fff", icon: "☕" });
     const cats = state["customCategories"] as Array<Record<string, unknown>>;
     expect(cats).toHaveLength(1);
     expect(cats[0]).toMatchObject({
       label: "Coffee",
       color: "#fff",
+      // eslint-disable-next-line sergeant-design/no-emoji-icon -- custom category `icon` is a user-picked emoji, not a system icon
       icon: "☕",
     });
   });

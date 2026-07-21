@@ -57,7 +57,9 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         `Готово, ${name}!`,
         "Твої дані тепер з тобою на всіх пристроях.",
         [
+          // eslint-disable-next-line sergeant-design/no-emoji-icon -- CelebrationModal reward `icon` is typed ReactNode (decorative badge, not the SVG Icon catalog)
           { icon: "🔐", label: "Захищений акаунт" },
+          // eslint-disable-next-line sergeant-design/no-emoji-icon -- CelebrationModal reward `icon` is typed ReactNode (decorative badge, not the SVG Icon catalog)
           { icon: "🔄", label: "Синхронізація" },
         ],
       );
