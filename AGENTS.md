@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-22 by @Skords-01. **Next review:** 2026-10-20.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -219,6 +219,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - [`docs/00-start/playbooks/README.md`](docs/00-start/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers).
 - [`docs/00-start/agents/agent-skills-catalog.md`](docs/00-start/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills.
 - [`docs/01-product/copy/style-guide.uk.md`](docs/01-product/copy/style-guide.uk.md) — canonical UA-copy tone-of-voice rules (1st-person-singular for action-busy, `ти`-address, action-prompt-closed errors). Reference for every new кирилічний JSX literal.
+- [`docs/01-product/model/`](docs/01-product/model/) — **продуктові канони модулів** (поки лише `finyk.md`). Перед продуктовою зміною модуля читай його канон; PR, що змінює продуктову поведінку, оновлює канон **у тому ж PR**. Секції з поміткою `[ІНТЕРВ'Ю]` — слова founder-а: код може з ними розійтись (це знахідка аудиту), але агент їх не редагує без явного рішення founder-а. Розбіжності канон↔доки↔код: [`docs/90-work/audits/product-knowledge-finyk.md`](docs/90-work/audits/product-knowledge-finyk.md).
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`.
 - [`docs/02-engineering/architecture/`](docs/02-engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
 - [`docs/04-governance/governance/rules/`](docs/04-governance/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
