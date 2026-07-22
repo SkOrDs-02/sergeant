@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { downloadJson } from "@sergeant/shared";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
@@ -60,6 +61,11 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         вписував сам. Тримай його як приватний — у менеджері паролів чи
         зашифрованій хмарі, не пересилай у відкритих чатах.
       </p>
+      <Banner variant="warning" className="text-xs leading-relaxed">
+        Ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої —
+        банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти
+        телефон чи чистити дані.
+      </Banner>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"

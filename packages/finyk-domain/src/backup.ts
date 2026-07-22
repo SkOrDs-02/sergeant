@@ -40,6 +40,7 @@ export interface FinykBackup {
   receivables?: unknown[];
   hiddenAccounts?: unknown[];
   hiddenTxIds?: unknown[];
+  excludedStatTxIds?: unknown[];
   monthlyPlan?: Record<string, unknown>;
   txCategories?: Record<string, unknown>;
   txSplits?: Record<string, unknown>;
@@ -100,6 +101,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     "receivables",
     "hiddenAccounts",
     "hiddenTxIds",
+    "excludedStatTxIds",
   ] as const;
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);
@@ -197,6 +199,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("receivables") ||
     has("hiddenAccounts") ||
     has("hiddenTxIds") ||
+    has("excludedStatTxIds") ||
     has("monthlyPlan") ||
     has("txCategories") ||
     has("txSplits") ||
@@ -222,6 +225,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
   if (has("d")) full.manualDebts = d["d"] as unknown[];
   if (has("r")) full.receivables = d["r"] as unknown[];
   if (has("h")) full.hiddenAccounts = d["h"] as unknown[];
+  if (has("es")) full.excludedStatTxIds = d["es"] as unknown[];
   if (has("mp")) full.monthlyPlan = d["mp"] as Record<string, unknown>;
   if (has("tc")) full.txCategories = d["tc"] as Record<string, unknown>;
   if (has("ts")) full.txSplits = d["ts"] as Record<string, unknown>;

@@ -122,6 +122,21 @@ describe("normalizeFinykBackup", () => {
   });
 });
 
+describe("excludedStatTxIds round-trip", () => {
+  it("survives normalizeFinykBackup export→import", () => {
+    const out = normalizeFinykBackup({
+      version: FINYK_BACKUP_VERSION,
+      excludedStatTxIds: ["tx-1", "tx-2"],
+    });
+    expect(out.excludedStatTxIds).toEqual(["tx-1", "tx-2"]);
+  });
+
+  it("survives the compact `es` sync payload key", () => {
+    const out = normalizeFinykSyncPayload({ es: ["tx-1"] });
+    expect(out.excludedStatTxIds).toEqual(["tx-1"]);
+  });
+});
+
 describe("normalizeFinykSyncPayload", () => {
   it("detects full-backup shape via field presence", () => {
     const out = normalizeFinykSyncPayload({ budgets: [{ id: "x" }] });
