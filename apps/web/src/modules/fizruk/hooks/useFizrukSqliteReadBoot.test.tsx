@@ -35,9 +35,18 @@ beforeEach(() => {
 });
 
 describe("useFizrukSqliteReadBoot", () => {
-  it("does not boot without an authenticated user or active demo", () => {
-    useAuthMock.mockReturnValue({ user: null });
+  it("boots under the anonymous id without an authenticated user or demo", async () => {
+    useAuthMock.mockReturnValue({ user: null, status: "unauthenticated" });
     isDemoActiveMock.mockReturnValue(false);
+    bootMock.mockResolvedValue(true);
+    renderHook(() => useFizrukSqliteReadBoot());
+    await waitFor(() => {
+      expect(bootMock).toHaveBeenCalledWith("local-anon");
+    });
+  });
+
+  it("does not boot while the session is still resolving", () => {
+    useAuthMock.mockReturnValue({ user: null, status: "loading" });
     renderHook(() => useFizrukSqliteReadBoot());
     expect(bootMock).not.toHaveBeenCalled();
   });

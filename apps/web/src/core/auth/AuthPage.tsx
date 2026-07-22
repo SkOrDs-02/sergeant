@@ -175,9 +175,17 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               >
                 Поки що пропустити
               </Button>
+              {/* AI-CONTEXT: this caption used to promise only that the
+                  account adds cross-device sync, which implied local work
+                  carries over on sign-in. It does not — anonymous rows live
+                  under a synthetic id in the `anon` SQLite partition and are
+                  not migrated into an account (decision Р2(б) in
+                  `docs/90-work/planning/specs/anonymous-local-first-persistence.md`).
+                  Keep the second sentence until that migration ships. */}
               <p className="text-center text-style-caption text-subtle leading-relaxed px-2">
-                Все працює локально. Акаунт потрібен лише для синхронізації між
-                пристроями.
+                Все працює локально — дані лишаються на цьому пристрої. Якщо
+                створиш акаунт пізніше, вони не перенесуться в нього: почни з
+                акаунту, якщо хочеш синхронізацію між пристроями.
               </p>
             </div>
           )}
