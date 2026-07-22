@@ -210,6 +210,21 @@ export const statusColors = {
 };
 
 /**
+ * Святкування — єдиний hue поза чотирма модульними, який система
+ * узаконює. Подія (сота доба серії, конфеті, level-up) не належить
+ * жодному модулю, тож фарбувати її модульним акцентом було б брехнею.
+ *
+ * Пара, а не одне значення: amber-400 світиться на ink-базі, але дає
+ * 1.66:1 на білому — для світлої теми береться AA-компаньйон amber-700
+ * (5.02:1). Значення дзеркалять `--c-celebration` / `--c-streak-tier-100`
+ * у `apps/web/src/styles/theme.css`.
+ */
+export const celebrationColors = {
+  light: "#b45309", // amber-700 — 5.02:1 на білому
+  dark: "#fbbf24", // amber-400 — люмінесцентний на ink
+};
+
+/**
  * Status colors as a flat hex map — alias of `statusColors` for inline
  * SVG / canvas / native status-bar call sites that can't consume the
  * Tailwind `text-success` / `bg-danger` utilities (body-highlighter,

@@ -31,9 +31,12 @@ import { useAuth } from "./AuthContext";
  * Synthetic id scoping the rows an anonymous visitor writes. Lives in
  * the `anon` SQLite partition, isolated from every real account id.
  *
- * These rows do NOT transfer into an account on sign-in — the migration
- * is deliberately deferred (decision Р2(б) in the spec above), and
- * `AnonymousDataNotice` is the UI that says so out loud.
+ * Decision Р2(а) in the spec above: on the first authorised boot these
+ * rows migrate onto the real `userId` and the `local-anon` copies are
+ * dropped. That migration is NOT implemented yet — until it ships, a
+ * visitor who works anonymously and then signs in sees an empty
+ * account. Do not treat this constant as private to the boot hooks;
+ * the migration will need it too.
  */
 export const LOCAL_ANON_USER_ID = "local-anon";
 
