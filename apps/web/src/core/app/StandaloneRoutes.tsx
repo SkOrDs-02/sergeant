@@ -49,7 +49,6 @@ const AssistantCataloguePage = lazyImport(
   "AssistantCataloguePage",
 );
 const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
-const LandingPage = lazyImport(() => import("../LandingPage"), "LandingPage");
 const LegalPage = lazyImport(() => import("../legal/LegalPage"), "LegalPage");
 const StatusPage = lazyImport(
   () => import("../status/StatusPage"),
@@ -126,33 +125,25 @@ export function defineStandaloneRoute<
 }
 
 const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
-  // `/` — public landing page for non-auth visitors (initiative 0010
-  // Phase 6.1, audit `2026-05-13-revenue-monetization-roast.md` §P1-3).
-  // We only render the marketing surface when there's no session AND
-  // no existing local data: that keeps local-first users (who never
-  // signed up but already populated the app) on their Hub home, and
-  // keeps the funnel-targeted landing for genuine fresh visitors.
-  // Authed users + warm local-first installs fall through to the
-  // existing Hub composition by returning `null`.
+  // `/` — маршрут лишається в реєстрі ЛИШЕ заради контракту відомих
+  // шляхів (`STANDALONE_ROUTE_PATHS` живить 404-гвардію нижче). Рендером
+  // кореня володіє `HubPage`.
+  //
+  // Тут раніше жив маркетинговий `LandingPage` (initiative 0010 Phase 6.1).
+  // Дизайн-аудит 2026-07 (цикл 3) виміряв, що він **недосяжний**: на
+  // prod-збірці з живим API 0 із 5 свіжих візитерів його побачили. Причина —
+  // гонка двох гейтів на ту саму умову: цей чекав на `authLoading`, а
+  // редирект на `/welcome` у `HubPage` — ні, і локальний стор осідав раніше
+  // за раунд-тріп до `/api/auth`. Вирок аудиту: не лагодити гонку, а зняти
+  // маршрут — `/welcome` виконує роботу лендинга краще (цінність через
+  // пікер, demo в один клік, воронка 3 кліки / 0 полів), і ставити
+  // slop-екран ПЕРЕД найсильнішим екраном воронки немає сенсу.
+  //
+  // Після зняття рішення про корінь ухвалює рівно одна умова
+  // (`storageReady` у `HubPage`) — гонки більше немає.
   defineStandaloneRoute({
     paths: ["/"],
-    render: ({ user, authLoading, storageReady, onLeaveWelcome }) => {
-      if (authLoading || user) return null;
-      // Anon visitor: landing-vs-Hub depends on `shouldShowOnboarding()`, which
-      // reads the SQLite-backed store. Before it resolves, a returning
-      // local-first user (who has data but no session) would be misread as a
-      // fresh visitor and ambushed by the marketing landing on every reload —
-      // splash until the store settles, then decide.
-      if (!storageReady) return <PageLoader />;
-      if (!shouldShowOnboarding()) return null;
-      return (
-        <Suspense fallback={<PageLoader />}>
-          <div className="page-enter">
-            <LandingPage onContinueWithoutAccount={onLeaveWelcome} />
-          </div>
-        </Suspense>
-      );
-    },
+    render: () => null,
   }),
 
   // `/sign-in` is a URL-addressable auth entry. Already-authenticated

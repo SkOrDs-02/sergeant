@@ -35,6 +35,20 @@ const sizeStyles: Record<
   xl: { icon: 36, text: "text-lg", wrapper: "w-16 h-16" },
 };
 
+/**
+ * Драбина «жару» серії. Раніше це була ротація ЧУЖИХ hue —
+ * yellow → amber → orange → red → pink → violet: п'ять родин, яких немає в
+ * палітрі Sergeant, і жодна не пов'язана з модулем, до якого серія
+ * належить. Дизайн-аудит 2026-07 (цикл 3) зберіг ідею «жар росте», але
+ * замінив матеріал: одна бренд-родина coral (рідний hue Рутини, той самий,
+ * що `--c-streak-glow`) від блідого до насиченого, і `--c-celebration`
+ * (amber) на сотій добі — сота доба і Є святкування, семантика токена точна.
+ *
+ * Відомий борг (не регресія — успадкований): на білому тлі нижні тири
+ * coral-300/400 не витягують 3:1 як не-текстовий елемент. Стара драбина
+ * (yellow-500 ≈ 1.9:1) була гіршою; повний фікс потребує тем-залежних
+ * тирів і йде окремо.
+ */
 function getFlameIntensity(streak: number): {
   color: string;
   glow: string;
@@ -42,43 +56,43 @@ function getFlameIntensity(streak: number): {
 } {
   if (streak >= 100) {
     return {
-      color: "text-violet-500",
-      glow: "shadow-violet-500/50",
+      color: "text-celebration",
+      glow: "shadow-celebration/50",
       glowSize: "shadow-xl",
     };
   }
   if (streak >= 60) {
     return {
-      color: "text-pink-500",
-      glow: "shadow-pink-500/40",
+      color: "text-coral-700",
+      glow: "shadow-coral-700/40",
       glowSize: "shadow-lg",
     };
   }
   if (streak >= 30) {
     return {
-      color: "text-red-500",
-      glow: "shadow-red-500/40",
+      color: "text-coral-600",
+      glow: "shadow-coral-600/40",
       glowSize: "shadow-lg",
     };
   }
   if (streak >= 14) {
     return {
-      color: "text-orange-500",
-      glow: "shadow-orange-500/30",
+      color: "text-coral-500",
+      glow: "shadow-coral-500/30",
       glowSize: "shadow-md",
     };
   }
   if (streak >= 7) {
     return {
-      color: "text-amber-500",
-      glow: "shadow-amber-500/30",
+      color: "text-coral-400",
+      glow: "shadow-coral-400/30",
       glowSize: "shadow-md",
     };
   }
   if (streak >= 3) {
     return {
-      color: "text-yellow-500",
-      glow: "shadow-yellow-500/20",
+      color: "text-coral-300",
+      glow: "shadow-coral-300/20",
       glowSize: "shadow-sm",
     };
   }

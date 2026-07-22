@@ -20,6 +20,8 @@ function makeConfig(
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут →",
+    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyExample: "3/5",
     getPreview: () => preview,
     ...overrides,
   };

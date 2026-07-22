@@ -436,7 +436,11 @@ export function PricingPage() {
                     "flex flex-col gap-4 motion-safe:animate-stagger-in",
                     isPremium && "ring-1 ring-brand-200/40",
                   )}
-                  style={{ animationDelay: `${idx * 100}ms` }}
+                  // Hard Rule #17: між дітьми стагеру максимум 30 мс,
+                  // сумарна затримка ≤150 мс — канонічна форма
+                  // `Math.min(index * 30, 150)`. Було `idx * 100`:
+                  // виміряно на prod-збірці 0 мс / 100 мс.
+                  style={{ animationDelay: `${Math.min(idx * 30, 150)}ms` }}
                   aria-current={isCurrent ? "true" : undefined}
                 >
                   <header className="space-y-1">
