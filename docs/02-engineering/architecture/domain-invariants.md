@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит D1/D3: internal_transfer — 7 місць не 3; додано § Money про дві одиниці грошей). **Next review:** 2026-10-20.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -19,7 +19,9 @@
 
 - **Database & API: minor units (kopiykas) as `number`** after bigint coercion. Mono webhook delivers minor units; we keep that representation through the stack.
 - **UI display:** divide by 100 at render time only. For Finyk transactions and balances use `fmtAmt(minor, currencyCode?)` from `@sergeant/finyk-domain/lib/formatting` — it handles `+`/`-` sign and currency symbol consistently. For other contexts (insights, dashboards) write a thin local helper that wraps `(minor / 100).toLocaleString("uk-UA", { minimumFractionDigits: 2 })` rather than re-inlining the math at every call site.
-- **Negative = expense, positive = income.** Match Mono's convention; transfers between own accounts come as a pair (-X on source, +X on destination). Обидві ноги несуть категорію `internal_transfer` і **виключаються зі spend/budget-розрахунків за категорією** — кожна нога пропускається окремо (`if (categoryId === INTERNAL_TRANSFER_ID) continue`), НЕ pair-matching/netting. Джерело: [`packages/finyk-domain/src/domain/selectors.ts`](../../../packages/finyk-domain/src/domain/selectors.ts), `lib/transactions.ts`, `lib/forecastEngine.ts`.
+- **Negative = expense, positive = income.** Match Mono's convention; transfers between own accounts come as a pair (-X on source, +X on destination). Обидві ноги несуть категорію `internal_transfer` і **виключаються зі spend/budget-розрахунків за категорією** — кожна нога пропускається окремо (`if (categoryId === INTERNAL_TRANSFER_ID) continue`), НЕ pair-matching/netting. Виняток продубльований у **7 місцях**, не в 3: `apps/web/src/modules/finyk/hooks/useStorage.ts:107-124`, `packages/finyk-domain/src/domain/selectors.ts:145`, `packages/finyk-domain/src/lib/transactions.ts:52`, `packages/finyk-domain/src/constants.ts:198` (константа `INTERNAL_TRANSFER_ID`), `packages/finyk-domain/src/lib/forecastEngine.ts:65,76` (⚠️ борг: тут виняток застосовано через **рядковий літерал** `"internal_transfer"` замість константи — окремий PR поза цією сесією), `apps/web/src/modules/finyk/pages/transactions/transactionsLib.ts:85`, `apps/web/src/core/lib/hubChatContext/finance.ts:90`. Кожне забуте місце ламає обіцянку «до копійки».
+
+- **⚠️ Finyk — дві одиниці грошей співіснують.** Банківські транзакції (Mono) — копійки як `number`, за правилом вище. **Ручні витрати** зберігаються й обробляються в **гривнях**, з конверсією на серверній межі: `apps/server/src/modules/finyk/manualExpenses.ts:101,113`. Це джерело помилки **в 100 разів** для будь-якого коду, що об'єднує обидва потоки (напр. підсумовує банківські й ручні суми без явної конверсії). Уніфікація одиниць — борг, не зроблена; до неї кожен новий код, що змішує потоки, зобов'язаний явно конвертувати.
 
 ## Identity
 

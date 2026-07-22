@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит: §4.1 узгоджено з `sync-client-wiring.md`). **Next review:** 2026-10-20.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -145,7 +145,7 @@ DB-level safety:
 
 - **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) — **єдиний source-of-truth** для модульних даних finyk / fizruk / nutrition / routine. Production LS/MMKV-write модульних ключів прибрано; `sqliteWriter/` — canonical mutation path.
 - **Свідомі винятки** (не residue): demo-seed LS bridge, `fizruk_rest_settings_v1`, web nutrition recipes (IndexedDB), Mono client mirror, kv_store, TanStack Query persister.
-- **Наступний gap (не cut-over):** **multi-device sync client wiring** — server `/api/v2/sync/*` готовий, але client pull/SSE consumer відсутній, outbox enqueue майже порожній (лише web routine completions). Деталі — [`sync-client-wiring.md`](../../90-work/planning/sync-client-wiring.md).
+- **Оновлено 2026-07-22 (finyk-аудит E2).** `sync-client-wiring.md` Фаза 1 (enqueue + pull) і Phase 2 (registry 27→42 таблиць, включно з finyk) — **shipped у коді**: `sqliteWriter/` adapters для finyk/fizruk/nutrition/routine enqueue-ять у outbox, push scheduler і client pull loop (`syncEngineReader`) працюють на web і mobile. Твердження нижче про «outbox enqueue майже порожній» — застаріле, лишене тут як history. **Реальний outstanding gap:** SSE consumer на клієнті (Phase 3, design-only) і local/CI dual-device E2E acceptance-доказ (Testcontainers). Деталі — [`sync-client-wiring.md`](../../90-work/planning/sync-client-wiring.md).
 
 _Історична нотатка (до 2026-07-10): LS/MMKV-write був source-of-truth під dual-write; Stage 8 PR #057\* quartet закрив read/write cut-over._
 
