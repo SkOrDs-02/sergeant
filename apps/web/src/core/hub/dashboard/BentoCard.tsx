@@ -230,7 +230,19 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
           </>
-        ) : null}
+        ) : (
+          /* FTUX: порожня картка мовчала — назва + опис, і все. Перший
+             екран після онбордінгу нічого не обіцяв. Тепер картка каже,
+             що саме тут зʼявиться, і показує приклад справжнього
+             значення в mono/модульному ink (мова «Папір», П3) — щоб
+             місце під число було видно ще до першого запису. */
+          <span className="text-style-caption text-subtle mt-1 leading-snug">
+            {config.emptyPromise}{" "}
+            <span className={cn("font-mono tabular-nums", config.inkClass)}>
+              {config.emptyExample}
+            </span>
+          </span>
+        )}
         {/* Empty cards intentionally render no CTA copy: the whole tile is a
             button (hover-lift on desktop, full tap target on touch) and the
             quick-add `+` sits in the corner for modules that support it. The

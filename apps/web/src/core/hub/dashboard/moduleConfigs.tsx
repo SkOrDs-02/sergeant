@@ -30,6 +30,15 @@ export interface ModuleConfig {
   description: string;
   hasGoal: boolean;
   emptyLabel: string;
+  /**
+   * FTUX-обіцянка порожньої картки: що тут зʼявиться. Раніше порожня
+   * картка мовчала (лише назва + опис), і перший екран після онбордінгу
+   * нічого не обіцяв. Мовою «Папір» (П3) приклад — ink/mono, не пастель,
+   * тому текст розділено: слова в `emptyPromise`, справжнє значення
+   * модуля — в `emptyExample` (JetBrains Mono, модульний ink).
+   */
+  emptyPromise: string;
+  emptyExample: string;
   getPreview: () => ModulePreview;
 }
 
@@ -73,6 +82,8 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Транзакції та бюджети",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
+    emptyPromise: "Тут зʼявиться баланс — напр.",
+    emptyExample: "450 ₴",
     getPreview: () =>
       selectModulePreview(
         "finyk",
@@ -107,6 +118,8 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Тренування та прогрес",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
+    emptyPromise: "Тут зʼявиться серія — напр.",
+    emptyExample: "5 трен.",
     getPreview: () =>
       selectModulePreview(
         "fizruk",
@@ -141,6 +154,8 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
+    emptyPromise: "Тут зʼявиться прогрес дня — напр.",
+    emptyExample: "3/5",
     getPreview: () =>
       selectModulePreview(
         "routine",
@@ -176,6 +191,8 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     description: "КБЖВ та раціон",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
+    emptyPromise: "Тут зʼявиться КБЖВ — напр.",
+    emptyExample: "1250 ккал",
     getPreview: () =>
       selectModulePreview(
         "nutrition",

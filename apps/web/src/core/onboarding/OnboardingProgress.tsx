@@ -37,7 +37,7 @@ export function OnboardingProgress({
       aria-valuenow={count}
       aria-valuemin={0}
       aria-valuemax={totalModules}
-      aria-label={`Активовано ${count} з ${totalModules} розділів`}
+      aria-label={`Модулів увімкнено: ${count} з ${totalModules}`}
     >
       <div className="flex-1 h-1.5 rounded-full bg-line/60 overflow-hidden">
         <div
@@ -45,8 +45,11 @@ export function OnboardingProgress({
           style={{ width: `${percent}%` }}
         />
       </div>
+      {/* Було «{count}/{totalModules} розділів» — на порожньому FTUX-хабі
+          це читалося як «4/4, все зроблено», хоча жодного запису ще немає.
+          Смуга показує, скільки модулів УВІМКНЕНО, а не скільки пройдено. */}
       <span className="text-style-caption text-muted whitespace-nowrap">
-        {count}/{totalModules} розділів
+        Модулів увімкнено: {count} з {totalModules}
       </span>
     </div>
   );

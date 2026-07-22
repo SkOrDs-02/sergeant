@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -11,7 +11,14 @@ type HubAction = Parameters<typeof openHubModuleWithAction>[1];
 
 interface PresetItem {
   id: string;
-  emoji: string;
+  /**
+   * Гліф плитки — ІМ'Я з каталогу `Icon`, не емодзі. Раніше тут стояв
+   * сирий `💧`/`📖`: `no-emoji-icon` цей шейп не ловить (емодзі всередині
+   * рядкової мітки, а не в полі `icon`), тому дефект дожив до 2026-07.
+   * Емодзі самої звички лишається в `data.emoji` — це доменні дані
+   * модуля, а не іконка інтерфейсу.
+   */
+  icon: IconName;
   title: string;
   desc: string;
   data: ModulePreset | Record<string, unknown>;
@@ -56,21 +63,21 @@ const PRESETS: PresetCatalog = {
     items: [
       {
         id: "water",
-        emoji: "💧",
+        icon: "droplet",
         title: "Випити воду",
         desc: "Щодня, будь-коли",
         data: { name: "Випити воду", emoji: "💧" },
       },
       {
         id: "walk",
-        emoji: "🚶",
+        icon: "run",
         title: "Пройти 10 хв",
         desc: "Короткий вихід після обіду",
         data: { name: "Пройти 10 хв", emoji: "🚶" },
       },
       {
         id: "read",
-        emoji: "📖",
+        icon: "book-open",
         title: "Прочитати 10 сторінок",
         desc: "Вечірня звичка",
         data: { name: "Прочитати 10 сторінок", emoji: "📖" },
@@ -95,21 +102,21 @@ const PRESETS: PresetCatalog = {
     items: [
       {
         id: "coffee",
-        emoji: "☕",
+        icon: "coffee",
         title: "Кава",
         desc: "ранкова звичка — введи свою суму",
         data: { description: "Кава", category: "їжа" },
       },
       {
         id: "ride",
-        emoji: "🚕",
+        icon: "truck",
         title: "Таксі",
         desc: "дорога на роботу чи додому",
         data: { description: "Таксі", category: "транспорт" },
       },
       {
         id: "lunch",
-        emoji: "🥗",
+        icon: "utensils",
         title: "Обід",
         desc: "що з'їв — і за скільки",
         data: { description: "Обід", category: "їжа" },
@@ -268,12 +275,12 @@ export function PresetSheet({
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-xl",
+                  "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center",
                   config.accent,
                 )}
                 aria-hidden
               >
-                <span>{item.emoji}</span>
+                <Icon name={item.icon} size={20} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-text truncate">
