@@ -9,12 +9,11 @@
  */
 
 import { useEffect } from "react";
-import { useAuth } from "../../../core/auth/AuthContext";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootFinykDualWrite } from "../lib/dualWriteBoot.js";
 
 export function useFinykDualWriteBoot(): void {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const userId = useLocalUserId();
 
   useEffect(() => {
     if (!userId) return;

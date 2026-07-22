@@ -13,22 +13,18 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAuth } from "../../../core/auth/AuthContext";
-import {
-  DEMO_LOCAL_USER_ID,
-  isDemoActive,
-} from "../../../core/onboarding/onboardingGate";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootFizrukSqliteReadPath } from "../lib/sqliteReadBoot";
 import { notifyFizrukSqliteCacheRefresh } from "../lib/sqliteReadGate";
 
 export function useFizrukSqliteReadBoot(): void {
-  const { user } = useAuth();
-  // AI-CONTEXT: demo mode bypasses auth (no user id), but the SQLite
-  // read-boot + residual `fizruk_*` LS->SQLite drain are userId-gated.
-  // Falling back to a synthetic demo id lets the seeded demo payload
-  // reach the read cache, so the Fizruk module is not empty while the
-  // hub card shows the seeded workout/streak stats (QA D-002).
-  const userId = user?.id ?? (isDemoActive() ? DEMO_LOCAL_USER_ID : null);
+  // AI-CONTEXT: demo and anonymous sessions both bypass auth (no user
+  // id), but the SQLite read-boot + residual `fizruk_*` LS->SQLite
+  // drain are userId-gated. `useLocalUserId` hands out a synthetic id
+  // for both, so the seeded demo payload reaches the read cache
+  // (QA D-002) and an anonymous visitor reads back what
+  // `useFizrukDualWriteBoot` wrote under the same id.
+  const userId = useLocalUserId();
   const didBoot = useRef(false);
 
   useEffect(() => {

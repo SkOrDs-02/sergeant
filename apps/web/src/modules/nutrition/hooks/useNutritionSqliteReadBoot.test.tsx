@@ -30,8 +30,20 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("useNutritionSqliteReadBoot", () => {
-  it("does nothing when there is no signed-in user", () => {
-    useAuthMock.mockReturnValue({ user: null });
+  it("boots under the anonymous id when there is no signed-in user", async () => {
+    // Regression: a meal logged before signing in was never read back
+    // after reload.
+    useAuthMock.mockReturnValue({ user: null, status: "unauthenticated" });
+
+    renderHook(() => useNutritionSqliteReadBoot());
+
+    await waitFor(() => {
+      expect(bootMock).toHaveBeenCalledWith("local-anon");
+    });
+  });
+
+  it("does nothing while the session is still resolving", () => {
+    useAuthMock.mockReturnValue({ user: null, status: "loading" });
     renderHook(() => useNutritionSqliteReadBoot());
     expect(bootMock).not.toHaveBeenCalled();
   });

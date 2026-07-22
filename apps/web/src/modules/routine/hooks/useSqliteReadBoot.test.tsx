@@ -5,10 +5,11 @@ import { cleanup, renderHook, waitFor } from "@testing-library/react";
 const bootMock = vi.fn();
 const emitMock = vi.fn();
 let authUser: { id: string } | null = null;
+let authStatus = "unauthenticated";
 let demoActive = false;
 
 vi.mock("../../../core/auth/AuthContext", () => ({
-  useAuth: () => ({ user: authUser }),
+  useAuth: () => ({ user: authUser, status: authStatus }),
 }));
 vi.mock("../../../core/onboarding/onboardingGate", () => ({
   DEMO_LOCAL_USER_ID: "demo-local-user",
@@ -27,6 +28,7 @@ describe("useSqliteReadBoot", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authUser = null;
+    authStatus = "unauthenticated";
     demoActive = false;
     bootMock.mockResolvedValue(false);
   });
@@ -34,12 +36,29 @@ describe("useSqliteReadBoot", () => {
   afterEach(() => {
     cleanup();
     authUser = null;
+    authStatus = "unauthenticated";
     demoActive = false;
   });
 
-  it("stays dormant without an auth user or active demo", () => {
+  it("boots under the anonymous id when nobody is signed in", async () => {
+    bootMock.mockResolvedValue(true);
+
     renderHook(() => useSqliteReadBoot());
 
+    // Regression: this used to stay dormant, so an anonymous visitor's
+    // habit was written to the warm cache only and vanished on reload.
+    await waitFor(() => {
+      expect(bootMock).toHaveBeenCalledWith("local-anon");
+    });
+  });
+
+  it("stays dormant while the session is still resolving", () => {
+    authStatus = "loading";
+
+    renderHook(() => useSqliteReadBoot());
+
+    // Booting the anon partition here would strand an authenticated
+    // user's first writes in `sergeant-anon.db`.
     expect(bootMock).not.toHaveBeenCalled();
     expect(emitMock).not.toHaveBeenCalled();
   });

@@ -6,9 +6,10 @@ const bootMock = vi.fn();
 const teardown = vi.fn();
 
 let authUser: { id: string } | null = null;
+let authStatus = "unauthenticated";
 
 vi.mock("../../../core/auth/AuthContext", () => ({
-  useAuth: () => ({ user: authUser }),
+  useAuth: () => ({ user: authUser, status: authStatus }),
 }));
 vi.mock("../lib/dualWriteBoot.js", () => ({
   bootNutritionDualWrite: (...args: unknown[]) => bootMock(...args),
@@ -19,15 +20,28 @@ import { useNutritionDualWriteBoot } from "./useNutritionDualWriteBoot";
 beforeEach(() => {
   vi.clearAllMocks();
   authUser = null;
+  authStatus = "unauthenticated";
   bootMock.mockReturnValue(teardown);
 });
 
 afterEach(() => {
   authUser = null;
+  authStatus = "unauthenticated";
 });
 
 describe("useNutritionDualWriteBoot", () => {
-  it("does not boot when userId is null", () => {
+  it("boots under the anonymous id when nobody is signed in", () => {
+    // Regression: a meal logged anonymously never reached SQLite and
+    // disappeared on reload.
+    renderHook(() => useNutritionDualWriteBoot());
+
+    expect(bootMock).toHaveBeenCalledTimes(1);
+    const ctx = bootMock.mock.calls[0]![0] as { getUserId: () => string };
+    expect(ctx.getUserId()).toBe("local-anon");
+  });
+
+  it("does not boot while the session is still resolving", () => {
+    authStatus = "loading";
     renderHook(() => useNutritionDualWriteBoot());
     expect(bootMock).not.toHaveBeenCalled();
   });

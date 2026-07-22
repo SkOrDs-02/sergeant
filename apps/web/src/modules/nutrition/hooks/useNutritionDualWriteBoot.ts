@@ -11,12 +11,11 @@
  */
 
 import { useEffect } from "react";
-import { useAuth } from "../../../core/auth/AuthContext";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootNutritionDualWrite } from "../lib/dualWriteBoot.js";
 
 export function useNutritionDualWriteBoot(): void {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const userId = useLocalUserId();
 
   useEffect(() => {
     if (!userId) return;

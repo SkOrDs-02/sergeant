@@ -12,12 +12,18 @@
  * flag — registration is now `userId`-gated only.
  *
  * Behaviour:
- *  - When `userId` is null, no context is registered. The LS-write
- *    layer's `isRoutineDualWriteRegistered` check stays `false` and
- *    the per-write `peekRoutineDualWritePrev` read is skipped.
- *  - When `userId` is known, the context is registered for the
- *    lifetime of the effect — signing out or unmounting `RoutineApp`
- *    runs the teardown returned by `bootRoutineDualWrite`.
+ *  - The id comes from `useLocalUserId`, so anonymous and demo
+ *    visitors register too — under a synthetic id in the `anon` SQLite
+ *    partition. Gating this on a real account id used to drop every
+ *    anonymous write on the floor (the record lived in the warm cache
+ *    until reload and then disappeared).
+ *  - While the session is still resolving the id is null and no
+ *    context is registered. The LS-write layer's
+ *    `isRoutineDualWriteRegistered` check stays `false` and the
+ *    per-write `peekRoutineDualWritePrev` read is skipped.
+ *  - Once the id is known, the context is registered for the lifetime
+ *    of the effect — signing out or unmounting `RoutineApp` runs the
+ *    teardown returned by `bootRoutineDualWrite`.
  *
  * The hook is fire-and-forget — boot does no async work itself, and
  * the dual-write orchestrator's promise never rejects. The caller does
@@ -25,12 +31,11 @@
  */
 
 import { useEffect } from "react";
-import { useAuth } from "../../../core/auth/AuthContext";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootRoutineDualWrite } from "../lib/dualWriteBoot.js";
 
 export function useRoutineDualWriteBoot(): void {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const userId = useLocalUserId();
 
   useEffect(() => {
     if (!userId) return;

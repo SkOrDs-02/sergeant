@@ -16,13 +16,16 @@
  */
 
 import { useEffect, useRef } from "react";
-import { useAuth } from "../../../core/auth/AuthContext";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootFinykSqliteReadPath } from "../lib/sqliteReadBoot";
 import { notifyFinykSqliteCacheRefresh } from "../lib/sqliteReadGate";
 
 export function useFinykSqliteReadBoot(): void {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  // AI-CONTEXT: this used to gate on a real account id, so neither the
+  // demo payload nor an anonymous visitor's writes were ever read back
+  // — the sibling modules already had the demo half of this fallback.
+  // `useLocalUserId` is the single resolver both boots share.
+  const userId = useLocalUserId();
   const didBoot = useRef(false);
 
   useEffect(() => {
