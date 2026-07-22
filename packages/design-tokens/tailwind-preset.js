@@ -1018,26 +1018,32 @@ const preset = {
   // the values from the raw `text-xs / text-sm / …` scale whenever a slot
   // has a documented role.
   //
-  // Twelve canonical slots:
+  // Eight canonical roles (D8-sweep, дизайн-аудит цикл 5). Шкала була
+  // інвентарною — 12 слотів, де кілька пар відрізнялись лише на крок
+  // розміру, тож однакова роль отримувала різне втілення залежно від
+  // того, хто писав екран. Тепер вона модульна: роль ≠ розмір, і кожна
+  // роль має рівно одне втілення.
   //
-  //   .text-style-display    — landing hero / splash heading (32→56px)
-  //   .text-style-headline   — page H1s, hero stat numbers   (26→36px)
-  //   .text-style-title-lg   — large section heading         (22→28px)
-  //   .text-style-title      — section heading, card title   (18→22px)
-  //   .text-style-subtitle   — sub-heading                   (16→18px)
-  //   .text-style-body-lg    — emphasised body copy          (16→18px)
-  //   .text-style-body       — default body copy             (15→16px)
-  //   .text-style-body-sm    — secondary body, descriptions  (13→14px)
-  //   .text-style-label      — form labels, button text      (13→14px)
-  //   .text-style-caption    — metadata, timestamps          (12px floor)
-  //   .text-style-overline   — uppercase kickers / eyebrows  (12px floor)
-  //   .text-style-code       — inline code / monospace stat  (13→14px)
+  //   .text-style-display    — найбільше число / heading екрана (40→64px)
+  //   .text-style-headline   — page H1, hero-стат               (26→36px)
+  //   .text-style-title      — заголовок секції / картки        (18→22px)
+  //   .text-style-body       — основний текст                   (15→16px)
+  //   .text-style-label      — мітки, кнопки, вторинний текст   (13→14px)
+  //   .text-style-caption    — мета, таймстемпи                 (12px floor)
+  //   .text-style-overline   — uppercase-кікери                 (12px floor)
+  //   .text-style-code       — mono-дані, inline-код            (13→14px)
+  //
+  // Злиті в цьому проході (кількість вживань → куди):
+  //   hero 20 → headline (значення були ідентичні — чистий дубль)
+  //   display-hero 13 → display (роль узяла розмір частотнішого)
+  //   title-lg 2, subtitle 7 → title
+  //   body-lg 3 → body
+  //   body-sm 25, body-strong 1 → label
   //
   // Fluid clamp() formula targets the 320→1280px viewport range so the
   // scale grows smoothly from compact mobile to comfortable desktop while
   // respecting the **12px floor** (Hard Rule #16): no slot drops below
-  // `caption` / `overline`. `.text-style-hero` is preserved as a
-  // back-compat alias on top of `headline`.
+  // `caption` / `overline`.
   //
   // Minimum text size in the design system is 12px; `text-2xs` (10px)
   // is reserved for chart ticks and decorative metadata badges and is
@@ -1054,23 +1060,20 @@ const preset = {
   plugins: [
     function semanticTypography({ addUtilities }) {
       addUtilities({
+        // D8-sweep (цикл 5): `display` і `display-hero` були двома
+        // «найбільшими числами екрана». Роль лишилась одна й узяла
+        // значення частотнішого втілення (display-hero, 11 вживань проти 2).
         ".text-style-display": {
-          fontSize: "clamp(2rem, 1.572rem + 2.143vw, 3.5rem)",
-          lineHeight: "1.05",
-          fontWeight: "700",
-          letterSpacing: "-0.025em",
+          fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
+          lineHeight: "1",
+          fontWeight: "800",
+          letterSpacing: "-0.03em",
         },
         // v2 hero display — Manrope-800 weight, tight leading.
         // Slot: Finyk balance reveal, Expensa amount hero (Phase 6.2),
         // Workout Win celebration headline (Phase 4.4 W2).
         // Separate from `.text-style-display` so existing display call-sites
         // keep their 700 weight; this opts you into the 800 hero look.
-        ".text-style-display-hero": {
-          fontSize: "clamp(2.5rem, 2rem + 2.5vw, 4rem)",
-          lineHeight: "1",
-          fontWeight: "800",
-          letterSpacing: "-0.03em",
-        },
         ".text-style-headline": {
           fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
           lineHeight: "1.15",
@@ -1080,42 +1083,14 @@ const preset = {
         // Back-compat alias — `.text-style-hero` was the prior name for
         // the page-H1 / hero-stat slot. New code should reach for
         // `.text-style-headline`; existing call-sites keep working.
-        ".text-style-hero": {
-          fontSize: "clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)",
-          lineHeight: "1.15",
-          fontWeight: "700",
-          letterSpacing: "-0.02em",
-        },
-        ".text-style-title-lg": {
-          fontSize: "clamp(1.375rem, 1.268rem + 0.536vw, 1.75rem)",
-          lineHeight: "1.25",
-          fontWeight: "600",
-          letterSpacing: "-0.015em",
-        },
         ".text-style-title": {
           fontSize: "clamp(1.125rem, 1.054rem + 0.357vw, 1.375rem)",
           lineHeight: "1.3",
           fontWeight: "600",
           letterSpacing: "-0.01em",
         },
-        ".text-style-subtitle": {
-          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
-          lineHeight: "1.4",
-          fontWeight: "500",
-          letterSpacing: "-0.005em",
-        },
-        ".text-style-body-lg": {
-          fontSize: "clamp(1rem, 0.964rem + 0.179vw, 1.125rem)",
-          lineHeight: "1.55",
-          fontWeight: "400",
-        },
         ".text-style-body": {
           fontSize: "clamp(0.9375rem, 0.920rem + 0.089vw, 1rem)",
-          lineHeight: "1.55",
-          fontWeight: "400",
-        },
-        ".text-style-body-sm": {
-          fontSize: "clamp(0.8125rem, 0.795rem + 0.089vw, 0.875rem)",
           lineHeight: "1.55",
           fontWeight: "400",
         },

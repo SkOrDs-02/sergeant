@@ -281,7 +281,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-hero text-text">
+            <span className="text-style-headline text-text">
               {formattedCurrent} трен.
             </span>
             <Delta cur={cur.count} prev={prev.count} higherIsBetter={true} />

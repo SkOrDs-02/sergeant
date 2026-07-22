@@ -11,8 +11,8 @@ import { ProgressRing } from "./ProgressRing";
  * mobile.
  *
  * Слоти орієнтовно: `ring` — `<ProgressRing>` чи його обгортка;
- * `metric` — `<CounterReveal>` з `.text-style-display-hero`; `narrative`
- * — short text-style-body-sm контекст під цифрою.
+ * `metric` — `<CounterReveal>` з `.text-style-display`; `narrative`
+ * — short text-style-label контекст під цифрою.
  */
 const meta: Meta<typeof HeroValueLine> = {
   title: "UI / HeroValueLine",

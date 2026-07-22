@@ -241,7 +241,7 @@ export function MemoryBankSection() {
               const meta = CATEGORY_META[cat] || { label: cat, emoji: "📝" };
               return (
                 <div key={cat}>
-                  <div className="text-eyebrow text-muted/70 mb-2">
+                  <div className="text-style-overline text-muted/70 mb-2">
                     {meta.label}
                   </div>
                   <div className="space-y-1">

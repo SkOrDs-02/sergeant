@@ -78,7 +78,7 @@ export function Sec({
       data-showcase-section={id}
     >
       <header className="mb-6 pb-3 border-b border-divider-strong flex items-center gap-3 flex-wrap">
-        <h2 id={`${id}-title`} className="text-style-hero text-text">
+        <h2 id={`${id}-title`} className="text-style-headline text-text">
           {title}
         </h2>
         {nav ? <MaturityBadge level={nav.maturity} /> : null}

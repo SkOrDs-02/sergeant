@@ -292,7 +292,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-hero text-text">
+            <span className="text-style-headline text-text">
               {formattedCurrent} {messages.nutrition.kcalUnit}
             </span>
             <Delta cur={cur.avg} prev={prev.avg} higherIsBetter={true} />

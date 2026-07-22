@@ -49,7 +49,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
               <span
                 key={chip}
-                className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                className="inline-flex items-center text-style-caption text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
               >
                 {chip}
               </span>

@@ -19,7 +19,7 @@ const meta: Meta<typeof AnimatedNumber> = {
   args: {
     value: 12480,
     immediate: true,
-    className: "text-style-hero tabular-nums text-text",
+    className: "text-style-headline tabular-nums text-text",
   },
 };
 export default meta;

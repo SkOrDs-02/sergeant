@@ -203,7 +203,7 @@ export function PersonalInfoSection({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-style-hero w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong dark:text-brand">
+              <div className="text-style-headline w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong dark:text-brand">
                 {initial}
               </div>
             )}
@@ -235,11 +235,11 @@ export function PersonalInfoSection({
 
         {/* Name + email + badges */}
         <div className="text-center min-w-0 w-full">
-          <p className="text-h2 text-text truncate">
+          <p className="text-style-title text-text truncate">
             {user.name || "Без імені"}
           </p>
           <div className="flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
-            <p className="text-body-sm text-muted truncate">{user.email}</p>
+            <p className="text-style-label text-muted truncate">{user.email}</p>
             {user.emailVerified ? (
               <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand text-style-caption font-medium">
                 <Icon name="check" size={10} strokeWidth={3} />

@@ -190,10 +190,15 @@ export const webBlocks = [
       // Replace (text-sm font-medium) with text-style-label etc.
       // See docs/design/design-system.md § Typography.
       //
-      // Severity flow: global `warn` here (covers `apps/web/src/{core,shared}/**`,
-      // packages, tools) → scoped `error` for `apps/web/src/modules/**` below
-      // (ramped 2026-05-21 in #3070 after T5 baseline cleanup landed).
-      "sergeant-design/prefer-text-style": "warn",
+      // Severity flow: був глобальний `warn` + точковий `error` для
+      // `apps/web/src/modules/**`. Промовано до глобального `error`
+      // 2026-07-22 (D8-sweep, дизайн-аудит цикл 5): після зняття legacy-шкали
+      // й злиття 12 інвентарних слотів у 8 ролей порушень не лишилось на
+      // жодній поверхні, тож warn більше нічого не «рампує» — він лише
+      // дозволив би другій шкалі відрости. Правило тепер несе і гард від
+      // реанімації знятих класів (`text-h1`, `text-meta`,
+      // `text-style-body-sm`, …) — див. `DEAD_TYPOGRAPHY_CLASSES`.
+      "sergeant-design/prefer-text-style": "error",
       // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
       // `text-[Nrem]` literals; route every call-site through a named
       // utility from index.css (`text-display`, `text-h1..h3`,

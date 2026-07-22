@@ -58,7 +58,7 @@ const PROSE_BASE = cn(
   // Heading hierarchy (fluid via `.text-style-*`).
   "[&_h1]:text-style-display [&_h1]:text-fg [&_h1]:mt-0",
   "[&_h2]:text-style-headline [&_h2]:text-fg",
-  "[&_h3]:text-style-title-lg [&_h3]:text-fg",
+  "[&_h3]:text-style-title [&_h3]:text-fg",
   "[&_h4]:text-style-title [&_h4]:text-fg",
   // Body copy and links.
   "[&_p]:text-style-body [&_p]:text-fg",
@@ -110,7 +110,7 @@ const RHYTHM_COMPACT = cn(
   "[&_li+li]:mt-1",
   // Step the base body down to body-sm in compact mode so embedded
   // copy reads as supporting prose rather than primary content.
-  "[&_p]:text-style-body-sm [&_ul]:text-style-body-sm [&_ol]:text-style-body-sm",
+  "[&_p]:text-style-label [&_ul]:text-style-label [&_ol]:text-style-label",
 );
 
 export function Prose({

@@ -88,7 +88,7 @@ export function ManualExpenseAmountSection({
         {amountHeroVisible ? (
           <div
             aria-hidden
-            className="text-style-display-hero font-mono tabular-nums text-finyk-strong dark:text-finyk leading-none mb-2 select-none"
+            className="text-style-display font-mono tabular-nums text-finyk-strong dark:text-finyk leading-none mb-2 select-none"
           >
             {formatMoney(amountNumeric)}
           </div>

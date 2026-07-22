@@ -108,7 +108,7 @@ export function RecentWorkoutsSection({
                 <p className="text-style-label text-text truncate">
                   {row.label}
                 </p>
-                <p className="text-meta text-muted mt-0.5">
+                <p className="text-style-caption text-muted mt-0.5">
                   {formatDateShort(row.endedAt)} ·{" "}
                   {formatDuration(row.durationSec)}
                 </p>

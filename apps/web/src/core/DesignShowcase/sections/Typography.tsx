@@ -33,7 +33,7 @@ const TEXT_SIZES: readonly TextRow[] = [
 ];
 
 const SEMANTIC_STYLES = [
-  { cls: "text-style-hero", spec: "26 / 32 / 700 / -0.02em" },
+  { cls: "text-style-headline", spec: "26 / 32 / 700 / -0.02em" },
   { cls: "text-style-title", spec: "20 / 28 / 600 / -0.01em" },
   { cls: "text-style-body", spec: "16 / 24 / 400" },
   { cls: "text-style-label", spec: "14 / 20 / 500" },

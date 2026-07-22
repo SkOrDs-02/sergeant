@@ -77,7 +77,7 @@ export function RoutineCalendarHero({
           <p className="mt-1 text-style-headline text-hero-ink">
             {headlineDate}
           </p>
-          <p className="mt-2 text-style-body-sm text-hero-ink">
+          <p className="mt-2 text-style-label text-hero-ink">
             {progressText}
             {currentStreak > 0
               ? ` · серія ${currentStreak} ${pluralDays(currentStreak)}`

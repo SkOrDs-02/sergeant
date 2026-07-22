@@ -99,10 +99,10 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
           >
             <div className="text-center">
-              <h2 className="text-style-display-hero text-text">
+              <h2 className="text-style-display text-text">
                 {mode === "login" ? "З поверненням" : "Створити акаунт"}
               </h2>
-              <p className="text-style-body-sm text-subtle mt-2">
+              <p className="text-style-label text-subtle mt-2">
                 {mode === "login"
                   ? "Email і пароль, Google або Apple"
                   : "Email і пароль — мінімум 10 символів"}

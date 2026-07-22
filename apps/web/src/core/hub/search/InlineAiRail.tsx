@@ -192,12 +192,12 @@ export function InlineAiRail({
                 Відкрити в чаті
               </button>
               {state.hasToolCalls && (
-                <span className="text-meta text-muted">
+                <span className="text-style-caption text-muted">
                   Дія потребує підтвердження в чаті
                 </span>
               )}
               {state.truncated && !state.hasToolCalls && (
-                <span className="text-meta text-muted">
+                <span className="text-style-caption text-muted">
                   Повна відповідь — у чаті
                 </span>
               )}

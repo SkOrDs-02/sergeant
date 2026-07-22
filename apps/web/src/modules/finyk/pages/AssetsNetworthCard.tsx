@@ -30,7 +30,7 @@ export function AssetsNetworthCard({
         </p>
         <div
           className={cn(
-            "text-display-stat mt-2",
+            "text-style-display tnum mt-2",
             isNegative
               ? "text-danger-strong dark:text-danger"
               : "text-finyk-strong dark:text-finyk",

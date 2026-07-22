@@ -143,7 +143,7 @@ export function WelcomeModulePicker({
         <BrandLogo size="md" variant="inline" className="mx-auto" />
         <h2
           className={cn(
-            "text-style-hero text-text outline-none",
+            "text-style-headline text-text outline-none",
             "focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm",
           )}
           tabIndex={-1}

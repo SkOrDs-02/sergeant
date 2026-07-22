@@ -128,7 +128,7 @@ export function InsightCard({
       >
         <div
           id={titleId}
-          className="text-style-body-sm font-extrabold truncate text-bg-base"
+          className="text-style-label font-extrabold truncate text-bg-base"
         >
           {title}
         </div>

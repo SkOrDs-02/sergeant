@@ -66,7 +66,9 @@ export function StoriesProgressHeader({
           <div className="text-xs font-bold text-white truncate">
             Дайджест · {activeLabel}
           </div>
-          <div className="text-micro text-white/75 truncate">{weekRange}</div>
+          <div className="text-style-caption text-white/75 truncate">
+            {weekRange}
+          </div>
         </div>
         <button
           type="button"

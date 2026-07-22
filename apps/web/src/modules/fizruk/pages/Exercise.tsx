@@ -238,7 +238,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <SectionHeading as="div" size="xs" variant="fizruk">
               Особистий рекорд
             </SectionHeading>
-            <div className="text-style-hero text-text mt-1 tabular-nums">
+            <div className="text-style-headline text-text mt-1 tabular-nums">
               {best.best1rm ? `${fmt(best.best1rm, 0)} кг` : "—"}
             </div>
             <div className="text-xs text-subtle mt-1">
@@ -260,7 +260,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <SectionHeading as="div" size="xs" variant="fizruk">
               Наступного разу
             </SectionHeading>
-            <div className="text-style-hero text-text mt-1 tabular-nums">
+            <div className="text-style-headline text-text mt-1 tabular-nums">
               {suggestedNext ? `${fmt(suggestedNext.weightKg, 1)} кг` : "—"}
             </div>
             <div className="text-xs text-subtle mt-1">

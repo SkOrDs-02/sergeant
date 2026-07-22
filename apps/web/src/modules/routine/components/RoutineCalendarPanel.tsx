@@ -530,7 +530,7 @@ export function RoutineCalendarPanel({
                               type="button"
                               onClick={() => onToggleHabit(habitId, e.date)}
                               className={cn(
-                                "rounded-xl border text-style-subtitle",
+                                "rounded-xl border text-style-title",
                                 e.completed ? C.done : "border-line text-muted",
                               )}
                               aria-label={

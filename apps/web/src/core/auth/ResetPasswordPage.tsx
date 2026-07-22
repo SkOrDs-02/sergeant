@@ -147,11 +147,11 @@ export function ResetPasswordPage() {
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="text-style-display-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+              className="text-style-display text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
             >
               Новий пароль
             </h2>
-            <p className="text-style-body-sm text-subtle mt-2">
+            <p className="text-style-label text-subtle mt-2">
               Встанови новий пароль для свого акаунта.
             </p>
           </div>
@@ -159,7 +159,7 @@ export function ResetPasswordPage() {
           {!token ? (
             <div
               role="alert"
-              className="text-style-body-sm text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+              className="text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
             >
               <p>
                 Посилання на скидання пароля неповне або протерміноване. Відкрий

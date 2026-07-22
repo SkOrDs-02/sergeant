@@ -33,7 +33,7 @@ export function PasswordStrengthBar({ password }: { password: string }) {
           )}
         />
       </div>
-      <p className={cn("text-meta font-medium", labelColors[level])}>
+      <p className={cn("text-style-caption font-medium", labelColors[level])}>
         {labels[level]}
       </p>
     </div>
@@ -75,7 +75,7 @@ export function FieldError({ id, message }: FieldErrorProps) {
   return (
     <p
       id={id}
-      className="mt-1.5 text-meta text-danger-strong dark:text-danger"
+      className="mt-1.5 text-style-caption text-danger-strong dark:text-danger"
       role="alert"
     >
       {message}

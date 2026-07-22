@@ -141,7 +141,7 @@ export function PendingVoiceChip({
             }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-micro font-semibold text-text tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-style-caption font-semibold text-text tabular-nums">
           {secondsLeft}
         </span>
       </div>
@@ -159,7 +159,7 @@ export function PendingVoiceChip({
         title="Зберегти зараз"
       >
         {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
-        <span className="block text-micro uppercase tracking-wide text-subtle">
+        <span className="block text-style-caption uppercase tracking-wide text-subtle">
           Голос
         </span>
         <span className="block">{text}</span>

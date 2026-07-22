@@ -2683,6 +2683,64 @@ const noCyrillicJsxLiteral = {
 // (SectionHeading, Button, Label, Badge, etc.) — these are excluded by
 // allowing `// eslint-disable-next-line sergeant-design/prefer-text-style`.
 
+// Мертві класи, які цей гард не дає реанімувати. Дві групи:
+//
+//  1. Legacy-шкала (`text-h1…h3`, `text-body*`, `text-meta`, `text-micro`,
+//     `text-display-stat`, …) — паралельна семантичній, знята в D8-sweep
+//     (дизайн-аудит цикл 5). Саме вона робила так, що однакова роль на
+//     різних екранах отримувала різний розмір.
+//  2. Злиті `text-style-*` слоти (`hero`, `title-lg`, `subtitle`,
+//     `body-lg`, `body-sm`, `body-strong`, `display-hero`) — шкала
+//     згорнута з 12 інвентарних слотів у 8 ролей.
+//
+// Правило працює на шейпі «класовий літерал у className», тож ловить і
+// `cn("…")`, і шаблонні рядки. Мапінг у повідомленні — той самий, що в
+// таблиці звіту, щоб автор не шукав, чим замінити.
+const DEAD_TYPOGRAPHY_CLASSES = new Map([
+  ["text-display-stat", "text-style-display tnum"],
+  ["text-display-hero", "text-style-display"],
+  ["text-display", "text-style-display"],
+  ["text-h1", "text-style-headline"],
+  ["text-h2", "text-style-title"],
+  ["text-h3", "text-style-label"],
+  ["text-body-sm", "text-style-label"],
+  ["text-body", "text-style-body"],
+  ["text-caption", "text-style-caption"],
+  ["text-eyebrow", "text-style-overline"],
+  ["text-meta", "text-style-caption"],
+  ["text-micro", "text-style-caption"],
+  ["text-style-hero", "text-style-headline"],
+  ["text-style-title-lg", "text-style-title"],
+  ["text-style-subtitle", "text-style-title"],
+  ["text-style-body-lg", "text-style-body"],
+  ["text-style-body-sm", "text-style-label"],
+  ["text-style-body-strong", "text-style-label"],
+  ["text-style-display-hero", "text-style-display"],
+]);
+
+const DEAD_TYPOGRAPHY_MESSAGE =
+  "`{{cls}}` — знятий типографічний клас (D8-sweep). Використай `{{replacement}}`: " +
+  "шкала має рівно 8 ролей, і роль володіє парою size/line-height цілком.";
+
+// Найдовші спершу — інакше `text-body` зматчить усередині `text-body-sm`.
+const DEAD_TYPOGRAPHY_ORDER = [...DEAD_TYPOGRAPHY_CLASSES.keys()].sort(
+  (a, b) => b.length - a.length,
+);
+
+function findDeadTypographyClass(value) {
+  if (typeof value !== "string") return null;
+  // Порівнюємо цілі токени, а не підрядки: інакше `text-body` спрацював би
+  // всередині `text-body-sm`, а `text-style-display` — всередині
+  // `text-style-display-hero`.
+  const tokens = new Set(value.split(/\s+/));
+  for (const cls of DEAD_TYPOGRAPHY_ORDER) {
+    if (tokens.has(cls)) {
+      return { cls, replacement: DEAD_TYPOGRAPHY_CLASSES.get(cls) };
+    }
+  }
+  return null;
+}
+
 const PREFER_TEXT_STYLE_MESSAGE =
   "Hand-rolled `{{combo}}` can be replaced with the semantic `text-style-{{slot}}` utility. " +
   "The semantic utility owns size + weight + tracking as a unit so design-token changes " +
@@ -2749,7 +2807,10 @@ const preferTextStyle = {
         "Prefer `text-style-*` semantic utilities over hand-rolled size+weight combinations.",
     },
     schema: [],
-    messages: { prefer: PREFER_TEXT_STYLE_MESSAGE },
+    messages: {
+      prefer: PREFER_TEXT_STYLE_MESSAGE,
+      dead: DEAD_TYPOGRAPHY_MESSAGE,
+    },
   },
   create(context) {
     const filename =
@@ -2767,6 +2828,15 @@ const preferTextStyle = {
     }
 
     function report(node, value) {
+      const dead = findDeadTypographyClass(value);
+      if (dead) {
+        context.report({
+          node,
+          messageId: "dead",
+          data: { cls: dead.cls, replacement: dead.replacement },
+        });
+        return;
+      }
       const hit = findTextStyleSlot(value);
       if (hit) {
         context.report({

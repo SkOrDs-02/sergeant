@@ -28,7 +28,7 @@ export function LegalLinks({
       aria-label={messages.legal.linksNavAria}
       className={[
         "flex flex-wrap items-center justify-center gap-x-3 gap-y-2",
-        compact ? "text-style-caption" : "text-style-body-sm",
+        compact ? "text-style-caption" : "text-style-label",
         className,
       ].join(" ")}
     >

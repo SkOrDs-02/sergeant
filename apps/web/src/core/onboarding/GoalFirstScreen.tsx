@@ -135,7 +135,7 @@ export function GoalFirstScreen({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+          className="text-style-headline text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
         >
           {messages.onboarding.goalFirstHeading}
         </h2>
@@ -177,7 +177,7 @@ export function GoalFirstScreen({
                     <Icon name={iconName} size={20} aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <div className="text-style-body-strong text-text">
+                    <div className="text-style-label text-text">
                       {outcome.headline}
                     </div>
                     <div className="text-xs text-muted mt-1 leading-snug">

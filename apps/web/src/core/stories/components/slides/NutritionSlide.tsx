@@ -24,9 +24,7 @@ export function NutritionSlide({ slide }: { slide: NutritionSlideData }) {
           Середнє калорій/день
         </div>
         <div className="flex items-baseline gap-3 mt-1">
-          <div className="text-display-hero leading-none font-black tabular-nums">
-            {fmtNum(agg?.avgKcal)}
-          </div>
+          <div className="text-style-display tnum">{fmtNum(agg?.avgKcal)}</div>
           <div className="text-style-label text-white/80">
             / {fmtNum(agg?.targetKcal)}
           </div>

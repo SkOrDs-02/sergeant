@@ -25,7 +25,7 @@ import { LegalLinks } from "./legal/LegalLinks";
  *   Free → Premium €X/міс. No Plus/Pro split, no Lifetime, no trial-only gate.
  *
  * v2 chrome: `<MeshBackground>` shell, `<Card prominence="hero">` для Premium,
- * `<Card prominence="default">` для Free, `text-style-display-hero` для ціни,
+ * `<Card prominence="default">` для Free, `text-style-display` для ціни,
  * `text-style-headline` для назви тіра.
  *
  * Internals: checkout flow та billing API лишаються незмінні — серверний
@@ -354,17 +354,17 @@ export function PricingPage() {
               {t.hero.subtitle}
             </p>
             {checkoutResult ? (
-              <p className="text-style-body-sm text-success-strong">
+              <p className="text-style-label text-success-strong">
                 {t.status.checkoutCreatedPrefix} ({checkoutResult.mode} mode).
               </p>
             ) : null}
             {checkoutError ? (
-              <p className="text-style-body-sm text-danger-strong" role="alert">
+              <p className="text-style-label text-danger-strong" role="alert">
                 {checkoutError}
               </p>
             ) : null}
             {portalError ? (
-              <p className="text-style-body-sm text-danger-strong" role="alert">
+              <p className="text-style-label text-danger-strong" role="alert">
                 {portalError}
               </p>
             ) : null}
@@ -447,7 +447,7 @@ export function PricingPage() {
                     <h3 className={cn("text-style-headline", headingTone)}>
                       {tier.name}
                     </h3>
-                    <p className={cn("text-style-body-sm", mutedTone)}>
+                    <p className={cn("text-style-label", mutedTone)}>
                       {tier.tagline}
                     </p>
                   </header>
@@ -455,13 +455,13 @@ export function PricingPage() {
                   <div className="space-y-1">
                     <span
                       className={cn(
-                        "text-style-display-hero tabular-nums",
+                        "text-style-display tabular-nums",
                         headingTone,
                       )}
                     >
                       {tier.price}
                     </span>
-                    <span className={cn("block text-style-body-sm", mutedTone)}>
+                    <span className={cn("block text-style-label", mutedTone)}>
                       {tier.cadence}
                     </span>
                   </div>
@@ -473,7 +473,7 @@ export function PricingPage() {
                         <li
                           key={f.label}
                           className={cn(
-                            "flex items-start gap-2 text-style-body-sm",
+                            "flex items-start gap-2 text-style-label",
                             excluded ? subtleTone : headingTone,
                           )}
                         >
@@ -542,7 +542,7 @@ export function PricingPage() {
               <h2 className="text-style-headline text-text">
                 {t.waitlist.headline}
               </h2>
-              <p className="text-style-body-sm text-muted">
+              <p className="text-style-label text-muted">
                 {t.waitlist.subtitle}
               </p>
             </header>
