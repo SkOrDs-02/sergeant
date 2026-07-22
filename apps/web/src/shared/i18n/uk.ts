@@ -348,6 +348,9 @@ export const messages = {
   },
 
   onboarding: {
+    // Пікер модулів: усі чотири увімкнені за замовчуванням, тому тап
+    // знімає вибір, а не додає — підпис робить це чесним.
+    pickerAllOnHint: "Увімкнено все — зніми те, чим не користуватимешся.",
     // Round 16 — onboarding-specific labels.
     hideChecklist: "Сховати чекліст",
 

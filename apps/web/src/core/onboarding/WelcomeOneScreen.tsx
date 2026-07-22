@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
 import { OnboardingProgress } from "./OnboardingProgress";
 import { ALL_MODULES } from "./vibePicks";
@@ -124,6 +125,14 @@ export function WelcomeOneScreen({
           {copy.badges[2]}
         </span>
       </div>
+
+      {/* Усі чотири модулі увімкнені за замовчуванням, тому тап по рядку
+          знімає вибір, а не додає. Без цього рядка взаємодія виглядає як
+          «обери свої», а працює як «зніми зайві» — дизайн-аудит 2026-07,
+          цикл 3. */}
+      <p className="w-full text-left text-style-caption text-subtle -mb-1">
+        {messages.onboarding.pickerAllOnHint}
+      </p>
 
       <div className="w-full space-y-2">
         {MODULE_CARDS.map((card, idx) => (

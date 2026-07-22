@@ -241,6 +241,7 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   onboarding: {
+    pickerAllOnHint: "Everything is on — switch off what you will not use.",
     hideChecklist: "Hide checklist",
 
     tourSettingsTitle: "App introduction",

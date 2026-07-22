@@ -65,22 +65,24 @@ describe("renderStandaloneRoute()", () => {
     expect(callRoute("/", authedUser)).toBeNull();
   });
 
-  it("renders the landing surface for a fresh non-auth visitor at `/`", () => {
-    // Fresh visitor: no session, no local-first data → marketing
-    // landing must render so SEO / paid-acquisition traffic lands on a
-    // CTA-bearing surface instead of the Hub shell.
+  it("returns `null` for `/` even for a fresh non-auth visitor (landing знято)", () => {
+    // Маркетинговий лендинг прибрано в циклі 3 дизайн-аудиту: на
+    // prod-збірці з живим API його бачили 0 із 5 свіжих візитерів.
+    // Тепер коренем безумовно володіє `HubPage`, а робота лендинга
+    // лишилась за `/welcome`.
     mockShouldShowOnboarding.mockReturnValueOnce(true);
-    expect(callRoute("/")).not.toBeNull();
+    expect(callRoute("/")).toBeNull();
   });
 
-  it("renders a splash for `/` while the persistent store is still booting (cold-boot race)", () => {
-    // Returning local-first user mid hard-reload: the SQLite warm-cache is
-    // empty, so `shouldShowOnboarding()` would misread them as a fresh visitor
-    // and ambush them with the marketing landing. Until storage settles we must
-    // render a loader and NOT consult the onboarding gate.
+  it("`/` не консультує onboarding-гейт і не залежить від auth (гонка знята)", () => {
+    // Регресійний гард на першопричину недосяжного лендинга: цей запис
+    // чекав на `authLoading`, а редирект на `/welcome` у `HubPage` — ні,
+    // тож локальний стор осідав раніше й редирект завжди вигравав.
+    // Тепер рішення про корінь ухвалює РІВНО ОДНА умова (`storageReady`
+    // у `HubPage`), а цей запис не читає ні auth, ні гейт.
     mockShouldShowOnboarding.mockClear();
-    const result = callRoute("/", null, /* storageReady */ false);
-    expect(result).not.toBeNull();
+    expect(callRoute("/", null, /* storageReady */ false)).toBeNull();
+    expect(callRoute("/", null, /* storageReady */ true)).toBeNull();
     expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
   });
 

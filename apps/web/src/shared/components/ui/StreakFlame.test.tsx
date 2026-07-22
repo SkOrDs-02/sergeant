@@ -18,14 +18,18 @@ describe("StreakFlame", () => {
     expect(getByLabelText("Streak: -3 days")).toBeInTheDocument();
   });
 
+  // Драбина «жару» — одна бренд-родина coral від блідого до насиченого,
+  // плюс celebration-токен на сотій добі. До циклу 3 дизайн-аудиту тут
+  // ротувалися п'ять ЧУЖИХ hue (yellow → amber → orange → red → pink →
+  // violet), яких немає в палітрі Sergeant.
   it.each([
     [1, "text-muted"],
-    [3, "text-yellow-500"],
-    [7, "text-amber-500"],
-    [14, "text-orange-500"],
-    [30, "text-red-500"],
-    [60, "text-pink-500"],
-    [100, "text-violet-500"],
+    [3, "text-coral-300"],
+    [7, "text-coral-400"],
+    [14, "text-coral-500"],
+    [30, "text-coral-600"],
+    [60, "text-coral-700"],
+    [100, "text-celebration"],
   ] as const)("streak=%i maps to intensity color %s", (streak, color) => {
     const { getByLabelText } = render(<StreakFlame streak={streak} />);
     const el = getByLabelText(`Streak: ${streak} days`);
