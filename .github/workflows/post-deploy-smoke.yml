@@ -51,10 +51,13 @@ jobs:
     name: Run post-deploy smoke tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Only run on successful deployments or manual triggers / scheduled runs.
+    # Vercel preview deployments are protected before request routing, so they
+    # cannot prove the API's liveness and would only yield Vercel 401s. API
+    # smoke runs after non-Vercel deployments, or explicitly via schedule/manual.
     if: |
       github.event_name != 'deployment_status' ||
-      github.event.deployment_status.state == 'success'
+      (github.event.deployment_status.state == 'success' &&
+      !contains(github.event.deployment_status.environment_url, '.vercel.app'))
     env:
       TARGET_BASE_URL: >-
         ${{ github.event.inputs.base_url

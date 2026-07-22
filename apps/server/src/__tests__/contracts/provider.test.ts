@@ -15,9 +15,8 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 22 consumer interactions across 14
-// unique routes (10 baseline + 12 added by the sync-v2 / food-search
-// / parse-pantry extension PRs). Of those, 8 routes are fully-verified
+// **Coverage:** the pact file has 24 consumer interactions across 15
+// unique routes, including the chat-usage extension. Of those, 8 routes are fully-verified
 // here via supertest replay against `createApp()`:
 //
 //   - GET  /api/v1/me                       (hub persona)
@@ -29,9 +28,9 @@
 //   - POST /api/v1/push/register             (fizruk persona, ios sibling)
 //   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed)
 //
-// The remaining 6 routes (`/api/v1/chat`, `/api/v1/nutrition/analyze-photo`,
-// `/api/v1/food-search`, `/api/v1/v2/sync/pull`, `/api/v1/v2/sync/push`,
-// `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
+// The remaining 7 routes (`/api/v1/chat`, `/api/v1/chat/usage`,
+// `/api/v1/nutrition/analyze-photo`, `/api/v1/food-search`, `/api/v2/sync/pull`,
+// `/api/v2/sync/push`, `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
 // skipped on the provider side here because their handler chains require
 // streaming or vision Anthropic stubs, full v2 sync log fixtures, or
 // upstream/timeout simulation that are already covered by dedicated
@@ -205,10 +204,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 22 expected consumer interactions across 14 routes", () => {
+  it("pact file has 24 expected consumer interactions across 15 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(22);
+    expect(pact.interactions).toHaveLength(24);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -221,6 +220,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/mono/transactions",
       "GET /api/v1/coach/memory",
       "GET /api/v1/barcode",
+      "GET /api/v1/chat/usage",
       "POST /api/v1/nutrition/day-plan",
       // sync-v2 + food-search + parse-pantry extension (4)
       "GET /api/v1/food-search",

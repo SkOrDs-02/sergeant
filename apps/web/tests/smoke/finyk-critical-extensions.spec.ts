@@ -14,10 +14,10 @@ test("@critical finyk: planning route opens the limit/goal form", async ({
   await page.goto("/finyk/budgets", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  const nav = page.getByRole("tablist", { name: "Розділи Фініка" });
-  await expect(nav.getByRole("tab", { name: "Планування" })).toHaveAttribute(
-    "aria-selected",
-    "true",
+  const nav = page.getByRole("navigation", { name: "Розділи Фініка" });
+  await expect(nav.getByRole("button", { name: "Планування" })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
 
   await page.getByRole("button", { name: "Додати ліміт або ціль" }).click();
@@ -41,10 +41,10 @@ test("@critical finyk: assets route opens subscription form", async ({
   await page.goto("/finyk/assets", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  const nav = page.getByRole("tablist", { name: "Розділи Фініка" });
-  await expect(nav.getByRole("tab", { name: "Активи" })).toHaveAttribute(
-    "aria-selected",
-    "true",
+  const nav = page.getByRole("navigation", { name: "Розділи Фініка" });
+  await expect(nav.getByRole("button", { name: "Активи" })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
 
   await page.getByRole("button", { name: "+ Додати підписку" }).click();

@@ -14,24 +14,24 @@ test("@critical fizruk: bottom nav switches path-backed module sections", async 
   await expect(page.getByRole("heading", { name: "Фізрук" })).toBeVisible({
     timeout: 10_000,
   });
-  const nav = page.getByRole("tablist", { name: "Розділи Фізрука" });
+  const nav = page.getByRole("navigation", { name: "Розділи Фізрука" });
   await expect(nav).toBeVisible();
 
-  const workouts = nav.getByRole("tab", { name: "Тренування" });
+  const workouts = nav.getByRole("button", { name: "Тренування" });
   await workouts.click();
   await expect(page).toHaveURL(/\/fizruk\/workouts$/);
-  await expect(workouts).toHaveAttribute("aria-selected", "true");
+  await expect(workouts).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Немає активного тренування")).toBeVisible();
 
-  const progress = nav.getByRole("tab", { name: "Прогрес і заміри" });
+  const progress = nav.getByRole("button", { name: "Прогрес і заміри" });
   await progress.click();
   await expect(page).toHaveURL(/\/fizruk\/progress$/);
-  await expect(progress).toHaveAttribute("aria-selected", "true");
+  await expect(progress).toHaveAttribute("aria-current", "page");
 
-  const body = nav.getByRole("tab", { name: "Моє тіло" });
+  const body = nav.getByRole("button", { name: "Моє тіло" });
   await body.click();
   await expect(page).toHaveURL(/\/fizruk\/body$/);
-  await expect(body).toHaveAttribute("aria-selected", "true");
+  await expect(body).toHaveAttribute("aria-current", "page");
 
   expect(
     errors,
@@ -50,7 +50,7 @@ test("@critical routine: stats tab deep-link round-trips to calendar", async ({
   await expect(
     page.getByRole("heading", { name: "Рутина" }).first(),
   ).toBeVisible({ timeout: 10_000 });
-  const nav = page.getByRole("tablist", { name: "Розділи Рутини" });
+  const nav = page.getByRole("navigation", { name: "Розділи Рутини" });
   await expect(nav).toBeVisible();
 
   const stats = nav.getByRole("tab", { name: "Статистика" });
