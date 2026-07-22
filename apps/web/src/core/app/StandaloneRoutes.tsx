@@ -232,13 +232,18 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
   // і waitlist-формою. Анонімна (auth не вимагається), бо основний
   // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
+  // ОПТ-АУТ з `page-enter` — «one entry system per page» (Hard Rule #17).
+  // `PricingPage` має власну вхідну хореографію (стагер тарифних карток),
+  // і обгортка додавала другу: виміряно на prod 2 RESPONSE одночасно при
+  // ліміті «1 AMBIENT + 1 RESPONSE». Правило прямо забороняє загортати
+  // компонент із власним входом у ще один вхід. Той самий опт-аут уже де-факто
+  // діяв для `/welcome` (він теж рендериться без `page-enter`) — тут він
+  // просто стає явним.
   defineStandaloneRoute({
     paths: [PRICING_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <PricingPage />
-        </div>
+        <PricingPage />
       </Suspense>
     ),
   }),

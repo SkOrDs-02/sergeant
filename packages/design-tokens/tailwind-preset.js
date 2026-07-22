@@ -419,6 +419,14 @@ const preset = {
         // ─── Celebration / Gamification ──────────────────────────────────
         celebration: "rgb(var(--c-celebration) / <alpha-value>)",
         "streak-glow": "rgb(var(--c-streak-glow) / <alpha-value>)",
+        // Драбина «жару» серії — тем-залежні щаблі (див. theme.css).
+        // Компонент мапить серію на щабель, тему вирішує CSS.
+        "streak-3": "rgb(var(--c-streak-tier-3) / <alpha-value>)",
+        "streak-7": "rgb(var(--c-streak-tier-7) / <alpha-value>)",
+        "streak-14": "rgb(var(--c-streak-tier-14) / <alpha-value>)",
+        "streak-30": "rgb(var(--c-streak-tier-30) / <alpha-value>)",
+        "streak-60": "rgb(var(--c-streak-tier-60) / <alpha-value>)",
+        "streak-100": "rgb(var(--c-streak-tier-100) / <alpha-value>)",
 
         // ═══════════════════════════════════════════════════════════════════
         // SERGEANT v2 REDESIGN TOKENS (introduced 2026-05)

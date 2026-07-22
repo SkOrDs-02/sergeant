@@ -139,7 +139,10 @@ export function WelcomeOneScreen({
           <div
             key={card.id}
             className="motion-safe:animate-module-card"
-            style={{ animationDelay: `${idx * 50}ms` }}
+            // Hard Rule #17: між дітьми стагеру максимум 30 мс, сумарно
+            // ≤150 мс. Було `idx * 50` — четверта картка чекала 150 мс,
+            // а на п'ятій вибігла б за стелю.
+            style={{ animationDelay: `${Math.min(idx * 30, 150)}ms` }}
           >
             <ModuleRow
               card={card}
