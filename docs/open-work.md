@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-07-21 by @codex. **Next review:** 2026-10-19.
+> **Last validated:** 2026-07-22 by @codex. **Next review:** 2026-10-20.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,7 +11,7 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **29** — Ініціативи: **4** · Планування: **6** · Launch / запуск: **13** · Аудити й прожарки: **1** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **30** — Ініціативи: **4** · Планування: **6** · Launch / запуск: **13** · Аудити й прожарки: **2** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
 ## Ініціативи (4)
 
@@ -57,13 +57,14 @@
 | [`product-os/paywall-ux-placement.md`](./01-product/launch/product-os/paywall-ux-placement.md)             | Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./01-product/launch/product-os/ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr). | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`tech/ai-memory-activation.md`](./01-product/launch/tech/ai-memory-activation.md)                         | Active (operational activation runbook; behavior SSOT is architecture doc)                                                                                                       | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
-## Аудити й прожарки (1)
+## Аудити й прожарки (2)
 
 > Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).
 
-| Документ                                                                    | Статус | PR-згадки |
-| --------------------------------------------------------------------------- | ------ | --------- |
-| [`product-knowledge-finyk.md`](./90-work/audits/product-knowledge-finyk.md) | Active | —         |
+| Документ                                                                            | Статус | PR-згадки |
+| ----------------------------------------------------------------------------------- | ------ | --------- |
+| [`product-knowledge-finyk.md`](./90-work/audits/product-knowledge-finyk.md)         | Active | —         |
+| [`product-knowledge-hub-coach.md`](./90-work/audits/product-knowledge-hub-coach.md) | Active | —         |
 
 ## Security hardening (1)
 
