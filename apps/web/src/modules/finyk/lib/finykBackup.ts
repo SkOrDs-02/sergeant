@@ -69,6 +69,10 @@ export function readFinykBackupFromStorage() {
     hiddenTxIds: warm
       ? cache.hiddenTransactions
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.hiddenTxIds, []),
+    excludedStatTxIds:
+      warm && cache.excludedStatTxIds !== null
+        ? cache.excludedStatTxIds
+        : readJSON(FINYK_FIELD_TO_STORAGE_KEY.excludedStatTxIds, []),
     monthlyPlan:
       warm && cache.monthlyPlan !== null
         ? cache.monthlyPlan

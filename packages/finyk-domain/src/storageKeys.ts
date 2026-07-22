@@ -48,6 +48,7 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   receivables: "finyk_recv",
   hiddenAccounts: "finyk_hidden",
   hiddenTxIds: "finyk_hidden_txs",
+  excludedStatTxIds: "finyk_excluded_stat_txs",
   monthlyPlan: "finyk_monthly_plan",
   txCategories: "finyk_tx_cats",
   txSplits: "finyk_tx_splits",

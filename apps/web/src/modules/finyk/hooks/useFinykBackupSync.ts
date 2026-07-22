@@ -55,6 +55,8 @@ export function useFinykBackupSync(
     setHiddenAccounts,
     hiddenTxIds,
     setHiddenTxIds,
+    excludedStatTxIds,
+    setExcludedStatTxIds,
     monthlyPlan,
     setMonthlyPlan,
     txCategories,
@@ -80,6 +82,8 @@ export function useFinykBackupSync(
     if (data.receivables) setReceivables(data.receivables as Receivable[]);
     if (data.hiddenAccounts) setHiddenAccounts(data.hiddenAccounts as string[]);
     if (data.hiddenTxIds) setHiddenTxIds(data.hiddenTxIds as string[]);
+    if (data.excludedStatTxIds)
+      setExcludedStatTxIds(data.excludedStatTxIds as string[]);
     if (data.monthlyPlan) setMonthlyPlan(data.monthlyPlan as MonthlyPlan);
     if (data.txCategories)
       setTxCategories(data.txCategories as TxCategoriesMap);
@@ -105,6 +109,7 @@ export function useFinykBackupSync(
       receivables,
       hiddenAccounts,
       hiddenTxIds,
+      excludedStatTxIds,
       monthlyPlan,
       txCategories,
       txSplits,
@@ -156,6 +161,7 @@ export function useFinykBackupSync(
       a: manualAssets,
       d: manualDebts,
       r: receivables,
+      es: excludedStatTxIds,
       mp: monthlyPlan,
       tc: txCategories,
       ts: txSplits,
