@@ -26,7 +26,11 @@ import type {
 /**
  * Sum UAH-denominated manual assets. Non-UAH entries are ignored —
  * Assets (and Overview) treat the FX portfolio as out-of-scope for
- * networth until a live FX rate is wired up.
+ * networth until a live FX rate is wired up. Non-UAH assets are a paid
+ * feature (`multi-currency` gate in `AssetsForm.tsx`), so callers that
+ * surface this total to the user must also surface the excluded count —
+ * see `nonUahManualAssetCount` in `useOverviewData.ts` and the Overview
+ * banner in `Overview.tsx`.
  */
 export function sumManualAssetsUAH(
   manualAssets: readonly ManualAsset[] | null | undefined,

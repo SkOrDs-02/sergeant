@@ -16,6 +16,7 @@ import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
 import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
 import { useOverviewData } from "./overview/useOverviewData";
+import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
 
 type StorageLike = ReturnType<typeof useStorage>;
@@ -124,6 +125,20 @@ export function Overview({
             />
 
             <NetworthSection networthHistory={d.networthHistory} />
+
+            {d.nonUahManualAssetCount > 0 && (
+              <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
+                <span className="text-style-caption text-warning-strong dark:text-warning">
+                  {d.nonUahManualAssetCount}{" "}
+                  {pluralize(
+                    d.nonUahManualAssetCount,
+                    messages.finyk.nonUahAssetsExcluded.one,
+                    messages.finyk.nonUahAssetsExcluded.few,
+                    messages.finyk.nonUahAssetsExcluded.many,
+                  )}
+                </span>
+              </div>
+            )}
 
             <BudgetAlertsList
               budgetAlerts={d.budgetAlerts}

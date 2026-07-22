@@ -351,6 +351,15 @@ export function AssetForm({
           <option value="EUR">EUR</option>
           <option value="BTC">BTC</option>
         </select>
+        {newAsset.currency !== "UAH" && (
+          <p
+            className="text-style-caption text-warning-strong dark:text-warning"
+            role="status"
+          >
+            Збережу актив, але поки не враховую його в загальному нетворсі —
+            рахую лише активи в гривні.
+          </p>
+        )}
         {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
           <p className="text-style-caption text-subtle" role="status">
             Заповни назву та вкажи позитивну суму активу.
