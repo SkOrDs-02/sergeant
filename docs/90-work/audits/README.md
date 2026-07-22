@@ -9,14 +9,17 @@
 
 ## Що тут лежить
 
-| Шлях                                                         | Призначення                                                                                                                                     |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`_runner-report.md`](./_runner-report.md)                   | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`) |
-| [`user-story-ledger.csv`](./user-story-ledger.csv)           | CSV ledger user-story проходів                                                                                                                  |
-| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md) | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                  |
-| [`archive/`](./archive/)                                     | Усі завершені / Closed / Draft-stub аудити й прожарки (fast-forward 2026-07-20)                                                                 |
+| Шлях                                                         | Призначення                                                                                                                                                                             |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`_runner-report.md`](./_runner-report.md)                   | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`)                                         |
+| [`user-story-ledger.csv`](./user-story-ledger.csv)           | CSV ledger user-story проходів                                                                                                                                                          |
+| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md) | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                                                          |
+| [`product-knowledge-finyk.md`](./product-knowledge-finyk.md) | **Active.** Продуктовий аудит знань finyk: тріангуляція founder ↔ доки ↔ код (37 питань). Канон, який він породив — [`docs/01-product/model/finyk.md`](../../01-product/model/finyk.md) |
+| [`archive/`](./archive/)                                     | Усі завершені / Closed / Draft-stub аудити й прожарки (fast-forward 2026-07-20)                                                                                                         |
 
-Живих `Active` / `In progress` аудитів у корені каталогу **немає** (`open-work.md` § Аудити = 0). Новий аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` — `git mv` у `archive/`.
+Живий `Active` аудит у корені каталогу один — `product-knowledge-finyk.md`
+(продуктовий аудит знань finyk, 2026-07-22). Новий аудит кладеться сюди як
+`YYYY-MM-DD-*.md`; після `Closed`/`Done` — `git mv` у `archive/`.
 
 ## Архів (зведення)
 
