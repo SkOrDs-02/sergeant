@@ -182,12 +182,22 @@
 .fizruk-cta-accent {
   @apply bg-fizruk-strong text-white font-semibold rounded-2xl
          transition-interactive
-         hover:bg-cyan-900 hover:shadow-glow-cyan
+         hover:bg-cyan-900
          active:scale-[0.98];
 }
 
+.fizruk-cta-accent:hover {
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.15);
+}
+
 .fizruk-summary-header {
-  @apply p-4 bg-hero-cyan;
+  @apply p-4;
+  background-image: linear-gradient(
+    135deg,
+    #ecfeff 0%,
+    #cffafe 50%,
+    #a5f3fc 100%
+  );
 }
 .dark .fizruk-summary-header {
   @apply bg-panel;
