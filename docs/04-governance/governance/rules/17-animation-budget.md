@@ -33,6 +33,12 @@ Three animation tiers — every animation in the codebase belongs to exactly one
 Rules:
 
 - Max **1 AMBIENT + 1 RESPONSE** running simultaneously on screen.
+- **One entry system per page.** A page has either a generic entry wrapper
+  (`page-enter`) **or** its own internal entry choreography — never both.
+  Routes whose component staggers its own children opt out of the wrapper in
+  `StandaloneRoutes.tsx` (`/pricing`, `/welcome`). Measured 2026-07-22 on a
+  prod build: `/pricing` ran `page-enter` + a 2-child stagger group = **2
+  RESPONSE** simultaneously.
 - A stagger group counts as **1 RESPONSE** regardless of child count.
 - Stagger timing: **max 30 ms between children**, total delay cap **≤ 150 ms** (`Math.min(index * 30, 150)`).
 - Never wrap a component that has its own internal entry animation in `StaggerChild` (double-animation).

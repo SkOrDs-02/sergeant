@@ -166,7 +166,12 @@ function PeekBackdrop() {
                   card.cardBg,
                   "motion-safe:animate-card-enter",
                 )}
-                style={{ animationDelay: `${0.4 + idx * 0.1}s` }}
+                // Hard Rule #17 — крок стагеру ≤30 мс (було 100 мс).
+                // 0.4 с — це затримка входу всієї peek-групи, не крок
+                // між дітьми, тому лишається.
+                style={{
+                  animationDelay: `calc(0.4s + ${Math.min(idx * 30, 150)}ms)`,
+                }}
               >
                 <div
                   className={cn(

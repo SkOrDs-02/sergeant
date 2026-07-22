@@ -37,17 +37,18 @@ const sizeStyles: Record<
 
 /**
  * Драбина «жару» серії. Раніше це була ротація ЧУЖИХ hue —
- * yellow → amber → orange → red → pink → violet: п'ять родин, яких немає в
- * палітрі Sergeant, і жодна не пов'язана з модулем, до якого серія
- * належить. Дизайн-аудит 2026-07 (цикл 3) зберіг ідею «жар росте», але
- * замінив матеріал: одна бренд-родина coral (рідний hue Рутини, той самий,
- * що `--c-streak-glow`) від блідого до насиченого, і `--c-celebration`
- * (amber) на сотій добі — сота доба і Є святкування, семантика токена точна.
+ * yellow → amber → orange → red → pink → violet: п'ять родин, яких немає
+ * в палітрі Sergeant. Цикл 3 дизайн-аудиту замінив матеріал на бренд-coral,
+ * цикл 4 витяг кольори з гілок цієї функції у ТОКЕНИ
+ * `--c-streak-tier-{3,7,14,30,60,100}` з парами light/dark.
  *
- * Відомий борг (не регресія — успадкований): на білому тлі нижні тири
- * coral-300/400 не витягують 3:1 як не-текстовий елемент. Стара драбина
- * (yellow-500 ≈ 1.9:1) була гіршою; повний фікс потребує тем-залежних
- * тирів і йде окремо.
+ * Чому токени, а не hex у коді: одна драбина для обох тем не працює —
+ * у темній глибина будується світлом (щаблі йдуть від блідого до
+ * насиченого), у світлій навпаки, і coral-300/400 на кремі не читались
+ * (2.8:1 і нижче при порозі 3:1 для не-текстового елемента). Тепер
+ * компонент лише мапить серію на щабель, а тон обирає тема. Побічно:
+ * значення стали токенами зі стабільним шейпом, тож контракт-тест
+ * складу палітри ловить їх нарівні з `chartHex`.
  */
 function getFlameIntensity(streak: number): {
   color: string;
@@ -56,43 +57,43 @@ function getFlameIntensity(streak: number): {
 } {
   if (streak >= 100) {
     return {
-      color: "text-celebration",
-      glow: "shadow-celebration/50",
+      color: "text-streak-100",
+      glow: "shadow-streak-100/50",
       glowSize: "shadow-xl",
     };
   }
   if (streak >= 60) {
     return {
-      color: "text-coral-700",
-      glow: "shadow-coral-700/40",
+      color: "text-streak-60",
+      glow: "shadow-streak-60/40",
       glowSize: "shadow-lg",
     };
   }
   if (streak >= 30) {
     return {
-      color: "text-coral-600",
-      glow: "shadow-coral-600/40",
+      color: "text-streak-30",
+      glow: "shadow-streak-30/40",
       glowSize: "shadow-lg",
     };
   }
   if (streak >= 14) {
     return {
-      color: "text-coral-500",
-      glow: "shadow-coral-500/30",
+      color: "text-streak-14",
+      glow: "shadow-streak-14/30",
       glowSize: "shadow-md",
     };
   }
   if (streak >= 7) {
     return {
-      color: "text-coral-400",
-      glow: "shadow-coral-400/30",
+      color: "text-streak-7",
+      glow: "shadow-streak-7/30",
       glowSize: "shadow-md",
     };
   }
   if (streak >= 3) {
     return {
-      color: "text-coral-300",
-      glow: "shadow-coral-300/20",
+      color: "text-streak-3",
+      glow: "shadow-streak-3/20",
       glowSize: "shadow-sm",
     };
   }
