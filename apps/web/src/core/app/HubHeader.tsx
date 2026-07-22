@@ -213,7 +213,12 @@ export function HubHeader({
           ink-якорем (display-вага), дата — mono-мета: число живе в
           JetBrains Mono, як усі технічні значення Sergeant. */}
       <p className="mt-2 ml-[3px] truncate">
-        <span className="text-style-title-lg text-text">{greetingText}</span>
+        {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба, якір
+            екрана з мови «Папір» (П2), а не заголовок секції. До sweep-у
+            воно носило `title-lg`; після злиття title-lg→title анкер
+            просів до розміру звичайного заголовка картки, тож роль
+            уточнена до `headline`. */}
+        <span className="text-style-headline text-text">{greetingText}</span>
         {dateStr && (
           <>
             <span className="mx-2 text-subtle" aria-hidden="true">

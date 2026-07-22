@@ -26,7 +26,7 @@ describe("Prose", () => {
     const { container } = render(<Prose variant="compact">x</Prose>);
     const el = container.firstElementChild!;
     expect(el.className).toContain("[&>*+*]:mt-3");
-    expect(el.className).toContain("[&_p]:text-style-body-sm");
+    expect(el.className).toContain("[&_p]:text-style-label");
   });
 
   it("merges a custom className and forwards extra HTML attrs", () => {

@@ -198,7 +198,7 @@ function CelebrateTier() {
                 value={amount}
                 formatOptions={{ style: "currency", currency: "UAH" }}
                 locale="uk-UA"
-                className="text-style-hero text-text tabular-nums"
+                className="text-style-headline text-text tabular-nums"
               />
               <p className="text-xs text-muted mt-1">Сума</p>
             </div>

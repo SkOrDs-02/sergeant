@@ -19,7 +19,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
       </p>
       <div className="mb-6">
         <div className="text-xs text-white/70 font-semibold">Витрати тижня</div>
-        <div className="text-display-hero leading-none font-black tabular-nums mt-1">
+        <div className="text-style-display tnum mt-1">
           {fmtUah(agg?.totalSpent)}
         </div>
         <div className="mt-2 text-sm text-white/80">

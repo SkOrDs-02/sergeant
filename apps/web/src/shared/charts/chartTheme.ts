@@ -68,7 +68,7 @@ export const chartAxis = {
   },
   /** Axis label (e.g. "₴ за місяць"). */
   label: {
-    className: "fill-muted text-meta tabular-nums",
+    className: "fill-muted text-style-caption tabular-nums",
   },
 } as const;
 

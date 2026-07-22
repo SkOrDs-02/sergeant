@@ -248,7 +248,7 @@ export function FirstEntryCelebrationModal({
 
         {/* Headline */}
         <div className="space-y-1">
-          <h2 className="text-style-hero text-text">{headline}</h2>
+          <h2 className="text-style-headline text-text">{headline}</h2>
           <p className="text-sm text-muted">{subtext}</p>
         </div>
 

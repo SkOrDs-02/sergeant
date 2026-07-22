@@ -148,7 +148,7 @@ const HeroCardImpl = function HeroCard({
       <div className="relative border-t border-hero-ink/15 px-5 py-4">
         <div
           className={cn(
-            "text-style-display-hero",
+            "text-style-display",
             color,
             !showBalance && "tracking-widest",
           )}

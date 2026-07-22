@@ -15,10 +15,10 @@ import { cn } from "@shared/lib/ui/cn";
  *   - `ring`      — optional radial indicator (typically `<ProgressRing>` or
  *                   a `<DayProgressRing>`). Rendered on the left at ≥ sm.
  *   - `narrative` — multi-line contextual text (one or two short sentences).
- *                   Should reach for `.text-style-body-sm` / `.text-style-caption`
+ *                   Should reach for `.text-style-label` / `.text-style-caption`
  *                   tokens — never raw `text-xs`.
  *   - `metric`    — the big number reveal — most commonly a `<CounterReveal>`
- *                   that uses `.text-style-display-hero` (T1 token).
+ *                   that uses `.text-style-display` (T1 token).
  *
  * Layout:
  *   - Mobile (default):  vertical stack, ring → metric → narrative.
@@ -73,10 +73,10 @@ export function HeroValueLine({
             `text-text`/`text-subtle` go invisible on the saturated hero
             gradient, so this primitive uses the theme-invariant hero-ink
             tone directly rather than per-call-site overrides. */}
-        <div className="text-style-display-hero text-hero-ink tabular-nums">
+        <div className="text-style-display text-hero-ink tabular-nums">
           {metric}
         </div>
-        <div className="text-style-body-sm text-hero-ink/70">{narrative}</div>
+        <div className="text-style-label text-hero-ink/70">{narrative}</div>
       </div>
     </div>
   );

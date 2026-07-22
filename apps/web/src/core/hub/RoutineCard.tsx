@@ -288,7 +288,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-hero text-text">
+            <span className="text-style-headline text-text">
               {formattedCurrent}%
             </span>
             <Delta cur={cur.pct} prev={prev.pct} higherIsBetter={true} />

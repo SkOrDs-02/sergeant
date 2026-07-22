@@ -85,82 +85,17 @@
            focus-visible:ring-2 focus-visible:ring-routine/25;
 }
 
-@utility text-display {
-  /* ═══════════════════════════════════════════════════════════════════════
-     TYPOGRAPHY HIERARCHY — Consistent heading scale across the app.
-     Usage: apply `.text-h1` / `.text-h2` etc. to heading elements.
-     Letter-spacing and font-weight are baked in; colour inherits from
-     the surrounding context so dark-mode works automatically.
-     ═══════════════════════════════════════════════════════════════════════ */
+/* ── Legacy типографічна шкала — ВИДАЛЕНА (D8-sweep, цикл 5) ──────────────
+   Тут жила друга шкала (`text-display` / `text-h1…h3` / `text-body*` /
+   `text-caption` / `text-eyebrow` / `text-meta` / `text-micro` /
+   `text-display-stat` / `text-display-hero`), паралельна семантичній
+   `.text-style-*`. Два «display hero», два caption і два набори заголовків
+   означали, що однакова роль на різних екранах отримувала різний розмір.
 
-  /* Display — hero numbers, large stat values (e.g. ₴ 12 400) */
-  @apply text-[2.25rem] leading-none font-bold tracking-tight tabular-nums;
-}
-
-@utility text-h1 {
-  /* H1 — page / screen title */
-  @apply text-[1.5rem] leading-tight font-bold tracking-tight;
-}
-
-@utility text-h2 {
-  /* H2 — section heading */
-  @apply text-[1.125rem] leading-snug font-semibold tracking-[-0.01em];
-}
-
-@utility text-h3 {
-  /* H3 — card title, subsection label */
-  @apply text-[0.9375rem] leading-snug font-semibold;
-}
-
-@utility text-body {
-  /* Body — default prose */
-  @apply text-[0.9375rem] leading-relaxed font-normal;
-}
-
-@utility text-body-sm {
-  /* Body Small — secondary text, descriptions */
-  @apply text-[0.8125rem] leading-relaxed font-normal;
-}
-
-@utility text-caption {
-  /* Caption — labels, timestamps, meta copy */
-  @apply text-[0.75rem] leading-snug font-normal tracking-[0.01em];
-}
-
-@utility text-eyebrow {
-  /* Eyebrow — overline / section prefix ("ФІНІК", "СЬОГОДНІ") */
-  @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
-}
-
-@utility text-meta {
-  /* Meta — compact lowercase labels (KPI hints, badges, "Monobank", "USD",
-     histogram axis ticks). 11px/medium with optional `tabular-nums` for
-     numeric companions. NOT uppercase — that is `text-eyebrow`'s job. */
-  @apply text-[0.6875rem] leading-snug font-medium;
-}
-
-@utility text-micro {
-  /* Micro — 10px aux glyph labels: icon-overlay numbers (mic levels, push-up
-     reps, progress-ring hints). Floor is 10px; nothing below ships in
-     prose. Use only inside controls where surrounding affordance carries
-     the meaning, never for running text. */
-  @apply text-[0.625rem] leading-tight font-medium;
-}
-
-@utility text-display-stat {
-  /* Display Stat — the single most prominent number on a screen:
-     Finyk HeroCard amount, AssetsTable asset value. 40px / bold /
-     tabular-nums / leading-tight so multi-line wraps don't push other
-     hero rows. */
-  @apply text-[2.5rem] leading-tight font-bold tracking-tight tabular-nums;
-}
-
-@utility text-display-hero {
-  /* Display Hero — full-screen "celebration" stat (story slides, weekly
-     digest take-aways). 44px / black / tabular-nums / leading-none for
-     the largest single-line number. */
-  @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
-}
+   Усі 31 вживання переведені на семантичні ролі; повернення legacy-класів
+   ловить `sergeant-design/prefer-text-style`. Таблиця мапінгу — у
+   `docs/90-work/audits/2026-07-22-cycle-5.md`.
+   ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Semantic `.text-style-*` utilities ────────────────────────────────────
    The canonical 12-slot fluid type scale (display, headline, title-lg,
@@ -169,16 +104,10 @@
    `packages/design-tokens/tailwind-preset.js`. Each slot is a `clamp()`
    across the 320→1280px viewport range with role-specific line-height
    and letter-spacing, respecting the 12px floor (Hard Rule #16).
-   `.text-style-hero` remains as a back-compat alias of `headline`.
+   `.text-style-headline` remains as a back-compat alias of `headline`.
    `.tnum` (font-variant-numeric: tabular-nums) is registered alongside.
    Referenced by the `prefer-text-style` ESLint rule.
    ─────────────────────────────────────────────────────────────────────── */
-
-@utility text-celebration {
-  /* Celebration — achievement moments: XP gains, streaks, confetti title */
-  @apply text-[1.25rem] leading-tight font-bold tracking-[0.02em];
-  color: rgb(var(--c-celebration));
-}
 
 @utility panel {
   /* ═══════════════════════════════════════════════════════════════════════

@@ -28,14 +28,14 @@ export const FlowRow = memo(function FlowRow({
   return (
     <div className="flex justify-between items-center py-3 border-b border-line last:border-0">
       <div className="min-w-0 mr-3">
-        <div className="text-style-body-lg leading-snug truncate">
+        <div className="text-style-body leading-snug truncate">
           {flow.title}
         </div>
         <div className="text-xs text-subtle mt-0.5">{flow.hint}</div>
       </div>
       <div
         className={cn(
-          "text-style-subtitle tabular-nums shrink-0",
+          "text-style-title tabular-nums shrink-0",
           isGreen
             ? "text-success-strong dark:text-success"
             : "text-danger-strong dark:text-danger",

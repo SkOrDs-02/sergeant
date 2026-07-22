@@ -65,7 +65,9 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
       aria-label={ariaLabel}
       className="flex-1 min-w-0 active:scale-[0.99] hover:opacity-90 px-3 py-2.5 text-left transition-[opacity,transform] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
-      <span className="block text-caption text-muted truncate">{label}</span>
+      <span className="block text-style-caption text-muted truncate">
+        {label}
+      </span>
       <span
         className={`block mt-0.5 text-style-label leading-tight truncate ${TONE_VALUE_CLASS[tone]}`}
       >

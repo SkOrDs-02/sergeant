@@ -295,7 +295,7 @@ export function QuickStartSheet({
                   variant="subtle"
                   className="px-1 mb-1.5"
                   action={
-                    <span className="text-meta text-muted normal-case tracking-normal font-normal">
+                    <span className="text-style-caption text-muted normal-case tracking-normal font-normal">
                       {g.items.length}
                     </span>
                   }
@@ -322,7 +322,7 @@ export function QuickStartSheet({
                         >
                           <span
                             className={cn(
-                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-meta font-bold",
+                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-style-caption font-bold",
                               active
                                 ? "bg-brand-strong border-brand-strong text-white"
                                 : "border-line text-subtle",

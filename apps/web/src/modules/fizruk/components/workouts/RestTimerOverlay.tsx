@@ -67,7 +67,7 @@ export function RestTimerOverlay({
             </SectionHeading>
             <div
               className={
-                "text-style-hero tabular-nums leading-tight " +
+                "text-style-headline tabular-nums leading-tight " +
                 (urgent ? "text-warning-strong dark:text-warning" : "text-text")
               }
             >

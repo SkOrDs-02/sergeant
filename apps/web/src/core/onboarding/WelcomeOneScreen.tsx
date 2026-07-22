@@ -102,7 +102,7 @@ export function WelcomeOneScreen({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+          className="text-style-headline text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
         >
           {copy.title}
         </h2>

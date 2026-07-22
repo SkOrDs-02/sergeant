@@ -272,7 +272,7 @@ export function AssetsTxPickerView({
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-3">
               <div className="text-xs text-subtle mb-1">{label}</div>
-              <div className="text-style-hero text-danger-strong dark:text-danger">
+              <div className="text-style-headline text-danger-strong dark:text-danger">
                 −
                 {remaining.toLocaleString("uk-UA", {
                   maximumFractionDigits: 0,
@@ -481,7 +481,7 @@ export function AssetsTxPickerView({
             </p>
             <div
               className={cn(
-                "text-style-hero mt-1",
+                "text-style-headline mt-1",
                 isDebt
                   ? "text-danger-strong dark:text-danger"
                   : "text-success-strong dark:text-success",
