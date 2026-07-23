@@ -127,6 +127,24 @@ describe("useModuleFirstRun", () => {
     expect(result.current.firstRun).toBe(false);
   });
 
+  it("markSeen() survives a hard reload that races the async SQLite write-back (A7)", () => {
+    // The warm-cache write-back to OPFS is fire-and-forget; a reload right
+    // after dismiss can lose it. markSeen must ALSO write the durable
+    // localStorage mirror that bootstrapKvStore re-seeds from, so a fresh
+    // mount (simulating post-reload) still reads the flag → banner stays gone.
+    const { result } = renderHook(() => useModuleFirstRun("finyk"));
+    act(() => {
+      result.current.markSeen();
+    });
+    // Raw localStorage (the durable mirror) must hold the flag even though the
+    // hook wrote through the KV-store path.
+    expect(window.localStorage.getItem(firstSeenKey("finyk"))).toBe("1");
+
+    // Fresh mount = a new page load; no in-memory hook state carries over.
+    const { result: reloaded } = renderHook(() => useModuleFirstRun("finyk"));
+    expect(reloaded.current.firstRun).toBe(false);
+  });
+
   it("resetModuleFirstSeen() wipes every module's flag", () => {
     for (const id of ["finyk", "fizruk", "routine", "nutrition"]) {
       window.localStorage.setItem(firstSeenKey(id), "1");

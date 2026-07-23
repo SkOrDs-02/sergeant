@@ -4,8 +4,10 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import {
   NUTRITION_GOALS,
@@ -269,13 +271,13 @@ export function DailyPlanGoalSelectors({
             ) : (
               <div className="px-3 py-2 text-xs text-subtle">
                 <div className="text-text">{TDEE_COPY.triggerHint}</div>
-                <a
-                  href="#/profile"
+                <Link
+                  to={PROFILE_PATH}
                   className="mt-1 inline-block text-nutrition-strong dark:text-nutrition underline"
                   onClick={() => setTdeeMenuOpen(false)}
                 >
                   {TDEE_COPY.profileLink}
-                </a>
+                </Link>
               </div>
             )}
           </div>

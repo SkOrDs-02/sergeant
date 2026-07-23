@@ -2,11 +2,12 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { formatMoney } from "@sergeant/shared";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
@@ -77,6 +78,11 @@ function MonthlyPlanCardComponent({
   const [open, setOpen] = useState<boolean>(() => firstRunHint === true);
   const [editing, setEditing] = useState<boolean>(() => firstRunHint === true);
   const hasPlan = planIncome > 0 || planExpense > 0 || planSavings > 0;
+
+  const fieldId = useId();
+  const incomeId = `${fieldId}-income`;
+  const expenseId = `${fieldId}-expense`;
+  const savingsId = `${fieldId}-savings`;
 
   const incomeDelta = factIncome - planIncome;
   const expenseDelta = totalExpenseFact - planExpense;
@@ -286,42 +292,54 @@ function MonthlyPlanCardComponent({
                   onDismiss={onDismissFirstRunHint ?? (() => {})}
                 />
               )}
-              <Input
-                type="number"
-                aria-label="План доходу"
-                placeholder="План доходу ₴"
-                value={monthlyPlan?.income ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    income: e.target.value,
-                  }))
-                }
-              />
-              <Input
-                type="number"
-                aria-label="План витрат"
-                placeholder="План витрат ₴"
-                value={monthlyPlan?.expense ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    expense: e.target.value,
-                  }))
-                }
-              />
-              <Input
-                type="number"
-                aria-label="План накопичень"
-                placeholder="План накопичень ₴"
-                value={monthlyPlan?.savings ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    savings: e.target.value,
-                  }))
-                }
-              />
+              <div>
+                <Label htmlFor={incomeId}>План доходу</Label>
+                <Input
+                  id={incomeId}
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Напр. 40000 ₴"
+                  value={monthlyPlan?.income ?? ""}
+                  onChange={(e) =>
+                    onChangeMonthlyPlan((p) => ({
+                      ...p,
+                      income: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor={expenseId}>План витрат</Label>
+                <Input
+                  id={expenseId}
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Напр. 25000 ₴"
+                  value={monthlyPlan?.expense ?? ""}
+                  onChange={(e) =>
+                    onChangeMonthlyPlan((p) => ({
+                      ...p,
+                      expense: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor={savingsId}>План накопичень</Label>
+                <Input
+                  id={savingsId}
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="Напр. 10000 ₴"
+                  value={monthlyPlan?.savings ?? ""}
+                  onChange={(e) =>
+                    onChangeMonthlyPlan((p) => ({
+                      ...p,
+                      savings: e.target.value,
+                    }))
+                  }
+                />
+              </div>
             </div>
           )}
         </div>

@@ -10,6 +10,8 @@ export interface TransactionsHeaderProps {
   showHidden: boolean;
   setShowHidden: (updater: (v: boolean) => boolean) => void;
   hiddenCount: number;
+  /** Batch selection size — drives the inline "Оберіть транзакції" hint. */
+  selectedCount?: number;
 }
 
 /**
@@ -32,6 +34,7 @@ export function TransactionsHeader({
   showHidden,
   setShowHidden,
   hiddenCount,
+  selectedCount = 0,
 }: TransactionsHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-3">
@@ -57,12 +60,19 @@ export function TransactionsHeader({
       </div>
       <div className="flex items-center gap-1.5">
         {selectMode ? (
-          <button
-            onClick={exitSelectMode}
-            className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
-          >
-            Скасувати
-          </button>
+          <>
+            {selectedCount === 0 && (
+              <span className="text-style-caption text-muted">
+                Оберіть транзакції
+              </span>
+            )}
+            <button
+              onClick={exitSelectMode}
+              className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
+            >
+              Скасувати
+            </button>
+          </>
         ) : (
           <>
             {hiddenCount > 0 && (

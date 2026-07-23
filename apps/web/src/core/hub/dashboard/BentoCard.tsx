@@ -282,7 +282,7 @@ export const BentoCard = memo(function BentoCard({
             // `tailwind-preset.js` — matches Button iconSizes.xs/sm.
             "rounded-xl flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
-            "transition-colors cursor-grab active:cursor-grabbing touch-none",
+            "transition-colors cursor-grab active:cursor-grabbing touch-none select-none",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
           )}
         >

@@ -6,7 +6,6 @@
  * source, date). Extracted for Hard Rule #18 max-lines.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { fmtDate } from "../utils";
 import { Badge } from "@shared/components/ui/Badge";
 import { Icon } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
@@ -96,7 +95,6 @@ export function TxRowMetaChips({
           П24
         </span>
       )}
-      <span className="text-xs text-subtle">· {fmtDate(tx.time ?? 0)}</span>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { CURRENCY } from "../constants";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import type { TxRowTx } from "./txRowHelpers";
 
 interface TxRowAmountActionsProps {
@@ -70,6 +71,7 @@ export function TxRowAmountActions({
           }}
           className={cn(
             "touch-target px-2 flex items-center justify-center gap-1 rounded-xl transition-colors text-style-label",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             splitEditor
               ? "text-primary bg-primary/8"
               : existingSplitsCount > 0
@@ -84,13 +86,15 @@ export function TxRowAmountActions({
         </button>
       )}
       {onCatChange && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
           onClick={(e) => {
             e.stopPropagation();
             onToggleCatPicker();
           }}
           className={cn(
-            "w-9 h-9 flex items-center justify-center rounded-xl transition-colors",
             catPicker
               ? "text-primary bg-primary/8"
               : "text-subtle/60 hover:text-subtle hover:bg-panelHi",
@@ -111,16 +115,18 @@ export function TxRowAmountActions({
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
-        </button>
+        </Button>
       )}
       {onHide && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
           onClick={(e) => {
             e.stopPropagation();
             onHide(tx.id);
           }}
           className={cn(
-            "w-9 h-9 flex items-center justify-center rounded-xl transition-colors",
             hidden
               ? "text-success hover:bg-success/8"
               : "text-subtle/60 hover:text-danger hover:bg-danger/8",
@@ -144,7 +150,7 @@ export function TxRowAmountActions({
           ) : (
             <Icon name="trash" size={14} />
           )}
-        </button>
+        </Button>
       )}
     </div>
   );

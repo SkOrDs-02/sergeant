@@ -2,6 +2,7 @@ import { DebtCard } from "../components/DebtCard";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
+import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -50,13 +51,12 @@ export function AssetsAssetsSection({ state }: { state: State }) {
 
   return (
     <div className="mb-3 space-y-3">
-      <Card radius="lg" padding="sm" className="space-y-2">
-        <SectionHeading as="div" size="sm" className="pt-1">
-          <span className="inline-flex items-center gap-1.5">
-            <Icon name="credit-card" size={14} className="text-muted" />
-            Картки Monobank
-          </span>
-        </SectionHeading>
+      <CollapsibleSection
+        storageKey="finyk_assets_mono_cards_open_v1"
+        title="Картки Monobank"
+        headingSize="sm"
+        collapsedIcon="credit-card"
+      >
         {accounts
           .filter((a) => !hiddenAccounts.includes(a.id ?? ""))
           .map((a, i) => {
@@ -103,7 +103,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
               </div>
             );
           })}
-      </Card>
+      </CollapsibleSection>
 
       <Card radius="lg" padding="sm" className="space-y-2">
         <button
