@@ -5,8 +5,9 @@ import {
   calcFinykSpendingTotal,
 } from "./spending.js";
 
-const monday = new Date("2026-04-20T00:00:00").getTime();
-const sunday = new Date("2026-04-27T00:00:00").getTime();
+// UTC-anchored so toISOString() date keys are stable regardless of the machine's local TZ.
+const monday = Date.UTC(2026, 3, 20);
+const sunday = Date.UTC(2026, 3, 27);
 
 interface MakeTx {
   id: string;

@@ -130,14 +130,16 @@ function LimitBudgetCardComponent({
               >
                 {spent} / {budget.limit} ₴
               </span>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
+                iconOnly
                 onClick={onBeginEdit}
-                className="text-subtle hover:text-text text-sm transition-colors"
                 aria-label="Редагувати ліміт"
               >
                 <Icon name="edit" size={16} aria-hidden />
-              </button>
+              </Button>
             </div>
           </div>
           <div className="h-2 bg-bg rounded-full overflow-hidden">

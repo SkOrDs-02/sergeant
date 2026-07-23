@@ -246,6 +246,7 @@ export function Transactions({
             showHidden={filters.showHidden}
             setShowHidden={filters.setShowHidden}
             hiddenCount={hiddenTxIds.length}
+            selectedCount={selection.selectedIds.size}
           />
           <TransactionSyncPill
             syncState={{

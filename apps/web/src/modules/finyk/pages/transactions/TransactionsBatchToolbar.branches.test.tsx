@@ -35,13 +35,13 @@ describe("TransactionsBatchToolbar (branches)", () => {
     expect(screen.queryByText(/обрано/)).toBeNull();
   });
 
-  it("shows the empty-selection prompt when selectMode=true and selectedSize=0", () => {
+  it("does not render the toolbar when selectMode=true and selectedSize=0", () => {
     render(
       <TransactionsBatchToolbar
         {...buildProps({ selectMode: true, selectedSize: 0 })}
       />,
     );
-    expect(screen.getByText("Оберіть транзакції")).toBeInTheDocument();
+    expect(screen.queryByText("Оберіть транзакції")).toBeNull();
     expect(screen.queryByRole("button", { name: "Категорія" })).toBeNull();
   });
 

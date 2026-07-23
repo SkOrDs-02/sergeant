@@ -5,6 +5,7 @@
 
 export * from "./types.js";
 export * from "./dashboardKpis.js";
+export * from "./quickStats.js";
 export * from "./nextPlanSession.js";
 export * from "./topPRs.js";
 export * from "./recentWorkouts.js";

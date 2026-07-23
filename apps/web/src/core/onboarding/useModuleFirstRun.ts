@@ -32,9 +32,9 @@
 
 import { useCallback, useState } from "react";
 import {
-  safeReadStringLS,
-  safeWriteLS,
-  safeRemoveLS,
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
+  safeRemoveLSDurable,
 } from "@shared/lib/storage/storage";
 import { useStorageReady } from "../db/storageReady";
 
@@ -54,12 +54,21 @@ function firstSeenKey(moduleId: string): string {
   return `${FIRST_SEEN_KEY_PREFIX}${moduleId}${FIRST_SEEN_KEY_SUFFIX}`;
 }
 
+// The seen flag is written on dismiss and immediately followed by the
+// user reloading the app. Routed through the plain `webKVStore` path,
+// the write lands only in the SQLite warm-cache and fans out to a
+// fire-and-forget OPFS write-back that a hard reload can race past — so
+// the post-reload warm-cache scan misses it and the banner re-appears
+// every session. The durable helpers ALSO mirror synchronously to the
+// `localStorage` fallback that `bootstrapKvStore()` re-seeds the warm
+// cache from, closing the race (same fix the theme choice uses).
+
 function readFirstSeen(moduleId: string): boolean {
-  return safeReadStringLS(firstSeenKey(moduleId)) === "1";
+  return safeReadStringLSDurable(firstSeenKey(moduleId)) === "1";
 }
 
 function writeFirstSeen(moduleId: string): void {
-  safeWriteLS(firstSeenKey(moduleId), "1");
+  safeWriteStringLSDurable(firstSeenKey(moduleId), "1");
 }
 
 export interface UseModuleFirstRun {
@@ -127,6 +136,6 @@ export function useModuleFirstRun(moduleId: string | null): UseModuleFirstRun {
  */
 export function resetModuleFirstSeen(): void {
   for (const id of MODULE_FIRST_RUN_IDS) {
-    safeRemoveLS(firstSeenKey(id));
+    safeRemoveLSDurable(firstSeenKey(id));
   }
 }

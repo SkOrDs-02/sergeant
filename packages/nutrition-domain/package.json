@@ -17,6 +17,7 @@
     "./nutrition-types": "./src/nutritionTypes.ts",
     "./pantry-consume": "./src/pantryConsume.ts",
     "./pantry-text-parser": "./src/pantryTextParser.ts",
+    "./quick-stats": "./src/quickStats.ts",
     "./recipe-ids": "./src/recipeIds.ts",
     "./shopping-list": "./src/shoppingList.ts",
     "./water-log": "./src/waterLog.ts",

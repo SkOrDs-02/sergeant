@@ -25,6 +25,7 @@ import { RoutineActions } from "./RoutineActions";
 import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
 import { useRoutineAppState } from "./useRoutineAppState";
+import { useRoutineQuickStatsWriter } from "./hooks/useRoutineQuickStatsWriter";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
@@ -63,6 +64,13 @@ export default function RoutineApp({
     handlePullRefresh,
     handlePullRefreshError,
   } = useRoutineAppState({ pwaAction, onPwaActionConsumed, onOpenModule });
+
+  // Keep the Hub routine bento card's quick-stats snapshot in sync with real
+  // habits/completions, not just the onboarding demo seed.
+  useRoutineQuickStatsWriter({
+    habits: routine.habits,
+    completions: routine.completions,
+  });
 
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Routine shell wraps content

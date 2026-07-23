@@ -20,9 +20,10 @@ export interface TransactionsBatchToolbarProps {
  * lifecycle, so they live together.
  *
  * Visibility:
- *   - the toolbar renders only when `selectMode === true`;
- *   - action buttons render only when at least one row is selected
- *     (so an empty selection shows just the prompt);
+ *   - the toolbar renders only once at least one row is selected — the
+ *     empty-selection "оберіть транзакції" hint moved inline into
+ *     `TransactionsHeader` (A6/B4) so it no longer floats over content
+ *     with nothing to act on;
  *   - the sheet is independently mounted because its open-state
  *     overlaps with select-mode but is not the same.
  */
@@ -39,7 +40,7 @@ export function TransactionsBatchToolbar({
 }: TransactionsBatchToolbarProps) {
   return (
     <>
-      {selectMode && (
+      {selectMode && selectedSize > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-60 safe-area-pb">
           {/* Clears the nav: 60px track + 0.375rem shell top padding
               (round-3 UI audit — reverted the round-2 2*env() term together
@@ -49,46 +50,38 @@ export function TransactionsBatchToolbar({
           <div className="max-w-4xl mx-auto px-4 pb-[calc(60px+0.375rem+0.5rem)] pt-3">
             <div className="bg-panel border border-line rounded-2xl shadow-float px-4 py-3 flex items-center justify-between gap-3">
               <span className="text-style-label text-text">
-                {selectedSize > 0
-                  ? `${selectedSize} обрано`
-                  : "Оберіть транзакції"}
+                {selectedSize} обрано
               </span>
               <div className="flex items-center gap-2 flex-wrap">
-                {selectedSize > 0 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={onOpenCatPicker}
-                      className="text-style-label px-4 py-2 rounded-xl bg-primary text-bg min-h-[40px] transition-colors"
-                    >
-                      Категорія
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onApplyHide}
-                      className="text-style-label touch-target px-4 py-2 rounded-xl border border-line bg-panelHi text-text transition-colors hover:border-muted"
-                    >
-                      Приховати
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onApplyExclude}
-                      aria-label="Не враховувати у статистиці"
-                      className="text-style-label px-4 py-2 rounded-xl border border-line bg-panelHi text-text min-h-[40px] transition-colors hover:border-muted"
-                    >
-                      Не враховувати
-                    </button>
-                  </>
-                )}
+                <button
+                  type="button"
+                  onClick={onOpenCatPicker}
+                  className="text-style-label px-4 py-2 rounded-xl bg-primary text-bg min-h-[40px] transition-colors"
+                >
+                  Категорія
+                </button>
+                <button
+                  type="button"
+                  onClick={onApplyHide}
+                  className="text-style-label touch-target px-4 py-2 rounded-xl border border-line bg-panelHi text-text transition-colors hover:border-muted"
+                >
+                  Приховати
+                </button>
+                <button
+                  type="button"
+                  onClick={onApplyExclude}
+                  aria-label="Не враховувати у статистиці"
+                  className="text-style-label px-4 py-2 rounded-xl border border-line bg-panelHi text-text min-h-[40px] transition-colors hover:border-muted"
+                >
+                  Не враховувати
+                </button>
               </div>
             </div>
-            {selectedSize > 0 && (
-              <p className="mt-1 px-1 text-xs text-subtle">
-                «Не враховувати» прибирає вибрані транзакції з підсумків і
-                графіків, але не видаляє їх. Це зручно для переказів між
-                власними картками та інших технічних операцій.
-              </p>
-            )}
+            <p className="mt-1 px-1 text-style-caption text-muted">
+              «Не враховувати» прибирає вибрані транзакції з підсумків і
+              графіків, але не видаляє їх. Це зручно для переказів між власними
+              картками та інших технічних операцій.
+            </p>
           </div>
         </div>
       )}

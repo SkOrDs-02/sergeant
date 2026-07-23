@@ -11,6 +11,7 @@
     "./date-keys": "./src/dateKeys.ts",
     "./drafts": "./src/drafts.ts",
     "./habit-order": "./src/habitOrder.ts",
+    "./quick-stats": "./src/quickStats.ts",
     "./schedule": "./src/schedule.ts",
     "./streaks": "./src/streaks.ts",
     "./types": "./src/types.ts"

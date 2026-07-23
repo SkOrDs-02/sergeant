@@ -1,13 +1,3 @@
-/**
- * @scaffolded
- * @owner @Skords-01
- * @addedIn 1d443ac1 (feat(web): add UI/UX improvements and new components)
- * @nextStep Pair with `<PullToRefreshIndicator>` and wire into module
- *           pages. See docs/design/design-system.md § PullToRefreshIndicator.
- *
- * Scaffolded but not yet imported by any consumer. Do NOT delete as part of
- * dead-code cleanup — see Hard Rule #15 in AGENTS.md.
- */
 import { useState, useRef, useCallback, useEffect } from "react";
 
 export interface PullToRefreshState {
@@ -36,6 +26,13 @@ export interface UsePullToRefreshOptions {
   resistance?: number | undefined;
   /** Whether pull-to-refresh is enabled (default: true) */
   enabled?: boolean | undefined;
+  /**
+   * Failsafe: force-reset the spinner after this many ms even if `onRefresh`
+   * never settles (default: 15000). A consumer whose `onRefresh` promise hangs
+   * — e.g. `invalidateQueries` awaiting a refetch that stalls on a dead
+   * network — would otherwise leave the indicator spinning forever.
+   */
+  refreshFailsafeMs?: number | undefined;
   /** Ref to scrollable container (required) */
   scrollRef: React.RefObject<HTMLElement>;
 }
@@ -70,6 +67,7 @@ export function usePullToRefresh(
     maxPullDistance = 120,
     resistance = 0.4,
     enabled = true,
+    refreshFailsafeMs = 15000,
     scrollRef,
   } = options;
 
@@ -173,8 +171,22 @@ export function usePullToRefresh(
         canRefresh: false,
       }));
 
+      // Race the refresh against a failsafe timeout so a consumer whose
+      // promise never settles (a stalled `invalidateQueries` refetch, a
+      // dropped network) can't leave the spinner hung forever. Whoever wins,
+      // the `finally` resets the gesture.
+      const refreshPromise = Promise.resolve().then(onRefresh);
+      // Swallow a late rejection: if the failsafe wins the race, the still-
+      // pending refresh must not surface as an unhandled rejection.
+      refreshPromise.catch(() => {});
+
       try {
-        await onRefresh();
+        await Promise.race([
+          refreshPromise,
+          new Promise<void>((resolve) => {
+            window.setTimeout(resolve, refreshFailsafeMs);
+          }),
+        ]);
       } catch (err) {
         onError?.(err);
       } finally {
@@ -192,6 +204,7 @@ export function usePullToRefresh(
     pullThreshold,
     onRefresh,
     onError,
+    refreshFailsafeMs,
   ]);
 
   useEffect(() => {

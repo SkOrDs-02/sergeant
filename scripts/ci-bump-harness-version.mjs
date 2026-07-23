@@ -38,10 +38,12 @@ const baseRef = process.env.BUMP_BASE_REF || "origin/main";
 const headRef = process.env.BUMP_HEAD_REF || "HEAD";
 let diff;
 try {
+  // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- git triple-dot range syntax, not a UI string
   diff = execSync(`git diff --name-only ${baseRef}...${headRef}`, {
     encoding: "utf8",
   });
-} catch (err) {
+} catch {
+  // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- git triple-dot range syntax, not a UI string
   diff = execSync("git diff --name-only HEAD~1...HEAD", { encoding: "utf8" });
 }
 const touched = diff.split("\n").filter(Boolean);
@@ -53,7 +55,6 @@ const isAgentsMd = (p) => p === "AGENTS.md";
 const isHusky = (p) => p.startsWith(".husky/");
 const isEslintPlugin = (p) =>
   p.startsWith("packages/eslint-plugin-sergeant-design/");
-const isDoc = (p) => p.startsWith("docs/04-governance/");
 
 const hasSkills = touched.some(isSkills);
 const hasRules = touched.some(isRules);
@@ -67,11 +68,12 @@ if (hasRules) {
   bump = "major";
   reasons.push("Hard Rule files changed");
 }
-if (hasAgents || hasSkills || hasEslint) {
+if (hasAgents || hasSkills || hasEslint || hasHusky) {
   if (bump !== "major") bump = "minor";
   if (hasAgents) reasons.push("AGENTS.md modified");
   if (hasSkills) reasons.push("skill file added/modified");
   if (hasEslint) reasons.push("eslint-plugin-sergeant-design modified");
+  if (hasHusky) reasons.push("pre-commit hooks modified");
 }
 if (bump === "patch") {
   reasons.push("typo / link / freshness-only change");

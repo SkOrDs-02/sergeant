@@ -53,6 +53,7 @@ import { useNutritionRemoteActions } from "./hooks/useNutritionRemoteActions";
 import { useNutritionPwaAction } from "./hooks/useNutritionPwaAction";
 import { useNutritionRecipeCache } from "./hooks/useNutritionRecipeCache";
 import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
+import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWriter";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { newMealId } from "./lib/mealId";
@@ -176,6 +177,9 @@ export default function NutritionApp({
   const sqliteCacheTick = useNutritionSqliteReadTick();
   const { prefs, setPrefs, prefsStorageErr } =
     useNutritionPrefsState(sqliteCacheTick);
+  // Keep the Hub nutrition bento card's quick-stats snapshot in sync with
+  // real meals/goal, not just the onboarding demo seed.
+  useNutritionQuickStatsWriter({ log: log.nutritionLog, prefs });
 
   const {
     editingMeal,

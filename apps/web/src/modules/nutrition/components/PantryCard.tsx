@@ -54,7 +54,7 @@ function ItemRow({
   busy,
 }: ItemRowProps) {
   return (
-    <div className="flex items-center gap-2 first:pt-1 group min-h-[44px]">
+    <div className="flex items-center gap-2 px-2 rounded-xl group min-h-[44px] hover:bg-panelHi/50 transition-colors">
       <button
         type="button"
         onClick={() => editItemAt(idx)}

@@ -5,6 +5,7 @@
  * Unit tests for `DailyPlanGoalSelectors` (preset + TDEE dropdowns).
  */
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const useBiometrics = vi.fn();
@@ -28,7 +29,11 @@ import { DailyPlanGoalSelectors, PRESETS } from "./DailyPlanGoalSelectors";
 
 function renderSel(prefs: Record<string, unknown> = {}) {
   const setPrefs = vi.fn();
-  render(<DailyPlanGoalSelectors prefs={prefs as never} setPrefs={setPrefs} />);
+  render(
+    <MemoryRouter>
+      <DailyPlanGoalSelectors prefs={prefs as never} setPrefs={setPrefs} />
+    </MemoryRouter>,
+  );
   return { setPrefs };
 }
 

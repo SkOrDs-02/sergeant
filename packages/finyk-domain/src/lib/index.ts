@@ -7,5 +7,6 @@ export * from "./formatting.js";
 export * from "./goals.js";
 export * from "./transactions.js";
 export * from "./spending.js";
+export * from "./quickStats.js";
 export * from "./recurringDetect.js";
 export * from "./forecastEngine.js";

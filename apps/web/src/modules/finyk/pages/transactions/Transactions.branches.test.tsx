@@ -179,7 +179,7 @@ describe("Transactions page (branches)", () => {
     expect(screen.queryByText("Оберіть транзакції")).toBeNull();
   });
 
-  it("shows the empty-selection prompt after entering select mode", () => {
+  it("shows the empty-selection hint inline in the header after entering select mode", () => {
     renderTransactions({
       mono: { realTx: [SAMPLE_TX] },
     });
@@ -188,6 +188,7 @@ describe("Transactions page (branches)", () => {
     expect(
       screen.getByRole("button", { name: "Скасувати" }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Категорія" })).toBeNull();
   });
 
   function enterSelectModeWithExpandedDay() {

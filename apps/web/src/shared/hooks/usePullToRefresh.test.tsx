@@ -146,6 +146,34 @@ describe("usePullToRefresh", () => {
     });
   });
 
+  it("force-resets via the failsafe when onRefresh never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      // A consumer whose promise hangs forever (stalled invalidateQueries /
+      // dead network). Without the failsafe the spinner would spin forever.
+      const onRefresh = vi.fn(() => new Promise<void>(() => {}));
+      const { result } = setup({
+        onRefresh,
+        pullThreshold: 80,
+        refreshFailsafeMs: 5000,
+      });
+      act(() => el.dispatchEvent(makeTouchEvent("touchstart", 100)));
+      act(() => el.dispatchEvent(makeTouchEvent("touchmove", 220)));
+      await act(async () => {
+        el.dispatchEvent(new Event("touchend"));
+      });
+      expect(result.current.isRefreshing).toBe(true);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(result.current.isRefreshing).toBe(false);
+      expect(result.current.pullDistance).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("ignores the gesture when not at the top of the scroll container", () => {
     setScrollTop(el, 50);
     const { result } = setup();

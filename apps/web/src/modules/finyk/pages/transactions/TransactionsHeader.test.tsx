@@ -94,4 +94,14 @@ describe("TransactionsHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
     expect(setSelectMode).toHaveBeenCalledWith(true);
   });
+
+  it("shows the inline hint while select mode is active and nothing is selected", () => {
+    renderHeader({ selectMode: true, selectedCount: 0 });
+    expect(screen.getByText("Оберіть транзакції")).toBeInTheDocument();
+  });
+
+  it("hides the inline hint once at least one row is selected", () => {
+    renderHeader({ selectMode: true, selectedCount: 2 });
+    expect(screen.queryByText("Оберіть транзакції")).not.toBeInTheDocument();
+  });
 });
