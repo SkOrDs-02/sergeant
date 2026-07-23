@@ -20,6 +20,7 @@ import {
   FIZRUK_WORKOUTS_STORAGE_ERROR,
   useWorkouts,
 } from "./hooks/useWorkouts";
+import { useFizrukQuickStatsWriter } from "./hooks/useFizrukQuickStatsWriter";
 import { FIZRUK_NAV } from "./shell/fizrukNav";
 import { FizrukHeader } from "./shell/FizrukHeader";
 import { FizrukRouter } from "./shell/FizrukRouter";
@@ -68,6 +69,9 @@ export default function FizrukApp({
   } = useTrainingProgram();
   const { workouts, createWorkout, addItem } = useWorkouts();
   const { exercises } = useExerciseCatalog();
+  // Keep the Hub fizruk bento card's quick-stats snapshot in sync with real
+  // workouts, not just the onboarding demo seed.
+  useFizrukQuickStatsWriter(workouts);
 
   useFizrukWorkoutReminder({
     enabled: !!monthlyPlan.todayTemplateId,

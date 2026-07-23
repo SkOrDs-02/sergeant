@@ -48,6 +48,7 @@ import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
+import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
@@ -177,6 +178,9 @@ export default function App({
   ]);
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
+  // Keep the Hub finyk bento card's quick-stats snapshot in sync with real
+  // data (manual expenses + Monobank), not just the onboarding demo seed.
+  useFinykQuickStatsWriter({ mono: mergedMono, storage });
   const { frequentCategories, frequentMerchants } = useFinykPersonalization({
     mono: mergedMono,
     storage,
@@ -351,12 +355,12 @@ export default function App({
           title="Фінік"
           subtitle="Фінанси"
           right={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
               <button
                 type="button"
                 onClick={() => setShowBalance(!showBalance)}
-                className="focus-ring w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                className="focus-ring shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
                 aria-label={showBalance ? "Приховати суми" : "Показати суми"}
                 title={showBalance ? "Приховати суми" : "Показати суми"}
               >
@@ -540,7 +544,7 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 select-none",
+        "flex items-center gap-1.5 select-none shrink-0",
         "text-style-caption px-2 py-0.5 rounded-full border",
         "transition-colors duration-200",
         syncTone.pill,
@@ -614,8 +618,15 @@ function getSwipeStyle(swipeDx: number): React.CSSProperties {
       willChange: "transform",
     };
   }
+  // AI-CONTEXT: `transform: none` (not `translate3d(0,0,0)`) at rest —
+  // any non-"none" transform on an ancestor makes it the containing
+  // block for `position: fixed` descendants (CSS Transforms spec). With
+  // the old identity-transform idle value, `TransactionsBatchToolbar`'s
+  // `fixed bottom-0` toolbar was pinned to *this* wrapper's box instead
+  // of the viewport, so it floated mid-screen instead of sitting above
+  // the nav bar (A6/B4 root cause).
   return {
-    transform: "translate3d(0, 0, 0)",
+    transform: "none",
     transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
   };
 }
