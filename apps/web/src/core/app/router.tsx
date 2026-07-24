@@ -116,6 +116,14 @@ export const router = createBrowserRouter([
         index: true,
         lazy: () => import("./HubPage").then((m) => ({ Component: m.HubPage })),
       },
+      // UI Audit — design review page (dev/internal)
+      {
+        path: "ui-audit",
+        lazy: () =>
+          import("../../pages/UiAuditPage").then((m) => ({
+            Component: m.UiAuditPage,
+          })),
+      },
       // Catch-all: standalone routes + 404.
       // Uses `Component` (not `element`) to force fresh JSX per match.
       {
