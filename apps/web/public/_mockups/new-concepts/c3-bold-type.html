@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sergeant — Bold Type Concept</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=Playfair+Display:ital@1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f2ec;
+        --ink: #14120e;
+        --muted: #7a746a;
+        --accent: #d4380d;
+        --sand: #d9cdb4;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Inter", sans-serif;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1.1fr 1px 1fr;
+        min-height: 100vh;
+      }
+      .vline {
+        background: var(--ink);
+      }
+      .left {
+        padding: 48px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .brand {
+        font-family: "Anton", sans-serif;
+        font-size: 15px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-family: "Anton", sans-serif;
+        font-size: clamp(56px, 9vw, 120px);
+        line-height: 0.94;
+        text-transform: uppercase;
+        letter-spacing: 0.01em;
+      }
+      h1 em {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--accent);
+      }
+      .bottomleft {
+        font-family: "Anton", sans-serif;
+        font-size: clamp(22px, 3vw, 34px);
+        text-transform: uppercase;
+        line-height: 1.05;
+      }
+      .bottomleft span {
+        color: var(--muted);
+      }
+      .right {
+        padding: 48px 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+      }
+      .navrow {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+      }
+      .navrow b {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 2px;
+      }
+      .navrow span {
+        color: var(--muted);
+      }
+      .blob {
+        background: var(--sand);
+        min-height: 260px;
+        padding: 28px;
+        position: relative;
+        clip-path: polygon(3% 6%, 97% 0%, 100% 60%, 94% 100%, 4% 96%, 0% 40%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+      }
+      .blob .label {
+        font-family: "Anton", sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .modlist {
+        list-style: none;
+      }
+      .modlist li {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--ink);
+      }
+      .modlist .name {
+        font-family: "Anton", sans-serif;
+        font-size: 22px;
+        text-transform: uppercase;
+      }
+      .modlist .desc {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: right;
+        max-width: 55%;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      .stat .k {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .stat .v {
+        font-family: "Anton", sans-serif;
+        font-size: clamp(36px, 5vw, 56px);
+        line-height: 1;
+      }
+      .formband {
+        border-top: 1px solid var(--ink);
+        padding: 40px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: center;
+      }
+      .formband h2 {
+        font-family: "Anton", sans-serif;
+        font-size: clamp(26px, 4vw, 44px);
+        text-transform: uppercase;
+        line-height: 1;
+      }
+      .formband h2 em {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        text-transform: none;
+        color: var(--accent);
+      }
+      .form {
+        display: flex;
+      }
+      .form input {
+        flex: 1;
+        border: 1px solid var(--ink);
+        border-right: none;
+        background: #fff;
+        padding: 16px 18px;
+        font-size: 14px;
+        outline: none;
+        font-family: "Inter", sans-serif;
+      }
+      .form button {
+        background: var(--accent);
+        color: #f5f2ec;
+        border: 1px solid var(--accent);
+        padding: 16px 26px;
+        font-family: "Anton", sans-serif;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+      }
+      .form button:hover {
+        background: #b32e0a;
+      }
+      .aisect {
+        border-top: 1px solid var(--ink);
+        padding: 56px 40px;
+      }
+      .aisect h2 {
+        font-family: "Anton", sans-serif;
+        font-size: clamp(34px, 6vw, 72px);
+        text-transform: uppercase;
+        line-height: 0.96;
+        max-width: 900px;
+      }
+      .aisect h2 em {
+        font-family: "Playfair Display", serif;
+        font-style: italic;
+        text-transform: none;
+        color: var(--accent);
+      }
+      .aisect p {
+        max-width: 520px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin-top: 20px;
+      }
+      footer {
+        border-top: 1px solid var(--ink);
+        padding: 18px 40px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      @media (max-width: 860px) {
+        .split {
+          grid-template-columns: 1fr;
+        }
+        .vline {
+          display: none;
+        }
+        .formband {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="split">
+      <div class="left">
+        <div class="brand">Sergeant®</div>
+        <h1>Твій<br />хаос —<br />мій <em>наказ.</em></h1>
+        <div class="bottomleft">
+          Гроші. Тіло.<br /><span>Звички. Їжа.</span>
+        </div>
+      </div>
+      <div class="vline" aria-hidden="true"></div>
+      <div class="right">
+        <nav class="navrow" aria-label="Розділи">
+          <b>Модулі</b><span>AI</span><span>Тарифи</span><span>Запуск</span>
+        </nav>
+        <div class="blob">
+          <div>
+            <div class="label">Запуск через</div>
+            <div class="stat">
+              <span class="v">24 дні</span
+              ><span class="k">чергa: 412 / 500</span>
+            </div>
+          </div>
+        </div>
+        <ul class="modlist">
+          <li>
+            <span class="name">Фінанси</span
+            ><span class="desc">бюджет у гривні, monobank-синк</span>
+          </li>
+          <li>
+            <span class="name">Фітнес</span
+            ><span class="desc">плани, прогрес, сила</span>
+          </li>
+          <li>
+            <span class="name">Звички</span
+            ><span class="desc">стріки без самообману</span>
+          </li>
+          <li>
+            <span class="name">Харчування</span
+            ><span class="desc">КБЖУ по-людськи</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <section class="aisect">
+      <h2>AI, що читає твій день <em>як відкриту книгу.</em></h2>
+      <p>
+        Сержант з'єднує всі чотири модулі й помічає те, що ти пропускаєш: як
+        недосип б'є по гаманцю, а пропущений зал — по настрою. І щоранку дає
+        короткий чесний рапорт.
+      </p>
+    </section>
+
+    <section class="formband">
+      <h2>Стань у чергу. <em>Перших 500 чекає знижка назавжди.</em></h2>
+      <form class="form" onsubmit="event.preventDefault()">
+        <input type="email" placeholder="ваш@email.com" aria-label="Email" />
+        <button type="submit">У стрій</button>
+      </form>
+    </section>
+
+    <footer>
+      <span>Sergeant — Made in Ukraine</span>
+      <span>Issue #001 — 2026</span>
+    </footer>
+  </body>
+</html>
