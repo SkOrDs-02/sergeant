@@ -84,10 +84,42 @@ describe("useWebVisualKeyboardInset", () => {
     expect(result.current).toBe(350);
   });
 
-  it("subtracts offsetTop from the gap", () => {
-    installVisualViewport(500, 50); // gap = 800 - 500 - 50 = 250
+  it("ignores offsetTop — the gap is derived from height alone", () => {
+    // Would have been 800 - 500 - 50 = 250 under the old formula; the
+    // stabilized inset only cares about the height delta (300).
+    installVisualViewport(500, 50);
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
-    expect(result.current).toBe(250);
+    expect(result.current).toBe(300);
+  });
+
+  it("does not recompute on visualViewport scroll events (H1 — no jitter)", () => {
+    // iOS fires `scroll` on visualViewport continuously while panning
+    // to keep a focused input above the keyboard, shifting offsetTop
+    // on every frame. The inset must stay put through that churn —
+    // only a real `resize` (keyboard height actually changing) may
+    // move it. See keyboard-and-scroll.md § H1.
+    const vv = installVisualViewport(500); // gap = 300
+    const { result } = renderHook(() => useWebVisualKeyboardInset(true));
+    expect(result.current).toBe(300);
+
+    act(() => {
+      vv.offsetTop = 40;
+      vv._fire("scroll");
+    });
+    expect(result.current).toBe(300);
+
+    act(() => {
+      vv.offsetTop = 90;
+      vv._fire("scroll");
+    });
+    expect(result.current).toBe(300);
+  });
+
+  it("only resize is subscribed on visualViewport — no scroll listener", () => {
+    const vv = installVisualViewport(800);
+    renderHook(() => useWebVisualKeyboardInset(true));
+    const listenedTypes = vv.addEventListener.mock.calls.map((call) => call[0]);
+    expect(listenedTypes).toEqual(["resize"]);
   });
 
   it("resets to 0 when toggled inactive", () => {
@@ -109,5 +141,45 @@ describe("useWebVisualKeyboardInset", () => {
     });
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
     expect(result.current).toBe(0);
+  });
+
+  it("scrolls the focused text field into view when the keyboard opens (H2 fallback)", () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+
+    const vv = installVisualViewport(800); // starts closed
+    renderHook(() => useWebVisualKeyboardInset(true));
+    expect(input.scrollIntoView).not.toHaveBeenCalled();
+
+    act(() => {
+      vv.height = 450; // keyboard opens, gap 350
+      vv._fire("resize");
+    });
+
+    expect(input.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    document.body.removeChild(input);
+  });
+
+  it("snaps window.scrollY back to 0 when the keyboard closes and the window drifted (H3 fallback)", () => {
+    const scrollToSpy = vi
+      .spyOn(window, "scrollTo")
+      .mockImplementation(() => {});
+    const vv = installVisualViewport(500); // starts open, gap 300
+    renderHook(() => useWebVisualKeyboardInset(true));
+    expect(scrollToSpy).not.toHaveBeenCalled();
+
+    Object.defineProperty(window, "scrollY", {
+      value: 120,
+      configurable: true,
+    });
+    act(() => {
+      vv.height = 800; // keyboard closes, gap 0
+      vv._fire("resize");
+    });
+
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 0);
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 });

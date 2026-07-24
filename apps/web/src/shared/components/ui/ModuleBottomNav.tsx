@@ -1,4 +1,5 @@
 import { memo, type ReactNode } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -32,6 +33,14 @@ import { cn } from "../../lib/ui/cn";
  *   nav's top edge. See `RoutineBottomNav`. The FAB sits in front
  *   of the nav's stacking context and keeps its own coral gradient
  *   per Routine identity.
+ *
+ * On-screen keyboard (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+ * § design decision 2): while the visual-keyboard inset is active the
+ * nav slides down out of view (nothing sits below it during text
+ * entry, and it was the fixed element that turned iOS's keyboard
+ * dead-zone into a *reachable* dead zone). Buttons drop to
+ * `tabIndex={-1}` and the `<nav>` gets `aria-hidden` together with the
+ * visual hide so it can't be tabbed/swiped into while off-screen.
  *
  * Accessibility:
  * - Default role is <nav> with <button aria-current="page">.
@@ -109,13 +118,18 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
 }: ModuleBottomNavProps) {
   const tokens = COLORS[module];
   const isTablist = role === "tablist";
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const hidden = kbInsetPx > 0;
 
   return (
     <nav
       aria-label={ariaLabel}
+      aria-hidden={hidden || undefined}
       className={cn(
         "shrink-0 relative z-30",
         "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "transition-transform duration-200 motion-reduce:transition-none",
+        hidden && "translate-y-full pointer-events-none",
         className,
       )}
     >
@@ -136,7 +150,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 !isTablist ? (active ? "page" : undefined) : undefined
               }
               aria-controls={isTablist ? item.panelId : undefined}
-              tabIndex={isTablist ? (active ? 0 : -1) : undefined}
+              tabIndex={hidden ? -1 : isTablist ? (active ? 0 : -1) : undefined}
               onClick={() => onChange(item.id)}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",

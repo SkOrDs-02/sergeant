@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useBodyScrollLock } from "./useBodyScrollLock";
 
@@ -52,5 +52,33 @@ describe("useBodyScrollLock", () => {
     expect(document.body.style.overflow).toBe("visible");
     unmount();
     expect(document.body.style.overflow).toBe("visible");
+  });
+
+  it("corrects window.scrollY back to the pinned offset on focusin while locked (iOS keyboard auto-scroll)", () => {
+    Object.defineProperty(window, "scrollY", {
+      value: 240,
+      configurable: true,
+    });
+    const scrollToSpy = vi
+      .spyOn(window, "scrollTo")
+      .mockImplementation(() => {});
+    const { unmount } = renderHook(() => useBodyScrollLock());
+
+    // iOS drifts the document scroll while auto-scrolling a focused
+    // input above the keyboard — simulate that drift, then the focus
+    // event that should trigger the correction.
+    Object.defineProperty(window, "scrollY", {
+      value: 300,
+      configurable: true,
+    });
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 240);
+
+    document.body.removeChild(input);
+    unmount();
+    Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
   });
 });

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import {
   ModuleBottomNav,
   type ModuleBottomNavItem,
@@ -80,6 +81,15 @@ export function RoutineBottomNav({
   // pill bezel. As a sibling at `z-40` it sits above the nav's stacking
   // context and overlaps the pill's top edge by ~22 px so it reads as
   // "floating above the dock", matching the v2 module-hero language.
+  //
+  // Keyboard-open hide (keyboard-and-scroll.md § design decision 2):
+  // `ModuleBottomNav` hides itself, but the FAB is a sibling — not a
+  // child — of that nav, so it needs the same signal to slide away
+  // together instead of floating alone once the pill it sits above is
+  // gone.
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const hidden = kbInsetPx > 0;
+
   return (
     <div className="relative shrink-0">
       <ModuleBottomNav
@@ -95,6 +105,8 @@ export function RoutineBottomNav({
           type="button"
           onClick={onAddHabit}
           aria-label="Додати звичку"
+          aria-hidden={hidden || undefined}
+          tabIndex={hidden ? -1 : undefined}
           className={[
             // `-top-[22px]` lifts the FAB above the pill's top edge by
             // 22 px (per locked spec §3.2). `z-40` clears the nav's
@@ -109,6 +121,7 @@ export function RoutineBottomNav({
             "flex items-center justify-center",
             "transition-transform duration-150 active:scale-95 hover:scale-[1.04]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            hidden && "translate-y-full pointer-events-none",
           ].join(" ")}
         >
           <svg

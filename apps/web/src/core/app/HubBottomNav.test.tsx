@@ -1,6 +1,11 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import { HubBottomNav } from "./HubBottomNav";
 
 const STORAGE_KEY = "sergeant.hub.reportsTabRevealedAt";
@@ -414,6 +419,46 @@ describe("HubBottomNav", () => {
         fireEvent.keyDown(signIn, { key: "ArrowRight" }),
       ).not.toThrow();
       expect(onShowAuth).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── On-screen keyboard hide (spec keyboard-and-scroll.md § design decision 2) ───
+
+  describe("on-screen keyboard hide", () => {
+    afterEach(() => {
+      resetVisualKeyboardInsetAdapter();
+    });
+
+    it("slides out of view and drops every tab out of the tab order while the keyboard is open", () => {
+      setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+      renderNav({});
+
+      // `aria-hidden` removes the subtree from the accessibility tree —
+      // `{ hidden: true }` opts back in to assert on the DOM state; the
+      // accessible *name* also zeroes out on an aria-hidden element, so
+      // this drops the `name` filter (only one `<nav>` renders here).
+      const nav = screen.getByRole("navigation", { hidden: true });
+      expect(nav).toHaveAttribute("aria-label", messages.nav.hubSections);
+      expect(nav).toHaveAttribute("aria-hidden", "true");
+      expect(nav.className).toContain("translate-y-full");
+      expect(
+        screen.getByRole("tab", { name: /Головна/, hidden: true }),
+      ).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("stays visible and reachable when the keyboard is closed", () => {
+      setVisualKeyboardInsetAdapter(() => 0);
+      renderNav({});
+
+      const nav = screen.getByRole("navigation", {
+        name: messages.nav.hubSections,
+      });
+      expect(nav).not.toHaveAttribute("aria-hidden");
+      expect(nav.className).not.toContain("translate-y-full");
+      expect(screen.getByRole("tab", { name: /Головна/ })).toHaveAttribute(
+        "tabindex",
+        "0",
+      );
     });
   });
 });
