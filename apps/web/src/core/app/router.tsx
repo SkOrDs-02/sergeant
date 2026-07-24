@@ -124,6 +124,14 @@ export const router = createBrowserRouter([
             Component: m.UiAuditPage,
           })),
       },
+      // Proposal — before/after UX/UI improvement demo (internal, for review)
+      {
+        path: "proposal",
+        lazy: () =>
+          import("../../pages/ProposalPage").then((m) => ({
+            Component: m.ProposalPage,
+          })),
+      },
       // Catch-all: standalone routes + 404.
       // Uses `Component` (not `element`) to force fresh JSX per match.
       {
