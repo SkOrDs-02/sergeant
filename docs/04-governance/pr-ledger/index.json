@@ -1,7 +1,7 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-24",
   "prs": [
     {
       "number": 334,
@@ -33,6 +33,26 @@
         "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
         "packages/api-client/README.md",
         "packages/dualwrite-core/README.md"
+      ]
+    },
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 432,
+      "title": "refactor(web): цикл 6 стадія 1 — семантичні типографічні ролі у shared/ui",
+      "merged_at": "2026-07-24T14:36:38Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/04-governance/governance/rules/16-typography-scale-12px-floor.md"
       ]
     },
     {
@@ -217,17 +237,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]
