@@ -2137,9 +2137,28 @@ describe("routine applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(deleteClient)).toContain("SET deleted_at = $1");
+
+    // Воскресіння tombstone-у новішим чекіном (audit E-1): детермінований
+    // PK `habitId:dateKey` робить повторний чекін того самого дня легітимним.
+    const reviveClient = makeClient([existing({ deleted_at: OLD_TS })]);
+    await expect(
+      applyRoutineEntries(
+        reviveClient,
+        op({
+          id: "entry-1",
+          user_id: USER_ID,
+          name: "Drink water",
+          completed_at: CLIENT_TS.toISOString(),
+          deleted_at: null,
+        }),
+        USER_ID,
+        CLIENT_TS,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(sql(reviveClient)).toContain("deleted_at = $4");
   });
 
-  it("rejects routine entry conflicts, tombstones, and bad dates", async () => {
+  it("rejects routine entry conflicts and bad dates", async () => {
     await expect(
       applyRoutineEntries(
         makeClient([existing({ user_id: "other-user" })]),
@@ -2158,14 +2177,15 @@ describe("routine applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
+    // Tombstone + СТАРІШИЙ/рівний clientTs і далі ріжеться LWW-guard-ом.
     await expect(
       applyRoutineEntries(
-        makeClient([existing({ deleted_at: OLD_TS })]),
+        makeClient([existing({ updated_at: NEWER_TS, deleted_at: NEWER_TS })]),
         op({ id: "entry-1", user_id: USER_ID, name: "Walk" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
     await expect(
       applyRoutineEntries(

@@ -1,6 +1,6 @@
 # Продуктовий аудит знань: routine — diff-звіт тріангуляції
 
-> **Last validated:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-07-24 by @claude. **Next review:** 2026-10-22.
 > **Status:** Active
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по модулю
@@ -489,6 +489,27 @@ Origin-девайс: виконано. Сервер + другий пристр�
 > Fable (`sqliteWriter/diff.ts`, `adapter.sql.ts`, `applyPullOp.ts`) лишаються
 > перевірюваними твердженнями.
 
+> **✅ ЗАКРИТО (2026-07-24, Хвиля 0).** Guard знято на всіх трьох шарах:
+> `apps/server/src/modules/sync/routine/applySync.ts` (push), `apps/web` і
+> `apps/mobile` `src/core/syncEngine/applyPullOp.ts` (pull). Захист від
+> stale-edit тримає LWW-guard (`updated_at >= clientTs` → `lww_conflict`) —
+> покрито парою тестів (новіший `clientTs` → воскресіння; старіший/рівний →
+> `lww_conflict`) в unit- та integration-лейнах. Guard для `nutrition_meals`
+> і `fizruk_*` (випадковий UUID-PK) НЕ чіпали.
+>
+> **Знято ОДНУ з ДВОХ причин втрати чекіну.** Друга лишається відкритою:
+> `routine_entries.id` у Postgres — `UUID` (`026_routine_tables.sql:33`,
+> `packages/db-schema/src/pg/routine.ts:25`), а клієнт шле
+> `hab_<base36>_<rand>:YYYY-MM-DD`. Реальний push мусить падати на `22P02`
+> → `apply_failed` → той самий термінальний reject. Це міграція типу PK по
+> 4 таблицях + бекфіл (Hard Rule #4) — окрема задача, записана в
+> `docs/90-work/tech-debt/backend.md`. Твердження «чекін більше не
+> губиться» ЗАБОРОНЕНО без live-перевірки на справжній БД.
+>
+> Побічний край: `clientTs` має мілісекундну роздільність
+> (`dualWriteBoot.ts:67-69`), тож два toggle-и в одну мілісекунду дадуть
+> `lww_conflict`. У проді людський цикл >1 ms; у тестах `t1/t2/t3` рознесені.
+
 ### E-2. Дві ратифіковані часові доктрини в одному модулі
 
 **Згода.** Усі три: «межа доби — Europe/Kyiv» (AGENTS.md domain-invariant,
@@ -725,7 +746,7 @@ X→Y» цього прогону не виконувалась; DOCS-колон
 | #   | Робота                                                                                                                                                                    | Джерело                      | Наслідок                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------- |
 | 1   | **`completions` як єдине джерело істини (append-only); стрік/rate/heatmap/digest — derived зі снапшотом конфігурації тижня** (один фікс закриває кластер E-1/E-2/E-3/E-7) | E-1..E-7, D-3                | `критично`                 |
-| 2   | **Tombstone-resurrection для `routine_entries`**: insert зі строго новішим `clientTs` знімає `deleted_at` (цикл toggle→untoggle→toggle) + тест через сервер               | E-1                          | `критично` (втрата чекіну) |
+| 2   | ✅ **Tombstone-resurrection для `routine_entries`**: insert зі строго новішим `clientTs` знімає `deleted_at` (цикл toggle→untoggle→toggle) + тест через сервер            | E-1                          | `критично` (втрата чекіну) |
 | 3   | **Ратифікувати одну часову доктрину** (Kyiv усюди vs device-local) + вирівняти mobile/reducers/`grid.ts` під неї                                                          | E-2                          | `критично`                 |
 | 4   | **Гнучкий стрік**: `paused` як датований інтервал (`pausedFrom`/`pausedTo`) + grace/freeze-бюджет; skip у стріку лише в межах паузи                                       | E-3, напруга 1, D1/D3/D5, G1 | `критично`                 |
 | 5   | **Тристанова модель пропуску** «зробив / не зміг з причиною / не зробив» (розширити бінарний `completions`); heatmap/digest розрізняють                                   | напруга «пропуск», D2        | `критично`                 |

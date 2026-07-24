@@ -99,25 +99,102 @@ describe("applyRoutineEntries", () => {
     ]);
   });
 
-  it("rejects stale writes against a tombstoned entry", async () => {
-    const fake = new FakeClient();
-    fake.queueRows([
-      {
-        user_id: "user-1",
-        updated_at: new Date("2026-07-21T07:00:00.000Z"),
-        deleted_at: new Date("2026-07-21T07:05:00.000Z"),
-      },
-    ]);
+  // AI-CONTEXT: `routine_entries.id` детермінований (`habitId:dateKey`), тому
+  // toggle→untoggle→toggle б'є в ТОЙ САМИЙ PK. Воскресіння tombstone-у тут
+  // легітимне — див. док-стрінг `applyRoutineEntries` і audit E-1.
+  it("resurrects a tombstoned entry when clientTs is strictly newer", async () => {
+    const t1 = new Date("2026-07-21T08:00:00.000Z");
+    const t2 = new Date("2026-07-21T08:00:01.000Z");
+    const t3 = new Date("2026-07-21T08:00:02.000Z");
+    const entry = { id: "hab_abc:2026-07-21", user_id: "user-1" };
 
+    // 1. insert(t1) — рядка ще немає.
+    const insertFake = new FakeClient();
     await expect(
       applyRoutineEntries(
-        asClient(fake),
-        op({ id: "entry-1", user_id: "user-1", name: "water" }, "update"),
+        asClient(insertFake),
+        op(
+          { ...entry, name: "water", completed_at: t1.toISOString() },
+          "insert",
+        ),
         "user-1",
-        new Date("2026-07-21T08:00:00.000Z"),
+        t1,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
-    expect(fake.queries).toHaveLength(1);
+    ).resolves.toEqual({ status: "applied" });
+    expect(lastQuery(insertFake).sql).toContain("INSERT INTO routine_entries");
+
+    // 2. delete(t2) — soft-delete, ставить tombstone.
+    const deleteFake = new FakeClient();
+    deleteFake.queueRows([
+      { user_id: "user-1", updated_at: t1, deleted_at: null },
+    ]);
+    await expect(
+      applyRoutineEntries(
+        asClient(deleteFake),
+        op(entry, "delete"),
+        "user-1",
+        t2,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(lastQuery(deleteFake).sql).toContain("SET deleted_at = $1");
+
+    // 3. insert(t3) проти tombstone-у — повторний чекін того самого дня.
+    const reviveFake = new FakeClient();
+    reviveFake.queueRows([
+      { user_id: "user-1", updated_at: t2, deleted_at: t2 },
+    ]);
+    await expect(
+      applyRoutineEntries(
+        asClient(reviveFake),
+        op(
+          {
+            ...entry,
+            name: "water",
+            completed_at: t3.toISOString(),
+            deleted_at: null,
+          },
+          "insert",
+        ),
+        "user-1",
+        t3,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    const revive = lastQuery(reviveFake);
+    expect(revive.sql).toContain("UPDATE routine_entries");
+    expect(revive.sql).toContain("deleted_at = $4");
+    expect(revive.params).toEqual(["water", t3, t3, null, entry.id, "user-1"]);
+  });
+
+  // Контр-кейс: без нього зникає захист від stale-edit іншого девайса.
+  it("still rejects a non-newer write against a tombstoned entry", async () => {
+    const tombstoneTs = new Date("2026-07-21T08:00:05.000Z");
+
+    for (const clientTs of [
+      new Date("2026-07-21T08:00:00.000Z"), // старіший
+      tombstoneTs, // рівний
+    ]) {
+      const fake = new FakeClient();
+      fake.queueRows([
+        {
+          user_id: "user-1",
+          updated_at: tombstoneTs,
+          deleted_at: tombstoneTs,
+        },
+      ]);
+
+      await expect(
+        applyRoutineEntries(
+          asClient(fake),
+          op(
+            { id: "hab_abc:2026-07-21", user_id: "user-1", name: "water" },
+            "update",
+          ),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
+      expect(fake.queries).toHaveLength(1);
+    }
   });
 });
 

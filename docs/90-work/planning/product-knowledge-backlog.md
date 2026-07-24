@@ -31,7 +31,7 @@
 | ------------------------------------------------------------------------------------------------ | --------- | ---- | ----- | -------------------------------------------------- | ---- |
 | Подвійний облік готівки — MCC 6011 (зняття) спотворює витрати                                    | finyk     | code | крит  | finyk E-2                                          |      |
 | Multi-currency гейт продає непрацюючу фічу — виправити або зняти                                 | finyk     | code | крит  | finyk D-1                                          |      |
-| Tombstone-resurrection: toggle→untoggle→toggle губить чекін                                      | routine   | code | крит  | routine E-1                                        |      |
+| Tombstone-resurrection: toggle→untoggle→toggle губить чекін                                      | routine   | code | крит  | routine E-1                                        | ✅   |
 | Weekday off-by-one у create/edit executor звичок                                                 | routine   | code | агент | routine E-5                                        |      |
 | Paywall-текст «10 повідомлень» → фактичний ліміт                                                 | hub-coach | code | агент | hub-coach E1                                       |      |
 | Пре-існуючі червоні тести finyk (spending, FinykApp.extra)                                       | finyk     | code | агент | finyk verification                                 |      |

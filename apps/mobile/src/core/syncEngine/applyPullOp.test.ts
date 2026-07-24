@@ -283,4 +283,99 @@ describe("applyPullOp (mobile)", () => {
     );
     expect(rows[0]?.deleted_at).toBe("2026-07-10T09:00:00.000Z");
   });
+
+  // audit E-1: PK `routine_entries` детермінований (`habitId:dateKey`), тож
+  // локальний tombstone НЕ має блокувати повторний чекін того самого дня.
+  it("resurrects locally soft-deleted routine_entries on a newer op", async () => {
+    const userId = "u1";
+    const entryId = "h-tomb:2026-07-10";
+    const deletedTs = "2026-07-10T09:00:00.000Z";
+
+    client.run(
+      `INSERT INTO routine_entries
+         (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, NULL, ?, ?, ?)`,
+      [entryId, userId, "Gone", deletedTs, deletedTs, deletedTs],
+    );
+
+    const outcome = await applyPullOp(
+      client,
+      {
+        id: 5,
+        table: "routine_entries",
+        op: "update",
+        row: {
+          id: entryId,
+          user_id: userId,
+          name: "Revived",
+          completed_at: "2026-07-10T10:00:00.000Z",
+          created_at: deletedTs,
+          deleted_at: null,
+        },
+        client_ts: "2026-07-10T10:00:00.000Z",
+        server_ts: "2026-07-10T10:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+    expect(outcome).toBe("applied");
+
+    const rows = await client.all<{
+      name: string;
+      completed_at: string | null;
+      deleted_at: string | null;
+    }>(
+      `SELECT name, completed_at, deleted_at FROM routine_entries WHERE id = ?`,
+      [entryId],
+    );
+    expect(rows[0]).toMatchObject({
+      name: "Revived",
+      completed_at: "2026-07-10T10:00:00.000Z",
+      deleted_at: null,
+    });
+  });
+
+  // Контр-кейс: stale pull проти tombstone-у і далі скіпається.
+  it("skips stale ops against locally soft-deleted routine_entries", async () => {
+    const userId = "u1";
+    const entryId = "h-tomb-stale:2026-07-10";
+    const deletedTs = "2026-07-10T09:00:00.000Z";
+
+    client.run(
+      `INSERT INTO routine_entries
+         (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, NULL, ?, ?, ?)`,
+      [entryId, userId, "Gone", deletedTs, deletedTs, deletedTs],
+    );
+
+    const outcome = await applyPullOp(
+      client,
+      {
+        id: 6,
+        table: "routine_entries",
+        op: "update",
+        row: {
+          id: entryId,
+          user_id: userId,
+          name: "Stale revive",
+          completed_at: null,
+          created_at: deletedTs,
+          deleted_at: null,
+        },
+        client_ts: "2026-07-10T08:00:00.000Z",
+        server_ts: "2026-07-10T08:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+    expect(outcome).toBe("skipped");
+
+    const rows = await client.all<{ name: string; deleted_at: string | null }>(
+      `SELECT name, deleted_at FROM routine_entries WHERE id = ?`,
+      [entryId],
+    );
+    expect(rows[0]).toMatchObject({ name: "Gone", deleted_at: deletedTs });
+  });
 });

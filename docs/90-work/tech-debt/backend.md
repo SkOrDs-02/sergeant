@@ -344,6 +344,27 @@ Webhook-based server-side integration added in PR2. Key components:
 - ✅ Inline EXPLAIN ANALYZE-нотатки на гарячих міграціях (016 — 4 патерни синку/push, 024 — partial для `mono_transaction` listу, 032 — підсумкові COMMENT ON для `psql \d+`).
 - `idx_module_data_server_updated_at` — досі **не створено**, нема feature-у "recent changes across all modules". Залишається у tech-debt-seed-секції (P2).
 
+### Routine: PK-тип `routine_*` розходиться з клієнтським id (відкрито, `критично`)
+
+**Знайдено 2026-07-24** під час фіксу tombstone-resurrection (audit routine
+E-1). `routine_entries.id` у Postgres — `UUID`
+([`026_routine_tables.sql:33`](../../../apps/server/src/migrations/026_routine_tables.sql),
+`packages/db-schema/src/pg/routine.ts:25`), у клієнтському SQLite — `TEXT`, а
+клієнт формує id як `hab_<base36>_<rand>:YYYY-MM-DD`
+(`packages/routine-domain/src/storage.ts` + `sqliteWriter/diff.ts`
+`buildCompletionRowId`). Реальний push із браузера має падати на `22P02`
+(`invalid input syntax for type uuid`) ще на `SELECT … WHERE id = $1` →
+`apply_failed` → термінальний reject в outbox (та сама втрата чекіну, що й
+E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categories`.
+Наявні тести маскують проблему, бо вживають валідні UUID-и.
+
+**Чому не в цьому PR:** зміна типу PK по 4 таблицях + бекфіл + FK — Hard Rule
+#4 (двофазність) і рішення власника поверхні. Знято ЛИШЕ tombstone-причину;
+до цієї міграції твердження «чекін більше не губиться» непідтверджене.
+
+**Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжній
+`habitId`) → окремий PR із двофазною міграцією типу.
+
 ---
 
 ## Observability & logging review
