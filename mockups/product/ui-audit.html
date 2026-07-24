@@ -32,7 +32,7 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: rgba(253, 249, 243, 0.92);
+        background: rgba(253, 249, 243, 0.94);
         backdrop-filter: blur(14px);
         border-bottom: 1px solid var(--border);
         padding: 14px 32px;
@@ -106,7 +106,7 @@
 
       /* ── page header ── */
       .page-header {
-        margin-bottom: 56px;
+        margin-bottom: 48px;
       }
       .kicker {
         font-family: var(--font-mono);
@@ -134,7 +134,7 @@
         color: var(--muted);
         font-size: 15px;
         line-height: 1.65;
-        max-width: 580px;
+        max-width: 560px;
       }
 
       /* ── score grid ── */
@@ -146,7 +146,7 @@
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
         overflow: hidden;
-        margin-bottom: 56px;
+        margin-bottom: 52px;
       }
       .score-cell {
         background: var(--panel);
@@ -184,7 +184,7 @@
 
       /* ── section ── */
       .section {
-        margin-bottom: 72px;
+        margin-bottom: 68px;
       }
       .section-head {
         display: flex;
@@ -229,11 +229,11 @@
         color: var(--text);
       }
 
-      /* ── before/after split ── */
+      /* ── split ── */
       .split {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
+        gap: 20px;
         align-items: start;
       }
       .split-panel {
@@ -271,186 +271,296 @@
       }
       .split-body {
         background: var(--panel);
-        padding: 28px 24px;
+        padding: 24px 20px;
+      }
+
+      /* ── anim-state badge ── */
+      .anim-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 4px 10px;
+        border-radius: var(--r-full);
+        margin-bottom: 16px;
+      }
+      .anim-badge.looping {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+      }
+      .anim-badge.static {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+      .anim-badge-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .anim-badge.looping .anim-badge-dot {
+        animation: blink-dot 0.8s ease-in-out infinite;
+      }
+      @keyframes blink-dot {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.25;
+        }
       }
 
       /* ── phone frame ── */
       .phone {
-        width: 280px;
+        width: 260px;
         margin: 0 auto;
         background: #1c1917;
         border-radius: 36px;
-        padding: 12px;
+        padding: 11px;
         box-shadow: var(--shadow-e5);
       }
       .phone-screen {
         background: var(--bg);
-        border-radius: 26px;
+        border-radius: 27px;
         overflow: hidden;
-        min-height: 340px;
         position: relative;
       }
-      .phone-screen.dark-screen {
-        background: #0d1512;
-      }
-
-      /* ── status bar ── */
       .status-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 18px 6px;
+        padding: 9px 16px 5px;
         font-family: var(--font-mono);
-        font-size: 10px;
+        font-size: 9.5px;
         font-weight: 600;
         color: var(--muted);
       }
-      .status-bar.dark {
-        color: rgba(255, 255, 255, 0.5);
-      }
-
-      /* ── phone content ── */
       .ph-content {
-        padding: 0 16px 20px;
+        padding: 0 14px 16px;
       }
       .ph-greeting {
-        padding: 12px 0 16px;
+        padding: 10px 0 12px;
         display: flex;
         justify-content: space-between;
-        align-items: center;
-      }
-      .ph-greeting-text {
+        align-items: flex-start;
       }
       .ph-date {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--muted);
-        margin-bottom: 2px;
+        margin-bottom: 1px;
       }
       .ph-name {
-        font-size: 19px;
+        font-size: 17px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
       .ph-settings {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
         background: var(--surface-muted);
         display: grid;
         place-items: center;
+        flex-shrink: 0;
+      }
+
+      /* module cards */
+      .mod-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .mod-card {
+        border-radius: 12px;
+        padding: 10px 11px;
+        border: 1px solid var(--border);
+      }
+      .mod-card-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+        opacity: 0.6;
+      }
+      .mod-card-val {
+        font-size: 16px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.03em;
+        line-height: 1;
+      }
+      .mod-card-sub {
+        font-size: 9px;
+        margin-top: 3px;
+        opacity: 0.55;
+      }
+
+      /* balance row */
+      .balance-row {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 11px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .balance-label {
+        font-size: 9px;
+        color: var(--muted);
+        margin-bottom: 2px;
+      }
+      .balance-val {
+        font-size: 18px;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        letter-spacing: -0.03em;
+        color: var(--brand-700);
+      }
+      .balance-chip {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 99px;
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      /* streak row */
+      .streak-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0 4px;
+      }
+      .streak-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 4px 10px 4px 8px;
+      }
+      .streak-num {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .streak-unit {
+        font-size: 10px;
+        color: var(--muted);
       }
 
       /* ── FAB ── */
-      .fab-wrap {
+      .fab-area {
         position: relative;
-        height: 56px;
-        margin-top: 8px;
+        height: 52px;
+        margin-top: 6px;
       }
       .fab {
         position: absolute;
         right: 0;
         bottom: 0;
-        height: 44px;
+        height: 42px;
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 0 18px 0 14px;
+        gap: 7px;
+        padding: 0 16px 0 12px;
         border-radius: 9999px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: white;
         cursor: pointer;
         border: none;
-      }
-      .fab.current {
-        background: var(--brand-700, #047857);
-      }
-      .fab.proposed {
-        background: #065f46;
-      }
-      .fab svg {
-        flex-shrink: 0;
+        background: var(--brand-700);
       }
 
-      /* pulse rings — "current" has infinite loop */
-      .pulse-ring {
-        position: absolute;
-        inset: -6px;
-        border-radius: 9999px;
-        background: var(--brand-500);
-        opacity: 0.4;
-        animation: pulse-loop 1.5s ease-in-out infinite;
-      }
-      .shadow-ring {
-        position: absolute;
-        inset: -2px;
-        border-radius: 9999px;
-        background: var(--brand-500);
-        opacity: 0.3;
-        animation: shadow-breath 1.2s ease-in-out infinite;
-      }
-      .fab-current-wrap {
+      /* CURRENT FAB: infinite pulse rings */
+      .fab-rings {
         position: absolute;
         right: 0;
         bottom: 0;
       }
-
-      /* proposed FAB — entrance only, then static */
-      .fab-proposed-wrap {
+      .ring {
         position: absolute;
-        right: 0;
-        bottom: 0;
+        border-radius: 9999px;
+        background: var(--brand-500);
+        pointer-events: none;
       }
+      .ring-1 {
+        inset: -8px;
+        opacity: 0.35;
+        animation: ring-pulse 1.5s ease-in-out infinite;
+      }
+      .ring-2 {
+        inset: -3px;
+        opacity: 0.28;
+        animation: ring-shadow 1.2s ease-in-out infinite;
+      }
+      @keyframes ring-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.3;
+        }
+        50% {
+          transform: scale(1.14);
+          opacity: 0;
+        }
+      }
+      @keyframes ring-shadow {
+        0%,
+        100% {
+          opacity: 0.2;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* PROPOSED FAB: entrance only */
       .fab-entrance {
-        animation: fab-in var(--dur-slower) var(--ease-decelerate) both;
+        animation: fab-in 480ms cubic-bezier(0, 0, 0, 1) both;
       }
       @keyframes fab-in {
         from {
           opacity: 0;
-          transform: scale(0.88) translateY(6px);
+          transform: scale(0.88) translateY(5px);
         }
         to {
           opacity: 1;
           transform: scale(1) translateY(0);
         }
       }
-      @keyframes pulse-loop {
-        0%,
-        100% {
-          transform: scale(1);
-          opacity: 0.35;
-        }
-        50% {
-          transform: scale(1.15);
-          opacity: 0;
-        }
-      }
-      @keyframes shadow-breath {
-        0%,
-        100% {
-          opacity: 0.25;
-        }
-        50% {
-          opacity: 0.55;
-        }
-      }
 
       /* ── empty state ── */
-      .empty-state-demo {
+      .es-demo {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 32px 20px;
-        gap: 12px;
+        padding: 28px 20px;
+        gap: 10px;
         text-align: center;
       }
       .es-icon-wrap {
         position: relative;
       }
       .es-icon {
-        width: 60px;
-        height: 60px;
-        border-radius: 16px;
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
         background: var(--surface-muted);
         border: 1px solid var(--border);
         display: grid;
@@ -458,33 +568,31 @@
         position: relative;
         z-index: 1;
       }
-      /* current: pulsing ring */
-      .es-pulse-ring {
+      .es-pulse {
         position: absolute;
         inset: -5px;
-        border-radius: 20px;
+        border-radius: 18px;
         background: #a8a29e;
-        animation: es-pulse 1.5s ease-in-out infinite;
+        animation: es-pls 1.5s ease-in-out infinite;
       }
-      @keyframes es-pulse {
+      @keyframes es-pls {
         0%,
         100% {
           transform: scale(1);
-          opacity: 0.5;
+          opacity: 0.45;
         }
         50% {
-          transform: scale(1.08);
-          opacity: 0.2;
+          transform: scale(1.07);
+          opacity: 0.12;
         }
       }
-      /* proposed: entrance only */
       .es-entrance {
-        animation: es-in 0.4s var(--ease-decelerate) 0.1s both;
+        animation: es-in 0.38s cubic-bezier(0, 0, 0, 1) 0.1s both;
       }
       @keyframes es-in {
         from {
           opacity: 0;
-          transform: scale(0.9);
+          transform: scale(0.88);
         }
         to {
           opacity: 1;
@@ -492,41 +600,40 @@
         }
       }
       .es-title {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
-        color: var(--text);
       }
       .es-desc {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted);
-        line-height: 1.5;
-        max-width: 200px;
+        line-height: 1.45;
+        max-width: 180px;
       }
       .es-btn {
-        margin-top: 4px;
-        padding: 8px 18px;
-        border-radius: 10px;
+        padding: 7px 16px;
+        border-radius: 9px;
         background: var(--brand-700);
         color: white;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         border: none;
         cursor: pointer;
+        margin-top: 2px;
       }
 
       /* ── streak flame ── */
-      .streak-demo {
+      .flame-demo {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 32px;
-        padding: 24px 0;
+        gap: 40px;
+        padding: 20px 0;
       }
-      .streak-item {
+      .flame-item {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
       }
       .flame-wrap {
         position: relative;
@@ -534,32 +641,31 @@
         align-items: center;
         justify-content: center;
       }
-      /* current: glow + wobble loop */
       .flame-glow {
         position: absolute;
-        width: 52px;
-        height: 52px;
-        border-radius: 26px;
+        width: 50px;
+        height: 50px;
+        border-radius: 25px;
         background: #f97316;
-        animation: flame-glow-loop 1s ease-in-out infinite;
+        animation: fl-glow 1s ease-in-out infinite;
       }
-      @keyframes flame-glow-loop {
+      @keyframes fl-glow {
         0%,
         100% {
-          opacity: 0.3;
+          opacity: 0.28;
           transform: scale(1);
         }
         50% {
-          opacity: 0.6;
-          transform: scale(1.08);
+          opacity: 0.55;
+          transform: scale(1.09);
         }
       }
       .flame-icon {
         position: relative;
         z-index: 1;
-        animation: flame-wobble 1.5s ease-in-out infinite;
+        animation: fl-wobble 1.5s ease-in-out infinite;
       }
-      @keyframes flame-wobble {
+      @keyframes fl-wobble {
         0%,
         100% {
           transform: scale(1) rotate(0deg);
@@ -571,15 +677,14 @@
           transform: scale(1.08) rotate(-1.5deg);
         }
       }
-      /* proposed: static, entrance on mount */
-      .flame-icon-static {
+      .flame-static {
         position: relative;
         z-index: 1;
       }
-      .flame-entrance {
-        animation: flame-in 0.36s var(--ease-decelerate) both;
+      .flame-static-enter {
+        animation: fl-in 0.36s cubic-bezier(0, 0, 0, 1) both;
       }
-      @keyframes flame-in {
+      @keyframes fl-in {
         from {
           opacity: 0;
           transform: scale(0.8);
@@ -589,54 +694,159 @@
           transform: scale(1);
         }
       }
-      .streak-count {
-        font-size: 20px;
+      .flame-count {
+        font-size: 19px;
         font-weight: 800;
         font-family: var(--font-mono);
         letter-spacing: -0.03em;
       }
-      .streak-suffix {
-        font-size: 11px;
+      .flame-unit {
+        font-size: 10px;
         color: var(--muted);
       }
 
-      /* flame SVG helpers */
-      svg.flame-svg {
-        display: block;
+      /* ── XP / color section ── */
+      .color-compare {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
       }
-
-      /* ── XP badge ── */
-      .xp-demo {
+      .color-card {
+        border-radius: var(--r-xl);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .color-card.after {
+        border-color: #a7f3d0;
+      }
+      .color-card-head {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        padding: 10px 16px;
         display: flex;
         align-items: center;
-        gap: 16px;
-        padding: 20px 0 8px;
-        flex-wrap: wrap;
+        gap: 8px;
       }
+      .color-card:not(.after) .color-card-head {
+        background: var(--surface-muted);
+        color: var(--muted);
+      }
+      .color-card.after .color-card-head {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .color-card-body {
+        background: var(--panel);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
       .xp-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 5px 12px;
+        padding: 5px 13px;
         border-radius: 9999px;
         font-family: var(--font-mono);
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
       }
-      .xp-badge.current {
+      .xp-violet {
         background: #ede9fe;
         color: #6d28d9;
         border: 1px solid #c4b5fd;
       }
-      .xp-badge.proposed-xp {
+      .xp-brand {
         background: var(--brand-soft);
-        color: var(--brand-700, #047857);
+        color: var(--brand-700);
         border: 1px solid #a7f3d0;
       }
-      .xp-label {
-        font-size: 12px;
-        color: var(--muted);
+
+      .swatch-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .swatch {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+      }
+      .swatch-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .swatch-hex {
         font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text);
+      }
+      .swatch-note {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .swatch-note.bad {
+        color: var(--danger);
+      }
+      .swatch-note.good {
+        color: var(--success);
+      }
+
+      /* ── hardcode table ── */
+      .hardcode-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .hardcode-table th {
+        text-align: left;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--subtle);
+        padding: 8px 12px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .hardcode-table td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--muted);
+        vertical-align: middle;
+      }
+      .hardcode-table tr:last-child td {
+        border-bottom: none;
+      }
+      .c-swatch {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+      .cs {
+        width: 13px;
+        height: 13px;
+        border-radius: 4px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        flex-shrink: 0;
+      }
+      .token-pill {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        background: var(--surface-muted);
+        padding: 2px 7px;
+        border-radius: var(--r-xs);
+        color: var(--brand);
       }
 
       /* ── code diff ── */
@@ -670,6 +880,7 @@
       .line {
         display: block;
         padding: 1px 0;
+        white-space: pre;
       }
       .line.del {
         background: rgba(239, 68, 68, 0.12);
@@ -690,18 +901,18 @@
         font-weight: 700;
       }
       .line.ctx {
-        color: rgba(148, 163, 184, 0.5);
+        color: rgba(148, 163, 184, 0.45);
       }
       .line.ctx::before {
         content: "   ";
       }
 
-      /* ── prose notes ── */
+      /* ── notes ── */
       .notes {
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: var(--r-xl);
-        padding: 24px;
+        padding: 20px;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -721,7 +932,7 @@
         flex-shrink: 0;
         display: grid;
         place-items: center;
-        font-size: 12px;
+        font-size: 11px;
         margin-top: 1px;
       }
       .note-icon.bad {
@@ -739,132 +950,56 @@
       .note strong {
         color: var(--text);
       }
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+      }
 
-      /* ── hardcode table ── */
-      .hardcode-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12.5px;
+      /* ── keep-section ── */
+      .keep-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--r-xl);
+        overflow: hidden;
       }
-      .hardcode-table th {
-        text-align: left;
+      .keep-cell {
+        background: var(--panel);
+        padding: 18px 20px;
+      }
+      .keep-label {
         font-family: var(--font-mono);
-        font-size: 10px;
+        font-size: 9.5px;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         color: var(--subtle);
-        padding: 8px 12px;
-        background: var(--surface);
-        border-bottom: 1px solid var(--border);
+        margin-bottom: 8px;
       }
-      .hardcode-table td {
-        padding: 9px 12px;
-        border-bottom: 1px solid var(--border);
-        color: var(--muted);
-      }
-      .hardcode-table tr:last-child td {
-        border-bottom: none;
-      }
-      .color-swatch {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
+      .keep-val {
+        font-size: 22px;
+        font-weight: 800;
         font-family: var(--font-mono);
-        font-size: 11px;
-      }
-      .swatch {
-        width: 14px;
-        height: 14px;
-        border-radius: 4px;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        flex-shrink: 0;
-      }
-      .fix-arrow {
+        letter-spacing: -0.03em;
         color: var(--success);
-        font-weight: 700;
+        line-height: 1;
       }
-      .token-ref {
-        font-family: var(--font-mono);
-        font-size: 11px;
-        background: var(--surface-muted);
-        padding: 2px 6px;
-        border-radius: var(--r-xs);
-        color: var(--brand);
+      .keep-sub {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 5px;
+        line-height: 1.4;
       }
 
       /* ── section divider ── */
       .section-divider {
         height: 1px;
         background: var(--border);
-        margin: 56px 0;
+        margin: 52px 0;
       }
 
-      /* ── summary verdict ── */
-      .verdict {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: var(--r-xl);
-        overflow: hidden;
-        margin-top: 56px;
-      }
-      .verdict-head {
-        background: var(--surface-muted);
-        padding: 16px 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .verdict-head h2 {
-        font-size: 16px;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-      }
-      .verdict-head .tag {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        background: var(--success-soft);
-        color: var(--success);
-        padding: 3px 8px;
-        border-radius: var(--r-sm);
-      }
-      .verdict-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1px;
-        background: var(--border);
-      }
-      .verdict-cell {
-        background: var(--panel);
-        padding: 20px 22px;
-      }
-      .verdict-cell .vc-label {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--subtle);
-        margin-bottom: 8px;
-      }
-      .verdict-cell .vc-val {
-        font-size: 28px;
-        font-weight: 800;
-        font-family: var(--font-mono);
-        letter-spacing: -0.03em;
-        line-height: 1;
-      }
-      .verdict-cell .vc-val.up {
-        color: var(--success);
-      }
-      .verdict-cell .vc-sub {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-
-      /* ── tab panels ── */
+      /* ── tabs ── */
       .panel {
         display: none;
       }
@@ -875,8 +1010,8 @@
       /* ── footer ── */
       .footer {
         border-top: 1px solid var(--border);
-        margin-top: 80px;
-        padding: 24px 32px;
+        margin-top: 72px;
+        padding: 22px 32px;
         display: flex;
         gap: 16px;
         align-items: center;
@@ -889,23 +1024,19 @@
         text-transform: uppercase;
         color: var(--subtle);
       }
-      .footer a {
-        color: var(--brand);
-      }
 
-      @media (max-width: 720px) {
+      @media (max-width: 760px) {
         .split {
           grid-template-columns: 1fr;
         }
         .score-grid {
           grid-template-columns: repeat(2, 1fr);
         }
-        .verdict-grid {
+        .color-compare {
           grid-template-columns: 1fr;
         }
-        .xp-demo {
-          flex-direction: column;
-          align-items: flex-start;
+        .keep-grid {
+          grid-template-columns: 1fr 1fr;
         }
       }
     </style>
@@ -946,14 +1077,15 @@
       <span class="topbar-tag">Audit · 2026-07</span>
     </header>
 
-    <div class="wrap">
+    <main class="wrap">
       <!-- ── page header ── -->
       <div class="page-header">
         <p class="kicker">UI / UX Audit · Mobile App</p>
         <h1>Прибираємо <em>AI-slop</em><br />з Sergeant</h1>
         <p>
           4 конкретні патерни, які видають «згенерований» інтерфейс. Нижче —
-          точне порівняння поточного стану з пропозицією виправлення.
+          точне порівняння поточного стану з пропозицією виправлення, з живими
+          анімаціями та diff-блоками.
         </p>
       </div>
 
@@ -962,14 +1094,14 @@
         <div class="score-cell">
           <div class="score-label">Загальна оцінка</div>
           <div class="score-val good">
-            7<span style="font-size: 18px; color: var(--muted)">/10</span>
+            7<span style="font-size: 17px; color: var(--muted)">/10</span>
           </div>
           <div class="score-sub">Міцний фундамент, є «tells»</div>
         </div>
         <div class="score-cell">
-          <div class="score-label">Нескінченний рух</div>
+          <div class="score-label">Loop-анімацій</div>
           <div class="score-val bad">3</div>
-          <div class="score-sub">loop-анімацій у статичному UI</div>
+          <div class="score-sub">нескінченних у статичному UI</div>
         </div>
         <div class="score-cell">
           <div class="score-label">Хардкод кольорів</div>
@@ -979,15 +1111,15 @@
         <div class="score-cell">
           <div class="score-label">Токен-система</div>
           <div class="score-val good">
-            9<span style="font-size: 18px; color: var(--muted)">/10</span>
+            9<span style="font-size: 17px; color: var(--muted)">/10</span>
           </div>
           <div class="score-sub">WCAG-AA, elevation, dark Ink</div>
         </div>
       </div>
 
-      <!-- ══════════════════════════════════════════
-           РОЗДІЛ 1 — AssistantFAB (P1)
-      ══════════════════════════════════════════ -->
+      <!-- ════════════════════════════════
+           P1 · AssistantFAB
+      ════════════════════════════════ -->
       <div class="section" data-group="motion icons">
         <div class="section-head">
           <span class="section-num">P1</span>
@@ -1002,19 +1134,22 @@
           <div class="split-panel">
             <div class="split-label"><span class="split-dot"></span> Зараз</div>
             <div class="split-body">
+              <div class="anim-badge looping">
+                <span class="anim-badge-dot"></span> Живе · нескінченний loop
+              </div>
               <div class="phone">
                 <div class="phone-screen">
                   <div class="status-bar">9:41<span>● ● ●</span></div>
                   <div class="ph-content">
                     <div class="ph-greeting">
-                      <div class="ph-greeting-text">
+                      <div>
                         <div class="ph-date">середа, 24 липня</div>
                         <div class="ph-name">Привіт, Матвій</div>
                       </div>
                       <div class="ph-settings">
                         <svg
-                          width="18"
-                          height="18"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="#a8a29e"
@@ -1029,50 +1164,55 @@
                         </svg>
                       </div>
                     </div>
-                    <!-- card placeholder -->
-                    <div
-                      style="
-                        background: var(--surface-muted);
-                        border-radius: 16px;
-                        height: 120px;
-                        margin-bottom: 12px;
-                        border: 1px solid var(--border);
-                      "
-                    ></div>
-                    <div
-                      style="
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 10px;
-                      "
-                    >
-                      <div
-                        style="
-                          background: var(--surface-muted);
-                          border-radius: 12px;
-                          height: 70px;
-                          border: 1px solid var(--border);
-                        "
-                      ></div>
-                      <div
-                        style="
-                          background: var(--surface-muted);
-                          border-radius: 12px;
-                          height: 70px;
-                          border: 1px solid var(--border);
-                        "
-                      ></div>
+                    <!-- balance -->
+                    <div class="balance-row">
+                      <div>
+                        <div class="balance-label">Баланс</div>
+                        <div class="balance-val">₴ 42 150</div>
+                      </div>
+                      <div class="balance-chip">+8.3%</div>
                     </div>
-                    <!-- FAB -->
-                    <div class="fab-wrap" style="margin-top: 16px">
-                      <div class="fab-current-wrap">
-                        <div class="pulse-ring"></div>
-                        <div class="shadow-ring"></div>
-                        <button class="fab current" aria-label="AI-асистент">
-                          <!-- Sparkles icon -->
+                    <!-- mod cards -->
+                    <div class="mod-cards">
+                      <div
+                        class="mod-card"
+                        style="background: #ecfdf5; border-color: #a7f3d0"
+                      >
+                        <div class="mod-card-label" style="color: #047857">
+                          Фінанси
+                        </div>
+                        <div class="mod-card-val" style="color: #047857">
+                          ₴ 3 200
+                        </div>
+                        <div class="mod-card-sub" style="color: #047857">
+                          цей місяць
+                        </div>
+                      </div>
+                      <div
+                        class="mod-card"
+                        style="background: #ecfeff; border-color: #a5f3fc"
+                      >
+                        <div class="mod-card-label" style="color: #0e7490">
+                          Фізрук
+                        </div>
+                        <div class="mod-card-val" style="color: #0e7490">
+                          5 / 7
+                        </div>
+                        <div class="mod-card-sub" style="color: #0e7490">
+                          тренувань
+                        </div>
+                      </div>
+                    </div>
+                    <!-- FAB with infinite rings -->
+                    <div class="fab-area">
+                      <div class="fab-rings">
+                        <div class="ring ring-1"></div>
+                        <div class="ring ring-2"></div>
+                        <button class="fab" aria-label="AI-асистент">
+                          <!-- Sparkles -->
                           <svg
-                            width="18"
-                            height="18"
+                            width="16"
+                            height="16"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="#fff"
@@ -1095,6 +1235,17 @@
                   </div>
                 </div>
               </div>
+              <p
+                style="
+                  font-size: 10.5px;
+                  color: var(--subtle);
+                  text-align: center;
+                  margin-top: 10px;
+                  font-family: var(--font-mono);
+                "
+              >
+                2 × Animated.loop · pulse-ring 1.5s + shadow-breath 1.2s
+              </p>
             </div>
           </div>
 
@@ -1104,19 +1255,22 @@
               <span class="split-dot"></span> Пропозиція
             </div>
             <div class="split-body">
+              <div class="anim-badge static">
+                <span class="anim-badge-dot"></span> Статика після mount
+              </div>
               <div class="phone">
                 <div class="phone-screen">
                   <div class="status-bar">9:41<span>● ● ●</span></div>
                   <div class="ph-content">
                     <div class="ph-greeting">
-                      <div class="ph-greeting-text">
+                      <div>
                         <div class="ph-date">середа, 24 липня</div>
                         <div class="ph-name">Привіт, Матвій</div>
                       </div>
                       <div class="ph-settings">
                         <svg
-                          width="18"
-                          height="18"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="#a8a29e"
@@ -1131,154 +1285,163 @@
                         </svg>
                       </div>
                     </div>
-                    <div
-                      style="
-                        background: var(--surface-muted);
-                        border-radius: 16px;
-                        height: 120px;
-                        margin-bottom: 12px;
-                        border: 1px solid var(--border);
-                      "
-                    ></div>
-                    <div
-                      style="
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 10px;
-                      "
-                    >
-                      <div
-                        style="
-                          background: var(--surface-muted);
-                          border-radius: 12px;
-                          height: 70px;
-                          border: 1px solid var(--border);
-                        "
-                      ></div>
-                      <div
-                        style="
-                          background: var(--surface-muted);
-                          border-radius: 12px;
-                          height: 70px;
-                          border: 1px solid var(--border);
-                        "
-                      ></div>
-                    </div>
-                    <!-- Proposed FAB: entrance only, MessageCircle icon -->
-                    <div class="fab-wrap" style="margin-top: 16px">
-                      <div class="fab-proposed-wrap">
-                        <button
-                          class="fab proposed fab-entrance"
-                          aria-label="Асистент"
-                        >
-                          <!-- MessageCircle icon — нейтральний, не "AI" -->
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#fff"
-                            stroke-width="2.2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path
-                              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                            />
-                          </svg>
-                          Асистент
-                        </button>
+                    <div class="balance-row">
+                      <div>
+                        <div class="balance-label">Баланс</div>
+                        <div class="balance-val">₴ 42 150</div>
                       </div>
+                      <div class="balance-chip">+8.3%</div>
+                    </div>
+                    <div class="mod-cards">
+                      <div
+                        class="mod-card"
+                        style="background: #ecfdf5; border-color: #a7f3d0"
+                      >
+                        <div class="mod-card-label" style="color: #047857">
+                          Фінанси
+                        </div>
+                        <div class="mod-card-val" style="color: #047857">
+                          ₴ 3 200
+                        </div>
+                        <div class="mod-card-sub" style="color: #047857">
+                          цей місяць
+                        </div>
+                      </div>
+                      <div
+                        class="mod-card"
+                        style="background: #ecfeff; border-color: #a5f3fc"
+                      >
+                        <div class="mod-card-label" style="color: #0e7490">
+                          Фізрук
+                        </div>
+                        <div class="mod-card-val" style="color: #0e7490">
+                          5 / 7
+                        </div>
+                        <div class="mod-card-sub" style="color: #0e7490">
+                          тренувань
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Proposed FAB: entrance once, then static. MessageCircle icon -->
+                    <div class="fab-area">
+                      <button
+                        class="fab fab-entrance"
+                        style="right: 0; bottom: 0; position: absolute"
+                        aria-label="Асистент"
+                      >
+                        <!-- MessageCircle — нейтральний, не "AI" -->
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#fff"
+                          stroke-width="2.2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                          />
+                        </svg>
+                        Асистент
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
+              <p
+                style="
+                  font-size: 10.5px;
+                  color: var(--subtle);
+                  text-align: center;
+                  margin-top: 10px;
+                  font-family: var(--font-mono);
+                "
+              >
+                1 × entrance (scale+fade, 480ms) · після — статика
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- notes -->
-        <div class="notes" style="margin-top: 20px">
+        <div class="notes" style="margin-top: 18px">
           <div class="note">
             <div class="note-icon bad">✕</div>
             <div>
-              <strong>Зараз:</strong> 2 нескінченні цикли — pulse-ring (1.5s
-              loop) + shadow-breathing (1.2s loop). Кнопка «дихає» весь час,
-              поки додаток відкритий. Це розряджає батарею та дешевить UI.
+              <strong>Зараз:</strong> Кнопка «дихає» весь час, поки застосунок
+              відкритий — 2 паралельні <code>Animated.loop</code>. Розряджає
+              батарею і сигналізує «типовий AI-чатбот».
             </div>
           </div>
           <div class="note">
             <div class="note-icon bad">✕</div>
             <div>
-              <strong>Sparkles (✦):</strong> Стандартна іконка «AI-кнопки» з
-              2023–2025. Читається як шаблон, а не як власний продукт.
+              <strong>Sparkles ✦:</strong> Універсальна іконка AI-кнопки
+              2023–2025. Миттєво читається як «AI-шаблон», а не як власний
+              продукт.
             </div>
           </div>
           <div class="note">
             <div class="note-icon good">✓</div>
             <div>
-              <strong>Пропозиція:</strong> Прибрати loop-и — FAB з'являється
-              <em>одним</em> entrance-ом (scale + fade, 480ms) і далі статичний.
-              Замінити Sparkles на <code>MessageCircle</code>. Анімація при
-              натиску (scale 0.97) вже є в <code>Button.tsx</code>.
+              <strong>Пропозиція:</strong> Один entrance при mount (scale +
+              fade, 480ms), далі статика. <code>MessageCircle</code> замість
+              Sparkles — нейтральний, читається як «написати», а не «AI».
             </div>
           </div>
         </div>
 
-        <div class="diff-block" style="margin-top: 16px">
+        <div class="diff-block">
           <div class="diff-head">
-            <span>HubDashboard.tsx — AssistantFab</span
-            ><span>~12 рядків видалено</span>
+            <span>HubDashboard.tsx — AssistantFab</span><span>−12 рядків</span>
           </div>
           <div class="diff-body">
             <code>
-              <span class="line del">
-                const [pulseScale] = useState(() => new
+              <span class="line del"
+                >const [pulseScale] = useState(() => new
                 Animated.Value(1));</span
               >
-              <span class="line del">
-                const [pulseOpacity] = useState(() => new
+              <span class="line del"
+                >const [pulseOpacity] = useState(() => new
                 Animated.Value(0.4));</span
               >
-              <span class="line del">
-                const [shadowOpacity] = useState(() => new
+              <span class="line del"
+                >const [shadowOpacity]= useState(() => new
                 Animated.Value(0.3));</span
               >
-              <span class="line del"> useEffect(() => {</span>
+              <span class="line del">useEffect(() => {</span>
               <span class="line del">
-                const pulseAnimation = Animated.loop(...);</span
+                const pulseAnim = Animated.loop(Animated.sequence([...]));</span
               >
               <span class="line del">
-                const shadowAnimation = Animated.loop(...);</span
+                const shadowAnim =
+                Animated.loop(Animated.sequence([...]));</span
               >
               <span class="line del">
-                pulseAnimation.start(); shadowAnimation.start();</span
+                pulseAnim.start(); shadowAnim.start();</span
               >
-              <span class="line del">
-                }, [pulseScale, pulseOpacity, shadowOpacity]);</span
+              <span class="line del"
+                >}, [pulseScale, pulseOpacity, shadowOpacity]);</span
               >
-              <span class="line del">
-                &lt;Sparkles size={20} color="#fff" strokeWidth={2.2}
+              <span class="line del"
+                >&lt;Sparkles size={20} color="#fff" strokeWidth={2.2}
                 /&gt;</span
               >
-              <span class="line ctx"> // --- замінити на ---</span>
-              <span class="line add">
-                // Один entrance при mount, далі статика</span
+              <span class="line ctx">// ─────── замінити на ───────</span>
+              <span class="line add"
+                >const fabOpacity = useRef(new Animated.Value(0)).current;</span
               >
+              <span class="line add">useEffect(() => {</span>
+              <span class="line add"> Animated.timing(fabOpacity, {</span>
+              <span class="line add"> toValue: 1, duration: 480,</span>
               <span class="line add">
-                const fabOpacity = useRef(new Animated.Value(0)).current;</span
+                easing: Easing.out(Easing.cubic), useNativeDriver: true,</span
               >
-              <span class="line add"> useEffect(() => {</span>
-              <span class="line add">
-                Animated.timing(fabOpacity, { toValue: 1, duration: 480,</span
-              >
-              <span class="line add">
-                easing: Easing.out(Easing.cubic), useNativeDriver: true
-                }).start();</span
-              >
-              <span class="line add"> }, []);</span>
-              <span class="line add">
-                &lt;MessageCircle size={20} color="#fff" strokeWidth={2.2}
+              <span class="line add"> }).start();</span>
+              <span class="line add">}, []);</span>
+              <span class="line add"
+                >&lt;MessageCircle size={20} color="#fff" strokeWidth={2.2}
                 /&gt;</span
               >
             </code>
@@ -1288,9 +1451,9 @@
 
       <div class="section-divider"></div>
 
-      <!-- ══════════════════════════════════════════
-           РОЗДІЛ 2 — EmptyState (P1)
-      ══════════════════════════════════════════ -->
+      <!-- ════════════════════════════════
+           P1 · EmptyState
+      ════════════════════════════════ -->
       <div class="section" data-group="motion">
         <div class="section-head">
           <span class="section-num">P1</span>
@@ -1302,50 +1465,59 @@
           <div class="split-panel">
             <div class="split-label"><span class="split-dot"></span> Зараз</div>
             <div class="split-body">
-              <div
-                style="background: var(--bg); border-radius: 16px; padding: 8px"
-              >
-                <div class="empty-state-demo">
-                  <div class="es-icon-wrap">
-                    <div class="es-pulse-ring"></div>
-                    <div class="es-icon">
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#a8a29e"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <line x1="8" y1="6" x2="21" y2="6" />
-                        <line x1="8" y1="12" x2="21" y2="12" />
-                        <line x1="8" y1="18" x2="21" y2="18" />
-                        <line x1="3" y1="6" x2="3.01" y2="6" />
-                        <line x1="3" y1="12" x2="3.01" y2="12" />
-                        <line x1="3" y1="18" x2="3.01" y2="18" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="es-title">Немає даних</div>
-                  <div class="es-desc">
-                    Тут поки що порожньо. Додайте перший запис!
-                  </div>
-                  <button class="es-btn">Додати</button>
-                </div>
+              <div class="anim-badge looping">
+                <span class="anim-badge-dot"></span> Живе · нескінченний loop
+                після 800ms
               </div>
-              <p
+              <div class="es-demo">
+                <div class="es-icon-wrap">
+                  <div class="es-pulse"></div>
+                  <div class="es-icon">
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#a8a29e"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="8" y1="6" x2="21" y2="6" />
+                      <line x1="8" y1="12" x2="21" y2="12" />
+                      <line x1="8" y1="18" x2="21" y2="18" />
+                      <line x1="3" y1="6" x2="3.01" y2="6" />
+                      <line x1="3" y1="12" x2="3.01" y2="12" />
+                      <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="es-title">Немає транзакцій</div>
+                <div class="es-desc">
+                  Тут поки що порожньо. Додайте першу транзакцію!
+                </div>
+                <button class="es-btn">Додати</button>
+              </div>
+              <div
                 style="
-                  font-size: 11px;
-                  color: var(--subtle);
-                  text-align: center;
-                  margin-top: 10px;
-                  font-family: var(--font-mono);
+                  background: var(--danger-soft);
+                  border-radius: 8px;
+                  padding: 8px 12px;
+                  margin-top: 8px;
                 "
               >
-                пульс кільця — нескінченний loop після 800ms delay
-              </p>
+                <p
+                  style="
+                    font-size: 11px;
+                    color: var(--danger);
+                    font-family: var(--font-mono);
+                    font-weight: 600;
+                  "
+                >
+                  Animated.loop: scale 1.0→1.05, opacity 0.6→0.8<br />Нескінченний.
+                  Стартує через 800ms після mount.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1354,71 +1526,78 @@
               <span class="split-dot"></span> Пропозиція
             </div>
             <div class="split-body">
-              <div
-                style="background: var(--bg); border-radius: 16px; padding: 8px"
-              >
-                <div class="empty-state-demo">
-                  <div class="es-icon-wrap">
-                    <!-- Без pulse-ring -->
-                    <div class="es-icon es-entrance">
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#a8a29e"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <line x1="8" y1="6" x2="21" y2="6" />
-                        <line x1="8" y1="12" x2="21" y2="12" />
-                        <line x1="8" y1="18" x2="21" y2="18" />
-                        <line x1="3" y1="6" x2="3.01" y2="6" />
-                        <line x1="3" y1="12" x2="3.01" y2="12" />
-                        <line x1="3" y1="18" x2="3.01" y2="18" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="es-title">Немає даних</div>
-                  <div class="es-desc">
-                    Тут поки що порожньо. Додайте перший запис!
-                  </div>
-                  <button class="es-btn">Додати</button>
-                </div>
+              <div class="anim-badge static">
+                <span class="anim-badge-dot"></span> Статика після entrance
               </div>
-              <p
+              <div class="es-demo">
+                <div class="es-icon-wrap">
+                  <!-- Без pulse ring -->
+                  <div class="es-icon es-entrance">
+                    <svg
+                      width="26"
+                      height="26"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#a8a29e"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="8" y1="6" x2="21" y2="6" />
+                      <line x1="8" y1="12" x2="21" y2="12" />
+                      <line x1="8" y1="18" x2="21" y2="18" />
+                      <line x1="3" y1="6" x2="3.01" y2="6" />
+                      <line x1="3" y1="12" x2="3.01" y2="12" />
+                      <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="es-title">Немає транзакцій</div>
+                <div class="es-desc">
+                  Тут поки що порожньо. Додайте першу транзакцію!
+                </div>
+                <button class="es-btn">Додати</button>
+              </div>
+              <div
                 style="
-                  font-size: 11px;
-                  color: var(--subtle);
-                  text-align: center;
-                  margin-top: 10px;
-                  font-family: var(--font-mono);
+                  background: var(--success-soft);
+                  border-radius: 8px;
+                  padding: 8px 12px;
+                  margin-top: 8px;
                 "
               >
-                лише entrance scale+fade, далі — статичний стан
-              </p>
+                <p
+                  style="
+                    font-size: 11px;
+                    color: var(--success);
+                    font-family: var(--font-mono);
+                    font-weight: 600;
+                  "
+                >
+                  Лише staggered entrance (вже є в коді).<br />Видалити:
+                  pulseScale, pulseOpacity, Animated.loop.
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="notes" style="margin-top: 20px">
+        <div class="notes" style="margin-top: 18px">
           <div class="note">
             <div class="note-icon bad">✕</div>
             <div>
               <strong>Зараз:</strong> Після 800ms delay стартує
-              <code>Animated.loop</code> — іконка вічно пульсує (scale 1→1.05,
-              opacity 0.6→0.8). Статичний empty state — не тригер для
-              нескінченного руху.
+              <code>Animated.loop</code> — іконка вічно пульсує. Статичний empty
+              state не є тригером для нескінченного руху.
             </div>
           </div>
           <div class="note">
             <div class="note-icon good">✓</div>
             <div>
               <strong>Пропозиція:</strong> Видалити <code>pulseScale</code>,
-              <code>pulseOpacity</code> та <code>Animated.loop</code>. Лишити
-              лише staggered entrance (він вже є і гарно відпрацьований). Іконка
-              виглядає дорожче у статиці.
+              <code>pulseOpacity</code>, <code>Animated.loop</code>. Staggered
+              entrance вже відпрацьований і залишається. Іконка виглядає
+              впевненіше у статиці.
             </div>
           </div>
         </div>
@@ -1426,9 +1605,9 @@
 
       <div class="section-divider"></div>
 
-      <!-- ══════════════════════════════════════════
-           РОЗДІЛ 3 — StreakFlame (P1)
-      ══════════════════════════════════════════ -->
+      <!-- ════════════════════════════════
+           P1 · StreakFlame
+      ════════════════════════════════ -->
       <div class="section" data-group="motion">
         <div class="section-head">
           <span class="section-num">P1</span>
@@ -1440,16 +1619,17 @@
           <div class="split-panel">
             <div class="split-label"><span class="split-dot"></span> Зараз</div>
             <div class="split-body">
-              <div class="streak-demo">
-                <div class="streak-item">
+              <div class="anim-badge looping">
+                <span class="anim-badge-dot"></span> Живе · 3 паралельні loop-и
+              </div>
+              <div class="flame-demo">
+                <div class="flame-item">
                   <div class="flame-wrap">
                     <div class="flame-glow"></div>
                     <div class="flame-icon">
-                      <!-- Flame SVG -->
                       <svg
-                        class="flame-svg"
-                        width="36"
-                        height="36"
+                        width="34"
+                        height="34"
                         viewBox="0 0 24 24"
                         fill="#fb923c"
                         stroke="#f97316"
@@ -1463,11 +1643,10 @@
                       </svg>
                     </div>
                   </div>
-                  <div class="streak-count" style="color: #f97316">14</div>
-                  <div class="streak-suffix">днів</div>
+                  <div class="flame-count" style="color: #f97316">14</div>
+                  <div class="flame-unit">днів</div>
                 </div>
-
-                <div class="streak-item">
+                <div class="flame-item">
                   <div class="flame-wrap">
                     <div
                       class="flame-glow"
@@ -1475,9 +1654,8 @@
                     ></div>
                     <div class="flame-icon" style="animation-delay: -0.2s">
                       <svg
-                        class="flame-svg"
-                        width="48"
-                        height="48"
+                        width="44"
+                        height="44"
                         viewBox="0 0 24 24"
                         fill="#ea580c"
                         stroke="#dc2626"
@@ -1491,20 +1669,30 @@
                       </svg>
                     </div>
                   </div>
-                  <div class="streak-count" style="color: #dc2626">90</div>
-                  <div class="streak-suffix">днів</div>
+                  <div class="flame-count" style="color: #dc2626">90</div>
+                  <div class="flame-unit">днів</div>
                 </div>
               </div>
-              <p
+              <div
                 style="
-                  font-size: 11px;
-                  color: var(--subtle);
-                  text-align: center;
-                  font-family: var(--font-mono);
+                  background: var(--danger-soft);
+                  border-radius: 8px;
+                  padding: 8px 12px;
+                  margin-top: 4px;
                 "
               >
-                3 паралельні loop-и: scale + glowOpacity + rotation
-              </p>
+                <p
+                  style="
+                    font-size: 11px;
+                    color: var(--danger);
+                    font-family: var(--font-mono);
+                    font-weight: 600;
+                  "
+                >
+                  scale + glowOpacity + rotation — 3 loop-и на компонент.<br />На
+                  екрані рутин може бути 4–5 таких = ~15 паралельних анімацій.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1513,15 +1701,17 @@
               <span class="split-dot"></span> Пропозиція
             </div>
             <div class="split-body">
-              <div class="streak-demo">
-                <div class="streak-item">
+              <div class="anim-badge static">
+                <span class="anim-badge-dot"></span> Entrance при mount · далі
+                статика
+              </div>
+              <div class="flame-demo">
+                <div class="flame-item">
                   <div class="flame-wrap">
-                    <!-- Без glow ring, без wobble -->
-                    <div class="flame-icon-static flame-entrance">
+                    <div class="flame-static flame-static-enter">
                       <svg
-                        class="flame-svg"
-                        width="36"
-                        height="36"
+                        width="34"
+                        height="34"
                         viewBox="0 0 24 24"
                         fill="#fb923c"
                         stroke="#f97316"
@@ -1535,20 +1725,18 @@
                       </svg>
                     </div>
                   </div>
-                  <div class="streak-count" style="color: #f97316">14</div>
-                  <div class="streak-suffix">днів</div>
+                  <div class="flame-count" style="color: #f97316">14</div>
+                  <div class="flame-unit">днів</div>
                 </div>
-
-                <div class="streak-item">
+                <div class="flame-item">
                   <div class="flame-wrap">
                     <div
-                      class="flame-icon-static flame-entrance"
-                      style="animation-delay: 0.05s"
+                      class="flame-static flame-static-enter"
+                      style="animation-delay: 0.06s"
                     >
                       <svg
-                        class="flame-svg"
-                        width="48"
-                        height="48"
+                        width="44"
+                        height="44"
                         viewBox="0 0 24 24"
                         fill="#ea580c"
                         stroke="#dc2626"
@@ -1562,50 +1750,49 @@
                       </svg>
                     </div>
                   </div>
-                  <div class="streak-count" style="color: #dc2626">90</div>
-                  <div class="streak-suffix">днів</div>
+                  <div class="flame-count" style="color: #dc2626">90</div>
+                  <div class="flame-unit">днів</div>
                 </div>
               </div>
-              <p
+              <div
                 style="
-                  font-size: 11px;
-                  color: var(--subtle);
-                  text-align: center;
-                  font-family: var(--font-mono);
+                  background: var(--success-soft);
+                  border-radius: 8px;
+                  padding: 8px 12px;
+                  margin-top: 4px;
                 "
               >
-                entrance тільки при mount; celebration-частинки — залишаємо
-                (вони one-shot)
-              </p>
+                <p
+                  style="
+                    font-size: 11px;
+                    color: var(--success);
+                    font-family: var(--font-mono);
+                    font-weight: 600;
+                  "
+                >
+                  Прибрати pulseAnimation з Animated.loop.<br />FlameParticle
+                  (one-shot milestone) — залишити!
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="notes" style="margin-top: 20px">
+        <div class="notes" style="margin-top: 18px">
           <div class="note">
             <div class="note-icon bad">✕</div>
             <div>
-              <strong>Зараз:</strong> 3 паралельних loop-а (scale, glowOpacity,
-              rotation) на кожен активний стрік. На екрані рутин може бути 4–5
-              таких компонентів одночасно — ~15 паралельних анімацій у
-              статичному списку.
+              <strong>Прибрати:</strong> <code>pulseAnimation</code> (glow +
+              wobble + rotation) — все це <code>Animated.loop</code> без
+              тригера.
             </div>
           </div>
           <div class="note">
             <div class="note-icon good">✓</div>
             <div>
-              <strong>Залишити:</strong> Celebration-частинки
-              (<code>FlameParticle</code>) — вони one-shot і запускаються лише
-              при досягненні milestone. Це <em>правильна</em> анімація: реакція
-              на подію, а не декорація.
-            </div>
-          </div>
-          <div class="note">
-            <div class="note-icon good">✓</div>
-            <div>
-              <strong>Прибрати:</strong> <code>pulseAnimation</code> з
-              <code>Animated.loop</code>. Flame-іконка виглядає впевнено і
-              статично — колір вже передає стан.
+              <strong>Залишити:</strong> <code>FlameParticle</code> — one-shot,
+              запускається тільки при milestone. Це правильна анімація: реакція
+              на подію, а не вічна декорація.
             </div>
           </div>
         </div>
@@ -1613,9 +1800,9 @@
 
       <div class="section-divider"></div>
 
-      <!-- ══════════════════════════════════════════
-           РОЗДІЛ 4 — Колір: XP-фіолет + хардкоди
-      ══════════════════════════════════════════ -->
+      <!-- ════════════════════════════════
+           P2 · XP violet + hardcode colors
+      ════════════════════════════════ -->
       <div class="section" data-group="color">
         <div class="section-head">
           <span class="section-num p2">P2</span>
@@ -1623,128 +1810,90 @@
           <span class="section-impact">Вплив: <strong>Середній</strong></span>
         </div>
 
-        <div class="split">
-          <div class="split-panel">
-            <div class="split-label"><span class="split-dot"></span> Зараз</div>
-            <div class="split-body">
-              <p
-                style="
-                  font-size: 12.5px;
-                  color: var(--muted);
-                  margin-bottom: 16px;
-                "
-              >
-                XP-бейдж використовує violet — колір, якого немає у 4-модульній
-                палітрі та який порушує ваш власний принцип «avoid violet»:
-              </p>
-              <div class="xp-demo">
-                <div>
-                  <div class="xp-label" style="margin-bottom: 8px">
-                    XP бейдж
-                  </div>
-                  <div class="xp-badge current">
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                      />
-                    </svg>
-                    +25 XP
-                  </div>
+        <!-- XP badge comparison -->
+        <div class="color-compare">
+          <div class="color-card">
+            <div class="color-card-head">
+              <span class="split-dot"></span> Зараз — XP бейдж
+            </div>
+            <div class="color-card-body">
+              <div>
+                <div class="xp-badge xp-violet">
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  +25 XP
                 </div>
-                <div>
-                  <div class="xp-label" style="margin-bottom: 8px">
-                    Violet (#6d28d9)
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 8px">
-                    <div
-                      class="swatch"
-                      style="
-                        background: #6d28d9;
-                        width: 24px;
-                        height: 24px;
-                        border-radius: 6px;
-                      "
-                    ></div>
-                    <span
-                      style="
-                        font-family: var(--font-mono);
-                        font-size: 12px;
-                        color: var(--muted);
-                      "
-                      >#6d28d9 — поза системою</span
-                    >
-                  </div>
+              </div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #6d28d9"></div>
+                <div class="swatch-info">
+                  <span class="swatch-hex">#6d28d9 — violet-700</span>
+                  <span class="swatch-note bad"
+                    >Поза 4-модульною палітрою. Порушує принцип «avoid
+                    violet».</span
+                  >
+                </div>
+              </div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #ede9fe"></div>
+                <div class="swatch-info">
+                  <span class="swatch-hex">#ede9fe — violet-100</span>
+                  <span class="swatch-note bad"
+                    >Жоден violet-токен не визначений у tokens.js.</span
+                  >
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="split-panel after">
-            <div class="split-label">
-              <span class="split-dot"></span> Пропозиція
+          <div class="color-card after">
+            <div class="color-card-head">
+              <span class="split-dot"></span> Пропозиція — XP бейдж
             </div>
-            <div class="split-body">
-              <p
-                style="
-                  font-size: 12.5px;
-                  color: var(--muted);
-                  margin-bottom: 16px;
-                "
-              >
-                XP переводиться у бренд-hue (emerald/brand-700). Відповідає
-                токен-системі та виглядає органічно:
-              </p>
-              <div class="xp-demo">
-                <div>
-                  <div class="xp-label" style="margin-bottom: 8px">
-                    XP бейдж
-                  </div>
-                  <div class="xp-badge proposed-xp">
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                    >
-                      <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                      />
-                    </svg>
-                    +25 XP
-                  </div>
+            <div class="color-card-body">
+              <div>
+                <div class="xp-badge xp-brand">
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                  +25 XP
                 </div>
-                <div>
-                  <div class="xp-label" style="margin-bottom: 8px">
-                    Brand-700 (#047857)
-                  </div>
-                  <div style="display: flex; align-items: center; gap: 8px">
-                    <div
-                      class="swatch"
-                      style="
-                        background: #047857;
-                        width: 24px;
-                        height: 24px;
-                        border-radius: 6px;
-                      "
-                    ></div>
-                    <span
-                      style="
-                        font-family: var(--font-mono);
-                        font-size: 12px;
-                        color: var(--muted);
-                      "
-                      >var(--brand-700) — в системі</span
-                    >
-                  </div>
+              </div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #047857"></div>
+                <div class="swatch-info">
+                  <span class="swatch-hex">var(--brand-700) · #047857</span>
+                  <span class="swatch-note good"
+                    >В системі. Органічно для gamification у brand-hue.</span
+                  >
+                </div>
+              </div>
+              <div class="swatch-row">
+                <div class="swatch" style="background: #ecfdf5"></div>
+                <div class="swatch-info">
+                  <span class="swatch-hex">var(--brand-soft) · #ecfdf5</span>
+                  <span class="swatch-note good"
+                    >Вже визначений токен. Нульова зміна у tokens.js.</span
+                  >
                 </div>
               </div>
             </div>
@@ -1752,9 +1901,10 @@
         </div>
 
         <!-- Hardcode table -->
-        <div style="margin-top: 28px">
+        <div style="margin-top: 24px">
           <p style="font-size: 13px; font-weight: 700; margin-bottom: 12px">
-            Хардкод-кольори у <code>StreakFlame.tsx</code> поза токен-системою:
+            Хардкод-кольори у <code>StreakFlame.tsx</code> — 5 значень поза
+            токенами:
           </p>
           <div
             style="
@@ -1767,87 +1917,61 @@
             <table class="hardcode-table">
               <thead>
                 <tr>
-                  <th>Хардкод значення</th>
-                  <th>Де використовується</th>
+                  <th>Значення</th>
+                  <th>Де</th>
                   <th>Пропозиція</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #dc2626"></span
+                    <span class="c-swatch"
+                      ><span class="cs" style="background: #dc2626"></span
                       >#dc2626</span
                     >
                   </td>
                   <td>Legendary streak (365+ днів)</td>
-                  <td>
-                    <span class="token-ref">colors.danger</span> або flame-red
-                    token
-                  </td>
+                  <td><span class="token-pill">--c-streak-legendary</span></td>
                 </tr>
                 <tr>
                   <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #ea580c"></span
+                    <span class="c-swatch"
+                      ><span class="cs" style="background: #ea580c"></span
                       >#ea580c</span
                     >
                   </td>
                   <td>90+ streak</td>
-                  <td>
-                    Новий токен <span class="token-ref">--c-streak-hot</span>
-                  </td>
+                  <td><span class="token-pill">--c-streak-hot</span></td>
                 </tr>
                 <tr>
                   <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #f97316"></span
+                    <span class="c-swatch"
+                      ><span class="cs" style="background: #f97316"></span
                       >#f97316</span
                     >
                   </td>
                   <td>30+ streak, частинки</td>
-                  <td>
-                    Новий токен <span class="token-ref">--c-streak-warm</span>
-                  </td>
+                  <td><span class="token-pill">--c-streak-warm</span></td>
                 </tr>
                 <tr>
                   <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #fb923c"></span
+                    <span class="c-swatch"
+                      ><span class="cs" style="background: #fb923c"></span
                       >#fb923c</span
                     >
                   </td>
                   <td>7+ streak</td>
-                  <td>
-                    Новий токен <span class="token-ref">--c-streak-base</span>
-                  </td>
+                  <td><span class="token-pill">--c-streak-base</span></td>
                 </tr>
                 <tr>
                   <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #fdba74"></span
+                    <span class="c-swatch"
+                      ><span class="cs" style="background: #fdba74"></span
                       >#fdba74</span
                     >
                   </td>
                   <td>Активний (&lt;7 днів)</td>
-                  <td>
-                    Новий токен <span class="token-ref">--c-streak-cool</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <span class="color-swatch"
-                      ><span class="swatch" style="background: #fbbf24"></span
-                      >#fbbf24,
-                      <span class="swatch" style="background: #f97316"></span
-                      >#f97316</span
-                    >
-                  </td>
-                  <td>FlameParticle кольори</td>
-                  <td>
-                    <span class="token-ref">--c-streak-base</span>,
-                    <span class="token-ref">colors.warning</span>
-                  </td>
+                  <td><span class="token-pill">--c-streak-cool</span></td>
                 </tr>
               </tbody>
             </table>
@@ -1858,11 +1982,11 @@
           <div class="note">
             <div class="note-icon info">i</div>
             <div>
-              <strong>Варіант:</strong> Streak-кольори — самостійна шкала
-              (помаранч не є частиною 4-модульної палітри). Найчистіше рішення —
-              додати <code>streak</code>-сімейство до <code>tokens.js</code> і
-              використовувати його замість хардкодів. Це не змінить візуал, але
-              зробить колір керованим.
+              <strong>Підхід:</strong> Streak-кольори утворюють власну шкалу (5
+              значень у діапазоні помаранч→червоний). Додати
+              <code>streak</code>-сімейство до <code>tokens.js</code> — це не
+              змінить візуал, але зробить колір керованим і прибере «magic
+              numbers» з компонента.
             </div>
           </div>
         </div>
@@ -1870,139 +1994,91 @@
 
       <div class="section-divider"></div>
 
-      <!-- ══════════════════════════════════════════
-           РОЗДІЛ 5 — Що НЕ чіпати
-      ══════════════════════════════════════════ -->
-      <div class="section" data-group="all">
+      <!-- ════════════════════════════════
+           Що залишити
+      ════════════════════════════════ -->
+      <div class="section">
         <div class="section-head">
           <span class="section-num p3">OK</span>
-          <h2>Що зберегти — сильні сторони системи</h2>
-          <span class="section-impact">Статус: <strong>Залишити</strong></span>
+          <h2>Що не чіпати — ваші сильні сторони</h2>
+          <span class="section-impact">Статус: <strong>Вже добре</strong></span>
         </div>
-
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-          "
-        >
-          <div class="notes">
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>Тепла cream-палітра</strong> — унікальна ідентичність,
-                відрізняє від холодного дефолту.
-              </div>
-            </div>
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>Elevation e0–e5 + z-tier</strong> — зріла, повна
-                система.
-              </div>
+        <div class="keep-grid">
+          <div class="keep-cell">
+            <div class="keep-label">Токен-система</div>
+            <div class="keep-val">9/10</div>
+            <div class="keep-sub">
+              WCAG-AA компаньйони, elevation e0–e5, z-tier, dark «Ink»
             </div>
           </div>
-          <div class="notes">
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>WCAG-AA companion shades</strong> — кожен модуль має
-                перевірений strong-variant.
-              </div>
-            </div>
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>44px touch targets</strong> +
-                <code>reduceMotion</code> — мобільна доступність на рівні.
-              </div>
+          <div class="keep-cell">
+            <div class="keep-label">Cream-палітра</div>
+            <div class="keep-val">Унікально</div>
+            <div class="keep-sub">
+              Тепла базова поверхня — рідкість, яка виділяє серед сірих дефолтів
             </div>
           </div>
-          <div class="notes">
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>Celebration particles</strong> в StreakFlame —
-                <em>one-shot</em> на milestone, це правильно.
-              </div>
+          <div class="keep-cell">
+            <div class="keep-label">Accessibility</div>
+            <div class="keep-val">9/10</div>
+            <div class="keep-sub">
+              44px тач-таргети, ролі/лейбли, reduceMotion, tabular-nums
             </div>
-            <div class="note">
-              <div class="note-icon good">✓</div>
-              <div>
-                <strong>Staggered entrance</strong> EmptyState — гарно
-                відпрацьований, лишити повністю.
-              </div>
+          </div>
+          <div class="keep-cell">
+            <div class="keep-label">Копірайтинг</div>
+            <div class="keep-val">8/10</div>
+            <div class="keep-sub">
+              Живий, людяний, без емодзі-сміття, українська плюралізація
+            </div>
+          </div>
+          <div class="keep-cell">
+            <div class="keep-label">Entrance-аніміції</div>
+            <div class="keep-val">Залишити</div>
+            <div class="keep-sub">
+              Staggered entrance, FlameParticle milestone, press-scale 0.97
+            </div>
+          </div>
+          <div class="keep-cell">
+            <div class="keep-label">Типографіка</div>
+            <div class="keep-val">8/10</div>
+            <div class="keep-sub">
+              Чітка шкала, eyebrow/display рівні, JetBrains Mono для цифр
             </div>
           </div>
         </div>
       </div>
-
-      <!-- ══════════════════════════════════════════
-           VERDICT
-      ══════════════════════════════════════════ -->
-      <div class="verdict">
-        <div class="verdict-head">
-          <h2>Підсумок змін</h2>
-          <span class="tag">Безпечний рефактор</span>
-        </div>
-        <div class="verdict-grid">
-          <div class="verdict-cell">
-            <div class="vc-label">Loop-анімацій прибрано</div>
-            <div class="vc-val up">3</div>
-            <div class="vc-sub">
-              FAB pulse + FAB shadow + EmptyState pulse + Flame loop
-            </div>
-          </div>
-          <div class="verdict-cell">
-            <div class="vc-label">Хардкодів у токени</div>
-            <div class="vc-val up">6</div>
-            <div class="vc-sub">
-              Flame-кольори → <code>streak.*</code> tokens
-            </div>
-          </div>
-          <div class="verdict-cell">
-            <div class="vc-label">Зміни файлів</div>
-            <div class="vc-val">3</div>
-            <div class="vc-sub">
-              HubDashboard, EmptyState, StreakFlame + tokens.js
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /wrap -->
+    </main>
 
     <footer class="footer">
-      <span>Sergeant · UI Audit</span>
-      <span style="color: var(--border)">|</span>
-      <a href="../index.html">← Всі мокапи</a>
-      <span style="margin-left: auto">Серпень 2026</span>
+      <span>Sergeant UI Audit · 2026-07</span>
+      <span style="margin-left: auto"
+        >4 проблеми · Пріоритет 1–2 · ~30 рядків змін</span
+      >
     </footer>
 
     <script>
-      // Tab filtering
       function switchTab(group, btn) {
         document
           .querySelectorAll(".tab-btn")
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-
-        document.querySelectorAll(".section[data-group]").forEach((sec) => {
+        document.querySelectorAll(".section").forEach((s) => {
           if (group === "all") {
-            sec.style.display = "";
+            s.style.display = "";
           } else {
-            const groups = sec.dataset.group.split(" ");
-            sec.style.display = groups.includes(group) ? "" : "none";
+            const g = (s.dataset.group || "").split(" ");
+            s.style.display = g.includes(group) ? "" : "none";
           }
         });
-
-        // Also show/hide the OK section
-        document
-          .querySelectorAll(".section:not([data-group])")
-          .forEach((sec) => {
-            sec.style.display = group === "all" ? "" : "none";
-          });
+        document.querySelectorAll(".section-divider").forEach((d, i, arr) => {
+          // hide orphan dividers
+          const prev = d.previousElementSibling;
+          const next = d.nextElementSibling;
+          const prevVisible = prev && prev.style.display !== "none";
+          const nextVisible = next && next.style.display !== "none";
+          d.style.display = prevVisible && nextVisible ? "" : "none";
+        });
       }
     </script>
   </body>
