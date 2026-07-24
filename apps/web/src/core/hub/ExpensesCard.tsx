@@ -235,8 +235,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   return (
     <div
       className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
+        "report-card bg-panel border border-line rounded-2xl transition-shadow",
+        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
       )}
     >
       <button

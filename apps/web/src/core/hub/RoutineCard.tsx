@@ -88,9 +88,10 @@ function HabitHeatmap({
           );
         })}
       </div>
-      {/* Легенда інтенсивності */}
+      {/* Легенда інтенсивності — мовно-нейтральні мітки 0%→100% (i18n-safe,
+          без нових рядків у каталозі; шкала кольорів = % виконання за день). */}
       <div className="mt-2 flex items-center justify-end gap-1.5">
-        <span className="text-style-caption text-muted">менше</span>
+        <span className="text-style-caption text-muted tabular-nums">0%</span>
         <span className="flex items-center gap-1" aria-hidden>
           <span className="w-3 h-3 rounded-sm bg-panelHi border border-line" />
           <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-30" />
@@ -98,7 +99,7 @@ function HabitHeatmap({
           <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-80" />
           <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-100" />
         </span>
-        <span className="text-style-caption text-muted">більше</span>
+        <span className="text-style-caption text-muted tabular-nums">100%</span>
       </div>
     </div>
   );
@@ -197,8 +198,8 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   return (
     <div
       className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
+        "report-card bg-panel border border-line rounded-2xl transition-shadow",
+        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
       )}
     >
       <button
@@ -260,7 +261,11 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} {formattedPrev}%
           </p>
-          <HabitHeatmap key={`${period}-${offset}`} data={cur.daily} dates={dates} />
+          <HabitHeatmap
+            key={`${period}-${offset}`}
+            data={cur.daily}
+            dates={dates}
+          />
         </>
       )}
     </div>

@@ -741,7 +741,7 @@ export const messages = {
     messageLabel: "Повідомлення",
     placeholderIdea: "Чого тобі бракує в застосунку?",
     placeholderBug: "Що саме поламалось і на якому екрані?",
-    placeholderOther: "Розкажи, що думаєш",
+    placeholderOther: "Розкажи, ��о думаєш",
     contextLabel: "Додати контекст сторінки",
     contextDescription:
       "Адреса поточної сторінки та розмір екрана — допоможе відтворити проблему.",
@@ -815,7 +815,7 @@ export const messages = {
     waitlistAriaLabel: "Підписатися на запуск Sergeant",
     waitlistHeadline: "Лист, коли Premium буде готовий",
     waitlistSubcopy:
-      "Залиш email для launch-апдейту. Це той самий список інтересу, але" +
+      "Залиш email для launch-апдейту. Це той самий список інтер��су, але" +
       " тепер із attribution `source=landing`.",
 
     // Pricing section
