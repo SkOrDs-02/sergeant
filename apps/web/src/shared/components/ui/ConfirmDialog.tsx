@@ -126,7 +126,10 @@ export const ConfirmDialog = memo(function ConfirmDialog({
           {title}
         </h2>
         {description && (
-          <p id={descId} className="text-sm text-muted leading-relaxed mb-5">
+          <p
+            id={descId}
+            className="text-style-body text-muted leading-relaxed mb-5"
+          >
             {description}
           </p>
         )}

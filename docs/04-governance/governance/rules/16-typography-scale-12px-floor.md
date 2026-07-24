@@ -24,14 +24,20 @@
 
 **Use one of the semantic `.text-style-*` utilities whenever a slot has a documented role.** The utilities live in `packages/design-tokens/tailwind-preset.js → plugins.semanticTypography` and bundle font-size, line-height, weight, letter-spacing, and casing so layouts can't drift on any single axis (e.g. shipping the hero size with the wrong weight).
 
-| Utility                | Contract                       | Slot                              |
-| ---------------------- | ------------------------------ | --------------------------------- |
-| `.text-style-hero`     | 26 / 32 / 700 / -0.02em        | Page H1, hero stat number         |
-| `.text-style-title`    | 20 / 28 / 600 / -0.01em        | Section heading, card title       |
-| `.text-style-body`     | 16 / 24 / 400                  | Main body copy                    |
-| `.text-style-label`    | 14 / 20 / 500                  | Form label, button text           |
-| `.text-style-caption`  | 12 / 16 / 400                  | Helper text, metadata, timestamps |
-| `.text-style-overline` | 12 / 16 / 600 / 0.06em / UPPER | Section kicker / eyebrow          |
+**Canon — the scale is a CLOSED set of eight roles.** `display / headline / title / body / label / caption / overline / code`. Пікселі не є роллю: «той самий розмір» ≠ «та сама роль» — обирай слот за композиційною роллю елемента (заголовок / тіло / лейбл / кікер / число-статистика), не за тим, у скільки пікселів він випадково рендериться. **Нову роль додає лише дизайн-вердикт** (цикл 5–6 дизайн-аудиту закрив шкалу на восьми; спроба злити `overline` у `caption` поверне hand-rolled uppercase-комбінації, які лінт забороняє). Розриви між сусідніми ролями (напр. `title` 22px → `headline` 26px) — навмисні: контрол-size-варіанти, що раніше плавно масштабували текст, тепер лягають на найближчу роль.
+
+| Utility                | Contract (min→max / lh / weight / tracking) | Slot                                      |
+| ---------------------- | ------------------------------------------- | ----------------------------------------- |
+| `.text-style-display`  | 40→64 / 1 / 800 / -0.03em                   | Hero-число, celebration-лічильник         |
+| `.text-style-headline` | 26→36 / 1.15 / 700 / -0.02em                | Page H1, hero stat number                 |
+| `.text-style-title`    | 18→22 / 1.3 / 600 / -0.01em                 | Section heading, card / dialog title      |
+| `.text-style-body`     | 15→16 / 1.55 / 400                          | Body copy, input / textarea text          |
+| `.text-style-label`    | 13→14 / 1.4 / 500 / 0.005em                 | Form label, button / tab / menu-item text |
+| `.text-style-caption`  | 12 / 1.4 / 400 / 0.005em                    | Helper text, metadata, hints, timestamps  |
+| `.text-style-overline` | 12 / 1.4 / 600 / 0.08em / UPPER             | Section kicker / eyebrow                  |
+| `.text-style-code`     | 13→14 / 1.5 / 500 / mono                    | Inline code, monospace stat value         |
+
+> `.text-style-hero` лишається back-compat аліасом `headline`; новий код бере `headline`. Гліф-розміри (емодзі-іконка, ініціали аватара, число всередині progress-ring, лічильник streak-вогника) — це РОЗМІР СИМВОЛА під контейнер, НЕ типографічна роль: лишай `text-<size>` з коментарем `/* icon-size, not type */` або `/* glyph scales with container, not a type role */`.
 
 **Floor: 12px (`text-style-caption` / `text-xs`).** `text-3xs` (9px) is removed from the scale; `text-2xs` (10px) is reserved for chart axis ticks and decorative metadata badges (timestamps, badge counts) — never primary content. Anything a user has to read to take an action MUST clear 12px.
 

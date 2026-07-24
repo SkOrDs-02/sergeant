@@ -259,11 +259,13 @@ export const HabitCheckbox = memo(function HabitCheckbox({
           {label}
         </span>
         {subtitle && (
-          <p className="text-xs text-muted mt-0.5 truncate">{subtitle}</p>
+          <p className="text-style-caption text-muted mt-0.5 truncate">
+            {subtitle}
+          </p>
         )}
       </div>
       {streak != null && streak > 0 && (
-        <span className="flex items-center gap-1 text-xs font-semibold text-warning-strong dark:text-warning">
+        <span className="flex items-center gap-1 text-style-caption font-semibold text-warning-strong dark:text-warning">
           <Icon name="zap" size={12} />
           {streak}
         </span>

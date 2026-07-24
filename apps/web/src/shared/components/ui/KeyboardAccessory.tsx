@@ -100,7 +100,7 @@ export function KeyboardAccessory({
             // tall) to `px-3 py-2.5 min-h-touch-target` so the WCAG 2.5.5
             // / Apple HIG 44px floor is met on coarse pointers. Pairs
             // with the `min-h-touch-target` token landed in Phase 0 (T6).
-            "rounded-full px-3 py-2.5 min-h-touch-target text-xs font-semibold transition-colors",
+            "rounded-full px-3 py-2.5 min-h-touch-target text-style-label font-semibold transition-colors",
             style.chip,
             style.chipHover,
           )}

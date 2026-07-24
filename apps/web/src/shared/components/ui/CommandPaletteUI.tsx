@@ -190,7 +190,7 @@ export function CommandPaletteUI() {
             placeholder="Знайди команду…"
             className={cn(
               "flex-1 bg-transparent outline-none border-none",
-              "text-sm text-text placeholder:text-subtle",
+              "text-style-body text-text placeholder:text-subtle",
               "focus-visible:outline-none",
             )}
             aria-autocomplete="list"
@@ -214,7 +214,7 @@ export function CommandPaletteUI() {
           className="flex-1 overflow-y-auto py-2"
         >
           {flat.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted">
+            <div className="px-4 py-8 text-center text-style-body text-muted">
               Нічого не знайдено
             </div>
           ) : (
@@ -372,11 +372,11 @@ function CommandGroup({
                 <span className="shrink-0 w-5 h-5" aria-hidden="true" />
               )}
               <span className="flex-1 min-w-0">
-                <span className="block text-sm text-text truncate">
+                <span className="block text-style-label text-text truncate">
                   {cmd.title}
                 </span>
                 {cmd.description ? (
-                  <span className="block text-xs text-muted truncate">
+                  <span className="block text-style-caption text-muted truncate">
                     {cmd.description}
                   </span>
                 ) : null}

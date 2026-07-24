@@ -46,13 +46,17 @@ export type SectionHeadingWeight =
 // separately so `weight` prop overrides can compose cleanly. The `2xs`
 // step maps to text-style-caption (12px) + uppercase + tracking-wide —
 // raised from 10px to satisfy HR#16 (minimum 12px text).
+// Роль задає РОЗМІР; casing / tracking / weight лишаються шарами поверх
+// (той самий патерн, що вже був у `2xs`). eyebrow-розміри сидять на
+// `caption` (12px floor, HR#16); md — `label`; lg/xl — `title` (секційний
+// заголовок). Цикл 6: сирих `text-xs/sm/lg/xl` тут більше немає.
 const sizeTokens: Record<SectionHeadingSize, string> = {
   "2xs": "text-style-caption uppercase tracking-wide",
-  xs: "text-xs uppercase tracking-wider",
-  sm: "text-xs uppercase tracking-widest",
-  md: "text-sm",
-  lg: "text-lg leading-tight",
-  xl: "text-xl leading-tight",
+  xs: "text-style-caption uppercase tracking-wider",
+  sm: "text-style-caption uppercase tracking-widest",
+  md: "text-style-label",
+  lg: "text-style-title leading-tight",
+  xl: "text-style-title leading-tight",
 };
 
 const weightTokens: Record<SectionHeadingWeight, string> = {

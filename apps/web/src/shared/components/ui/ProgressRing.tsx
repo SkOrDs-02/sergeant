@@ -91,6 +91,7 @@ const sizePx: Record<ProgressRingSize, number> = {
   xl: 128,
 };
 
+// glyph scales with ring size, not a type role
 const labelTextSize: Record<ProgressRingSize, string> = {
   xs: "text-style-caption",
   sm: "text-xs",

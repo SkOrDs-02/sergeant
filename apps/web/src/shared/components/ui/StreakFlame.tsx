@@ -25,6 +25,7 @@ import { Icon } from "./Icon";
 
 export type StreakFlameSize = "sm" | "md" | "lg" | "xl";
 
+/* streak count scales with flame size, not a type role */
 const sizeStyles: Record<
   StreakFlameSize,
   { icon: number; text: string; wrapper: string }

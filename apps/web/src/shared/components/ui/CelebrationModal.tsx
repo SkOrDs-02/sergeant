@@ -240,6 +240,7 @@ export const CelebrationModal = memo(function CelebrationModal({
   const renderIcon = () => {
     if (icon) return icon;
 
+    /* icon-size, not type */
     const iconMap: Record<CelebrationType, ReactNode> = {
       achievement: <span className="text-5xl animate-celebration-pop">🏆</span>,
       goal: <span className="text-5xl animate-celebration-pop">🎯</span>,
@@ -255,6 +256,7 @@ export const CelebrationModal = memo(function CelebrationModal({
           />
         </div>
       ),
+      /* icon-size, not type */
       confetti: <span className="text-6xl animate-celebration-pop">🎉</span>,
     };
     return iconMap[type];
@@ -265,7 +267,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="flex items-baseline justify-center gap-1.5">
-        <span className="text-4xl font-black text-text tabular-nums animate-tick-up">
+        <span className="text-style-display font-black text-text tabular-nums animate-tick-up">
           {value}
         </span>
         {unit && <span className="text-style-title text-muted">{unit}</span>}
@@ -296,7 +298,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             style={{ width: `${percent}%` }}
           />
         </div>
-        <p className="text-xs text-muted text-center mt-1.5">
+        <p className="text-style-caption text-muted text-center mt-1.5">
           {progress.current} / {progress.max}
         </p>
       </div>
@@ -318,6 +320,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             )}
             style={{ animationDelay: `${idx * 100 + 200}ms` }}
           >
+            {/* icon-size, not type */}
             <span className="text-lg">{reward.icon}</span>
             <span className="text-style-label text-text">{reward.label}</span>
           </div>
@@ -406,7 +409,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
           {/* Description */}
           {description && (
-            <p className="text-sm text-muted text-center text-pretty max-w-[280px]">
+            <p className="text-style-body text-muted text-center text-pretty max-w-[280px]">
               {description}
             </p>
           )}

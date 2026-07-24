@@ -244,12 +244,14 @@ export function Sheet({
             <div className="min-w-0 flex-1">
               <div
                 id={titleId}
-                className="text-lg font-extrabold text-text leading-tight"
+                className="text-style-title font-extrabold text-text leading-tight"
               >
                 {title}
               </div>
               {description && (
-                <div className="text-xs text-subtle mt-1">{description}</div>
+                <div className="text-style-caption text-subtle mt-1">
+                  {description}
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">

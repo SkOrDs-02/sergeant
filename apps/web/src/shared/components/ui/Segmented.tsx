@@ -84,8 +84,8 @@ const INACTIVE =
   "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors";
 
 const SIZE: Record<SegmentedSize, string> = {
-  sm: "px-3 py-2 text-xs min-h-[36px]",
-  md: "px-3 py-2.5 text-xs min-h-[44px]",
+  sm: "px-3 py-2 text-style-label min-h-[36px]",
+  md: "px-3 py-2.5 text-style-label min-h-[44px]",
 };
 
 export function Segmented<V extends string = string>({

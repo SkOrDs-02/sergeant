@@ -39,7 +39,7 @@ describe("Stat", () => {
   it("maps size to the correct typographic class", () => {
     const { container } = render(<Stat label="X" value="1" size="lg" />);
     const valueRow = container.querySelector(".mt-1.flex.items-baseline")!;
-    expect(valueRow.className).toContain("text-3xl");
+    expect(valueRow.className).toContain("text-style-headline");
   });
 
   it.each([

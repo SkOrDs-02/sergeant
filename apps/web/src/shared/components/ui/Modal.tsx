@@ -183,7 +183,7 @@ export function Modal({
               {title && (
                 <div
                   id={titleId}
-                  className="text-lg font-extrabold text-fg leading-tight"
+                  className="text-style-title font-extrabold text-fg leading-tight"
                 >
                   {title}
                 </div>
@@ -191,7 +191,7 @@ export function Modal({
               {description && (
                 <div
                   id={descriptionId}
-                  className="text-sm text-fg-muted leading-relaxed mt-1"
+                  className="text-style-body text-fg-muted leading-relaxed mt-1"
                 >
                   {description}
                 </div>

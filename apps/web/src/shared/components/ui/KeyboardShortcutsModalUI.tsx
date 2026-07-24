@@ -163,7 +163,7 @@ export function KeyboardShortcutsModal({
                     key={idx}
                     className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-surface/50 transition-colors"
                   >
-                    <span className="text-sm text-text">
+                    <span className="text-style-body text-text">
                       {shortcut.description}
                     </span>
                     <div className="flex items-center gap-1">
@@ -186,7 +186,7 @@ export function KeyboardShortcutsModal({
 
         {/* Footer hint */}
         <div className="p-4 border-t border-line text-center">
-          <p className="text-xs text-muted">
+          <p className="text-style-caption text-muted">
             Натисни <KeyBadge>?</KeyBadge> будь-де щоб відкрити цю довідку
           </p>
         </div>

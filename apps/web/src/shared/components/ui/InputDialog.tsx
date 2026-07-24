@@ -138,7 +138,10 @@ export function InputDialog({
           {title}
         </h2>
         {description && (
-          <p id={descId} className="text-sm text-muted leading-relaxed mb-4">
+          <p
+            id={descId}
+            className="text-style-body text-muted leading-relaxed mb-4"
+          >
             {description}
           </p>
         )}
@@ -152,7 +155,7 @@ export function InputDialog({
           placeholder={placeholder}
           disabled={isSubmitting}
           className={cn(
-            "w-full h-12 rounded-xl bg-bg border border-line px-4 text-sm text-text placeholder:text-subtle mb-4",
+            "w-full h-12 rounded-xl bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
             "transition-colors",
             "focus:outline-none",
             "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",

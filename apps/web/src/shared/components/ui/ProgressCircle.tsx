@@ -58,6 +58,7 @@ const variantClass: Record<ProgressCircleVariant, string> = {
   danger: "text-danger-strong",
 };
 
+// glyph scales with ring size, not a type role
 const labelTextClass: Record<ProgressCircleSize, string> = {
   xs: "text-style-caption",
   sm: "text-style-caption",

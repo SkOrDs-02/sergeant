@@ -37,7 +37,7 @@ export function Banner({
   return (
     <div
       className={cn(
-        "rounded-2xl border px-4 py-3 text-sm",
+        "rounded-2xl border px-4 py-3 text-style-body",
         variants[variant] || variants.info,
         className,
       )}

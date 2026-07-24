@@ -47,9 +47,9 @@ const variantClass: Record<StatVariant, string> = {
 };
 
 const valueSize: Record<StatSize, string> = {
-  sm: "text-lg font-extrabold tabular-nums",
-  md: "text-2xl font-extrabold tabular-nums",
-  lg: "text-3xl font-black tabular-nums",
+  sm: "text-style-title font-extrabold tabular-nums",
+  md: "text-style-headline font-extrabold tabular-nums",
+  lg: "text-style-headline font-black tabular-nums",
 };
 
 export interface StatProps {
@@ -98,11 +98,14 @@ export function Stat({
         )}
       >
         {icon && (
+          /* icon-size, not type */
           <span className="text-base font-normal leading-none">{icon}</span>
         )}
         <span>{value}</span>
       </div>
-      {sublabel && <div className="text-xs text-subtle mt-1">{sublabel}</div>}
+      {sublabel && (
+        <div className="text-style-caption text-subtle mt-1">{sublabel}</div>
+      )}
     </div>
   );
 }
