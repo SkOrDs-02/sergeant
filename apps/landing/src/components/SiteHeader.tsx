@@ -1,0 +1,47 @@
+import { Link, useLocation } from "react-router-dom";
+
+export default function SiteHeader() {
+  const { pathname } = useLocation();
+  const onHome = pathname === "/";
+
+  const anchor = (hash: string) => (onHome ? `#${hash}` : `/#${hash}`);
+
+  return (
+    <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+      <Link
+        to="/"
+        className="font-display text-lg font-bold tracking-tight text-foreground"
+      >
+        Sergeant<span className="text-accent">.</span>
+      </Link>
+      <nav
+        aria-label="Головна навігація"
+        className="hidden items-center gap-6 text-sm text-muted md:flex"
+      >
+        <a href={anchor("how")} className="transition hover:text-foreground">
+          Як це працює
+        </a>
+        <a
+          href={anchor("modules")}
+          className="transition hover:text-foreground"
+        >
+          Модулі
+        </a>
+        <Link
+          to="/pricing"
+          className={`transition hover:text-foreground ${
+            pathname === "/pricing" ? "text-foreground" : ""
+          }`}
+        >
+          Тарифи
+        </Link>
+      </nav>
+      <a
+        href={anchor("beta")}
+        className="rounded-full border border-cardline bg-card px-4 py-2 text-sm font-semibold text-foreground backdrop-blur-md transition hover:border-accent/50"
+      >
+        У бету
+      </a>
+    </header>
+  );
+}
