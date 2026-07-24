@@ -103,7 +103,7 @@ export function HubChatHistoryDrawer({
             >
               <Icon name="sparkle" size={15} className="text-brand-500" />
             </div>
-            <div className="text-base font-bold text-text">Бесіди</div>
+            <div className="text-style-title font-bold text-text">Бесіди</div>
           </div>
           <Button
             variant="ghost"
@@ -132,7 +132,7 @@ export function HubChatHistoryDrawer({
 
         <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-1">
           {sortedSessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 text-center text-muted text-xs py-10 px-4">
+            <div className="flex flex-col items-center justify-center gap-2 text-center text-muted text-style-caption py-10 px-4">
               <div
                 className="w-12 h-12 rounded-2xl bg-panelHi flex items-center justify-center"
                 aria-hidden

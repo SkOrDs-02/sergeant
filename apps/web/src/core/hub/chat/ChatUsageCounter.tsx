@@ -36,7 +36,7 @@ export function ChatUsageCounter() {
       aria-label={ariaLabel}
       data-testid="chat-usage-counter"
       className={cn(
-        "shrink-0 px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap",
+        "shrink-0 px-2 py-1 rounded-full text-style-caption font-semibold whitespace-nowrap",
         exhausted
           ? "bg-warning-soft text-warning-strong dark:text-warning"
           : "bg-panelHi text-muted",

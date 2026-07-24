@@ -345,7 +345,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             ))}
           </Select>
           {form.activityLevel !== "" && (
-            <p className="text-xs text-muted">
+            <p className="text-style-caption text-muted">
               {ACTIVITY_META[form.activityLevel].hint}
             </p>
           )}

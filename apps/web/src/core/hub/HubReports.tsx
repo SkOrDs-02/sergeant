@@ -74,13 +74,15 @@ function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
     <div className="bg-panel border border-line rounded-2xl p-4 flex gap-3 items-start">
       <Icon name={iconName} size={24} className="shrink-0 text-muted mt-0.5" />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-sm text-text leading-snug">{title}</p>
+        <p className="text-style-label text-text leading-snug">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-style-title text-brand-strong dark:text-brand">
             {stat}
           </span>
           {detail && (
-            <span className="text-xs text-muted truncate">{detail}</span>
+            <span className="text-style-caption text-muted truncate">
+              {detail}
+            </span>
           )}
         </div>
       </div>
@@ -207,7 +209,7 @@ export function HubReports() {
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </Button>
-          <span className="text-xs text-muted min-w-[90px] text-center">
+          <span className="text-style-caption text-muted min-w-[90px] text-center">
             {label}
           </span>
           <Button
@@ -278,7 +280,7 @@ export function HubReports() {
           ))}
         </div>
       ) : (
-        <div className="bg-panel border border-line rounded-2xl p-4 text-center text-xs text-muted">
+        <div className="bg-panel border border-line rounded-2xl p-4 text-center text-style-caption text-muted">
           Збери більше даних для інсайтів
         </div>
       )}

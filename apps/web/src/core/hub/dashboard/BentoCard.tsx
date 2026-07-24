@@ -169,7 +169,7 @@ export const BentoCard = memo(function BentoCard({
             // focal point and is sized up; once data lands the big
             // `preview.main` number takes over as the hero and the name
             // recedes to a caption above it.
-            hasData ? "text-xs" : "text-sm",
+            hasData ? "text-style-caption" : "text-style-label",
             inactive ? "text-muted" : "text-text",
           )}
         >

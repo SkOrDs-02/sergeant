@@ -62,7 +62,7 @@ export function ThemingSection() {
       }
     >
       <Group label="Поточна тема">
-        <div className="flex items-center gap-3 text-xs text-muted">
+        <div className="flex items-center gap-3 text-style-caption text-muted">
           <span>
             Активна тема:{" "}
             <code className="text-text font-semibold">{theme}</code>
@@ -82,7 +82,7 @@ export function ThemingSection() {
               className="bg-panel border border-line rounded-2xl p-4 space-y-2"
             >
               <div className="text-style-label text-text">{row.label}</div>
-              <p className="text-2xs text-muted">{row.tone}</p>
+              <p className="text-style-caption text-muted">{row.tone}</p>
               <div className="flex gap-2 pt-1">
                 {row.swatches.map((s) => (
                   <Swatch
@@ -98,7 +98,7 @@ export function ThemingSection() {
       </Group>
 
       <Group label="Schedule modes (useDarkMode)">
-        <div className="space-y-2 text-xs text-muted">
+        <div className="space-y-2 text-style-caption text-muted">
           <p>
             <code className="text-text">manual</code> — вручну через{" "}
             <code>toggle()</code>. localStorage: <code>hub_dark_mode_v1</code>.

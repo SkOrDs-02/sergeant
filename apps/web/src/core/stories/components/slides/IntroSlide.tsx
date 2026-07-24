@@ -9,7 +9,7 @@ export function IntroSlide({ slide }: { slide: Slide }) {
           Щотижневий дайджест
         </p>
         <h2 className="text-style-display tnum mb-4">Твій тиждень</h2>
-        <p className="text-base text-white/85 leading-relaxed max-w-88">
+        <p className="text-style-body text-white/85 leading-relaxed max-w-88">
           Коротке зведення по всіх модулях. Тапай праворуч, щоб гортати далі,
           ліворуч — назад. Утримуй, щоб зупинити.
         </p>

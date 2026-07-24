@@ -244,7 +244,7 @@ export function FinykWebhookServiceSection({
                       ? "Webhook очікує"
                       : "Помилка webhook"}
                 </div>
-                <div className="text-xs text-subtle mt-0.5">
+                <div className="text-style-caption text-subtle mt-0.5">
                   {webhookSyncState.accountsCount} {COPY.accounts}
                   {webhookSyncState.lastEventAt && (
                     <>
@@ -287,7 +287,9 @@ export function FinykWebhookServiceSection({
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-subtle leading-snug">{COPY.tokenHelp}</p>
+            <p className="text-style-caption text-subtle leading-snug">
+              {COPY.tokenHelp}
+            </p>
             <div className="relative">
               <input
                 type={showWebhookToken ? "text" : "password"}
@@ -295,7 +297,7 @@ export function FinykWebhookServiceSection({
                 onChange={(event) => setWebhookTokenInput(event.target.value)}
                 placeholder={COPY.tokenPlaceholder}
                 autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
+                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
                 onKeyDown={(event) => event.key === "Enter" && connectWebhook()}
               />
               <button
@@ -324,7 +326,7 @@ export function FinykWebhookServiceSection({
         )}
         {webhookError && (
           <p
-            className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2"
+            className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2"
             role="alert"
           >
             {webhookError}
@@ -333,7 +335,9 @@ export function FinykWebhookServiceSection({
       </SettingsSubGroup>
 
       <SettingsSubGroup title={COPY.serviceTitle}>
-        <p className="text-xs text-subtle leading-snug">{COPY.serviceHelp}</p>
+        <p className="text-style-caption text-subtle leading-snug">
+          {COPY.serviceHelp}
+        </p>
         <Button
           variant="ghost"
           className="w-full h-11"

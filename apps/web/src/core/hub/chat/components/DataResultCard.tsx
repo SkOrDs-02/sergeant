@@ -263,7 +263,7 @@ function DataResultCardImpl({
           />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-text wrap-break-word">
+          <p className="text-style-caption font-semibold text-text wrap-break-word">
             {title}
           </p>
           <p className="mt-0.5 text-style-caption text-subtle wrap-break-word">

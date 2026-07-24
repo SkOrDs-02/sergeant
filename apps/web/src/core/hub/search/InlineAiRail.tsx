@@ -153,7 +153,7 @@ export function InlineAiRail({
         {state.status === "loading" && (
           <div className="flex items-center justify-between gap-3">
             <div
-              className="flex items-center gap-2 text-sm text-muted"
+              className="flex items-center gap-2 text-style-caption text-muted"
               aria-live="polite"
             >
               <span
@@ -165,7 +165,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={onCancel}
-              className="text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
             >
               Скасувати
             </button>
@@ -204,7 +204,7 @@ export function InlineAiRail({
               <button
                 type="button"
                 onClick={() => onRetry(state.question)}
-                className="ml-auto text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+                className="ml-auto text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
               >
                 Спробувати ще раз
               </button>
@@ -214,13 +214,13 @@ export function InlineAiRail({
 
         {state.status === "aborted" && (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">
+            <p className="text-style-body text-muted">
               Запит скасовано — натисни «Запитати знову», щоб спробувати ще раз.
             </p>
             <button
               type="button"
               onClick={() => onRetry(state.question)}
-              className="text-sm text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
             >
               Запитати знову
             </button>
@@ -229,7 +229,7 @@ export function InlineAiRail({
 
         {state.status === "error" && (
           <div className="space-y-2">
-            <p className="text-sm text-danger-strong dark:text-red-200">
+            <p className="text-style-body text-danger-strong dark:text-red-200">
               {state.message}
             </p>
             <div className="flex flex-wrap items-center gap-2">

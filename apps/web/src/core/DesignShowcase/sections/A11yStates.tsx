@@ -42,14 +42,12 @@ function TokenRow({
         className={`h-7 w-7 shrink-0 rounded-xl border border-divider ${swatchClass}`}
       />
       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-        <code className="text-2xs text-text font-mono truncate">
-          {variable}
-        </code>
-        <code className="text-2xs text-subtle font-mono truncate">
-          {utility}
-        </code>
+        <code className="text-style-code text-text truncate">{variable}</code>
+        <code className="text-style-code text-subtle truncate">{utility}</code>
       </div>
-      <span className="text-2xs text-muted shrink-0">{roleLabel}</span>
+      <span className="text-style-caption text-muted shrink-0">
+        {roleLabel}
+      </span>
     </div>
   );
 }
@@ -57,7 +55,7 @@ function TokenRow({
 export function A11yStatesSection() {
   return (
     <Sec id="a11y-states" title="A11y / States">
-      <p className="text-sm text-muted">
+      <p className="text-style-body text-muted">
         Семантичні токени для focus, selection, scrollbar, caret і дільників.
         Працюють однаково у світлій і темній темах — клас не повторюємо через{" "}
         {`dark:`}. Tab-нись по контролах нижче, виділи будь-який текст, проскрол
@@ -87,7 +85,7 @@ export function A11yStatesSection() {
               ring-focus-strong (solid)
             </button>
           </div>
-          <p className="text-2xs text-subtle">
+          <p className="text-style-caption text-subtle">
             Контракт:{" "}
             <code>
               focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg
@@ -99,7 +97,7 @@ export function A11yStatesSection() {
 
       {/* ::selection — text selection demo */}
       <Group label="::selection — виділення тексту">
-        <p className="text-sm text-text leading-relaxed">
+        <p className="text-style-body text-text">
           Виділи цей абзац мишкою або {`⌘/Ctrl+A`}, щоб побачити м&apos;який
           емералд-фон і темно-зелений текст із токенів{" "}
           <code className="font-mono">--c-selection-bg</code> та{" "}
@@ -108,7 +106,7 @@ export function A11yStatesSection() {
           <code className="font-mono"> ::-moz-selection</code>.
         </p>
         <div className="mt-3 p-3 rounded-2xl bg-panelHi border border-divider">
-          <p className="text-sm font-mono text-text leading-relaxed">
+          <p className="text-style-code text-text">
             const focusRing ={` `}
             <span className="text-brand-strong">{`"ring-focus/45"`}</span>;{` `}
           </p>
@@ -122,7 +120,7 @@ export function A11yStatesSection() {
             placeholder="Клацни сюди, побач емералд-курсор"
             aria-label="Demo input з caret-brand"
           />
-          <p className="text-2xs text-subtle">
+          <p className="text-style-caption text-subtle">
             Утиліта <code className="font-mono">caret-brand</code> (визначена в{" "}
             <code>utilities.css</code>) тримає курсор у фірмовому емералді в
             обох темах через <code className="font-mono">var(--c-caret)</code>.
@@ -134,7 +132,7 @@ export function A11yStatesSection() {
       <Group label="Scrollbar — тонкі рейки через --c-scrollbar-*">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div
-            className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-sm leading-relaxed text-text"
+            className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-style-body text-text"
             aria-label="Скролл-демо — глобальний scrollbar"
           >
             <p className="text-style-label mb-2">Глобальний scrollbar</p>
@@ -146,7 +144,7 @@ export function A11yStatesSection() {
             ))}
           </div>
           <div
-            className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-sm leading-relaxed text-text custom-scrollbar"
+            className="h-40 overflow-auto rounded-2xl border border-divider bg-panel p-3 text-style-body text-text custom-scrollbar"
             aria-label="Скролл-демо — custom-scrollbar utility"
           >
             <p className="text-style-label mb-2">.custom-scrollbar</p>
@@ -163,27 +161,27 @@ export function A11yStatesSection() {
       <Group label="Divider trio — weak / default / strong">
         <div className="rounded-2xl border border-divider bg-panel">
           <div className="px-4 py-3 border-b border-divider-weak">
-            <p className="text-sm text-text">
-              <code className="font-mono text-2xs">border-divider-weak</code> —
+            <p className="text-style-body text-text">
+              <code className="text-style-code">border-divider-weak</code> —
               feather hairline між рядками у списку.
             </p>
           </div>
           <div className="px-4 py-3 border-b border-divider">
-            <p className="text-sm text-text">
-              <code className="font-mono text-2xs">border-divider</code> —
+            <p className="text-style-body text-text">
+              <code className="text-style-code">border-divider</code> —
               стандартний дільник між елементами картки.
             </p>
           </div>
           <div className="px-4 py-3 border-b border-divider-strong">
-            <p className="text-sm text-text">
-              <code className="font-mono text-2xs">border-divider-strong</code>{" "}
-              — між великими секціями (header → content).
+            <p className="text-style-body text-text">
+              <code className="text-style-code">border-divider-strong</code> —
+              між великими секціями (header → content).
             </p>
           </div>
           <div className="px-4 py-3">
-            <p className="text-sm text-text">
+            <p className="text-style-body text-text">
               Останній рядок без дільника — Tailwind
-              <code className="font-mono text-2xs"> last:border-b-0</code>.
+              <code className="text-style-code"> last:border-b-0</code>.
             </p>
           </div>
         </div>

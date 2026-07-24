@@ -214,10 +214,10 @@ export function ModuleChecklist({
             <Icon name="list-checks" size={16} strokeWidth={2} />
           </div>
           <div className="min-w-0 text-left">
-            <h3 className="text-sm font-bold text-text truncate">
+            <h3 className="text-style-title text-text truncate">
               {compact ? "Перші кроки" : def.title}
             </h3>
-            <p className="text-xs text-muted">
+            <p className="text-style-caption text-muted">
               {completed}/{total} {messages.status.doneLowercase}
             </p>
           </div>
@@ -306,8 +306,8 @@ export function ModuleChecklist({
                 />
                 <span
                   className={cn(
-                    "flex-1 text-sm transition-all duration-200",
-                    done ? "text-muted line-through" : "text-text font-medium",
+                    "flex-1 text-style-label transition-all duration-200",
+                    done ? "text-muted line-through" : "text-text",
                   )}
                 >
                   {step.label}
@@ -329,7 +329,7 @@ export function ModuleChecklist({
             type="button"
             onClick={handleDismiss}
             className={cn(
-              "w-full text-center text-xs text-muted hover:text-text py-2 mt-1",
+              "w-full text-center text-style-label text-muted hover:text-text py-2 mt-1",
               "transition-colors focus:outline-none focus-visible:underline",
             )}
           >

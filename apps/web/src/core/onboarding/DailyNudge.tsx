@@ -76,7 +76,9 @@ export function DailyNudge({
           <Icon name="sparkle" size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-text leading-relaxed">{nudge.message}</p>
+          <p className="text-style-body text-text leading-relaxed">
+            {nudge.message}
+          </p>
           <div className="flex items-center gap-2 mt-2.5">
             {onAction && (
               <Button variant="primary" size="xs" onClick={handlePrimary}>

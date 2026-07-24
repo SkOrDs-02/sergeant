@@ -19,7 +19,7 @@ export function PushNotificationToggle({
     <div className={cn("flex items-center justify-between gap-3", className)}>
       <div className="min-w-0">
         <div className="text-style-label text-text">Push-сповіщення</div>
-        <div className="text-xs text-subtle mt-0.5">
+        <div className="text-style-caption text-subtle mt-0.5">
           {blocked
             ? "Заблоковано в налаштуваннях браузера"
             : subscribed

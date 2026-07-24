@@ -13,7 +13,7 @@ export function AssistantCatalogueSection() {
   const navigate = useNavigate();
   return (
     <SettingsGroup title="Можливості асистента" icon="sparkles">
-      <p className="text-sm text-subtle leading-relaxed">
+      <p className="text-style-body text-subtle leading-relaxed">
         ~60 інструментів, які може запустити AI-асистент: фінанси, тренування,
         звички, харчування, аналітика, утиліти, пам&apos;ять. Тапни картку — і
         одразу побачиш приклади команд.

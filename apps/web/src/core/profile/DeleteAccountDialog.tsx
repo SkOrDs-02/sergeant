@@ -57,10 +57,10 @@ export function DeleteAccountDialog({
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
       >
-        <h2 id={titleId} className="text-base font-bold text-text">
+        <h2 id={titleId} className="text-style-title text-text">
           Видалити акаунт назавжди?
         </h2>
-        <p id={descriptionId} className="text-sm text-muted mt-2">
+        <p id={descriptionId} className="text-style-body text-muted mt-2">
           Введи пароль для підтвердження. Цю дію неможливо скасувати.
         </p>
         <div className="mt-4 space-y-2">

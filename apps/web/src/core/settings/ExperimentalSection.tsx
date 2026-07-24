@@ -53,7 +53,9 @@ export function ExperimentalSection() {
 
   return (
     <SettingsGroup title={copy.title} icon="tool">
-      <p className="text-xs text-subtle leading-snug">{copy.intro}</p>
+      <p className="text-style-caption text-subtle leading-snug">
+        {copy.intro}
+      </p>
       <div
         role="note"
         className="flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5"
@@ -64,7 +66,9 @@ export function ExperimentalSection() {
           className="text-warn shrink-0 mt-0.5"
           aria-hidden
         />
-        <p className="text-xs text-text leading-snug">{copy.warningBanner}</p>
+        <p className="text-style-caption text-text leading-snug">
+          {copy.warningBanner}
+        </p>
       </div>
       {!acknowledged && (
         <div className="flex items-start gap-3 text-text">
@@ -81,7 +85,7 @@ export function ExperimentalSection() {
             className="flex-1 min-w-0 cursor-pointer"
           >
             <span className="text-style-label block">{copy.optInLabel}</span>
-            <span className="text-xs text-subtle mt-1 block leading-relaxed">
+            <span className="text-style-caption text-subtle mt-1 block leading-relaxed">
               {copy.optInHint}
             </span>
           </label>

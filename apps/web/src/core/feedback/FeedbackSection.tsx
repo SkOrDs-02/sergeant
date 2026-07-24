@@ -42,7 +42,7 @@ export function FeedbackSection() {
         title={messages.feedback.settingsSubGroupTitle}
         defaultOpen
       >
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           {messages.feedback.settingsDescription}
         </p>
         <Button

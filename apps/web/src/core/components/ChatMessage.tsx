@@ -77,7 +77,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 flex-wrap text-xs font-semibold text-text">
+        <div className="flex items-center gap-1.5 flex-wrap text-style-label font-semibold text-text">
           <span className="truncate">{card.title}</span>
           {isRisky && <RiskyBadge />}
         </div>
@@ -142,7 +142,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
             <path d="M9 6V4h6v2" />
           </svg>
         </span>
-        <span className="text-xs font-semibold text-danger-strong dark:text-danger flex-1 truncate">
+        <span className="text-style-label font-semibold text-danger-strong dark:text-danger flex-1 truncate">
           {card.title}
         </span>
         <span className="shrink-0 text-style-caption font-semibold text-danger-strong/70 dark:text-danger/70 rounded-full bg-danger/10 px-1.5 py-0.5">
@@ -193,7 +193,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
       )}
       <div
         className={cn(
-          "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+          "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-style-body leading-relaxed",
           isAssistant
             ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
             : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
@@ -225,7 +225,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               speak(text);
               onSpeak?.();
             }}
-            className="mt-1.5 flex items-center gap-1 text-xs text-subtle hover:text-text transition-colors"
+            className="mt-1.5 flex items-center gap-1 text-style-label text-subtle hover:text-text transition-colors"
             title="Озвучити"
             aria-label="Озвучити відповідь"
           >
@@ -297,7 +297,7 @@ export function TypingIndicator() {
         aria-hidden
         className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 items-center"
       >
-        <span className="text-sm text-muted">Думаю…</span>
+        <span className="text-style-body text-muted">Думаю…</span>
       </div>
     </div>
   );

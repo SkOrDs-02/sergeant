@@ -139,7 +139,7 @@ export function GoalFirstScreen({
         >
           {messages.onboarding.goalFirstHeading}
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {messages.onboarding.goalFirstSubtitle}
         </p>
       </div>
@@ -180,7 +180,7 @@ export function GoalFirstScreen({
                     <div className="text-style-label text-text">
                       {outcome.headline}
                     </div>
-                    <div className="text-xs text-muted mt-1 leading-snug">
+                    <div className="text-style-body text-muted mt-1 leading-snug">
                       {outcome.body}
                     </div>
                   </div>

@@ -103,7 +103,7 @@ export function EmptyStatesSection() {
               className="flex flex-col items-center gap-2"
             >
               <Comp size={100} />
-              <span className="text-2xs text-muted font-mono">{label}</span>
+              <span className="text-style-code text-muted">{label}</span>
             </Card>
           ))}
         </div>

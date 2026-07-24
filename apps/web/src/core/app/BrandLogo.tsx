@@ -93,9 +93,7 @@ export function BrandLogo({
   variant = "badge",
 }: BrandLogoProps) {
   const wordmarkCls =
-    size === "lg"
-      ? "text-xl leading-none font-extrabold tracking-tight"
-      : "text-lg leading-none font-extrabold tracking-tight";
+    "text-style-title leading-none font-extrabold tracking-tight";
 
   if (variant === "mark") {
     const iconSize = size === "lg" ? 26 : 22;

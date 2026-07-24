@@ -125,7 +125,7 @@ export function DashboardSection() {
           onChange={setShowMotivational}
         />
         <div className="space-y-2">
-          <p className="text-xs text-subtle leading-snug">
+          <p className="text-style-caption text-subtle leading-snug">
             Скільки простору між картками на головному екрані.
           </p>
           <div className="flex gap-2">
@@ -150,7 +150,7 @@ export function DashboardSection() {
                 >
                   {DASHBOARD_DENSITY_LABELS[d]}
                 </span>
-                <span className="block text-xs text-muted mt-0.5">
+                <span className="block text-style-caption text-muted mt-0.5">
                   {DASHBOARD_DENSITY_DESCRIPTIONS[d]}
                 </span>
               </button>
@@ -166,7 +166,7 @@ export function DashboardSection() {
          * settings-side reorder UI was a confusing duplicate. Active /
          * inactive checkboxes stay here because that toggle has no
          * dashboard-side equivalent. */}
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи виглядають
           приглушено — без кнопки швидкого додавання. Принаймні один має
           залишатися активним. Порядок змінюється на головній через кнопку
@@ -184,7 +184,7 @@ export function DashboardSection() {
                     onChange={() => toggleActive(id)}
                     className="h-4 w-4 accent-primary"
                   />
-                  <span className="flex-1 text-sm text-text">
+                  <span className="flex-1 text-style-label text-text">
                     {SHARED_DASHBOARD_MODULE_LABELS[id]}
                   </span>
                 </label>

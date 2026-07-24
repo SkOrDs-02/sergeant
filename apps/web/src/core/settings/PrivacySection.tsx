@@ -130,7 +130,7 @@ export function PrivacySection() {
       <div className="space-y-3">
         <div>
           <h3 className="text-style-label text-text">Згода та дані</h3>
-          <p className="mt-1 text-xs text-subtle leading-relaxed">
+          <p className="mt-1 text-style-caption text-subtle leading-relaxed">
             Обери, що Sergeant може використовувати для якості продукту та
             персоналізації. Дані для входу, безпеки й оплати залишаються
             потрібними для роботи застосунку. Сповіщення налаштовуються в
@@ -158,7 +158,7 @@ export function PrivacySection() {
           onChange={(checked) => void updatePreference("aiMemory", checked)}
         />
         <div className="rounded-2xl border border-line bg-panelHi p-3">
-          <p className="text-xs text-subtle leading-relaxed">
+          <p className="text-style-caption text-subtle leading-relaxed">
             Памʼять зберігає підтверджені факти профілю локально та, коли
             перемикач увімкнений, семантичні записи на сервері. Вимкнення блокує
             нові записи й використання між сесіями, але не видаляє вже
@@ -189,13 +189,13 @@ export function PrivacySection() {
             {clearingMemory ? "Очищаю…" : "Очистити памʼять ШІ"}
           </Button>
           {memoryClearStatus ? (
-            <p className="mt-2 text-xs text-subtle" role="status">
+            <p className="mt-2 text-style-caption text-subtle" role="status">
               {memoryClearStatus}
             </p>
           ) : null}
         </div>
         {!preferencesLoaded && preferencesError ? (
-          <p className="text-xs text-danger-strong" role="alert">
+          <p className="text-style-caption text-danger-strong" role="alert">
             {preferencesError}
           </p>
         ) : null}

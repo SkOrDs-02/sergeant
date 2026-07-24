@@ -74,7 +74,9 @@ interface HubSectionFallbackProps {
 function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
   return (
     <div className="px-1 py-6 text-center">
-      <p className="text-sm text-muted mb-3">Щось пішло не так у цій секції.</p>
+      <p className="text-style-body text-muted mb-3">
+        Щось пішло не так у цій секції.
+      </p>
       <button
         type="button"
         onClick={resetError}

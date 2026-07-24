@@ -80,7 +80,7 @@ export function FirstRunHintBanner({
         aria-hidden
         className={cn(
           "shrink-0 inline-flex items-center justify-center",
-          "w-7 h-7 rounded-full text-sm font-bold",
+          "w-7 h-7 rounded-full text-sm font-bold" /* glyph scales with container, not a type role */,
           v.pill,
         )}
       >
@@ -88,14 +88,16 @@ export function FirstRunHintBanner({
       </span>
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-style-label text-text leading-snug">{title}</p>
-        <p className="text-xs text-subtle leading-snug">{description}</p>
+        <p className="text-style-body text-subtle leading-snug">
+          {description}
+        </p>
         <div className="pt-1.5">
           <button
             type="button"
             onClick={onDismiss}
             className={cn(
               "inline-flex items-center justify-center gap-1 rounded-xl border px-2.5 py-1",
-              "min-h-[44px] min-w-[44px] text-xs font-semibold transition-colors",
+              "min-h-[44px] min-w-[44px] text-style-label transition-colors",
               v.cta,
             )}
           >

@@ -124,7 +124,7 @@ function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
       >
         <div className="min-w-0 flex-1">
           <p className="text-style-label">{headline}</p>
-          <p className="text-xs opacity-80">{COPY.body}</p>
+          <p className="text-style-caption opacity-80">{COPY.body}</p>
         </div>
         <Button
           variant="primary"

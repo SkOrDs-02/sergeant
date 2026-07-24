@@ -146,11 +146,12 @@ export function FinykPrivatBankSection({
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-bg border border-success/30 rounded-xl">
             <div className="w-9 h-9 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center text-base shrink-0">
+              {/* icon-size, not type */}
               <Icon name="credit-card" size={18} aria-hidden />
             </div>
             <div>
               <div className="text-style-label text-text">{COPY.connected}</div>
-              <div className="text-xs text-subtle mt-0.5 font-mono truncate">
+              <div className="text-style-code text-subtle mt-0.5 truncate">
                 ID: {(privatIdInput || "").slice(0, 6)}••••
               </div>
             </div>
@@ -165,11 +166,13 @@ export function FinykPrivatBankSection({
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-subtle leading-snug">{COPY.help}</p>
+          <p className="text-style-caption text-subtle leading-snug">
+            {COPY.help}
+          </p>
           <div>
             <label
               htmlFor="hub-privat-merchant-id"
-              className="text-xs text-muted mb-1 block"
+              className="text-style-label text-muted mb-1 block"
             >
               {COPY.merchantId}
             </label>
@@ -180,13 +183,13 @@ export function FinykPrivatBankSection({
               onChange={(event) => setPrivatIdInput(event.target.value)}
               placeholder={COPY.merchantIdPlaceholder}
               autoComplete="off"
-              className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+              className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
             />
           </div>
           <div>
             <label
               htmlFor="hub-privat-token"
-              className="text-xs text-muted mb-1 block"
+              className="text-style-label text-muted mb-1 block"
             >
               {COPY.tokenLabel}
             </label>
@@ -198,7 +201,7 @@ export function FinykPrivatBankSection({
                 onChange={(event) => setPrivatTokenInput(event.target.value)}
                 placeholder={COPY.tokenPlaceholder}
                 autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
+                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
                 onKeyDown={(event) => event.key === "Enter" && connectPrivat()}
               />
               <button
@@ -222,10 +225,10 @@ export function FinykPrivatBankSection({
               checked={rememberPrivat}
               onChange={(event) => setRememberPrivat(event.target.checked)}
             />
-            <span className="text-sm text-muted">{COPY.remember}</span>
+            <span className="text-style-label text-muted">{COPY.remember}</span>
           </label>
           {privatError && (
-            <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
+            <p className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2">
               {privatError}
             </p>
           )}

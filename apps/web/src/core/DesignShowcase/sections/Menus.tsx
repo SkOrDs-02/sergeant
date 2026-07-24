@@ -141,13 +141,13 @@ export function MenusSection() {
 
       <Group label="Командна палітра">
         <div className="space-y-2">
-          <p className="text-sm text-muted">
+          <p className="text-style-body text-muted">
             Натисни{" "}
-            <kbd className="px-1.5 h-5 inline-flex items-center text-2xs font-mono font-semibold text-muted bg-surface-muted border border-line rounded-md">
+            <kbd className="px-1.5 h-5 inline-flex items-center text-style-code text-muted bg-surface-muted border border-line rounded-md">
               ⌘ K
             </kbd>{" "}
             (або{" "}
-            <kbd className="px-1.5 h-5 inline-flex items-center text-2xs font-mono font-semibold text-muted bg-surface-muted border border-line rounded-md">
+            <kbd className="px-1.5 h-5 inline-flex items-center text-style-code text-muted bg-surface-muted border border-line rounded-md">
               Ctrl K
             </kbd>{" "}
             на Windows / Linux), щоб відкрити палітру з пошуком і клавіатурною

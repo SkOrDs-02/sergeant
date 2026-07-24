@@ -181,7 +181,7 @@ export function MemoryBankSection() {
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="sparkle" size={18} className="text-muted" />
         <span className="text-style-label text-text">Пам&apos;ять ШІ</span>
-        <span className="ml-auto text-xs text-muted">
+        <span className="ml-auto text-style-caption text-muted">
           {entries.length}{" "}
           {entries.length === 1
             ? "запис"
@@ -199,10 +199,10 @@ export function MemoryBankSection() {
             <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-3">
               <Icon name="sparkle" size={22} className="text-brand-500" />
             </div>
-            <p className="text-sm text-muted mb-1">
+            <p className="text-style-body text-muted mb-1">
               Банк пам&apos;яті порожній
             </p>
-            <p className="text-xs text-muted/70 mb-4">
+            <p className="text-style-caption text-muted/70 mb-4">
               ШІ задасть кілька запитань щоб дізнатися про ваші алергії, цілі,
               уподобання та рівень активності
             </p>
@@ -250,7 +250,7 @@ export function MemoryBankSection() {
                         key={entry.id}
                         className="flex items-center gap-2 group"
                       >
-                        <span className="text-sm text-text flex-1 min-w-0 truncate">
+                        <span className="text-style-label text-text flex-1 min-w-0 truncate">
                           {entry.fact}
                         </span>
                         <button
@@ -272,7 +272,7 @@ export function MemoryBankSection() {
               <button
                 type="button"
                 onClick={openMemoryChat}
-                className="flex-1 py-2.5 rounded-xl border border-dashed border-line text-sm text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl border border-dashed border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
               >
                 <Icon name="plus" size={14} />
                 Додати інфо
@@ -280,14 +280,14 @@ export function MemoryBankSection() {
               <button
                 type="button"
                 onClick={() => setManualOpen(true)}
-                className="py-2.5 px-3 rounded-xl border border-line text-sm text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
               >
                 Вручну
               </button>
               <button
                 type="button"
                 onClick={handleExport}
-                className="py-2.5 px-3 rounded-xl border border-line text-sm text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
                 aria-label="Експорт пам'яті"
               >
                 <Icon name="download" size={14} />
@@ -295,7 +295,7 @@ export function MemoryBankSection() {
               <button
                 type="button"
                 onClick={() => importRef.current?.click()}
-                className="py-2.5 px-3 rounded-xl border border-line text-sm text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-xl border border-line text-style-label text-muted hover:text-text hover:border-muted transition-colors flex items-center justify-center gap-1.5"
                 aria-label="Імпорт пам'яті"
               >
                 <Icon name="upload" size={14} />

@@ -207,7 +207,7 @@ export function WaitlistForm({
           {emailErrorMessage && (
             <p
               id="waitlist-email-error"
-              className="mt-1 text-xs text-danger-strong"
+              className="mt-1 text-style-caption text-danger-strong"
               role="alert"
             >
               {emailErrorMessage}
@@ -263,7 +263,9 @@ export function WaitlistForm({
                     <span className="text-style-label text-text">
                       {opt.label}
                     </span>
-                    <span className="text-xs text-muted">{opt.hint}</span>
+                    <span className="text-style-caption text-muted">
+                      {opt.hint}
+                    </span>
                   </span>
                 </label>
               );
@@ -273,7 +275,7 @@ export function WaitlistForm({
 
         {serverError && (
           <p
-            className="text-xs text-danger-strong"
+            className="text-style-caption text-danger-strong"
             role="alert"
             data-testid="waitlist-server-error"
           >
@@ -290,7 +292,7 @@ export function WaitlistForm({
           Підписатись на waitlist
         </Button>
 
-        <p className="text-xs text-muted">
+        <p className="text-style-caption text-muted">
           Без спаму. Один лист, коли Premium запуститься. Ціну оголосимо на
           запуску.
         </p>

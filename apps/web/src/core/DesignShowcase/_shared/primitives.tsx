@@ -84,9 +84,7 @@ export function Sec({
         {nav ? <MaturityBadge level={nav.maturity} /> : null}
       </header>
       {intro ? (
-        <p className="text-sm text-muted leading-relaxed mb-6 max-w-3xl">
-          {intro}
-        </p>
+        <p className="text-style-body text-muted mb-6 max-w-3xl">{intro}</p>
       ) : null}
       <div className="space-y-10">{children}</div>
     </section>
@@ -111,7 +109,9 @@ export function Group({
           {label}
         </SectionHeading>
         {description ? (
-          <p className="text-xs text-muted mt-1 max-w-2xl">{description}</p>
+          <p className="text-style-caption text-muted mt-1 max-w-2xl">
+            {description}
+          </p>
         ) : null}
       </div>
       <div className={row ? "flex flex-wrap items-center gap-3" : ""}>
@@ -136,9 +136,7 @@ export function Swatch({
           className,
         )}
       />
-      <span className="text-2xs text-subtle text-center font-mono">
-        {label}
-      </span>
+      <span className="text-style-code text-subtle text-center">{label}</span>
     </div>
   );
 }
@@ -147,7 +145,7 @@ export function CodeBlock({ children }: { children: string }) {
   return (
     <pre
       className={cn(
-        "text-2xs leading-relaxed font-mono",
+        "text-style-code",
         "bg-panelHi text-text border border-line rounded-xl",
         "px-3 py-2 overflow-x-auto",
       )}
@@ -166,7 +164,7 @@ export interface DoDontRow {
 export function DoDont({ rows }: { rows: readonly DoDontRow[] }) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-line">
-      <table className="w-full text-xs">
+      <table className="w-full text-style-body">
         <thead className="bg-panelHi">
           <tr>
             <th
@@ -231,13 +229,15 @@ export function RuleBadges({
           Hard rules
         </span>
         {hardRules.length === 0 ? (
-          <span className="text-2xs text-subtle italic">none direct</span>
+          <span className="text-style-caption text-subtle italic">
+            none direct
+          </span>
         ) : null}
         {hardRules.map((r) => (
           <span
             key={r.label}
             title={r.hint}
-            className="px-2 py-0.5 rounded-md text-2xs font-mono border border-accent/40 bg-accent/10 text-accent"
+            className="px-2 py-0.5 rounded-md text-style-code border border-accent/40 bg-accent/10 text-accent"
           >
             {r.label}
           </span>
@@ -248,13 +248,15 @@ export function RuleBadges({
           ESLint
         </span>
         {lintRules.length === 0 ? (
-          <span className="text-2xs text-subtle italic">convention-only</span>
+          <span className="text-style-caption text-subtle italic">
+            convention-only
+          </span>
         ) : null}
         {lintRules.map((r) => (
           <span
             key={r.label}
             title={r.hint}
-            className="px-2 py-0.5 rounded-md text-2xs font-mono border border-info/40 bg-info/10 text-info-strong dark:text-info"
+            className="px-2 py-0.5 rounded-md text-style-code border border-info/40 bg-info/10 text-info-strong dark:text-info"
           >
             {r.label}
           </span>

@@ -59,7 +59,7 @@ export function ShowcaseSidebar() {
               aria-current={isActive ? "true" : undefined}
               className={cn(
                 "flex items-center justify-between gap-2",
-                "px-3 py-2 rounded-xl text-xs font-semibold",
+                "px-3 py-2 rounded-xl text-style-label font-semibold",
                 "transition-colors",
                 isActive
                   ? "bg-accent/10 text-accent"

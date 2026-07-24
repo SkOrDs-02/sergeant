@@ -68,7 +68,7 @@ export default class ChunkErrorBoundary extends Component<
           style={minH ? { minHeight: `${minH}px` } : undefined}
           className="bg-panel border border-line rounded-2xl p-4 flex flex-col items-center justify-center gap-3 text-center"
         >
-          <p className="text-sm text-muted">
+          <p className="text-style-body text-muted">
             {messages.errors.generic.sectionFailed}
           </p>
           <button

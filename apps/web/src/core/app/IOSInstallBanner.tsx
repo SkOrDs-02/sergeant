@@ -35,7 +35,7 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Додай на головний екран</p>
-          <p className="text-xs text-muted mt-0.5 leading-snug">
+          <p className="text-style-caption text-muted mt-0.5 leading-snug">
             Щоб отримувати push-сповіщення на iOS, відкрий меню{" "}
             <span className="font-semibold">Поділитися</span>{" "}
             {/* eslint-disable-next-line sergeant-design/no-emoji-icon -- навмисна

@@ -117,7 +117,7 @@ export function HubHeader({
               action-кластером і обрізався до «Sergea…» (design-audit F6) —
               нижче sm лишаємо тільки mark — стандартний mobile-патерн
               header-а. */}
-          <span className="sr-only sm:not-sr-only sm:block truncate text-xl leading-none font-extrabold tracking-tight text-text select-none">
+          <span className="sr-only sm:not-sr-only sm:block truncate text-style-title leading-none font-extrabold tracking-tight text-text select-none">
             Sergeant
           </span>
         </div>

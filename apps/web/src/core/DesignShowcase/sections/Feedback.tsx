@@ -96,7 +96,7 @@ export function FeedbackSection() {
           <Tooltip content="Top tooltip" placement="top">
             <button
               type="button"
-              className="px-3 py-2 rounded-xl border border-line bg-panel text-xs text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="px-3 py-2 rounded-xl border border-line bg-panel text-style-label text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               Top
             </button>
@@ -104,7 +104,7 @@ export function FeedbackSection() {
           <Tooltip content="Bottom tooltip" placement="bottom">
             <button
               type="button"
-              className="px-3 py-2 rounded-xl border border-line bg-panel text-xs text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="px-3 py-2 rounded-xl border border-line bg-panel text-style-label text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               Bottom
             </button>
@@ -112,7 +112,7 @@ export function FeedbackSection() {
           <Tooltip content="Right tooltip" placement="right">
             <button
               type="button"
-              className="px-3 py-2 rounded-xl border border-line bg-panel text-xs text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="px-3 py-2 rounded-xl border border-line bg-panel text-style-label text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               Right
             </button>

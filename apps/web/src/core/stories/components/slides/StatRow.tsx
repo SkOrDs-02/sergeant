@@ -15,7 +15,7 @@ export function StatRow({ label, value, accent }: Props) {
       </span>
       <span
         className={cn(
-          "text-base font-bold tabular-nums",
+          "text-style-body font-bold tabular-nums",
           accent ? "text-white" : "text-white/95",
         )}
       >

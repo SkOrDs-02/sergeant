@@ -1,7 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift -- legend labels are
-   the canonical "tiny eyebrow" treatment for showcase toggle groups;
-   replacing the inline span with <SectionHeading> would over-promote
-   them visually. */
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui";
 import {
@@ -91,10 +87,7 @@ function ToggleGroup<T extends string>({
   return (
     <fieldset className="flex items-center gap-1 border border-line rounded-xl pl-2 pr-1 py-0.5 bg-panel">
       <legend className="sr-only">{legend}</legend>
-      <span
-        aria-hidden="true"
-        className="text-2xs uppercase tracking-wide text-subtle font-mono"
-      >
+      <span aria-hidden="true" className="text-style-overline text-subtle">
         {legend}
       </span>
       <div className="flex items-center gap-0.5">
@@ -107,7 +100,7 @@ function ToggleGroup<T extends string>({
               onClick={() => onChange(opt.value)}
               aria-pressed={active}
               className={cn(
-                "px-2 py-1 rounded-md text-2xs font-semibold transition-colors",
+                "px-2 py-1 rounded-md text-style-label font-semibold transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
                 active
                   ? "bg-brand-strong text-white"

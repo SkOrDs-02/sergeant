@@ -86,9 +86,9 @@ export function A11ySection() {
             Текстове посилання
           </a>
         </div>
-        <p className="text-2xs text-muted mt-3">
+        <p className="text-style-caption text-muted mt-3">
           Натисни{" "}
-          <kbd className="px-1.5 py-0.5 rounded border border-line bg-panelHi text-2xs">
+          <kbd className="px-1.5 py-0.5 rounded border border-line bg-panelHi text-style-code">
             Tab
           </kbd>{" "}
           щоб побачити focus-ring (тільки клавіатура — не миша).
@@ -106,7 +106,7 @@ export function A11ySection() {
             <Icon name="x" />
           </IconButton>
         </div>
-        <p className="text-2xs text-muted mt-2">
+        <p className="text-style-caption text-muted mt-2">
           Button з <code>size=&quot;xs&quot;/&quot;sm&quot;</code> + IconButton
           автоматично отримують <code>min-h-[44px] min-w-[44px]</code>. Opt-out
           лише через <code>data-compact</code> для щільних cells (heatmap).
@@ -115,7 +115,7 @@ export function A11ySection() {
 
       <Group label="Контраст — WCAG AA">
         <div className="overflow-x-auto rounded-2xl border border-line">
-          <table className="w-full text-xs">
+          <table className="w-full text-style-body">
             <thead className="bg-panelHi">
               <tr>
                 <th
@@ -147,7 +147,7 @@ export function A11ySection() {
             <tbody className="divide-y divide-line">
               {CONTRAST_ROWS.map((row) => (
                 <tr key={row.label} className="bg-panel">
-                  <td className="px-3 py-2 text-text font-mono text-2xs">
+                  <td className="px-3 py-2 text-text text-style-code">
                     {row.label}
                   </td>
                   <td className="px-3 py-2">
@@ -169,7 +169,7 @@ export function A11ySection() {
       </Group>
 
       <Group label="prefers-reduced-motion respect">
-        <p className="text-xs text-muted">
+        <p className="text-style-caption text-muted">
           Всі <code>animate-*</code> утиліти обгорнуті в{" "}
           <code>motion-safe:</code>; OS-pref{" "}
           <code>prefers-reduced-motion: reduce</code> вимикає їх. Toggle

@@ -100,14 +100,16 @@ export function PlanSection() {
             {planLabel}
           </Badge>
           {isLoading && (
-            <span className="text-xs text-subtle">Завантажуємо…</span>
+            <span className="text-style-caption text-subtle">
+              Завантажуємо…
+            </span>
           )}
         </div>
 
         {isPro && status === "trialing" && periodEnd && (
           <div data-testid="plan-trial-info" className="space-y-1">
             <span className="text-style-label block">Пробний період</span>
-            <p className="text-sm text-text leading-snug">
+            <p className="text-style-body text-text leading-snug">
               Закінчується {periodEnd}. Після цього підписка стане платною за
               тарифом з чекауту — скасуй до цієї дати, якщо передумаєш.
             </p>
@@ -117,7 +119,7 @@ export function PlanSection() {
         {isPro && status === "active" && periodEnd && (
           <p
             data-testid="plan-active-info"
-            className="text-sm text-subtle leading-snug"
+            className="text-style-body text-subtle leading-snug"
           >
             Наступне списання: {periodEnd}.
           </p>
@@ -126,7 +128,7 @@ export function PlanSection() {
         {isPro && status === "canceled" && (
           <p
             data-testid="plan-canceled-info"
-            className="text-sm text-warning-strong leading-snug"
+            className="text-style-body text-warning-strong leading-snug"
           >
             Підписку скасовано.
             {periodEnd ? ` Доступ до Pro завершиться ${periodEnd}.` : ""}
@@ -136,7 +138,7 @@ export function PlanSection() {
         {isPro && status === "past_due" && (
           <p
             data-testid="plan-past-due-info"
-            className="text-sm text-danger-strong leading-snug"
+            className="text-style-body text-danger-strong leading-snug"
           >
             {subscription?.provider === "stripe"
               ? "Останній платіж не пройшов. Онови картку в платіжному порталі, щоб не втратити доступ."
@@ -145,7 +147,7 @@ export function PlanSection() {
         )}
 
         {!isPro && status !== "canceled" && (
-          <p className="text-sm text-subtle leading-snug">
+          <p className="text-style-body text-subtle leading-snug">
             Ти на безкоштовному тарифі. Pro відкриває безлімітний AI-чат,
             CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
           </p>
@@ -154,7 +156,7 @@ export function PlanSection() {
         {!isPro && status === "canceled" && (
           <p
             data-testid="plan-ended-info"
-            className="text-sm text-warning-strong leading-snug"
+            className="text-style-body text-warning-strong leading-snug"
           >
             Підписка Pro завершилася{periodEnd ? ` ${periodEnd}` : ""}. Можеш
             поновити її в будь-який момент.
@@ -228,7 +230,7 @@ export function PlanSection() {
           <p
             role="alert"
             data-testid="plan-portal-error"
-            className="text-sm text-danger-strong"
+            className="text-style-body text-danger-strong"
           >
             {portalError}
           </p>
@@ -237,7 +239,7 @@ export function PlanSection() {
           <p
             role="alert"
             data-testid="plan-cancel-error"
-            className="text-sm text-danger-strong"
+            className="text-style-body text-danger-strong"
           >
             {cancelError}
           </p>

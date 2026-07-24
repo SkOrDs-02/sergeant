@@ -66,7 +66,7 @@ export function OutcomeCard({
           >
             Почни з одного живого запису
           </h2>
-          <p className="text-sm text-muted leading-relaxed">
+          <p className="text-style-body text-muted leading-relaxed">
             Обери модуль, де найпростіше зробити першу дію. Після цього хаб
             замінить стартові підказки на персональний фокус дня.
           </p>
@@ -108,7 +108,7 @@ export function OutcomeCard({
                   <span className="block text-sm font-semibold text-text">
                     {module.title}
                   </span>
-                  <span className="block text-xs text-muted leading-relaxed">
+                  <span className="block text-style-caption text-muted leading-relaxed">
                     {module.body}
                   </span>
                 </span>

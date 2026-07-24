@@ -96,10 +96,10 @@ export function StatusPage(): JSX.Element {
       data-testid="status-page"
     >
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-text">
+        <h1 className="text-style-headline font-semibold tracking-tight text-text">
           {messages.publicStatus.pageTitle}
         </h1>
-        <p className="text-sm text-textDim">
+        <p className="text-style-body text-textDim">
           {messages.publicStatus.pollNote}{" "}
           {Math.round(STATUS_POLL_INTERVAL_MS / 1000)}{" "}
           {messages.publicStatus.pollNoteSuffix}
@@ -156,7 +156,10 @@ function OverallBanner({
     <Banner variant={variant} data-testid="status-overall">
       <div className="flex items-center justify-between gap-3">
         <span className="font-semibold">{headline}</span>
-        <span className="text-xs opacity-80" data-testid="status-timestamp">
+        <span
+          className="text-style-caption opacity-80"
+          data-testid="status-timestamp"
+        >
           {messages.publicStatus.timestampPrefix} {formatRelativeUk(timestamp)}
         </span>
       </div>
@@ -212,13 +215,19 @@ function LastIncidentRow({
 }): JSX.Element {
   if (!lastIncident) {
     return (
-      <p className="text-xs text-textDim" data-testid="status-last-incident">
+      <p
+        className="text-style-caption text-textDim"
+        data-testid="status-last-incident"
+      >
         {messages.publicStatus.lastIncidentNone}
       </p>
     );
   }
   return (
-    <p className="text-xs text-textDim" data-testid="status-last-incident">
+    <p
+      className="text-style-caption text-textDim"
+      data-testid="status-last-incident"
+    >
       {messages.publicStatus.lastIncidentPrefix}{" "}
       <span className="text-text">{formatRelativeUk(lastIncident.at)}</span>
       {" — "}
@@ -233,7 +242,7 @@ function LastIncidentRow({
 function LoadingCard(): JSX.Element {
   return (
     <div
-      className="rounded-2xl border border-line bg-panel px-4 py-3 text-sm text-textDim"
+      className="rounded-2xl border border-line bg-panel px-4 py-3 text-style-body text-textDim"
       data-testid="status-loading"
     >
       {messages.publicStatus.loading}
@@ -254,7 +263,7 @@ function ErrorCard({
         <span className="font-semibold">
           {messages.publicStatus.errorTitle}
         </span>
-        <span className="text-xs opacity-80">{message}</span>
+        <span className="text-style-body opacity-80">{message}</span>
         <button
           type="button"
           onClick={onRetry}

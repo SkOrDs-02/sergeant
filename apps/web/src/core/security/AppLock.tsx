@@ -99,7 +99,7 @@ function PinPad({
       {error && (
         <p
           role="alert"
-          className="text-sm text-danger-strong dark:text-danger text-center mt-2"
+          className="text-style-body text-danger-strong dark:text-danger text-center mt-2"
         >
           {error}
         </p>
@@ -145,7 +145,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
   if (step === "enter") {
     return (
       <div className="flex flex-col items-center gap-2 w-full">
-        <p className="text-sm text-muted">{m.setupSubtitle}</p>
+        <p className="text-style-body text-muted">{m.setupSubtitle}</p>
         <PinPad
           value={first}
           onChange={setFirst}
@@ -171,7 +171,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
-      <p className="text-sm text-muted">{m.confirmSubtitle}</p>
+      <p className="text-style-body text-muted">{m.confirmSubtitle}</p>
       <PinPad
         value={second}
         onChange={setSecond}
@@ -235,7 +235,7 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
-      <p className="text-sm text-muted">{m.unlockSubtitle}</p>
+      <p className="text-style-body text-muted">{m.unlockSubtitle}</p>
       <PinPad
         value={pin}
         onChange={handlePinChange}
@@ -252,7 +252,9 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       >
         {m.open}
       </Button>
-      <p className="text-xs text-subtle text-center mt-2">{m.recoveryHint}</p>
+      <p className="text-style-caption text-subtle text-center mt-2">
+        {m.recoveryHint}
+      </p>
     </div>
   );
 }

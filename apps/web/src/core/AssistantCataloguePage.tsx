@@ -174,7 +174,7 @@ export function AssistantCataloguePage({
               <h1 className="text-style-title text-text leading-tight">
                 Можливості асистента
               </h1>
-              <p className="text-sm text-subtle mt-1 leading-relaxed">
+              <p className="text-style-body text-subtle mt-1 leading-relaxed">
                 Усе, що вміє робити асистент ({totalCount} сценаріїв). Натисни
                 картку щоб запустити або побачити приклади.
               </p>
@@ -196,7 +196,7 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук — наприклад, «витрата», «звичка», «1RM»…"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-sm text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
+            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -208,7 +208,7 @@ export function AssistantCataloguePage({
               onClick={toggleAll}
               data-testid="catalogue-toggle-all"
               className={cn(
-                "inline-flex items-center gap-1.5 text-xs font-semibold text-muted",
+                "inline-flex items-center gap-1.5 text-style-label font-semibold text-muted",
                 "rounded-full px-2.5 py-1 hover:bg-panel hover:text-text transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               )}
@@ -225,7 +225,7 @@ export function AssistantCataloguePage({
 
         {filtered.length === 0 && (
           <Card variant="flat" radius="lg" padding="xl">
-            <p className="text-center text-subtle text-sm">
+            <p className="text-center text-subtle text-style-body">
               Нічого не знайдено за «{query}». Спробуй інший термін.
             </p>
           </Card>
@@ -306,11 +306,11 @@ function ModuleGroup({
         <span className="flex-1 min-w-0">
           <span
             id={headingId}
-            className="block text-base font-semibold text-text leading-tight"
+            className="block text-style-title font-semibold text-text leading-tight"
           >
             {meta.title}
           </span>
-          <span className="block text-xs text-subtle mt-0.5">
+          <span className="block text-style-caption text-subtle mt-0.5">
             {capabilities.length}{" "}
             {pluralizeUk(capabilities.length, [
               "сценарій",
@@ -408,7 +408,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
             />
           )}
         </span>
-        <span className="block text-xs text-subtle mt-0.5">
+        <span className="block text-style-body text-subtle mt-0.5">
           {capability.description}
         </span>
       </span>
@@ -432,16 +432,18 @@ function CapabilityLegend() {
       )}
       aria-label="Що означають позначки"
     >
-      <span className="text-xs font-semibold text-muted">Позначки:</span>
-      <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+      <span className="text-style-caption font-semibold text-muted">
+        Позначки:
+      </span>
+      <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
         <BadgeChip tone="brand" icon="zap" label="Чіп" />
         швидкий сценарій
       </span>
-      <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+      <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
         <BadgeChip tone="warning" icon="alert-triangle" label="Ризик" />
         критична дія
       </span>
-      <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+      <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
         <BadgeChip tone="success" icon="sparkles" label="Новинка" />
         нещодавно додано
       </span>
