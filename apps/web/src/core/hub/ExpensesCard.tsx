@@ -245,7 +245,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         aria-expanded={!collapsed}
         className={cn(
           "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-colors",
+          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
         <Icon

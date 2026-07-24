@@ -2,7 +2,6 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
-import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { lazyImport } from "../lib/lazyImport";
@@ -112,30 +111,69 @@ export const HubMainContent = memo(function HubMainContent({
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
-  // Scroll-to-top when switching hub tabs. Targets the inner scroll
-  // container of `PullToRefresh` (the real scroller) — calling
-  // `window.scrollTo` on the document does nothing useful here because
-  // `#root` owns the exact CSS viewport height and `HubHomeView` is
-  // `overflow-hidden`; on
-  // iOS Safari / Capacitor it triggers a visual-viewport jump that
-  // pushes the bottom nav off-screen (user feedback 2026-05-13).
+  // Per-tab scroll persistence. Кожна hub-вкладка запам'ятовує свою
+  // позицію скролу; при поверненні на вкладку її прокрутку відновлюємо
+  // замість жорсткого скидання на верх (UX-пропозиція 2026-07: юзер, що
+  // заходить у хаб десятки разів на день, повертається туди, де був).
+  //
+  // Скрол читаємо/пишемо на внутрішньому контейнері `PullToRefresh`
+  // (реальний скролер) — `window.scrollTo` тут не працює, бо `#root`
+  // володіє точною висотою viewport-а, а `HubHomeView` — `overflow-hidden`.
+  // На iOS Safari / Capacitor виклик document-скролу тригерив visual-
+  // viewport jump, що зіштовхував bottom-nav (user feedback 2026-05-13),
+  // тому лишаємось строго на контейнері.
   const scrollElRef = useRef<HTMLDivElement | null>(null);
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
     null,
   );
   const prevHubViewRef = useRef<HubView | null>(null);
+  // Позиції скролу по кожній вкладці (best-effort, тримаємо в пам'яті на
+  // час маунту хаба — не персистимо у storage, щоб холодний старт завжди
+  // відкривав дашборд згори).
+  const scrollPositionsRef = useRef<Map<HubView, number>>(new Map());
+  // «Жива» вкладка для scroll-listener-а: він пише позицію саме тієї
+  // вкладки, що зараз на екрані, а не тієї, на яку ми щойно перемкнулись.
+  const liveViewRef = useRef<HubView>(hubView);
   const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
     scrollElRef.current = el;
     setScrollElement(el);
   }, []);
+
+  // Безперервно фіксуємо позицію активної вкладки — так до моменту
+  // перемикання ми вже маємо збережений `scrollTop` вихідної вкладки.
   useEffect(() => {
+    const el = scrollElement;
+    if (!el) return;
+    const onScroll = () => {
+      scrollPositionsRef.current.set(liveViewRef.current, el.scrollTop);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollElement]);
+
+  useEffect(() => {
+    liveViewRef.current = hubView;
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
-      scrollElRef.current?.scrollTo({
-        top: 0,
-        behavior: motionScrollBehavior(),
+      const el = scrollElRef.current;
+      const saved = scrollPositionsRef.current.get(hubView) ?? 0;
+      // Відкладаємо на два rAF, щоб контент нової вкладки встиг
+      // змонтуватись/спейнтитись і мав достатню висоту для відновлення
+      // (дашборд — eager; reports/profile/settings — lazy через Suspense,
+      // де відновлення лишається best-effort до появи контенту).
+      const outer = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Миттєве відновлення (не «smooth»): вкладка має відчуватись
+          // так, ніби вона лишалась на цій позиції, а не доскролюватись
+          // на очах. `top: 0` для першого відкриття вкладки теж має бути
+          // без анімації.
+          el?.scrollTo({ top: saved, behavior: "auto" });
+        });
       });
+      prevHubViewRef.current = hubView;
+      return () => cancelAnimationFrame(outer);
     }
     prevHubViewRef.current = hubView;
+    return undefined;
   }, [hubView]);
 
   // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches. Fire
