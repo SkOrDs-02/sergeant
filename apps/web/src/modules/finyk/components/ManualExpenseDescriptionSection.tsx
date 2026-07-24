@@ -62,7 +62,7 @@ export function ManualExpenseDescriptionSection({
           id={`${formId}-merchants`}
           className="flex flex-wrap gap-1.5 mt-2"
           role="group"
-          aria-label="Нещодавні мерчанти"
+          aria-label="Нещодавні продавці"
         >
           {merchantSuggestions.map((m) => (
             <button

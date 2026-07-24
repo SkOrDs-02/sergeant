@@ -82,7 +82,7 @@ const HeroCardImpl = function HeroCard({
       <div className="relative px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-style-caption text-hero-ink/60">Нетворс</p>
+            <p className="text-style-caption text-hero-ink/60">Капітал</p>
             <p
               className={cn(
                 "text-style-title tabular-nums leading-tight mt-0.5",

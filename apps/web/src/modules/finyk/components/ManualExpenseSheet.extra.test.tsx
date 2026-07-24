@@ -98,7 +98,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentMerchants={merchants}
       />,
     );
-    const hints = screen.getByRole("group", { name: "Нещодавні мерчанти" });
+    const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
     // description set + AI badge surfaces the auto-applied "food" category
     expect(screen.getByPlaceholderText(/Кава, продукти/)).toHaveValue("Сільпо");
@@ -114,7 +114,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentMerchants={merchants}
       />,
     );
-    const hints = screen.getByRole("group", { name: "Нещодавні мерчанти" });
+    const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
     fireEvent.click(screen.getByLabelText("Сховати AI-підказку"));
     expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();

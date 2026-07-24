@@ -39,7 +39,7 @@ describe("HeroCard", () => {
 
   it("renders networth, breakdown row and big day-budget number", () => {
     render(<HeroCard {...baseProps} />);
-    expect(screen.getByText("Нетворс")).toBeInTheDocument();
+    expect(screen.getByText("Капітал")).toBeInTheDocument();
     // The networth is split across nodes: a leading "−" text node sibling to
     // the CounterReveal span ("89 158 ₴"). Match the wrapper by textContent.
     // Intl.NumberFormat("uk-UA") groups thousands with a non-breaking space

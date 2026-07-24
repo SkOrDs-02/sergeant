@@ -60,7 +60,7 @@ describe("AssetsNetworthCard", () => {
         showBalance={true}
       />,
     );
-    expect(screen.getByText("Загальний нетворс")).toBeInTheDocument();
+    expect(screen.getByText("Загальний капітал")).toBeInTheDocument();
   });
 
   it("shows 'Суми приховано' when showBalance is false", () => {

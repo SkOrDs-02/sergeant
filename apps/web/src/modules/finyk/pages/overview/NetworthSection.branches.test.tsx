@@ -21,13 +21,17 @@ describe("NetworthSection (branches)", () => {
         networthHistory={[{ month: "2026-01", networth: 100 }]}
       />,
     );
-    expect(screen.getByText("Поки що мало знімків")).toBeInTheDocument();
+    expect(
+      screen.getByText("Поки що мало записів балансу"),
+    ).toBeInTheDocument();
     expect(screen.queryByTestId("networth-chart")).toBeNull();
   });
 
   it("renders empty state for zero history", () => {
     render(<NetworthSection networthHistory={[]} />);
-    expect(screen.getByText("Поки що мало знімків")).toBeInTheDocument();
+    expect(
+      screen.getByText("Поки що мало записів балансу"),
+    ).toBeInTheDocument();
   });
 
   it("renders chart card when history has two or more points", () => {
@@ -39,7 +43,7 @@ describe("NetworthSection (branches)", () => {
         ]}
       />,
     );
-    expect(screen.getByText("Динаміка нетворсу")).toBeInTheDocument();
+    expect(screen.getByText("Динаміка капіталу")).toBeInTheDocument();
     expect(screen.getByText("2 міс.")).toBeInTheDocument();
     expect(screen.getByTestId("networth-chart")).toHaveTextContent("points 2");
   });

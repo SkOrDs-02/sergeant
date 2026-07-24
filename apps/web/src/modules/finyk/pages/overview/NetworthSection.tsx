@@ -28,7 +28,7 @@ const NetworthSectionImpl = function NetworthSection({
       >
         <div className="flex items-center justify-between mb-3">
           <span className="text-style-caption text-subtle">
-            Динаміка нетворсу
+            Динаміка капіталу
           </span>
           <span className="text-xs text-muted">
             {networthHistory.length} міс.
@@ -52,8 +52,8 @@ const NetworthSectionImpl = function NetworthSection({
         compact
         module="finyk"
         icon={<Icon name="trending-up" size={20} />}
-        title="Поки що мало знімків"
-        description="Графік нетворсу з'явиться після кількох змін балансу."
+        title="Поки що мало записів балансу"
+        description="Графік капіталу з'явиться після кількох змін балансу."
       />
     </Card>
   );

@@ -126,14 +126,14 @@ describe("Overview page (branches)", () => {
     renderOverview({
       mono: buildMono({ loadingTx: true, realTx: [] }),
     });
-    expect(screen.queryByText("Нетворс")).toBeNull();
+    expect(screen.queryByText("Капітал")).toBeNull();
   });
 
   it("renders hero content when transactions are available", () => {
     renderOverview({
       mono: buildMono({ realTx: [mkTx("t1", -5000)] }),
     });
-    expect(screen.getByText("Нетворс")).toBeInTheDocument();
+    expect(screen.getByText("Капітал")).toBeInTheDocument();
   });
 
   it("shows SyncStatusBadge when mono reports an error", () => {
