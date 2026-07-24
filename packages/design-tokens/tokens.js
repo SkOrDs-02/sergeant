@@ -115,10 +115,13 @@ export const chartPaletteList = Object.values(chartPalette);
  */
 export const moduleColors = {
   finyk: {
-    primary: "#10b981", // emerald-500
-    secondary: "#14b8a6", // teal-500
-    surface: "#ecfdf5", // emerald-50
-    surfaceAlt: "#f0fdfa", // teal-50
+    // 2026-07: shifted from emerald-500 (#10b981) to teal-700 (#0f766e).
+    // Emerald-500 is the "Tailwind default" AI-slop tell — teal-700 is
+    // deeper and more distinctive while staying in the same hue family.
+    primary: "#0f766e", // teal-700
+    secondary: "#0d9488", // teal-600
+    surface: "#f0fdfa", // teal-50
+    surfaceAlt: "#ccfbf1", // teal-100
   },
   fizruk: {
     primary: "#0e7490", // cyan-700 — disambiguates from finyk emerald (was teal-500 #14b8a6)
@@ -159,7 +162,7 @@ export const moduleColors = {
  * white). It matches the `bg-{module}-strong` Tailwind utility.
  */
 export const moduleAccentRgb = {
-  finyk: { default: "16 185 129", strong: "4 120 87" }, // emerald-500 / -700
+  finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
   routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
@@ -194,7 +197,7 @@ export const inkTheme = {
     subtle: "#5f6b64", // labels ≥12px only
   },
   accent: {
-    finyk: brandColors.emerald[400], // #34d399
+    finyk: brandColors.teal[400], // #2dd4bf (2026-07: was emerald-400 #34d399)
     fizruk: brandColors.cyan[400], // #22d3ee
     routine: brandColors.coral[400], // #ff8c78
     nutrition: brandColors.lime[400], // #b0e636

@@ -91,51 +91,8 @@ export function EmptyState({
   // `packages/design-tokens/mobile.d.ts`.
   const resolvedIconColor = iconColor ?? colors.textMuted;
 
-  // Pulsing animation for the icon container.
-  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
-  // Animated.Value is created once on mount and its identity never changes,
-  // which keeps render free of ref reads (react-hooks/refs) without touching
-  // animation behavior.
-  const [pulseScale] = useState(() => new Animated.Value(1));
-  const [pulseOpacity] = useState(() => new Animated.Value(0.6));
-
-  useEffect(() => {
-    if (!shouldAnimate || !IconComponent) return;
-
-    // Start subtle pulsing animation after entrance
-    const timeout = setTimeout(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1.05,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.8,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.6,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ).start();
-    }, 800);
-
-    return () => clearTimeout(timeout);
-  }, [shouldAnimate, IconComponent, pulseScale, pulseOpacity]);
+  // No persistent pulse loop — static icon reads as more mature/trustworthy.
+  // The entrance animation below already provides the "alive" signal on mount.
 
   // Animation values for staggered entrance
   const [containerOpacity] = useState(
@@ -244,20 +201,6 @@ export function EmptyState({
             transform: [{ scale: iconScale }],
           }}
         >
-          {/* Pulse ring behind icon */}
-          <Animated.View
-            style={{
-              position: "absolute",
-              top: -4,
-              left: -4,
-              right: -4,
-              bottom: -4,
-              borderRadius: 20,
-              backgroundColor: resolvedIconColor,
-              opacity: pulseOpacity,
-              transform: [{ scale: pulseScale }],
-            }}
-          />
           <View
             className={cx(
               "items-center justify-center rounded-2xl bg-surface-muted border border-line",

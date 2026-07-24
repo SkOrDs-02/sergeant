@@ -15,7 +15,7 @@ import { Pressable, Text, View } from "react-native";
 import {
   CreditCard,
   Dumbbell,
-  Sparkles,
+  MessageCircle,
   type LucideIcon,
   CheckCircle2,
   UtensilsCrossed,
@@ -78,7 +78,7 @@ export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
       className="flex-1 items-center justify-center gap-4 px-4 py-6"
     >
       <View className="h-12 w-12 items-center justify-center rounded-2xl bg-cream-100">
-        <Sparkles size={22} color={MODULE_ACCENT.finyk} />
+        <MessageCircle size={22} color={MODULE_ACCENT.finyk} />
       </View>
       <Text className="text-base font-semibold text-fg">
         Запитай щось — я допоможу

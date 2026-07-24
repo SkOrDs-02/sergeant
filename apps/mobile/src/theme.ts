@@ -51,7 +51,7 @@ export const chartColors = {
   /** Nutrition module macro rings */
   nutrition: {
     kcal: "#f97316", // orange-500 — calories
-    protein: brandColors.emerald[500]!, // #10b981 — protein
+    protein: brandColors.cyan[700]!, // #0e7490 — protein (matches chartHex.protein)
     carbs: "#3b82f6", // blue-500 — carbohydrates
     fat: "#eab308", // yellow-500 — fat
     track: brandColors.cream[300]!, // #f5ead8 — background track
@@ -65,7 +65,7 @@ export const chartColors = {
   },
   /** Finyk module charts */
   finyk: {
-    income: brandColors.emerald[500]!, // #10b981
+    income: brandColors.teal[700]!, // #0f766e (2026-07: was emerald-500, aligns with brand shift)
     expense: brandColors.coral[500]!, // #f97066
     balance: brandColors.teal[500]!, // #14b8a6
     track: brandColors.cream[300]!,

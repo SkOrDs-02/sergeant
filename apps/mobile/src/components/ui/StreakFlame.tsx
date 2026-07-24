@@ -164,21 +164,21 @@ export function StreakFlame({
 
   // Animation values (lazy useState — see AI-CONTEXT in FlameParticle)
   const [scale] = useState(() => new Animated.Value(1));
-  const [glowOpacity] = useState(() => new Animated.Value(0.3));
-  const [rotation] = useState(() => new Animated.Value(0));
 
   // Celebration state
   const [showParticles, setShowParticles] = useState(false);
   const prevDays = useRef(days);
   const [prevCelebrate, setPrevCelebrate] = useState(celebrate);
 
-  // Determine flame color based on streak length
+  // Determine flame color based on streak length.
+  // Uses coral scale from design-tokens (routine module hue) instead of
+  // raw orange/red hardcodes — keeps streak tiers inside the brand palette.
   const getFlameColor = () => {
-    if (days >= 365) return "#dc2626"; // red-600 (legendary)
-    if (days >= 90) return "#ea580c"; // orange-600
-    if (days >= 30) return "#f97316"; // orange-500
-    if (days >= 7) return "#fb923c"; // orange-400
-    return "#fdba74"; // orange-300
+    if (days >= 365) return "#a13333"; // coral-800 — legendary, AA on white
+    if (days >= 90) return "#c23a3a"; // coral-700
+    if (days >= 30) return "#e64d4d"; // coral-600
+    if (days >= 7) return "#f97066"; // coral-500
+    return "#ff8c78"; // coral-400
   };
 
   const flameColor = getFlameColor();
@@ -214,67 +214,30 @@ export function StreakFlame({
     return () => clearTimeout(timer);
   }, [celebrate, reduceMotion]);
 
-  // Pulsing animation for active streaks
+  // Entrance animation: icon bounces in on mount when streak is active.
+  // No persistent loop — the flame is static by default, animates only on
+  // celebrate (milestone reached) via the particles system above.
   useEffect(() => {
     if (!shouldAnimate) {
       scale.setValue(1);
-      glowOpacity.setValue(0.3);
-      rotation.setValue(0);
       return;
     }
 
-    // Continuous pulse
-    const pulseAnimation = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(scale, {
-            toValue: 1.08,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(glowOpacity, {
-            toValue: 0.6,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowOpacity, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        // Subtle wobble
-        Animated.sequence([
-          Animated.timing(rotation, {
-            toValue: 0.02,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(rotation, {
-            toValue: -0.02,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(rotation, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-
-    pulseAnimation.start();
-
-    return () => pulseAnimation.stop();
-  }, [shouldAnimate, scale, glowOpacity, rotation]);
+    // Single bounce-in on mount
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.15,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        damping: 12,
+        stiffness: 180,
+      }),
+    ]).start();
+  }, [shouldAnimate, scale]);
 
   const iconSize = sizePx[size];
   const isInactive = days === 0;
@@ -293,34 +256,8 @@ export function StreakFlame({
       className={cx("items-center gap-1", className)}
     >
       <View className="relative items-center justify-center">
-        {/* Glow effect */}
-        {shouldAnimate && (
-          <Animated.View
-            style={{
-              position: "absolute",
-              width: iconSize * 1.6,
-              height: iconSize * 1.6,
-              borderRadius: iconSize * 0.8,
-              backgroundColor: flameColor,
-              opacity: glowOpacity,
-            }}
-          />
-        )}
-
         {/* Flame icon */}
-        <Animated.View
-          style={{
-            transform: [
-              { scale },
-              {
-                rotate: rotation.interpolate({
-                  inputRange: [-1, 1],
-                  outputRange: ["-15deg", "15deg"],
-                }),
-              },
-            ],
-          }}
-        >
+        <Animated.View style={{ transform: [{ scale }] }}>
           <Flame
             size={iconSize}
             color={isInactive ? "#a8a29e" : flameColor}
@@ -336,7 +273,7 @@ export function StreakFlame({
               <FlameParticle
                 key={i}
                 delay={i * 50}
-                color={i % 2 === 0 ? "#fbbf24" : "#f97316"}
+                color={i % 2 === 0 ? "#fbbf24" : "#f97066"} // amber-400 / coral-500
               />
             ))}
           </View>
@@ -396,8 +333,8 @@ export function StreakBadge({
     >
       <Flame
         size={14}
-        color={isActive ? "#f97316" : "#a8a29e"}
-        fill={isActive ? "#f97316" : "transparent"}
+        color={isActive ? "#f97066" : "#a8a29e"} // coral-500 / stone-400
+        fill={isActive ? "#f97066" : "transparent"}
         strokeWidth={2}
       />
       <Text

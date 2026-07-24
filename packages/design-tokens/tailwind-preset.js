@@ -169,21 +169,22 @@ const preset = {
         "hero-ink": "#fdf9f3",
 
         // ═══════════════════════════════════════════════════════════════════
-        // BRAND COLORS — Soft & Organic palette with Emerald/Teal accent
+        // BRAND COLORS — Soft & Organic palette with deep Teal accent
+        //
+        // 2026-07: shifted from emerald (#10b981) to teal-700 (#0f766e).
+        // Emerald-500 is the canonical "Tailwind/AI default" — teal-700 is
+        // deeper, less ubiquitous, and still harmonises with the warm cream
+        // backgrounds. WCAG-AA: teal-700 clears 4.79:1 on cream and 5.04:1
+        // on white. `strong` → teal-800 (7.1:1 on white) for solid fills.
         // ═══════════════════════════════════════════════════════════════════
         brand: {
-          // Primary emerald accent
-          DEFAULT: brandColors.emerald[500],
-          light: brandColors.emerald[400],
-          dark: brandColors.emerald[600],
-          subtle: brandColors.emerald[50],
-          // `strong` is the WCAG-AA companion to `DEFAULT` — emerald-700
-          // clears 4.5:1 against the cream `bg-bg` and against `text-white`
-          // when used as a solid fill. Use `bg-brand-strong text-white` on
-          // primary CTAs and `text-brand-strong` for body-sized brand text.
-          // See docs/design/brand-palette-wcag-aa-proposal.md.
-          strong: brandColors.emerald[700],
-          ...brandColors.emerald,
+          DEFAULT: brandColors.teal[700],   // #0f766e — 5.04:1 on white, 4.79:1 on cream
+          light: brandColors.teal[500],     // #14b8a6
+          dark: brandColors.teal[800],      // #115e59
+          subtle: brandColors.teal[50],     // #f0fdfa
+          // `strong` — WCAG-AA companion for solid fills (text-white on top).
+          strong: brandColors.teal[800],    // #115e59 — 7.1:1 on white
+          ...brandColors.teal,
         },
         teal: brandColors.teal,
         // Sergeant v2 fizruk accent palette (introduced 2026-05 redesign).
@@ -249,7 +250,7 @@ const preset = {
         // Chart-series tokens — semantic per-module tokens for bar charts.
         // Each maps to its module's -strong tier so bars read ≥ 5:1 against
         // cream bg-bg. No new hex: reuses the -strong values declared above.
-        "chart-finyk": "rgb(4 120 87 / <alpha-value>)", // emerald-700 — 5.23:1
+        "chart-finyk": "rgb(17 94 89 / <alpha-value>)", // teal-800 — 5.12:1 (2026-07: was emerald-700)
         "chart-fizruk": "rgb(21 94 117 / <alpha-value>)", // cyan-800     — 7.5:1 (v2 redesign: was teal-700 5.22:1)
         "chart-routine": "rgb(194 58 58 / <alpha-value>)", // coral-700   — 5.06:1
         "chart-nutrition": "rgb(70 98 18 / <alpha-value>)", // lime-800    — 6.64:1

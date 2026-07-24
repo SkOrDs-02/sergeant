@@ -47,17 +47,17 @@ export type ProgressRingVariant =
 export type ProgressRingSize = "sm" | "md" | "lg" | "xl";
 
 const variantColors: Record<ProgressRingVariant, string> = {
-  accent: "#10b981", // emerald-500
-  success: "#10b981", // emerald-500
+  accent: "#0f766e", // teal-700 (2026-07: was emerald-500)
+  success: "#10b981", // emerald-500 — status green, intentionally unchanged
   warning: "#f59e0b", // amber-500
   danger: "#ef4444", // red-500
   info: "#0ea5e9", // sky-500
-  finyk: "#10b981", // emerald-500
+  finyk: "#0f766e", // teal-700 — mirrors moduleColors.finyk.primary
   fizruk: "#0e7490", // cyan-700 — mirrors moduleColors.fizruk.primary
   routine: "#f97066", // coral-500
   nutrition: "#92cc17", // lime-500
-  kcal: "#f97316", // orange-500
-  protein: "#3b82f6", // blue-500
+  kcal: "#f97316", // orange-500 — calorie metric, unchanged
+  protein: "#0e7490", // cyan-700 — matches chartHex.protein
   fat: "#eab308", // yellow-500
   carbs: "#22c55e", // green-500
 };

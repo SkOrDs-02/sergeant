@@ -75,9 +75,9 @@ export interface FloatingActionButtonProps {
 }
 
 const variantColors: Record<FABVariant, { bg: string; text: string }> = {
-  primary: { bg: "#10b981", text: "#ffffff" },
-  finyk: { bg: "#10b981", text: "#ffffff" },
-  fizruk: { bg: "#14b8a6", text: "#ffffff" },
+  primary: { bg: "#0f766e", text: "#ffffff" }, // teal-700
+  finyk: { bg: "#0f766e", text: "#ffffff" }, // teal-700
+  fizruk: { bg: "#0e7490", text: "#ffffff" }, // cyan-700 — unchanged hue, correct value
   routine: { bg: "#f97066", text: "#ffffff" },
   nutrition: { bg: "#84cc16", text: "#ffffff" },
 };
