@@ -629,6 +629,21 @@ Executor `routineActions.ts:148-152` (create/edit) кладе числа в
 > ремапінгу** → `routineCreateHabit(..., weekdays)`; `schedule.ts:38` —
 > `isoWeekdayFromDateKey` (Mon=0). Зсув на день підтверджено. У беклог як баг.
 
+> **✅ ЗАКРИТО (2026-07-24, Хвиля 0).** Обрано другий варіант рішення —
+> tool-опис переписано на Mon-first: `create_habit.weekdays` і
+> `edit_habit.weekdays` у `apps/server/src/modules/chat/toolDefs/routine.ts`
+> тепер явно кажуть «0 — понеділок … 6 — неділя» і посилаються на
+> `set_habit_schedule`. Remap у executor НЕ додавали навмисно: passthrough
+> коректний після фікса anchor-а, а `(llm+6)%7` дав би подвійну інверсію й
+> повернув баг. Тести: опис закріплено в `toolDefs/domainTools.test.ts`
+> (це був red-first кейс), поведінка — межовими днями в
+> `apps/web/src/core/lib/chatActions/routineActions.test.ts`
+> (`weekdays [0]` → понеділок, `weekdays [6]` → неділя).
+>
+> **Поза скоупом:** звички, створені через HubChat під старою (хибною)
+> інтерпретацією, ретроактивно НЕ виправляються — потрібне рішення founder-а
+> про data-repair.
+
 ### E-6. `add_calendar_event` × heatmap-знаменник: користування AI назавжди «погіршує» дисципліну
 
 **Згода.** Три ратифіковані рішення: (1) календарні події = `once`-звички
@@ -752,7 +767,7 @@ X→Y» цього прогону не виконувалась; DOCS-колон
 | 5   | **Тристанова модель пропуску** «зробив / не зміг з причиною / не зробив» (розширити бінарний `completions`); heatmap/digest розрізняють                                   | напруга «пропуск», D2        | `критично`                 |
 | 6   | **Heatmap-знаменник = `habitScheduledOnDate` того дня** (уніфікація з rate; розв'язує `once`+`paused`+розклади одразу)                                                    | напруга 6, G3, C1, E-6       | `критично`                 |
 | 7   | **Telemetry чекіну + показу стріку** (awareness→мотивація) — щоб «чи стріки мотивують» стало вимірним; передумова kill-критерію                                           | B1, B2, B3, F3               | `критично`                 |
-| 8   | **weekday off-by-one remap** у create/edit executor (`domain=(llm+6)%7`) або переписати tool-опис на Mon-first=0 + тест «щопонеділка»                                     | E-5 (**live bug**)           | `агент помилиться`         |
+| 8   | ✅ **weekday off-by-one**: tool-опис переписано на Mon-first=0 (без remap в executor — він і був коректним passthrough) + тести на межові дні                             | E-5 (**live bug**)           | `агент помилиться`         |
 | 9   | **`routine_streaks`**: зняти (двофазно, Hard Rule #4) або перейменувати в `routine_completion_counter`; server-side стрік рахувати з `routine_entries`                    | E-4                          | `агент помилиться`         |
 | 10  | **Digest server-side зі снапшотом тижня** (заморожений тиждень не переписується поточними прапорами)                                                                      | E-7, G4                      | `агент помилиться`         |
 | 11  | **Декларація sub-processors/privacy для routine-даних у AI** (назви звичок у digest-промпті + HubChat-tools)                                                              | G5                           | `критично`                 |

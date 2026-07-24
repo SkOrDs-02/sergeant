@@ -43,7 +43,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         weekdays: {
           type: "array",
           description:
-            "Для recurrence='weekly': номери днів 0-6 (0 — неділя, 1 — понеділок, …, 6 — субота). Опційно.",
+            "Для recurrence='weekly': номери днів 0-6, тиждень починається з понеділка (0 — понеділок, 1 — вівторок, …, 6 — неділя). Узгоджено з set_habit_schedule. Опційно.",
           items: { type: "number" },
         },
         time_of_day: {
@@ -132,7 +132,8 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         },
         weekdays: {
           type: "array",
-          description: "Нові дні тижня 0-6 для weekly (опційно)",
+          description:
+            "Нові дні тижня 0-6 для weekly, тиждень починається з понеділка (0 — понеділок, 1 — вівторок, …, 6 — неділя). Узгоджено з set_habit_schedule. Опційно.",
           items: { type: "number" },
         },
       },
