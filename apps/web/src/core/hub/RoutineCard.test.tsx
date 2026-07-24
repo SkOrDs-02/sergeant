@@ -45,12 +45,16 @@ describe("RoutineCard", () => {
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
-  it("renders the bar chart with completion data", () => {
+  it("renders the consistency heatmap with completion data", () => {
     loadRoutineState.mockReturnValue(stateWithCompletion());
     render(<RoutineCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Рутина/i }));
+    // Heatmap замінив стовпчиковий графік: контейнер лишається під тим
+    // самим aria-label, а дні тепер — клітинки-`div` з per-cell aria-label
+    // «DD.MM: N%» (тиждень → 7 клітинок).
     const chart = screen.getByLabelText("Графік");
-    expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
+    const cells = chart.querySelectorAll("[aria-label*='%']");
+    expect(cells.length).toBe(7);
   });
 
   it("ignores archived habits without crashing", () => {

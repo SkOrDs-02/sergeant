@@ -1,9 +1,10 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { AssistantAdviceCard } from "./AssistantAdviceCard";
 import { publishAiTier, __resetAiTierForTests } from "@shared/api/aiTierBus";
+import { onHubBus, __resetHubBusForTests } from "@shared/lib/modules/hubBus";
 
 describe("AssistantAdviceCard — loading vs loaded", () => {
   afterEach(() => {
@@ -79,6 +80,46 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
     const refresh = screen.getByRole("button", { name: /оновити пораду/i });
     expect(refresh).toBeInTheDocument();
     expect(refresh).toBeDisabled();
+  });
+
+  it("exposes an actionable 'ask AI' CTA that opens chat seeded with the insight (autoSend off)", () => {
+    __resetHubBusForTests();
+    const insight = "Сьогодні ти витратив на 18% більше за середній тиждень.";
+    const received: { message: string | null; autoSend?: boolean }[] = [];
+    const off = onHubBus("openChat", (d) => received.push(d));
+
+    render(
+      <AssistantAdviceCard
+        insight={insight}
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    const cta = screen.getByRole("button", { name: /запитати ai про це/i });
+    fireEvent.click(cta);
+    off();
+
+    expect(received).toHaveLength(1);
+    // Prompt must carry the insight verbatim so the assistant has context,
+    // and autoSend stays falsy so the user can edit before sending.
+    expect(received[0]?.message).toContain(insight);
+    expect(received[0]?.autoSend).toBeFalsy();
+  });
+
+  it("hides the 'ask AI' CTA while loading without a cached insight", () => {
+    render(
+      <AssistantAdviceCard
+        insight={null}
+        loading={true}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /запитати ai про це/i }),
+    ).toBeNull();
   });
 
   it("renders nothing when the request errors out and there is no cached insight (no infinite skeleton)", () => {
