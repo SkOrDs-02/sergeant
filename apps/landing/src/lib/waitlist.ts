@@ -14,7 +14,11 @@ export async function submitWaitlist(
 ): Promise<WaitlistResult> {
   const res = await fetch("/api/v1/waitlist", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // M10 CSRF guard: сервер вимагає non-simple header (як у api-client).
+      "X-Requested-With": "XMLHttpRequest",
+    },
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       tier_interest: tierInterest,
