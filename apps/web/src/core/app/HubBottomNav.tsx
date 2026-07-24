@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -78,6 +79,15 @@ interface HubBottomNavTabProps {
    */
   action?: boolean | undefined;
   onKeyDown?: ((event: KeyboardEvent<HTMLButtonElement>) => void) | undefined;
+  /**
+   * On-screen keyboard is open (keyboard-and-scroll.md § design
+   * decision 2) — the whole nav is sliding out of view, so every tab
+   * drops to `tabIndex={-1}` and loses its handlers the same way a
+   * `hiddenSlot` tab does. Kept distinct from `hiddenSlot` (FTUX
+   * geometry placeholder, `visibility: hidden`, no animation) because
+   * this one participates in the nav's slide-down transform instead.
+   */
+  kbHidden?: boolean | undefined;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -96,6 +106,7 @@ function HubBottomNavTab({
   hiddenSlot = false,
   action = false,
   onKeyDown,
+  kbHidden = false,
 }: HubBottomNavTabProps) {
   const prefetchProps =
     !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
@@ -112,9 +123,9 @@ function HubBottomNavTab({
       type="button"
       id={`hub-tab-${id}`}
       {...tabAria}
-      tabIndex={hiddenSlot ? -1 : active || action ? 0 : -1}
-      onClick={hiddenSlot ? undefined : onClick}
-      onKeyDown={hiddenSlot || action ? undefined : onKeyDown}
+      tabIndex={hiddenSlot || kbHidden ? -1 : active || action ? 0 : -1}
+      onClick={hiddenSlot || kbHidden ? undefined : onClick}
+      onKeyDown={hiddenSlot || action || kbHidden ? undefined : onKeyDown}
       {...prefetchProps}
       // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
       // ховала слот за computed-стилем, але RTL міг знайти його через
@@ -189,6 +200,11 @@ export function HubBottomNav({
   const prevShowReportsRef = useRef(showReports);
   const [animateReveal, setAnimateReveal] = useState(false);
   const tablistRef = useRef<HTMLDivElement>(null);
+  // On-screen keyboard open → slide the nav away (spec
+  // keyboard-and-scroll.md § design decision 2; same treatment as
+  // ModuleBottomNav / RoutineBottomNav's FAB).
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const kbHidden = kbInsetPx > 0;
 
   // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
   // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
@@ -317,9 +333,12 @@ export function HubBottomNav({
   return (
     <nav
       aria-label={messages.nav.hubSections}
+      aria-hidden={kbHidden || undefined}
       className={cn(
         "shrink-0 relative z-30",
         "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "transition-transform duration-200 motion-reduce:transition-none",
+        kbHidden && "translate-y-full pointer-events-none",
       )}
     >
       <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
@@ -338,6 +357,7 @@ export function HubBottomNav({
               hiddenSlot={tab.hiddenSlot}
               action={tab.action}
               onKeyDown={handleTablistKeyDown}
+              kbHidden={kbHidden}
             />
           ))}
         </div>
@@ -354,6 +374,7 @@ export function HubBottomNav({
             prefetchPage={authAction.prefetchPage}
             hiddenSlot={authAction.hiddenSlot}
             action={authAction.action}
+            kbHidden={kbHidden}
           />
         )}
       </div>

@@ -44,7 +44,25 @@ export function useBodyScrollLock(active: boolean = true): void {
       document.body.style.width = "100%";
     }
     lockCount += 1;
+
+    // iOS Safari still auto-scrolls the document to bring a focused
+    // input above the keyboard even though `position: fixed` stops the
+    // user from dragging the page — that OS-level scroll-into-view
+    // step ignores the CSS lock. Left uncorrected, `window.scrollY`
+    // drifts on every focus change inside the locked sheet, which is
+    // exactly what fed the keyboard-inset jitter and the "jumping"
+    // sheet (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+    // § H1, design decision §1). Snap it straight back to the pinned
+    // offset on every focus change while any lock is active.
+    const resetScroll = () => {
+      if (window.scrollY !== savedScrollY) {
+        window.scrollTo(0, savedScrollY);
+      }
+    };
+    document.addEventListener("focusin", resetScroll);
+
     return () => {
+      document.removeEventListener("focusin", resetScroll);
       lockCount -= 1;
       if (lockCount === 0) {
         document.body.style.overflow = savedOverflow ?? "";
