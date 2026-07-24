@@ -70,12 +70,14 @@ export function ElevationSection() {
           {SHADOWS.map((s) => (
             <div key={s.cls} className="flex flex-col items-center gap-2">
               <div
-                className={`${s.cls} bg-panel rounded-2xl border border-line w-40 h-20 flex items-center justify-center text-2xs font-mono text-muted`}
+                className={`${s.cls} bg-panel rounded-2xl border border-line w-40 h-20 flex items-center justify-center text-style-code text-muted`}
               >
                 {s.cls}
               </div>
-              <span className="text-2xs text-subtle font-mono">{s.spec}</span>
-              <span className="text-2xs text-subtle text-center">{s.use}</span>
+              <span className="text-style-code text-subtle">{s.spec}</span>
+              <span className="text-style-caption text-subtle text-center">
+                {s.use}
+              </span>
             </div>
           ))}
         </div>
@@ -85,8 +87,10 @@ export function ElevationSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {CARD_VARIANTS.map((variant) => (
             <Card key={variant} variant={variant} padding="md" radius="xl">
-              <div className="text-xs font-semibold text-text">{variant}</div>
-              <div className="text-2xs text-muted mt-1">
+              <div className="text-style-label font-semibold text-text">
+                {variant}
+              </div>
+              <div className="text-style-caption text-muted mt-1">
                 variant=&quot;{variant}&quot;
               </div>
             </Card>
@@ -99,8 +103,10 @@ export function ElevationSection() {
           {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
             (module) => (
               <Card key={module} module={module} prominence="hero" padding="lg">
-                <div className="text-sm font-bold text-hero-ink">{module}</div>
-                <div className="text-2xs text-hero-ink/70 mt-1">
+                <div className="text-style-label font-bold text-hero-ink">
+                  {module}
+                </div>
+                <div className="text-style-caption text-hero-ink/70 mt-1">
                   module=&quot;{module}&quot; prominence=&quot;hero&quot;
                 </div>
               </Card>
@@ -112,7 +118,10 @@ export function ElevationSection() {
       <Group label="Z-layer шкала">
         <div className="space-y-1.5">
           {Z_LAYERS.map((z) => (
-            <div key={z.cls} className="flex items-center gap-3 text-xs">
+            <div
+              key={z.cls}
+              className="flex items-center gap-3 text-style-caption"
+            >
               <code className="text-text w-20">{z.cls}</code>
               <span className="text-muted">{z.role}</span>
             </div>

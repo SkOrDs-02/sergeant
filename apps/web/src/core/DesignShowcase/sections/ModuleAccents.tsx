@@ -102,9 +102,11 @@ export function ModuleAccentsSection() {
               key={m.id}
               className="bg-panel border border-line rounded-2xl p-3 space-y-2"
             >
-              <div className={`text-sm font-bold ${m.textCls}`}>{m.label}</div>
-              <div className="text-2xs text-muted">{m.hue}</div>
-              <div className="text-2xs text-subtle">{m.role}</div>
+              <div className={`text-style-label font-bold ${m.textCls}`}>
+                {m.label}
+              </div>
+              <div className="text-style-caption text-muted">{m.hue}</div>
+              <div className="text-style-caption text-subtle">{m.role}</div>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <span
                   className={`w-5 h-5 rounded-md ${m.swatch.base}`}
@@ -123,7 +125,7 @@ export function ModuleAccentsSection() {
                   aria-hidden="true"
                 />
               </div>
-              <div className="text-2xs font-mono text-subtle">
+              <div className="text-style-code text-subtle">
                 base · -strong · -soft · -surface
               </div>
             </div>
@@ -141,8 +143,10 @@ export function ModuleAccentsSection() {
               padding="md"
               radius="xl"
             >
-              <div className="text-xs font-semibold text-text">{m.label}</div>
-              <div className="text-2xs text-muted mt-1">
+              <div className="text-style-label font-semibold text-text">
+                {m.label}
+              </div>
+              <div className="text-style-caption text-muted mt-1">
                 prominence=&quot;soft&quot;
               </div>
             </Card>
@@ -151,7 +155,7 @@ export function ModuleAccentsSection() {
       </Group>
 
       <Group label="Module-accent containment правило">
-        <div className="space-y-2 text-xs text-muted">
+        <div className="space-y-2 text-style-caption text-muted">
           <p>
             <code>apps/{`{web,mobile}`}/src/modules/&lt;X&gt;/**</code> →
             дозволено лише акценти модуля <code>&lt;X&gt;</code>.

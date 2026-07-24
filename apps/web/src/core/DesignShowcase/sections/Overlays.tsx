@@ -13,7 +13,7 @@ import {
 
 const SAMPLE_USAGE = `// Modal portals to document.body to escape transformed ancestors (PR #2227)
 <Modal open={open} onClose={close} size="md" title="…">
-  <p className="text-sm text-muted">…</p>
+  <p className="text-style-body text-muted">…</p>
 </Modal>
 
 // ConfirmDialog — destructive irreversible action
@@ -86,7 +86,7 @@ export function OverlaysSection() {
           </div>
         }
       >
-        <p className="text-sm text-muted leading-relaxed">
+        <p className="text-style-body text-muted">
           Тіло модального вікна. Може містити форми, списки або будь-який вміст.
           Розмір:{" "}
           <span className="font-mono font-semibold text-text">{modal}</span>.
@@ -113,7 +113,7 @@ export function OverlaysSection() {
           </div>
         }
       >
-        <p className="text-sm text-muted leading-relaxed py-4">
+        <p className="text-style-body text-muted py-4">
           Вміст аркуша. Прокручується, якщо контент не вміщується у viewport.
           Фокус-пастка та Escape закривають аркуш автоматично.
         </p>

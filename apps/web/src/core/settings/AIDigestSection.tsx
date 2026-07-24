@@ -36,14 +36,14 @@ export function AIDigestSection() {
   return (
     <SettingsGroup title="AI Звіт тижня" icon="clipboard">
       <div className="space-y-3">
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
           харчування та звички. Згенерувати звіт можна на головній — у блоці
           «Звіт тижня».
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">
-          <p className="text-xs font-semibold text-text">Поточний тиждень</p>
-          <p className="text-xs text-muted mt-0.5">{weekRange}</p>
+          <p className="text-style-label text-text">Поточний тиждень</p>
+          <p className="text-style-caption text-muted mt-0.5">{weekRange}</p>
           {generatedAt && (
             <p className="text-style-caption text-subtle mt-1">
               Згенеровано: {generatedAt}

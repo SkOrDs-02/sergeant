@@ -102,7 +102,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.current?.message && (
             <p
               id="profile-current-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.current.message}
             </p>
@@ -131,7 +131,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.next?.message && (
             <p
               id="profile-new-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.next.message}
             </p>
@@ -159,7 +159,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.confirm?.message && (
             <p
               id="profile-confirm-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.confirm.message}
             </p>
@@ -169,7 +169,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         {serverError && (
           <div
             role="alert"
-            className="text-xs text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
+            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
           >
             {serverError}
           </div>

@@ -44,24 +44,24 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-panelHi/40 px-3 py-2.5 flex flex-col gap-3 text-xs text-subtle",
+        "rounded-2xl border border-line bg-panelHi/40 px-3 py-2.5 flex flex-col gap-3 text-style-caption text-subtle",
         className,
       )}
     >
       <p className="font-semibold text-text leading-snug">
         Резервна копія всього Hub (Фінік, Фізрук, Рутина, Їжа) у JSON-файл.
       </p>
-      <p className="leading-relaxed text-xs">
+      <p className="leading-relaxed text-style-caption">
         Токен Monobank і кеш транзакцій не входять у файл — після імпорту
         підключи рахунок знову в Фініку.
       </p>
-      <p className="leading-relaxed text-xs">
+      <p className="leading-relaxed text-style-caption">
         Ідентифікатори акаунта прибираю автоматично, але файл усе одно містить
         твої особисті дані: суми, назви боргів, нотатки й коментарі, які ти
         вписував сам. Тримай його як приватний — у менеджері паролів чи
         зашифрованій хмарі, не пересилай у відкритих чатах.
       </p>
-      <Banner variant="warning" className="text-xs leading-relaxed">
+      <Banner variant="warning" className="text-style-caption leading-relaxed">
         Ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої —
         банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти
         телефон чи чистити дані.

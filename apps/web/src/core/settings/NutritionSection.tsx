@@ -56,7 +56,7 @@ function NumberField({
 
   return (
     <label className="flex items-center gap-3 min-h-[44px]">
-      <span className="text-sm text-text flex-1 min-w-0">{label}</span>
+      <span className="text-style-label text-text flex-1 min-w-0">{label}</span>
       <div className="flex items-center gap-1.5 shrink-0">
         <input
           type="number"
@@ -65,7 +65,7 @@ function NumberField({
           step={1}
           placeholder={placeholder}
           className={cn(
-            "input-focus h-10 w-24 px-2.5 text-right text-sm",
+            "input-focus h-10 w-24 px-2.5 text-right text-style-body",
             "bg-panelHi border border-line rounded-xl text-text",
             "placeholder:text-muted",
           )}
@@ -73,7 +73,9 @@ function NumberField({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => onCommit(parseOptionalPositiveInt(draft))}
         />
-        <span className="text-xs text-muted w-10 text-left">{suffix}</span>
+        <span className="text-style-caption text-muted w-10 text-left">
+          {suffix}
+        </span>
       </div>
     </label>
   );
@@ -155,13 +157,13 @@ export function NutritionSection() {
   return (
     <SettingsGroup title="Їжа" icon="utensils">
       {storageErr && (
-        <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-strong dark:text-danger">
+        <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-style-body text-danger-strong dark:text-danger">
           {storageErr}
         </div>
       )}
 
       <SettingsSubGroup title="Денні цілі (KБЖУ)" defaultOpen>
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Значення показуються у прогрес-кільці на головному екрані Їжі і в
           денних підсумках. Залиш порожнім, щоб ціль не враховувалась.
         </p>
@@ -207,7 +209,7 @@ export function NutritionSection() {
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Вода">
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Денна норма для трекера води в картці дня Їжі.
         </p>
         <NumberField
@@ -224,17 +226,17 @@ export function NutritionSection() {
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Підстановка з комори">
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
           продукти з активної комори — їх можна вибрати одним тапом.
         </p>
         <label className="flex items-center gap-3 min-h-[44px]">
-          <span className="text-sm text-text flex-1 min-w-0">
+          <span className="text-style-label text-text flex-1 min-w-0">
             Активна комора
           </span>
           <select
             className={cn(
-              "input-focus h-10 px-2.5 text-sm min-w-[140px]",
+              "input-focus h-10 px-2.5 text-style-body min-w-[140px]",
               "bg-panelHi border border-line rounded-xl text-text",
             )}
             value={activePantry?.id || ""}
@@ -251,7 +253,7 @@ export function NutritionSection() {
             ))}
           </select>
         </label>
-        <p className="text-xs text-subtle">
+        <p className="text-style-caption text-subtle">
           Деталі продуктів і перейменування комор — у менеджері комори всередині
           модуля Їжі.
         </p>
@@ -267,12 +269,12 @@ export function NutritionSection() {
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Сканування продуктів">
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Це довідка про сканування, а не окремий перемикач. Основна дія живе в
           Їжа → Комора та у діалозі «Додати прийом їжі»: натисни іконку
           штрихкоду, наведи камеру або введи код вручну.
         </p>
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Камері потрібен дозвіл у браузері або системі. Знайдений продукт
           підставляється у форму прийому їжі; якщо збігу немає, можна привʼязати
           штрихкод до існуючої страви. У вебі сканер працює через

@@ -38,8 +38,8 @@ export function ReEngagementCard({
           <Icon name="hand-wave" size={24} />
         </div>
         <div className="space-y-1">
-          <h3 className="text-base font-bold text-text">Давно не бачились!</h3>
-          <p className="text-xs text-muted leading-relaxed max-w-xs">
+          <h3 className="text-style-title text-text">Давно не бачились!</h3>
+          <p className="text-style-body text-muted leading-relaxed max-w-xs">
             Тебе не було {daysInactive} {pluralDays(daysInactive)}. Все
             збережено — продовжуй звідки зупинився.
           </p>

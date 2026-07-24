@@ -119,13 +119,17 @@ export function SessionsSection({ online }: { online: boolean }) {
 
       <div className="p-4">
         {loading && sessions.length === 0 ? (
-          <p className="text-sm text-muted text-center py-4">{COPY.loading}</p>
+          <p className="text-style-body text-muted text-center py-4">
+            {COPY.loading}
+          </p>
         ) : error ? (
-          <p className="text-sm text-danger-strong dark:text-danger text-center py-4">
+          <p className="text-style-body text-danger-strong dark:text-danger text-center py-4">
             {error}
           </p>
         ) : sessions.length === 0 ? (
-          <p className="text-sm text-muted text-center py-4">{COPY.empty}</p>
+          <p className="text-style-body text-muted text-center py-4">
+            {COPY.empty}
+          </p>
         ) : (
           <ul className="space-y-2">
             {sessions.map((s) => {
@@ -140,14 +144,16 @@ export function SessionsSection({ online }: { online: boolean }) {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm text-text truncate">{ua.label}</p>
+                      <p className="text-style-label text-text truncate">
+                        {ua.label}
+                      </p>
                       {isCurrent && (
                         <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong dark:text-brand border border-brand-500/30">
                           {COPY.thisDevice}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted mt-0.5">
+                    <p className="text-style-caption text-muted mt-0.5">
                       {s.ipAddress ?? COPY.unknownIp}
                       {" \u00b7 "}
                       {`${COPY.lastSeenPrefix} ${lastSeen}`}

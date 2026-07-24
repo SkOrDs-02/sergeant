@@ -186,7 +186,7 @@ function PeekBackdrop() {
                     aria-hidden
                   />
                 </div>
-                <span className="text-xs font-semibold text-text">
+                <span className="text-style-label font-semibold text-text">
                   {card.label}
                 </span>
                 <span className="text-style-title text-text tabular-nums mt-1">

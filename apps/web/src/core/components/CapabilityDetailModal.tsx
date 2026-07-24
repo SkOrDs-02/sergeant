@@ -32,7 +32,7 @@ export function CapabilityDetailModal({
       title={cap?.label}
       description={
         cap ? (
-          <span className="flex items-center gap-2 text-xs">
+          <span className="flex items-center gap-2 text-style-caption">
             <Icon
               name={CAPABILITY_MODULE_META[cap.module].icon}
               size={12}
@@ -61,10 +61,10 @@ export function CapabilityDetailModal({
     >
       {cap && (
         <div className="px-5 py-4 space-y-4">
-          <p className="text-sm text-text">{cap.description}</p>
+          <p className="text-style-body text-text">{cap.description}</p>
 
           {cap.risky && (
-            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-xs text-warning-strong dark:text-warning">
+            <div className="flex items-start gap-2 bg-warning/10 border border-warning/40 rounded-2xl px-3 py-2 text-style-caption text-warning-strong dark:text-warning">
               <Icon name="alert-triangle" size={14} aria-hidden />
               <span>
                 Критична дія. Перевір дані перед відправкою — деякі зміни
@@ -81,7 +81,7 @@ export function CapabilityDetailModal({
               {cap.examples.map((ex, i) => (
                 <li
                   key={i}
-                  className="text-sm text-text bg-bg border border-line rounded-xl px-3 py-2"
+                  className="text-style-body text-text bg-bg border border-line rounded-xl px-3 py-2"
                 >
                   «{ex}»
                 </li>
@@ -89,7 +89,7 @@ export function CapabilityDetailModal({
             </ul>
           </div>
 
-          <p className="text-xs text-subtle">
+          <p className="text-style-caption text-subtle">
             Кнопка нижче відкриє чат і вставить заготовку у поле вводу — допиши
             деталі і натисни Enter.
           </p>

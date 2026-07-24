@@ -223,7 +223,7 @@ export function TodayFocusCard({
           </SectionHeading>
         </div>
 
-        <h2 className="text-base font-bold text-text leading-snug text-balance">
+        <h2 className="text-style-title font-bold text-text leading-snug text-balance">
           {focus.icon &&
             (ICON_NAMES.includes(focus.icon) ? (
               // Recommendation `icon` is dual-convention: either a registered
@@ -245,7 +245,7 @@ export function TodayFocusCard({
         </h2>
 
         {focus.body && (
-          <p className="text-xs text-muted mt-1 leading-relaxed">
+          <p className="text-style-body text-muted mt-1 leading-relaxed">
             {focus.body}
           </p>
         )}
@@ -256,7 +256,7 @@ export function TodayFocusCard({
             onClick={primary.run}
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl touch-target",
-              "bg-primary text-bg text-xs font-semibold",
+              "bg-primary text-bg text-style-label font-semibold",
               "hover:brightness-110 active:scale-[0.98] transition-[filter,opacity,transform]",
             )}
           >

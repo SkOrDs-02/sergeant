@@ -259,7 +259,7 @@ export function PersonalInfoSection({
               {!confirmRemoveAvatar ? (
                 <button
                   type="button"
-                  className="text-xs text-muted hover:text-danger transition-colors"
+                  className="text-style-label text-muted hover:text-danger transition-colors"
                   disabled={!online || uploadingAvatar}
                   onClick={() => setConfirmRemoveAvatar(true)}
                 >
@@ -272,14 +272,14 @@ export function PersonalInfoSection({
                   </span>
                   <button
                     type="button"
-                    className="text-xs font-semibold text-danger-strong dark:text-danger hover:text-danger/80 transition-colors"
+                    className="text-style-label font-semibold text-danger-strong dark:text-danger hover:text-danger/80 transition-colors"
                     onClick={handleRemoveAvatar}
                   >
                     Так
                   </button>
                   <button
                     type="button"
-                    className="text-xs text-muted hover:text-text transition-colors"
+                    className="text-style-label text-muted hover:text-text transition-colors"
                     onClick={() => setConfirmRemoveAvatar(false)}
                   >
                     Ні
@@ -345,12 +345,12 @@ export function PersonalInfoSection({
             </Button>
           </div>
           {nameForm.formState.errors.name && (
-            <p className="text-xs text-danger-strong" role="alert">
+            <p className="text-style-caption text-danger-strong" role="alert">
               {nameForm.formState.errors.name.message}
             </p>
           )}
           {nameForm.serverError && (
-            <p className="text-xs text-danger-strong" role="alert">
+            <p className="text-style-caption text-danger-strong" role="alert">
               {nameForm.serverError}
             </p>
           )}
@@ -366,7 +366,9 @@ export function PersonalInfoSection({
           </label>
           {!editingEmail ? (
             <div className="flex items-center gap-2">
-              <p className="text-sm text-text flex-1 truncate">{user.email}</p>
+              <p className="text-style-body text-text flex-1 truncate">
+                {user.email}
+              </p>
               <Button
                 variant="ghost"
                 size="xs"
@@ -419,16 +421,22 @@ export function PersonalInfoSection({
                 </Button>
               </div>
               {emailForm.formState.errors.email && (
-                <p className="text-xs text-danger-strong" role="alert">
+                <p
+                  className="text-style-caption text-danger-strong"
+                  role="alert"
+                >
                   {emailForm.formState.errors.email.message}
                 </p>
               )}
               {emailForm.serverError && (
-                <p className="text-xs text-danger-strong" role="alert">
+                <p
+                  className="text-style-caption text-danger-strong"
+                  role="alert"
+                >
                   {emailForm.serverError}
                 </p>
               )}
-              <p className="text-xs text-muted">
+              <p className="text-style-caption text-muted">
                 На новий email надійде лист для підтвердження.
               </p>
             </div>

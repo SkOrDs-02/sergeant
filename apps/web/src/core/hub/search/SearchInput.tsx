@@ -43,13 +43,13 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             aria-controls={listId}
             aria-activedescendant={activeId}
             aria-autocomplete="list"
-            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-panelHi border border-line text-text placeholder:text-muted text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="w-full h-11 pl-10 pr-4 rounded-2xl bg-panelHi border border-line text-text placeholder:text-muted text-style-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           />
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 text-sm text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl px-2 py-1"
+          className="shrink-0 text-style-label text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl px-2 py-1"
         >
           {messages.actions.cancel}
         </button>

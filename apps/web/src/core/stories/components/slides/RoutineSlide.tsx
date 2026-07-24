@@ -41,6 +41,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {/* glyph scales with container, not a type role */}
             <div className="text-3xl font-black leading-none tabular-nums">
               {agg?.overallRate ?? 0}%
             </div>
@@ -53,7 +54,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
           <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
             Активних звичок
           </div>
-          <div className="text-3xl font-black leading-tight tabular-nums">
+          <div className="text-style-headline leading-tight tabular-nums">
             {agg?.habitCount ?? 0}
           </div>
         </div>
@@ -66,7 +67,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
           </p>
           {top.map((h) => (
             <div key={h.name} className="space-y-1">
-              <div className="flex items-baseline justify-between text-sm">
+              <div className="flex items-baseline justify-between text-style-body">
                 <span className="font-semibold text-white/95 truncate pr-2">
                   {h.name}
                 </span>
@@ -89,7 +90,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
         <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
-            <p className="text-xs text-white/85 mt-2 leading-relaxed">
+            <p className="text-style-caption text-white/85 mt-2 leading-relaxed">
               {ai.comment}
             </p>
           )}

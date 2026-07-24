@@ -36,7 +36,7 @@ export function DataExportSection() {
 
   return (
     <SettingsGroup title="Експорт/імпорт JSON" icon="download">
-      <p className="text-xs text-subtle leading-snug">
+      <p className="text-style-caption text-subtle leading-snug">
         Збережи всі свої локальні дані у файл — його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
         даних акаунта.
@@ -46,7 +46,7 @@ export function DataExportSection() {
       <div className="space-y-3 rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <div>
           <h3 className="text-style-label text-text">Права на дані</h3>
-          <p className="mt-1 text-xs text-subtle leading-relaxed">
+          <p className="mt-1 text-style-caption text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
             можна у профілі — там зібрані всі дії керування акаунтом.
           </p>
@@ -65,12 +65,12 @@ export function DataExportSection() {
           </Button>
         </div>
         {serverMessage ? (
-          <p className="text-xs text-success-strong" role="status">
+          <p className="text-style-caption text-success-strong" role="status">
             {serverMessage}
           </p>
         ) : null}
         {serverError ? (
-          <p className="text-xs text-danger-strong" role="alert">
+          <p className="text-style-caption text-danger-strong" role="alert">
             {serverError}
           </p>
         ) : null}

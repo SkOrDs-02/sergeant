@@ -225,7 +225,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <SectionHeading as="div" size="sm" variant="subtle">
                 Старт
               </SectionHeading>
-              <h2 className="text-base font-bold text-text mt-0.5">
+              <h2 className="text-style-title text-text mt-0.5">
                 З чого хочеш почати?
               </h2>
               <p className="text-style-caption text-muted mt-0.5 leading-snug">
@@ -271,7 +271,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                       <Icon name={action.icon} size={20} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-bold text-text">
+                      <span className="block text-style-title text-text">
                         {action.chipLabel}
                       </span>
                       <span className="block text-style-caption text-muted">
@@ -306,7 +306,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <SectionHeading as="div" size="sm" variant="subtle">
                 Старт
               </SectionHeading>
-              <h2 className="text-base font-bold text-text mt-0.5">
+              <h2 className="text-style-title text-text mt-0.5">
                 З чого хочеш почати?
               </h2>
               <p className="text-style-caption text-muted mt-0.5 leading-snug">
@@ -356,7 +356,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                       <Icon name={action.icon} size={20} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-bold text-text">
+                      <span className="block text-style-title text-text">
                         {action.chipLabel}
                       </span>
                       <span className="block text-style-caption text-muted">
@@ -392,10 +392,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             <SectionHeading as="div" size="sm" variant="subtle">
               Старт
             </SectionHeading>
-            <h2 className="text-base font-bold text-text mt-0.5">
+            <h2 className="text-style-title text-text mt-0.5">
               {picks.length > 1 ? "З чого хочеш почати?" : "Почни з однієї дії"}
             </h2>
-            <p className="text-xs text-muted mt-0.5 leading-snug">
+            <p className="text-style-body text-muted mt-0.5 leading-snug">
               Твої показники з&apos;являться після першого збереженого запису.
             </p>
           </div>
@@ -430,8 +430,8 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <Icon name={primary.icon} size={22} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-text">{primary.title}</div>
-              <div className="text-xs text-muted mt-0.5 truncate">
+              <div className="text-style-title text-text">{primary.title}</div>
+              <div className="text-style-body text-muted mt-0.5 truncate">
                 {getGoalAwareDesc(primaryId, primary.desc)}
               </div>
             </div>

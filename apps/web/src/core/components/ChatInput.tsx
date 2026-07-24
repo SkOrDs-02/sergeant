@@ -112,7 +112,7 @@ export function ChatInput({
       </Tooltip>
       <input
         ref={inputRef}
-        className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-sm text-text placeholder:text-subtle disabled:opacity-50"
+        className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
         placeholder={
           online
             ? "Запитай або попроси змінити щось…"

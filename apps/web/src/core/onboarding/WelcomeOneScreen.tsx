@@ -106,12 +106,12 @@ export function WelcomeOneScreen({
         >
           {copy.title}
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-muted">
+      <div className="flex items-center gap-3 text-style-caption text-muted">
         <span className="flex items-center gap-1">
           <Icon name="lock" size={14} aria-hidden />
           {copy.badges[0]}
@@ -176,7 +176,7 @@ export function WelcomeOneScreen({
 
       {ctaDisabled && emptyPicksHint ? (
         <p
-          className="text-xs text-muted -mt-2"
+          className="text-style-caption text-muted -mt-2"
           role="status"
           aria-live="polite"
         >
@@ -205,7 +205,7 @@ export function WelcomeOneScreen({
         type="button"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
-        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded inline-flex items-center justify-center gap-1.5"
+        className="w-full text-style-label text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded inline-flex items-center justify-center gap-1.5"
       >
         <Icon
           name={expanded ? "chevron-up" : "chevron-down"}

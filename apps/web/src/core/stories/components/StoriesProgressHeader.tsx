@@ -59,11 +59,12 @@ export function StoriesProgressHeader({
         })}
       </div>
       <div className="mt-3 flex items-center gap-2">
+        {/* icon-size, not type */}
         <div className="w-7 h-7 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-sm">
           📊
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold text-white truncate">
+          <div className="text-style-label font-bold text-white truncate">
             Дайджест · {activeLabel}
           </div>
           <div className="text-style-caption text-white/75 truncate">

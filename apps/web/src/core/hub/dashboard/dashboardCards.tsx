@@ -97,7 +97,7 @@ export function TodaySummaryStrip({
           >
             <span
               className={cn(
-                "text-base font-bold tabular-nums",
+                "text-style-body font-bold tabular-nums",
                 pill.main ? pill.accent : "text-subtle",
               )}
             >
@@ -251,7 +251,9 @@ export function MotivationalFooter() {
       ? "Вже 1 запис \u2014 продовжуй!"
       : `Вже ${entryCount} записів \u2014 продовжуй!`;
 
-  return <p className="text-xs text-subtle text-center py-8">{message}</p>;
+  return (
+    <p className="text-style-caption text-subtle text-center py-8">{message}</p>
+  );
 }
 
 /**

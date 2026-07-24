@@ -39,13 +39,13 @@ export function FinykSection() {
   };
 
   const catInputClass =
-    "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text";
+    "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text";
 
   return (
     <div ref={sectionRef}>
       <SettingsGroup title="Фінік" icon="credit-card">
         <SettingsSubGroup title="Власні категорії витрат">
-          <p className="text-xs text-subtle leading-snug">
+          <p className="text-style-caption text-subtle leading-snug">
             Додаються до списку категорій у транзакціях, сплітах і лімітах
             (можна вказати емодзі на початку назви).
           </p>
@@ -84,7 +84,7 @@ export function FinykSection() {
                   <button
                     type="button"
                     onClick={() => removeCustomCategory(category.id)}
-                    className="text-xs font-semibold text-danger/80 hover:text-danger shrink-0"
+                    className="text-style-label font-semibold text-danger/80 hover:text-danger shrink-0"
                   >
                     Видалити
                   </button>

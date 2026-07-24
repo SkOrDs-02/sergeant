@@ -140,9 +140,7 @@ function ButtonsMatrix() {
       {(["primary", "secondary", "ghost", "danger", "success"] as const).map(
         (variant) => (
           <div key={variant} className="flex flex-wrap items-end gap-3">
-            <span className="w-20 text-2xs text-subtle font-mono">
-              {variant}
-            </span>
+            <span className="w-20 text-style-code text-subtle">{variant}</span>
             {(["sm", "md", "lg"] as const).map((size) => (
               <Button key={size} variant={variant} size={size}>
                 {variant}
@@ -166,15 +164,15 @@ function SwitchDemo() {
   const [b, setB] = useState(false);
   return (
     <div className="flex items-center gap-6 flex-wrap">
-      <div className="flex items-center gap-2 text-sm text-text">
+      <div className="flex items-center gap-2 text-style-label text-text">
         <Switch checked={a} onChange={setA} label="Notifications" />
         <span>Notifications</span>
       </div>
-      <div className="flex items-center gap-2 text-sm text-text">
+      <div className="flex items-center gap-2 text-style-label text-text">
         <Switch checked={b} onChange={setB} label="Sound effects" />
         <span>Sound effects</span>
       </div>
-      <div className="flex items-center gap-2 text-sm text-muted">
+      <div className="flex items-center gap-2 text-style-label text-muted">
         <Switch checked={false} onChange={() => {}} disabled label="Disabled" />
         <span>Disabled</span>
       </div>

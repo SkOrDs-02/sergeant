@@ -112,7 +112,7 @@ export function PrimitivesSection() {
           header="Як рахується ліміт"
           label="Як рахується ліміт"
         >
-          <p className="px-2 py-2 text-sm text-muted leading-relaxed max-w-xs">
+          <p className="px-2 py-2 text-style-body text-muted max-w-xs">
             Ліміт — це сума, яку ти готовий витратити цього місяця. Перевищення
             підсвічується червоним і триггерить m-of-m попередження за 3 дні до
             перевищення тренду.
@@ -146,7 +146,7 @@ export function PrimitivesSection() {
             </div>
           }
         >
-          <div className="px-2 py-2 space-y-2 text-sm text-fg min-w-[220px]">
+          <div className="px-2 py-2 space-y-2 text-style-body text-fg min-w-[220px]">
             <label className="flex items-center gap-2">
               <input type="checkbox" className="accent-accent" />
               Доходи

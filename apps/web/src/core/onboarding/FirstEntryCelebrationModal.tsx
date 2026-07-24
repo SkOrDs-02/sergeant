@@ -249,7 +249,7 @@ export function FirstEntryCelebrationModal({
         {/* Headline */}
         <div className="space-y-1">
           <h2 className="text-style-headline text-text">{headline}</h2>
-          <p className="text-sm text-muted">{subtext}</p>
+          <p className="text-style-body text-muted">{subtext}</p>
         </div>
 
         {/* Tips for next steps */}
@@ -262,7 +262,9 @@ export function FirstEntryCelebrationModal({
             <div className="w-6 h-6 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
               <Icon name="sparkles" size={12} className="text-brand-500" />
             </div>
-            <p className="text-xs text-muted leading-relaxed">{nextStepTip}</p>
+            <p className="text-style-body text-muted leading-relaxed">
+              {nextStepTip}
+            </p>
           </div>
         </div>
 

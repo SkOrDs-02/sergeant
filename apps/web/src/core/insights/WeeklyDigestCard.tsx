@@ -135,9 +135,13 @@ function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
           <Icon name={cfg.icon} size="sm" aria-hidden />
         </div>
         <div className="flex-1 min-w-0 text-left">
-          <span className="text-xs font-semibold text-text">{cfg.label}</span>
+          <span className="text-style-label font-semibold text-text">
+            {cfg.label}
+          </span>
           {data.summary && (
-            <p className="text-xs text-muted truncate mt-0.5">{data.summary}</p>
+            <p className="text-style-caption text-muted truncate mt-0.5">
+              {data.summary}
+            </p>
           )}
         </div>
         <ChevronIcon expanded={open} />
@@ -152,7 +156,7 @@ function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
         <div className="overflow-hidden">
           <div className="px-3 pb-3 border-t border-line pt-2 space-y-2">
             {data.comment && (
-              <p className="text-xs text-muted leading-relaxed">
+              <p className="text-style-body text-muted leading-relaxed">
                 {data.comment}
               </p>
             )}
@@ -169,7 +173,7 @@ function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
                       >
                         →
                       </span>
-                      <span className="text-xs text-text leading-snug">
+                      <span className="text-style-body text-text leading-snug">
                         {rec}
                       </span>
                     </div>
@@ -260,14 +264,14 @@ function DigestContent({
 
   const errorSlot = (
     <div className="px-4 pb-3">
-      <p className="text-xs text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
+      <p className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
         {error}
       </p>
       {isCurrentWeek && (
         <button
           type="button"
           onClick={onGenerate}
-          className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+          className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
         >
           Спробувати знову
         </button>
@@ -279,7 +283,7 @@ function DigestContent({
     <div className="px-4 pb-4">
       {isCurrentWeek ? (
         <>
-          <p className="text-xs text-muted mb-3 leading-relaxed">
+          <p className="text-style-body text-muted mb-3 leading-relaxed">
             AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
             рекомендації на наступний тиждень.
           </p>
@@ -292,7 +296,7 @@ function DigestContent({
           </button>
         </>
       ) : (
-        <p className="text-xs text-muted text-center py-2">
+        <p className="text-style-body text-muted text-center py-2">
           Звіт за цей тиждень не збережено
         </p>
       )}
@@ -314,7 +318,7 @@ function DigestContent({
               type="button"
               onClick={onPlayStories}
               className={cn(
-                "w-full h-11 rounded-xl text-sm font-bold text-white",
+                "w-full h-11 rounded-xl text-style-label font-bold text-white",
                 "bg-linear-to-r from-brand-500 via-brand-400 to-teal-400",
                 "dark:from-brand-600 dark:via-brand-500 dark:to-teal-500",
                 "shadow-card hover:brightness-110 active:scale-[0.98] transition-[box-shadow,filter,opacity,transform]",
@@ -365,7 +369,7 @@ function DigestContent({
                             <span className="text-style-caption font-bold text-primary mt-0.5 shrink-0">
                               ★
                             </span>
-                            <span className="text-xs text-text leading-snug">
+                            <span className="text-style-body text-text leading-snug">
                               {rec}
                             </span>
                           </div>
@@ -377,7 +381,7 @@ function DigestContent({
                   <button
                     type="button"
                     onClick={onUpdate}
-                    className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                    className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
                   >
                     Оновити звіт
                   </button>
@@ -391,7 +395,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpanded(true)}
-                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Переглянути звіт
               </button>
@@ -402,7 +406,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpanded(false)}
-                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Згорнути
               </button>
@@ -474,8 +478,10 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-text">Звіт тижня</div>
-          <div className="text-xs text-muted mt-0.5">{weekRange}</div>
+          <div className="text-style-title font-bold text-text">Звіт тижня</div>
+          <div className="text-style-caption text-muted mt-0.5">
+            {weekRange}
+          </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {digest?.generatedAt && (
@@ -543,7 +549,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                   setShowHistory(false);
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors",
+                  "px-2.5 py-1 rounded-xl text-style-label font-semibold transition-colors",
                   selectedWeekKey === h.weekKey
                     ? "bg-primary/15 text-primary"
                     : "bg-panelHi text-muted hover:text-text",
@@ -566,7 +572,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
           <button
             type="button"
             onClick={() => setSelectedWeekKey(currentWeekKey)}
-            className="text-xs text-primary hover:underline"
+            className="text-style-label text-primary hover:underline"
           >
             ← Поточний тиждень
           </button>

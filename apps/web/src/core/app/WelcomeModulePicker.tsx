@@ -150,7 +150,7 @@ export function WelcomeModulePicker({
         >
           {copy.heading}
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
         </p>
       </div>
@@ -228,7 +228,7 @@ export function WelcomeModulePicker({
       </Button>
 
       <p
-        className="text-xs text-muted -mt-2"
+        className="text-style-caption text-muted -mt-2"
         role={ctaDisabled ? "status" : undefined}
         aria-live={ctaDisabled ? "polite" : undefined}
       >

@@ -283,10 +283,10 @@ export function PresetSheet({
                 <Icon name={item.icon} size={20} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-text truncate">
+                <div className="text-style-title text-text truncate">
                   {item.title}
                 </div>
-                <div className="text-xs text-muted mt-0.5 truncate">
+                <div className="text-style-body text-muted mt-0.5 truncate">
                   {item.desc}
                 </div>
               </div>

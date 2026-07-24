@@ -100,7 +100,9 @@ export function CrossModulePreview({
         <div className="flex-1 min-w-0 space-y-2">
           <div className="space-y-1">
             <h3 className="text-style-label text-text">{copy.title}</h3>
-            <p className="text-xs text-muted leading-relaxed">{copy.body}</p>
+            <p className="text-style-caption text-muted leading-relaxed">
+              {copy.body}
+            </p>
           </div>
           <div className="flex">
             <Button variant="secondary" size="sm" onClick={handleClick}>

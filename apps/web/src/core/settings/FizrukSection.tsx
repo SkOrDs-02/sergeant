@@ -14,7 +14,7 @@ export function FizrukSection() {
   return (
     <SettingsGroup title="Фізрук" icon="dumbbell">
       <SettingsSubGroup title="Таймер відпочинку">
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           Рекомендований час відпочинку підбирається автоматично за типом
           вправи. Ці значення з&apos;являться як кнопка за замовчуванням у
           кожній вправі.
@@ -24,7 +24,9 @@ export function FizrukSection() {
             Object.entries(REST_CATEGORY_LABELS) as [RestCategory, string][]
           ).map(([cat, label]) => (
             <div key={cat} className="flex items-center gap-3">
-              <span className="text-xs text-text flex-1 min-w-0">{label}</span>
+              <span className="text-style-label text-text flex-1 min-w-0">
+                {label}
+              </span>
               <div className="flex items-center gap-1 flex-wrap justify-end">
                 {[30, 60, 90, 120, 180].map((sec) => (
                   <button
@@ -32,7 +34,7 @@ export function FizrukSection() {
                     type="button"
                     onClick={() => updateSetting(cat, sec)}
                     className={cn(
-                      "h-9 w-14 rounded-xl border text-xs font-semibold transition-colors",
+                      "h-9 w-14 rounded-xl border text-style-label font-semibold transition-colors",
                       typedSettings[cat] === sec
                         ? "border-success bg-success/15 text-success-strong dark:text-success"
                         : "border-line bg-panelHi text-subtle hover:text-text",
