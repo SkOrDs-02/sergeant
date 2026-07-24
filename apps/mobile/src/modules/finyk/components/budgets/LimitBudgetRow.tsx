@@ -86,7 +86,7 @@ function LimitBudgetRowImpl({
               ? "h-full bg-danger"
               : warnLimit
                 ? "h-full bg-amber-500"
-                : "h-full bg-emerald-500"
+                : "h-full bg-teal-700"
           }
         />
       </View>

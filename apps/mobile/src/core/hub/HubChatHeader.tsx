@@ -19,7 +19,7 @@ import { MessageCircle, Plus, ListOrdered, X } from "lucide-react-native";
 // Module-accent hex — keep inline to bypass the
 // `Record<ModuleAccent, Record<string, string>>` widening that
 // `noUncheckedIndexedAccess` would otherwise turn into `string | undefined`.
-const FINYK_ACCENT = "#10b981";
+const FINYK_ACCENT = "#0f766e"; // teal-700 (2026-07: was emerald-500)
 
 export interface HubChatHeaderProps {
   online: boolean;

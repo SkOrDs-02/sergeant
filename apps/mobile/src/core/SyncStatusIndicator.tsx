@@ -180,10 +180,8 @@ export function SyncStatusIndicator({
           className,
         )}
       >
-        <View className="h-2 w-2 rounded-full bg-emerald-500" />
-        <Text className="text-[11px] font-medium text-emerald-800">
-          Синк: on
-        </Text>
+        <View className="h-2 w-2 rounded-full bg-teal-700" />
+        <Text className="text-[11px] font-medium text-teal-900">Синк: on</Text>
       </View>
     );
   }

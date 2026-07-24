@@ -70,7 +70,7 @@ function GoalBudgetRowImpl({
         <Sparkline values={progressTrend(pct)} tone="positive" height={14} />
       </View>
       <View className="h-2 bg-cream-200 rounded-full overflow-hidden">
-        <View style={{ width: barWidth }} className="h-full bg-emerald-500" />
+        <View style={{ width: barWidth }} className="h-full bg-teal-700" />
       </View>
       {monthlyLabel ? (
         <Text className="text-xs text-fg-muted mt-1.5">{monthlyLabel}</Text>

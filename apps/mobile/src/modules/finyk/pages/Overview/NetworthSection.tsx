@@ -22,11 +22,12 @@ export interface NetworthSectionProps {
 }
 
 /**
- * Same emerald palette the web chart uses (`stroke` / soft fill) — kept
+ * Same teal palette the web chart uses (`stroke` / soft fill) — kept
  * in sync with `apps/web/src/modules/finyk/components/charts/NetworthChart.tsx`.
+ * 2026-07: shifted from emerald-500 to teal-700 (brand shift).
  */
-const STROKE = "#10b981";
-const FILL = "rgba(16, 185, 129, 0.18)";
+const STROKE = "#0f766e"; // teal-700
+const FILL = "rgba(15, 118, 110, 0.18)";
 
 const NetworthSectionImpl = function NetworthSection({
   networthHistory,

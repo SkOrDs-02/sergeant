@@ -25,7 +25,7 @@ import {
 // pulling `moduleColors.<id>.primary` through `noUncheckedIndexedAccess`
 // (which collapses the index access to `string | undefined`).
 const MODULE_ACCENT = {
-  finyk: "#10b981",
+  finyk: "#0f766e", // teal-700 (2026-07: was emerald-500)
   fizruk: "#14b8a6",
   nutrition: "#92cc17",
   routine: "#f97066",

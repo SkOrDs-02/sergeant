@@ -20,8 +20,8 @@ export interface BudgetTrendChartProps {
   testID?: string;
 }
 
-const ACTUAL_STROKE = "#10b981";
-const ACTUAL_FILL = "rgba(16, 185, 129, 0.18)";
+const ACTUAL_STROKE = "#0f766e"; // teal-700
+const ACTUAL_FILL = "rgba(15, 118, 110, 0.18)";
 const FORECAST_STROKE = "#f59e0b";
 const LIMIT_STROKE = "#dc2626";
 
@@ -119,7 +119,7 @@ function BudgetTrendChartImpl({
         ) : null}
       </VictoryGroup>
       <View className="flex-row gap-3 mt-1 px-2">
-        <Text className="text-[10px] text-emerald-700">● Факт</Text>
+        <Text className="text-[10px] text-teal-700">● Факт</Text>
         <Text className="text-[10px] text-amber-700">┄ Прогноз</Text>
         {limit > 0 ? (
           <Text className="text-[10px] text-danger">┄ Ліміт</Text>

@@ -44,7 +44,7 @@ function MerchantListComponent({ merchants }: MerchantListProps) {
               <View className="flex-row items-center gap-2">
                 <View className="flex-1 h-1.5 bg-cream-100 rounded-full overflow-hidden">
                   <View
-                    className="h-full bg-emerald-500/70 rounded-full"
+                    className="h-full bg-teal-700/70 rounded-full"
                     style={{ width: `${barPct}%` }}
                   />
                 </View>
