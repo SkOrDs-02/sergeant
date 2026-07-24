@@ -80,7 +80,7 @@ vi.mock("./hooks/useFinykRoute", () => ({
 
 vi.mock("./hooks/useUnifiedFinanceData", () => ({
   useUnifiedFinanceData: vi.fn(() => ({
-    mergedMono: { accounts: [], transactions: [], syncState: null },
+    mergedMono: { accounts: [], transactions: [], realTx: [], syncState: null },
     mergedRefresh: vi.fn(),
   })),
 }));
@@ -489,6 +489,18 @@ describe("FinykApp (extra) — URL sync effect", () => {
 // ── First-run navigation ──────────────────────────────────────────────────────
 
 describe("FinykApp (extra) — first-run navigation", () => {
+  beforeEach(() => {
+    vi.stubGlobal("location", {
+      pathname: "/finyk",
+      search: "",
+      href: "http://localhost/finyk",
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("navigates to budgets on first run when page is not budgets", () => {
     vi.mocked(useModuleFirstRun).mockReturnValueOnce({
       firstRun: true,
