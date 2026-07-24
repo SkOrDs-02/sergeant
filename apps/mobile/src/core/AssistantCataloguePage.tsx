@@ -306,10 +306,8 @@ function CapabilityLegend() {
         <Text className="text-[11px] text-fg-muted">критична дія</Text>
       </View>
       <View className="flex-row items-center gap-1.5">
-        <View className="border border-emerald-400 bg-emerald-50 rounded-full px-2 py-0.5">
-          <Text className="text-[10px] font-bold text-emerald-700">
-            ✨ НОВИНКА
-          </Text>
+        <View className="border border-teal-500 bg-teal-50 rounded-full px-2 py-0.5">
+          <Text className="text-[10px] font-bold text-teal-800">НОВИНКА</Text>
         </View>
         <Text className="text-[11px] text-fg-muted">нещодавно додано</Text>
       </View>
@@ -339,10 +337,10 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           {capability.isNew ? (
             <View
               testID={`catalogue-capability-${capability.id}-new`}
-              className="border border-emerald-400 bg-emerald-50 rounded-full px-2 py-0.5"
+              className="border border-teal-500 bg-teal-50 rounded-full px-2 py-0.5"
             >
-              <Text className="text-[10px] font-bold text-emerald-700">
-                ✨ НОВИНКА
+              <Text className="text-[10px] font-bold text-teal-800">
+                НОВИНКА
               </Text>
             </View>
           ) : null}

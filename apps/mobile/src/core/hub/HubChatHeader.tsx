@@ -14,12 +14,12 @@
  */
 
 import { Pressable, Text, View } from "react-native";
-import { Plus, Sparkles, ListOrdered, X } from "lucide-react-native";
+import { MessageCircle, Plus, ListOrdered, X } from "lucide-react-native";
 
 // Module-accent hex — keep inline to bypass the
 // `Record<ModuleAccent, Record<string, string>>` widening that
 // `noUncheckedIndexedAccess` would otherwise turn into `string | undefined`.
-const FINYK_ACCENT = "#10b981";
+const FINYK_ACCENT = "#0f766e"; // teal-700 (2026-07: was emerald-500)
 
 export interface HubChatHeaderProps {
   online: boolean;
@@ -43,7 +43,7 @@ export function HubChatHeader({
     >
       <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
         <View className="relative h-9 w-9 items-center justify-center rounded-xl bg-cream-100">
-          <Sparkles size={16} color={FINYK_ACCENT} />
+          <MessageCircle size={16} color={FINYK_ACCENT} />
           <View
             className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ${online ? "bg-brand-500" : "bg-warning"}`}
             style={{ borderWidth: 2, borderColor: "#ffffff00" }}

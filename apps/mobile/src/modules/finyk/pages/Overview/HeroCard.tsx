@@ -44,7 +44,7 @@ const HeroCardImpl = function HeroCard({
 
   return (
     <LinearGradient
-      colors={["#10b981", "#059669"]}
+      colors={["#0f766e", "#115e59"]} // teal-700 → teal-800
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       className="rounded-3xl p-5"

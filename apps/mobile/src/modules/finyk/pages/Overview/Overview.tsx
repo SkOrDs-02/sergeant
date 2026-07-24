@@ -244,7 +244,7 @@ export function Overview({
       ? "bg-rose-500"
       : spendPct > 50
         ? "bg-amber-500"
-        : "bg-emerald-500";
+        : "bg-teal-700";
   const showMonthForecast = showBalance && daysPassed > 0 && projectedSpend > 0;
   const forecastTrendPct = showMonthForecast
     ? Math.min(100, Math.round((spent / projectedSpend) * 100))
@@ -254,7 +254,7 @@ export function Overview({
       ? "bg-rose-500"
       : forecastTrendPct > 50
         ? "bg-amber-500"
-        : "bg-emerald-500";
+        : "bg-teal-700";
 
   const spendPlanRatio = expenseTarget > 0 ? spent / expenseTarget : 0;
   const hasExpensePlan = expenseTarget > 0;

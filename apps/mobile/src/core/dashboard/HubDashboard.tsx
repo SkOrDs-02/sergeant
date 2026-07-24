@@ -39,7 +39,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Search, Settings, Sparkles } from "lucide-react-native";
+import { MessageCircle, Search, Settings } from "lucide-react-native";
 
 import { colors } from "@/theme";
 
@@ -87,72 +87,31 @@ import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 import { HubModuleStorageBoot } from "@/core/settings/HubModuleStorageBoot";
 
 /**
- * AssistantFab — floating action button with pulse glow animation.
+ * AssistantFab — floating action button.
+ *
+ * Animation: one-shot entrance ring that expands and fades on mount,
+ * then stops. No persistent loops — they drain battery and read as
+ * "AI generated" (design audit P1).
  */
 function AssistantFab({ onPress }: { onPress: () => void }) {
-  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
-  // Animated.Value is created once on mount and its identity never changes,
-  // which keeps render free of ref reads (react-hooks/refs) without touching
-  // animation behavior.
-  const [pulseScale] = useState(() => new Animated.Value(1));
-  const [pulseOpacity] = useState(() => new Animated.Value(0.4));
-  const [shadowOpacity] = useState(() => new Animated.Value(0.3));
+  // Entrance ring: expands from 1→1.4 and fades 0.35→0 once on mount.
+  const [ringScale] = useState(() => new Animated.Value(1));
+  const [ringOpacity] = useState(() => new Animated.Value(0.35));
 
   useEffect(() => {
-    // Subtle pulse animation for the glow ring
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.15,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.4,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-
-    // Shadow breathing animation
-    const shadowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shadowOpacity, {
-          toValue: 0.6,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shadowOpacity, {
-          toValue: 0.3,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    pulseAnimation.start();
-    shadowAnimation.start();
-
-    return () => {
-      pulseAnimation.stop();
-      shadowAnimation.stop();
-    };
-  }, [pulseScale, pulseOpacity, shadowOpacity]);
+    Animated.parallel([
+      Animated.timing(ringScale, {
+        toValue: 1.4,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(ringOpacity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [ringScale, ringOpacity]);
 
   return (
     <View
@@ -163,7 +122,7 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
         pointerEvents: "box-none",
       }}
     >
-      {/* Pulse glow ring */}
+      {/* One-shot entrance ring — expands and disappears on mount */}
       <Animated.View
         style={{
           position: "absolute",
@@ -173,22 +132,8 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
           bottom: -4,
           borderRadius: 32,
           backgroundColor: colors.accent,
-          opacity: pulseOpacity,
-          transform: [{ scale: pulseScale }],
-        }}
-        pointerEvents="none"
-      />
-      {/* Shadow layer */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 2,
-          left: 2,
-          right: -2,
-          bottom: -2,
-          borderRadius: 28,
-          backgroundColor: colors.accent,
-          opacity: shadowOpacity,
+          opacity: ringOpacity,
+          transform: [{ scale: ringScale }],
         }}
         pointerEvents="none"
       />
@@ -196,10 +141,10 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
         accessibilityRole="button"
         accessibilityLabel="Відкрити AI-асистента"
         onPress={onPress}
-        className="h-14 flex-row items-center gap-2 rounded-full bg-brand-700 pl-4 pr-5 shadow-xl active:scale-95 active:opacity-90"
+        className="h-14 flex-row items-center gap-2 rounded-full bg-brand-700 pl-4 pr-5 shadow-md active:scale-95 active:opacity-90"
         testID="dashboard-assistant-fab"
       >
-        <Sparkles size={20} color="#fff" strokeWidth={2.2} />
+        <MessageCircle size={20} color="#fff" strokeWidth={2} />
         <Text className="text-sm font-semibold text-white">Асистент</Text>
       </Pressable>
     </View>

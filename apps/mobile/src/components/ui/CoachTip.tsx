@@ -17,7 +17,6 @@ import * as Haptics from "expo-haptics";
 import {
   ArrowRight,
   Lightbulb,
-  Sparkles,
   Target,
   TrendingUp,
   X,
@@ -79,10 +78,10 @@ const variantConfig: Record<
     borderClass: "border-amber-200 dark:border-amber-800",
   },
   suggestion: {
-    icon: Sparkles,
-    bgClass: "bg-violet-50 dark:bg-violet-950/30",
-    iconColor: "#8b5cf6",
-    borderClass: "border-violet-200 dark:border-violet-800",
+    icon: Lightbulb,
+    bgClass: "bg-teal-50 dark:bg-teal-950/30",
+    iconColor: "#0f766e",
+    borderClass: "border-teal-200 dark:border-teal-800",
   },
   insight: {
     icon: TrendingUp,
@@ -92,15 +91,15 @@ const variantConfig: Record<
   },
   goal: {
     icon: Target,
-    bgClass: "bg-emerald-50 dark:bg-emerald-950/30",
-    iconColor: "#10b981",
-    borderClass: "border-emerald-200 dark:border-emerald-800",
+    bgClass: "bg-teal-50 dark:bg-teal-950/30",
+    iconColor: "#0f766e",
+    borderClass: "border-teal-200 dark:border-teal-800",
   },
   celebration: {
-    icon: Sparkles,
-    bgClass: "bg-orange-50 dark:bg-orange-950/30",
-    iconColor: "#f97316",
-    borderClass: "border-orange-200 dark:border-orange-800",
+    icon: TrendingUp,
+    bgClass: "bg-amber-50 dark:bg-amber-950/30",
+    iconColor: "#d97706", // amber-600
+    borderClass: "border-amber-200 dark:border-amber-800",
   },
 };
 

@@ -150,7 +150,7 @@ const indicatorColor: Record<ButtonVariant, string> = {
   fizruk: "#ffffff",
   routine: "#ffffff",
   nutrition: "#ffffff",
-  "finyk-soft": "#047857",
+  "finyk-soft": "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
   "fizruk-soft": "#0f766e",
   "routine-soft": "#c23a3a",
   "nutrition-soft": "#466212",

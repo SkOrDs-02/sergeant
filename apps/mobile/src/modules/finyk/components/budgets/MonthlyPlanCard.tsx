@@ -193,7 +193,7 @@ function MonthlyPlanCardImpl({
                       ? "h-full bg-danger"
                       : pctExpense >= 85
                         ? "h-full bg-amber-500"
-                        : "h-full bg-emerald-500"
+                        : "h-full bg-teal-700"
                   }
                 />
               </View>

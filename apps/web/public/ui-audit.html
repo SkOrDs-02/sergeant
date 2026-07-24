@@ -1,0 +1,1667 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UI Audit — До / Після</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --c-bg: 252 248 242;
+        --c-panel: 255 255 255;
+        --c-panel-hi: 247 244 238;
+        --c-text: 28 24 20;
+        --c-muted: 120 110 98;
+        --c-line: 228 220 208;
+        --c-primary: 16 185 129; /* emerald-500 — the "before" */
+        --c-after: 20 83 45; /* emerald-900 deep — the "after" */
+        --c-xp-before: 124 58 237; /* violet — the "before" */
+        --c-xp-after: 16 185 129; /* brand hue — the "after" */
+        --c-orange: 234 88 12; /* hardcoded flame */
+        --c-danger: 220 38 38;
+        --c-badge-before: #fee2e2;
+        --c-badge-after: #d1fae5;
+        --radius: 16px;
+      }
+
+      body {
+        font-family: "Manrope", system-ui, sans-serif;
+        background: rgb(var(--c-bg));
+        color: rgb(var(--c-text));
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ─── Layout ─── */
+      .page {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+
+      .page-header {
+        text-align: center;
+        margin-bottom: 56px;
+      }
+      .page-header h1 {
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+      .page-header p {
+        margin-top: 8px;
+        font-size: 15px;
+        color: rgb(var(--c-muted));
+      }
+
+      /* ─── Tabs ─── */
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+      }
+      .tab {
+        padding: 8px 18px;
+        border-radius: 40px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1.5px solid rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+        color: rgb(var(--c-muted));
+        transition: all 0.15s;
+      }
+      .tab.active {
+        background: rgb(var(--c-text));
+        color: rgb(var(--c-bg));
+        border-color: rgb(var(--c-text));
+      }
+
+      /* ─── Section ─── */
+      .section {
+        margin-bottom: 64px;
+      }
+      .section[data-cat] {
+        display: none;
+      }
+      .section[data-cat].visible {
+        display: block;
+      }
+
+      .section-header {
+        margin-bottom: 24px;
+      }
+      .section-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .section-header p {
+        margin-top: 4px;
+        font-size: 14px;
+        color: rgb(var(--c-muted));
+        line-height: 1.5;
+      }
+
+      .compare-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 640px) {
+        .compare-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: rgb(var(--c-panel));
+        border: 1.5px solid rgb(var(--c-line));
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .card-label {
+        padding: 10px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        border-bottom: 1px solid rgb(var(--c-line));
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card-label .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .dot-before {
+        background: #f87171;
+      }
+      .dot-after {
+        background: #34d399;
+      }
+      .card-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      /* ─── Phone frame ─── */
+      .phone {
+        width: 220px;
+        height: 380px;
+        background: rgb(var(--c-panel-hi));
+        border-radius: 32px;
+        border: 2px solid rgb(var(--c-line));
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .phone-bar {
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+      }
+      .phone-bar-title {
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .phone-content {
+        flex: 1;
+        padding: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* ─── FAB ─── */
+      .fab {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+      }
+      .fab-before {
+        background: rgb(var(--c-primary));
+      }
+      .fab-after {
+        background: rgb(var(--c-after));
+      }
+
+      .pulse-ring {
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 2px solid rgba(16, 185, 129, 0.5);
+        animation: pulse-loop 2s ease-in-out infinite;
+      }
+      @keyframes pulse-loop {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        50% {
+          transform: scale(1.3);
+          opacity: 0;
+        }
+      }
+      .entrance-ring {
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 2px solid rgba(20, 83, 45, 0.5);
+        animation: entrance-once 0.6s ease-out 1 forwards;
+      }
+      @keyframes entrance-once {
+        0% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
+
+      /* ─── Sparkles vs MessageCircle ─── */
+      .icon-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: rgb(var(--c-muted));
+        text-align: center;
+        line-height: 1.3;
+      }
+
+      /* ─── Empty state ─── */
+      .empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px;
+      }
+      .empty-icon-wrap {
+        position: relative;
+      }
+      .empty-pulse {
+        position: absolute;
+        inset: -8px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.15);
+        animation: pulse-loop 2s ease-in-out infinite;
+      }
+      .empty-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgb(var(--c-panel-hi));
+        border: 1.5px solid rgb(var(--c-line));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .empty-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .empty-desc {
+        font-size: 10px;
+        color: rgb(var(--c-muted));
+        text-align: center;
+        line-height: 1.4;
+      }
+      .empty-btn {
+        margin-top: 4px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+      }
+      .empty-btn-before {
+        background: rgb(var(--c-primary));
+        color: #fff;
+      }
+      .empty-btn-after {
+        background: rgb(var(--c-after));
+        color: #fff;
+      }
+
+      /* ─── Streak ─── */
+      .streak-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1.5px solid rgb(var(--c-line));
+        background: rgb(var(--c-panel));
+        width: 100%;
+      }
+      .flame-icon {
+        font-size: 22px;
+      }
+      .flame-icon.animated {
+        animation: wobble-loop 1.5s ease-in-out infinite;
+      }
+      @keyframes wobble-loop {
+        0%,
+        100% {
+          transform: rotate(0deg) scale(1);
+        }
+        25% {
+          transform: rotate(-8deg) scale(1.05);
+        }
+        75% {
+          transform: rotate(8deg) scale(1.05);
+        }
+      }
+      .streak-label {
+        flex: 1;
+      }
+      .streak-label-title {
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .streak-label-sub {
+        font-size: 9px;
+        color: rgb(var(--c-muted));
+      }
+      .streak-count {
+        font-size: 18px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .streak-glow-before {
+        color: rgb(var(--c-orange));
+      }
+      .streak-glow-after {
+        color: rgb(var(--c-after));
+      }
+
+      .particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        animation: particle-loop 1.2s ease-in-out infinite;
+      }
+      @keyframes particle-loop {
+        0% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-20px) scale(0);
+          opacity: 0;
+        }
+      }
+
+      /* ─── Colour swatches ─── */
+      .swatch-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .swatch {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+      }
+      .swatch-block {
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        border: 1.5px solid rgb(var(--c-line));
+      }
+      .swatch-name {
+        font-size: 10px;
+        font-weight: 600;
+        text-align: center;
+      }
+      .swatch-hex {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 9px;
+        color: rgb(var(--c-muted));
+      }
+
+      /* ─── Annotation ─── */
+      .annotation {
+        font-size: 11px;
+        line-height: 1.5;
+        color: rgb(var(--c-muted));
+        padding: 10px 14px;
+        border-left: 2px solid rgb(var(--c-line));
+        width: 100%;
+      }
+      .annotation strong {
+        color: rgb(var(--c-text));
+      }
+
+      /* ─── Code diff ─── */
+      .diff {
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        line-height: 1.7;
+      }
+      .diff-line {
+        padding: 2px 12px;
+        white-space: pre;
+      }
+      .diff-rem {
+        background: #fef2f2;
+        color: #b91c1c;
+      }
+      .diff-add {
+        background: #f0fdf4;
+        color: #15803d;
+      }
+      .diff-ctx {
+        background: rgb(var(--c-panel-hi));
+        color: rgb(var(--c-muted));
+      }
+
+      /* ─── Hardcoded table ─── */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      th,
+      td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid rgb(var(--c-line));
+      }
+      th {
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: rgb(var(--c-muted));
+        background: rgb(var(--c-panel-hi));
+      }
+      td code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgb(var(--c-panel-hi));
+      }
+      .color-chip {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        vertical-align: middle;
+        margin-right: 4px;
+      }
+
+      /* ─── XP badge ─── */
+      .xp-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .xp-before {
+        background: #ede9fe;
+        color: #7c3aed;
+      }
+      .xp-after {
+        background: #d1fae5;
+        color: rgb(var(--c-after));
+      }
+
+      .verdict-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .verdict-slop {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .verdict-ok {
+        background: #d1fae5;
+        color: #15803d;
+      }
+
+      /* ─── Keep section ─── */
+      .keep-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        border-radius: var(--radius);
+        overflow: hidden;
+        border: 1.5px solid rgb(var(--c-line));
+      }
+      .keep-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgb(var(--c-panel));
+      }
+      .keep-row:nth-child(odd) {
+        background: rgb(var(--c-panel-hi));
+      }
+      .keep-check {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgb(var(--c-text));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        shrink: 0;
+        margin-top: 1px;
+      }
+
+      /* ─── Divider ─── */
+      .divider {
+        height: 1px;
+        background: rgb(var(--c-line));
+        margin: 48px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="page-header">
+        <h1>UI Audit — До / Після</h1>
+        <p>
+          Конкретні патерни «AI-slop», що читаються у поточному UI, та
+          запропоновані виправлення
+        </p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="filter('all')">Всі</button>
+        <button class="tab" onclick="filter('motion')">Motion</button>
+        <button class="tab" onclick="filter('icon')">Іконки</button>
+        <button class="tab" onclick="filter('color')">Колір</button>
+        <button class="tab" onclick="filter('keep')">Залишити</button>
+      </div>
+
+      <!-- ════════════════════════════════════════
+         1. AssistantFAB — нескінченний pulse
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="motion">
+        <div class="section-header">
+          <h2>1. AssistantFAB — нескінченний pulse-ring</h2>
+          <p>
+            Кільце, що постійно пульсує навколо кнопки асистента, —
+            найвиразніший «AI-tell» у застосунку. Реальні продукти анімують на
+            переході (mount / press), а не вічно. Нескінченний motion розряджає
+            батарею і дешевить інтерфейс.
+          </p>
+        </div>
+        <div class="compare-grid">
+          <!-- Before -->
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-before"></span>
+              ДО — нескінченний loop
+              <span class="verdict-chip verdict-slop" style="margin-left: auto"
+                >AI-slop</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Sergeant</span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                </div>
+                <div class="phone-content">
+                  <!-- mini cards -->
+                  <div
+                    style="
+                      height: 60px;
+                      border-radius: 10px;
+                      background: rgb(var(--c-panel));
+                      border: 1.5px solid rgb(var(--c-line));
+                      padding: 10px 12px;
+                    "
+                  >
+                    <div style="font-size: 10px; color: rgb(var(--c-muted))">
+                      Баланс
+                    </div>
+                    <div
+                      style="font-size: 16px; font-weight: 800; margin-top: 2px"
+                    >
+                      ₴ 42 150
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 44px;
+                        border-radius: 8px;
+                        background: rgb(var(--c-panel));
+                        border: 1.5px solid rgb(var(--c-line));
+                        padding: 8px 10px;
+                      "
+                    >
+                      <div style="font-size: 9px; color: rgb(var(--c-muted))">
+                        Фізрук
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          font-weight: 700;
+                          margin-top: 1px;
+                        "
+                      >
+                        5 тренувань
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        height: 44px;
+                        border-radius: 8px;
+                        background: rgb(var(--c-panel));
+                        border: 1.5px solid rgb(var(--c-line));
+                        padding: 8px 10px;
+                      "
+                    >
+                      <div style="font-size: 9px; color: rgb(var(--c-muted))">
+                        Нутрі
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          font-weight: 700;
+                          margin-top: 1px;
+                        "
+                      >
+                        1 840 ккал
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- FAB before -->
+                <div class="fab fab-before">
+                  <div class="pulse-ring"></div>
+                  <div class="pulse-ring" style="animation-delay: 0.7s"></div>
+                  <!-- Sparkles icon -->
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                    <path
+                      d="M12 2l1.4 4.2L18 7.6l-4.2 1.4L12 14l-1.4-4.2L6 8.4l4.2-1.4L12 2z"
+                    />
+                    <path
+                      d="M19 14l.7 2.1 2.3.7-2.3.7L19 20l-.7-2.5-2.3-.7 2.3-.7L19 14z"
+                      opacity=".6"
+                    />
+                    <path
+                      d="M5 14l.5 1.5 1.5.5-1.5.5L5 18l-.5-1.5-1.5-.5 1.5-.5L5 14z"
+                      opacity=".4"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div class="annotation">
+                <strong>Проблема:</strong> два pulse-ring у нескінченному циклі
+                + Sparkles-іконка (кліше AI-UI 2023–25). Вічний рух = «дивись на
+                мене» без причини.
+              </div>
+              <div class="diff">
+                <div class="diff-ctx">// AssistantFAB.tsx (фрагмент)</div>
+                <div class="diff-rem">
+                  - &lt;Animated.View style={[styles.ring, pulseStyle1]} /&gt;
+                </div>
+                <div class="diff-rem">
+                  - &lt;Animated.View style={[styles.ring, pulseStyle2]} /&gt;
+                </div>
+                <div class="diff-rem">
+                  - // animation: loop(sequence([timing(1), timing(0)]), -1)
+                </div>
+                <div class="diff-rem">
+                  - &lt;Sparkles size={20} color="#fff" /&gt;
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- After -->
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-after"></span>
+              ПІСЛЯ — entrance-only + нейтральна іконка
+              <span class="verdict-chip verdict-ok" style="margin-left: auto"
+                >Виправлено</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Sergeant</span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                </div>
+                <div class="phone-content">
+                  <div
+                    style="
+                      height: 60px;
+                      border-radius: 10px;
+                      background: rgb(var(--c-panel));
+                      border: 1.5px solid rgb(var(--c-line));
+                      padding: 10px 12px;
+                    "
+                  >
+                    <div style="font-size: 10px; color: rgb(var(--c-muted))">
+                      Баланс
+                    </div>
+                    <div
+                      style="font-size: 16px; font-weight: 800; margin-top: 2px"
+                    >
+                      ₴ 42 150
+                    </div>
+                  </div>
+                  <div
+                    style="
+                      display: grid;
+                      grid-template-columns: 1fr 1fr;
+                      gap: 6px;
+                    "
+                  >
+                    <div
+                      style="
+                        height: 44px;
+                        border-radius: 8px;
+                        background: rgb(var(--c-panel));
+                        border: 1.5px solid rgb(var(--c-line));
+                        padding: 8px 10px;
+                      "
+                    >
+                      <div style="font-size: 9px; color: rgb(var(--c-muted))">
+                        Фізрук
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          font-weight: 700;
+                          margin-top: 1px;
+                        "
+                      >
+                        5 тренувань
+                      </div>
+                    </div>
+                    <div
+                      style="
+                        height: 44px;
+                        border-radius: 8px;
+                        background: rgb(var(--c-panel));
+                        border: 1.5px solid rgb(var(--c-line));
+                        padding: 8px 10px;
+                      "
+                    >
+                      <div style="font-size: 9px; color: rgb(var(--c-muted))">
+                        Нутрі
+                      </div>
+                      <div
+                        style="
+                          font-size: 12px;
+                          font-weight: 700;
+                          margin-top: 1px;
+                        "
+                      >
+                        1 840 ккал
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- FAB after — entrance only, resets on hover for demo -->
+                <div
+                  class="fab fab-after"
+                  id="fab-after"
+                  onmouseenter="resetEntrance()"
+                >
+                  <div class="entrance-ring" id="entrance-ring"></div>
+                  <!-- MessageCircle icon -->
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div class="annotation">
+                <strong>Виправлення:</strong> кільце спрацьовує лише один раз
+                при mount. Наведіть на FAB — побачите entrance-анімацію знову.
+                MessageCircle замість Sparkles — нейтральний, не «AI-branded».
+              </div>
+              <div class="diff">
+                <div class="diff-ctx">// AssistantFAB.tsx (фрагмент)</div>
+                <div class="diff-add">
+                  + // ring fires ONCE on mount via withTiming + runOnJS
+                  callback
+                </div>
+                <div class="diff-add">+ const ring = useSharedValue(0);</div>
+                <div class="diff-add">
+                  + useEffect(() => { ring.value = withTiming(1, { duration: 600
+                  }); }, []);
+                </div>
+                <div class="diff-add">
+                  + &lt;MessageCircle size={20} color="#fff" /&gt;
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ════════════════════════════════════════
+         2. EmptyState — пульсуюче кільце на статиці
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="motion">
+        <div class="section-header">
+          <h2>2. EmptyState — нескінченний pulse за іконкою</h2>
+          <p>
+            Порожній стан не є «живою» подією — він статичний за природою.
+            Пульсуюче кільце каже «відбувається щось динамічне», коли нічого не
+            відбувається. Статична іконка з чіткою CTA виглядає дорожче.
+          </p>
+        </div>
+        <div class="compare-grid">
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-before"></span>ДО — pulse на статичному стані
+              <span class="verdict-chip verdict-slop" style="margin-left: auto"
+                >AI-slop</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Транзакції</span>
+                </div>
+                <div class="phone-content">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap">
+                      <div class="empty-pulse"></div>
+                      <div class="empty-icon">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgb(var(--c-primary))"
+                          stroke-width="2"
+                        >
+                          <rect x="2" y="5" width="20" height="14" rx="2" />
+                          <line x1="2" y1="10" x2="22" y2="10" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="empty-title">Транзакцій ще немає</div>
+                    <div class="empty-desc">
+                      Додай першу — вона одразу з'явиться тут
+                    </div>
+                    <button class="empty-btn empty-btn-before">+ Додати</button>
+                  </div>
+                </div>
+              </div>
+              <div class="annotation">
+                <strong>Проблема:</strong>
+                <code>animation: pulse-loop 2s infinite</code> за іконкою
+                порожнього стану. Рух без причини — статична сторінка «дихає» як
+                живий організм.
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-after"></span>ПІСЛЯ — статика + чіткий CTA
+              <span class="verdict-chip verdict-ok" style="margin-left: auto"
+                >Виправлено</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Транзакції</span>
+                </div>
+                <div class="phone-content">
+                  <div class="empty-state">
+                    <div class="empty-icon-wrap">
+                      <!-- no pulse ring -->
+                      <div
+                        class="empty-icon"
+                        style="
+                          width: 48px;
+                          height: 48px;
+                          background: rgb(var(--c-panel));
+                          border: 1.5px solid rgb(var(--c-line));
+                        "
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="rgb(var(--c-after))"
+                          stroke-width="2"
+                        >
+                          <rect x="2" y="5" width="20" height="14" rx="2" />
+                          <line x1="2" y1="10" x2="22" y2="10" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="empty-title">Транзакцій ще немає</div>
+                    <div class="empty-desc">
+                      Додай першу — вона одразу з'явиться тут
+                    </div>
+                    <button class="empty-btn empty-btn-after">+ Додати</button>
+                  </div>
+                </div>
+              </div>
+              <div class="annotation">
+                <strong>Виправлення:</strong> прибрати pulse, збільшити іконку
+                до 48px, зробити CTA-кнопку у brand-after hue. Спокій = довіра.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ════════════════════════════════════════
+         3. StreakFlame — вічний wobble + частинки
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="motion">
+        <div class="section-header">
+          <h2>3. StreakFlame — wobble + частинки у нескінченному циклі</h2>
+          <p>
+            Флейм-компонент запускає wobble-анімацію, glow і три
+            floating-частинки постійно — незалежно від того, чи зростає стрік
+            прямо зараз. Анімація повинна святкувати подію, а не бути фоновим
+            шумом.
+          </p>
+        </div>
+        <div class="compare-grid">
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-before"></span>ДО — вічний wobble + частинки
+              <span class="verdict-chip verdict-slop" style="margin-left: auto"
+                >AI-slop</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Фізрук</span>
+                </div>
+                <div
+                  class="phone-content"
+                  style="justify-content: center; gap: 10px"
+                >
+                  <div class="streak-row" style="position: relative">
+                    <div class="flame-icon animated" style="position: relative">
+                      🔥
+                      <div
+                        class="particle"
+                        style="
+                          background: #f97316;
+                          top: -4px;
+                          left: 2px;
+                          animation-delay: 0s;
+                        "
+                      ></div>
+                      <div
+                        class="particle"
+                        style="
+                          background: #ef4444;
+                          top: -2px;
+                          left: 14px;
+                          animation-delay: 0.4s;
+                        "
+                      ></div>
+                      <div
+                        class="particle"
+                        style="
+                          background: #fb923c;
+                          top: -6px;
+                          left: 8px;
+                          animation-delay: 0.8s;
+                        "
+                      ></div>
+                    </div>
+                    <div class="streak-label">
+                      <div class="streak-label-title">Стрік</div>
+                      <div class="streak-label-sub">7 днів поспіль</div>
+                    </div>
+                    <div class="streak-count streak-glow-before">7</div>
+                  </div>
+                  <div class="annotation" style="font-size: 10px">
+                    Wobble + glow + 3 частинки завжди. Навіть у неділю вранці
+                    без тренування.
+                  </div>
+                </div>
+              </div>
+              <div class="diff">
+                <div class="diff-rem">
+                  - animation: wobble-loop 1.5s infinite
+                </div>
+                <div class="diff-rem">
+                  - {[0,1,2].map(i =&gt; &lt;Particle key={i} delay={i * 0.4}
+                  /&gt;)}
+                </div>
+                <div class="diff-rem">
+                  - // hardcoded: #dc2626, #ea580c, #f97316
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-after"></span>ПІСЛЯ — статика, анімація лише
+              при зростанні
+              <span class="verdict-chip verdict-ok" style="margin-left: auto"
+                >Виправлено</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="phone">
+                <div class="phone-bar">
+                  <span class="phone-bar-title">Фізрук</span>
+                </div>
+                <div
+                  class="phone-content"
+                  style="justify-content: center; gap: 10px"
+                >
+                  <div class="streak-row">
+                    <div class="flame-icon">🔥</div>
+                    <div class="streak-label">
+                      <div class="streak-label-title">Стрік</div>
+                      <div class="streak-label-sub">7 днів поспіль</div>
+                    </div>
+                    <div class="streak-count streak-glow-after">7</div>
+                  </div>
+                  <div class="annotation" style="font-size: 10px">
+                    Статична іконка. Wobble + частинки — тільки коли
+                    <code>prevCount !== count</code> (тобто саме зараз стрік
+                    виріс).
+                  </div>
+                </div>
+              </div>
+              <div class="diff">
+                <div class="diff-add">
+                  + // trigger only when streak actually increments
+                </div>
+                <div class="diff-add">
+                  + const didGrow = usePrevious(count) !== count;
+                </div>
+                <div class="diff-add">
+                  + {didGrow &amp;&amp; &lt;ParticleBurst /&gt;}
+                </div>
+                <div class="diff-add">
+                  + // color via token: --c-streak → brand hue
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ════════════════════════════════════════
+         4. Колір — XP-фіолет і хардкоди
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="color">
+        <div class="section-header">
+          <h2>4. XP-фіолет та хардкод-кольори поза системою</h2>
+          <p>
+            Токен <code>--c-xp</code> використовує violet (#7c3aed), що порушує
+            задокументований принцип «уникати фіолетового» і випадає з
+            4-модульної палітри. Флейм-кольори (#dc2626, #ea580c, #f97316)
+            хардкодовані в компоненті замість токенів.
+          </p>
+        </div>
+        <div class="compare-grid">
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-before"></span>ДО — XP violet + hardcodes
+              <span class="verdict-chip verdict-slop" style="margin-left: auto"
+                >AI-slop</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="swatch-row">
+                <div class="swatch">
+                  <div class="swatch-block" style="background: #7c3aed"></div>
+                  <div class="swatch-name">--c-xp</div>
+                  <div class="swatch-hex">#7c3aed</div>
+                </div>
+                <div class="swatch">
+                  <div class="swatch-block" style="background: #dc2626"></div>
+                  <div class="swatch-name">hardcode</div>
+                  <div class="swatch-hex">#dc2626</div>
+                </div>
+                <div class="swatch">
+                  <div class="swatch-block" style="background: #ea580c"></div>
+                  <div class="swatch-name">hardcode</div>
+                  <div class="swatch-hex">#ea580c</div>
+                </div>
+                <div class="swatch">
+                  <div class="swatch-block" style="background: #f97316"></div>
+                  <div class="swatch-name">hardcode</div>
+                  <div class="swatch-hex">#f97316</div>
+                </div>
+              </div>
+              <div class="xp-badge xp-before" style="margin-top: 4px">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                  />
+                </svg>
+                +250 XP
+              </div>
+              <div class="annotation">
+                <strong>Порушення:</strong> violet (#7c3aed) відсутній у
+                cream/emerald/amber/ink палітрі, порушує документований принцип
+                «no violet». Флейм-кольори — 3 різних hue поза системою.
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-after"></span>ПІСЛЯ — XP у brand hue + токени
+              <span class="verdict-chip verdict-ok" style="margin-left: auto"
+                >Виправлено</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="swatch-row">
+                <div class="swatch">
+                  <div
+                    class="swatch-block"
+                    style="background: rgb(var(--c-after))"
+                  ></div>
+                  <div class="swatch-name">--c-xp</div>
+                  <div class="swatch-hex">#14532d</div>
+                </div>
+                <div class="swatch">
+                  <div
+                    class="swatch-block"
+                    style="background: rgb(var(--c-orange))"
+                  ></div>
+                  <div class="swatch-name">--c-flame</div>
+                  <div class="swatch-hex">token</div>
+                </div>
+                <div class="swatch">
+                  <div
+                    class="swatch-block"
+                    style="background: rgb(var(--c-primary))"
+                  ></div>
+                  <div class="swatch-name">--c-primary</div>
+                  <div class="swatch-hex">#10b981</div>
+                </div>
+              </div>
+              <div class="xp-badge xp-after" style="margin-top: 4px">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                  />
+                </svg>
+                +250 XP
+              </div>
+              <div class="annotation">
+                <strong>Виправлення:</strong>
+                <code>--c-xp: var(--c-primary-strong)</code> залишається в
+                бренд-палітрі. Флейм-кольори → єдиний токен
+                <code>--c-flame: rgb(234 88 12)</code>, прибрати два дублі.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardcoded colors table -->
+      <div class="section visible" data-cat="color" style="margin-top: 32px">
+        <div class="section-header">
+          <h2>Таблиця хардкодів для токенізації</h2>
+          <p>
+            Кольори, що зустрічаються у компонентах напряму (не через токен) і
+            потребують переведення у <code>tokens.js</code>.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding: 0; align-items: stretch">
+            <table>
+              <thead>
+                <tr>
+                  <th>Колір</th>
+                  <th>Hex</th>
+                  <th>Де зустрічається</th>
+                  <th>Новий токен</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <span class="color-chip" style="background: #7c3aed"></span
+                    >XP violet
+                  </td>
+                  <td><code>#7c3aed</code></td>
+                  <td>StreakFlame, XPBadge, gamification tokens</td>
+                  <td><code>--c-xp: var(--c-primary-strong)</code></td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="color-chip" style="background: #dc2626"></span
+                    >Flame red
+                  </td>
+                  <td><code>#dc2626</code></td>
+                  <td>StreakFlame.tsx particles</td>
+                  <td><code>--c-flame: rgb(234 88 12)</code></td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="color-chip" style="background: #ea580c"></span
+                    >Flame orange
+                  </td>
+                  <td><code>#ea580c</code></td>
+                  <td>StreakFlame.tsx particles</td>
+                  <td>→ <code>var(--c-flame)</code></td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="color-chip" style="background: #f97316"></span
+                    >Flame light
+                  </td>
+                  <td><code>#f97316</code></td>
+                  <td>StreakFlame.tsx particles</td>
+                  <td>→ <code>var(--c-flame)</code></td>
+                </tr>
+                <tr>
+                  <td>
+                    <span class="color-chip" style="background: #fbbf24"></span
+                    >Celebration amber
+                  </td>
+                  <td><code>#fbbf24</code></td>
+                  <td>CelebrationOverlay, confetti</td>
+                  <td><code>--c-celebration: rgb(251 191 36)</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ════════════════════════════════════════
+         5. Primary color option
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="color">
+        <div class="section-header">
+          <h2>5. (Опційно) Бренд-колір — emerald vs глибокий teal</h2>
+          <p>
+            Primary emerald-500 (#10b981) — дефолтний колір Tailwind-демок і
+            більшості AI-згенерованих застосунків. Це не баг, але це
+            найсильніший «сигнал штампа». Тепла cream-основа у вас унікальна —
+            акцент її не підсилює. Ось порівняння варіантів.
+          </p>
+        </div>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+          "
+        >
+          <!-- Option A current -->
+          <div class="card">
+            <div class="card-label">
+              <span class="dot dot-before"></span>Поточний — Emerald 500
+            </div>
+            <div class="card-body">
+              <div class="swatch">
+                <div
+                  class="swatch-block"
+                  style="
+                    background: #10b981;
+                    width: 80px;
+                    height: 80px;
+                    border-radius: var(--radius);
+                  "
+                ></div>
+                <div class="swatch-name" style="font-size: 13px">#10b981</div>
+                <div class="swatch-hex" style="font-size: 11px">
+                  tailwind emerald-500
+                </div>
+              </div>
+              <div class="annotation">
+                <strong>Ризик:</strong> upside-down — cream + emerald виглядає
+                як «Duolingo-клон» або «AI fintech demo». Заїжджений.
+              </div>
+            </div>
+          </div>
+          <!-- Option B -->
+          <div class="card" style="border-color: #0d9488">
+            <div class="card-label">
+              <span class="dot dot-after"></span>Варіант B — Teal 600
+            </div>
+            <div class="card-body">
+              <div class="swatch">
+                <div
+                  class="swatch-block"
+                  style="
+                    background: #0d9488;
+                    width: 80px;
+                    height: 80px;
+                    border-radius: var(--radius);
+                  "
+                ></div>
+                <div class="swatch-name" style="font-size: 13px">#0d9488</div>
+                <div class="swatch-hex" style="font-size: 11px">
+                  tailwind teal-600
+                </div>
+              </div>
+              <div class="annotation">
+                На крок в сторону від emerald. Темніший, серйозніший, добре з
+                cream. Мінімальна зміна — максимальний ефект.
+              </div>
+            </div>
+          </div>
+          <!-- Option C -->
+          <div class="card" style="border-color: #0f766e">
+            <div class="card-label">
+              <span class="dot dot-after"></span>Варіант C — Teal 700
+            </div>
+            <div class="card-body">
+              <div class="swatch">
+                <div
+                  class="swatch-block"
+                  style="
+                    background: #0f766e;
+                    width: 80px;
+                    height: 80px;
+                    border-radius: var(--radius);
+                  "
+                ></div>
+                <div class="swatch-name" style="font-size: 13px">#0f766e</div>
+                <div class="swatch-hex" style="font-size: 11px">
+                  tailwind teal-700
+                </div>
+              </div>
+              <div class="annotation">
+                Найбільший контраст з cream. Виглядає як власний бренд, а не
+                Tailwind demo. Рекомендований якщо міняти.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ════════════════════════════════════════
+         6. Що не чіпати
+    ════════════════════════════════════════ -->
+      <div class="section visible" data-cat="keep">
+        <div class="section-header">
+          <h2>6. Що не чіпати — сильні сторони</h2>
+          <p>Ці рішення — рівень зрілого продукту. Жодних змін не потрібно.</p>
+        </div>
+        <div class="keep-list">
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                Тепла cream-палітра (#fcf8f2)
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Унікальна, тепла, не схожа на жоден AI-шаблон. Це ваш
+                найсильніший бренд-сигнал.
+              </div>
+            </div>
+          </div>
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                Elevation-шкала e0–e5 + z-tier
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Семантична, задокументована, узгоджена між dark/light. Рідко
+                зустрічається навіть у продуктах senior-команд.
+              </div>
+            </div>
+          </div>
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                WCAG-AA контраст-пари
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Задокументовані companion-кольори для всіх фонів. Не знайшов
+                жодного реального порушення контрасту.
+              </div>
+            </div>
+          </div>
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                44px тач-таргети + ARIA-ролі
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Доступність на рівні продакшн-застосунку. reduceMotion, screen
+                reader labels — все на місці.
+              </div>
+            </div>
+          </div>
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                Dark «Ink» тема
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Симетрична до light, не проста інверсія. Semantic-токени
+                правильно інвертуються по смислу.
+              </div>
+            </div>
+          </div>
+          <div class="keep-row">
+            <div class="keep-check">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M2 5l2 2 4-4"
+                  stroke="rgb(var(--c-bg))"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style="font-size: 13px; font-weight: 700">
+                Українська локалізація з плюралізацією
+              </div>
+              <div
+                style="
+                  font-size: 12px;
+                  margin-top: 2px;
+                  color: rgb(var(--c-muted));
+                "
+              >
+                Живий копірайтинг, правильні відмінки, нуль емодзі-сміття.
+                Звучить як людина, а не як перекладач.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 24px"></div>
+      <div
+        style="
+          text-align: center;
+          font-size: 12px;
+          color: rgb(var(--c-muted));
+          padding-top: 24px;
+          border-top: 1px solid rgb(var(--c-line));
+        "
+      >
+        UI Audit · Sergeant · Липень 2025
+      </div>
+    </div>
+
+    <script>
+      function filter(cat) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        event.target.classList.add("active");
+        document.querySelectorAll(".section[data-cat]").forEach((s) => {
+          s.classList.toggle("visible", cat === "all" || s.dataset.cat === cat);
+        });
+      }
+
+      function resetEntrance() {
+        const ring = document.getElementById("entrance-ring");
+        ring.style.animation = "none";
+        ring.offsetHeight; // reflow
+        ring.style.animation = "entrance-once .6s ease-out 1 forwards";
+      }
+    </script>
+  </body>
+</html>

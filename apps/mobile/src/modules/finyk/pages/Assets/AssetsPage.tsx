@@ -225,10 +225,10 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
       >
         {/* Networth hero */}
         <View
-          className="rounded-2xl bg-emerald-700 p-4"
+          className="rounded-2xl bg-teal-700 p-4"
           testID={testID ? `${testID}-networth` : undefined}
         >
-          <Text className="text-xs font-medium uppercase text-emerald-100/80">
+          <Text className="text-xs font-medium uppercase text-teal-100/80">
             Чисті активи
           </Text>
           <Text
@@ -237,7 +237,7 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
           >
             {fmt(summary.networth)} ₴
           </Text>
-          <Text className="text-xs text-emerald-100/85 mt-1">
+          <Text className="text-xs text-teal-100/85 mt-1">
             Активи: {fmt(summary.totalAssets)} ₴ · Пасиви: −
             {fmt(summary.totalLiabilities)} ₴
           </Text>

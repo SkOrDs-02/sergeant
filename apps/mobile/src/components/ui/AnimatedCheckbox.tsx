@@ -49,8 +49,8 @@ const variantColors: Record<
   CheckboxVariant,
   { bg: string; border: string; check: string }
 > = {
-  default: { bg: "#10b981", border: "#10b981", check: "#ffffff" },
-  finyk: { bg: "#10b981", border: "#10b981", check: "#ffffff" },
+  default: { bg: "#0f766e", border: "#0f766e", check: "#ffffff" }, // teal-700
+  finyk: { bg: "#0f766e", border: "#0f766e", check: "#ffffff" }, // teal-700
   fizruk: { bg: "#14b8a6", border: "#14b8a6", check: "#ffffff" },
   routine: { bg: "#f97066", border: "#f97066", check: "#ffffff" },
   nutrition: { bg: "#84cc16", border: "#84cc16", check: "#ffffff" },

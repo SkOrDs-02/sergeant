@@ -171,14 +171,14 @@
     );
 
     /* Brand accent for focus states */
-    --c-accent: 16 185 129; /* emerald-500 */
+    --c-accent: 15 118 110; /* teal-700 (2026-07: was emerald-500 #10b981) */
 
     /* «Чорнило» theme-aware module accents (spec § 5). Light = the strong
        AA tier (the bare `text-finyk` etc. now clears AA as accent text on
        the light surface); dark counterparts (luminescent tier-400) live in
        `.dark`. Consumed by the web-only `{module}` DEFAULT override in
        apps/web/tailwind.config.js. */
-    --c-finyk-accent: 4 120 87; /* #047857 — emerald-700 */
+    --c-finyk-accent: 17 94 89; /* teal-800 (2026-07: was emerald-700 #047857) */
     --c-fizruk-accent: 14 116 144; /* #0e7490 — cyan-700 */
     --c-routine-accent: 194 58 58; /* #c23a3a — coral-700 */
     --c-nutrition-accent: 86 124 15; /* #567c0f — lime-ink */
@@ -211,23 +211,22 @@
        and ring tokens are tuned to ≥3:1 against neighbour surfaces in
        both themes.
        ─────────────────────────────────────────────────────────────────── */
-    /* Focus ring — brand emerald is the canonical accent. Use
+    /* Focus ring — brand teal is the canonical accent. Use
        `focus-visible:ring-2 ring-focus/45 ring-offset-2 ring-offset-bg`
        for the standard subtle ring; `ring-focus-strong` (no alpha) for
        extra-punch focus on busy surfaces. */
-    --c-ring: 16 185 129; /* emerald-500 — primary keyboard-focus ring */
-    --c-ring-strong: 4 120 87; /* emerald-700 — WCAG-AA companion, solid */
+    --c-ring: 15 118 110; /* teal-700 — primary keyboard-focus ring */
+    --c-ring-strong: 17 94 89; /* teal-800 — WCAG-AA companion, solid */
     --c-ring-offset: 255 255 255; /* white — matches panel; pair with `ring-offset-panel`/`ring-offset-bg` */
 
-    /* Selection — global `::selection` wash. Soft emerald tint with a
-       darker emerald foreground so links/code stay readable when
-       selected. */
-    --c-selection-bg: 167 243 208; /* emerald-200 */
-    --c-selection-fg: 6 78 59; /* emerald-900 */
+    /* Selection — global `::selection` wash. Soft teal tint with a
+       deeper teal foreground so links/code stay readable when selected. */
+    --c-selection-bg: 153 246 228; /* teal-200 */
+    --c-selection-fg: 19 78 74; /* teal-900 */
 
-    /* Caret — text-input caret colour. Brand emerald reads as «active
+    /* Caret — text-input caret colour. Brand teal reads as «active
        composition» without competing with the placeholder text. */
-    --c-caret: 16 185 129; /* emerald-500 */
+    --c-caret: 15 118 110; /* teal-700 */
 
     /* Scrollbar — warm-neutral thumb on cream track. The hover step is
        one shade deeper so the affordance stays visible on every
@@ -264,13 +263,13 @@
        `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
        See docs/design/archive/dark-mode-audit.md for the migration targets.
        ─────────────────────────────────────────────────────────────────── */
-    --c-brand-soft: 236 253 245; /* emerald-50 — matches legacy `bg-brand-50` */
-    --c-brand-soft-border: 167 243 208; /* emerald-200 — matches legacy ring */
-    --c-brand-soft-hover: 209 250 229; /* emerald-100 — one step deeper for hover */
+    --c-brand-soft: 240 253 250; /* teal-50 (2026-07: was emerald-50) */
+    --c-brand-soft-border: 153 246 228; /* teal-200 */
+    --c-brand-soft-hover: 204 251 241; /* teal-100 */
 
-    --c-finyk-soft: 236 253 245; /* emerald-50 — parity with `brandColors.emerald[50]` */
-    --c-finyk-soft-border: 167 243 208; /* emerald-200 */
-    --c-finyk-soft-hover: 209 250 229; /* emerald-100 */
+    --c-finyk-soft: 240 253 250; /* teal-50 */
+    --c-finyk-soft-border: 153 246 228; /* teal-200 */
+    --c-finyk-soft-hover: 204 251 241; /* teal-100 */
 
     --c-fizruk-soft: 236 254 255; /* cyan-50 — parity with `brandColors.cyan[50]` */
     --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
@@ -300,8 +299,8 @@
        (see `.dark` / `html.hc*` below) so one `text-<m>-soft-fg` utility
        replaces the old `text-<m>-strong dark:text-<m>` pair — the saturated
        mid-accent in dark mode measured ~1.8:1 and was illegible. */
-    --c-brand-soft-fg: 4 120 87; /* emerald-700 — brand accent on brand-soft */
-    --c-finyk-soft-fg: 4 120 87; /* emerald-700 */
+    --c-brand-soft-fg: 17 94 89; /* teal-800 — brand accent on brand-soft (2026-07: was emerald-700) */
+    --c-finyk-soft-fg: 17 94 89; /* teal-800 */
     --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
     --c-routine-soft-fg: 194 58 58; /* coral-700 */
     --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
@@ -484,7 +483,7 @@
 
     /* «Чорнило» module accents — dark tier-400 (luminescent), the
        counterpart of the light strong tier in `:root` (spec § 5). */
-    --c-finyk-accent: 52 211 153; /* #34d399 — emerald-400 */
+    --c-finyk-accent: 45 212 191; /* #2dd4bf — teal-400 (2026-07: was emerald-400 #34d399) */
     --c-fizruk-accent: 34 211 238; /* #22d3ee — cyan-400 */
     --c-routine-accent: 255 140 120; /* #ff8c78 — coral-400 */
     --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
@@ -529,17 +528,15 @@
        low-vision users lives in `html.hc.dark`. */
     --c-border-strong: 74 84 78; /* #4a544e — prominent ink divider (≈ white/12%) */
 
-    /* Dark-theme A11y / states overrides. Focus ring shifts to
-       emerald-400 so it clears ≥3:1 against the warm-charcoal panel
-       (`--c-panel` = #201c19). Selection flips to a deep emerald wash
-       with a bright foreground. Scrollbar uses warm-neutral steps that
-       sit just above the panel/border floor. */
-    --c-ring: 52 211 153; /* emerald-400 — brighter for dark panels */
-    --c-ring-strong: 110 231 183; /* emerald-300 — solid, punchy */
+    /* Dark-theme A11y / states overrides. Focus ring shifts to teal-400
+       so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #201c19).
+       Selection flips to a deep teal wash with a bright foreground. */
+    --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
+    --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
     --c-ring-offset: 18 28 23; /* panel — matches `--c-panel` */
-    --c-selection-bg: 4 120 87; /* emerald-700 */
-    --c-selection-fg: 209 250 229; /* emerald-100 */
-    --c-caret: 52 211 153; /* emerald-400 — visible in dark inputs */
+    --c-selection-bg: 17 94 89; /* teal-800 */
+    --c-selection-fg: 204 251 241; /* teal-100 */
+    --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
     --c-scrollbar-track: 18 28 23; /* panel */
     --c-scrollbar-thumb: 31 42 37; /* matches --c-line */
     --c-scrollbar-thumb-hover: 95 107 100; /* matches --c-subtle */
@@ -557,13 +554,13 @@
        the dark panel background. `-soft-border` matches the
        corresponding `-800`; `-soft-hover` is one step brighter than
        `-soft` for a visible but subtle hover lift. */
-    --c-brand-soft: 6 78 59; /* emerald-900 */
-    --c-brand-soft-border: 6 95 70; /* emerald-800 */
-    --c-brand-soft-hover: 6 95 70; /* emerald-800 */
+    --c-brand-soft: 19 78 74; /* teal-900 (2026-07: was emerald-900) */
+    --c-brand-soft-border: 17 94 89; /* teal-800 */
+    --c-brand-soft-hover: 17 94 89; /* teal-800 */
 
-    --c-finyk-soft: 6 78 59; /* emerald-900 */
-    --c-finyk-soft-border: 6 95 70; /* emerald-800 */
-    --c-finyk-soft-hover: 6 95 70; /* emerald-800 */
+    --c-finyk-soft: 19 78 74; /* teal-900 */
+    --c-finyk-soft-border: 17 94 89; /* teal-800 */
+    --c-finyk-soft-hover: 17 94 89; /* teal-800 */
 
     --c-fizruk-soft: 22 78 99; /* cyan-900 */
     --c-fizruk-soft-border: 21 94 117; /* cyan-800 */
@@ -601,8 +598,8 @@
        — the fizruk soft button measured ~1.77:1 on prod (a11y fail). The
        `-300` tier clears WCAG AA with margin (≈7.9–10.3:1 on `bg-<m>/15`
        over `--c-panel`) while staying the module's own hue. */
-    --c-brand-soft-fg: 110 231 183; /* emerald-300 — brand accent on brand-soft */
-    --c-finyk-soft-fg: 110 231 183; /* emerald-300 */
+    --c-brand-soft-fg: 94 234 212; /* teal-300 — brand accent on brand-soft (2026-07: was emerald-300) */
+    --c-finyk-soft-fg: 94 234 212; /* teal-300 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
     --c-routine-soft-fg: 255 180 165; /* coral-300 */
     --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
@@ -776,8 +773,8 @@
        the bumped `-200` soft surface. Coral is hue-capped at ≈6.4:1 (still
        AA, and a lift over the base `-strong`): a warm coral ink can't reach
        AAA on a coral-200 surface within the registered palette. */
-    --c-brand-soft-fg: 6 78 59; /* emerald-900 — brand accent on brand-soft (AAA) */
-    --c-finyk-soft-fg: 6 78 59; /* emerald-900 */
+    --c-brand-soft-fg: 19 78 74; /* teal-900 — brand accent on brand-soft (AAA) */
+    --c-finyk-soft-fg: 19 78 74; /* teal-900 */
     --c-fizruk-soft-fg: 22 78 99; /* cyan-900 */
     --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
     --c-nutrition-soft-fg: 59 83 20; /* lime-900 */
@@ -793,7 +790,7 @@
 
     /* Chart series — HC light keeps the AA-strong tier from `:root`
        (already 5+ contrast on cream). 4 hues stay distinguishable. */
-    --c-chart-finyk: 4 120 87; /* emerald-700 */
+    --c-chart-finyk: 17 94 89; /* teal-800 (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 */
     --c-chart-routine: 194 58 58; /* coral-700 */
     --c-chart-nutrition: 70 98 18; /* lime-800 */
@@ -820,10 +817,10 @@
     --c-danger-soft: 185 28 28; /* red-700     */
     --c-info-soft: 3 105 161; /* sky-700     */
 
-    --c-brand-soft: 4 120 87;
-    --c-brand-soft-border: 16 185 129;
-    --c-finyk-soft: 4 120 87;
-    --c-finyk-soft-border: 16 185 129;
+    --c-brand-soft: 15 118 110; /* teal-700 (2026-07: was emerald-700) */
+    --c-brand-soft-border: 20 184 166; /* teal-500 */
+    --c-finyk-soft: 15 118 110; /* teal-700 */
+    --c-finyk-soft-border: 20 184 166; /* teal-500 */
     --c-fizruk-soft: 14 116 144; /* cyan-700 */
     --c-fizruk-soft-border: 6 182 212; /* cyan-500 */
     --c-routine-soft: 185 54 48; /* coral-800 */
@@ -833,8 +830,8 @@
 
     /* Soft-fill foreground (HC dark) — brightest `-200` accent for ≥7:1
        AAA on the `bg-<m>/15` fill over the dark panel (≈10–12:1). */
-    --c-brand-soft-fg: 167 243 208; /* emerald-200 — brand accent on brand-soft (AAA) */
-    --c-finyk-soft-fg: 167 243 208; /* emerald-200 */
+    --c-brand-soft-fg: 153 246 228; /* teal-200 — brand accent on brand-soft (AAA) */
+    --c-finyk-soft-fg: 153 246 228; /* teal-200 */
     --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
     --c-routine-soft-fg: 255 212 203; /* coral-200 */
     --c-nutrition-soft-fg: 223 249 157; /* lime-200 */
