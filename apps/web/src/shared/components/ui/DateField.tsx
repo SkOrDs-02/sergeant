@@ -79,7 +79,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
           {isEmpty && !focused ? (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-0 right-11 flex items-center rounded-l-2xl bg-panelHi px-4 text-base text-subtle"
+              className="pointer-events-none absolute inset-y-0 left-0 right-11 flex items-center rounded-l-2xl bg-panelHi px-4 text-style-body text-subtle"
             >
               {emptyLabel}
             </span>
@@ -90,7 +90,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             id={helperId}
             role={error ? "alert" : "status"}
             className={cn(
-              "text-xs leading-snug",
+              "text-style-caption leading-snug",
               error ? "text-danger-strong dark:text-danger" : "text-subtle",
             )}
           >

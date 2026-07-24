@@ -15,7 +15,9 @@ describe("SectionHeading", () => {
     const { container } = render(<SectionHeading>Розділ</SectionHeading>);
     const el = container.querySelector("h3")!;
     expect(el).not.toBeNull();
-    expect(el.className).toContain("text-xs");
+    // Цикл 6: eyebrow-розмір сидить на семантичній ролі `caption` (12px),
+    // а не на сирому `text-xs`. Casing / tracking / weight — шари поверх.
+    expect(el.className).toContain("text-style-caption");
     expect(el.className).toContain("uppercase");
     expect(el.className).toContain("tracking-wider");
     expect(el.className).toContain("font-bold");
@@ -29,7 +31,7 @@ describe("SectionHeading", () => {
       <SectionHeading size="md">Розділ</SectionHeading>,
     );
     const el = container.querySelector("h3")!;
-    expect(el.className).toContain("text-sm");
+    expect(el.className).toContain("text-style-label");
     expect(el.className).toContain("font-semibold");
     expect(el.className).not.toContain("uppercase");
   });

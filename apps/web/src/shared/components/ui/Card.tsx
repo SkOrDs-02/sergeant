@@ -375,7 +375,7 @@ export function CardTitle({
 }: CardTitleProps) {
   return (
     <Component
-      className={cn("text-lg font-semibold text-text", className)}
+      className={cn("text-style-title font-semibold text-text", className)}
       {...props}
     />
   );
@@ -388,7 +388,12 @@ export function CardDescription({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-muted mt-1", className)} {...props} />;
+  return (
+    <p
+      className={cn("text-style-body text-muted mt-1", className)}
+      {...props}
+    />
+  );
 }
 
 /**

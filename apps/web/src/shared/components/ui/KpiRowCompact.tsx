@@ -83,6 +83,7 @@ export function KpiRowCompact({
           className="flex min-w-0 items-center gap-2"
         >
           {idx > 0 && (
+            /* icon-size, not type */
             <span aria-hidden="true" className={cn("text-xs", sepClass)}>
               ·
             </span>

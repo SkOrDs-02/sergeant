@@ -123,8 +123,8 @@ const VARIANT_RING: Record<TabsVariant, string> = {
 };
 
 const SIZE: Record<TabsSize, string> = {
-  sm: "h-9 px-3 text-xs",
-  md: "h-11 px-4 text-sm",
+  sm: "h-9 px-3 text-style-label",
+  md: "h-11 px-4 text-style-label",
 };
 
 export function Tabs<V extends string = string>({

@@ -17,9 +17,9 @@ export type SelectSize = SmallMediumLarge;
 export type SelectVariant = FormVariant;
 
 const sizes: Record<SelectSize, string> = {
-  sm: "h-9 pl-3 pr-9 text-sm rounded-xl",
-  md: "h-11 pl-4 pr-10 text-base rounded-2xl",
-  lg: "h-12 pl-5 pr-10 text-base rounded-2xl",
+  sm: "h-9 pl-3 pr-9 text-style-body rounded-xl",
+  md: "h-11 pl-4 pr-10 text-style-body rounded-2xl",
+  lg: "h-12 pl-5 pr-10 text-style-body rounded-2xl",
 };
 
 /**

@@ -45,7 +45,7 @@ export function Label({
       className={cn(
         normalCase
           ? "text-style-label block text-text mb-1"
-          : "block text-xs text-muted uppercase tracking-wide font-semibold mb-1",
+          : "block text-style-caption text-muted uppercase tracking-wide font-semibold mb-1",
         className,
       )}
       {...props}
@@ -129,13 +129,16 @@ export function FormField({
       {hasError ? (
         <p
           id={`${controlId}-error`}
-          className="text-xs text-danger-strong mt-1"
+          className="text-style-caption text-danger-strong mt-1"
           role="alert"
         >
           {error}
         </p>
       ) : helperText ? (
-        <p id={`${controlId}-hint`} className="text-xs text-subtle mt-1">
+        <p
+          id={`${controlId}-hint`}
+          className="text-style-caption text-subtle mt-1"
+        >
           {helperText}
         </p>
       ) : null}

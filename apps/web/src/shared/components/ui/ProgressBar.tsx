@@ -63,8 +63,8 @@ const fillClass: Record<ProgressBarVariant, string> = {
 const labelTextClass: Record<ProgressBarSize, string> = {
   xs: "text-style-caption",
   sm: "text-style-caption",
-  md: "text-xs",
-  lg: "text-xs",
+  md: "text-style-caption",
+  lg: "text-style-caption",
 };
 
 export function ProgressBar({

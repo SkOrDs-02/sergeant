@@ -14,7 +14,7 @@ export interface AccentColor {
   preview: string;
 }
 
-const DEFAULT_ACCENT_COLORS: AccentColor[] = [
+const DEFAULT_ACCENT_COLORS: [AccentColor, ...AccentColor[]] = [
   { id: "emerald", name: "Смарагд", hsl: "158 64% 52%", preview: "#10B981" },
   { id: "teal", name: "Бірюза", hsl: "168 80% 37%", preview: "#14B8A6" },
   { id: "blue", name: "Синій", hsl: "217 91% 60%", preview: "#3B82F6" },
@@ -105,7 +105,7 @@ export function AccentColorPicker({
             {showLabels && (
               <span
                 className={cn(
-                  "text-xs",
+                  "text-style-caption",
                   isSelected ? "text-text font-medium" : "text-muted",
                 )}
               >
@@ -128,7 +128,7 @@ export function useAccentColor() {
   });
 
   const accent =
-    DEFAULT_ACCENT_COLORS.find((c) => c.id === accentId) ||
+    DEFAULT_ACCENT_COLORS.find((c) => c.id === accentId) ??
     DEFAULT_ACCENT_COLORS[0];
 
   // Apply accent color to CSS custom properties
@@ -136,16 +136,17 @@ export function useAccentColor() {
     const root = document.documentElement;
 
     // Parse HSL values
-    const [h, s, l] = accent!.hsl.split(" ")!;
+    const [h, s, l] = accent.hsl.split(" ");
+    if (!h || !s || !l) return;
 
     // Set CSS custom properties
-    root.style.setProperty("--accent", accent!.hsl!);
-    root.style.setProperty("--accent-h", h!);
-    root.style.setProperty("--accent-s", s!);
-    root.style.setProperty("--accent-l", l!);
+    root.style.setProperty("--accent", accent.hsl);
+    root.style.setProperty("--accent-h", h);
+    root.style.setProperty("--accent-s", s);
+    root.style.setProperty("--accent-l", l);
 
     // Generate lighter/darker variants
-    const lNum = parseInt(l!);
+    const lNum = parseInt(l);
     root.style.setProperty(
       "--accent-light",
       `${h} ${s} ${Math.min(95, lNum + 30)}%`,
@@ -189,12 +190,14 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-style-label text-text">Акцентний колір</h3>
-          <p className="text-xs text-muted mt-0.5">Поточний: {accent!.name!}</p>
+          <p className="text-style-caption text-muted mt-0.5">
+            Поточний: {accent.name}
+          </p>
         </div>
         {/* Preview */}
         <div
           className="w-8 h-8 rounded-xl shadow-sm"
-          style={{ backgroundColor: accent!.preview! }}
+          style={{ backgroundColor: accent.preview }}
         />
       </div>
 
@@ -208,27 +211,24 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
 
       {/* Preview elements */}
       <div className="mt-4 pt-4 border-t border-line">
-        <p className="text-xs text-muted mb-2">Приклад елементів:</p>
+        <p className="text-style-caption text-muted mb-2">Приклад елементів:</p>
         <div className="flex items-center gap-2">
           <button
             type="button"
             className="text-style-label px-3 py-1.5 rounded-xl transition-colors"
             style={{
-              backgroundColor: accent!.preview!,
+              backgroundColor: accent.preview,
               color: "white",
             }}
           >
             Кнопка
           </button>
-          <span
-            className="text-style-label"
-            style={{ color: accent!.preview! }}
-          >
+          <span className="text-style-label" style={{ color: accent.preview }}>
             Посилання
           </span>
           <div
             className="w-4 h-4 rounded-full"
-            style={{ backgroundColor: accent!.preview! }}
+            style={{ backgroundColor: accent.preview }}
           />
         </div>
       </div>

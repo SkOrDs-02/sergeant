@@ -132,11 +132,11 @@ const variants: Record<ButtonVariant, string> = {
 // only one that actually feels card-sized — bumps to CARD radius (16 px)
 // so it does not compress to a near-pill on a 56 px square (icon-only xl).
 const sizes: Record<ButtonSize, string> = {
-  xs: "h-8 px-3 text-xs font-medium rounded-xl gap-1.5",
-  sm: "h-9 px-3.5 text-sm font-medium rounded-xl gap-1.5",
-  md: "h-11 px-5 text-sm font-semibold rounded-xl gap-2",
-  lg: "h-12 px-6 text-base font-semibold rounded-xl gap-2",
-  xl: "h-14 px-8 text-base font-bold rounded-2xl gap-2.5",
+  xs: "h-8 px-3 text-style-label font-medium rounded-xl gap-1.5",
+  sm: "h-9 px-3.5 text-style-label font-medium rounded-xl gap-1.5",
+  md: "h-11 px-5 text-style-label font-semibold rounded-xl gap-2",
+  lg: "h-12 px-6 text-style-label font-semibold rounded-xl gap-2",
+  xl: "h-14 px-8 text-style-label font-bold rounded-2xl gap-2.5",
 };
 
 // Icon-only button sizes

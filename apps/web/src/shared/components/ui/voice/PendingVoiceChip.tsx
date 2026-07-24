@@ -155,7 +155,7 @@ export function PendingVoiceChip({
           hapticTap();
           onConfirm();
         }}
-        className="flex-1 min-w-0 text-left text-xs leading-tight text-text hover:text-brand-strong line-clamp-2"
+        className="flex-1 min-w-0 text-left text-style-caption leading-tight text-text hover:text-brand-strong line-clamp-2"
         title="Зберегти зараз"
       >
         {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}

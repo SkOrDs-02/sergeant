@@ -196,7 +196,7 @@ function SwipeToActionImpl({
         <div
           className={cn(
             "absolute inset-x-0 -top-8 z-10 flex items-center justify-center gap-1.5",
-            "text-xs text-muted",
+            "text-style-caption text-muted",
             "motion-safe:animate-fade-in",
           )}
         >

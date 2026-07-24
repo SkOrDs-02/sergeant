@@ -293,7 +293,7 @@ export function PopoverItem({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left",
+        "flex w-full items-center gap-2.5 px-3.5 py-2 text-style-label text-left",
         "transition-colors duration-150 rounded-xl mx-1 outline-none",
         "focus-visible:ring-2 focus-visible:ring-accent/60",
         destructive

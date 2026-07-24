@@ -91,9 +91,9 @@ export function DropdownMenuEntryView({
           </span>
         ) : null}
         <span className="flex-1 min-w-0">
-          <span className="block text-sm truncate">{entry.label}</span>
+          <span className="block text-style-label truncate">{entry.label}</span>
           {entry.description ? (
-            <span className="block text-xs text-muted truncate">
+            <span className="block text-style-caption text-muted truncate">
               {entry.description}
             </span>
           ) : null}
@@ -110,7 +110,10 @@ export function DropdownMenuEntryView({
           </kbd>
         ) : null}
         {isSubmenu ? (
-          <span aria-hidden="true" className="shrink-0 ml-2 text-muted text-xs">
+          <span
+            aria-hidden="true"
+            className="shrink-0 ml-2 text-muted text-xs" /* icon-size, not type */
+          >
             ▸
           </span>
         ) : null}
@@ -202,7 +205,7 @@ function DropdownMenuSubmenuPanel({ entry, onClose }: SubmenuPanelProps) {
               onClose();
             }}
             className={cn(
-              "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm",
+              "flex w-full items-center gap-2.5 px-3 py-2 text-left text-style-label",
               "transition-colors duration-150 rounded-xl",
               "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",

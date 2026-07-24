@@ -51,9 +51,9 @@ export type InputSize = SmallMediumLarge;
 export type InputVariant = FormVariant;
 
 const sizes: Record<InputSize, string> = {
-  sm: "h-9 px-3 text-sm rounded-xl",
-  md: "h-11 px-4 text-base rounded-2xl",
-  lg: "h-12 px-5 text-base rounded-2xl",
+  sm: "h-9 px-3 text-style-body rounded-xl",
+  md: "h-11 px-4 text-style-body rounded-2xl",
+  lg: "h-12 px-5 text-style-body rounded-2xl",
 };
 
 /**
@@ -145,7 +145,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-text leading-snug"
+          className="text-style-label font-medium text-text leading-snug"
         >
           {label}
         </label>
@@ -190,7 +190,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               id={id ? `${id}-helper` : undefined}
               role={error ? "alert" : "status"}
               className={cn(
-                "text-xs leading-snug",
+                "text-style-caption leading-snug",
                 error ? "text-danger-strong dark:text-danger" : "text-subtle",
               )}
             >
@@ -202,7 +202,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {renderCounter && (
             <span
               className={cn(
-                "text-xs tabular-nums shrink-0 transition-colors",
+                "text-style-caption tabular-nums shrink-0 transition-colors",
                 counterColor,
               )}
               aria-live="polite"
@@ -253,7 +253,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={id}
-            className="text-sm font-medium text-text leading-snug"
+            className="text-style-label font-medium text-text leading-snug"
           >
             {label}
           </label>
@@ -265,7 +265,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full px-4 py-3 text-base text-text placeholder:text-subtle/70 rounded-2xl",
+            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle/70 rounded-2xl",
             "outline-none transition-colors duration-200 resize-none",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             variants[variant],
@@ -279,7 +279,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             id={id ? `${id}-helper` : undefined}
             role={error ? "alert" : "status"}
             className={cn(
-              "text-xs leading-snug",
+              "text-style-caption leading-snug",
               error ? "text-danger" : "text-subtle",
             )}
           >

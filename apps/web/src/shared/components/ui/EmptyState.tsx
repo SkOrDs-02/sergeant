@@ -188,7 +188,7 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
     outer: "py-8 px-4 gap-2",
     iconBox: "w-10 h-10",
     title: "text-style-label",
-    description: "text-xs",
+    description: "text-style-caption",
     descriptionMax: "max-w-xs",
     eyebrow: "text-style-caption",
     actionGap: "mt-1 gap-2",
@@ -196,8 +196,8 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
   md: {
     outer: "py-14 px-6 gap-3",
     iconBox: "w-14 h-14",
-    title: "text-base font-semibold",
-    description: "text-sm",
+    title: "text-style-title font-semibold",
+    description: "text-style-body",
     descriptionMax: "max-w-sm",
     eyebrow: "text-style-caption",
     actionGap: "mt-2 gap-3",
@@ -205,10 +205,10 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
   lg: {
     outer: "py-20 px-8 gap-4",
     iconBox: "w-20 h-20",
-    title: "text-xl font-extrabold",
-    description: "text-base",
+    title: "text-style-title font-extrabold",
+    description: "text-style-body",
     descriptionMax: "max-w-md",
-    eyebrow: "text-xs",
+    eyebrow: "text-style-overline",
     actionGap: "mt-3 gap-3",
   },
 };
@@ -538,7 +538,7 @@ export function ModuleEmptyState({
         <p className="text-style-label text-text truncate">
           {config.exampleLine1}
         </p>
-        <p className="text-xs text-muted">{config.exampleLine2}</p>
+        <p className="text-style-caption text-muted">{config.exampleLine2}</p>
       </div>
     </div>
   );

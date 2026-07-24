@@ -18,6 +18,7 @@ import { cn } from "../../lib/ui/cn";
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarStatus = "online" | "busy" | "offline";
 
+/* initials glyph scales with avatar size, not a type role */
 const sizeClasses: Record<AvatarSize, string> = {
   xs: "h-6 w-6 text-style-caption",
   sm: "h-8 w-8 text-xs",

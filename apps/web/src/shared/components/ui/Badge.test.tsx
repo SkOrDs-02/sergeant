@@ -80,12 +80,14 @@ describe("Badge", () => {
     expect(dot).toBeNull();
   });
 
-  it("maps size='xs' to text-style-caption and size='md' to text-xs", () => {
+  it("maps size='xs' and size='md' to text-style-caption", () => {
     const { container, rerender } = render(<Badge size="xs">x</Badge>);
     expect(container.querySelector("span")!.className).toContain(
       "text-style-caption",
     );
     rerender(<Badge size="md">x</Badge>);
-    expect(container.querySelector("span")!.className).toContain("text-xs");
+    expect(container.querySelector("span")!.className).toContain(
+      "text-style-caption",
+    );
   });
 });
