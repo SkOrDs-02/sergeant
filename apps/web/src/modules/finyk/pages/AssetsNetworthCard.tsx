@@ -26,7 +26,7 @@ export function AssetsNetworthCard({
       <div className="relative">
         <p className="text-sm text-muted inline-flex items-center gap-1.5">
           <Icon name="wallet" size={14} aria-hidden />
-          Загальний нетворс
+          Загальний капітал
         </p>
         <div
           className={cn(

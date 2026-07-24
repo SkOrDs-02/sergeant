@@ -356,7 +356,7 @@ export function AssetForm({
             className="text-style-caption text-warning-strong dark:text-warning"
             role="status"
           >
-            Збережу актив, але поки не враховую його в загальному нетворсі —
+            Збережу актив, але поки не враховую його в загальному капіталі —
             рахую лише активи в гривні.
           </p>
         )}
@@ -378,7 +378,7 @@ export function AssetForm({
               // an asset balance must be strictly positive. A negative manual
               // asset shows up as "−1 000 ₴" inside the assets list, flips the
               // section header to "Активи +−1 000 ₴" (because the formatter
-              // unconditionally prepends `+`), and pulls Загальний нетворс
+              // unconditionally prepends `+`), and pulls Загальний капітал
               // negative.
               const parsedAmount = Number(newAsset.amount);
               if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;

@@ -75,7 +75,7 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
         viewBox={`0 0 ${W} ${H}`}
         className="w-full overflow-visible"
         role="img"
-        aria-label="Графік нетворсу за місяці"
+        aria-label="Графік капіталу за місяці"
         aria-describedby={summaryId}
       >
         <defs>
@@ -144,7 +144,7 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
       </svg>
       <div id={summaryId} className="sr-only">
         <p>
-          Динаміка нетворсу. Поточне значення: {fmt(lastValue)}₴. Зміна від
+          Динаміка капіталу. Поточне значення: {fmt(lastValue)}₴. Зміна від
           першого місяця: {lastValue - firstValue >= 0 ? "+" : ""}
           {fmt(lastValue - firstValue)}₴.
         </p>

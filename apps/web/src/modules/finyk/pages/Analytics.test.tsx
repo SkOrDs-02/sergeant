@@ -86,10 +86,10 @@ describe("Analytics page", () => {
     });
     expect(screen.getByText("Підсумок місяця")).toBeInTheDocument();
     expect(screen.getByText("Категорії")).toBeInTheDocument();
-    expect(screen.getByText("Топ мерчанти")).toBeInTheDocument();
+    expect(screen.getByText("Топ продавці")).toBeInTheDocument();
     // empty-state copy for no data
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
-    expect(screen.getByText("Поки немає мерчантів")).toBeInTheDocument();
+    expect(screen.getByText("Поки немає продавців")).toBeInTheDocument();
   });
 
   it("disables the next-month button while on the current month", async () => {
@@ -153,7 +153,7 @@ describe("Analytics page", () => {
     });
 
     expect(screen.queryByText("Поки немає витрат")).toBeNull();
-    expect(screen.queryByText("Поки немає мерчантів")).toBeNull();
+    expect(screen.queryByText("Поки немає продавців")).toBeNull();
     expect(
       container.querySelectorAll('[class*="animate-pulse"]').length,
     ).toBeGreaterThanOrEqual(7);

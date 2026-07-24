@@ -462,7 +462,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
         </Section>
 
         {/* Merchants */}
-        <Section title="Топ мерчанти">
+        <Section title="Топ продавці">
           {pageLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (
@@ -473,7 +473,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
             <EmptyState
               compact
               module="finyk"
-              title="Поки немає мерчантів"
+              title="Поки немає продавців"
               description="Витрат за цей місяць ще не записано."
             />
           ) : (
