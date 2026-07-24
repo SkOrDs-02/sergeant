@@ -1100,6 +1100,17 @@ const preset = {
           fontWeight: "500",
           letterSpacing: "0.005em",
         },
+        // Size-variant of `label` (НЕ дев'ята роль — як bold у body). 16px
+        // фіксовано, та сама вага/трекінг. Призначення: великий CTA
+        // (Button lg/xl), де просадка до 13.9px послаблювала moment-of-value
+        // ієрархію. Дозволено ЛИШЕ компонентам, не сторінковому коду
+        // (цикл 6 acceptance §2). Канон 8 ролей не порушено.
+        ".text-style-label-lg": {
+          fontSize: "1rem",
+          lineHeight: "1.4",
+          fontWeight: "500",
+          letterSpacing: "0.005em",
+        },
         // 12px floor — Hard Rule #16. Fixed (non-fluid) so the floor
         // never drifts below readability on any viewport.
         ".text-style-caption": {

@@ -135,8 +135,8 @@ const sizes: Record<ButtonSize, string> = {
   xs: "h-8 px-3 text-style-label font-medium rounded-xl gap-1.5",
   sm: "h-9 px-3.5 text-style-label font-medium rounded-xl gap-1.5",
   md: "h-11 px-5 text-style-label font-semibold rounded-xl gap-2",
-  lg: "h-12 px-6 text-style-label font-semibold rounded-xl gap-2",
-  xl: "h-14 px-8 text-style-label font-bold rounded-2xl gap-2.5",
+  lg: "h-12 px-6 text-style-label-lg font-semibold rounded-xl gap-2",
+  xl: "h-14 px-8 text-style-label-lg font-bold rounded-2xl gap-2.5",
 };
 
 // Icon-only button sizes

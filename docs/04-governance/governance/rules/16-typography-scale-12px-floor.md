@@ -37,7 +37,11 @@
 | `.text-style-overline` | 12 / 1.4 / 600 / 0.08em / UPPER             | Section kicker / eyebrow                  |
 | `.text-style-code`     | 13→14 / 1.5 / 500 / mono                    | Inline code, monospace stat value         |
 
-> `.text-style-hero` лишається back-compat аліасом `headline`; новий код бере `headline`. Гліф-розміри (емодзі-іконка, ініціали аватара, число всередині progress-ring, лічильник streak-вогника) — це РОЗМІР СИМВОЛА під контейнер, НЕ типографічна роль: лишай `text-<size>` з коментарем `/* icon-size, not type */` або `/* glyph scales with container, not a type role */`.
+> `.text-style-hero` лишається back-compat аліасом `headline`; новий код бере `headline`.
+
+**Size-variant ролі (НЕ дев'ята роль).** Роль може мати розмірний варіант, як `bold` у body — це не порушує закриту вісімку. Наразі є один: `.text-style-label-lg` (16px, та сама вага/трекінг, що `label`) — для великого CTA (`Button` lg/xl), де просадка до 13.9px послаблювала moment-of-value ієрархію (цикл 6 acceptance §2). **Дозволено ЛИШЕ компонентам-примітивам, не сторінковому коду.** Нові size-варіанти додає лише дизайн-вердикт, як і нові ролі.
+
+**Гліф-розміри — не типографіка.** Розмір емодзі-іконки, ініціалів аватара, числа всередині progress-ring, лічильника streak-вогника масштабується під КОНТЕЙНЕР, а не є семантичною роллю. Такі місця лишають `text-<size>` з обов'язковим маркером-коментарем `/* icon-size, not type */` (гліф фіксованого розміру) або `/* glyph scales with container, not a type role */` (гліф, пропорційний контейнеру). Лінт/аудит їх не чіпає; відсутність маркера = сирий розмір, який треба перевести в роль.
 
 **Floor: 12px (`text-style-caption` / `text-xs`).** `text-3xs` (9px) is removed from the scale; `text-2xs` (10px) is reserved for chart axis ticks and decorative metadata badges (timestamps, badge counts) — never primary content. Anything a user has to read to take an action MUST clear 12px.
 
