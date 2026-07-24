@@ -39,9 +39,11 @@ export function ColorsSection() {
       <Group label="Semantic — текст">
         <div className="flex gap-8 items-baseline">
           <div className="flex flex-col gap-1.5">
-            <span className="text-base font-semibold text-text">text-text</span>
-            <span className="text-base text-muted">text-muted</span>
-            <span className="text-base text-subtle">text-subtle</span>
+            <span className="text-style-body font-semibold text-text">
+              text-text
+            </span>
+            <span className="text-style-body text-muted">text-muted</span>
+            <span className="text-style-body text-subtle">text-subtle</span>
           </div>
         </div>
       </Group>
@@ -74,10 +76,10 @@ export function ColorsSection() {
       >
         <div className="flex flex-wrap gap-3">
           {/* eslint-disable-next-line sergeant-design/no-low-contrast-text-on-fill -- showcase демонструє AA-fail, а не пропонує його як патерн */}
-          <div className="bg-brand text-white rounded-xl px-3 py-2 text-xs font-mono">
+          <div className="bg-brand text-white rounded-xl px-3 py-2 text-style-code">
             bg-brand · text-white (~2.7:1 — fail)
           </div>
-          <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-xs font-mono">
+          <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-style-code">
             bg-brand-strong · text-white (WCAG AA — recommended)
           </div>
         </div>

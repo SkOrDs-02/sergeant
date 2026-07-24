@@ -99,7 +99,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <Icon name="bell" size="lg" />
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white text-xs font-bold leading-[18px] text-center"
+          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
         >
           {count}
         </span>
@@ -128,7 +128,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
                   {n.title}
                 </p>
                 {n.description && (
-                  <p className="text-xs text-muted leading-snug mt-0.5">
+                  <p className="text-style-caption text-muted leading-snug mt-0.5">
                     {n.description}
                   </p>
                 )}

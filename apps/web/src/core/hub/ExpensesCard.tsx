@@ -48,7 +48,7 @@ function BarChart({
 
   if (!hasData) {
     return (
-      <div className="h-24 flex items-center justify-center text-xs text-muted">
+      <div className="h-24 flex items-center justify-center text-style-caption text-muted">
         {messages.hub.reportNoData}
       </div>
     );
@@ -152,7 +152,8 @@ interface DeltaProps {
 
 function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
   if (prev === 0 && cur === 0) return null;
-  if (prev === 0) return <span className="text-xs text-muted">—</span>;
+  if (prev === 0)
+    return <span className="text-style-caption text-muted">—</span>;
   const diff = cur - prev;
   const pct = Math.round((diff / prev) * 100);
   const positive = higherIsBetter ? diff >= 0 : diff <= 0;
@@ -262,7 +263,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-base font-bold text-text">
+            <span className="text-style-body font-bold text-text">
               {formattedCurrent} ₴
             </span>
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
@@ -294,7 +295,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             </span>
             <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
           </div>
-          <p className="text-xs text-muted">
+          <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} {formattedPrev} ₴
           </p>
           <BarChart

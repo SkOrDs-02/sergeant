@@ -114,10 +114,10 @@ export class ErrorBoundary extends Component<
             </svg>
           </div>
           <h1 className="text-style-title text-text mb-1">Щось пішло не так</h1>
-          <p className="text-sm text-muted mb-4 text-center max-w-xs">
+          <p className="text-style-body text-muted mb-4 text-center max-w-xs">
             Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
           </p>
-          <pre className="text-xs text-danger-strong/80 dark:text-danger/80 mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
+          <pre className="text-style-code text-danger-strong/80 dark:text-danger/80 mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
             {error.message}
           </pre>
           {showRequestId && (
@@ -125,15 +125,17 @@ export class ErrorBoundary extends Component<
               className="mb-6 max-w-lg w-full bg-panel rounded-xl p-3 border border-line flex items-center gap-2"
               data-testid="error-request-id"
             >
-              <span className="text-xs text-muted shrink-0">requestId:</span>
-              <code className="text-xs text-text font-mono truncate flex-1">
+              <span className="text-style-caption text-muted shrink-0">
+                requestId:
+              </span>
+              <code className="text-style-code text-text font-mono truncate flex-1">
                 {requestId}
               </code>
               <button
                 type="button"
                 onClick={this.copyRequestId}
                 aria-label="Скопіювати requestId"
-                className="text-xs px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+                className="text-style-label px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
               >
                 {copied ? "Скопійовано" : "Копіювати"}
               </button>

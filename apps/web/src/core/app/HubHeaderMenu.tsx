@@ -151,7 +151,7 @@ function PrivacyRow({
       />
       <span className="flex-1 min-w-0">
         <span className="block text-style-label leading-tight">{label}</span>
-        <span className="block text-xs text-muted leading-snug mt-0.5">
+        <span className="block text-style-caption text-muted leading-snug mt-0.5">
           {detail}
         </span>
       </span>

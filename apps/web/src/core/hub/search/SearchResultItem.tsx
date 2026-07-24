@@ -73,8 +73,8 @@ export function SearchResultItem({
         <Icon name={hit.icon} size="md" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-text truncate">{hit.title}</p>
-        <p className="text-xs text-muted truncate">{hit.subtitle}</p>
+        <p className="text-style-body text-text truncate">{hit.title}</p>
+        <p className="text-style-caption text-muted truncate">{hit.subtitle}</p>
       </div>
       <svg
         width="14"

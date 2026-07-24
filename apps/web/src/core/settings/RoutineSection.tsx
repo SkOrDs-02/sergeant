@@ -63,7 +63,7 @@ export function RoutineSection() {
 
       <SettingsSubGroup title="Звички">
         <div className="space-y-4">
-          <p className="text-xs text-subtle leading-snug">
+          <p className="text-style-caption text-subtle leading-snug">
             Нові звички додаються через кнопку «+» в центрі нижньої навігації
             «Рутини». Тут можна редагувати, архівувати й видаляти наявні.
           </p>

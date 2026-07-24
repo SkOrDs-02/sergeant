@@ -81,7 +81,7 @@ export function HubChatHeader({
             <span className="flex items-center gap-1 min-w-0">
               <span
                 id="hub-chat-title"
-                className="text-base font-bold text-text leading-snug truncate"
+                className="text-style-title font-bold text-text leading-snug truncate"
               >
                 Асистент
               </span>
@@ -102,7 +102,7 @@ export function HubChatHeader({
           id="hub-chat-privacy"
           className="space-y-2 px-2 pt-2 pb-1"
         >
-          <div className="flex items-center gap-2 text-xs text-text">
+          <div className="flex items-center gap-2 text-style-caption text-text">
             <span
               className={cn(
                 "inline-block w-2 h-2 rounded-full",
@@ -153,7 +153,7 @@ export function HubChatHeader({
           <button
             type="button"
             onClick={onClearChat}
-            className="h-9 min-h-[44px] min-w-[44px] px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="h-9 min-h-[44px] min-w-[44px] px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label="Нова бесіда"
           >
             <Icon name="plus" size={14} />

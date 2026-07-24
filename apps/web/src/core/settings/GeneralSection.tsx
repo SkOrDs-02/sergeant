@@ -46,7 +46,7 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
   return (
     <SettingsGroup title="Загальні" icon="settings">
       <SettingsSubGroup title={messages.onboarding.tourSettingsTitle}>
-        <p className="text-xs text-subtle leading-snug">
+        <p className="text-style-caption text-subtle leading-snug">
           {messages.onboarding.tourCopyExplanation}
         </p>
         <Button

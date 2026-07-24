@@ -89,10 +89,10 @@ function ShowcaseShell() {
         )}
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center gap-3 flex-wrap">
-          <h1 className="font-extrabold text-text text-sm shrink-0">
+          <h1 className="font-extrabold text-text text-style-label shrink-0">
             Design System 2.0
           </h1>
-          <span className="text-2xs text-subtle font-mono shrink-0 hidden sm:inline">
+          <span className="text-style-caption text-subtle shrink-0 hidden sm:inline">
             internal styleguide · navigable · token-only
           </span>
           <div className="ml-auto">

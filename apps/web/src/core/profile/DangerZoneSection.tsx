@@ -75,7 +75,7 @@ export function DangerZoneSection({
         </div>
 
         <div className="p-4 space-y-3">
-          <p className="text-sm text-muted">
+          <p className="text-style-body text-muted">
             Видалення акаунту є незворотною дією. Усі ваші дані буде повністю
             видалено з серверу.
           </p>

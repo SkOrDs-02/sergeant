@@ -63,14 +63,18 @@ export function TypographySection() {
                 <span className={`${row.cls} font-semibold text-text`}>
                   {row.cls}
                 </span>
-                <span className="text-2xs text-subtle">{row.size}</span>
+                <span className="text-style-caption text-subtle">
+                  {row.size}
+                </span>
               </div>
             ) : (
               <div key={row.cls} className="flex items-baseline gap-4">
                 <span className={`${row.cls} font-semibold text-text`}>
                   {row.cls}
                 </span>
-                <span className="text-2xs text-subtle">{row.size}</span>
+                <span className="text-style-caption text-subtle">
+                  {row.size}
+                </span>
               </div>
             ),
           )}
@@ -82,7 +86,7 @@ export function TypographySection() {
           {SEMANTIC_STYLES.map((row) => (
             <div key={row.cls} className="flex items-baseline gap-4">
               <span className={`${row.cls} text-text`}>{row.cls}</span>
-              <span className="text-2xs text-subtle">{row.spec}</span>
+              <span className="text-style-caption text-subtle">{row.spec}</span>
             </div>
           ))}
         </div>
@@ -101,10 +105,13 @@ export function TypographySection() {
       <Group label="Font weight" row>
         {([400, 500, 600, 700, 900] as const).map((w) => (
           <div key={w} className="flex flex-col items-center gap-1">
-            <span style={{ fontWeight: w }} className="text-2xl text-text">
+            <span
+              style={{ fontWeight: w }}
+              className="text-style-title text-text"
+            >
               Аа
             </span>
-            <span className="text-2xs text-subtle">{w}</span>
+            <span className="text-style-caption text-subtle">{w}</span>
           </div>
         ))}
       </Group>

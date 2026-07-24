@@ -79,7 +79,7 @@ export function AssistantAdviceCard({
         >
           <div className="flex items-center gap-2">
             <span
-              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs"
+              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs" /* glyph scales with container, not a type role */
               aria-hidden
             >
               S
@@ -126,7 +126,7 @@ export function AssistantAdviceCard({
             {insight && (
               <p
                 key={insight}
-                className="text-sm text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-200"
+                className="text-style-body text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-200"
               >
                 {insight}
               </p>

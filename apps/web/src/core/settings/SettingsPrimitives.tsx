@@ -126,7 +126,7 @@ export function SettingsGroup({
               <Icon name={icon} size={18} />
             </span>
           )}
-          <span className="text-base font-semibold text-text">{title}</span>
+          <span className="text-style-title text-text">{title}</span>
         </div>
         <ChevronIcon expanded={open} />
       </button>
@@ -169,14 +169,8 @@ export function SettingsSubGroup({
         )}
       >
         <ChevronIcon expanded={open} />
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-            Collapsible header uses `group-hover:text-brand-strong` interactive
-            state + transition-colors, which SectionHeading can't express via
-            its static tone tokens. Resting tone is `text-text` (stone-900) —
-            the previous `text-muted` resting tone read as light-on-light in
-            the warm light theme over the soft-glass card (user report
-            2026-05-26 / `ui-layout-styling-fixes`). */}
-        <span className="text-xs font-bold text-text uppercase tracking-wider group-hover:text-brand-strong transition-colors">
+        {}
+        <span className="text-style-overline text-text group-hover:text-brand-strong transition-colors">
           {title}
         </span>
       </button>
@@ -225,7 +219,7 @@ export function ToggleRow({
           {label}
         </span>
         {description && (
-          <p className="text-xs text-subtle mt-1 leading-relaxed">
+          <p className="text-style-caption text-subtle mt-1 leading-relaxed">
             {description}
           </p>
         )}
@@ -295,7 +289,9 @@ export function ConfirmModal({
           {title}
         </h2>
         {body && (
-          <p className="text-sm text-muted mt-3 leading-relaxed">{body}</p>
+          <p className="text-style-body text-muted mt-3 leading-relaxed">
+            {body}
+          </p>
         )}
         <div className="flex gap-3 mt-6">
           <button

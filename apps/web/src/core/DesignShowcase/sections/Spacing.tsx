@@ -69,8 +69,11 @@ export function SpacingSection() {
       <Group label="Канонічна spacing-шкала">
         <div className="space-y-1.5">
           {SPACING_SCALE.map((row) => (
-            <div key={row.label} className="flex items-center gap-3 text-xs">
-              <span className="w-8 text-2xs text-subtle font-mono">
+            <div
+              key={row.label}
+              className="flex items-center gap-3 text-style-caption"
+            >
+              <span className="w-8 text-style-code text-subtle">
                 {row.label}
               </span>
               <code className="text-muted">{row.value}</code>
@@ -87,9 +90,7 @@ export function SpacingSection() {
           {SPACING_BARS.map((bar) => (
             <div key={bar.label} className="flex items-center gap-3">
               <div className={`${bar.cls} bg-accent rounded-md`} />
-              <span className="text-2xs font-mono text-subtle">
-                {bar.label}
-              </span>
+              <span className="text-style-code text-subtle">{bar.label}</span>
             </div>
           ))}
         </div>
@@ -102,8 +103,8 @@ export function SpacingSection() {
               <div
                 className={`${r.cls} w-16 h-16 bg-panelHi border border-line shadow-soft`}
               />
-              <span className="text-2xs font-mono text-subtle">{r.cls}</span>
-              <span className="text-2xs text-subtle text-center w-32">
+              <span className="text-style-code text-subtle">{r.cls}</span>
+              <span className="text-style-caption text-subtle text-center w-32">
                 {r.spec}
               </span>
             </div>
@@ -112,7 +113,7 @@ export function SpacingSection() {
       </Group>
 
       <Group label="Контейнерна стек-шкала">
-        <div className="space-y-3 text-xs text-muted">
+        <div className="space-y-3 text-style-caption text-muted">
           <p>
             <code>space-y-2</code> · 8px — щільні списки, форми
           </p>

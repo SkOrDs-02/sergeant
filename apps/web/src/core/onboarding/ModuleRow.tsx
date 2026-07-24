@@ -106,12 +106,12 @@ export function ModuleRow({
           <Icon name={card.icon} size={expanded ? 20 : 18} strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1 pr-7">
-          <span className="block text-sm font-bold text-text leading-tight">
+          <span className="block text-style-title text-text leading-tight">
             {card.label}
           </span>
           {expanded ? (
             <>
-              <span className="block text-xs text-muted mt-0.5 leading-snug">
+              <span className="block text-style-body text-muted mt-0.5 leading-snug">
                 {card.description}
               </span>
               <span className="block text-style-caption text-subtle mt-1 leading-tight">

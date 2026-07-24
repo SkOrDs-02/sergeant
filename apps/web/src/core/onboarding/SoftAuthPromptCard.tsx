@@ -92,7 +92,9 @@ export function SoftAuthPromptCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-style-label text-text">{copy.title}</p>
-          <p className="text-xs text-muted mt-1 leading-relaxed">{copy.body}</p>
+          <p className="text-style-body text-muted mt-1 leading-relaxed">
+            {copy.body}
+          </p>
           <div className="flex items-center gap-2 mt-3">
             <Button
               type="button"

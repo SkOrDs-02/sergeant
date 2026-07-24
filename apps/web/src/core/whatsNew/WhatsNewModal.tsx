@@ -52,7 +52,9 @@ function ItemRow({ item }: { item: WhatsNewItem }) {
       >
         {KIND_LABELS[item.kind]}
       </Badge>
-      <span className="text-sm text-fg leading-relaxed">{item.text}</span>
+      <span className="text-style-body text-fg leading-relaxed">
+        {item.text}
+      </span>
     </li>
   );
 }
@@ -129,7 +131,7 @@ export function WhatsNewModal({
         </div>
       }
     >
-      <p className="text-sm text-fg-muted leading-relaxed mb-4">
+      <p className="text-style-body text-fg-muted leading-relaxed mb-4">
         {release.summary}
       </p>
       <ul className="flex flex-col gap-3">

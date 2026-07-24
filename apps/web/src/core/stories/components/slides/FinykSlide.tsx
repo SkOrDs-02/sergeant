@@ -18,11 +18,11 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
         Фінанси · ФІНІК
       </p>
       <div className="mb-6">
-        <div className="text-xs text-white/70 font-semibold">Витрати тижня</div>
+        <div className="text-style-label text-white/70">Витрати тижня</div>
         <div className="text-style-display tnum mt-1">
           {fmtUah(agg?.totalSpent)}
         </div>
-        <div className="mt-2 text-sm text-white/80">
+        <div className="mt-2 text-style-body text-white/80">
           {agg?.txCount || 0} транзакцій · дохід {fmtUah(agg?.totalIncome)}
         </div>
       </div>
@@ -36,7 +36,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
             const pct = Math.max(6, Math.round((c.amount / maxCat) * 100));
             return (
               <div key={c.name} className="space-y-1">
-                <div className="flex items-baseline justify-between text-sm">
+                <div className="flex items-baseline justify-between text-style-body">
                   <span className="font-semibold text-white/95 truncate pr-2">
                     {c.name}
                   </span>
@@ -68,7 +68,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
         <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
-            <p className="text-xs text-white/85 mt-2 leading-relaxed">
+            <p className="text-style-caption text-white/85 mt-2 leading-relaxed">
               {ai.comment}
             </p>
           )}
