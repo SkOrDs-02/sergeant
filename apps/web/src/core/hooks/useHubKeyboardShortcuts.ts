@@ -1,7 +1,11 @@
 import { useEffect, useRef } from "react";
 
 export type NavChordTarget =
-  "hub" | "finyk" | "fizruk" | "routine" | "nutrition";
+  | "hub"
+  | "finyk"
+  | "fizruk"
+  | "routine"
+  | "nutrition";
 
 interface HubKeyboardShortcutsOptions {
   onOpenSearch: () => void;

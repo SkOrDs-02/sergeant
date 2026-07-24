@@ -85,7 +85,8 @@ export function readRecipeCache<TRecipe = unknown>(
     const all = JSON.parse(raw);
     if (!all || typeof all !== "object") return null;
     const entry = (all as Record<string, unknown>)[cacheKey] as
-      RecipeCacheEntry<TRecipe> | undefined;
+      | RecipeCacheEntry<TRecipe>
+      | undefined;
     if (!entry || !Array.isArray(entry.recipes)) return null;
     return {
       recipes: entry.recipes,

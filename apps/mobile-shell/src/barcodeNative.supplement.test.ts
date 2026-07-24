@@ -15,7 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 type CameraPermissionState =
-  "granted" | "denied" | "prompt" | "prompt-with-rationale" | "limited";
+  | "granted"
+  | "denied"
+  | "prompt"
+  | "prompt-with-rationale"
+  | "limited";
 
 type BarcodeFixture = {
   rawValue?: string;

@@ -1,6 +1,6 @@
 # Оцінка стеку інфраструктури, авторизації та вартості Sergeant
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
 > **Status:** Deprecated — доміграційний знімок стеку.
 >
 > **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** ця оцінка описує стек ДО міграції (Railway як current backend). Бекенд відтоді переїхав на Hetzner CX23 + Coolify. Зберігається як історичний assessment; вартісні/хостингові висновки не актуальні.
@@ -86,11 +86,11 @@ Anthropic usage-tier, щоб зняти 50 RPM.
 | **Разом (порядок)**                | **$5–25**      | **$150–800**                  | **Claude-dominated**         |
 
 **Claude на активного користувача:** при 50 req/день, ~2–5k input + ~~500–1k output
-токенів/запит на **Sonnet** ($3/$15 за MTok) — **~~$5–25/user/міс без кешу**; на
+токенів/запит на **Sonnet** ($3/$15 за MTok) — \*\*~~$5–25/user/міс без кешу**; на
 **Haiku** (~$1/$5) — близько ⅓; на **Opus** ($5/$25) — у кілька разів більше.
 **Prompt caching:** cache read = 0.1× base input (−90%); 5-хв cache write = 1.25×,
 окупається після **одного** читання (1.25×+0.1× = 1.35× проти 2× без кешу). Кешовані
-токени **не рахуються** в ITPM (виняток — Haiku 3.5) → і дешевше, і вищий throughput.
+токени **не рахуються\*\* в ITPM (виняток — Haiku 3.5) → і дешевше, і вищий throughput.
 Для tool-use + AI-memory workload Sergeant (стабільні system-prompt / tool-defs /
 повторюваний контекст) це дає реальні −60…90% на input.
 

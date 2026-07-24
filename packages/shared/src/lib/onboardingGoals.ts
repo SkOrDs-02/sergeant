@@ -78,7 +78,10 @@ export function getOnboardingGoals(store: KVStore): OnboardingGoals {
 // ---------------------------------------------------------------------------
 
 export type GoalQuestionId =
-  "finyk_budget" | "fizruk_weekly" | "routine_first_habit" | "nutrition_goal";
+  | "finyk_budget"
+  | "fizruk_weekly"
+  | "routine_first_habit"
+  | "nutrition_goal";
 
 export interface GoalQuestionOption {
   value: string;

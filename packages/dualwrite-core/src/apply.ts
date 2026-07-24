@@ -31,7 +31,10 @@ export interface ApplyDualWriteResult {
  * жодної операції. Спільні для всіх модульних пайплайнів.
  */
 export type DualWriteSkipReason =
-  "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
+  | "context-unset"
+  | "no-ops"
+  | "user-id-missing"
+  | "sqlite-unavailable";
 
 /**
  * Результат одного fire-and-forget dual-write прогону: або застосовано (з

@@ -380,13 +380,13 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   - Зняти заміри bundle (web) + first-open SQLite latency на iOS
     Safari 16.4+ і опублікувати у `routine-sqlite-v2.md`.
 - **Decision gate (kill criteria).**
-  | Метрика                           | Pass     | Fail                                |
+  | Метрика | Pass | Fail |
   | --------------------------------- | -------- | ----------------------------------- |
-  | Initial bundle (web)              | ≤ +5 KB  | ≥ +50 KB                            |
-  | First open SQLite latency         | ≤ 200 ms | ≥ 800 ms                            |
-  | OPFS на Safari iOS 16.4+          | works    | doesn't load                        |
-  | Multi-device toggle conflict-free | yes      | manual conflict resolution required |
-  | Vercel bundle build time          | ≤ +30s   | ≥ 2 min                             |
+  | Initial bundle (web) | ≤ +5 KB | ≥ +50 KB |
+  | First open SQLite latency | ≤ 200 ms | ≥ 800 ms |
+  | OPFS на Safari iOS 16.4+ | works | doesn't load |
+  | Multi-device toggle conflict-free | yes | manual conflict resolution required |
+  | Vercel bundle build time | ≤ +30s | ≥ 2 min |
 - **Якщо fail.** Документуємо blockers, повертаємось до Stage 1
   consolidation (без SQLite). План B: на whole-blob LWW + custom
   per-row diff на сервері.

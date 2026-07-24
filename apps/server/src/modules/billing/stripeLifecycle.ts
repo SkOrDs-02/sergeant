@@ -155,7 +155,10 @@ export async function emitSubscriptionCanceled(
 }
 
 type PaymentFailedKind =
-  "payment_intent" | "invoice" | "charge" | "checkout_expired";
+  | "payment_intent"
+  | "invoice"
+  | "charge"
+  | "checkout_expired";
 
 export interface PaymentFailedEmit {
   distinctId: string;

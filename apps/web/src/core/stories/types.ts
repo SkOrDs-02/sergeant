@@ -6,7 +6,12 @@ import type {
 } from "../insights/useWeeklyDigest";
 
 export type SlideKind =
-  "intro" | "finyk" | "fizruk" | "nutrition" | "routine" | "overall";
+  | "intro"
+  | "finyk"
+  | "fizruk"
+  | "nutrition"
+  | "routine"
+  | "overall";
 
 export interface AISlidePayload {
   summary?: string;
@@ -14,7 +19,10 @@ export interface AISlidePayload {
 }
 
 export type SlideAggregate =
-  FinykAggregate | FizrukAggregate | NutritionAggregate | RoutineAggregate;
+  | FinykAggregate
+  | FizrukAggregate
+  | NutritionAggregate
+  | RoutineAggregate;
 
 export interface Slide {
   id: string;

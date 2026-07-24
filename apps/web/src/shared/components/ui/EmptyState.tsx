@@ -61,7 +61,11 @@ import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 export type EmptyStateSize = "sm" | "md" | "lg";
 
 export type EmptyStateVariant =
-  "neutral" | "info" | "success" | "warning" | "danger";
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "danger";
 
 export interface EmptyStateProps {
   icon?: ReactNode | undefined;

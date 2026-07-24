@@ -22,7 +22,9 @@ interface TxRowAmountActionsProps {
   hidden?: boolean | undefined;
   existingSplitsCount: number;
   onSplitChange?:
-    ((id: string, split: TxSplit[] | null) => void) | null | undefined;
+    | ((id: string, split: TxSplit[] | null) => void)
+    | null
+    | undefined;
   onCatChange?: ((id: string, catId: string | null) => void) | null | undefined;
   onHide?: ((id: string) => void) | null | undefined;
   onOpenSplitEditor: () => void;

@@ -1,6 +1,6 @@
 # n8n Reporting Matrix
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
 > **Status:** Active. Live since 2026-05-02 — supergroup `Sergeant Ops` (chat
 > id `-1003924852082`) у Forum mode, 7 канонічних топіків створені, кожен
 > workflow JSON шле через `={{ $env.TELEGRAM_TOPIC_* }}` expression на
@@ -64,32 +64,32 @@ push-ноти (WF-07/09/10) **не йдуть в supergroup**, а летять �
 Цей розділ — **canonical mapping**. Зміна workflow без оновлення цієї таблиці
 ламає [Hard Rule #15](../../AGENTS.md#15-read-governance-before-coding-update-docs-alongside-code-internal-docs-in-ukrainian).
 
-| WF | File | Topic | Tier | Cadence | Owner | Escalation if `error` |
+| WF      | File                                  | Topic                      | Tier   | Cadence                      | Owner    | Escalation if `error`                  |
 | ------- | ------------------------------------- | -------------------------- | ------ | ---------------------------- | -------- | -------------------------------------- | --- | ------ | ------------------------------- | --------- | ------ | --------------- | ------ | -------------------------- |
-| **01** | `01-billing-pipeline.json` | `#revenue` ⁽⁵⁾ | **P0** | Stripe webhook | ops | WF-98 → `#meta` + email |
-| **02** | `02-failed-payment-recovery.json` | `#revenue` ⁽⁵⁾ | **P0** | Stripe webhook | ops | WF-98 → `#meta` + email |
-| **03** | `03-sentry-alert-routing.json` | `#incidents` ⁽⁵⁾ | **P1** | Sentry webhook | ops | WF-98 → `#meta` + email |
-| **04** | `04-daily-backup-verification.json` | `#ops` ⁽⁵⁾ | **P1** | Cron 03:00 UTC | ops | WF-98 → `#meta` (no email) |
-| **05** | `05-renovate-pr-auto-handler.json` | `#engineering` ⁽⁵⁾ | **P1** | GitHub webhook | devex | WF-98 → `#meta` (no email) |
-| **06** | `06-mono-webhook-enrichment.json` | `#revenue` ⁽⁵⁾ | **P1** | Mono webhook | finyk | WF-98 → `#meta` (no email) |
-| **07** | `07-morning-briefing-push.json` | DM (push) | **P2** | Cron 07:30 Kyiv | product | WF-98 → `#meta` (no email) |
-| **08** | `08-weekly-financial-digest.json` | `#digest` | **P2** | Cron Sun 20:00 Kyv | finyk | WF-98 → `#meta` (no email) |
-| **09** | `09-habit-streak-alert.json` | DM (push) | **P2** | Cron 21:00 Kyiv | product | WF-98 → `#meta` (no email) |
-| **10** | `10-debt-receivable-reminder.json` | DM (push) + `#ops` | **P2** | Cron 10:00 Kyiv | finyk | WF-98 → `#meta` (no email) | | **16** | `16-posthog-daily-metrics.json` | `#growth` | **P2** | Cron 09:00 Kyiv | growth | WF-98 → `#meta` (no email) |
-| **17** | `17-github-pr-stale-alert.json` | `#engineering` | **P2** | Cron Mo–Fr 10:00 | devex | WF-98 → `#meta` (no email) |
-| **18** | `18-nightly-security-audit.json` | `#incidents` ⁽³⁾ | **P1** | Cron 04:00 UTC | security | WF-98 → `#meta` + email |
-| **19** | `19-db-health-report.json` | `#ops` | **P1** | Cron Mon 07:00 | ops | WF-98 → `#meta` (no email) |
-| **20** | `20-agent-dispatcher.json` | `#engineering` | **P1** | Console/OpenClaw webhook ⁽⁴⁾ | agents | WF-98 → `#meta` (no email) |
-| **25** | `25-morning-briefing-cron.json` | DM (founder) ⁽⁶⁾ | **P2** | Cron 07:00 Kyiv | ops | WF-98 → `#meta` (no email) |
-| **30** | `30-ai-memory-daily-digest.json` | `#digest` | **P2** | Cron 09:05 Kyiv | ops | WF-98 → `#meta` (no email) |
-| **60** | `60-growth-funnel-snapshot.json` | `#growth` | **P2** | Cron 02:30 Kyiv | growth | WF-98 → `#meta` (no email) |
-| **63** | `63-growth-acquisition-snapshot.json` | `#growth` | **P2** | Cron 02:35 Kyiv | growth | WF-98 → `#meta` (no email) |
-| **98** | `98-error-handler.json` | `#meta` | **P0** | n8n error trigger | ops | _none_ (anti-loop, no `errorWorkflow`) |
-| **99** | `99-heartbeat.json` | `#meta` | **P0** | Cron \*/3h | ops | Email fallback (Resend) |
-| **103** | `103-alert-escalation-cron.json` | DM (founder) ⁽⁶⁾ | **P1** | Cron \*/5min | ops | WF-98 → `#meta` (no email) |
-| **104** | `104-alert-callback-router.json` | `#incidents` ⁽⁶⁾ | **P1** | Telegram `callback_query` | ops | WF-98 → `#meta` (no email) |
-| **105** | `105-alert-repeat-ping-cron.json` | `#incidents` ⁽⁷⁾ | **P1** | Cron \*/15min | ops | WF-98 → `#meta` (no email) |
-| **106** | `106-alert-sentry-warn-cron.json` | — (Sentry off-channel) ⁽⁷⁾ | **P1** | Cron \*/15min | ops | WF-98 → `#meta` (no email) |
+| **01**  | `01-billing-pipeline.json`            | `#revenue` ⁽⁵⁾             | **P0** | Stripe webhook               | ops      | WF-98 → `#meta` + email                |
+| **02**  | `02-failed-payment-recovery.json`     | `#revenue` ⁽⁵⁾             | **P0** | Stripe webhook               | ops      | WF-98 → `#meta` + email                |
+| **03**  | `03-sentry-alert-routing.json`        | `#incidents` ⁽⁵⁾           | **P1** | Sentry webhook               | ops      | WF-98 → `#meta` + email                |
+| **04**  | `04-daily-backup-verification.json`   | `#ops` ⁽⁵⁾                 | **P1** | Cron 03:00 UTC               | ops      | WF-98 → `#meta` (no email)             |
+| **05**  | `05-renovate-pr-auto-handler.json`    | `#engineering` ⁽⁵⁾         | **P1** | GitHub webhook               | devex    | WF-98 → `#meta` (no email)             |
+| **06**  | `06-mono-webhook-enrichment.json`     | `#revenue` ⁽⁵⁾             | **P1** | Mono webhook                 | finyk    | WF-98 → `#meta` (no email)             |
+| **07**  | `07-morning-briefing-push.json`       | DM (push)                  | **P2** | Cron 07:30 Kyiv              | product  | WF-98 → `#meta` (no email)             |
+| **08**  | `08-weekly-financial-digest.json`     | `#digest`                  | **P2** | Cron Sun 20:00 Kyv           | finyk    | WF-98 → `#meta` (no email)             |
+| **09**  | `09-habit-streak-alert.json`          | DM (push)                  | **P2** | Cron 21:00 Kyiv              | product  | WF-98 → `#meta` (no email)             |
+| **10**  | `10-debt-receivable-reminder.json`    | DM (push) + `#ops`         | **P2** | Cron 10:00 Kyiv              | finyk    | WF-98 → `#meta` (no email)             |     | **16** | `16-posthog-daily-metrics.json` | `#growth` | **P2** | Cron 09:00 Kyiv | growth | WF-98 → `#meta` (no email) |
+| **17**  | `17-github-pr-stale-alert.json`       | `#engineering`             | **P2** | Cron Mo–Fr 10:00             | devex    | WF-98 → `#meta` (no email)             |
+| **18**  | `18-nightly-security-audit.json`      | `#incidents` ⁽³⁾           | **P1** | Cron 04:00 UTC               | security | WF-98 → `#meta` + email                |
+| **19**  | `19-db-health-report.json`            | `#ops`                     | **P1** | Cron Mon 07:00               | ops      | WF-98 → `#meta` (no email)             |
+| **20**  | `20-agent-dispatcher.json`            | `#engineering`             | **P1** | Console/OpenClaw webhook ⁽⁴⁾ | agents   | WF-98 → `#meta` (no email)             |
+| **25**  | `25-morning-briefing-cron.json`       | DM (founder) ⁽⁶⁾           | **P2** | Cron 07:00 Kyiv              | ops      | WF-98 → `#meta` (no email)             |
+| **30**  | `30-ai-memory-daily-digest.json`      | `#digest`                  | **P2** | Cron 09:05 Kyiv              | ops      | WF-98 → `#meta` (no email)             |
+| **60**  | `60-growth-funnel-snapshot.json`      | `#growth`                  | **P2** | Cron 02:30 Kyiv              | growth   | WF-98 → `#meta` (no email)             |
+| **63**  | `63-growth-acquisition-snapshot.json` | `#growth`                  | **P2** | Cron 02:35 Kyiv              | growth   | WF-98 → `#meta` (no email)             |
+| **98**  | `98-error-handler.json`               | `#meta`                    | **P0** | n8n error trigger            | ops      | _none_ (anti-loop, no `errorWorkflow`) |
+| **99**  | `99-heartbeat.json`                   | `#meta`                    | **P0** | Cron \*/3h                   | ops      | Email fallback (Resend)                |
+| **103** | `103-alert-escalation-cron.json`      | DM (founder) ⁽⁶⁾           | **P1** | Cron \*/5min                 | ops      | WF-98 → `#meta` (no email)             |
+| **104** | `104-alert-callback-router.json`      | `#incidents` ⁽⁶⁾           | **P1** | Telegram `callback_query`    | ops      | WF-98 → `#meta` (no email)             |
+| **105** | `105-alert-repeat-ping-cron.json`     | `#incidents` ⁽⁷⁾           | **P1** | Cron \*/15min                | ops      | WF-98 → `#meta` (no email)             |
+| **106** | `106-alert-sentry-warn-cron.json`     | — (Sentry off-channel) ⁽⁷⁾ | **P1** | Cron \*/15min                | ops      | WF-98 → `#meta` (no email)             |
 
 ⁽²⁾ Якщо deploy `failed` — WF-15 шле в `#incidents` (через тернарне
 expression у `message_thread_id`: `{{ $json.ok ? $env.TELEGRAM_TOPIC_OPS :

@@ -70,7 +70,8 @@ export interface FizrukRouterProps {
     program: TrainingProgramDef,
   ) => void;
   onOpenModule?:
-    ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
+    | ((moduleId: string, opts?: { hash?: string }) => void)
+    | undefined;
 }
 
 function renderPage(props: FizrukRouterProps) {

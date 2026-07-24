@@ -72,7 +72,9 @@ interface NutritionAppProps {
 // One-shot imperative follow-ups that must run *after* a page/state change has
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
 type PendingNutritionAction =
-  { kind: "open-add-meal" } | { kind: "open-photo-picker" } | null;
+  | { kind: "open-add-meal" }
+  | { kind: "open-photo-picker" }
+  | null;
 
 export default function NutritionApp({
   onBackToHub,

@@ -23,7 +23,12 @@ import { elapsedMs, isAbortError } from "./timing.js";
  */
 
 export type PostHogDeleteOutcome =
-  "ok" | "not_found" | "rate_limited" | "timeout" | "skipped" | "error";
+  | "ok"
+  | "not_found"
+  | "rate_limited"
+  | "timeout"
+  | "skipped"
+  | "error";
 
 export interface PostHogDeletePersonResult {
   outcome: PostHogDeleteOutcome;

@@ -123,7 +123,12 @@ function withSoftBreaks(lines: string[], keyPrefix: string): ReactNode[] {
 
 interface ParsedBlock {
   type:
-    "paragraph" | "heading-3" | "heading-4" | "ulist" | "olist" | "blockquote";
+    | "paragraph"
+    | "heading-3"
+    | "heading-4"
+    | "ulist"
+    | "olist"
+    | "blockquote";
   lines: string[];
 }
 

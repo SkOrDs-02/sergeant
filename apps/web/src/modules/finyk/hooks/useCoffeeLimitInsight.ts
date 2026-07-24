@@ -87,7 +87,8 @@ interface UseCoffeeLimitInsightArgs {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?:
-    readonly { id: string; label?: string | undefined }[] | undefined;
+    | readonly { id: string; label?: string | undefined }[]
+    | undefined;
 }
 
 export function useCoffeeLimitInsight({

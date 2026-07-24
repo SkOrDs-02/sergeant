@@ -79,7 +79,8 @@ export interface UseRoutineAppStateParams {
   pwaAction?: string | null | undefined;
   onPwaActionConsumed?: (() => void) | undefined;
   onOpenModule?:
-    ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
+    | ((moduleId: string, opts?: { hash?: string }) => void)
+    | undefined;
 }
 
 export interface RoutineAppStateBundle {

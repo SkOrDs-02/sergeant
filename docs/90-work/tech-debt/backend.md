@@ -476,8 +476,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 **Owner:** `@Skords-01`. **Trigger** — новий env-var-related incident або плановий SOC2-audit.
 
-**Альтернативи розглянуті і відкинуті:** Vault/Doppler overengineering; повна заборона runtime security-knobs (частково вже в `access-policy.md`).
----
+## **Альтернативи розглянуті і відкинуті:** Vault/Doppler overengineering; повна заборона runtime security-knobs (частково вже в `access-policy.md`).
 
 ## Status log
 
