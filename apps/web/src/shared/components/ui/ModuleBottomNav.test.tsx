@@ -1,6 +1,10 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
 import { ModuleBottomNav } from "./ModuleBottomNav";
 
 const items = [
@@ -19,6 +23,7 @@ const items = [
 describe("ModuleBottomNav", () => {
   afterEach(() => {
     cleanup();
+    resetVisualKeyboardInsetAdapter();
   });
 
   it("renders as a bottom-nav-shell — inset, rounded, framed", () => {
@@ -129,5 +134,54 @@ describe("ModuleBottomNav", () => {
     const activeIcon = screen.getByRole("button", { name: "Overview" })
       .firstElementChild as HTMLElement;
     expect(activeIcon.querySelector(".bg-nutrition")).toBeNull();
+  });
+
+  it("slides out of view and drops out of the tab order while the keyboard is open (spec § design decision 2)", () => {
+    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    // `aria-hidden` removes the whole subtree from the accessibility
+    // tree — the standard `getByRole` queries can no longer see it, so
+    // this is itself proof the hide worked. `{ hidden: true }` opts
+    // back in to assert on the underlying DOM state; the accessible
+    // *name* also zeroes out on an aria-hidden element (dom-accessibility-api
+    // follows the element's own hidden state even with `hidden: true`),
+    // so this query drops the `name` filter — there's only one `<nav>`.
+    const nav = screen.getByRole("navigation", { hidden: true });
+    expect(nav).toHaveAttribute("aria-label", "Module sections");
+    expect(nav).toHaveAttribute("aria-hidden", "true");
+    expect(nav.className).toContain("translate-y-full");
+    expect(nav.className).toContain("pointer-events-none");
+    expect(
+      screen.getByRole("button", { name: "Overview", hidden: true }),
+    ).toHaveAttribute("tabindex", "-1");
+    expect(
+      screen.getByRole("button", { name: "Stats", hidden: true }),
+    ).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("stays visible and reachable when the keyboard is closed", () => {
+    setVisualKeyboardInsetAdapter(() => 0);
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const nav = screen.getByRole("navigation", { name: "Module sections" });
+    expect(nav).not.toHaveAttribute("aria-hidden");
+    expect(nav.className).not.toContain("translate-y-full");
   });
 });
