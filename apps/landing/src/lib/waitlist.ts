@@ -31,7 +31,15 @@ export async function submitWaitlist(
     const body = (await res.json().catch(() => null)) as {
       message?: string;
     } | null;
-    throw new Error(body?.message ?? `Помилка ${res.status}. Спробуй ще раз.`);
+    // Не показуємо сирі серверні повідомлення (типу "Server error") —
+    // мапимо статуси на дружні тексти українською.
+    if (res.status === 429) {
+      throw new Error("Забагато спроб. Зачекай хвилину і спробуй ще раз.");
+    }
+    if (res.status === 400 && body?.message) {
+      throw new Error("Перевір адресу — схоже, email некоректний.");
+    }
+    throw new Error("Щось пішло не так. Спробуй ще раз за хвилину.");
   }
 
   return (await res.json()) as WaitlistResult;
