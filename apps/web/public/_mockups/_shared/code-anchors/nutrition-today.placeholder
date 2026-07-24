@@ -1,0 +1,5 @@
+Screen: Nutrition — Today / Log view (module home)
+Source: apps/web/src/modules/nutrition/pages/NutritionLogPage.tsx
+Status: live-in-code
+Note: NutritionLogPage is the closest to "today" — daily food log. Also: NutritionMenuPage, NutritionPantryPage.
+Replace with: screenshot at 390×844px, light + dark mode.
