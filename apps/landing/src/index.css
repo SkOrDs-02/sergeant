@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Sergeant landing — Glass Dashboard theme (концепт C4).
+   3 основні кольори + 2 нейтрали: background/foreground/muted + accent + card-line. */
+@theme {
+  --color-background: #0a0e14;
+  --color-foreground: #eef2f6;
+  --color-muted: #94a3b3;
+  --color-accent: #35d07f;
+  --color-accent-strong: #4ee696;
+  --color-accent-ink: #06281a;
+  --color-card: rgba(255, 255, 255, 0.05);
+  --color-cardline: rgba(255, 255, 255, 0.12);
+
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Manrope", sans-serif;
+
+  --radius: 1.125rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(
+      ellipse 60% 40% at 70% 10%,
+      rgba(53, 208, 127, 0.14),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 20% 80%,
+      rgba(53, 150, 208, 0.1),
+      transparent
+    );
+  background-attachment: fixed;
+}
