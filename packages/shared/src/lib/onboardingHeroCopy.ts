@@ -43,7 +43,10 @@ export const ONBOARDING_HERO_COPY_EXPERIMENT: ExperimentDefinition = {
 };
 
 export type OnboardingHeroCopyVariant =
-  "outcome" | "safe" | "bold" | "disciplined";
+  | "outcome"
+  | "safe"
+  | "bold"
+  | "disciplined";
 
 export interface OnboardingHeroCopy {
   /** Hero headline (h2). ≤ 64 chars. */

@@ -123,7 +123,10 @@ export type DualWriteOutcome =
   | {
       status: "skipped";
       reason:
-        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
+        | "context-unset"
+        | "no-ops"
+        | "user-id-missing"
+        | "sqlite-unavailable";
     };
 
 function logSafe(

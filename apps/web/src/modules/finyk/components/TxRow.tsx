@@ -39,7 +39,9 @@ interface TxRowProps {
   hideAmount?: boolean | undefined;
   txSplits?: TxSplitsMap | undefined;
   onSplitChange?:
-    ((id: string, split: TxSplit[] | null) => void) | null | undefined;
+    | ((id: string, split: TxSplit[] | null) => void)
+    | null
+    | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
 }
 

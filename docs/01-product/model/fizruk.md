@@ -316,7 +316,7 @@ best1rm) best1rm = est`, `apps/web/src/modules/fizruk/pages/Exercise.tsx:89,343`
 **Mobile — найглибший паритет серед модулів.** Дослівно: mobile — найглибша
 поверхня. У `apps/mobile/app/(tabs)/fizruk/` — **12 роут-файлів** (atlas, body,
 exercise, index, measurements, plan, programs, progress, workouts, workout/new,
-workout/[id], _layout); доки підтверджують повний web/shell/RN-паритет
+workout/[id], \_layout); доки підтверджують повний web/shell/RN-паритет
 (`platforms.md:43`).
 
 > **Докстрінг відстав від коду — зафіксувати.** `apps/mobile/src/modules/fizruk/FizrukApp.tsx:23-27`

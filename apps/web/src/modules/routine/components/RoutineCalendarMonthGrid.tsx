@@ -12,7 +12,8 @@ import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
 
 type GroupedListItem =
-  { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
+  | { kind: "header"; label: string }
+  | { kind: "event"; e: HubCalendarEvent };
 
 export interface RoutineCalendarMonthGridProps {
   monthCursor: { y: number; m: number };

@@ -22,7 +22,10 @@
  */
 
 export type IntentPrefetchModuleId =
-  "finyk" | "fizruk" | "routine" | "nutrition";
+  | "finyk"
+  | "fizruk"
+  | "routine"
+  | "nutrition";
 
 type Prefetcher = (id: IntentPrefetchModuleId) => void;
 

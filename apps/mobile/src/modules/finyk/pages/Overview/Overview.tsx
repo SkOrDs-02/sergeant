@@ -53,7 +53,11 @@ import { useFinykOverviewData } from "./useFinykOverviewData";
 import type { FinykOverviewData } from "./types";
 
 export type OverviewNavRoute =
-  "transactions" | "budgets" | "subscriptions" | "analytics" | "assets";
+  | "transactions"
+  | "budgets"
+  | "subscriptions"
+  | "analytics"
+  | "assets";
 
 export interface OverviewProps {
   /**

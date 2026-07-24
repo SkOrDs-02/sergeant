@@ -32,7 +32,11 @@ import {
 } from "./Skeleton";
 
 export type PageSkeletonVariant =
-  "list" | "detail" | "dashboard" | "form" | "cards";
+  | "list"
+  | "detail"
+  | "dashboard"
+  | "form"
+  | "cards";
 
 export interface PageSkeletonProps {
   /** Layout variant. Defaults to "list". */

@@ -22,7 +22,11 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export type CheckboxVariant =
-  "default" | "finyk" | "fizruk" | "routine" | "nutrition";
+  | "default"
+  | "finyk"
+  | "fizruk"
+  | "routine"
+  | "nutrition";
 
 export type CheckboxSize = "sm" | "md" | "lg";
 

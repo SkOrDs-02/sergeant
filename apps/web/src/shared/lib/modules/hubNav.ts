@@ -19,7 +19,11 @@ export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 // дубльованих декларацій (aislop `ai-slop/duplicate-type-declaration`).
 export type HubModuleId = ModuleAccent;
 export type HubModuleAction =
-  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
+  | "add_expense"
+  | "start_workout"
+  | "add_meal"
+  | "add_meal_photo"
+  | "add_habit";
 
 export interface HubOpenModuleDetail {
   module: HubModuleId;

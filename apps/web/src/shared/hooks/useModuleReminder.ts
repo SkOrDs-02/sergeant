@@ -34,7 +34,8 @@ function readNotificationPermission(): NotificationPermission | "unsupported" {
  * Lifted verbatim from `useRoutineReminders.ts` (page-audit-09 F8).
  */
 export function useNotificationPermission():
-  NotificationPermission | "unsupported" {
+  | NotificationPermission
+  | "unsupported" {
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">(() =>
     readNotificationPermission(),
   );

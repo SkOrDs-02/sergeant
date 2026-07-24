@@ -68,7 +68,11 @@ function emailFingerprint(raw: unknown): string | undefined {
  * limiter, щоб 429 ловились.
  */
 type AuthOp =
-  "sign_in" | "sign_up" | "forget_password" | "reset_password" | "signout";
+  | "sign_in"
+  | "sign_up"
+  | "forget_password"
+  | "reset_password"
+  | "signout";
 
 export function authMetricsMiddleware(
   req: Request,

@@ -34,7 +34,11 @@ export type SectionHeadingVariant =
   | "nutrition";
 
 export type SectionHeadingWeight =
-  "normal" | "medium" | "semibold" | "bold" | "extrabold";
+  | "normal"
+  | "medium"
+  | "semibold"
+  | "bold"
+  | "extrabold";
 
 // This IS the SectionHeading primitive itself — canonical owner of the
 // uppercase + tracking + text-* eyebrow combo. Raw-className call-sites

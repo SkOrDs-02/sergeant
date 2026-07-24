@@ -43,7 +43,9 @@ export type FinykPreset = {
 export type ModuleId = "routine" | "finyk" | "nutrition" | "fizruk";
 
 export type ModulePreset =
-  RoutinePreset | FinykPreset | Record<string, unknown>;
+  | RoutinePreset
+  | FinykPreset
+  | Record<string, unknown>;
 
 function applyRoutinePreset(preset: RoutinePreset): void {
   const next = applyCreateHabit(loadRoutineState(), {

@@ -55,7 +55,10 @@ export type OnboardingGoalFirstVariant = "control" | "goal_first";
  * hypothesis is single-commitment.
  */
 export type OnboardingOutcomeId =
-  "spend-less" | "stay-in-shape" | "build-habits" | "eat-better";
+  | "spend-less"
+  | "stay-in-shape"
+  | "build-habits"
+  | "eat-better";
 
 export interface OnboardingOutcomeCopy {
   /** Outcome id. */

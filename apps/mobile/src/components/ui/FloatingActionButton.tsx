@@ -33,7 +33,11 @@ import {
 } from "react-native";
 
 export type FABVariant =
-  "primary" | "finyk" | "fizruk" | "routine" | "nutrition";
+  | "primary"
+  | "finyk"
+  | "fizruk"
+  | "routine"
+  | "nutrition";
 export type FABSize = "mini" | "regular" | "extended";
 
 export interface FABAction {

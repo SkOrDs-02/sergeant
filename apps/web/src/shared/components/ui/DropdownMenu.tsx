@@ -48,7 +48,10 @@ import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 const DROPDOWN_PANEL_OFFSET = 6;
 
 export type DropdownMenuPlacement =
-  "bottom-start" | "bottom-end" | "top-start" | "top-end";
+  | "bottom-start"
+  | "bottom-end"
+  | "top-start"
+  | "top-end";
 
 /** A clickable row inside the menu. */
 export interface DropdownMenuItem {

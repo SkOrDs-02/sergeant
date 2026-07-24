@@ -34,7 +34,11 @@ import {
 } from "react-native";
 
 export type CoachTipVariant =
-  "default" | "suggestion" | "insight" | "goal" | "celebration";
+  | "default"
+  | "suggestion"
+  | "insight"
+  | "goal"
+  | "celebration";
 
 export type CoachTipPosition = "top" | "bottom" | "left" | "right";
 

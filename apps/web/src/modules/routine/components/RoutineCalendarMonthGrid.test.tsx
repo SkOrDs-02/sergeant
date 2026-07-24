@@ -18,7 +18,8 @@ import {
 afterEach(cleanup);
 
 type GroupedListItem =
-  { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
+  | { kind: "header"; label: string }
+  | { kind: "event"; e: HubCalendarEvent };
 
 function makeEvent(over: Partial<HubCalendarEvent> = {}): HubCalendarEvent {
   return {

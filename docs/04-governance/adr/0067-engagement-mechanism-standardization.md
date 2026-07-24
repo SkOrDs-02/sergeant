@@ -158,4 +158,5 @@ Hub має цілий клас «engagement-механізмів» — код, �
 | [#3665](https://github.com/Skords-01/Sergeant/pull/3665) | docs(web): add ADR-0067 engagement mechanism standardization | 2026-06-20 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

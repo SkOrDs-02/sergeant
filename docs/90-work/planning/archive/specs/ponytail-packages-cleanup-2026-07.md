@@ -1,4 +1,4 @@
-# Spec: Ponytail-cleanup packages/* (over-engineering purge)
+# Spec: Ponytail-cleanup packages/\* (over-engineering purge)
 
 > **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/90-work/planning/specs/ponytail-packages-cleanup-2026-07.md`.

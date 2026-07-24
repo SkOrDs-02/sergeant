@@ -86,7 +86,8 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
 
     const options = vi.mocked(useDialogFocusTrap).mock.calls.at(-1)?.[2] as
-      { onEscape?: () => void } | undefined;
+      | { onEscape?: () => void }
+      | undefined;
     options?.onEscape?.();
 
     expect(setFinishFlash).toHaveBeenCalledWith(null);

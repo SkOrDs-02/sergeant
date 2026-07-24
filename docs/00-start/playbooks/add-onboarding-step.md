@@ -1,6 +1,6 @@
 # Playbook: Add Onboarding Step
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
@@ -41,7 +41,10 @@ export const ONBOARDING_STEPS: readonly OnboardingStepId[] = [...];
 
 ```ts
 export type OnboardingStepId =
-  "welcome" | "modules" | "goals" | "your_new_step"; // ➕
+  | "welcome"
+  | "modules"
+  | "goals"
+  | "your_new_step"; // ➕
 
 export const ONBOARDING_STEPS: readonly OnboardingStepId[] = [
   "welcome",

@@ -247,7 +247,9 @@ async function sendViaResend(args: {
  */
 export class FtuxDripSkip extends Error {
   readonly outcome:
-    "skipped_optout" | "skipped_already_sent" | "skipped_user_deleted";
+    | "skipped_optout"
+    | "skipped_already_sent"
+    | "skipped_user_deleted";
   constructor(outcome: FtuxDripSkip["outcome"], message: string) {
     super(message);
     this.outcome = outcome;

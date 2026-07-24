@@ -57,7 +57,8 @@ export interface FoodProductInput {
 }
 
 export type UpsertFoodResult =
-  { ok: true; product: FoodProduct } | { ok: false; error: string };
+  | { ok: true; product: FoodProduct }
+  | { ok: false; error: string };
 
 function normText(s: unknown): string {
   return String(s || "")

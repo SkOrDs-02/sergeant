@@ -92,6 +92,7 @@ ESLint правило [`sergeant-design/no-strict-bypass`](../../../packages/esl
 
 **Стан 2026-07-20:** allowlist у `eslint.mobile.js` **порожній**; production
 `as unknown as` = **0** (M3/M4/M5 closed). Нові bypasses падають на lint.
+
 ---
 
 ## `: any` types
@@ -155,6 +156,7 @@ allowlist на 1 файл (`useSyncedStorage.ts` сам), 0 інших пору�
 Історично закриті: `adapter.ts` / `PlanCalendar` (#3363), `diff.ts` → `diff/`,
 `Calendar.tsx` → `pages/Calendar/` (#2780), `TransactionsPage` (#1453),
 `CelebrationModal` (#1465), `OnboardingWizard` → 390 LOC.
+
 ---
 
 ## TODO/FIXME маркери
@@ -169,8 +171,7 @@ Live / closed markers у `apps/mobile/src` (не-test), triage 2026-07-20 (Wave 
 | `core/hub/HubReports.tsx`                | `TODO(billing)` paywall + `TODO(H4)` WeeklyDigestCard               | 🚫 Blocked-reason: owner-decision — no mobile entitlement/`PaywallModal` surface yet (`useFlag` gate stays); H4 digest card lands separately.                           |
 | `core/hub/reports/exportReport.ts`       | `TODO(export): expo-print`                                          | 🚫 Blocked-reason: dep-blocked — HTML share via `expo-sharing` is the interim path; real PDF needs `expo-print` (do not bump Expo SDK here).                            |
 
-`AI-LEGACY:` / `FIXME` / `HACK` / `XXX` — 0. ModuleErrorBoundary TODO(phase-10) — closed.
----
+## `AI-LEGACY:` / `FIXME` / `HACK` / `XXX` — 0. ModuleErrorBoundary TODO(phase-10) — closed.
 
 ## Observability — Sentry RN
 
@@ -262,6 +263,7 @@ never-resolving Promise).
 
 ✅ [PR #1415](https://github.com/Skords-01/Sergeant/pull/1415) + [PR #2538](https://github.com/Skords-01/Sergeant/pull/2538)
 (boundary / native-bridge coverage). M8 — done.
+
 ---
 
 ## TypeScript-version drift

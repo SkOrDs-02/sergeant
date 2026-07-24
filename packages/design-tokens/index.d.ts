@@ -11,7 +11,10 @@ export type ModuleAccent = "finyk" | "fizruk" | "routine" | "nutrition";
 
 /** Soft (tinted-surface) variants of module accents. */
 export type ModuleSoftAccent =
-  "finyk-soft" | "fizruk-soft" | "routine-soft" | "nutrition-soft";
+  | "finyk-soft"
+  | "fizruk-soft"
+  | "routine-soft"
+  | "nutrition-soft";
 
 /** Status / semantic colour identifiers used for feedback UI. */
 export type StatusColor = "success" | "warning" | "danger" | "info";
@@ -101,7 +104,12 @@ export declare const elevation: Readonly<Record<ElevationLevel, ElevationStep>>;
 
 /** Semantic z-index tiers — match an `elevation.eN` level to its tier. */
 export type ZTier =
-  "base" | "dropdown" | "sticky" | "overlay" | "modal" | "toast";
+  | "base"
+  | "dropdown"
+  | "sticky"
+  | "overlay"
+  | "modal"
+  | "toast";
 
 /** Z-index tier values (numeric strings) keyed by semantic tier. */
 export declare const zTier: Readonly<Record<ZTier, string>>;
