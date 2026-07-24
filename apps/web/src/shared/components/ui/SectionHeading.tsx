@@ -48,15 +48,16 @@ export type SectionHeadingWeight =
 // raised from 10px to satisfy HR#16 (minimum 12px text).
 // Роль задає РОЗМІР; casing / tracking / weight лишаються шарами поверх
 // (той самий патерн, що вже був у `2xs`). eyebrow-розміри сидять на
-// `caption` (12px floor, HR#16); md — `label`; lg/xl — `title` (секційний
-// заголовок). Цикл 6: сирих `text-xs/sm/lg/xl` тут більше немає.
+// `caption` (12px floor, HR#16); md — `label`; lg — `title` (секційний
+// заголовок); xl — `headline` (проміжний H2: крок ієрархії title 22 →
+// headline 26 і є тим розривом, яким користуємось, cycle-6 acceptance §3).
 const sizeTokens: Record<SectionHeadingSize, string> = {
   "2xs": "text-style-caption uppercase tracking-wide",
   xs: "text-style-caption uppercase tracking-wider",
   sm: "text-style-caption uppercase tracking-widest",
   md: "text-style-label",
   lg: "text-style-title leading-tight",
-  xl: "text-style-title leading-tight",
+  xl: "text-style-headline leading-tight",
 };
 
 const weightTokens: Record<SectionHeadingWeight, string> = {
