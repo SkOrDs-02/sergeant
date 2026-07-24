@@ -749,7 +749,10 @@ function Section6() {
 
 export function ProposalPage() {
   return (
-    <div className="min-h-screen" style={{ background: "rgb(var(--c-bg))" }}>
+    <div
+      className="h-screen overflow-y-auto"
+      style={{ background: "rgb(var(--c-bg))", WebkitOverflowScrolling: "touch" }}
+    >
       <style>{`
         @keyframes proposalRise {
           from { opacity: 0; transform: translateY(14px) scale(0.98); }
