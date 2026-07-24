@@ -23,6 +23,7 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Banner } from "@shared/components/ui/Banner";
+import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import {
   MeshBackground,
   ModuleAccentProvider,
@@ -253,6 +254,15 @@ export default function NutritionApp({
     log.setAddMealPhotoResult(photo.photoResult);
     log.setAddMealSheetOpen(true);
   };
+
+  // FAB (fab-and-manual-income spec §5): єдина точка входу для «додати
+  // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
+  // sheet завжди відкривався у create-режимі.
+  const handleOpenAddMeal = useCallback(() => {
+    setEditingMeal(null);
+    log.setAddMealPhotoResult(null);
+    log.setAddMealSheetOpen(true);
+  }, [log, setEditingMeal]);
 
   // "Додати прийом їжі" from the Start dashboard: jump to today + Log page,
   // then open the add-meal sheet once that page has mounted. We request the
@@ -649,6 +659,15 @@ export default function NutritionApp({
             </div>
           </div>
         </PullToRefresh>
+
+        {(activePage === "start" || activePage === "log") && (
+          <FloatingActionButton
+            variant="v2-nutrition"
+            icon="plus"
+            onClick={handleOpenAddMeal}
+            aria-label="Додати прийом їжі"
+          />
+        )}
 
         <NutritionBottomNav
           activePage={activePage}

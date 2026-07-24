@@ -298,8 +298,9 @@ export function dedupeAndSortTransactions(
 
 /**
  * Перетворює збережену manual-витрату (`addManualExpense`-entry) у
- * нормалізовану Transaction. Зберігає amount у копійках зі знаком "витрата"
- * та проставляє categoryId з поля `category`.
+ * нормалізовану Transaction. Зберігає amount у копійках зі знаком, похідним
+ * від `kind` (expense → від'ємний, income → додатний), та проставляє
+ * categoryId з поля `category`.
  */
 export interface ManualExpenseEntry {
   id: string | number;
@@ -307,6 +308,33 @@ export interface ManualExpenseEntry {
   description?: string;
   amount?: number | string;
   category?: string;
+  kind?: string;
+  /**
+   * Legacy alias для `kind`: HubChat chat-actions (`finykActions/transactions.ts`)
+   * штампували цей запис як `type: "income" | "expense"` до появи `kind` у
+   * формі ручного вводу. Читається як fallback у {@link resolveManualExpenseKind},
+   * ніколи не пишеться новим кодом.
+   */
+  type?: string;
+}
+
+export type ManualExpenseKind = "expense" | "income";
+
+/**
+ * Визначає ефективний `kind` manual-запису: `kind` має пріоритет; за
+ * відсутності — легасі поле `type` (HubChat-записи, зроблені до появи
+ * `kind`); інакше — `"expense"` (старі записи без жодного поля лишаються
+ * валідними без міграції даних).
+ */
+export function resolveManualExpenseKind(
+  entry:
+    | { kind?: string | null | undefined; type?: string | null | undefined }
+    | null
+    | undefined,
+): ManualExpenseKind {
+  if (entry?.kind === "income" || entry?.kind === "expense") return entry.kind;
+  if (entry?.type === "income") return "income";
+  return "expense";
 }
 
 export function manualExpenseToTransaction(
@@ -314,14 +342,17 @@ export function manualExpenseToTransaction(
 ): Transaction {
   const e: ManualExpenseEntry = entry || { id: "" };
   const time = e.date ? Math.floor(new Date(e.date).getTime() / 1000) : 0;
+  const isIncome = resolveManualExpenseKind(e) === "income";
+  const amountMinor = Math.abs(Math.round(Number(e.amount || 0) * 100));
   return normalizeTransaction(
     {
       id: `manual_${e.id}`,
       manual: true,
       manualId: e.id,
       time,
-      // UI зберігає amount як додатнє число у гривнях → конвертуємо у мінус-копійки.
-      amount: -Math.abs(Math.round(Number(e.amount || 0) * 100)),
+      // UI зберігає amount як додатнє число у гривнях → конвертуємо у
+      // копійки зі знаком за kind (expense мінус, income плюс).
+      amount: isIncome ? amountMinor : -amountMinor,
       description: e.description || "",
       mcc: 0,
       raw: { category: e.category },

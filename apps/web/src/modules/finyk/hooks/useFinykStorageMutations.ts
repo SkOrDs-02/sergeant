@@ -43,6 +43,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setTxSplits,
     setMonoDebtLinkedTxIds,
     setCustomCategories,
+    manualExpenses,
     setManualExpenses,
     setExcludedStatTxIds,
     setDismissedRecurring,
@@ -59,28 +60,35 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
   const addManualExpense = (
     expense: Partial<ManualExpense> & { id?: unknown },
   ) => {
+    const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
       id: expense?.id != null ? String(expense.id) : Date.now().toString(),
+      // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback for a missing entry date, not a Kyiv day-boundary computation.
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
       amount: Number(expense.amount) || 0,
-      category: expense.category || "інше",
+      category: expense.category || (isIncome ? "other-income" : "інше"),
+      kind: isIncome ? "income" : "expense",
     };
     setManualExpenses((prev) => [entry, ...prev]);
     invalidateFinykPreview();
     // Product analytics: payload intentionally minimal (category + flag
     // whether a custom description was provided) — no amounts, no text.
-    trackEvent(ANALYTICS_EVENTS.EXPENSE_ADDED, {
-      category: entry.category,
-      hasDescription: Boolean(entry.description),
-      source: "manual",
-    });
+    trackEvent(
+      isIncome ? ANALYTICS_EVENTS.INCOME_ADDED : ANALYTICS_EVENTS.EXPENSE_ADDED,
+      {
+        category: entry.category,
+        hasDescription: Boolean(entry.description),
+        source: "manual",
+      },
+    );
     // Activation funnel: fire once for the user's first-ever manual
-    // expense, keyed by a localStorage flag so seeded demo data doesn't
-    // count and so re-adds don't re-fire. `safeReadStringLS`/`safeWriteLS`
-    // swallow storage errors (locked-down private modes, quota), so we
-    // do not need a wrapping try/catch.
-    if (!safeReadStringLS("finyk_first_expense_seen_v1")) {
+    // EXPENSE (income intentionally excluded — it's a distinct activation
+    // hypothesis with no funnel defined yet), keyed by a localStorage flag
+    // so seeded demo data doesn't count and re-adds don't re-fire.
+    // `safeReadStringLS`/`safeWriteLS` swallow storage errors (locked-down
+    // private modes, quota), so we do not need a wrapping try/catch.
+    if (!isIncome && !safeReadStringLS("finyk_first_expense_seen_v1")) {
       safeWriteLS("finyk_first_expense_seen_v1", "1");
       trackEvent(ANALYTICS_EVENTS.FIRST_EXPENSE_ADDED, {
         category: entry.category,
@@ -90,9 +98,15 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
   };
 
   const removeManualExpense = (id: string) => {
+    const removed = manualExpenses.find((e) => e.id === id);
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
     invalidateFinykPreview();
-    trackEvent(ANALYTICS_EVENTS.EXPENSE_DELETED, { source: "manual" });
+    trackEvent(
+      removed?.kind === "income"
+        ? ANALYTICS_EVENTS.INCOME_DELETED
+        : ANALYTICS_EVENTS.EXPENSE_DELETED,
+      { source: "manual" },
+    );
   };
 
   const editManualExpense = (
@@ -110,6 +124,8 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (patch?.category != null)
           next.category = String(patch.category || "інше");
         if (patch?.amount != null) next.amount = Number(patch.amount) || 0;
+        if (patch?.kind === "income" || patch?.kind === "expense")
+          next.kind = patch.kind;
         return next;
       }),
     );

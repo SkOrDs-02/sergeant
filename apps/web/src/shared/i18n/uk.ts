@@ -25,6 +25,7 @@
 
 import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
+import { routinePageMessages } from "./uk.routine";
 
 export const messages = {
   auth: {
@@ -500,18 +501,7 @@ export const messages = {
     kcalUnit: "ккал",
   },
 
-  routine: {
-    dayReport: "Денний звіт",
-    weekdays: "Дні тижня",
-    archive: "Архів",
-    // HubReports RoutineCard
-    reportHeading: "Рутина (виконання звичок)",
-    firstRun: {
-      title: "Перша звичка — попередня",
-      description:
-        "Додай будь-яку звичку для старту. Далі сам редагуватимеш і додаватимеш нові з цього ж діалогу.",
-    },
-  },
+  routine: routinePageMessages,
 
   finyk: finykPageMessages,
 

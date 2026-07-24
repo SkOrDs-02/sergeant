@@ -4,6 +4,7 @@ import {
   normalizeTransaction,
   normalizeTransactions,
   manualExpenseToTransaction,
+  resolveManualExpenseKind,
   dedupeAndSortTransactions,
 } from "./transactions.js";
 import { INTERNAL_TRANSFER_ID } from "../constants.js";
@@ -228,5 +229,55 @@ describe("manualExpenseToTransaction", () => {
       date: "2024-06-15T12:00:00.000Z",
     });
     expect(tx.amount).toBe(0);
+  });
+
+  it("kind: income → конвертує гривні в копійки зі знаком надходження", () => {
+    const tx = manualExpenseToTransaction({
+      id: "3",
+      date: "2024-06-15T12:00:00.000Z",
+      description: "Зарплата",
+      amount: 5000,
+      category: "salary",
+      kind: "income",
+    });
+    expect(tx.amount).toBe(500000);
+    expect(tx.type).toBe("income");
+  });
+
+  it("запис без kind (старі дані) лишається expense — без міграції", () => {
+    const tx = manualExpenseToTransaction({
+      id: "4",
+      date: "2024-06-15T12:00:00.000Z",
+      amount: 100,
+    });
+    expect(tx.amount).toBe(-10000);
+  });
+
+  it("легасі поле type: income (HubChat-записи до появи kind) читається як income", () => {
+    const tx = manualExpenseToTransaction({
+      id: "5",
+      date: "2024-06-15T12:00:00.000Z",
+      amount: 5000,
+      type: "income",
+    });
+    expect(tx.amount).toBe(500000);
+  });
+});
+
+describe("resolveManualExpenseKind", () => {
+  it("kind має пріоритет над type", () => {
+    expect(resolveManualExpenseKind({ kind: "expense", type: "income" })).toBe(
+      "expense",
+    );
+  });
+
+  it("type: income — fallback, коли kind відсутній", () => {
+    expect(resolveManualExpenseKind({ type: "income" })).toBe("income");
+  });
+
+  it("без kind і type — за замовчуванням expense", () => {
+    expect(resolveManualExpenseKind({})).toBe("expense");
+    expect(resolveManualExpenseKind(null)).toBe("expense");
+    expect(resolveManualExpenseKind(undefined)).toBe("expense");
   });
 });

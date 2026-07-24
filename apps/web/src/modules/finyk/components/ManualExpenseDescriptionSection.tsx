@@ -11,11 +11,7 @@ import type { FrequentMerchant } from "@sergeant/finyk-domain/domain/personaliza
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { formatMoney, pluralTimes } from "@sergeant/shared";
-import {
-  CATEGORY_SLUGS,
-  upgradeCategory,
-  type CategorySlug,
-} from "./manualExpenseCategories";
+import { CATEGORY_SLUGS, upgradeCategory } from "./manualExpenseCategories";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
 interface ManualExpenseDescriptionSectionProps {
@@ -25,7 +21,8 @@ interface ManualExpenseDescriptionSectionProps {
   showMerchantHints: boolean;
   merchantSuggestions: FrequentMerchant[];
   setDescFocused: Dispatch<SetStateAction<boolean>>;
-  setAiAppliedCategory: Dispatch<SetStateAction<CategorySlug | null>>;
+  /** Widened to `string` — the sheet also uses this setter for income-slug picks. */
+  setAiAppliedCategory: Dispatch<SetStateAction<string | null>>;
   register: UseFormRegister<ExpenseFormValues>;
   setValue: UseFormSetValue<ExpenseFormValues>;
 }

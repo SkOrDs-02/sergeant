@@ -4,6 +4,7 @@ import {
   calcFinykSpendingByDate,
   calcFinykSpendingTotal,
 } from "./spending.js";
+import { manualExpenseToTransaction } from "../domain/transactions.js";
 
 // UTC-anchored so toISOString() date keys are stable regardless of the machine's local TZ.
 const monday = Date.UTC(2026, 3, 20);
@@ -126,6 +127,22 @@ describe("calcFinykPeriodAggregate", () => {
       { start: monday, end: sunday },
     );
     expect(r.txCount).toBe(0);
+    expect(r.totalSpent).toBe(0);
+  });
+
+  it("бачить ручний income (fab-and-manual-income spec): manualExpenseToTransaction(kind: income) → totalIncome", () => {
+    const manualIncomeTx = manualExpenseToTransaction({
+      id: "salary-1",
+      date: new Date(monday + 3_600_000).toISOString(),
+      amount: 5000,
+      category: "salary",
+      kind: "income",
+    });
+    const r = calcFinykPeriodAggregate([manualIncomeTx], {
+      start: monday,
+      end: sunday,
+    });
+    expect(r.totalIncome).toBe(5000);
     expect(r.totalSpent).toBe(0);
   });
 });
