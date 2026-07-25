@@ -12,21 +12,13 @@
  * щоб картка відрендерилася для тих самих ключових дій.
  */
 
+import { isRiskyTool } from "@sergeant/shared";
+
 import type { ChatActionCardLite } from "./hubChatUtils";
 
 export type ChatActionCardModule = ChatActionCardLite["module"];
 export type ChatActionCardStatus = ChatActionCardLite["status"];
 export type ChatActionCard = ChatActionCardLite;
-
-/** Tools, класифіковані як ризикові за специфікацією §4. */
-const RISKY_TOOLS: ReadonlySet<string> = new Set([
-  "batch_categorize",
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-]);
 
 const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "create_transaction",
@@ -202,7 +194,7 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   };
   const icon = iconFor(input.name);
   if (icon) Object.assign(card, { icon });
-  if (RISKY_TOOLS.has(input.name)) Object.assign(card, { risky: true });
+  if (isRiskyTool(input.name)) Object.assign(card, { risky: true });
   return card;
 }
 

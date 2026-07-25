@@ -7,6 +7,7 @@ import { HubChatHeader } from "./chat/HubChatHeader";
 import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
 import { PaywallModal } from "../billing/PaywallModal";
+import { DestructiveConfirmModal } from "./chat/DestructiveConfirmModal";
 
 interface HubChatProps {
   onClose: () => void;
@@ -78,6 +79,7 @@ function HubChat({
     cancelInFlight,
     paywallOpen,
     closePaywall,
+    confirmDestructive,
     sendRef,
     focusInputRef,
   } = sendState;
@@ -155,13 +157,19 @@ function HubChat({
         onDelete={handleDeleteSession}
       />
 
+      <DestructiveConfirmModal
+        toolNames={confirmDestructive.pending?.toolNames ?? null}
+        onConfirm={confirmDestructive.accept}
+        onCancel={confirmDestructive.reject}
+      />
+
       {/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing PaywallModal copy; i18n catalog migration tracked separately. */}
       <PaywallModal
         open={paywallOpen}
         onClose={closePaywall}
         surface="ai_chat_limit"
         title="Безлімітний AI-чат у Pro"
-        description="Free-тариф має 15 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+        description="Free-тариф має 5 AI-повідомлень на день. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
     </div>

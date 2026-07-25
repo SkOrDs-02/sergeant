@@ -26,6 +26,10 @@ import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
 import { parseToolCalls } from "./toolCallSchema";
+import {
+  useDestructiveConfirm,
+  type UseDestructiveConfirmResult,
+} from "./useDestructiveConfirm";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { buildActionCard } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
@@ -33,10 +37,23 @@ import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
 import { usePlan } from "../../billing/usePlan";
+import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
-const FREE_DAILY_AI_CHAT_LIMIT = 15;
+/**
+ * Клієнтський пре-гейт пейволу. Мусить збігатися з
+ * `billing/effectiveLimits.ts::aiRequestsPerDay` для free-плану.
+ *
+ * AI-DANGER: тут стояло 15 після того, як сервер зрізали до 5 (PR #464) —
+ * тобто клієнт пускав ще десять запитів, які сервер відбивав квотою.
+ * Користувач бачив помилку замість пейволу. Точного паритету все одно
+ * немає: сервер рахує ОДИНИЦІ (виклик з інструментом коштує 3), а тут
+ * рахуються повідомлення, тож це груба нижня оцінка, і сервер лишається
+ * джерелом істини. Змінюєш ліміт — зміни в обох місцях і в копії.
+ */
+const FREE_DAILY_AI_CHAT_LIMIT = 5;
 const DAILY_CHAT_COUNT_KEY = "sergeant:ai-chat:daily-count:v1";
+const CANCELLED_BY_USER_TEXT = "Скасовано — нічого не змінено.";
 const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
 const HUB_CHAT_HELP_TEXT = [
   "Ось коротка довідка по командам:",
@@ -104,6 +121,8 @@ export interface UseChatSendResult {
   /** Abort the in-flight request (cancel button or close while streaming). */
   cancelInFlight: () => void;
   paywallOpen: boolean;
+  /** Гейт підтвердження незворотних інструментів (канон §8). */
+  confirmDestructive: UseDestructiveConfirmResult;
   closePaywall: () => void;
   /** Imperative send ref — used by the autofocus / quick-action handlers. */
   sendRef: React.MutableRefObject<
@@ -143,6 +162,12 @@ export function useChatSend({
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const confirmDestructive = useDestructiveConfirm();
+  // Беремо саме `request` у залежності `send`: сам об'єкт хука
+  // перестворюється на кожну зміну `pending`, і залежність від нього
+  // пересоздавала б `send` щоразу, коли відкривається/закривається діалог.
+  // `request` стабільний (useCallback без залежностей).
+  const requestDestructiveConfirm = confirmDestructive.request;
 
   // AbortController for cancelling the active request (cancel button).
   // Lives in a ref because it does not affect render — we just need a
@@ -366,6 +391,35 @@ export function useChatSend({
             return;
           }
           const toolCalls = parsed.value;
+
+          // Канон §8 — «Деструктивне тільки з підтвердженням», причому
+          // ПЕРЕД виконанням. Гейт стоїть тут, а не всередині хендлерів:
+          // хендлери — чисті функції над сховищем, у них немає UI, і
+          // підтвердження в кожному з них розповзлось би шістьма копіями.
+          const destructive = toolCalls.filter((tc) =>
+            requiresConfirmation(tc.name as string),
+          );
+          if (destructive.length > 0) {
+            const approved = await requestDestructiveConfirm(
+              destructive.map((tc) => tc.name as string),
+            );
+            if (!approved) {
+              // Скасування — весь батч, а не лише деструктивна його
+              // частина. Часткове виконання лишило б стан, якого
+              // користувач не обмірковував: він відмовився від «видали
+              // й перепиши», а отримав би половину.
+              //
+              // Другий запит до моделі теж не робимо: `tool_calls_raw`
+              // йде лише в ньому, тож жоден `tool_use` не лишається без
+              // пари — протокол не ламається, а токени не палимо.
+              setMessages((m) => [
+                ...m,
+                makeAssistantMsg(CANCELLED_BY_USER_TEXT),
+              ]);
+              return;
+            }
+          }
+
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
@@ -537,6 +591,7 @@ export function useChatSend({
       maybeSpeak,
       onOpenCatalogue,
       queryClient,
+      requestDestructiveConfirm,
       scheduleContextBuild,
       setMessages,
       toast,
@@ -592,6 +647,7 @@ export function useChatSend({
     cancelInFlight,
     paywallOpen,
     closePaywall,
+    confirmDestructive,
     sendRef,
     focusInputRef,
   };
