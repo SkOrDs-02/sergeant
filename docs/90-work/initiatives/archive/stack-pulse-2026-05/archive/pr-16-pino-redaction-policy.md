@@ -14,7 +14,7 @@
 ## Statuses
 
 - **2026-05-03** — Initiative заведено зі статусом `Planned`. Pino-redact-paths уже частково існували в `apps/server/src/obs/logger.ts`; гап був у ESLint-guard + governance.
-- **2026-05-06** — Implementation: додано `sergeant-design/no-raw-req-in-pino-log` (severity `error`, scope `apps/server/**`), створено [`docs/04-governance/security/logging-redaction-policy.md`](../../../../04-governance/security/logging-redaction-policy.md), зареєстровано Hard Rule #21 у [`AGENTS.md`](../../../../../AGENTS.md) + [`docs/04-governance/governance/hard-rules.json`](../../../../04-governance/governance/hard-rules.json) + [`CONTRIBUTING.md`](../../../../../CONTRIBUTING.md). Server-lint: `0 errors` після додавання правила (raw-req логування не виявлено у поточному коді — guard fixates clean baseline).
+- **2026-05-06** — Implementation: додано `sergeant-design/no-raw-req-in-pino-log` (severity `error`, scope `apps/server/**`), створено [`docs/04-governance/security/logging-redaction-policy.md`](../../../../../04-governance/security/logging-redaction-policy.md), зареєстровано Hard Rule #21 у [`AGENTS.md`](../../../../../../AGENTS.md) + [`docs/04-governance/governance/hard-rules.json`](../../../../../04-governance/governance/hard-rules.json) + [`CONTRIBUTING.md`](../../../../../../CONTRIBUTING.md). Server-lint: `0 errors` після додавання правила (raw-req логування не виявлено у поточному коді — guard fixates clean baseline).
 
 ## Контекст
 

@@ -1,6 +1,6 @@
 # Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції
 
-> **Last validated:** 2026-07-22 by @Skords-01. **Next review:** 2026-10-20.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по
@@ -8,7 +8,7 @@
 > weekly-digest). Другий прогін процедури, обкатаної на
 > [finyk](product-knowledge-finyk.md). Канон, який цей звіт супроводжує —
 > [`docs/01-product/model/hub-coach.md`](../../01-product/model/hub-coach.md).
-> Спека прогону — [`product-knowledge-audit-hub-coach.md`](../planning/specs/product-knowledge-audit-hub-coach.md).
+> Спека прогону — [`product-knowledge-audit-hub-coach.md`](../planning/archive/specs/product-knowledge-audit-hub-coach.md).
 >
 > **Метод.** 41 питання банку (§3 спеки) поставлено трьом незалежним колонкам:
 > FOUNDER (Додаток А спеки, дослівно, повторно не опитувався), DOCS

@@ -66,7 +66,7 @@ Send `seed_skipped` / `seed_ran` event у Sentry breadcrumb (low-frequency).
 - [x] `apps/web/src/main.tsx` викликає тільки `maybeRunOnboarding()` — прямі eager-import-и demo helpers видалені.
 - [x] Версіоновані idempotence-key живуть у `seedDemoData.ts` / `cleanupDemoData.ts` (existing constants за v3/v1 schemes) — lazy-gate не міняє єволюцію ключів.
 - [x] Existing tests `apps/web/src/core/onboarding/__tests__/*.test.ts` pass + new `maybeRunOnboarding.test.ts` (4 кейси: no-flag no-op / `?demo=1` seed / `?demo=reset` cleanup / `?welcome=1` no-op).
-- [ ] Boot-time benchmark: -15ms median на cold-load — **deferred**: відсутній custom perf-mark suite у `apps/web`. Lazy-gate підтверджений поведінково (свіжі випадки без `?demo` не підвантажують `demoSeed.js`); Lighthouse benchmark прив'яжется пізніше до загальної бюджетної планки `apps/web` (Performance budgets у [AGENTS.md](../../../../../AGENTS.md)).
+- [ ] Boot-time benchmark: -15ms median на cold-load — **deferred**: відсутній custom perf-mark suite у `apps/web`. Lazy-gate підтверджений поведінково (свіжі випадки без `?demo` не підвантажують `demoSeed.js`); Lighthouse benchmark прив'яжется пізніше до загальної бюджетної планки `apps/web` (Performance budgets у [AGENTS.md](../../../../../../AGENTS.md)).
 
 ## Тести
 

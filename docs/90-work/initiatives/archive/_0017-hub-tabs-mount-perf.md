@@ -30,7 +30,7 @@
 - **Prefetch вже зроблено** ([PR #3043](https://github.com/Skords-01/Sergeant/pull/3043)) — chunks завантажуються миттєво. Подальша економія з цього напрямку = 0 ms. Залишаються тільки два важеля: **mount cost** і **render cost**.
 - **Mobile users**: Sergeant — PWA-first. На середньому Android (Moto G Power, Snapdragon 680) JS execution ~3× повільніший за desktop. Якщо desktop 10 s, mobile 25-30 s — це fail-state.
 - **Bundle gate ≤820 KB** ([`scripts/check-bundle-size.mjs`](../../../../scripts/check-bundle-size.mjs)) тримається тільки тому, що ми тримаємо `HubSettingsPage` як один chunk. Якщо ділити на 14 chunk-ів — треба переглянути `manualChunks`.
-- **Не блокує** [0006-frontend-routing-and-code-split](../0006-frontend-routing-and-code-split.md), але **довершує** його логіку: 0006 розділив на per-route chunks, 0017 — на per-section.
+- **Не блокує** [0006-frontend-routing-and-code-split](./_0006-frontend-routing-and-code-split.md), але **довершує** його логіку: 0006 розділив на per-route chunks, 0017 — на per-section.
 
 ## Скоуп
 
@@ -178,7 +178,7 @@ The initiative assumed "~30 KB index after Sprint 1+2 split". That assumption wa
 **Remaining levers and disposition:**
 
 - **`uk.ts` locale split** — ~8–12 KB gzip potential, but requires i18n lazy-loading infrastructure (split catalog + per-group loader + Suspense) and risks a flash of untranslated strings (risk: MED-HIGH). Deferred — poor ROI/risk ratio; needs a human-ratified "first-paint-critical keys" curation before implementation.
-- **Route-level lazy** — DEAD END. Blocked by the React Router 7 location-context bug tracked in initiative [0006](../0006-frontend-routing-and-code-split.md) Phase 5.
+- **Route-level lazy** — DEAD END. Blocked by the React Router 7 location-context bug tracked in initiative [0006](./_0006-frontend-routing-and-code-split.md) Phase 5.
 - **Real further reduction** = fix the RR7 blocker (separate initiative) or implement the i18n refactor above.
 
 **Net outcome:** bundle-shrink push delivered **~2.35 KB gzip** (PR #3403). Active index-dieting stopped here as low-ROI. 191.64 KB initial JS accepted for now.
@@ -219,7 +219,7 @@ The initiative assumed "~30 KB index after Sprint 1+2 split". That assumption wa
 
 ## Зв'язки
 
-- Уточнює: [0006-frontend-routing-and-code-split](../0006-frontend-routing-and-code-split.md) — per-route split вже зроблений, тут per-section split всередині route.
+- Уточнює: [0006-frontend-routing-and-code-split](./_0006-frontend-routing-and-code-split.md) — per-route split вже зроблений, тут per-section split всередині route.
 - Залежить від: [0013-module-decomposition-round-2](./_0013-module-decomposition-round-2.md) — Sprint 1 декомпозиція дала чисті imports у sections, без неї cross-module bootstrap було б ще гірше.
 - Може вплинути на: [`scripts/check-bundle-size.mjs`](../../../../scripts/check-bundle-size.mjs) — gate потребує оновлення.
 - Породжує: [`docs/03-operations/observability/hub-perf-baseline.md`](../../../03-operations/observability) (new в Sprint 0).

@@ -6,7 +6,7 @@
 > `DbPoolSaturated`) до старту PR-13; цей PR довіз: бамп `PG_POOL_SIZE`
 > default 10 → 20, slow-connect Pino warn + Sentry breadcrumb +
 > `db_slow_pool_connects_total` counter, новий
-> [`docs/03-operations/observability/pg-pool-sizing.md`](../../../../03-operations/observability/pg-pool-sizing.md).
+> [`docs/03-operations/observability/pg-pool-sizing.md`](../../../../../03-operations/observability/pg-pool-sizing.md).
 
 |              |                                                                            |
 | ------------ | -------------------------------------------------------------------------- |
@@ -81,8 +81,8 @@ PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10);
       default 500мс.
 - [x] Alert правила задокументовані — `DbPoolWaitingSustained` (5m, ticket)
       і `DbPoolSaturated` (10m, page) живуть у
-      [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../../../03-operations/observability/prometheus/alert_rules.yml).
-- [x] Документ [`docs/03-operations/observability/pg-pool-sizing.md`](../../../../03-operations/observability/pg-pool-sizing.md).
+      [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../../../../03-operations/observability/prometheus/alert_rules.yml).
+- [x] Документ [`docs/03-operations/observability/pg-pool-sizing.md`](../../../../../03-operations/observability/pg-pool-sizing.md).
 
 ## Тести
 

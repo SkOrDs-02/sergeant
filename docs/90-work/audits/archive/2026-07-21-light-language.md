@@ -1,8 +1,8 @@
 # Light-мова «Папір» — виконання наряду · 2026-07-21
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Reference — звіт про виконання наряду Claude Design;
-> baseline скорингу лишається [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
+> baseline скорингу лишається [`2026-07-21-design-audit.md`](../2026-07-21-design-audit.md).
 
 > Наряд: `light-language-task-for-claude-code.md` (Claude Design, бриф «Папір» §4).
 > Стек: dev-збірка `localhost:5175`, demo-дані, Chromium/Playwright, піпетка

@@ -50,7 +50,7 @@
 
 ## Acceptance criteria (DoD)
 
-- [x] Audit doc captured as [`docs/04-governance/security/hardening/M21-coep-stripe-compatibility.md`](../../../../04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md) plus [`docs/03-operations/deploy/vercel.md`](../../../../03-operations/deploy/vercel.md).
+- [x] Audit doc captured as [`docs/04-governance/security/hardening/M21-coep-stripe-compatibility.md`](../../../../../04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md) plus [`docs/03-operations/deploy/vercel.md`](../../../../../03-operations/deploy/vercel.md).
 - [x] `vercel.json` decision recorded: no change required while `require-corp` is load-bearing for SQLite-WASM.
 - [x] Security-header verification recipe documented in `docs/03-operations/deploy/vercel.md`.
 - [x] Sentry / PostHog compatibility recorded as JS-module/connect-src flows, not iframe flows.
@@ -83,9 +83,9 @@
 
 ## Resolution note
 
-Already resolved by [`M21`](../../../../04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md)
+Already resolved by [`M21`](../../../../../04-governance/security/hardening/archive/M21-coep-stripe-compatibility.md)
 and the canonical compatibility matrix in
-[`docs/03-operations/deploy/vercel.md`](../../../../03-operations/deploy/vercel.md).
+[`docs/03-operations/deploy/vercel.md`](../../../../../03-operations/deploy/vercel.md).
 No `vercel.json` change is required today: `require-corp` remains load-bearing
 for the SQLite-WASM `crossOriginIsolated` path, and Stripe/OAuth iframes must
 record an explicit COEP exception before launch.

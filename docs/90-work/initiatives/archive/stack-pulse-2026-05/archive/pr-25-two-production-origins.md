@@ -27,6 +27,6 @@ Historically прод обслуговувався **двома** Vercel-дом�
 
 ## Refs
 
-- [ADR-0074 §74.2](../../../../04-governance/adr/0074-hosting-hetzner-coolify.md#adr-742--single-canonical-web-origin)
+- [ADR-0074 §74.2](../../../../../04-governance/adr/0074-hosting-hetzner-coolify.md#adr-742--single-canonical-web-origin)
 - [Vercel rewrites + redirects](https://vercel.com/docs/edge-network/rewrites)
 - ADR-0043 cloudsync v1 sunset (mentions fizruk vs sergeant)

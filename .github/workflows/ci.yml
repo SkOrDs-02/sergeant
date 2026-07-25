@@ -264,7 +264,7 @@ jobs:
         # PWA precache manifest. Catches the case where a Vite plugin
         # silently inlines a 3rd-party CDN asset into `dist/`.
         # Cache-poisoning + CSP-bypass + GDPR risk all in one go;
-        # see docs/90-work/initiatives/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
+        # see docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
         run: pnpm lint:pwa-precache
 
       - name: Bundle size guard (size-limit)

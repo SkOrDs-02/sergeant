@@ -1,6 +1,6 @@
 # Продуктовий аудит знань: fizruk — diff-звіт тріангуляції
 
-> **Last validated:** 2026-07-23 by @Skords-01. **Next review:** 2026-10-21.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по модулю
@@ -8,7 +8,7 @@
 > [finyk](product-knowledge-finyk.md), [hub-coach](product-knowledge-hub-coach.md)
 > і [nutrition](product-knowledge-nutrition.md). Канон, який цей звіт
 > супроводжує — [`docs/01-product/model/fizruk.md`](../../01-product/model/fizruk.md).
-> Спека прогону — [`product-knowledge-audit-fizruk.md`](../planning/specs/product-knowledge-audit-fizruk.md).
+> Спека прогону — [`product-knowledge-audit-fizruk.md`](../planning/archive/specs/product-knowledge-audit-fizruk.md).
 >
 > **Метод.** 40 питань банку (§3 спеки) поставлено трьом незалежним колонкам:
 > FOUNDER (Додаток А спеки, дослівно, повторно не опитувався), DOCS (субагент

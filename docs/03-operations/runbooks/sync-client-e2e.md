@@ -1,7 +1,7 @@
 # Sync client E2E — manual runbook (Phase 1 gate)
 
 > **Status:** Active
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > Ручний прогін multi-device sync після merge PR-1…PR-4 ([`sync-client-wiring-playbook.md`](../../90-work/planning/sync-client-wiring-playbook.md) §4.5, §8).
 
 ## Prerequisites
@@ -32,7 +32,7 @@
 3. **Profile B** (or mobile foreground): pull ≤60s.
 4. **Pass:** habit visible in list.
 
-Handoff: [`sync-client-wiring-phase2-handoff.md`](../../90-work/planning/sync-client-wiring-phase2-handoff.md) §3.
+Handoff: [`sync-client-wiring-phase2-handoff.md`](../../90-work/planning/archive/sync-client-wiring-phase2-handoff.md) §3.
 
 ## C. Echo suppression
 

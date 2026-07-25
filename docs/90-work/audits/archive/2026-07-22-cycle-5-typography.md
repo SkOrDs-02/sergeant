@@ -1,9 +1,9 @@
 # Цикл 5 — типографічний sweep (D8) · 2026-07-22
 
-> **Last touched:** 2026-07-22 by @Skords-01. **Next review:** 2026-10-20.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Reference — звіт про виконання наряду Claude Design
 > `typography-task-for-claude-code.md`; baseline —
-> [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
+> [`2026-07-21-design-audit.md`](../2026-07-21-design-audit.md).
 
 ---
 

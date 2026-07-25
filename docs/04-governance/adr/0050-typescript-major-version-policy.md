@@ -1,6 +1,6 @@
 # ADR-0050: TypeScript major-version policy + `@types/node` pinning
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Accepted
 
 - **Status:** Accepted
@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-05-typescript-types-node-downgrade.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-05-typescript-types-node-downgrade.md)
   - [`renovate.json`](../../../renovate.json) — `allowedVersions` rule for `@types/node`
   - [`package.json`](../../../package.json) — `pnpm.overrides["@types/node"]`
 

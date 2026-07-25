@@ -68,7 +68,7 @@
     },
     {
       "pattern": "^https?://node-postgres\\.com/api/pool",
-      "reason": "Cited в docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
+      "reason": "Cited в docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
     },
     {
       "pattern": "^https?://csrc\\.nist\\.gov/(publications/detail|pubs)/sp/",
@@ -84,7 +84,7 @@
     },
     {
       "pattern": "^https?://platform\\.openai\\.com(/|$)",
-      "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/90-work/planning/openclaw-user-guide.md (api-keys console)."
+      "reason": "platform.openai.com gates everything behind Cloudflare anti-bot and returns 403 to non-browser User-Agents; pages render correctly in browsers. Cited в docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md (embeddings guide) та docs/90-work/planning/openclaw-user-guide.md (api-keys console)."
     },
     {
       "pattern": "^https?://eu\\.posthog\\.com/shared/",
@@ -92,7 +92,7 @@
     },
     {
       "pattern": "^https?://(www\\.)?codemzy\\.com(/.*)?$",
-      "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
+      "reason": "codemzy.com times out (ECONNABORTED) against CI runner User-Agents. Cited in docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-36-lazy-import-chunk-reload-guard.md as a ChunkLoadError fix reference; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://agentskill\\.sh(/.*)?$",
@@ -116,7 +116,7 @@
     },
     {
       "pattern": "^https?://security\\.stackexchange\\.com(/.*)?$",
-      "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/90-work/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
+      "reason": "security.stackexchange.com returns 403 (Cloudflare anti-bot) to non-browser User-Agents. Cited in docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md as a bcrypt max-length QA reference; page loads correctly in browsers."
     },
     {
       "pattern": "^https?://cabinet\\.tax\\.gov\\.ua(/.*)?$",

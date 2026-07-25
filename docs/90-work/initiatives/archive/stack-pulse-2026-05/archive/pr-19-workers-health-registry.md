@@ -17,7 +17,7 @@
 
 PR [#1995](https://github.com/Skords-01/Sergeant/pull/1995) (commit [`cdcdb5ba`](https://github.com/Skords-01/Sergeant/commit/cdcdb5ba)) запровадив `/health/workers` endpoint, але обрав **простіший** in-memory підхід замість запропонованої `worker_health` DB-таблиці:
 
-- Handler — `createWorkersHealthHandler(pool)` у [`apps/server/src/http/health.ts`](../../../../../apps/server/src/http/health.ts).
+- Handler — `createWorkersHealthHandler(pool)` у [`apps/server/src/http/health.ts`](../../../../../../apps/server/src/http/health.ts).
 - Покриває три worker-и: `aiMemoryIngest` (BullMQ queue stats), `monoEnrichment` (DB-based status), `backgroundQueue` (in-memory queue stats).
 - Status codes: 200 коли всі sample-функції успішні (включно з disabled/fallback states), 503 коли хоч одна повертає `error`.
 - L7 hardening invariants — `version`/`commit`/`sha` не повертаються (паралельно з `/healthz`).
