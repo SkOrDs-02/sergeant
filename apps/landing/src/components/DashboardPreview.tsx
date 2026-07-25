@@ -4,11 +4,11 @@ export default function DashboardPreview() {
   return (
     <section
       aria-label="Приклад дашборда Sergeant"
-      className="mx-auto mt-14 grid w-full max-w-5xl grid-cols-1 gap-4 px-5 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]"
+      className="mx-auto mt-14 grid w-full max-w-5xl grid-cols-1 gap-4 px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4"
     >
-      <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm">
+      <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm sm:col-span-2">
         <span className="text-xs font-medium uppercase tracking-widest text-muted">
-          Бюджет липня
+          ФІНІК · бюджет липня
         </span>
         <div className="mt-2 font-display text-3xl font-bold text-foreground-strong">
           ₴18 420{" "}
@@ -29,19 +29,19 @@ export default function DashboardPreview() {
 
       <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm">
         <span className="text-xs font-medium uppercase tracking-widest text-muted">
-          Стрік звичок
+          Рутина · стрік
         </span>
         <div className="mt-2 font-display text-3xl font-bold text-routine">
           21 день
         </div>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          Ранкова зарядка, читання, без цукру — тримаєшся третій тиждень.
+          Зарядка, читання, без цукру — третій тиждень поспіль.
         </p>
       </div>
 
       <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm">
         <span className="text-xs font-medium uppercase tracking-widest text-muted">
-          Тренувань за тиждень
+          ФІЗРУК · тренування
         </span>
         <div className="mt-2 font-display text-3xl font-bold text-fizruk">
           3 / 4
@@ -51,21 +51,50 @@ export default function DashboardPreview() {
         </p>
       </div>
 
+      <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm sm:col-span-2 lg:col-span-4">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span className="text-xs font-medium uppercase tracking-widest text-muted">
+              Харчування · сьогодні
+            </span>
+            <div className="mt-2 font-display text-3xl font-bold text-nutrition">
+              1 840{" "}
+              <span className="text-sm font-normal text-muted">
+                / 2 100 ккал
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-4 text-sm text-muted">
+            <span>
+              Б <b className="font-semibold text-foreground">96г</b>
+            </span>
+            <span>
+              Ж <b className="font-semibold text-foreground">58г</b>
+            </span>
+            <span>
+              В <b className="font-semibold text-foreground">190г</b>
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div
         role="log"
         aria-label="Приклад підказки від Sergeant"
-        className="flex flex-col gap-2.5 rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm md:col-span-3"
+        className="flex flex-col gap-2.5 rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm sm:col-span-2 lg:col-span-4"
       >
-        <span className="text-xs font-medium uppercase tracking-widest text-muted">
-          Тижневий підсумок
+        <span className="text-xs font-medium uppercase tracking-widest text-accent">
+          Звʼязок тижня · сон × харчування × гроші
         </span>
         <div className="max-w-[90%] self-start rounded-2xl bg-accent-soft px-4 py-3 text-sm leading-relaxed text-foreground sm:max-w-[75%]">
           Схоже, у тижні з короткими ночами ти частіше замовляєш доставку — за
-          останні три такі дні вийшло приблизно на ₴350 більше. Це поки лише
-          спостереження, не вирок. Приготуєш вечерю вдома сьогодні?
+          останні три такі дні вийшло приблизно на ₴350 більше, а денна норма
+          КБЖУ злітала. Це поки лише спостереження, не вирок. Приготуєш вечерю
+          вдома сьогодні?
         </div>
         <p className="pl-1 text-xs text-subtle">
-          Sergeant показує звʼязок обережно — бо даних ще небагато.
+          Жоден окремий трекер цього не побачив би — звʼязок видно лише коли
+          сфери поруч.
         </p>
       </div>
     </section>

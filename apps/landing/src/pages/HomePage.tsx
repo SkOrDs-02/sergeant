@@ -5,6 +5,7 @@ import DashboardPreview from "../components/DashboardPreview";
 import {
   HowItWorks,
   ModulesSection,
+  ConnectionsSection,
   HonestSection,
   BetaCta,
 } from "../components/HomeSections";
@@ -45,6 +46,7 @@ export default function HomePage() {
 
         <HowItWorks />
         <ModulesSection />
+        <ConnectionsSection />
         <HonestSection />
         <BetaCta />
       </main>

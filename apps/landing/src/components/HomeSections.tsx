@@ -125,6 +125,82 @@ export function ModulesSection() {
   );
 }
 
+export function ConnectionsSection() {
+  const links = [
+    {
+      a: { label: "ФІЗРУК", className: "bg-fizruk-soft text-fizruk" },
+      b: { label: "ФІНІК", className: "bg-finyk-soft text-finyk" },
+      insight:
+        "У тижні, коли ти тренуєшся 3+ рази, замовлень доставки помітно менше.",
+    },
+    {
+      a: { label: "Харчування", className: "bg-nutrition-soft text-nutrition" },
+      b: { label: "Рутина", className: "bg-routine-soft text-routine" },
+      insight:
+        "Коли снідаєш вдома, ранкова рутина тримається довше, а зриви — рідше.",
+    },
+    {
+      a: { label: "ФІНІК", className: "bg-finyk-soft text-finyk" },
+      b: { label: "Харчування", className: "bg-nutrition-soft text-nutrition" },
+      insight:
+        "Імпульсивні витрати на їжу частішають у дні, коли пропускаєш обід.",
+    },
+  ];
+
+  return (
+    <section
+      id="connections"
+      className="hero-wash mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24"
+    >
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+          Головна фішка
+        </p>
+        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
+          Окремі трекери показують цифри. Sergeant показує{" "}
+          <span className="text-accent">звʼязки</span> між ними.
+        </h2>
+        <p className="mt-4 leading-relaxed text-muted">
+          Ось приклади того, що стає видно, коли всі сфери поруч. Sergeant
+          показує такі звʼязки лише коли впевнений — і чесно каже, коли даних
+          ще замало.
+        </p>
+      </div>
+      <div className="mt-12 grid gap-4 md:grid-cols-3">
+        {links.map((l) => (
+          <article
+            key={l.insight}
+            className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${l.a.className}`}
+              >
+                {l.a.label}
+              </span>
+              <span aria-hidden="true" className="text-lg text-subtle">
+                ×
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${l.b.className}`}
+              >
+                {l.b.label}
+              </span>
+            </div>
+            <p className="text-sm leading-relaxed text-foreground">
+              {l.insight}
+            </p>
+          </article>
+        ))}
+      </div>
+      <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-subtle">
+        Приклади ілюстративні. Реальні звʼязки Sergeant будує на твоїх даних —
+        і з часом бачить їх дедалі точніше.
+      </p>
+    </section>
+  );
+}
+
 export function HonestSection() {
   const now = [
     "Автосинк фінансів через Monobank",

@@ -27,14 +27,12 @@ export default function SiteHeader() {
         >
           Модулі
         </a>
-        <Link
-          to="/pricing"
-          className={`transition hover:text-foreground ${
-            pathname === "/pricing" ? "text-foreground" : ""
-          }`}
+        <a
+          href={anchor("connections")}
+          className="transition hover:text-foreground"
         >
-          Тарифи
-        </Link>
+          Звʼязки
+        </a>
       </nav>
       <a
         href={anchor("beta")}
