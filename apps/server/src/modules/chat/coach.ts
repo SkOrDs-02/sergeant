@@ -12,6 +12,8 @@ import {
 import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -421,6 +423,8 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
     : "Даних за поточний тиждень ще немає.";
 
   const systemPrompt = `Ти персональний AI-коуч у додатку "Мій простір". Ти знаєш цю людину по місяцях даних і говориш з нею як довірений коуч — тепло, але конкретно.
+
+${ADVICE_BOUNDARY_RULE}
 
 КОНТЕКСТ ДАТИ (Київ):
 ${dateContextText}

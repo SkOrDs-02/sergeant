@@ -378,7 +378,7 @@
 | Анонімізація перед LLM (етап 1) + декларація sub-processors                     | крос      | code+docs     | крит  | брейншторм 2.1 · G4 усіх звітів     |      |
 | Confirmation-flow для 7 RISKY-tools + відновлюваність tool-записів              | hub-coach | code          | крит  | hub-coach напруга1/E-4              |      |
 | Перегляд і видалення окремих фактів AI-пам'яті                                  | hub-coach | code          | крит  | hub-coach D5/G3                     |      |
-| Заборона мед./фін. порад у системних промптах AI                                | hub-coach | code          | крит  | hub-coach C1 · fizruk C6            |      |
+| Заборона мед./фін. порад у системних промптах AI                                | hub-coach | code          | крит  | hub-coach C1 · fizruk C6            | ✅   |
 | Unit-економіка: cost/user по тірах vs ₴199                                      | крос      | research      | крит  | overview раунд B                    |      |
 | First-run рішення: budgets-first vs вибір режиму (invite-онбординг)             | finyk     | рішення       | агент | finyk A2/E-1                        | ✅   |
 

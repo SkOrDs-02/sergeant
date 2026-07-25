@@ -22,6 +22,8 @@ import {
 import { logger } from "../../obs/logger.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
 type WithAnthropicKey = Request & { anthropicKey?: string };
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -40,9 +42,7 @@ function buildDigestMemoryContent(
   const tag = weekRange ? `Тижневий звіт ${weekRange}` : "Тижневий звіт";
   for (const key of ["finyk", "fizruk", "nutrition", "routine"] as const) {
     const sec = safe[key] as
-      | { summary?: string; comment?: string }
-      | null
-      | undefined;
+      { summary?: string; comment?: string } | null | undefined;
     if (!sec) continue;
     const summary = (sec.summary || "").trim();
     const comment = (sec.comment || "").trim();
@@ -290,6 +290,8 @@ ${habitsInfo}`);
 Якщо даних по модулю немає — поверни null для цього ключа. Відповідай ВИКЛЮЧНО валідним JSON.`;
 
     const systemPrompt = `Ти аналітик персональних даних користувача додатку "Мій простір".
+
+${ADVICE_BOUNDARY_RULE}
 Відповідай ВИКЛЮЧНО валідним JSON — без markdown, без коментарів, без преамбули.
 Уся аналітика — українською. Числа бери з блоку даних.
 

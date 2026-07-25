@@ -8,6 +8,8 @@ import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -54,6 +56,8 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
 /* eslint-disable sergeant-design/no-ellipsis-dots --
    JSON-schema format hint for the LLM (placeholder-style `"..."` entries), not user-facing copy. */
 const SYSTEM = `Ти шеф-кухар і планувальник харчування. Відповідай ТІЛЬКИ українською.
+
+${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown.
 
 Формат:
