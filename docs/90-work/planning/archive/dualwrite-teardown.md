@@ -1,7 +1,7 @@
 # Dual-write teardown — перехід клієнта на чистий SQLite
 
 > **Status:** Deprecated (ініціатива виконана 2026-07-10; документ зберігається як історія)
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > Трек-документ багатокрокової ініціативи: прибрати LS/MMKV-запис **модульних даних** (finyk / fizruk / nutrition / routine) і зробити SQLite єдиним джерелом правди на клієнті. Продовження [`storage-roadmap.md`](storage-roadmap.md) (Stage 8 cut-over) і [ADR-0073](../../../04-governance/adr/0073-dualwrite-generic-framework.md) (generic SQLite-writer фреймворк). **Закрито:** PR [#169](https://github.com/Skords-01/Sergeant/pull/169) (finyk tx-shim + mobile settings) + Phase 5 PR (rename `dualWrite/` → `sqliteWriter/`, entropy-janitor, doc closure).
 
 ---
@@ -130,7 +130,7 @@ pnpm check
 - **Write-shim:** `useMonobankWebhook.ts:194-220` пише `finyk_tx_cache`/`finyk_info_cache` як legacy forward-compat.
 - **Backup residue:** `finykBackup.ts:94-98` (`dismissedRecurring` LS-only, хоча колонка `finyk_prefs.dismissed_recurring_json` вже є).
 - **residualImport:** 17 ключів, call-site `sqliteReadBoot.ts:55`.
-- **Легітимне (R5):** `FINYK_MANUAL_ONLY_KEY` (`FinykApp.tsx:111`), mono-token migration flags; PrivatBank — вимкнено (`PRIVAT_ENABLED = false`), мертвий код; proactive-advice TTL-cache (warm-cache-подібний).
+- **Легітимне (R5):** `FINYK_MANUAL_ONLY_KEY` (`FinykApp.tsx:111`), mono-token migration flags; PrivatBank — вимкнено (`PRIVAT_ENABLED = false`), очікує зовнішнього фактора (не мертвий код — див. finyk.md §8); proactive-advice TTL-cache (warm-cache-подібний).
 
 ### mobile (усі 4)
 

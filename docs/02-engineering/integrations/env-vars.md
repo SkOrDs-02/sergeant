@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -163,6 +163,18 @@ PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` 
 Коли `false` — strict-mode, як у PR-12: handler кидає `ANTHROPIC_ERROR` / `ANTHROPIC_PARSE_ERROR` / `ANTHROPIC_SHAPE_MISMATCH` і клієнт отримує 502. Корисно для e2e-тестів які явно перевіряють Anthropic-error semantics, або для проектів, де founder воліє бачити порожній звіт через failed UI замість шаблонних чисел.
 
 Прийнятні значення: `1`/`true`/`yes` → on, інакше → off.
+
+**Важливо — env-дефолт `true` не діє в production.** Бойовий роут
+(`apps/server/src/routes/weekly-digest.ts`) використовує `export default
+defaultHandler` з `apps/server/src/modules/digest/weekly-digest.ts:453`, де
+`createWeeklyDigestHandler({ fallbackOnError: false })` жорстко фіксує
+`false` — незалежно від значення цього env-var. Це навмисно (докстрінг
+`weekly-digest.ts:441-450`): збій Anthropic має піднімати `5xx`, а не
+повертати тихий `200` з template-звітом (regression-тест
+`weekly-digest.test.ts:1032-1043`). Env-дефолт `true` реально застосовується
+лише в тестах і кастомних instance-handler-ах, які самі не передають
+`fallbackOnError`. Щоб отримати fail-soft-поведінку в production, самого
+env-var **недостатньо** — треба змінювати сам default-export.
 
 ### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
 
