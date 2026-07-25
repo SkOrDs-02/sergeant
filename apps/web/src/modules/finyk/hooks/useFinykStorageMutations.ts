@@ -16,6 +16,7 @@ import type {
   CustomCategory,
   ManualExpense,
   TxCategoriesMap,
+  TxNotesMap,
   TxSplit,
   TxSplitsMap,
 } from "./useStorage.types";
@@ -41,6 +42,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setHiddenAccounts,
     setHiddenTxIds,
     setTxCategories,
+    setTxNotes,
     setTxSplits,
     setMonoDebtLinkedTxIds,
     setCustomCategories,
@@ -286,6 +288,16 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     );
   };
 
+  /** Порожня нотатка = відсутність нотатки — видаляє запис, не зберігає "". */
+  const setTxNote = (txId: string, note: string | null | undefined) => {
+    const trimmed = String(note ?? "").trim();
+    setTxNotes((prev: TxNotesMap) =>
+      trimmed
+        ? { ...prev, [txId]: trimmed }
+        : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== txId)),
+    );
+  };
+
   const addCustomCategory = (
     label: string,
     {
@@ -371,6 +383,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     hideTx,
     toggleExcludeFromStats,
     setSplitTx,
+    setTxNote,
     dismissRecurring,
     restoreDismissedRecurring,
     addSubscriptionFromRecurring,

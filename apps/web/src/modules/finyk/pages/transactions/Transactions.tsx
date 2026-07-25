@@ -99,6 +99,10 @@ export interface TransactionsStorageSlice {
   overrideCategory: (id: string, catId: string | null) => void;
   txSplits: TxSplitsMap;
   setSplitTx: (id: string, splits: TxSplit[]) => void;
+  /** User's own free-text annotation per bank transaction — bank facts
+   * (amount/date/merchant) stay immutable, this is the user's note. */
+  txNotes: Record<string, string | undefined>;
+  setTxNote: (id: string, note: string | null) => void;
   manualExpenses: ManualExpense[] | undefined;
   addManualExpense: (expense: ManualExpense) => void;
   removeManualExpense: (id: string) => void;
@@ -159,6 +163,8 @@ export function Transactions({
     overrideCategory,
     txSplits,
     setSplitTx,
+    txNotes,
+    setTxNote,
     manualExpenses,
     addManualExpense,
     removeManualExpense,
@@ -201,6 +207,7 @@ export function Transactions({
     toggleExcludeFromStats,
     overrideCategory,
     setSplitTx,
+    setTxNote,
     removeManualExpense,
     addManualExpense,
     onEditManualExpense,
@@ -224,6 +231,7 @@ export function Transactions({
       hiddenTxIdSet={filters.hiddenTxIdSet}
       txCategories={txCategories}
       txSplits={txSplits}
+      txNotes={txNotes}
       accounts={accounts}
       customCategories={customCategories}
       onToggleSelect={selection.toggleSelect}
@@ -233,6 +241,7 @@ export function Transactions({
       onHideTx={selection.stableHideTx}
       onCatChange={selection.stableOverrideCategory}
       onSplitChange={selection.stableSetSplitTx}
+      onNoteChange={selection.stableSetTxNote}
       onRefresh={handlePullRefresh}
       header={
         <section aria-label="Керування операціями" className="mb-4 space-y-2.5">

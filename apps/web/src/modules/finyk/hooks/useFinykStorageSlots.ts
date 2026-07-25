@@ -11,6 +11,7 @@ import type {
   ManualExpense,
   CustomCategory,
   TxCategoriesMap,
+  TxNotesMap,
   MonoDebtLinkedMap,
   MonthlyPlan,
   NetworthEntry,
@@ -51,6 +52,10 @@ export interface FinykStorageSlots {
   setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   txCategories: TxCategoriesMap;
   setTxCategories: Dispatch<SetStateAction<TxCategoriesMap>>;
+  /** User's own free-text annotation per bank transaction (LS-only —
+   * not part of the SQLite dual-write mirror, same as `finyk_tx_filters_v1`). */
+  txNotes: TxNotesMap;
+  setTxNotes: Dispatch<SetStateAction<TxNotesMap>>;
   monoDebtLinkedTxIds: MonoDebtLinkedMap;
   setMonoDebtLinkedTxIds: Dispatch<SetStateAction<MonoDebtLinkedMap>>;
   networthHistory: NetworthEntry[];
@@ -125,6 +130,10 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   );
   const [txCategories, setTxCategories] = useReadonlyPersist<TxCategoriesMap>(
     "finyk_tx_cats",
+    {},
+  );
+  const [txNotes, setTxNotes] = useReadonlyPersist<TxNotesMap>(
+    "finyk_tx_notes",
     {},
   );
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
@@ -219,6 +228,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setMonthlyPlan,
     txCategories,
     setTxCategories,
+    txNotes,
+    setTxNotes,
     monoDebtLinkedTxIds,
     setMonoDebtLinkedTxIds,
     networthHistory,

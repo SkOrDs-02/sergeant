@@ -80,7 +80,10 @@ function DayCardShell({
         )}
       >
         {inset && (
-          <div aria-hidden className="ml-[3.4rem] mr-3 border-t border-line/45" />
+          <div
+            aria-hidden
+            className="ml-[3.4rem] mr-3 border-t border-line/45"
+          />
         )}
         {children}
       </div>
@@ -121,6 +124,8 @@ export interface TransactionListProps {
   hiddenTxIdSet: Set<string>;
   txCategories: TxCategoriesMap;
   txSplits: TxSplitsMap;
+  /** User's own free-text annotation per bank transaction. */
+  txNotes?: Record<string, string | undefined> | undefined;
   accounts: ReadonlyArray<TxAccount> | undefined;
   customCategories: CustomCategoryInput[] | undefined;
   onToggleSelect: (id: string) => void;
@@ -130,6 +135,7 @@ export interface TransactionListProps {
   onHideTx: (id: string) => void;
   onCatChange: (id: string, catId: string | null) => void;
   onSplitChange: (id: string, splits: TxSplit[]) => void;
+  onNoteChange?: ((id: string, note: string | null) => void) | undefined;
   /** Bottom-of-list "still loading…" text shown when refreshing a non-
    * empty list. */
   trailing?: ReactNode;
@@ -173,6 +179,7 @@ export function TransactionList({
   hiddenTxIdSet,
   txCategories,
   txSplits,
+  txNotes = {},
   accounts,
   customCategories,
   onToggleSelect,
@@ -182,6 +189,7 @@ export function TransactionList({
   onHideTx,
   onCatChange,
   onSplitChange,
+  onNoteChange,
   trailing,
   header,
   footer,
@@ -364,6 +372,7 @@ export function TransactionList({
                       hidden={hiddenTxIdSet.has(t.id)}
                       overrideCatId={txCategories[t.id]}
                       txSplits={txSplits}
+                      note={txNotes[t.id]}
                       accounts={accounts ?? []}
                       hideAmount={!showBalance}
                       customCategories={customCategories}
@@ -376,6 +385,7 @@ export function TransactionList({
                       onSplitChange={(id, splits) =>
                         onSplitChange(id, (splits ?? []) as TxSplit[])
                       }
+                      onNoteChange={onNoteChange}
                     />
                   </DayCardShell>
                 );

@@ -4,7 +4,9 @@
  *
  * Inline category override picker for TxRow. Extracted for Hard Rule #18.
  */
+import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
 import {
@@ -59,8 +61,13 @@ interface TxRowCategoryPickerProps {
   overrideCatId?: string | null | undefined;
   txId: string;
   onCatChange?: ((id: string, catId: string | null) => void) | null | undefined;
+  /** User's own free-text annotation for this transaction. */
+  note?: string | undefined;
+  onNoteChange?: ((id: string, note: string | null) => void) | null | undefined;
   onClose: () => void;
 }
+
+const NOTE_MAX_LENGTH = 200;
 
 export function TxRowCategoryPicker({
   categories,
@@ -68,55 +75,81 @@ export function TxRowCategoryPicker({
   overrideCatId,
   txId,
   onCatChange,
+  note,
+  onNoteChange,
   onClose,
 }: TxRowCategoryPickerProps) {
+  const [draftNote, setDraftNote] = useState(note ?? "");
+  const commitNote = () => {
+    if (draftNote.trim() === (note ?? "").trim()) return;
+    onNoteChange?.(txId, draftNote);
+  };
+
   return (
-    <div className="flex flex-wrap gap-1.5 pb-3 px-2">
-      {categories.map((c) => (
-        <button
-          key={c.id}
-          onClick={() => {
-            const nextCatId =
-              c.id === currentCatId && overrideCatId ? null : c.id;
-            // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
-            // слати не можна: `finyk_tx_categorized` — чисельник петлі
-            // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
-            // історію подій не можна). Той самий guard, що `outcome.changed`
-            // у `useRoutineAppState`.
-            //
-            // Умова навмисно вужча за `nextCatId === (overrideCatId ??
-            // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
-            // закріплює її явно — це реальна дія користувача, і вона мусить
-            // лишитись у знаменнику.
-            if (overrideCatId && nextCatId === overrideCatId) {
+    <div className="pb-3 px-2 space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {categories.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => {
+              const nextCatId =
+                c.id === currentCatId && overrideCatId ? null : c.id;
+              // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
+              // слати не можна: `finyk_tx_categorized` — чисельник петлі
+              // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
+              // історію подій не можна). Той самий guard, що `outcome.changed`
+              // у `useRoutineAppState`.
+              //
+              // Умова навмисно вужча за `nextCatId === (overrideCatId ??
+              // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
+              // закріплює її явно — це реальна дія користувача, і вона мусить
+              // лишитись у знаменнику.
+              if (overrideCatId && nextCatId === overrideCatId) {
+                onClose();
+                return;
+              }
+              onCatChange?.(txId, nextCatId);
+              trackTxCategorized(nextCatId);
               onClose();
-              return;
-            }
-            onCatChange?.(txId, nextCatId);
-            trackTxCategorized(nextCatId);
-            onClose();
+            }}
+            className={cn(
+              "text-xs px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
+              c.id === currentCatId
+                ? "bg-text text-bg border-text"
+                : "border-line text-subtle hover:border-muted hover:text-text",
+            )}
+          >
+            {stripLeadingEmoji(c.label)}
+          </button>
+        ))}
+        {overrideCatId && (
+          <button
+            onClick={() => {
+              onCatChange?.(txId, null);
+              trackTxCategorized(null);
+              onClose();
+            }}
+            className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
+          >
+            <Icon name="close" size={13} aria-hidden /> Скинути
+          </button>
+        )}
+      </div>
+      {onNoteChange && (
+        <Input
+          size="sm"
+          placeholder="Нотатка…"
+          value={draftNote}
+          maxLength={NOTE_MAX_LENGTH}
+          onChange={(e) => setDraftNote(e.target.value)}
+          onBlur={commitNote}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            commitNote();
+            e.currentTarget.blur();
           }}
-          className={cn(
-            "text-xs px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
-            c.id === currentCatId
-              ? "bg-text text-bg border-text"
-              : "border-line text-subtle hover:border-muted hover:text-text",
-          )}
-        >
-          {stripLeadingEmoji(c.label)}
-        </button>
-      ))}
-      {overrideCatId && (
-        <button
-          onClick={() => {
-            onCatChange?.(txId, null);
-            trackTxCategorized(null);
-            onClose();
-          }}
-          className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"
-        >
-          <Icon name="close" size={13} aria-hidden /> Скинути
-        </button>
+          aria-label="Нотатка до транзакції"
+        />
       )}
     </div>
   );

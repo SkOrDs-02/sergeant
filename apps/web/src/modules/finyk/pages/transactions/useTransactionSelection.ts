@@ -35,6 +35,7 @@ export interface UseTransactionSelectionParams {
   toggleExcludeFromStats: (id: string) => void;
   overrideCategory: (id: string, catId: string | null) => void;
   setSplitTx: (id: string, splits: TxSplit[]) => void;
+  setTxNote: (id: string, note: string | null) => void;
   removeManualExpense: ((id: string) => void) | undefined;
   addManualExpense: ((expense: ManualExpense) => void) | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
@@ -64,6 +65,8 @@ export interface UseTransactionSelectionResult {
   stableOverrideCategory: (id: string, catId: string | null) => void;
   /** Stable handler: TxRow → split editor confirm. */
   stableSetSplitTx: (id: string, splits: TxSplit[]) => void;
+  /** Stable handler: TxRow → note edit. */
+  stableSetTxNote: (id: string, note: string | null) => void;
 }
 
 /**
@@ -83,6 +86,7 @@ export function useTransactionSelection({
   toggleExcludeFromStats,
   overrideCategory,
   setSplitTx,
+  setTxNote,
   removeManualExpense,
   addManualExpense,
   onEditManualExpense,
@@ -100,6 +104,7 @@ export function useTransactionSelection({
     hideTx,
     overrideCategory,
     setSplitTx,
+    setTxNote,
     removeManualExpense,
     addManualExpense,
     onEditManualExpense,
@@ -110,6 +115,7 @@ export function useTransactionSelection({
       hideTx,
       overrideCategory,
       setSplitTx,
+      setTxNote,
       removeManualExpense,
       addManualExpense,
       onEditManualExpense,
@@ -119,6 +125,7 @@ export function useTransactionSelection({
     hideTx,
     overrideCategory,
     setSplitTx,
+    setTxNote,
     removeManualExpense,
     addManualExpense,
     onEditManualExpense,
@@ -149,6 +156,11 @@ export function useTransactionSelection({
   const stableSetSplitTx = useCallback(
     (id: string, splits: TxSplit[]) =>
       handlersRef.current.setSplitTx?.(id, splits),
+    [],
+  );
+  const stableSetTxNote = useCallback(
+    (id: string, note: string | null) =>
+      handlersRef.current.setTxNote?.(id, note),
     [],
   );
   const stableOnEditManual = useCallback((manualId?: string) => {
@@ -292,5 +304,6 @@ export function useTransactionSelection({
     stableHideTx,
     stableOverrideCategory,
     stableSetSplitTx,
+    stableSetTxNote,
   };
 }

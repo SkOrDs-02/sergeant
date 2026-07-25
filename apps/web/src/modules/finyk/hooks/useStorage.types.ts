@@ -57,6 +57,9 @@ export type CustomCategory = {
 };
 
 export type TxCategoriesMap = Record<string, string | undefined>;
+/** Per-transaction user note (free text). Bank facts stay immutable — this
+ * is the user's own annotation, keyed by transaction id. */
+export type TxNotesMap = Record<string, string | undefined>;
 export type MonoDebtLinkedMap = Record<string, string[]>;
 
 export type MonthlyPlan = {

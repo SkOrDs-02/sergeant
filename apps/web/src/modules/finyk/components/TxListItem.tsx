@@ -15,6 +15,8 @@ interface TxListItemProps {
   hidden: boolean;
   overrideCatId?: string | null | undefined;
   txSplits: TxSplitsMap;
+  /** User's own free-text annotation for this transaction. */
+  note?: string | undefined;
   accounts: readonly MonoAccount[];
   hideAmount: boolean;
   customCategories?: readonly CustomCategoryInput[] | undefined;
@@ -25,6 +27,7 @@ interface TxListItemProps {
   onHideTx?: ((id: string) => void) | undefined;
   onCatChange?: ((id: string, categoryId: string | null) => void) | undefined;
   onSplitChange?: ((id: string, splits: unknown) => void) | undefined;
+  onNoteChange?: ((id: string, note: string | null) => void) | undefined;
 }
 
 function TxListItemImpl({
@@ -35,6 +38,7 @@ function TxListItemImpl({
   hidden,
   overrideCatId,
   txSplits,
+  note,
   accounts,
   hideAmount,
   customCategories,
@@ -45,6 +49,7 @@ function TxListItemImpl({
   onHideTx,
   onCatChange,
   onSplitChange,
+  onNoteChange,
 }: TxListItemProps) {
   const isManual = !!tx._manual;
   const canSwipeLeft = isManual
@@ -142,6 +147,8 @@ function TxListItemImpl({
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}
+            note={isManual ? undefined : note}
+            onNoteChange={isManual ? undefined : onNoteChange}
             onSplitChange={onSplitChange}
             customCategories={customCategories}
             divider={false}
