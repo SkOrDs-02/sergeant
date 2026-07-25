@@ -373,7 +373,7 @@
 | Durability: повний бекап ручного світу + оверлеїв на сервер                     | finyk     | code          | крит  | finyk G2                            |      |
 | Єдиний повний експорт даних + sunset-обіцянка в продукті                        | крос      | code+docs     | крит  | finyk G5 · overview B-5             |      |
 | Звірка sum(transactions) ↔ balance з видимим прапорцем                          | finyk     | code          | крит  | finyk G1                            |      |
-| Staleness-детекція тиші Mono («дані не оновлювались N днів»)                    | finyk     | code          | крит  | finyk G3                            |      |
+| Staleness-детекція тиші Mono («дані не оновлювались N днів»)                    | finyk     | code          | крит  | finyk G3                            | ✅   |
 | Research баз штрихкодів (укр-продукти) → продакшн-ключі USDA / заміна UPCitemdb | nutrition | research+code | крит  | брейншторм 1.4 · nutrition напруга1 |      |
 | Анонімізація перед LLM (етап 1) + декларація sub-processors                     | крос      | code+docs     | крит  | брейншторм 2.1 · G4 усіх звітів     |      |
 | Confirmation-flow для 7 RISKY-tools + відновлюваність tool-записів              | hub-coach | code          | крит  | hub-coach напруга1/E-4              |      |

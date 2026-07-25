@@ -22,6 +22,8 @@ import { messages } from "@shared/i18n/uk";
 import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { getOnboardingGoals } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
+import { useMonoStaleness } from "./overview/useMonoStaleness";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -55,6 +57,25 @@ export function Overview({
   // людина прийшла. Читаються один раз — вони не змінюються за час сесії.
   const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
+  // Staleness банку (канон §6.3). `webhookSyncState` приїжджає з
+  // `useMonobankWebhook` крізь спред у `mergedMono`; поріг і вся логіка —
+  // у доменній функції, тут лише читання.
+  // `webhookActive` беремо з контракту (`MonoSyncStateSchema`), а не
+  // виводимо зі зведеного `syncState.status`: той злитий із Приватом, і
+  // помилка Привату гасила б staleness Monobank без жодного стосунку.
+  const webhookSyncState = (
+    mono as {
+      webhookSyncState?: {
+        lastEventAt?: string | null;
+        webhookActive?: boolean;
+      } | null;
+    }
+  ).webhookSyncState;
+  const monoStaleness = useMonoStaleness({
+    lastEventAt: webhookSyncState?.lastEventAt ?? null,
+    webhookActive: webhookSyncState?.webhookActive ?? false,
+  });
+
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
     isLoading: d.loadingTx,
@@ -80,6 +101,15 @@ export function Overview({
                 error={d.monoError}
                 onRetry={d.monoRefresh}
                 loading={d.loadingTx}
+              />
+            )}
+
+            {monoStaleness.stale && monoStaleness.days !== null && (
+              <MonoStalenessBanner
+                days={monoStaleness.days}
+                onReconnect={
+                  onNavigate ? () => onNavigate("settings") : undefined
+                }
               />
             )}
 
