@@ -68,7 +68,10 @@ const shownOnce = new Map<string, number>();
 /** Стабільні id за scope-ом (див. `adviceIdForScope`). */
 const idsByScope = new Map<string, string>();
 
-/** Випадковий uuid. НІКОЛИ не похідна від тексту поради. */
+/** Лічильник для fallback-ID (див. `newAdviceId`). Скидається з сесією. */
+let adviceIdCounter = 0;
+
+/** Унікальний id поради. НІКОЛИ не похідна від тексту поради. */
 function newAdviceId(): string {
   try {
     if (
@@ -80,7 +83,12 @@ function newAdviceId(): string {
   } catch {
     /* деякі WebView-и кидають на доступі до crypto — падаємо у fallback */
   }
-  return `adv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  // Fallback БЕЗ `Math.random()`: CodeQL справедливо позначає його як
+  // insecure-randomness, і сперечатись тут нема про що — для correlation-ID
+  // випадковість не потрібна взагалі. Монотонний лічильник у межах сесії дає
+  // те, чого random не гарантує: відсутність колізій усіченого суфікса.
+  adviceIdCounter += 1;
+  return `adv-${Date.now().toString(36)}-${adviceIdCounter.toString(36)}`;
 }
 
 /**
