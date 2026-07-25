@@ -16,6 +16,50 @@
 
 Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (90) + RENAME (2) − REMOVE (1) − ABSORBED (1: goal_first_shown → experiment_exposed). 94 → 96. ✓
 
+## Оновлення 2026-07-25 — Хвиля 2, група `value_loop` (+10 подій, registry-only)
+
+**Що змінилось:** у `tracking-plan.yaml` зареєстровано нову категорію `value_loop`
+з 10 подій; імена заморожені в
+[`packages/shared/src/lib/analyticsEvents.valueLoops.ts`](../packages/shared/src/lib/analyticsEvents.valueLoops.ts)
+і пінуються verbatim у `analyticsEvents.test.ts`. **Callsite-ів ще немає** — це
+навмисно: імена подій де-факто незворотні (§ «Naming convention» нижче), тож
+контракт заморожується ОДНИМ рев'ювабельним патчем ДО інструментування.
+
+| Подія                                              | Що закриває                                                                        |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `value_signal_shown` / `_activated` / `_dismissed` | B1 у `product-knowledge-{finyk,routine,nutrition,fizruk}.md` — половина «показано» |
+| `routine_habit_checked`                            | B1 routine + зріз «чекін після показу стріку» (routine B3)                         |
+| `fizruk_workout_finished`, `nutrition_meal_logged` | B1 fizruk / nutrition — половина «дію зроблено»                                    |
+| `finyk_tx_categorized`                             | B1 finyk (єдина відсутня дія; `expense_added` / `budget_set` уже є)                |
+| `ai_advice_shown` / `ai_advice_reacted`            | B1 `product-knowledge-hub-coach.md` — «подія показу інсайту + подія реакції»       |
+| `routine_streak_shown`                             | Експозиція стріку поза `InsightCard` (щоб покази не подвоювались)                  |
+
+**Три рішення, зафіксовані разом з іменами:**
+
+1. **Вікно N не зашите в код.** Події несуть сирий `ms_since_signal`; N обирається
+   в PostHog-запиті, тож переглядається заднім числом без перевипуску бандла.
+2. **Тіла AI-поради в payload не існує.** `scrubPII` чистить за _іменами_ ключів
+   (`packages/shared/src/lib/pii.ts`), тож поле на кшталт `advice_text` він НЕ виріже —
+   захист є контрактом, а не сподіванням на скраб (Hard Rule #21). `advice_id` —
+   випадковий uuid, а не хеш тексту.
+3. **Сирий insight id у payload не кладеться.** `signal` — стабільний kind без
+   змінного суфікса: інакше high-cardinality property + `categoryId` кастомної
+   категорії (potential PII).
+
+**НЕ додано в allowlist AI-пам'яті.** Жодна з 10 подій не входить у
+`PRODUCT_MEMORY_EVENTS` (`apps/server/src/modules/ai-memory/eventSync.ts`) — інакше
+шар вчився б на власному виході (аудит hub-coach, напруга 4).
+
+**Наслідок для ESLint-правила нижче:** список дозволених дієслівних суфіксів треба
+розширити на `activated`, `checked`, `finished`, `logged`, `reacted` — правило поки
+не імплементоване, тож блокером це не є.
+
+**Backfill неможливий.** Ретроактивно дізнатись, які сигнали показувались до релізу,
+не можна ні з чого: сервер тіло поради не зберігає, історії показів не існує. Будь-яка
+когорта до дати релізу подій показує нуль — це НЕ означає «сигналів не було». Для
+чекінів Хвилі 1 (`routine_completion_events`) експозиція = `unknown`, а не `false`:
+`COALESCE(saw_streak, false)` дав би штучне підтвердження гіпотези «стріки не мотивують».
+
 ## Naming convention — locked, not migrated
 
 **Decision:** keep existing `object_verb_past_tense` snake_case (e.g. `expense_added`, `paywall_viewed`). Do **not** migrate to `object.action` dot-notation despite the skill's default recommendation.
@@ -44,10 +88,10 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 
 ## Rename — 2 events
 
-| Current Name                                                                   | Target Name              | Change                                                                              |
+| Current Name | Target Name | Change |
 | ------------------------------------------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header | settings_root                                                                                     | deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
-| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`)    | `biometric_auth_failed`  | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
+| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`) | `biometric_auth_failed` | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
 
 **Migration approach for renames:** dual-write for one release cycle. The old PostHog event name continues to fire alongside the new one; once dashboards switch, old fire is removed. Document in `.telemetry/changelog.md` (created by `product-tracking-instrument-new-feature` skill on first invocation).
 
