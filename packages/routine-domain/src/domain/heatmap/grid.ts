@@ -13,6 +13,7 @@
  */
 
 import { dateKeyFromDate } from "../../dateKeys.js";
+import { habitScheduledOnDate } from "../../schedule.js";
 import type { Habit } from "../../types.js";
 import {
   HEATMAP_DAYS,
@@ -108,24 +109,69 @@ function addDaysAt12(base: Date, days: number): Date {
 }
 
 /**
+ * Which population forms the per-day denominator of a heatmap cell.
+ *
+ *   - `"active"` (default, historical behaviour) — every non-archived
+ *     habit counts on every day, so the denominator is constant across
+ *     the whole grid.
+ *   - `"scheduled"` — only habits actually on the calendar that day
+ *     (`habitScheduledOnDate`: respects `archived`, `paused`,
+ *     `startDate` / `endDate` and the recurrence rule). This is the same
+ *     denominator `completionRateForRange` / `streakForHabit` already
+ *     use, i.e. the mode that makes heatmap and rate agree.
+ */
+export type HeatmapDenominator = "active" | "scheduled";
+
+/** Optional knobs for {@link buildHeatmapGrid}. */
+export interface BuildHeatmapGridOptions {
+  /** Denominator mode. Default `"active"` — the historical behaviour. */
+  denominator?: HeatmapDenominator | undefined;
+  /**
+   * Extra ISO weeks appended *after* the week containing `today`, giving
+   * the grid a look-ahead tail. Default `0`. The history window (and
+   * therefore `startKey`) is unaffected.
+   */
+  futureWeeks?: number | undefined;
+}
+
+/**
  * Build the rendered heatmap grid for the window ending at the week
  * containing `today` and spanning `weeks` ISO weeks back (default
- * `HEATMAP_WEEKS`).
+ * `HEATMAP_WEEKS`), optionally followed by `opts.futureWeeks` look-ahead
+ * weeks.
  *
- * The grid has exactly `weeks × HEATMAP_DAYS` cells, each populated
- * with a pre-computed `intensity` bucket so components can render
- * without re-doing any math. Month markers flag the first week in
- * which a new month starts, in the order they appear inside the grid.
+ * The grid has exactly `(weeks + futureWeeks) × HEATMAP_DAYS` cells,
+ * each populated with a pre-computed `intensity` bucket so components
+ * can render without re-doing any math. Month markers flag the first
+ * week in which a new month starts, in the order they appear inside the
+ * grid.
+ *
+ * `scheduledTotal` / `scheduledCnt` are always populated; `cnt` /
+ * `total` / `ratio` follow `opts.denominator`.
  */
 export function buildHeatmapGrid(
   habits: readonly Habit[] | null | undefined,
   completions: Record<string, readonly string[]> | null | undefined,
   today: Date,
   weeks: number = HEATMAP_WEEKS,
+  opts: BuildHeatmapGridOptions = {},
 ): HeatmapGrid {
-  const totalWeeks = Math.max(1, Math.floor(weeks));
-  const totalActive = activeHabits(habits).length;
-  const cntByDay = countHabitCompletionsByDay(habits, completions);
+  const historyWeeks = Math.max(1, Math.floor(weeks));
+  const futureWeeks = Math.max(0, Math.floor(opts.futureWeeks ?? 0));
+  const gridWeeks = historyWeeks + futureWeeks;
+  const useScheduled = opts.denominator === "scheduled";
+
+  const active = activeHabits(habits);
+  const totalActive = active.length;
+  const cntByDay = useScheduled
+    ? {}
+    : countHabitCompletionsByDay(habits, completions);
+  // Per-habit completion sets: membership lookup for the schedule-aware
+  // numerator, and de-duplication of repeated date-keys in one pass.
+  const completionSets = new Map<string, Set<string>>();
+  for (const h of active) {
+    completionSets.set(h.id, new Set(completions?.[h.id] ?? []));
+  }
 
   const todayAtNoon = new Date(today);
   todayAtNoon.setHours(12, 0, 0, 0);
@@ -134,26 +180,39 @@ export function buildHeatmapGrid(
   const mondayThisWeek = mondayOfWeek(todayAtNoon);
   const startDate = addDaysAt12(
     mondayThisWeek,
-    -(totalWeeks - 1) * HEATMAP_DAYS,
+    -(historyWeeks - 1) * HEATMAP_DAYS,
   );
   const startKey = dateKeyFromDate(startDate);
-  const endDate = addDaysAt12(startDate, totalWeeks * HEATMAP_DAYS - 1);
+  const endDate = addDaysAt12(startDate, gridWeeks * HEATMAP_DAYS - 1);
   const endKey = dateKeyFromDate(endDate);
 
   const weeksOut: HeatmapCell[][] = [];
   const seenMonths = new Set<string>();
   const monthMarkers: HeatmapMonthMarker[] = [];
 
-  for (let w = 0; w < totalWeeks; w++) {
+  for (let w = 0; w < gridWeeks; w++) {
     const week: HeatmapCell[] = [];
     for (let d = 0; d < HEATMAP_DAYS; d++) {
       const dt = addDaysAt12(startDate, w * HEATMAP_DAYS + d);
       const dateKey = dateKeyFromDate(dt);
       const isFuture = dateKey > todayKey;
       const isToday = dateKey === todayKey;
-      const cnt = cntByDay[dateKey] || 0;
-      const total = totalActive;
-      const ratio = total > 0 && !isFuture ? cnt / total : 0;
+
+      let scheduledTotal = 0;
+      let scheduledCnt = 0;
+      for (const h of active) {
+        if (!habitScheduledOnDate(h, dateKey)) continue;
+        scheduledTotal += 1;
+        if (completionSets.get(h.id)?.has(dateKey)) scheduledCnt += 1;
+      }
+
+      const cnt = useScheduled ? scheduledCnt : cntByDay[dateKey] || 0;
+      const total = useScheduled ? scheduledTotal : totalActive;
+      const raw = total > 0 && !isFuture ? cnt / total : 0;
+      // Clamp only on the schedule-aware path: historical completions
+      // recorded under a previous schedule can outnumber today's
+      // scheduled habits, and a ratio > 1 would mis-colour the cell.
+      const ratio = useScheduled ? Math.min(1, raw) : raw;
       const intensity = heatmapIntensity(ratio, isFuture);
 
       week.push({
@@ -169,6 +228,8 @@ export function buildHeatmapGrid(
         total,
         ratio,
         intensity,
+        scheduledTotal,
+        scheduledCnt,
       });
 
       const mk = `${dt.getFullYear()}-${dt.getMonth()}`;

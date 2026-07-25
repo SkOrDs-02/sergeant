@@ -201,6 +201,173 @@ describe("buildHeatmapGrid", () => {
   });
 });
 
+describe("buildHeatmapGrid — futureWeeks", () => {
+  it("defaults to zero look-ahead weeks (grid ends on the current week)", () => {
+    const grid = buildHeatmapGrid([], {}, TODAY, 4);
+    expect(grid.weeks).toHaveLength(4);
+    expect(grid.endKey).toBe("2025-01-19");
+  });
+
+  it("appends `futureWeeks` weeks after the week containing today", () => {
+    const grid = buildHeatmapGrid([], {}, TODAY, 4, { futureWeeks: 2 });
+    expect(grid.weeks).toHaveLength(6);
+    // 2 extra weeks past Sun 2025-01-19 → Sun 2025-02-02.
+    expect(grid.endKey).toBe("2025-02-02");
+    // The history part is untouched — same start as without look-ahead.
+    expect(grid.startKey).toBe(buildHeatmapGrid([], {}, TODAY, 4).startKey);
+    for (const cell of grid.weeks.flat()) {
+      if (cell.dateKey > "2025-01-15") expect(cell.isFuture).toBe(true);
+    }
+  });
+
+  it("clamps a negative / fractional futureWeeks to a whole non-negative count", () => {
+    expect(
+      buildHeatmapGrid([], {}, TODAY, 4, { futureWeeks: -3 }).weeks,
+    ).toHaveLength(4);
+    expect(
+      buildHeatmapGrid([], {}, TODAY, 4, { futureWeeks: 2.7 }).weeks,
+    ).toHaveLength(6);
+  });
+});
+
+describe("buildHeatmapGrid — denominator: 'scheduled'", () => {
+  /** Every cell of the grid, keyed by date-key. */
+  function byKey(grid: ReturnType<typeof buildHeatmapGrid>) {
+    return new Map(grid.weeks.flat().map((c) => [c.dateKey, c]));
+  }
+
+  it("drops a `once` habit from the denominator on every day but its own", () => {
+    const habits = [
+      habit({
+        id: "a",
+        name: "Разова",
+        recurrence: "once",
+        startDate: "2025-01-10",
+      }),
+    ];
+    const cells = byKey(
+      buildHeatmapGrid(habits, { a: ["2025-01-10"] }, TODAY, 4, {
+        denominator: "scheduled",
+      }),
+    );
+    expect(cells.get("2025-01-10")?.total).toBe(1);
+    expect(cells.get("2025-01-10")?.cnt).toBe(1);
+    expect(cells.get("2025-01-10")?.ratio).toBe(1);
+    // Any other day: the habit is simply not on the calendar.
+    expect(cells.get("2025-01-12")?.total).toBe(0);
+    expect(cells.get("2025-01-12")?.ratio).toBe(0);
+    expect(cells.get("2025-01-12")?.intensity).toBe("empty");
+    expect(cells.get("2025-01-09")?.total).toBe(0);
+  });
+
+  it("counts a weekly [Mon, Wed] habit only on Mondays and Wednesdays", () => {
+    const habits = [
+      habit({
+        id: "a",
+        name: "Тренування",
+        recurrence: "weekly",
+        weekdays: [0, 2],
+        startDate: "2025-01-01",
+      }),
+    ];
+    const cells = byKey(
+      buildHeatmapGrid(habits, {}, TODAY, 4, { denominator: "scheduled" }),
+    );
+    expect(cells.get("2025-01-13")?.total).toBe(1); // Mon
+    expect(cells.get("2025-01-15")?.total).toBe(1); // Wed
+    expect(cells.get("2025-01-14")?.total).toBe(0); // Tue
+    expect(cells.get("2025-01-16")?.total).toBe(0); // Thu
+    expect(cells.get("2025-01-12")?.total).toBe(0); // Sun
+  });
+
+  it("excludes paused habits from the scheduled denominator (default mode still counts them)", () => {
+    const habits = [
+      habit({ id: "a", name: "Активна", startDate: "2025-01-01" }),
+      habit({
+        id: "b",
+        name: "На паузі",
+        paused: true,
+        startDate: "2025-01-01",
+      }),
+    ];
+    const completions = { a: ["2025-01-13"] };
+    const scheduled = byKey(
+      buildHeatmapGrid(habits, completions, TODAY, 4, {
+        denominator: "scheduled",
+      }),
+    );
+    expect(scheduled.get("2025-01-13")?.total).toBe(1);
+    expect(scheduled.get("2025-01-13")?.ratio).toBe(1);
+
+    // Default ("active") denominator is untouched: paused still counts.
+    const active = byKey(buildHeatmapGrid(habits, completions, TODAY, 4));
+    expect(active.get("2025-01-13")?.total).toBe(2);
+    expect(active.get("2025-01-13")?.ratio).toBeCloseTo(0.5, 5);
+  });
+
+  it("never yields ratio > 1 from completions on unscheduled days or duplicate keys", () => {
+    const habits = [
+      habit({ id: "a", name: "Щоденна", startDate: "2025-01-01" }),
+      habit({
+        id: "b",
+        name: "Разова",
+        recurrence: "once",
+        startDate: "2025-01-10",
+      }),
+    ];
+    const completions = {
+      // Duplicate key + a completion for `b` on a day it is not scheduled.
+      a: ["2025-01-12", "2025-01-12"],
+      b: ["2025-01-12"],
+    };
+    const grid = buildHeatmapGrid(habits, completions, TODAY, 4, {
+      denominator: "scheduled",
+    });
+    const cell = byKey(grid).get("2025-01-12");
+    expect(cell?.total).toBe(1); // only the daily habit is scheduled
+    expect(cell?.cnt).toBe(1); // duplicate collapses, `b` is not counted
+    expect(cell?.ratio).toBe(1);
+    for (const c of grid.weeks.flat()) expect(c.ratio).toBeLessThanOrEqual(1);
+  });
+
+  it("exposes scheduledTotal / scheduledCnt in both modes without changing `total`", () => {
+    const habits = [
+      habit({ id: "a", name: "Щоденна", startDate: "2025-01-01" }),
+      habit({
+        id: "b",
+        name: "Разова",
+        recurrence: "once",
+        startDate: "2025-01-10",
+      }),
+    ];
+    const completions = { a: ["2025-01-13"], b: ["2025-01-10"] };
+    const active = byKey(buildHeatmapGrid(habits, completions, TODAY, 4));
+    // Legacy fields keep the "all non-archived habits" semantics …
+    expect(active.get("2025-01-13")?.total).toBe(2);
+    expect(active.get("2025-01-13")?.cnt).toBe(1);
+    // … while the additive schedule-aware pair is already populated.
+    expect(active.get("2025-01-13")?.scheduledTotal).toBe(1);
+    expect(active.get("2025-01-13")?.scheduledCnt).toBe(1);
+    expect(active.get("2025-01-10")?.scheduledTotal).toBe(2);
+    expect(active.get("2025-01-10")?.scheduledCnt).toBe(1);
+  });
+
+  it("stays empty (never NaN) when no habit is scheduled on a day", () => {
+    const grid = buildHeatmapGrid(
+      [habit({ id: "a", name: "A", archived: true })],
+      { a: ["2025-01-10"] },
+      TODAY,
+      4,
+      { denominator: "scheduled" },
+    );
+    const cell = byKey(grid).get("2025-01-10");
+    expect(cell?.total).toBe(0);
+    expect(cell?.cnt).toBe(0);
+    expect(cell?.ratio).toBe(0);
+    expect(cell?.intensity).toBe("empty");
+  });
+});
+
 describe("grid aggregates", () => {
   const habits = [habit({ id: "a", name: "A" }), habit({ id: "b", name: "B" })];
   const completions = {

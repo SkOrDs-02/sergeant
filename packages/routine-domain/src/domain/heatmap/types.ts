@@ -48,12 +48,36 @@ export interface HeatmapCell {
   isFuture: boolean;
   /** True when `dateKey === todayKey`. */
   isToday: boolean;
-  /** Raw completion count across all active habits for this day. */
+  /**
+   * Completion count that feeds `ratio` — i.e. the numerator of the
+   * denominator mode the grid was built with (`"active"` → all
+   * non-archived habits, `"scheduled"` → habits on the calendar that
+   * day). Equals `scheduledCnt` in `"scheduled"` mode.
+   */
   cnt: number;
-  /** Number of active (non-archived) habits at build-time. */
+  /**
+   * Denominator this cell was scored against. Depends on the
+   * `denominator` option `buildHeatmapGrid` was called with:
+   *   - `"active"` (default) — number of non-archived habits at
+   *     build-time, identical for every cell in the grid;
+   *   - `"scheduled"` — number of habits actually scheduled on this
+   *     date (`habitScheduledOnDate`), i.e. `scheduledTotal`.
+   */
   total: number;
   /** `cnt / total` clamped to [0..1]; 0 when `total === 0` or future. */
   ratio: number;
+  /**
+   * Number of habits scheduled on this date per `habitScheduledOnDate`
+   * (respects `archived`, `paused`, start/end bounds and the recurrence
+   * rule). Always populated, regardless of the `denominator` mode — the
+   * schedule-aware denominator the routine `rate`/streak already uses.
+   */
+  scheduledTotal: number;
+  /**
+   * Completions counted **only** among the habits scheduled on this date;
+   * de-duplicated per habit, so `scheduledCnt <= scheduledTotal` always.
+   */
+  scheduledCnt: number;
   /** Pre-selected intensity bucket — use this for colour selection. */
   intensity: HeatmapIntensity;
 }
