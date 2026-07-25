@@ -127,7 +127,7 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
     expect(logger).toHaveBeenCalledWith(
       "warn",
       "dual-write skipped: user id unavailable",
-      expect.objectContaining({ ops: 1 }),
+      expect.objectContaining({ ops: 2 }),
     );
   });
 
@@ -156,13 +156,36 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
       h1: ["2026-05-01"],
     });
     const result = await dualWriteRoutineState(prev, next);
+    // 2 ops: старий `completion-add` у `routine_entries` + append-only
+    // подія журналу (W1-ROUTINE-APPEND стадія 1). Дзеркало web-тесту.
     expect(result).toEqual({
       status: "applied",
-      result: { applied: 1, errored: 0, skipped: 0 },
+      result: { applied: 2, errored: 0, skipped: 0 },
     });
     const rows = listEntries();
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ id: "h1:2026-05-01", deleted_at: null });
+    const events = client.all<{
+      habit_id: string;
+      date_key: string;
+      state: string;
+      day_anchor: string;
+      source: string;
+    }>(`SELECT * FROM routine_completion_events`, []) as unknown as Array<{
+      habit_id: string;
+      date_key: string;
+      state: string;
+      day_anchor: string;
+      source: string;
+    }>;
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      habit_id: "h1",
+      date_key: "2026-05-01",
+      state: "done",
+      day_anchor: "device-local",
+      source: "ui",
+    });
   });
 
   it("never throws even when adapter calls all fail", async () => {
@@ -188,7 +211,9 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
     const result = await dualWriteRoutineState(prev, next);
     expect(result.status).toBe("applied");
     if (result.status === "applied") {
-      expect(result.result.errored).toBe(1);
+      // Обидва ops (старий + журнальний) падають на битому клієнті —
+      // і жоден не кидає назовні.
+      expect(result.result.errored).toBe(2);
       expect(result.result.applied).toBe(0);
     }
   });

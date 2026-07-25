@@ -21,6 +21,7 @@
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */
 import { applyRoutineDualWriteOps } from "./adapter";
+import { completionEventEnv } from "./adapter.completionEvents";
 import type { RoutineDualWriteOp } from "./diff";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
@@ -49,6 +50,20 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
     dateKey: "2026-06-22",
   },
   { kind: "completion-remove", habitId: "h1", dateKey: "2026-06-21" },
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал. Обидва стани, бо
+  // `undone` — це саме те, чого стара пара add/remove не вміє записати.
+  {
+    kind: "completion-event-append",
+    habitId: "h1",
+    dateKey: "2026-06-22",
+    state: "done",
+  },
+  {
+    kind: "completion-event-append",
+    habitId: "h1",
+    dateKey: "2026-06-21",
+    state: "undone",
+  },
   {
     kind: "habit-rename",
     habitId: "h1",
@@ -93,7 +108,24 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
   { kind: "completion-note-delete", noteKey: "h1:2026-06-21" },
 ] as never;
 
+/**
+ * Заморожує оточення append-шляху журналу: device-id і tz-offset інакше
+ * залежали б від машини, де крутиться CI, і гейт став би flaky.
+ */
+function stubCompletionEventEnv(): void {
+  jest.spyOn(completionEventEnv, "deviceId").mockReturnValue("dev-snapshot");
+  jest.spyOn(completionEventEnv, "tzOffsetMin").mockReturnValue(180);
+}
+
 describe("mobile routine dual-write SQL snapshot (ADR-0073 Крок 0)", () => {
+  beforeEach(() => {
+    stubCompletionEventEnv();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("emits a byte-stable (sql, params) sequence for the canonical op set", async () => {
     const { client, calls } = makeRecordingClient();
 
