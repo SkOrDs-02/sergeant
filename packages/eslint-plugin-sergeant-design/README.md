@@ -322,7 +322,7 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 ### `sergeant-design/no-hash-router-in-modules`
 
-Канарка міграції на `react-router@7` ([initiative 0006](../../docs/90-work/initiatives/0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
+Канарка міграції на `react-router@7` ([initiative 0006](../../docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
 
 ### `sergeant-design/no-bare-fixed-inset-modal`
 

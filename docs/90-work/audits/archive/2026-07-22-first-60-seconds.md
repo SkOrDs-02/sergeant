@@ -1,8 +1,8 @@
 # Перші 60 секунд — доказовий прохід · 2026-07-22
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Reference — доказовий звіт; baseline скорингу лишається
-> [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
+> [`2026-07-21-design-audit.md`](../2026-07-21-design-audit.md).
 
 > Наряд: `first-60s-task-for-claude-code.md` (Claude Design).
 > Доказовий прохід, **нічого не редизайнено**.

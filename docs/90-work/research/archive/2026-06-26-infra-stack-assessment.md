@@ -1,9 +1,9 @@
 # Оцінка стеку інфраструктури, авторизації та вартості Sergeant
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Deprecated — доміграційний знімок стеку.
 >
-> **⚠️ Superseded by [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** ця оцінка описує стек ДО міграції (Railway як current backend). Бекенд відтоді переїхав на Hetzner CX23 + Coolify. Зберігається як історичний assessment; вартісні/хостингові висновки не актуальні.
+> **⚠️ Superseded by [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** ця оцінка описує стек ДО міграції (Railway як current backend). Бекенд відтоді переїхав на Hetzner CX23 + Coolify. Зберігається як історичний assessment; вартісні/хостингові висновки не актуальні.
 
 ## Питання
 

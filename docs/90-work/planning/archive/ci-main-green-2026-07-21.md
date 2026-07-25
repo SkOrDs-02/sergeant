@@ -1,6 +1,6 @@
 # CI на main → green (2026-07-21)
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Closed
 
 ## Діагноз

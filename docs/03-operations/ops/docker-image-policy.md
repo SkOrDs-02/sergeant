@@ -1,6 +1,6 @@
 # Docker image policy
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 > **Update 2026-07-21:** Backend на Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). `Dockerfile.openclaw` видалено з репо ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Trivy gate лишається лише для `Dockerfile.api`.
@@ -143,6 +143,6 @@ Native-binding deps (наприклад `sharp`) — НЕ у поточному 
 - [`Dockerfile.api`](../../../Dockerfile.api) — Hub API multi-stage build.
 - [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) — Trivy CI gate.
 - [`.github/workflows/deploy-api.yml`](../../../.github/workflows/deploy-api.yml) — CI build → ghcr.io → Coolify.
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
 - [`docs/04-governance/security/hardening/L13-docker-platform-pin.md`](../../04-governance/security/hardening/archive/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.
 - [Distroless images](https://github.com/GoogleContainerTools/distroless) — upstream README.

@@ -4,7 +4,7 @@
 > **Status:** Active
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по модулю finyk
-> за спекою [`docs/90-work/planning/specs/product-knowledge-audit.md`](../planning/specs/product-knowledge-audit.md).
+> за спекою [`docs/90-work/planning/specs/product-knowledge-audit.md`](../planning/archive/specs/product-knowledge-audit.md).
 > Канон, який цей аудит породив: [`docs/01-product/model/finyk.md`](../../01-product/model/finyk.md).
 >
 > **Метод.** 37 питань банку (§3 спеки) поставлені трьом незалежним колонкам:

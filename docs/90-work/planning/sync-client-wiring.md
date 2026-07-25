@@ -141,7 +141,7 @@ pnpm --filter @sergeant/api-client exec vitest run src/__tests__/contracts
 pnpm check
 ```
 
-| **Manual E2E (обов'язково для Phase 1 PR):** два browser profiles або web + mobile emulator — mutation → wait push → pull → assert overlay. Phase 2 habit gate — див. [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) §3.
+| **Manual E2E (обов'язково для Phase 1 PR):** два browser profiles або web + mobile emulator — mutation → wait push → pull → assert overlay. Phase 2 habit gate — див. [`sync-client-wiring-phase2-handoff.md`](./archive/sync-client-wiring-phase2-handoff.md) §3.
 
 ---
 
@@ -172,7 +172,7 @@ pnpm check
 
 ### Фаза 2 — Full state registry expansion (in progress)
 
-> **Handoff:** [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) — що зроблено в cloud vs що лишилось локально.
+> **Handoff:** [`sync-client-wiring-phase2-handoff.md`](./archive/sync-client-wiring-phase2-handoff.md) — що зроблено в cloud vs що лишилось локально.
 
 - [x] Server: apply functions для routine full-state tables (7).
 - [x] Server: apply для fizruk misc + nutrition water/shopping (8).
@@ -229,7 +229,7 @@ pnpm check
 ## 10. Пов'язане
 
 - [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) — **операційна інструкція** (фази, агенти, метрики, E2E)
-- [`sync-client-wiring-phase2-handoff.md`](./sync-client-wiring-phase2-handoff.md) — Phase 2 cloud/local handoff
+- [`sync-client-wiring-phase2-handoff.md`](./archive/sync-client-wiring-phase2-handoff.md) — Phase 2 cloud/local handoff
 - [`dualwrite-teardown.md`](./archive/dualwrite-teardown.md) — SQLite SoT на клієнті (виконано)
 - [`storage-roadmap.md`](archive/storage-roadmap.md) — historical 13 stages
 - [`storage-roadmap/01-overview.md`](archive/storage-roadmap/01-overview.md) — цільова архітектура sync

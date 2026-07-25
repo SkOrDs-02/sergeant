@@ -83,11 +83,11 @@ Full list → [`docs/04-governance/governance/hard-rules.md`](./docs/04-governan
 
 - [x] `hard-rules.schema.json` має `category` field required (`required: ["id", "title", "scope", "severity", "category", "enforced_by"]`).
 - [x] `hard-rules.json` всі 21 entry мають `category` (8 `blocker-invariant` + 11 `lint-enforced-convention` + 2 `active-initiative`).
-- [x] Per-rule canonical bodies живуть у [`docs/04-governance/governance/rules/`](../../../../04-governance/governance/rules) (з BAD/GOOD прикладами); за-rule машино-читабельна матриця — [`docs/04-governance/governance/hard-rules-matrix.md`](../../../../04-governance/governance/hard-rules-matrix.md).
+- [x] Per-rule canonical bodies живуть у [`docs/04-governance/governance/rules/`](../../../../../04-governance/governance/rules) (з BAD/GOOD прикладами); за-rule машино-читабельна матриця — [`docs/04-governance/governance/hard-rules-matrix.md`](../../../../../04-governance/governance/hard-rules-matrix.md).
 - [x] AGENTS.md `Hard rules` section містить таксономію + per-rule таблицю (`#`, `Rule`, `Category`, `Per-rule file`).
 - [x] 3-way sync gate (`pnpm lint:hard-rules-registry` через `scripts/check-hard-rules-registry-sync.mjs`) валідує що `AGENTS.md ↔ hard-rules.json ↔ docs/04-governance/governance/rules/*` не дрейфують.
 
-> **Implementation note:** Реалізовано як **3 enforcement-категорії**, не 5 subject-категорій. Категорії описують _як_ правило enforcing-ається (runtime invariant / linter / sunset-allowlist), не _яку_ область покриває (engineering / security / etc.). Логіку рішення зафіксовано в [ADR-0045](../../../../04-governance/adr/0045-hard-rules-taxonomy.md) — subject-домен явно винесено за scope (`scope` field у `hard-rules.json` його несе окремо).
+> **Implementation note:** Реалізовано як **3 enforcement-категорії**, не 5 subject-категорій. Категорії описують _як_ правило enforcing-ається (runtime invariant / linter / sunset-allowlist), не _яку_ область покриває (engineering / security / etc.). Логіку рішення зафіксовано в [ADR-0045](../../../../../04-governance/adr/0045-hard-rules-taxonomy.md) — subject-домен явно винесено за scope (`scope` field у `hard-rules.json` його несе окремо).
 
 ## Тести
 

@@ -41,7 +41,7 @@
 
 - П'ять модульних спек-транскриптів (`docs/90-work/planning/specs/product-knowledge-audit-*.md`, Додатки А).
 - [`product-brainstorm-2026-07.md`](../../90-work/planning/product-brainstorm-2026-07.md) — 16 продуктових рішень.
-- Спека парасольки: [`product-knowledge-audit-overview.md`](../../90-work/planning/specs/product-knowledge-audit-overview.md).
+- Спека парасольки: [`product-knowledge-audit-overview.md`](../../90-work/planning/archive/specs/product-knowledge-audit-overview.md).
 
 **Наступний крок конвеєра — беклог** (окрема сесія): зведення всіх «фіксів»
 шести diff-звітів + брейншторму в пріоритезовану чергу.

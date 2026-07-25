@@ -9,19 +9,20 @@
 
 ## Що тут лежить
 
-| Шлях                                                                 | Призначення                                                                                                                                                                                                                 |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`_runner-report.md`](./_runner-report.md)                           | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`)                                                                             |
-| [`user-story-ledger.csv`](./user-story-ledger.csv)                   | CSV ledger user-story проходів                                                                                                                                                                                              |
-| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md)         | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                                                                                              |
-| [`product-knowledge-finyk.md`](./product-knowledge-finyk.md)         | **Active.** Продуктовий аудит знань finyk: тріангуляція founder ↔ доки ↔ код (37 питань). Канон, який він породив — [`docs/01-product/model/finyk.md`](../../01-product/model/finyk.md)                                     |
-| [`product-knowledge-hub-coach.md`](./product-knowledge-hub-coach.md) | **Active.** Продуктовий аудит знань AI-шару hub-coach: тріангуляція founder ↔ доки ↔ код (41 питання) + blindspot-пас по згоді колонок. Канон — [`docs/01-product/model/hub-coach.md`](../../01-product/model/hub-coach.md) |
-| [`archive/`](./archive/)                                             | Усі завершені / Closed / Draft-stub аудити й прожарки (fast-forward 2026-07-20)                                                                                                                                             |
+| Шлях                                                                                           | Призначення                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`_runner-report.md`](./_runner-report.md)                                                     | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`)                                                                                                                                                                                                              |
+| [`user-story-ledger.csv`](./user-story-ledger.csv)                                             | CSV ledger user-story проходів                                                                                                                                                                                                                                                                                                                               |
+| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md)                                   | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                                                                                                                                                                                                                               |
+| `product-knowledge-*.md` (6)                                                                   | **Active.** Продуктові аудити знань: тріангуляція founder ↔ доки ↔ код по `finyk`, `fizruk`, `hub-coach`, `nutrition`, `routine` + парасолька `overview`. Канони, які вони породили — [`docs/01-product/model/`](../../01-product/model/README.md). Зведення фіксів — [`../planning/product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md) |
+| [`2026-07-24-cycle6-stage2-typography-core.md`](./2026-07-24-cycle6-stage2-typography-core.md) | Цикл 6, стадія 2 (`core/**`) — Reference; **stage 3 (модульні поверхні) ще не виконано**, тому цикл лишається в активній зоні разом зі стадією 1                                                                                                                                                                                                             |
+| [`2026-07-22-cycle6-typography-shared-ui.md`](./2026-07-22-cycle6-typography-shared-ui.md)     | Цикл 6, стадія 1 (`shared/components/ui`) — Reference                                                                                                                                                                                                                                                                                                        |
+| [`archive/`](./archive/)                                                                       | Усі завершені / Closed / Draft-stub аудити й прожарки (fast-forward 2026-07-20, розчистка 2026-07-25)                                                                                                                                                                                                                                                        |
 
-Живих `Active` аудитів у корені каталогу два — `product-knowledge-finyk.md` і
-`product-knowledge-hub-coach.md` (продуктові аудити знань, 2026-07-22). Новий
-аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` — `git mv` у
-`archive/`.
+Новий аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` — `git mv`
+у `archive/`. Виняток — звіт, на який спирається **незавершений** цикл: baseline
+`2026-07-21-design-audit.md` і стадії циклу 6 лишаються в корені, доки stage 3 не
+закрито.
 
 ## Архів (зведення)
 
@@ -35,6 +36,8 @@
 - **Draft stubs** — `archive/2026-08-XX-sync-engine-roast.md`, `archive/2026-08-XX-openclaw-internal-roast.md`
 
 **Batch 2026-07-20** (fast-forward, 90-day gate skipped): усі ще живі Closed/Done/Reference аудити перенесено з кореня в `archive/`. Деталі — [`archive/README.md`](./archive/README.md).
+
+**Batch 2026-07-25** (розчистка активної зони): закриті дизайн-цикли 3–5 + супутні звіти — `archive/2026-07-22-cycle-3.md`, `archive/2026-07-22-cycle-4.md`, `archive/2026-07-22-cycle-5-typography.md`, `archive/2026-07-21-light-language.md`, `archive/2026-07-22-first-60-seconds.md`.
 
 ## Як читати
 

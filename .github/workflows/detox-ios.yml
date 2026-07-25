@@ -29,7 +29,7 @@ name: Detox (iOS)
 #      gate `pnpm api:check-openapi-types` (root `lint` script) is the
 #      first defence; Detox catches anything the codegen + types miss
 #      (e.g. behavioural drift, route ordering, header changes).
-#   See `docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#   See `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
 #
 # Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
 # merge до `main`. Ручний прогін: `workflow_dispatch`. PR-тригер лише на

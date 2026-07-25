@@ -1,6 +1,6 @@
 # Дослідження ЦА: трекери — чи юзають, для чого, чому кидають
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 > Дизайн exploratory-дослідження ЦА Sergeant перед/під час раннього запуску.
@@ -233,4 +233,4 @@ exploratory, тому покриває три рішення одразу:
 
 - [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md) — фази запуску, куди підключиться waitlist із опитування.
 - [`docs/01-product/copy/style-guide.uk.md`](../../01-product/copy/style-guide.uk.md) — тон копірайту; мову з інтервʼю звіряй із ним.
-- [`docs/90-work/research/2026-06-26-infra-stack-assessment.md`](./2026-06-26-infra-stack-assessment.md) — попереднє research у цій теці (формат-референс).
+- [`docs/90-work/research/2026-06-26-infra-stack-assessment.md`](./archive/2026-06-26-infra-stack-assessment.md) — попереднє research у цій теці (формат-референс).

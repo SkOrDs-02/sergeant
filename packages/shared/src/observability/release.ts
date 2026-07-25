@@ -11,7 +11,7 @@
  * from the deploy host or domain (e.g. `fizruk.vercel.app` vs
  * `sergeant.vercel.app`). Encoding the domain into the release was the root
  * cause of the double release growth tracked in stack-pulse PR-25 (archived:
- * `docs/90-work/initiatives/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`).
+ * `docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`).
  *
  * The SHA is resolved from the first non-empty deploy-host variable, then
  * shortened to 7 chars (git's canonical abbreviation) so the release reads

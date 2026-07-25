@@ -1,7 +1,7 @@
 # Sync client wiring — Phase 2 handoff (registry expansion)
 
 > **Status:** Active
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-03.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > Handoff для сесій у **іншому середовищі** (локальна машина з Docker, manual E2E, CI з Testcontainers).
 
 ---
@@ -27,12 +27,12 @@ PR branch: `cursor/sync-phase2-registry-expansion-0eea`
 
 ## 2. Що НЕ зроблено (явні блокери cloud-середовища)
 
-| Блокер                                                   | Симптом                                               | Хто закриває                                   | Команди / дії                                                                                           |
-| -------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Testcontainers**                                       | `Could not find a working container runtime strategy` | Локальна сесія або CI                          | `pnpm --filter @sergeant/server test:integration -- syncV2`                                             |
-| **Manual E2E**                                           | Два browser profiles / Expo emulator недоступні       | Founder / локальна сесія                       | [`sync-client-e2e.md`](../../03-operations/runbooks/sync-client-e2e.md) § A + **новий** § routine habit |
-| **Full `pnpm check`**                                    | Cloud pod може не встигнути / без integration         | CI на PR merge                                 | `pnpm check`                                                                                            |
-| **Web fizruk programs/wellbeing/plan_templates enqueue** | Web adapter не має op-kinds (mobile-only writers)     | Окремий PR якщо web UI почне писати ці таблиці | grep `programs-set` у `apps/web`                                                                        |
+| Блокер                                                   | Симптом                                               | Хто закриває                                   | Команди / дії                                                                                              |
+| -------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Testcontainers**                                       | `Could not find a working container runtime strategy` | Локальна сесія або CI                          | `pnpm --filter @sergeant/server test:integration -- syncV2`                                                |
+| **Manual E2E**                                           | Два browser profiles / Expo emulator недоступні       | Founder / локальна сесія                       | [`sync-client-e2e.md`](../../../03-operations/runbooks/sync-client-e2e.md) § A + **новий** § routine habit |
+| **Full `pnpm check`**                                    | Cloud pod може не встигнути / без integration         | CI на PR merge                                 | `pnpm check`                                                                                               |
+| **Web fizruk programs/wellbeing/plan_templates enqueue** | Web adapter не має op-kinds (mobile-only writers)     | Окремий PR якщо web UI почне писати ці таблиці | grep `programs-set` у `apps/web`                                                                           |
 
 ---
 
@@ -89,6 +89,6 @@ Client enqueue використовує **SQLite column names** (`tag_ids_json`,
 
 ## 7. Пов'язане
 
-- [`sync-client-wiring.md`](./sync-client-wiring.md) — initiative tracker
-- [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) §5 — Phase 2 template
-- [`sync-client-e2e.md`](../../03-operations/runbooks/sync-client-e2e.md) — manual runbook
+- [`sync-client-wiring.md`](../sync-client-wiring.md) — initiative tracker
+- [`sync-client-wiring-playbook.md`](../sync-client-wiring-playbook.md) §5 — Phase 2 template
+- [`sync-client-e2e.md`](../../../03-operations/runbooks/sync-client-e2e.md) — manual runbook

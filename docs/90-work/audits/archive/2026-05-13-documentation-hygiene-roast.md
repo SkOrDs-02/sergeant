@@ -61,7 +61,7 @@
 
 **Root cause:** `f5caf1ee chore(web): remove unused useHashRoute hook + tests + exports` (2026-05-13) видалив `apps/web/src/shared/hooks/useHashRoute.ts`. `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md:119,160` рапортує файл як «still active for fizruk + routine», що неправда — fizruk має `useFizrukRoute.ts`, routine має `useRoutineRoute.ts`.
 
-**Action: Change** ([`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`](../../initiatives/0006-frontend-routing-and-code-split.md)):
+**Action: Change** ([`docs/90-work/initiatives/0006-frontend-routing-and-code-split.md`](../../initiatives/archive/_0006-frontend-routing-and-code-split.md)):
 
 - `line 119` — статус прогрес-бара `[ ] Прогрес: 2/4` → `[x] 4/4: ... shared usage closed in f5caf1ee`
 - `line 160` — посилання на видалений файл → strikethrough + посилання на per-module hooks

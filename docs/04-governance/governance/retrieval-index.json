@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-07-25",
   "sourceHashes": {
-    "knowledge-graph": "ba95885dcc397d36d32cedbe1a43bb1aee1c5168802a0fa883c32e4073be41a3",
+    "knowledge-graph": "9432f0c944ee8874f855696b180b560d3b1605e29b7f937b9948363e4bf12854",
     "symbol-index": "93dba76ae0340aa2a6cb630c7c708b6d8620f29135ff065669b2f80e9b2ac80e"
   },
   "counts": {
     "adr": 77,
-    "audit": 14,
+    "audit": 9,
     "export": 286,
     "hard-rule": 26,
-    "initiative": 6,
+    "initiative": 5,
     "playbook": 60,
     "skill": 23,
-    "total": 492
+    "total": 486
   },
   "chunks": [
     {
@@ -540,8 +540,8 @@
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-21 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "ef98a91be4fce7c8323c313542bff3589a91ebb9f6d08fb893c426f7d5719bdf"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-25 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "2dec9c5ce27901a8a4bd80837db1992707046b91bc4d3d9805d44b26ef5f748c"
     },
     {
       "id": "adr:0051",
@@ -573,8 +573,8 @@
       "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-07-20 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
-      "contentHash": "32887b2db280b3e968f67733d0caa01ff8f712904a924b831b71afcf5e4e4803"
+      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-07-25 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
+      "contentHash": "e8685175cfa488bf5ad9c5372b105dd27c2633779e6b2b3921fc1094728923ac"
     },
     {
       "id": "adr:0054",
@@ -672,8 +672,8 @@
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-07-20 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "705231849f29f8767e9fc19a8d330e64d6e438aa50cf8a8afd8d11b79c85868e"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-07-25 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "71053c787ea64f64fa040fd03fac4244b950d29f66cbd559fe7ab1e4fb755593"
     },
     {
       "id": "adr:0064",
@@ -874,50 +874,6 @@
       "contentHash": "c132ed95bc44c28dcf44bc43c83f9991b9e1be7d78452b62cf55e7cff103745f"
     },
     {
-      "id": "audit:2026-07-21-light-language",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-07-21-light-language.md",
-      "line": 1,
-      "title": "Light-мова «Папір» — виконання наряду · 2026-07-21",
-      "tier": "core",
-      "status": "Reference — звіт про виконання наряду Claude Design;",
-      "text": "Light-мова «Папір» — виконання наряду · 2026-07-21 · audit:2026-07-21-light-language · audit · Reference — звіт про виконання наряду Claude Design; · A — докази · A1 · dark/light поруч (1280, demo) · A2 · виміри меж на кремі (піпетка) · A3 · mesh A/B/C (off · default · ×2), піксельний семпл фону · A4 · macro-бар «до» · B — імплементація · B1 · хаб-сітка light (PR-1) · B2 · macro-шкала · B3 · violet-XP · Побічний ефект, який треба назвати · C — кадри «після» + виміри · Тоновий крок і риски (піпетка, light, після) · axe (WCAG 2.0/2.1 A+AA, /, demo) · 5-секундний тест (light 1280) · Гейти · Побічно полагоджено",
-      "contentHash": "c5a66a77d4c1d29b34dad78e49d68974a1a3b726ae0fc6772069c0dc974b79e0"
-    },
-    {
-      "id": "audit:2026-07-22-cycle-3",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-07-22-cycle-3.md",
-      "line": 1,
-      "title": "Цикл 3 — виконання наряду · 2026-07-22",
-      "tier": "core",
-      "status": "Reference — звіт про виконання наряду Claude Design",
-      "text": "Цикл 3 — виконання наряду · 2026-07-22 · audit:2026-07-22-cycle-3 · audit · Reference — звіт про виконання наряду Claude Design · 1 · P0 — винесено в окрему спеку, і він більший за наряд · 2 · Demo-CTA → secondary · 3 · LandingPage знято · 4 · StreakFlame → coral-драбина · 5 · D4 на /pricing — виміряно після · 6 · FTUX-картки: обіцянка замість мовчання · 7 · Дрібне · Гейти · Методика · Що чекає на твій вирок",
-      "contentHash": "25917f08b76993e0fed32114b8af432f5abaa490c5b41e3a2cdaa604e68048eb"
-    },
-    {
-      "id": "audit:2026-07-22-cycle-4",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-07-22-cycle-4.md",
-      "line": 1,
-      "title": "Цикл 4 — виконання наряду · 2026-07-22",
-      "tier": "core",
-      "status": "Reference — звіт про виконання наряду Claude Design",
-      "text": "Цикл 4 — виконання наряду · 2026-07-22 · audit:2026-07-22-cycle-4 · audit · Reference — звіт про виконання наряду Claude Design · 1 · P0-персистентність — виконується в окремій сесії · 2 · page-enter опт-аут — виміряно, критерій закрито · 3 · StreakFlame → тем-залежні токени · Гейти · Скоринг — що з трьох заблокованих рубрик рухається · Що лишається за тобою",
-      "contentHash": "500ed82e467f7f29077f49676d1bdc9698ff61f21282dd0f94a4e80f2ccd853d"
-    },
-    {
-      "id": "audit:2026-07-22-cycle-5-typography",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-07-22-cycle-5-typography.md",
-      "line": 1,
-      "title": "Цикл 5 — типографічний sweep (D8) · 2026-07-22",
-      "tier": "core",
-      "status": "Reference — звіт про виконання наряду Claude Design",
-      "text": "Цикл 5 — типографічний sweep (D8) · 2026-07-22 · audit:2026-07-22-cycle-5-typography · audit · Reference — звіт про виконання наряду Claude Design · 0 · Інвентаризація · Дві шкали, як і казав baseline · Таблиця мапінгу legacy → роль · Знайдене принагідно · 1 · Консолідація шкали: 12 інвентарних слотів → 8 ролей · 2 · Побічний наслідок, який довелось лікувати · 3 · Lint — гард від відростання другої шкали · 4 · Перевірка диффу — піксельне порівняння · 5 · Що НЕ зроблено: сирі розміри · Гейти · Критерій скорингу",
-      "contentHash": "89e3f033acc04072796aa0713e4d55135af55f444f0a5eafe5f70ef23352d261"
-    },
-    {
       "id": "audit:2026-07-22-cycle6-typography-shared-ui",
       "type": "audit",
       "path": "docs/90-work/audits/2026-07-22-cycle6-typography-shared-ui.md",
@@ -927,17 +883,6 @@
       "status": "Reference — звіт про виконання наряду циклу 6; baseline скорингу —",
       "text": "Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui` · audit:2026-07-22-cycle6-typography-shared-ui · audit · Reference — звіт про виконання наряду циклу 6; baseline скорингу — · Цикл 6, стадія 1 — сирі Tailwind-розміри в shared/components/ui · Результат одним рядком · «2 випадки text-[NNpx]» — насправді нуль реальних · Лічильник · Ключові рішення (за роллю, не за пікселем — урок Р1) · Гейти · Піксель-дифф (fullPage, light+dark, 9 екранів) · Не в скоупі (stage 2+)",
       "contentHash": "cfa3eb3e6fef05e2a96fa77d25ad0a4a0d0e62a01f82b4c696a4768e1426d31a"
-    },
-    {
-      "id": "audit:2026-07-22-first-60-seconds",
-      "type": "audit",
-      "path": "docs/90-work/audits/2026-07-22-first-60-seconds.md",
-      "line": 1,
-      "title": "Перші 60 секунд — доказовий прохід · 2026-07-22",
-      "tier": "core",
-      "status": "Reference — доказовий звіт; baseline скорингу лишається",
-      "text": "Перші 60 секунд — доказовий прохід · 2026-07-22 · audit:2026-07-22-first-60-seconds · audit · Reference — доказовий звіт; baseline скорингу лишається · 0 · Виправлення до таблиці станів у брифі · 1 · Головне: landing недосяжний для жодного свіжого візитера · Механізм — гонка, а не «сторінку видалили» · 2 · D4 (стагер) — закрито фактом на prod · 3 · FTUX-хаб за критеріями брифу §4 · 4 · Воронка (виміряно) · 5 · P0-кандидат: основна FTUX-дія не створює запис · 6 · Дрібне, помічене принагідно · 7 · Що НЕ зроблено з наряду",
-      "contentHash": "f9fe7960fb444dfb6724c08bcae2a753c32d9eaf0b2e6dfe58766768088299a7"
     },
     {
       "id": "audit:2026-07-24-cycle6-stage2-typography-core",
@@ -3849,17 +3794,6 @@
       "tier": "core",
       "text": "Saturated brand fills behind `text-white` must use the `-strong` companion · hard-rule:9 · hard-rule · 9 · blocker · lint-enforced-convention · apps/web/src/**",
       "contentHash": "6d9b9c1ad9105f21df708af623243eb9796095f5f81ffeb6a7229a645d5c82dc"
-    },
-    {
-      "id": "initiative:0006",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "line": 1,
-      "title": "0006 — Frontend routing migration + route-based code-split",
-      "tier": "core",
-      "status": "Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.",
-      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
-      "contentHash": "540903f1098910a8a2dcfb0111166f2e17637f2d62bb56f59534fb9c7fbb1bb4"
     },
     {
       "id": "initiative:0010",

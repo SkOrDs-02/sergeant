@@ -8,7 +8,7 @@
 > [finyk](product-knowledge-finyk.md), [hub-coach](product-knowledge-hub-coach.md)
 > і [nutrition](product-knowledge-nutrition.md). Канон, який цей звіт супроводжує —
 > [`docs/01-product/model/routine.md`](../../01-product/model/routine.md).
-> Спека прогону — [`product-knowledge-audit-routine.md`](../planning/specs/product-knowledge-audit-routine.md).
+> Спека прогону — [`product-knowledge-audit-routine.md`](../planning/archive/specs/product-knowledge-audit-routine.md).
 >
 > **Метод.** 38 питань банку (§3 спеки) поставлено трьом незалежним колонкам:
 > FOUNDER (Додаток А спеки, дослівно, повторно не опитувався), DOCS (субагент

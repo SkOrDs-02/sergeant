@@ -15,15 +15,15 @@
 
 ## Outcome (Phase 1 shipped)
 
-Code-first OpenAPI generation pipeline + freshness gate **уже працюють**, рішення формалізоване в [ADR-0062](../../../../04-governance/adr/0062-openapi-source-of-truth.md) (написаний 2026-06-05; раніше прийнято de facto через імплементацію). Що зроблено:
+Code-first OpenAPI generation pipeline + freshness gate **уже працюють**, рішення формалізоване в [ADR-0062](../../../../../04-governance/adr/0062-openapi-source-of-truth.md) (написаний 2026-06-05; раніше прийнято de facto через імплементацію). Що зроблено:
 
-- **Generator:** [`scripts/api/generate-openapi.mjs`](../../../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/02-engineering/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
+- **Generator:** [`scripts/api/generate-openapi.mjs`](../../../../../../scripts/api/generate-openapi.mjs) + `scripts/api/generate-openapi-types.mjs` — читає Zod-schemas з `apps/server/src/modules/**/serializers/` (через `buildOpenApiDocument`) і генерує `docs/02-engineering/api/openapi.json` + `packages/api-client/src/generated/openapi.d.ts`.
 - **Committed artifacts:**
   - `docs/02-engineering/api/openapi.json` (`openapi: 3.1.0`) — single source-of-truth для documented spec.
   - `packages/api-client/src/generated/openapi.d.ts` — auto-generated TS types для web/mobile клієнтів.
 - **Freshness gate:**
-  - `pnpm api:check-openapi` (= [`scripts/api/check-openapi-fresh.mjs`](../../../../../scripts/api/check-openapi-fresh.mjs)) — regenerates spec у пам'яті + порівнює з committed файлом. Fail на drift.
-  - `pnpm api:check-openapi-types` (= [`scripts/api/check-openapi-types-fresh.mjs`](../../../../../scripts/api/check-openapi-types-fresh.mjs)) — analogous для generated types.
+  - `pnpm api:check-openapi` (= [`scripts/api/check-openapi-fresh.mjs`](../../../../../../scripts/api/check-openapi-fresh.mjs)) — regenerates spec у пам'яті + порівнює з committed файлом. Fail на drift.
+  - `pnpm api:check-openapi-types` (= [`scripts/api/check-openapi-types-fresh.mjs`](../../../../../../scripts/api/check-openapi-types-fresh.mjs)) — analogous для generated types.
   - Обидва інтегровані у root `pnpm lint` → запускається в CI через `pnpm check` (`.github/workflows/ci.yml` § "Format, lint, test, build").
 
 Що **НЕ** зроблено (deferred):

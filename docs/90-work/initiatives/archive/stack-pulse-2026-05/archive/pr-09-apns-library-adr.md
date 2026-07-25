@@ -57,7 +57,7 @@
 
 ## Resolution note
 
-Implemented as [`ADR-0048`](../../../../04-governance/adr/0048-apns-provider-library.md) instead of
+Implemented as [`ADR-0048`](../../../../../04-governance/adr/0048-apns-provider-library.md) instead of
 `ADR-0045`, because `0045` is already the Hard Rules taxonomy ADR. Current
 decision: keep `@parse/node-apn`; re-open on stale release (>12 months),
 high/critical advisory, APNs auth/signing defect, or Node runtime breakage.
