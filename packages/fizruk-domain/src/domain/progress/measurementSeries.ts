@@ -10,28 +10,28 @@
  * either series (mobile: `WeightChartSection` / `MeasurementsChartSection`).
  */
 
+import {
+  buildBodyWeightSeries,
+  type BodyWeightRecordInput,
+} from "../body/bodyWeight.js";
+import { MEASUREMENT_TREND_WINDOW, formatTickLabel } from "./seriesFormat.js";
 import type {
   MeasurementDelta,
   MeasurementPoint,
   ProgressMeasurementInput,
 } from "./types.js";
 
-/** Default number of points kept in a trend (matches web "last 8" window). */
-export const MEASUREMENT_TREND_WINDOW = 8;
+/**
+ * Default number of points kept in a trend (matches web "last 8" window).
+ * Канонічне визначення живе в `./seriesFormat.ts` — тут re-export, щоб
+ * публічна поверхня пакета не змінилась.
+ */
+export { MEASUREMENT_TREND_WINDOW };
 
 function toFiniteNumber(input: unknown): number | null {
   if (input == null || input === "") return null;
   const n = Number(input);
   return Number.isFinite(n) ? n : null;
-}
-
-function formatTickLabel(iso: string): string {
-  const t = Date.parse(iso);
-  if (!Number.isFinite(t)) return "";
-  return new Date(t).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
 }
 
 /**
@@ -73,12 +73,33 @@ export function buildMeasurementSeries(
   });
 }
 
-/** Convenience: last-N body-weight series. */
+/**
+ * Convenience: last-N body-weight series.
+ *
+ * ADDITIVE-перевантаження (W1-WEIGHT-SOT, стадія 1): якщо передати третім
+ * аргументом записи `fizruk_daily_log`, серія будується як **union** обох
+ * сховищ ваги через {@link buildBodyWeightSeries} — з дедупом за Kyiv-днем.
+ * Без третього аргументу поведінка **байт-у-байт стара**: тільки `entries`,
+ * без дедупу за днем. Тому наявні виклики (mobile Progress,
+ * `MeasurementsTrendCard`) не міняються.
+ *
+ * @param entries   Записи `fizruk_measurements` (як і раніше).
+ * @param limit     Скільки останніх точок лишити.
+ * @param dailyLog  Опційне друге джерело ваги — `fizruk_daily_log`.
+ */
 export function buildWeightTrend(
   entries: readonly ProgressMeasurementInput[] | null | undefined,
   limit: number = MEASUREMENT_TREND_WINDOW,
+  dailyLog?: readonly BodyWeightRecordInput[] | null,
 ): MeasurementPoint[] {
-  return buildMeasurementSeries(entries, "weightKg", limit);
+  if (dailyLog === undefined) {
+    return buildMeasurementSeries(entries, "weightKg", limit);
+  }
+  return buildBodyWeightSeries(
+    dailyLog,
+    entries as readonly BodyWeightRecordInput[] | null | undefined,
+    limit,
+  );
 }
 
 /** Convenience: last-N body-fat-% series. */

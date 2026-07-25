@@ -574,12 +574,12 @@
 
 **Items covered:** §7.1, §7.4.
 
-> **Контекст vs. initiative 0006 (frontend routing):** route-level lazy boundaries для цілих модулів (`/finyk/*`, `/nutrition/*`) вже реалізовані у [`core/app/router.tsx`](../../../../apps/web/src/core/app/router.tsx) (Phase 1+2.b — `lazy: () => import("../../modules/<mod>/route")`). Phase 5 ([0006](../../initiatives/0006-frontend-routing-and-code-split.md)) додатково замінить `element: <App />` на `<Lazy>` навколо `<FinykApp />`. Це **інша площина**: 0006 розщеплює per-module page-tree, PR-22 розщеплює **sub-cards усередині вже-mount-нутих сторінок** (Overview, HubDashboard hero) — щоб LCP не блокувався heavy data-fetch-ами в `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList`. Доповнюючі ефекти, не дублюючі.
+> **Контекст vs. initiative 0006 (frontend routing):** route-level lazy boundaries для цілих модулів (`/finyk/*`, `/nutrition/*`) вже реалізовані у [`core/app/router.tsx`](../../../../apps/web/src/core/app/router.tsx) (Phase 1+2.b — `lazy: () => import("../../modules/<mod>/route")`). Phase 5 ([0006](../../initiatives/archive/_0006-frontend-routing-and-code-split.md)) додатково замінить `element: <App />` на `<Lazy>` навколо `<FinykApp />`. Це **інша площина**: 0006 розщеплює per-module page-tree, PR-22 розщеплює **sub-cards усередині вже-mount-нутих сторінок** (Overview, HubDashboard hero) — щоб LCP не блокувався heavy data-fetch-ами в `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList`. Доповнюючі ефекти, не дублюючі.
 
 **Scope:**
 
 - `HubDashboard` — секції Insights / Weekly Digest / Re-engagement → `<Suspense fallback={<Skeleton/>}>` + `lazy(() => import(...))` (component-level, бо HubDashboard — частина основного bundle-а через catch-all route у `router.tsx`).
-- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy. Цей файл уже всередині finyk-route chunk-а ([initiative 0006 Phase 2.b](../../initiatives/0006-frontend-routing-and-code-split.md)); тут робимо вторинний split на рівні sub-cards.
+- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy. Цей файл уже всередині finyk-route chunk-а ([initiative 0006 Phase 2.b](../../initiatives/archive/_0006-frontend-routing-and-code-split.md)); тут робимо вторинний split на рівні sub-cards.
 - IntersectionObserver як trigger для нижніх секцій (не лише `requestIdleCallback`); `MonthPulseCard` / hero-card — eager.
 - Vitest perf-snapshot: bundle-size delta + chunk-list assertion (через `vite-bundle-visualizer` або `rollup-plugin-visualizer` snapshot).
   **Files:**

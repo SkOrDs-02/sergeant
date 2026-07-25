@@ -14,8 +14,13 @@
  * **20 strict tools на запит**, а в нас 66 — тож кожен `/api/chat` падав
  * із 400 `Too many strict tools (66)`. Unit-тести верифікували `strict: true`
  * на кожному tool, але не били реальний Anthropic — регресія пройшла повз.
- * Strict-режим знятий до того моменту, як ми переробимо стратегію
- * (opt-in per-tool на ≤20 high-value tools, або waivers від Anthropic).
+ *
+ * ПОТОЧНА СТРАТЕГІЯ (opt-in ≤20): strict вмикається per-tool через `strict: true`
+ * у domain-defs (`toolDefs/*.ts`) лише на high-value write-tools (гроші/вага/
+ * звички/харчування) — зараз 19, під cap-ом 20. `validateToolRegistry` кидає на
+ * старті, якщо strict-tools >20. У payload strict-прапор проходить лише коли
+ * `CHAT_STRICT_TOOLS=true` (default); `false` — миттєвий kill-switch у
+ * `promptCache.ts` без редеплою. Non-strict tools завжди йдуть без прапора.
  */
 
 export type { AnthropicTool } from "./toolDefs/types.js";

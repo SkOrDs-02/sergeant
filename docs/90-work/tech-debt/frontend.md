@@ -65,6 +65,71 @@
 
 ## 🔴 Критичне
 
+### ~~Черга синку finyk не дренажиться~~ — діагностовано і закрито (2026-07-25)
+
+**Симптом (як його побачили).** У локальному E2E-прогоні (Postgres 16 +
+pgvector 0.8.0, `PW_SKIP_WEBSERVER=1`) finyk поставив **4 операції** в чергу
+синку, і не вилетіло **жодного** запиту на `/api/sync`. Черга не спорожніла до
+кінця прогону.
+
+**Що з цього виявилось вимірювальним артефактом.** Smoke-тест
+`deep-module-crud` бігає **неавтентифікованим** (`seedFTUX`, без
+`auth.setup.ts`). Для такого прогону нуль запитів — це не баг, а контракт
+T3#2: `createDefaultRuntime` не запускає дренаж, поки `getSession()` не дасть
+юзера (`if (!userId) return []`), бо без автентифікації з пристрою нічого не
+має летіти. До того ж бойовий шлях — `/api/v2/sync/push`, а не `/api/sync`.
+
+**Що виявилось справжнім багом (два, обидва полагоджені).**
+
+1. **Недренажні рядки в аутбоксі.** `useLocalUserId()` навмисно віддає
+   синтетичний id (`local-anon` / `demo-local`), щоб анонім і демо писали в
+   локальний SQLite. Дуал-райт клав під цим id рядки і в `sync_op_outbox`, а
+   `drainSyncOpOutbox` фільтрує `WHERE status='pending' AND user_id = ?` по id
+   сесії Better Auth. Збіг неможливий **ніколи**. Прибрати такий рядок теж
+   нікому: `purgeStaleTerminalOutbox` за контрактом кидає помилку на статус
+   `pending`, а `setSqliteUser()` після логіну ще й перемикає партицію на
+   `sergeant-<id>.db`, лишаючи рядки в анонімній базі. Черга росла без межі,
+   без видимості й без шансу поїхати.
+   **Фікс:** гейт `isSyncableUserId()` у
+   [`core/syncEngine/syncableUserId.ts`](../../../apps/web/src/core/syncEngine/syncableUserId.ts) —
+   операції під синтетичним id взагалі не потрапляють у чергу. Локальний запис
+   не страждає: дуал-райт у SQLite відбувається до і незалежно від enqueue.
+2. **Мертвий нудж.** Writer-runtime із самого початку мав `notifyEnqueued()` —
+   негайний flush замість очікування тіку, — але **жоден** дуал-райт його не
+   викликав (нуль виробничих call-site-ів на web і mobile). Єдиними тригерами
+   push-у лишались ~30-секундний інтервал і `online`/`visibilitychange`, тож
+   кожен запис чекав до ~36 с (інтервал + джитер), а короткоживуча вкладка
+   могла закритись, так нічого й не надіславши.
+   **Фікс:** реєстр
+   [`core/syncEngine/outboxNudge.ts`](../../../apps/web/src/core/syncEngine/outboxNudge.ts);
+   `enqueueOutboxUpsert` смикає нудж після успішної вставки, `singleton.ts`
+   реєструє його одразу після `start()`. Реєстр, а не прямий імпорт синглтона —
+   щоб не зшити write-path з `authClient` в один chunk (та сама форма циклічної
+   залежності, що вже валила прод TDZ-крашем).
+
+**Чому CI цього не бачив і що змінилось.** Покриття синку обривалось на межі
+SQLite: `syncRoundTrip.test.ts` доводить `enqueue → pull apply` (обидва боки
+локальні), smoke — локальний стан. Ланцюга «локальний запис → HTTP-push» не
+перевіряв ніхто. Тепер його тримає
+[`core/syncEngine/outboxDrainChain.test.ts`](../../../apps/web/src/core/syncEngine/outboxDrainChain.test.ts):
+реальний SQLite + реальні `enqueueOutboxUpsert` / `drainSyncOpOutbox` /
+lifecycle + реальні scheduler і writer-runtime, підроблений лише HTTP-`push`.
+Годинник у тесті **не рухається** — якщо ланцюг «enqueue → нудж → flush»
+розірветься, тест не дочекається push-у і впаде, а не «пройде через 30 с».
+
+**Свідомо НЕ зроблено:** не піднято таймаут очікування (сховало б симптом);
+не чіпано mobile — там `useLocalUserId`-аналога і синтетичних id немає, усі
+записи йдуть під реальним id.
+
+**Лишається відкритим.** Крос-девайсна збіжність усе ще не доведена живим
+прогоном проти реального сервера — доведено рівно те, що ланцюг до HTTP-виклику
+цілий. Міграція анонімних даних на реальний id після логіну як не існувала, так
+і не існує (див. докстрінг `useLocalUserId.ts`); тепер вона щонайменше не має
+фантомної черги, яку могла б «успадкувати».
+
+**Знайдено** під час Хвилі 2 канон-беклогу; контекст —
+[`product-knowledge-backlog.md § Знахідки на винос`](../planning/product-knowledge-backlog.md#знахідки-на-винос-побічні-не-з-хвиль).
+
 <details>
 <summary>1. ~~Зламані тести~~ — Виконано (розгорнути)</summary>
 
@@ -818,15 +883,15 @@ in-place перед initiation Phase 4:
 13/13 (100 %), enforced. Але «ідеально» — ні. Backlog opt-in-прапорів
 та залишкових `as unknown as`-каст:
 
-| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Статус                                                                                                                                               |
-| --- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a) → 0. Flipped у base, **12 / 12 пакетів = 100%** (closure PR `0012-close-strictness-rollout` 2026-05-05 закрив `apps/web` + `apps/server` residual). Allowlist для `noUncheckedIndexedAccess` — порожній. Tracked у [Initiative 0012 § Phase 6a](../initiatives/archive/_0012-perfect-strictness-rollout.md).                                                                                                                    | ✅ Done                                                                                                                                              |
-| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | **44 baseline для `apps/server` → 0** (closure PR `0012-close-strictness-rollout` 2026-05-05 — 8 інтерфейсів + 5 call-sites; patterns: bidirectional `\| undefined` propagation + spread-only conditional includes). 12 / 12 пакетів вмикнули flag. **`apps/web` closed 2026-06-01** — ~497 baseline errors → 0; override `false` removed, allowlist entry removed. Strategy: interface widening (`prop?: T                                                                                   | undefined`) + conditional spreads at call sites. Tracked у [Initiative 0012 § Phase 6b](../initiatives/archive/_0012-perfect-strictness-rollout.md). | ✅ Done |
-| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | **8 baseline / 8 файлів** (виміряно 2026-05-04 — `apps/web` 6, `apps/server` 2, виключно у `useEffect`-cleanup-ах і `RequestHandler`-ах; 0 `noFallthroughCasesInSwitch` violations). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6c](../initiatives/archive/_0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS.                                                                                                                                  | ✅ Done                                                                                                                                              |
-| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | **TS4111 errors у `apps/server` → 0** (codemod-based bracket-notation transform, closure PR `0012-close-strictness-rollout` 2026-05-05). 12 / 12 пакетів вмикнули flag. **`apps/web` closed 2026-06-01** — all TS4111 `.foo` → `["foo"]` bracket-notation fixes applied; override `false` removed, allowlist entry removed. Tracked у [Initiative 0012 § Phase 6d](../initiatives/archive/_0012-perfect-strictness-rollout.md).                                                               | ✅ Done                                                                                                                                              |
-| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | **1 baseline / 1 файл** (виміряно 2026-05-04 — `apps/web/src/core/db/__tests__/sqlite-wasm-fake.ts` `cols` field, mortified як dead state). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6e](../initiatives/archive/_0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS. ESLint `@typescript-eslint/no-unused-vars` залишається активним як doubly-redundant safety net (немає вартості, але ловить runtime-cases типу JSX-imports краще, ніж TS). | ✅ Done                                                                                                                                              |
-| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended`                                                                                                                                                                                                                                                                                                                                                                 | ⏳ pending                                                                                                                                           |
-| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                                                                                                                                                                                                                                                                                                                                                                                           | ⏳ pending                                                                                                                                           |
+| #   | Прапор / патерн                                                                                                        | Очікуваний impact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Статус     |
+| --- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                            | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a) → 0. Flipped у base, **12 / 12 пакетів = 100%** (closure PR `0012-close-strictness-rollout` 2026-05-05 закрив `apps/web` + `apps/server` residual). Allowlist для `noUncheckedIndexedAccess` — порожній. Tracked у [Initiative 0012 § Phase 6a](../initiatives/archive/_0012-perfect-strictness-rollout.md).                                                                                                                                                                                          | ✅ Done    |
+| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                   | **44 baseline для `apps/server` → 0** (closure PR `0012-close-strictness-rollout` 2026-05-05 — 8 інтерфейсів + 5 call-sites; patterns: bidirectional `\| undefined` propagation + spread-only conditional includes). 12 / 12 пакетів вмикнули flag. **`apps/web` closed 2026-06-01** — ~497 baseline errors → 0; override `false` removed, allowlist entry removed. Strategy: interface widening (`prop?: T \| undefined`) + conditional spreads at call sites. Tracked у [Initiative 0012 § Phase 6b](../initiatives/archive/_0012-perfect-strictness-rollout.md). | ✅ Done    |
+| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                     | **8 baseline / 8 файлів** (виміряно 2026-05-04 — `apps/web` 6, `apps/server` 2, виключно у `useEffect`-cleanup-ах і `RequestHandler`-ах; 0 `noFallthroughCasesInSwitch` violations). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6c](../initiatives/archive/_0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS.                                                                                                                                                                                                        | ✅ Done    |
+| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                           | **TS4111 errors у `apps/server` → 0** (codemod-based bracket-notation transform, closure PR `0012-close-strictness-rollout` 2026-05-05). 12 / 12 пакетів вмикнули flag. **`apps/web` closed 2026-06-01** — all TS4111 `.foo` → `["foo"]` bracket-notation fixes applied; override `false` removed, allowlist entry removed. Tracked у [Initiative 0012 § Phase 6d](../initiatives/archive/_0012-perfect-strictness-rollout.md).                                                                                                                                     | ✅ Done    |
+| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                        | **1 baseline / 1 файл** (виміряно 2026-05-04 — `apps/web/src/core/db/__tests__/sqlite-wasm-fake.ts` `cols` field, mortified як dead state). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6e](../initiatives/archive/_0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS. ESLint `@typescript-eslint/no-unused-vars` залишається активним як doubly-redundant safety net (немає вартості, але ловить runtime-cases типу JSX-imports краще, ніж TS).                                                                       | ✅ Done    |
+| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                               | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended`                                                                                                                                                                                                                                                                                                                                                                                                                                       | ⏳ pending |
+| 7   | `: any` в allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio. NB: `lazyImport.ts` — runtime-інфра code-splitting-у, НЕ тест; «allowlisted» тут ≠ «тестовий»                                                                                                                                                                                                                                                                                                                                                                                                                  | ⏳ pending |
 
 **Phase 6a baseline-experiment (PR 2026-05-03):**
 

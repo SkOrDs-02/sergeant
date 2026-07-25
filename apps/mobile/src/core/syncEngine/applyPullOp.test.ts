@@ -133,6 +133,76 @@ describe("applyPullOp (mobile)", () => {
     expect(rows[0]?.name).toBe("Run");
   });
 
+  it("routine_completion_events — insert-only append-шлях (W1-ROUTINE-APPEND)", async () => {
+    const userId = "user-1";
+    const base = {
+      id: 90,
+      table: "routine_completion_events",
+      op: "insert" as const,
+      row: {
+        id: "habit1|2026-07-10|2026-07-10T08:00:00.000Z|done|device-b",
+        user_id: userId,
+        habit_id: "habit1",
+        date_key: "2026-07-10",
+        state: "done",
+        occurred_at: "2026-07-10T08:00:00.000Z",
+        tz_offset_min: 180,
+        day_anchor: "device-local",
+        source: "ui",
+        device_id: "device-b",
+        created_at: "2026-07-10T08:00:00.000Z",
+      },
+      client_ts: "2026-07-10T08:00:00.000Z",
+      server_ts: "2026-07-10T08:00:01.000Z",
+      origin_device_id: "device-b",
+    };
+
+    expect(await applyPullOp(client, base, userId, "device-a")).toBe("applied");
+
+    // Повторна доставка тієї самої події — `skipped`, не помилка:
+    // `id` детермінований, тож дублікати нормальні.
+    expect(
+      await applyPullOp(client, { ...base, id: 91 }, userId, "device-a"),
+    ).toBe("skipped");
+
+    // update / delete не існують для журналу — сервер такі ops відхиляє
+    // (`append_only_violation`), клієнт теж не застосовує.
+    for (const op of ["update", "delete"] as const) {
+      expect(
+        await applyPullOp(client, { ...base, id: 92, op }, userId, "device-a"),
+      ).toBe("rejected");
+    }
+
+    // Чужий user_id / бита форма — rejected.
+    expect(
+      await applyPullOp(client, { ...base, id: 93 }, "other-user", "device-a"),
+    ).toBe("rejected");
+    expect(
+      await applyPullOp(
+        client,
+        { ...base, id: 94, row: { ...base.row, habit_id: 42 } },
+        userId,
+        "device-a",
+      ),
+    ).toBe("rejected");
+
+    const rows = await client.all<{
+      habit_id: string;
+      date_key: string;
+      state: string;
+      day_anchor: string;
+      device_id: string;
+    }>(`SELECT * FROM routine_completion_events`);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      habit_id: "habit1",
+      date_key: "2026-07-10",
+      state: "done",
+      day_anchor: "device-local",
+      device_id: "device-b",
+    });
+  });
+
   it("skips echo ops from the same origin device", async () => {
     const deviceA = "device-a";
     const outcome = await applyPullOp(

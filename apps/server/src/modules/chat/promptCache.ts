@@ -4,6 +4,7 @@
 // (`promptCache.test.ts`) і тримати `chat.ts` тоншим. Поведінка ідентична до
 // інлайн-версії: жодна не мутує вхід.
 
+import { env } from "../../env.js";
 import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
 
 /**
@@ -29,10 +30,16 @@ import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
  *    tool-result турі шлеться ефемерний one-shot (останній user + tool-раунд),
  *    тож кеш там був би марним 1.25× write без re-read.
  *
- * Per-user `context` рендериться другим блоком system — **без** `cache_control`,
- * щоб не створювати власного cache slot per-user-ом. Але оскільки cache key
- * охоплює весь system, різний context між юзерами все одно фрагментує кеш (один слот
- * на user). Це ОК: юзер в межах своєї сесії (5хв) отримує багато cache_read.
+ * Per-user `context` рендериться ДРУГИМ блоком system — **без** `cache_control`
+ * і, головне, ПІСЛЯ breakpoint-а на SYSTEM_PREFIX. Anthropic кешує префікс
+ * up-to-and-including кожен breakpoint, тож shared-блок `tools + SYSTEM_PREFIX`
+ * (breakpoint #1/#2) закривається ще ДО per-user context → цей cache однаковий
+ * для ВСІХ юзерів і НЕ фрагментується їхнім context-ом. Per-user context
+ * потрапляє лише в message-level cache (breakpoint #3), який і так per-
+ * conversation. Тобто розміщення context у system тут коректне: воно не
+ * "розмиває" cross-user shared prefix — саме тому НЕ переносимо його в перше
+ * user-повідомлення (це нічого не покращило б, лише зламало б empty-context
+ * гілку нижче).
  *
  * Коли `context` порожній, Anthropic API відхиляє `text`-блоки з empty `text`,
  * тому під cap-ом повертаємо лише самий cached prefix.
@@ -77,9 +84,11 @@ export function applyToolsCacheBreakpoint<T extends object>(
 }
 
 /**
- * Anthropic strict-mode schemas currently compile reliably only for very small
- * subsets. Keep the full registry annotated for internal validation, but send
- * the live provider payload in non-strict mode so `/api/chat` stays available.
+ * Видаляє `strict`-прапор з КОЖНОГО tool — legacy non-strict payload. Kill-
+ * switch, коли `CHAT_STRICT_TOOLS=false`: гарантує, що Anthropic отримує
+ * payload без strict-прапорів навіть якщо domain-defs анотовані `strict: true`.
+ * Схема лишається нормалізованою (`additionalProperties: false` вже проставлено
+ * у `tools.ts::normalizeStrictTools`) — це для провайдера безпечно.
  */
 export function stripStrictModeForAnthropic<T extends { strict?: unknown }>(
   tools: readonly T[],
@@ -88,11 +97,32 @@ export function stripStrictModeForAnthropic<T extends { strict?: unknown }>(
 }
 
 /**
+ * Прибирає `strict: false` (явний opt-out) із payload-у, зберігаючи
+ * `strict: true`. Anthropic не приймає `strict: false` — прапор або
+ * присутній як `true`, або відсутній. Tools без `strict` лишаються без нього.
+ */
+function keepStrictTrueOnly<T extends { strict?: unknown }>(
+  tools: readonly T[],
+): T[] {
+  return tools.map((tool) => {
+    if (tool.strict === true) return tool;
+    const { strict: _strict, ...rest } = tool;
+    return rest as T;
+  });
+}
+
+/**
  * Tools із cache breakpoint на останньому — обчислюється один раз при імпорті
  * модуля (TOOLS статичний), щоб не клонувати масив на кожен запит.
+ *
+ * `CHAT_STRICT_TOOLS` (default true) — вмикає Anthropic strict tool use для
+ * ≤20 анотованих high-value write-tools; `false` — legacy kill-switch, який
+ * зриває strict з усіх tools (див. INCIDENT 2026-05-16 у `tools.ts`).
  */
 export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
-  stripStrictModeForAnthropic(TOOLS),
+  env.CHAT_STRICT_TOOLS
+    ? keepStrictTrueOnly(TOOLS)
+    : stripStrictModeForAnthropic(TOOLS),
 );
 
 /**

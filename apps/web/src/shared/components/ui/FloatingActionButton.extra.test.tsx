@@ -8,6 +8,10 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
+import {
   render,
   screen,
   cleanup,
@@ -26,6 +30,7 @@ vi.mock("@shared/hooks/useBodyScrollLock", () => ({
 import { FloatingActionButton } from "./FloatingActionButton";
 
 afterEach(() => {
+  resetVisualKeyboardInsetAdapter();
   cleanup();
   vi.clearAllMocks();
 });
@@ -143,5 +148,32 @@ describe("FloatingActionButton — scroll-to-hide", () => {
     });
     fireEvent.scroll(window);
     expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  // Перенесено з `RoutineBottomNav.test.tsx`: після уніфікації FAB
+  // (spec fab-and-manual-income §5-6) center-docked кнопка з nav-а переїхала
+  // сюди, а keyboard-hide поїхав разом із нею — `useVisualKeyboardInset` тут,
+  // рядки 132-136. Тести лишались у старому місці й падали, бо рендерили
+  // компонент, який FAB більше не володіє.
+  it("hides itself while the on-screen keyboard is open (spec § design decision 2)", () => {
+    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    render(<FloatingActionButton icon="plus" aria-label="Додати звичку" />);
+
+    // `aria-hidden` прибирає кнопку з accessibility-дерева і занулює її
+    // accessible name, тож дістаємось через DOM, а не через getByRole.
+    const fab = document.querySelector('[aria-label="Додати звичку"]')!;
+    const outer = fab.parentElement!;
+    expect(outer).toHaveAttribute("aria-hidden", "true");
+    expect(fab).toHaveAttribute("tabindex", "-1");
+    expect(outer.className).toContain("translate-y-24");
+  });
+
+  it("stays reachable while the keyboard is closed", () => {
+    setVisualKeyboardInsetAdapter(() => 0);
+    render(<FloatingActionButton icon="plus" aria-label="Додати звичку" />);
+
+    const fab = screen.getByRole("button", { name: "Додати звичку" });
+    expect(fab).not.toHaveAttribute("tabindex", "-1");
+    expect(fab.parentElement!.className).not.toContain("translate-y-24");
   });
 });

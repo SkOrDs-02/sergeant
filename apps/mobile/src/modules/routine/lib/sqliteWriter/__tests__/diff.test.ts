@@ -51,6 +51,13 @@ describe("diffRoutineDualWriteOps", () => {
         habitName: "Drink water",
         dateKey: "2026-05-01",
       },
+      // W1-ROUTINE-APPEND стадія 1 — журнал пишеться ПОРУЧ зі старим op.
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
     ]);
   });
 
@@ -65,6 +72,12 @@ describe("diffRoutineDualWriteOps", () => {
     });
     expect(diffRoutineDualWriteOps(prev, next)).toEqual([
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
     ]);
   });
 
@@ -83,6 +96,18 @@ describe("diffRoutineDualWriteOps", () => {
     expect(diffRoutineDualWriteOps(prev, next)).toEqual([
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-02" },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-02",
+        state: "undone",
+      },
       // Stage 10: habit removed from the array → habit-delete
       { kind: "habit-delete", habitId: "h1" },
     ]);
@@ -155,6 +180,25 @@ describe("diffRoutineDualWriteOps", () => {
         dateKey: "2026-05-03",
       },
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
+      // append-only журнал (habitId, dateKey, state)
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-04",
+        state: "done",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h2",
+        dateKey: "2026-05-03",
+        state: "done",
+      },
       {
         kind: "habit-rename",
         habitId: "h2",
@@ -191,6 +235,12 @@ describe("diffRoutineDualWriteOps", () => {
         habitId: "h1",
         habitName: "Drink water",
         dateKey: "2026-05-01",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
       },
     ]);
   });

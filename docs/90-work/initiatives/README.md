@@ -21,7 +21,6 @@
 
 ```text
 docs/90-work/initiatives/
-├── 0006-frontend-routing-…md                 # Withdrawn (audit trail)
 ├── 0010-revenue-first-launch.md              # In progress
 ├── 0015-docs-automation-daily-ops.md         # In progress
 ├── 0022-import-from-external-trackers.md     # Proposed
@@ -30,11 +29,12 @@ docs/90-work/initiatives/
 ├── archive/
 │   ├── _0001-… … _0016-…                     # earlier batches
 │   ├── _0003-sync-v2-rollout-and-v1-sunset.md  # Closed (archived 2026-07-20)
+│   ├── _0006-frontend-routing-…md              # Withdrawn (archived 2026-07-25)
 │   ├── _0017-hub-tabs-mount-perf.md            # Closed (archived 2026-07-20)
 │   ├── _0021-react-hooks-v7-cleanup.md         # Done (archived 2026-07-20)
+│   ├── stack-pulse-2026-05/                    # Closed (archived 2026-07-25)
 │   └── README.md
-├── follow-ups.md
-└── stack-pulse-2026-05/                      # Closed 2026-07-20 → archive/
+└── follow-ups.md
 ```
 
 Коли `Closed` файл переходить у `archive/`, префікс **залишається** — `archive/_NNNN-slug.md` (fast-forward дозволено без 90-day gate за рішенням founder-а).
@@ -90,11 +90,9 @@ Nested-bullets (відступ + `-`) **зливаються** у parent-опи�
 
 | #    | Назва                                                                                                  | Пріоритет | Власник      | ETA                                    | Статус                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---- | ------------------------------------------------------------------------------------------------------ | --------- | ------------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0006 | [Frontend routing & code-split](./0006-frontend-routing-and-code-split.md)                             | P1        | `@Skords-01` | Sprint 2 (2 wk)                        | **Withdrawn** — committed routing scope shipped; optional loader/bundle tuning moved to the performance backlog.                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 0010 | [Revenue-first launch (LiqPay/Plata + Apple/Google auth + Mono-wedge)](./0010-revenue-first-launch.md) | P0        | `@Skords-01` | ops-блокери                            | **In progress** — Phases 0–6 **code-complete** + m083 orphan DROP + provider-neutral billing copy + OpenAPI billing roundtrip. Canonical: `subscriptions` (через m083), pricing v4 ([ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md)). **Pending — founder-ops only:** `APPLE_*` + `LIQPAY_*`/`PLATA_*` у Coolify, ФОП, перший live paid + webhook, A/B decision, launch smoke. **Public metrics — deferred.**                                                                            |
 | 0015 | [Docs automation for daily ops](./0015-docs-automation-daily-ops.md)                                   | P2        | `@Skords-01` | 2026-05-31                             | In progress — **Phase 1 + Phase 2 code-complete.** Phase 1: daily brief (`today.md`), WIP overload guard, trust badge. Phase 2 (Bundle Beta): skill+playbook columns у `open-work.md` + `agent-ready` field на всіх ініціативах + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). Daily schedule знято 2026-07-09 (`workflow_dispatch`-only). Не 90-day-gated; archival deferred до закриття observation-вікна.      |
 | 0022 | [Import from external trackers (CSV-onboarding)](./0022-import-from-external-trackers.md)              | P2        | `@SkOrDs-02` | Phase 1 ≈ 1 sprint; full ≈ 3–4 sprints | Proposed (2026-06-28) — план CSV-імпорту з зовнішніх трекерів як activation-важіль. Один upload-конвеєр (multipart + ZIP unwrap + delimiter/encoding detect + ідемпотентний UPSERT через наявні `applySync`) + тонкі per-source адаптери. Фаза 1: Strong+Hevy → `fizruk_*`; Фаза 2: Cronometer+MFP → `nutrition_meals`; Фаза 3: універсальний column-mapper для фінансів. Чекає founder-greenlight по скоупу Фази 1 + рішення по dedup/валютній нормалізації. Source: founder-запит 2026-06-28 + export-research. |
-| —    | [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md) (multi-PR series)                            | P2        | `@Skords-01` | —                                      | **Closed** (2026-07-20) — 39/39 PR-планів; картки в [`stack-pulse-2026-05/archive/`](./stack-pulse-2026-05/archive/).                                                                                                                                                                                                                                                                                                                                                                                             |
 
 ## Нещодавно завершені
 
@@ -105,6 +103,11 @@ _Наразі порожньо — усі завершені ініціатив�
 ## Архів
 
 Не активні джерела рішень. Файли в [`archive/`](./archive). Канонічні правила з ініціатив — у `AGENTS.md` Hard Rules / `docs/04-governance/governance/` / `docs/90-work/tech-debt/`.
+
+**Batch 2026-07-25** (fast-forward за рішенням founder-а — розчистка активної зони):
+
+- [`archive/_0006-frontend-routing-and-code-split.md`](./archive/_0006-frontend-routing-and-code-split.md) — **Withdrawn**: обов'язкові routing-фази виконано; optional loader/bundle tuning пішов у performance-backlog. ESLint-канарка `hash-router` лишається `warn` і посилається на архівний шлях.
+- [`archive/stack-pulse-2026-05/`](./archive/stack-pulse-2026-05/README.md) — **Closed** (2026-07-20): 39/39 PR-планів; картки в [`archive/stack-pulse-2026-05/archive/`](./archive/stack-pulse-2026-05/archive/). Зведення відкритих пунктів серії — [`hardening-matrix.md`](./hardening-matrix.md).
 
 **Batch 2026-05-13** (виконано — `90 days` waiting period не застосовано за рішенням founder-а, [`archive/2026-08-02-batch-archival-plan.md`](./archive/2026-08-02-batch-archival-plan.md)):
 

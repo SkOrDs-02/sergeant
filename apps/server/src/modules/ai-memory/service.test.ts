@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createAiMemoryService } from "./service.js";
+import { env } from "../../env.js";
 import type {
   EmbeddingProvider,
   MemoryQueryResult,
@@ -7,16 +8,20 @@ import type {
   VectorStore,
 } from "./types.js";
 
+// `env` парситься один раз при import (`parseEnv()`), тож тести патчать
+// його поля напряму (не process.env — див. коментар у env/env.ts).
 const ENV_VARS = ["AI_MEMORY_TOP_K"] as const;
-const savedEnv: Record<string, string | undefined> = {};
+const savedProcessEnv: Record<string, string | undefined> = {};
+const savedDedupThreshold = env.AI_MEMORY_DEDUP_THRESHOLD;
 beforeEach(() => {
-  for (const k of ENV_VARS) savedEnv[k] = process.env[k];
+  for (const k of ENV_VARS) savedProcessEnv[k] = process.env[k];
 });
 afterEach(() => {
   for (const k of ENV_VARS) {
-    if (savedEnv[k] === undefined) delete process.env[k];
-    else process.env[k] = savedEnv[k];
+    if (savedProcessEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = savedProcessEnv[k];
   }
+  env.AI_MEMORY_DEDUP_THRESHOLD = savedDedupThreshold;
 });
 
 /**
@@ -165,6 +170,70 @@ describe("AiMemoryService — enabled", () => {
     expect(store.rows).toHaveLength(2);
     expect(store!.rows[0]!.embeddingMeta).toEqual(embeddings.meta);
     expect(store!.rows[0]!.embedding).toBeInstanceOf(Float32Array);
+  });
+
+  it("remember() — dedup: пропускає near-duplicate free memory (sourceRef=null) над порогом", async () => {
+    // Fake store.query повертає score 0.9 для наявного row-а.
+    env.AI_MEMORY_DEDUP_THRESHOLD = 0.85; // 0.9 >= 0.85 → dedup
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    // Перший факт — пишеться (store порожній, query → []).
+    await svc.remember([
+      { userId: "u1", source: "chat", sourceRef: null, content: "алергія" },
+    ]);
+    expect(store.rows).toHaveLength(1);
+    // Повторний майже-ідентичний факт — query знаходить score 0.9 ≥ 0.85 → skip.
+    await svc.remember([
+      {
+        userId: "u1",
+        source: "chat",
+        sourceRef: null,
+        content: "алергія знову",
+      },
+    ]);
+    expect(store.rows).toHaveLength(1);
+  });
+
+  it("remember() — dedup НЕ чіпає rows зі sourceRef!=null (їх дедупить upsert)", async () => {
+    env.AI_MEMORY_DEDUP_THRESHOLD = 0.85;
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    await svc.remember([
+      { userId: "u1", source: "finyk", sourceRef: "tx-1", content: "x" },
+    ]);
+    // Навіть якщо є схожий row, sourceRef!=null пишеться завжди (без dedup-query).
+    await svc.remember([
+      { userId: "u1", source: "finyk", sourceRef: "tx-2", content: "x" },
+    ]);
+    expect(store.rows).toHaveLength(2);
+  });
+
+  it("remember() — dedup вимкнено при threshold=0 (пише дублі)", async () => {
+    env.AI_MEMORY_DEDUP_THRESHOLD = 0;
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    await svc.remember([
+      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+    ]);
+    await svc.remember([
+      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+    ]);
+    expect(store.rows).toHaveLength(2);
   });
 
   it("remember() — no-op для пустого input", async () => {

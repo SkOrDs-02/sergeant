@@ -1,0 +1,247 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sergeant.app/schemas/posthog/dashboard.schema.json",
+  "title": "Sergeant PostHog portable dashboard manifest",
+  "description": "Status: Active. Контракт portable-манифесту дашборду PostHog (ops/posthog/dashboards/*.json). НЕ raw PostHog export — див. ops/posthog/README.md § «Контракт JSON-файлу». Валідується через `pnpm lint:posthog-manifests`; споживається scripts/posthog/import-founder-pulse.mjs.",
+  "type": "object",
+  "required": [
+    "version",
+    "key",
+    "name",
+    "description",
+    "timezone",
+    "events_contract",
+    "super_properties",
+    "person_properties",
+    "panels",
+    "alerts",
+    "umbrella_dashboard"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Відносний шлях до цієї схеми (зазвичай \"../schema/dashboard.schema.json\")."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Bump на breaking-зміну форми манифесту."
+    },
+    "key": {
+      "$ref": "#/definitions/kebabKey",
+      "description": "Стабільний id манифесту. Керує tag-namespace імпортера: теги інсайтів — [key, \"managed-by-manifest\", \"<ініціали key>:<panel.key>\"]."
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "description_uk": { "type": "string", "minLength": 1 },
+    "timezone": {
+      "const": "Europe/Kyiv",
+      "description": "Доменний інваріант Sergeant — час завжди Europe/Kyiv."
+    },
+    "events_contract": {
+      "type": "object",
+      "description": "Snapshot пейлоадів canonical-подій на момент авторування панелей. Зміна події в packages/shared/src/lib/analyticsEvents.ts вимагає оновлення манифесту в ТОМУ САМОМУ PR.",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z0-9_$]+$" },
+      "additionalProperties": { "$ref": "#/definitions/eventContract" }
+    },
+    "super_properties": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "person_properties": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "panels": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/panel" }
+    },
+    "alerts": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/alert" }
+    },
+    "umbrella_dashboard": { "$ref": "#/definitions/umbrellaDashboard" }
+  },
+  "definitions": {
+    "kebabKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "eventContract": {
+      "type": "object",
+      "required": ["fired_by"],
+      "additionalProperties": false,
+      "properties": {
+        "payload": {
+          "type": "object",
+          "description": "Мапа поле → опис типу. Вільна форма: це документація контракту, не runtime-валідація."
+        },
+        "fired_by": { "type": "string", "minLength": 1 },
+        "introduced_by": { "type": "string" },
+        "idempotency": { "type": "string" },
+        "sampling": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "breakdown": {
+      "type": "object",
+      "required": ["type", "key"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["super_property", "person_property", "event_property"]
+        },
+        "key": { "type": "string", "minLength": 1 },
+        "comment": { "type": "string" }
+      }
+    },
+    "hogqlQuery": {
+      "type": "object",
+      "required": ["kind", "query"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "HogQLQuery" },
+        "query": { "type": "string", "minLength": 1 }
+      }
+    },
+    "funnelStep": {
+      "type": "object",
+      "required": ["event"],
+      "additionalProperties": false,
+      "properties": {
+        "event": { "type": "string", "minLength": 1 },
+        "breakdown": {
+          "type": "string",
+          "description": "Напр. \"properties.module\" — імпортер мапить це у event-breakdown по полю `module`."
+        },
+        "module_values": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "panel": {
+      "type": "object",
+      "required": [
+        "key",
+        "name",
+        "type",
+        "size",
+        "description",
+        "rationale",
+        "targets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "#/definitions/kebabKey" },
+        "name": { "type": "string", "minLength": 1 },
+        "name_uk": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "description_uk": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["trends", "funnel", "retention", "hogql"] },
+        "size": { "enum": ["wide", "half", "narrow"] },
+        "targets": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "Числові пороги / kill-критерії. Обовʼязкові: панель без цілі неможливо прочитати як «добре чи погано». Допустиме значення-заглушка — явне \"TBD після baseline (<дата>)\"."
+        },
+        "query": { "$ref": "#/definitions/hogqlQuery" },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/definitions/funnelStep" }
+        },
+        "conversion_window": {
+          "type": "object",
+          "required": ["hours"],
+          "additionalProperties": false,
+          "properties": { "hours": { "type": "integer", "minimum": 1 } }
+        },
+        "breakdown": { "$ref": "#/definitions/breakdown" },
+        "cohortizing_event": { "type": "string", "minLength": 1 },
+        "returning_event": { "type": "string", "minLength": 1 },
+        "period": { "enum": ["day", "week", "month"] },
+        "total_intervals": { "type": "integer", "minimum": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "funnel" } },
+            "required": ["type"]
+          },
+          "then": { "required": ["steps"] }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "retention" } },
+            "required": ["type"]
+          },
+          "then": { "required": ["cohortizing_event"] }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "hogql" } },
+            "required": ["type"]
+          },
+          "then": { "required": ["query"] }
+        },
+        {
+          "anyOf": [
+            { "required": ["query"] },
+            {
+              "properties": { "type": { "const": "funnel" } },
+              "required": ["type", "steps"]
+            },
+            {
+              "properties": { "type": { "const": "retention" } },
+              "required": ["type", "cohortizing_event"]
+            }
+          ],
+          "description": "Дзеркалить buildQuery() в scripts/posthog/import-founder-pulse.mjs: панель мусить нести або HogQLQuery, або funnel-steps, або retention-когорту. Інакше імпорт упаде на цій панелі у рантаймі."
+        }
+      ]
+    },
+    "alert": {
+      "type": "object",
+      "required": ["key", "panel", "condition", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "#/definitions/kebabKey" },
+        "panel": { "$ref": "#/definitions/kebabKey" },
+        "condition": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["P1", "P2", "P3"] },
+        "channel": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "umbrellaDashboard": {
+      "type": "object",
+      "required": ["name", "tiles"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "tiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["panel", "row", "width"],
+            "additionalProperties": false,
+            "properties": {
+              "panel": { "$ref": "#/definitions/kebabKey" },
+              "row": { "type": "integer", "minimum": 1 },
+              "width": { "enum": ["full", "half", "third"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

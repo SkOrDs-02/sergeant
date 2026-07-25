@@ -21,6 +21,7 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
 
 const useWorkouts = vi.fn();
 const useMeasurements = vi.fn();
+const useDailyLog = vi.fn();
 const useExerciseCatalog = vi.fn();
 const usePushupActivity = vi.fn();
 
@@ -29,6 +30,9 @@ vi.mock("../hooks/useWorkouts", () => ({
 }));
 vi.mock("../hooks/useMeasurements", () => ({
   useMeasurements: () => useMeasurements(),
+}));
+vi.mock("../hooks/useDailyLog", () => ({
+  useDailyLog: () => useDailyLog(),
 }));
 vi.mock("../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: () => useExerciseCatalog(),
@@ -59,9 +63,11 @@ function setHooks(opts: {
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
   pushup?: { stats: unknown; hasData: boolean };
+  dailyLog?: unknown[];
 }) {
   useWorkouts.mockReturnValue({ workouts: opts.workouts ?? [] });
   useMeasurements.mockReturnValue({ entries: opts.entries ?? [] });
+  useDailyLog.mockReturnValue({ entries: opts.dailyLog ?? [] });
   useExerciseCatalog.mockReturnValue({
     exercises: opts.exercises ?? [],
     musclesUk: opts.musclesUk ?? {},
@@ -97,6 +103,29 @@ describe("Progress page", () => {
     expect(
       screen.getByRole("heading", { name: "Прогрес" }),
     ).toBeInTheDocument();
+  });
+
+  // W1-WEIGHT-SOT стадія 1: «Тренд ваги» і KPI-картка «Вага» читали лише
+  // `fizruk_measurements`, тож зважування з екрана «Тіло» сюди не доходили.
+  it("бере вагу з daily_log, коли «Замірів» немає (W1-WEIGHT-SOT)", () => {
+    setHooks({
+      dailyLog: [
+        { id: "dl2", at: "2026-05-14T08:00:00Z", weightKg: 79 },
+        { id: "dl1", at: "2026-05-07T08:00:00Z", weightKg: 81 },
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.getByText("79 кг")).toBeInTheDocument();
+    expect(screen.getByText("-2.0 кг")).toBeInTheDocument();
+  });
+
+  it("об'єднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
+    setHooks({
+      entries: [{ id: "m1", at: "2026-05-07T08:00:00Z", weightKg: 81 }],
+      dailyLog: [{ id: "dl1", at: "2026-05-14T08:00:00Z", weightKg: 79 }],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.getByText("79 кг")).toBeInTheDocument();
   });
 
   it("navigates to measurements when the заміри stat is tapped (Z3)", () => {

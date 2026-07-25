@@ -22,6 +22,11 @@ import {
   TOOLS_WITH_CACHE,
 } from "./promptCache.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
+import {
+  buildChatCacheKey,
+  getCachedChatResponse,
+  setCachedChatResponse,
+} from "./chatResponseCache.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
 import { als } from "../../obs/requestContext.js";
@@ -440,6 +445,26 @@ export default async function handler(
     messages: cleaned,
   });
 
+  const firstTurnSystem = buildSystem(augmentedContext);
+
+  // Response-cache (перший тур): ключ від фактичного system+messages. `system`
+  // несе живий фінансовий снапшот + RAG + coach-кореляції, тож будь-яка зміна
+  // даних → інший ключ → miss (інвалідація автоматична, stale віддати не
+  // можна). Hit пропускає весь Anthropic-виклик і continuation-loop. Кешуємо
+  // лише success-відповіді цього туру (нижче), не 422/error. Див.
+  // `chatResponseCache.ts`.
+  const cacheKey = buildChatCacheKey({
+    userId: ledgerUserId,
+    model: env.CHAT_MODEL_FIRST_TURN,
+    system: firstTurnSystem,
+    messages: cleaned,
+  });
+  const cached = getCachedChatResponse(cacheKey);
+  if (cached) {
+    res.status(cached.status).json(cached.body);
+    return;
+  }
+
   let response, data;
   try {
     ({ response, data } = await callAnthropicWithContinuation(
@@ -457,7 +482,7 @@ export default async function handler(
       {
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
-        system: buildSystem(augmentedContext),
+        system: firstTurnSystem,
         tools: TOOLS_WITH_CACHE,
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
@@ -506,7 +531,7 @@ export default async function handler(
 
   if (toolUses.length > 0) {
     recordToolProposals(content);
-    res.status(200).json({
+    const body = {
       text: textParts || null,
       tool_calls: toolUses.map((t) => ({
         id: t.id,
@@ -514,11 +539,17 @@ export default async function handler(
         input: t.input,
       })),
       tool_calls_raw: content,
-    });
+    };
+    // Кешуємо tool_use-пропозицію: вона детермінована для цього prompt-у, а
+    // клієнт усе одно виконає інструменти проти ЖИВИХ даних — тож stale немає.
+    setCachedChatResponse(cacheKey, { status: 200, body });
+    res.status(200).json(body);
     return;
   }
 
-  res.status(200).json({ text: textParts || "Немає відповіді від AI." });
+  const textBody = { text: textParts || "Немає відповіді від AI." };
+  setCachedChatResponse(cacheKey, { status: 200, body: textBody });
+  res.status(200).json(textBody);
 }
 
 function sanitizeMessages(messages: unknown): ClientChatMessage[] {

@@ -9,6 +9,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
+import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
@@ -135,6 +136,10 @@ export function DailyPlanGoalSelectors({
   const tdeeMenuRef = useRef<HTMLDivElement | null>(null);
   const tdeeMenuLeft = useClampedMenuLeft(tdeeMenuOpen, tdeeMenuRef);
   const { biometrics } = useBiometrics();
+  // W1-WEIGHT-SOT стадія 1: вага для TDEE приходить із fizruk-SoT
+  // (union daily_log + measurements). `biometrics.weightKg` лишається
+  // фолбеком, щоб юзер без модуля fizruk нічого не втратив.
+  const fizrukWeightKg = useLatestBodyWeightKg();
 
   const tdeeTargets = useMemo<Record<
     NutritionGoalId,
@@ -142,12 +147,17 @@ export function DailyPlanGoalSelectors({
   > | null>(() => {
     const result: Partial<Record<NutritionGoalId, NutritionTargets>> = {};
     for (const goal of NUTRITION_GOALS) {
-      const t = computeNutritionTargetsFromBiometrics(biometrics, goal);
+      const t = computeNutritionTargetsFromBiometrics(
+        biometrics,
+        goal,
+        undefined,
+        fizrukWeightKg,
+      );
       if (!t) return null;
       result[goal] = t;
     }
     return result as Record<NutritionGoalId, NutritionTargets>;
-  }, [biometrics]);
+  }, [biometrics, fizrukWeightKg]);
 
   const activePreset = PRESETS.find(
     (p) =>

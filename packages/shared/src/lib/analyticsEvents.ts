@@ -1,3 +1,5 @@
+import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
+
 /**
  * Canonical analytics event names shared across platforms.
  *
@@ -494,6 +496,13 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // 10 %. The first event after page-load is suppressed (initial mount,
   // not a route change).
   ROUTE_CHANGE: "route_change",
+
+  // Хвиля 2 — петлі цінності («сигнал показано → дію зроблено»).
+  // Група живе в окремому модулі, щоб тримати цей файл у межах
+  // module-size-дисципліни (Hard Rule #18); публічний доступ незмінний —
+  // `ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN` тощо. Payload-контракти —
+  // у `analyticsEvents.valueLoops.ts`.
+  ...VALUE_LOOP_ANALYTICS_EVENTS,
 } as const);
 
 export type AnalyticsEventName =

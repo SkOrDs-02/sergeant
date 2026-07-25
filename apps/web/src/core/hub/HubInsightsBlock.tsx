@@ -12,6 +12,7 @@
  * rendering their own insights locally via per-trigger hooks.
  */
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
@@ -30,6 +31,11 @@ export interface HubInsightsBlockProps {
   coachLoading: boolean;
   coachError: string | null;
   coachInsightText: string | null;
+  /**
+   * `advice_id` поточної AI-поради (з `useCoachInsight`). Просто прокидається
+   * вниз у `AssistantAdviceCard` — блок його не читає.
+   */
+  coachAdviceId?: string | null;
   coachRefresh: () => void;
   rest: readonly Rec[];
   digestFresh: boolean;
@@ -49,6 +55,7 @@ export function HubInsightsBlock({
   coachLoading,
   coachError,
   coachInsightText,
+  coachAdviceId = null,
   coachRefresh,
   rest,
   digestFresh,
@@ -64,6 +71,12 @@ export function HubInsightsBlock({
 }: HubInsightsBlockProps) {
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
+  // Реальний стан розгорнутості секції. `CollapsibleSection` тримає дітей у
+  // DOM і згорнутою, тож без цього AI-порада і дайджест рахували б показ,
+  // якого користувач не бачив (подвійний collapse). Ініціалізація значенням
+  // `insightsDefaultOpen` — доки `onOpenChange` не віддав справжній стан із
+  // localStorage; setter стабільний, тож ефект у секції не циклиться.
+  const [insightsOpen, setInsightsOpen] = useState(insightsDefaultOpen);
 
   function handleInsightActivate(insight: Insight) {
     if (insight.action.type === "navigate") {
@@ -82,6 +95,7 @@ export function HubInsightsBlock({
     <CollapsibleSection
       storageKey="sergeant:hub.insights.open"
       defaultOpen={insightsDefaultOpen}
+      onOpenChange={setInsightsOpen}
       title="Інсайти"
       collapsedIcon="sparkles"
       collapsedSubtitle={
@@ -110,6 +124,10 @@ export function HubInsightsBlock({
               id={insight.id}
               title={insight.title}
               subtitle={insight.subtitle}
+              // Хаб — єдина поверхня, що не є модульним блоком. Без цього
+              // пропа події `value_signal_*` з хабу поїхали б як
+              // `surface: "module"` і зіпсували б розріз по поверхнях.
+              surface="hub"
               onActivate={() => handleInsightActivate(insight)}
             />
           ))}
@@ -120,6 +138,8 @@ export function HubInsightsBlock({
         loading={coachLoading}
         error={coachError}
         onRefresh={coachRefresh}
+        adviceId={coachAdviceId}
+        sectionOpen={insightsOpen}
       />
       {activeNudge && !reengagementShow && (
         <DailyNudge
@@ -134,7 +154,11 @@ export function HubInsightsBlock({
         onDismiss={dismiss}
       />
       {digestExpanded ? (
-        <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
+        <WeeklyDigestCard
+          onCollapse={() => setDigestExpanded(false)}
+          surface="hub_dashboard"
+          sectionOpen={insightsOpen}
+        />
       ) : showDigestFooter ? (
         <WeeklyDigestFooter
           fresh={digestFresh}

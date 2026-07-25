@@ -34,6 +34,7 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../../core/observability/analytics";
+import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
 import { BudgetsLimitsSection } from "./BudgetsLimitsSection";
 import { BudgetsGoalsSection } from "./BudgetsGoalsSection";
 import { useProactiveAdvice } from "./useProactiveAdvice";
@@ -322,12 +323,15 @@ export function Budgets({
   const handleAddBudget = useCallback(
     (draft: NewBudgetDraft) => {
       setBudgets((b) => [...b, { ...draft, id: crypto.randomUUID() }]);
-      trackEvent(
-        ANALYTICS_EVENTS.BUDGET_SET,
-        draft.type === "limit"
+      // Хвиля 2: подія переюзана як є — додані лише поля атрибуції петлі,
+      // щоб «бюджет після сигналу про перевитрату» став вимірюваним без
+      // нової події і без ренейму наявної.
+      trackEvent(ANALYTICS_EVENTS.BUDGET_SET, {
+        ...(draft.type === "limit"
           ? { type: "limit", categoryId: draft.categoryId }
-          : { type: "goal" },
-      );
+          : { type: "goal" }),
+        ...readSignalContext("finyk"),
+      });
       setShowForm(false);
     },
     [setBudgets],

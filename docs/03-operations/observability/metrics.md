@@ -109,7 +109,7 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 `op`: `push` · `pull` · `push_all` · `pull_all` · `v2_push` · `v2_pull`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile` · `syncV2`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error` · `partial`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
-**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate`; `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 5 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported`) + 47 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` + 12 `missing_*` + 29 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: ~28 tables × 3 statuses × 53 reasons ≈ 4_452 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації.
+**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate`; `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 5 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported`) + 58 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` · `append_only_violation` + 16 `missing_*` + 35 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: 45 tables × 3 statuses × 64 reasons (`none` + 5 engine + 58 apply) ≈ 8_640 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації. Хвиля 1 (стадія 1) додала три append-only таблиці в `OP_LOG_TABLE_REGISTRY` — `routine_completion_events`, `nutrition_pantry_events`, `nutrition_goal_periods` (реєстр виріс до 45) — і три apply-level причини: `append_only_violation` — гейт на `op='update'|'delete'` для append-only журналу відміток: подія незмінна, виправлення історії = НОВА подія; `invalid_event_kind` + `missing_delta_or_abs` (валідація payload-у ledger-а комори) і `invalid_goal_origin` (журнал цілей КБЖВ).
 
 **v2 pull lag/queue (`sync_op_log_pull_lag_ms`, `sync_op_log_pull_queue_depth`)**: гістограми без лейблів, спостерігаються по одній observation на `GET /v2/sync/pull` із непорожньою відповіддю. Buckets pull lag: `50…3_600_000` ms (SSE happy-path → offline-replay). Buckets queue depth: `0…1000` ops/pull.
 
@@ -463,6 +463,53 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 **PR-14 — Anthropic daily budget alert ($3 soft / $5 hard).** На відміну від Voyage, для Anthropic не використовуємо Prometheus alert rule, а робимо in-process loop у [`obs/anthropicBudgetGuard.ts`](../../../apps/server/src/obs/anthropicBudgetGuard.ts) — Sentry → n8n WF-22 → Telegram pipeline уже live, тоді як Prometheus → Alertmanager → Telegram routing для production-deploy-у ще не змонтований. Loop читає `aiCostEstimateUsd{provider="anthropic"}` через `Counter#get()`, тримає baseline-snapshot на початок UTC-доби (`dailyBaseline`), рахує delta кожні `ANTHROPIC_BUDGET_CHECK_INTERVAL_MS` мс. Soft → `Sentry.captureMessage(level="warning", tags={op:"anthropic_budget_alert", threshold:"soft"})`, Hard → `level="error"` + взводить `isAnthropicBudgetHardExceeded()` для не-критичних шляхів. Idempotency: Redis `SET NX EX 36h` під key `anthropic_budget_alert_v1:<YYYY-MM-DD>:<soft|hard>` з in-memory fallback. Налаштовується через `ANTHROPIC_BUDGET_SOFT_USD` / `ANTHROPIC_BUDGET_HARD_USD` / `ANTHROPIC_BUDGET_ALERT_ENABLED` (див. [`env-vars.md`](../../02-engineering/integrations/env-vars.md#ai-budget-envelopes)).
 
 **Voyage daily cost alert ($1 soft / $5 hard) + monthly projection.** Analogous до PR-14, але post-record-driven (не polling): хук [`runVoyageBudgetTick`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts) у `recordVoyageUsage()` рахує today-spend і шле Sentry alert при breach. Soft (PR-38, pre-existing) → `level="warning"`, `tags.error_signature='voyage-daily-budget-soft'`, skip non-critical embeddings. **Hard** → `level="error"`, `tags.error_signature='voyage-daily-budget-hard'`, взводить `isVoyageBudgetHardExceeded()` flag; `AiMemoryService.remember()` читає flag і skip-ить embed-call ще до `embedBatch` (auto-pause ingestion). **Monthly projection** — коли `today-spend × днів-у-місяці ≥ VOYAGE_MONTHLY_BUDGET_USD`, шлемо warning `error_signature='voyage-monthly-budget-projection'` один раз на (`YYYY-MM`, monthly). Idempotency у пам'яті: `alertedTiers` Set keyed на `(dayKey|monthKey):tier` (clearing на day/month rollover). Налаштовується через `VOYAGE_DAILY_BUDGET_USD_SOFT` / `VOYAGE_DAILY_BUDGET_USD_HARD` / `VOYAGE_MONTHLY_BUDGET_USD` (див. [`env-vars.md`](../../02-engineering/integrations/env-vars.md#ai-budget-envelopes)). Sentry → n8n WF-22 → Telegram (same pipeline як Anthropic). Dedup на Telegram стороні — через `error_signature` tag (analogous до WF-98 `workflowId:error_signature` шаблону, PR-15 #2535).
+
+---
+
+## 17. Продуктові події «петель цінності» (PostHog, НЕ Prometheus)
+
+> Тут немає жодної Prometheus-серії. Секція існує тому, що це єдиний
+> каталог метрик у репо, і питання «чим виміряна ця продуктова теза»
+> шукають саме тут. Транспорт — `trackEvent`
+> ([`apps/web/src/core/observability/analytics.ts`](../../../apps/web/src/core/observability/analytics.ts)),
+> призначення — PostHog + ring-buffer `window.__hubAnalytics`. Канонічні
+> імена — [`analyticsEvents.valueLoops.ts`](../../../packages/shared/src/lib/analyticsEvents.valueLoops.ts),
+> повний контракт полів — [`.telemetry/tracking-plan.yaml`](../../../.telemetry/tracking-plan.yaml).
+> Читання зрізів — [`posthog-founder-pulse.md § 8`](./posthog-founder-pulse.md).
+
+| Подія                     | Емітер (web)                                                                                                                           | Що міряє                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `value_signal_shown`      | `shared/components/ui/InsightCard.tsx`                                                                                                 | показ продуктового сигналу (9 сигналів, 4 модулі)             |
+| `value_signal_activated`  | ↑                                                                                                                                      | тап по сигналу                                                |
+| `value_signal_dismissed`  | ↑                                                                                                                                      | відкидання сигналу                                            |
+| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts`                                                                                                | чекін звички (`source: ui \| bulk`)                           |
+| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx`                                                                                   | показ стріку ПОЗА `InsightCard` (`surface: hero_flame`)       |
+| `fizruk_workout_finished` | `modules/fizruk/components/workouts/WorkoutJournalSection.tsx`                                                                         | завершення тренування                                         |
+| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                                                                                           | логування прийому їжі                                         |
+| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`                                                                                     | категоризація транзакції                                      |
+| `ai_advice_shown`         | `core/observability/adviceTelemetry.ts` — єдиний писар; клієнти-callsite-и: `core/insights/{AssistantAdviceCard,WeeklyDigestCard}.tsx` | ФАКТИЧНИЙ показ AI-поради (не mount)                          |
+| `ai_advice_reacted`       | ↑                                                                                                                                      | реакція на пораду (`ask_ai \| refresh \| collapse \| expand`) |
+
+Наявні `expense_added` / `income_added` / `budget_set` НЕ перейменовані й не
+продубльовані — до них лише дописані ті самі поля атрибуції.
+
+**Правило читання №1 — pre-instrumentation = `unknown`, а НЕ `false`.**
+Callsite-и зʼявились 2026-07-25. Ретроактивного backfill не існує в принципі:
+PostHog не може дізнатись, які сигнали показувались до релізу подій, а журнал
+`routine_completion_events` не має і не мав колонки «чи бачив стрік». Тому
+когорти до цієї дати рахуються з `exposure = unknown` і **не беруться в
+знаменник**. Спокуса `COALESCE(saw_streak, false)` дасть штучне підтвердження
+гіпотези «стріки не мотивують» з нічого.
+
+**Правило читання №2 — `source` розрізняє мотив, а не транспорт.**
+`routine_habit_checked{source=bulk}` — масова відмітка «закрити день одним
+тапом»; `source=chat` — дія AI-інструмента. Ні те, ні те не є мотивованим
+чекіном і виключається зі знаменника петлі на боці запиту.
+
+**Правило читання №3 — вікно N живе в запиті, не в коді.** Події несуть сирі
+`ms_since_signal` / `ms_since_streak_shown`. Ніякого обчисленого булеана «дія
+протягом N» у payload немає навмисно: N переглядається заднім числом без
+релізу.
 
 ---
 

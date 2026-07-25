@@ -1,7 +1,7 @@
 import { logger } from "@shared/lib";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
-import { mirrorWeightToBiometrics } from "../../profile/biometrics";
+import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
   persistFizrukDailyLog,
   readFizrukDailyLog,
@@ -329,8 +329,9 @@ export function handleNutritionAction(
       };
       // Weight is a Fizruk daily-log entry: persist through the shared helper
       // so it dual-writes to SQLite and mirrors to Profile/Nutrition biometrics.
+      // W1-WEIGHT-SOT стадія 2: дзеркалення — через спільний funnel.
       persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
-      mirrorWeightToBiometrics(n, entry.at);
+      recordBodyWeight({ weightKg: n, at: entry.at });
       return `Вагу записано: ${n} кг`;
     }
     // ── Фізрук v2 ──────────────────────────────────────────────

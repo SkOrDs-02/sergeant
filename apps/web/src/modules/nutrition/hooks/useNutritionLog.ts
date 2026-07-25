@@ -9,6 +9,11 @@ import { useToast } from "@shared/hooks/useToast";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
+import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
+import {
   NUTRITION_LOG_KEY,
   loadNutritionLog,
   persistNutritionLog,
@@ -129,6 +134,26 @@ export function useNutritionLog() {
     setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
     setAddMealSheetOpen(false);
     setAddMealPhotoResult(null);
+    // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
+    // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
+    // виконався б у render-фазі (та сама пастка, що в routine).
+    //
+    // НАЗВИ СТРАВИ В PAYLOAD НЕМАЄ і не буде: `scrubPII` чистить за іменами
+    // ключів (`packages/shared/src/lib/pii.ts`), тож `name` він не вирізав
+    // би (Hard Rule #21). Їдуть лише enum-и і прапорці.
+    //
+    // `source` (як їжа потрапила в лог) і `macro_source` (звідки макроси) —
+    // це РІЗНІ осі: фото без розпізнаних макросів дає `photo` + `manual`.
+    // Схлопування їх в одне поле зробило б «скільки логів через AI»
+    // неможливим питанням.
+    trackEvent(ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED, {
+      meal_type: typeof meal?.mealType === "string" ? meal.mealType : "unknown",
+      source: meal?.source === "photo" ? "photo" : "manual",
+      macro_source:
+        typeof meal?.macroSource === "string" ? meal.macroSource : "manual",
+      has_macros: Boolean(meal?.macros),
+      ...readSignalContext("nutrition"),
+    });
   };
 
   const handleEditMeal = (

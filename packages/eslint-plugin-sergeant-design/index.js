@@ -3184,7 +3184,7 @@ const forbidShellOnlyFeature = {
 // Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
 
 const NO_HASH_ROUTER_MESSAGE =
-  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/initiatives/0006-frontend-routing-and-code-split.md.";
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md.";
 
 const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
 

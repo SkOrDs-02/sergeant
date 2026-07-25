@@ -5,6 +5,7 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
+import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
 import {
   safeReadStringLS,
   safeWriteLS,
@@ -74,12 +75,18 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     invalidateFinykPreview();
     // Product analytics: payload intentionally minimal (category + flag
     // whether a custom description was provided) — no amounts, no text.
+    //
+    // Хвиля 2: подія НЕ перейменовується і не дублюється новою — до неї лише
+    // дописані поля атрибуції петлі (`after_signal` / `ms_since_signal` /
+    // `signal`). Ренейм зламав би наявні дашборди й обірвав історію
+    // (`.telemetry/tracking-plan.yaml` § naming_convention).
     trackEvent(
       isIncome ? ANALYTICS_EVENTS.INCOME_ADDED : ANALYTICS_EVENTS.EXPENSE_ADDED,
       {
         category: entry.category,
         hasDescription: Boolean(entry.description),
         source: "manual",
+        ...readSignalContext("finyk"),
       },
     );
     // Activation funnel: fire once for the user's first-ever manual

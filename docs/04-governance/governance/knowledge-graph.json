@@ -1,13 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-25",
   "counts": {
-    "adr": 72,
+    "adr": 77,
+    "audit": 9,
     "hard-rule": 26,
-    "initiative": 6,
+    "initiative": 5,
     "playbook": 60,
-    "pr": 143,
+    "pr": 135,
     "skill": 23
   },
   "nodes": [
@@ -538,7 +539,7 @@
       "tier": "core",
       "meta": {
         "number": 50,
-        "last_validated": "2026-07-20"
+        "last_validated": "2026-07-25"
       }
     },
     {
@@ -572,7 +573,7 @@
       "tier": "core",
       "meta": {
         "number": 53,
-        "last_validated": "2026-07-20"
+        "last_validated": "2026-07-25"
       }
     },
     {
@@ -618,7 +619,7 @@
       "tier": "core",
       "meta": {
         "number": 58,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -630,7 +631,7 @@
       "tier": "core",
       "meta": {
         "number": 59,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -642,7 +643,7 @@
       "tier": "core",
       "meta": {
         "number": 60,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -654,7 +655,7 @@
       "tier": "core",
       "meta": {
         "number": 61,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -677,7 +678,7 @@
       "tier": "core",
       "meta": {
         "number": 63,
-        "last_validated": "2026-07-20"
+        "last_validated": "2026-07-25"
       }
     },
     {
@@ -711,7 +712,7 @@
       "tier": "core",
       "meta": {
         "number": 66,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -792,7 +793,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-21"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -816,6 +817,142 @@
       "meta": {
         "number": 75
       }
+    },
+    {
+      "id": "adr:0076",
+      "type": "adr",
+      "title": "ADR-0076: «Готівка на руках» як окрема сутність finyk",
+      "path": "docs/04-governance/adr/0076-cash-on-hand-entity.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 76
+      }
+    },
+    {
+      "id": "adr:0077",
+      "type": "adr",
+      "title": "ADR-0077: Комора як append-only ledger, залишок — derived",
+      "path": "docs/04-governance/adr/0077-pantry-append-only-ledger.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 77
+      }
+    },
+    {
+      "id": "adr:0078",
+      "type": "adr",
+      "title": "ADR-0078: Межа доби — за пристроєм користувача",
+      "path": "docs/04-governance/adr/0078-day-boundary-device-local.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 78
+      }
+    },
+    {
+      "id": "adr:0079",
+      "type": "adr",
+      "title": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка",
+      "path": "docs/04-governance/adr/0079-frozen-past-and-canonical-denominator.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 79
+      }
+    },
+    {
+      "id": "adr:0080",
+      "type": "adr",
+      "title": "ADR-0080: Єдине джерело істини ваги тіла — fizruk",
+      "path": "docs/04-governance/adr/0080-body-weight-source-of-truth.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 80
+      }
+    },
+    {
+      "id": "audit:2026-07-21-design-audit",
+      "type": "audit",
+      "title": "Sergeant — дизайн-аудит apps/web · 2026-07",
+      "path": "docs/90-work/audits/2026-07-21-design-audit.md",
+      "status": "Reference — цикл закрито; таблиця скорингу §1 лишається baseline",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-cycle6-typography-shared-ui",
+      "type": "audit",
+      "title": "Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui`",
+      "path": "docs/90-work/audits/2026-07-22-cycle6-typography-shared-ui.md",
+      "status": "Reference — звіт про виконання наряду циклу 6; baseline скорингу —",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-24-cycle6-stage2-typography-core",
+      "type": "audit",
+      "title": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`",
+      "path": "docs/90-work/audits/2026-07-24-cycle6-stage2-typography-core.md",
+      "status": "Reference — звіт про виконання наряду циклу 6, стадія 2; baseline",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-finyk",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: finyk — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-finyk.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-fizruk",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: fizruk — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-fizruk.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-hub-coach",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-hub-coach.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-nutrition",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: nutrition — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-nutrition.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-overview",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-overview.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-routine",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: routine — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-routine.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
     },
     {
       "id": "hard-rule:1",
@@ -1188,19 +1325,6 @@
         "severity": "blocker",
         "category": "lint-enforced-convention",
         "scope": ["apps/web/src/**"]
-      }
-    },
-    {
-      "id": "initiative:0006",
-      "type": "initiative",
-      "title": "0006 — Frontend routing migration + route-based code-split",
-      "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "status": "Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.",
-      "tier": "core",
-      "meta": {
-        "number": 6,
-        "owner": "@Skords-01",
-        "priority": "P1 (Sprint 2)"
       }
     },
     {
@@ -2409,16 +2533,6 @@
       }
     },
     {
-      "id": "pr:2100",
-      "type": "pr",
-      "title": "PR #2100",
-      "tier": "extended",
-      "meta": {
-        "number": 2100,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2100"
-      }
-    },
-    {
       "id": "pr:2103",
       "type": "pr",
       "title": "PR #2103",
@@ -2426,26 +2540,6 @@
       "meta": {
         "number": 2103,
         "url": "https://github.com/Skords-01/Sergeant/pull/2103"
-      }
-    },
-    {
-      "id": "pr:2104",
-      "type": "pr",
-      "title": "PR #2104",
-      "tier": "extended",
-      "meta": {
-        "number": 2104,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2104"
-      }
-    },
-    {
-      "id": "pr:2108",
-      "type": "pr",
-      "title": "PR #2108",
-      "tier": "extended",
-      "meta": {
-        "number": 2108,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2108"
       }
     },
     {
@@ -2569,16 +2663,6 @@
       }
     },
     {
-      "id": "pr:2541",
-      "type": "pr",
-      "title": "PR #2541",
-      "tier": "extended",
-      "meta": {
-        "number": 2541,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2541"
-      }
-    },
-    {
       "id": "pr:2543",
       "type": "pr",
       "title": "PR #2543",
@@ -2586,56 +2670,6 @@
       "meta": {
         "number": 2543,
         "url": "https://github.com/Skords-01/Sergeant/pull/2543"
-      }
-    },
-    {
-      "id": "pr:2545",
-      "type": "pr",
-      "title": "PR #2545",
-      "tier": "extended",
-      "meta": {
-        "number": 2545,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2545"
-      }
-    },
-    {
-      "id": "pr:2549",
-      "type": "pr",
-      "title": "PR #2549",
-      "tier": "extended",
-      "meta": {
-        "number": 2549,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2549"
-      }
-    },
-    {
-      "id": "pr:2551",
-      "type": "pr",
-      "title": "PR #2551",
-      "tier": "extended",
-      "meta": {
-        "number": 2551,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2551"
-      }
-    },
-    {
-      "id": "pr:2553",
-      "type": "pr",
-      "title": "PR #2553",
-      "tier": "extended",
-      "meta": {
-        "number": 2553,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2553"
-      }
-    },
-    {
-      "id": "pr:2570",
-      "type": "pr",
-      "title": "PR #2570",
-      "tier": "extended",
-      "meta": {
-        "number": 2570,
-        "url": "https://github.com/Skords-01/Sergeant/pull/2570"
       }
     },
     {
@@ -2819,26 +2853,6 @@
       }
     },
     {
-      "id": "pr:3610",
-      "type": "pr",
-      "title": "PR #3610",
-      "tier": "extended",
-      "meta": {
-        "number": 3610,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3610"
-      }
-    },
-    {
-      "id": "pr:3640",
-      "type": "pr",
-      "title": "PR #3640",
-      "tier": "extended",
-      "meta": {
-        "number": 3640,
-        "url": "https://github.com/Skords-01/Sergeant/pull/3640"
-      }
-    },
-    {
       "id": "pr:3649",
       "type": "pr",
       "title": "PR #3649",
@@ -2879,6 +2893,26 @@
       }
     },
     {
+      "id": "pr:409",
+      "type": "pr",
+      "title": "PR #409",
+      "tier": "extended",
+      "meta": {
+        "number": 409,
+        "url": "https://github.com/Skords-01/Sergeant/pull/409"
+      }
+    },
+    {
+      "id": "pr:43",
+      "type": "pr",
+      "title": "PR #43",
+      "tier": "extended",
+      "meta": {
+        "number": 43,
+        "url": "https://github.com/Skords-01/Sergeant/pull/43"
+      }
+    },
+    {
       "id": "pr:443",
       "type": "pr",
       "title": "PR #443",
@@ -2906,6 +2940,16 @@
       "meta": {
         "number": 445,
         "url": "https://github.com/Skords-01/Sergeant/pull/445"
+      }
+    },
+    {
+      "id": "pr:446",
+      "type": "pr",
+      "title": "PR #446",
+      "tier": "extended",
+      "meta": {
+        "number": 446,
+        "url": "https://github.com/Skords-01/Sergeant/pull/446"
       }
     },
     {
@@ -3802,11 +3846,6 @@
     },
     {
       "from": "adr:0054",
-      "to": "initiative:0006",
-      "type": "references"
-    },
-    {
-      "from": "adr:0054",
       "to": "pr:2103",
       "type": "touched-by"
     },
@@ -4056,58 +4095,43 @@
       "type": "references"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2100",
+      "from": "adr:0076",
+      "to": "pr:446",
       "type": "touched-by"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2104",
+      "from": "adr:0080",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-21-design-audit",
+      "to": "pr:409",
       "type": "touched-by"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2108",
-      "type": "touched-by"
+      "from": "audit:2026-07-22-cycle6-typography-shared-ui",
+      "to": "hard-rule:16",
+      "type": "references"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2541",
-      "type": "touched-by"
+      "from": "audit:product-knowledge-finyk",
+      "to": "hard-rule:10",
+      "type": "references"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2545",
-      "type": "touched-by"
+      "from": "audit:product-knowledge-routine",
+      "to": "hard-rule:12",
+      "type": "references"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2549",
-      "type": "touched-by"
+      "from": "audit:product-knowledge-routine",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
-      "from": "initiative:0006",
-      "to": "pr:2551",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0006",
-      "to": "pr:2553",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0006",
-      "to": "pr:2570",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0006",
-      "to": "pr:3610",
-      "type": "touched-by"
-    },
-    {
-      "from": "initiative:0006",
-      "to": "pr:3640",
+      "from": "audit:product-knowledge-routine",
+      "to": "pr:43",
       "type": "touched-by"
     },
     {

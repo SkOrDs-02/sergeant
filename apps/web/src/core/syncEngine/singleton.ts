@@ -15,6 +15,7 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { getSession } from "../auth/authClient";
 
 import { classifyOutboxBootOutcome } from "./outboxBoot";
+import { setOutboxEnqueueNudge } from "./outboxNudge";
 import {
   createSyncEngineWriterRuntime,
   type SyncEngineWriterRuntime,
@@ -55,6 +56,10 @@ export function bootSyncEngineWriter(
     .then((created) => {
       runtime = created;
       runtime.start();
+      // Аутбокс-нудж: свіжий enqueue штовхає push негайно замість
+      // очікування ~30-секундного тіку. Реєструємо ПІСЛЯ `start()`, щоб
+      // нудж ніколи не прилетів у неармований scheduler.
+      setOutboxEnqueueNudge(() => created.notifyEnqueued());
       return runtime;
     })
     .catch((error: unknown) => {
@@ -72,6 +77,7 @@ export function __resetSyncEngineWriterForTests(): void {
   runtime?.stop();
   runtime = null;
   inFlight = null;
+  setOutboxEnqueueNudge(null);
   readerRuntime?.stop();
   readerRuntime = null;
   readerInFlight = null;

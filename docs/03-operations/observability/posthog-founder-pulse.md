@@ -309,3 +309,101 @@ PostHog → **Alerts** (subscriptions, Telegram-mirror через n8n WF-16 → 
 - **Mobile parity.** Поки `apps/mobile` не пише в PostHog (планується в [`ftux-sprint-plan.md` §2 S0.3](../../01-product/launch/archive/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)), усі панелі представляють **web-only** користувачів. Super-property `platform` уже зареєстрована, тож insights почнуть segmenting cleanly щойно mobile приземлиться без правок dashboard.
 - **MRR з renewals/cancellations.** Поки [`stripe.ts`](../../../apps/server/src/modules/billing/stripe.ts) не fire-ить `SUBSCRIPTION_CANCELED` / `SUBSCRIPTION_RENEWED` (TODO у PR-09), §3.5 показує **new-MRR contribution**, не cumulative active-MRR. Коли події приземляться — додати §3.6.5 cumulative-MRR панель і апдейтити targets.
 - **A/B testing.** Sprint 5 (goal-first wizard з `ftux-sprint-plan.md`) вводить feature flags. Коли це лендиться — додати §3.8 insight, що breaks down §3.2 by активним variant.
+
+---
+
+## 8. Петлі цінності («сигнал показано → дію зроблено»)
+
+> **Статус:** події живуть у коді з **2026-07-25** (Хвиля 2 беклогу знань).
+> Панелей на цьому дашборді ще НЕМАЄ — секція описує контракт, семантику й
+> пастки читання, щоб перша ж панель не була побудована неправильно.
+> Канонічні імена — [`analyticsEvents.valueLoops.ts`](../../../packages/shared/src/lib/analyticsEvents.valueLoops.ts);
+> повний контракт полів — [`.telemetry/tracking-plan.yaml`](../../../.telemetry/tracking-plan.yaml).
+
+### 8.1 Що емітиться
+
+| Подія                     | Емітер (web)                                         | Половина петлі |
+| ------------------------- | ---------------------------------------------------- | -------------- |
+| `value_signal_shown`      | `shared/components/ui/InsightCard.tsx`               | показано       |
+| `value_signal_activated`  | ↑                                                    | показано       |
+| `value_signal_dismissed`  | ↑                                                    | показано       |
+| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx` | показано       |
+| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts`              | зроблено       |
+| `fizruk_workout_finished` | `modules/fizruk/.../WorkoutJournalSection.tsx`       | зроблено       |
+| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`         | зроблено       |
+| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`   | зроблено       |
+
+`expense_added` / `income_added` / `budget_set` **переюзані як є** — до них
+лише дописані поля атрибуції. Ренейму не було й не буде: наявні дашборди й
+історія цим ламаються (`tracking-plan.yaml` § `naming_convention`).
+
+### 8.2 Семантика `after_signal` / `ms_since_signal` / `signal`
+
+Ці три поля несе КОЖНА подія «дію зроблено».
+
+- `after_signal: boolean` — чи дії передував показ продуктового сигналу.
+- `ms_since_signal: number | null` — **сирий** інтервал у мілісекундах.
+- `signal: string | null` — стабільний kind сигналу без змінного суфікса
+  (`finyk-budget-overrun`, а не `finyk-budget-overrun-<categoryId>`).
+
+**Вікно N у код НЕ зашите — і не має бути.** Обчисленого булеана «дія протягом
+N» у payload немає навмисно: N обирається у HogQL (`ms_since_signal < 3600000`
+тощо), тож його можна переглянути заднім числом без релізу бандла. Атрибуція
+модуль-скоупована: показ finyk-сигналу не зарахується чекіну звички.
+
+Леджер атрибуції — `core/observability/valueSignalAttribution.ts` (TTL 24 год
+— це межа протухання, **не** вікно N). Читання не очищає стан: дві дії після
+одного показу — валідний продуктовий кейс, і consume-семантика занизила б
+конверсію.
+
+### 8.3 Знаменник: що виключати
+
+1. **`routine_habit_checked{source IN ('bulk','chat')}`** — масова відмітка
+   «закрити день одним тапом» і дія AI-інструмента не є мотивованим чекіном.
+   Залишати їх у знаменнику = розмити зріз.
+2. **Когорти ДО дати релізу подій.** ⚠️ Це найлегша й найдорожча помилка на
+   цьому дашборді: користувачі до 2026-07-25 показують **нуль** показів і
+   нуль дій **не тому, що сигналів не було**, а тому що подій не існувало.
+   Ретроактивного backfill не існує в принципі. Фільтруй когорту по даті
+   релізу; ніколи не пиши `COALESCE(saw_streak, false)` — це перетворює
+   «не знаємо» на «не бачив» і дає штучне підтвердження гіпотези з нічого.
+3. **Накопичені dismissals.** `useInsightDismissal` тримає відкинуті id у
+   localStorage **назавжди**; відкинутий сигнал більше не рендериться, тож і
+   `value_signal_shown` для нього не полетить. Знаменник на єдиному наявному
+   профілі занижений — це відома й прийнята похибка, не баг запиту.
+
+### 8.4 Стрік: чому `hero_flame` не можна читати як експеримент
+
+`routine_habit_checked` несе `saw_streak_surface`, `streak_days_at_checkin`,
+`ms_since_streak_shown` — і `scope: "max_across_habits"`, бо показаний стрік
+це максимум по ВСІХ звичках, а чекін per-habit.
+
+⚠️ `flame.visible === (streakDays > 0)` (`useStreakFlame.ts`), а полум'я живе
+на тому ж екрані, що й чекбокси. Тому зріз «бачив полум'я vs ні» — це
+порівняння когорт «стрік > 0» і «стрік = 0», а **не** тест стимулу. Він
+виглядатиме як сильне підтвердження «стріки мотивують» і буде артефактом.
+Єдина поверхня з чесною варіацією — streak-record-карточка (умовна,
+dismissible), яка їде як `value_signal_shown{signal='routine-streak-record-pending'}`.
+**Ніколи не агрегувати обидві поверхні в один булеан «бачив стрік».**
+
+Навіть чесний зріз дає максимум кореляцію. Відповідь на «карго-культ чи ні»
+вимагає A/B (сховати полум'я частині користувачів) — під це вже є
+`experiment_exposed`, але самого експерименту немає.
+
+### 8.5 Обмеження покриття (станом на 2026-07-25)
+
+- **Web-only.** `apps/mobile` подій петель не емітить; там стрік показується
+  безумовно, включно з «0 дн.» — це ІНША експозиція, тож крос-платформна
+  агрегація можлива лише з розрізом по `surface`.
+- **AI-порада.** `ai_advice_shown` / `ai_advice_reacted` мають web-callsite-и
+  (`core/observability/adviceTelemetry.ts` — єдиний писар; клієнти
+  `AssistantAdviceCard.tsx` і `WeeklyDigestCard.tsx`). Відкритим лишається
+  **id**: він КЛІЄНТСЬКИЙ. Крос-платформного порівняння сьогодні не існує
+  взагалі — `apps/mobile` подій петель не емітить (пункт «Web-only» вище).
+  Але щойно зʼявляться mobile-callsite-и, та сама денна порада, відкрита у
+  вебі й на телефоні, дасть ДВА різні `advice_id`. Тобто метрика придатна для
+  «побачив → зреагував» і НЕпридатна для «скільки унікальних порад
+  згенеровано» — останнє вимагає серверного id (окрема стадія).
+- **Незалежність від синку.** Події їдуть у PostHog HTTP-транспортом, а не
+  через `/api/sync`. Дашборд НЕ має читати «дія зроблена» як «дані доїхали в
+  хмару» — для цього є окремі `sync_*` події.

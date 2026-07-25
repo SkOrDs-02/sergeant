@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/api/queryKeys";
@@ -11,6 +11,7 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { newAdviceId } from "../observability/adviceTelemetry";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
    prefer-kyiv-time: the "today" / week-window math intentionally reads
@@ -269,19 +270,58 @@ async function fetchCoachInsight(): Promise<string | null> {
 const coachInsightQueryKey = (todayKey = localDateKey()) =>
   coachKeys.insight(todayKey);
 
+/**
+ * Форма запису кешу. `adviceId` доданий Хвилею 2 (W2-AI-ADVICE-EVENTS) і
+ * НАВМИСНО опційний: записи, збережені старим бандлом, живуть до кінця дня
+ * (`staleTime: Infinity`), тож читання без id не має падати — id дописується
+ * ліниво при першому ж проході ефекту.
+ */
+interface CachedAdvice {
+  date?: string;
+  text?: string;
+  adviceId?: string;
+}
+
+function readAdviceCache(): CachedAdvice | null {
+  return safeReadLS<CachedAdvice | null>(CACHE_KEY, null);
+}
+
 function loadInitialInsight(todayKey: string): string | undefined {
-  const cached = safeReadLS<{ date?: string; text?: string } | null>(
-    CACHE_KEY,
-    null,
-  );
+  const cached = readAdviceCache();
   if (cached?.date === todayKey && typeof cached?.text === "string") {
     return cached.text;
   }
   return undefined;
 }
 
+function loadInitialAdviceId(todayKey: string): string | null {
+  const cached = readAdviceCache();
+  if (
+    cached?.date === todayKey &&
+    typeof cached?.adviceId === "string" &&
+    cached.adviceId
+  ) {
+    return cached.adviceId;
+  }
+  return null;
+}
+
 interface UseCoachInsightResult {
   insight: string | null;
+  /**
+   * Ідентичність поради для телеметрії (`advice_id` подій `ai_advice_*`).
+   *
+   * Випадковий uuid, згенерований РІВНО ОДИН РАЗ на згенеровану пораду —
+   * не на рендер і НЕ як хеш тексту (хеш перетворив би подію на приховану
+   * сигнатуру змісту, тобто на витік іншими словами). `null`, поки поради
+   * немає.
+   *
+   * Обмеження, яке треба знати ДО побудови дашборда: id клієнтський, тож та
+   * сама денна порада у вебі й на телефоні дасть ДВА різні id. Придатно для
+   * «побачив → зреагував», НЕпридатно для «скільки унікальних порад
+   * згенеровано».
+   */
+  adviceId: string | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<unknown>;
@@ -309,26 +349,55 @@ export function useCoachInsight(): UseCoachInsightResult {
     gcTime: 24 * 60 * 60_000,
     initialData: () => loadInitialInsight(todayKey),
     initialDataUpdatedAt: () => {
-      const cached = safeReadLS<{ date?: string } | null>(CACHE_KEY, null);
+      const cached = readAdviceCache();
       if (cached?.date !== todayKey) return undefined;
       return Date.now();
     },
   });
 
+  const [adviceId, setAdviceId] = useState<string | null>(() =>
+    loadInitialAdviceId(todayKey),
+  );
+  // Якір ідентичності: (текст поради → її id). Джерело правди — САМЕ він, а не
+  // round-trip через localStorage.
+  //
+  // AI-DANGER: спокуслива версія «перечитати кеш і порівняти» тут — це
+  // нескінченний цикл рендерів у приватному режимі / при переповненій квоті:
+  // `safeWriteLS` мовчки не зберігає, наступний `safeReadLS` знову не бачить
+  // id, ефект генерує ще один — і так щорендеру. Ref розриває цю залежність:
+  // id генерується рівно один раз на текст навіть коли сховище недоступне.
+  const adviceIdRef = useRef<{ text: string; id: string } | null>(null);
+
   useEffect(() => {
-    if (
-      typeof query.data === "string" &&
-      query.data.length > 0 &&
-      !query.isFetching
-    ) {
-      const cached = safeReadLS<{ date?: string; text?: string } | null>(
-        CACHE_KEY,
-        null,
-      );
-      if (cached?.date !== todayKey || cached?.text !== query.data) {
-        safeWriteLS(CACHE_KEY, { date: todayKey, text: query.data });
-      }
+    const text = query.data;
+    if (typeof text !== "string" || text.length === 0 || query.isFetching) {
+      return;
     }
+    // Той самий текст → та сама порада → той самий id. Жодної залежності від
+    // рендеру: id мінтиться в момент фіксації результату.
+    if (adviceIdRef.current?.text === text) return;
+
+    const cached = readAdviceCache();
+    // Legacy-запис `{date, text}` без `adviceId` не падає — id дописується
+    // ліниво, бо `staleTime: Infinity` лишає такий запис живим до кінця дня.
+    const cachedId =
+      cached?.date === todayKey &&
+      cached?.text === text &&
+      typeof cached?.adviceId === "string" &&
+      cached.adviceId
+        ? cached.adviceId
+        : null;
+    const nextId = cachedId ?? newAdviceId();
+
+    adviceIdRef.current = { text, id: nextId };
+    if (
+      cached?.date !== todayKey ||
+      cached?.text !== text ||
+      cached?.adviceId !== nextId
+    ) {
+      safeWriteLS(CACHE_KEY, { date: todayKey, text, adviceId: nextId });
+    }
+    setAdviceId((prev) => (prev === nextId ? prev : nextId));
   }, [query.data, query.isFetching, todayKey]);
 
   const { refetch } = query;
@@ -340,6 +409,7 @@ export function useCoachInsight(): UseCoachInsightResult {
 
   return {
     insight: query.data ?? null,
+    adviceId,
     loading: query.isPending || query.isFetching,
     error: query.error
       ? isApiError(query.error) && query.error.kind === "http"

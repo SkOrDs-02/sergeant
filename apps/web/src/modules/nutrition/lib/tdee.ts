@@ -153,15 +153,34 @@ export function computeNutritionTargets(
  * or a usable birth-date). The "Розрахувати з профілю" CTA on
  * `DailyPlanCard` uses the `null` to disable the button and steer the
  * user back to Profile → Біометрія.
+ *
+ * W1-WEIGHT-SOT стадія 1: канон fizruk §10 каже «fizruk володіє тілом,
+ * nutrition читає». Тому вага береться з fizruk-селектора
+ * (`selectLatestBodyWeight`, union `fizruk_daily_log` + `fizruk_measurements`),
+ * якщо викликач її передав, і **лише за її відсутності** — зі знімка
+ * `biometrics.weightKg`. Фолбек навмисний: користувач без модуля fizruk
+ * не має втратити КБЖВ-розрахунок (стара поведінка живе далі). Яка
+ * таблиця канонічна і що стається з `hub_biometrics.weightKg` — питання
+ * окремого ADR (стадії 3-4).
+ *
+ * @param fizrukWeightKg Найсвіжіша вага з fizruk, або `null`/`undefined`,
+ *                       коли fizruk-історії немає.
  */
 export function computeNutritionTargetsFromBiometrics(
   biometrics: Biometrics,
   goal: NutritionGoalId,
   now: Date = new Date(),
+  fizrukWeightKg?: number | null,
 ): NutritionTargets | null {
   const ageYears = computeAgeYears(biometrics.birthDate, now);
+  const weightKg =
+    fizrukWeightKg != null &&
+    Number.isFinite(fizrukWeightKg) &&
+    fizrukWeightKg > 0
+      ? fizrukWeightKg
+      : biometrics.weightKg;
   if (
-    biometrics.weightKg == null ||
+    weightKg == null ||
     biometrics.heightCm == null ||
     biometrics.sex == null ||
     biometrics.activityLevel == null ||
@@ -171,7 +190,7 @@ export function computeNutritionTargetsFromBiometrics(
   }
   return computeNutritionTargets(
     {
-      weightKg: biometrics.weightKg,
+      weightKg,
       heightCm: biometrics.heightCm,
       ageYears,
       sex: biometrics.sex,

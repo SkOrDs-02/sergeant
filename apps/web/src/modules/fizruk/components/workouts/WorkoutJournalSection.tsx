@@ -17,6 +17,11 @@ import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../../core/observability/analytics";
+import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
@@ -268,6 +273,22 @@ export function WorkoutJournalSection({
                 );
                 const sum = summarizeWorkoutForFinish(activeWorkout);
                 const wid = activeWorkout.id;
+                // Телеметрія (Хвиля 2, `fizruk_workout_finished`). Емісія
+                // стоїть ПІСЛЯ re-entry-guard-а `finishingRef` вище, тож
+                // подвійний клік дає одну подію. У payload — лише counts:
+                // назв вправ, нотаток і тоннажу тут немає і бути не має
+                // (Hard Rule #21 — `scrubPII` чистить за іменами ключів,
+                // тож назва вправи в події не була б вирізана).
+                trackEvent(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED, {
+                  items: sum?.items ?? (activeWorkout.items || []).length,
+                  has_sets: (activeWorkout.items || []).some(
+                    (item) =>
+                      item.type === "strength" && (item.sets?.length ?? 0) > 0,
+                  ),
+                  duration_min:
+                    sum === null ? null : Math.round(sum.durationSec / 60),
+                  ...readSignalContext("fizruk"),
+                });
                 endWorkout(wid);
                 // Confirm the action visually + with haptic so the user does
                 // not have to read the modal to know the session was saved.

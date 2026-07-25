@@ -128,6 +128,62 @@ export const nutritionPantryItems = pgTable(
 );
 
 /**
+ * Postgres schema for `nutrition_pantry_events` table.
+ * Mirrors migration 086_nutrition_pantry_events.sql.
+ *
+ * Append-only журнал руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ * НЕ пишеться і НЕ читається на цій стадії — `nutritionPantryItems.qty`
+ * лишається єдиним джерелом залишку.
+ *
+ * AI-CONTEXT: `id` / `pantryId` / `itemId` / `mealId` — TEXT, а НЕ `uuid()`,
+ * на відміну від сусідньої `nutritionPantryItems`. Це свідомо: клієнт
+ * генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`),
+ * тож `uuid` тут дав би `22P02` на реальному push-і — той самий баг, що
+ * задокументований у `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип».
+ * НЕ «вирівнюй» тип під pantryItems.
+ *
+ * `deletedAt` — ретракція помилкової події (згортка її пропускає), а не
+ * редагування історії: `op='update'` apply-шлях відхиляє.
+ */
+export const nutritionPantryEvents = pgTable(
+  "nutrition_pantry_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    pantryId: text("pantry_id").notNull(),
+    itemId: text("item_id"),
+    itemKey: text("item_key").notNull(),
+    kind: text().notNull(),
+    deltaQty: real("delta_qty"),
+    absQty: real("abs_qty"),
+    unit: text(),
+    source: text().notNull().default("manual"),
+    mealId: text("meal_id"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("nutrition_pantry_events_user_item_idx").on(
+      table.userId,
+      table.pantryId,
+      table.itemKey,
+      table.occurredAt,
+    ),
+    index("nutrition_pantry_events_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * Postgres schema for `nutrition_prefs` table.
  * Mirrors migration 035_nutrition_tables.sql.
  *
@@ -148,6 +204,64 @@ export const nutritionPrefs = pgTable("nutrition_prefs", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Postgres schema for `nutrition_goal_periods` table.
+ * Mirrors migration 087_nutrition_goal_periods.sql.
+ *
+ * Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1). Кожен рядок —
+ * СХОДИНКА: «з цього Kyiv-локального дня і далі юзер хотів ось такі цілі».
+ *
+ * AI-CONTEXT: на стадії 1 таблиця ПИШЕТЬСЯ (дуал-райт із web, паралельно до
+ * `prefs-upsert`), але НЕ ЧИТАЄТЬСЯ — `nutritionPrefs.prefsJson`
+ * -> `dailyTarget*` лишається єдиним джерелом цілі для кожного екрана на
+ * web і mobile. Cutover ретроспективних консюмерів — стадія 3.
+ *
+ * `id` — TEXT, а НЕ `uuid()`, і це НЕ неузгодженість із сусідніми таблицями:
+ * писар — клієнт, і його id ДЕТЕРМІНОВАНИЙ
+ * (`gp::<effective_from>::<values>::<deviceId>`), щоб повторна доставка
+ * push-а лягла в `ON CONFLICT DO NOTHING`, а не другим періодом з тими
+ * самими числами. `crypto.randomUUID()` дав би дубль на кожному ретраї.
+ *
+ * `effectiveFrom` — TEXT 'YYYY-MM-DD' у Kyiv-локальному дні, як
+ * `nutritionWaterLog.dateKey`, а не `date()`/`timestamp()`.
+ *
+ * Цілі NULLABLE: `dailyTargetKcal = null` — валідний дефолт, і «цілі немає»
+ * не можна плутати з нулем. `deletedAt` — ретракція помилкового періоду
+ * (резолвер його пропускає), а не редагування історії: `op='update'`
+ * apply-шлях відхиляє.
+ */
+export const nutritionGoalPeriods = pgTable(
+  "nutrition_goal_periods",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    effectiveFrom: text("effective_from").notNull(),
+    kcal: integer(),
+    proteinG: real("protein_g"),
+    fatG: real("fat_g"),
+    carbsG: real("carbs_g"),
+    waterMl: integer("water_ml"),
+    origin: text().notNull().default("manual"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("nutrition_goal_periods_user_effective_idx").on(
+      table.userId,
+      table.effectiveFrom,
+      table.createdAt,
+    ),
+    index("nutrition_goal_periods_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 /**
  * Postgres schema for `nutrition_recipes` table.

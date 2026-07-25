@@ -10,4 +10,5 @@
  * compute inline.
  */
 export * from "./types.js";
+export * from "./bodyWeight.js";
 export * from "./summary.js";

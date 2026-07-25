@@ -12,7 +12,7 @@ export type SyncV2Outcome =
   | "unauthorized"
   | "error";
 
-// Reject reasons — 54 значень, докуменовані в metrics.md §4
+// Reject reasons — 55 значень, докуменовані в metrics.md §4
 export const APPLY_REJECT_REASONS = [
   // CRDT / per-row state invariants
   "lww_conflict",
@@ -78,6 +78,28 @@ export const APPLY_REJECT_REASONS = [
   // Field validation — PN-counter primitive (PR #042b)
   "missing_delta",
   "invalid_delta",
+  // Append-only invariant (W1-ROUTINE-APPEND, стадія 1)
+  // `routine_completion_events` приймає ЛИШЕ `op='insert'`. `update` /
+  // `delete` означають спробу переписати історію — відхиляємо явно, а не
+  // ховаємо під `delete_not_supported`, щоб метрика показувала саме
+  // порушення append-only-інваріанта.
+  "append_only_violation",
+  // Append-only ledger комори (W1-PANTRY-APPEND, стадія 1).
+  // `nutrition_pantry_events.kind` — закритий enum ('consume' | 'replenish'
+  // | 'adjust' | 'initial'); чужий kind означає клієнта з іншого контракту,
+  // і ховати це під загальний `apply_failed` (який виглядає як збій БД)
+  // не можна.
+  "invalid_event_kind",
+  // Подія-дельта мусить нести `delta_qty`, подія-чекпойнт — `abs_qty`.
+  // Рядок без жодного з них не згортається в число, тож пускати його в
+  // журнал = створювати позицію з невідомим залишком назавжди.
+  "missing_delta_or_abs",
+  // Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1).
+  // `nutrition_goal_periods.origin` — закритий enum ('manual' | 'preset' |
+  // 'tdee' | 'backfill'). Окремий reason, а не спільний з
+  // `invalid_event_kind`: там валідується `kind` події комори, і злиття
+  // двох різних колонок в один лейбл зробило б метрику нечитаною.
+  "invalid_goal_origin",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];
@@ -94,8 +116,7 @@ export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];
 export type RejectReason = ApplyRejectReason | EngineRejectReason;
 
 export type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 // Re-export
 export type { SyncV2Op } from "../../http/schemas.js";

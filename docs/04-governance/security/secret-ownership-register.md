@@ -1,6 +1,6 @@
 # Secret Ownership Register
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 Operational metadata registry for secrets and privileged system credentials in Sergeant. This register documents ownership and blast radius, never secret values.
@@ -19,6 +19,32 @@ Operational metadata registry for secrets and privileged system credentials in S
 | Telegram bot token / console-agent credentials       | Founder | Railway env                                  | `tools/openclaw`, bot runtime                                 | On compromise or role change              | Rotation can interrupt bot flows until redeploy                             | Internal bot impersonation or action abuse                  | active | ongoing  | 2026-05-01    |
 | Push / mobile distribution credentials               | Founder | App store consoles, local release tooling    | `apps/mobile`, `apps/mobile-shell`, release workflows         | On compromise or certificate expiry cycle | Store propagation may delay full recovery                                   | Broken mobile release pipeline or malicious app update risk | active | ongoing  | 2026-05-01    |
 | n8n integration credentials                          | Founder | n8n runtime, vendor consoles                 | workflow automations, webhook relays                          | Quarterly review, immediate on compromise | Validate workflow health after rotation                                     | Automation misuse or external service abuse                 | active | ongoing  | 2026-05-01    |
+
+## Pending secrets — third-party erasure/purge tokens (GDPR Art. 17)
+
+> **Не в production-обігу.** Ці credential-и ще не заведені, тому їх НЕ додано в §Register вище — там `Status` за схемою лише `active` або `removed YYYY-MM-DD`. Рядки переїжджають у §Register у тому самому PR, що вмикає purge-шлях.
+
+**Навіщо.** `DELETE /api/me` видаляє дані з нашої БД, але дані користувача лишаються у третіх сторонах — це незакритий GDPR Art. 17. Аудит 2026-07-25 (`apps/server/src/modules/me/dataRights.ts` → `deleteUserData`) підтвердив: чистяться лише billing-провайдери (`stripe`, `liqpay`, `plata`), а Sentry / PostHog / Resend — ні.
+
+**Ключове розрізнення.** Наявні в §Register рядки «Sentry auth / DSN» і «PostHog project» — це **ingest**-креденшели: вони вміють писати, але не видаляти. Purge вимагає окремого **admin / management** токена з delete-скоупом. Це інший секрет з суттєво вищим blast radius: скомпрометований ingest-ключ псує телеметрію, скомпрометований purge-токен дає стирання чужих даних у vendor-акаунті.
+
+| Vendor      | Потрібний токен                          | Blast radius при компромісі                                        | Стан                                                                  |
+| ----------- | ---------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| **Sentry**  | org/project auth token з delete-скоупом  | Видалення issue-історії й проєктних даних поза межами одного юзера | ⏸ не заведено. **Vendor-API не підтверджено** — див. відкриті питання |
+| **PostHog** | personal API key з person-delete скоупом | Стирання person-записів і поведінкової історії в проєкті           | ⏸ не заведено                                                         |
+| **Resend**  | API key з contacts-delete скоупом        | Видалення/зміна audience-контактів                                 | ⏸ не заведено. Vendor узагалі відсутній у §Register                   |
+
+**Відкриті питання до реалізації (не вигадувати — підтвердити по vendor-докам):**
+
+- Sentry: чи існує per-user erasure API взагалі, чи покриття досягається лише data-scrubbing + retention-політикою. Якщо per-user delete недоступний — це треба явно задокументувати в Privacy Policy як обмеження, а не вдавати, що покрито.
+- PostHog / Resend: точні ендпойнти й формат ідентифікатора (у нас `user_id` — opaque Better Auth рядок, не email).
+- Де зберігати: backend живе на Hetzner + Coolify ([ADR-0074](../adr/0074-hosting-hetzner-coolify.md)), тож env-vars Coolify, не Railway.
+- Fail-режим: provider-cancel уже best-effort. Purge мусить писати `purge_failed` у audit-журнал і алертити, а не тихо ковтати помилку.
+
+**Owner:** Founder (заведення ключів) + Dev (реалізація purge-шляху).
+**Трекер:** § 1.4 у [`04-launch-readiness.md`](../../01-product/launch/business/04-launch-readiness.md); блок «Privacy and data-rights operations» у [`ai-coding-improvements.md`](../../90-work/planning/ai-coding-improvements.md).
+
+> **Побічна знахідка (не фіксується цим записом).** Усі рядки §Register кажуть `Railway prod env`, хоча Railway виведено з експлуатації, а бекенд на Hetzner/Coolify (ADR-0074). Це доковий drift по всій таблиці — окремий sweep, не частина цього запису.
 
 ## Retired secrets
 

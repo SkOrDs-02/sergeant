@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ANALYTICS_EVENTS } from "./analyticsEvents";
+import { ANALYTICS_EVENTS, type AnalyticsEventName } from "./analyticsEvents";
+import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
 
 describe("ANALYTICS_EVENTS registry", () => {
   it("is frozen so callsites cannot mutate event names at runtime", () => {
@@ -141,5 +142,82 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.PERMISSION_STATUS_CHANGED).toBe(
       "permission_status_changed",
     );
+  });
+
+  // Хвиля 2 — петлі цінності. Ці 10 рядків заморожені ДО того, як
+  // інструментовано хоч один callsite: `.telemetry/tracking-plan.yaml`
+  // § naming_convention прямо каже, що ренейм ламає дашборди й губить
+  // історію. Асерти нижче роблять перейменування падінням тесту, а не
+  // мовчазною смертю дашборда.
+  it("exposes the Wave-2 value-loop groups verbatim", () => {
+    // Сигнал показано / активовано / приховано (спільний шов InsightCard).
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN).toBe("value_signal_shown");
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED).toBe(
+      "value_signal_activated",
+    );
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED).toBe(
+      "value_signal_dismissed",
+    );
+
+    // Друга половина петлі — «дію зроблено», по одній події на модуль.
+    expect(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED).toBe(
+      "routine_habit_checked",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED).toBe(
+      "fizruk_workout_finished",
+    );
+    expect(ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED).toBe(
+      "nutrition_meal_logged",
+    );
+    expect(ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED).toBe("finyk_tx_categorized");
+
+    // AI-порада: показ + реакція (тіло поради в payload не існує).
+    expect(ANALYTICS_EVENTS.AI_ADVICE_SHOWN).toBe("ai_advice_shown");
+    expect(ANALYTICS_EVENTS.AI_ADVICE_REACTED).toBe("ai_advice_reacted");
+
+    // Експозиція стріку поза InsightCard.
+    expect(ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN).toBe("routine_streak_shown");
+  });
+
+  it("keeps the Wave-2 value-loop group reachable through the single registry", () => {
+    // Група винесена в `analyticsEvents.valueLoops.ts` заради
+    // module-size-дисципліни (Hard Rule #18). Реєстр мусить лишатися
+    // ОДИН: якщо spread колись загубиться, доступ
+    // `ANALYTICS_EVENTS.<X>` мовчки стане `undefined` — цей тест ловить
+    // саме це, а не просто рядкові значення.
+    const wave2 = [
+      ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED,
+      ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED,
+      ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED,
+      ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED,
+      ANALYTICS_EVENTS.AI_ADVICE_SHOWN,
+      ANALYTICS_EVENTS.AI_ADVICE_REACTED,
+      ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
+    ];
+
+    // Тип мусить лишатись ЛІТЕРАЛЬНИМ після spread-у, а не розширитись до
+    // `string` — інакше `AnalyticsEventName` тихо перестане ловити одруківки
+    // на callsite-ах. Ці два рядки падають на typecheck, не на runtime.
+    const literal: "value_signal_shown" = ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN;
+    const fromUnion: AnalyticsEventName = ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN;
+    expect(literal).toBe("value_signal_shown");
+    expect(fromUnion).toBe("routine_streak_shown");
+
+    // Звірка МНОЖИН, а не довжин. Спершу тут стояло `toHaveLength(10)` —
+    // тавтологія проти рукописного літерала. Довжина проти реєстру була вже
+    // кращою, але теж дірявою: дубль у `wave2` плюс пропущена подія дають ту
+    // саму довжину і тест мовчить. Рівність множин ловить обидва випадки.
+    expect(new Set(wave2)).toEqual(
+      new Set(Object.values(VALUE_LOOP_ANALYTICS_EVENTS)),
+    );
+    // Окремо — що дублів немає: `Set` вище сам би їх схлопнув.
+    expect(wave2).toHaveLength(new Set(wave2).size);
+    for (const name of wave2) {
+      expect(typeof name).toBe("string");
+      expect(Object.values(ANALYTICS_EVENTS)).toContain(name);
+    }
   });
 });

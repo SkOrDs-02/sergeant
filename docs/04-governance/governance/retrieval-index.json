@@ -1,19 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-25",
   "sourceHashes": {
-    "knowledge-graph": "f17b0a28ea36aa5312deea02b611dbf72b3102eed90ba14d3751dd819fbab0cd",
+    "knowledge-graph": "9432f0c944ee8874f855696b180b560d3b1605e29b7f937b9948363e4bf12854",
     "symbol-index": "93dba76ae0340aa2a6cb630c7c708b6d8620f29135ff065669b2f80e9b2ac80e"
   },
   "counts": {
-    "adr": 72,
+    "adr": 77,
+    "audit": 9,
     "export": 286,
     "hard-rule": 26,
-    "initiative": 6,
+    "initiative": 5,
     "playbook": 60,
     "skill": 23,
-    "total": 473
+    "total": 486
   },
   "chunks": [
     {
@@ -539,8 +540,8 @@
       "title": "ADR-0050: TypeScript major-version policy + `@types/node` pinning",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-20 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
-      "contentHash": "aa7fb7af98fd5b44cdbf98aa7aa28fe5f7dcf802e113876f288f49e74758fe2d"
+      "text": "ADR-0050: TypeScript major-version policy + `@types/node` pinning · adr:0050 · adr · Accepted · 50 · 2026-07-25 · ADR-0050: TypeScript major-version policy + @types/node pinning · Context and Problem Statement · Decision · 1. @types/node pinned to ^20.x everywhere · 2. TypeScript 6.x at root — accepted, with fallback plan · 3. Fallback plan to TS 5.9 · Rationale · Consequences",
+      "contentHash": "2dec9c5ce27901a8a4bd80837db1992707046b91bc4d3d9805d44b26ef5f748c"
     },
     {
       "id": "adr:0051",
@@ -572,8 +573,8 @@
       "title": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-07-20 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
-      "contentHash": "32887b2db280b3e968f67733d0caa01ff8f712904a924b831b71afcf5e4e4803"
+      "text": "ADR-0053: API versioning policy — `/api/*` ↔ `/api/v1/*` mirror · adr:0053 · adr · Accepted · 53 · 2026-07-25 · ADR-0053: API versioning policy — /api/ ↔ /api/v1/ mirror · Context · Decision · Consequences · Альтернативи · Trigger to revisit · Refs",
+      "contentHash": "e8685175cfa488bf5ad9c5372b105dd27c2633779e6b2b3921fc1094728923ac"
     },
     {
       "id": "adr:0054",
@@ -616,8 +617,8 @@
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "51f380cd40f26e7926d4b21662c26a04f5fa54b85bb668d291479df6db8258b6"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "56afa881ab0969bf978f1aa5810f022519aa13f9e30240e88d783f66a8d88bd1"
     },
     {
       "id": "adr:0059",
@@ -627,8 +628,8 @@
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "8b6d6e2fafa002957b3161b162750cbbae8692119ba3fdee2f4901b8636f75f0"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "615e0c6e65f73e4dbefeca35d9f40a3c4159a6a44f466fd01579d67f7a185c76"
     },
     {
       "id": "adr:0060",
@@ -638,8 +639,8 @@
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "8eb1e4e2dd353a2396cef8ac347c9ea9ba5dd41f95f656ced93ed77fba4b3e15"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "31fbb23967153764d6962cebddfa2b20a813eb0d915c6b51a45642a519e7d702"
     },
     {
       "id": "adr:0061",
@@ -649,8 +650,8 @@
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "f42cb61efbe66e03db39b96ef179e25facf70448ad1e275850bb3a65b2ebce6a"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "38930116fe07dca5204c71d4e9b70f1a1c814443db2b3d00c74d074f2fccd0eb"
     },
     {
       "id": "adr:0062",
@@ -671,8 +672,8 @@
       "title": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-07-20 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
-      "contentHash": "705231849f29f8767e9fc19a8d330e64d6e438aa50cf8a8afd8d11b79c85868e"
+      "text": "ADR-0063: Expo SDK 52 → 53 upgrade — pre-flight compatibility · adr:0063 · adr · Accepted · 63 · 2026-07-25 · Context and Problem Statement · Considered Options · Decision · New Architecture — KEEP newArchEnabled: true (accepted risk) · Patch plan — @expocli@0.22.28.patch · TypeScript implications · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links",
+      "contentHash": "71053c787ea64f64fa040fd03fac4244b950d29f66cbd559fe7ab1e4fb755593"
     },
     {
       "id": "adr:0064",
@@ -704,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-15 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "4817189b184a98cf98f370997b73e641178d3d0666bc95c11c41b5afbf610c30"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "457d5fa2796385e9799e8cc7766a4e291bdeba53a1bdd3cbf4b75027ce0a69fe"
     },
     {
       "id": "adr:0067",
@@ -781,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-21 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
-      "contentHash": "0b73dd6255d4e935dc8e872575ce50eb7164520808fabedae705cb3dfb9cfa39"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-24 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
+      "contentHash": "95373fb7475a7d8009418d5e548b28677be2a805a89044a564e9328677b2326d"
     },
     {
       "id": "adr:0074",
@@ -805,6 +806,160 @@
       "status": "accepted",
       "text": "ADR-0075: OpenClaw Gateway decommissioned · adr:0075 · adr · accepted · 75 · 0. TL;DR · Context and Problem Statement · Decision · Що свідомо лишається · Immutable-ADR link-graph · Consequences · Positive · Neutral · Negative",
       "contentHash": "110cc63634f585d7154a55aa587d14d5fe87fe5ae767e057326e0d8dc4fdc908"
+    },
+    {
+      "id": "adr:0076",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0076-cash-on-hand-entity.md",
+      "line": 1,
+      "title": "ADR-0076: «Готівка на руках» як окрема сутність finyk",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0076: «Готівка на руках» як окрема сутність finyk · adr:0076 · adr · accepted · 76 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · 3. Рішення · 4. Наслідки · 5. Що це закриває",
+      "contentHash": "8f235943878f8e3373b3be6b0ac6ccd1995c6a3d8057058f70b29275d0c4a54b"
+    },
+    {
+      "id": "adr:0077",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0077-pantry-append-only-ledger.md",
+      "line": 1,
+      "title": "ADR-0077: Комора як append-only ledger, залишок — derived",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0077: Комора як append-only ledger, залишок — derived · adr:0077 · adr · accepted · 77 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · Варіант А — PN-counter (op='increment'), відхилено · Варіант Б — append-only ledger, прийнято · 3. Рішення · 3.1 Три речі, які згортка НЕ робить · 3.2 Типи ключів — TEXT, не UUID · 3.3 Ретракція замість редагування · 3.4 Ledger виключено з cleanup-логіки dual-write · 4. Стадійність · 5. Що робиться з наявними залишками · 6. Наслідки · 7. Чесне обмеження щодо E-7",
+      "contentHash": "f65a8d0d1ff93f7d48034febac8079a2e883b8909436a654c558b6f444752683"
+    },
+    {
+      "id": "adr:0078",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0078-day-boundary-device-local.md",
+      "line": 1,
+      "title": "ADR-0078: Межа доби — за пристроєм користувача",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0078: Межа доби — за пристроєм користувача · adr:0078 · adr · accepted · 78 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · 3. Рішення · 4. Наслідки · 5. Що це закриває",
+      "contentHash": "276037f571de84cdffd4fecac5022c23e2e8d1446d6939190640785a5786148f"
+    },
+    {
+      "id": "adr:0079",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0079-frozen-past-and-canonical-denominator.md",
+      "line": 1,
+      "title": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка · adr:0079 · adr · accepted · 79 · 0. TL;DR · 1. Контекст · 2. Рішення 1 — заморожується лише закрите · 3. Рішення 2 — знаменник за розкладом · 4. Наслідки · 5. Що це закриває",
+      "contentHash": "5375e4882c7c6c500852b31d771e267c6d9aecf0f2efc4c41420e02ccf5c3780"
+    },
+    {
+      "id": "adr:0080",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0080-body-weight-source-of-truth.md",
+      "line": 1,
+      "title": "ADR-0080: Єдине джерело істини ваги тіла — fizruk",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0080: Єдине джерело істини ваги тіла — fizruk · adr:0080 · adr · accepted · 80 · 0. TL;DR · 1. Контекст · 2. Рішення · 3. Наслідки · 4. Що це закриває",
+      "contentHash": "df1be72bd14d63063af7e4659a8023599bc35f3222ed2ce72ab97a8f5693c801"
+    },
+    {
+      "id": "audit:2026-07-21-design-audit",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-07-21-design-audit.md",
+      "line": 1,
+      "title": "Sergeant — дизайн-аудит apps/web · 2026-07",
+      "tier": "core",
+      "status": "Reference — цикл закрито; таблиця скорингу §1 лишається baseline",
+      "text": "Sergeant — дизайн-аудит apps/web · 2026-07 · audit:2026-07-21-design-audit · audit · Reference — цикл закрито; таблиця скорингу §1 лишається baseline · 1 · Підсумковий скоринг · 2 · Дефекти: повний життєвий цикл · 3 · Знахідки візуального проходу (поза код-аудитом) · 4 · Що сильне (підтверджено рендером і числами) · 5 · Відкриті борги (беклог наступної ітерації) · 6 · Уроки процесу · 7 · Чому цикл із верифікацією, а не односторонній аудит",
+      "contentHash": "c132ed95bc44c28dcf44bc43c83f9991b9e1be7d78452b62cf55e7cff103745f"
+    },
+    {
+      "id": "audit:2026-07-22-cycle6-typography-shared-ui",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-07-22-cycle6-typography-shared-ui.md",
+      "line": 1,
+      "title": "Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui`",
+      "tier": "core",
+      "status": "Reference — звіт про виконання наряду циклу 6; baseline скорингу —",
+      "text": "Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui` · audit:2026-07-22-cycle6-typography-shared-ui · audit · Reference — звіт про виконання наряду циклу 6; baseline скорингу — · Цикл 6, стадія 1 — сирі Tailwind-розміри в shared/components/ui · Результат одним рядком · «2 випадки text-[NNpx]» — насправді нуль реальних · Лічильник · Ключові рішення (за роллю, не за пікселем — урок Р1) · Гейти · Піксель-дифф (fullPage, light+dark, 9 екранів) · Не в скоупі (stage 2+)",
+      "contentHash": "cfa3eb3e6fef05e2a96fa77d25ad0a4a0d0e62a01f82b4c696a4768e1426d31a"
+    },
+    {
+      "id": "audit:2026-07-24-cycle6-stage2-typography-core",
+      "type": "audit",
+      "path": "docs/90-work/audits/2026-07-24-cycle6-stage2-typography-core.md",
+      "line": 1,
+      "title": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`",
+      "tier": "core",
+      "status": "Reference — звіт про виконання наряду циклу 6, стадія 2; baseline",
+      "text": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**` · audit:2026-07-24-cycle6-stage2-typography-core · audit · Reference — звіт про виконання наряду циклу 6, стадія 2; baseline · Цикл 6, стадія 2 — сирі Tailwind-розміри в core/ · Headline 26 vs 34.6 — fluid-scale, не баг · Результат · Виконання · Вага (важлива системна примітка) · Гейти · Винятки (21 лишок, навмисно) · Флаги для дизайн-звірки · Не в скоупі (stage 3)",
+      "contentHash": "73330d5fd5ccc33269e87099aa1a96c4dc4d76f7b01323853274db8fafd6c4c7"
+    },
+    {
+      "id": "audit:product-knowledge-finyk",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-finyk.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: finyk — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: finyk — diff-звіт тріангуляції · audit:product-knowledge-finyk · audit · Active · A. Межі покриття графа (§5 спеки) · Що покрито · Що НЕ покрито (і як це вплинуло на аудит) · Уточнення до Додатку В спеки (вихідні дані частково не відтворились) · Спостереження семантичного графа · B. Тріангуляція: 37 питань × три колонки · (а) Користувач і JTBD · (б) Успіх і провал · (в) Межі · (г) Доменні правила · (д) Компроміс vs дизайн · (е) Невпевненість · (є) Контракти довіри · C. Три наперед відомі напруги (§6 спеки) · Напруга 1: «до копійки» + «durability» ↔ local-first без sync і reconciliation · Напруга 2: «два рівних входи» ↔ GTM і activation, закладені під Mono · Напруга 3: «продукт має помітити тишу банку» ↔ webhook-only без staleness · D. Знахідки поза тріангуляцією · E. Сліпа пляма згоди (blindspot-пас, §7 спеки) · E-1. «Другий користувач» мислиться як майбутня подія — а двері вже відчинені · E-2. Гібрид без мосту: кожна готівкова гривня рахується двічі · E-3. Успіх виміряний присутністю, а робота продукту — зміною поведінки · E-4. Оверлеї класифіковані як «банківське», а отже — без durability",
+      "contentHash": "e4111eb543e6d31fc7c6d89eb51dd1157f9a5d6cdaab0bb96577eb3ed601128b"
+    },
+    {
+      "id": "audit:product-knowledge-fizruk",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-fizruk.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: fizruk — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: fizruk — diff-звіт тріангуляції · audit:product-knowledge-fizruk · audit · Active · A. Межі покриття графа (§5 спеки) · Що покрито · Що НЕ покрито (і як це вплинуло на аудит) · B. Тріангуляція: 40 питань × три колонки · (а) Користувач і JTBD · (б) Успіх і провал · (в) Межі і шви · (г) Доменні правила · (д) Компроміс vs дизайн · (е) Невпевненість · (є) Контракти довіри · (ж) Життєвий цикл цінності · C. Шість наперед відомих напруг (§6 спеки) · <a id=\"напруга-1\"></a>Напруга 1 — стрік карає за відпочинок · <a id=\"напруга-2\"></a>Напруга 2 — похвала об'єму · <a id=\"напруга-3\"></a>Напруга 3 — травма (фізична шкода) · <a id=\"напруга-4\"></a>Напруга 4 — 1RM без старіння / повернення · <a id=\"напруга-5\"></a>Напруга 5 — план у routine · <a id=\"напруга-6\"></a>Напруга 6 — JTBD ширший за модель · D. Знахідки поза тріангуляцією · E. Сліпа пляма згоди (blindspot-пас, §7 спеки) · E-1. Усі три лікують старість 1RM — ніхто не помітив, що вона бреше вже в день народження · E-2. Порадник безпеки радить з локальної репліки — і жодна колонка не спитала, чи бачить він усю історію",
+      "contentHash": "cf818f636195260dca51961b8ae915d609e0266cd80dad93ac341b7a3588edf5"
+    },
+    {
+      "id": "audit:product-knowledge-hub-coach",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-hub-coach.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції · audit:product-knowledge-hub-coach · audit · Active · A. Межі покриття графа (§5 спеки) · Що покрито · Що НЕ покрито (і як це вплинуло на аудит) · B. Тріангуляція: 41 питання × три колонки · (а) Користувач і JTBD · (б) Успіх і провал · (в) Межі · (г) Доменні правила · (д) Компроміс vs дизайн · (е) Невпевненість · (є) Контракти довіри · (ж) Життєвий цикл цінності · C. П'ять наперед відомих напруг (§6 спеки) · Напруга 1 · Напруга 2 · Напруга 3 · Напруга 4 · Напруга 5 · D. Знахідки поза тріангуляцією · E. Сліпа пляма згоди (blindspot-пас, §7 спеки) · E-1. Проактивність — не фіча поверх системи, а прихована залежність від міграції даних · E-2. Контракт «числа не вигадуються» охороняє не ті двері · E-3. Feedback-петля за погодженим дизайном — машина самоцензури",
+      "contentHash": "030cb42acbb7f517775be6750704cc63128d5319bf79fe505535110398c60c0f"
+    },
+    {
+      "id": "audit:product-knowledge-nutrition",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-nutrition.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: nutrition — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: nutrition — diff-звіт тріангуляції · audit:product-knowledge-nutrition · audit · Active · A. Межі покриття графа (§5 спеки) · Що покрито · Що НЕ покрито (і як це вплинуло на аудит) · B. Тріангуляція: 41 питання × три колонки · (а) Користувач і JTBD · (б) Успіх і провал · (в) Межі · (г) Доменні правила · (д) Компроміс vs дизайн · (е) Невпевненість · (є) Контракти довіри · (ж) Життєвий цикл цінності · C. П'ять наперед відомих напруг (§6 спеки) · <a id=\"напруга-1\"></a>Напруга 1 — демо-ключі зовнішніх баз (найвищий пріоритет) · <a id=\"напруга-2\"></a>Напруга 2 — комора як складський облік · <a id=\"напруга-3\"></a>Напруга 3 — неповний день · <a id=\"напруга-4\"></a>Напруга 4 — teaser фото для Free · <a id=\"напруга-5\"></a>Напруга 5 — UI розрізняє точне/оцінку · <a id=\"напруга-межа\"></a>Напруга-межа (виявлена аудитом) — тренер-плани · D. Знахідки поза тріангуляцією · E. Сліпа пляма згоди (blindspot-пас, §7 спеки) · E-1. Ціль КБЖВ — мутабельна преференція, а не часовий ряд: зміна цілі мовчки переписує всю історію · E-2. «Лог = споживання комори» — хибна семантика: готування споживає інгредієнти раз, лог фіксує з'їдене багато разів",
+      "contentHash": "a86415d78d7664d60fc8ceb520ac74d5a536ee5a0637c9b117d26675b17ef221"
+    },
+    {
+      "id": "audit:product-knowledge-overview",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-overview.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції · audit:product-knowledge-overview · audit · Active · A. Межі покриття графа (§5 спеки) · B. Шість напруг (§6 спеки) · B-1. Ідентичність випереджає код · B-2. «Базові зв'язки у Free» ↔ реальність коду · B-3. Дві стрік-механіки ↔ «гнучкий всюди» · B-4. Trial 7 днів × time-to-insight · B-5. Експорт-гарантія ↔ повнота · B-6. GTM попереду коду · C. Тріангуляція по банку (23 питання — де колонки розходяться) · D. Сліпа пляма згоди (§7 спеки) · E. Критерії готовності (§8 спеки)",
+      "contentHash": "694417dd0b9c6c44abe52e232d2ad3e0094d19c44cfd286ea484c80c3601494c"
+    },
+    {
+      "id": "audit:product-knowledge-routine",
+      "type": "audit",
+      "path": "docs/90-work/audits/product-knowledge-routine.md",
+      "line": 1,
+      "title": "Продуктовий аудит знань: routine — diff-звіт тріангуляції",
+      "tier": "core",
+      "status": "Active",
+      "text": "Продуктовий аудит знань: routine — diff-звіт тріангуляції · audit:product-knowledge-routine · audit · Active · A. Межі покриття графа (§5 спеки) · Що покрито (прямий розбір graph.json за sourcefile) · Що НЕ покрито (і як це вплинуло на аудит) · B. Тріангуляція: 38 питань × три колонки · (а) Користувач і JTBD · (б) Успіх і провал · (в) Межі і шви · (г) Доменні правила · (д) Компроміс vs дизайн · (е) Невпевненість · (є) Контракти довіри · (ж) Життєвий цикл цінності · C. Шість наперед відомих напруг (§6 спеки) · <a id=\"напруга-1\"></a>Напруга 1 — стрік жорсткий без заморозок · <a id=\"напруга-2\"></a>Напруга 2 — чистота модуля (календар + pushup-шов) · <a id=\"напруга-3\"></a>Напруга 3 — streak-at-risk push (GTM ↔ код) · <a id=\"напруга-4\"></a>Напруга 4 — тір-гейти нагадувань (docs ↔ код) · <a id=\"напруга-5\"></a>Напруга 5 — mobile-заглушка (маркетинг ↔ платформа) · <a id=\"напруга-6\"></a>Напруга 6 — once/todo (межа ↔ enum) · D. Знахідки поза тріангуляцією · E. Сліпа пляма згоди (blindspot-пас, §7 спеки) · E-1. Toggle-цикл × tombstone-guard: повторний чекін назавжди губиться між пристроями · E-2. Дві ратифіковані часові доктрини в одному модулі",
+      "contentHash": "e3a6903ca56ad8dfa73778cde92d64e9a9707197900633f2de1438deab27e50a"
     },
     {
       "id": "export:@sergeant/api-client:AiMemoryClearResponse",
@@ -3639,17 +3794,6 @@
       "tier": "core",
       "text": "Saturated brand fills behind `text-white` must use the `-strong` companion · hard-rule:9 · hard-rule · 9 · blocker · lint-enforced-convention · apps/web/src/**",
       "contentHash": "6d9b9c1ad9105f21df708af623243eb9796095f5f81ffeb6a7229a645d5c82dc"
-    },
-    {
-      "id": "initiative:0006",
-      "type": "initiative",
-      "path": "docs/90-work/initiatives/0006-frontend-routing-and-code-split.md",
-      "line": 1,
-      "title": "0006 — Frontend routing migration + route-based code-split",
-      "tier": "core",
-      "status": "Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи.",
-      "text": "0006 — Frontend routing migration + route-based code-split · initiative:0006 · initiative · Withdrawn — обов'язкові routing-фази виконано; залишкові optional loader/bundle tuning не виправдовують продовження окремої ініціативи. · 6 · @Skords-01 · P1 (Sprint 2) · TL;DR · Чому зараз · Скоуп · План змін · Фаза 1 — react-router setup + Hub-route (1 PR) · Фаза 2 — top-level routes per domain (4 PRs, по одному модулю) · Фаза 3 — hash-URL compat shim (1 PR) · Фаза 4 — scroll restoration + prefetch on hover (1 PR) · Фаза 5 — bundle-gate перенастройка + cleanup (1 PR) · Критерії DONE · Ризики та митиґація · Метрики · Власник, ревʼюери · Посилання · Outcome · Phase 0 — lint canary + baseline (2026-05-04) · Baseline hash-router callsites (snapshot 2026-05-04) · Phase 1 — <RouterProvider /> migration (2026-05-06) · Phase 2.a — /nutrition/ migration (2026-05-06) · Phase 2.b — /finyk/ migration (2026-05-06) · Phase 3 — hash-URL compat shim (2026-05-18) · Phase 4 (partial) — scroll restoration + prefetch (2026-05-18) · Phase 5 (partial) — bundle-gate + cleanup (2026-05-18; bundle-gate prefix fix 2026-05-24)",
-      "contentHash": "540903f1098910a8a2dcfb0111166f2e17637f2d62bb56f59534fb9c7fbb1bb4"
     },
     {
       "id": "initiative:0010",

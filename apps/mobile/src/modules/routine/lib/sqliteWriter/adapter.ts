@@ -12,6 +12,7 @@ import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 
 import { enqueueOutboxUpsert } from "@/core/syncEngine/enqueueOutboxUpsert";
 import { fireSyncOutboxUpsert } from "@/core/syncEngine/fireSyncOutboxUpsert";
+import { appendCompletionEvent } from "./adapter.completionEvents";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
 
 /**
@@ -41,6 +42,9 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
  * Op kind → table mapping:
  *
  *   - `completion-add` / `completion-remove` → `routine_entries`
+ *   - `completion-event-append` → `routine_completion_events` (append-only
+ *     журнал, W1-ROUTINE-APPEND стадія 1; `INSERT OR IGNORE`, без
+ *     streak-інкремента — його вже зробив старий шлях)
  *   - `habit-rename` → `routine_entries` (denormalized name cascade)
  *   - `habit-upsert` / `habit-delete` → `routine_habits`
  *   - `tag-upsert` / `tag-delete` → `routine_tags`
@@ -84,6 +88,13 @@ const applyOps = createApplyOps<RoutineDualWriteOp>({
     },
     "completion-remove": async (client, op, rt) => {
       await removeCompletion(client, op.habitId, op.dateKey, rt);
+      return "applied";
+    },
+    // W1-ROUTINE-APPEND стадія 1 — append-only журнал. Пишеться ПОРУЧ із
+    // completion-add/remove; реалізація живе в окремому файлі
+    // (`adapter.completionEvents.ts`), дзеркально до web.
+    "completion-event-append": async (client, op, rt) => {
+      await appendCompletionEvent(client, op, rt);
       return "applied";
     },
     "habit-rename": async (client, op, rt) => {

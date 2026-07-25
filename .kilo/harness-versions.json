@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "2.0.1",
+  "current": "2.0.2",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -104,6 +104,14 @@
       "releasedAt": "2026-07-24",
       "changes": [
         "bump from 2.0.0 -> 2.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "2.0.2": {
+      "releasedAt": "2026-07-25",
+      "changes": [
+        "bump from 2.0.1 -> 2.0.2: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -56,6 +56,59 @@ export interface RoutineState {
   completionNotes: Record<string, string>;
 }
 
+// ---------------------------------------------------------------------
+// Append-only журнал відміток (W1-ROUTINE-APPEND, стадія 1)
+// ---------------------------------------------------------------------
+
+/** Стан відмітки, який зафіксувала подія. */
+export type CompletionEventState = "done" | "undone";
+
+/**
+ * Як саме клієнт порахував `dateKey` події.
+ *
+ * `unknown` — для синтетичних подій backfill-у (стадія 2): вони НЕ мають
+ * права вдавати, ніби знають доктрину. Рішення Kyiv vs device-local
+ * (задача W1-TIME-DOCTRINE) ухвалюється окремо і може бути переграним
+ * із сирих полів події.
+ */
+export type CompletionDayAnchor = "device-local" | "kyiv" | "unknown";
+
+/** Звідки прилетіла подія. */
+export type CompletionEventSource =
+  "ui" | "chat" | "bulk" | "backfill" | "seed";
+
+/**
+ * Одна незмінна подія журналу відміток.
+ *
+ * AI-CONTEXT: подія несе І `dateKey` (як його порахував клієнт), І сирі
+ * `occurredAt` + `tzOffsetMin` + `dayAnchor`. Це навмисне дублювання:
+ * ключ — те, що бачив користувач, сирий момент — те, з чого майбутній
+ * derive зможе перерахувати ключ за іншою доктриною.
+ *
+ * Подія НЕ редагується і НЕ видаляється (append-only). Виправлення
+ * історії — це нова подія з новішим `occurredAt`.
+ */
+export interface CompletionEvent {
+  readonly id: string;
+  readonly habitId: string;
+  readonly dateKey: string;
+  readonly state: CompletionEventState;
+  /** ISO-8601 з offset — реальний момент дії користувача. */
+  readonly occurredAt: string;
+  /** Зсув таймзони пристрою у хвилинах; `null` якщо невідомий. */
+  readonly tzOffsetMin: number | null;
+  readonly dayAnchor: CompletionDayAnchor;
+  readonly source: CompletionEventSource;
+  readonly deviceId: string | null;
+}
+
+/**
+ * Результат згортки журналу — та сама форма, що й `RoutineState.completions`
+ * (`habitId → відсортовані dateKey`). Окремий alias, щоб у сигнатурах було
+ * видно, що значення ПОХІДНЕ від подій, а не збережений стан.
+ */
+export type FoldedCompletions = Record<string, string[]>;
+
 export interface HabitDraftPatch {
   name?: string | undefined;
   emoji?: string | undefined;

@@ -365,6 +365,59 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 **Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжній
 `habitId`) → окремий PR із двофазною міграцією типу.
 
+**Оновлення 2026-07-25 (W1-ROUTINE-APPEND, стадія 1).** Нова таблиця
+`routine_completion_events` (міграція
+[`085`](../../../apps/server/src/migrations/085_routine_completion_events.sql))
+СВІДОМО оголошує `id TEXT`, а не `UUID` — щоб не повторити цю саму пастку.
+Клієнт генерує `id` детерміновано (`buildCompletionEventId` у
+`@sergeant/routine-domain`), сервер застосовує через
+`INSERT ... ON CONFLICT (id) DO NOTHING`
+([`applyCompletionEvents.ts`](../../../apps/server/src/modules/sync/routine/applyCompletionEvents.ts)).
+Для СТАРИХ таблиць (`routine_entries` / `routine_habits` / `routine_tags` /
+`routine_categories`) борг лишається ВІДКРИТИМ і закриється лише стадією 5
+(припинення запису в `routine_entries` + двофазний DROP) — до того моменту
+твердження «чекін доїжджає до сервера» так само непідтверджене.
+
+### Nutrition: PK-тип `nutrition_pantries` / `nutrition_pantry_items` розходиться з клієнтським id (відкрито, `критично`)
+
+**Знайдено 2026-07-25** під час W1-PANTRY-APPEND стадії 1. Той самий клас
+багу, що описаний вище для routine, але в коморі — і досі не помічений.
+
+`nutrition_pantries.id` і `nutrition_pantry_items.id` у Postgres — `UUID`
+([`035_nutrition_tables.sql`](../../../apps/server/src/migrations/035_nutrition_tables.sql)),
+у клієнтському SQLite — `TEXT`. Клієнт формує обидва id як **НЕ-UUID** рядки:
+
+- комора — `home` (default) або `p_<ms>_<idx>`
+  ([`nutritionPantries.ts`](../../../packages/nutrition-domain/src/nutritionPantries.ts));
+- позиція — `` `${pantryId}::${index}::${name}` `` (детермінований id із
+  позиційного LS-масиву, `extractPantrySnapshots` у
+  [`nutritionStorage.ts`](../../../apps/web/src/modules/nutrition/lib/nutritionStorage.ts)).
+
+Отже реальний push комори з браузера має падати на `22P02`
+(`invalid input syntax for type uuid`) ще на `SELECT … WHERE id = $1` у
+`applyNutritionPantryItems` → `apply_failed` → термінальний reject в outbox.
+Наявні тести цього не ловлять, бо вживають валідні UUID-и — рівно як у
+routine-випадку.
+
+**Додаткове зауваження:** `id` позиції містить `index` і `name`, тож
+перейменування продукту або зсув у масиві **породжує новий id**. Навіть після
+фіксу типу LWW-upsert по такому ключу лишається нестабільним.
+
+**Що зроблено в стадії 1:** нова таблиця `nutrition_pantry_events`
+(міграція [`086`](../../../apps/server/src/migrations/086_nutrition_pantry_events.sql))
+СВІДОМО оголошує `id` / `pantry_id` / `item_id` / `meal_id` як `TEXT`, щоб не
+успадкувати пастку, і ключує згортку на `item_key` (`canonicalFoodKey`), а не
+на `item_id`. FK на `nutrition_pantries(id)` через це неможливий (TEXT vs
+UUID) — лишився лише FK на `"user"(id)`. Рішення зафіксоване в
+[ADR-0077](../../04-governance/adr/0077-pantry-append-only-ledger.md) §3.2.
+
+**Чому не в цьому PR:** зміна типу PK по двох таблицях + бекфіл + FK — Hard
+Rule #4 (двофазність) і рішення власника поверхні, як і в routine-випадку.
+
+**Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжня
+комора) → окремий PR із двофазною міграцією типу. До того моменту твердження
+«комора синхронізується між пристроями» — непідтверджене.
+
 ### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
 
 **Знайдено:** audit routine E-4. `routine_streaks.current_streak` /

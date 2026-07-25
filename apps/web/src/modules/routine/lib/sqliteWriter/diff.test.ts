@@ -49,12 +49,20 @@ describe("diffRoutineDualWriteOps – completion-add", () => {
       completions: { h1: ["2026-04-20"] },
     });
     const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops).toHaveLength(1);
+    // Стадія 1 W1-ROUTINE-APPEND: поруч зі старим `completion-add` тепер
+    // їде append-only подія журналу. Старий op не змінився.
+    expect(ops).toHaveLength(2);
     expect(ops[0]).toMatchObject({
       kind: "completion-add",
       habitId: "h1",
       habitName: "Run",
       dateKey: "2026-04-20",
+    });
+    expect(ops[1]).toMatchObject({
+      kind: "completion-event-append",
+      habitId: "h1",
+      dateKey: "2026-04-20",
+      state: "done",
     });
   });
 
@@ -105,12 +113,97 @@ describe("diffRoutineDualWriteOps – completion-remove", () => {
       completions: {},
     });
     const ops = diffRoutineDualWriteOps(prev, next);
-    expect(ops).toHaveLength(1);
+    expect(ops).toHaveLength(2);
     expect(ops[0]).toMatchObject({
       kind: "completion-remove",
       habitId: "h1",
       dateKey: "2026-04-20",
     });
+    // Зняття відмітки тепер лишає слід у журналі — саме цього старий
+    // soft-delete-шлях не вміє (audit E-1).
+    expect(ops[1]).toMatchObject({
+      kind: "completion-event-append",
+      habitId: "h1",
+      dateKey: "2026-04-20",
+      state: "undone",
+    });
+  });
+});
+
+// ─── completion-event-append (W1-ROUTINE-APPEND стадія 1) ────────────────────
+
+describe("diffRoutineDualWriteOps – completion-event-append", () => {
+  it("пише подію навіть коли звички вже немає в next.habits", () => {
+    // Старий `completion-add` тут пропускається (нема імені для
+    // денормалізації `routine_entries.name`), а журнал факт фіксує.
+    const prev = makeState({ completions: {} });
+    const next = makeState({
+      habits: [],
+      completions: { orphan: ["2026-04-20"] },
+    });
+    const ops = diffRoutineDualWriteOps(prev, next);
+    expect(ops.filter((o) => o.kind === "completion-add")).toHaveLength(0);
+    expect(ops.filter((o) => o.kind === "completion-event-append")).toEqual([
+      {
+        kind: "completion-event-append",
+        habitId: "orphan",
+        dateKey: "2026-04-20",
+        state: "done",
+      },
+    ]);
+  });
+
+  it("детермінований порядок: habitId, потім dateKey, потім state", () => {
+    const prev = makeState({
+      habits: [{ id: "a", name: "A" }],
+      completions: { a: ["2026-04-18"] },
+    });
+    const next = makeState({
+      habits: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      completions: { a: ["2026-04-19"], b: ["2026-04-20"] },
+    });
+    const events = diffRoutineDualWriteOps(prev, next).filter(
+      (o) => o.kind === "completion-event-append",
+    );
+    expect(events).toEqual([
+      {
+        kind: "completion-event-append",
+        habitId: "a",
+        dateKey: "2026-04-18",
+        state: "undone",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "a",
+        dateKey: "2026-04-19",
+        state: "done",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "b",
+        dateKey: "2026-04-20",
+        state: "done",
+      },
+    ]);
+  });
+
+  it("не породжує подій, коли completions не змінились", () => {
+    const prev = makeState({
+      habits: [{ id: "h1", name: "Run" }],
+      completions: { h1: ["2026-04-20"] },
+    });
+    const next = makeState({
+      habits: [{ id: "h1", name: "Run 2.0" }],
+      completions: { h1: ["2026-04-20"] },
+    });
+    expect(
+      diffRoutineDualWriteOps(prev, next).filter(
+        (o) => o.kind === "completion-event-append",
+      ),
+    ).toEqual([]);
   });
 });
 

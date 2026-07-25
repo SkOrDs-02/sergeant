@@ -40,7 +40,14 @@ test("@critical nutrition: today dashboard → add-meal CTA opens sheet", async 
     },
   );
 
-  await page.getByRole("button", { name: /Додати прийом їжі/ }).click();
+  // `.first()`, а не `exact` — після уніфікації FAB (#443) на сторінці ДВІ
+  // кнопки з ІДЕНТИЧНИМ accessible name «Додати прийом їжі»: хедерна `+ Додати`
+  // і круглий FAB. Точний збіг тут не розрізняє їх, бо різниться лише розмітка.
+  // Обидві відкривають ту саму шторку, тож беремо першу в DOM-порядку.
+  await page
+    .getByRole("button", { name: /Додати прийом їжі/ })
+    .first()
+    .click();
   // With no saved templates the sheet auto-skips "source" → "fill"
   // (title "Додати прийом їжі" + backtrack link). With templates it
   // stays on "source" (title "Звідки страва?"). Either means the sheet opened.

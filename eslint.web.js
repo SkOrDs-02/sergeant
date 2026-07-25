@@ -272,7 +272,7 @@ export const webBlocks = [
   // `useRoutineRoute` або через injected `onNavigate` prop із module
   // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
   // assignments у модулях ламають lint і CI, як заплановано в
-  // `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md` §Phase 2.
+  // `docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {

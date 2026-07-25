@@ -122,7 +122,7 @@ describe("dualWriteRoutineState orchestrator", () => {
     expect(logger).toHaveBeenCalledWith(
       "warn",
       "dual-write skipped: user id unavailable",
-      expect.objectContaining({ ops: 1 }),
+      expect.objectContaining({ ops: 2 }),
     );
     expect(await listEntries(handle.client)).toEqual([]);
   });
@@ -167,9 +167,28 @@ describe("dualWriteRoutineState orchestrator", () => {
       h1: ["2026-05-01"],
     });
     const result = await dualWriteRoutineState(prev, next);
+    // 2 ops: старий `completion-add` у `routine_entries` + append-only
+    // подія журналу (W1-ROUTINE-APPEND стадія 1). Обидва шляхи живуть
+    // паралельно; старий рядок нижче має лишитись байт-у-байт тим самим.
     expect(result).toEqual({
       status: "applied",
-      result: { applied: 1, errored: 0, skipped: 0 },
+      result: { applied: 2, errored: 0, skipped: 0 },
+    });
+    const events = await handle.client.all<{
+      id: string;
+      habit_id: string;
+      date_key: string;
+      state: string;
+      day_anchor: string;
+      source: string;
+    }>(`SELECT * FROM routine_completion_events`);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      habit_id: "h1",
+      date_key: "2026-05-01",
+      state: "done",
+      day_anchor: "device-local",
+      source: "ui",
     });
     const rows = await listEntries(handle.client);
     expect(rows).toHaveLength(1);
@@ -205,7 +224,9 @@ describe("dualWriteRoutineState orchestrator", () => {
     const result = await dualWriteRoutineState(prev, next);
     expect(result.status).toBe("applied");
     if (result.status === "applied") {
-      expect(result.result.errored).toBe(1);
+      // Обидва ops (старий + журнальний) падають на битому клієнті —
+      // і жоден не кидає назовні.
+      expect(result.result.errored).toBe(2);
       expect(result.result.applied).toBe(0);
     }
   });
@@ -260,8 +281,15 @@ describe("dualWriteRoutineState — outbox enqueue wiring", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(enqueueMock).toHaveBeenCalledOnce();
-    const [, input] = enqueueMock.mock.calls[0]!;
+    // Стадія 1 W1-ROUTINE-APPEND: у чергу тепер їде ДВА op-и — старий
+    // `routine_entries` insert і append-only подія журналу. Фільтруємо
+    // за таблицею, щоб тест перевіряв саме старий контракт.
+    expect(enqueueMock).toHaveBeenCalledTimes(2);
+    const entryCalls = enqueueMock.mock.calls.filter(
+      ([, i]) => i.table === "routine_entries",
+    );
+    expect(entryCalls).toHaveLength(1);
+    const [, input] = entryCalls[0]!;
     expect(input.table).toBe("routine_entries");
     expect(input.op).toBe("insert");
     expect(input.row).toMatchObject({
@@ -294,11 +322,27 @@ describe("dualWriteRoutineState — outbox enqueue wiring", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(enqueueMock).toHaveBeenCalledOnce();
-    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(enqueueMock).toHaveBeenCalledTimes(2);
+    const entryCalls = enqueueMock.mock.calls.filter(
+      ([, i]) => i.table === "routine_entries",
+    );
+    expect(entryCalls).toHaveLength(1);
+    const [, input] = entryCalls[0]!;
     expect(input.table).toBe("routine_entries");
     expect(input.op).toBe("delete");
     expect(input.row).toMatchObject({ id: "h1:2026-05-01", user_id: USER_ID });
+
+    // Журнальна подія їде окремим op-ом і фіксує саме ЗНЯТТЯ відмітки.
+    const eventCalls = enqueueMock.mock.calls.filter(
+      ([, i]) => i.table === "routine_completion_events",
+    );
+    expect(eventCalls).toHaveLength(1);
+    expect(eventCalls[0]![1].op).toBe("insert");
+    expect(eventCalls[0]![1].row).toMatchObject({
+      habit_id: "h1",
+      date_key: "2026-05-01",
+      state: "undone",
+    });
   });
 
   it("does NOT reject dualWrite when enqueueOutboxUpsert throws", async () => {

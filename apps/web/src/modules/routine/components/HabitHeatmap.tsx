@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { buildHeatmapGrid } from "@sergeant/routine-domain";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
@@ -12,11 +13,16 @@ import type { Habit, RoutineState } from "../lib/types";
 
 const HISTORY_WEEKS = 53;
 const FUTURE_WEEKS = 4;
-const WEEKS = HISTORY_WEEKS + FUTURE_WEEKS;
 const DAYS = 7;
 const DAY_LABELS = ["Пн", "", "Ср", "", "Пт", "", "Нд"];
 const HEATMAP = chartHeatmap.routine;
 
+/**
+ * Presentation view of a `@sergeant/routine-domain` heatmap cell: the
+ * domain cell plus the `Date` instance the Ukrainian date/month labels
+ * are formatted from. All counting math lives in `buildHeatmapGrid` —
+ * this component owns rendering only.
+ */
 interface HeatmapCell {
   key: string;
   dt: Date;
@@ -30,11 +36,6 @@ interface HeatmapCell {
 interface MonthMarker {
   weekIdx: number;
   label: string;
-}
-
-function localDateKey(d: Date): string {
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formats a Date already built from Kyiv-anchored parts at local noon; pure YYYY-MM-DD shaping, not a host-local "now" read
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function cellBg(ratio: number, isFuture: boolean): string {
@@ -76,55 +77,37 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       });
   }, [selected]);
 
-  const activeHabits = useMemo(
-    () => (habits || []).filter((h) => !h.archived),
-    [habits],
-  );
-
   const { weeks, monthMarkers } = useMemo(() => {
     // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell
     // doesn't drift to a different square when the user roams
     // (consolidated page-audit § Theme 1 — 09 F3). Construct as local-noon
-    // of Kyiv-Y/M/D so the subsequent local-TZ getters preserve the
-    // calendar day across host TZ.
+    // of Kyiv-Y/M/D so the grid arithmetic inside `buildHeatmapGrid`
+    // preserves the calendar day across host TZ.
     const { year, month, day } = getKyivDateParts();
-    /* eslint-disable sergeant-design/prefer-kyiv-time -- every getter below reads Date objects constructed from the Kyiv-anchored parts above (pinned to local noon); this is pure calendar arithmetic for the year-long grid, not host-local "now" reads */
     const today = new Date(year, month - 1, day, 12, 0, 0, 0);
-    const todayKey = localDateKey(today);
 
-    const dow = (today.getDay() + 6) % 7;
-    const mondayThisWeek = new Date(today);
-    mondayThisWeek.setDate(today.getDate() - dow);
+    // Single source of the heatmap math — shared with the mobile grid
+    // (`@sergeant/routine-domain`). `denominator: "active"` is the
+    // historical web behaviour (every non-archived habit counts every
+    // day); switching it to "scheduled" is a separate cutover decision.
+    const grid = buildHeatmapGrid(habits, completions, today, HISTORY_WEEKS, {
+      futureWeeks: FUTURE_WEEKS,
+      denominator: "active",
+    });
 
-    const startDate = new Date(mondayThisWeek);
-    startDate.setDate(mondayThisWeek.getDate() - (HISTORY_WEEKS - 1) * 7);
-
-    const cntByDay: Record<string, number> = {};
-    for (const h of activeHabits) {
-      for (const dk of completions?.[h.id] || []) {
-        cntByDay[dk] = (cntByDay[dk] || 0) + 1;
-      }
-    }
-
-    const weeks: HeatmapCell[][] = [];
-
-    for (let w = 0; w < WEEKS; w++) {
-      const week: HeatmapCell[] = [];
-      for (let d = 0; d < DAYS; d++) {
-        const dt = new Date(startDate);
-        dt.setDate(startDate.getDate() + w * 7 + d);
-        dt.setHours(12, 0, 0, 0);
-        const key = localDateKey(dt);
-        const isFuture = key > todayKey;
-        const isToday = key === todayKey;
-        const cnt = cntByDay[key] || 0;
-        const total = activeHabits.length;
-        const ratio = total > 0 && !isFuture ? cnt / total : 0;
-        week.push({ key, dt, isFuture, isToday, cnt, total, ratio });
-      }
-      weeks.push(week);
-    }
-    /* eslint-enable sergeant-design/prefer-kyiv-time */
+    const weeks: HeatmapCell[][] = grid.weeks.map((week) =>
+      week.map((cell) => ({
+        key: cell.key,
+        // Same local-noon instant the grid keyed the cell from, rebuilt
+        // for `toLocaleDateString` labelling.
+        dt: new Date(cell.year, cell.month, cell.day, 12, 0, 0, 0),
+        isFuture: cell.isFuture,
+        isToday: cell.isToday,
+        cnt: cell.cnt,
+        total: cell.total,
+        ratio: cell.ratio,
+      })),
+    );
 
     // Chronological, oldest→newest left-to-right. Today sits near the right
     // edge with a ~1-month look-ahead trailing after it, so the grid never
@@ -147,7 +130,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     });
 
     return { weeks, monthMarkers };
-  }, [activeHabits, completions]);
+  }, [habits, completions]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {

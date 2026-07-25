@@ -9,4 +9,5 @@ export * from "./lib/debt.js";
 export * from "./lib/transactions.js";
 export * from "./lib/goals.js";
 export * from "./lib/spending.js";
+export * from "./lib/metrics.js";
 export * from "./lib/quickStats.js";

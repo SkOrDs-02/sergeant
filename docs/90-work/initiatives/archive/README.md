@@ -1,6 +1,6 @@
 # Initiatives — Архів
 
-> **Last validated:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active — каталог архіву (батчі 2026-05-13 … 2026-07-20).
 
 Цей каталог тримає **архівовані ініціативи** — файли, що пройшли lifecycle до `Closed`/`Done`/`Archived` і перенесені з `docs/90-work/initiatives/`. Default gate — ≥90 днів без регресій; **fast-forward** (skip 90d) — за рішенням founder-а. Redirect-stub-и — у [`../README.md` § Архів](../README.md#архів).
@@ -57,7 +57,7 @@
 | **0021** React hooks v7 cleanup    | Done      | `eslint.baseline.js` react-hooks v7 `"error"`    | [`_0021-react-hooks-v7-cleanup.md`](./_0021-react-hooks-v7-cleanup.md)               |
 | session-log 0018 (find / semantic) | Reference | Measurement logs                                 | [`session-log-0018-*.md`](./session-log-0018-agent-find-measurement-2026-06-08.md)   |
 
-Паралельно: Closed stack-pulse картки → [`../stack-pulse-2026-05/archive/`](../stack-pulse-2026-05/archive/).
+Паралельно: Closed stack-pulse картки → [`../stack-pulse-2026-05/archive/`](./stack-pulse-2026-05/archive/).
 
 ## Поточний вміст
 

@@ -18,6 +18,7 @@ import { _getMMKVInstance } from "@/lib/storage";
 import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
   type FizrukMeasurementEntry,
 } from "../lib/sqliteReader";
 import { Body } from "./Body";
@@ -60,6 +61,20 @@ function seedEntries(
   // SQLite warm cache, not MMKV. Seed the cache directly.
   __setFizrukSqliteCacheForTests({
     measurements: rows.map((r) => ({ ...r }) as FizrukMeasurementEntry),
+  });
+}
+
+/**
+ * W1-WEIGHT-SOT стадія 1: половина зважувань живе у `fizruk_daily_log`
+ * (web-екран «Тіло», AI `log_weight`/`log_wellbeing`). Цей екран їх раніше
+ * не бачив узагалі.
+ */
+function seedDailyLog(
+  rows: readonly { id: string; at: string; weightKg?: number }[],
+) {
+  __setFizrukSqliteCacheForTests({
+    measurements: [],
+    dailyLog: rows.map((r) => ({ ...r }) as unknown as CachedDailyLogEntry),
   });
 }
 
@@ -133,6 +148,40 @@ describe("Fizruk Body page (mobile)", () => {
     expect(screen.queryByTestId("fizruk-body-trend-sleepHours")).toBeNull();
     expect(screen.queryByTestId("fizruk-body-trend-energyLevel")).toBeNull();
     expect(screen.queryByTestId("fizruk-body-trend-mood")).toBeNull();
+  });
+
+  it("показує вагу з daily_log, коли «Замірів» немає (W1-WEIGHT-SOT)", () => {
+    seedDailyLog([
+      { id: "dl-new", at: "2026-04-20T09:00:00Z", weightKg: 79 },
+      { id: "dl-old", at: "2026-04-16T09:00:00Z", weightKg: 81 },
+    ]);
+
+    render(<Body onOpenMeasurements={jest.fn()} />);
+
+    expect(screen.queryByTestId("fizruk-body-empty")).toBeNull();
+    const weightValue = screen.getByTestId(
+      "fizruk-body-summary-weightKg-value",
+    );
+    expect(weightValue.props.children).toContain("79");
+    expect(screen.getByTestId("fizruk-body-trend-weightKg")).toBeTruthy();
+  });
+
+  it("об'єднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {
+    __setFizrukSqliteCacheForTests({
+      measurements: [
+        { id: "m-old", at: "2026-04-14T09:00:00Z", weightKg: 82 },
+      ] as unknown as FizrukMeasurementEntry[],
+      dailyLog: [
+        { id: "dl-new", at: "2026-04-20T09:00:00Z", weightKg: 78 },
+      ] as unknown as CachedDailyLogEntry[],
+    });
+
+    render(<Body onOpenMeasurements={jest.fn()} />);
+
+    const weightValue = screen.getByTestId(
+      "fizruk-body-summary-weightKg-value",
+    );
+    expect(weightValue.props.children).toContain("78");
   });
 
   it("fires onOpenMeasurements when the header CTA is pressed", () => {

@@ -15,6 +15,7 @@ import {
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
+import { insertGoalPeriod } from "./adapter.goalPeriods.js";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
@@ -90,6 +91,15 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
     },
     "shopping-list-set": async (client, op, rt) => {
       await setShoppingList(client, op.shoppingList, rt);
+      return "applied";
+    },
+    // W1-KBJU-APPEND стадія 1 — сходинка в append-only журналі цілей КБЖВ.
+    // Їде ПАРАЛЕЛЬНО з `prefs-upsert` вище, який лишився недоторканим.
+    // Тіло — в `adapter.goalPeriods.ts` (цей файл 646 рядків при ліміті
+    // 600, Hard Rule #18; append-only-семантика й так не має жити поруч
+    // із LWW-upsert-ами).
+    "goal-period-insert": async (client, op, rt) => {
+      await insertGoalPeriod(client, op, rt);
       return "applied";
     },
   },
