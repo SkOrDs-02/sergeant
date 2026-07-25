@@ -218,6 +218,12 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   hub: {
+    destructiveConfirm: {
+      title: "Confirm an irreversible action",
+      body: "The assistant wants to do something that cannot be undone:",
+      confirm: "Yes, do it",
+      cancel: "Cancel",
+    },
     insights: "Insights",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",

@@ -183,6 +183,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Категоризуй масово: ",
     requiresInput: true,
+    // Перезаписує категорії до 50 транзакцій без збереження попередніх —
+    // «перезапис» у термінах рішення founder-а #8. Режим — `destructive`
+    // у `toolRisk.ts`.
+    risky: true,
     requiresOnline: true,
     aiHint: "dry_run спершу",
     keywords: ["batch", "масово", "категорія"],

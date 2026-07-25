@@ -376,7 +376,7 @@
 | Staleness-детекція тиші Mono («дані не оновлювались N днів»)                    | finyk     | code          | крит  | finyk G3                            | ✅   |
 | Research баз штрихкодів (укр-продукти) → продакшн-ключі USDA / заміна UPCitemdb | nutrition | research+code | крит  | брейншторм 1.4 · nutrition напруга1 |      |
 | Анонімізація перед LLM (етап 1) + декларація sub-processors                     | крос      | code+docs     | крит  | брейншторм 2.1 · G4 усіх звітів     |      |
-| Confirmation-flow для 7 RISKY-tools + відновлюваність tool-записів              | hub-coach | code          | крит  | hub-coach напруга1/E-4              |      |
+| Confirmation-flow для RISKY-tools (відновлюваність — частково, E-4 відкрито)    | hub-coach | code          | крит  | hub-coach напруга1/E-4              | ✅   |
 | Перегляд і видалення окремих фактів AI-пам'яті                                  | hub-coach | code          | крит  | hub-coach D5/G3                     |      |
 | Заборона мед./фін. порад у системних промптах AI                                | hub-coach | code          | крит  | hub-coach C1 · fizruk C6            | ✅   |
 | Unit-економіка: cost/user по тірах vs ₴199                                      | крос      | research      | крит  | overview раунд B                    | ✅   |

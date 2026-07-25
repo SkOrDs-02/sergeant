@@ -294,7 +294,6 @@ describe("archive_habit", () => {
       name: "archive_habit",
       input: { habit_id: "h1" },
     });
-    expect(typeof out).toBe("string");
     expect(out).toContain("заархівовано");
   });
 
@@ -304,7 +303,6 @@ describe("archive_habit", () => {
       name: "archive_habit",
       input: { habit_id: "h1", archived: false },
     });
-    expect(typeof out).toBe("string");
     expect(out).toContain("повернуто");
   });
 
@@ -863,5 +861,64 @@ describe("complete_habit_for_date · undo", () => {
     out.undo();
     const after = loadRoutineState();
     expect(after.completions["h1"]).toContain("2025-01-02");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// archive_habit — undo (рішення founder-а #8: оборотні дії виконуються одразу,
+// але з кнопкою «скасувати»). Без undo друга половина рішення не існує.
+// ---------------------------------------------------------------------------
+describe("archive_habit — undo", () => {
+  it("undo знімає архівацію", () => {
+    seedHabit("h1", "Біг");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+
+    expect(typeof out).toBe("object");
+    expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
+      true,
+    );
+    out.undo();
+    expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
+      false,
+    );
+  });
+
+  it("undo не затирає зміни, зроблені між дією і скасуванням", () => {
+    // Замикання на знімок стану замість повторного читання — найтиповіша
+    // помилка undo. Вона проявляється ЛИШЕ коли між дією і undo щось
+    // змінилось, тобто ніколи в наївному тесті.
+    seedHabit("h1", "Біг");
+    seedHabit("h2", "Вода");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+
+    const mid = loadRoutineState();
+    saveRoutineState({
+      ...mid,
+      habits: mid.habits.map((h) =>
+        h.id === "h2" ? { ...h, name: "Вода 2л" } : h,
+      ),
+    });
+
+    out.undo();
+    const after = loadRoutineState();
+    expect(after.habits.find((h) => h.id === "h1")?.archived).toBe(false);
+    expect(after.habits.find((h) => h.id === "h2")?.name).toBe("Вода 2л");
+  });
+
+  it("undo ідемпотентний: звичка зникла — не кидає", () => {
+    seedHabit("h1", "Біг");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+    const st = loadRoutineState();
+    saveRoutineState({ ...st, habits: [] });
+    expect(() => out.undo()).not.toThrow();
   });
 });

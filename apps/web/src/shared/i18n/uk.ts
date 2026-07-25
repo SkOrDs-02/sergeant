@@ -302,6 +302,15 @@ export const messages = {
   },
 
   hub: {
+    // Канон hub-coach §8 — згода ПЕРЕД незворотною дією. Копія називає
+    // інструменти поіменно (список рендериться окремо): згода без предмета
+    // не є згодою.
+    destructiveConfirm: {
+      title: "Підтверди незворотну дію",
+      body: "Асистент хоче виконати те, що не вийде скасувати:",
+      confirm: "Так, виконати",
+      cancel: "Скасувати",
+    },
     // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
     // потрапляють reused chat/insights/cross-module-preview labels та
     // довший offline-notice composer-а.

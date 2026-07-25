@@ -17,14 +17,6 @@ import {
 
 // Mirrors RISKY_TOOLS in apps/web/src/core/lib/hubChatActionCards.ts.
 // Hardcoded here because @sergeant/shared cannot depend on app code.
-const RISKY_TOOL_IDS = new Set<string>([
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-]);
-
 describe("ASSISTANT_CAPABILITIES — invariants", () => {
   it("has unique ids", () => {
     const ids = ASSISTANT_CAPABILITIES.map((c) => c.id);
@@ -66,26 +58,11 @@ describe("ASSISTANT_CAPABILITIES — invariants", () => {
     }
   });
 
-  it("risky=true entries are also in client RISKY_TOOLS set", () => {
-    const registryRisky = new Set(
-      ASSISTANT_CAPABILITIES.filter((c) => c.risky).map((c) => c.id),
-    );
-    // Every risky in registry must be known to the action-card layer.
-    for (const id of registryRisky) {
-      expect(
-        RISKY_TOOL_IDS.has(id),
-        `${id} marked risky but missing from RISKY_TOOLS`,
-      ).toBe(true);
-    }
-    // Every RISKY_TOOL must have a risky catalogue entry (so user
-    // sees the warning badge before triggering it).
-    for (const id of RISKY_TOOL_IDS) {
-      expect(
-        registryRisky.has(id),
-        `${id} in RISKY_TOOLS but missing risky catalogue entry`,
-      ).toBe(true);
-    }
-  });
+  // Перевірка «risky ↔ клієнтський набір» переїхала у `toolRisk.test.ts`.
+  // Тут вона звіряла каталог із рукописною копією набору, оголошеною
+  // просто вище в цьому ж файлі, — і тому лишалась зеленою, поки в
+  // продукті жили чотири різні набори. Тепер джерело одне (`toolRisk.ts`),
+  // а порівнюються реальні множини.
 
   it("isQuickAction entries have priority and online flag", () => {
     for (const c of ASSISTANT_CAPABILITIES) {
