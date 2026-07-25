@@ -38,9 +38,9 @@ export default function SiteHeader() {
       </nav>
       <a
         href={anchor("beta")}
-        className="rounded-full border border-cardline bg-card px-4 py-2 text-sm font-semibold text-foreground backdrop-blur-md transition hover:border-accent/50"
+        className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink shadow-sm transition hover:bg-accent-hover"
       >
-        У бету
+        До бети
       </a>
     </header>
   );

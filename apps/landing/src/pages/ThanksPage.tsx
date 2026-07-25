@@ -13,32 +13,30 @@ export default function ThanksPage() {
       <main className="mx-auto flex w-full max-w-2xl flex-col items-center px-5 py-20 text-center sm:px-8 sm:py-28">
         <div
           aria-hidden="true"
-          className="grid h-16 w-16 place-items-center rounded-2xl border border-accent/40 bg-accent/15 font-display text-2xl font-bold text-accent"
+          className="grid h-16 w-16 place-items-center rounded-2xl bg-accent-soft font-display text-2xl font-bold text-accent"
         >
           ✓
         </div>
-        <h1 className="mt-6 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">
-          {alreadyOnList
-            ? "Ми памʼятаємо твій інтерес"
-            : "Ти в списку, боєць"}
+        <h1 className="mt-6 font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-5xl">
+          {alreadyOnList ? "Ти вже в списку" : "Готово, ти в списку"}
         </h1>
         <p className="mt-4 max-w-md leading-relaxed text-pretty text-muted">
           {alreadyOnList
-            ? "Цей email уже в вейтлісті — місце за тобою. Напишемо, щойно відкриємо доступ."
-            : "Місце заброньовано. Щойно відкриємо наступну хвилю бети — напишемо тобі першому."}
+            ? "Ця пошта вже у вейтлісті — місце за тобою. Напишемо, щойно відкриємо доступ."
+            : "Дякуємо за довіру. Напишемо на пошту, щойно відкриємо наступну хвилю бети — без спаму."}
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <a
             href="https://t.me/sergeant_app"
             target="_blank"
             rel="noreferrer"
-            className="rounded-xl bg-accent px-6 py-3 text-sm font-extrabold text-accent-ink transition hover:bg-accent-strong"
+            className="rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-ink shadow-sm transition hover:bg-accent-hover"
           >
             Приєднатись до Telegram
           </a>
           <Link
             to="/"
-            className="rounded-xl border border-cardline bg-card px-6 py-3 text-sm font-semibold text-foreground backdrop-blur-md transition hover:border-accent/50"
+            className="rounded-xl border border-cardline bg-card px-6 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:border-accent"
           >
             На головну
           </Link>

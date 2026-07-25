@@ -12,20 +12,20 @@ const FREE_FEATURES = [
 
 const PRO_FEATURES = [
   "Усе з Free, без лімітів",
-  "Крос-модульний AI: сон × витрати × тренування",
+  "Глибші крос-модульні звʼязки в тижневих звітах",
   "CloudSync між пристроями",
-  "AI-фото їжі та тижневі звіти",
+  "AI-фото їжі та розширена аналітика",
   "Пріоритетна підтримка",
 ];
 
 const FAQ = [
   {
-    q: "Що буде з моїми даними, якщо я даунгрейджу до Free?",
-    a: "Усе залишається. Дані живуть локально на пристрої. Просто вимкнеться CloudSync та крос-модульні звіти. Повернешся на Pro — і вони знову там.",
+    q: "Що буде з моїми даними, якщо повернуся на Free?",
+    a: "Усе залишається. Дані живуть локально на пристрої — просто вимкнеться CloudSync та частина звітів. Повернешся на Pro, і вони знову доступні.",
   },
   {
-    q: "Чому ₴99, а не $14.99 як у конкурентів?",
-    a: "Ми UAH-first і рахуємо ціну від українських зарплат, а не від каліфорнійських. Один Pro замінює 3-4 підписки на окремі застосунки.",
+    q: "Чому ціна в гривні?",
+    a: "Ми рахуємо ціну від українських реалій, а не переводимо доларовий цінник. Один Pro покриває сфери, за які інакше платиш кільком окремим застосункам.",
   },
   {
     q: "Чи потрібна картка для тріалу?",
@@ -51,7 +51,7 @@ export default function PricingPage() {
             вмикає крос-модульний AI. Без прихованих платежів.
           </p>
 
-          <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-cardline bg-card p-1 backdrop-blur-md">
+          <div className="mt-8 inline-flex items-center gap-1 rounded-full border border-cardline bg-card p-1">
             <button
               type="button"
               onClick={() => setAnnual(false)}
@@ -76,7 +76,7 @@ export default function PricingPage() {
         </section>
 
         <section className="mt-10 grid gap-4 md:grid-cols-2">
-          <article className="rounded-3xl border border-cardline bg-card p-8 backdrop-blur-md">
+          <article className="rounded-[var(--radius-card)] border border-cardline bg-card shadow-sm p-8">
             <h2 className="font-display text-xl font-bold">Free</h2>
             <div className="mt-3 font-display text-4xl font-bold">
               ₴0
@@ -95,7 +95,7 @@ export default function PricingPage() {
             </ul>
           </article>
 
-          <article className="relative rounded-3xl border border-accent/40 bg-accent/10 p-8 backdrop-blur-md">
+          <article className="relative rounded-[var(--radius-card)] border-2 border-accent bg-card p-8">
             <span className="absolute -top-3 right-6 rounded-full bg-accent px-3 py-1 text-xs font-extrabold text-accent-ink">
               Популярний
             </span>
@@ -122,16 +122,20 @@ export default function PricingPage() {
           </article>
         </section>
 
-        <section className="mt-16 rounded-3xl border border-cardline bg-card p-8 text-center backdrop-blur-md sm:p-10">
-          <h2 className="font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl">
-            Застосунок ще в закритій беті
+        <section className="mt-16 rounded-[var(--radius-card)] border border-cardline bg-accent-soft p-8 text-center shadow-sm sm:p-10">
+          <h2 className="font-display text-2xl font-bold tracking-tight text-balance text-foreground-strong sm:text-3xl">
+            Застосунок ще в ранній беті
           </h2>
           <p className="mx-auto mt-3 max-w-xl leading-relaxed text-muted">
-            Залиш пошту — і отримаєш ранній доступ. Перші 500 бета-юзерів
-            отримують Pro назавжди безкоштовно.
+            Залиш пошту — і отримаєш доступ однією з перших хвиль. Ранні
+            користувачі допомагають нам обрати, що будувати далі.
           </p>
           <div className="mt-6 flex justify-center">
-            <WaitlistForm tierInterest="pro" buttonLabel="У вейтліст" compact />
+            <WaitlistForm
+              tierInterest="pro"
+              buttonLabel="Приєднатись до бети"
+              compact
+            />
           </div>
         </section>
 
@@ -143,7 +147,7 @@ export default function PricingPage() {
             {FAQ.map((item) => (
               <article
                 key={item.q}
-                className="rounded-2xl border border-cardline bg-card p-6 backdrop-blur-md"
+                className="rounded-2xl border border-cardline bg-card shadow-sm p-6"
               >
                 <h3 className="font-display font-bold">{item.q}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">

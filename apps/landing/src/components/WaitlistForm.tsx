@@ -37,7 +37,7 @@ export default function WaitlistForm({
     <div className={`w-full ${compact ? "max-w-md" : "max-w-lg"}`}>
       <form
         onSubmit={handleSubmit}
-        className="flex w-full flex-col gap-2 rounded-2xl border border-cardline bg-card p-1.5 backdrop-blur-md sm:flex-row sm:gap-0"
+        className="flex w-full flex-col gap-2 rounded-2xl border border-cardline bg-card p-1.5 shadow-sm sm:flex-row sm:gap-0"
       >
         <label htmlFor={inputId} className="sr-only">
           Email
@@ -55,13 +55,13 @@ export default function WaitlistForm({
         <button
           type="submit"
           disabled={status === "loading"}
-          className="shrink-0 rounded-xl bg-accent px-6 py-3 text-sm font-extrabold text-accent-ink transition hover:bg-accent-strong disabled:opacity-60"
+          className="shrink-0 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-ink transition hover:bg-accent-hover disabled:opacity-60"
         >
-          {status === "loading" ? "Хвилинку…" : buttonLabel}
+          {status === "loading" ? "Реєструю…" : buttonLabel}
         </button>
       </form>
       {error ? (
-        <p role="alert" className="mt-2 px-2 text-sm text-red-400">
+        <p role="alert" className="mt-2 px-2 text-sm text-routine">
           {error}
         </p>
       ) : null}
