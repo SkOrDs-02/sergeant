@@ -844,7 +844,7 @@ export const messages = {
       freePrice: "0 ₴",
       freeCadence: "назавжди",
       freeTagline:
-        "Усі модулі, ручний трекінг без лімітів. AI — 15 повідомлень/день.",
+        "Усі модулі, ручний трекінг без лімітів. AI — 5 повідомлень/день.",
       premiumName: "Premium",
       premiumCadence: "/ місяць (річний тариф — скоро)",
       premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
@@ -871,7 +871,7 @@ export const messages = {
       // Leading space intentional — composes як `${N} / місяць`.
       perMonth: " / місяць",
       unlimited: "без ліміту",
-      aiChatPerDay: "15 / день",
+      aiChatPerDay: "5 / день",
     },
     cta: {
       tryPremium: "Спробувати Premium",

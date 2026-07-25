@@ -28,7 +28,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - Сервер НЕ виконує chat-tool side-effect-и у `chat.ts`.
 - Клієнтські executor-и мають використовувати наявні storage-врапери або типовані API-клієнти, а не ad-hoc storage.
 - Результати tool-ів, що повертаються моделі, мають лишатися лаконічними і детермінованими.
-- **Prompt cache (ADR-0057):** зміна tool-визначень може інвалідовувати prompt-cache candidates — Anthropic-виклики з prompt caching живуть у `apps/server/src/lib/anthropic.ts`. Групуй wording-правки разом; не роби часткових tool-def змін між PR-ами.
+- **Prompt cache (ADR-0057):** breakpoint-и і TTL живуть у `apps/server/src/modules/chat/promptCache.ts`, розкладка tools — у `toolSearch.ts` (`apps/server/src/lib/anthropic.ts` — лише HTTP-врапер). З 2026-07-25 у контекст їде лише гарячий набір (`HOT_TOOL_NAMES`), решта — `defer_loading: true`, тож зміна опису **deferred** tool-а кеш НЕ інвалідовує; зміна гарячого — інвалідовує. Не став `cache_control` на deferred tool: Anthropic віддає 400. Бюджет префікса тримає `promptPrefixBudget.test.ts`.
 - **Hard Rule #20:** Ніяких OpenClaw PAT-ів у production. `assertStartupEnv()` захищає runtime; не обходь.
 
 ## Верифікація
@@ -36,7 +36,7 @@ HubChat: tool defs на `apps/server`, executors на `apps/web`, дефінує
 - Протестуй executor-шлях і принаймні один error-шлях.
 - Використай задокументований curl- або local-UI flow для end-to-end виклику tool-а.
 - Перевір, чи tool слід позначити risky або відрендерити з action card.
-- Якщо зміна торкається tool def wording — перевір, чи не зламаний prompt-cache кандидат у `apps/server/src/lib/anthropic.ts`.
+- Якщо зміна торкається tool def wording — прогони `pnpm --filter @sergeant/server test -- promptPrefixBudget toolSearch`.
 
 ## Корисні доки
 

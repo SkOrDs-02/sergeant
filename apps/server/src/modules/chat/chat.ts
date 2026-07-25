@@ -19,7 +19,7 @@ import { SYSTEM_PROMPT_VERSION } from "./tools.js";
 import {
   applyMessagesCacheBreakpoint,
   buildSystem,
-  TOOLS_WITH_CACHE,
+  buildToolsPayload,
 } from "./promptCache.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import {
@@ -49,10 +49,11 @@ type WithAnthropicKey = Request & { anthropicKey?: string };
  */
 const CHAT_TOOL_TIMEOUT_MS = 30_000;
 
-// Anthropic prompt-caching хелпери (buildSystem / TOOLS_WITH_CACHE /
+// Anthropic prompt-caching хелпери (buildSystem / buildToolsPayload /
 // applyMessagesCacheBreakpoint) винесені в `./promptCache.ts` — три cache
-// breakpoint-и (system prefix, останній tool, останнє повідомлення) задокументовані
-// там. Винесення тримає chat.ts під module-size cap (Hard Rule #18).
+// breakpoint-и (system prefix, останній не-deferred tool, останнє повідомлення)
+// задокументовані там разом із TTL-політикою і tool search.
+// Винесення тримає chat.ts під module-size cap (Hard Rule #18).
 
 // SSE-streaming (`streamAnthropicToSse` / `streamOneIterationToSse` /
 // `SSE_HEARTBEAT_MS`) винесено в `./chatStream.ts`, а спільні типи/константи/
@@ -367,7 +368,10 @@ export default async function handler(
       model: proTier.model,
       max_tokens: 2500,
       system: buildSystem(context),
-      tools: TOOLS_WITH_CACHE,
+      // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
+      // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
+      // підтримують не всі моделі, тож payload будується під фактичну.
+      tools: buildToolsPayload(proTier.model),
       messages: fullMessages,
     };
 
@@ -483,7 +487,7 @@ export default async function handler(
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: firstTurnSystem,
-        tools: TOOLS_WITH_CACHE,
+        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN),
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
         messages: applyMessagesCacheBreakpoint(cleaned),
