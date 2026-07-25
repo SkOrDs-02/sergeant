@@ -161,7 +161,7 @@ beforeEach(async () => {
   // ізолює тести між собою.
   await testPool.query(
     `TRUNCATE sync_op_log, sync_audit_log,
-              routine_entries, routine_streaks,
+              routine_entries, routine_streaks, routine_completion_events,
               fizruk_workout_sets, fizruk_workout_items, fizruk_workouts,
               fizruk_custom_exercises, fizruk_measurements,
               nutrition_pantry_items, nutrition_pantries,
@@ -828,6 +828,225 @@ describe("syncV2Push / syncV2Pull integration", () => {
       };
       expect(body.accepted).toBe(0);
       expect(body!.results[0]!.reason).toBe("clock_skew");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// W1-ROUTINE-APPEND, СТАДІЯ 1 — append-only журнал відміток.
+//
+// Тест ганяє ТУ САМУ форму op-а, яку клієнтський write-path кладе в
+// `sync_op_outbox` (`appendCompletionEvent` у
+// `apps/{web,mobile}/.../sqliteWriter/adapter.completionEvents.ts`):
+// детермінований TEXT-`id`, `state`, сирі `occurred_at` / `tz_offset_min`
+// / `day_anchor`. Тобто перевіряється весь шлях push → OP_LOG_TABLE_REGISTRY
+// → apply → рядок у PG → pull на інший пристрій, а не «хендлер викликався».
+//
+// ЧЕСНЕ ОБМЕЖЕННЯ: реальний drain клієнтського outbox сюди не входить —
+// він живе у web/mobile і в цьому лейні недосяжний. Якщо drain мовчить
+// (відома знахідка по finyk: 4 операції висять у черзі), цей тест усе одно
+// зелений, а події до сервера не доїдуть. Мультидевайсна збіжність журналу
+// потребує окремої ЖИВОЇ перевірки, а не лише цього лейну.
+// ---------------------------------------------------------------------
+describe("syncV2Push — routine_completion_events (W1-ROUTINE-APPEND стадія 1)", () => {
+  const EVENT_ID = "hab_x1|2026-07-20|2026-07-20T09:00:00.000Z|done|device-A";
+
+  function clientShapedRow(
+    overrides: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      id: EVENT_ID,
+      user_id: "u-events",
+      habit_id: "hab_x1",
+      date_key: "2026-07-20",
+      state: "done",
+      occurred_at: "2026-07-20T09:00:00.000Z",
+      tz_offset_min: 180,
+      day_anchor: "device-local",
+      source: "ui",
+      device_id: "device-A",
+      created_at: "2026-07-20T09:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it(
+    "insert проходить push → apply → PG-рядок → pull на іншому пристрої",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-events",
+          body: {
+            ops: [
+              {
+                table: "routine_completion_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "evt-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        pushRes,
+      );
+
+      expect(pushRes.statusCode).toBe(200);
+      expect(
+        (pushRes.body as { results: Array<{ status: string }> }).results[0]!
+          .status,
+      ).toBe("applied");
+
+      // Рядок реально лежить у PG з тим самим TEXT-id (не UUID!).
+      const rows = await testPool.query(
+        `SELECT id, habit_id, date_key, state, tz_offset_min, day_anchor,
+                source, device_id
+           FROM routine_completion_events WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]).toMatchObject({
+        id: EVENT_ID,
+        habit_id: "hab_x1",
+        date_key: "2026-07-20",
+        state: "done",
+        tz_offset_min: 180,
+        day_anchor: "device-local",
+        source: "ui",
+        device_id: "device-A",
+      });
+
+      // Інший пристрій бачить подію у pull.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-events",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "device-B" },
+        }),
+        pullRes,
+      );
+      const pulled = (
+        pullRes.body as {
+          ops: Array<{ table: string; row: Record<string, unknown> }>;
+        }
+      ).ops;
+      expect(pulled).toHaveLength(1);
+      expect(pulled[0]!.table).toBe("routine_completion_events");
+      expect(pulled[0]!.row["id"]).toBe(EVENT_ID);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "повторний push тієї самої події (новий idempotency_key) не дублює рядок",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      for (const key of ["evt-dup-1", "evt-dup-2"]) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-events",
+            body: {
+              ops: [
+                {
+                  table: "routine_completion_events",
+                  op: "insert" as const,
+                  row: clientShapedRow(),
+                  client_ts: isoNow(),
+                  idempotency_key: key,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        expect(
+          (res.body as { results: Array<{ status: string }> }).results[0]!
+            .status,
+        ).toBe("applied");
+      }
+
+      const count = await testPool.query(
+        `SELECT COUNT(*)::int AS n FROM routine_completion_events
+          WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(count.rows[0]!.n).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "update / delete відхиляються з append_only_violation і не міняють рядок",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      const seed = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-events",
+          body: {
+            ops: [
+              {
+                table: "routine_completion_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "evt-seed",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        seed,
+      );
+
+      for (const [i, mutating] of (["update", "delete"] as const).entries()) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-events",
+            body: {
+              ops: [
+                {
+                  table: "routine_completion_events",
+                  op: mutating,
+                  row: clientShapedRow({ state: "undone" }),
+                  client_ts: isoNow(1000 + i),
+                  idempotency_key: `evt-mutate-${mutating}`,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        const result = (
+          res.body as {
+            results: Array<{ status: string; reason?: string }>;
+          }
+        ).results[0]!;
+        expect(result.status).toBe("rejected");
+        expect(result.reason).toBe("append_only_violation");
+      }
+
+      const rows = await testPool.query(
+        `SELECT state FROM routine_completion_events WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]!.state).toBe("done");
     },
     TIMEOUT_MS,
   );

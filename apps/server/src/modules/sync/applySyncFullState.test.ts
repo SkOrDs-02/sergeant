@@ -65,8 +65,8 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables (42 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(42);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + routine_completion_events (43 total)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(43);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",

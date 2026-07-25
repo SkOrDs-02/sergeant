@@ -28,6 +28,7 @@ import {
   applyRoutineEntries,
   applyRoutineStreaks,
 } from "./routine/applySync.js";
+import { applyRoutineCompletionEvents } from "./routine/applyCompletionEvents.js";
 import {
   applyRoutineCompletionNotes,
   applyRoutineHabitOrder,
@@ -88,8 +89,7 @@ type SyncV2Outcome =
   | "error";
 
 type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 type ApplyFn = (
   client: PoolClient,
@@ -152,6 +152,10 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_pushups: applyRoutinePushups,
   routine_habit_order: applyRoutineHabitOrder,
   routine_completion_notes: applyRoutineCompletionNotes,
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. `op='update'`
+  // / `'delete'` відхиляються з `append_only_violation`; читачів у цій
+  // стадії нема.
+  routine_completion_events: applyRoutineCompletionEvents,
   fizruk_workouts: applyFizrukWorkouts,
   fizruk_workout_items: applyFizrukItems,
   fizruk_workout_sets: applyFizrukSets,

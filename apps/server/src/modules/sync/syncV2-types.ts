@@ -12,7 +12,7 @@ export type SyncV2Outcome =
   | "unauthorized"
   | "error";
 
-// Reject reasons — 54 значень, докуменовані в metrics.md §4
+// Reject reasons — 55 значень, докуменовані в metrics.md §4
 export const APPLY_REJECT_REASONS = [
   // CRDT / per-row state invariants
   "lww_conflict",
@@ -78,6 +78,12 @@ export const APPLY_REJECT_REASONS = [
   // Field validation — PN-counter primitive (PR #042b)
   "missing_delta",
   "invalid_delta",
+  // Append-only invariant (W1-ROUTINE-APPEND, стадія 1)
+  // `routine_completion_events` приймає ЛИШЕ `op='insert'`. `update` /
+  // `delete` означають спробу переписати історію — відхиляємо явно, а не
+  // ховаємо під `delete_not_supported`, щоб метрика показувала саме
+  // порушення append-only-інваріанта.
+  "append_only_violation",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];
@@ -94,8 +100,7 @@ export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];
 export type RejectReason = ApplyRejectReason | EngineRejectReason;
 
 export type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 // Re-export
 export type { SyncV2Op } from "../../http/schemas.js";

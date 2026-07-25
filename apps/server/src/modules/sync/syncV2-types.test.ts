@@ -10,7 +10,7 @@ import {
 
 describe("syncV2 wire reason/type registries", () => {
   it("keeps apply-level reject reasons unique and label-safe", () => {
-    expect(APPLY_REJECT_REASONS).toHaveLength(54);
+    expect(APPLY_REJECT_REASONS).toHaveLength(55);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );
