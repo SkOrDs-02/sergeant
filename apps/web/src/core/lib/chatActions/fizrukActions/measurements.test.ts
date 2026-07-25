@@ -11,6 +11,9 @@ vi.mock("../../../../modules/fizruk/lib/fizrukDualWriteState", () => ({
 vi.mock("../../../../modules/fizruk/lib/sqliteReader", () => ({
   getCachedFizrukSqliteState: vi.fn(),
 }));
+vi.mock("../../../profile/recordBodyWeight", () => ({
+  recordBodyWeight: vi.fn(),
+}));
 
 import { triggerFizrukDualWrite } from "../../../../modules/fizruk/lib/sqliteWriter/index";
 import type { FizrukDualWriteState } from "../../../../modules/fizruk/lib/sqliteWriter/index";
@@ -20,6 +23,7 @@ import {
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 import type { SqliteFizrukCache } from "../../../../modules/fizruk/lib/sqliteReader";
+import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import { logMeasurement } from "./measurements";
 import type { LogMeasurementAction } from "../types.fizruk";
 
@@ -27,6 +31,7 @@ const mockTriggerDualWrite = vi.mocked(triggerFizrukDualWrite);
 const mockPeekState = vi.mocked(peekFizrukDualWriteState);
 const mockExtract = vi.mocked(extractMeasurementSnapshots);
 const mockGetCached = vi.mocked(getCachedFizrukSqliteState);
+const mockRecordBodyWeight = vi.mocked(recordBodyWeight);
 
 function emptyCache(
   overrides: Partial<SqliteFizrukCache> = {},
@@ -109,6 +114,22 @@ describe("logMeasurement", () => {
     expect(typeof result).toBe("string");
     expect(result).toContain("weightKg=82.5");
     expect(mockTriggerDualWrite).toHaveBeenCalledOnce();
+  });
+
+  // W1-WEIGHT-SOT стадія 2: до цього патча мосту не було взагалі — тул
+  // писав у `fizruk_measurements` і мовчки не оновлював КБЖВ-цілі.
+  it("дзеркалить вагу через спільний funnel recordBodyWeight", () => {
+    logMeasurement(makeAction({ weight_kg: 82.5 }));
+    expect(mockRecordBodyWeight).toHaveBeenCalledTimes(1);
+    const arg = mockRecordBodyWeight.mock.calls[0]![0];
+    expect(arg.weightKg).toBe(82.5);
+    expect(typeof arg.at).toBe("string");
+  });
+
+  it("не чіпає вагу профілю, коли weight_kg не передали", () => {
+    logMeasurement(makeAction({ waist_cm: 90 }));
+    expect(mockTriggerDualWrite).toHaveBeenCalledOnce();
+    expect(mockRecordBodyWeight).not.toHaveBeenCalled();
   });
 
   it("records multiple valid measurement fields", () => {

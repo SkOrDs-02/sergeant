@@ -5,25 +5,40 @@
  * still has the inputs needed for BMR / TDEE — the user's own
  * requirement when shaping the storage layer (see
  * `biometrics-storage-plan.md`). Persisted under
- * `STORAGE_KEYS.HUB_BIOMETRICS` (`hub_biometrics_v1`); cross-device
- * sync rides the existing `SYNC_MODULES.profile` LWW path next to the
- * memory bank.
+ * `STORAGE_KEYS.HUB_BIOMETRICS` (`hub_biometrics_v1`).
  *
- * Weight is treated as the canonical "current weight" snapshot for
- * Nutrition (Mifflin-St Jeor uses one number, not a time-series).
- * Fizruk Body keeps the historical journal (`fizruk_daily_log_v1`
- * entries). The two stay in lockstep:
+ * AI-DANGER: **це device-local кеш, а не синкована сутність.** Попередня
+ * версія цього докстрінга стверджувала, що вага «rides the existing
+ * `SYNC_MODULES.profile` LWW path» — такого шляху не існує (перевірено
+ * W1-WEIGHT-SOT, стадія 2):
+ *
+ *   - `hub_biometrics` немає в `OP_LOG_TABLE_REGISTRY`
+ *     (`apps/server/src/modules/sync/syncV2.ts`) і в жодній PG-міграції;
+ *   - `SYNC_MODULES.profile` (`packages/shared/src/sync/modules.ts`) —
+ *     tombstone: жоден рантайм його не споживає;
+ *   - серверної таблиці `kv_store` теж немає.
+ *
+ * Практичний наслідок: «поточна вага» тут НЕ переживає зміну пристрою
+ * чи очистку браузера. Історія ваги, яка переживає, живе у fizruk-таблицях
+ * (`fizruk_daily_log` + `fizruk_measurements`) — читай її через
+ * `selectLatestBodyWeight` з `@sergeant/fizruk-domain`. Доля цього слоту
+ * (внести в sync-реєстр чи офіційно демоутити до кешу) — питання ADR,
+ * стадія 4 W1-WEIGHT-SOT.
+ *
+ * Weight is treated as the "current weight" snapshot for Nutrition
+ * (Mifflin-St Jeor uses one number, not a time-series) і як фолбек для
+ * юзера без модуля fizruk. Fizruk keeps the historical journal. The two
+ * stay in lockstep:
  *
  *   - Profile → Fizruk: `BiometricsSection` calls
  *     `useDailyLog.addEntry({ weightKg })` on save when weight
  *     changes — going through the canonical fizruk hook keeps the
  *     SQLite overlay (PR #030, storage-roadmap) transparent.
- *   - Fizruk → Profile: `useDailyLog.addEntry` calls
- *     `mirrorWeightToBiometrics` whenever an entry includes
- *     `weightKg`, updating the hub-level snapshot in place.
+ *   - Fizruk → Profile: усі писачі ваги (обидва хуки + три AI-тули)
+ *     ходять через `recordBodyWeight()` (`./recordBodyWeight.ts`), який
+ *     інкапсулює `mirrorWeightToBiometrics`.
  *
- * Both directions converge on Last-Write-Wins via `weightUpdatedAt`,
- * matching CloudSync's per-module LWW for the merged Profile blob.
+ * Both directions converge on Last-Write-Wins via `weightUpdatedAt`.
  */
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
@@ -125,11 +140,13 @@ export function writeBiometrics(b: Biometrics): void {
 }
 
 /**
- * Update biometrics from a Fizruk-side weight write — `useDailyLog.addEntry`
- * calls this whenever a daily-log entry includes `weightKg`. Last-Write-Wins:
+ * Update biometrics from a Fizruk-side weight write. Last-Write-Wins:
  * the caller's `at` becomes the new `weightUpdatedAt`, regardless of any
- * older value already in biometrics. CloudSync's LWW will then resolve
- * cross-device conflicts on the merged Profile blob.
+ * older value already in biometrics.
+ *
+ * AI-NOTE: не клич це напряму з нового коду — заходь через
+ * `recordBodyWeight()` (`./recordBodyWeight.ts`), щоб funnel лишався
+ * одним. Публічний експорт збережено для наявних тестів (additive).
  */
 export function mirrorWeightToBiometrics(
   weightKg: number,

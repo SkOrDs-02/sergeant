@@ -60,8 +60,29 @@
 | Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 |
 | Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       |            |
 | Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | стадія 1   |
-| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     |            |
+| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | стадії 1-2 |
 | Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 |
+
+> **SoT ваги тіла — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1 (read-union):
+> новий доменний селектор `packages/fizruk-domain/src/domain/body/bodyWeight.ts`
+> (`selectLatestBodyWeight`, `buildBodyWeightSeries`) робить union
+> `fizruk_daily_log` + `fizruk_measurements` із дедупом за днем у Europe/Kyiv
+> (при колізії дня виграє новіший `at`; tombstone-записи ігноруються). На нього
+> переведені web «Тіло», web «Прогрес», mobile «Тіло» і nutrition-TDEE (вага з
+> fizruk із фолбеком на `biometrics.weightKg`, щоб юзер без fizruk не зламався).
+> Стадія 2 (write-funnel): усі п'ять писачів ваги ходять через один
+> `recordBodyWeight()` — зокрема `useMeasurements.addEntry` і AI-тул
+> `log_measurement`, у яких мосту **не було взагалі** (звідси й баг «зважився в
+> Замірах → КБЖВ-цілі не оновились»). Виправлено брехливий докстрінг
+> `apps/web/src/core/profile/biometrics.ts` про неіснуючий синк через
+> `SYNC_MODULES.profile`; описи трьох tool-def (`log_measurement`,
+> `log_wellbeing`, `log_weight`) прямо кажуть, що всі троє пишуть в один SoT
+> (схеми не чіпані — Hard Rule #3). **Жодна колонка й жоден запис не змінені.**
+> Стадії 3-4 (вибір канонічної таблиці, ADR, backfill-міграція, two-phase DROP,
+> доля `hub_biometrics` у синку) заблоковані рішенням founder-а: чи має
+> користувач без модуля fizruk зберігати власну «поточну вагу» на рівні профілю
+> — див. відкрите питання в [аудиті fizruk](../audits/product-knowledge-fizruk.md)
+> § D-3.
 
 > **Heatmap-знаменник — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1:
 > `buildHeatmapGrid` отримав опційний `denominator: "active" | "scheduled"`
