@@ -49,7 +49,14 @@ export function TransactionDayHeader({
       onClick={() => onToggle(dayKey)}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
-      className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg/95 backdrop-blur-sm border-b border-line text-style-caption text-text tracking-wide hover:bg-panelHi transition-colors"
+      className={cn(
+        "w-full flex items-center justify-between gap-2 px-3 py-2",
+        "text-style-caption text-text tracking-wide transition-colors",
+        "hover:bg-panelHi",
+        // Separator only when the day is expanded and rows follow beneath —
+        // a collapsed day is a self-contained card and needs no trailing line.
+        !collapsed && "border-b border-line/60",
+      )}
     >
       <span className="flex items-center gap-2 min-w-0">
         <svg

@@ -2,7 +2,7 @@
  * Last validated: 2026-07-20
  * Status: Active
  */
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { getCategory, getIncomeCategory } from "../utils";
 import {
   MCC_CATEGORIES,
@@ -43,6 +43,19 @@ interface TxRowProps {
     | null
     | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /**
+   * Draw the built-in bottom hairline. Defaults to `true` for the Assets
+   * pickers that stack rows directly. The transaction list (#13) sets this
+   * to `false` and paints its own inset dividers at the group-card level so
+   * the last row doesn't collide with the card's rounded bottom edge.
+   */
+  divider?: boolean | undefined;
+  /**
+   * Monotonic counter used as an external "open category picker" trigger
+   * (#7 swipe-right → quick categorize). Each increment opens the inline
+   * category picker; kept optional so the Assets pickers are unaffected.
+   */
+  catPickerRequest?: number | undefined;
 }
 
 function TxRowImpl({
@@ -58,6 +71,8 @@ function TxRowImpl({
   txSplits,
   onSplitChange,
   customCategories = [],
+  divider = true,
+  catPickerRequest,
 }: TxRowProps) {
   const [catPicker, setCatPicker] = useState(false);
   const [splitEditor, setSplitEditor] = useState(false);
@@ -68,6 +83,14 @@ function TxRowImpl({
   // звужувався до `never[]` під `noImplicitAny: false`, і будь-яка помилка
   // у shape-і елемента ловилась лише рантаймом.
   const [draftSplits, setDraftSplits] = useState<TxSplit[]>([]);
+
+  // External open-category-picker trigger (#7). We intentionally exclude the
+  // initial mount (0/undefined) so the picker only opens on an actual swipe.
+  useEffect(() => {
+    if (!catPickerRequest) return;
+    setCatPicker(true);
+    setSplitEditor(false);
+  }, [catPickerRequest]);
   const splitCategoryOptions = useMemo(() => {
     const merged = mergeExpenseCategoryDefinitions(
       customCategories as readonly unknown[],
@@ -191,7 +214,7 @@ function TxRowImpl({
   return (
     <div
       className={cn(
-        "border-b border-line last:border-0",
+        divider && "border-b border-line last:border-0",
         highlighted && "bg-primary/5 rounded-xl border-0 my-0.5",
       )}
     >

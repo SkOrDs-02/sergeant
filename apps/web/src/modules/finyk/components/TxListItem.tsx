@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
@@ -51,11 +51,24 @@ function TxListItemImpl({
     ? typeof onSwipeDeleteManual === "function"
     : !hidden && typeof onSwipeHideTx === "function";
 
+  // #7 — swipe-right quick action. Monotonic counter opens TxRow's inline
+  // category picker; manual rows jump straight to their editor instead.
+  const [catPickerRequest, setCatPickerRequest] = useState(0);
+  const canQuickCategorize =
+    !isManual && !hidden && typeof onCatChange === "function";
+  const canSwipeRight = isManual
+    ? typeof onEditManual === "function"
+    : canQuickCategorize;
+  const onSwipeRight = !canSwipeRight
+    ? undefined
+    : isManual
+      ? () => onEditManual?.(tx._manualId)
+      : () => setCatPickerRequest((n) => n + 1);
+
   return (
     <div
       className={cn(
         "px-1 sm:px-2 relative",
-        rowIndex % 2 === 1 && "bg-panelHi/25",
         selectMode && selected && "bg-primary/8",
       )}
     >
@@ -95,9 +108,16 @@ function TxListItemImpl({
                 : () => onSwipeHideTx?.(tx.id)
               : undefined
           }
-          onSwipeRight={undefined}
+          onSwipeRight={onSwipeRight}
           rightLabel={isManual ? "Видалити" : "Приховати"}
           rightColor={isManual ? "bg-danger" : "bg-warning/80"}
+          leftLabel={
+            <span className="flex items-center gap-1.5">
+              <Icon name={isManual ? "edit" : "tag"} size={18} aria-hidden />
+              {isManual ? "Редагувати" : "Категорія"}
+            </span>
+          }
+          leftColor={isManual ? "bg-primary" : "bg-finyk"}
           // Surface the swipe-affordance peek on the first row of the list
           // for first-time users only — `SwipeToAction` reads/writes a
           // single localStorage flag (`sergeant:swipe_hint_shown`) so the
@@ -124,6 +144,8 @@ function TxListItemImpl({
             txSplits={txSplits}
             onSplitChange={onSplitChange}
             customCategories={customCategories}
+            divider={false}
+            catPickerRequest={catPickerRequest}
           />
         </SwipeToAction>
       </div>
