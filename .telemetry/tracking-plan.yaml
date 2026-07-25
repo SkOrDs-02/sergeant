@@ -486,6 +486,17 @@ events:
   #
   # Вікно атрибуції N у код НЕ зашите: події несуть сирий ms_since_signal,
   # а N обирається в PostHog-запиті й переглядається заднім числом.
+  #
+  # ІНСТРУМЕНТОВАНО 2026-07-25. Єдиний писар трьох value_signal_* —
+  # apps/web/src/shared/components/ui/InsightCard.tsx (mount / activate /
+  # dismiss). НЕ додавай emit у use*Insight.ts-хуки: вони рендеряться через
+  # InsightCard, тож подія полетить двічі. `module` і `signal` виводяться
+  # з insight id через apps/web/src/shared/lib/insights/insightId.ts —
+  # явний реєстр kind-ів, longest-prefix match.
+  #
+  # `module: unknown` у enum — це НЕ покриття помилки, а видимий бакет для
+  # сигналу, якого немає в реєстрі insightId.ts. Краще одна порожня
+  # категорія на дашборді, ніж тихе розмиття знаменника відомих модулів.
   # ─────────────────────────────────────────────────────────────────────
   - {
       name: value_signal_shown,
@@ -498,7 +509,7 @@ events:
             name: module,
             type: string_enum,
             required: true,
-            values: [finyk, fizruk, routine, nutrition],
+            values: [finyk, fizruk, routine, nutrition, unknown],
           },
           {
             name: signal,
@@ -525,7 +536,7 @@ events:
             name: module,
             type: string_enum,
             required: true,
-            values: [finyk, fizruk, routine, nutrition],
+            values: [finyk, fizruk, routine, nutrition, unknown],
           },
           { name: signal, type: string, required: true },
           {
@@ -547,7 +558,7 @@ events:
             name: module,
             type: string_enum,
             required: true,
-            values: [finyk, fizruk, routine, nutrition],
+            values: [finyk, fizruk, routine, nutrition, unknown],
           },
           { name: signal, type: string, required: true },
           {

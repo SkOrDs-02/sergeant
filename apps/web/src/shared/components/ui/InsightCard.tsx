@@ -33,14 +33,57 @@
  * primary visual identity лишається AI/celebration (amber + ink-strong),
  * не module accent. Це навмисно: insight reads as "from Sergeant", not
  * "from Finyk/Fizruk/...".
+ *
+ * ## Телеметрія петель цінності (Хвиля 2)
+ *
+ * Цей компонент — ЄДИНИЙ писар подій `value_signal_*` для всіх 9
+ * продуктових сигналів у 4 модулях. НЕ додавай `trackEvent` у
+ * `use*Insight.ts`-хуки: вони віддають дані, які все одно рендеряться
+ * через `InsightCard`, тож подія полетить двічі й конверсія петлі
+ * помножиться на два на рівному місці.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { useInsightDismissal } from "@shared/lib/insights/useInsightDismissal";
+import { parseInsightId } from "@shared/lib/insights/insightId";
 import type { InsightId } from "@shared/lib/insights/types";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
+import { markSignalShown } from "../../../core/observability/valueSignalAttribution";
+
+/** Де саме рендериться картка — property `surface` контракту `value_signal_*`. */
+export type InsightSurface = "module" | "hub";
+
+/**
+ * Once-guard показу: id, для яких `value_signal_shown` уже полетів у цьому
+ * завантаженні сторінки.
+ *
+ * Навіщо. `FinykInsightsBlock` (і решта блоків) перераховують candidates на
+ * кожен рендер батька, тож `InsightCard` монтується/розмонтовується десятки
+ * разів за сесію. Без guard-а знаменник петлі («скільки разів сигнал
+ * показано») роздувся б у десятки разів, а конверсія впала б у стільки ж.
+ * Guard також гасить подвійний mount під React StrictMode.
+ *
+ * Ключ — САМЕ id, без `surface`. 8 із 9 сигналів мають `showOn: "both"`,
+ * тобто той самий сигнал рендериться і на хабі, і в модулі. Один показ на
+ * сигнал на сесію — це те, що потрібно метриці; `surface` фіксує, де його
+ * побачили ВПЕРШЕ.
+ *
+ * Scope — page-load, не акаунт і не localStorage: аудит finyk B3 уже
+ * зафіксував, що persistent-прапорці в localStorage дають хибну поведінку
+ * після очищення браузера, а PostHog дедуплікує за `distinct_id` сам.
+ */
+const shownOnce = new Set<InsightId>();
+
+/** Скидання once-guard-а між тестами. Не для продакшн-шляхів. */
+export function __resetInsightShownGuard(): void {
+  shownOnce.clear();
+}
 
 export interface InsightCardProps {
   /** Stable id for dismissal tracking (e.g. "finyk-coffee-limit-2026-05"). */
@@ -55,6 +98,12 @@ export interface InsightCardProps {
   onActivate: () => void;
   /** Called after dismissal is persisted (analytics hook). */
   onDismiss?: () => void;
+  /**
+   * Де рендериться картка. Їде у property `surface` подій `value_signal_*`.
+   * Дефолт `"module"` — усі чотири модульні блоки рендерять картку без
+   * пропа; хаб (`HubInsightsBlock`) передає `"hub"` явно.
+   */
+  surface?: InsightSurface;
   className?: string;
 }
 
@@ -65,6 +114,7 @@ export function InsightCard({
   ctaLabel = "→",
   onActivate,
   onDismiss,
+  surface = "module",
   className,
 }: InsightCardProps) {
   const { isDismissed, dismiss } = useInsightDismissal();
@@ -72,10 +122,41 @@ export function InsightCard({
   // even before the hook's localStorage write completes.
   const [hidden, setHidden] = useState(false);
 
-  if (hidden || isDismissed(id)) return null;
+  const isHidden = hidden || isDismissed(id);
+  const { module, kind } = parseInsightId(id);
 
+  // Подія показу. Стоїть ПЕРЕД раннім `return null` (Rules of Hooks), тому
+  // умову «картку реально видно» перевіряємо всередині ефекту.
+  //
+  // ПАСТКА, яку тут закрито: `useInsightDismissal` тримає dismissed-id у
+  // localStorage НАЗАВЖДИ (попри docstring вище про show-once-per-day), тож
+  // для вже відкинутої картки shown стріляти не має — інакше знаменник
+  // рахував би покази, яких користувач не бачив.
+  useEffect(() => {
+    if (isHidden) return;
+    if (shownOnce.has(id)) return;
+    shownOnce.add(id);
+    markSignalShown({ signal: kind, module });
+    trackEvent(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN, {
+      module,
+      signal: kind,
+      surface,
+    });
+  }, [id, kind, module, surface, isHidden]);
+
+  if (isHidden) return null;
+
+  // Обидві події емітяться ДО консюмерських колбеків (`onActivate` часто
+  // навігує, `onDismiss` — довільний код власника). `trackEvent` сам по собі
+  // fire-and-forget і ніколи не кидає, тож порядок нічим не ризикує, зате
+  // throw усередині колбека не з'їдає подію.
   const handleDismiss = () => {
     hapticTap();
+    trackEvent(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED, {
+      module,
+      signal: kind,
+      surface,
+    });
     dismiss(id);
     setHidden(true);
     onDismiss?.();
@@ -83,6 +164,11 @@ export function InsightCard({
 
   const handleActivate = () => {
     hapticTap();
+    trackEvent(ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED, {
+      module,
+      signal: kind,
+      surface,
+    });
     onActivate();
   };
 
