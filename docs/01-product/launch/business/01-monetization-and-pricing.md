@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI 15 повідомлень/день + cloud-sync 2 пристрої. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
@@ -397,6 +397,15 @@ Paid (Pro)
 ### 8.2 Push notification стратегія
 
 Вже є push (web + native). Потрібна **стратегія**, а не «просто відправити нотифікацію».
+
+> **Caveat — не читати цю таблицю як спеку до реалізації.** Реалізовано
+> **лише рядок 1** (нагадування за часом доби, коли звичка ще не відмічена —
+> `apps/web/src/sw/reminders.ts` `checkRoutineReminders`/`checkFizrukReminders`/
+> `checkNutritionReminders`, усі три суто часові тригери). Рядки 2-8, включно
+> зі «Streak at risk», AI weekly insight, inactivity- та payment-тригерами —
+> **пропонована cadence, не відвантажена**. Роль нагадувань (чи взагалі
+> потрібні streak/inactivity-push) чекає рішення founder-а — canon overview
+> §9, routine напруга 3 diff-звіту.
 
 **Конкретні cadence-правила:**
 
