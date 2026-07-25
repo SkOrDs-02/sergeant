@@ -9,6 +9,7 @@ import {
   formatStickyDayLabel,
   type computeDaySummary,
 } from "./transactionsLib";
+import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { messages } from "@shared/i18n/uk";
 
 export interface TransactionDayHeaderProps {
@@ -16,6 +17,12 @@ export interface TransactionDayHeaderProps {
   collapsed: boolean;
   summary: ReturnType<typeof computeDaySummary>;
   showTotal: boolean;
+  /**
+   * Blur the day total behind the #9 privacy mask. The header itself is a
+   * collapse-toggle button, so the total uses the static (non-interactive)
+   * MaskedAmount variant to avoid nesting buttons.
+   */
+  masked?: boolean;
   onToggle: (key: string) => void;
 }
 
@@ -32,6 +39,7 @@ export function TransactionDayHeader({
   collapsed,
   summary,
   showTotal,
+  masked = false,
   onToggle,
 }: TransactionDayHeaderProps) {
   const label = formatStickyDayLabel(dayKey);
@@ -76,7 +84,9 @@ export function TransactionDayHeader({
           )}
         >
           {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}
-          {fmtAmt(summary.total, CURRENCY.UAH)}
+          <MaskedAmount masked={masked} interactive={false} label="сума за день">
+            {fmtAmt(summary.total, CURRENCY.UAH)}
+          </MaskedAmount>
         </span>
       )}
     </button>
