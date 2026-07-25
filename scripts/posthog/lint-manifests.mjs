@@ -30,6 +30,30 @@ const REPO_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const SCHEMA_PATH = join(REPO_ROOT, "ops/posthog/schema/dashboard.schema.json");
 const DEFAULT_DIR = join(REPO_ROOT, "ops/posthog/dashboards");
 
+/**
+ * Колізія tag-namespace між манифестами. Повертає масив рядків-помилок і
+ * МУТУЄ `prefixes` (prefix → перший манифест, що його зайняв).
+ *
+ * Винесено з `main()` рівно тому, що інакше цей шлях неможливо протестувати:
+ * колізія виникає лише на ДРУГОМУ манифесті, а в репо сьогодні немає пари
+ * ключів, що колідують, — тобто найважливіша гілка ніколи не виконувалась би
+ * у тестах.
+ */
+export function checkTagNamespace(manifest, prefixes) {
+  if (!manifest?.key) return [];
+  const prefix = tagPrefix(manifest.key);
+  const owner = prefixes.get(prefix);
+  const errors =
+    owner && owner !== manifest.key
+      ? [
+          `tag-namespace "${prefix}:" collides with manifest "${owner}" — ` +
+            `rename one of the manifest keys (insights would share a tag prefix)`,
+        ]
+      : [];
+  prefixes.set(prefix, manifest.key);
+  return errors;
+}
+
 /** Референційні перевірки поверх схеми. Повертає масив рядків-помилок. */
 export function checkReferentialIntegrity(manifest, fileName) {
   const errors = [];
@@ -124,17 +148,7 @@ function main() {
     }
     errors.push(...checkReferentialIntegrity(manifest, file));
 
-    if (manifest.key) {
-      const prefix = tagPrefix(manifest.key);
-      const owner = prefixes.get(prefix);
-      if (owner && owner !== manifest.key) {
-        errors.push(
-          `tag-namespace "${prefix}:" collides with manifest "${owner}" — ` +
-            `rename one of the manifest keys (insights would share a tag prefix)`,
-        );
-      }
-      prefixes.set(prefix, manifest.key);
-    }
+    errors.push(...checkTagNamespace(manifest, prefixes));
 
     if (errors.length > 0) {
       failed += 1;

@@ -64,7 +64,7 @@ describe("adviceTelemetry — ai_advice_shown", () => {
     const input = {
       adviceId: "advice-1",
       source: "coach_insight" as const,
-      surface: "hub_dashboard",
+      surface: "hub_dashboard" as const,
       chars: ADVICE_TEXT.length,
     };
 

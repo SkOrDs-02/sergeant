@@ -21,6 +21,7 @@ import {
   adviceIdForScope,
   markAdviceShown,
   trackAdviceReaction,
+  type AdviceSurface,
 } from "../observability/adviceTelemetry";
 
 // `hasLiveWeeklyDigest` now lives in `@sergeant/shared` (DOM-free, reused by
@@ -266,7 +267,7 @@ interface DigestContentProps {
   /** `advice_id` цього дайджесту; `null` доки тіла звіту немає. */
   adviceId: string | null;
   /** Поверхня показу — property `surface` події `ai_advice_shown`. */
-  surface: string;
+  surface: AdviceSurface;
   /** Чи розгорнута зовнішня `CollapsibleSection` (див. `AssistantAdviceCard`). */
   sectionOpen: boolean;
 }
@@ -495,7 +496,7 @@ interface WeeklyDigestCardProps {
    * відповідає standalone-використанню у «Звітах»; хаб-дашборд передає
    * `"hub_dashboard"` явно.
    */
-  surface?: string;
+  surface?: AdviceSurface;
   /**
    * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — у «Звітах»
    * картка не загорнута в секцію.

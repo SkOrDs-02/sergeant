@@ -5,7 +5,7 @@ meta:
   product: Sergeant
   version: 1
   created: 2026-05-17
-  updated: 2026-07-25 # value_loop: +10 подій, 8 із них уже мають web-callsite-и
+  updated: 2026-07-25 # value_loop: +10 подій, усі 10 мають web-callsite-и
   owner: "@Skords-01"
   product_type: B2C
   destinations: [posthog]
@@ -474,9 +474,11 @@ events:
   #
   # Джерело: docs/90-work/planning/product-knowledge-backlog.md § Хвиля 2.
   # Стан: імена ЗАМОРОЖЕНІ в packages/shared/src/lib/analyticsEvents.valueLoops.ts
-  # і пінуються verbatim у analyticsEvents.test.ts. Callsite-ів ще НЕМАЄ —
-  # реєстрація тут навмисно випереджає інструментування, щоб наступний
-  # audit-прогін не позначив ці події як undesigned drift.
+  # і пінуються verbatim у analyticsEvents.test.ts. Реєстрація тут навмисно
+  # випередила інструментування (щоб audit-прогін не позначив ці події як
+  # undesigned drift); станом на кінець Хвилі 2 web-callsite-и мають усі 10 —
+  # див. таблиці в .telemetry/delta.md. Без callsite-ів лишились лише
+  # mobile-дзеркала.
   #
   # PII-контракт групи: НІЯКОГО вільного тексту. Тіло AI-поради, назви
   # звичок / страв, сирі insight id (несуть categoryId кастомної категорії)
@@ -638,8 +640,7 @@ events:
       category: value_loop,
       source: frontend,
       description: "Назва страви у payload НЕ передається.",
-      properties:
-        [
+      properties: [
           { name: after_signal, type: boolean, required: true },
           { name: ms_since_signal, type: integer, required: false },
           { name: signal, type: string, required: false },
@@ -661,6 +662,10 @@ events:
             type: string_enum,
             required: true,
             values: [manual, productDb, photoAI, recipeAI],
+            # camelCase тут НЕ описка й не підлягає нормалізації у snake_case:
+            # це дослівні доменні літерали `Meal.macroSource` з
+            # @sergeant/nutrition-domain (normalizeMeal). Перейменування тут
+            # розсинхронізувало б подію з полем, яке її наповнює.
             description: "Звідки макроси. Інша вісь, ніж source: фото без розпізнаних макросів = photo + manual.",
           },
           {

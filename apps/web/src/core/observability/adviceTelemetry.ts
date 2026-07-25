@@ -60,6 +60,16 @@ export type AdviceSource = "coach_insight" | "weekly_digest";
 export type AdviceReaction = "ask_ai" | "refresh" | "collapse" | "expand";
 
 /**
+ * Поверхня показу — property `surface` події `ai_advice_shown`.
+ *
+ * Літеральний union, а не `string`: контракт заморожений, і одрук у поверхні
+ * розділив би один зріз на два мовчки — дашборд показав би просто менше
+ * показів, без жодної помилки. Нову поверхню додавай СЮДИ, тоді компілятор
+ * покаже всі місця, де її треба врахувати.
+ */
+export type AdviceSurface = "hub_dashboard" | "hub_reports";
+
+/**
  * id, для яких `ai_advice_shown` уже полетів у цьому завантаженні сторінки.
  * Гасить і повторні mount/unmount карток, і подвійний mount під StrictMode.
  */
@@ -135,8 +145,8 @@ export function adviceIdForScope(scope: string): string {
 export interface AdviceShownInput {
   adviceId: string;
   source: AdviceSource;
-  /** Де саме побачили: `hub_dashboard` | `hub_reports` | … */
-  surface: string;
+  /** Де саме побачили. */
+  surface: AdviceSurface;
   /** Довжина тексту поради. САМ ТЕКСТ у payload не потрапляє ніколи. */
   chars: number;
 }

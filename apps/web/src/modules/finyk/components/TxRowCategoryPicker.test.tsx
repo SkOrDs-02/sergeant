@@ -119,6 +119,22 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
     expect(categorizedPayload()).toMatchObject({ action: "cleared" });
   });
 
+  it("повторний тап по вже застосованому override НЕ емітить події", () => {
+    // `currentCatId="food"`, override уже на «Мій репетитор» — тап по ньому ж
+    // нічого не змінює. Подія тут роздула б чисельник петлі цінності
+    // не-дією, і виправити це заднім числом було б неможливо.
+    const { onCatChange, onClose } = renderPicker({
+      overrideCatId: "custom_1755000000",
+    });
+
+    fireEvent.click(screen.getByText("Мій репетитор"));
+
+    expect(categorizedCalls()).toHaveLength(0);
+    expect(onCatChange).not.toHaveBeenCalled();
+    // Шторка все одно закривається — для користувача це валідний вихід.
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it("дописує атрибуцію показаного finyk-сигналу", () => {
     markSignalShown({ signal: "finyk-recurring-detected", module: "finyk" });
     renderPicker();
