@@ -1,9 +1,13 @@
 /**
- * UI Mockups Page — раунд 2: галереї варіантів для двох пунктів, які користувач
- * попросив пропрацювати далі (мобільний PWA).
+ * UI Mockups Page — раунд 3.
  *
- *   #13 — роздільники списку транзакцій (волосяні лінії відхилено як «голий вигляд»)
- *   #20 — морфний індикатор активної вкладки bottom-nav (ідея схвалена, треба варіанти)
+ *   #13 — роздільники списку транзакцій. Групування по днях УЖЕ реалізовано
+ *         (sticky `TransactionDayHeader`: chevron + лічильник + денний підсумок,
+ *         усе в одній зовнішній картці з зеброю). Псує саме зебра + пласка
+ *         подача. Тут — «Зараз» (реалістично) + 2 гібриди між «день-картка» (A)
+ *         і «рядок-картка» (C), які ПОКРАЩУЮТЬ наявний групувальник.
+ *   #20 — індикатор активної вкладки bottom-nav. Обрано ВАРІАНТ C
+ *         (pill навколо іконки активної вкладки + лейбл лише в активної).
  *
  * Route: /ui-mockups  (dev/internal only, не лінкується з основної навігації).
  * Лише дизайн-токени (`rgb(var(--c-*))`), без нових залежностей. Це прев'ю для
@@ -47,7 +51,7 @@ function SectionHeader({
 }
 
 /** Картка одного варіанта: «Зараз» (червона), нейтральний варіант, або
- *  рекомендований (зелена рамка). */
+ *  обраний (зелена рамка). */
 function VariantCard({
   tone,
   label,
@@ -127,7 +131,7 @@ function VariantCard({
 /* ─── Phone frame wrapper ──────────────────────────────────────────────── */
 function PhoneFrame({
   children,
-  height = 360,
+  height = 380,
 }: {
   children: React.ReactNode;
   height?: number;
@@ -189,8 +193,9 @@ const DAY_TOTAL: Record<string, string> = {
   Сьогодні: "−600 ₴",
   Вчора: "+37 426 ₴",
 };
+const DAY_COUNT: Record<string, number> = { Сьогодні: 2, Вчора: 3 };
 
-/** семантичний колір-токен на категорію (для варіанта B) */
+/** семантичний колір-токен на категорію (тонкий акцент у гібридах) */
 const CAT_COLOR: Record<string, string> = {
   Продукти: "var(--c-info)",
   Транспорт: "var(--c-warning)",
@@ -201,11 +206,11 @@ function catColor(c: string) {
   return CAT_COLOR[c] ?? "var(--c-finyk-accent)";
 }
 
-function Amount({ a }: { a: string }) {
+function Amount({ a, small }: { a: string; small?: boolean }) {
   const positive = a.startsWith("+");
   return (
     <span
-      className="text-xs font-bold tabular-nums shrink-0"
+      className={`${small ? "text-[11px]" : "text-xs"} font-bold tabular-nums shrink-0`}
       style={{
         color: positive ? "rgb(var(--c-success))" : "rgb(var(--c-text))",
         fontFamily: "var(--font-mono, monospace)",
@@ -216,208 +221,182 @@ function Amount({ a }: { a: string }) {
   );
 }
 
-/* ── #13 · Зараз: зебра ─────────────────────────────────────────────────── */
+/** Реалістичний sticky-заголовок дня (як наявний TransactionDayHeader). */
+function DayHeaderRow({
+  day,
+  filled,
+}: {
+  day: string;
+  filled?: boolean;
+}) {
+  const positive = DAY_TOTAL[day].startsWith("+");
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2.5 py-1.5"
+      style={{
+        background: filled ? "rgb(var(--c-panel-hi))" : "transparent",
+        borderBottom: filled ? "none" : "1px solid rgb(var(--c-line))",
+      }}
+    >
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        style={{ color: "rgb(var(--c-muted))" }}
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+      <span
+        className="text-[10px] font-bold uppercase tracking-wide"
+        style={{ color: "rgb(var(--c-text))" }}
+      >
+        {day}
+      </span>
+      <span
+        className="text-[10px] font-semibold tabular-nums"
+        style={{ color: "rgb(var(--c-muted))" }}
+      >
+        · {DAY_COUNT[day]}
+      </span>
+      <span
+        className="ml-auto text-[10px] font-bold tabular-nums"
+        style={{
+          color: positive ? "rgb(var(--c-success))" : "rgb(var(--c-text))",
+          fontFamily: "var(--font-mono, monospace)",
+        }}
+      >
+        {DAY_TOTAL[day]}
+      </span>
+    </div>
+  );
+}
+
+/* ── #13 · Зараз: одна картка + sticky-заголовки днів + зебра ────────────── */
 function TxNowZebra() {
   return (
     <PhoneFrame>
       <FakeHeader title="Транзакції" />
       <div className="px-3">
-        {TX.map((tx, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2.5 py-2 px-2 rounded-lg"
-            style={{
-              background:
-                i % 2 === 1 ? "rgb(var(--c-panel-hi) / 0.5)" : "transparent",
-            }}
-          >
-            <div
-              className="w-7 h-7 rounded-lg shrink-0"
-              style={{ background: "rgb(var(--c-panel-hi))" }}
-            />
-            <div className="min-w-0 flex-1">
-              <p
-                className="text-xs font-semibold truncate"
-                style={{ color: "rgb(var(--c-text))" }}
-              >
-                {tx.t}
-              </p>
-              <p
-                className="text-[10px]"
-                style={{ color: "rgb(var(--c-subtle))" }}
-              >
-                {tx.c}
-              </p>
-            </div>
-            <Amount a={tx.a} />
-          </div>
-        ))}
-      </div>
-    </PhoneFrame>
-  );
-}
-
-/* ── #13 · Варіант A: групи-картки за днями ─────────────────────────────── */
-function TxVarPanels() {
-  return (
-    <PhoneFrame>
-      <FakeHeader title="Транзакції" />
-      <div className="px-3 space-y-3">
-        {DAYS.map((day) => {
-          const rows = TX.filter((t) => t.day === day);
-          return (
-            <div key={day}>
-              <p
-                className="text-[10px] font-bold uppercase tracking-wide mb-1.5 px-1"
-                style={{ color: "rgb(var(--c-muted))" }}
-              >
-                {day}
-              </p>
-              <div
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  background: "rgb(var(--c-panel))",
-                  border: "1px solid rgb(var(--c-line))",
-                }}
-              >
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ border: "1px solid rgb(var(--c-line) / 0.4)" }}
+        >
+          {DAYS.map((day) => {
+            const rows = TX.filter((t) => t.day === day);
+            return (
+              <div key={day}>
+                <DayHeaderRow day={day} />
                 {rows.map((tx, i) => (
                   <div
                     key={i}
                     className="flex items-center gap-2.5 py-2 px-2.5"
                     style={{
-                      borderTop:
-                        i === 0
-                          ? "none"
-                          : "1px solid rgb(var(--c-line) / 0.5)",
+                      // зебра — те, що псує вигляд
+                      background:
+                        i % 2 === 1
+                          ? "rgb(var(--c-panel-hi) / 0.5)"
+                          : "transparent",
                     }}
                   >
                     <div
-                      className="w-6 h-6 rounded-lg shrink-0"
+                      className="w-7 h-7 rounded-lg shrink-0"
                       style={{ background: "rgb(var(--c-panel-hi))" }}
                     />
-                    <span
-                      className="text-xs font-semibold truncate flex-1"
-                      style={{ color: "rgb(var(--c-text))" }}
-                    >
-                      {tx.t}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-xs font-semibold truncate"
+                        style={{ color: "rgb(var(--c-text))" }}
+                      >
+                        {tx.t}
+                      </p>
+                      <p
+                        className="text-[10px]"
+                        style={{ color: "rgb(var(--c-subtle))" }}
+                      >
+                        {tx.c}
+                      </p>
+                    </div>
                     <Amount a={tx.a} />
                   </div>
                 ))}
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </PhoneFrame>
   );
 }
 
-/* ── #13 · Варіант B: inset-роздільники + кольори категорій ─────────────── */
-function TxVarInset() {
+/* ── #13 · Гібрид 1: день-панель + inset-hairlines + акцент категорії ────── */
+/*    Ближче до A: кожен день — заповнена м'яка панель-картка. Наявний
+ *    заголовок лишається всередині панелі. Рядки розділені відступленими
+ *    (inset) волосяними лініями, тонкий кольоровий акцент категорії. */
+function TxHybridInset() {
   return (
     <PhoneFrame>
       <FakeHeader title="Транзакції" />
-      <div className="px-3">
+      <div className="px-3 space-y-2.5">
         {DAYS.map((day) => {
           const rows = TX.filter((t) => t.day === day);
           return (
-            <div key={day} className="mb-1">
-              <div
-                className="inline-block rounded-full px-2 py-0.5 my-1.5 text-[9px] font-bold uppercase tracking-wide"
-                style={{
-                  background: "rgb(var(--c-panel-hi))",
-                  color: "rgb(var(--c-muted))",
-                }}
-              >
-                {day}
-              </div>
-              {rows.map((tx, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2.5 py-2"
-                  style={{
-                    borderTop:
-                      i === 0
-                        ? "none"
-                        : "1px solid rgb(var(--c-line) / 0.5)",
-                    marginLeft: i === 0 ? 0 : 34,
-                    paddingLeft: i === 0 ? 0 : 0,
-                  }}
-                >
-                  <div
-                    className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center"
-                    style={{
-                      background: `rgb(${catColor(tx.c)} / 0.16)`,
-                      marginLeft: i === 0 ? 0 : -34,
-                    }}
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: `rgb(${catColor(tx.c)})` }}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="text-xs font-semibold truncate"
-                      style={{ color: "rgb(var(--c-text))" }}
-                    >
-                      {tx.t}
-                    </p>
-                    <p
-                      className="text-[10px] font-medium"
-                      style={{ color: `rgb(${catColor(tx.c)})` }}
-                    >
-                      {tx.c}
-                    </p>
-                  </div>
-                  <Amount a={tx.a} />
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </PhoneFrame>
-  );
-}
-
-/* ── #13 · Варіант C: картки-рядки ──────────────────────────────────────── */
-function TxVarCards() {
-  return (
-    <PhoneFrame>
-      <FakeHeader title="Транзакції" />
-      <div className="px-3">
-        {DAYS.map((day) => {
-          const rows = TX.filter((t) => t.day === day);
-          return (
-            <div key={day}>
-              <p
-                className="text-[10px] font-bold uppercase tracking-wide mb-1.5 mt-1 px-1"
-                style={{ color: "rgb(var(--c-muted))" }}
-              >
-                {day}
-              </p>
-              <div className="flex flex-col gap-1.5 mb-2">
+            <div
+              key={day}
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgb(var(--c-panel))",
+                border: "1px solid rgb(var(--c-line) / 0.7)",
+                boxShadow: "var(--shadow-e1)",
+              }}
+            >
+              <DayHeaderRow day={day} filled />
+              <div className="px-1">
                 {rows.map((tx, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2.5 py-1.5 px-2.5 rounded-xl"
+                    className="flex items-center gap-2.5 py-2 pl-1.5 pr-2"
                     style={{
-                      background: "rgb(var(--c-panel-hi) / 0.6)",
-                      border: "1px solid rgb(var(--c-line) / 0.5)",
+                      // inset-лінія: починається після іконки, не «на всю»
+                      borderTop:
+                        i === 0
+                          ? "none"
+                          : "1px solid rgb(var(--c-line) / 0.55)",
+                      marginLeft: i === 0 ? 0 : 38,
+                      paddingLeft: 0,
                     }}
                   >
                     <div
-                      className="w-6 h-6 rounded-lg shrink-0"
-                      style={{ background: "rgb(var(--c-panel))" }}
-                    />
-                    <span
-                      className="text-xs font-semibold truncate flex-1"
-                      style={{ color: "rgb(var(--c-text))" }}
+                      className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center"
+                      style={{
+                        background: `rgb(${catColor(tx.c)} / 0.14)`,
+                        marginLeft: i === 0 ? 0 : -38,
+                      }}
                     >
-                      {tx.t}
-                    </span>
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: `rgb(${catColor(tx.c)})` }}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="text-xs font-semibold truncate"
+                        style={{ color: "rgb(var(--c-text))" }}
+                      >
+                        {tx.t}
+                      </p>
+                      <p
+                        className="text-[10px] font-medium"
+                        style={{ color: `rgb(${catColor(tx.c)})` }}
+                      >
+                        {tx.c}
+                      </p>
+                    </div>
                     <Amount a={tx.a} />
                   </div>
                 ))}
@@ -430,63 +409,57 @@ function TxVarCards() {
   );
 }
 
-/* ── #13 · Варіант D: заголовок дня з підсумком ─────────────────────────── */
-function TxVarDayTotal() {
+/* ── #13 · Гібрид 2: день-панель + рядки-таблетки ───────────────────────── */
+/*    Ближче до C: та сама день-панель із заголовком, але рядки — окремі
+ *    м'які «таблетки» з невеликими проміжками всередині панелі. Тактильність
+ *    C без повного відриву в окремі картки; групування дня збережене. */
+function TxHybridPills() {
   return (
     <PhoneFrame>
       <FakeHeader title="Транзакції" />
-      <div className="px-3">
+      <div className="px-3 space-y-2.5">
         {DAYS.map((day) => {
           const rows = TX.filter((t) => t.day === day);
-          const positive = DAY_TOTAL[day].startsWith("+");
           return (
-            <div key={day} className="mb-1">
-              <div
-                className="flex items-center justify-between rounded-lg px-2.5 py-1.5 my-1.5"
-                style={{ background: "rgb(var(--c-panel-hi))" }}
-              >
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wide"
-                  style={{ color: "rgb(var(--c-muted))" }}
-                >
-                  {day}
-                </span>
-                <span
-                  className="text-[11px] font-bold tabular-nums"
-                  style={{
-                    color: positive
-                      ? "rgb(var(--c-success))"
-                      : "rgb(var(--c-text))",
-                    fontFamily: "var(--font-mono, monospace)",
-                  }}
-                >
-                  {DAY_TOTAL[day]}
-                </span>
-              </div>
-              {rows.map((tx, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2.5 py-2 px-1"
-                  style={{
-                    borderTop:
-                      i === 0
-                        ? "none"
-                        : "1px solid rgb(var(--c-line) / 0.5)",
-                  }}
-                >
+            <div
+              key={day}
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgb(var(--c-panel-hi) / 0.45)",
+                border: "1px solid rgb(var(--c-line) / 0.7)",
+                boxShadow: "var(--shadow-e1)",
+              }}
+            >
+              <DayHeaderRow day={day} filled />
+              <div className="p-1.5 flex flex-col gap-1.5">
+                {rows.map((tx, i) => (
                   <div
-                    className="w-7 h-7 rounded-lg shrink-0"
-                    style={{ background: "rgb(var(--c-panel-hi))" }}
-                  />
-                  <span
-                    className="text-xs font-semibold truncate flex-1"
-                    style={{ color: "rgb(var(--c-text))" }}
+                    key={i}
+                    className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl"
+                    style={{
+                      background: "rgb(var(--c-panel))",
+                      border: "1px solid rgb(var(--c-line) / 0.4)",
+                    }}
                   >
-                    {tx.t}
-                  </span>
-                  <Amount a={tx.a} />
-                </div>
-              ))}
+                    <div
+                      className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center"
+                      style={{ background: `rgb(${catColor(tx.c)} / 0.14)` }}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: `rgb(${catColor(tx.c)})` }}
+                      />
+                    </div>
+                    <span
+                      className="text-xs font-semibold truncate flex-1"
+                      style={{ color: "rgb(var(--c-text))" }}
+                    >
+                      {tx.t}
+                    </span>
+                    <Amount a={tx.a} small />
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
@@ -558,7 +531,9 @@ function NavNowGlow() {
               onClick={() => setActive(i)}
               className="flex flex-col items-center gap-0.5 rounded-xl px-2 py-1"
               style={{
-                boxShadow: on ? `0 0 12px 2px rgb(var(--c-finyk-accent) / 0.5)` : "none",
+                boxShadow: on
+                  ? `0 0 12px 2px rgb(var(--c-finyk-accent) / 0.5)`
+                  : "none",
               }}
             >
               <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
@@ -576,102 +551,7 @@ function NavNowGlow() {
   );
 }
 
-/* ── #20 · Варіант A: ковзний pill (baseline) ───────────────────────────── */
-function NavVarPill() {
-  const [active, setActive] = useState(0);
-  const count = NAV.length;
-  return (
-    <NavShell>
-      <div
-        className="absolute bottom-0 inset-x-0 h-14"
-        style={{
-          background: "rgb(var(--c-panel))",
-          borderTop: "1px solid rgb(var(--c-line))",
-        }}
-      >
-        <div
-          className="absolute top-1.5 h-11 rounded-2xl"
-          style={{
-            width: `calc(${100 / count}% - 10px)`,
-            left: `calc(${(100 / count) * active}% + 5px)`,
-            background: "rgb(var(--c-finyk-accent) / 0.16)",
-            transition: `left 360ms ${EASE}`,
-          }}
-        />
-        <div className="relative h-14 flex items-center justify-around">
-          {NAV.map((n, i) => {
-            const on = i === active;
-            return (
-              <button
-                key={n.label}
-                onClick={() => setActive(i)}
-                className="flex flex-col items-center gap-0.5 px-2 py-1"
-              >
-                <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
-                <span
-                  className="text-[9px]"
-                  style={{ color: on ? ACCENT : "rgb(var(--c-muted))" }}
-                >
-                  {n.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </NavShell>
-  );
-}
-
-/* ── #20 · Варіант B: верхня морф-лінія ─────────────────────────────────── */
-function NavVarTopBar() {
-  const [active, setActive] = useState(0);
-  const count = NAV.length;
-  return (
-    <NavShell>
-      <div
-        className="absolute bottom-0 inset-x-0 h-14"
-        style={{
-          background: "rgb(var(--c-panel))",
-          borderTop: "1px solid rgb(var(--c-line))",
-        }}
-      >
-        {/* морфна лінія-індикатор на верхній кромці */}
-        <div
-          className="absolute -top-px h-[3px] rounded-full"
-          style={{
-            width: `calc(${100 / count}% - 24px)`,
-            left: `calc(${(100 / count) * active}% + 12px)`,
-            background: ACCENT,
-            transition: `left 340ms ${EASE}, width 340ms ${EASE}`,
-          }}
-        />
-        <div className="relative h-14 flex items-center justify-around">
-          {NAV.map((n, i) => {
-            const on = i === active;
-            return (
-              <button
-                key={n.label}
-                onClick={() => setActive(i)}
-                className="flex flex-col items-center gap-0.5 px-2 py-1"
-              >
-                <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
-                <span
-                  className="text-[9px]"
-                  style={{ color: on ? ACCENT : "rgb(var(--c-muted))" }}
-                >
-                  {n.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </NavShell>
-  );
-}
-
-/* ── #20 · Варіант C: pill навколо іконки + активний лейбл ───────────────── */
+/* ── #20 · Варіант C (ОБРАНО): pill навколо іконки + лейбл лише в активної ─ */
 function NavVarIconPill() {
   const [active, setActive] = useState(0);
   return (
@@ -696,7 +576,9 @@ function NavVarIconPill() {
                 paddingRight: on ? 12 : 8,
                 paddingTop: 6,
                 paddingBottom: 6,
-                background: on ? "rgb(var(--c-finyk-accent) / 0.16)" : "transparent",
+                background: on
+                  ? "rgb(var(--c-finyk-accent) / 0.16)"
+                  : "transparent",
                 transition: `background 260ms ${EASE}, gap 260ms ${EASE}, padding 260ms ${EASE}`,
               }}
             >
@@ -715,60 +597,6 @@ function NavVarIconPill() {
             </button>
           );
         })}
-      </div>
-    </NavShell>
-  );
-}
-
-/* ── #20 · Варіант D: ковзна крапка + підйом іконки ─────────────────────── */
-function NavVarDot() {
-  const [active, setActive] = useState(0);
-  const count = NAV.length;
-  return (
-    <NavShell>
-      <div
-        className="absolute bottom-0 inset-x-0 h-14"
-        style={{
-          background: "rgb(var(--c-panel))",
-          borderTop: "1px solid rgb(var(--c-line))",
-        }}
-      >
-        <div className="relative h-14 flex items-center justify-around">
-          {NAV.map((n, i) => {
-            const on = i === active;
-            return (
-              <button
-                key={n.label}
-                onClick={() => setActive(i)}
-                className="flex flex-col items-center gap-0.5 px-2 py-1"
-              >
-                <div
-                  style={{
-                    transition: `transform 320ms ${EASE}`,
-                    transform: on ? "translateY(-3px)" : "none",
-                  }}
-                >
-                  <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
-                </div>
-                <span
-                  className="text-[9px]"
-                  style={{ color: on ? ACCENT : "rgb(var(--c-muted))" }}
-                >
-                  {n.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {/* ковзна крапка під активною вкладкою */}
-        <div
-          className="absolute bottom-1.5 w-1.5 h-1.5 rounded-full"
-          style={{
-            left: `calc(${(100 / count) * active}% + ${100 / count / 2}% - 3px)`,
-            background: ACCENT,
-            transition: `left 320ms ${EASE}`,
-          }}
-        />
       </div>
     </NavShell>
   );
@@ -793,10 +621,10 @@ export function UiMockupsPage() {
       >
         <div className="mx-auto max-w-4xl px-4 h-14 flex items-center gap-2 flex-wrap">
           <h1 className="font-extrabold" style={{ color: "rgb(var(--c-text))" }}>
-            UI Mockups · раунд 2
+            UI Mockups · раунд 3
           </h1>
           <span className="text-xs" style={{ color: "rgb(var(--c-muted))" }}>
-            варіанти #13 і #20 · мобільний PWA · для узгодження
+            #13 гібриди · #20 обраний варіант · мобільний PWA
           </span>
         </div>
       </header>
@@ -810,9 +638,11 @@ export function UiMockupsPage() {
             boxShadow: "var(--shadow-e1)",
           }}
         >
-          Порівняй варіанти й скажи, який брати в кожному пункті (або комбінацію).
-          Мокапи навмисно спрощені — лише токени дизайн-системи, без реальних
-          даних. Пункти #9, #11, #18, #19 уже погоджені; #14 відхилено.
+          #13 — уточнення: групування по днях{" "}
+          <strong style={{ color: "rgb(var(--c-text))" }}>уже є</strong>{" "}
+          (sticky-заголовок з лічильником і денним підсумком). Псує саме зебра +
+          все в одній пласкій картці. Нижче — «Зараз» реалістично + 2 гібриди
+          між «день-картка» (A) і «рядок-картка» (C). #20 — обрано варіант C.
         </p>
 
         {/* ── #13 ─────────────────────────────────────────────────────── */}
@@ -820,43 +650,29 @@ export function UiMockupsPage() {
           <SectionHeader
             number="13"
             title="Роздільники списку транзакцій"
-            subtitle="Волосяні лінії виглядали «голо». Ось 4 варіанти з більшою структурою."
+            subtitle="Покращуємо наявний групувальник по днях. Гібрид між A і C."
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <VariantCard
               tone="now"
-              label="Зараз · зебра"
-              note="Смугастий фон шумить, немає групування за днями, суперечить мові «Папір»."
+              label="Зараз · одна картка + зебра"
+              note="Групування по днях уже є (заголовок з лічильником + підсумок). Але зебра-фон шумить, а всі дні злиті в одну пласку картку без повітря."
             >
               <TxNowZebra />
             </VariantCard>
             <VariantCard
               tone="option"
-              label="Варіант A · групи-картки за днями"
-              note="Кожен день — окрема картка-панель. Заповнена поверхня прибирає відчуття порожнечі; знайомий патерн Wallet/Monobank."
+              label="Гібрид 1 · день-панель + inset-лінії"
+              note="Ближче до A: кожен день — заповнена м'яка панель із наявним заголовком. Рядки розділені відступленими волосяними лініями + тонкий кольоровий акцент категорії. Повітря між днями."
             >
-              <TxVarPanels />
+              <TxHybridInset />
             </VariantCard>
             <VariantCard
               tone="option"
-              label="Варіант B · inset-лінії + кольори категорій"
-              note="Роздільники з відступом під текст + кольоровий токен на категорію. Колір і ритм заповнюють «голизну», лишаючись пласким списком."
+              label="Гібрид 2 · день-панель + рядки-таблетки"
+              note="Ближче до C: та сама день-панель, але рядки — окремі м'які таблетки з проміжками. Тактильність C без повного відриву; групування дня збережене."
             >
-              <TxVarInset />
-            </VariantCard>
-            <VariantCard
-              tone="option"
-              label="Варіант C · картки-рядки"
-              note="Кожна транзакція — окрема м'яка картка з відступами. Найтактильніше, без ліній, але список стає вищим."
-            >
-              <TxVarCards />
-            </VariantCard>
-            <VariantCard
-              tone="option"
-              label="Варіант D · заголовок дня з підсумком"
-              note="Заголовок дня — заповнена смуга з денним нетто справа. Додає ваги й корисної інформації + волосяні лінії."
-            >
-              <TxVarDayTotal />
+              <TxHybridPills />
             </VariantCard>
           </div>
         </section>
@@ -866,7 +682,7 @@ export function UiMockupsPage() {
           <SectionHeader
             number="20"
             title="Індикатор активної вкладки bottom-nav"
-            subtitle="Ідею схвалено. 4 варіанти індикатора — тапай вкладки, щоб побачити рух."
+            subtitle="Обрано варіант C. Тапай вкладки, щоб побачити рух pill + лейбла."
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <VariantCard
@@ -878,36 +694,12 @@ export function UiMockupsPage() {
               <NavNowGlow />
             </VariantCard>
             <VariantCard
-              tone="option"
-              label="Варіант A · ковзний pill"
+              tone="pick"
+              label="Варіант C · ОБРАНО"
               hint="тапни вкладку"
-              note="Заповнений squircle перетікає під активну вкладку. Найпомітніший, «важкий» акцент."
-            >
-              <NavVarPill />
-            </VariantCard>
-            <VariantCard
-              tone="option"
-              label="Варіант B · верхня морф-лінія"
-              hint="тапни вкладку"
-              note="Тонка лінія на верхній кромці ковзає й морфить ширину (Material-стиль). Мінімалістично й легко."
-            >
-              <NavVarTopBar />
-            </VariantCard>
-            <VariantCard
-              tone="option"
-              label="Варіант C · pill навколо іконки + лейбл"
-              hint="тапни вкладку"
-              note="Лейбли лише в активної вкладки, pill обгортає іконку+текст. Ощадливо за місцем, сучасний iOS-стиль."
+              note="Pill обгортає іконку активної вкладки, лейбл показується лише в неї (неактивні — самі іконки). Ощадливо за місцем, чіткий фокус, сучасний iOS-стиль."
             >
               <NavVarIconPill />
-            </VariantCard>
-            <VariantCard
-              tone="option"
-              label="Варіант D · ковзна крапка + підйом іконки"
-              hint="тапни вкладку"
-              note="Маленька крапка ковзає під активною вкладкою, іконка трохи піднімається. Найтонший, найелегантніший акцент."
-            >
-              <NavVarDot />
             </VariantCard>
           </div>
         </section>
