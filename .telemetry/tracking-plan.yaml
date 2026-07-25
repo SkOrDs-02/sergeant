@@ -5,7 +5,7 @@ meta:
   product: Sergeant
   version: 1
   created: 2026-05-17
-  updated: 2026-07-25 # +10 подій групи value_loop (Хвиля 2, registry-only)
+  updated: 2026-07-25 # value_loop: +10 подій, 8 із них уже мають web-callsite-и
   owner: "@Skords-01"
   product_type: B2C
   destinations: [posthog]
@@ -599,6 +599,13 @@ events:
           { name: streak_days_at_checkin, type: integer, required: false },
           { name: ms_since_streak_shown, type: integer, required: false },
           {
+            name: day_key,
+            type: date,
+            required: true,
+            format: YYYY-MM-DD,
+            description: "День ПРИСТРОЮ (ADR-0078), не UTC — це той самий ключ, яким домен адресує відмітку.",
+          },
+          {
             name: scope,
             type: string_enum,
             required: true,
@@ -610,11 +617,20 @@ events:
       name: fizruk_workout_finished,
       category: value_loop,
       source: frontend,
+      description: "Назв вправ і нотаток у payload НЕ передається — лише counts.",
       properties:
         [
           { name: after_signal, type: boolean, required: true },
           { name: ms_since_signal, type: integer, required: false },
           { name: signal, type: string, required: false },
+          { name: items, type: integer, required: true },
+          {
+            name: has_sets,
+            type: boolean,
+            required: true,
+            description: "Хоч одна силова вправа має записані підходи.",
+          },
+          { name: duration_min, type: integer, required: false },
         ],
     }
   - {
@@ -627,18 +643,57 @@ events:
           { name: after_signal, type: boolean, required: true },
           { name: ms_since_signal, type: integer, required: false },
           { name: signal, type: string, required: false },
+          {
+            name: meal_type,
+            type: string_enum,
+            required: true,
+            values: [breakfast, lunch, dinner, snack, unknown],
+          },
+          {
+            name: source,
+            type: string_enum,
+            required: true,
+            values: [manual, photo],
+            description: "Як їжа потрапила в лог.",
+          },
+          {
+            name: macro_source,
+            type: string_enum,
+            required: true,
+            values: [manual, productDb, photoAI, recipeAI],
+            description: "Звідки макроси. Інша вісь, ніж source: фото без розпізнаних макросів = photo + manual.",
+          },
+          {
+            name: has_macros,
+            type: boolean,
+            required: true,
+            description: "Чи передано обʼєкт макросів. НЕ означає, що всі поля заповнені: normalizeMacros може віддати обʼєкт із null-ами.",
+          },
         ],
     }
   - {
       name: finyk_tx_categorized,
       category: value_loop,
       source: frontend,
-      description: "Єдина відсутня дія finyk; expense_added / budget_set переюзуються як є.",
+      description: "Єдина відсутня дія finyk; expense_added / budget_set переюзуються як є (до них лише дописані поля атрибуції).",
       properties:
         [
           { name: after_signal, type: boolean, required: true },
           { name: ms_since_signal, type: integer, required: false },
           { name: signal, type: string, required: false },
+          {
+            name: action,
+            type: string_enum,
+            required: true,
+            values: [set, cleared],
+          },
+          {
+            name: category_kind,
+            type: string_enum,
+            required: false,
+            values: [builtin, custom],
+            description: "Enum-ознака, а НЕ categoryId і не назва: id кастомної категорії створює користувач (high-cardinality + potential PII).",
+          },
         ],
     }
 

@@ -6,11 +6,51 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
+import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
 interface CategoryOption {
   id: string;
   label: string;
+}
+
+/**
+ * Id вбудованих категорій. Кастомні — усе, чого тут немає
+ * (`mergeExpenseCategoryDefinitions` домішує їх до MCC-списку).
+ */
+const BUILTIN_CATEGORY_IDS: ReadonlySet<string> = new Set([
+  ...MCC_CATEGORIES.map((c) => c.id),
+  ...INCOME_CATEGORIES.map((c) => c.id),
+]);
+
+/**
+ * Подія «дію зроблено» для finyk (Хвиля 2, `finyk_tx_categorized`).
+ *
+ * У payload — ЛИШЕ enum-ознака категорії, а не `categoryId` і не назва:
+ * id кастомної категорії створює користувач, тож і high-cardinality
+ * property в PostHog, і potential PII (Hard Rule #21 — `scrubPII` чистить
+ * за іменами ключів і значення всередині `category_kind` не врятував би).
+ *
+ * `expense_added` / `income_added` / `budget_set` НЕ дублюються сюди —
+ * вони вже емітяться зі своїх write-шляхів; категоризація була єдиною
+ * відсутньою дією модуля.
+ */
+function trackTxCategorized(nextCatId: string | null): void {
+  trackEvent(ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED, {
+    action: nextCatId === null ? "cleared" : "set",
+    category_kind:
+      nextCatId === null
+        ? null
+        : BUILTIN_CATEGORY_IDS.has(nextCatId)
+          ? "builtin"
+          : "custom",
+    ...readSignalContext("finyk"),
+  });
 }
 
 interface TxRowCategoryPickerProps {
@@ -36,10 +76,10 @@ export function TxRowCategoryPicker({
         <button
           key={c.id}
           onClick={() => {
-            onCatChange?.(
-              txId,
-              c.id === currentCatId && overrideCatId ? null : c.id,
-            );
+            const nextCatId =
+              c.id === currentCatId && overrideCatId ? null : c.id;
+            onCatChange?.(txId, nextCatId);
+            trackTxCategorized(nextCatId);
             onClose();
           }}
           className={cn(
@@ -56,6 +96,7 @@ export function TxRowCategoryPicker({
         <button
           onClick={() => {
             onCatChange?.(txId, null);
+            trackTxCategorized(null);
             onClose();
           }}
           className="text-xs px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong/60 dark:text-danger/60 hover:text-danger transition-colors"

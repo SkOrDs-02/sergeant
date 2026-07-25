@@ -2,11 +2,17 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
+import { useEffect } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { StreakFlame } from "@shared/components/ui/StreakFlame";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
 import { DayProgressRing } from "./DayProgressRing";
 import { useStreakFlame } from "../hooks/useStreakFlame";
+import { claimStreakShownOnce, markStreakSeen } from "../lib/streakExposure";
 
 export interface RoutineCalendarHeroProps {
   rangeLabel: string;
@@ -44,6 +50,31 @@ export function RoutineCalendarHero({
       ? `${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} виконано`
       : "Звичок на сьогодні ще немає";
   const flame = useStreakFlame(currentStreak);
+
+  // Експозиція стріку (Хвиля 2, `routine_streak_shown`).
+  //
+  // ЛЕДЖЕР оновлюється на кожній зміні видимості/лічильника — він відповідає
+  // на питання «коли полум'я востаннє було на екрані». ПОДІЯ ж емітиться
+  // рівно раз на (день пристрою, поверхню): цей екран ре-рендериться на
+  // КОЖЕН toggle звички, і наївний emit роздув би знаменник у десятки разів,
+  // обваливши conversion checkin/shown у нуль на рівному місці.
+  //
+  // ПОПЕРЕДЖЕННЯ ПРО ВИСНОВОК: `flame.visible === (streakDays > 0)`
+  // (`useStreakFlame`), а полум'я живе на тому ж екрані, що й чекбокси. Тому
+  // зріз «бачив полум'я vs ні» — це порівняння когорт «стрік > 0» і
+  // «стрік = 0», а НЕ тест стимулу. Чесну варіацію дає лише
+  // streak-record-карточка (вона їде як `value_signal_shown`,
+  // `surface: "module"`). Не агрегувати обидві поверхні в один булеан.
+  useEffect(() => {
+    if (!flame.visible) return;
+    markStreakSeen({ surface: "hero_flame", streakDays: flame.count });
+    if (!claimStreakShownOnce("hero_flame")) return;
+    trackEvent(ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN, {
+      surface: "hero_flame",
+      streak_days: flame.count,
+      scope: "max_across_habits",
+    });
+  }, [flame.visible, flame.count]);
 
   return (
     <Card

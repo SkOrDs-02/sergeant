@@ -42,6 +42,12 @@ import {
   ROUTINE_EVENT,
   ROUTINE_STORAGE_ERROR,
 } from "./lib/routineStorage";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../core/observability/analytics";
+import { readSignalContext } from "../../core/observability/valueSignalAttribution";
+import { readStreakExposure } from "./lib/streakExposure";
 import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
@@ -79,8 +85,7 @@ export interface UseRoutineAppStateParams {
   pwaAction?: string | null | undefined;
   onPwaActionConsumed?: (() => void) | undefined;
   onOpenModule?:
-    | ((moduleId: string, opts?: { hash?: string }) => void)
-    | undefined;
+    ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
 }
 
 export interface RoutineAppStateBundle {
@@ -331,13 +336,41 @@ export function useRoutineAppState({
       // re-entrant `ROUTINE_EVENT` listeners (e.g. `PushupsWidget`) then
       // `setState` mid-render → "Cannot update a component while rendering
       // a different component". Persisting in the handler keeps updaters pure.
+      //
+      // Телеметрія (Хвиля 2, `routine_habit_checked`): результат тогла
+      // збирається В transition-колбеку, а `trackEvent` викликається ПІСЛЯ
+      // нього. Причини рівно дві:
+      //   1) `startTransition` виконує колбек синхронно, тож до моменту
+      //      емісії `outcome` уже заповнений — зайвого стану не треба;
+      //   2) сам `trackEvent` лишається поза transition-скоупом, щоб не
+      //      з'їхати в render-фазу (та сама межа, що описана вище).
+      const outcome = { changed: false, done: false };
       startHabitTransition(() => {
-        const next = toggleHabitCompletion(
-          loadRoutineState(),
-          habitId,
-          dateKey,
-        );
+        const prev = loadRoutineState();
+        const next = toggleHabitCompletion(prev, habitId, dateKey);
+        if (next !== prev) {
+          outcome.changed = true;
+          outcome.done = (next.completions[habitId] ?? []).includes(dateKey);
+        }
         setRoutine(next);
+      });
+      // Тап по звичці, яка не запланована на цей день, — no-op домену
+      // (`applyToggleHabitCompletion` віддає той самий state). Подія має
+      // означати реальну зміну відмітки, інакше знаменник петлі рахує
+      // натискання, а не чекіни.
+      if (!outcome.changed) return;
+      trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
+        state: outcome.done ? "done" : "undone",
+        source: "ui",
+        // День ПРИСТРОЮ (ADR-0078): `dateKey` — це той самий ключ, яким
+        // домен адресує відмітку, тобто вже device-local, ніякого UTC.
+        day_key: dateKey,
+        // Показаний стрік — `derived.streakMax`, максимум по ВСІХ звичках,
+        // а чекін per-habit. Без цього поля аналіз збрехав би, нібито
+        // стрік належить саме відміченій звичці.
+        scope: "max_across_habits",
+        ...readStreakExposure(),
+        ...readSignalContext("routine"),
       });
     },
     [setRoutine, startHabitTransition],
@@ -349,9 +382,27 @@ export function useRoutineAppState({
     // Eager compute + persist outside the updater — see `onToggleHabit`
     // for why `markAllScheduledHabitsComplete` (which persists + emits
     // `ROUTINE_EVENT`) must not run as a render-phase state-updater.
-    const next = markAllScheduledHabitsComplete(loadRoutineState(), dk);
+    const prev = loadRoutineState();
+    const next = markAllScheduledHabitsComplete(prev, dk);
     setRoutine(next);
     hapticSuccess();
+    if (next === prev) return;
+    // Масова відмітка — це «закрити день одним тапом», а не мотивований
+    // чекін. Подія та сама (інакше знаменник роз'їхався б по двох іменах),
+    // але `source: "bulk"` дозволяє виключити її зі знаменника петлі на
+    // боці дашборда. Стрік-поля свідомо null: приписати експозицію полум'я
+    // одному тапу по «відмітити все» означало б рахувати N чекінів як
+    // мотивовані одним показом.
+    trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
+      state: "done",
+      source: "bulk",
+      day_key: dk,
+      scope: "max_across_habits",
+      saw_streak_surface: null,
+      streak_days_at_checkin: null,
+      ms_since_streak_shown: null,
+      ...readSignalContext("routine"),
+    });
   }, [derived.range.startKey, derived.range.endKey, setRoutine]);
 
   // Routine is local-first (localStorage) and the visible state is

@@ -248,14 +248,14 @@
 Одна зв'язана поставка на готовій PostHog-інфрі. Розблоковує: перевірку
 стріків, цінність AI-порад, ієрархію модулів, kill-критерії, unit-економіку.
 
-| Задача                                                                                | Модуль    | Тип  | Насл. | Джерело                         | Стан                                                                                                                               |
-| ------------------------------------------------------------------------------------- | --------- | ---- | ----- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| ~10-15 подій «сигнал показано → дію зроблено» (по 2-3 на модуль) у `ANALYTICS_EVENTS` | крос      | code | крит  | брейншторм 1.3 · B1 усіх звітів | стадії 1+3: `value_signal_*` емітяться з `InsightCard` (9 сигналів, 4 модулі) + леджер атрибуції; «дію зроблено» (стадія 2) — далі |
-| Події AI-поради: показ + реакція (порада→дія протягом N)                              | hub-coach | code | крит  | брейншторм 2.2 · hub-coach H1   | стадія 1 (реєстр) + реєстрація в `.telemetry`; adviceId/UI — далі                                                                  |
-| Стрік-зрізи в подіях (чекін після показу стріку vs без) — тест карго-культу           | routine   | code | агент | брейншторм 4.3 · routine B3     | стадія 1 (реєстр): зріз у payload `routine_habit_checked`; ledger — далі                                                           |
-| PostHog-дашборд петель цінності                                                       | крос      | ops  | недок | брейншторм 1.3                  |                                                                                                                                    |
+| Задача                                                                                | Модуль    | Тип  | Насл. | Джерело                         | Стан                                                                                                                  |
+| ------------------------------------------------------------------------------------- | --------- | ---- | ----- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| ~10-15 подій «сигнал показано → дію зроблено» (по 2-3 на модуль) у `ANALYTICS_EVENTS` | крос      | code | крит  | брейншторм 1.3 · B1 усіх звітів | стадії 1-4 (web): `value_signal_*` + 4 події «дію зроблено» емітяться; лишились AI-порада і mobile-паритет (стадія 5) |
+| Події AI-поради: показ + реакція (порада→дія протягом N)                              | hub-coach | code | крит  | брейншторм 2.2 · hub-coach H1   | стадія 1 (реєстр) + реєстрація в `.telemetry`; adviceId/UI — далі                                                     |
+| Стрік-зрізи в подіях (чекін після показу стріку vs без) — тест карго-культу           | routine   | code | агент | брейншторм 4.3 · routine B3     | стадія 1 (web): `routine_streak_shown{hero_flame}` + стрік-поля в чекіні; mobile (2) і дашборд (3) — далі             |
+| PostHog-дашборд петель цінності                                                       | крос      | ops  | недок | брейншторм 1.3                  |                                                                                                                       |
 
-> **Хвиля 2 — стан.** У репо лежить **тільки іменний контракт**: 10 констант групи
+> **Хвиля 2 — стан.** Фундамент — **іменний контракт**: 10 констант групи
 > `value_loop` у [`packages/shared/src/lib/analyticsEvents.valueLoops.ts`](../../../packages/shared/src/lib/analyticsEvents.valueLoops.ts)
 > (спредяться у `ANALYTICS_EVENTS`, доступ незмінний), verbatim-піни в
 > `analyticsEvents.test.ts` і реєстрація в
@@ -273,9 +273,34 @@
 > з id через [`insightId.ts`](../../../apps/web/src/shared/lib/insights/insightId.ts)
 > (явний реєстр kind-ів + longest-prefix, а не «зріж останній сегмент»), леджер
 > атрибуції — [`valueSignalAttribution.ts`](../../../apps/web/src/core/observability/valueSignalAttribution.ts).
-> Друга половина петлі (`routine_habit_checked` і три сусіди) callsite-ів ще не
-> має, тож твердження «телеметрії петлі немає» лишається правдою для «дію
-> зроблено», але вже НЕ для «сигнал показано».
+> **Оновлено 2026-07-25 (пізніше того ж дня) — друга половина петлі.**
+> Чотири події «дію зроблено» тепер мають web-callsite-и:
+> `routine_habit_checked` ([`useRoutineAppState.ts`](../../../apps/web/src/modules/routine/useRoutineAppState.ts):
+> `onToggleHabit` → `source: "ui"`, `onBulkMarkDay` → `source: "bulk"`),
+> `fizruk_workout_finished` ([`WorkoutJournalSection.tsx`](../../../apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx)),
+> `nutrition_meal_logged` ([`useNutritionLog.ts`](../../../apps/web/src/modules/nutrition/hooks/useNutritionLog.ts)),
+> `finyk_tx_categorized` ([`TxRowCategoryPicker.tsx`](../../../apps/web/src/modules/finyk/components/TxRowCategoryPicker.tsx)).
+> Плюс `routine_streak_shown{surface: "hero_flame"}` з
+> [`RoutineCalendarHero.tsx`](../../../apps/web/src/modules/routine/components/RoutineCalendarHero.tsx)
+> і леджер [`streakExposure.ts`](../../../apps/web/src/modules/routine/lib/streakExposure.ts).
+> Наявні `expense_added` / `income_added` / `budget_set` переюзані як є — до них
+> лише дописані поля атрибуції, без ренейму й без дублювання.
+> `routine_habit_checked` емітиться ЛИШЕ коли відмітка реально змінилась: тап по
+> незапланованій звичці — no-op домену, а не чекін.
+> `diff.ts` / журнал `routine_completion_events` НЕ чіпані: UI-контекст показу —
+> це аналітика, а не факт домену, і в append-only журналі даних користувача йому
+> не місце. Міграцій хвиля не споживає; **088 лишається вільним**.
+> Твердження «телеметрії петлі немає» більше не правда для web; лишаються
+> AI-порада (`ai_advice_*` без callsite-ів) і `apps/mobile` (нуль подій).
+>
+> ⚠️ **Зріз `hero_flame` — вироджений, і це записано в канон.**
+> `flame.visible === (streakDays > 0)` ([`useStreakFlame.ts`](../../../apps/web/src/modules/routine/hooks/useStreakFlame.ts)),
+> а полумʼя живе на тому ж екрані, що й чекбокси. Тому «бачив полумʼя vs ні» —
+> це порівняння когорт «стрік > 0» і «стрік = 0», а НЕ тест стимулу; він
+> виглядатиме як підтвердження «стріки мотивують» і буде артефактом. Єдина
+> поверхня з чесною варіацією — streak-record-карточка (їде як
+> `value_signal_shown`). Ніколи не агрегувати обидві поверхні в один булеан.
+> Правила знаменника — [`posthog-founder-pulse.md § 8`](../../03-operations/observability/posthog-founder-pulse.md).
 >
 > **Два обмеження знаменника — прийняті свідомо, не баг.**
 > (1) Ретроактивного backfill не існує: PostHog не знає, які сигнали
