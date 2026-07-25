@@ -1,7 +1,10 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { resetVisualKeyboardInsetAdapter } from "@sergeant/shared";
+import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
 import { RoutineBottomNav } from "./RoutineBottomNav";
 
 describe("RoutineBottomNav", () => {
@@ -37,7 +40,7 @@ describe("RoutineBottomNav", () => {
   });
 
   it("hides the nav while the keyboard is open (spec § design decision 2)", () => {
-    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    setVisualKeyboardInsetAdapter((active: boolean) => (active ? 320 : 0));
     render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
 
     // aria-hidden removes the nav from the accessibility tree so getByRole
