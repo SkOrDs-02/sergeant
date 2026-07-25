@@ -3,12 +3,12 @@
   "version": 1,
   "generated_at": "2026-07-25",
   "counts": {
-    "adr": 72,
+    "adr": 73,
     "audit": 14,
     "hard-rule": 26,
     "initiative": 6,
     "playbook": 60,
-    "pr": 147,
+    "pr": 148,
     "skill": 23
   },
   "nodes": [
@@ -816,6 +816,17 @@
       "tier": "core",
       "meta": {
         "number": 75
+      }
+    },
+    {
+      "id": "adr:0076",
+      "type": "adr",
+      "title": "ADR-0076: «Готівка на руках» як окрема сутність finyk",
+      "path": "docs/04-governance/adr/0076-cash-on-hand-entity.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 76
       }
     },
     {
@@ -3066,6 +3077,16 @@
       }
     },
     {
+      "id": "pr:446",
+      "type": "pr",
+      "title": "PR #446",
+      "tier": "extended",
+      "meta": {
+        "number": 446,
+        "url": "https://github.com/Skords-01/Sergeant/pull/446"
+      }
+    },
+    {
       "id": "pr:447",
       "type": "pr",
       "title": "PR #447",
@@ -4221,6 +4242,11 @@
       "from": "adr:0075",
       "to": "hard-rule:4",
       "type": "references"
+    },
+    {
+      "from": "adr:0076",
+      "to": "pr:446",
+      "type": "touched-by"
     },
     {
       "from": "audit:2026-07-21-design-audit",
