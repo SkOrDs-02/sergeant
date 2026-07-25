@@ -504,7 +504,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       name: "Multi-currency assets",
       title: "Multi-currency — Premium",
       description:
-        "Hold assets in USD, EUR, BTC and auto-convert to UAH — Premium only.",
+        "Hold assets in USD or EUR. I show them separately for now — I don't fold them into your UAH net worth.",
     },
     "analytics-export-pdf": {
       name: "PDF export",
@@ -610,7 +610,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       activeHabits: "Active habits",
       habits: "Habits",
       pdfExport: "PDF report export",
-      multiCurrency: "Multi-currency accounts",
+      multiCurrency: "Foreign-currency assets",
       monoAutoSync: "Monobank auto-sync",
       cloudSync: "Cross-device CloudSync",
     },

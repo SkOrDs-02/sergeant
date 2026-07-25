@@ -765,7 +765,7 @@ export const messages = {
       name: "Кілька валют",
       title: "Мульти-валюта — у Premium",
       description:
-        "Активи у USD, EUR, BTC і конвертація в гривню — тільки на Premium плані.",
+        "Зберігай активи в USD чи EUR. Поки що показую їх окремо — у загальний капітал у гривні не зводжу.",
     },
     "analytics-export-pdf": {
       name: "Експорт PDF",
@@ -873,7 +873,7 @@ export const messages = {
       activeHabits: "Активні звички",
       habits: "Звички",
       pdfExport: "PDF-експорт звітів",
-      multiCurrency: "Мульти-валютні рахунки",
+      multiCurrency: "Активи в іноземній валюті",
       monoAutoSync: "Авто-синхронізація з Monobank",
       cloudSync: "CloudSync між пристроями",
     },
