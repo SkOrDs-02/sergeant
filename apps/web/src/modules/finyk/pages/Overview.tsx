@@ -23,6 +23,7 @@ import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { getOnboardingGoals } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
+import { LocalOnlyDataBanner } from "../../../core/durability/LocalOnlyDataBanner";
 import { useMonoStaleness } from "./overview/useMonoStaleness";
 
 type StorageLike = ReturnType<typeof useStorage>;
@@ -103,6 +104,13 @@ export function Overview({
                 loading={d.loadingTx}
               />
             )}
+
+            {/* Канон §6.2 — durability. Банер сам вирішує, чи показуватись:
+                лише коли поточний id несинхронізований (той самий предикат,
+                що вимикає запис у outbox). Ставимо ВИЩЕ staleness-банера:
+                «твої дані можуть зникнути назавжди» важливіше за «дані
+                банку не оновлювались N днів». */}
+            <LocalOnlyDataBanner onSignIn={() => onNavigate?.("settings")} />
 
             {monoStaleness.stale && monoStaleness.days !== null && (
               <MonoStalenessBanner
