@@ -2,7 +2,13 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useState, useCallback, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";
@@ -30,6 +36,20 @@ export interface CollapsibleSectionProps {
    * or a one-line CTA ("AI-порада оновлена", "3 інсайти").
    */
   collapsedSubtitle?: ReactNode;
+  /**
+   * Викликається з поточним станом розгорнутості — на монтуванні (значення з
+   * localStorage / `defaultOpen`) і після кожного перемикання.
+   *
+   * Навіщо. Секція тримає дітей у DOM навіть згорнутою
+   * (`grid-rows-[0fr] overflow-hidden`), тож «змонтовано» ≠ «видно». Дітям,
+   * які емітять impression-телеметрію (`AssistantAdviceCard`,
+   * `WeeklyDigestCard`), потрібен реальний стан видимості — інакше показ
+   * зарахується для згорнутої секції і знаменник роздується.
+   *
+   * Передавай СТАБІЛЬНИЙ колбек (наприклад setter із `useState`): інлайн-
+   * лямбда змінює identity щорендеру і ефект перевикликатиметься дарма.
+   */
+  onOpenChange?: (open: boolean) => void;
   children?: ReactNode;
   className?: string;
 }
@@ -57,6 +77,7 @@ export function CollapsibleSection({
   headingSize = "xs",
   collapsedIcon,
   collapsedSubtitle,
+  onOpenChange,
   children,
   className,
 }: CollapsibleSectionProps) {
@@ -64,6 +85,10 @@ export function CollapsibleSection({
     () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
   );
   const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {

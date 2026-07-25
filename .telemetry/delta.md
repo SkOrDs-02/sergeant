@@ -36,7 +36,26 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 | `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                                                                   |
 | `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`                                                             |
 
-Без callsite-ів лишились дві події AI-поради (`ai_advice_*`). Домені поля
+**Оновлено 2026-07-25 (той самий день) — AI-порада.** `ai_advice_shown` /
+`ai_advice_reacted` отримали web-callsite-и. Єдиний писар —
+[`adviceTelemetry.ts`](../apps/web/src/core/observability/adviceTelemetry.ts);
+двоє клієнтів: `AssistantAdviceCard` (`source: "coach_insight"`) і
+`WeeklyDigestCard` (`source: "weekly_digest"`). Показ емітиться ЛИШЕ за
+фактичної видимості тексту: картка живе у подвійному collapse (секція
+«Інсайти» + власне згортання), тож `CollapsibleSection` отримав additive-проп
+`onOpenChange`. Impression на mount роздув би знаменник у рази — назавжди.
+Реакції зняті з ТРЬОХ наявних афордансів (`ask_ai` / `refresh` /
+`collapse`+`expand`); нових кнопок не додано, тобто це проксі згоди, а не
+дослівний лайк-дизлайк §ж.1 канону.
+
+`advice_id` — випадковий uuid у `useCoachInsight` (кеш
+`hub_coach_insight_cache_v1`: `{date, text}` → `{date, text, adviceId}`,
+legacy-записи читаються без падіння). **Він клієнтський**: та сама денна порада
+у вебі й на телефоні дасть два різні id — придатно для «побачив → зреагував»,
+непридатно для підрахунку УНІКАЛЬНИХ порад. `instrumentation_version` у payload
+дозволяє відрізати когорту зі старим бандлом (PWA service-worker).
+
+Без callsite-ів лишилися mobile-дзеркала (`apps/mobile` — нуль подій). Домені поля
 чотирьох action-подій дописані в `tracking-plan.yaml` у тому ж патчі
 (`day_key`, `items` / `has_sets` / `duration_min`, `meal_type` / `source` /
 `macro_source` / `has_macros`, `action` / `category_kind`) — у payload лише

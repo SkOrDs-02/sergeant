@@ -167,6 +167,8 @@ export interface HubDashboardState {
   dismiss: ReturnType<typeof useDashboardFocus>["dismiss"];
   openInsightTarget: (module: string, hash?: string) => void;
   coachInsightText: string | null;
+  /** `advice_id` поточної AI-поради (телеметрія `ai_advice_*`, Хвиля 2). */
+  coachAdviceId: string | null;
   coachLoading: boolean;
   coachError: string | null;
   coachRefresh: () => void;
@@ -287,6 +289,9 @@ export function useHubDashboardState(props: {
 
   const {
     insight: coachInsightText,
+    // `advice_id` поточної AI-поради — лише прокидається в UI для телеметрії
+    // `ai_advice_*`; жодне продуктове рішення від нього не залежить.
+    adviceId: coachAdviceId,
     loading: coachLoading,
     error: coachError,
     refresh: coachRefresh,
@@ -428,11 +433,7 @@ export function useHubDashboardState(props: {
   const showDigestFooter = true;
 
   const primaryModule = activeModules[0] as
-    | "finyk"
-    | "fizruk"
-    | "routine"
-    | "nutrition"
-    | undefined;
+    "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
   const showChecklist =
     primaryModule &&
     hasRealEntry &&
@@ -491,6 +492,7 @@ export function useHubDashboardState(props: {
     dismiss,
     openInsightTarget,
     coachInsightText,
+    coachAdviceId,
     coachLoading,
     coachError,
     coachRefresh,
