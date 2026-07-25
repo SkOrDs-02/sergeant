@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { useEffect, useRef } from "react";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
@@ -13,6 +14,7 @@ import { useHubDashboardState } from "./useHubDashboardState";
 import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
 import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
+import { useScrollParallax } from "@shared/hooks/useScrollParallax";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
@@ -27,6 +29,35 @@ export function HubDashboard({
   onShowAuth,
 }: HubDashboardProps) {
   const s = useHubDashboardState({ onOpenModule, user, onShowAuth });
+
+  // #19 — Scroll-parallax hero. We discover the nearest scrollable ancestor
+  // by traversing from a sentinel ref rather than prop-drilling the scroll
+  // container ref through three layers. The sentinel mounts inside the
+  // scrollable `HubMainContent` overflow container, so its `offsetParent`
+  // chain always leads to the right element.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    // Walk up the DOM until we find an element with overflow scroll/auto.
+    let el: HTMLElement | null = sentinelRef.current.parentElement;
+    while (el && el !== document.body) {
+      const { overflowY } = window.getComputedStyle(el);
+      if (overflowY === "auto" || overflowY === "scroll") {
+        scrollContainerRef.current = el;
+        return;
+      }
+      el = el.parentElement;
+    }
+    // Fallback: treat window as the scroll source.
+    scrollContainerRef.current = null;
+  }, []);
+
+  const heroParallaxPx = useScrollParallax({
+    containerRef: scrollContainerRef,
+    speed: 0.22,
+    maxOffsetPx: 50,
+  });
   // C · Контроль: «Чистий режим» (toggle у HubHeader) ховає весь сигнальний
   // шар головної — лишаються лише модулі (+ hero для FTUX). Реактивно
   // оновлюється через спільний HUB_PREFS-стан.
@@ -45,28 +76,35 @@ export function HubDashboard({
   // там немає модульних даних і єдиний сигнал має бути дія. Виносимо обидва
   // блоки у змінні, щоб не дублювати довгі props-списки між гілками.
   const hero = (
-    <StaggerChild index={s.hasRealEntry ? 1 : 0}>
-      <HubHeroBlock
-        onOpenModule={onOpenModule}
-        onShowAuth={onShowAuth}
-        user={user}
-        hasRealEntry={s.hasRealEntry}
-        sessionDays={s.sessionDays}
-        entryCount={s.entryCount}
-        onboardingState={s.onboardingState}
-        reengagement={s.reengagement}
-        dismissReengagement={s.dismissReengagement}
-        crossModulePreviewSource={s.crossModulePreviewSource}
-        dismissCrossModulePreview={s.dismissCrossModulePreview}
-        focus={s.focus}
-        dismiss={s.dismiss}
-        primaryModule={s.primaryModule}
-        showChecklist={s.showChecklist}
-        activeModules={s.activeModules}
-        goals={s.goals}
-        hasValueBar={s.hasValueBar}
-      />
-    </StaggerChild>
+    // #19 — the translate wraps only the StaggerChild so the parallax
+    // transform never fights the stagger animation class.
+    <div
+      style={{ transform: `translateY(${-heroParallaxPx}px)` }}
+      className="will-change-transform"
+    >
+      <StaggerChild index={s.hasRealEntry ? 1 : 0}>
+        <HubHeroBlock
+          onOpenModule={onOpenModule}
+          onShowAuth={onShowAuth}
+          user={user}
+          hasRealEntry={s.hasRealEntry}
+          sessionDays={s.sessionDays}
+          entryCount={s.entryCount}
+          onboardingState={s.onboardingState}
+          reengagement={s.reengagement}
+          dismissReengagement={s.dismissReengagement}
+          crossModulePreviewSource={s.crossModulePreviewSource}
+          dismissCrossModulePreview={s.dismissCrossModulePreview}
+          focus={s.focus}
+          dismiss={s.dismiss}
+          primaryModule={s.primaryModule}
+          showChecklist={s.showChecklist}
+          activeModules={s.activeModules}
+          goals={s.goals}
+          hasValueBar={s.hasValueBar}
+        />
+      </StaggerChild>
+    </div>
   );
 
   const modules = (
@@ -89,6 +127,8 @@ export function HubDashboard({
 
   return (
     <div className={DENSITY_OUTER_SPACE[s.density]}>
+      {/* #19 — sentinel used by useEffect to discover the scroll container */}
+      <div ref={sentinelRef} aria-hidden className="sr-only" />
       <DemoModeBanner />
 
       {s.hasRealEntry ? (

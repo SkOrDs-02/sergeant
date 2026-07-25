@@ -5,14 +5,20 @@
 import {
   memo,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import {
+  openHubModuleWithAction,
+  openHubSettingsSection,
+} from "@shared/lib/modules/hubNav";
 import {
   getModulePrefetchProps,
   type ModuleIntentProps,
@@ -27,6 +33,71 @@ import {
   handleNativeSortableKeyDown,
   type NativeSortableHandlers,
 } from "./nativeSortable";
+
+// ─── #18 Long-press peek ──────────────────────────────────────────────────
+
+const LONG_PRESS_DELAY_MS = 500;
+
+/**
+ * Minimal long-press hook. Returns pointer handlers that fire `onLongPress`
+ * after `LONG_PRESS_DELAY_MS` ms of held contact. Cancels on move / release.
+ * Uses `useRef` for the timer so it is stable across re-renders.
+ */
+function useLongPress(onLongPress: () => void, disabled = false) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didFire = useRef(false);
+
+  const cancel = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const onPointerDown = useCallback(
+    (e: PointerEvent) => {
+      if (disabled || e.button !== 0) return;
+      didFire.current = false;
+      cancel();
+      timerRef.current = setTimeout(() => {
+        didFire.current = true;
+        onLongPress();
+      }, LONG_PRESS_DELAY_MS);
+    },
+    [cancel, disabled, onLongPress],
+  );
+
+  const onPointerUp = useCallback(() => {
+    cancel();
+  }, [cancel]);
+
+  const onPointerLeave = useCallback(() => {
+    cancel();
+  }, [cancel]);
+
+  const onPointerCancel = useCallback(() => {
+    cancel();
+  }, [cancel]);
+
+  // Prevent the click from firing immediately after a long-press fired.
+  const onClickCapture = useCallback((e: React.MouseEvent) => {
+    if (didFire.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      didFire.current = false;
+    }
+  }, []);
+
+  useEffect(() => () => cancel(), [cancel]);
+
+  return {
+    onPointerDown,
+    onPointerUp,
+    onPointerLeave,
+    onPointerCancel,
+    onClickCapture,
+  };
+}
 
 export interface BentoCardProps {
   config: ModuleConfig;
@@ -242,11 +313,11 @@ export const BentoCard = memo(function BentoCard({
                 <span
                   className={cn(
                     "mt-1 inline-flex items-center gap-0.5 self-start",
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none",
+                    "rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none",
                     "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
                     config.trendDelta > 0
-                      ? "bg-success/12 text-success-strong dark:text-success"
-                      : "bg-danger/12 text-danger-strong dark:text-danger",
+                      ? "bg-success/10 text-success-strong dark:text-success"
+                      : "bg-danger/10 text-danger-strong dark:text-danger",
                   )}
                   aria-label={`Зміна: ${config.trendDelta > 0 ? "+" : ""}${Math.round(config.trendDelta * 100)} %`}
                 >
@@ -335,6 +406,102 @@ export const BentoCard = memo(function BentoCard({
   );
 });
 
+/* ─── #18 BentoCardPeek sheet ──────��─────────────────────────────────────── */
+
+/**
+ * Compact action sheet that appears on long-press of a BentoCard.
+ * Renders as a floating panel anchored below the card's bottom edge with a
+ * subtle scale-in animation. Dismissed on backdrop tap, Escape, or after an
+ * action is fired.
+ */
+function BentoCardPeek({
+  config,
+  moduleId,
+  onDismiss,
+}: {
+  config: ModuleConfig;
+  moduleId: string;
+  onDismiss: () => void;
+}) {
+  const actions = config.quickActions;
+  if (!actions || actions.length === 0) return null;
+
+  return (
+    // Outer dialog wrapper: role="dialog" + aria-modal satisfies both the
+    // a11y spec and sergeant-design/no-bare-fixed-inset-modal.
+    // The backdrop button sits inside this dialog context, so the lint rule
+    // does not flag `fixed inset-0` as a bare overlay.
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Швидкі дії: ${config.label}`}
+    >
+      {/* Invisible backdrop — tap anywhere outside to dismiss.
+          role="presentation" satisfies sergeant-design/no-bare-fixed-inset-modal.
+          jsx-a11y permits onClick/onKeyDown on role="presentation" elements. */}
+      {}
+      <div
+        role="presentation"
+        aria-hidden="true"
+        className="fixed inset-0 z-40 cursor-default"
+        onClick={onDismiss}
+        onKeyDown={(e) => e.key === "Escape" && onDismiss()}
+      />
+
+      {/* Peek sheet */}
+      <div
+        className={cn(
+          "absolute bottom-0 inset-x-0 z-50 mx-2 mb-2",
+          "rounded-2xl border border-line bg-panel shadow-float",
+          "p-2 flex flex-col gap-0.5",
+          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95",
+          "motion-safe:slide-in-from-bottom-2 motion-safe:duration-150",
+        )}
+      >
+        {/* Drag handle pill for visual affordance */}
+        <div
+          aria-hidden
+          className="mx-auto mb-1 w-8 h-1 rounded-full bg-line"
+        />
+        <p className="px-2 pb-1 text-style-caption font-semibold text-muted">
+          {config.label}
+        </p>
+        {actions.map((qa) => (
+          <button
+            key={qa.action}
+            type="button"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl",
+              "text-style-label font-medium text-text text-left",
+              "hover:bg-panelHi active:bg-panelHi/80",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+              "transition-colors",
+            )}
+            onClick={() => {
+              openHubModuleWithAction(
+                moduleId as Parameters<typeof openHubModuleWithAction>[0],
+                qa.action,
+              );
+              onDismiss();
+            }}
+          >
+            <span
+              className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                config.iconClass,
+              )}
+              aria-hidden
+            >
+              <Icon name={qa.icon} size={16} strokeWidth={2} />
+            </span>
+            {qa.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── #10 Ghost preview helpers ──────────────────────────────────────────── */
 
 /**
@@ -342,13 +509,7 @@ export const BentoCard = memo(function BentoCard({
  * prop is a small SVG path string (absolute coords, 48×28 viewBox) that
  * represents the characteristic shape of that module's data chart.
  */
-function GhostSparkline({
-  d,
-  colorClass,
-}: {
-  d: string;
-  colorClass: string;
-}) {
+function GhostSparkline({ d, colorClass }: { d: string; colorClass: string }) {
   // Wrap in a span that carries the text-color so `stroke="currentColor"`
   // inside the SVG inherits it. Avoids generating arbitrary `stroke-*`
   // Tailwind classes that won't be present in the bundle without a safelist.
@@ -459,6 +620,17 @@ export const SortableCard = memo(function SortableCard({
   columns = 2,
 }: SortableCardProps) {
   const [isDragging, setIsDragging] = useState(false);
+  // #18 — long-press peek state
+  const [peekOpen, setPeekOpen] = useState(false);
+  const openPeek = useCallback(() => {
+    hapticTap();
+    setPeekOpen(true);
+  }, []);
+  const closePeek = useCallback(() => setPeekOpen(false), []);
+  // Disable long-press in edit-mode (drag already owns the gesture) and for
+  // inactive cards (they have no actions to show).
+  const longPressDisabled = !!editMode || !!inactive;
+  const longPressHandlers = useLongPress(openPeek, longPressDisabled);
 
   const intentProps = useMemo(
     () => (editMode ? null : getModulePrefetchProps(id)),
@@ -519,9 +691,12 @@ export const SortableCard = memo(function SortableCard({
     <div
       data-sortable-id={id}
       className={cn(
-        "min-w-0 h-full",
+        "min-w-0 h-full relative",
         isDragging && "ring-2 ring-focus/40 rounded-3xl",
       )}
+      // #18 — long-press peek: attach to the wrapper so the gesture works
+      // regardless of which child element is under the pointer.
+      {...(!longPressDisabled ? longPressHandlers : {})}
     >
       <BentoCard
         config={cfg}
@@ -533,6 +708,10 @@ export const SortableCard = memo(function SortableCard({
         editMode={editMode}
         adaptiveReason={adaptiveReason}
       />
+      {/* #18 — peek sheet rendered inside the positioned wrapper */}
+      {peekOpen && (
+        <BentoCardPeek config={cfg} moduleId={id} onDismiss={closePeek} />
+      )}
     </div>
   );
 });

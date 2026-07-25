@@ -88,6 +88,9 @@ export type {
   UseChartScrubResult,
 } from "./useChartScrub";
 
+export { useScrollParallax } from "./useScrollParallax";
+export type { UseScrollParallaxOptions } from "./useScrollParallax";
+
 export { useShortcutGlyph } from "./useShortcutGlyph";
 
 export { useInView } from "./useInView";

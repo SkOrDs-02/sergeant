@@ -68,11 +68,13 @@ export interface ModuleConfig {
    * BentoCard. Each action fires `openHubModuleWithAction` so the module
    * opens directly to the right create-flow.
    */
-  quickActions?: ReadonlyArray<{
-    action: HubModuleAction;
-    label: string;
-    icon: string; // lucide-compatible icon name for <Icon>
-  }> | undefined;
+  quickActions?:
+    | ReadonlyArray<{
+        action: HubModuleAction;
+        label: string;
+        icon: string; // lucide-compatible icon name for <Icon>
+      }>
+    | undefined;
 }
 
 export type ModuleId = ModuleAccent;
@@ -160,7 +162,8 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyPromise: "Тут зʼявиться серія — напр.",
     emptyExample: "5 трен.",
     // #10 — ghost sparkline: volume bars (weekly workout volume shape)
-    ghostPath: "M4,24 L4,16 M12,24 L12,20 M20,24 L20,12 M28,24 L28,18 M36,24 L36,8 M44,24 L44,14",
+    ghostPath:
+      "M4,24 L4,16 M12,24 L12,20 M20,24 L20,12 M28,24 L28,18 M36,24 L36,8 M44,24 L44,14",
     // #18 — long-press peek
     quickActions: [
       { action: "start_workout", label: "Тренування", icon: "dumbbell" },
@@ -203,6 +206,10 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyExample: "3/5",
     // #10 — ghost ring at ~60 % fill to preview the daily-progress ring
     ghostRingPct: 60,
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_habit", label: "Нова звичка", icon: "check-circle" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "routine",
@@ -242,6 +249,11 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyExample: "1250 ккал",
     // #10 — ghost ring at ~45 % fill to preview the calorie-target ring
     ghostRingPct: 45,
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_meal", label: "Прийом їжі", icon: "plus" },
+      { action: "add_meal_photo", label: "Фото страви", icon: "camera" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "nutrition",
