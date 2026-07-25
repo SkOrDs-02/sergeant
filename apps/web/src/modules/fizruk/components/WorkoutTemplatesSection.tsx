@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { pluralExercises } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -54,6 +55,7 @@ export function WorkoutTemplatesSection({
   restoreTemplate,
   onStartTemplate,
 }: WorkoutTemplatesSectionProps) {
+  const nameId = useId();
   const toast = useToast();
   const [q, setQ] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -197,8 +199,10 @@ export function WorkoutTemplatesSection({
 
       {editingId && (
         <Card radius="lg" className="space-y-3">
+          <Label htmlFor={nameId}>Назва шаблону</Label>
           <Input
-            placeholder="Назва (за замовчуванням — «Мій шаблон»)"
+            id={nameId}
+            placeholder="Напр. Push day, Ноги (без назви — «Мій шаблон»)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Назва шаблону"

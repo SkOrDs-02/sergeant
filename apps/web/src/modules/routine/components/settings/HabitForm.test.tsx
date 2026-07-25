@@ -255,7 +255,7 @@ describe("HabitForm – field errors", () => {
   it("shows the name error message and applies aria-invalid on the input", () => {
     render(<Harness errors={{ name: "Назва обовʼязкова" }} />);
     expect(screen.getByText("Назва обовʼязкова")).toBeInTheDocument();
-    const input = screen.getByPlaceholderText("Назва");
+    const input = screen.getByLabelText("Назва звички");
     expect(input).toHaveAttribute("aria-invalid", "true");
   });
 
@@ -273,7 +273,7 @@ describe("HabitForm – field errors", () => {
 describe("HabitForm – name input interaction", () => {
   it("updates the draft name when the user types in the input", () => {
     render(<Harness />);
-    const input = screen.getByPlaceholderText("Назва");
+    const input = screen.getByLabelText("Назва звички");
     fireEvent.change(input, { target: { value: "Бігати вранці" } });
     expect(input).toHaveValue("Бігати вранці");
   });
