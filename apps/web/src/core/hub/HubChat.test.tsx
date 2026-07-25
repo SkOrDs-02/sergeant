@@ -182,8 +182,17 @@ vi.mock("./HubChatHistoryDrawer", () => ({
 }));
 
 vi.mock("../billing/PaywallModal", () => ({
-  PaywallModal: ({ open, onClose }: { open: boolean; onClose: () => void }) => (
+  PaywallModal: ({
+    open,
+    onClose,
+    description,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    description: string;
+  }) => (
     <div data-testid="paywall" data-open={open}>
+      <p data-testid="paywall-description">{description}</p>
       <button type="button" onClick={onClose}>
         close paywall
       </button>
@@ -220,6 +229,9 @@ describe("HubChat", () => {
       "true",
     );
     expect(screen.getByTestId("paywall")).toHaveAttribute("data-open", "true");
+    expect(screen.getByTestId("paywall-description")).toHaveTextContent(
+      "Free-тариф має 15 AI-повідомлень на день",
+    );
 
     fireEvent.click(screen.getByText("details"));
     fireEvent.click(screen.getByText("history"));

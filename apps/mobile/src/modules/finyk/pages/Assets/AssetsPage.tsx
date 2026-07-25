@@ -64,6 +64,16 @@ function fmt(uah: number): string {
   return uah.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
 }
 
+// Ukrainian pluralisation — mirrors
+// `apps/web/src/core/hub/useHubDashboardState.ts` `pluralize()`.
+function pluralizeUk(n: number, one: string, few: string, many: string) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+
 export interface AssetsPageProps {
   /** Test/storybook seed — pre-populates the MMKV slices this page owns. */
   seed?: FinykAssetsSeed;
@@ -134,6 +144,16 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
       store.receivables,
       store.transactions,
     ],
+  );
+
+  // Non-UAH manual assets are excluded from networth (see
+  // `sumManualAssetsUAH` in `@sergeant/finyk-domain`) — surface the count
+  // so the exclusion isn't silent. Mirrors the web banner in
+  // `apps/web/src/modules/finyk/pages/Overview.tsx`.
+  const nonUahManualAssetCount = useMemo(
+    () =>
+      store.manualAssets.filter((a) => (a.currency ?? "UAH") !== "UAH").length,
+    [store.manualAssets],
   );
 
   const visibleAccounts = useMemo(() => {
@@ -242,6 +262,23 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
             {fmt(summary.totalLiabilities)} ₴
           </Text>
         </View>
+
+        {nonUahManualAssetCount > 0 && (
+          <View
+            className="rounded-2xl px-4 py-3 border border-warning/20 bg-warning/8"
+            testID={testID ? `${testID}-non-uah-banner` : undefined}
+          >
+            <Text className="text-xs text-warning-strong">
+              {nonUahManualAssetCount}{" "}
+              {pluralizeUk(
+                nonUahManualAssetCount,
+                "актив в іноземній валюті не враховую в нетворсі",
+                "активи в іноземній валюті не враховую в нетворсі",
+                "активів в іноземній валюті не враховую в нетворсі",
+              )}
+            </Text>
+          </View>
+        )}
 
         {/* Accounts section */}
         <View className="gap-2">

@@ -299,7 +299,9 @@ describe("applyPullOp", () => {
     ).toBe("skipped");
   });
 
-  it("skips non-delete ops against locally soft-deleted routine_entries", async () => {
+  // audit E-1: PK `routine_entries` детермінований (`habitId:dateKey`), тож
+  // локальний tombstone НЕ має блокувати повторний чекін того самого дня.
+  it("resurrects locally soft-deleted routine_entries on a newer op", async () => {
     const userId = "u-tomb";
     const rowId = "habit-tomb:2026-07-10";
     const deletedTs = "2026-07-10T09:00:00.000Z";
@@ -322,7 +324,7 @@ describe("applyPullOp", () => {
             id: rowId,
             user_id: userId,
             name: "Revive attempt",
-            completed_at: null,
+            completed_at: "2026-07-10T10:00:00.000Z",
             created_at: deletedTs,
             deleted_at: null,
           },
@@ -333,7 +335,68 @@ describe("applyPullOp", () => {
         userId,
         "device-a",
       ),
+    ).toBe("applied");
+
+    const revived = await client.all<{
+      name: string;
+      completed_at: string | null;
+      deleted_at: string | null;
+    }>(
+      `SELECT name, completed_at, deleted_at FROM routine_entries WHERE id = ?`,
+      [rowId],
+    );
+    expect(revived[0]).toMatchObject({
+      name: "Revive attempt",
+      completed_at: "2026-07-10T10:00:00.000Z",
+      deleted_at: null,
+    });
+  });
+
+  // Контр-кейс: stale pull проти tombstone-у і далі скіпається (isStaleLocal).
+  it("skips stale ops against locally soft-deleted routine_entries", async () => {
+    const userId = "u-tomb-stale";
+    const rowId = "habit-tomb-stale:2026-07-10";
+    const deletedTs = "2026-07-10T09:00:00.000Z";
+
+    await client.run(
+      `INSERT INTO routine_entries
+         (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+       VALUES (?, ?, ?, NULL, ?, ?, ?)`,
+      [rowId, userId, "Gone", deletedTs, deletedTs, deletedTs],
+    );
+
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 81,
+          table: "routine_entries",
+          op: "update",
+          row: {
+            id: rowId,
+            user_id: userId,
+            name: "Stale revive",
+            completed_at: null,
+            created_at: deletedTs,
+            deleted_at: null,
+          },
+          client_ts: "2026-07-10T08:00:00.000Z",
+          server_ts: "2026-07-10T08:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
     ).toBe("skipped");
+
+    const stillDeleted = await client.all<{
+      name: string;
+      deleted_at: string | null;
+    }>(`SELECT name, deleted_at FROM routine_entries WHERE id = ?`, [rowId]);
+    expect(stillDeleted[0]).toMatchObject({
+      name: "Gone",
+      deleted_at: deletedTs,
+    });
   });
 
   it("covers routine_streaks increment, delete, and upsert branches", async () => {

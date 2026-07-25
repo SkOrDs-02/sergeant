@@ -250,6 +250,81 @@ describe("AssetForm (extra) — currency gate", () => {
   });
 });
 
+// ── AssetForm — currency selector options + non-UAH hint (F-MULTICUR) ───────
+
+describe("AssetForm (extra) — currency options and non-UAH hint", () => {
+  it("does not offer BTC as a currency option", () => {
+    render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{
+            name: "Cash",
+            amount: "1000",
+            currency: "UAH",
+            emoji: "",
+          }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+    const select = screen.getByRole("combobox", {
+      name: /валюта активу/i,
+    }) as HTMLSelectElement;
+    const optionValues = Array.from(select.options).map((o) => o.value);
+    expect(optionValues).toEqual(["UAH", "USD", "EUR"]);
+  });
+
+  it("shows the non-UAH networth hint when currency is USD", () => {
+    render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{
+            name: "Cash",
+            amount: "1000",
+            currency: "USD",
+            emoji: "",
+          }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+    expect(
+      screen.getByText(/поки не враховую його в загальному капіталі/i),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the non-UAH networth hint when currency is UAH", () => {
+    render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{
+            name: "Cash",
+            amount: "1000",
+            currency: "UAH",
+            emoji: "",
+          }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+    expect(
+      screen.queryByText(/поки не враховую його в загальному капіталі/i),
+    ).not.toBeInTheDocument();
+  });
+});
+
 // ── DebtForm — voice input ───────────────────────────────────────────────────
 
 describe("DebtForm (extra) — voice input", () => {

@@ -62,9 +62,17 @@ export const routineEntries = sqliteTable(
 /**
  * SQLite schema for the `routine_streaks` table.
  *
- * Mirrors the Postgres version. Один рядок на користувача —
- * агреговані стрік-метрики, реагує на push/pull op-log-у через
- * apply-шлях `applyRoutineStreaks` у `apps/server/src/modules/sync/syncV2.ts`.
+ * Mirrors the Postgres version. Один рядок на користувача, реагує на
+ * push/pull op-log-у через apply-шлях `applyRoutineStreaks` у
+ * `apps/server/src/modules/sync/syncV2.ts`.
+ *
+ * AI-DANGER: імʼя таблиці фантомне (audit E-4). `current_streak` /
+ * `longest_streak` — це НЕ derived день-стрік, а net-лічильник кліків
+ * «відмітив/зняв» по ВСІХ звичках разом (increment-only PN-counter із
+ * clamp-ом `>= 0`). Одиниця виміру — кліки, не послідовні дні. НЕ читай
+ * ці стовпці для UI / push / digest: справжній стрік рахується
+ * client-side (`streakForHabit`) з `routine_entries`/completions. Канон:
+ * `docs/01-product/model/routine.md` §4.
  */
 export const routineStreaks = sqliteTable("routine_streaks", {
   userId: text("user_id").primaryKey(),

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { habitScheduledOnDate } from "@sergeant/routine-domain";
 import {
   loadRoutineState,
   saveRoutineState,
@@ -152,6 +153,22 @@ describe("create_habit", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toMatch(/id:/);
+  });
+
+  // audit routine E-5: weekdays — Mon-first 0..6 (ISO 8601). Executor —
+  // чистий passthrough; anchor задає опис тулзи в
+  // `apps/server/src/modules/chat/toolDefs/routine.ts`. Межовий день
+  // (понеділок/неділя) ловить off-by-one у будь-який бік.
+  it("E-5: weekdays [0] means Monday, not Sunday", () => {
+    call({
+      name: "create_habit",
+      input: { name: "Біг", recurrence: "weekly", weekdays: [0] },
+    });
+
+    const habit = loadRoutineState().habits.find((h) => h.name === "Біг");
+    expect(habit).toBeDefined();
+    expect(habitScheduledOnDate(habit!, "2026-04-27")).toBe(true); // понеділок
+    expect(habitScheduledOnDate(habit!, "2026-05-03")).toBe(false); // неділя
   });
 });
 
@@ -404,6 +421,21 @@ describe("edit_habit", () => {
     });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+
+  // Дзеркало E-5-кейсу з create_habit: weekdays [6] = неділя, не субота.
+  it("E-5: weekdays [6] means Sunday, not Saturday", () => {
+    seedHabit("h1", "Розтяжка");
+    call({
+      name: "edit_habit",
+      input: { habit_id: "h1", recurrence: "weekly", weekdays: [6] },
+    });
+
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1");
+    expect(habit).toBeDefined();
+    expect(habitScheduledOnDate(habit!, "2026-05-03")).toBe(true); // неділя
+    expect(habitScheduledOnDate(habit!, "2026-05-02")).toBe(false); // субота
+    expect(habitScheduledOnDate(habit!, "2026-04-27")).toBe(false); // понеділок
   });
 });
 

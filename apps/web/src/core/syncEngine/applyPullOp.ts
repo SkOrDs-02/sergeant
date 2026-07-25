@@ -125,9 +125,12 @@ async function applyRoutineEntries(
     [id, userId],
   );
   const local = existing[0];
+  // AI-CONTEXT: локальний tombstone НЕ блокує non-delete op (audit E-1).
+  // PK `routine_entries` детермінований (`habitId:dateKey`), тож повторний
+  // чекін того самого дня приходить у той самий рядок і мусить його
+  // воскресити. Захист від stale-edit-у — `isStaleLocal` вище.
+  // Generic-гілка нижче обслуговує інші таблиці — там guard лишається.
   if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
-  if (local && local.deleted_at !== null && op.op !== "delete")
-    return "skipped";
 
   if (op.op === "delete") {
     if (!local) return "skipped";

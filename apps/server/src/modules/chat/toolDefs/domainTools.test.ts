@@ -146,6 +146,33 @@ describe("chat domain tool definitions", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  // audit routine E-5: доменна конвенція — Monday-first (ISO 8601,
+  // `isoWeekdayFromDateKey` у `@sergeant/routine-domain`). Executor
+  // (`apps/web/src/core/lib/chatActions/routineActions.ts`) — чистий
+  // passthrough, тож єдине джерело anchor-а для LLM — цей опис. Sunday-first
+  // формулювання давало off-by-one при створенні/редагуванні weekly-звички.
+  it("anchors routine weekdays descriptions to Monday-first", () => {
+    const weekdayDescriptions = ROUTINE_TOOLS.filter((tool) =>
+      ["create_habit", "edit_habit"].includes(tool.name),
+    ).map((tool) => {
+      const properties = tool.input_schema["properties"] as Record<
+        string,
+        { description?: string }
+      >;
+      return {
+        name: tool.name,
+        description: properties["weekdays"]?.description ?? "",
+      };
+    });
+
+    expect(weekdayDescriptions).toHaveLength(2);
+    for (const { description } of weekdayDescriptions) {
+      expect(description).toContain("0 — понеділок");
+      expect(description).toContain("6 — неділя");
+      expect(description).not.toContain("0 — неділя");
+    }
+  });
+
   it("keeps read-only query tools out of strict mode", () => {
     for (const { tools } of QUERY_TOOL_MODULES) {
       for (const tool of tools) {

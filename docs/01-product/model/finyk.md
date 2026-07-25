@@ -90,21 +90,21 @@ activation + week-2 return).
 `039_finyk_tables.sql`, яка **існує, але сервером ще не читається**
 (`039_finyk_tables.sql:26-31`).
 
-| Сутність                 | Клієнт (SQLite / LS-ключ)                                               | PG-таблиця                                                  | Примітка                                                                 |
-| ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **Transaction (mono)**   | дзеркало `finyk_mono_transactions/accounts`                             | `mono_transaction` (міграція 008) — **не finyk**            | суми в **копійках** (`number`)                                           |
-| **Transaction (manual)** | `finyk_manual_expenses_v1`                                              | `finyk_manual_expenses`                                     | суми в **гривнях** — інша одиниця, ніж у банківських (див. борг нижче)   |
-| **Category (override)**  | `finyk_tx_cats`                                                         | `finyk_tx_categories`                                       | **без FK** на `mono_transaction` — оверлей навмисно відв'язаний          |
-| **Category (custom)**    | `finyk_custom_cats_v1`                                                  | `finyk_custom_categories`                                   | ліміт 80 категорій / 80 символів                                         |
-| **Split**                | `finyk_tx_splits`                                                       | `finyk_tx_splits`                                           | перекриває категорію транзакції; має `categoryId`+`amount`, **не особу** |
-| **Budget**               | `finyk_budgets`                                                         | `finyk_budgets`                                             | union `limit` (categoryId+limit+period) \| `goal` (target/saved/date)    |
-| **Subscription**         | `finyk_subs`, dismissed → `finyk_rec_dismissed`                         | `finyk_subscriptions`                                       | ручний ввід **+ автодетекція** `detectRecurring`                         |
-| **Asset**                | `finyk_assets`                                                          | `finyk_assets`                                              | лише UAH враховується в networth; не-UAH мовчки випадають                |
-| **Debt / Receivable**    | `finyk_debts`, `finyk_recv`, `finyk_mono_debt_linked`                   | `finyk_debts`, `finyk_receivables`, `finyk_mono_debt_links` | —                                                                        |
-| **Hidden-оверлеї**       | `finyk_hidden` (рахунки), `finyk_hidden_txs`, `finyk_excluded_stat_txs` | `finyk_hidden_accounts`, `finyk_hidden_transactions`        | `excluded_stat` **не має** серверної таблиці                             |
-| **MonthlyPlan**          | `finyk_monthly_plan`                                                    | окремої таблиці **немає**                                   | споживається weekly-digest на обох платформах                            |
-| **Networth-history**     | `finyk_networth_history`, `finyk_networth_last_snap`                    | `finyk_networth_history`                                    | снапшот раз на день і лише при зміні > 1 %                               |
-| **Prefs / фільтри**      | `finyk_show_balance_v1`, `finyk_manual_only_v1`                         | `finyk_prefs`, `finyk_tx_filters`                           | `tx_filters` свідомо не підключена до синку                              |
+| Сутність                 | Клієнт (SQLite / LS-ключ)                                               | PG-таблиця                                                  | Примітка                                                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Transaction (mono)**   | дзеркало `finyk_mono_transactions/accounts`                             | `mono_transaction` (міграція 008) — **не finyk**            | суми в **копійках** (`number`)                                                                                            |
+| **Transaction (manual)** | `finyk_manual_expenses_v1`                                              | `finyk_manual_expenses`                                     | суми в **гривнях** — інша одиниця, ніж у банківських (див. борг нижче)                                                    |
+| **Category (override)**  | `finyk_tx_cats`                                                         | `finyk_tx_categories`                                       | **без FK** на `mono_transaction` — оверлей навмисно відв'язаний                                                           |
+| **Category (custom)**    | `finyk_custom_cats_v1`                                                  | `finyk_custom_categories`                                   | ліміт 80 категорій / 80 символів                                                                                          |
+| **Split**                | `finyk_tx_splits`                                                       | `finyk_tx_splits`                                           | перекриває категорію транзакції; має `categoryId`+`amount`, **не особу**                                                  |
+| **Budget**               | `finyk_budgets`                                                         | `finyk_budgets`                                             | union `limit` (categoryId+limit+period) \| `goal` (target/saved/date)                                                     |
+| **Subscription**         | `finyk_subs`, dismissed → `finyk_rec_dismissed`                         | `finyk_subscriptions`                                       | ручний ввід **+ автодетекція** `detectRecurring`                                                                          |
+| **Asset**                | `finyk_assets`                                                          | `finyk_assets`                                              | лише UAH враховується в networth; не-UAH виключені, користувач попереджений у формі й на Overview (веб) / Assets (мобайл) |
+| **Debt / Receivable**    | `finyk_debts`, `finyk_recv`, `finyk_mono_debt_linked`                   | `finyk_debts`, `finyk_receivables`, `finyk_mono_debt_links` | —                                                                                                                         |
+| **Hidden-оверлеї**       | `finyk_hidden` (рахунки), `finyk_hidden_txs`, `finyk_excluded_stat_txs` | `finyk_hidden_accounts`, `finyk_hidden_transactions`        | `excluded_stat` **не має** серверної таблиці                                                                              |
+| **MonthlyPlan**          | `finyk_monthly_plan`                                                    | окремої таблиці **немає**                                   | споживається weekly-digest на обох платформах                                                                             |
+| **Networth-history**     | `finyk_networth_history`, `finyk_networth_last_snap`                    | `finyk_networth_history`                                    | снапшот раз на день і лише при зміні > 1 %                                                                                |
+| **Prefs / фільтри**      | `finyk_show_balance_v1`, `finyk_manual_only_v1`                         | `finyk_prefs`, `finyk_tx_filters`                           | `tx_filters` свідомо не підключена до синку                                                                               |
 
 **Формула networth** (канонічна, у коді продубльована у двох місцях —
 `packages/finyk-domain/src/domain/assets/aggregates.ts:114-148` і
@@ -116,12 +116,21 @@ networth = monoBalance + manualAssets(UAH) + receivables − (monoDebt + manualD
 
 Не входять: приховані рахунки, **не-UAH активи**, бюджети, цілі, підписки.
 
-**Два борги, зафіксовані каноном:**
+**Три борги, зафіксовані каноном:**
 
 1. **Дві одиниці грошей.** Банківські транзакції — копійки, ручні витрати —
    гривні, з конверсією на серверній межі. Будь-який новий код, що об'єднує
    два потоки, ризикує помилкою в 100 разів. Канон не ратифікує це як дизайн.
 2. **Дубльована формула networth.** Два місця, які мусять збігатися вручну.
+3. **Платний гейт multi-currency продає лише право зберегти запис.**
+   `useFeatureGate("multi-currency")` (`AssetsForm.tsx`) відкриває вибір
+   USD/EUR тільки на Premium, але жодної конвертації валют у коді немає
+   (grep `exchangeRate|fxRate|convertToUah|currencyRate` — 0 збігів по
+   `apps/web`, `packages/finyk-domain`, `apps/server`). Не-UAH актив просто
+   зберігається і виключається з networth (див. таблицю сутностей вище) —
+   гейт не купує жодного розрахунку. Чи лишати гейт як є, знімати його, чи
+   будувати реальну конвертацію — рішення founder-а (§12, питання 1,
+   позначене [ІНТЕРВ'Ю]).
 
 ### Семантика «приховати» vs «виключити зі статистики»
 

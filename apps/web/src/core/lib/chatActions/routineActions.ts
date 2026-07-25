@@ -145,6 +145,8 @@ export function handleRoutineAction(
       ]);
       const rec =
         recurrence && allowedRec.has(recurrence) ? recurrence : "daily";
+      // Mon-first 0..6 — passthrough без remap; anchor задає опис `weekdays`
+      // у `apps/server/src/modules/chat/toolDefs/routine.ts` (audit E-5).
       const wdays = Array.isArray(weekdays)
         ? weekdays
             .map((d) => Number(d))
@@ -366,6 +368,7 @@ export function handleRoutineAction(
           changes.push(`розклад → ${recurrence}`);
         }
       }
+      // Mon-first 0..6 — passthrough без remap (див. create_habit вище).
       if (Array.isArray(weekdays) && weekdays.length > 0) {
         updated.weekdays = weekdays.filter(
           (d) => Number.isInteger(d) && d >= 0 && d <= 6,

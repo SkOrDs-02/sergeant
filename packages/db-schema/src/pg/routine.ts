@@ -49,8 +49,17 @@ export const routineEntries = pgTable(
  * Postgres schema for `routine_streaks` table.
  * Mirrors migration 026_routine_tables.sql.
  *
- * Один рядок на користувача — агреговані стрік-метрики.
- * `userId` — PRIMARY KEY (не sequence), ON DELETE CASCADE з "user".
+ * Один рядок на користувача. `userId` — PRIMARY KEY (не sequence),
+ * ON DELETE CASCADE з "user".
+ *
+ * AI-DANGER: імʼя таблиці фантомне (audit E-4). `current_streak` /
+ * `longest_streak` — це НЕ derived день-стрік, а net-лічильник кліків
+ * «відмітив/зняв» по ВСІХ звичках разом (increment-only PN-counter із
+ * clamp-ом `>= 0`, див. `applyRoutineStreaks`). Одиниця виміру — кліки,
+ * не послідовні дні. НЕ читай ці стовпці для UI / push / digest:
+ * справжній стрік рахується client-side (`streakForHabit`) з
+ * `routine_entries`/completions. Канон:
+ * `docs/01-product/model/routine.md` §4.
  */
 export const routineStreaks = pgTable("routine_streaks", {
   userId: text("user_id").primaryKey(),

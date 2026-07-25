@@ -126,4 +126,76 @@ describe("applyRoutineEntries integration", () => {
     },
     INTEGRATION_TIMEOUT_MS,
   );
+
+  // Регресія audit E-1: toggle→untoggle→toggle. PK `routine_entries`
+  // детермінований (`habitId:dateKey`), тож третій чекін б'є у той самий
+  // рядок і мусить його воскресити, а не отримати `tombstoned`.
+  it(
+    "resurrects a soft-deleted entry on a strictly newer re-check",
+    async (ctx) => {
+      if (!harness || !dockerAvailable) return ctx.skip();
+
+      const t1 = new Date("2026-07-22T08:00:00.000Z");
+      const t2 = new Date("2026-07-22T09:00:00.000Z");
+      const t3 = new Date("2026-07-22T10:00:00.000Z");
+      const id = "10000000-0000-4000-8000-000000000002";
+
+      await withClient(async (client) => {
+        await expect(
+          applyRoutineEntries(
+            client,
+            routineEntryOp("insert", {
+              id,
+              user_id: "routine-user",
+              name: "drink water",
+              completed_at: t1.toISOString(),
+            }),
+            "routine-user",
+            t1,
+          ),
+        ).resolves.toEqual({ status: "applied" });
+
+        await expect(
+          applyRoutineEntries(
+            client,
+            routineEntryOp("delete", { id, user_id: "routine-user" }),
+            "routine-user",
+            t2,
+          ),
+        ).resolves.toEqual({ status: "applied" });
+
+        await expect(
+          applyRoutineEntries(
+            client,
+            routineEntryOp("insert", {
+              id,
+              user_id: "routine-user",
+              name: "drink water",
+              completed_at: t3.toISOString(),
+              deleted_at: null,
+            }),
+            "routine-user",
+            t3,
+          ),
+        ).resolves.toEqual({ status: "applied" });
+
+        const revived = await client.query<{
+          name: string;
+          completed_at: Date | null;
+          deleted_at: Date | null;
+        }>(
+          `SELECT name, completed_at, deleted_at FROM routine_entries WHERE id = $1`,
+          [id],
+        );
+        expect(revived.rows[0]).toMatchObject({
+          name: "drink water",
+          deleted_at: null,
+        });
+        expect(revived.rows[0]?.completed_at?.toISOString()).toBe(
+          t3.toISOString(),
+        );
+      });
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
 });

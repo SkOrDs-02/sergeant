@@ -2408,18 +2408,23 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
 
 // ---------------------------------------------------------------------
 // Tombstone-resurrection guard — Stage 5 follow-up до PR #043 (G-set
-// CRDT для `nutrition_meals`). Той самий інваріант поширюється на
-// інші soft-delete apply-шляхи: routine_entries + 5 fizruk_* таблиць.
+// CRDT для `nutrition_meals`). Інваріант діє для таблиць з ВИПАДКОВИМ
+// UUID-PK: 5 fizruk_* таблиць + nutrition_meals.
 //
-// Кожен тест проганяє послідовність insert(t1) → delete(t2) →
+// Кожен такий тест проганяє послідовність insert(t1) → delete(t2) →
 // update(t3, t3 > t2). Без guard-а raw LWW дозволив би update
 // перезаписати рядок (deleted_at скинеться у null із payload-у), що
 // фактично воскрешає видалений ряд. З guard-ом — update reject-нуто
 // з `reason='tombstoned'`, ряд лишається soft-deleted.
+//
+// ВИНЯТОК — `routine_entries` (audit E-1): PK детермінований
+// (`habitId:dateKey`), тому повторний чекін того самого дня б'є в той
+// самий рядок і мусить його воскресити. Перший тест нижче кодифікує
+// саме цю (протилежну) семантику.
 // ---------------------------------------------------------------------
 describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
   it(
-    "routine_entries: update після soft-delete із новішим client_ts відхилено як tombstoned",
+    "routine_entries: update після soft-delete із новішим client_ts воскрешає рядок",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-rt-tomb");
@@ -2484,6 +2489,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
                   user_id: "u-rt-tomb",
                   name: "resurrected",
                   completed_at: t3,
+                  deleted_at: null,
                 },
                 client_ts: t3,
                 idempotency_key: "rt-tomb-resurrect",
@@ -2497,8 +2503,102 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
+
+      const finalRow = await testPool.query<{
+        deleted_at: Date | null;
+        name: string;
+      }>(`SELECT deleted_at, name FROM routine_entries WHERE id = $1`, [id]);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+    },
+    TIMEOUT_MS,
+  );
+
+  // Контр-кейс: stale-edit проти tombstone-у і далі ріжеться LWW-guard-ом.
+  it(
+    "routine_entries: update після soft-delete зі СТАРІШИМ client_ts відхилено як lww_conflict",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-rt-stale");
+
+      const id = "30000000-0000-4000-8000-000000000002";
+      const t1 = isoNow(-10_000);
+      const t2 = isoNow();
+      const tStale = isoNow(-5_000);
+
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id,
+                  user_id: "u-rt-stale",
+                  name: "before-delete",
+                  completed_at: t1,
+                },
+                client_ts: t1,
+                idempotency_key: "rt-stale-insert",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "delete" as const,
+                row: { id, user_id: "u-rt-stale" },
+                client_ts: t2,
+                idempotency_key: "rt-stale-delete",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      const rStale = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "update" as const,
+                row: {
+                  id,
+                  user_id: "u-rt-stale",
+                  name: "stale-edit",
+                  completed_at: tStale,
+                  deleted_at: null,
+                },
+                client_ts: tStale,
+                idempotency_key: "rt-stale-resurrect",
+              },
+            ],
+          },
+        }),
+        rStale,
+      );
+      const staleBody = rStale.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(staleBody.accepted).toBe(0);
+      expect(staleBody!.results[0]!.reason).toBe("lww_conflict");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;

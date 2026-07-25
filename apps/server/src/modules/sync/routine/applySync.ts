@@ -18,12 +18,23 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * `updated_at = clientTs`. Жорстке видалення не використовується для
  * Routine, бо клієнт може потім повернути виконання.
  *
- * Tombstone-resurrection guard (Stage 5, дзеркалить PR #043 для
- * `nutrition_meals`): після soft-delete `op='insert'`/`op='update'`
- * проти tombstoned-у ряд відхиляється з `reason='tombstoned'`. Інакше
- * stale offline-edit на одному девайсі скасовував би delete на іншому.
- * `op='delete'` лишається ідемпотентним — re-stamp-ить `deleted_at`
- * новішим `client_ts`.
+ * Воскресіння tombstone-у ДОЗВОЛЕНЕ (audit E-1). `op='delete'`
+ * лишається ідемпотентним — re-stamp-ить `deleted_at` новішим
+ * `client_ts`; але `insert`/`update` зі СТРОГО новішим `client_ts`
+ * скидає `deleted_at` назад у `null` через звичайну UPDATE-гілку.
+ *
+ * AI-CONTEXT: `routine_entries` має ДЕТЕРМІНОВАНИЙ PK
+ * `habitId:dateKey` (`apps/web/src/modules/routine/lib/sqliteWriter/diff.ts`
+ * → `buildCompletionRowId`), тому повторний чекін тієї самої звички за той
+ * самий день б'є в ТОЙ САМИЙ рядок. G-set-інваріант `nutrition_meals`
+ * (випадковий UUID на кожен запис, PR #043) тут НЕ застосовний: там
+ * повторний insert створює новий рядок, тут — переписує tombstone.
+ * Tombstone-resurrection guard, скопійований звідти, ріже легітимний
+ * цикл toggle→untoggle→toggle і НАЗАВЖДИ губить чекін (reject
+ * термінальний в outbox). НЕ «відновлюй симетрію» з nutrition.
+ * Від stale offline-edit-у захищає LWW-guard нижче
+ * (`updated_at >= clientTs` → `lww_conflict`) — до DML доходять лише
+ * строго новіші ops. Канон: `docs/01-product/model/routine.md` §2, §12.
  */
 export async function applyRoutineEntries(
   client: PoolClient,
@@ -59,10 +70,6 @@ export async function applyRoutineEntries(
     }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
-    }
-    // Tombstone-resurrection guard — див. док-стрінг.
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -125,6 +132,13 @@ export async function applyRoutineEntries(
 }
 
 /**
+ * AI-DANGER: імʼя таблиці фантомне (audit E-4). `current_streak` /
+ * `longest_streak` — це НЕ derived день-стрік, а net-лічильник кліків
+ * «відмітив/зняв» по ВСІХ звичках разом. Одиниця виміру — кліки, не
+ * послідовні дні. НЕ читай їх тут (і ніде) для UI / push / digest:
+ * справжній стрік рахується client-side (`streakForHabit`) з
+ * `routine_entries`/completions. Канон: `docs/01-product/model/routine.md` §4.
+ *
  * Apply-шлях для `routine_streaks` (per-user aggregate). PK = user_id,
  * один рядок на юзера; історичного `updated_at` нема. LWW-guard
  * робимо проти `MAX(client_ts)` із `sync_op_log` для (user_id,

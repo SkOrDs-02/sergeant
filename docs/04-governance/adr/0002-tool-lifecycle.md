@@ -2,7 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-04-27
-- **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+- **Last validated:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
   > **Status:** Active
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
@@ -36,19 +36,20 @@
 
 Крім 4-фазного flow, цей ADR фіксує:
 
-| #    | Тема                                 | Decision (коротко)                                                            |
-| ---- | ------------------------------------ | ----------------------------------------------------------------------------- |
-| 2.1  | Чому потрібен формальний lifecycle   | (оригінальний sub-ADR)                                                        |
-| 2.2  | Фаза 1: Proposal                     | RFC-issue + tool-spec template                                                |
-| 2.3  | Фаза 2: Safety review                | Mandatory checklist у PR-template                                             |
-| 2.4  | Фаза 3: Rollout                      | Feature flag + 24h staging перед production                                   |
-| 2.5  | Фаза 4: KPIs                         | 30-day review, deprecation thresholds                                         |
-| 2.6  | Owner-domain map                     | Solo-repo зараз; trigger розширення — 2-й contributor з ≥3 PR-ами             |
-| 2.7  | Anthropic prompt-cache budget        | Батчити N tools в один PR при масових змінах                                  |
-| 2.8  | Не-цілі (out of scope)               | (оригінальний)                                                                |
-| 2.9  | Tool input_schema versioning         | Optional fields — minor; required — major (`_v2` + 30-day deprecation старої) |
-| 2.10 | Hot kill-switch (DB flag, no deploy) | `tool_kill_switches` table + LISTEN; <1 min recovery; auth: owner-domain      |
-| 2.11 | Token-budget cap для `tools` array   | Сума `JSON.stringify(input_schema).length` ⊤ 16 KB; CI-check у `tools.ts`     |
+| #    | Тема                                 | Decision (коротко)                                                                                                 |
+| ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 2.1  | Чому потрібен формальний lifecycle   | (оригінальний sub-ADR)                                                                                             |
+| 2.2  | Фаза 1: Proposal                     | RFC-issue + tool-spec template                                                                                     |
+| 2.3  | Фаза 2: Safety review                | Mandatory checklist у PR-template                                                                                  |
+| 2.4  | Фаза 3: Rollout                      | Feature flag + 24h staging перед production                                                                        |
+| 2.5  | Фаза 4: KPIs                         | 30-day review, deprecation thresholds                                                                              |
+| 2.6  | Owner-domain map                     | Solo-repo зараз; trigger розширення — 2-й contributor з ≥3 PR-ами                                                  |
+| 2.7  | Anthropic prompt-cache budget        | Батчити N tools в один PR при масових змінах                                                                       |
+| 2.8  | Не-цілі (out of scope)               | (оригінальний)                                                                                                     |
+| 2.9  | Tool input_schema versioning         | Optional fields — minor; required — major (`_v2` + 30-day deprecation старої)                                      |
+| 2.10 | Hot kill-switch (DB flag, no deploy) | `tool_kill_switches` table + LISTEN; <1 min recovery; auth: owner-domain                                           |
+| 2.11 | Token-budget cap для `tools` array   | Сума `JSON.stringify(input_schema).length` ⊤ 16 KB; CI-check у `tools.ts`                                          |
+| 2.12 | Anthropic strict-tools hard cap      | Provider-side ліміт 20 `strict: true` tools на запит; НЕЗАЛЕЖНО від 16 KB budget (2.11); enforced `tools.ts:87-91` |
 
 ---
 
@@ -477,6 +478,74 @@ proposed.
 - **No cap:** historical default, вже бачили silent token-bloat.
 - **Soft warning, no fail:** ігнорується без forcing-function-у.
 - **Per-tool cap (кожен ≤ N байт):** дозволяє mass-add маленьких tool-ів — той самий ризик.
+
+---
+
+## ADR-2.12 — Anthropic strict-tools hard cap
+
+### Status
+
+accepted (enforced у продакшні).
+
+### Context
+
+Окремо від self-imposed 16 KB token-budget cap-у (ADR-2.11), Anthropic API
+має **власний, provider-side, жорсткий ліміт** на кількість tools із
+`strict: true` в одному `/api/chat` запиті: **20**. Це обмеження не
+пов'язане з розміром schema — воно рахує кількість strict-tools, а не байти.
+
+**INCIDENT 2026-05-16** (PR 830c1342): `applyStrictModeToAll` обгорнув увесь
+масив `TOOLS` у Anthropic Strict tool use. На момент інциденту реєстр
+налічував 66 tools — кожен `/api/chat`-запит падав із `400 Too many strict
+tools (66)`. Unit-тести верифікували `strict: true` на кожному tool
+локально, але не били реальний Anthropic endpoint, тож регресія пройшла
+повз CI. Задокументовано в коментарі `apps/server/src/modules/chat/tools.ts:12-18`.
+
+### Decision
+
+`apps/server/src/modules/chat/tools.ts:87-91` рахує `strictCount` при
+збірці масиву `tools` і кидає помилку, якщо `strictCount > 20`:
+
+```ts
+if (strictCount > 20) {
+  throw new Error(
+    `Too many strict tools (${strictCount}). Anthropic API limit is 20. ` +
+      "Remove strict:true from some tools or implement tool subset strategy.",
+  );
+}
+```
+
+Strict-режим сьогодні вмикається **селективно, per-tool** (не
+`applyStrictModeToAll` на весь реєстр) — див. `toolDefs/strict.ts:44-60` і
+opt-in коментарі в `toolDefs/query{Finyk,Fizruk,Routine,Nutrition}.ts`.
+
+Продуктовий канон `docs/01-product/model/hub-coach.md` (§4, таблиця
+«Ключові сутності», рядок «Реєстр інструментів») уже фіксує цей ліміт на
+продуктовому рівні як «прийшов із реального інциденту» — цей ADR-пункт
+закриває інженерну сторону того самого факту.
+
+### Consequences
+
+**Позитивні:**
+
+- Regression неможлива без явного fail-fast: перевищення ліміту падає одразу
+  при збірці `TOOLS`, а не тихим 400 у продакшні.
+- Явне розмежування двох незалежних cap-ів (16 KB schema-budget vs 20
+  strict-tools) запобігає плутанині при майбутньому tool-additions.
+
+**Негативні:**
+
+- 20 strict-tools при 66+ tools у реєстрі означає, що strict-режим
+  структурно не масштабується на весь реєстр — потрібна per-tool
+  пріоритизація (high-value tools) або очікування підвищення ліміту від
+  Anthropic.
+
+### Alternatives considered
+
+- **`applyStrictModeToAll` на весь реєстр:** саме це спричинило інцидент
+  2026-05-16 — відкинуто.
+- **Ігнорувати strict mode повністю:** втрачає гарантії schema-adherence,
+  які strict mode дає для high-value tools — відкинуто.
 
 ---
 

@@ -349,15 +349,13 @@ export function AssetForm({
           <option value="UAH">UAH</option>
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
-          <option value="BTC">BTC</option>
         </select>
         {newAsset.currency !== "UAH" && (
           <p
             className="text-style-caption text-warning-strong dark:text-warning"
             role="status"
           >
-            Збережу актив, але поки не враховую його в загальному капіталі —
-            рахую лише активи в гривні.
+            {messages.finyk.nonUahAssetHint}
           </p>
         )}
         {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
