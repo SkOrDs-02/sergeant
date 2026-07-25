@@ -2,13 +2,14 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 
 interface LimitBudgetInput {
@@ -64,20 +65,28 @@ function LimitBudgetCardComponent({
   const overLimit = pctRaw >= 100;
   const warnLimit = pctRaw >= 80 && !overLimit;
   const [adviceOpen, setAdviceOpen] = useState(true);
+  const fieldId = useId();
+  const limitId = `${fieldId}-limit`;
+  const periodId = `${fieldId}-period`;
 
   return (
     <Card radius="lg" padding="lg">
       {isEditing ? (
         <div className="space-y-2">
-          <Input
-            size="sm"
-            type="number"
-            placeholder="Ліміт ₴"
-            value={budget.limit}
-            onChange={(e) => onChangeLimit?.(Number(e.target.value))}
-          />
+          <div>
+            <Label htmlFor={limitId}>Ліміт</Label>
+            <Input
+              id={limitId}
+              size="sm"
+              type="number"
+              placeholder="Напр. 5000 ₴"
+              value={budget.limit}
+              onChange={(e) => onChangeLimit?.(Number(e.target.value))}
+            />
+          </div>
+          <Label htmlFor={periodId}>Період</Label>
           <select
-            aria-label="Період ліміту"
+            id={periodId}
             value={budget.period ?? "month"}
             onChange={(event) =>
               onChangePeriod?.(

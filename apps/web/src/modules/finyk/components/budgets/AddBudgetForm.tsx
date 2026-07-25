@@ -1,8 +1,9 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
@@ -144,6 +145,11 @@ function AddBudgetFormComponent({
   onCancel,
 }: AddBudgetFormProps) {
   const [formType, setFormType] = useState<BudgetFormType>("limit");
+  const fieldId = useId();
+  const limitAmountId = `${fieldId}-limit-amount`;
+  const goalNameId = `${fieldId}-goal-name`;
+  const goalAmountId = `${fieldId}-goal-amount`;
+  const goalSavedId = `${fieldId}-goal-saved`;
 
   // Schema із dedup-check бере замикання на `existingBudgets`. Memoize,
   // щоб resolver-reference не змінювався на кожен parent-render
@@ -265,8 +271,9 @@ function AddBudgetFormComponent({
           aria-label="Новий ліміт бюджету"
         >
           <div>
+            <Label htmlFor={`${fieldId}-period`}>Період</Label>
             <select
-              aria-label="Період ліміту"
+              id={`${fieldId}-period`}
               className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
               disabled={isSubmitting}
               {...limitForm.register("period")}
@@ -297,10 +304,11 @@ function AddBudgetFormComponent({
             )}
           </div>
           <div>
+            <Label htmlFor={limitAmountId}>Ліміт</Label>
             <Input
-              placeholder="Ліміт ₴"
+              id={limitAmountId}
+              placeholder="Напр. 5000 ₴"
               type="number"
-              aria-label="Ліміт"
               aria-invalid={limitAmountError ? true : undefined}
               disabled={isSubmitting}
               {...limitForm.register("limit")}
@@ -370,9 +378,10 @@ function AddBudgetFormComponent({
             ))}
           </select>
           <div>
+            <Label htmlFor={goalNameId}>Назва цілі</Label>
             <Input
-              placeholder="Назва цілі"
-              aria-label="Назва цілі"
+              id={goalNameId}
+              placeholder="Напр. На відпустку"
               aria-invalid={goalNameError ? true : undefined}
               disabled={isSubmitting}
               {...goalForm.register("name")}
@@ -387,10 +396,11 @@ function AddBudgetFormComponent({
             )}
           </div>
           <div>
+            <Label htmlFor={goalAmountId}>Сума цілі</Label>
             <Input
-              placeholder="Сума цілі ₴"
+              id={goalAmountId}
+              placeholder="Напр. 20000 ₴"
               type="number"
-              aria-label="Сума цілі"
               aria-invalid={goalAmountError ? true : undefined}
               disabled={isSubmitting}
               {...goalForm.register("targetAmount")}
@@ -405,10 +415,11 @@ function AddBudgetFormComponent({
             )}
           </div>
           <div>
+            <Label htmlFor={goalSavedId}>Вже відкладено</Label>
             <Input
-              placeholder="Вже відкладено ₴"
+              id={goalSavedId}
+              placeholder="Напр. 5000 ₴"
               type="number"
-              aria-label="Вже відкладено"
               aria-invalid={goalSavedError ? true : undefined}
               disabled={isSubmitting}
               {...goalForm.register("savedAmount")}
@@ -425,17 +436,16 @@ function AddBudgetFormComponent({
           <div>
             <DateField
               id="budget-goal-target-date"
-              emptyLabel="Дата завершення"
-              value={goalTargetDate}
-              aria-label="Дата завершення"
+              label="Дата завершення"
               // iOS Safari's native `type="date"` never renders a
-              // `placeholder`, and the owner rejected an external label
-              // (round-2 M1) as inconsistent with the sibling fields —
-              // wants the same in-field placeholder look. `text-transparent`
-              // hides the browser's own empty-state guide text (which
-              // inherits `color`) while a value is unset; the overlay
-              // below fills that same spot, same as `placeholder:` on
-              // the text/number inputs above.
+              // `placeholder`, so `emptyLabel` supplies the in-field
+              // example overlay shown while unfocused and empty (see
+              // `DateField`'s own empty-state handling). Founder decision
+              // 2026-07-24 supersedes the earlier round-2 M1 call to skip
+              // an external label — every form field now gets a visible
+              // label + example placeholder.
+              emptyLabel="Напр. 31.12.2026"
+              value={goalTargetDate}
               className="w-full"
               disabled={isSubmitting}
               {...goalForm.register("targetDate")}
