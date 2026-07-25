@@ -466,6 +466,51 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 
 ---
 
+## 17. Продуктові події «петель цінності» (PostHog, НЕ Prometheus)
+
+> Тут немає жодної Prometheus-серії. Секція існує тому, що це єдиний
+> каталог метрик у репо, і питання «чим виміряна ця продуктова теза»
+> шукають саме тут. Транспорт — `trackEvent`
+> ([`apps/web/src/core/observability/analytics.ts`](../../../apps/web/src/core/observability/analytics.ts)),
+> призначення — PostHog + ring-buffer `window.__hubAnalytics`. Канонічні
+> імена — [`analyticsEvents.valueLoops.ts`](../../../packages/shared/src/lib/analyticsEvents.valueLoops.ts),
+> повний контракт полів — [`.telemetry/tracking-plan.yaml`](../../../.telemetry/tracking-plan.yaml).
+> Читання зрізів — [`posthog-founder-pulse.md § 8`](./posthog-founder-pulse.md).
+
+| Подія                     | Емітер (web)                                                   | Що міряє                                                |
+| ------------------------- | -------------------------------------------------------------- | ------------------------------------------------------- |
+| `value_signal_shown`      | `shared/components/ui/InsightCard.tsx`                         | показ продуктового сигналу (9 сигналів, 4 модулі)       |
+| `value_signal_activated`  | ↑                                                              | тап по сигналу                                          |
+| `value_signal_dismissed`  | ↑                                                              | відкидання сигналу                                      |
+| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts`                        | чекін звички (`source: ui \| bulk`)                     |
+| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx`           | показ стріку ПОЗА `InsightCard` (`surface: hero_flame`) |
+| `fizruk_workout_finished` | `modules/fizruk/components/workouts/WorkoutJournalSection.tsx` | завершення тренування                                   |
+| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                   | логування прийому їжі                                   |
+| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`             | категоризація транзакції                                |
+
+Наявні `expense_added` / `income_added` / `budget_set` НЕ перейменовані й не
+продубльовані — до них лише дописані ті самі поля атрибуції.
+
+**Правило читання №1 — pre-instrumentation = `unknown`, а НЕ `false`.**
+Callsite-и зʼявились 2026-07-25. Ретроактивного backfill не існує в принципі:
+PostHog не може дізнатись, які сигнали показувались до релізу подій, а журнал
+`routine_completion_events` не має і не мав колонки «чи бачив стрік». Тому
+когорти до цієї дати рахуються з `exposure = unknown` і **не беруться в
+знаменник**. Спокуса `COALESCE(saw_streak, false)` дасть штучне підтвердження
+гіпотези «стріки не мотивують» з нічого.
+
+**Правило читання №2 — `source` розрізняє мотив, а не транспорт.**
+`routine_habit_checked{source=bulk}` — масова відмітка «закрити день одним
+тапом»; `source=chat` — дія AI-інструмента. Ні те, ні те не є мотивованим
+чекіном і виключається зі знаменника петлі на боці запиту.
+
+**Правило читання №3 — вікно N живе в запиті, не в коді.** Події несуть сирі
+`ms_since_signal` / `ms_since_streak_shown`. Ніякого обчисленого булеана «дія
+протягом N» у payload немає навмисно: N переглядається заднім числом без
+релізу.
+
+---
+
 ## Бюджет кардинальності / bad-smell-и
 
 Загальна оцінка: 36 кастомних метрик генерують ≈ **8 000–10 000 серій** — прийнятно для single-instance Hetzner-деплою.

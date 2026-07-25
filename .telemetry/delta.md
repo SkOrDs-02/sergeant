@@ -25,6 +25,37 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 рев'ювабельним патчем ДО інструментування — навмисно, бо імена подій де-факто
 незворотні (§ «Naming convention» нижче).
 
+**Оновлено 2026-07-25 (пізніше того ж дня) — половина «дію зроблено».**
+До трьох `value_signal_*` додались пʼять web-callsite-ів:
+
+| Подія                     | Callsite (web)                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts` (`onToggleHabit` — `source: "ui"`, `onBulkMarkDay` — `source: "bulk"`) |
+| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx` (`surface: "hero_flame"`)                                 |
+| `fizruk_workout_finished` | `modules/fizruk/components/workouts/WorkoutJournalSection.tsx`                                                 |
+| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                                                                   |
+| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`                                                             |
+
+Без callsite-ів лишились дві події AI-поради (`ai_advice_*`). Домені поля
+чотирьох action-подій дописані в `tracking-plan.yaml` у тому ж патчі
+(`day_key`, `items` / `has_sets` / `duration_min`, `meal_type` / `source` /
+`macro_source` / `has_macros`, `action` / `category_kind`) — у payload лише
+counts і enum-и, жодної назви звички, вправи, страви чи категорії
+(Hard Rule #21: `scrubPII` чистить за _іменами_ ключів, тож назву він би не
+вирізав). Наявні `expense_added` / `income_added` / `budget_set` НЕ
+перейменовані й не продубльовані — до них лише дописані поля атрибуції.
+
+Леджер експозиції стріку — `modules/routine/lib/streakExposure.ts` (device-local
+день за ADR-0078, дедуплікація показу по «(день, поверхня)»). Показ
+streak-record-карточки туди НЕ пише: вона рендериться через `InsightCard` і вже
+покрита `value_signal_shown`; другий запис подвоїв би покази.
+
+⚠️ **Зріз `hero_flame` вироджений і не є експериментом.** `flame.visible ===
+(streakDays > 0)`, а полумʼя живе на тому ж екрані, що й чекбокси — «бачив
+полумʼя vs ні» порівнює когорти, а не стимул. Читати лише з розрізом по
+`surface`, ніколи не схлопувати в один булеан. Деталі й правила знаменника —
+[`posthog-founder-pulse.md § 8`](../docs/03-operations/observability/posthog-founder-pulse.md).
+
 **Оновлено 2026-07-25 — перші callsite-и.** Три `value_signal_*` уже емітяться;
 решта сімох подій лишаються без callsite-ів. Єдиний писар — спільний шов
 [`InsightCard.tsx`](../apps/web/src/shared/components/ui/InsightCard.tsx)
