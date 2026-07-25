@@ -70,6 +70,7 @@ function buildParams(
     toggleExcludeFromStats: vi.fn(),
     overrideCategory: vi.fn(),
     setSplitTx: vi.fn(),
+    setTxNote: vi.fn(),
     removeManualExpense: vi.fn(),
     addManualExpense: vi.fn(),
     onEditManualExpense: vi.fn(),

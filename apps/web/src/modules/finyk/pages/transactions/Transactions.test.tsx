@@ -131,6 +131,8 @@ function buildStorage(
     overrideCategory: vi.fn(),
     txSplits: {},
     setSplitTx: vi.fn(),
+    txNotes: {},
+    setTxNote: vi.fn(),
     manualExpenses: [],
     addManualExpense: vi.fn(),
     removeManualExpense: vi.fn(),

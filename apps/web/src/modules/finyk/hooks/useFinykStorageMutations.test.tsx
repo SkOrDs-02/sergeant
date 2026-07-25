@@ -37,6 +37,7 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     hiddenAccounts: [],
     hiddenTxIds: [],
     txCategories: {},
+    txNotes: {},
     txSplits: {},
     monoDebtLinkedTxIds: {},
     customCategories: [],
@@ -68,6 +69,7 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     hiddenTxIds: state["hiddenTxIds"],
     setHiddenTxIds: makeSetter("hiddenTxIds"),
     setTxCategories: makeSetter("txCategories"),
+    setTxNotes: makeSetter("txNotes"),
     setTxSplits: makeSetter("txSplits"),
     setMonoDebtLinkedTxIds: makeSetter("monoDebtLinkedTxIds"),
     setCustomCategories: makeSetter("customCategories"),
@@ -344,6 +346,30 @@ describe("overrideCategory", () => {
     result.current.overrideCategory("tx1", null);
     expect(
       (state["txCategories"] as Record<string, unknown>)["tx1"],
+    ).toBeUndefined();
+  });
+});
+
+describe("setTxNote", () => {
+  it("sets, trims, and clears a tx note", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.setTxNote("tx1", "  Оплата за друга  ");
+    expect((state["txNotes"] as Record<string, unknown>)["tx1"]).toBe(
+      "Оплата за друга",
+    );
+    result.current.setTxNote("tx1", "");
+    expect(
+      (state["txNotes"] as Record<string, unknown>)["tx1"],
+    ).toBeUndefined();
+  });
+
+  it("treats a whitespace-only note as empty (no entry)", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.setTxNote("tx1", "   ");
+    expect(
+      (state["txNotes"] as Record<string, unknown>)["tx1"],
     ).toBeUndefined();
   });
 });

@@ -2,7 +2,7 @@
  * Last validated: 2026-07-20
  * Status: Active
  */
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { getCategory, getIncomeCategory } from "../utils";
 import {
   MCC_CATEGORIES,
@@ -35,13 +35,14 @@ interface TxRowProps {
   hidden?: boolean | undefined;
   overrideCatId?: string | null | undefined;
   onCatChange?: ((id: string, catId: string | null) => void) | null | undefined;
+  /** User's own free-text annotation for this transaction. */
+  note?: string | undefined;
+  onNoteChange?: ((id: string, note: string | null) => void) | null | undefined;
   accounts?: readonly MonoAccount[] | undefined;
   hideAmount?: boolean | undefined;
   txSplits?: TxSplitsMap | undefined;
   onSplitChange?:
-    | ((id: string, split: TxSplit[] | null) => void)
-    | null
-    | undefined;
+    ((id: string, split: TxSplit[] | null) => void) | null | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
   /**
    * Draw the built-in bottom hairline. Defaults to `true` for the Assets
@@ -66,6 +67,8 @@ function TxRowImpl({
   hidden,
   overrideCatId,
   onCatChange,
+  note,
+  onNoteChange,
   accounts,
   hideAmount = false,
   txSplits,
@@ -84,13 +87,20 @@ function TxRowImpl({
   // у shape-і елемента ловилась лише рантаймом.
   const [draftSplits, setDraftSplits] = useState<TxSplit[]>([]);
 
-  // External open-category-picker trigger (#7). We intentionally exclude the
-  // initial mount (0/undefined) so the picker only opens on an actual swipe.
-  useEffect(() => {
-    if (!catPickerRequest) return;
-    setCatPicker(true);
-    setSplitEditor(false);
-  }, [catPickerRequest]);
+  // External open-category-picker trigger (#7): реагуємо на зміну лічильника
+  // прямо під час рендера (React-патерн «adjusting state when props change»),
+  // а не в ефекті — setState-в-ефекті дає каскадний ререндер і заборонений
+  // лінтом. Ініціалізація поточним значенням виключає початковий mount,
+  // тож пікер відкривається лише на реальний свайп.
+  const [handledCatPickerRequest, setHandledCatPickerRequest] =
+    useState(catPickerRequest);
+  if (catPickerRequest !== handledCatPickerRequest) {
+    setHandledCatPickerRequest(catPickerRequest);
+    if (catPickerRequest) {
+      setCatPicker(true);
+      setSplitEditor(false);
+    }
+  }
   const splitCategoryOptions = useMemo(() => {
     const merged = mergeExpenseCategoryDefinitions(
       customCategories as readonly unknown[],
@@ -207,6 +217,11 @@ function TxRowImpl({
           account={account}
           accountName={accountName}
         />
+        {note && (
+          <div className="text-style-caption text-subtle truncate mt-0.5">
+            {note}
+          </div>
+        )}
       </div>
     </>
   );
@@ -285,6 +300,8 @@ function TxRowImpl({
           overrideCatId={overrideCatId}
           txId={tx.id}
           onCatChange={onCatChange}
+          note={note}
+          onNoteChange={onNoteChange}
           onClose={() => setCatPicker(false)}
         />
       )}

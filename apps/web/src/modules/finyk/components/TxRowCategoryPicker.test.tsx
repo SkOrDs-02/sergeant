@@ -44,9 +44,16 @@ function categorizedPayload(index = 0): Record<string, unknown> {
   return call[1] as Record<string, unknown>;
 }
 
-function renderPicker(props: Partial<{ overrideCatId: string | null }> = {}) {
+function renderPicker(
+  props: Partial<{
+    overrideCatId: string | null;
+    note: string | undefined;
+    onNoteChange: (id: string, note: string | null) => void;
+  }> = {},
+) {
   const onCatChange = vi.fn();
   const onClose = vi.fn();
+  const onNoteChange = props.onNoteChange ?? vi.fn();
   render(
     <TxRowCategoryPicker
       categories={CATEGORIES}
@@ -54,10 +61,12 @@ function renderPicker(props: Partial<{ overrideCatId: string | null }> = {}) {
       overrideCatId={props.overrideCatId ?? null}
       txId="tx-1"
       onCatChange={onCatChange}
+      note={props.note}
+      onNoteChange={onNoteChange}
       onClose={onClose}
     />,
   );
-  return { onCatChange, onClose };
+  return { onCatChange, onClose, onNoteChange };
 }
 
 describe("TxRowCategoryPicker — телеметрія категоризації", () => {
@@ -145,5 +154,53 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
       after_signal: true,
       signal: "finyk-recurring-detected",
     });
+  });
+});
+
+describe("TxRowCategoryPicker — нотатка транзакції", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetSignalAttribution();
+    sessionStorage.clear();
+  });
+  afterEach(cleanup);
+
+  it("зберігає нотатку на blur", () => {
+    const { onNoteChange } = renderPicker();
+
+    const input = screen.getByLabelText("Нотатка до транзакції");
+    fireEvent.change(input, { target: { value: "Оплата за друга" } });
+    fireEvent.blur(input);
+
+    expect(onNoteChange).toHaveBeenCalledWith("tx-1", "Оплата за друга");
+  });
+
+  it("зберігає нотатку на Enter", () => {
+    const { onNoteChange } = renderPicker();
+
+    const input = screen.getByLabelText("Нотатка до транзакції");
+    fireEvent.change(input, { target: { value: "Кава з колегою" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onNoteChange).toHaveBeenCalledWith("tx-1", "Кава з колегою");
+  });
+
+  it("не викликає onNoteChange, якщо текст не змінився", () => {
+    const { onNoteChange } = renderPicker({ note: "Незмінна нотатка" });
+
+    const input = screen.getByLabelText("Нотатка до транзакції");
+    fireEvent.blur(input);
+
+    expect(onNoteChange).not.toHaveBeenCalled();
+  });
+
+  it("порожня нотатка на blur = видалення (null value)", () => {
+    const { onNoteChange } = renderPicker({ note: "Стара нотатка" });
+
+    const input = screen.getByLabelText("Нотатка до транзакції");
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.blur(input);
+
+    expect(onNoteChange).toHaveBeenCalledWith("tx-1", "");
   });
 });
