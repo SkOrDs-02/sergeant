@@ -197,6 +197,18 @@
     {
       "pattern": "^https?://console\\.firebase\\.google\\.com(/.*)?$",
       "reason": "Firebase console cited in docs/90-work/tech-debt/backend.md for FCM setup; gates everything behind Google login and returns 403 to anonymous non-browser requests. Correct URL for authenticated project owners."
+    },
+    {
+      "pattern": "^https?://(blog|support|community)\\.myfitnesspal\\.com/",
+      "reason": "MyFitnessPal довідка/блог/спільнота — джерела для docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md (модель «зеленої галочки» і її відомі провали). Zendesk-довідка й Vanilla-форум віддають 403/503 на HEAD/GET з CI-user-agent, у браузері відкриваються."
+    },
+    {
+      "pattern": "^https?://support\\.cronometer\\.com/",
+      "reason": "Cronometer Data Sources — джерело моделі «внески приватні за замовчуванням + куратор» у docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md. Zendesk-довідка 403-ить не-браузерні user-agent-и."
+    },
+    {
+      "pattern": "^https?://doaj\\.org/article/",
+      "reason": "DOAJ-запис валідаційного дослідження точності MyFitnessPal (JMIR 2020), цитоване в docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md. DOAJ 403-ить автоматизовані запити."
     }
   ]
 }

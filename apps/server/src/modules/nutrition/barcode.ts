@@ -3,6 +3,7 @@ import {
   BarcodeLookupSuccessSchema,
   type BarcodeProduct,
 } from "@sergeant/shared/schemas";
+import { env } from "../../env.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { BarcodeQuerySchema } from "../../http/schemas.js";
@@ -283,18 +284,32 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Source 3: UPCitemdb (no key, 100 req/day, 694M+ barcodes)
+// Source 3: UPCitemdb (694M+ barcodes)
 // Returns product name/brand but rarely has nutrition data for food items.
 // We mark partial: true so the frontend can prompt the user to fill in macros.
+//
+// AI-DANGER: дефолтний endpoint — `prod/trial`, тобто **100 запитів на добу
+// на весь продукт**, а не на користувача. Перший же день із десятком людей
+// вимикає третє джерело каскаду. До 2026-07-25 URL був захардкоджений і
+// змінити його без релізу було неможливо; тепер він в `UPCITEMDB_BASE_URL`.
+// Заміна тріалу на платний план або на інше джерело — крок 2 у
+// `docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md`.
 // ──────────────────────────────────────────────────────────────────────────────
 async function lookupUPCitemdb(
   barcode: string,
 ): Promise<NormalizedProduct | null> {
-  const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`;
+  const base = env.UPCITEMDB_BASE_URL.replace(/\/+$/, "");
+  const url = `${base}/lookup?upc=${encodeURIComponent(barcode)}`;
   const start = process.hrtime.bigint();
   try {
     const r = await fetch(url, {
-      headers: { "User-Agent": "Sergeant-NutritionApp/1.0" },
+      headers: {
+        "User-Agent": "Sergeant-NutritionApp/1.0",
+        // Платні плани UPCitemdb автентифікуються заголовком `user_key`;
+        // тріал його ігнорує, тож заголовок додається лише за наявності
+        // ключа — інакше тріальний запит отримав би зайвий заголовок.
+        ...(env.UPCITEMDB_API_KEY ? { user_key: env.UPCITEMDB_API_KEY } : {}),
+      },
       signal: AbortSignal.timeout(3000),
     });
     if (!r.ok) {
