@@ -6,6 +6,7 @@ import {
   selectModulePreview,
   type ModulePreview,
 } from "@sergeant/shared";
+import type { HubModuleAction } from "@shared/lib/modules/hubNav";
 
 export interface ModuleConfig {
   icon: ReactNode;
@@ -40,6 +41,40 @@ export interface ModuleConfig {
   emptyPromise: string;
   emptyExample: string;
   getPreview: () => ModulePreview;
+  /**
+   * #8 — trend delta chip. Relative change vs previous period expressed as a
+   * number (e.g. 0.12 = +12 %, -0.05 = −5 %). `null` means "not enough data
+   * to compute a trend yet" and the chip is omitted.  Callers can supply this
+   * via a local quick-stats snapshot — it is intentionally separate from the
+   * canonical `ModulePreview` so the bento tile can show it while the module
+   * page is still lazy-loading.
+   */
+  trendDelta?: number | null | undefined;
+  /**
+   * #10 — empty-state ghost preview. A small SVG path (relative, e.g.
+   * "M0,20 L10,14 L20,16 L30,8 L40,12") that sketches what a real sparkline
+   * or ring would look like once the user has data. Rendered as a faded
+   * silhouette inside the empty card so the layout destination is visible.
+   * Each module defines its own characteristic shape.
+   */
+  ghostPath?: string | undefined;
+  /** Ring percentage (0–100) used as the ghost preview for goal-bearing
+   *  modules (routine, nutrition). When present, renders a partial arc
+   *  instead of a sparkline silhouette. */
+  ghostRingPct?: number | undefined;
+  /**
+   * #18 — long-press peek quick actions.
+   * Up to 3 items shown in the peek sheet when the user long-presses the
+   * BentoCard. Each action fires `openHubModuleWithAction` so the module
+   * opens directly to the right create-flow.
+   */
+  quickActions?:
+    | ReadonlyArray<{
+        action: HubModuleAction;
+        label: string;
+        icon: string; // lucide-compatible icon name for <Icon>
+      }>
+    | undefined;
 }
 
 export type ModuleId = ModuleAccent;
@@ -84,6 +119,12 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyLabel: "Почни тут \u2192",
     emptyPromise: "Тут зʼявиться баланс — напр.",
     emptyExample: "450 ₴",
+    // #10 — ghost sparkline: gentle rising curve (net-worth trend shape)
+    ghostPath: "M0,22 L8,18 L16,20 L24,14 L32,16 L40,10 L48,12",
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_expense", label: "Витрата", icon: "minus-circle" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "finyk",
@@ -120,6 +161,13 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyLabel: "Почни тут \u2192",
     emptyPromise: "Тут зʼявиться серія — напр.",
     emptyExample: "5 трен.",
+    // #10 — ghost sparkline: volume bars (weekly workout volume shape)
+    ghostPath:
+      "M4,24 L4,16 M12,24 L12,20 M20,24 L20,12 M28,24 L28,18 M36,24 L36,8 M44,24 L44,14",
+    // #18 — long-press peek
+    quickActions: [
+      { action: "start_workout", label: "Тренування", icon: "dumbbell" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "fizruk",
@@ -156,6 +204,12 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyLabel: "Почни тут \u2192",
     emptyPromise: "Тут зʼявиться прогрес дня — напр.",
     emptyExample: "3/5",
+    // #10 — ghost ring at ~60 % fill to preview the daily-progress ring
+    ghostRingPct: 60,
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_habit", label: "Нова звичка", icon: "check-circle" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "routine",
@@ -193,6 +247,13 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyLabel: "Почни тут \u2192",
     emptyPromise: "Тут зʼявиться КБЖВ — напр.",
     emptyExample: "1250 ккал",
+    // #10 — ghost ring at ~45 % fill to preview the calorie-target ring
+    ghostRingPct: 45,
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_meal", label: "Прийом їжі", icon: "plus" },
+      { action: "add_meal_photo", label: "Фото страви", icon: "camera" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "nutrition",

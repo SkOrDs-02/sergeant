@@ -1,4 +1,7 @@
+import { useRef, useMemo } from "react";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { useChartScrub } from "@shared/hooks";
+import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 
 export interface MiniLineChartDataPoint {
   value: number | null | undefined;
@@ -17,6 +20,11 @@ interface MiniLineChartProps {
   unit: string;
   color: string;
   metricLabel?: string;
+  /**
+   * #2 — optional reference/goal value (e.g. target weight, TDEE).
+   * Rendered as a dashed goal line with a "Ціль" label.
+   */
+  goalValue?: number;
 }
 
 /** SVG line chart for measurement trends (weight, body fat %). */
@@ -25,6 +33,7 @@ export function MiniLineChart({
   unit,
   color,
   metricLabel = "показник",
+  goalValue,
 }: MiniLineChartProps) {
   const valid = (data || []).filter(
     (d: MiniLineChartDataPoint) =>
@@ -134,14 +143,41 @@ export function MiniLineChart({
     labelIndices.add(Math.floor((2 * n) / 3));
   }
 
+  // #1 — scrubbing
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => points.map((p) => p.x),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [n, padL, step],
+  );
+
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: points.length,
+    xPositions,
+    viewBoxWidth: w,
+  });
+
+  const activePoint = activeIndex !== null ? points[activeIndex] : null;
+  const activeDotY = activePoint?.y ?? undefined;
+  const activeVal = activePoint?.v;
+
+  // #2 — goal line y-position (clamp to visible range)
+  const goalY =
+    goalValue !== undefined
+      ? padT + innerH - ((Math.min(Math.max(goalValue, minVal), maxVal) - minVal) / range) * innerH
+      : undefined;
+
   return (
     <div className="w-full">
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-auto max-h-[160px] overflow-visible"
+        className="w-full h-auto max-h-[160px] overflow-visible touch-none cursor-crosshair"
         role="img"
         aria-label={`Графік тренду — ${metricLabel}`}
         aria-describedby={summaryId}
+        {...bind}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -173,6 +209,20 @@ export function MiniLineChart({
             </text>
           </g>
         ))}
+
+        {/* #2 — goal line */}
+        {goalY !== undefined && (
+          <ChartGoalLine
+            y={goalY}
+            x1={padL}
+            x2={w - padR}
+            label="Ціль"
+            color={color}
+            zone="below"
+            zoneTop={padT}
+            gradId={`mlc${color.replace(/[^a-zA-Z0-9]/g, "")}`}
+          />
+        )}
 
         {areaD && <path d={areaD} fill={`url(#${gradId})`} />}
         {lineD && (
@@ -216,6 +266,21 @@ export function MiniLineChart({
             </text>
           );
         })}
+
+        {/* #1 — scrub crosshair + tooltip */}
+        {activePoint != null && activeDotY !== undefined && activeVal !== null && activeVal !== undefined && (
+          <ChartScrubOverlay
+            x={scrubX}
+            top={padT}
+            bottom={padT + innerH}
+            dotY={activeDotY}
+            dotColor={color}
+            label={`${activeVal.toFixed(1)} ${unit}`}
+            subLabel={activePoint.label}
+            viewBoxWidth={w}
+            flipNearEdge={true}
+          />
+        )}
       </svg>
 
       {}
@@ -238,9 +303,11 @@ export function MiniLineChart({
 
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-xl font-extrabold tabular-nums text-text">
-          {lastValid.value} {unit}
+          {activeVal !== null && activeVal !== undefined
+            ? `${activeVal.toFixed(1)} ${unit}`
+            : `${lastValid.value} ${unit}`}
         </span>
-        {delta !== 0 && (
+        {delta !== 0 && activeIndex === null && (
           <span
             className={`text-style-caption ${delta > 0 ? "text-warning-strong dark:text-warning" : "text-success-strong dark:text-success"}`}
           >

@@ -9,6 +9,7 @@ import {
   formatStickyDayLabel,
   type computeDaySummary,
 } from "./transactionsLib";
+import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { messages } from "@shared/i18n/uk";
 
 export interface TransactionDayHeaderProps {
@@ -16,6 +17,12 @@ export interface TransactionDayHeaderProps {
   collapsed: boolean;
   summary: ReturnType<typeof computeDaySummary>;
   showTotal: boolean;
+  /**
+   * Blur the day total behind the #9 privacy mask. The header itself is a
+   * collapse-toggle button, so the total uses the static (non-interactive)
+   * MaskedAmount variant to avoid nesting buttons.
+   */
+  masked?: boolean;
   onToggle: (key: string) => void;
 }
 
@@ -32,6 +39,7 @@ export function TransactionDayHeader({
   collapsed,
   summary,
   showTotal,
+  masked = false,
   onToggle,
 }: TransactionDayHeaderProps) {
   const label = formatStickyDayLabel(dayKey);
@@ -41,7 +49,14 @@ export function TransactionDayHeader({
       onClick={() => onToggle(dayKey)}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
-      className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg/95 backdrop-blur-sm border-b border-line text-style-caption text-text tracking-wide hover:bg-panelHi transition-colors"
+      className={cn(
+        "w-full flex items-center justify-between gap-2 px-3 py-2",
+        "text-style-caption text-text tracking-wide transition-colors",
+        "hover:bg-panelHi",
+        // Separator only when the day is expanded and rows follow beneath —
+        // a collapsed day is a self-contained card and needs no trailing line.
+        !collapsed && "border-b border-line/60",
+      )}
     >
       <span className="flex items-center gap-2 min-w-0">
         <svg
@@ -76,7 +91,9 @@ export function TransactionDayHeader({
           )}
         >
           {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}
-          {fmtAmt(summary.total, CURRENCY.UAH)}
+          <MaskedAmount masked={masked} interactive={false} label="сума за день">
+            {fmtAmt(summary.total, CURRENCY.UAH)}
+          </MaskedAmount>
         </span>
       )}
     </button>

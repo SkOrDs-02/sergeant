@@ -11,6 +11,7 @@ import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import type { TxRowTx } from "./txRowHelpers";
 
 interface TxRowAmountActionsProps {
@@ -56,11 +57,15 @@ export function TxRowAmountActions({
               : "text-text",
           )}
         >
-          {hideAmount ? "••••" : fmtAmt(tx.amount, CURRENCY.UAH)}
+          <MaskedAmount masked={hideAmount}>
+            {fmtAmt(tx.amount, CURRENCY.UAH)}
+          </MaskedAmount>
         </div>
         {tx.currencyCode !== CURRENCY.UAH && tx.operationAmount && (
           <div className="text-style-caption text-muted tabular-nums">
-            {hideAmount ? "••••" : fmtAmt(tx.operationAmount, tx.currencyCode)}
+            <MaskedAmount masked={hideAmount}>
+              {fmtAmt(tx.operationAmount, tx.currencyCode)}
+            </MaskedAmount>
           </div>
         )}
       </div>

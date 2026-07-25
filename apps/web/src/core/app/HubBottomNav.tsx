@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { useReducedMotion } from "@shared/hooks/useReducedMotion";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
 import { getPagePrefetchProps, type PageKey } from "../lib/useRoutePrefetch";
@@ -88,6 +89,12 @@ interface HubBottomNavTabProps {
    * this one participates in the nav's slide-down transform instead.
    */
   kbHidden?: boolean | undefined;
+  /**
+   * #20 — Variant C. When true the active tab shows icon + label inside a
+   * pill; inactive tabs show only their icon. Animated with CSS transitions
+   * (width/opacity) unless reduced-motion is on.
+   */
+  reduceMotion?: boolean | undefined;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -107,6 +114,7 @@ function HubBottomNavTab({
   action = false,
   onKeyDown,
   kbHidden = false,
+  reduceMotion = false,
 }: HubBottomNavTabProps) {
   const prefetchProps =
     !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
@@ -118,6 +126,16 @@ function HubBottomNavTab({
         "aria-controls": panelId,
       } as const);
 
+  // #20 Variant C — pill wraps icon+label for the active tab; inactive tabs
+  // show only their icon. The pill itself carries the brand background so the
+  // button background stays transparent: this way the active "slot" doesn't
+  // change size and there is no layout shift as tabs switch. Width/opacity of
+  // the label span is animated with CSS transitions (collapsed to opacity-only
+  // under prefers-reduced-motion via the `reduceMotion` prop).
+  const transition = reduceMotion
+    ? "transition-opacity"
+    : "transition-[width,opacity,padding]";
+
   return (
     <button
       type="button"
@@ -127,32 +145,46 @@ function HubBottomNavTab({
       onClick={hiddenSlot || kbHidden ? undefined : onClick}
       onKeyDown={hiddenSlot || action || kbHidden ? undefined : onKeyDown}
       {...prefetchProps}
-      // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
-      // ховала слот за computed-стилем, але RTL міг знайти його через
-      // `getByRole(..., { hidden: true })`. `aria-hidden` стер би
-      // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-center gap-1",
-        "my-1.5 rounded-xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
+        "relative flex-1 flex items-center justify-center",
+        "min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        active
-          ? "text-bg border-transparent bg-brand-strong dark:bg-brand-400"
-          : "text-text border-transparent hover:text-text/80",
+        "text-text",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
     >
+      {/* Inner pill — carries the brand fill and grows to fit icon + label */}
       <span
-        className="relative transition-all duration-200 w-10 h-7 flex items-center justify-center"
         aria-hidden
+        className={cn(
+          "flex items-center justify-center gap-1.5 rounded-2xl",
+          "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
+          active
+            ? "bg-brand-strong dark:bg-brand-400 text-bg px-3 py-1.5"
+            : "bg-transparent text-text px-2 py-1.5",
+          !reduceMotion && "transition-[background-color,padding,color]",
+        )}
       >
-        <Icon name={iconName} size={20} strokeWidth={2} />
+        <Icon name={iconName} size={20} strokeWidth={active ? 2.5 : 2} />
+        {/* Label: visible only for active tab, slides in/out */}
+        <span
+          className={cn(
+            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+            transition,
+            "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
+            active
+              ? "max-w-[96px] opacity-100"
+              : "max-w-0 opacity-0 pointer-events-none",
+          )}
+        >
+          {label}
+        </span>
       </span>
-      <span className="text-style-caption font-semibold leading-none">
-        {label}
-      </span>
+      {/* Screen-reader-only label so every tab has an accessible name */}
+      <span className="sr-only">{label}</span>
     </button>
   );
 }
@@ -205,6 +237,7 @@ export function HubBottomNav({
   // ModuleBottomNav / RoutineBottomNav's FAB).
   const kbInsetPx = useVisualKeyboardInset(true);
   const kbHidden = kbInsetPx > 0;
+  const reduceMotion = useReducedMotion();
 
   // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
   // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
@@ -358,6 +391,7 @@ export function HubBottomNav({
               action={tab.action}
               onKeyDown={handleTablistKeyDown}
               kbHidden={kbHidden}
+              reduceMotion={reduceMotion}
             />
           ))}
         </div>
@@ -375,6 +409,7 @@ export function HubBottomNav({
             hiddenSlot={authAction.hiddenSlot}
             action={authAction.action}
             kbHidden={kbHidden}
+            reduceMotion={reduceMotion}
           />
         )}
       </div>

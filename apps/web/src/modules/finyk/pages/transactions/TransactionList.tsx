@@ -44,10 +44,60 @@ function ListPlaceholder() {
   return <div aria-hidden className="h-px" />;
 }
 
+/**
+ * #13 (Hybrid 1) — one virtualized row's slice of a per-day "paper" card.
+ *
+ * The card is border-less: every slice shares the same `bg-panel` surface so
+ * flush neighbours read as one continuous panel, while the transparent
+ * bottom gap (`pb`) on the group's last slice lets the page background show
+ * through and separates days. Only the group's outer corners are rounded —
+ * interior corners sit panel-on-panel and stay invisible, which also sidesteps
+ * the rounded corners `SwipeToAction` paints on every row.
+ *
+ * `inset` draws the hairline divider between rows, indented past the category
+ * icon so it aligns with the description text (replaces the old zebra bands).
+ */
+function DayCardShell({
+  edge,
+  inset = false,
+  children,
+}: {
+  edge: "top" | "middle" | "bottom" | "single";
+  inset?: boolean;
+  children: ReactNode;
+}) {
+  const groupEnd = edge === "bottom" || edge === "single";
+  const roundTop = edge === "top" || edge === "single";
+  const roundBottom = edge === "bottom" || edge === "single";
+  return (
+    <div className={cn(groupEnd && "pb-2.5")}>
+      <div
+        className={cn(
+          "bg-panel",
+          roundTop && "rounded-t-2xl",
+          roundBottom && "rounded-b-2xl",
+          (roundTop || roundBottom) && "overflow-hidden",
+        )}
+      >
+        {inset && (
+          <div aria-hidden className="ml-[3.4rem] mr-3 border-t border-line/45" />
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /** Discriminated union for the flat render list fed to `VirtualList`. */
 type RenderRow =
-  | { kind: "header"; groupIndex: number; key: string }
-  | { kind: "item"; flatIndex: number; tx: Transaction };
+  | { kind: "header"; groupIndex: number; key: string; standalone: boolean }
+  | {
+      kind: "item";
+      flatIndex: number;
+      tx: Transaction;
+      firstInGroup: boolean;
+      lastInGroup: boolean;
+    };
 
 export interface TransactionListProps {
   /** Whether the underlying month is still loading (real or history). */
@@ -149,11 +199,25 @@ export function TransactionList({
     const rows: RenderRow[] = [];
     let flatIdx = 0;
     groupedByDate.forEach((group, gi) => {
-      rows.push({ kind: "header", groupIndex: gi, key: group.key });
       const count = groupCounts[gi] ?? 0;
+      // A collapsed day contributes only its header (count 0) → the header
+      // becomes a self-contained rounded card (#13 Hybrid 1).
+      rows.push({
+        kind: "header",
+        groupIndex: gi,
+        key: group.key,
+        standalone: count === 0,
+      });
       for (let k = 0; k < count; k++) {
         const tx = flatItems[flatIdx];
-        if (tx) rows.push({ kind: "item", flatIndex: flatIdx, tx });
+        if (tx)
+          rows.push({
+            kind: "item",
+            flatIndex: flatIdx,
+            tx,
+            firstInGroup: k === 0,
+            lastInGroup: k === count - 1,
+          });
         flatIdx++;
       }
     });
@@ -235,14 +299,17 @@ export function TransactionList({
         isEmpty={(data) => data.length === 0}
       >
         {() => (
-          <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
+          <div className="-mx-px">
             <VirtualList
               items={renderRows}
               estimateSize={(index) => {
                 const row = renderRows[index];
-                return row?.kind === "header"
-                  ? HEADER_HEIGHT_PX
-                  : ROW_HEIGHT_PX;
+                if (!row) return ROW_HEIGHT_PX;
+                // Group-end rows carry the transparent day-gap (`pb`), so
+                // seed the estimate a touch taller to reduce first-paint jump.
+                if (row.kind === "header")
+                  return HEADER_HEIGHT_PX + (row.standalone ? 10 : 0);
+                return ROW_HEIGHT_PX + (row.lastInGroup ? 10 : 0);
               }}
               scrollElement={scrollParent}
               overscan={8}
@@ -264,15 +331,20 @@ export function TransactionList({
                   // Коли у день є тільки «не в статистиці» транзакції, сховати
                   // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
                   // перекази у вигляді доходу.
-                  const showTotal = showBalance && summary.statCount > 0;
+                  // #9 — показуємо суму завжди, коли вона є, але за вимкненого
+                  // «ока» (showBalance=false) віддаємо її розмитою, а не ховаємо.
+                  const hasTotal = summary.statCount > 0;
                   return (
-                    <TransactionDayHeader
-                      dayKey={key}
-                      collapsed={collapsed}
-                      summary={summary}
-                      showTotal={showTotal}
-                      onToggle={toggleDay}
-                    />
+                    <DayCardShell edge={row.standalone ? "single" : "top"}>
+                      <TransactionDayHeader
+                        dayKey={key}
+                        collapsed={collapsed}
+                        summary={summary}
+                        showTotal={hasTotal}
+                        masked={!showBalance}
+                        onToggle={toggleDay}
+                      />
+                    </DayCardShell>
                   );
                 }
                 // row.kind === "item"
@@ -280,27 +352,32 @@ export function TransactionList({
                 if (!t) return <ListPlaceholder />;
                 const rowTx = t as TxRowTx;
                 return (
-                  <TxListItem
-                    tx={rowTx}
-                    rowIndex={row.flatIndex}
-                    selectMode={selectMode}
-                    selected={selectMode && selectedIds.has(t.id)}
-                    hidden={hiddenTxIdSet.has(t.id)}
-                    overrideCatId={txCategories[t.id]}
-                    txSplits={txSplits}
-                    accounts={accounts ?? []}
-                    hideAmount={!showBalance}
-                    customCategories={customCategories}
-                    onToggleSelect={onToggleSelect}
-                    onSwipeHideTx={onSwipeHideTx}
-                    onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
-                    onEditManual={onEditManual}
-                    onHideTx={onHideTx}
-                    onCatChange={onCatChange}
-                    onSplitChange={(id, splits) =>
-                      onSplitChange(id, (splits ?? []) as TxSplit[])
-                    }
-                  />
+                  <DayCardShell
+                    edge={row.lastInGroup ? "bottom" : "middle"}
+                    inset={!row.firstInGroup}
+                  >
+                    <TxListItem
+                      tx={rowTx}
+                      rowIndex={row.flatIndex}
+                      selectMode={selectMode}
+                      selected={selectMode && selectedIds.has(t.id)}
+                      hidden={hiddenTxIdSet.has(t.id)}
+                      overrideCatId={txCategories[t.id]}
+                      txSplits={txSplits}
+                      accounts={accounts ?? []}
+                      hideAmount={!showBalance}
+                      customCategories={customCategories}
+                      onToggleSelect={onToggleSelect}
+                      onSwipeHideTx={onSwipeHideTx}
+                      onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
+                      onEditManual={onEditManual}
+                      onHideTx={onHideTx}
+                      onCatChange={onCatChange}
+                      onSplitChange={(id, splits) =>
+                        onSplitChange(id, (splits ?? []) as TxSplit[])
+                      }
+                    />
+                  </DayCardShell>
                 );
               }}
             </VirtualList>

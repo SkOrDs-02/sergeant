@@ -35,4 +35,27 @@ describe("RoutineBottomNav", () => {
       screen.queryByRole("tab", { name: /Налаштування/i }),
     ).not.toBeInTheDocument();
   });
+
+  it("hides the nav while the keyboard is open (spec § design decision 2)", () => {
+    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
+
+    // aria-hidden removes the nav from the accessibility tree so getByRole
+    // won't find it — reach via querySelector on the aria-label attribute.
+    const nav = document.querySelector(
+      'nav[aria-label="Розділи Рутини"]',
+    ) as HTMLElement;
+    expect(nav).toBeTruthy();
+    expect(nav).toHaveAttribute("aria-hidden", "true");
+    expect(nav.className).toContain("translate-y-full");
+  });
+
+  it("keeps the nav reachable when the keyboard is closed", () => {
+    setVisualKeyboardInsetAdapter(() => 0);
+    render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
+
+    expect(
+      screen.getByRole("navigation", { name: "Розділи Рутини" }),
+    ).not.toHaveAttribute("aria-hidden");
+  });
 });

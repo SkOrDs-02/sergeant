@@ -124,6 +124,15 @@ export const router = createBrowserRouter([
             Component: m.UiAuditPage,
           })),
       },
+      // UI Mockups — «зараз / може бути» прев'ю для узгодження UI/UX-ідей
+      // (dev/internal, не лінкується з основної навігації).
+      {
+        path: "ui-mockups",
+        lazy: () =>
+          import("../../pages/UiMockupsPage").then((m) => ({
+            Component: m.UiMockupsPage,
+          })),
+      },
       // Catch-all: standalone routes + 404.
       // Uses `Component` (not `element`) to force fresh JSX per match.
       {

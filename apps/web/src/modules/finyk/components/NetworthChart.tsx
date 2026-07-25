@@ -1,5 +1,8 @@
-import { memo } from "react";
+import { memo, useRef, useMemo } from "react";
 import { chartAxis, chartGrid, chartTick, statusColors } from "@shared/charts";
+import { useChartScrub } from "@shared/hooks";
+import { ChartScrubOverlay } from "@shared/components/charts";
+import { ChartGoalLine } from "@shared/components/charts";
 
 interface NetworthPoint {
   month: string;
@@ -8,11 +11,16 @@ interface NetworthPoint {
 
 interface NetworthChartProps {
   data?: readonly NetworthPoint[];
+  /**
+   * #2 — optional reference line (e.g. savings target, zero-net threshold).
+   * Rendered as a dashed goal line with a "Ціль" label.
+   */
+  goalValue?: number;
 }
 
 // SVG-графік нетворсу повністю детермінований вхідним `data`.
 // `memo` запобігає перерендеру при незв'язаних оновленнях стану Overview.
-function NetworthChartComponent({ data }: NetworthChartProps) {
+function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   if (!data || data.length < 2) return null;
 
   const values = data.map((d) => d.networth);
@@ -66,17 +74,44 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
     return MONTH_UK[idx] || m;
   };
 
+  // #1 — scrubbing
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => data.map((_, i) => px(i)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.length, W, PAD.left, PAD.right],
+  );
+
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: data.length,
+    xPositions,
+    viewBoxWidth: W,
+  });
+
+  const activePoint = activeIndex !== null ? data[activeIndex] : null;
+  const activeDotY =
+    activeIndex !== null ? py(data[activeIndex]?.networth ?? 0) : undefined;
+
+  // #2 — goal line y-position
+  const goalY =
+    goalValue !== undefined
+      ? py(Math.max(min, Math.min(max, goalValue)))
+      : undefined;
+
   const summaryId = "finyk-networth-summary";
 
   return (
     <div>
       {/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- chart a11y labels + sr-only summary */}
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full overflow-visible"
+        className="w-full overflow-visible touch-none cursor-crosshair"
         role="img"
         aria-label="Графік капіталу за місяці"
         aria-describedby={summaryId}
+        {...bind}
       >
         <defs>
           <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
@@ -95,6 +130,20 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
             className={chartGrid.horizontal.className}
             strokeDasharray={chartGrid.horizontal.strokeDasharray}
             strokeWidth={chartGrid.horizontal.strokeWidth}
+          />
+        )}
+
+        {/* #2 — goal line */}
+        {goalY !== undefined && (
+          <ChartGoalLine
+            y={goalY}
+            x1={PAD.left}
+            x2={W - PAD.right}
+            label="Ціль"
+            color={statusColors.warning}
+            zone="above"
+            zoneBottom={H - PAD.bottom}
+            gradId="nw"
           />
         )}
 
@@ -125,8 +174,8 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
             >
               {monthLabel(d.month)}
             </text>
-            {/* Value label for first and last */}
-            {(i === 0 || i === data.length - 1) && (
+            {/* Value label for first and last (hide when scrubbing to avoid overlap) */}
+            {(i === 0 || i === data.length - 1) && activeIndex === null && (
               <text
                 x={px(i)}
                 y={py(d.networth) - 5}
@@ -141,6 +190,21 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
             )}
           </g>
         ))}
+
+        {/* #1 — scrub crosshair + tooltip */}
+        {activePoint && (
+          <ChartScrubOverlay
+            x={scrubX}
+            top={PAD.top}
+            bottom={H - PAD.bottom}
+            dotY={activeDotY}
+            dotColor={color}
+            label={`${fmt(activePoint.networth)}₴`}
+            subLabel={monthLabel(activePoint.month)}
+            viewBoxWidth={W}
+            flipNearEdge={true}
+          />
+        )}
       </svg>
       <div id={summaryId} className="sr-only">
         <p>

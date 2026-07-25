@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@shared/lib/ui/cn";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -98,6 +99,12 @@ export interface HubMainContentProps {
   user: User | null;
   onShowAuth: () => void;
   inFtuxSession?: boolean;
+  /**
+   * #3 — fires once the scrollable main container is available (or null on
+   * unmount). `HubHomeView` threads this into `useScrollDirection` so the
+   * header collapses when the user scrolls down.
+   */
+  onScrollContainer?: ((el: HTMLDivElement | null) => void) | undefined;
 }
 
 export const HubMainContent = memo(function HubMainContent({
@@ -108,6 +115,7 @@ export const HubMainContent = memo(function HubMainContent({
   user,
   onShowAuth,
   inFtuxSession = false,
+  onScrollContainer,
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
@@ -134,10 +142,14 @@ export const HubMainContent = memo(function HubMainContent({
   // «Жива» вкладка для scroll-listener-а: він пише позицію саме тієї
   // вкладки, що зараз на екрані, а не тієї, на яку ми щойно перемкнулись.
   const liveViewRef = useRef<HubView>(hubView);
-  const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
-    scrollElRef.current = el;
-    setScrollElement(el);
-  }, []);
+  const handleScrollElement = useCallback(
+    (el: HTMLDivElement | null) => {
+      scrollElRef.current = el;
+      setScrollElement(el);
+      onScrollContainer?.(el);
+    },
+    [onScrollContainer],
+  );
 
   // Безперервно фіксуємо позицію активної вкладки — так до моменту
   // перемикання ми вже маємо збережений `scrollTop` вихідної вкладки.
@@ -176,12 +188,7 @@ export const HubMainContent = memo(function HubMainContent({
     return undefined;
   }, [hubView]);
 
-  // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches. Fire
-  // `beginHubTabSwitch` here (after React commits the new `hubView`)
-  // and pair it with `<TabReadyProbe>` mounted inside each tab's
-  // Suspense boundary below; the probe fires `endHubTabSwitch` once
-  // the chunk has resolved and the panel content has painted.
-  // `dashboard` is excluded — no Suspense, no meaningful TTI.
+  // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches.
   useEffect(() => {
     if (
       hubView === "reports" ||
@@ -190,6 +197,36 @@ export const HubMainContent = memo(function HubMainContent({
     ) {
       beginHubTabSwitch(hubView);
     }
+  }, [hubView]);
+
+  // #11 — directional slide choreography between hub tabs.
+  // The canonical tab order is: dashboard → reports → profile → settings.
+  // Switching to a tab that is further right → slide-in from the right;
+  // switching left → slide-in from the left. This mirrors the spatial model
+  // of a physical tab strip, matching the user's mental map.
+  const HUB_TAB_ORDER: HubView[] = [
+    "dashboard",
+    "reports",
+    "profile",
+    "settings",
+  ];
+  const prevHubViewForAnim = useRef<HubView>(hubView);
+  const [slideClass, setSlideClass] = useState<string>("");
+
+  useEffect(() => {
+    const prev = prevHubViewForAnim.current;
+    if (prev === hubView) return;
+    const prevIdx = HUB_TAB_ORDER.indexOf(prev);
+    const nextIdx = HUB_TAB_ORDER.indexOf(hubView);
+    const goRight = nextIdx > prevIdx;
+    setSlideClass(goRight ? "animate-slide-in-right" : "animate-slide-in-left");
+    prevHubViewForAnim.current = hubView;
+    // Clear the class after the animation completes so re-mounting
+    // the same tab doesn't re-trigger the enter keyframe.
+    const id = setTimeout(() => setSlideClass(""), 260);
+    return () => clearTimeout(id);
+    // HUB_TAB_ORDER is a module-level constant — no dep needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hubView]);
 
   const handleRefresh = useCallback(async () => {
@@ -230,7 +267,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-dashboard"
               role="tabpanel"
               aria-labelledby="hub-tab-dashboard"
-              className="flex flex-col gap-5 pt-2"
+              className={cn("flex flex-col gap-5 pt-2", slideClass)}
             >
               <h1 className="sr-only">{messages.nav.dashboard}</h1>
               <HubDashboard
@@ -248,7 +285,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-reports"
               role="tabpanel"
               aria-labelledby="hub-tab-reports"
-              className="pt-2"
+              className={cn("pt-2", slideClass)}
             >
               <h1 className="sr-only">{messages.nav.reports}</h1>
               <SuspenseWithMinDelay fallback={<PageLoader />}>
@@ -265,7 +302,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-profile"
               role="tabpanel"
               aria-labelledby="hub-tab-profile"
-              className="pt-2"
+              className={cn("pt-2", slideClass)}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
@@ -281,6 +318,7 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-settings"
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
+              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubSettingsPage user={user} scrollContainer={scrollElement} />
