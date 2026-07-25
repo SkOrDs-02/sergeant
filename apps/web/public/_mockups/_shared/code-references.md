@@ -1,5 +1,9 @@
 # Code references for mockup work
 
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Status:** Reference — довідник шляхів для роботи з мокапами; вміст звірено
+> з кодовою базою 2026-05-17 і може відставати після переїзду файлів.
+
 Verified against codebase on 2026-05-17. Update when files move.
 
 ---
