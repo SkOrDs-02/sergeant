@@ -7,6 +7,7 @@ import { useAppLockContext } from "../security/AppLockContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 import { writeMemoryEntries } from "../profile/memoryBank";
+import { AiMemoryList } from "./AiMemoryList";
 
 const m = messages.privacy.lock;
 
@@ -193,6 +194,15 @@ export function PrivacySection() {
               {memoryClearStatus}
             </p>
           ) : null}
+          <div className="mt-3 border-t border-line pt-3">
+            <h4 className="text-style-label text-text">
+              {messages.privacy.aiMemory.sectionTitle}
+            </h4>
+            <p className="mt-1 mb-2 text-style-caption text-subtle leading-relaxed">
+              {messages.privacy.aiMemory.sectionHint}
+            </p>
+            <AiMemoryList />
+          </div>
         </div>
         {!preferencesLoaded && preferencesError ? (
           <p className="text-style-caption text-danger-strong" role="alert">

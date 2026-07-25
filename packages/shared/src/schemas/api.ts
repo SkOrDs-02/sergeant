@@ -184,6 +184,57 @@ export const AiMemoryClearResponseSchema = z.object({
 });
 export type AiMemoryClearResponse = z.infer<typeof AiMemoryClearResponseSchema>;
 
+/**
+ * Query для `GET /api/ai-memory/list`.
+ *
+ * `coerce`, бо це query-string: `?limit=20` приходить рядком. `cursor` —
+ * keyset по `ai_memories.id` (не OFFSET: черга ingest-у дописує рядки
+ * поки користувач гортає, і OFFSET між сторінками або дублює, або губить).
+ */
+export const AiMemoryListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.coerce.number().int().positive().optional(),
+});
+export type AiMemoryListQuery = z.infer<typeof AiMemoryListQuerySchema>;
+
+/**
+ * Один факт AI-пам'яті у списку налаштувань.
+ *
+ * `id` — `number`: у Postgres це `BIGSERIAL`, і pg-драйвер віддає його
+ * стрінгою. Коерція живе в серверному серіалізаторі (Hard Rule #1) — тут
+ * контракт уже числовий, бо клієнт кладе id у RQ-ключ і в URL.
+ */
+export const AiMemoryListItemSchema = z.object({
+  id: z.number().int().positive(),
+  source: z.string().min(1),
+  content: z.string(),
+  topic: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+export type AiMemoryListItem = z.infer<typeof AiMemoryListItemSchema>;
+
+/** Response для `GET /api/ai-memory/list`. */
+export const AiMemoryListResponseSchema = z.object({
+  items: z.array(AiMemoryListItemSchema),
+  /** `null` — сторінок більше немає. */
+  nextCursor: z.number().int().positive().nullable(),
+});
+export type AiMemoryListResponse = z.infer<typeof AiMemoryListResponseSchema>;
+
+/**
+ * Response для `DELETE /api/ai-memory/:id`.
+ *
+ * `deleted: false` — рядка вже не було. Це успіх, а не помилка: повторний
+ * тап чи паралельна вкладка приводять систему в той самий бажаний стан.
+ */
+export const AiMemoryDeleteResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.boolean(),
+});
+export type AiMemoryDeleteResponse = z.infer<
+  typeof AiMemoryDeleteResponseSchema
+>;
+
 /** /api/nutrition/analyze-photo */
 export const AnalyzePhotoSchema = z.object({
   image_base64: z

@@ -26,6 +26,7 @@
 import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
+import { privacyMessages } from "./uk.privacy";
 
 export const messages = {
   auth: {
@@ -541,44 +542,7 @@ export const messages = {
   },
 
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
-  privacy: {
-    // G4-a — privacy indicator chip in HubHeader + soft-prompt banner.
-    chip: "Тільки ти",
-    chipTooltip: "Усі дані — локально, без хмари",
-    bannerTitle: "Захисти Sergeant блокуванням",
-    bannerHint: "PIN · Face ID — для Mono-токена і медичних даних",
-    bannerCta: "Налаштувати",
-
-    lock: {
-      sectionTitle: "Конфіденційність",
-      enableLabel: "Блокування додатку",
-      enableDescription:
-        "Захисти дані PIN-кодом. Додаток заблокується при переключенні або після 5 хвилин бездіяльності.",
-      setupTitle: "Встановити PIN",
-      setupSubtitle: "Введи 4–6 цифр",
-      changeTitle: "Змінити PIN",
-      confirmTitle: "Підтвердь PIN",
-      confirmSubtitle: "Введи PIN ще раз для підтвердження",
-      unlockTitle: "Введи PIN",
-      unlockSubtitle: "Введи PIN, щоб розблокувати",
-      pinMismatch: "PIN-коди не збігаються. Спробуй ще раз.",
-      pinWrong: "Невірний PIN. Спробуй ще раз.",
-      pinTooShort: "PIN має містити від 4 до 6 цифр.",
-      lockNow: "Заблокувати зараз",
-      changePin: "Змінити PIN",
-      disableLabel: "Вимкнути блокування",
-      disableConfirmTitle: "Вимкнути блокування?",
-      disableConfirmBody:
-        "Додаток більше не буде запитувати PIN при відкритті.",
-      disableConfirmButton: "Вимкнути",
-      recoveryHint: "Забув PIN? Скинь через відновлення акаунту.",
-      next: "Далі",
-      back: "Назад",
-      open: "Відкрити",
-      deleteDigit: "Видалити",
-    },
-  },
-
+  privacy: privacyMessages,
   // Profile → "Біометрія" section (Mifflin-St Jeor inputs for Nutrition).
   // Owns the form labels, the activity-ladder copy, and the small status
   // hint that tells the user whether the record is complete enough for

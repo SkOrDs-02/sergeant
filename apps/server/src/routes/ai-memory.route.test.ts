@@ -585,3 +585,210 @@ describe("POST /api/ai-memory/event-sync — happy path", () => {
     expect(arg.metadata).not.toHaveProperty("password");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// GET /api/ai-memory/list  +  DELETE /api/ai-memory/:id
+//
+// AI-CONTEXT: тут два різні класи ризику, і асерти нижче цілять саме в них.
+//   * Ізоляція між юзерами. `DELETE ... WHERE id = $1` без `user_id`
+//     виглядає робочим у будь-якому happy-path тесті і при цьому дозволяє
+//     будь-кому з сесією стирати чужі факти перебором id. Тому перевіряємо
+//     не «повернувся 200», а САМ SQL і його параметри.
+//   * Hard Rule #1. `pg` віддає `BIGSERIAL` стрінгою; клієнт кладе цей id
+//     у RQ-ключ і в URL DELETE-а. `"12"` замість `12` роздвоїло б кеш і
+//     мовчки зламало інвалідацію — жоден типчек цього не ловить, бо на
+//     дроті все одно JSON.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Прапорець id-у як його віддає pg-драйвер: СТРІНГА, не число. */
+function pgRow(id: string, over: Record<string, unknown> = {}) {
+  return {
+    id,
+    source: "chat",
+    content: `факт ${id}`,
+    topic: null,
+    created_at: new Date("2026-07-20T10:00:00Z"),
+    ...over,
+  };
+}
+
+/**
+ * Диспатчер по тексту SQL: pool у цих тестах спільний із rate-limiter-ом і
+ * `requirePlan`, тож відповідати одним фікстурним рядком на всі запити не
+ * можна. `capture` збирає лише звернення до `ai_memories`.
+ */
+function stubAiMemorySql(
+  rows: Array<Record<string, unknown>>,
+  deleteRowCount = 1,
+) {
+  const capture: Array<{ sql: string; params: unknown[] }> = [];
+  queryMock.mockImplementation((sql: unknown, params: unknown) => {
+    const text = String(sql);
+    if (text.includes("ai_memories")) {
+      capture.push({ sql: text, params: (params as unknown[]) ?? [] });
+      if (/^\s*DELETE/i.test(text)) {
+        return Promise.resolve({ rows: [], rowCount: deleteRowCount });
+      }
+      return Promise.resolve({ rows, rowCount: rows.length });
+    }
+    return Promise.resolve({ rows: [{ "?column?": 1 }], rowCount: 1 });
+  });
+  return capture;
+}
+
+describe("GET /api/ai-memory/list", () => {
+  it("→ 401 без сесії", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/ai-memory/list")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(401);
+  });
+
+  it("коерцить bigint id у number (Hard Rule #1)", async () => {
+    // Робить неможливим `"12"` у відповіді: клієнт кладе id у RQ-ключ і в
+    // URL DELETE-а, і стрінга там роздвоїла б кеш без жодної помилки.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    stubAiMemorySql([pgRow("12")]);
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/ai-memory/list")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].id).toBe(12);
+    expect(typeof res.body.items[0].id).toBe("number");
+  });
+
+  it("фільтрує soft-deleted рядки і скоупить запит на юзера", async () => {
+    // `deleted_at IS NULL` — без нього в списку спливли б факти, які
+    // founder уже стер через `/forget`, і кнопка «видалити» на них
+    // вдавала б роботу. `user_id = $1` — щоб список не був чужим.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([]);
+    const app = createApp();
+    await request(app)
+      .get("/api/ai-memory/list")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(capture).toHaveLength(1);
+    expect(capture[0]!.sql).toContain("deleted_at IS NULL");
+    expect(capture[0]!.sql).toContain("user_id = $1");
+    expect(capture[0]!.params[0]).toBe("u1");
+  });
+
+  it("не віддає probe-рядок і ставить nextCursor на останній елемент сторінки", async () => {
+    // Запитуємо limit+1, щоб дізнатись про наступну сторінку. Якщо забути
+    // зрізати зайвий рядок, юзер побачить на елемент більше, ніж просив, а
+    // курсор перескочить його — тобто наступна сторінка почнеться з
+    // пропуском. Тихо і майже непомітно.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([pgRow("30"), pgRow("20"), pgRow("10")]);
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/ai-memory/list?limit=2")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(200);
+    expect(capture[0]!.params[1]).toBe(3); // limit + 1
+    expect(res.body.items.map((i: { id: number }) => i.id)).toEqual([30, 20]);
+    expect(res.body.nextCursor).toBe(20);
+  });
+
+  it("остання сторінка → nextCursor: null", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    stubAiMemorySql([pgRow("30")]);
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/ai-memory/list?limit=2")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.body.nextCursor).toBeNull();
+  });
+
+  it("cursor звужує вибірку по id", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([]);
+    const app = createApp();
+    await request(app)
+      .get("/api/ai-memory/list?cursor=50")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(capture[0]!.sql).toContain("id < $3");
+    expect(capture[0]!.params[2]).toBe(50);
+  });
+
+  it("→ 400 на сміттєвий limit, без звернення до БД", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([]);
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/ai-memory/list?limit=999999")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(400);
+    expect(capture).toHaveLength(0);
+  });
+});
+
+describe("DELETE /api/ai-memory/:id", () => {
+  it("→ 401 без сесії", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .delete("/api/ai-memory/7")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(401);
+  });
+
+  it("скоупить DELETE на user_id — інакше це стирання чужих фактів по id", async () => {
+    // Найдорожчий баг цього PR-у. `WHERE id = $1` теж дає зелений
+    // happy-path тест, тому перевіряємо САМ SQL і його параметри, а не
+    // код відповіді.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([], 1);
+    const app = createApp();
+    const res = await request(app)
+      .delete("/api/ai-memory/7")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(200);
+    expect(capture).toHaveLength(1);
+    expect(capture[0]!.sql).toContain("user_id = $1");
+    expect(capture[0]!.params).toEqual(["u1", 7]);
+    expect(res.body).toEqual({ ok: true, deleted: true });
+  });
+
+  it("hard-delete, а не soft — рішення founder-а «зникає назавжди»", async () => {
+    // Якщо хтось «уніфікує» цей шлях із `forget.ts`, запит стане
+    // `UPDATE ... SET deleted_at = NOW()`, а UI продовжить обіцяти
+    // «назавжди». Асерт ловить саме таку правку.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([], 1);
+    const app = createApp();
+    await request(app)
+      .delete("/api/ai-memory/7")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(capture[0]!.sql).toMatch(/^\s*DELETE FROM ai_memories/);
+    expect(capture[0]!.sql).not.toContain("deleted_at");
+  });
+
+  it("ідемпотентний: неіснуючий id → 200 + deleted:false", async () => {
+    // 404 тут ламав би реальний сценарій (подвійний тап, друга вкладка):
+    // UI показував би помилку на дії, яка вже досягла бажаного стану.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    stubAiMemorySql([], 0);
+    const app = createApp();
+    const res = await request(app)
+      .delete("/api/ai-memory/999")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, deleted: false });
+  });
+
+  it("→ 400 на нечисловий id, БЕЗ звернення до БД", async () => {
+    // Захист від запиту з `NaN` у параметрі: Postgres відкинув би його
+    // помилкою типу, але тоді 500 замість 400 і шум у Sentry.
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const capture = stubAiMemorySql([], 1);
+    const app = createApp();
+    const res = await request(app)
+      .delete("/api/ai-memory/abc")
+      .set("X-Requested-With", "XMLHttpRequest");
+    expect(res.status).toBe(400);
+    expect(capture).toHaveLength(0);
+  });
+});
