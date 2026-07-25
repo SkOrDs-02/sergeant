@@ -1,21 +1,47 @@
 @import "tailwindcss";
 
-/* Sergeant landing — Glass Dashboard theme (концепт C4).
-   3 основні кольори + 2 нейтрали: background/foreground/muted + accent + card-line. */
+/*
+  Sergeant landing — Soft & Organic light theme.
+  Токени віддзеркалюють docs/05-design/design/brandbook.md
+  та design-system/01-tokens-colors.md (cream surface, warm black,
+  emerald brand, 4 модульні акценти). Шрифт — DM Sans (brandbook §Font).
+*/
+
 @theme {
-  --color-background: #0a0e14;
-  --color-foreground: #eef2f6;
-  --color-muted: #94a3b3;
-  --color-accent: #35d07f;
-  --color-accent-strong: #4ee696;
-  --color-accent-ink: #06281a;
-  --color-card: rgba(255, 255, 255, 0.05);
-  --color-cardline: rgba(255, 255, 255, 0.12);
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", "Manrope", sans-serif;
+  /* Surfaces — cream */
+  --color-background: #fdf9f3;
+  --color-surface: #faf7f1;
+  --color-surface-muted: #f5ead8;
+  --color-card: #ffffff;
+  --color-cardline: #ebe4da;
+  --color-cardline-strong: #d0c8bc;
 
-  --radius: 1.125rem;
+  /* Text — warm black */
+  --color-foreground: #1c1917;
+  --color-foreground-strong: #0a0a09;
+  --color-muted: #57534e;
+  --color-subtle: #a8a29e;
+
+  /* Brand — emerald */
+  --color-accent: #047857;
+  --color-accent-hover: #065f46;
+  --color-accent-soft: #ecfdf5;
+  --color-accent-ink: #ffffff;
+
+  /* Module accents */
+  --color-finyk: #10b981;
+  --color-finyk-soft: #ecfdf5;
+  --color-fizruk: #0e7490;
+  --color-fizruk-soft: #ecfeff;
+  --color-routine: #f97066;
+  --color-routine-soft: #fff5f3;
+  --color-nutrition: #6f9e12;
+  --color-nutrition-soft: #f8fee7;
+
+  --radius-card: 24px;
 }
 
 html {
@@ -26,17 +52,12 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
-  min-height: 100vh;
-  background-image:
-    radial-gradient(
-      ellipse 60% 40% at 70% 10%,
-      rgba(53, 208, 127, 0.14),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 50% 35% at 20% 80%,
-      rgba(53, 150, 208, 0.1),
-      transparent
-    );
-  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Warm ambient hero wash — subtle, analogous emerald tint only */
+.hero-wash {
+  background:
+    radial-gradient(60% 55% at 50% 0%, #ecfdf5 0%, rgba(236, 253, 245, 0) 70%),
+    var(--color-background);
 }
