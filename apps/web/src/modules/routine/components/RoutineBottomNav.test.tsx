@@ -39,38 +39,26 @@ describe("RoutineBottomNav", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("hides the add-habit FAB alongside the nav while the keyboard is open (spec § design decision 2)", () => {
+  it("hides the nav while the keyboard is open (spec § design decision 2)", () => {
     setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
-    render(
-      <RoutineBottomNav
-        mainTab="calendar"
-        onSelectTab={() => {}}
-        onAddHabit={vi.fn()}
-      />,
-    );
+    render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
 
-    // `aria-hidden` removes the button from the accessibility tree, and
-    // it also zeroes the accessible name computed from its own
-    // `aria-label` — even with `{ hidden: true }` — so this reaches
-    // straight into the DOM by attribute instead of `getByRole`.
-    const fab = document.querySelector('[aria-label="Додати звичку"]')!;
-    expect(fab).toHaveAttribute("aria-hidden", "true");
-    expect(fab).toHaveAttribute("tabindex", "-1");
-    expect(fab.className).toContain("translate-y-full");
+    // aria-hidden removes the nav from the accessibility tree so getByRole
+    // won't find it — reach via querySelector on the aria-label attribute.
+    const nav = document.querySelector(
+      'nav[aria-label="Розділи Рутини"]',
+    ) as HTMLElement;
+    expect(nav).toBeTruthy();
+    expect(nav).toHaveAttribute("aria-hidden", "true");
+    expect(nav.className).toContain("translate-y-full");
   });
 
-  it("keeps the add-habit FAB reachable when the keyboard is closed", () => {
+  it("keeps the nav reachable when the keyboard is closed", () => {
     setVisualKeyboardInsetAdapter(() => 0);
-    render(
-      <RoutineBottomNav
-        mainTab="calendar"
-        onSelectTab={() => {}}
-        onAddHabit={vi.fn()}
-      />,
-    );
+    render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
 
-    const fab = screen.getByRole("button", { name: "Додати звичку" });
-    expect(fab).not.toHaveAttribute("aria-hidden");
-    expect(fab.className).not.toContain("translate-y-full");
+    expect(
+      screen.getByRole("navigation", { name: "Розділи Рутини" }),
+    ).not.toHaveAttribute("aria-hidden");
   });
 });
