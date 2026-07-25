@@ -5,6 +5,7 @@ import DashboardPreview from "../components/DashboardPreview";
 import {
   HowItWorks,
   ModulesSection,
+  ConnectionsSection,
   HonestSection,
   BetaCta,
 } from "../components/HomeSections";
@@ -23,13 +24,12 @@ export default function HomePage() {
               <span aria-hidden="true">·</span> українською
             </span>
             <h1 className="mt-6 font-display text-4xl font-bold leading-[1.06] tracking-tight text-balance text-foreground-strong sm:text-6xl lg:text-[4.25rem]">
-              Бачить усе твоє життя{" "}
-              <span className="text-accent">разом</span>
+              Бачить усе твоє життя <span className="text-accent">разом</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-pretty text-muted">
-              Гроші, тіло, звички та їжа — в одному застосунку. Sergeant
-              помічає звʼязки, яких поодинокі трекери не бачать: як пізні ночі
-              бʼють по бюджету, а тренування — по настрою.
+              Гроші, тіло, звички та їжа — в одному застосунку. Sergeant помічає
+              звʼязки, яких поодинокі трекери не бачать: як пізні ночі бʼють по
+              бюджету, а тренування — по настрою.
             </p>
             <div className="mt-8 flex w-full justify-center">
               <WaitlistForm buttonLabel="Приєднатись до бети" />
@@ -45,6 +45,7 @@ export default function HomePage() {
 
         <HowItWorks />
         <ModulesSection />
+        <ConnectionsSection />
         <HonestSection />
         <BetaCta />
       </main>
