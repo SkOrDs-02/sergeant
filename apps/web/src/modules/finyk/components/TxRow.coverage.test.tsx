@@ -71,8 +71,10 @@ describe("TxRow", () => {
   });
 
   it("masks the amount when hideAmount is set", () => {
+    // MaskedAmount (#9 blur-to-reveal) більше не малює «••••» — значення
+    // лишається в DOM розмитим і прихованим від AT, з sr-only підписом.
     render(<TxRow tx={mkTx()} hideAmount />);
-    expect(screen.getByText("••••")).toBeInTheDocument();
+    expect(screen.getByText(/Прихована сума/)).toBeInTheDocument();
   });
 
   it("renders a foreign-currency operation amount", () => {
