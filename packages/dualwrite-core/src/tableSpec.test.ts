@@ -9,9 +9,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  APPEND_ONLY_TABLES,
   buildDelete,
   buildLwwUpsert,
   buildReconcileChildren,
+  isAppendOnlyTable,
   type TableSpec,
 } from "./index.js";
 
@@ -128,5 +130,107 @@ describe("buildReconcileChildren", () => {
         AND deleted_at IS NULL
         AND id NOT IN (?,?)`,
     );
+  });
+});
+
+/**
+ * DCRUD-007 запобіжник: append-only журнали не можна ні soft-видаляти, ні
+ * реконсилити за parentColumn. Інцидент, під який це написано, описаний у
+ * `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts` — dual-write
+ * diff одного разу вже масово стер позиції комори. Для журналу така сама
+ * помилка знищила б історію, з якої залишок відновлюється.
+ */
+describe("append-only tables are excluded from delete/reconcile", () => {
+  it("registers the three stage-1 ledgers", () => {
+    expect(isAppendOnlyTable("routine_completion_events")).toBe(true);
+    expect(isAppendOnlyTable("nutrition_pantry_events")).toBe(true);
+    expect(APPEND_ONLY_TABLES.has("nutrition_pantry_events")).toBe(true);
+    // W1-KBJU-APPEND стадія 1 — журнал цілей КБЖВ.
+    expect(isAppendOnlyTable("nutrition_goal_periods")).toBe(true);
+    expect(APPEND_ONLY_TABLES.has("nutrition_goal_periods")).toBe(true);
+  });
+
+  it("refuses to build a soft-delete for the goal ledger", () => {
+    // Ретракція періоду — це адресний `UPDATE … SET deleted_at WHERE id = ?`
+    // з apply-шляху синку, а не масовий cleanup через білдер.
+    expect(() =>
+      buildDelete({
+        table: "nutrition_goal_periods",
+        deletePolicy: "soft",
+        matchColumns: ["id", "user_id"],
+      }),
+    ).toThrow(/append-only table "nutrition_goal_periods"/);
+  });
+
+  it("refuses parent/child reconciliation of the goal ledger", () => {
+    expect(() =>
+      buildReconcileChildren(
+        { table: "nutrition_goal_periods", parentColumn: "user_id" },
+        0,
+      ),
+    ).toThrow(/append-only table "nutrition_goal_periods"/);
+  });
+
+  it("does NOT treat nutrition_prefs as append-only", () => {
+    // `nutrition_prefs` лишається мутабельним LWW-рядком — старий шлях
+    // цілей мусить працювати як раніше протягом усієї стадії 1.
+    expect(isAppendOnlyTable("nutrition_prefs")).toBe(false);
+  });
+
+  it("does NOT treat the mutable pantry-items table as append-only", () => {
+    // Інакше запобіжник зламав би наявний (робочий) шлях комори.
+    expect(isAppendOnlyTable("nutrition_pantry_items")).toBe(false);
+    expect(isAppendOnlyTable("routine_entries")).toBe(false);
+  });
+
+  it("refuses to build a soft-delete for the pantry ledger", () => {
+    expect(() =>
+      buildDelete({
+        table: "nutrition_pantry_events",
+        deletePolicy: "soft",
+        matchColumns: ["id", "user_id"],
+      }),
+    ).toThrow(/append-only table "nutrition_pantry_events"/);
+  });
+
+  it("refuses to build a hard-delete for the pantry ledger", () => {
+    expect(() =>
+      buildDelete({
+        table: "nutrition_pantry_events",
+        deletePolicy: "hard",
+        matchColumns: ["id"],
+      }),
+    ).toThrow(/append-only table "nutrition_pantry_events"/);
+  });
+
+  it("refuses parent/child reconciliation of the pantry ledger (keepCount 0)", () => {
+    // Саме ця гілка масово стерла дітей в інциденті DCRUD-007.
+    expect(() =>
+      buildReconcileChildren(
+        { table: "nutrition_pantry_events", parentColumn: "pantry_id" },
+        0,
+      ),
+    ).toThrow(/append-only table "nutrition_pantry_events"/);
+  });
+
+  it("refuses parent/child reconciliation of the pantry ledger (keepCount > 0)", () => {
+    expect(() =>
+      buildReconcileChildren(
+        { table: "nutrition_pantry_events", parentColumn: "pantry_id" },
+        3,
+      ),
+    ).toThrow(/append-only table "nutrition_pantry_events"/);
+  });
+
+  it("still builds a plain LWW upsert for non-ledger tables", () => {
+    // Запобіжник стосується лише видалення/реконсиляції — звичайні
+    // таблиці працюють як раніше.
+    expect(() =>
+      buildDelete({
+        table: "nutrition_pantry_items",
+        deletePolicy: "soft",
+        matchColumns: ["id", "user_id"],
+      }),
+    ).not.toThrow();
   });
 });

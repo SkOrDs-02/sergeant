@@ -55,6 +55,13 @@ describe("diffRoutineDualWriteOps", () => {
         habitName: "Drink water",
         dateKey: "2026-05-01",
       },
+      // W1-ROUTINE-APPEND стадія 1 — журнал пишеться ПОРУЧ зі старим op.
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
     ]);
   });
 
@@ -69,6 +76,12 @@ describe("diffRoutineDualWriteOps", () => {
     });
     expect(diffRoutineDualWriteOps(prev, next)).toEqual([
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
     ]);
   });
 
@@ -90,6 +103,18 @@ describe("diffRoutineDualWriteOps", () => {
     expect(diffRoutineDualWriteOps(prev, next)).toEqual([
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-02" },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-02",
+        state: "undone",
+      },
       // Stage 10: habit removed from the array → habit-delete
       { kind: "habit-delete", habitId: "h1" },
     ]);
@@ -168,6 +193,25 @@ describe("diffRoutineDualWriteOps", () => {
       },
       // removes
       { kind: "completion-remove", habitId: "h1", dateKey: "2026-05-01" },
+      // append-only журнал (habitId, dateKey, state)
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "undone",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-04",
+        state: "done",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h2",
+        dateKey: "2026-05-03",
+        state: "done",
+      },
       // renames
       {
         kind: "habit-rename",
@@ -214,6 +258,18 @@ describe("diffRoutineDualWriteOps", () => {
         habitName: "Stretch",
         dateKey: "2026-05-01",
       },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
+      {
+        kind: "completion-event-append",
+        habitId: "h2",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
     ]);
   });
 
@@ -241,18 +297,33 @@ describe("diffRoutineDualWriteOps", () => {
         habitName: "Drink water",
         dateKey: "2026-05-01",
       },
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
     ]);
   });
 
   it("does NOT emit add when the habitId has no matching habit in next.habits", () => {
     // Defensive: a corrupted state may have a completion for a habit id
     // that isn't in `habits`. Without a name we cannot create a row.
+    // Стадія 1: старий шлях так само мовчить (нема імені для
+    // денормалізації), а журнал сирий факт усе одно фіксує.
     const prev = makeState({ habits: [], completions: {} });
     const next = makeState({
       habits: [],
       completions: { h1: ["2026-05-01"] },
     });
-    expect(diffRoutineDualWriteOps(prev, next)).toEqual([]);
+    expect(diffRoutineDualWriteOps(prev, next)).toEqual([
+      {
+        kind: "completion-event-append",
+        habitId: "h1",
+        dateKey: "2026-05-01",
+        state: "done",
+      },
+    ]);
   });
 
   // -----------------------------------------------------------------------

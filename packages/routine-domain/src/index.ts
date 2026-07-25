@@ -27,6 +27,11 @@ export * from "./quickStats.js";
 export * from "./drafts.js";
 export * from "./storage.js";
 export * from "./reducers.js";
+// W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. Пишеться
+// паралельно зі старим станом; читачів (fold) у цій стадії немає.
+export * from "./completionEvents.js";
+export * from "./foldCompletionEvents.js";
+export * from "./reducersWithEvents.js";
 export * from "./calendarEvents.js";
 export * from "./calendarGrid.js";
 export * from "./reminders.js";

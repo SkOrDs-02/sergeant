@@ -37,6 +37,44 @@ exports[`mobile routine dual-write SQL snapshot (ADR-0073 Крок 0) emits a by
   },
   {
     "params": [
+      "h1|2026-06-22|2026-06-23T00:00:00.000Z|done|dev-snapshot",
+      "u1",
+      "h1",
+      "2026-06-22",
+      "done",
+      "2026-06-23T00:00:00.000Z",
+      180,
+      "device-local",
+      "ui",
+      "dev-snapshot",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT OR IGNORE INTO routine_completion_events
+           (id, user_id, habit_id, date_key, state, occurred_at,
+            tz_offset_min, day_anchor, source, device_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "h1|2026-06-21|2026-06-23T00:00:00.000Z|undone|dev-snapshot",
+      "u1",
+      "h1",
+      "2026-06-21",
+      "undone",
+      "2026-06-23T00:00:00.000Z",
+      180,
+      "device-local",
+      "ui",
+      "dev-snapshot",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT OR IGNORE INTO routine_completion_events
+           (id, user_id, habit_id, date_key, state, occurred_at,
+            tz_offset_min, day_anchor, source, device_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
       "Вода 2л",
       "2026-06-23T00:00:00.000Z",
       "u1",

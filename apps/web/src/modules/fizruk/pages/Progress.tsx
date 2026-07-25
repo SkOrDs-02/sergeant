@@ -8,6 +8,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { useDailyLog } from "../hooks/useDailyLog";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { usePushupActivity } from "../hooks/usePushupActivity";
@@ -15,7 +16,12 @@ import { useWorkouts } from "../hooks/useWorkouts";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { WellbeingChart } from "../components/WellbeingChart";
 import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
-import { epley1rm, weeklyVolumeSeriesNow } from "@sergeant/fizruk-domain";
+import {
+  buildBodyWeightSeries,
+  epley1rm,
+  selectBodyWeightSamples,
+  weeklyVolumeSeriesNow,
+} from "@sergeant/fizruk-domain";
 import { kyivMondayStartMs } from "@sergeant/shared";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { statusColors } from "@shared/charts";
@@ -35,6 +41,9 @@ interface ProgressProps {
 export function Progress({ onNavigate }: ProgressProps) {
   const { workouts } = useWorkouts();
   const { entries } = useMeasurements();
+  // W1-WEIGHT-SOT стадія 1: «Тренд ваги» читав тільки `fizruk_measurements`,
+  // тому зважування з екрана «Тіло» (daily_log) сюди не потрапляли.
+  const { entries: dailyLogEntries } = useDailyLog();
   const { exercises, musclesUk } = useExerciseCatalog();
   const { stats: pushupStats, hasData: hasPushupData } = usePushupActivity();
 
@@ -50,18 +59,29 @@ export function Progress({ onNavigate }: ProgressProps) {
     return { latest, prev, delta };
   }, [entries]);
 
-  const weightTrend = useMemo(() => {
-    return [...(entries || [])]
-      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-      .slice(-8)
-      .map((e) => ({
-        value: e["weightKg"] != null ? Number(e["weightKg"]) : null,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
-      }));
-  }, [entries]);
+  const weightTrend = useMemo(
+    () =>
+      buildBodyWeightSeries(dailyLogEntries, entries, 8).map((p) => ({
+        value: p.value,
+        label: p.label,
+      })),
+    [dailyLogEntries, entries],
+  );
+
+  /**
+   * KPI-картка «Вага» теж на union — інакше цифра над графіком розходилась
+   * би з самим графіком (і з шапкою екрана «Тіло»). Дельта — між двома
+   * найсвіжішими днями зважування.
+   */
+  const weightStat = useMemo(() => {
+    const samples = selectBodyWeightSamples(dailyLogEntries, entries);
+    const latest = samples[0]?.weightKg ?? null;
+    const prev = samples[1]?.weightKg ?? null;
+    return {
+      latest,
+      delta: latest != null && prev != null ? latest - prev : null,
+    };
+  }, [dailyLogEntries, entries]);
 
   const fatTrend = useMemo(() => {
     return [...(entries || [])]
@@ -231,7 +251,10 @@ export function Progress({ onNavigate }: ProgressProps) {
     setPrFilter("all");
   }
 
-  const hasAny = (workouts?.length || 0) > 0 || (entries?.length || 0) > 0;
+  const hasAny =
+    (workouts?.length || 0) > 0 ||
+    (entries?.length || 0) > 0 ||
+    weightStat.latest != null;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -355,7 +378,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
         {/* Weight + fat cards */}
         {(() => {
-          const weightDelta = meas.delta("weightKg");
+          const weightDelta = weightStat.delta;
           const fatDelta = meas.delta("bodyFatPct");
           return (
             <div className="grid grid-cols-2 gap-3">
@@ -363,8 +386,8 @@ export function Progress({ onNavigate }: ProgressProps) {
                 <Stat
                   label={messages.fizruk.progress.weight}
                   value={
-                    meas.latest?.["weightKg"] != null
-                      ? `${meas.latest["weightKg"]} ${messages.fizruk.kgUnit}`
+                    weightStat.latest != null
+                      ? `${weightStat.latest} ${messages.fizruk.kgUnit}`
                       : "—"
                   }
                   sublabel={

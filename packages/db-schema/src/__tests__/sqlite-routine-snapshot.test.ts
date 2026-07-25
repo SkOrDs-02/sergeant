@@ -10,6 +10,7 @@ import {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineCompletionEvents,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
@@ -526,8 +527,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the poison-row quarantine migration, then the HIGH-#2 user-id migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(6);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the poison-row quarantine migration, then the HIGH-#2 user-id migration, then the W1-ROUTINE-APPEND completion-events migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(7);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -652,6 +653,28 @@ describe("sqlite/migrations exports", () => {
       /sync_op_outbox_user_pending_idx_lite/,
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[5]!.sql).toMatch(/'__legacy__'/);
+
+    // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток.
+    // Additive CREATE TABLE: жодного rebuild-рецепту, жодного
+    // `updated_at`/`deleted_at` (їх нема за конструкцією).
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.name).toBe(
+      "007_routine_completion_events.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_completion_events/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).toMatch(
+      /CHECK \(state IN \('done','undone'\)\)/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).toMatch(
+      /routine_completion_events_user_habit_date_idx_lite/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).toMatch(
+      /routine_completion_events_user_occurred_idx_lite/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/deleted_at/);
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/updated_at/);
+    expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/ALTER TABLE/);
   });
 
   it("uses the standard `__migrations` ledger table", () => {
@@ -664,5 +687,53 @@ describe("sqlite/migrations exports", () => {
     // a new array with the same contents.
     expect(ROUTINE_SPIKE_CLIENT_MIGRATIONS).toBe(ROUTINE_CLIENT_MIGRATIONS);
     expect(ROUTINE_SPIKE_MIGRATIONS_TABLE).toBe(ROUTINE_MIGRATIONS_TABLE);
+  });
+});
+
+/**
+ * `routine_completion_events` — append-only журнал відміток
+ * (W1-ROUTINE-APPEND, стадія 1).
+ */
+describe("sqlite/routineCompletionEvents schema snapshot", () => {
+  const cfg = getTableConfig(routineCompletionEvents);
+
+  it("has the canonical table name", () => {
+    expect(cfg.name).toBe("routine_completion_events");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(cfg.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "habit_id",
+      "date_key",
+      "state",
+      "occurred_at",
+      "tz_offset_min",
+      "day_anchor",
+      "source",
+      "device_id",
+      "created_at",
+    ]);
+  });
+
+  it("is append-only — no updated_at / deleted_at columns exist", () => {
+    const names = cfg.columns.map((c) => c.name);
+    expect(names).not.toContain("updated_at");
+    expect(names).not.toContain("deleted_at");
+  });
+
+  it("keys on a TEXT id (deliberately NOT uuid — see migration 085)", () => {
+    const pk = cfg.columns.filter((c) => c.primary).map((c) => c.name);
+    expect(pk).toEqual(["id"]);
+    const id = cfg.columns.find((c) => c.name === "id");
+    expect(id?.dataType).toBe("string");
+  });
+
+  it("declares both `_lite`-suffixed indexes", () => {
+    expect(cfg.indexes.map((i) => i.config.name).sort()).toEqual([
+      "routine_completion_events_user_habit_date_idx_lite",
+      "routine_completion_events_user_occurred_idx_lite",
+    ]);
   });
 });

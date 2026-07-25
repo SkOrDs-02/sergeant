@@ -7,13 +7,20 @@
 
 ## Time and dates
 
-- **Single source of truth: Europe/Kyiv.** All "today / yesterday / this week" UI logic computes day boundaries against `Europe/Kyiv` (UTC+2/+3 with DST).
+- **Межа особистої доби — пристрій користувача** ([ADR-0078](../../04-governance/adr/0078-day-boundary-device-local.md)).
+  День-ключ відмітки звички, логу їжі й денного запису визначається годинником пристрою
+  в момент дії; кожна подія несе `tz_offset_minutes`. **Europe/Kyiv лишається** для
+  відображення часу, серверних операційних звітів і фінансових періодів — тобто для всього,
+  що НЕ є «особистим днем». Раніше цей рядок вимагав Kyiv скрізь; ADR-0078 звузив вимогу
+  після того, як аудит (routine § E-2) показав, що `routine-domain` роками писав device-local.
 - **Storage:** `timestamptz` in Postgres (UTC at rest), but read with `timezone('Europe/Kyiv', ts)` when bucketing by day in SQL.
-- **Day key format:** `YYYY-MM-DD` interpreted in Kyiv local time. This is what `coachKeys.insight(dayKey)`, `digestKeys.byWeek(weekKey)`, and Routine streaks use.
+- **Day key format:** `YYYY-MM-DD`. Для особистих сутностей інтерпретується в таймзоні пристрою (ADR-0078); для серверних звітів — у Kyiv. `coachKeys.insight(dayKey)`, `digestKeys.byWeek(weekKey)` і стріки Routine споживають перший варіант — сервер НЕ обчислює «сьогодні» користувача сам, а згортає журнал за `tz_offset_minutes` події.
 - **Week start:** Monday (ISO 8601). `weekKey` = **`YYYY-MM-DD` (дата того понеділка)**, НЕ ISO `YYYY-Www` — див. `getWeekKey()` у [`packages/shared/src/lib/weeklyDigest.ts`](../../../packages/shared/src/lib/weeklyDigest.ts), який повертає `localDateKey(monday)`. (Парсер, що очікує `2026-W29`, зламається.)
 - **Don't** use `new Date().toISOString().slice(0,10)` — it gives a UTC day, which flips a day at 21:00–22:00 Kyiv time and breaks Routine streaks for late-evening users.
 
-> **⚠️ Web-виняток (tracked burn-down 2026-Q3).** Ідеал «Europe/Kyiv, never the runtime's local zone» тримається на **сервері**. На **вебі** частина «сьогодні»/week-window математики свідомо читає host-local `Date` parts (напр. `localDateKey()` у [`apps/web/src/core/insights/useCoachInsight.ts`](../../../apps/web/src/core/insights/useCoachInsight.ts) — з явним `eslint-disable sergeant-design/prefer-kyiv-time`): на Kyiv-хості wall-clock і так Kyiv, а `toISOString()` зсунув би межу дня. Поки клієнт не в Kyiv-таймзоні, день рахується в таймзоні пристрою. Kyiv-anchoring вебу — окремий burn-down, ще не закритий.
+> **⚠️ Історична нотатка (до ADR-0078).** Нижче описаний «web-виняток», який трактувався як борг. ADR-0078 ратифікував саме цю поведінку як канонічну для особистої доби, тож burn-down скасовано — лишається протилежна робота: звести київські латки до однієї доктрини.
+>
+> **Web-виняток (початковий опис).** Ідеал «Europe/Kyiv, never the runtime's local zone» тримається на **сервері**. На **вебі** частина «сьогодні»/week-window математики свідомо читає host-local `Date` parts (напр. `localDateKey()` у [`apps/web/src/core/insights/useCoachInsight.ts`](../../../apps/web/src/core/insights/useCoachInsight.ts) — з явним `eslint-disable sergeant-design/prefer-kyiv-time`): на Kyiv-хості wall-clock і так Kyiv, а `toISOString()` зсунув би межу дня. Поки клієнт не в Kyiv-таймзоні, день рахується в таймзоні пристрою. Kyiv-anchoring вебу — окремий burn-down, ще не закритий.
 
 ## Money (UAH)
 

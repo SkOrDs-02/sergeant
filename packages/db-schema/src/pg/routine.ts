@@ -46,6 +46,63 @@ export const routineEntries = pgTable(
 );
 
 /**
+ * Postgres schema for the `routine_completion_events` table.
+ * Mirrors migration `085_routine_completion_events.sql`.
+ *
+ * Append-only журнал відміток звичок (Хвиля 1, стадія 1 задачі
+ * W1-ROUTINE-APPEND). На цій стадії таблиця тільки ПИШЕТЬСЯ паралельно з
+ * `routineEntries` — жоден читач (streak / rate / heatmap / digest) на неї
+ * ще не спирається.
+ *
+ * AI-DANGER: таблиця append-only. НЕ додавай сюди `updated_at`,
+ * `deleted_at` чи UPDATE-шлях: apply-функція
+ * `applyRoutineCompletionEvents` відхиляє `op='update'|'delete'` з
+ * причиною `append_only_violation`. Виправлення історії — це нова подія,
+ * а не редагування старої.
+ *
+ * `id` — TEXT, НЕ UUID (свідомо). `routineEntries.id` оголошений як `uuid()`,
+ * тоді як клієнт шле `habitId:dateKey` → `22P02` → `apply_failed`
+ * (`docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»). Новий журнал
+ * цю пастку обходить.
+ */
+export const routineCompletionEvents = pgTable(
+  "routine_completion_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    habitId: text("habit_id").notNull(),
+    /** YYYY-MM-DD як його порахував КЛІЄНТ; трактування залежить від `dayAnchor`. */
+    dateKey: text("date_key").notNull(),
+    /** `'done'` | `'undone'` — CHECK-констрейнт живе в SQL-міграції. */
+    state: text().notNull().default("done"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    tzOffsetMin: integer("tz_offset_min"),
+    /** `'device-local'` | `'kyiv'` | `'unknown'` (backfill). */
+    dayAnchor: text("day_anchor").notNull().default("unknown"),
+    /** `'ui'` | `'chat'` | `'bulk'` | `'backfill'` | `'seed'`. */
+    source: text().notNull().default("ui"),
+    deviceId: text("device_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("routine_completion_events_user_habit_date_idx").on(
+      table.userId,
+      table.habitId,
+      table.dateKey,
+      table.occurredAt,
+    ),
+    index("routine_completion_events_user_occurred_idx").on(
+      table.userId,
+      table.occurredAt,
+    ),
+  ],
+);
+
+/**
  * Postgres schema for `routine_streaks` table.
  * Mirrors migration 026_routine_tables.sql.
  *

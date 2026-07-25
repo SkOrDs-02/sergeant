@@ -6,6 +6,7 @@ import {
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 import type { MeasurementEntry } from "@sergeant/fizruk-domain";
+import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import type { LogMeasurementAction, ChatActionResult } from "../types";
 
 export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
@@ -55,5 +56,11 @@ export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
     ...prevDualWrite,
     measurements: extractMeasurementSnapshots(next),
   });
+  // W1-WEIGHT-SOT стадія 2: `log_measurement` з `weight_kg` не дзеркалив
+  // нікуди, тому AI-тул мовчки не оновлював КБЖВ-цілі. Той самий funnel,
+  // що й у решти чотирьох писачів ваги.
+  if (typeof entry["weightKg"] === "number") {
+    recordBodyWeight({ weightKg: entry["weightKg"], at: entry.at });
+  }
   return `Заміри записано: ${changed.join(", ")}`;
 }

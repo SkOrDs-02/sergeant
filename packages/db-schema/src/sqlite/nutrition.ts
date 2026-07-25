@@ -131,6 +131,63 @@ export const nutritionPantryItems = sqliteTable(
 );
 
 /**
+ * SQLite schema for the `nutrition_pantry_events` table.
+ *
+ * Дзеркало `086_nutrition_pantry_events.sql` / `pg/nutrition.ts`. Клієнтський
+ * DDL живе у `NUTRITION_004_PANTRY_EVENTS_SQL`
+ * (`sqlite/migrations/index.ts`).
+ *
+ * Append-only журнал руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ * На цій стадії у нього ніхто не пише і з нього ніхто не читає.
+ *
+ * Відмінності від Postgres — лише звичні для цього пакета: TIMESTAMPTZ → TEXT
+ * (ISO-8601). Типи id тут ЗБІГАЮТЬСЯ з PG (обидва TEXT) — на відміну від
+ * `nutritionPantryItems`, де PG-сторона помилково `uuid`, а клієнт шле
+ * `<pantryId>::<idx>::<name>`. Див. AI-CONTEXT у `pg/nutrition.ts`.
+ *
+ * CHECK-констрейнти (`kind IN (…)`, `qty_shape`) живуть лише у сирому DDL:
+ * drizzle-таблиця описує форму рядка, а не валідацію — валідація дублюється
+ * у `derivePantryQty` і в серверному apply-шляху.
+ */
+export const nutritionPantryEvents = sqliteTable(
+  "nutrition_pantry_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    pantryId: text("pantry_id").notNull(),
+    itemId: text("item_id"),
+    itemKey: text("item_key").notNull(),
+    kind: text().notNull(),
+    deltaQty: real("delta_qty"),
+    absQty: real("abs_qty"),
+    unit: text(),
+    source: text().notNull().default("manual"),
+    mealId: text("meal_id"),
+    occurredAt: text("occurred_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("nutrition_pantry_events_user_item_idx_lite").on(
+      table.userId,
+      table.pantryId,
+      table.itemKey,
+      table.occurredAt,
+    ),
+    index("nutrition_pantry_events_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * SQLite schema for the `nutrition_prefs` table.
  *
  * Per-user singleton row. JSONB → TEXT; the open-ended `NutritionPrefs`
@@ -148,6 +205,56 @@ export const nutritionPrefs = sqliteTable("nutrition_prefs", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+/**
+ * SQLite schema for the `nutrition_goal_periods` table.
+ *
+ * Дзеркало `087_nutrition_goal_periods.sql` / `pg/nutrition.ts`. Клієнтський
+ * DDL живе у `NUTRITION_005_GOAL_PERIODS_SQL` (`sqlite/migrations/index.ts`).
+ *
+ * Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1). На цій стадії у
+ * нього ПИШУТЬ (дуал-райт паралельно до `prefs-upsert`), але з нього ніхто
+ * НЕ ЧИТАЄ: цілі на екранах і далі беруться з `nutritionPrefs.prefsJson`.
+ *
+ * Відмінності від Postgres — лише звичні для цього пакета: TIMESTAMPTZ → TEXT
+ * (ISO-8601). Тип `id` тут ЗБІГАЄТЬСЯ з PG (обидва TEXT) — клієнтський id
+ * детермінований і не є UUID, див. AI-CONTEXT у `pg/nutrition.ts`.
+ *
+ * CHECK-констрейнти (`origin IN (…)`, форма `effective_from`) живуть лише в
+ * сирому DDL: drizzle-таблиця описує форму рядка, а не валідацію — валідація
+ * дублюється в серверному apply-шляху і в резолвері.
+ */
+export const nutritionGoalPeriods = sqliteTable(
+  "nutrition_goal_periods",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    effectiveFrom: text("effective_from").notNull(),
+    kcal: integer(),
+    proteinG: real("protein_g"),
+    fatG: real("fat_g"),
+    carbsG: real("carbs_g"),
+    waterMl: integer("water_ml"),
+    origin: text().notNull().default("manual"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("nutrition_goal_periods_user_effective_idx_lite").on(
+      table.userId,
+      table.effectiveFrom,
+      table.createdAt,
+    ),
+    index("nutrition_goal_periods_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 /**
  * SQLite schema for the `nutrition_recipes` table.

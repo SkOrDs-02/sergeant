@@ -1,4 +1,4 @@
-import { mirrorWeightToBiometrics } from "../../../profile/biometrics";
+import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import { persistFizrukDailyLog, readFizrukDailyLog } from "./shared";
 import type { LogWellbeingAction, ChatActionResult } from "../types";
 
@@ -45,7 +45,10 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   // Bidirectional weight sync — a Fizruk weigh-in is the canonical "current
   // weight" for Nutrition/Profile (mirrors `useDailyLog.addEntry`).
   if (typeof entry["weightKg"] === "number") {
-    mirrorWeightToBiometrics(entry["weightKg"], entry["at"] as string);
+    recordBodyWeight({
+      weightKg: entry["weightKg"],
+      at: entry["at"] as string,
+    });
   }
   const entryId = entry["id"] as string;
   return {

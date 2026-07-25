@@ -1,11 +1,20 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+
+vi.mock("../../../core/profile/recordBodyWeight", () => ({
+  recordBodyWeight: vi.fn(),
+}));
+
+import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
 import { useMeasurements } from "./useMeasurements";
+
+const mockRecordBodyWeight = vi.mocked(recordBodyWeight);
 
 describe("useMeasurements", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
   });
 
   it("starts with no entries", () => {
@@ -72,6 +81,33 @@ describe("useMeasurements", () => {
     act(() => result.current.restoreEntry(null));
     act(() => result.current.restoreEntry({ at: "x" } as never));
     expect(result.current.entries).toHaveLength(0);
+  });
+
+  // W1-WEIGHT-SOT стадія 2: цей міст був відсутній — зважування на екрані
+  // «Заміри» мовчки не оновлювало «поточну вагу» для КБЖВ-цілей.
+  it("addEntry дзеркалить вагу через спільний funnel", () => {
+    const { result } = renderHook(() => useMeasurements());
+    act(() => {
+      result.current.addEntry({ weightKg: 80, waistCm: 90 });
+    });
+    expect(mockRecordBodyWeight).toHaveBeenCalledTimes(1);
+    expect(mockRecordBodyWeight.mock.calls[0]![0]!.weightKg).toBe(80);
+  });
+
+  it("addEntry без ваги профіль не чіпає", () => {
+    const { result } = renderHook(() => useMeasurements());
+    act(() => {
+      result.current.addEntry({ waistCm: 90 });
+    });
+    expect(mockRecordBodyWeight).not.toHaveBeenCalled();
+  });
+
+  it("addEntry з відкинутою (поза діапазоном) вагою профіль не чіпає", () => {
+    const { result } = renderHook(() => useMeasurements());
+    act(() => {
+      result.current.addEntry({ weightKg: 5 });
+    });
+    expect(mockRecordBodyWeight).not.toHaveBeenCalled();
   });
 
   it("sorts entries by `at` descending", () => {

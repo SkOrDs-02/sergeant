@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
-import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
+import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
@@ -27,10 +27,7 @@ export interface DailyLogEntry extends DomainDailyLogEntry {
 }
 
 export type DailyLogNumericField =
-  | "weightKg"
-  | "sleepHours"
-  | "energyLevel"
-  | "moodScore";
+  "weightKg" | "sleepHours" | "energyLevel" | "moodScore";
 
 // AI-DANGER: local id generation for daily-log entries. The `dl_` prefix
 // and time+random shape are relied on by the dual-write/cloud-sync pipeline
@@ -109,11 +106,11 @@ export function useDailyLog() {
       // Bidirectional weight sync — a Fizruk-side weigh-in is also the
       // canonical "current weight" for Nutrition (and the "Поточна
       // вага" field on Profile). LWW: every weigh-in beats the last
-      // value regardless of which surface initiated it; CloudSync
-      // resolves cross-device conflicts on the merged Profile blob via
-      // the same module-level LWW.
+      // value regardless of which surface initiated it.
+      // W1-WEIGHT-SOT стадія 2: дзеркалення живе в одному хелпері
+      // (`recordBodyWeight`), а не в чотирьох копіях по кодовій базі.
       if (e.weightKg != null) {
-        mirrorWeightToBiometrics(e.weightKg, e.at);
+        recordBodyWeight({ weightKg: e.weightKg, at: e.at });
       }
       return e;
     },

@@ -53,15 +53,195 @@
 події замість мутованого стану, одна часова доктрина, одне джерело кожної
 цифри. Блокує все, що рахує (стріки, coverage, digest, звірки).
 
-| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан |
-| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | ---- |
-| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 |      |
-| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 |      |
-| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  |      |
-| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       |      |
-| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     |      |
-| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     |      |
-| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  |      |
+| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан                             |
+| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | -------------------------------- |
+| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 | стадія 1 стадія 1 · ADR-0079     |
+| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 | стадія 1 стадія 1 · ADR-0077     |
+| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 стадії 1-2 · ADR-0079 |
+| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       | ✅ ADR-0078                      |
+| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | стадія 1 стадія 1 · ADR-0079     |
+| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | стадії 1-2 стадії 1-2 · ADR-0080 |
+| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 стадії 1-2 · ADR-0079 |
+
+> **SoT ваги тіла — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1 (read-union):
+> новий доменний селектор `packages/fizruk-domain/src/domain/body/bodyWeight.ts`
+> (`selectLatestBodyWeight`, `buildBodyWeightSeries`) робить union
+> `fizruk_daily_log` + `fizruk_measurements` із дедупом за днем у Europe/Kyiv
+> (при колізії дня виграє новіший `at`; tombstone-записи ігноруються). На нього
+> переведені web «Тіло», web «Прогрес», mobile «Тіло» і nutrition-TDEE (вага з
+> fizruk із фолбеком на `biometrics.weightKg`, щоб юзер без fizruk не зламався).
+> Стадія 2 (write-funnel): усі п'ять писачів ваги ходять через один
+> `recordBodyWeight()` — зокрема `useMeasurements.addEntry` і AI-тул
+> `log_measurement`, у яких мосту **не було взагалі** (звідси й баг «зважився в
+> Замірах → КБЖВ-цілі не оновились»). Виправлено брехливий докстрінг
+> `apps/web/src/core/profile/biometrics.ts` про неіснуючий синк через
+> `SYNC_MODULES.profile`; описи трьох tool-def (`log_measurement`,
+> `log_wellbeing`, `log_weight`) прямо кажуть, що всі троє пишуть в один SoT
+> (схеми не чіпані — Hard Rule #3). **Жодна колонка й жоден запис не змінені.**
+> Стадії 3-4 (вибір канонічної таблиці, ADR, backfill-міграція, two-phase DROP,
+> доля `hub_biometrics` у синку) заблоковані рішенням founder-а: чи має
+> користувач без модуля fizruk зберігати власну «поточну вагу» на рівні профілю
+> — див. відкрите питання в [аудиті fizruk](../audits/product-knowledge-fizruk.md)
+> § D-3.
+
+> **Heatmap-знаменник — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1:
+> `buildHeatmapGrid` отримав опційний `denominator: "active" | "scheduled"`
+> (default — стара поведінка) і `futureWeeks`; режим `"scheduled"` рахує
+> знаменник через `habitScheduledOnDate` з клемпом `Math.min(1, ratio)`.
+> Стадія 2: web-`HabitHeatmap` більше не має власної копії математики — обидва
+> рендери (web + mobile) ходять в один `buildHeatmapGrid`. **Жодне видиме
+> число не змінилось**: default лишається `"active"`, новий режим — мертвий
+> код. Стадія 3 (перемкнути default, копія «N з M запланованих», канон §5,
+> ADR) заблокована рішенням founder-а з
+> [аудиту routine](../audits/product-knowledge-routine.md) — питання №9:
+> чи поважає heatmap `paused` ретроактивно і що робити з `once`.
+
+> **Канонічна агрегація на метрику — стадія 1 приземлена, ✅ ще нема.**
+> Стадія 1: у domain-пакетах зʼявились відсутні канонічні функції —
+> `buildFinykSpendingUniverse` / `buildFinykExcludedTxIds` (finyk-domain,
+> «всесвіт витрат»: канонічний excluded-set + merge ручних витрат),
+> `calcNutritionPeriodAverages` (nutrition-domain, знаменник = дні з ≥1
+> прийомом), `calcFizrukPeriodAggregate` (fizruk-domain, обʼєм + кількість
+> тренувань); routine-domain нічого не потребував — `completionRateForRange`
+> уже канонічний. Додано реєстр
+> [`metric-registry.md`](../../02-engineering/architecture/metric-registry.md)
+> і характеризаційний parity-тест
+> [`metricParity.test.ts`](../../../apps/web/src/core/insights/metricParity.test.ts):
+> один фікстур → 5 реальних конвеєрів → зафіксовані ПОТОЧНІ, розбіжні числа
+> (витрати тижня: канон 1150 грн, дайджест/Hub-Reports 900, HubChat-контекст
+> 1100, чат-тулза 2500; звички 100% проти 43%; ккал 600 проти 400).
+> **Жоден call-site не перемкнено, жодне число користувача не зрушило.**
+> Стадії 2-5 не входять: 2 (по одному читачу finyk), 3 (розфорк mobile),
+> 4 (знаменники; routine-частина заблокована рішенням rate↔heatmap),
+> 5 (`metricsVersion`, ESLint-гейт, київська межа доби) — кожна рухає число,
+> яке користувач уже бачив. **Чесно про синк:** спільна функція гарантує
+> збіг лише в межах одного пристрою — крос-девайсна збіжність залежить від
+> `/api/sync`, а по finyk є знахідка, що клієнт туди не ходить.
+
+> **Append-only completions — стадія 1 приземлена, ✅ ще нема.** Стадія 1:
+> зʼявився журнал `routine_completion_events` (PG-міграція `085`, клієнтська
+> SQLite `007`, drizzle-дзеркала, новий op-kind `completion-event-append` у
+> web+mobile write-path, append-only apply-шлях на сервері з reject-причиною
+> `append_only_violation`, реєстрація в sync-реєстрах). Кожен toggle пише
+> подію ДОДАТКОВО до `routine_entries`. **Жоден читач не змінився**:
+> streak / rate / heatmap / digest далі беруть `completions`, а
+> `foldCompletionEvents` у `@sergeant/routine-domain` не має споживачів —
+> так і задумано. Якщо журнал зламається, продукт цього не помітить.
+> Стадії 2-5 (backfill + parity, читання через fold, знімок запланованості й
+> зміна похідних, припинення запису в `routine_entries` + DROP) не входять:
+> стадія 2 чекає, поки стадія 1 постоїть у проді на ОБОХ клієнтах (mobile має
+> EAS-лаг), стадія 4 — на рішення founder-а про заморозку минулих цифр
+> (питання №9 в [аудиті routine](../audits/product-knowledge-routine.md)) і на
+> ухвалену часову доктрину (W1-TIME-DOCTRINE).
+>
+> **Чесно про синк:** локально журнал пишеться і працює (доведено тестами на
+> реальному SQLite). Мультидевайсна збіжність НЕ доведена: живого прогону
+> drain-у outbox у цьому патчі не було, а по finyk є відома знахідка — клієнт
+> не надсилає жодного запиту на `/api/sync`, 4 операції висять у черзі.
+> Sync-рушій спільний, тож поки drain не перевірений живим прогоном, події
+> накопичуються локально, і «журнал синхронізується між пристроями» — це
+> гіпотеза, а не факт. Стадії 1-3 від синку не залежать (fold теж локальний);
+> стадія 4 — залежить.
+
+> **Комора append-only — стадія 1 приземлена, ✅ ще нема.** Стадія 1:
+> зʼявився журнал `nutrition_pantry_events` (PG-міграція `086`, клієнтська
+> SQLite `004`, drizzle-дзеркала PG+SQLite, append-only apply-шлях
+> `applyNutritionPantryEvents` з причинами `invalid_event_kind` /
+> `missing_delta_or_abs` / `append_only_violation`, реєстрація в
+> `OP_LOG_TABLE_REGISTRY` і в клієнтських allowlist-ах
+> `applyPullOp` / `refreshCachesAfterPull`) і чиста згортка
+> `derivePantryQty` у `@sergeant/nutrition-domain`. Рішення — ADR-0077.
+>
+> **На відміну від routine, тут НІХТО ще навіть не пише**: жоден мутатор
+> подій не емітить, `nutrition_pantry_items.qty` лишається єдиним джерелом
+> залишку, `derivePantryQty` не має споживачів. Нуль видимих змін. Стадії
+> 2-5 (емісія з пʼяти web-мутаторів + HubChat + mobile, backfill
+> `'initial'`-чекпойнтів, parity, cutover UI на derived, депрекація `qty`)
+> не входять.
+>
+> **Що зроблено проти інциденту DCRUD-007:** нова таблиця виключена з
+> cleanup/`parentColumn`-логіки dual-write **механічно** —
+> `APPEND_ONLY_TABLES` + `assertNotAppendOnly` у
+> `packages/dualwrite-core/src/tableSpec.ts` кидають помилку на спробу
+> зібрати `buildDelete`/`buildReconcileChildren` для журналу. Покрито
+> тестами з обох боків (примітив + поверхня nutrition-адаптера).
+>
+> **Чесно про E-7 і синк:** цей патч НЕ лагодить «LWW-конфлікт двох
+> пристроїв» для користувача. Доведено рівно те, що **сервер** приймає,
+> зберігає і віддає події, і що дві конкурентні події з різних пристроїв
+> обидві `applied` замість `lww_conflict` (інтеграційний лейн у
+> `syncV2.integration.test.ts` — вимагає Docker, локально skip, зелений у
+> CI). Клієнт подій поки не емітить взагалі, а по finyk є відома знахідка:
+> клієнт не надсилає жодного запиту на `/api/sync`, 4 операції висять у
+> черзі. Механізм правдоподібний — `drainSyncOpOutbox` фільтрує
+> `WHERE status='pending' AND user_id = ?`, тож рядки з іншим/порожнім
+> `user_id` не дренуються ніколи, — але живого прогону в цьому патчі не
+> було, тож це гіпотеза, а не діагноз. E-7 матеріалізується лише зі
+> стадією 2 плюс підтвердженим drain-ом.
+>
+> **Цілі КБЖВ append-only — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1:
+> зʼявився журнал `nutrition_goal_periods` (PG-міграція `087` з backfill-ом,
+> клієнтська SQLite `005`, drizzle-дзеркала PG+SQLite, append-only apply-шлях
+> `applyNutritionGoalPeriods` у власному `applySyncGoals.ts` з причиною
+> `invalid_goal_origin`, реєстрація в `OP_LOG_TABLE_REGISTRY` і в клієнтських
+> allowlist-ах `applyPullOp` / `refreshCachesAfterPull` + власний
+> insert-only pull-шлях `applyPullGoalPeriods.ts`). Клієнт ПИШЕ сходинку при
+> зміні будь-якого `dailyTarget*` — новий op-kind `goal-period-insert` у
+> web-дуал-райті, тіло в `adapter.goalPeriods.ts`. Стадія 2: чистий резолвер
+> `resolveEffectiveGoal` / `resolveEffectiveGoalsForRange` у
+> `@sergeant/nutrition-domain`.
+>
+> **Жоден екран не змінився.** `prefs-upsert` їде як їхав,
+> `nutrition_prefs.prefs_json` -> `dailyTarget*` лишається ЄДИНИМ джерелом
+> цілі для всіх 9 ретроспективних читачів (дайджест, coach-снапшот, тижневий
+> графік, рекомендації, stories + три mobile-дзеркала), а резолвер не має
+> споживачів — так і задумано. Якщо журнал зламається, продукт не помітить.
+>
+> **Про backfill чесно.** Історії цілей за минулі дні не існує НІДЕ —
+> попередні значення затерті LWW-UPDATE-ом. Тому рядок, який створює
+> міграція 087, — це РЕКОНСТРУКЦІЯ («ми припустили сьогоднішню ціль»), і він
+> позначений `origin='backfill'` саме для того, щоб стадія 3 могла
+> відрізнити припущення від факту. `effective_from` = найраніший день з їжею
+> (Kyiv-локальний), fallback — дата створення `nutrition_prefs`. Юзер без
+> жодної цілі рядка не отримує; `waterGoalMl` НЕ рахується ознакою наявної
+> цілі, бо в нього дефолт 2000 у кожного.
+>
+> **Клієнтського backfill-у СВІДОМО немає** (на відміну від плану). SQLite
+> не має бази таймзон, тож Kyiv-локальний `effective_from` він порахував би
+> приблизно, а pull журналу insert-only — правильне серверне значення вже НЕ
+> перезаписало б. Рядок приїжджає з сервера звичайним pull-ом; офлайн-клієнт
+> до першого синку живе без нього, і це безпечно, бо журнал ніхто не читає.
+>
+> **Чесно про синк:** доведено, що СЕРВЕР приймає сходинки, не подвоює їх на
+> ретраї і дає ДВІ сходинки на дві зміни цілі з двох пристроїв замість
+> `lww_conflict` (інтеграційний лейн у `syncV2.integration.test.ts` — вимагає
+> Docker, локально skip, зелений у CI). Живого drain-у outbox у цьому патчі
+> не було; відома знахідка по finyk (клієнт не шле жодного запиту, 4
+> операції висять у черзі) стосується спільного рушія. Стадії 1-2 від синку
+> не залежать: клієнт пише в локальний SQLite, а цілі на екранах беруться з
+> `nutrition_prefs`.
+>
+> **Стадії 3-5 не входять і не можуть увійти:** cutover 9 консюмерів гейтить
+> openQuestion founder-а («чи має редагування цілі перефарбовувати минуле» +
+> як малювати дні з `origin='backfill'`), і без ратифікації ADR-ом канон
+> `nutrition.md` §4/§12 навмисно не чіпано — поведінка не змінилась.
+> `nutrition_day_targets` (стадія 4) і депрекація `dailyTarget*` (стадія 5) —
+> окремі задачі.
+
+> **Що ledger НЕ лагодить:** тригер списання (E-2). Каструля борщу і далі
+> списується стільки разів, скільки логів порцій — журнал зробить це
+> видимим як N подій `'consume'`, але не прибере. Сутність «приготував»
+> (`'cook'`) редагує секцію канону §9 з поміткою `[ІНТЕРВʼЮ]`, тож це
+> рішення founder-а, не агента (див. ADR-0077 §6).
+
+> **Хвиля 1 — стан.** У репо лежать **стадії 1** усіх журналів: події пишуться
+> паралельно зі старим шляхом, читання не перемкнуто, **жодне видиме число не
+> змінилось**. Cutover-стадії розблоковані рішеннями founder-а —
+> [ADR-0078](../../04-governance/adr/0078-day-boundary-device-local.md) (межа доби за
+> пристроєм), [ADR-0079](../../04-governance/adr/0079-frozen-past-and-canonical-denominator.md)
+> (заморожується лише закрите; знаменник за розкладом),
+> [ADR-0080](../../04-governance/adr/0080-body-weight-source-of-truth.md) (вага — fizruk).
+> Cutover дасть одноразовий стрибок цифр і вимагає `metricsVersion` — окремою поставкою.
 
 ## Хвиля 2 — Телеметрія петель цінності
 

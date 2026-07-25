@@ -703,6 +703,25 @@ describe("run() — integration", () => {
     assert.equal(ok, true);
   });
 
+  it("ignores non-migration files that live in the migrations dir", () => {
+    // `git diff -- apps/server/src/migrations` повертає і `__tests__/*.test.ts`.
+    // Тест міграції, який перевіряє власний `.down.sql`, ЦИТУЄ у собі
+    // `DROP TABLE IF EXISTS …` — і без фільтра лінтер вимагав від .ts-файлу
+    // TWO-PHASE-DROP-заголовок, тобто видавав діагностику, яку неможливо
+    // задовольнити.
+    writeFileSync(join(tmpDir, "001_init.sql"), "CREATE TABLE foo (id INT);\n");
+    writeFileSync(
+      join(tmpDir, "001-init.test.ts"),
+      "expect(down).toMatch(/DROP TABLE IF EXISTS foo;/);\n",
+    );
+
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "001-init.test.ts")],
+    });
+    assert.equal(ok, true);
+  });
+
   it("fails on gaps in migration numbering", () => {
     writeFileSync(join(tmpDir, "001_init.sql"), "SELECT 1;\n");
     writeFileSync(join(tmpDir, "003_skip.sql"), "SELECT 1;\n");

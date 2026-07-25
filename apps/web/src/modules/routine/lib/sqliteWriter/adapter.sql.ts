@@ -170,6 +170,23 @@ export const COMPLETION_NOTE_UPSERT_SQL = buildLwwUpsert(
   COMPLETION_NOTE_UPSERT_SPEC,
 );
 
+/**
+ * Append-only insert у журнал відміток (W1-ROUTINE-APPEND, стадія 1).
+ *
+ * `INSERT OR IGNORE`, а НЕ `ON CONFLICT DO UPDATE`: подія незмінна, тож
+ * повторна доставка того самого `id` (ретрай write-path-у) має бути
+ * тихим no-op-ом, а не перезаписом. Тому й `buildLwwUpsert` тут не
+ * використовується — у таблиці нема ні `updated_at`, ні `deleted_at`,
+ * і LWW-guard нема на що почепити.
+ *
+ * AI-DANGER: не «уніфікуй» це з рештою upsert-ів. UPDATE-гілка тут
+ * означала б редагування історії.
+ */
+export const COMPLETION_EVENT_INSERT_SQL = `INSERT OR IGNORE INTO routine_completion_events
+           (id, user_id, habit_id, date_key, state, occurred_at,
+            tz_offset_min, day_anchor, source, device_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
 // Routine's soft-delete SQL keeps its own layout (SET on its own line, one
 // `AND` per line) — the generic `buildDelete` emits a single-line WHERE, so
 // this shape is hand-written to stay byte-identical to the snapshot.

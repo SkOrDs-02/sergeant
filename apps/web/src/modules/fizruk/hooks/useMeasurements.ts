@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
@@ -137,6 +138,12 @@ export function useMeasurements() {
         at: new Date().toISOString(),
       };
       persist([e, ...entries]);
+      // W1-WEIGHT-SOT стадія 2: мосту звідси НЕ БУЛО — зважування на екрані
+      // «Заміри» мовчки не оновлювало «поточну вагу» для КБЖВ-цілей. Той
+      // самий хелпер, що й у `useDailyLog.addEntry`.
+      if (typeof e.weightKg === "number") {
+        recordBodyWeight({ weightKg: e.weightKg, at: e.at });
+      }
       return e;
     },
     [persist, entries],

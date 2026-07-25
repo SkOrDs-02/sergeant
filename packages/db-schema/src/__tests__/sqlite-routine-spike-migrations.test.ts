@@ -72,6 +72,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "004_routine_full_state.sql",
       "005_sync_op_outbox_quarantine.sql",
       "006_sync_op_outbox_user_id.sql",
+      "007_routine_completion_events.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -85,6 +86,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     expect(tables.map((r) => r.name)).toEqual([
       "__migrations",
       "routine_categories",
+      "routine_completion_events",
       "routine_completion_notes",
       "routine_entries",
       "routine_habit_order",
@@ -219,6 +221,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "004_routine_full_state.sql",
       "005_sync_op_outbox_quarantine.sql",
       "006_sync_op_outbox_user_id.sql",
+      "007_routine_completion_events.sql",
     ]);
   });
 

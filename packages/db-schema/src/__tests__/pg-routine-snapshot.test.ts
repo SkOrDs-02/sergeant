@@ -10,6 +10,7 @@ import {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineCompletionEvents,
 } from "../pg/routine.js";
 
 /**
@@ -314,5 +315,53 @@ describe("pg/routineCompletionNotes schema snapshot", () => {
     );
     expect(idx).toBeDefined();
     expect(idx!.config.where).toBeDefined();
+  });
+});
+
+/**
+ * `routine_completion_events` — append-only журнал відміток
+ * (міграція 085, W1-ROUTINE-APPEND стадія 1).
+ */
+describe("pg/routineCompletionEvents schema snapshot", () => {
+  const config = getTableConfig(routineCompletionEvents);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_completion_events");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "habit_id",
+      "date_key",
+      "state",
+      "occurred_at",
+      "tz_offset_min",
+      "day_anchor",
+      "source",
+      "device_id",
+      "created_at",
+    ]);
+  });
+
+  it("is append-only — no updated_at / deleted_at columns exist", () => {
+    const names = config.columns.map((c) => c.name);
+    expect(names).not.toContain("updated_at");
+    expect(names).not.toContain("deleted_at");
+  });
+
+  it("keys on a TEXT id — deliberately NOT uuid (see migration 085 rationale)", () => {
+    const id = config.columns.find((c) => c.name === "id");
+    expect(id).toBeDefined();
+    expect(id!.primary).toBe(true);
+    expect(id!.columnType).toBe("PgText");
+  });
+
+  it("declares both lookup indexes", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "routine_completion_events_user_habit_date_idx",
+      "routine_completion_events_user_occurred_idx",
+    ]);
   });
 });

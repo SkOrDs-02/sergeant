@@ -32,6 +32,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyRoutineDualWriteOps } from "./adapter";
+import { completionEventEnv } from "./adapter.completionEvents.js";
 import type { RoutineDualWriteOp } from "./diff.js";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
@@ -56,6 +57,16 @@ function makeRecordingClient() {
  * Кожен виклик встановлює СВІЖИЙ лічильник, щоб обидва прогони
  * determinism-тесту давали ідентичну послідовність ключів.
  */
+/**
+ * Заморожує оточення append-шляху журналу відміток: device-id і
+ * tz-offset інакше залежали б від машини, де крутиться CI, і гейт став
+ * би flaky. Прод-код читає ті самі методи.
+ */
+function stubCompletionEventEnv(): void {
+  vi.spyOn(completionEventEnv, "deviceId").mockReturnValue("dev-snapshot");
+  vi.spyOn(completionEventEnv, "tzOffsetMin").mockReturnValue(180);
+}
+
 function stubDeterministicUuids(): void {
   let n = 0;
   vi.spyOn(globalThis.crypto, "randomUUID").mockImplementation(() => {
@@ -90,6 +101,20 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
     dateKey: "2026-06-20",
   },
   { kind: "completion-remove", habitId: "h1", dateKey: "2026-06-19" },
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал. Обидва стани, бо
+  // `undone` — це саме те, чого стара пара add/remove не вміє записати.
+  {
+    kind: "completion-event-append",
+    habitId: "h1",
+    dateKey: "2026-06-20",
+    state: "done",
+  },
+  {
+    kind: "completion-event-append",
+    habitId: "h1",
+    dateKey: "2026-06-19",
+    state: "undone",
+  },
   {
     kind: "habit-rename",
     habitId: "h1",
@@ -147,6 +172,7 @@ describe("routine dual-write SQL snapshot (ADR-0073 Крок 0)", () => {
 
   it("emits a byte-stable (sql, params) sequence for the canonical op set", async () => {
     stubDeterministicUuids();
+    stubCompletionEventEnv();
     const { client, calls } = makeRecordingClient();
 
     const result = await applyRoutineDualWriteOps(client, CANONICAL_OPS, OPTS);
@@ -165,10 +191,12 @@ describe("routine dual-write SQL snapshot (ADR-0073 Крок 0)", () => {
     const second = makeRecordingClient();
 
     stubDeterministicUuids();
+    stubCompletionEventEnv();
     await applyRoutineDualWriteOps(first.client, CANONICAL_OPS, OPTS);
     await flushAsyncWork();
 
     stubDeterministicUuids();
+    stubCompletionEventEnv();
     await applyRoutineDualWriteOps(second.client, CANONICAL_OPS, OPTS);
     await flushAsyncWork();
 

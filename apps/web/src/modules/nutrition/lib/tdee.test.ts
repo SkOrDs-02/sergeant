@@ -193,4 +193,77 @@ describe("computeNutritionTargetsFromBiometrics", () => {
     expect(t!.fat_g).toBeGreaterThan(0);
     expect(t!.carbs_g).toBeGreaterThanOrEqual(0);
   });
+
+  // ── W1-WEIGHT-SOT стадія 1: вага з fizruk-SoT з фолбеком на біометрію ──
+  describe("fizruk-вага як джерело SoT", () => {
+    const NOW = new Date("2026-01-15T12:00:00Z"); // рівно 31 рік.
+
+    it("надає перевагу fizruk-вазі над знімком біометрії", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const fromFizruk = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+        90,
+      );
+      const asIfBiometrics = computeNutritionTargetsFromBiometrics(
+        fullBiometrics({ weightKg: 90 }),
+        "maintenance",
+        NOW,
+      );
+      expect(fromFizruk).toEqual(asIfBiometrics);
+      expect(fromFizruk!.kcal).not.toBe(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW)!.kcal,
+      );
+    });
+
+    it("падає назад на biometrics.weightKg, коли fizruk порожній", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const base = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+      );
+      expect(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW, null),
+      ).toEqual(base);
+      expect(
+        computeNutritionTargetsFromBiometrics(
+          bio,
+          "maintenance",
+          NOW,
+          undefined,
+        ),
+      ).toEqual(base);
+    });
+
+    it("ігнорує сміттєву fizruk-вагу (0, від'ємна, NaN)", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const base = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+      );
+      for (const bad of [0, -5, Number.NaN]) {
+        expect(
+          computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW, bad),
+        ).toEqual(base);
+      }
+    });
+
+    it("рятує юзера без ваги в біометрії, якщо fizruk-вага є", () => {
+      const bio = fullBiometrics({ weightKg: null });
+      expect(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW),
+      ).toBeNull();
+      const t = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+        82,
+      );
+      expect(t).not.toBeNull();
+      expect(t!.kcal).toBeGreaterThan(0);
+    });
+  });
 });

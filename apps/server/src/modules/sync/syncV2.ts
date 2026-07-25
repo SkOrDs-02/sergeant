@@ -28,6 +28,7 @@ import {
   applyRoutineEntries,
   applyRoutineStreaks,
 } from "./routine/applySync.js";
+import { applyRoutineCompletionEvents } from "./routine/applyCompletionEvents.js";
 import {
   applyRoutineCompletionNotes,
   applyRoutineHabitOrder,
@@ -58,6 +59,8 @@ import {
   applyNutritionPrefs,
   applyNutritionRecipes,
 } from "./nutrition/applySync.js";
+import { applyNutritionPantryEvents } from "./nutrition/applyPantryEvents.js";
+import { applyNutritionGoalPeriods } from "./nutrition/applySyncGoals.js";
 import {
   applyNutritionShoppingList,
   applyNutritionWaterLog,
@@ -88,8 +91,7 @@ type SyncV2Outcome =
   | "error";
 
 type AppliedStatus =
-  | { status: "applied" }
-  | { status: "rejected"; reason: ApplyRejectReason };
+  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 type ApplyFn = (
   client: PoolClient,
@@ -152,6 +154,10 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_pushups: applyRoutinePushups,
   routine_habit_order: applyRoutineHabitOrder,
   routine_completion_notes: applyRoutineCompletionNotes,
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. `op='update'`
+  // / `'delete'` відхиляються з `append_only_violation`; читачів у цій
+  // стадії нема.
+  routine_completion_events: applyRoutineCompletionEvents,
   fizruk_workouts: applyFizrukWorkouts,
   fizruk_workout_items: applyFizrukItems,
   fizruk_workout_sets: applyFizrukSets,
@@ -166,6 +172,19 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,
+  // W1-PANTRY-APPEND стадія 1 — append-only журнал руху продуктів комори.
+  // `op='update'` відхиляється з `append_only_violation`, `op='delete'` —
+  // лише tombstone-ретракція. `op='increment'` НЕ потрібен: append-only
+  // рядки комутативні самі по собі, тож `INCREMENT_OP_SUPPORTED_TABLES`
+  // нижче лишається як є. Ні писарів, ні читачів на цій стадії.
+  nutrition_pantry_events: applyNutritionPantryEvents,
+  // W1-KBJU-APPEND стадія 1 — append-only журнал цілей КБЖВ. Свідомо БЕЗ
+  // LWW-guard-а, на відміну від сусіднього `nutrition_prefs`: дві зміни
+  // цілі з двох пристроїв у різні дні — це дві сходинки історії, а не
+  // конфлікт. `op='update'` → `append_only_violation`, `op='delete'` —
+  // лише tombstone-ретракція. `INCREMENT_OP_SUPPORTED_TABLES` нижче не
+  // чіпаємо: append-only рядки комутативні самі по собі.
+  nutrition_goal_periods: applyNutritionGoalPeriods,
   nutrition_prefs: applyNutritionPrefs,
   nutrition_recipes: applyNutritionRecipes,
   nutrition_water_log: applyNutritionWaterLog,

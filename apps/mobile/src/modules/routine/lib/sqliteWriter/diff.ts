@@ -39,6 +39,25 @@ export interface CompletionRemoveOp {
   readonly dateKey: string;
 }
 
+/**
+ * Append-only журнал відміток (W1-ROUTINE-APPEND, СТАДІЯ 1).
+ *
+ * Ця операція йде ПОРУЧ із `completion-add` / `completion-remove`, а не
+ * замість них: старий шлях (`routine_entries` + soft-delete) лишається
+ * недоторканим, журнал пишеться паралельно. Якщо журнал зламається —
+ * продукт не помітить, бо жоден читач на нього ще не спирається.
+ *
+ * `state` фіксує І зняття відмітки (`'undone'`), чого стара пара
+ * add/remove не вміє: soft-delete лише ховає рядок, а факт «було
+ * відмічено, потім знято» зникає (audit E-1).
+ */
+export interface CompletionEventAppendOp {
+  readonly kind: "completion-event-append";
+  readonly habitId: string;
+  readonly dateKey: string;
+  readonly state: "done" | "undone";
+}
+
 export interface HabitRenameOp {
   readonly kind: "habit-rename";
   readonly habitId: string;
@@ -118,6 +137,7 @@ export interface CompletionNoteDeleteOp {
 export type RoutineDualWriteOp =
   | CompletionAddOp
   | CompletionRemoveOp
+  | CompletionEventAppendOp
   | HabitRenameOp
   | HabitUpsertOp
   | HabitDeleteOp
@@ -142,6 +162,9 @@ export type RoutineDualWriteOp =
  *
  *   1. completion-add (habitId asc, dateKey asc)
  *   2. completion-remove (habitId asc, dateKey asc)
+ *   2a. completion-event-append (habitId asc, dateKey asc, state asc) —
+ *       append-only журнал, W1-ROUTINE-APPEND стадія 1; іде ПІСЛЯ старих
+ *       completion-ops, щоб їхній відносний порядок не змінився
  *   3. habit-rename (habitId asc)
  *   4. habit-upsert / habit-delete (habitId asc)
  *   5. tag-upsert / tag-delete (tagId asc)
@@ -224,7 +247,56 @@ function diffCompletionOps(
   }
   removes.sort(byHabitThenDate);
 
-  ops.push(...adds, ...removes);
+  ops.push(...adds, ...removes, ...buildCompletionEventOps(prevSet, nextSet));
+}
+
+/**
+ * Побудувати append-only події журналу для того самого переходу.
+ *
+ * Свідомо НЕ перевикористовує масиви `adds` / `removes`: ті пропускають
+ * add, для якого не знайшлось імені звички у `next.habits` (стара
+ * денормалізація `routine_entries.name`). Журнал такої залежності не
+ * має — він фіксує сирий факт, а не рядок для показу.
+ *
+ * Порядок детермінований (habitId, dateKey, state), щоб батч ops не
+ * «плив» між прогонами і snapshot-тести write-path-у лишались стабільними.
+ */
+function buildCompletionEventOps(
+  prevSet: Set<string>,
+  nextSet: Set<string>,
+): CompletionEventAppendOp[] {
+  const events: CompletionEventAppendOp[] = [];
+
+  for (const key of nextSet) {
+    if (prevSet.has(key)) continue;
+    const split = splitCompletionKey(key);
+    if (!split) continue;
+    events.push({
+      kind: "completion-event-append",
+      habitId: split.habitId,
+      dateKey: split.dateKey,
+      state: "done",
+    });
+  }
+  for (const key of prevSet) {
+    if (nextSet.has(key)) continue;
+    const split = splitCompletionKey(key);
+    if (!split) continue;
+    events.push({
+      kind: "completion-event-append",
+      habitId: split.habitId,
+      dateKey: split.dateKey,
+      state: "undone",
+    });
+  }
+
+  events.sort((a, b) => {
+    if (a.habitId !== b.habitId) return a.habitId < b.habitId ? -1 : 1;
+    if (a.dateKey !== b.dateKey) return a.dateKey < b.dateKey ? -1 : 1;
+    if (a.state !== b.state) return a.state < b.state ? -1 : 1;
+    return 0;
+  });
+  return events;
 }
 
 function diffHabitRenameOps(

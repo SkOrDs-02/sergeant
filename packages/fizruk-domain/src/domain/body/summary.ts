@@ -1,9 +1,13 @@
 /**
- * Pure selectors for the Fizruk **Body** dashboard (mobile).
+ * Pure selectors for the Fizruk **Body** dashboard (web + mobile).
  *
- * All helpers work over the `MobileMeasurementEntry[]` shape owned by
- * `useMeasurements()` — the Body screen is a read-only consumer of
- * that store, so there is no new storage slot to reason about here.
+ * Більшість хелперів працює над формою `MobileMeasurementEntry[]`, яку
+ * віддає `useMeasurements()`. **Виняток — вага тіла:** припущення, що цей
+ * масив і є повний набір ваги, хибне (див. `./bodyWeight.ts`) — половина
+ * зважувань живе у `fizruk_daily_log`. Саме тут гинула daily_log-історія
+ * на mobile Body. Для ваги використовуй union-варіанти нижче
+ * ({@link buildBodyWeightSummary}, {@link buildBodySummariesWithWeightUnion}),
+ * які приймають обидва джерела.
  *
  * The functions below deliberately do **not** assume any particular
  * ordering of the input array. They re-sort when needed so callers
@@ -11,6 +15,11 @@
  */
 
 import type { MeasurementFieldId } from "../measurements/types.js";
+import {
+  selectBodyWeightSamples,
+  toBodyWeightEntries,
+  type BodyWeightRecordInput,
+} from "./bodyWeight.js";
 import type {
   BodyMetricSummary,
   BodySummariesByField,
@@ -185,6 +194,53 @@ export function buildBodySummaries(
     out[f] = buildBodySummary(entries, f, windowDays, nowIso);
   }
   return out;
+}
+
+/**
+ * Union-варіант {@link buildBodySummary} для поля `weightKg`: бере вагу з
+ * обох сховищ (`fizruk_daily_log` + `fizruk_measurements`) через
+ * {@link selectBodyWeightSamples}, а не тільки з переданого масиву замірів.
+ *
+ * ADDITIVE: старий `buildBodySummary(entries, "weightKg")` лишається
+ * робочим — просто показує підмножину історії.
+ */
+export function buildBodyWeightSummary(
+  dailyLog: readonly BodyWeightRecordInput[] | null | undefined,
+  measurements: readonly BodyWeightRecordInput[] | null | undefined,
+  windowDays: number = BODY_SUMMARY_WINDOW_DAYS,
+  nowIso: string = new Date().toISOString(),
+): BodyMetricSummary {
+  const entries = toBodyWeightEntries(
+    selectBodyWeightSamples(dailyLog, measurements),
+  );
+  return buildBodySummary(entries, "weightKg", windowDays, nowIso);
+}
+
+/**
+ * Union-варіант {@link buildBodySummaries}: усі поля рахуються як раніше,
+ * але `weightKg` (якщо він серед `fields`) підміняється на union обох
+ * сховищ ваги. Це те, що робить mobile Body й web Body однаковими числами.
+ *
+ * ADDITIVE: `buildBodySummaries` не змінився й лишається публічним.
+ */
+export function buildBodySummariesWithWeightUnion(
+  dailyLog: readonly BodyWeightRecordInput[] | null | undefined,
+  measurements: readonly MobileMeasurementEntry[] | null | undefined,
+  fields: readonly MeasurementFieldId[],
+  windowDays: number = BODY_SUMMARY_WINDOW_DAYS,
+  nowIso: string = new Date().toISOString(),
+): BodySummariesByField {
+  const base = buildBodySummaries(measurements, fields, windowDays, nowIso);
+  if (!fields.includes("weightKg")) return base;
+  return {
+    ...base,
+    weightKg: buildBodyWeightSummary(
+      dailyLog,
+      measurements as readonly BodyWeightRecordInput[] | null | undefined,
+      windowDays,
+      nowIso,
+    ),
+  };
 }
 
 /**
