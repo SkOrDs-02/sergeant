@@ -365,6 +365,19 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 **Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжній
 `habitId`) → окремий PR із двофазною міграцією типу.
 
+**Оновлення 2026-07-25 (W1-ROUTINE-APPEND, стадія 1).** Нова таблиця
+`routine_completion_events` (міграція
+[`085`](../../../apps/server/src/migrations/085_routine_completion_events.sql))
+СВІДОМО оголошує `id TEXT`, а не `UUID` — щоб не повторити цю саму пастку.
+Клієнт генерує `id` детерміновано (`buildCompletionEventId` у
+`@sergeant/routine-domain`), сервер застосовує через
+`INSERT ... ON CONFLICT (id) DO NOTHING`
+([`applyCompletionEvents.ts`](../../../apps/server/src/modules/sync/routine/applyCompletionEvents.ts)).
+Для СТАРИХ таблиць (`routine_entries` / `routine_habits` / `routine_tags` /
+`routine_categories`) борг лишається ВІДКРИТИМ і закриється лише стадією 5
+(припинення запису в `routine_entries` + двофазний DROP) — до того моменту
+твердження «чекін доїжджає до сервера» так само непідтверджене.
+
 ### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
 
 **Знайдено:** audit routine E-4. `routine_streaks.current_streak` /
