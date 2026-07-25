@@ -1,7 +1,8 @@
 /**
- * Last validated: 2026-05-14
- * Status: Active
+ * Last validated: 2026-07-25
+ * Status: Active — updated with #1 scrub + #2 goal line
  */
+import { useRef, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import {
@@ -10,6 +11,8 @@ import {
   chartSeries,
   chartTick,
 } from "@shared/charts";
+import { useChartScrub } from "@shared/hooks";
+import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
@@ -17,11 +20,17 @@ const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 interface WeeklyVolumeChartProps {
   volumeKg?: number[];
   className?: string;
+  /**
+   * #2 — optional weekly volume goal (кг×повт). Rendered as a dashed
+   * goal line with a "Ціль" label.
+   */
+  weeklyGoal?: number;
 }
 
 export function WeeklyVolumeChart({
   volumeKg,
   className,
+  weeklyGoal,
 }: WeeklyVolumeChartProps) {
   const vals =
     Array.isArray(volumeKg) && volumeKg.length === 7
@@ -70,7 +79,7 @@ export function WeeklyVolumeChart({
   const points = vals.map((v, i) => {
     const x = padL + i * step;
     const y = padT + innerH - (Math.min(Number(v) || 0, max) / max) * innerH;
-    return { x, y, v };
+    return { x, y, v: Number(v) || 0 };
   });
 
   const lineD = points
@@ -88,6 +97,32 @@ export function WeeklyVolumeChart({
     lab: fr === 0 ? "0" : fr === 1 ? formatYAxis(max) : formatYAxis(max * 0.5),
   }));
 
+  // #2 — goal line y-position
+  const goalY =
+    weeklyGoal !== undefined && weeklyGoal > 0
+      ? padT + innerH - (Math.min(weeklyGoal, max) / max) * innerH
+      : undefined;
+
+  // #1 — scrubbing
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => points.map((p) => p.x),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [n, padL, step],
+  );
+
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: n,
+    xPositions,
+    viewBoxWidth: w,
+  });
+
+  const activePoint = activeIndex !== null ? points[activeIndex] : null;
+  const activeDotY = activePoint?.y;
+  const activeDay = activeIndex !== null ? LABELS_UK[activeIndex] : null;
+  const activeVol = activePoint?.v;
+
   const summaryId = "fizruk-weekly-volume-summary";
 
   return (
@@ -98,19 +133,30 @@ export function WeeklyVolumeChart({
           className="text-style-caption text-subtle flex items-center gap-1.5"
           aria-hidden
         >
-          <span
-            className="inline-block w-2 h-2 rounded-full"
-            style={{ backgroundColor: chartSeries.fizruk.primary }}
-          />
-          кг×повт
+          {/* Live scrub label replaces static unit hint */}
+          {activeDay !== null && activeVol !== undefined ? (
+            <span className="tabular-nums font-semibold" style={{ color: chartSeries.fizruk.primary }}>
+              {activeDay} · {formatYAxis(activeVol)} кг×повт
+            </span>
+          ) : (
+            <>
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ backgroundColor: chartSeries.fizruk.primary }}
+              />
+              кг×повт
+            </>
+          )}
         </span>
       </div>
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-auto max-h-[200px] overflow-visible"
+        className="w-full h-auto max-h-[200px] overflow-visible touch-none cursor-crosshair"
         role="img"
         aria-label="Графік обсягу тренувань за дні поточного тижня"
         aria-describedby={summaryId}
+        {...bind}
       >
         <defs>
           <linearGradient id="wvFill" x1="0" y1="0" x2="0" y2="1">
@@ -139,6 +185,21 @@ export function WeeklyVolumeChart({
             </text>
           </g>
         ))}
+
+        {/* #2 — weekly volume goal line */}
+        {goalY !== undefined && (
+          <ChartGoalLine
+            y={goalY}
+            x1={padL}
+            x2={w - padR}
+            label="Ціль"
+            color={chartSeries.fizruk.primary}
+            zone="above"
+            zoneBottom={padT + innerH}
+            gradId="wv"
+          />
+        )}
+
         <path d={areaD} fill="url(#wvFill)" />
         <path
           d={lineD}
@@ -173,6 +234,21 @@ export function WeeklyVolumeChart({
             </text>
           );
         })}
+
+        {/* #1 — scrub crosshair + tooltip */}
+        {activePoint !== null && activeDotY !== undefined && activeVol !== undefined && activeDay !== null && (
+          <ChartScrubOverlay
+            x={scrubX}
+            top={padT}
+            bottom={padT + innerH}
+            dotY={activeDotY}
+            dotColor={chartSeries.fizruk.primary}
+            label={`${formatYAxis(activeVol)}`}
+            subLabel={activeDay}
+            viewBoxWidth={w}
+            flipNearEdge={true}
+          />
+        )}
       </svg>
       <div id={summaryId} className="sr-only">
         <p>

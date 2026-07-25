@@ -229,19 +229,61 @@ export const BentoCard = memo(function BentoCard({
                 {preview.sub}
               </span>
             )}
+            {/* #8 — trend-delta chip: ▲/▼ vs previous period. Only shown
+                when `trendDelta` is a non-null finite number. Positive =
+                success-ink (▲ green), negative = danger-ink (▼ red), zero
+                is omitted (no meaningful change to communicate). The chip
+                sits below the sub-text and does not push the progress bar:
+                it is absolutely positioned in the bottom-left corner so it
+                never causes layout shift in the 120–132 px card height. */}
+            {config.trendDelta != null &&
+              Number.isFinite(config.trendDelta) &&
+              config.trendDelta !== 0 && (
+                <span
+                  className={cn(
+                    "mt-1 inline-flex items-center gap-0.5 self-start",
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none",
+                    "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
+                    config.trendDelta > 0
+                      ? "bg-success/12 text-success-strong dark:text-success"
+                      : "bg-danger/12 text-danger-strong dark:text-danger",
+                  )}
+                  aria-label={`Зміна: ${config.trendDelta > 0 ? "+" : ""}${Math.round(config.trendDelta * 100)} %`}
+                >
+                  {config.trendDelta > 0 ? "▲" : "▼"}
+                  {Math.abs(Math.round(config.trendDelta * 100))}%
+                </span>
+              )}
           </>
         ) : (
-          /* FTUX: порожня картка мовчала — назва + опис, і все. Перший
-             екран після онбордінгу нічого не обіцяв. Тепер картка каже,
-             що саме тут зʼявиться, і показує приклад справжнього
-             значення в mono/модульному ink (мова «Папір», П3) — щоб
-             місце під число було видно ще до першого запису. */
-          <span className="text-style-caption text-subtle mt-1 leading-snug">
-            {config.emptyPromise}{" "}
-            <span className={cn("font-mono tabular-nums", config.inkClass)}>
-              {config.emptyExample}
+          <>
+            {/* FTUX: порожня картка мовчала — назва + опис, і все. Тепер
+                картка каже, що тут зʼявиться, і показує приклад значення. */}
+            <span className="text-style-caption text-subtle mt-1 leading-snug">
+              {config.emptyPromise}{" "}
+              <span className={cn("font-mono tabular-nums", config.inkClass)}>
+                {config.emptyExample}
+              </span>
             </span>
-          </span>
+            {/* #10 — ghost preview: faded silhouette of a sparkline (for
+                data modules like finyk/fizruk) or a partial arc ring (for
+                goal modules like routine/nutrition). Gives the eye a spatial
+                anchor for where the real visual will appear, so the empty
+                card feels intentional rather than broken.
+                `aria-hidden` — decorative; the sr-only label above carries
+                the accessible description. */}
+            {config.ghostRingPct != null ? (
+              <GhostRing
+                pct={config.ghostRingPct}
+                colorClass={config.inkClass}
+              />
+            ) : config.ghostPath ? (
+              <GhostSparkline
+                d={config.ghostPath}
+                colorClass={config.inkClass}
+              />
+            ) : null}
+          </>
         )}
         {/* Empty cards intentionally render no CTA copy: the whole tile is a
             button (hover-lift on desktop, full tap target on touch) and the
@@ -292,6 +334,86 @@ export const BentoCard = memo(function BentoCard({
     </div>
   );
 });
+
+/* ─── #10 Ghost preview helpers ──────────────────────────────────────────── */
+
+/**
+ * A faded sparkline silhouette rendered inside empty module cards. The `d`
+ * prop is a small SVG path string (absolute coords, 48×28 viewBox) that
+ * represents the characteristic shape of that module's data chart.
+ */
+function GhostSparkline({
+  d,
+  colorClass,
+}: {
+  d: string;
+  colorClass: string;
+}) {
+  return (
+    <svg
+      viewBox="0 0 48 28"
+      aria-hidden
+      className={cn(
+        "mt-2 w-full max-w-[80px] h-auto opacity-20",
+        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
+      )}
+    >
+      <path
+        d={d}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        className={colorClass.replace("text-", "stroke-")}
+      />
+    </svg>
+  );
+}
+
+/**
+ * A partial arc ring silhouette used as the ghost for goal-bearing modules
+ * (routine, nutrition). `pct` drives the arc length (0–100).
+ */
+function GhostRing({ pct, colorClass }: { pct: number; colorClass: string }) {
+  const r = 11;
+  const cx = 14;
+  const cy = 14;
+  const circumference = 2 * Math.PI * r;
+  const dash = (Math.min(pct, 100) / 100) * circumference;
+  return (
+    <svg
+      viewBox="0 0 28 28"
+      aria-hidden
+      className={cn(
+        "mt-2 w-7 h-7 opacity-20",
+        "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
+      )}
+    >
+      {/* Track */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        strokeWidth="3"
+        className="stroke-line/50"
+      />
+      {/* Fill arc */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        strokeWidth="3"
+        strokeDasharray={`${dash} ${circumference}`}
+        strokeDashoffset={0}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${cx} ${cy})`}
+        className={colorClass.replace("text-", "stroke-")}
+      />
+    </svg>
+  );
+}
 
 export interface SortableCardProps {
   id: ModuleId;

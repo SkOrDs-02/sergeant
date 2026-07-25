@@ -82,6 +82,12 @@ export type { UseHapticReturn } from "./useHaptic";
 
 export { useReducedMotion } from "./useReducedMotion";
 
+export { useChartScrub } from "./useChartScrub";
+export type {
+  UseChartScrubOptions,
+  UseChartScrubResult,
+} from "./useChartScrub";
+
 export { useShortcutGlyph } from "./useShortcutGlyph";
 
 export { useInView } from "./useInView";
