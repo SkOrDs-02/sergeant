@@ -41,6 +41,8 @@ export function exportModuleData(action: ExportModuleDataAction): string {
       const parts: string[] = ["Експорт Фінік:"];
       // Bank transactions are now stored in the SQLite mirror; serialize
       // the in-memory cache the same way exportData would serialize a LS value.
+      // Свідомо СИРИЙ геттер (не visible-варіант): експорт — повний дамп
+      // даних юзера, транзакції вимкнених карток теж мають потрапити сюди.
       parts.push(
         exportValue(getCachedFinykMonoMirrorState().transactions, "Транзакції"),
       );

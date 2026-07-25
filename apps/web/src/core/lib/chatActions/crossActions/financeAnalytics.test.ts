@@ -15,9 +15,15 @@ vi.mock("../../../../modules/finyk/constants", () => ({
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
 }));
-vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: vi.fn(),
-}));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => {
+  // Продакшн-код читає visible-геттер; інстанс мока один на обидва імені,
+  // тож mockReturnValue через будь-яке з них конфігурує обидва.
+  const shared = vi.fn();
+  return {
+    getCachedFinykMonoMirrorState: shared,
+    getVisibleFinykMonoMirrorState: shared,
+  };
+});
 
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";

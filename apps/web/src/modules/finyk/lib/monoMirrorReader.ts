@@ -20,6 +20,8 @@
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { STORAGE_KEYS } from "@sergeant/shared";
+import { safeReadLS } from "@shared/lib/storage/storage";
 
 interface MonoAccountCacheEntry {
   id: string;
@@ -69,6 +71,44 @@ export function getCachedFinykMonoMirrorStateWithLastGood(): SqliteMonoMirrorCac
   if (cache.transactions.length > 0) return cache;
   if (lastGoodTransactions.length === 0) return cache;
   return { ...cache, transactions: lastGoodTransactions };
+}
+
+/**
+ * Транзакції рахунків, вимкнених тумблером «Враховувати картку»
+ * (`finyk_hidden`), не мають потрапляти в жодну user-facing поверхню.
+ *
+ * AI-CONTEXT: фільтр живе на ДВОХ ярусах. Модуль Фінік фільтрує свій
+ * merged-стрім у `useUnifiedFinanceData` (реактивно, зі стейту). Всі
+ * решта споживачів дзеркала (HubChat-контекст, recommendationEngine,
+ * chat-actions, hub-пошук/картки, підписки Рутини) читають кеш синхронно
+ * поза React — для них visible-геттери нижче. Сирі геттери лишаються
+ * для ingest-шляху (`useMonobankWebhook` overlay-ить кеш назад у стейт —
+ * фільтрація там зробила б приховані картки невідновними) і для
+ * повного експорту даних (`exportHandler`).
+ */
+function filterHiddenAccountTx(txs: Transaction[]): Transaction[] {
+  const hidden = new Set(
+    safeReadLS<string[]>(STORAGE_KEYS.FINYK_HIDDEN, []) ?? [],
+  );
+  if (hidden.size === 0) return txs;
+  return txs.filter((t) => {
+    const accountId = t._accountId ?? t.accountId;
+    return typeof accountId !== "string" || !hidden.has(accountId);
+  });
+}
+
+/** Як `getCachedFinykMonoMirrorState`, але без транзакцій прихованих карток. */
+export function getVisibleFinykMonoMirrorState(): SqliteMonoMirrorCache {
+  const raw = getCachedFinykMonoMirrorState();
+  const transactions = filterHiddenAccountTx(raw.transactions);
+  return transactions === raw.transactions ? raw : { ...raw, transactions };
+}
+
+/** Як `getCachedFinykMonoMirrorStateWithLastGood`, але без прихованих карток. */
+export function getVisibleFinykMonoMirrorStateWithLastGood(): SqliteMonoMirrorCache {
+  const raw = getCachedFinykMonoMirrorStateWithLastGood();
+  const transactions = filterHiddenAccountTx(raw.transactions);
+  return transactions === raw.transactions ? raw : { ...raw, transactions };
 }
 
 /** Test-only escape hatch: clears the cache between specs. */

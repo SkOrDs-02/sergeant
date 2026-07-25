@@ -13,6 +13,16 @@ export const finykPageMessages = {
   },
   nonUahAssetHint:
     "Збережу актив, але поки не враховую його в загальному капіталі — рахую лише активи в гривні.",
+  monoCards: {
+    sectionTitle: "Картки Monobank",
+    fallbackName: "Картка",
+    bankLabel: "Monobank",
+    excluded: "Не враховується",
+    settingsAriaSuffix: "налаштування картки",
+    includeLabel: "Враховувати картку",
+    includeHint:
+      "Вимкнена картка не потрапляє в баланс, аналітику та статистику.",
+  },
   monoConnectErrors: {
     tokenRejected: "Mono відхилив токен. Перевір, чи скопіював правильний.",
     networkUnavailable: "Не вдалось зв'язатись з Mono. Перевір з'єднання.",

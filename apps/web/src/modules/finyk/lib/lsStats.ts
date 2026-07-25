@@ -6,7 +6,7 @@
    STORAGE_KEYS — окремий крок. Читання raw тут навмисне. */
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { getCachedFinykMonoMirrorState } from "./monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 
 // Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама логіка, що
 // в `useStorage` → `excludedTxIds`), читаючи безпосередньо з localStorage.
@@ -70,7 +70,7 @@ export interface FinykStatsContext {
 }
 
 export function readFinykStatsContext(): FinykStatsContext {
-  const txs: BankTxLike[] = getCachedFinykMonoMirrorState().transactions;
+  const txs: BankTxLike[] = getVisibleFinykMonoMirrorState().transactions;
   const txCategoriesRaw = safeReadLS<Record<string, string>>(
     "finyk_tx_cats",
     {},

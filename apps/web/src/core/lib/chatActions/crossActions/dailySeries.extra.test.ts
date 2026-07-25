@@ -52,6 +52,7 @@ vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
 
 vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
   getCachedFinykMonoMirrorState: mockCachedFinykMonoMirror,
+  getVisibleFinykMonoMirrorState: mockCachedFinykMonoMirror,
 }));
 
 vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({

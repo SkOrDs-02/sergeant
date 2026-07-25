@@ -15,8 +15,8 @@ import { handleCrossAction } from "./crossActions";
 // `readFinykStatsContext` now reads bank transactions from the SQLite Mono
 // mirror cache instead of `finyk_tx_cache` localStorage. Bridge the two so
 // existing test code that seeds LS still flows through to `aggregateFinyk`.
-vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: vi.fn(() => {
+vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => {
+  const readMockMirrorState = () => {
     const raw = localStorage.getItem("finyk_tx_cache");
     if (!raw) return { transactions: [], accounts: [], refreshedAt: null };
     try {
@@ -34,9 +34,15 @@ vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => ({
     } catch {
       return { transactions: [], accounts: [], refreshedAt: null };
     }
-  }),
-  clearFinykMonoMirrorCache: vi.fn(),
-}));
+  };
+  return {
+    getCachedFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    // Chat-actions читають visible-геттер (без прихованих карток); у моку
+    // обидва — один і той самий фейк.
+    getVisibleFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    clearFinykMonoMirrorCache: vi.fn(),
+  };
+});
 import {
   __setRoutineSqliteStateCacheForTests,
   __setRoutineSqliteCompletionsCacheForTests,

@@ -5,7 +5,7 @@ import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
@@ -27,7 +27,7 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   }
   const fromTs = fromDate.getTime();
   const toTs = toDate.getTime();
-  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     description?: string;

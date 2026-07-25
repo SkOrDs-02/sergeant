@@ -11,7 +11,7 @@ import {
   mergeExpenseCategoryDefinitions,
 } from "../../../../modules/finyk/constants";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
   CategoryBreakdownAction,
   DetectAnomaliesAction,
@@ -24,7 +24,7 @@ export function spendingTrend(action: SpendingTrendAction): string {
   const now = Date.now();
   const currentStart = now - days * 86400000;
   const prevStart = currentStart - days * 86400000;
-  const allTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const allTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;
@@ -69,7 +69,7 @@ export function categoryBreakdown(action: CategoryBreakdownAction): string {
   const { period_days } = (action as CategoryBreakdownAction).input || {};
   const days = Number(period_days) || 30;
   const cutoff = Date.now() - days * 86400000;
-  const allTxsCat = getCachedFinykMonoMirrorState().transactions as Array<{
+  const allTxsCat = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;
@@ -120,7 +120,7 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
   const days = Number(period_days) || 30;
   const threshold = Number(threshold_multiplier) || 3;
   const cutoff = Date.now() - days * 86400000;
-  const allTxsAnomaly = getCachedFinykMonoMirrorState().transactions as Array<{
+  const allTxsAnomaly = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;

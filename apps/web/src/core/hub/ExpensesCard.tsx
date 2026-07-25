@@ -13,7 +13,7 @@ import {
   getFinykExcludedTxIdsFromStorage,
   getFinykTxSplitsFromStorage,
 } from "@finyk/utils";
-import { getCachedFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import {
   aggregateSpending,
@@ -210,7 +210,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   const { cur, prev, dates } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
-    const txList = getCachedFinykMonoMirrorState().transactions;
+    const txList = getVisibleFinykMonoMirrorState().transactions;
 
     const inputs: SpendingInputs = {
       txList: txList as SpendingInputs["txList"],

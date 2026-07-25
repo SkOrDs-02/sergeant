@@ -18,8 +18,8 @@ vi.mock("@finyk/utils", async (importOriginal) => {
 // ExpensesCard reads bank transactions from the SQLite Mono mirror cache.
 // Bridge it to localStorage so test-seeded `finyk_tx_cache` entries flow
 // through — this matches the pattern used in crossActions.test.ts.
-vi.mock("@finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: vi.fn(() => {
+vi.mock("@finyk/lib/monoMirrorReader", () => {
+  const readMockMirrorState = () => {
     const raw = localStorage.getItem("finyk_tx_cache");
     if (!raw) return { transactions: [], accounts: [], refreshedAt: null };
     try {
@@ -37,9 +37,15 @@ vi.mock("@finyk/lib/monoMirrorReader", () => ({
     } catch {
       return { transactions: [], accounts: [], refreshedAt: null };
     }
-  }),
-  useFinykMonoMirrorTick: vi.fn(() => 0),
-}));
+  };
+  return {
+    getCachedFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    // ExpensesCard читає visible-геттер (без прихованих карток); у моку
+    // обидва — один і той самий фейк.
+    getVisibleFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    useFinykMonoMirrorTick: vi.fn(() => 0),
+  };
+});
 
 import ExpensesCard from "./ExpensesCard";
 

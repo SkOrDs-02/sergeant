@@ -13,7 +13,7 @@ import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/perso
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { Recommendations } from "@sergeant/insights";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 
 type FinanceContext = Recommendations.FinanceContext;
 type Transaction = Recommendations.Transaction;
@@ -52,7 +52,7 @@ export function buildFinanceContext(): FinanceContext {
   const monthStart = startOfCurrentMonth();
   const monthStartMs = monthStart.getTime();
 
-  const transactions: Transaction[] = getCachedFinykMonoMirrorState()
+  const transactions: Transaction[] = getVisibleFinykMonoMirrorState()
     .transactions as Transaction[];
 
   const budgets = safeLS<Budget[]>("finyk_budgets", []);

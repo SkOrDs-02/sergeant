@@ -2,7 +2,7 @@ import { getWeekKey } from "@sergeant/shared";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
-import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import {
   toDisplayAmount,
   toIsoDay,
@@ -88,7 +88,7 @@ type RawTx = {
 function readQueryTransactions(): FinykSearchTx[] {
   const sqlite = getCachedFinykSqliteState();
   const manual = sqlite.manualExpenses as RawTx[];
-  const bankTxs = getCachedFinykMonoMirrorState().transactions as RawTx[];
+  const bankTxs = getVisibleFinykMonoMirrorState().transactions as RawTx[];
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
 

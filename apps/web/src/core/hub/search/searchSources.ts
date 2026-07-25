@@ -4,7 +4,7 @@ import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
-import { getCachedFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import { safeParseLS, scoreLru } from "./searchCache";
@@ -28,7 +28,7 @@ interface FinykSub {
 function searchFinyk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
-  const txList = getCachedFinykMonoMirrorState().transactions as FinykTx[];
+  const txList = getVisibleFinykMonoMirrorState().transactions as FinykTx[];
   if (Array.isArray(txList)) {
     for (const tx of txList) {
       if (!tx || typeof tx !== "object") continue;
@@ -280,7 +280,7 @@ function storageSnapshot(): string {
   // data changes (counts + ids + habit/meal names catch add/remove/rename).
   // finyk_tx_cache is now tombstoned — derive change-signal from the mirror cache
   // (same semantics: length change + prefix/suffix fingerprint).
-  const mirrorTxs = getCachedFinykMonoMirrorState().transactions;
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions;
   const mirrorSnapshot =
     mirrorTxs.length === 0
       ? "0"

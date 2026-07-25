@@ -11,14 +11,25 @@ const FIXED_NOW = new Date("2026-04-15T10:30:00.000Z");
 // this mock rather than localStorage.
 
 const mockMirrorTransactions: Array<Record<string, unknown>> = [];
-vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: () => ({
+vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => {
+  // Стан визначений УСЕРЕДИНІ фабрики: vi.mock хойститься, зовнішній
+  // const тут ще не ініціалізований (TDZ); масив-фікстуру читаємо лише
+  // в момент виклику геттера — це безпечно.
+  const state = () => ({
     transactions: mockMirrorTransactions,
     accounts: [],
     refreshedAt:
-      mockMirrorTransactions.length > 0 ? FIXED_NOW.toISOString() : null,
-  }),
-}));
+      mockMirrorTransactions.length > 0
+        ? new Date("2026-04-15T10:30:00.000Z").toISOString()
+        : null,
+  });
+  return {
+    // financeContext читає visible-варіант (без транзакцій прихованих
+    // карток); у моку обидва геттери віддають один і той самий стан.
+    getCachedFinykMonoMirrorState: state,
+    getVisibleFinykMonoMirrorState: state,
+  };
+});
 
 function setMirrorTxs(txs: Array<Record<string, unknown>>) {
   mockMirrorTransactions.length = 0;

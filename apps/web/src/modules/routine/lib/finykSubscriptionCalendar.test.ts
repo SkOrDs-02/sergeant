@@ -81,6 +81,7 @@ vi.mock("@sergeant/routine-domain", () => ({
 
 vi.mock("../../finyk/lib/monoMirrorReader", () => ({
   getCachedFinykMonoMirrorStateWithLastGood: () => deps.getMirrorState(),
+  getVisibleFinykMonoMirrorStateWithLastGood: () => deps.getMirrorState(),
 }));
 
 describe("finykSubscriptionCalendar", () => {

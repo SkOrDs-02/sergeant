@@ -8,7 +8,7 @@ import {
   type FinykSubscriptionLike,
   type HubCalendarEvent,
 } from "@sergeant/routine-domain";
-import { getCachedFinykMonoMirrorStateWithLastGood } from "../../finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorStateWithLastGood } from "../../finyk/lib/monoMirrorReader";
 
 export { FINYK_SUB_GROUP_LABEL };
 
@@ -32,7 +32,7 @@ export function loadFinykSubscriptionsFromStorage() {
  * (replaces the old `finyk_tx_cache` + `finyk_tx_cache_last_good` LS reads).
  */
 export function loadFinykTransactionsFromStorage(): unknown[] {
-  return getCachedFinykMonoMirrorStateWithLastGood().transactions;
+  return getVisibleFinykMonoMirrorStateWithLastGood().transactions;
 }
 
 /**

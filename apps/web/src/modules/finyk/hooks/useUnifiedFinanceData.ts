@@ -9,11 +9,22 @@ type PrivatLike = ReturnType<typeof usePrivatbank>;
 interface UseUnifiedFinanceDataArgs {
   mono: MonoLike;
   privat: PrivatLike;
+  /**
+   * Рахунки, вимкнені тумблером «Враховувати картку» (`finyk_hidden`).
+   *
+   * AI-CONTEXT: єдина точка, де виключення застосовується до транзакцій.
+   * Баланси вже фільтруються всередині `getMonoTotals`/`filterVisibleAccounts`,
+   * але транзакції розходяться звідси у Огляд, Аналітику, Транзакції,
+   * Бюджети та quick-stats Хабу — тому фільтр стоїть тут, а не в кожному
+   * споживачі окремо.
+   */
+  hiddenAccountIds?: readonly string[] | undefined;
 }
 
 export function useUnifiedFinanceData({
   mono,
   privat,
+  hiddenAccountIds,
 }: UseUnifiedFinanceDataArgs) {
   const mergedRefresh = useCallback(async () => {
     const tasks = [mono.refresh()];
@@ -24,7 +35,15 @@ export function useUnifiedFinanceData({
   const mergedMono = useMemo(() => {
     const privatTxs = privat.transactions || [];
     const monoTxs = mono.realTx || [];
-    const combined = dedupeAndSortTransactions([...monoTxs, ...privatTxs]);
+    const hidden = new Set(hiddenAccountIds ?? []);
+    const merged = dedupeAndSortTransactions([...monoTxs, ...privatTxs]);
+    const combined =
+      hidden.size === 0
+        ? merged
+        : merged.filter((t) => {
+            const accountId = t._accountId ?? t.accountId;
+            return typeof accountId !== "string" || !hidden.has(accountId);
+          });
     const privatTotal = (privat.accounts || [])
       .filter((a) => a.currency === "UAH" || a.currency === "980")
       .reduce((s, a) => s + (a.balance || 0) / 100, 0);
@@ -87,7 +106,7 @@ export function useUnifiedFinanceData({
                 )
               : mono.lastUpdated || privat.lastUpdated || null,
     };
-  }, [mono, privat, mergedRefresh]);
+  }, [mono, privat, mergedRefresh, hiddenAccountIds]);
 
   return { mergedMono, mergedRefresh };
 }

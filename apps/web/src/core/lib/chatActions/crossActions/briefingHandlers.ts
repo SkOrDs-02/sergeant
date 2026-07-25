@@ -7,7 +7,7 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
-import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { readFizrukWorkouts } from "../fizrukActions/shared";
@@ -106,7 +106,7 @@ export function weeklySummary(): string {
     );
     parts.push(`Калорії: ~${avg} ккал/день (${weekKcal.length} днів)`);
   }
-  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;

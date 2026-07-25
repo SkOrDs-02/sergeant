@@ -326,7 +326,7 @@ describe("AssetsAssetsSection", () => {
     expect(screen.getByText(/1[\s\S]*000,00[\s\S]*₴/)).toBeInTheDocument();
   });
 
-  it("skips hidden accounts and formats non-UAH card balances", () => {
+  it("marks excluded accounts and formats non-UAH card balances", () => {
     const state = makeState({
       accounts: [
         {
@@ -355,9 +355,10 @@ describe("AssetsAssetsSection", () => {
 
     expect(screen.getByText(/42,50 \$/)).toBeInTheDocument();
     expect(screen.getByText(/99,00 €/)).toBeInTheDocument();
-    expect(
-      screen.queryByText(/1[\s\S]*000,00[\s\S]*₴/),
-    ).not.toBeInTheDocument();
+    // Excluded cards stay on screen (otherwise the toggle is unreachable) —
+    // they are just labelled as not counted.
+    expect(screen.getByText(/1[\s\S]*000,00[\s\S]*₴/)).toBeInTheDocument();
+    expect(screen.getByText("Не враховується")).toBeInTheDocument();
   });
 
   it("hides balance amounts when showBalance is false", () => {

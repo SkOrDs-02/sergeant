@@ -21,7 +21,7 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../../../../modules/nutrition/lib/sqliteReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -117,7 +117,7 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 
 function readFinyk(sign: "spending" | "income"): Map<string, number> {
   const out = new Map<string, number>();
-  const txs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const txs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;

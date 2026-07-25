@@ -58,6 +58,27 @@ describe("useUnifiedFinanceData", () => {
     expect(merged.realTx[0]!.id).toBe("c");
   });
 
+  it("drops transactions of accounts excluded via hiddenAccountIds", () => {
+    const kept = { ...tx("a", 200), _accountId: "acc-visible" } as Transaction;
+    const dropped = {
+      ...tx("b", 100),
+      _accountId: "acc-hidden",
+    } as Transaction;
+    const manual = { ...tx("c", 50), _accountId: null } as Transaction;
+    const mono = makeMono({ realTx: [kept, dropped, manual] });
+    const privat = makePrivat();
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({
+        mono,
+        privat,
+        hiddenAccountIds: ["acc-hidden"],
+      }),
+    );
+    const ids = result.current.mergedMono.transactions.map((t) => t.id);
+    // Manual transactions carry no account — exclusion must not swallow them.
+    expect(ids).toEqual(["a", "c"]);
+  });
+
   it("sums privat UAH balances into privatTotal/totalBalance", () => {
     const mono = makeMono({ accounts: [{ id: "m1" }] });
     const privat = makePrivat({
