@@ -76,7 +76,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(amountInput, { target: { value: "0" } });
     // Footer Submit button — `Sheet` renders it outside `<form>`, тож
     // тиснемо як user-click; useApiForm.submit() прокидує zod-валідацію.
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
       expect(amountInput).toHaveAttribute("aria-invalid", "true");
@@ -97,7 +97,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByPlaceholderText(/Кава, продукти/), {
       target: { value: "  Кава  " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -135,10 +135,12 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Додати" })).not.toBeDisabled();
+      expect(
+        screen.getByRole("button", { name: "Додати витрату" }),
+      ).not.toBeDisabled();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -169,7 +171,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "50" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -180,5 +182,144 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     };
     expect(call.description).toBe("Транспорт");
     expect(call.category).toBe("transport");
+  });
+});
+
+// ─── Kind segment switch (fab-and-manual-income spec) ────────────────────────
+describe("ManualExpenseSheet — kind segment switch", () => {
+  it("defaults to Витрата, switching to Надходження shows income categories + dynamic CTA", async () => {
+    const onSave = vi.fn();
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
+    await act(async () => {});
+
+    expect(screen.getByRole("tab", { name: "Витрата" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "Додати витрату" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+
+    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "Зарплата" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Фріланс" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Подарунок" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Повернення" }),
+    ).toBeInTheDocument();
+    // Expense-only category chips must not leak into income mode.
+    expect(
+      screen.queryByRole("button", { name: "Продукти" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Додати надходження" }),
+    ).toBeInTheDocument();
+  });
+
+  it("submits kind: income with an income-taxonomy category after switching segment", async () => {
+    const onSave = vi.fn();
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "5000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зарплата" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+    const call = onSave.mock.calls[0]![0] as {
+      amount: number;
+      category: string;
+      kind: string;
+    };
+    expect(call.amount).toBe(5000);
+    expect(call.category).toBe("salary");
+    expect(call.kind).toBe("income");
+  });
+
+  it("editing an income entry preselects the Надходження segment + saved category", async () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        onSave={onSave}
+        initialExpense={{
+          id: "1",
+          description: "Зарплата",
+          amount: 5000,
+          category: "salary",
+          kind: "income",
+          date: "2026-06-01T12:00:00.000Z",
+        }}
+      />,
+    );
+    await act(async () => {});
+
+    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(
+      screen.getByRole("button", { name: "Зберегти" }),
+    ).toBeInTheDocument();
+  });
+
+  it("editing a legacy type: income entry (no kind, HubChat-era) also preselects Надходження", async () => {
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        initialExpense={{
+          id: "2",
+          description: "Фріланс проєкт",
+          amount: 3000,
+          category: "freelance",
+          type: "income",
+          date: "2026-06-01T12:00:00.000Z",
+        }}
+      />,
+    );
+    await act(async () => {});
+
+    expect(screen.getByRole("tab", { name: "Надходження" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("switching kind mid-edit resets the category to the new kind's default", async () => {
+    const onSave = vi.fn();
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Витрата" }));
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "42" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+    const call = onSave.mock.calls[0]![0] as { category: string; kind: string };
+    // Back-to-expense reset lands on DEFAULT_CATEGORY ("other"), never a
+    // leftover income slug like "salary".
+    expect(call.category).toBe("other");
+    expect(call.kind).toBe("expense");
   });
 });

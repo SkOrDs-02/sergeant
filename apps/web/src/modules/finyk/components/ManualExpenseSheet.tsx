@@ -16,11 +16,16 @@ import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { toLocalISODate, useVisualKeyboardInset } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
+import { cn } from "@shared/lib/ui/cn";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
   type FrequentMerchant,
 } from "@sergeant/finyk-domain/domain/personalization";
+import {
+  resolveManualExpenseKind,
+  type ManualExpenseKind,
+} from "@sergeant/finyk-domain/domain/transactions";
 import {
   CATEGORY_DISPLAY,
   CATEGORY_SLUGS,
@@ -28,6 +33,12 @@ import {
   upgradeCategory,
   type CategorySlug,
 } from "./manualExpenseCategories";
+import {
+  DEFAULT_INCOME_CATEGORY,
+  INCOME_CATEGORY_DISPLAY,
+  INCOME_CATEGORY_SLUGS,
+  upgradeIncomeCategory,
+} from "./manualIncomeCategories";
 import {
   CATEGORY_COLLAPSED_COUNT,
   buildAmountSuggestions,
@@ -56,6 +67,7 @@ interface ManualExpenseSheetProps {
     amount: number;
     category: string;
     date: string;
+    kind: ManualExpenseKind;
   }) => void;
   /**
    * Delete the expense currently being edited. Only wired in edit mode
@@ -70,6 +82,9 @@ interface ManualExpenseSheetProps {
     amount?: number;
     category?: string;
     date?: string;
+    kind?: string;
+    /** Legacy alias — see `resolveManualExpenseKind` in finyk-domain. */
+    type?: string;
   } | null;
   frequentCategories?: FrequentCategory[];
   frequentMerchants?: FrequentMerchant[];
@@ -95,6 +110,7 @@ export function ManualExpenseSheet({
   const catLabelId = `${formId}-cat-label`;
   const kbInsetPx = useVisualKeyboardInset(open);
   const isEditing = !!initialExpense?.id;
+  const [kind, setKind] = useState<ManualExpenseKind>("expense");
 
   const { register, submit, reset, setValue, watch, formState, isSubmitting } =
     useApiForm<ExpenseFormValues, void>({
@@ -106,11 +122,23 @@ export function ManualExpenseSheet({
         date: toLocalISODate(),
       },
       onSubmit: async (values) => {
-        const slug = upgradeCategory(values.category);
         const trimmedDesc = values.description.trim();
-        // Fallback description uses the UA label from the display map.
-        const description =
-          trimmedDesc || (CATEGORY_DISPLAY[slug]?.label ?? slug);
+        // Branch fully per-kind (rather than indexing a union display map
+        // with a union slug) so each `display[slug]` lookup stays narrowly
+        // typed against its own taxonomy.
+        const [slug, description]: [string, string] =
+          kind === "income"
+            ? (() => {
+                const s = upgradeIncomeCategory(values.category);
+                return [
+                  s,
+                  trimmedDesc || (INCOME_CATEGORY_DISPLAY[s]?.label ?? s),
+                ];
+              })()
+            : (() => {
+                const s = upgradeCategory(values.category);
+                return [s, trimmedDesc || (CATEGORY_DISPLAY[s]?.label ?? s)];
+              })();
         hapticSuccess();
         onSave?.({
           ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
@@ -121,6 +149,7 @@ export function ManualExpenseSheet({
           // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
           // Ставимо полудень, щоб стабільно зберігати правильний день.
           date: toExpenseInstant(values.date || toLocalISODate()),
+          kind,
         });
         onClose();
       },
@@ -148,8 +177,9 @@ export function ManualExpenseSheet({
   // merchant chip with `suggestedManualCategory` is clicked; cleared on
   // dismiss OR when the user picks a different category manually OR on
   // form reset.
-  const [aiAppliedCategory, setAiAppliedCategory] =
-    useState<CategorySlug | null>(null);
+  const [aiAppliedCategory, setAiAppliedCategory] = useState<string | null>(
+    null,
+  );
 
   // showDateField — UI-only, не частина zod-схеми. Раніше жило в
   // form-state, але то був лиш toggle для видимості поля — без валідації
@@ -195,16 +225,22 @@ export function ManualExpenseSheet({
       setPrevOpenInitKey(openInitKey);
 
       if (initialExpense?.id) {
+        const initialKind = resolveManualExpenseKind(initialExpense);
+        setKind(initialKind);
         reset({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
-          category: upgradeCategory(initialExpense.category),
+          category:
+            initialKind === "income"
+              ? upgradeIncomeCategory(initialExpense.category)
+              : upgradeCategory(initialExpense.category),
           date: initialExpense.date
             ? toLocalISODate(initialExpense.date)
             : toLocalISODate(),
         });
       } else {
+        setKind("expense");
         let startCategory: CategorySlug = DEFAULT_CATEGORY;
         if (initialCategory) {
           startCategory = upgradeCategory(initialCategory);
@@ -252,27 +288,40 @@ export function ManualExpenseSheet({
     [frequentCategories],
   );
 
+  const isIncome = kind === "income";
+  const categoryDisplay = isIncome ? INCOME_CATEGORY_DISPLAY : CATEGORY_DISPLAY;
+
   // Top-N категорії для згорнутого стану. Якщо обрана категорія випадає
   // за межі top-N — підтягуємо її у видимий ряд, щоб активний чип завжди
   // залишався видимим і не плутав користувача при відкритті аркуша.
   // Normalise the watched category value so comparison against slug list is
-  // stable even if a legacy value slips through.
-  const categorySlug = upgradeCategory(category);
+  // stable even if a legacy value slips through. Income has a fixed 5-slug
+  // taxonomy (§3, fab-and-manual-income spec) — no frequency sort / collapse.
+  const categorySlug = isIncome
+    ? upgradeIncomeCategory(category)
+    : upgradeCategory(category);
 
   const visibleCategories = useMemo(() => {
+    if (isIncome) return INCOME_CATEGORY_SLUGS;
+    // Recompute the expense-taxonomy slug locally (rather than reuse the
+    // outer `categorySlug`, which is a `CategorySlug | IncomeCategorySlug`
+    // union) so `sortedCategories.includes(...)` below stays narrowly typed.
+    const expenseCategorySlug = upgradeCategory(category);
     if (categoriesExpanded) return sortedCategories;
     const base = sortedCategories.slice(0, CATEGORY_COLLAPSED_COUNT);
-    if (categorySlug && !base.includes(categorySlug)) {
-      return [categorySlug, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
+    if (expenseCategorySlug && !base.includes(expenseCategorySlug)) {
+      return [expenseCategorySlug, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
     }
     return base;
-  }, [sortedCategories, categoriesExpanded, categorySlug]);
+  }, [isIncome, sortedCategories, categoriesExpanded, category]);
   const hasHiddenCategories =
-    sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
+    !isIncome && sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
 
+  // Merchant-driven quick amounts / description hints are expense-only —
+  // they come from banking-merchant history and have no income analogue.
   const amountSuggestions = useMemo(
-    () => buildAmountSuggestions(frequentMerchants),
-    [frequentMerchants],
+    () => (isIncome ? [] : buildAmountSuggestions(frequentMerchants)),
+    [isIncome, frequentMerchants],
   );
 
   // Список мерчант-пропозицій, що рендериться інлайн під полем «Назва»
@@ -281,12 +330,12 @@ export function ManualExpenseSheet({
   // нижче — показуємо лише поки поле порожнє або у фокусі, щоб не
   // перевантажувати аркуш, коли користувач уже обрав назву.
   const merchantSuggestions = useMemo(() => {
-    if (!frequentMerchants.length) return [];
+    if (isIncome || !frequentMerchants.length) return [];
     const currentKey = (description || "").trim().toLocaleLowerCase("uk-UA");
     return frequentMerchants
       .filter((m) => m.name && m.name.toLocaleLowerCase("uk-UA") !== currentKey)
       .slice(0, 5);
-  }, [frequentMerchants, description]);
+  }, [isIncome, frequentMerchants, description]);
   const showMerchantHints =
     merchantSuggestions.length > 0 &&
     (descFocused || description.trim() === "");
@@ -300,11 +349,34 @@ export function ManualExpenseSheet({
     void submit();
   };
 
+  // Segment switch (§1 fab-and-manual-income spec): resets category to the
+  // new kind's default so a stale expense/income slug never gets saved
+  // under the wrong taxonomy.
+  const handleKindChange = (nextKind: ManualExpenseKind) => {
+    if (nextKind === kind) return;
+    setKind(nextKind);
+    setValue(
+      "category",
+      nextKind === "income" ? DEFAULT_INCOME_CATEGORY : DEFAULT_CATEGORY,
+      { shouldDirty: true },
+    );
+    setAiAppliedCategory(null);
+    setCategoriesExpanded(false);
+  };
+
+  const sheetTitle = isEditing
+    ? isIncome
+      ? "Редагувати надходження"
+      : "Редагувати витрату"
+    : isIncome
+      ? "Додати надходження"
+      : "Додати витрату";
+
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title={isEditing ? "Редагувати витрату" : "Додати витрату"}
+      title={sheetTitle}
       kbInsetPx={kbInsetPx}
       panelClassName="finyk-sheet"
       bodyClassName="space-y-4"
@@ -324,7 +396,7 @@ export function ManualExpenseSheet({
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
-              {isEditing ? "Зберегти" : "Додати"}
+              {isEditing ? "Зберегти" : sheetTitle}
             </Button>
           </div>
           {isEditing && onDelete && initialExpense?.id ? (
@@ -345,6 +417,47 @@ export function ManualExpenseSheet({
       }
     >
       <div className="space-y-3">
+        {/* §1 fab-and-manual-income spec: segment switch lives at the top
+            of the form itself (no fan-menu, no long-press) — defaults to
+            Витрата. Switching resets the category to the new kind's
+            default via handleKindChange. */}
+        <div
+          role="tablist"
+          aria-label="Тип запису"
+          className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-panelHi"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!isIncome}
+            disabled={isSubmitting}
+            onClick={() => handleKindChange("expense")}
+            className={cn(
+              "touch-target rounded-md text-style-body font-medium transition-colors duration-150",
+              !isIncome
+                ? "bg-finyk-strong text-white shadow-sm"
+                : "text-muted hover:text-text",
+            )}
+          >
+            Витрата
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isIncome}
+            disabled={isSubmitting}
+            onClick={() => handleKindChange("income")}
+            className={cn(
+              "touch-target rounded-md text-style-body font-medium transition-colors duration-150",
+              isIncome
+                ? "bg-success-strong text-white shadow-sm"
+                : "text-muted hover:text-text",
+            )}
+          >
+            Надходження
+          </button>
+        </div>
+
         {/* S15: amount is the only «must-fill» field — it used to live
             under the name input, so new users had to scroll past an
             optional field before they could do the single thing that
@@ -401,6 +514,7 @@ export function ManualExpenseSheet({
 
         <ManualExpenseCategorySection
           catLabelId={catLabelId}
+          categoryDisplay={categoryDisplay}
           aiAppliedCategory={aiAppliedCategory}
           categorySlug={categorySlug}
           visibleCategories={visibleCategories}

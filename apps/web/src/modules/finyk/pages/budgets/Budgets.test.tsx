@@ -202,4 +202,31 @@ describe("Budgets page", () => {
       container.querySelector('[aria-busy="true"]'),
     ).not.toBeInTheDocument();
   });
+
+  it("manual income (kind: income) this month moves factIncome / Plan card progress (fab-and-manual-income spec)", () => {
+    // `mono.realTx` deliberately stays empty — Budgets previously read spend
+    // ONLY from the bank tx stream, ignoring `storage.manualExpenses`
+    // entirely (a pre-existing gap independent of this feature). The merge
+    // added alongside manual-income must pick this record up so the Plan
+    // card's "Дохід" fact actually moves when a manual salary is logged.
+    const manualExpenses = [
+      {
+        id: "salary-1",
+        date: "2026-06-10T12:00:00.000Z",
+        description: "Зарплата",
+        amount: 4321,
+        category: "salary",
+        kind: "income" as const,
+      },
+    ];
+    const { container } = renderBudgets({
+      storage: buildStorage({ manualExpenses }),
+    });
+    // The Plan/Fact table (with the "Дохід" row) only renders once the
+    // collapsed "Фінплан на місяць" card is expanded.
+    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    // `\s` already covers U+00A0 (non-breaking space) per the JS spec.
+    const flatText = (container.textContent ?? "").replace(/\s/g, "");
+    expect(flatText).toContain("4321");
+  });
 });

@@ -9,23 +9,26 @@ import type { Dispatch, SetStateAction } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 import { Icon } from "@shared/components/ui/Icon";
 import { Badge } from "@shared/components/ui/Badge";
-import { CATEGORY_DISPLAY, type CategorySlug } from "./manualExpenseCategories";
+import type { CategoryDisplay } from "./manualExpenseCategories";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
 interface ManualExpenseCategorySectionProps {
   catLabelId: string;
-  aiAppliedCategory: CategorySlug | null;
-  categorySlug: CategorySlug;
-  visibleCategories: CategorySlug[];
+  /** Slug → display map for the active kind (expense or income taxonomy). */
+  categoryDisplay: Record<string, CategoryDisplay>;
+  aiAppliedCategory: string | null;
+  categorySlug: string;
+  visibleCategories: string[];
   hasHiddenCategories: boolean;
   categoriesExpanded: boolean;
   setCategoriesExpanded: Dispatch<SetStateAction<boolean>>;
-  setAiAppliedCategory: Dispatch<SetStateAction<CategorySlug | null>>;
+  setAiAppliedCategory: Dispatch<SetStateAction<string | null>>;
   setValue: UseFormSetValue<ExpenseFormValues>;
 }
 
 export function ManualExpenseCategorySection({
   catLabelId,
+  categoryDisplay,
   aiAppliedCategory,
   categorySlug,
   visibleCategories,
@@ -62,7 +65,7 @@ export function ManualExpenseCategorySection({
           >
             <Icon name="sparkles" size={12} aria-hidden />
             AI ·{" "}
-            {CATEGORY_DISPLAY[aiAppliedCategory]?.label ?? aiAppliedCategory}
+            {categoryDisplay[aiAppliedCategory]?.label ?? aiAppliedCategory}
             <button
               type="button"
               onClick={() => setAiAppliedCategory(null)}
@@ -80,7 +83,7 @@ export function ManualExpenseCategorySection({
         aria-labelledby={catLabelId}
       >
         {visibleCategories.map((slug) => {
-          const display = CATEGORY_DISPLAY[slug];
+          const display = categoryDisplay[slug];
           return (
             <button
               key={slug}

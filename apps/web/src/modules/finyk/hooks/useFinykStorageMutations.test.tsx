@@ -71,6 +71,7 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     setTxSplits: makeSetter("txSplits"),
     setMonoDebtLinkedTxIds: makeSetter("monoDebtLinkedTxIds"),
     setCustomCategories: makeSetter("customCategories"),
+    manualExpenses: state["manualExpenses"],
     setManualExpenses: makeSetter("manualExpenses"),
     setExcludedStatTxIds: makeSetter("excludedStatTxIds"),
     setDismissedRecurring: makeSetter("dismissedRecurring"),

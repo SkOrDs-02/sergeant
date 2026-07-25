@@ -11,6 +11,7 @@ import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
  * Sergeant Design System -- FloatingActionButton (FAB)
@@ -128,6 +129,12 @@ export const FloatingActionButton = memo(function FloatingActionButton({
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
+  // Mirrors `ModuleBottomNav`'s own keyboard-hide (iOS visual-viewport
+  // inset) — the FAB is a sibling of that nav, not a child, so it needs
+  // the same signal to slide away with it instead of floating alone
+  // once the pill it sits above is gone.
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const hidden = isHidden || kbInsetPx > 0;
   const lastScrollY = useRef(0);
   // outerRef wraps the whole FAB (button + expanded items) for positioning
   const outerRef = useRef<HTMLDivElement>(null);
@@ -221,11 +228,12 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   return (
     <div
       ref={outerRef}
+      aria-hidden={hidden || undefined}
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
         "transition-all duration-300 ease-out",
-        isHidden && "translate-y-24 opacity-0 pointer-events-none",
+        hidden && "translate-y-24 opacity-0 pointer-events-none",
         className,
       )}
     >
@@ -233,6 +241,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
       <button
         type="button"
         onClick={handleClick}
+        tabIndex={hidden ? -1 : undefined}
         aria-label={ariaLabel || label || "Action"}
         aria-haspopup={hasActions ? "menu" : undefined}
         aria-expanded={hasActions ? isOpen : undefined}

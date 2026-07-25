@@ -8,6 +8,8 @@
  */
 
 import type { Dispatch, SetStateAction } from "react";
+import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { messages } from "@shared/i18n/uk";
 import { HabitQuickCreateDialog } from "./components/HabitQuickCreateDialog";
 import { RoutineBottomNav } from "./components/RoutineBottomNav";
 import type { RoutineMainTab } from "./context/RoutineCalendarContext";
@@ -42,11 +44,16 @@ export function RoutineActions({
 }: RoutineActionsProps) {
   return (
     <>
-      <RoutineBottomNav
-        mainTab={mainTab}
-        onSelectTab={setMainTab}
-        onAddHabit={onOpenQuickAddHabit}
+      {/* fab-and-manual-income spec §5-6: replaces the old center-docked
+          nav FAB with the shared component, placed/styled identically to
+          the other 3 modules. */}
+      <FloatingActionButton
+        variant="v2-routine"
+        icon="plus"
+        onClick={onOpenQuickAddHabit}
+        aria-label={messages.routine.addHabitFab}
       />
+      <RoutineBottomNav mainTab={mainTab} onSelectTab={setMainTab} />
       <HabitQuickCreateDialog
         open={quickAddHabitOpen}
         routine={routine}

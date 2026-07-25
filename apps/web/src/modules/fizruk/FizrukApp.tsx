@@ -5,6 +5,9 @@
 import { useEffect } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
+import { safeWriteSS } from "@shared/lib/storage/storage";
 import { messages } from "@shared/i18n/uk";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { useFizrukRoute } from "./hooks/useFizrukRoute";
@@ -108,6 +111,16 @@ export default function FizrukApp({
 
   const showBottomNav = page !== "atlas" && page !== "exercise";
 
+  // FAB (fab-and-manual-income spec §5): «Почати тренування» коли немає
+  // активної сесії; «Продовжити» + перехід одразу в log-режим, коли є —
+  // canonical selector, той самий, що й Dashboard hero-картка.
+  const activeWorkoutId = useActiveFizrukWorkout();
+  const handleFabClick = () => {
+    if (activeWorkoutId) safeWriteSS("fizruk_workouts_mode", "log");
+    navigate("workouts");
+  };
+  const showFab = showBottomNav && page !== "workouts";
+
   // Contextual back-button targets for the three sub-pages that show
   // a `← <label>` arrow instead of the module's "back to hub" arrow.
   // The header's `backLabelFor()` mirrors these destinations so what
@@ -182,6 +195,18 @@ export default function FizrukApp({
           }
           onOpenModule={onOpenModule}
         />
+        {showFab && (
+          <FloatingActionButton
+            variant="v2-fizruk"
+            icon={activeWorkoutId ? "play" : "plus"}
+            onClick={handleFabClick}
+            aria-label={
+              activeWorkoutId
+                ? messages.fizruk.resumeWorkoutFab
+                : messages.fizruk.startWorkoutFab
+            }
+          />
+        )}
       </ModuleShell>
     </RestTimerProvider>
   );
