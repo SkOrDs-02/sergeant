@@ -128,6 +128,62 @@ export const nutritionPantryItems = pgTable(
 );
 
 /**
+ * Postgres schema for `nutrition_pantry_events` table.
+ * Mirrors migration 086_nutrition_pantry_events.sql.
+ *
+ * Append-only журнал руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ * НЕ пишеться і НЕ читається на цій стадії — `nutritionPantryItems.qty`
+ * лишається єдиним джерелом залишку.
+ *
+ * AI-CONTEXT: `id` / `pantryId` / `itemId` / `mealId` — TEXT, а НЕ `uuid()`,
+ * на відміну від сусідньої `nutritionPantryItems`. Це свідомо: клієнт
+ * генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`),
+ * тож `uuid` тут дав би `22P02` на реальному push-і — той самий баг, що
+ * задокументований у `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип».
+ * НЕ «вирівнюй» тип під pantryItems.
+ *
+ * `deletedAt` — ретракція помилкової події (згортка її пропускає), а не
+ * редагування історії: `op='update'` apply-шлях відхиляє.
+ */
+export const nutritionPantryEvents = pgTable(
+  "nutrition_pantry_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    pantryId: text("pantry_id").notNull(),
+    itemId: text("item_id"),
+    itemKey: text("item_key").notNull(),
+    kind: text().notNull(),
+    deltaQty: real("delta_qty"),
+    absQty: real("abs_qty"),
+    unit: text(),
+    source: text().notNull().default("manual"),
+    mealId: text("meal_id"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("nutrition_pantry_events_user_item_idx").on(
+      table.userId,
+      table.pantryId,
+      table.itemKey,
+      table.occurredAt,
+    ),
+    index("nutrition_pantry_events_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * Postgres schema for `nutrition_prefs` table.
  * Mirrors migration 035_nutrition_tables.sql.
  *

@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
   nutritionMeals,
   nutritionPantries,
+  nutritionPantryEvents,
   nutritionPantryItems,
   nutritionPrefs,
   nutritionRecipes,
@@ -418,7 +419,7 @@ describe("sqlite/nutrition migrations exports", () => {
 
   it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
     // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(3);
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(4);
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
       "002_nutrition_full_state.sql",
     );
@@ -450,7 +451,84 @@ describe("sqlite/nutrition migrations exports", () => {
     );
   });
 
+  it("ships the W1-PANTRY-APPEND 004_nutrition_pantry_events.sql delta", () => {
+    // Дзеркалить Postgres 086_nutrition_pantry_events.sql — append-only
+    // журнал руху комори (стадія 1: ні писарів, ні читачів).
+    expect(NUTRITION_CLIENT_MIGRATIONS[3]!.name).toBe(
+      "004_nutrition_pantry_events.sql",
+    );
+    const sql = NUTRITION_CLIENT_MIGRATIONS[3]!.sql;
+    // `IF NOT EXISTS` — additive, старі клієнти не ламаються.
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS nutrition_pantry_events/);
+    // Закритий enum видів події — дзеркало CHECK у PG.
+    expect(sql).toMatch(
+      /CHECK \(kind IN \('consume','replenish','adjust','initial'\)\)/,
+    );
+    // Дельта ↔ чекпойнт: рядок без жодного числа в журнал не потрапляє.
+    expect(sql).toMatch(/nutrition_pantry_events_qty_shape/);
+    // id-колонки TEXT, а не UUID — клієнт шле `<pantryId>::<idx>::<name>`.
+    expect(sql).toMatch(/id\s+TEXT PRIMARY KEY/);
+    expect(sql).toMatch(/item_key\s+TEXT NOT NULL/);
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_item_idx_lite/,
+    );
+    // Журнал не ALTER-ить лічильникову таблицю.
+    expect(sql).not.toMatch(/ALTER TABLE nutrition_pantry_items/);
+  });
+
   it("uses a separate `__nutrition_migrations` ledger table", () => {
     expect(NUTRITION_MIGRATIONS_TABLE).toBe("__nutrition_migrations");
+  });
+});
+
+describe("sqlite/nutritionPantryEvents schema snapshot", () => {
+  const config = getTableConfig(nutritionPantryEvents);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_pantry_events");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "pantry_id",
+      "item_id",
+      "item_key",
+      "kind",
+      "delta_qty",
+      "abs_qty",
+      "unit",
+      "source",
+      "meal_id",
+      "occurred_at",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("keeps id/pantry_id/item_id as TEXT (client sends non-UUID ids)", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    for (const name of ["id", "pantry_id", "item_id", "meal_id", "item_key"]) {
+      expect(columnMap[name]!.dataType).toBe("string");
+    }
+    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["item_id"]!.notNull).toBe(false);
+    expect(columnMap["item_key"]!.notNull).toBe(true);
+    expect(columnMap["delta_qty"]!.dataType).toBe("number");
+    expect(columnMap["abs_qty"]!.dataType).toBe("number");
+    // Обидві величини nullable: подія несе рівно одну з них.
+    expect(columnMap["delta_qty"]!.notNull).toBe(false);
+    expect(columnMap["abs_qty"]!.notNull).toBe(false);
+  });
+
+  it("declares both indexes", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "nutrition_pantry_events_user_active_idx_lite",
+      "nutrition_pantry_events_user_item_idx_lite",
+    ]);
   });
 });

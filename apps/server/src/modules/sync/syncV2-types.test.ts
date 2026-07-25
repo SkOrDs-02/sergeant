@@ -10,7 +10,7 @@ import {
 
 describe("syncV2 wire reason/type registries", () => {
   it("keeps apply-level reject reasons unique and label-safe", () => {
-    expect(APPLY_REJECT_REASONS).toHaveLength(55);
+    expect(APPLY_REJECT_REASONS).toHaveLength(57);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );
@@ -20,6 +20,9 @@ describe("syncV2 wire reason/type registries", () => {
         "tombstoned",
         "missing_user_id",
         "invalid_delta",
+        // Append-only ledger комори (W1-PANTRY-APPEND стадія 1).
+        "invalid_event_kind",
+        "missing_delta_or_abs",
       ]),
     );
     for (const reason of APPLY_REJECT_REASONS) {

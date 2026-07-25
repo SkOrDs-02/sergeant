@@ -30,6 +30,9 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",
+  // W1-PANTRY-APPEND стадія 1 — append-only журнал руху продуктів комори.
+  // Без цього рядка pull-опи мовчки відкидаються.
+  "nutrition_pantry_events",
   "nutrition_prefs",
   "nutrition_recipes",
   "nutrition_water_log",

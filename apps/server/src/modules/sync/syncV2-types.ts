@@ -84,6 +84,16 @@ export const APPLY_REJECT_REASONS = [
   // ховаємо під `delete_not_supported`, щоб метрика показувала саме
   // порушення append-only-інваріанта.
   "append_only_violation",
+  // Append-only ledger комори (W1-PANTRY-APPEND, стадія 1).
+  // `nutrition_pantry_events.kind` — закритий enum ('consume' | 'replenish'
+  // | 'adjust' | 'initial'); чужий kind означає клієнта з іншого контракту,
+  // і ховати це під загальний `apply_failed` (який виглядає як збій БД)
+  // не можна.
+  "invalid_event_kind",
+  // Подія-дельта мусить нести `delta_qty`, подія-чекпойнт — `abs_qty`.
+  // Рядок без жодного з них не згортається в число, тож пускати його в
+  // журнал = створювати позицію з невідомим залишком назавжди.
+  "missing_delta_or_abs",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

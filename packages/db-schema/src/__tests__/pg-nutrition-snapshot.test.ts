@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   nutritionMeals,
   nutritionPantries,
+  nutritionPantryEvents,
   nutritionPantryItems,
   nutritionPrefs,
   nutritionRecipes,
@@ -346,5 +347,82 @@ describe("pg/nutritionShoppingList schema snapshot", () => {
     expect(columnMap["updated_at"]!.columnType).toBe("PgTimestamp");
     expect(columnMap["updated_at"]!.notNull).toBe(true);
     expect(columnMap["updated_at"]!.hasDefault).toBe(true);
+  });
+});
+
+/**
+ * `nutrition_pantry_events` — append-only журнал руху продуктів комори
+ * (міграція 086, W1-PANTRY-APPEND стадія 1).
+ */
+describe("pg/nutritionPantryEvents schema snapshot", () => {
+  const config = getTableConfig(nutritionPantryEvents);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_pantry_events");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "pantry_id",
+      "item_id",
+      "item_key",
+      "kind",
+      "delta_qty",
+      "abs_qty",
+      "unit",
+      "source",
+      "meal_id",
+      "occurred_at",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("keeps id/pantry_id/item_id as PgText, NOT PgUUID", () => {
+    // AI-DANGER: не «вирівнюй» ці типи під nutrition_pantry_items.id (UUID).
+    // Клієнт генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`,
+    // `<pantryId>::<idx>::<name>`), тож UUID тут дав би 22P02 на кожному
+    // реальному push-і — той самий баг, що в
+    // docs/90-work/tech-debt/backend.md § «Routine: PK-тип».
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    for (const name of ["id", "pantry_id", "item_id", "item_key", "meal_id"]) {
+      expect(columnMap[name]!.columnType).toBe("PgText");
+    }
+    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.hasDefault).toBe(false);
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["pantry_id"]!.notNull).toBe(true);
+    expect(columnMap["item_key"]!.notNull).toBe(true);
+    // `item_id` навмисно nullable: подія переживає зникнення рядка позиції.
+    expect(columnMap["item_id"]!.notNull).toBe(false);
+  });
+
+  it("declares delta/abs as nullable reals and timestamps as timestamptz", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["delta_qty"]!.columnType).toBe("PgReal");
+    expect(columnMap["delta_qty"]!.notNull).toBe(false);
+    expect(columnMap["abs_qty"]!.columnType).toBe("PgReal");
+    expect(columnMap["abs_qty"]!.notNull).toBe(false);
+    expect(columnMap["kind"]!.notNull).toBe(true);
+    expect(columnMap["source"]!.notNull).toBe(true);
+    expect(columnMap["source"]!.hasDefault).toBe(true);
+    expect(columnMap["occurred_at"]!.columnType).toBe("PgTimestamp");
+    expect(columnMap["occurred_at"]!.notNull).toBe(true);
+    // Ретракція події, а не перезапис історії.
+    expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  it("declares both indexes from migration 086", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "nutrition_pantry_events_user_active_idx",
+      "nutrition_pantry_events_user_item_idx",
+    ]);
   });
 });

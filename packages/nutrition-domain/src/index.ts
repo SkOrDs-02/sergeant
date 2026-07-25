@@ -12,6 +12,9 @@
 export * from "./mealTypes.js";
 export * from "./pantryTextParser.js";
 export * from "./pantryConsume.js";
+// W1-PANTRY-APPEND стадія 1: типи журналу + чиста згортка залишку.
+// Споживачів поки немає за задумом — див. AI-CONTEXT у pantryLedger.ts.
+export * from "./pantryLedger.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";

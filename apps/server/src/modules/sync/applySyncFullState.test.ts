@@ -65,14 +65,18 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + routine_completion_events (43 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(43);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 2 append-only ledgers (44 total)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(44);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",
         "nutrition_water_log",
         "fizruk_daily_log",
         "fizruk_programs",
+        // Append-only журнали стадії 1: routine (W1-ROUTINE-APPEND) і
+        // комора (W1-PANTRY-APPEND).
+        "routine_completion_events",
+        "nutrition_pantry_events",
       ]),
     );
   });

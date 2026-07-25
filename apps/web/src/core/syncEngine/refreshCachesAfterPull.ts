@@ -45,6 +45,10 @@ const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",
+  // W1-PANTRY-APPEND стадія 1. Читачів у журналу поки немає, але таблиця
+  // має бути в списку ДО того, як з'являться писарі (стадія 2) — інакше
+  // перший же pull подій не інвалідує nutrition-кеш.
+  "nutrition_pantry_events",
   "nutrition_prefs",
   "nutrition_recipes",
   "nutrition_water_log",

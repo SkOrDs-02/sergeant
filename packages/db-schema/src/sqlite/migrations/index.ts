@@ -1018,6 +1018,51 @@ UPDATE nutrition_shopping_list
  WHERE created_at IS NULL;
 `;
 
+/**
+ * Клієнтське дзеркало `086_nutrition_pantry_events.sql` — append-only журнал
+ * руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ *
+ * `CREATE TABLE IF NOT EXISTS` — чисто additive: старі клієнти, які ще не
+ * прокрутили цю міграцію, працюють як раніше, бо на стадії 1 у таблицю
+ * ніхто не пише і ніхто з неї не читає.
+ *
+ * AI-CONTEXT: id-колонки TEXT, FK немає (SQLite-дзеркала їх взагалі не
+ * оголошують), а CHECK-и продубльовані з PG навмисно — локальний писар
+ * стадії 2 має падати на тій самій умові, що й сервер, а не «домовлятись»
+ * із ним постфактум.
+ */
+const NUTRITION_004_PANTRY_EVENTS_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_pantry_events (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  pantry_id    TEXT NOT NULL,
+  item_id      TEXT,
+  item_key     TEXT NOT NULL,
+  kind         TEXT NOT NULL
+               CHECK (kind IN ('consume','replenish','adjust','initial')),
+  delta_qty    REAL,
+  abs_qty      REAL,
+  unit         TEXT,
+  source       TEXT NOT NULL DEFAULT 'manual',
+  meal_id      TEXT,
+  occurred_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at   TEXT,
+  CONSTRAINT nutrition_pantry_events_qty_shape CHECK (
+    (kind IN ('consume','replenish') AND delta_qty IS NOT NULL)
+    OR (kind IN ('adjust','initial') AND abs_qty IS NOT NULL)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_item_idx_lite
+  ON nutrition_pantry_events (user_id, pantry_id, item_key, occurred_at);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_active_idx_lite
+  ON nutrition_pantry_events (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
   {
@@ -1027,6 +1072,10 @@ export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "003_nutrition_created_at.sql",
     sql: NUTRITION_003_CREATED_AT_SQL,
+  },
+  {
+    name: "004_nutrition_pantry_events.sql",
+    sql: NUTRITION_004_PANTRY_EVENTS_SQL,
   },
 ] as const;
 

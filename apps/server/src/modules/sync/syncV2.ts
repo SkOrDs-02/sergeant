@@ -59,6 +59,7 @@ import {
   applyNutritionPrefs,
   applyNutritionRecipes,
 } from "./nutrition/applySync.js";
+import { applyNutritionPantryEvents } from "./nutrition/applyPantryEvents.js";
 import {
   applyNutritionShoppingList,
   applyNutritionWaterLog,
@@ -170,6 +171,12 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,
+  // W1-PANTRY-APPEND стадія 1 — append-only журнал руху продуктів комори.
+  // `op='update'` відхиляється з `append_only_violation`, `op='delete'` —
+  // лише tombstone-ретракція. `op='increment'` НЕ потрібен: append-only
+  // рядки комутативні самі по собі, тож `INCREMENT_OP_SUPPORTED_TABLES`
+  // нижче лишається як є. Ні писарів, ні читачів на цій стадії.
+  nutrition_pantry_events: applyNutritionPantryEvents,
   nutrition_prefs: applyNutritionPrefs,
   nutrition_recipes: applyNutritionRecipes,
   nutrition_water_log: applyNutritionWaterLog,

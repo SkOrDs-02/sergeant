@@ -93,6 +93,49 @@ export interface ReconcileChildrenSpec {
   readonly parentColumn: string;
 }
 
+/**
+ * Таблиці-журнали, до яких НІКОЛИ не можна застосовувати ні soft-delete, ні
+ * parent/child-реконсиляцію.
+ *
+ * AI-DANGER: це не «список на майбутнє» — це запобіжник під конкретний
+ * інцидент. DCRUD-007 (див. коментар у
+ * `apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts`): dual-write
+ * diff одного разу вже МАСОВО soft-видалив усі позиції комори користувача,
+ * бо reconcile-гілка «прибери дітей, яких немає в новому стані» відпрацювала
+ * на нerhydrated-стані. Для лічильника це втрата залишку; для append-only
+ * журналу це знищення САМОЇ ІСТОРІЇ, з якої залишок відновлюється — тобто
+ * непоправно.
+ *
+ * Тому append-only таблиці виключені механічно, на рівні білдера SQL, а не
+ * «за домовленістю не викликати». Спроба зібрати для них DELETE або
+ * reconcile — це помилка програміста, і вона падає гучно в тестах і в dev,
+ * а не тихо стирає дані в проді.
+ *
+ * Ретракція окремої події — це `UPDATE … SET deleted_at` за конкретним `id`
+ * з apply-шляху синку, а не масовий cleanup за `parentColumn`.
+ */
+export const APPEND_ONLY_TABLES: ReadonlySet<string> = new Set([
+  // W1-ROUTINE-APPEND стадія 1 — журнал відміток звичок.
+  "routine_completion_events",
+  // W1-PANTRY-APPEND стадія 1 — журнал руху продуктів комори.
+  "nutrition_pantry_events",
+]);
+
+/** Чи є таблиця append-only журналом (див. `APPEND_ONLY_TABLES`). */
+export function isAppendOnlyTable(table: string): boolean {
+  return APPEND_ONLY_TABLES.has(table);
+}
+
+function assertNotAppendOnly(table: string, operation: string): void {
+  if (!APPEND_ONLY_TABLES.has(table)) return;
+  throw new Error(
+    `[dualwrite-core] ${operation} is forbidden for append-only table "${table}". ` +
+      "Deleting or reconciling a ledger destroys the history the derived value is " +
+      "rebuilt from (see DCRUD-007). Retract a single event with an explicit " +
+      "UPDATE … SET deleted_at WHERE id = ? instead.",
+  );
+}
+
 const sp = (n: number): string => " ".repeat(n);
 
 /**
@@ -136,6 +179,7 @@ export function buildLwwUpsert(spec: TableSpec): string {
  *  - `"hard"` → `DELETE FROM … WHERE <match>` (no LWW guard)
  */
 export function buildDelete(spec: DeleteSpec): string {
+  assertNotAppendOnly(spec.table, "buildDelete");
   const match = spec.matchColumns.map((c) => `${c} = ?`).join(" AND ");
   if (spec.deletePolicy === "hard") {
     return `DELETE FROM ${spec.table}
@@ -158,6 +202,7 @@ export function buildReconcileChildren(
   spec: ReconcileChildrenSpec,
   keepCount: number,
 ): string {
+  assertNotAppendOnly(spec.table, "buildReconcileChildren");
   if (keepCount === 0) {
     return `UPDATE ${spec.table}
         SET deleted_at = ?, updated_at = ?
