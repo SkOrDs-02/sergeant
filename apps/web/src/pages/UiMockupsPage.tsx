@@ -660,7 +660,7 @@ function Peek18After() {
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════���══════════════════════════════════════════
    #19 — SCROLL-ПАРАЛАКС HERO
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -971,7 +971,10 @@ const SECTIONS: {
 
 export function UiMockupsPage() {
   return (
-    <div className="min-h-dvh" style={{ background: "rgb(var(--c-bg))" }}>
+    <div
+      className="h-dvh overflow-y-auto"
+      style={{ background: "rgb(var(--c-bg))" }}
+    >
       <style>{KEYFRAMES}</style>
 
       <header
