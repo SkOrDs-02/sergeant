@@ -116,7 +116,7 @@ describe("GoalBudgetCard", () => {
         onDelete={onDelete}
       />,
     );
-    const input = screen.getByPlaceholderText("Відкладено ₴");
+    const input = screen.getByLabelText("Відкладено");
     fireEvent.change(input, { target: { value: "5000" } });
     expect(onChangeSaved).toHaveBeenCalledWith(5000);
     fireEvent.click(screen.getByText("Зберегти"));
