@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import {
   DataState,
@@ -18,6 +19,9 @@ import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
 import { useOverviewData } from "./overview/useOverviewData";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
+import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import { getOnboardingGoals } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -47,6 +51,9 @@ export function Overview({
   showBalance = true,
 }: OverviewProps) {
   const d = useOverviewData({ mono, storage, onNavigate });
+  // Цілі з онбордингу підбирають копію порожнього стану під те, по що
+  // людина прийшла. Читаються один раз — вони не змінюються за час сесії.
+  const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
@@ -83,76 +90,90 @@ export function Overview({
               />
             )}
 
-            <HeroCard
-              networth={d.networth}
-              monoTotal={d.monoTotal}
-              totalDebt={d.totalDebt}
-              daysInMonth={d.daysInMonth}
-              daysPassed={d.daysPassed}
-              dayBudget={d.dayBudget}
-              hasExpensePlan={d.hasExpensePlan}
-              spendPlanRatio={d.spendPlanRatio}
-              showBalance={showBalance}
-            />
+            {!d.hasAnyData ? (
+              // Рішення founder-а 2026-07-25: перший вхід у finyk — порожній
+              // екран із ненав'язливими підказками. До цього новачок бачив
+              // стіну карток по ₴0 (нетворт, пульс місяця, алерти бюджетів,
+              // планові потоки) — усі порожні, всі однаково безмовні.
+              // Інлайн-CTA тут свідомо НЕМА: глобальний FAB «+ Додати
+              // витрату» вже висить на цьому екрані, а дублювати його
+              // всередині empty-state — антипатерн із docs/design/
+              // empty-states.md (той самий коментар у TransactionList).
+              <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
+            ) : (
+              <>
+                <HeroCard
+                  networth={d.networth}
+                  monoTotal={d.monoTotal}
+                  totalDebt={d.totalDebt}
+                  daysInMonth={d.daysInMonth}
+                  daysPassed={d.daysPassed}
+                  dayBudget={d.dayBudget}
+                  hasExpensePlan={d.hasExpensePlan}
+                  spendPlanRatio={d.spendPlanRatio}
+                  showBalance={showBalance}
+                />
 
-            <FinykInsightsBlock
-              transactions={d.realTx}
-              budgets={storage.budgets}
-              subscriptions={storage.subscriptions}
-              dismissedRecurring={storage.dismissedRecurring}
-              txCategories={d.txCategories}
-              txSplits={d.txSplits}
-              customCategories={d.customCategories}
-              excludedTxIds={storage.excludedTxIds}
-            />
+                <FinykInsightsBlock
+                  transactions={d.realTx}
+                  budgets={storage.budgets}
+                  subscriptions={storage.subscriptions}
+                  dismissedRecurring={storage.dismissedRecurring}
+                  txCategories={d.txCategories}
+                  txSplits={d.txSplits}
+                  customCategories={d.customCategories}
+                  excludedTxIds={storage.excludedTxIds}
+                />
 
-            <MonthPulseCard
-              dateLabel={d.dateLabel}
-              daysPassed={d.daysPassed}
-              spent={d.spent}
-              income={d.income}
-              showBalance={showBalance}
-              showMonthForecast={d.showMonthForecast && showBalance}
-              projectedSpend={d.projectedSpend}
-              hasExpensePlan={d.hasExpensePlan}
-              spendPlanRatio={d.spendPlanRatio}
-              planExpense={d.planExpense}
-              forecastTrendPct={d.forecastTrendPct}
-              forecastBarClass={d.forecastBarClass}
-              recurringOutThisMonth={d.recurringOutThisMonth}
-              recurringInThisMonth={d.recurringInThisMonth}
-              unknownOutCount={d.unknownOutCount}
-            />
+                <MonthPulseCard
+                  dateLabel={d.dateLabel}
+                  daysPassed={d.daysPassed}
+                  spent={d.spent}
+                  income={d.income}
+                  showBalance={showBalance}
+                  showMonthForecast={d.showMonthForecast && showBalance}
+                  projectedSpend={d.projectedSpend}
+                  hasExpensePlan={d.hasExpensePlan}
+                  spendPlanRatio={d.spendPlanRatio}
+                  planExpense={d.planExpense}
+                  forecastTrendPct={d.forecastTrendPct}
+                  forecastBarClass={d.forecastBarClass}
+                  recurringOutThisMonth={d.recurringOutThisMonth}
+                  recurringInThisMonth={d.recurringInThisMonth}
+                  unknownOutCount={d.unknownOutCount}
+                />
 
-            <NetworthSection networthHistory={d.networthHistory} />
+                <NetworthSection networthHistory={d.networthHistory} />
 
-            {d.nonUahManualAssetCount > 0 && (
-              <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
-                <span className="text-style-caption text-warning-strong dark:text-warning">
-                  {d.nonUahManualAssetCount}{" "}
-                  {pluralize(
-                    d.nonUahManualAssetCount,
-                    messages.finyk.nonUahAssetsExcluded.one,
-                    messages.finyk.nonUahAssetsExcluded.few,
-                    messages.finyk.nonUahAssetsExcluded.many,
-                  )}
-                </span>
-              </div>
+                {d.nonUahManualAssetCount > 0 && (
+                  <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
+                    <span className="text-style-caption text-warning-strong dark:text-warning">
+                      {d.nonUahManualAssetCount}{" "}
+                      {pluralize(
+                        d.nonUahManualAssetCount,
+                        messages.finyk.nonUahAssetsExcluded.one,
+                        messages.finyk.nonUahAssetsExcluded.few,
+                        messages.finyk.nonUahAssetsExcluded.many,
+                      )}
+                    </span>
+                  </div>
+                )}
+
+                <BudgetAlertsList
+                  budgetAlerts={d.budgetAlerts}
+                  statTx={d.statTx}
+                  txCategories={d.txCategories}
+                  txSplits={d.txSplits}
+                  customCategories={d.customCategories}
+                />
+
+                <PlannedFlowsCard
+                  plannedFlows={d.plannedFlows}
+                  onNavigate={onNavigate ?? (() => {})}
+                  showBalance={showBalance}
+                />
+              </>
             )}
-
-            <BudgetAlertsList
-              budgetAlerts={d.budgetAlerts}
-              statTx={d.statTx}
-              txCategories={d.txCategories}
-              txSplits={d.txSplits}
-              customCategories={d.customCategories}
-            />
-
-            <PlannedFlowsCard
-              plannedFlows={d.plannedFlows}
-              onNavigate={onNavigate ?? (() => {})}
-              showBalance={showBalance}
-            />
 
             {d.loadingTx && (
               <p className="text-center text-xs text-subtle py-4">
