@@ -132,6 +132,13 @@ export async function applyRoutineEntries(
 }
 
 /**
+ * AI-DANGER: імʼя таблиці фантомне (audit E-4). `current_streak` /
+ * `longest_streak` — це НЕ derived день-стрік, а net-лічильник кліків
+ * «відмітив/зняв» по ВСІХ звичках разом. Одиниця виміру — кліки, не
+ * послідовні дні. НЕ читай їх тут (і ніде) для UI / push / digest:
+ * справжній стрік рахується client-side (`streakForHabit`) з
+ * `routine_entries`/completions. Канон: `docs/01-product/model/routine.md` §4.
+ *
  * Apply-шлях для `routine_streaks` (per-user aggregate). PK = user_id,
  * один рядок на юзера; історичного `updated_at` нема. LWW-guard
  * робимо проти `MAX(client_ts)` із `sync_op_log` для (user_id,

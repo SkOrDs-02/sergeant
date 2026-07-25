@@ -365,6 +365,25 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 **Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжній
 `habitId`) → окремий PR із двофазною міграцією типу.
 
+### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
+
+**Знайдено:** audit routine E-4. `routine_streaks.current_streak` /
+`longest_streak` — net-лічильник кліків «відмітив/зняв» по всіх звичках
+разом (increment-only PN-counter, clamp `>= 0`), а не derived день-стрік.
+Правильне ім'я — `routine_completion_counter`.
+
+**Зроблено 2026-07-24 (documentation-фаза):** міграція
+`084_routine_streaks_phantom_docs.sql` (`COMMENT ON TABLE`/`COLUMN`, нуль
+DDL) + JSDoc-попередження у `packages/db-schema/src/pg/routine.ts`,
+`packages/db-schema/src/sqlite/routine.ts` і док-стрінгу
+`applyRoutineStreaks`.
+
+**Чому rename заблокований:** рядок `routine_streaks` — одночасно (a) ім'я
+PG-таблиці, (b) ім'я SQLite-таблиці всередині вже встановлених web/mobile
+клієнтів, (c) wire-protocol table key increment-опів з outbox. Потрібен
+координований web+mobile rollout з app-store лагом (EAS) — Hard Rule #4
+two-phase DROP цього класу змін не покриває.
+
 ---
 
 ## Observability & logging review

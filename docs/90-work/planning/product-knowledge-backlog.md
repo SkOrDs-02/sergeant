@@ -37,7 +37,7 @@
 | Пре-існуючі червоні тести finyk (spending, FinykApp.extra)                                       | finyk     | code | агент | finyk verification                                 |      |
 | Пакет docs-фіксів: Privat-статус, mobile-паритет, глосарій, env-vars, докстрінги, ліміт 20 tools | крос      | docs | агент | finyk E1-E3 · hub-coach E5/D1 · fizruk E4          |      |
 | Звірити GTM-обіцянки з кодом: «500K+ база», проактивність, тір-гейти                             | крос      | docs | агент | overview B-6 · nutrition D-3 · routine напруги 3-4 |      |
-| Фантомний лічильник `routine_streaks` — перейменувати або зняти                                  | routine   | code | недок | routine E-4                                        |      |
+| Фантомний лічильник `routine_streaks` — перейменувати або зняти                                  | routine   | code | недок | routine E-4                                        | ✅   |
 
 ## Хвиля 1 — Фундамент даних
 
