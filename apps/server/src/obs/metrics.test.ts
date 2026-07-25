@@ -145,7 +145,11 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Phase 2 sync expansion (ba5eadd75) додало 6 нових причин для full-state
     // таблиць: missing_date_key, missing_note_key, invalid_last_used_at,
     // invalid_entry_at, invalid_energy, invalid_sleep_quality.
-    expect(APPLY_REJECT_REASONS.length).toBe(55);
+    // Хвиля 1 (фундамент даних), стадія 1 трьох журналів: +3 причини —
+    // append_only_violation (гейт update/delete для append-only таблиць),
+    // invalid_event_kind і missing_delta_or_abs (ledger комори),
+    // invalid_goal_origin (журнал цілей КБЖВ). Реєстр таблиць виріс до 45.
+    expect(APPLY_REJECT_REASONS.length).toBe(58);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
