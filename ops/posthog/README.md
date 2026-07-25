@@ -83,7 +83,7 @@ pnpm lint:posthog-manifests   # AJV-валідація + референційн�
 
 Імпортер деривує namespace з `manifest.key` — ініціали kebab-сегментів: `founder-pulse` → `fp`, `hub-tab-perf` → `htp`, `value-loops` → `vl`. На кожен інсайт пишеться трійка тегів:
 
-```
+```text
 [ "<manifest.key>", "managed-by-manifest", "<prefix>:<panel.key>" ]
 ```
 

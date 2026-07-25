@@ -28,12 +28,17 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../core/observability/analytics", () => ({
-  trackEvent: mocks.trackEvent,
-  ANALYTICS_EVENTS: {
-    ROUTINE_HABIT_CHECKED: "routine_habit_checked",
-  },
-}));
+// Часткова підміна, а не заміна всього модуля: якщо перевизначити
+// `ANALYTICS_EVENTS` локальним об'єктом, будь-яка ІНША подія з графа імпортів
+// `useRoutineAppState` резолвиться в `undefined` і `trackEvent(undefined)`
+// тихо не спрацьовує замість того, щоб впасти. Реальний реєстр лишається в
+// грі разом зі своїми замороженими іменами.
+vi.mock("../../core/observability/analytics", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../core/observability/analytics")
+  >("../../core/observability/analytics");
+  return { ...actual, trackEvent: mocks.trackEvent };
+});
 vi.mock("@shared/lib/modules/cloudPullRequest", () => ({
   requestCloudPull: vi.fn(async () => undefined),
 }));

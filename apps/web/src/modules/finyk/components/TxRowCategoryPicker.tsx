@@ -78,6 +78,20 @@ export function TxRowCategoryPicker({
           onClick={() => {
             const nextCatId =
               c.id === currentCatId && overrideCatId ? null : c.id;
+            // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
+            // слати не можна: `finyk_tx_categorized` — чисельник петлі
+            // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
+            // історію подій не можна). Той самий guard, що `outcome.changed`
+            // у `useRoutineAppState`.
+            //
+            // Умова навмисно вужча за `nextCatId === (overrideCatId ??
+            // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
+            // закріплює її явно — це реальна дія користувача, і вона мусить
+            // лишитись у знаменнику.
+            if (overrideCatId && nextCatId === overrideCatId) {
+              onClose();
+              return;
+            }
             onCatChange?.(txId, nextCatId);
             trackTxCategorized(nextCatId);
             onClose();

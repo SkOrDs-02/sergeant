@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { ANALYTICS_EVENTS, type AnalyticsEventName } from "./analyticsEvents";
+import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
 
 describe("ANALYTICS_EVENTS registry", () => {
   it("is frozen so callsites cannot mutate event names at runtime", () => {
@@ -205,7 +206,11 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(literal).toBe("value_signal_shown");
     expect(fromUnion).toBe("routine_streak_shown");
 
-    expect(wave2).toHaveLength(10);
+    // НЕ `toHaveLength(10)`: `wave2` — рукописний літерал, тож константа
+    // проти нього — тавтологія, яка не може впасти. Звірка з РЕАЛЬНИМ
+    // реєстром робить із цього справжній гейт: 11-та подія, додана без
+    // пінa тут, валить тест.
+    expect(wave2).toHaveLength(Object.keys(VALUE_LOOP_ANALYTICS_EVENTS).length);
     for (const name of wave2) {
       expect(typeof name).toBe("string");
       expect(Object.values(ANALYTICS_EVENTS)).toContain(name);

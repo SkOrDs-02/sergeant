@@ -75,11 +75,16 @@ streak-record-карточки туди НЕ пише: вона рендерит
 `surface`, ніколи не схлопувати в один булеан. Деталі й правила знаменника —
 [`posthog-founder-pulse.md § 8`](../docs/03-operations/observability/posthog-founder-pulse.md).
 
-**Оновлено 2026-07-25 — перші callsite-и.** Три `value_signal_*` уже емітяться;
-решта сімох подій лишаються без callsite-ів. Єдиний писар — спільний шов
+**Оновлено 2026-07-25 — callsite-и на вебі.** Три `value_signal_*` мають єдиного
+писаря — спільний шов
 [`InsightCard.tsx`](../apps/web/src/shared/components/ui/InsightCard.tsx)
 (mount → `shown`, activate → `activated`, dismiss → `dismissed`), який покриває
 всі 9 продуктових сигналів у 4 модулях без жодної правки в самих модулях.
+
+Станом на кінець Хвилі 2 web-callsite-и мають **усі 10** подій групи: три
+`value_signal_*`, чотири «дію зроблено», `routine_streak_shown` і обидві
+`ai_advice_*` (таблиці callsite-ів вище). Без callsite-ів лишаються **лише
+mobile-дзеркала** — це окремий рядок беклогу, не борг цієї хвилі.
 `module` / `signal` виводяться з insight id через
 [`insightId.ts`](../apps/web/src/shared/lib/insights/insightId.ts) (явний реєстр
 kind-ів + longest-prefix, а не «зріж останній сегмент»); леджер атрибуції для
@@ -153,10 +158,10 @@ dismissals (localStorage, назавжди) занижують кількіст�
 
 ## Rename — 2 events
 
-| Current Name | Target Name | Change |
-| ------------------------------------------------------------------------------ | ------------------------ | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header | settings_root                                                                                     | deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
-| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`) | `biometric_auth_failed` | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin          | none }`. Lets us track biometric failures that don't fall back without inventing a sibling event. |
+| Current Name                                                                   | Target Name              | Change                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------ | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `module_settings_opened_from_module` (`MODULE_SETTINGS_OPENED` constant value) | `module_settings_opened` | Drop `_from_module` suffix; encode the source via property `{ source: module_header \| settings_root \| deeplink }`. Current name leaks implementation (only fires from module header). Properties-over-events. |
+| `biometric_auth_failed_fallback_pin` (`BIOMETRIC_AUTH_FAILED_FALLBACK_PIN`)    | `biometric_auth_failed`  | Drop `_fallback_pin` suffix; encode fallback via property `{ fallback: pin \| none }`. Lets us track biometric failures that don't fall back without inventing a sibling event.                                 |
 
 **Migration approach for renames:** dual-write for one release cycle. The old PostHog event name continues to fire alongside the new one; once dashboards switch, old fire is removed. Document in `.telemetry/changelog.md` (created by `product-tracking-instrument-new-feature` skill on first invocation).
 

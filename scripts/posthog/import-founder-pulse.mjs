@@ -118,6 +118,40 @@ export function isOwnedBy(insight, manifestKey) {
   );
 }
 
+/** Tags written onto the umbrella dashboard owned by `manifestKey`. */
+export function dashboardTags(manifestKey) {
+  return [manifestKey, "managed-by-manifest"];
+}
+
+/**
+ * Pick the dashboard to PATCH, scoped to this manifest.
+ *
+ * Same hazard as insights, and it was left unscoped: a project-wide
+ * `name === dashName` match lets a second manifest that happens to reuse an
+ * `umbrella_dashboard.name` PATCH the FIRST manifest's dashboard and overwrite
+ * its description. So ownership wins, and the bare name match survives only for
+ * `LEGACY_GLOBAL_NAME_FALLBACK` manifests, whose dashboards were created before
+ * this script wrote any tags.
+ */
+export function findExistingDashboard(dashboards, manifestKey, dashName) {
+  const list = dashboards ?? [];
+  const owned = list.find(
+    (d) => isOwnedBy(d, manifestKey) && d?.name === dashName,
+  );
+  if (owned) return owned;
+  if (!LEGACY_GLOBAL_NAME_FALLBACK.includes(manifestKey)) return undefined;
+  return list.find(
+    (d) => d?.name === dashName && !hasForeignOwner(d, manifestKey),
+  );
+}
+
+/** True when the entity carries a `managed-by-manifest` tag of ANOTHER manifest. */
+function hasForeignOwner(entity, manifestKey) {
+  const tags = entity?.tags ?? [];
+  if (!tags.includes("managed-by-manifest")) return false;
+  return !isOwnedBy(entity, manifestKey);
+}
+
 /**
  * Build the lookup tables used to decide UPDATE-vs-CREATE for each panel.
  *
@@ -221,8 +255,19 @@ function buildQuery(panel) {
             type: "events",
             name: panel.cohortizing_event,
           },
-          // returning "$any_event" → null id = "All events"
-          returningEntity: { id: null, type: "events", name: "All events" },
+          // `$any_event` (і відсутнє поле) → null id, тобто "All events".
+          // Будь-яка інша подія проходить наскрізь: доти цей рядок був
+          // захардкоджений, тож маніфест, що просив конкретну returning-подію,
+          // МОВЧКИ отримував "All events" — розбіжність, помітна лише як
+          // дивні числа на дашборді.
+          returningEntity:
+            panel.returning_event && panel.returning_event !== "$any_event"
+              ? {
+                  id: panel.returning_event,
+                  type: "events",
+                  name: panel.returning_event,
+                }
+              : { id: null, type: "events", name: "All events" },
           period: "Day",
           totalIntervals: panel.total_intervals ?? 31,
           retentionType: "retention_first_time",
@@ -248,20 +293,33 @@ async function main() {
     `Manifest "${manifest.key}" → project ${PROJECT} @ ${HOST}${DRY ? " (DRY RUN)" : ""}`,
   );
 
-  // 1. Dashboard — reuse by name or create; sync description (UA preferred).
+  // 1. Dashboard — reuse only a dashboard THIS manifest owns (see
+  // `findExistingDashboard`), else create it tagged; sync description (UA
+  // preferred).
   const dashDescription = (
     manifest.description_uk ??
     manifest.description ??
     ""
   ).slice(0, 400);
   const dashList = await api(`/dashboards/?limit=200`);
-  let dash = (dashList.results || []).find((d) => d.name === dashName);
+  const dashTags = dashboardTags(manifest.key);
+  let dash = findExistingDashboard(
+    dashList.results || [],
+    manifest.key,
+    dashName,
+  );
   if (dash) {
     console.log(`  dashboard "${dashName}" exists → #${dash.id} (reuse)`);
     if (!DRY) {
+      // Теги дописуються і при reuse: інакше legacy-дашборд назавжди
+      // лишається невідтеґованим і кожен наступний прогін знову покладається
+      // на глобальний name-fallback.
       await api(`/dashboards/${dash.id}/`, {
         method: "PATCH",
-        body: JSON.stringify({ description: dashDescription }),
+        body: JSON.stringify({
+          description: dashDescription,
+          tags: [...new Set([...(dash.tags ?? []), ...dashTags])],
+        }),
       });
     }
   } else if (DRY) {
@@ -270,7 +328,11 @@ async function main() {
   } else {
     dash = await api(`/dashboards/`, {
       method: "POST",
-      body: JSON.stringify({ name: dashName, description: dashDescription }),
+      body: JSON.stringify({
+        name: dashName,
+        description: dashDescription,
+        tags: dashTags,
+      }),
     });
     console.log(`  created dashboard "${dashName}" → #${dash.id}`);
   }

@@ -5,11 +5,16 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 
-import { checkReferentialIntegrity } from "../lint-manifests.mjs";
+import {
+  checkReferentialIntegrity,
+  checkTagNamespace,
+} from "../lint-manifests.mjs";
 import {
   LEGACY_GLOBAL_NAME_FALLBACK,
   LEGACY_TAG_PREFIXES,
   buildInsightIndex,
+  dashboardTags,
+  findExistingDashboard,
   findExistingInsight,
   isOwnedBy,
   panelTags,
@@ -279,4 +284,61 @@ test("a manifest only ever sees insights it owns", () => {
 
   const fpIndex = buildInsightIndex(mixed, "founder-pulse");
   assert.equal(fpIndex.byTag.size, founderPulse.panels.length);
+});
+
+test("checkTagNamespace ловить колізію префіксів між двома манифестами", () => {
+  const prefixes = new Map();
+  // `founder-pulse` і `feature-pulse` обидва дають префікс `fp`.
+  assert.deepEqual(checkTagNamespace({ key: "founder-pulse" }, prefixes), []);
+  const errors = checkTagNamespace({ key: "feature-pulse" }, prefixes);
+  assert.equal(errors.length, 1);
+  assert.match(
+    errors[0],
+    /tag-namespace "fp:" collides with manifest "founder-pulse"/,
+  );
+
+  // Той самий ключ двічі — не колізія (переgeneration того самого манифесту).
+  assert.deepEqual(checkTagNamespace({ key: "feature-pulse" }, prefixes), []);
+  // Манифест без ключа схему й так не пройде — тут просто не падаємо.
+  assert.deepEqual(checkTagNamespace({}, prefixes), []);
+});
+
+test("findExistingDashboard не віддає чужий дашборд зі збігом назви", () => {
+  const dashName = "Sergeant — Pulse";
+  const foreign = {
+    id: 1,
+    name: dashName,
+    tags: ["value-loops", "managed-by-manifest"],
+  };
+  const owned = {
+    id: 2,
+    name: dashName,
+    tags: dashboardTags("hub-tab-perf"),
+  };
+
+  // Чужий дашборд із тією ж назвою НЕ переюзається — інакше PATCH затер би
+  // його опис.
+  assert.equal(
+    findExistingDashboard([foreign], "hub-tab-perf", dashName),
+    undefined,
+  );
+  // Власний — переюзається.
+  assert.equal(
+    findExistingDashboard([foreign, owned], "hub-tab-perf", dashName)?.id,
+    2,
+  );
+
+  // Legacy-манифест (founder-pulse) досі бачить НЕвідтеґований дашборд по
+  // імені — його дашборд створено до того, як скрипт почав писати теги.
+  const untagged = { id: 3, name: dashName };
+  assert.equal(
+    findExistingDashboard([untagged], "founder-pulse", dashName)?.id,
+    3,
+  );
+  // ...але й він не чіпає дашборд, що явно належить іншому манифесту.
+  assert.equal(
+    findExistingDashboard([foreign], "founder-pulse", dashName),
+    undefined,
+  );
+  assert.ok(LEGACY_GLOBAL_NAME_FALLBACK.includes("founder-pulse"));
 });
