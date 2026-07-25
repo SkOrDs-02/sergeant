@@ -21,9 +21,9 @@ import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
 import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { getOnboardingGoals } from "@sergeant/shared";
-import { FinykDomain } from "@sergeant/finyk-domain";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
+import { useMonoStaleness } from "./overview/useMonoStaleness";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -71,24 +71,10 @@ export function Overview({
       } | null;
     }
   ).webhookSyncState;
-  const monoLastEventAt = webhookSyncState?.lastEventAt ?? null;
-  const monoWebhookActive = webhookSyncState?.webhookActive ?? false;
-  const monoStaleness = useMemo(
-    () =>
-      FinykDomain.evaluateMonoStaleness({
-        lastEventAt: monoLastEventAt,
-        webhookActive: monoWebhookActive,
-        // WHY: тут потрібен саме UTC-anchored instant, а не київська межа
-        // доби. `evaluateMonoStaleness` рахує РІЗНИЦЮ двох моментів
-        // (скільки минуло від останньої події банку), а не «який сьогодні
-        // день». Київські хелпери дали б день-ключ, який для віднімання
-        // непридатний, і ще й зробив би результат залежним від того, о
-        // котрій годині впала подія.
-        // eslint-disable-next-line no-restricted-syntax
-        now: new Date(),
-      }),
-    [monoLastEventAt, monoWebhookActive],
-  );
+  const monoStaleness = useMonoStaleness({
+    lastEventAt: webhookSyncState?.lastEventAt ?? null,
+    webhookActive: webhookSyncState?.webhookActive ?? false,
+  });
 
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
