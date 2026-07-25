@@ -477,18 +477,18 @@ sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]))
 > повний контракт полів — [`.telemetry/tracking-plan.yaml`](../../../.telemetry/tracking-plan.yaml).
 > Читання зрізів — [`posthog-founder-pulse.md § 8`](./posthog-founder-pulse.md).
 
-| Подія                     | Емітер (web)                                                   | Що міряє                                                      |
-| ------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------- |
-| `value_signal_shown`      | `shared/components/ui/InsightCard.tsx`                         | показ продуктового сигналу (9 сигналів, 4 модулі)             |
-| `value_signal_activated`  | ↑                                                              | тап по сигналу                                                |
-| `value_signal_dismissed`  | ↑                                                              | відкидання сигналу                                            |
-| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts`                        | чекін звички (`source: ui \| bulk`)                           |
-| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx`           | показ стріку ПОЗА `InsightCard` (`surface: hero_flame`)       |
-| `fizruk_workout_finished` | `modules/fizruk/components/workouts/WorkoutJournalSection.tsx` | завершення тренування                                         |
-| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                   | логування прийому їжі                                         |
-| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`             | категоризація транзакції                                      |
-| `ai_advice_shown`         | `core/insights/{AssistantAdviceCard,WeeklyDigestCard}.tsx`     | ФАКТИЧНИЙ показ AI-поради (не mount)                          |
-| `ai_advice_reacted`       | ↑                                                              | реакція на пораду (`ask_ai \| refresh \| collapse \| expand`) |
+| Подія                     | Емітер (web)                                                                                                                           | Що міряє                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `value_signal_shown`      | `shared/components/ui/InsightCard.tsx`                                                                                                 | показ продуктового сигналу (9 сигналів, 4 модулі)             |
+| `value_signal_activated`  | ↑                                                                                                                                      | тап по сигналу                                                |
+| `value_signal_dismissed`  | ↑                                                                                                                                      | відкидання сигналу                                            |
+| `routine_habit_checked`   | `modules/routine/useRoutineAppState.ts`                                                                                                | чекін звички (`source: ui \| bulk`)                           |
+| `routine_streak_shown`    | `modules/routine/components/RoutineCalendarHero.tsx`                                                                                   | показ стріку ПОЗА `InsightCard` (`surface: hero_flame`)       |
+| `fizruk_workout_finished` | `modules/fizruk/components/workouts/WorkoutJournalSection.tsx`                                                                         | завершення тренування                                         |
+| `nutrition_meal_logged`   | `modules/nutrition/hooks/useNutritionLog.ts`                                                                                           | логування прийому їжі                                         |
+| `finyk_tx_categorized`    | `modules/finyk/components/TxRowCategoryPicker.tsx`                                                                                     | категоризація транзакції                                      |
+| `ai_advice_shown`         | `core/observability/adviceTelemetry.ts` — єдиний писар; клієнти-callsite-и: `core/insights/{AssistantAdviceCard,WeeklyDigestCard}.tsx` | ФАКТИЧНИЙ показ AI-поради (не mount)                          |
+| `ai_advice_reacted`       | ↑                                                                                                                                      | реакція на пораду (`ask_ai \| refresh \| collapse \| expand`) |
 
 Наявні `expense_added` / `income_added` / `budget_set` НЕ перейменовані й не
 продубльовані — до них лише дописані ті самі поля атрибуції.
