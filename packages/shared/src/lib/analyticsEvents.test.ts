@@ -206,11 +206,15 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(literal).toBe("value_signal_shown");
     expect(fromUnion).toBe("routine_streak_shown");
 
-    // НЕ `toHaveLength(10)`: `wave2` — рукописний літерал, тож константа
-    // проти нього — тавтологія, яка не може впасти. Звірка з РЕАЛЬНИМ
-    // реєстром робить із цього справжній гейт: 11-та подія, додана без
-    // пінa тут, валить тест.
-    expect(wave2).toHaveLength(Object.keys(VALUE_LOOP_ANALYTICS_EVENTS).length);
+    // Звірка МНОЖИН, а не довжин. Спершу тут стояло `toHaveLength(10)` —
+    // тавтологія проти рукописного літерала. Довжина проти реєстру була вже
+    // кращою, але теж дірявою: дубль у `wave2` плюс пропущена подія дають ту
+    // саму довжину і тест мовчить. Рівність множин ловить обидва випадки.
+    expect(new Set(wave2)).toEqual(
+      new Set(Object.values(VALUE_LOOP_ANALYTICS_EVENTS)),
+    );
+    // Окремо — що дублів немає: `Set` вище сам би їх схлопнув.
+    expect(wave2).toHaveLength(new Set(wave2).size);
     for (const name of wave2) {
       expect(typeof name).toBe("string");
       expect(Object.values(ANALYTICS_EVENTS)).toContain(name);

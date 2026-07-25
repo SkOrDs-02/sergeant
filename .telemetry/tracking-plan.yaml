@@ -708,8 +708,7 @@ events:
       category: value_loop,
       source: frontend,
       description: "AI-порада фактично видима користувачу (не просто змонтована). advice_id — випадковий uuid, НЕ хеш тексту.",
-      properties:
-        [
+      properties: [
           { name: advice_id, type: string, required: true },
           {
             name: source,
@@ -717,7 +716,16 @@ events:
             required: true,
             values: [coach_insight, weekly_digest],
           },
-          { name: surface, type: string, required: true },
+          {
+            name: surface,
+            type: string_enum,
+            required: true,
+            # Дзеркалить `AdviceSurface` з
+            # apps/web/src/core/observability/adviceTelemetry.ts. Тримати
+            # синхронно: вільний `string` тут дозволив би одрук у поверхні,
+            # який мовчки розділив би один зріз на два.
+            values: [hub_dashboard, hub_reports],
+          },
           {
             name: day_key,
             type: date,

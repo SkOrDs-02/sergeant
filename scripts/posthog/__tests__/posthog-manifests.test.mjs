@@ -297,8 +297,21 @@ test("checkTagNamespace ловить колізію префіксів між д
     /tag-namespace "fp:" collides with manifest "founder-pulse"/,
   );
 
-  // Той самий ключ двічі — не колізія (переgeneration того самого манифесту).
-  assert.deepEqual(checkTagNamespace({ key: "feature-pulse" }, prefixes), []);
+  // Повторний прогін колізійного ключа лишається НЕВАЛІДНИМ і далі показує
+  // ПЕРШОГО власника. Раніше тут стояло `[]` — тобто тест закріплював баг:
+  // `prefixes.set()` віддавав власність колізійному манифесту, після чого
+  // повторний виклик бачив owner === manifest.key і мовчав.
+  const again = checkTagNamespace({ key: "feature-pulse" }, prefixes);
+  assert.equal(again.length, 1);
+  assert.match(again[0], /collides with manifest "founder-pulse"/);
+
+  // Третій колізійний ключ теж звинувачує ПЕРШОГО власника, а не другого.
+  const third = checkTagNamespace({ key: "future-plans" }, prefixes);
+  assert.equal(third.length, 1);
+  assert.match(third[0], /collides with manifest "founder-pulse"/);
+
+  // Той самий ключ, що й власник, — не колізія (переprogін того ж манифесту).
+  assert.deepEqual(checkTagNamespace({ key: "founder-pulse" }, prefixes), []);
   // Манифест без ключа схему й так не пройде — тут просто не падаємо.
   assert.deepEqual(checkTagNamespace({}, prefixes), []);
 });
@@ -341,4 +354,18 @@ test("findExistingDashboard не віддає чужий дашборд зі з�
     undefined,
   );
   assert.ok(LEGACY_GLOBAL_NAME_FALLBACK.includes("founder-pulse"));
+
+  // Чужий дашборд із САМИМ ЛИШЕ панель-подібним тегом `htp:` і тим самим
+  // іменем. `isOwnedBy` порахував би його нашим (префікс збігається) — і
+  // PATCH затер би опис. Точний предикат мусить його відкинути, а
+  // legacy-фолбек не має вважати його «невідтеґованим».
+  const foreignPanelTagged = { id: 4, name: dashName, tags: ["htp:custom"] };
+  assert.equal(
+    findExistingDashboard([foreignPanelTagged], "hub-tab-perf", dashName),
+    undefined,
+  );
+  assert.equal(
+    findExistingDashboard([foreignPanelTagged], "founder-pulse", dashName),
+    undefined,
+  );
 });

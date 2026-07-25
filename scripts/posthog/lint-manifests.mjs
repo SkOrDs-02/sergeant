@@ -43,15 +43,18 @@ export function checkTagNamespace(manifest, prefixes) {
   if (!manifest?.key) return [];
   const prefix = tagPrefix(manifest.key);
   const owner = prefixes.get(prefix);
-  const errors =
-    owner && owner !== manifest.key
-      ? [
-          `tag-namespace "${prefix}:" collides with manifest "${owner}" — ` +
-            `rename one of the manifest keys (insights would share a tag prefix)`,
-        ]
-      : [];
-  prefixes.set(prefix, manifest.key);
-  return errors;
+  if (owner && owner !== manifest.key) {
+    // Власника НЕ перезаписуємо: перший манифест, що зайняв префікс, лишається
+    // власником назавжди. Інакше третій колізійний манифест звинуватив би
+    // другого замість першого, а повторний прогін того самого колізійного
+    // ключа виглядав би валідним (owner став би === manifest.key).
+    return [
+      `tag-namespace "${prefix}:" collides with manifest "${owner}" — ` +
+        `rename one of the manifest keys (insights would share a tag prefix)`,
+    ];
+  }
+  if (!owner) prefixes.set(prefix, manifest.key);
+  return [];
 }
 
 /** Референційні перевірки поверх схеми. Повертає масив рядків-помилок. */

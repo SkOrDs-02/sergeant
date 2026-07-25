@@ -136,20 +136,34 @@ export function dashboardTags(manifestKey) {
 export function findExistingDashboard(dashboards, manifestKey, dashName) {
   const list = dashboards ?? [];
   const owned = list.find(
-    (d) => isOwnedBy(d, manifestKey) && d?.name === dashName,
+    (d) => ownsDashboard(d, manifestKey) && d?.name === dashName,
   );
   if (owned) return owned;
   if (!LEGACY_GLOBAL_NAME_FALLBACK.includes(manifestKey)) return undefined;
-  return list.find(
-    (d) => d?.name === dashName && !hasForeignOwner(d, manifestKey),
-  );
+  // Legacy-фолбек — ЛИШЕ для повністю невідтеґованих дашбордів. Будь-який тег
+  // виду `<prefix>:` означає, що дашборд комусь належить, і чіпати його по
+  // самому лише збігу імені не можна.
+  return list.find((d) => d?.name === dashName && isUntagged(d));
 }
 
-/** True when the entity carries a `managed-by-manifest` tag of ANOTHER manifest. */
-function hasForeignOwner(entity, manifestKey) {
+/**
+ * Точна власність дашборда: обидва теги, які пише `dashboardTags`.
+ *
+ * НЕ `isOwnedBy`: той приймає будь-який тег `<prefix>:…`, і для інсайтів це
+ * правильно (вони саме так теґуються по панелях), але для дашборда завузько —
+ * чужий дашборд із тим самим іменем і панель-подібним тегом `htp:custom`
+ * порахувався б «нашим», і PATCH затер би його опис.
+ */
+function ownsDashboard(dashboard, manifestKey) {
+  const tags = dashboard?.tags ?? [];
+  return tags.includes(manifestKey) && tags.includes("managed-by-manifest");
+}
+
+/** True коли на сутності немає ЖОДНОГО маркера власності. */
+function isUntagged(entity) {
   const tags = entity?.tags ?? [];
-  if (!tags.includes("managed-by-manifest")) return false;
-  return !isOwnedBy(entity, manifestKey);
+  if (tags.includes("managed-by-manifest")) return false;
+  return !tags.some((t) => typeof t === "string" && /^[a-z0-9]+:/i.test(t));
 }
 
 /**
