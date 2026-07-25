@@ -25,6 +25,6 @@ Each skill writes its file(s) and reads upstream artifacts. Run skills in order;
 
 ## Conventions
 
-- **Event names** — canonical source: [`packages/shared/src/lib/analyticsEvents.ts`](../packages/shared/src/lib/analyticsEvents.ts) (`ANALYTICS_EVENTS` const). Never inline raw strings in callsites; always reference the constant.
+- **Event names** — canonical source: [`packages/shared/src/lib/analyticsEvents.ts`](../packages/shared/src/lib/analyticsEvents.ts) (`ANALYTICS_EVENTS` const). Never inline raw strings in callsites; always reference the constant. The registry stays **one object**; a group may live in a sibling module and be spread in for module-size reasons (today: [`analyticsEvents.valueLoops.ts`](../packages/shared/src/lib/analyticsEvents.valueLoops.ts), Хвиля 2 `value_loop`) — access is still `ANALYTICS_EVENTS.<NAME>`.
 - **Transport** — fire-and-forget via [`apps/web/src/core/observability/analytics.ts`](../apps/web/src/core/observability/analytics.ts) (`trackEvent`) for web, [`apps/mobile/src/lib/analytics.ts`](../apps/mobile/src/lib/analytics.ts) for mobile, [`apps/server/src/lib/posthogCapture.ts`](../apps/server/src/lib/posthogCapture.ts) for server.
 - **Audit cadence** — re-run audit before any design pass, and after any wave of feature work that introduced new events.

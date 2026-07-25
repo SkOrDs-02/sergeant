@@ -5,7 +5,7 @@ meta:
   product: Sergeant
   version: 1
   created: 2026-05-17
-  updated: 2026-05-17
+  updated: 2026-07-25 # +10 подій групи value_loop (Хвиля 2, registry-only)
   owner: "@Skords-01"
   product_type: B2C
   destinations: [posthog]
@@ -467,6 +467,248 @@ events:
       category: activation,
       source: frontend,
       properties: [{ name: module, type: string, required: true }],
+    }
+
+  # ─────────────────────────────────────────────────────────────────────
+  # VALUE LOOPS (NEW — Хвиля 2: «сигнал показано → дію зроблено»)
+  #
+  # Джерело: docs/90-work/planning/product-knowledge-backlog.md § Хвиля 2.
+  # Стан: імена ЗАМОРОЖЕНІ в packages/shared/src/lib/analyticsEvents.valueLoops.ts
+  # і пінуються verbatim у analyticsEvents.test.ts. Callsite-ів ще НЕМАЄ —
+  # реєстрація тут навмисно випереджає інструментування, щоб наступний
+  # audit-прогін не позначив ці події як undesigned drift.
+  #
+  # PII-контракт групи: НІЯКОГО вільного тексту. Тіло AI-поради, назви
+  # звичок / страв, сирі insight id (несуть categoryId кастомної категорії)
+  # у payload не потрапляють. scrubPII чистить за ІМЕНАМИ ключів
+  # (packages/shared/src/lib/pii.ts), тож він тут НЕ страхує — захист є
+  # контрактом (Hard Rule #21).
+  #
+  # Вікно атрибуції N у код НЕ зашите: події несуть сирий ms_since_signal,
+  # а N обирається в PostHog-запиті й переглядається заднім числом.
+  # ─────────────────────────────────────────────────────────────────────
+  - {
+      name: value_signal_shown,
+      category: value_loop,
+      source: frontend,
+      description: "Продуктовий сигнал (insight-картка) показано користувачу. Спільний шов InsightCard покриває всі модулі.",
+      properties:
+        [
+          {
+            name: module,
+            type: string_enum,
+            required: true,
+            values: [finyk, fizruk, routine, nutrition],
+          },
+          {
+            name: signal,
+            type: string,
+            required: true,
+            description: "Стабільний kind БЕЗ змінного суфікса (finyk-budget-overrun, НЕ finyk-budget-overrun-<categoryId>). High-cardinality / PII guard.",
+          },
+          {
+            name: surface,
+            type: string_enum,
+            required: true,
+            values: [module, hub],
+          },
+        ],
+    }
+  - {
+      name: value_signal_activated,
+      category: value_loop,
+      source: frontend,
+      description: "Користувач натиснув основну дію сигналу.",
+      properties:
+        [
+          {
+            name: module,
+            type: string_enum,
+            required: true,
+            values: [finyk, fizruk, routine, nutrition],
+          },
+          { name: signal, type: string, required: true },
+          {
+            name: surface,
+            type: string_enum,
+            required: true,
+            values: [module, hub],
+          },
+        ],
+    }
+  - {
+      name: value_signal_dismissed,
+      category: value_loop,
+      source: frontend,
+      description: "Користувач приховав сигнал. Funnel: shown >= activated + dismissed.",
+      properties:
+        [
+          {
+            name: module,
+            type: string_enum,
+            required: true,
+            values: [finyk, fizruk, routine, nutrition],
+          },
+          { name: signal, type: string, required: true },
+          {
+            name: surface,
+            type: string_enum,
+            required: true,
+            values: [module, hub],
+          },
+        ],
+    }
+
+  # Друга половина петлі — «дію зроблено». Спільні поля атрибуції
+  # (after_signal / ms_since_signal / signal) присутні в УСІХ чотирьох.
+  - {
+      name: routine_habit_checked,
+      category: value_loop,
+      source: frontend,
+      description: "Чекін звички. scope=max_across_habits, бо показаний стрік — це derived.streakMax по ВСІХ звичках, а чекін per-habit.",
+      properties:
+        [
+          {
+            name: state,
+            type: string_enum,
+            required: true,
+            values: [done, undone],
+          },
+          {
+            name: source,
+            type: string_enum,
+            required: true,
+            values: [ui, bulk, chat],
+            description: "bulk / chat НЕ є мотивованим чекіном — виключаються зі знаменника петлі на боці дашборда.",
+          },
+          { name: after_signal, type: boolean, required: true },
+          { name: ms_since_signal, type: integer, required: false },
+          { name: signal, type: string, required: false },
+          { name: saw_streak_surface, type: string, required: false },
+          { name: streak_days_at_checkin, type: integer, required: false },
+          { name: ms_since_streak_shown, type: integer, required: false },
+          {
+            name: scope,
+            type: string_enum,
+            required: true,
+            values: [max_across_habits],
+          },
+        ],
+    }
+  - {
+      name: fizruk_workout_finished,
+      category: value_loop,
+      source: frontend,
+      properties:
+        [
+          { name: after_signal, type: boolean, required: true },
+          { name: ms_since_signal, type: integer, required: false },
+          { name: signal, type: string, required: false },
+        ],
+    }
+  - {
+      name: nutrition_meal_logged,
+      category: value_loop,
+      source: frontend,
+      description: "Назва страви у payload НЕ передається.",
+      properties:
+        [
+          { name: after_signal, type: boolean, required: true },
+          { name: ms_since_signal, type: integer, required: false },
+          { name: signal, type: string, required: false },
+        ],
+    }
+  - {
+      name: finyk_tx_categorized,
+      category: value_loop,
+      source: frontend,
+      description: "Єдина відсутня дія finyk; expense_added / budget_set переюзуються як є.",
+      properties:
+        [
+          { name: after_signal, type: boolean, required: true },
+          { name: ms_since_signal, type: integer, required: false },
+          { name: signal, type: string, required: false },
+        ],
+    }
+
+  # AI-порада: показ + реакція. Тіло поради НЕ існує на рівні події.
+  - {
+      name: ai_advice_shown,
+      category: value_loop,
+      source: frontend,
+      description: "AI-порада фактично видима користувачу (не просто змонтована). advice_id — випадковий uuid, НЕ хеш тексту.",
+      properties:
+        [
+          { name: advice_id, type: string, required: true },
+          {
+            name: source,
+            type: string_enum,
+            required: true,
+            values: [coach_insight, weekly_digest],
+          },
+          { name: surface, type: string, required: true },
+          {
+            name: day_key,
+            type: date,
+            required: true,
+            format: YYYY-MM-DD,
+            description: "День ПРИСТРОЮ (ADR-0078), не UTC.",
+          },
+          {
+            name: chars,
+            type: integer,
+            required: true,
+            description: "Довжина поради. Сам текст у payload відсутній (Hard Rule #21).",
+          },
+          {
+            name: instrumentation_version,
+            type: integer,
+            required: true,
+            description: "Дозволяє відрізати когорту зі старим бандлом (PWA service-worker), а не гадати про знаменник.",
+          },
+        ],
+    }
+  - {
+      name: ai_advice_reacted,
+      category: value_loop,
+      source: frontend,
+      description: "Реакція на пораду. Дискримінатор у property (конвенція daily_nudge_action), а не окремі імена подій.",
+      properties:
+        [
+          { name: advice_id, type: string, required: true },
+          {
+            name: reaction,
+            type: string_enum,
+            required: true,
+            values: [ask_ai, refresh, collapse, expand],
+          },
+          { name: seconds_since_shown, type: number, required: true },
+        ],
+    }
+
+  # Експозиція стріку ПОЗА InsightCard. streak-record-карточка вже
+  # покривається value_signal_shown — інакше покази подвояться.
+  - {
+      name: routine_streak_shown,
+      category: value_loop,
+      source: frontend,
+      description: "Показ стріку на поверхні, яка НЕ є InsightCard. Web ховає полумʼя при streak=0, mobile показує «0 дн.» безумовно — агрегувати лише з розрізом по surface.",
+      properties:
+        [
+          {
+            name: surface,
+            type: string_enum,
+            required: true,
+            values: [hero_flame, stats_pill, hub_badge],
+          },
+          { name: streak_days, type: integer, required: true },
+          {
+            name: scope,
+            type: string_enum,
+            required: true,
+            values: [max_across_habits],
+          },
+        ],
     }
 
   # ─────────────────────────────────────────────────────────────────────

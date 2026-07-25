@@ -77,6 +77,18 @@ import { enqueueMemoryIngest } from "./ingestQueue.js";
  * текст без узгодження: `/recall` запити founder-а полягають на
  * стабільні фрази (наприклад, "completed onboarding" — щоб
  * vector-search ловив).
+ *
+ * AI-NOTE: Хвиля 2, свідоме рішення — не «забули додати». ЖОДНА подія
+ * групи `value_loop` з `analyticsEvents.valueLoops.ts`
+ * (`value_signal_*`, `routine_habit_checked`, `fizruk_workout_finished`,
+ * `nutrition_meal_logged`, `finyk_tx_categorized`, `ai_advice_*`,
+ * `routine_streak_shown`) у цей allowlist НЕ додається. Причина —
+ * структурна: `ai_advice_*` описують реакцію на вихід самого AI-шару,
+ * тож їх дзеркалення в `ai_memories` замкнуло б шар на власний вихід
+ * (аудит `docs/90-work/audits/product-knowledge-hub-coach.md`, напруга 4).
+ * Решта — impression/telemetry, тобто рівно той шум, який цей allowlist
+ * і створений відсікати. Хочеш змінити — це продуктове рішення (ADR),
+ * а не рефакторинг.
  */
 export const PRODUCT_MEMORY_EVENTS = [
   "signup_completed",
