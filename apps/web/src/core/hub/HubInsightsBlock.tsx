@@ -110,6 +110,10 @@ export function HubInsightsBlock({
               id={insight.id}
               title={insight.title}
               subtitle={insight.subtitle}
+              // Хаб — єдина поверхня, що не є модульним блоком. Без цього
+              // пропа події `value_signal_*` з хабу поїхали б як
+              // `surface: "module"` і зіпсували б розріз по поверхнях.
+              surface="hub"
               onActivate={() => handleInsightActivate(insight)}
             />
           ))}

@@ -21,9 +21,24 @@ Math check: target events = 96. Current LIVE = 94. Delta: ADD (3) + KEEP_AS_IS (
 **Що змінилось:** у `tracking-plan.yaml` зареєстровано нову категорію `value_loop`
 з 10 подій; імена заморожені в
 [`packages/shared/src/lib/analyticsEvents.valueLoops.ts`](../packages/shared/src/lib/analyticsEvents.valueLoops.ts)
-і пінуються verbatim у `analyticsEvents.test.ts`. **Callsite-ів ще немає** — це
-навмисно: імена подій де-факто незворотні (§ «Naming convention» нижче), тож
-контракт заморожується ОДНИМ рев'ювабельним патчем ДО інструментування.
+і пінуються verbatim у `analyticsEvents.test.ts`. Контракт заморожено ОДНИМ
+рев'ювабельним патчем ДО інструментування — навмисно, бо імена подій де-факто
+незворотні (§ «Naming convention» нижче).
+
+**Оновлено 2026-07-25 — перші callsite-и.** Три `value_signal_*` уже емітяться;
+решта сімох подій лишаються без callsite-ів. Єдиний писар — спільний шов
+[`InsightCard.tsx`](../apps/web/src/shared/components/ui/InsightCard.tsx)
+(mount → `shown`, activate → `activated`, dismiss → `dismissed`), який покриває
+всі 9 продуктових сигналів у 4 модулях без жодної правки в самих модулях.
+`module` / `signal` виводяться з insight id через
+[`insightId.ts`](../apps/web/src/shared/lib/insights/insightId.ts) (явний реєстр
+kind-ів + longest-prefix, а не «зріж останній сегмент»); леджер атрибуції для
+майбутніх action-подій —
+[`valueSignalAttribution.ts`](../apps/web/src/core/observability/valueSignalAttribution.ts).
+Два обмеження знаменника задокументовані в
+[`docs/90-work/planning/product-knowledge-backlog.md`](../docs/90-work/planning/product-knowledge-backlog.md)
+§ Хвиля 2: когорта до дати релізу = `unknown`, а не `false`; накопичені
+dismissals (localStorage, назавжди) занижують кількість показів.
 
 | Подія                                              | Що закриває                                                                        |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------- |

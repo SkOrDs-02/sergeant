@@ -1,12 +1,40 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { StrictMode } from "react";
 import { render, cleanup, fireEvent } from "@testing-library/react";
-import { InsightCard } from "./InsightCard";
+
+vi.mock("../../../core/observability/analytics", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/observability/analytics")
+  >("../../../core/observability/analytics");
+  return { ...actual, trackEvent: vi.fn() };
+});
+
+import { InsightCard, __resetInsightShownGuard } from "./InsightCard";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
+import {
+  readSignalContext,
+  resetSignalAttribution,
+} from "../../../core/observability/valueSignalAttribution";
+
+const trackEventMock = vi.mocked(trackEvent);
 
 afterEach(cleanup);
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
+  __resetInsightShownGuard();
+  resetSignalAttribution();
+  trackEventMock.mockClear();
 });
+
+/** Усі виклики `trackEvent` з конкретним іменем події. */
+function callsOf(eventName: string) {
+  return trackEventMock.mock.calls.filter(([name]) => name === eventName);
+}
 
 describe("InsightCard", () => {
   it("renders title, subtitle and the default CTA glyph", () => {
@@ -84,5 +112,177 @@ describe("InsightCard", () => {
     const group = container.querySelector('[role="group"]')!;
     const titleEl = getByText("t");
     expect(group.getAttribute("aria-labelledby")).toBe(titleEl.id);
+  });
+});
+
+// ── Телеметрія петель цінності (Хвиля 2) ──────────────────────────────
+//
+// InsightCard — єдиний писар подій `value_signal_*` для всіх 9 сигналів
+// у 4 модулях. Тести пінять три речі, кожна з яких мовчки псує знаменник
+// петлі, якщо зламається: одноразовість показу, відсутність показу для
+// dismissed-картки і стабільний `signal` без змінного суфікса.
+describe("InsightCard — value-loop telemetry", () => {
+  it("емітить value_signal_shown рівно один раз на mount", () => {
+    render(
+      <InsightCard
+        id="finyk-coffee-limit-2026-07"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+
+    const shown = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN);
+    expect(shown).toHaveLength(1);
+    expect(shown[0]?.[1]).toEqual({
+      module: "finyk",
+      // Стабільний kind БЕЗ `-2026-07`: сирий id — high-cardinality
+      // property, а для budget-overrun ще й categoryId (potential PII).
+      signal: "finyk-coffee-limit",
+      surface: "module",
+    });
+  });
+
+  it("не дублює показ при повторному mount у межах сесії", () => {
+    const card = (
+      <InsightCard
+        id="routine-todo-evening"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />
+    );
+    const first = render(card);
+    first.unmount();
+    render(card);
+
+    // FinykInsightsBlock та інші блоки перераховують candidates на кожен
+    // рендер батька — без once-guard-а тут було б 2+ і знаменник збрехав би.
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN)).toHaveLength(1);
+  });
+
+  it("StrictMode подвійний mount не дублює показ", () => {
+    render(
+      <StrictMode>
+        <InsightCard
+          id="fizruk-pr-pending"
+          title="t"
+          subtitle="s"
+          onActivate={() => {}}
+        />
+      </StrictMode>,
+    );
+
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN)).toHaveLength(1);
+  });
+
+  it("НЕ емітить показ для вже відкинутої картки", () => {
+    // `useInsightDismissal` тримає dismissed-id у localStorage назавжди,
+    // тож така картка ніколи не рендериться — і не має рахуватись показом.
+    localStorage.setItem(
+      "sergeant.v2.insights.dismissed",
+      JSON.stringify(["nutrition-protein-low"]),
+    );
+    render(
+      <InsightCard
+        id="nutrition-protein-low"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN)).toHaveLength(0);
+  });
+
+  it("емітить value_signal_activated з коректними module/signal", () => {
+    const { getByText } = render(
+      <InsightCard
+        id="finyk-budget-overrun-cat_9f2b1c"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+    fireEvent.click(getByText("t"));
+
+    const activated = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED);
+    expect(activated).toHaveLength(1);
+    expect(activated[0]?.[1]).toEqual({
+      module: "finyk",
+      signal: "finyk-budget-overrun",
+      surface: "module",
+    });
+  });
+
+  it("емітить value_signal_dismissed з коректними module/signal", () => {
+    const { getByLabelText } = render(
+      <InsightCard
+        id="nutrition-streak-7-days-2026-W30"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText("Закрити пропозицію"));
+
+    const dismissed = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED);
+    expect(dismissed).toHaveLength(1);
+    expect(dismissed[0]?.[1]).toEqual({
+      module: "nutrition",
+      signal: "nutrition-streak-7-days",
+      surface: "module",
+    });
+  });
+
+  it("проп surface їде у payload (хаб vs модуль)", () => {
+    render(
+      <InsightCard
+        id="routine-streak-record-pending"
+        title="t"
+        subtitle="s"
+        surface="hub"
+        onActivate={() => {}}
+      />,
+    );
+
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN)[0]?.[1]).toMatchObject({
+      surface: "hub",
+    });
+  });
+
+  it("показ кладе сигнал у леджер атрибуції", () => {
+    render(
+      <InsightCard
+        id="routine-todo-evening"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+
+    expect(readSignalContext("routine")).toMatchObject({
+      after_signal: true,
+      signal: "routine-todo-evening",
+    });
+    // Чужий модуль атрибуцію не отримує.
+    expect(readSignalContext("finyk").after_signal).toBe(false);
+  });
+
+  it("відкинута картка не кладе сигнал у леджер", () => {
+    localStorage.setItem(
+      "sergeant.v2.insights.dismissed",
+      JSON.stringify(["fizruk-rest-day-overdue"]),
+    );
+    render(
+      <InsightCard
+        id="fizruk-rest-day-overdue"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+
+    expect(readSignalContext().after_signal).toBe(false);
   });
 });
