@@ -36,13 +36,13 @@ describe("HabitForm focus stability", () => {
   it("keeps the name input mounted and focused while typing in the dialog form", () => {
     render(<Harness />);
 
-    const input = screen.getByPlaceholderText("Назва");
+    const input = screen.getByLabelText("Назва звички");
     input.focus();
     expect(document.activeElement).toBe(input);
 
     fireEvent.change(input, { target: { value: "в" } });
 
-    expect(screen.getByPlaceholderText("Назва")).toBe(input);
+    expect(screen.getByLabelText("Назва звички")).toBe(input);
     expect(document.activeElement).toBe(input);
   });
 

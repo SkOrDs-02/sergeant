@@ -13,6 +13,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import {
   ROUTINE_THEME as C,
@@ -100,6 +101,7 @@ export function HabitForm({
   const endId = `${fieldIds}-end`;
   const advancedId = `${fieldIds}-advanced`;
   const nameErrId = `${fieldIds}-name-err`;
+  const nameId = `${fieldIds}-name`;
   const weekdaysErrId = `${fieldIds}-weekdays-err`;
   const sectionRef = useRef<HTMLElement | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -185,6 +187,7 @@ export function HabitForm({
       )}
 
       <div>
+        <Label htmlFor={nameId}>Назва звички</Label>
         <div className="flex gap-2 items-center">
           <div className="relative shrink-0" ref={emojiWrapRef}>
             <button
@@ -235,12 +238,13 @@ export function HabitForm({
             )}
           </div>
           <Input
+            id={nameId}
             ref={nameRef}
             className={cn(
               "routine-touch-field min-w-0 flex-1",
               errors?.name && "border-danger",
             )}
-            placeholder="Назва"
+            placeholder="Напр. Пити воду, медитувати, ранкова пробіжка"
             aria-invalid={errors?.name ? true : undefined}
             aria-describedby={errors?.name ? nameErrId : undefined}
             value={habitDraft.name}

@@ -151,7 +151,7 @@ describe("AddExerciseSheet", () => {
     fireEvent.change(screen.getByLabelText("Назва вправи українською"), {
       target: { value: "  Bench Press 2  " },
     });
-    fireEvent.change(screen.getByPlaceholderText("Опис"), {
+    fireEvent.change(screen.getByLabelText(/^Опис/), {
       target: { value: " розведення " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));

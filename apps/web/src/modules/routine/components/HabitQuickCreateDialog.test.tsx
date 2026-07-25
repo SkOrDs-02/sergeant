@@ -133,7 +133,7 @@ describe("HabitQuickCreateDialog", () => {
   it("creates a habit on save and closes the dialog", async () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
-    const nameInput = screen.getByPlaceholderText("Назва");
+    const nameInput = screen.getByLabelText("Назва звички");
     fireEvent.change(nameInput, { target: { value: "Медитація" } });
     fireEvent.click(screen.getByRole("button", { name: "Додати звичку" }));
     await waitFor(() => {
