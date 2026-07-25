@@ -11,6 +11,7 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { newAdviceId } from "../observability/adviceTelemetry";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
    prefer-kyiv-time: the "today" / week-window math intentionally reads
@@ -324,21 +325,6 @@ interface UseCoachInsightResult {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<unknown>;
-}
-
-/** Випадковий uuid. Ніколи не похідна від тексту поради. */
-function newAdviceId(): string {
-  try {
-    if (
-      typeof crypto !== "undefined" &&
-      typeof crypto.randomUUID === "function"
-    ) {
-      return crypto.randomUUID();
-    }
-  } catch {
-    /* деякі WebView-и кидають на доступі до crypto — падаємо у fallback */
-  }
-  return `adv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function useCoachInsight(): UseCoachInsightResult {

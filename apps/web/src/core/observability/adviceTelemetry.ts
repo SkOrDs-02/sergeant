@@ -71,8 +71,15 @@ const idsByScope = new Map<string, string>();
 /** Лічильник для fallback-ID (див. `newAdviceId`). Скидається з сесією. */
 let adviceIdCounter = 0;
 
-/** Унікальний id поради. НІКОЛИ не похідна від тексту поради. */
-function newAdviceId(): string {
+/**
+ * Унікальний id поради. НІКОЛИ не похідна від тексту поради.
+ *
+ * Експортується навмисно: `useCoachInsight` мусить генерувати id тим самим
+ * способом, інакше друга копія цієї функції рано чи пізно розійдеться з
+ * першою (перша ітерація цієї Хвилі саме так і залишила `Math.random()` в
+ * одному з двох місць).
+ */
+export function newAdviceId(): string {
   try {
     if (
       typeof crypto !== "undefined" &&
