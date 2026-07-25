@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-25",
   "counts": {
-    "adr": 73,
+    "adr": 77,
     "audit": 14,
     "hard-rule": 26,
     "initiative": 6,
@@ -827,6 +827,50 @@
       "tier": "core",
       "meta": {
         "number": 76
+      }
+    },
+    {
+      "id": "adr:0077",
+      "type": "adr",
+      "title": "ADR-0077: Комора як append-only ledger, залишок — derived",
+      "path": "docs/04-governance/adr/0077-pantry-append-only-ledger.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 77
+      }
+    },
+    {
+      "id": "adr:0078",
+      "type": "adr",
+      "title": "ADR-0078: Межа доби — за пристроєм користувача",
+      "path": "docs/04-governance/adr/0078-day-boundary-device-local.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 78
+      }
+    },
+    {
+      "id": "adr:0079",
+      "type": "adr",
+      "title": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка",
+      "path": "docs/04-governance/adr/0079-frozen-past-and-canonical-denominator.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 79
+      }
+    },
+    {
+      "id": "adr:0080",
+      "type": "adr",
+      "title": "ADR-0080: Єдине джерело істини ваги тіла — fizruk",
+      "path": "docs/04-governance/adr/0080-body-weight-source-of-truth.md",
+      "status": "accepted",
+      "tier": "core",
+      "meta": {
+        "number": 80
       }
     },
     {
@@ -4247,6 +4291,11 @@
       "from": "adr:0076",
       "to": "pr:446",
       "type": "touched-by"
+    },
+    {
+      "from": "adr:0080",
+      "to": "hard-rule:4",
+      "type": "references"
     },
     {
       "from": "audit:2026-07-21-design-audit",

@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-07-25",
   "sourceHashes": {
-    "knowledge-graph": "b343f731f5a5df51f0eeb830bc3c2b28fee19ef23c1e378a9e66dea98adab3fb",
+    "knowledge-graph": "ba95885dcc397d36d32cedbe1a43bb1aee1c5168802a0fa883c32e4073be41a3",
     "symbol-index": "93dba76ae0340aa2a6cb630c7c708b6d8620f29135ff065669b2f80e9b2ac80e"
   },
   "counts": {
-    "adr": 73,
+    "adr": 77,
     "audit": 14,
     "export": 286,
     "hard-rule": 26,
     "initiative": 6,
     "playbook": 60,
     "skill": 23,
-    "total": 488
+    "total": 492
   },
   "chunks": [
     {
@@ -817,6 +817,50 @@
       "status": "accepted",
       "text": "ADR-0076: «Готівка на руках» як окрема сутність finyk · adr:0076 · adr · accepted · 76 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · 3. Рішення · 4. Наслідки · 5. Що це закриває",
       "contentHash": "8f235943878f8e3373b3be6b0ac6ccd1995c6a3d8057058f70b29275d0c4a54b"
+    },
+    {
+      "id": "adr:0077",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0077-pantry-append-only-ledger.md",
+      "line": 1,
+      "title": "ADR-0077: Комора як append-only ledger, залишок — derived",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0077: Комора як append-only ledger, залишок — derived · adr:0077 · adr · accepted · 77 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · Варіант А — PN-counter (op='increment'), відхилено · Варіант Б — append-only ledger, прийнято · 3. Рішення · 3.1 Три речі, які згортка НЕ робить · 3.2 Типи ключів — TEXT, не UUID · 3.3 Ретракція замість редагування · 3.4 Ledger виключено з cleanup-логіки dual-write · 4. Стадійність · 5. Що робиться з наявними залишками · 6. Наслідки · 7. Чесне обмеження щодо E-7",
+      "contentHash": "f65a8d0d1ff93f7d48034febac8079a2e883b8909436a654c558b6f444752683"
+    },
+    {
+      "id": "adr:0078",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0078-day-boundary-device-local.md",
+      "line": 1,
+      "title": "ADR-0078: Межа доби — за пристроєм користувача",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0078: Межа доби — за пристроєм користувача · adr:0078 · adr · accepted · 78 · 0. TL;DR · 1. Контекст · 2. Розглянуті варіанти · 3. Рішення · 4. Наслідки · 5. Що це закриває",
+      "contentHash": "276037f571de84cdffd4fecac5022c23e2e8d1446d6939190640785a5786148f"
+    },
+    {
+      "id": "adr:0079",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0079-frozen-past-and-canonical-denominator.md",
+      "line": 1,
+      "title": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0079: Заморожене минуле і канонічний знаменник відсотка · adr:0079 · adr · accepted · 79 · 0. TL;DR · 1. Контекст · 2. Рішення 1 — заморожується лише закрите · 3. Рішення 2 — знаменник за розкладом · 4. Наслідки · 5. Що це закриває",
+      "contentHash": "5375e4882c7c6c500852b31d771e267c6d9aecf0f2efc4c41420e02ccf5c3780"
+    },
+    {
+      "id": "adr:0080",
+      "type": "adr",
+      "path": "docs/04-governance/adr/0080-body-weight-source-of-truth.md",
+      "line": 1,
+      "title": "ADR-0080: Єдине джерело істини ваги тіла — fizruk",
+      "tier": "core",
+      "status": "accepted",
+      "text": "ADR-0080: Єдине джерело істини ваги тіла — fizruk · adr:0080 · adr · accepted · 80 · 0. TL;DR · 1. Контекст · 2. Рішення · 3. Наслідки · 4. Що це закриває",
+      "contentHash": "df1be72bd14d63063af7e4659a8023599bc35f3222ed2ce72ab97a8f5693c801"
     },
     {
       "id": "audit:2026-07-21-design-audit",
