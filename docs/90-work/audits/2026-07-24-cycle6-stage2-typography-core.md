@@ -1,90 +1,94 @@
-﻿# Р¦РёРєР» 6, СЃС‚Р°РґС–СЏ 2 вЂ” СЃРёСЂС– Tailwind-СЂРѕР·РјС–СЂРё РІ `core/**`
+# Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`
 
-> РќР°СЂСЏРґ: `cycle-6-stage-2-task-for-claude-code.md` (Claude Design).
-> РњРµС‚РѕРґ: `design-audit-sergeant-web.md В§ РЈСЂРѕРєРё`. РЎС‚РµРє: dev `localhost:5175`,
-> demo+FTUX, Chromium/Playwright, piРєСЃРµР»СЊ-РґРёС„С„ fullPage, computed-РїСЂРѕР±Рё, axe-core.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Status:** Reference — звіт про виконання наряду циклу 6, стадія 2; baseline
+> скорингу — [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md).
 
-## Headline 26 vs 34.6 вЂ” fluid-scale, РЅРµ Р±Р°Рі
+> Наряд: `cycle-6-stage-2-task-for-claude-code.md` (Claude Design).
+> Метод: `design-audit-sergeant-web.md § Уроки`. Стек: dev `localhost:5175`,
+> demo+FTUX, Chromium/Playwright, piксель-дифф fullPage, computed-проби, axe-core.
+
+## Headline 26 vs 34.6 — fluid-scale, не баг
 
 `.text-style-headline` = `clamp(1.625rem, 1.446rem + 0.893vw, 2.25rem)`: **26px** min
-(mobile floor, 375px), **36px** ceiling. РќР° 1280px: `1.446rem + 0.893В·12.8 = 34.57px`
-(Сѓ РјРµР¶Р°С… clamp). РўРѕР±С‚Рѕ В«26В» Сѓ С‚Р°Р±Р»РёС†С– Rule #16 вЂ” РЅРёР¶РЅСЏ РјРµР¶Р°, В«34.6В» вЂ” computed СЃР°РјРµ РЅР°
-1280, В«36В» вЂ” СЃС‚РµР»СЏ. РўРѕРєРµРЅ РєРѕСЂРµРєС‚РЅРёР№; С‚Р°Р±Р»РёС†СЏ РїРѕРєР°Р·СѓС” minв†’max, computed Р·Р°РІР¶РґРё РјС–Р¶ РЅРёРјРё.
+(mobile floor, 375px), **36px** ceiling. На 1280px: `1.446rem + 0.893·12.8 = 34.57px`
+(у межах clamp). Тобто «26» у таблиці Rule #16 — нижня межа, «34.6» — computed саме на
+1280, «36» — стеля. Токен коректний; таблиця показує min→max, computed завжди між ними.
 
-## Р РµР·СѓР»СЊС‚Р°С‚
+## Результат
 
-**0 СЃРёСЂРёС… `text-<size>` Сѓ С‚РµРєСЃС‚РѕРІРёС… СЂРѕР»СЏС… `core/**`.** ~357 РїРµСЂРµРІРµРґРµРЅРѕ РЅР° СЃРµРјР°РЅС‚РёС‡РЅС–
-СЂРѕР»С–. Р—Р°Р»РёС€РѕРє 21 вЂ” РЅР°РІРјРёСЃРЅС– РІРёРЅСЏС‚РєРё (РєРѕР¶РµРЅ РѕР±Т‘СЂСѓРЅС‚РѕРІР°РЅРёР№, РґРёРІ. В§Р’РёРЅСЏС‚РєРё).
+**0 сирих `text-<size>` у текстових ролях `core/**`.** ~357 переведено на семантичні
+ролі. Залишок 21 — навмисні винятки (кожен обґрунтований, див. §Винятки).
 
-## Р’РёРєРѕРЅР°РЅРЅСЏ
+## Виконання
 
-**8 web-Р°РіРµРЅС‚С–РІ** РїРѕ РґРёР·'СЋРЅРєС‚РЅРёС… РїС–РґРґРµСЂРµРІР°С… (РєРѕР¶РµРЅ С‡РёС‚Р°РІ РєР°РЅРѕРЅ Rule #16 СЏРє С”РґРёРЅРµ
-РґР¶РµСЂРµР»Рѕ): hub (48), settings (47), profile (30), onboarding (32), stories (20),
-insights (33), DesignShowcase (~94 real), СЂРµС€С‚Р°-core (45).
+**8 web-агентів** по диз'юнктних піддеревах (кожен читав канон Rule #16 як єдине
+джерело): hub (48), settings (47), profile (30), onboarding (32), stories (20),
+insights (33), DesignShowcase (~94 real), решта-core (45).
 
-**4 РґРёСЂРµРєС‚РѕСЂС–С—, С‰Рѕ СЃР°Р±Рё РЅРµ РїРѕРєСЂРёР»Рё вЂ” РґРѕСЂРѕР±РёРІ СЃР°Рј:** `billing/TrialBanner`,
-`feedback/FeedbackSection`, `whatsNew/WhatsNewModal` (Г—2), `hub/chat/ChatEmpty` (Г—3).
+**4 директорії, що саби не покрили — доробив сам:** `billing/TrialBanner`,
+`feedback/FeedbackSection`, `whatsNew/WhatsNewModal` (×2), `hub/chat/ChatEmpty` (×3).
 
-**1 over-mapping РІРёРїСЂР°РІР»РµРЅРѕ:** `WeeklyDigestCard` Р°РєРѕСЂРґРµРѕРЅ-СЂСЏРґРѕРє РјРѕРґСѓР»СЏ вЂ” СЃР°Р± Р·РјР°РїРёРІ
-Сѓ `title` (22px), Р°Р»Рµ С†Рµ РєРѕРјРїР°РєС‚РЅРёР№ СЂСЏРґРѕРє (py-2.5, 24px С–РєРѕРЅРєР°), РЅРµ СЃРµРєС†С–Р№РЅРёР№
-Р·Р°РіРѕР»РѕРІРѕРє в†’ РїРѕРІРµСЂРЅСѓРІ РЅР° `label`, summary РїС–Рґ РЅРёРј в†’ `caption`. Р’С–Р·СѓР°Р»СЊРЅРѕ РїС–РґС‚РІРµСЂРґР¶РµРЅРѕ
-С‡РёСЃС‚РёРј (РєР°РґСЂ `after/insights--light`).
+**1 over-mapping виправлено:** `WeeklyDigestCard` акордеон-рядок модуля — саб змапив
+у `title` (22px), але це компактний рядок (py-2.5, 24px іконка), не секційний
+заголовок → повернув на `label`, summary під ним → `caption`. Візуально підтверджено
+чистим (кадр `after/insights--light`).
 
-## Р’Р°РіР° (РІР°Р¶Р»РёРІР° СЃРёСЃС‚РµРјРЅР° РїСЂРёРјС–С‚РєР°)
+## Вага (важлива системна примітка)
 
-- **Р§РёСЃР»Р° Р·Р±РµСЂРµРіР»Рё `font-bold`** (РїРµСЂРµРІС–СЂРµРЅРѕ ExpensesCard: `text-style-body font-bold`
-  = 16px/700, СЏРє Р±СѓР»Рѕ `text-base font-bold`). Р РµРіСЂРµСЃС–С— РІР°РіРё РЅР° С†РёС„СЂР°С… РЅРµРјР°С”.
-- **Р—Р°РіРѕР»РѕРІРєРё / eyebrow / CTA:** СЃР°Р±Рё РїСЂРёР±РёСЂР°Р»Рё РґСѓР±Р»СЋСЋС‡РёР№ `font-bold`/`font-semibold`,
-  С‰РѕР± СЂРѕР»СЊ РЅРµСЃР»Р° РІР°РіСѓ (title 600, overline 600, label 500). Р¦Рµ СѓР·РіРѕРґР¶РµРЅРѕ Р· РєР°РЅРѕРЅРѕРј
-  Rule #16 (В«СѓС‚РёР»С–С‚Р° bundаґІ-РёС‚СЊ РІР°РіСѓ, С‰РѕР± РЅРµ Р±СѓР»Рѕ РґСЂРµР№С„СѓВ») вЂ” Р°Р»Рµ РґРµ `font-bold`(700)
-  РїРµСЂРµРєСЂРёРІР°РІ, СЂРµРЅРґРµСЂ СЃС‚Р°РІ РЅР° С‚РёСЂ Р»РµРіС€РёРј (600). РЎРІС–РґРѕРјР° РЅРѕСЂРјР°Р»С–Р·Р°С†С–СЏ, РЅРµ СЂРµРіСЂРµСЃС–СЏ;
-  С†Рµ С– С” РјРµС‚Р° РїРµСЂРµС…РѕРґСѓ РЅР° СЂРѕР»С–.
+- **Числа зберегли `font-bold`** (перевірено ExpensesCard: `text-style-body font-bold`
+  = 16px/700, як було `text-base font-bold`). Регресії ваги на цифрах немає.
+- **Заголовки / eyebrow / CTA:** саби прибирали дублюючий `font-bold`/`font-semibold`,
+  щоб роль несла вагу (title 600, overline 600, label 500). Це узгоджено з каноном
+  Rule #16 («утиліта задає вагу, щоб не було дрейфу») — але де `font-bold`(700)
+  перекривав, рендер став на тир легшим (600). Свідома нормалізація, не регресія;
+  це і є мета переходу на ролі.
 
-## Р“РµР№С‚Рё
+## Гейти
 
-- **Р›С–С‡РёР»СЊРЅРёРє:** 0 СЃРёСЂРёС… Сѓ С‚РµРєСЃС‚-СЂРѕР»СЏС… (СЃРєСЂРёРїС‚). вњ…
-- **typecheck:** С‡РёСЃС‚Рѕ. вњ…
-- **lint:** 0 errors. 3 unused `eslint-disable no-eyebrow-drift` (СЃР°Р±Рё СЃРєРѕРЅРІРµСЂС‚СѓРІР°Р»Рё
-  eyebrows Сѓ showcase, Р»РёС€РёРІС€Рё file-level disable) вЂ” РїСЂРёР±СЂР°РЅРѕ `eslint --fix`. вњ…
-- **axe** (hub/insights/settings/status/welcome/chat Г— light/dark): **0 РЅРѕРІРёС… РїРѕСЂСѓС€РµРЅСЊ**.
-  3 pre-existing serious (РЅРµ РІС–Рґ СЃРІС–РїСѓ вЂ” Р·РјС–РЅР° Р»РёС€Рµ С‚РѕРєРµРЅР° СЂРѕР·РјС–СЂСѓ РЅРµ СЃС‚РІРѕСЂСЋС”
-  color-contrast, Р±Рѕ РЅРµ РїРµСЂРµС‚РёРЅР°С” РјРµР¶Сѓ 18px РІРµР»РёРєРѕРіРѕ С‚РµРєСЃС‚Сѓ):
-  - status В«РЎРµСЂР№РѕР·РЅР° РїСЂРѕР±Р»РµРјР°В» span вЂ” **РЅРµР·РјС–РЅРЅРёР№** СЃРІС–РїРѕРј (Banner danger-variant РЅР° dark);
-  - status timestamp `text-xs`в†’`caption` (РѕР±РёРґРІР° 12px, `opacity-80` вЂ” РєРѕР»С–СЂ);
-  - dark-chat РєРЅРѕРїРєР° (`h-9`) вЂ” РєРѕР»С–СЂРЅРёР№ РєРѕРЅС‚СЂР°СЃС‚.
-    РўРѕР№ СЃР°РјРёР№ РєР»Р°СЃ Р±РѕСЂРіСѓ, С‰Рѕ finyk MonthlyPlanCard (stage 1) вЂ” РїРѕР·Р° СЃРєРѕСѓРїРѕРј С‚РёРїРѕРіСЂР°С„С–РєРё.
-- **РўРµСЃС‚Рё:** `src/core` вЂ” 3114 pass / 7 fail (4 С„Р°Р№Р»Рё). **0 СЂРµРіСЂРµСЃС–Р№ РІС–Рґ СЃРІС–РїСѓ:**
-  РґРѕРІРµРґРµРЅРѕ вЂ” Р·С– СЃС‚РµС€РµРЅРёРјРё Р·РјС–РЅР°РјРё (С‡РёСЃС‚РёР№ origin/main) С‚С– СЃР°РјС– С„Р°Р№Р»Рё РїР°РґР°СЋС‚СЊ С‚Р°Рє СЃР°РјРѕ
-  (`HubChatHeader` В«No QueryClientВ» вЂ” С‚РµСЃС‚ Р±РµР· QueryClientProvider; `sqlite.init`
+- **Лічильник:** 0 сирих у текст-ролях (скрипт). ✅
+- **typecheck:** чисто. ✅
+- **lint:** 0 errors. 3 unused `eslint-disable no-eyebrow-drift` (саби сконвертували
+  eyebrows у showcase, лишивши file-level disable) — прибрано `eslint --fix`. ✅
+- **axe** (hub/insights/settings/status/welcome/chat × light/dark): **0 нових порушень**.
+  3 pre-existing serious (не від свіпу — зміна лише токена розміру не створює
+  color-contrast, бо не перетинає межу 18px великого тексту):
+  - status «Серйозна проблема» span — **незмінний** свіпом (Banner danger-variant на dark);
+  - status timestamp `text-xs`→`caption` (обидва 12px, `opacity-80` — колір);
+  - dark-chat кнопка (`h-9`) — колірний контраст.
+    Той самий клас боргу, що finyk MonthlyPlanCard (stage 1) — поза скоупом типографіки.
+- **Тести:** `src/core` — 3114 pass / 7 fail (4 файли). **0 регресій від свіпу:**
+  доведено — зі стешеними змінами (чистий origin/main) ті самі файли падають так само
+  (`HubChatHeader` «No QueryClient» — тест без QueryClientProvider; `sqlite.init`
   crossOriginIsolated; `PageLoader` skeleton; `lockStorage` 156s brute-force timeout).
-  РўСЂРё Р· С‡РѕС‚РёСЂСЊРѕС… С„Р°Р№Р»С–РІ РЅР°РІС–С‚СЊ РЅРµ РІ РґРёС„С–; `HubChatHeader` diff вЂ” СЃСѓС‚Рѕ className.
-- **РџС–РєСЃРµР»СЊ-РґРёС„С„** (7 core-РµРєСЂР°РЅС–РІ Г— 2 С‚РµРјРё): hub 13.6% / insights 12.4% вЂ” reflow РІС–Рґ
-  line-height СЂРѕР»РµР№ (fullPage Р°РјРїР»С–С‚СѓРґРёС‚СЊ) + content-dynamism РЅР° С…Р°Р±С– (С‡Р°СЃ РґРѕР±Рё,
-  adaptive-bento). РЎРїРѕС‚-С‡РµРє insights/status вЂ” С–С”СЂР°СЂС…С–СЏ С‡РёСЃС‚Р°, РЅРµ СЂРµРіСЂРµСЃС–С—.
+  Три з чотирьох файлів навіть не в дифі; `HubChatHeader` diff — суто className.
+- **Піксель-дифф** (7 core-екранів × 2 теми): hub 13.6% / insights 12.4% — reflow від
+  line-height ролей (fullPage амплітудить) + content-dynamism на хабі (час доби,
+  adaptive-bento). Спот-чек insights/status — ієрархія чиста, не регресії.
 
-## Р’РёРЅСЏС‚РєРё (21 Р»РёС€РѕРє, РЅР°РІРјРёСЃРЅРѕ)
+## Винятки (21 лишок, навмисно)
 
-- **DesignShowcase `Typography.tsx` TEXT_SIZES** (8) вЂ” `{ cls: "text-4xl", вЂ¦ }` РґРµРјРѕ-РґР°РЅС–,
-  С‰Рѕ Р Р•РќР”Р•Р РЇРўР¬ РєР»Р°СЃ РґР»СЏ РїРѕРєР°Р·Сѓ С€РєР°Р»Рё (РїСЂРµРґРјРµС‚ showcase, РЅРµ UI-С‚РёРїРѕРіСЂР°С„С–РєР°).
-- **stories eyebrows** (12) вЂ” `text-xs uppercase tracking-[0.3em] font-bold` Р· file-level
-  `eslint-disable no-eyebrow-drift`. Bespoke С‚СЂРµРєС–РЅРі 0.3em РЅРµ РјР°РїРёС‚СЊСЃСЏ РЅР° overline
-  (0.08em); РєРѕРЅРІРµСЂС‚Р°С†С–СЏ Р·РјС–РЅРёР»Р° Р± СЃС‚РёР»С–СЃС‚РёРєСѓ СЃР»Р°Р№РґС–РІ. Р”РѕРєСѓРјРµРЅС‚РѕРІР°РЅРёР№ exemption Rule #16.
-- **`hub/OutcomeCard.tsx:108`** (1) вЂ” pre-existing deferred tech-debt Р·
-  `eslint-disable prefer-text-style`; РЅРµ С‡С–РїР°РІ.
+- **DesignShowcase `Typography.tsx` TEXT_SIZES** (8) — `{ cls: "text-4xl", … }` демо-дані,
+  що РЕНДЕРЯТЬ клас для показу шкали (предмет showcase, не UI-типографіка).
+- **stories eyebrows** (12) — `text-xs uppercase tracking-[0.3em] font-bold` з file-level
+  `eslint-disable no-eyebrow-drift`. Bespoke трекінг 0.3em не мапиться на overline
+  (0.08em); конвертація змінила б стилістику слайдів. Документований exemption Rule #16.
+- **`hub/OutcomeCard.tsx:108`** (1) — pre-existing deferred tech-debt з
+  `eslint-disable prefer-text-style`; не чіпав.
 
-## Р¤Р»Р°РіРё РґР»СЏ РґРёР·Р°Р№РЅ-Р·РІС–СЂРєРё
+## Флаги для дизайн-звірки
 
-1. **stories eyebrows** вЂ” Р»РёС€РµРЅС– Р· 0.3em С‚СЂРµРєС–РЅРіРѕРј (РЅРµ overline). Р С–С€РµРЅРЅСЏ: С‡Рё С„РѕСЂСЃСѓРІР°С‚Рё
-   overline (РІС‚СЂР°С‚РёС‚СЊ wide-tracking СЃС‚РёР»С–СЃС‚РёРєСѓ СЃР»Р°Р№РґС–РІ), С‡Рё Р»РёС€РёС‚Рё exemption.
-2. **NutritionSlide macro-Р·РЅР°С‡РµРЅРЅСЏ** 20px в†’ `title` (size-match, РЅРµ role-match вЂ” С†Рµ РЅРµ
-   В«Р·Р°РіРѕР»РѕРІРѕРєВ»). РљР°РЅРґРёРґР°С‚ РЅР° РѕРєСЂРµРјРµ СЂС–С€РµРЅРЅСЏ.
-3. **BrandLogo/wordmark** lg/md (20/18px) в†’ С”РґРёРЅРёР№ `title` (fluid 18-22) вЂ” РІС‚СЂР°С‚Р°
-   РґРІРѕС‚РёСЂРЅРѕС— СЂС–Р·РЅРёС†С–.
-4. **DesignShowcase `index.tsx`** top-bar h1 в†’ `label` (РєРѕРјРїР°РєС‚РЅРёР№ sticky-Р»РѕРіРѕС‚РёРї, РЅРµ
-   page-H1) вЂ” РЅР°РІРјРёСЃРЅРµ РІС–РґС…РёР»РµРЅРЅСЏ РІС–Рґ В«H1в†’headlineВ».
-5. **DeleteAccountDialog** h2 16px в†’ `title` (18-22, +РІР°РіР°-РЅРѕСЂРјР°Р»С–Р·Р°С†С–СЏ).
+1. **stories eyebrows** — лишені з 0.3em трекінгом (не overline). Рішення: чи форсувати
+   overline (втратить wide-tracking стилістику слайдів), чи лишити exemption.
+2. **NutritionSlide macro-значення** 20px → `title` (size-match, не role-match — це не
+   «заголовок»). Кандидат на окреме рішення.
+3. **BrandLogo/wordmark** lg/md (20/18px) → єдиний `title` (fluid 18-22) — втрата
+   двотирної різниці.
+4. **DesignShowcase `index.tsx`** top-bar h1 → `label` (компактний sticky-логотип, не
+   page-H1) — навмисне відхилення від «H1→headline».
+5. **DeleteAccountDialog** h2 16px → `title` (18-22, +вага-нормалізація).
 
-## РќРµ РІ СЃРєРѕСѓРїС– (stage 3)
+## Не в скоупі (stage 3)
 
-РњРѕРґСѓР»СЊРЅС– РїРѕРІРµСЂС…РЅС– `finyk/fizruk/routine/nutrition/**`, РІРєР»СЋС‡РЅРѕ Р· MonthlyPlanCard
-`text-subtle` РєРѕРЅС‚СЂР°СЃС‚РѕРј. Pre-existing color-contrast Р±РѕСЂРі (status/chat) вЂ” РѕРєСЂРµРјРѕ.
+Модульні поверхні `finyk/fizruk/routine/nutrition/**`, включно з MonthlyPlanCard
+`text-subtle` контрастом. Pre-existing color-contrast борг (status/chat) — окремо.

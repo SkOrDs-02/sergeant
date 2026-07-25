@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-07-22 by @codex. **Next review:** 2026-10-20.
+> **Last validated:** 2026-07-25 by @codex. **Next review:** 2026-10-23.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,7 +11,7 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **30** — Ініціативи: **4** · Планування: **6** · Launch / запуск: **13** · Аудити й прожарки: **2** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **36** — Ініціативи: **4** · Планування: **8** · Launch / запуск: **13** · Аудити й прожарки: **6** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
 ## Ініціативи (4)
 
@@ -24,7 +24,7 @@
 | [`0022-import-from-external-trackers.md`](./90-work/initiatives/0022-import-from-external-trackers.md) | Proposed (2026-06-28) — драфт плану; не почато. Чекає на founder-greenlight по скоупу Фази 1 + рішення по валютній нормалізації та dedup-стратегії (див. § Відкриті рішення).        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | 🟡 needs-decision | `sergeant-server-api` | —                        |
 | [`hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md)                                     | Active                                                                                                                                                                               | [#327](https://github.com/Skords-01/Sergeant/pull/327) [#1550](https://github.com/Skords-01/Sergeant/pull/1550) [#1552](https://github.com/Skords-01/Sergeant/pull/1552) [#1567](https://github.com/Skords-01/Sergeant/pull/1567) [#1634](https://github.com/Skords-01/Sergeant/pull/1634) [#1638](https://github.com/Skords-01/Sergeant/pull/1638) [#1639](https://github.com/Skords-01/Sergeant/pull/1639) [#1641](https://github.com/Skords-01/Sergeant/pull/1641) [#1642](https://github.com/Skords-01/Sergeant/pull/1642) [#1659](https://github.com/Skords-01/Sergeant/pull/1659) +38 | —                 | `docs`                | —                        |
 
-## Планування (6)
+## Планування (8)
 
 > Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).
 
@@ -32,6 +32,8 @@
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`ai-coding-improvements.md`](./90-work/planning/ai-coding-improvements.md)                       | Active                                                                                                                                                                               | —                                                                                                                                                                          |
 | [`harness-engineering-v1.md`](./90-work/planning/harness-engineering-v1.md)                       | Active — rollout v1 shipped (2026-06-29); harness `1.0.0` + skill-trigger evals + golden-task suite + freshness-janitor + playbook-routing evals done.                               | [#3614](https://github.com/Skords-01/Sergeant/pull/3614)                                                                                                                   |
+| [`product-brainstorm-2026-07.md`](./90-work/planning/product-brainstorm-2026-07.md)               | Active                                                                                                                                                                               | —                                                                                                                                                                          |
+| [`product-knowledge-backlog.md`](./90-work/planning/product-knowledge-backlog.md)                 | Active                                                                                                                                                                               | —                                                                                                                                                                          |
 | [`sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md)                         | Active — Sprint 9 code-side closed; Sprint 10: S10-T2 + S10-Q1 + S10-X1 + S10-T3 (JSON) shipped; відкриті залишки: S10-R2 (full EN contract), S10-R1 (SEO/`/app`), S10-F2 (mobile C… | [#2012](https://github.com/Skords-01/Sergeant/pull/2012) [#2586](https://github.com/Skords-01/Sergeant/pull/2586) [#2599](https://github.com/Skords-01/Sergeant/pull/2599) |
 | [`sync-client-wiring-phase2-handoff.md`](./90-work/planning/sync-client-wiring-phase2-handoff.md) | Active                                                                                                                                                                               | —                                                                                                                                                                          |
 | [`sync-client-wiring-playbook.md`](./90-work/planning/sync-client-wiring-playbook.md)             | Active                                                                                                                                                                               | —                                                                                                                                                                          |
@@ -57,14 +59,18 @@
 | [`product-os/paywall-ux-placement.md`](./01-product/launch/product-os/paywall-ux-placement.md)             | Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./01-product/launch/product-os/ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr). | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`tech/ai-memory-activation.md`](./01-product/launch/tech/ai-memory-activation.md)                         | Active (operational activation runbook; behavior SSOT is architecture doc)                                                                                                       | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
-## Аудити й прожарки (2)
+## Аудити й прожарки (6)
 
 > Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).
 
-| Документ                                                                            | Статус | PR-згадки |
-| ----------------------------------------------------------------------------------- | ------ | --------- |
-| [`product-knowledge-finyk.md`](./90-work/audits/product-knowledge-finyk.md)         | Active | —         |
-| [`product-knowledge-hub-coach.md`](./90-work/audits/product-knowledge-hub-coach.md) | Active | —         |
+| Документ                                                                            | Статус | PR-згадки                                            |
+| ----------------------------------------------------------------------------------- | ------ | ---------------------------------------------------- |
+| [`product-knowledge-finyk.md`](./90-work/audits/product-knowledge-finyk.md)         | Active | —                                                    |
+| [`product-knowledge-fizruk.md`](./90-work/audits/product-knowledge-fizruk.md)       | Active | —                                                    |
+| [`product-knowledge-hub-coach.md`](./90-work/audits/product-knowledge-hub-coach.md) | Active | —                                                    |
+| [`product-knowledge-nutrition.md`](./90-work/audits/product-knowledge-nutrition.md) | Active | —                                                    |
+| [`product-knowledge-overview.md`](./90-work/audits/product-knowledge-overview.md)   | Active | —                                                    |
+| [`product-knowledge-routine.md`](./90-work/audits/product-knowledge-routine.md)     | Active | [#43](https://github.com/Skords-01/Sergeant/pull/43) |
 
 ## Security hardening (1)
 

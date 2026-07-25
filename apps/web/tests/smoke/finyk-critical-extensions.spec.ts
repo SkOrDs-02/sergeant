@@ -25,7 +25,9 @@ test("@critical finyk: planning route opens the limit/goal form", async ({
     page.getByRole("form", { name: "Новий ліміт бюджету" }),
   ).toBeVisible();
   await expect(page.getByLabel("Період ліміту")).toBeVisible();
-  await expect(page.getByLabel("Ліміт")).toBeVisible();
+  // `exact: true` — інакше підрядкове зіставлення accessible name ловить ще
+  // форму «Новий ліміт бюджету» і селект «Період ліміту» (strict mode violation).
+  await expect(page.getByLabel("Ліміт", { exact: true })).toBeVisible();
 
   expect(errors, "Uncaught page errors on Finyk planning add flow").toEqual([]);
 });
@@ -47,7 +49,11 @@ test("@critical finyk: assets route opens subscription form", async ({
     "page",
   );
 
-  await page.getByRole("button", { name: "+ Додати підписку" }).click();
+  // Секція «Підписки» тепер згорнута за замовчуванням (`useAssetsState.ts`
+  // → `open.subscriptions === false`), тож кнопка «+ Додати підписку» всередині
+  // неї не змонтована. Канонічний вхід у форму — quick-action «+ Підписка»,
+  // який розгортає секцію і відкриває форму одним кліком (`openSubscriptionForm`).
+  await page.getByRole("button", { name: "+ Підписка" }).click();
   await expect(page.getByLabel("Назва підписки")).toBeVisible();
   await expect(page.getByLabel("Пошук транзакції за описом")).toBeVisible();
   await expect(page.getByLabel("День списання (1-31)")).toBeVisible();
