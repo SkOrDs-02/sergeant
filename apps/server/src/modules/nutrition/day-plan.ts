@@ -8,6 +8,8 @@ import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
@@ -37,6 +39,8 @@ interface NormalizedDayPlan {
 }
 
 const SYSTEM = `Ти нутріціолог і шеф-кухар. Відповідай ТІЛЬКИ українською.
+
+${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Формат JSON:

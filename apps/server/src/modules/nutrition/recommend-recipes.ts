@@ -9,12 +9,16 @@ import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { normalizeRecipes } from "../../lib/nutritionResponse.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
 };
 
 const SYSTEM = `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
+
+${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
