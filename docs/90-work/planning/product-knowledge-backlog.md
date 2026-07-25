@@ -59,7 +59,7 @@
 | Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 | стадія 1   |
 | Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 |
 | Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       |            |
-| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     |            |
+| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | стадія 1   |
 | Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     |            |
 | Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 |
 
@@ -74,6 +74,28 @@
 > ADR) заблокована рішенням founder-а з
 > [аудиту routine](../audits/product-knowledge-routine.md) — питання №9:
 > чи поважає heatmap `paused` ретроактивно і що робити з `once`.
+
+> **Канонічна агрегація на метрику — стадія 1 приземлена, ✅ ще нема.**
+> Стадія 1: у domain-пакетах зʼявились відсутні канонічні функції —
+> `buildFinykSpendingUniverse` / `buildFinykExcludedTxIds` (finyk-domain,
+> «всесвіт витрат»: канонічний excluded-set + merge ручних витрат),
+> `calcNutritionPeriodAverages` (nutrition-domain, знаменник = дні з ≥1
+> прийомом), `calcFizrukPeriodAggregate` (fizruk-domain, обʼєм + кількість
+> тренувань); routine-domain нічого не потребував — `completionRateForRange`
+> уже канонічний. Додано реєстр
+> [`metric-registry.md`](../../02-engineering/architecture/metric-registry.md)
+> і характеризаційний parity-тест
+> [`metricParity.test.ts`](../../../apps/web/src/core/insights/metricParity.test.ts):
+> один фікстур → 5 реальних конвеєрів → зафіксовані ПОТОЧНІ, розбіжні числа
+> (витрати тижня: канон 1150 грн, дайджест/Hub-Reports 900, HubChat-контекст
+> 1100, чат-тулза 2500; звички 100% проти 43%; ккал 600 проти 400).
+> **Жоден call-site не перемкнено, жодне число користувача не зрушило.**
+> Стадії 2-5 не входять: 2 (по одному читачу finyk), 3 (розфорк mobile),
+> 4 (знаменники; routine-частина заблокована рішенням rate↔heatmap),
+> 5 (`metricsVersion`, ESLint-гейт, київська межа доби) — кожна рухає число,
+> яке користувач уже бачив. **Чесно про синк:** спільна функція гарантує
+> збіг лише в межах одного пристрою — крос-девайсна збіжність залежить від
+> `/api/sync`, а по finyk є знахідка, що клієнт туди не ходить.
 
 > **Append-only completions — стадія 1 приземлена, ✅ ще нема.** Стадія 1:
 > зʼявився журнал `routine_completion_events` (PG-міграція `085`, клієнтська
