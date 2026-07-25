@@ -25,6 +25,7 @@ vi.mock("../../lib/anthropic.js", () => ({
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import handler from "./chat.js";
+import { __resetChatResponseCache } from "./chatResponseCache.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
@@ -65,6 +66,10 @@ beforeEach(() => {
   // Інакше leftover-моки з попереднього тесту (наприклад cap-тест queue-ить 5, а
   // консьюмить лише 4) залежать у наступному.
   anthropicMessages.mockReset();
+  // First-turn response-cache — module-level Map, що переживає між кейсами.
+  // Багато тестів шлють ІДЕНТИЧНІ запити, тож без ресету другий кейс отримав
+  // би cache-hit і не викликав би anthropicMessages-мок. Ізолюємо стан.
+  __resetChatResponseCache();
 });
 
 describe("chat handler — tool_use parsing", () => {
@@ -120,6 +125,57 @@ describe("chat handler — tool_use parsing", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ text: "Привіт!" });
+  });
+
+  describe("first-turn response-cache", () => {
+    it("другий ІДЕНТИЧНИЙ запит бере відповідь з кешу (Anthropic не викликається)", async () => {
+      anthropicMessages.mockResolvedValueOnce({
+        response: { ok: true, status: 200 },
+        data: { content: [{ type: "text", text: "Кешована відповідь" }] },
+      });
+      const body = {
+        messages: [{ role: "user", content: "однакове питання" }],
+      };
+
+      const res1 = makeRes();
+      await handler(makeReq(body), res1);
+      expect(res1.body).toEqual({ text: "Кешована відповідь" });
+      expect(anthropicMessages).toHaveBeenCalledTimes(1);
+
+      // Другий раз мок НЕ заряджений — якби кеш не спрацював, handler упав би.
+      const res2 = makeRes();
+      await handler(makeReq(body), res2);
+      expect(res2.statusCode).toBe(200);
+      expect(res2.body).toEqual({ text: "Кешована відповідь" });
+      expect(anthropicMessages).toHaveBeenCalledTimes(1); // без другого виклику
+    });
+
+    it("інше повідомлення → cache-miss (Anthropic викликається знову)", async () => {
+      anthropicMessages
+        .mockResolvedValueOnce({
+          response: { ok: true, status: 200 },
+          data: { content: [{ type: "text", text: "A" }] },
+        })
+        .mockResolvedValueOnce({
+          response: { ok: true, status: 200 },
+          data: { content: [{ type: "text", text: "B" }] },
+        });
+
+      const res1 = makeRes();
+      await handler(
+        makeReq({ messages: [{ role: "user", content: "перше" }] }),
+        res1,
+      );
+      const res2 = makeRes();
+      await handler(
+        makeReq({ messages: [{ role: "user", content: "друге" }] }),
+        res2,
+      );
+
+      expect(res1.body).toEqual({ text: "A" });
+      expect(res2.body).toEqual({ text: "B" });
+      expect(anthropicMessages).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("другий крок з tool_results → повертає summary-text", async () => {
@@ -182,7 +238,7 @@ describe("chat handler — tool_use parsing", () => {
     expect(payload.model).toBe("claude-haiku-4-5-20251001");
   });
 
-  it("тур синтезу tool-result іде на CHAT_MODEL_SYNTHESIS (Sonnet default)", async () => {
+  it("тур ��интезу tool-result іде на CHAT_MODEL_SYNTHESIS (Sonnet default)", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
       data: { content: [{ type: "text", text: "Готово." }] },

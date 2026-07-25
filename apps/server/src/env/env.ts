@@ -297,7 +297,7 @@ const envSchema = z.object({
   BETTER_AUTH_TOKEN_ENC_KEYS: z.string().optional(),
   /**
    * **H4** Поточна версія ключа для запису ciphertext-ів. Формат — `vN`,
-   * де N — позитивне ціле, присутнє у `BETTER_AUTH_TOKEN_ENC_KEYS`. Якщо
+   * де N — позитивне ціле, ��рисутнє у `BETTER_AUTH_TOKEN_ENC_KEYS`. Якщо
    * порожнє, використовується найвища версія у key-ring-у. Якщо
    * посилається на версію, якої нема у `_KEYS`, `parseKeyRing` кидає
    * помилку при першому використанні.
@@ -404,6 +404,28 @@ const envSchema = z.object({
    */
   CHAT_STRICT_TOOLS: boolFromEnv(true),
   /**
+   * Response-cache для ПЕРШОГО (non-streaming) туру `/api/chat` — TTL у мс.
+   * Ключ = sha256(userId + model + system + messages). Оскільки `system`
+   * містить живий фінансовий снапшот + RAG + coach-кореляції, БУДЬ-ЯКА зміна
+   * даних змінює ключ → cache-miss. Тобто інвалідація автоматична, stale-данні
+   * віддати неможливо: однаковий prompt ⇒ однакова відповідь. Ловить
+   * double-submit, retry після network-blip і повторні ІДЕНТИЧНІ питання
+   * ("скільки я витратив цього місяця") у межах вікна.
+   *
+   * Default 60_000 (1 хв) — досить, щоб покрити burst повторів, і достатньо
+   * коротко, щоб обмежити памʼять і будь-який дрейф поза ключем. `0` — вимкнено
+   * (kill-switch). Кешується лише success-відповідь першого туру (text або
+   * tool_use-пропозиція); tool-result synthesis-тур НЕ кешується.
+   */
+  CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),
+  /**
+   * Верхня межа записів у in-memory response-cache (per-instance). При
+   * переповненні витісняється найстаріший (insertion-order LRU). Захищає RSS
+   * від необмеженого росту під час сплеску унікальних запитів. `0`/менше —
+   * теж вимикає кеш (нема куди писати).
+   */
+  CHAT_RESPONSE_CACHE_MAX_ENTRIES: intFromEnv(500),
+  /**
    * PR-23 — pluggable LLM provider. `anthropic` (default) використовує
    * `AnthropicProvider`; `stub` повертає hardcoded JSON для read-only
    * OpenClaw paths-у / e2e-тестів / Anthropic-incident-recovery; `openrouter`
@@ -419,7 +441,7 @@ const envSchema = z.object({
    *
    * Use-cases:
    * - Anthropic-incident: `LLM_READONLY_PROVIDER=stub` тимчасово; chat-flow
-   *   обслуговується головним provider-ом окремо (weekly-digest має власний
+   *   обслуговується головним provider-ом окр��мо (weekly-digest має власний
    *   `LLM_DIGEST_PROVIDER` toggle, налаштовується незалежно).
    * - Local-dev без `ANTHROPIC_API_KEY` — class-detection деградує у `chat`,
    *   решта endpoints працює як раніше.
@@ -672,7 +694,7 @@ const envSchema = z.object({
   /** Адреса відправника (default: Sergeant <onboarding@resend.dev>). */
   RESEND_FROM: z.string().optional(),
 
-  // ── Observability ──────────────────────────────────────────────────
+  // ── Observability ────────────────────────���─────────────────────────
   /** Sentry DSN. Без нього Sentry вимкнений (Noop SDK). */
   SENTRY_DSN: stringWithDefault(""),
   SENTRY_ENVIRONMENT: z.string().optional(),
@@ -1228,7 +1250,7 @@ const envSchema = z.object({
   ANTHROPIC_BUDGET_HARD_USD: floatFromEnv(5),
   /**
    * Період polling-у Anthropic budget guard (мс). Default 5 хв — достатньо
-   * щоб зловити breach у межах 1 deploy cycle, але не спамити Sentry.
+   * щоб зловити breach у межах 1 deploy cycle, але не спами��и Sentry.
    */
   ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
   /**
