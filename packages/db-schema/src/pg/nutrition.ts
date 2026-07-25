@@ -206,6 +206,64 @@ export const nutritionPrefs = pgTable("nutrition_prefs", {
 });
 
 /**
+ * Postgres schema for `nutrition_goal_periods` table.
+ * Mirrors migration 087_nutrition_goal_periods.sql.
+ *
+ * Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1). Кожен рядок —
+ * СХОДИНКА: «з цього Kyiv-локального дня і далі юзер хотів ось такі цілі».
+ *
+ * AI-CONTEXT: на стадії 1 таблиця ПИШЕТЬСЯ (дуал-райт із web, паралельно до
+ * `prefs-upsert`), але НЕ ЧИТАЄТЬСЯ — `nutritionPrefs.prefsJson`
+ * -> `dailyTarget*` лишається єдиним джерелом цілі для кожного екрана на
+ * web і mobile. Cutover ретроспективних консюмерів — стадія 3.
+ *
+ * `id` — TEXT, а НЕ `uuid()`, і це НЕ неузгодженість із сусідніми таблицями:
+ * писар — клієнт, і його id ДЕТЕРМІНОВАНИЙ
+ * (`gp::<effective_from>::<values>::<deviceId>`), щоб повторна доставка
+ * push-а лягла в `ON CONFLICT DO NOTHING`, а не другим періодом з тими
+ * самими числами. `crypto.randomUUID()` дав би дубль на кожному ретраї.
+ *
+ * `effectiveFrom` — TEXT 'YYYY-MM-DD' у Kyiv-локальному дні, як
+ * `nutritionWaterLog.dateKey`, а не `date()`/`timestamp()`.
+ *
+ * Цілі NULLABLE: `dailyTargetKcal = null` — валідний дефолт, і «цілі немає»
+ * не можна плутати з нулем. `deletedAt` — ретракція помилкового періоду
+ * (резолвер його пропускає), а не редагування історії: `op='update'`
+ * apply-шлях відхиляє.
+ */
+export const nutritionGoalPeriods = pgTable(
+  "nutrition_goal_periods",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    effectiveFrom: text("effective_from").notNull(),
+    kcal: integer(),
+    proteinG: real("protein_g"),
+    fatG: real("fat_g"),
+    carbsG: real("carbs_g"),
+    waterMl: integer("water_ml"),
+    origin: text().notNull().default("manual"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("nutrition_goal_periods_user_effective_idx").on(
+      table.userId,
+      table.effectiveFrom,
+      table.createdAt,
+    ),
+    index("nutrition_goal_periods_user_active_idx")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * Postgres schema for `nutrition_recipes` table.
  * Mirrors migration 035_nutrition_tables.sql.
  *

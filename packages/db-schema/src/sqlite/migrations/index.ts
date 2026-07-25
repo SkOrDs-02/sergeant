@@ -1063,6 +1063,64 @@ CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_active_idx_lite
   WHERE deleted_at IS NULL;
 `;
 
+/**
+ * Клієнтське дзеркало `087_nutrition_goal_periods.sql` — append-only журнал
+ * цілей КБЖВ (W1-KBJU-APPEND, стадія 1).
+ *
+ * `CREATE TABLE IF NOT EXISTS` — чисто additive: старий клієнт, який ще не
+ * прокрутив цю міграцію, працює як раніше, бо цілі на екранах і далі
+ * читаються з `nutrition_prefs`.
+ *
+ * AI-DANGER: тут СВІДОМО НЕМАЄ backfill-у, на відміну від серверної 087.
+ * Це не недогляд і не «докінчимо потім» — backfill тут неможливо зробити
+ * ЧЕСНО, і напівчесний зробив би гірше, ніж жодного:
+ *
+ *   1. `effective_from` мусить бути Kyiv-локальним днем. SQLite не має бази
+ *      таймзон: доступні лише UTC і `'localtime'` пристрою. `+2 hours`
+ *      бреше пів року (Kyiv — UTC+2/+3 з DST), `'localtime'` бреше для
+ *      кожного, хто не в Києві. Для реконструкції, сенс якої саме в тому,
+ *      щоб не вигадувати минуле, приблизний день — це той самий клас
+ *      брехні, тільки записаний у журнал назавжди.
+ *   2. Розбіжність була б НЕВИПРАВНОЮ. Обидві сторони дали б рядку той
+ *      самий детермінований id `backfill::<user_id>`, але з різними
+ *      `effective_from`. Pull-шлях журналу insert-only (append-only:
+ *      `op='update'` відхиляється), тож серверне — правильне — значення
+ *      ніколи б не перезаписало локальне хибне.
+ *
+ * Що відбувається натомість: серверний backfill (у якого Є
+ * `AT TIME ZONE 'Europe/Kyiv'`) створює рядок і той приїжджає звичайним
+ * sync-pull-ом. Офлайн-клієнт до першого синку живе без backfill-рядка — і
+ * це БЕЗПЕЧНО саме на стадії 1, бо журнал ніхто не читає; перша ж зміна
+ * цілі створює нормальну сходинку через дуал-райт. Якщо на стадії 3
+ * знадобиться локальна реконструкція — їй місце в TypeScript, де є
+ * `getKyivDayKey`, а не в цьому DDL.
+ */
+const NUTRITION_005_GOAL_PERIODS_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_goal_periods (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  effective_from  TEXT NOT NULL
+                  CHECK (effective_from GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+  kcal            INTEGER,
+  protein_g       REAL,
+  fat_g           REAL,
+  carbs_g         REAL,
+  water_ml        INTEGER,
+  origin          TEXT NOT NULL DEFAULT 'manual'
+                  CHECK (origin IN ('manual','preset','tdee','backfill')),
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_effective_idx_lite
+  ON nutrition_goal_periods (user_id, effective_from DESC, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_active_idx_lite
+  ON nutrition_goal_periods (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
   {
@@ -1076,6 +1134,10 @@ export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "004_nutrition_pantry_events.sql",
     sql: NUTRITION_004_PANTRY_EVENTS_SQL,
+  },
+  {
+    name: "005_nutrition_goal_periods.sql",
+    sql: NUTRITION_005_GOAL_PERIODS_SQL,
   },
 ] as const;
 

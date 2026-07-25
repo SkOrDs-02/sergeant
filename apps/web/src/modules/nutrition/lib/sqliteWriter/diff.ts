@@ -93,6 +93,22 @@ export interface NutritionPrefsSnapshot {
   readonly activePantryId: string | null;
 }
 
+/**
+ * Цілі КБЖВ, витягнуті з `prefs_json` у типізовану форму (W1-KBJU-APPEND).
+ *
+ * Окремо від `NutritionPrefsSnapshot`, у якому цілі поховані всередині
+ * непрозорого JSON-рядка `prefsJson`: щоб зрозуміти, чи змінилась саме
+ * ЦІЛЬ (а не, скажімо, `reminderHour`), рядок доводиться розібрати.
+ * Витягуємо один раз тут, а не в кожному консюмері.
+ */
+export interface NutritionGoalSnapshot {
+  readonly kcal: number | null;
+  readonly proteinG: number | null;
+  readonly fatG: number | null;
+  readonly carbsG: number | null;
+  readonly waterMl: number | null;
+}
+
 export interface NutritionRecipeSnapshot {
   readonly id: string;
   readonly title: string;
@@ -173,6 +189,27 @@ export interface ShoppingListSetOp {
   readonly shoppingList: NutritionShoppingListSnapshot;
 }
 
+/**
+ * W1-KBJU-APPEND стадія 1 — нова СХОДИНКА в append-only журналі цілей КБЖВ.
+ *
+ * Емітується ДОДАТКОВО до `prefs-upsert`, а не замість нього: старий шлях
+ * (`nutrition_prefs.prefs_json`) лишається єдиним джерелом цілі для всіх
+ * екранів на цій стадії. Якщо журнал зламається — продукт не помітить.
+ *
+ * `effectiveFrom` тут НЕМА навмисно. День рахує адаптер із `clientTs` через
+ * `getKyivDayKey` — цей модуль лишається ЧИСТОЮ функцією `prev → next` без
+ * `new Date()` і без таймзонних залежностей, інакше його власні тести
+ * почали б залежати від годинника машини.
+ *
+ * Значення — сирі поля `NutritionPrefs`, `null` = «ціль не задана». `null`
+ * НЕ згортається в 0: нуль означав би «весь день у мінусі» замість «цілі
+ * немає».
+ */
+export interface GoalPeriodInsertOp {
+  readonly kind: "goal-period-insert";
+  readonly goal: NutritionGoalSnapshot;
+}
+
 export type NutritionDualWriteOp =
   | MealUpsertOp
   | MealDeleteOp
@@ -182,7 +219,8 @@ export type NutritionDualWriteOp =
   | RecipeUpsertOp
   | RecipeDeleteOp
   | WaterLogSetOp
-  | ShoppingListSetOp;
+  | ShoppingListSetOp
+  | GoalPeriodInsertOp;
 
 // -----------------------------------------------------------------------
 // State shape — what LS looks like across all nutrition keys
@@ -252,6 +290,10 @@ export function diffNutritionDualWriteOps(
     ops.push({ kind: "prefs-upsert", prefs: next.prefs });
   }
 
+  // --- Журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1) ---
+  // ДОДАТКОВО до `prefs-upsert` вище, який навмисно лишився недоторканим.
+  diffGoalPeriodOps(prev, next, ops);
+
   // --- Recipes ---
   diffArray(
     prev.recipes,
@@ -309,6 +351,92 @@ function diffShoppingListOps(
   if (!shoppingListChanged(prev.shoppingList, next.shoppingList)) return;
   if (!next.shoppingList) return;
   ops.push({ kind: "shopping-list-set", shoppingList: next.shoppingList });
+}
+
+// -----------------------------------------------------------------------
+// W1-KBJU-APPEND стадія 1 — журнал цілей КБЖВ
+// -----------------------------------------------------------------------
+
+/**
+ * Емітує `goal-period-insert`, коли змінилась ХОЧ ОДНА ціль КБЖВ.
+ *
+ * Порівнюємо РОЗІБРАНІ значення, а не рядок `prefsJson`: у блобі живуть ще
+ * `reminderHour`, `mealTemplates`, `exclude` тощо, і зміна будь-чого з них
+ * породжувала б порожню сходинку «ціль та сама» — журнал намірів забився б
+ * шумом за тиждень.
+ *
+ * `waterMl` теж рахується зміною цілі: він частина знімка, і сходинка без
+ * нього змусила б майбутній резолвер шукати воду в іншому місці.
+ *
+ * Перший знімок (`prev.prefs === null`) сходинку НЕ дає, якщо всі цілі
+ * порожні: юзер, який щойно відкрив модуль, ще нічого не хотів.
+ */
+function diffGoalPeriodOps(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+  ops: NutritionDualWriteOp[],
+): void {
+  if (!next.prefs) return;
+  const nextGoal = extractGoalSnapshot(next.prefs);
+  if (nextGoal === null) return;
+
+  const prevGoal = prev.prefs ? extractGoalSnapshot(prev.prefs) : null;
+  if (prevGoal !== null && !goalChanged(prevGoal, nextGoal)) return;
+  if (prevGoal === null && isEmptyGoal(nextGoal)) return;
+
+  ops.push({ kind: "goal-period-insert", goal: nextGoal });
+}
+
+/** `null` тільки коли `prefsJson` взагалі не парситься. */
+function extractGoalSnapshot(
+  prefs: NutritionPrefsSnapshot,
+): NutritionGoalSnapshot | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(prefs.prefsJson || "{}");
+  } catch {
+    // Пошкоджений блоб — не привід вигадувати ціль. Старий шлях
+    // (`prefs-upsert`) уже поїхав вище і поводиться як раніше.
+    return null;
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    kcal: finiteOrNull(o["dailyTargetKcal"]),
+    proteinG: finiteOrNull(o["dailyTargetProtein_g"]),
+    fatG: finiteOrNull(o["dailyTargetFat_g"]),
+    carbsG: finiteOrNull(o["dailyTargetCarbs_g"]),
+    waterMl: finiteOrNull(o["waterGoalMl"]),
+  };
+}
+
+/** `null` для всього, що не є скінченним числом — зокрема для `0` не є. */
+function finiteOrNull(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function goalChanged(
+  prev: NutritionGoalSnapshot,
+  next: NutritionGoalSnapshot,
+): boolean {
+  return (
+    prev.kcal !== next.kcal ||
+    prev.proteinG !== next.proteinG ||
+    prev.fatG !== next.fatG ||
+    prev.carbsG !== next.carbsG ||
+    prev.waterMl !== next.waterMl
+  );
+}
+
+function isEmptyGoal(goal: NutritionGoalSnapshot): boolean {
+  return (
+    goal.kcal === null &&
+    goal.proteinG === null &&
+    goal.fatG === null &&
+    goal.carbsG === null &&
+    goal.waterMl === null
+  );
 }
 
 // -----------------------------------------------------------------------

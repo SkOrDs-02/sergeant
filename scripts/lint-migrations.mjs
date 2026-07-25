@@ -405,6 +405,15 @@ export function run({
 
     if (DOWN_FILE_RE.test(name)) continue;
 
+    // `changedFiles` приходить із `git diff -- <migrationsDir>`, а в цьому
+    // каталозі живуть НЕ лише міграції: поруч є `__tests__/*.test.ts`, які
+    // ЦИТУЮТЬ SQL із міграцій (напр. `expect(down).toMatch(/DROP TABLE …/)`).
+    // Без цього фільтра тест міграції, що перевіряє власний `.down.sql`,
+    // валив лінтер вимогою TWO-PHASE-DROP-заголовка у .ts-файлі —
+    // діагностика, яку неможливо задовольнити. Fallback-гілка вище (readdir)
+    // фільтрувала за `MIGRATION_FILE_RE` завжди; git-гілка — ні.
+    if (!MIGRATION_FILE_RE.test(name)) continue;
+
     let content;
     try {
       content = readFileSync(filePath, "utf8");

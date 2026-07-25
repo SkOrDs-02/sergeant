@@ -94,6 +94,12 @@ export const APPLY_REJECT_REASONS = [
   // Рядок без жодного з них не згортається в число, тож пускати його в
   // журнал = створювати позицію з невідомим залишком назавжди.
   "missing_delta_or_abs",
+  // Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1).
+  // `nutrition_goal_periods.origin` — закритий enum ('manual' | 'preset' |
+  // 'tdee' | 'backfill'). Окремий reason, а не спільний з
+  // `invalid_event_kind`: там валідується `kind` події комори, і злиття
+  // двох різних колонок в один лейбл зробило б метрику нечитаною.
+  "invalid_goal_origin",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

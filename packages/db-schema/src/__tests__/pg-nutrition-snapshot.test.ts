@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   nutritionMeals,
   nutritionPantries,
+  nutritionGoalPeriods,
   nutritionPantryEvents,
   nutritionPantryItems,
   nutritionPrefs,
@@ -423,6 +424,78 @@ describe("pg/nutritionPantryEvents schema snapshot", () => {
     expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
       "nutrition_pantry_events_user_active_idx",
       "nutrition_pantry_events_user_item_idx",
+    ]);
+  });
+});
+
+/**
+ * `nutrition_goal_periods` — append-only журнал цілей КБЖВ
+ * (міграція 087, W1-KBJU-APPEND стадія 1).
+ */
+describe("pg/nutritionGoalPeriods schema snapshot", () => {
+  const config = getTableConfig(nutritionGoalPeriods);
+  const columnMap = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_goal_periods");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "effective_from",
+      "kcal",
+      "protein_g",
+      "fat_g",
+      "carbs_g",
+      "water_ml",
+      "origin",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("keeps id as PgText without a default — client mints it deterministically", () => {
+    // AI-DANGER: не «вирівнюй» під `nutrition_pantries.id` (UUID). Писар —
+    // клієнт, і його id детермінований, щоб повторна доставка push-а була
+    // no-op, а не другим періодом з тими самими числами.
+    expect(columnMap["id"]!.columnType).toBe("PgText");
+    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.hasDefault).toBe(false);
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+  });
+
+  it("keeps effective_from as PgText day key, NOT a date/timestamp", () => {
+    // Kyiv-локальний 'YYYY-MM-DD', як `nutrition_water_log.date_key`.
+    expect(columnMap["effective_from"]!.columnType).toBe("PgText");
+    expect(columnMap["effective_from"]!.notNull).toBe(true);
+  });
+
+  it("keeps every goal value NULLABLE — «цілі немає» це не нуль", () => {
+    for (const name of ["kcal", "protein_g", "fat_g", "carbs_g", "water_ml"]) {
+      expect(columnMap[name]!.notNull).toBe(false);
+      expect(columnMap[name]!.hasDefault).toBe(false);
+    }
+    // INTEGER/REAL, а не BIGINT/NUMERIC: драйвер `pg` віддає їх як `number`
+    // без ручної коерсії (Hard Rule #1).
+    expect(columnMap["kcal"]!.columnType).toBe("PgInteger");
+    expect(columnMap["water_ml"]!.columnType).toBe("PgInteger");
+    expect(columnMap["protein_g"]!.columnType).toBe("PgReal");
+  });
+
+  it("declares origin NOT NULL with a default and deleted_at nullable", () => {
+    expect(columnMap["origin"]!.notNull).toBe(true);
+    expect(columnMap["origin"]!.hasDefault).toBe(true);
+    // Ретракція періоду, а не перезапис історії.
+    expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  it("declares both indexes from migration 087", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "nutrition_goal_periods_user_active_idx",
+      "nutrition_goal_periods_user_effective_idx",
     ]);
   });
 });

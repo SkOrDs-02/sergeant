@@ -141,10 +141,40 @@ describe("buildReconcileChildren", () => {
  * помилка знищила б історію, з якої залишок відновлюється.
  */
 describe("append-only tables are excluded from delete/reconcile", () => {
-  it("registers the two stage-1 ledgers", () => {
+  it("registers the three stage-1 ledgers", () => {
     expect(isAppendOnlyTable("routine_completion_events")).toBe(true);
     expect(isAppendOnlyTable("nutrition_pantry_events")).toBe(true);
     expect(APPEND_ONLY_TABLES.has("nutrition_pantry_events")).toBe(true);
+    // W1-KBJU-APPEND стадія 1 — журнал цілей КБЖВ.
+    expect(isAppendOnlyTable("nutrition_goal_periods")).toBe(true);
+    expect(APPEND_ONLY_TABLES.has("nutrition_goal_periods")).toBe(true);
+  });
+
+  it("refuses to build a soft-delete for the goal ledger", () => {
+    // Ретракція періоду — це адресний `UPDATE … SET deleted_at WHERE id = ?`
+    // з apply-шляху синку, а не масовий cleanup через білдер.
+    expect(() =>
+      buildDelete({
+        table: "nutrition_goal_periods",
+        deletePolicy: "soft",
+        matchColumns: ["id", "user_id"],
+      }),
+    ).toThrow(/append-only table "nutrition_goal_periods"/);
+  });
+
+  it("refuses parent/child reconciliation of the goal ledger", () => {
+    expect(() =>
+      buildReconcileChildren(
+        { table: "nutrition_goal_periods", parentColumn: "user_id" },
+        0,
+      ),
+    ).toThrow(/append-only table "nutrition_goal_periods"/);
+  });
+
+  it("does NOT treat nutrition_prefs as append-only", () => {
+    // `nutrition_prefs` лишається мутабельним LWW-рядком — старий шлях
+    // цілей мусить працювати як раніше протягом усієї стадії 1.
+    expect(isAppendOnlyTable("nutrition_prefs")).toBe(false);
   });
 
   it("does NOT treat the mutable pantry-items table as append-only", () => {

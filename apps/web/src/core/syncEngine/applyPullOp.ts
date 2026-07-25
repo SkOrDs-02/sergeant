@@ -1,6 +1,8 @@
 import type { SyncV2PullOp } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { applyNutritionGoalPeriodsPull } from "./applyPullGoalPeriods.js";
+
 export type ApplyPullOutcome = "applied" | "skipped" | "rejected";
 
 /** Mirrors `SYNC_V2_SUPPORTED_TABLES` on the server (`syncV2.ts`). */
@@ -33,6 +35,8 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   // W1-PANTRY-APPEND стадія 1 — append-only журнал руху продуктів комори.
   // Без цього рядка pull-опи мовчки відкидаються.
   "nutrition_pantry_events",
+  // W1-KBJU-APPEND стадія 1 — append-only журнал цілей КБЖВ.
+  "nutrition_goal_periods",
   "nutrition_prefs",
   "nutrition_recipes",
   "nutrition_water_log",
@@ -394,6 +398,10 @@ const SPECIAL_HANDLERS: Record<
   routine_entries: applyRoutineEntries,
   routine_streaks: applyRoutineStreaks,
   routine_completion_events: applyRoutineCompletionEvents,
+  // W1-KBJU-APPEND стадія 1. Генеричний шлях робить `ON CONFLICT DO UPDATE`
+  // і переписав би тіло вже записаної сходинки — для журналу намірів це
+  // стирання історії. Див. `applyPullGoalPeriods.ts`.
+  nutrition_goal_periods: applyNutritionGoalPeriodsPull,
 };
 
 /**

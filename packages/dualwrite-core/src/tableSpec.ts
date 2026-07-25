@@ -119,6 +119,8 @@ export const APPEND_ONLY_TABLES: ReadonlySet<string> = new Set([
   "routine_completion_events",
   // W1-PANTRY-APPEND стадія 1 — журнал руху продуктів комори.
   "nutrition_pantry_events",
+  // W1-KBJU-APPEND стадія 1 — журнал цілей КБЖВ.
+  "nutrition_goal_periods",
 ]);
 
 /** Чи є таблиця append-only журналом (див. `APPEND_ONLY_TABLES`). */

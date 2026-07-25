@@ -6,7 +6,10 @@ import {
   createSqliteAdapter,
   type SqliteMigrationClient,
 } from "@sergeant/db-schema/migrate/sqlite";
-import { ROUTINE_CLIENT_MIGRATIONS } from "@sergeant/db-schema/sqlite";
+import {
+  NUTRITION_CLIENT_MIGRATIONS,
+  ROUTINE_CLIENT_MIGRATIONS,
+} from "@sergeant/db-schema/sqlite";
 import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 
 import {
@@ -810,5 +813,148 @@ describe("applyPullOp", () => {
         "device-a",
       ),
     ).toBe("applied");
+  });
+});
+
+/**
+ * Append-only pull-шлях журналу цілей КБЖВ (W1-KBJU-APPEND, стадія 1).
+ *
+ * Головне, що доводить цей блок: генеричний шлях (`ON CONFLICT DO UPDATE`)
+ * НЕ застосовується до журналу. Для LWW-таблиці перезапис — норма; для
+ * журналу намірів це стирання історії: сходинка, яка вже описала минулий
+ * тиждень, заднім числом стала б іншою.
+ */
+describe("applyPullOp — nutrition_goal_periods (W1-KBJU-APPEND стадія 1)", () => {
+  let db: BetterSqliteDatabase;
+  let client: SqliteMigrationClient;
+
+  const userId = "user-1";
+  const PERIOD_ID = "gp::2026-07-25::1800:140:55:180:2500::device-b";
+
+  function pullOp(over: Record<string, unknown> = {}) {
+    return {
+      id: 200,
+      table: "nutrition_goal_periods",
+      op: "insert" as const,
+      row: {
+        id: PERIOD_ID,
+        user_id: userId,
+        effective_from: "2026-07-25",
+        kcal: 1800,
+        protein_g: 140,
+        fat_g: 55,
+        carbs_g: 180,
+        water_ml: 2500,
+        origin: "manual",
+        created_at: "2026-07-25T07:00:00.000Z",
+        deleted_at: null,
+      },
+      client_ts: "2026-07-25T08:00:00.000Z",
+      server_ts: "2026-07-25T08:00:01.000Z",
+      origin_device_id: "device-b",
+      ...over,
+    };
+  }
+
+  beforeEach(async () => {
+    __resetApplyPullOpCachesForTests();
+    db = new Database(":memory:");
+    client = makeSqliteClient(db);
+    await runMigrations({
+      adapter: createSqliteAdapter(client),
+      files: NUTRITION_CLIENT_MIGRATIONS,
+      tableName: "__nutrition_migrations",
+    });
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("вставляє сходинку з чужого пристрою", async () => {
+    expect(await applyPullOp(client, pullOp(), userId, "device-a")).toBe(
+      "applied",
+    );
+    const rows = await client.all<{ effective_from: string; kcal: number }>(
+      `SELECT effective_from, kcal FROM nutrition_goal_periods WHERE id = ?`,
+      [PERIOD_ID],
+    );
+    expect(rows[0]).toMatchObject({ effective_from: "2026-07-25", kcal: 1800 });
+  });
+
+  it("повторна доставка — skipped, тіло НЕ переписується", async () => {
+    // Ось де генеричний шлях зробив би `DO UPDATE` і поміняв би 1800 на
+    // 240 у вже записаній сходинці.
+    await applyPullOp(client, pullOp(), userId, "device-a");
+    expect(
+      await applyPullOp(
+        client,
+        pullOp({ id: 201, row: { ...pullOp().row, kcal: 240 } }),
+        userId,
+        "device-a",
+      ),
+    ).toBe("skipped");
+    const rows = await client.all<{ kcal: number }>(
+      `SELECT kcal FROM nutrition_goal_periods WHERE id = ?`,
+      [PERIOD_ID],
+    );
+    expect(rows[0]!.kcal).toBe(1800);
+  });
+
+  it("op='update' відхиляється — історія не редагується", async () => {
+    expect(
+      await applyPullOp(client, pullOp({ op: "update" }), userId, "device-a"),
+    ).toBe("rejected");
+  });
+
+  it("op='delete' ставить лише tombstone", async () => {
+    await applyPullOp(client, pullOp(), userId, "device-a");
+    expect(
+      await applyPullOp(
+        client,
+        pullOp({ id: 202, op: "delete" }),
+        userId,
+        "device-a",
+      ),
+    ).toBe("applied");
+    const rows = await client.all<{ kcal: number; deleted_at: string | null }>(
+      `SELECT kcal, deleted_at FROM nutrition_goal_periods WHERE id = ?`,
+      [PERIOD_ID],
+    );
+    // Рядок на місці, тіло ціле — прибрано лише з поля зору резолвера.
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.kcal).toBe(1800);
+    expect(rows[0]!.deleted_at).not.toBeNull();
+  });
+
+  it("відхиляє чужий user_id і ISO-instant замість day key", async () => {
+    expect(await applyPullOp(client, pullOp(), "other-user", "device-a")).toBe(
+      "rejected",
+    );
+    expect(
+      await applyPullOp(
+        client,
+        pullOp({
+          id: 203,
+          row: { ...pullOp().row, effective_from: "2026-07-25T08:00:00.000Z" },
+        }),
+        userId,
+        "device-a",
+      ),
+    ).toBe("rejected");
+  });
+
+  it("null-цілі приїжджають як null, а не як 0", async () => {
+    await applyPullOp(
+      client,
+      pullOp({ row: { ...pullOp().row, kcal: null, protein_g: null } }),
+      userId,
+      "device-a",
+    );
+    const rows = await client.all<{ kcal: number | null }>(
+      `SELECT kcal, protein_g FROM nutrition_goal_periods WHERE id = ?`,
+      [PERIOD_ID],
+    );
+    expect(rows[0]!.kcal).toBeNull();
   });
 });

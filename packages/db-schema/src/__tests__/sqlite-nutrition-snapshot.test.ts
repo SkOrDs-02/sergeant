@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
   nutritionMeals,
   nutritionPantries,
+  nutritionGoalPeriods,
   nutritionPantryEvents,
   nutritionPantryItems,
   nutritionPrefs,
@@ -419,7 +420,7 @@ describe("sqlite/nutrition migrations exports", () => {
 
   it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
     // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(4);
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(5);
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
       "002_nutrition_full_state.sql",
     );
@@ -476,6 +477,36 @@ describe("sqlite/nutrition migrations exports", () => {
     expect(sql).not.toMatch(/ALTER TABLE nutrition_pantry_items/);
   });
 
+  it("ships the W1-KBJU-APPEND 005_nutrition_goal_periods.sql delta", () => {
+    // Дзеркалить Postgres 087_nutrition_goal_periods.sql — append-only
+    // журнал цілей КБЖВ (стадія 1: писар є, читачів немає).
+    expect(NUTRITION_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_nutrition_goal_periods.sql",
+    );
+    const sql = NUTRITION_CLIENT_MIGRATIONS[4]!.sql;
+    // `IF NOT EXISTS` — additive, старі клієнти не ламаються.
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS nutrition_goal_periods/);
+    // Закритий enum origin з обов'язковим 'backfill'.
+    expect(sql).toMatch(
+      /CHECK \(origin IN \('manual','preset','tdee','backfill'\)\)/,
+    );
+    // `effective_from` — day key, а не ISO-instant.
+    expect(sql).toMatch(/effective_from\s+TEXT NOT NULL/);
+    expect(sql).toMatch(/GLOB '\[0-9\]\[0-9\]\[0-9\]\[0-9\]-/);
+    expect(sql).toMatch(/id\s+TEXT PRIMARY KEY/);
+    expect(sql).toMatch(
+      /CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_effective_idx_lite/,
+    );
+    // AI-DANGER: клієнтського backfill-у тут НЕМАЄ і бути не може — SQLite
+    // не знає таймзон, тож Kyiv-локальний `effective_from` він порахував би
+    // приблизно, а pull (insert-only) правильне серверне значення вже НЕ
+    // перезаписав би. Обґрунтування — у коментарі до
+    // `NUTRITION_005_GOAL_PERIODS_SQL`.
+    expect(sql).not.toMatch(/INSERT INTO/);
+    // Журнал не ALTER-ить блоб з поточною ціллю.
+    expect(sql).not.toMatch(/ALTER TABLE nutrition_prefs/);
+  });
+
   it("uses a separate `__nutrition_migrations` ledger table", () => {
     expect(NUTRITION_MIGRATIONS_TABLE).toBe("__nutrition_migrations");
   });
@@ -529,6 +560,57 @@ describe("sqlite/nutritionPantryEvents schema snapshot", () => {
     expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
       "nutrition_pantry_events_user_active_idx_lite",
       "nutrition_pantry_events_user_item_idx_lite",
+    ]);
+  });
+});
+
+/**
+ * `nutrition_goal_periods` — SQLite-дзеркало журналу цілей КБЖВ
+ * (клієнтська міграція `005_nutrition_goal_periods.sql`).
+ */
+describe("sqlite/nutritionGoalPeriods schema snapshot", () => {
+  const config = getTableConfig(nutritionGoalPeriods);
+  const columnMap = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("nutrition_goal_periods");
+  });
+
+  it("mirrors the Postgres column order 1:1", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "effective_from",
+      "kcal",
+      "protein_g",
+      "fat_g",
+      "carbs_g",
+      "water_ml",
+      "origin",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("stores timestamps as TEXT (ISO-8601) — the only diff from Postgres", () => {
+    for (const name of ["created_at", "updated_at", "deleted_at"]) {
+      expect(columnMap[name]!.columnType).toBe("SQLiteText");
+    }
+    expect(columnMap["created_at"]!.hasDefault).toBe(true);
+    expect(columnMap["deleted_at"]!.notNull).toBe(false);
+  });
+
+  it("keeps every goal value NULLABLE, exactly like Postgres", () => {
+    for (const name of ["kcal", "protein_g", "fat_g", "carbs_g", "water_ml"]) {
+      expect(columnMap[name]!.notNull).toBe(false);
+    }
+  });
+
+  it("declares both `_lite` indexes", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "nutrition_goal_periods_user_active_idx_lite",
+      "nutrition_goal_periods_user_effective_idx_lite",
     ]);
   });
 });

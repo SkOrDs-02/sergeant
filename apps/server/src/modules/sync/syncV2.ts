@@ -60,6 +60,7 @@ import {
   applyNutritionRecipes,
 } from "./nutrition/applySync.js";
 import { applyNutritionPantryEvents } from "./nutrition/applyPantryEvents.js";
+import { applyNutritionGoalPeriods } from "./nutrition/applySyncGoals.js";
 import {
   applyNutritionShoppingList,
   applyNutritionWaterLog,
@@ -177,6 +178,13 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   // рядки комутативні самі по собі, тож `INCREMENT_OP_SUPPORTED_TABLES`
   // нижче лишається як є. Ні писарів, ні читачів на цій стадії.
   nutrition_pantry_events: applyNutritionPantryEvents,
+  // W1-KBJU-APPEND стадія 1 — append-only журнал цілей КБЖВ. Свідомо БЕЗ
+  // LWW-guard-а, на відміну від сусіднього `nutrition_prefs`: дві зміни
+  // цілі з двох пристроїв у різні дні — це дві сходинки історії, а не
+  // конфлікт. `op='update'` → `append_only_violation`, `op='delete'` —
+  // лише tombstone-ретракція. `INCREMENT_OP_SUPPORTED_TABLES` нижче не
+  // чіпаємо: append-only рядки комутативні самі по собі.
+  nutrition_goal_periods: applyNutritionGoalPeriods,
   nutrition_prefs: applyNutritionPrefs,
   nutrition_recipes: applyNutritionRecipes,
   nutrition_water_log: applyNutritionWaterLog,
