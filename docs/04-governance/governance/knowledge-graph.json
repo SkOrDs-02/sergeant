@@ -1,13 +1,14 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-25",
   "counts": {
     "adr": 72,
+    "audit": 14,
     "hard-rule": 26,
     "initiative": 6,
     "playbook": 60,
-    "pr": 143,
+    "pr": 147,
     "skill": 23
   },
   "nodes": [
@@ -538,7 +539,7 @@
       "tier": "core",
       "meta": {
         "number": 50,
-        "last_validated": "2026-07-20"
+        "last_validated": "2026-07-21"
       }
     },
     {
@@ -618,7 +619,7 @@
       "tier": "core",
       "meta": {
         "number": 58,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -630,7 +631,7 @@
       "tier": "core",
       "meta": {
         "number": 59,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -642,7 +643,7 @@
       "tier": "core",
       "meta": {
         "number": 60,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -654,7 +655,7 @@
       "tier": "core",
       "meta": {
         "number": 61,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -711,7 +712,7 @@
       "tier": "core",
       "meta": {
         "number": 66,
-        "last_validated": "2026-07-15"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -792,7 +793,7 @@
       "tier": "core",
       "meta": {
         "number": 73,
-        "last_validated": "2026-07-21"
+        "last_validated": "2026-07-24"
       }
     },
     {
@@ -816,6 +817,132 @@
       "meta": {
         "number": 75
       }
+    },
+    {
+      "id": "audit:2026-07-21-design-audit",
+      "type": "audit",
+      "title": "Sergeant — дизайн-аудит apps/web · 2026-07",
+      "path": "docs/90-work/audits/2026-07-21-design-audit.md",
+      "status": "Reference — цикл закрито; таблиця скорингу §1 лишається baseline",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-21-light-language",
+      "type": "audit",
+      "title": "Light-мова «Папір» — виконання наряду · 2026-07-21",
+      "path": "docs/90-work/audits/2026-07-21-light-language.md",
+      "status": "Reference — звіт про виконання наряду Claude Design;",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-cycle-3",
+      "type": "audit",
+      "title": "Цикл 3 — виконання наряду · 2026-07-22",
+      "path": "docs/90-work/audits/2026-07-22-cycle-3.md",
+      "status": "Reference — звіт про виконання наряду Claude Design",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-cycle-4",
+      "type": "audit",
+      "title": "Цикл 4 — виконання наряду · 2026-07-22",
+      "path": "docs/90-work/audits/2026-07-22-cycle-4.md",
+      "status": "Reference — звіт про виконання наряду Claude Design",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-cycle-5-typography",
+      "type": "audit",
+      "title": "Цикл 5 — типографічний sweep (D8) · 2026-07-22",
+      "path": "docs/90-work/audits/2026-07-22-cycle-5-typography.md",
+      "status": "Reference — звіт про виконання наряду Claude Design",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-cycle6-typography-shared-ui",
+      "type": "audit",
+      "title": "Цикл 6, стадія 1 — сирі Tailwind-розміри в `shared/components/ui`",
+      "path": "docs/90-work/audits/2026-07-22-cycle6-typography-shared-ui.md",
+      "status": "Reference — звіт про виконання наряду циклу 6; baseline скорингу —",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-22-first-60-seconds",
+      "type": "audit",
+      "title": "Перші 60 секунд — доказовий прохід · 2026-07-22",
+      "path": "docs/90-work/audits/2026-07-22-first-60-seconds.md",
+      "status": "Reference — доказовий звіт; baseline скорингу лишається",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:2026-07-24-cycle6-stage2-typography-core",
+      "type": "audit",
+      "title": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`",
+      "path": "docs/90-work/audits/2026-07-24-cycle6-stage2-typography-core.md",
+      "status": "Reference — звіт про виконання наряду циклу 6, стадія 2; baseline",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-finyk",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: finyk — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-finyk.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-fizruk",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: fizruk — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-fizruk.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-hub-coach",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-hub-coach.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-nutrition",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: nutrition — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-nutrition.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-overview",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-overview.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:product-knowledge-routine",
+      "type": "audit",
+      "title": "Продуктовий аудит знань: routine — diff-звіт тріангуляції",
+      "path": "docs/90-work/audits/product-knowledge-routine.md",
+      "status": "Active",
+      "tier": "core",
+      "meta": {}
     },
     {
       "id": "hard-rule:1",
@@ -2879,6 +3006,36 @@
       }
     },
     {
+      "id": "pr:409",
+      "type": "pr",
+      "title": "PR #409",
+      "tier": "extended",
+      "meta": {
+        "number": 409,
+        "url": "https://github.com/Skords-01/Sergeant/pull/409"
+      }
+    },
+    {
+      "id": "pr:410",
+      "type": "pr",
+      "title": "PR #410",
+      "tier": "extended",
+      "meta": {
+        "number": 410,
+        "url": "https://github.com/Skords-01/Sergeant/pull/410"
+      }
+    },
+    {
+      "id": "pr:43",
+      "type": "pr",
+      "title": "PR #43",
+      "tier": "extended",
+      "meta": {
+        "number": 43,
+        "url": "https://github.com/Skords-01/Sergeant/pull/43"
+      }
+    },
+    {
       "id": "pr:443",
       "type": "pr",
       "title": "PR #443",
@@ -2956,6 +3113,16 @@
       "meta": {
         "number": 53,
         "url": "https://github.com/Skords-01/Sergeant/pull/53"
+      }
+    },
+    {
+      "id": "pr:567",
+      "type": "pr",
+      "title": "PR #567",
+      "tier": "extended",
+      "meta": {
+        "number": 567,
+        "url": "https://github.com/Skords-01/Sergeant/pull/567"
       }
     },
     {
@@ -4054,6 +4221,71 @@
       "from": "adr:0075",
       "to": "hard-rule:4",
       "type": "references"
+    },
+    {
+      "from": "audit:2026-07-21-design-audit",
+      "to": "pr:409",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-07-21-light-language",
+      "to": "hard-rule:9",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-21-light-language",
+      "to": "pr:410",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-07-21-light-language",
+      "to": "pr:567",
+      "type": "touched-by"
+    },
+    {
+      "from": "audit:2026-07-22-cycle-3",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-22-cycle-4",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-22-cycle-5-typography",
+      "to": "hard-rule:16",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-22-cycle6-typography-shared-ui",
+      "to": "hard-rule:16",
+      "type": "references"
+    },
+    {
+      "from": "audit:2026-07-22-first-60-seconds",
+      "to": "hard-rule:17",
+      "type": "references"
+    },
+    {
+      "from": "audit:product-knowledge-finyk",
+      "to": "hard-rule:10",
+      "type": "references"
+    },
+    {
+      "from": "audit:product-knowledge-routine",
+      "to": "hard-rule:12",
+      "type": "references"
+    },
+    {
+      "from": "audit:product-knowledge-routine",
+      "to": "hard-rule:4",
+      "type": "references"
+    },
+    {
+      "from": "audit:product-knowledge-routine",
+      "to": "pr:43",
+      "type": "touched-by"
     },
     {
       "from": "initiative:0006",
