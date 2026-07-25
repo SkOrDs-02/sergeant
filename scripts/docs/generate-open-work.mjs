@@ -599,12 +599,12 @@ export function rewriteRelativeLinks(text, srcRelPath, dstRelPath) {
   );
 }
 
-/** Format PR numbers as a list of markdown links to github.com/SkOrDs-02/sergeant. */
+/** Format PR numbers as a list of markdown links to github.com/Skords-01/Sergeant. */
 export function formatPRLinks(prs, { maxShown = 10 } = {}) {
   if (prs.length === 0) return "—";
   const visible = prs.slice(0, maxShown);
   const linked = visible.map(
-    (n) => `[#${n}](https://github.com/SkOrDs-02/sergeant/pull/${n})`,
+    (n) => `[#${n}](https://github.com/Skords-01/Sergeant/pull/${n})`,
   );
   if (prs.length > maxShown) {
     linked.push(`+${prs.length - maxShown}`);
