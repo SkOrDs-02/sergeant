@@ -29,9 +29,6 @@ const DEFAULT_AMOUNTS = [50, 100, 200, 500];
 const MAX_AMOUNT_CHIPS = 6;
 const DAY_NOON_UTC = "T12:00:00.000Z";
 
-/** Collapsed category chip count before «Більше». */
-export const CATEGORY_COLLAPSED_COUNT = 6;
-
 export function toExpenseInstant(dayKey: string): string {
   // API stores an ISO instant; UTC noon preserves the selected day key
   // without reading the host-local timezone.

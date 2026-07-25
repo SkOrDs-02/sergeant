@@ -1,14 +1,28 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-07-25
  * Status: Active
  *
- * Category chip picker + AI-applied badge for ManualExpenseSheet.
- * Extracted for Hard Rule #18 (`max-lines: 600`).
+ * Category dropdown + AI-applied badge for ManualExpenseSheet. Extracted
+ * for Hard Rule #18 (`max-lines: 600`).
+ *
+ * Founder decision (D3, 2026-07-25): categories render as a single native
+ * `<select>` instead of a chip grid/expand-collapse row, for both the
+ * expense and income taxonomies. `Select` is the existing shared
+ * form-control (`@shared/components/ui/Select`) — same sizing/focus
+ * treatment as `Input`, already ≥44px at the default `md` size, and a
+ * native `<select>` gets label association, keyboard nav, and the
+ * platform picker UI for free. This superseded the frequency-based
+ * "collapsed row + Більше/Менше" behaviour: with every category always
+ * one native picker away, there's no overflow to hide — frequency
+ * ordering is preserved by sorting the `<option>` list itself
+ * (see `sortCategoriesByFrequency` / `categorySlugs` in the parent).
  */
 import type { Dispatch, SetStateAction } from "react";
 import type { UseFormSetValue } from "react-hook-form";
 import { Icon } from "@shared/components/ui/Icon";
 import { Badge } from "@shared/components/ui/Badge";
+import { Label } from "@shared/components/ui/FormField";
+import { Select } from "@shared/components/ui/Select";
 import type { CategoryDisplay } from "./manualExpenseCategories";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
@@ -18,10 +32,8 @@ interface ManualExpenseCategorySectionProps {
   categoryDisplay: Record<string, CategoryDisplay>;
   aiAppliedCategory: string | null;
   categorySlug: string;
-  visibleCategories: string[];
-  hasHiddenCategories: boolean;
-  categoriesExpanded: boolean;
-  setCategoriesExpanded: Dispatch<SetStateAction<boolean>>;
+  /** Ordered slugs for the active kind — frequency-sorted for expense, fixed for income. */
+  categorySlugs: string[];
   setAiAppliedCategory: Dispatch<SetStateAction<string | null>>;
   setValue: UseFormSetValue<ExpenseFormValues>;
 }
@@ -31,28 +43,19 @@ export function ManualExpenseCategorySection({
   categoryDisplay,
   aiAppliedCategory,
   categorySlug,
-  visibleCategories,
-  hasHiddenCategories,
-  categoriesExpanded,
-  setCategoriesExpanded,
+  categorySlugs,
   setAiAppliedCategory,
   setValue,
 }: ManualExpenseCategorySectionProps) {
   return (
     <div>
-      <div
-        id={catLabelId}
-        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Category group label needs a stable id (catLabelId) for aria-labelledby; Label would require dropping htmlFor.
-        className="block text-xs text-muted uppercase tracking-wide font-semibold mb-1"
-      >
-        Категорія
-      </div>
+      <Label htmlFor={catLabelId}>Категорія</Label>
       {/* 6.3: AI-applied badge surfaces the silent merchant→category
           auto-application. Renders only when AI applied and current
           category still matches the AI suggestion (so dismissal +
           manual overrides hide it). Dismiss = clear local state only;
-          category stays applied (user can still change it via picker
-          below).
+          category stays applied (user can still change it via the
+          dropdown below).
           motion-safe wrappers — reduced-motion users see a static
           badge without the fade-in. */}
       {aiAppliedCategory && categorySlug === aiAppliedCategory ? (
@@ -77,48 +80,25 @@ export function ManualExpenseCategorySection({
           </Badge>
         </div>
       ) : null}
-      <div
-        className="flex flex-wrap gap-2"
-        role="group"
-        aria-labelledby={catLabelId}
+      <Select
+        id={catLabelId}
+        value={categorySlug}
+        onChange={(e) => {
+          const slug = e.target.value;
+          setValue("category", slug, { shouldDirty: true });
+          // Manual category pick supersedes any AI suggestion; clear the
+          // badge so it doesn't linger after an explicit user choice.
+          if (slug !== aiAppliedCategory) {
+            setAiAppliedCategory(null);
+          }
+        }}
       >
-        {visibleCategories.map((slug) => {
-          const display = categoryDisplay[slug];
-          return (
-            <button
-              key={slug}
-              type="button"
-              onClick={() => {
-                setValue("category", slug, { shouldDirty: true });
-                // Manual category pick supersedes any AI suggestion;
-                // clear the badge so it doesn't linger after an
-                // explicit user choice.
-                if (slug !== aiAppliedCategory) {
-                  setAiAppliedCategory(null);
-                }
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
-                categorySlug === slug
-                  ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
-                  : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
-              }`}
-            >
-              <Icon name={display?.iconName ?? "tag"} size="xs" aria-hidden />
-              {display?.label ?? slug}
-            </button>
-          );
-        })}
-        {hasHiddenCategories && (
-          <button
-            type="button"
-            onClick={() => setCategoriesExpanded((v) => !v)}
-            aria-expanded={categoriesExpanded}
-            className="px-3 py-1.5 rounded-full text-style-caption border border-line bg-panel text-muted hover:text-text hover:border-muted/50 hover:bg-panelHi transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95"
-          >
-            {categoriesExpanded ? "Менше ▴" : "Більше ▾"}
-          </button>
-        )}
-      </div>
+        {categorySlugs.map((slug) => (
+          <option key={slug} value={slug}>
+            {categoryDisplay[slug]?.label ?? slug}
+          </option>
+        ))}
+      </Select>
     </div>
   );
 }
