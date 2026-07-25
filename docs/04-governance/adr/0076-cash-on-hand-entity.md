@@ -97,3 +97,14 @@ UI має це показувати, а не мовчати.
 
 Секції §11 і §12 канону позначені `[ІНТЕРВ'Ю]` — це слова founder-а, і цей ADR
 їх **не переписує**. Покажчик на рішення доданий окремою секцією канону.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                     | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- | ---------- |
+| [#450](https://github.com/Skords-01/Sergeant/pull/450) | docs(docs): зафіксувати ADR-0076 «Готівка на руках» і ескалацію F-MCC6011 | 2026-07-25 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
