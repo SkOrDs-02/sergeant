@@ -30,10 +30,16 @@ import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
  *    tool-result турі шлеться ефемерний one-shot (останній user + tool-раунд),
  *    тож кеш там був би марним 1.25× write без re-read.
  *
- * Per-user `context` рендериться другим блоком system — **без** `cache_control`,
- * щоб не створювати власного cache slot per-user-ом. Але оскільки cache key
- * охоплює весь system, різний context між юзерами все одно фрагментує кеш (один слот
- * на user). Це ОК: юзер в межах своєї сесії (5хв) отримує багато cache_read.
+ * Per-user `context` рендериться ДРУГИМ блоком system — **без** `cache_control`
+ * і, головне, ПІСЛЯ breakpoint-а на SYSTEM_PREFIX. Anthropic кешує префікс
+ * up-to-and-including кожен breakpoint, тож shared-блок `tools + SYSTEM_PREFIX`
+ * (breakpoint #1/#2) закривається ще ДО per-user context → цей cache однаковий
+ * для ВСІХ юзерів і НЕ фрагментується їхнім context-ом. Per-user context
+ * потрапляє лише в message-level cache (breakpoint #3), який і так per-
+ * conversation. Тобто розміщення context у system тут коректне: воно не
+ * "розмиває" cross-user shared prefix — саме тому НЕ переносимо його в перше
+ * user-повідомлення (це нічого не покращило б, лише зламало б empty-context
+ * гілку нижче).
  *
  * Коли `context` порожній, Anthropic API відхиляє `text`-блоки з empty `text`,
  * тому під cap-ом повертаємо лише самий cached prefix.

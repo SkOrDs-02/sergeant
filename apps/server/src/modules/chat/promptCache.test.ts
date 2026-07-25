@@ -47,7 +47,7 @@ describe("applyToolsCacheBreakpoint", () => {
     expect(applyToolsCacheBreakpoint([])).toEqual([]);
   });
 
-  it("strips strict mode from the live Anthropic payload", () => {
+  it("stripStrictModeForAnthropic (kill-switch helper) знімає strict з усіх tools, не мутуючи вхід", () => {
     const input = [
       { name: "strict_tool", strict: true, input_schema: { type: "object" } },
       { name: "regular_tool", input_schema: { type: "object" } },
@@ -59,7 +59,23 @@ describe("applyToolsCacheBreakpoint", () => {
       { name: "regular_tool", input_schema: { type: "object" } },
     ]);
     expect(input).toEqual(snapshot);
-    expect(TOOLS_WITH_CACHE.some((tool) => "strict" in tool)).toBe(false);
+  });
+
+  it("з CHAT_STRICT_TOOLS=true (default) у payload проходить strict:true, але НІКОЛИ strict:false", () => {
+    // Anthropic приймає strict-прапор лише як `true` або як відсутній —
+    // `strict: false` у схемі відхиляється. Тому в payload не може бути
+    // жодного tool із strict:false, а strict:true — лише на курованому subset.
+    const strictFalse = TOOLS_WITH_CACHE.filter(
+      (tool) => (tool as { strict?: unknown }).strict === false,
+    );
+    expect(strictFalse).toHaveLength(0);
+
+    const strictTrue = TOOLS_WITH_CACHE.filter(
+      (tool) => (tool as { strict?: unknown }).strict === true,
+    );
+    // Subset активний (>0) і в межах Anthropic-ліміту 20 strict tools/запит.
+    expect(strictTrue.length).toBeGreaterThan(0);
+    expect(strictTrue.length).toBeLessThanOrEqual(20);
   });
 });
 
