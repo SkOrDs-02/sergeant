@@ -53,15 +53,27 @@
 події замість мутованого стану, одна часова доктрина, одне джерело кожної
 цифри. Блокує все, що рахує (стріки, coverage, digest, звірки).
 
-| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан |
-| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | ---- |
-| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 |      |
-| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 |      |
-| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  |      |
-| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       |      |
-| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     |      |
-| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     |      |
-| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  |      |
+| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан       |
+| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | ---------- |
+| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 |            |
+| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 |            |
+| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  |            |
+| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       |            |
+| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     |            |
+| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     |            |
+| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 |
+
+> **Heatmap-знаменник — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1:
+> `buildHeatmapGrid` отримав опційний `denominator: "active" | "scheduled"`
+> (default — стара поведінка) і `futureWeeks`; режим `"scheduled"` рахує
+> знаменник через `habitScheduledOnDate` з клемпом `Math.min(1, ratio)`.
+> Стадія 2: web-`HabitHeatmap` більше не має власної копії математики — обидва
+> рендери (web + mobile) ходять в один `buildHeatmapGrid`. **Жодне видиме
+> число не змінилось**: default лишається `"active"`, новий режим — мертвий
+> код. Стадія 3 (перемкнути default, копія «N з M запланованих», канон §5,
+> ADR) заблокована рішенням founder-а з
+> [аудиту routine](../audits/product-knowledge-routine.md) — питання №9:
+> чи поважає heatmap `paused` ретроактивно і що робити з `once`.
 
 ## Хвиля 2 — Телеметрія петель цінності
 
