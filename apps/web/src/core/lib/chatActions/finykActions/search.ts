@@ -8,7 +8,7 @@ import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -93,7 +93,7 @@ function readSearchTransactions(): FinykSearchTx[] {
   }>;
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
-  const bankTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const bankTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id?: string;
     time?: number | string;
     date?: string;

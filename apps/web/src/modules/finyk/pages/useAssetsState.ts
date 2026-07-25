@@ -23,6 +23,7 @@ import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transa
 type StorageSlice = Pick<
   ReturnType<typeof import("../hooks/useStorage").useStorage>,
   | "hiddenAccounts"
+  | "toggleHideAccount"
   | "manualAssets"
   | "setManualAssets"
   | "manualDebts"
@@ -79,6 +80,7 @@ export function useAssetsState({
     mono;
   const {
     hiddenAccounts,
+    toggleHideAccount,
     manualAssets,
     setManualAssets,
     manualDebts,
@@ -259,6 +261,7 @@ export function useAssetsState({
 
     // Storage-derived
     hiddenAccounts,
+    toggleHideAccount,
     manualAssets,
     setManualAssets,
     manualDebts,

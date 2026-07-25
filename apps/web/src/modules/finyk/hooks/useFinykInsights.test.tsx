@@ -6,6 +6,7 @@ const cachedState = { transactions: [] as unknown[] };
 
 vi.mock("../lib/monoMirrorReader", () => ({
   getCachedFinykMonoMirrorState: () => cachedState,
+  getVisibleFinykMonoMirrorState: () => cachedState,
 }));
 vi.mock("../lib/monoMirrorGate", () => ({
   useFinykMonoMirrorTick: () => 0,

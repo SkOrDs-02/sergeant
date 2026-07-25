@@ -7,7 +7,7 @@
    Dual-write teardown Phase 3 and replaced by the mirror reader below. */
 import { INTERNAL_TRANSFER_ID } from "../../../modules/finyk/constants";
 import { ls } from "../hubChatUtils";
-import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import type {
   AllData,
   Budget,
@@ -18,7 +18,7 @@ import type {
 } from "./types";
 
 export function readAllData(): AllData {
-  const mirror = getCachedFinykMonoMirrorState();
+  const mirror = getVisibleFinykMonoMirrorState();
 
   const transactions = mirror.transactions;
   const accounts = mirror.accounts as AllData["accounts"];

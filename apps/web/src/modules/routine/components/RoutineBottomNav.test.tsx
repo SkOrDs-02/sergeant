@@ -40,7 +40,7 @@ describe("RoutineBottomNav", () => {
   });
 
   it("hides the nav while the keyboard is open (spec § design decision 2)", () => {
-    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    setVisualKeyboardInsetAdapter((active: boolean) => (active ? 320 : 0));
     render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
 
     // aria-hidden removes the nav from the accessibility tree so getByRole

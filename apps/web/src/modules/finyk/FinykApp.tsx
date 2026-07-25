@@ -173,7 +173,11 @@ export default function App({
     onPwaActionConsumed,
   ]);
 
-  const { mergedMono } = useUnifiedFinanceData({ mono, privat });
+  const { mergedMono } = useUnifiedFinanceData({
+    mono,
+    privat,
+    hiddenAccountIds: storage.hiddenAccounts,
+  });
   // Keep the Hub finyk bento card's quick-stats snapshot in sync with real
   // data (manual expenses + Monobank), not just the onboarding demo seed.
   useFinykQuickStatsWriter({ mono: mergedMono, storage });

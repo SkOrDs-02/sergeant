@@ -2,14 +2,12 @@ import { DebtCard } from "../components/DebtCard";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
-import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import {
   getRecvPaid,
   calcReceivableRemaining,
   getReceivableEffectiveTotal,
 } from "../utils";
-import { getAccountVisual } from "../lib/accountVisual";
-import { cn } from "@shared/lib/ui/cn";
+import { AssetsMonoCards } from "./AssetsMonoCards";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ReceivableForm, AssetForm } from "./AssetsForm";
@@ -27,6 +25,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
     accounts,
     transactions,
     hiddenAccounts,
+    toggleHideAccount,
     manualAssets,
     setManualAssets,
     receivables,
@@ -51,59 +50,12 @@ export function AssetsAssetsSection({ state }: { state: State }) {
 
   return (
     <div className="mb-3 space-y-3">
-      <CollapsibleSection
-        storageKey="finyk_assets_mono_cards_open_v1"
-        title="Картки Monobank"
-        headingSize="sm"
-        collapsedIcon="credit-card"
-      >
-        {accounts
-          .filter((a) => !hiddenAccounts.includes(a.id ?? ""))
-          .map((a, i) => {
-            const visual = getAccountVisual(a);
-            const currencySymbol =
-              a.currencyCode === 980
-                ? "\u20B4"
-                : a.currencyCode === 840
-                  ? "$"
-                  : "\u20AC";
-            return (
-              <div
-                key={i}
-                className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3 hover:bg-panelHi transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className={cn(
-                      "inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0",
-                      visual.tone,
-                    )}
-                    aria-hidden
-                  >
-                    <Icon name={visual.iconName} size={18} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-style-label truncate">
-                      {visual.name}
-                    </div>
-                    <div className="text-style-caption text-subtle mt-0.5">
-                      Monobank
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-style-label tabular-nums text-text">
-                    {showBalance
-                      ? `${((a.balance ?? 0) / 100).toLocaleString("uk-UA", {
-                          minimumFractionDigits: 2,
-                        })} ${currencySymbol}`
-                      : "\u2022\u2022\u2022\u2022"}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-      </CollapsibleSection>
+      <AssetsMonoCards
+        accounts={accounts}
+        hiddenAccounts={hiddenAccounts}
+        toggleHideAccount={toggleHideAccount}
+        showBalance={showBalance}
+      />
 
       <Card radius="lg" padding="sm" className="space-y-2">
         <button

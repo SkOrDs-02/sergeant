@@ -8,7 +8,7 @@
  * including the Hub which has no Finyk network providers in scope.
  *
  * Transaction data is sourced from the SQLite Mono mirror cache
- * (`getCachedFinykMonoMirrorState`), which is populated at boot by
+ * (`getVisibleFinykMonoMirrorState`), which is populated at boot by
  * `useFinykMonoMirrorBoot`. The cache is reactive via
  * `useFinykMonoMirrorTick` so the hook re-evaluates after each
  * mirror refresh.
@@ -25,7 +25,7 @@
  */
 
 import { useMemo } from "react";
-import { getCachedFinykMonoMirrorState } from "../lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../lib/monoMirrorReader";
 import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useCoffeeLimitInsight } from "./useCoffeeLimitInsight";
@@ -42,7 +42,7 @@ export function useFinykInsights(): Insight[] {
 
   const transactions = useMemo(() => {
     void mirrorTick; // mirror cache refresh tick
-    return getCachedFinykMonoMirrorState().transactions;
+    return getVisibleFinykMonoMirrorState().transactions;
   }, [mirrorTick]);
 
   const slots = useFinykStorageSlots();

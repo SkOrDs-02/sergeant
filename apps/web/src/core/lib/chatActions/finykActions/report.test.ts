@@ -7,9 +7,14 @@ vi.mock("../../../../modules/finyk/utils", () => ({
 vi.mock("../../../../modules/finyk/lib/sqliteReader", () => ({
   getCachedFinykSqliteState: vi.fn(),
 }));
-vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: vi.fn(),
-}));
+vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => {
+  // Продакшн-код читає visible-геттер; інстанс мока один на обидва імені.
+  const shared = vi.fn();
+  return {
+    getCachedFinykMonoMirrorState: shared,
+    getVisibleFinykMonoMirrorState: shared,
+  };
+});
 
 import { ls } from "../../hubChatUtils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";

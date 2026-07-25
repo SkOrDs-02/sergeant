@@ -7,7 +7,7 @@ import {
 } from "@shared/lib/time/kyivTime";
 import { ls } from "../hubChatUtils";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
-import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import type { ChatAction, ChatActionResult } from "./types";
 
 /**
@@ -228,7 +228,7 @@ function normalizeMetric(value: unknown): CorrelationMetric {
 
 /** Per-Kyiv-day expense total (грн) from the Mono mirror cache. */
 function spendingByDay(days: number): Map<string, number> {
-  const mirrorTxs = getCachedFinykMonoMirrorState().transactions as Array<{
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
     id: string;
     amount: number;
     time?: number;

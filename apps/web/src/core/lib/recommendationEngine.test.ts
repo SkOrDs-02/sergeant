@@ -23,13 +23,18 @@ import { generateRecommendations } from "./recommendationEngine";
 // mirror reader. Tests provide transactions via this mock; `setLS` routes
 // "finyk_tx_cache" writes here instead of localStorage.
 const mockMirrorTxsRec: Array<Record<string, unknown>> = [];
-vi.mock("../../modules/finyk/lib/monoMirrorReader", () => ({
-  getCachedFinykMonoMirrorState: () => ({
+vi.mock("../../modules/finyk/lib/monoMirrorReader", () => {
+  const state = () => ({
     transactions: mockMirrorTxsRec,
     accounts: [],
     refreshedAt: mockMirrorTxsRec.length > 0 ? new Date().toISOString() : null,
-  }),
-}));
+  });
+  // recommendationEngine читає visible-геттер; у моку обидва — один стан.
+  return {
+    getCachedFinykMonoMirrorState: state,
+    getVisibleFinykMonoMirrorState: state,
+  };
+});
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ---------------------------------------------------------------------------
