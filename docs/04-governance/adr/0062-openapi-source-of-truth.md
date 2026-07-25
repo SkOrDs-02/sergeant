@@ -100,3 +100,14 @@ deferred, trigger-gated на перший production contract-bug:
 - PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
 - [zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
 - [openapi-typescript](https://github.com/openapi-ts/openapi-typescript)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#453](https://github.com/Skords-01/Sergeant/pull/453) | docs(docs): archive completed work docs and refresh 90-work active zone | 2026-07-25 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

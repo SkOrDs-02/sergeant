@@ -1,7 +1,7 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-25",
   "prs": [
     {
       "number": 334,
@@ -33,6 +33,36 @@
         "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
         "packages/api-client/README.md",
         "packages/dualwrite-core/README.md"
+      ]
+    },
+    {
+      "number": 4521,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "PENDING",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 453,
+      "title": "docs(docs): archive completed work docs and refresh 90-work active zone",
+      "merged_at": "2026-07-25T13:52:36Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/rotate-openclaw-credentials.md",
+        "docs/04-governance/adr/0042-password-hashing-strategy.md",
+        "docs/04-governance/adr/0048-apns-provider-library.md",
+        "docs/04-governance/adr/0049-auth-vendor-risk.md",
+        "docs/04-governance/adr/0050-typescript-major-version-policy.md",
+        "docs/04-governance/adr/0053-api-versioning-policy.md",
+        "docs/04-governance/adr/0057-anthropic-sdk-v1-upgrade.md",
+        "docs/04-governance/adr/0062-openapi-source-of-truth.md",
+        "docs/04-governance/adr/0063-expo-sdk-53-upgrade.md",
+        "docs/04-governance/governance/rules/20-no-openclaw-pats-in-production.md",
+        "docs/04-governance/governance/rules/21-pino-redaction-policy.md"
       ]
     },
     {
@@ -217,17 +247,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 4521,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]
