@@ -63,8 +63,11 @@ test("@critical routine: stats tab deep-link round-trips to calendar", async ({
   await overview.click();
   await expect(page).toHaveURL(/\/routine$/);
   await expect(overview).toHaveAttribute("aria-selected", "true");
+  // `exact: true` — ціль це FAB (`RoutineActions.tsx`, aria-label «Додати звичку»).
+  // Без прапорця підрядкове зіставлення додатково ловить кнопку
+  // «Додати звичку в «Рутина»» з `RoutineCalendarPanel.tsx` (strict mode violation).
   await expect(
-    page.getByRole("button", { name: "Додати звичку" }),
+    page.getByRole("button", { name: "Додати звичку", exact: true }),
   ).toBeVisible();
 
   expect(
