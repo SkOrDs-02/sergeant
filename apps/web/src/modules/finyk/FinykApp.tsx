@@ -127,20 +127,16 @@ export default function App({
     }
   }, [storage, toast]);
 
-  const firstRunNavHandledRef = useRef(false);
-  useEffect(() => {
-    if (firstRunNavHandledRef.current) return;
-    firstRunNavHandledRef.current = true;
-    if (!firstRunFinyk) return;
-    if (pwaAction === "add_expense") return;
-    // Only steer the module ROOT (`/finyk`) to the first-run фінплан.
-    // An explicit deep-link (`/finyk/transactions`, `/finyk/overview`, …)
-    // must win over first-run onboarding — otherwise every deep-link is
-    // hijacked to /finyk/budgets until the first-run flag persists.
-    const path = window.location.pathname.replace(/\/+$/, "");
-    if (path !== "/finyk") return;
-    if (page !== "budgets") navigate("budgets");
-  }, [firstRunFinyk, pwaAction, page, navigate]);
+  // AI-CONTEXT: тут БУВ одноразовий ефект, що з `/finyk` кидав першого
+  // користувача на `/finyk/budgets` (фінплан). Аудит зафіксував це як
+  // розбіжність A2 — канон finyk §8 каже, що bank-connected і manual-only
+  // рівноправні, а редірект нав'язував третій сценарій, якого не обирав
+  // ніхто. Founder ухвалив 2026-07-25: перший вхід — **порожній екран
+  // finyk із ненав'язливими підказками**, ні budgets-first, ні екран
+  // вибору режиму. Тому редіректу більше немає: користувач лишається на
+  // default-сторінці `overview`, яка при нульових даних показує
+  // `ModuleEmptyState`. Прапорець first-run НЕ видалено — він і далі
+  // живить підказку у Плануванні, коли юзер дійде туди сам.
 
   // PWA action: open add-expense sheet when the OS deep-link fires.
   const prevPwaActionRef = useRef<string | null | undefined>(null);

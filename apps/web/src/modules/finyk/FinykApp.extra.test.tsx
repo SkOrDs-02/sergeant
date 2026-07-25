@@ -501,34 +501,40 @@ describe("FinykApp (extra) — first-run navigation", () => {
     vi.unstubAllGlobals();
   });
 
-  it("navigates to budgets on first run when page is not budgets", () => {
+  // Рішення founder-а 2026-07-25: перший вхід у finyk НЕ веде на фінплан.
+  // Раніше тут стояли три тести, що закріплювали протилежне («navigates to
+  // budgets on first run»). Вони проходили — і саме тому розбіжність A2
+  // прожила в продукті: зелений тест стверджував, що нав'язаний редірект
+  // це і є задум. Нижче — інверсія: асерти роблять неможливим його
+  // повернення в будь-якому з трьох сценаріїв, де він раніше спрацьовував.
+  it("не редіректить на budgets при першому вході з кореня /finyk", () => {
     vi.mocked(useModuleFirstRun).mockReturnValueOnce({
       firstRun: true,
       markSeen: vi.fn(),
     });
     vi.mocked(useFinykRoute).mockReturnValueOnce(["overview", navigateMock]);
     render(<FinykApp />);
-    expect(navigateMock).toHaveBeenCalledWith("budgets");
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("does not navigate away when already on budgets", () => {
+  it("не редіректить нікуди, коли юзер сам відкрив budgets", () => {
     vi.mocked(useModuleFirstRun).mockReturnValueOnce({
       firstRun: true,
       markSeen: vi.fn(),
     });
     vi.mocked(useFinykRoute).mockReturnValueOnce(["budgets", navigateMock]);
     render(<FinykApp />);
-    expect(navigateMock).not.toHaveBeenCalledWith("budgets");
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("skips first-run navigate when pwaAction is add_expense", () => {
+  it("не редіректить при pwaAction=add_expense", () => {
     vi.mocked(useModuleFirstRun).mockReturnValue({
       firstRun: true,
       markSeen: vi.fn(),
     });
     vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
     render(<FinykApp pwaAction="add_expense" />);
-    expect(navigateMock).not.toHaveBeenCalledWith("budgets");
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });
 

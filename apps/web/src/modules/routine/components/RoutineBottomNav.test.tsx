@@ -1,7 +1,10 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { resetVisualKeyboardInsetAdapter } from "@sergeant/shared";
+import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
 import { RoutineBottomNav } from "./RoutineBottomNav";
 
 describe("RoutineBottomNav", () => {
