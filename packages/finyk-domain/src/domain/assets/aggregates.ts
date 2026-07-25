@@ -30,7 +30,8 @@ import type {
  * feature (`multi-currency` gate in `AssetsForm.tsx`), so callers that
  * surface this total to the user must also surface the excluded count —
  * see `nonUahManualAssetCount` in `useOverviewData.ts` and the Overview
- * banner in `Overview.tsx`.
+ * banner in `Overview.tsx` (web), and the `nonUahManualAssetCount` banner
+ * in mobile `AssetsPage.tsx`.
  */
 export function sumManualAssetsUAH(
   manualAssets: readonly ManualAsset[] | null | undefined,
