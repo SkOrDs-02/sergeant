@@ -4,6 +4,7 @@
 // (`promptCache.test.ts`) і тримати `chat.ts` тоншим. Поведінка ідентична до
 // інлайн-версії: жодна не мутує вхід.
 
+import { env } from "../../env.js";
 import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
 
 /**
@@ -77,9 +78,11 @@ export function applyToolsCacheBreakpoint<T extends object>(
 }
 
 /**
- * Anthropic strict-mode schemas currently compile reliably only for very small
- * subsets. Keep the full registry annotated for internal validation, but send
- * the live provider payload in non-strict mode so `/api/chat` stays available.
+ * Видаляє `strict`-прапор з КОЖНОГО tool — legacy non-strict payload. Kill-
+ * switch, коли `CHAT_STRICT_TOOLS=false`: гарантує, що Anthropic отримує
+ * payload без strict-прапорів навіть якщо domain-defs анотовані `strict: true`.
+ * Схема лишається нормалізованою (`additionalProperties: false` вже проставлено
+ * у `tools.ts::normalizeStrictTools`) — це для провайдера безпечно.
  */
 export function stripStrictModeForAnthropic<T extends { strict?: unknown }>(
   tools: readonly T[],
@@ -88,11 +91,32 @@ export function stripStrictModeForAnthropic<T extends { strict?: unknown }>(
 }
 
 /**
+ * Прибирає `strict: false` (явний opt-out) із payload-у, зберігаючи
+ * `strict: true`. Anthropic не приймає `strict: false` — прапор або
+ * присутній як `true`, або відсутній. Tools без `strict` лишаються без нього.
+ */
+function keepStrictTrueOnly<T extends { strict?: unknown }>(
+  tools: readonly T[],
+): T[] {
+  return tools.map((tool) => {
+    if (tool.strict === true) return tool;
+    const { strict: _strict, ...rest } = tool;
+    return rest as T;
+  });
+}
+
+/**
  * Tools із cache breakpoint на останньому — обчислюється один раз при імпорті
  * модуля (TOOLS статичний), щоб не клонувати масив на кожен запит.
+ *
+ * `CHAT_STRICT_TOOLS` (default true) — вмикає Anthropic strict tool use для
+ * ≤20 анотованих high-value write-tools; `false` — legacy kill-switch, який
+ * зриває strict з усіх tools (див. INCIDENT 2026-05-16 у `tools.ts`).
  */
 export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
-  stripStrictModeForAnthropic(TOOLS),
+  env.CHAT_STRICT_TOOLS
+    ? keepStrictTrueOnly(TOOLS)
+    : stripStrictModeForAnthropic(TOOLS),
 );
 
 /**

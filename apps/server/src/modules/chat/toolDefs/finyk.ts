@@ -332,6 +332,7 @@ export const FINYK_TOOLS: AnthropicTool[] = [
     name: "split_transaction",
     description:
       "Розділити транзакцію на кілька частин по категоріях. Наприклад: покупка в супермаркеті — 200 грн їжа, 100 грн побут.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {

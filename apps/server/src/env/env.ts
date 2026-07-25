@@ -285,7 +285,7 @@ const envSchema = z.object({
    * Якщо задане, перевизначає legacy `BETTER_AUTH_TOKEN_ENC_KEY`. Версія,
    * яка використовується для **запису** нових ciphertext-ів, обирається
    * через `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION`. Версія, яка
-   * розшифровує конкретний рядок, читається з префіксу `enc:v2:k<N>:...`
+   * розшифровує конкретний рядок, читається з пр��фіксу `enc:v2:k<N>:...`
    * або (для legacy `enc:v1:`) трактується як v1.
    *
    * Rotation flow (див. `docs/runbooks/encryption-key-rotation.md`):
@@ -389,6 +389,20 @@ const envSchema = z.object({
    * самий payload використовується і для stream, і для non-stream відповіді.
    */
   CHAT_MODEL_SYNTHESIS: stringWithDefault("claude-sonnet-4-6"),
+  /**
+   * Anthropic "Strict tool use" toggle для `/api/chat` payload-у. Коли `true`
+   * (default), tools із `strict: true` (див. `toolDefs/*.ts` — ≤20 high-value
+   * write-tools: гроші/вага/звички/харчування) відправляються в Anthropic зі
+   * strict-прапором + grammar-constrained sampling, що усуває invalid-JSON /
+   * type-coercion retry (`"2"` замість `2`). Non-strict tools лишаються як є.
+   *
+   * INCIDENT 2026-05-16: blanket `applyStrictModeToAll` (66 tools) перевищив
+   * Anthropic-ліміт 20 strict tools/запит → кожен `/api/chat` падав 400. Тепер
+   * subset жорстко ≤20 (валідатор у `tools.ts` кидає на старті при >20), а цей
+   * flag — kill-switch: `CHAT_STRICT_TOOLS=false` миттєво повертає legacy
+   * non-strict payload без редеплою, якщо Anthropic почне відхиляти якусь схему.
+   */
+  CHAT_STRICT_TOOLS: boolFromEnv(true),
   /**
    * PR-23 — pluggable LLM provider. `anthropic` (default) використовує
    * `AnthropicProvider`; `stub` повертає hardcoded JSON для read-only
@@ -1047,6 +1061,16 @@ const envSchema = z.object({
   AI_MEMORY_RAG_TOP_K: intFromEnv(4),
   /** Hard timeout for the RAG Voyage + pgvector round-trip (мс). */
   AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
+  /**
+   * Near-duplicate guard для `AiMemoryService.remember`. Перед upsert-ом
+   * вільних (sourceRef=null) memory сервіс шукає найсхожіший наявний запис
+   * того ж source і ПРОПУСКАЄ write, якщо cosine-similarity ≥ цього порога.
+   * Не витрачає Voyage (переюзує вже пораховані embeddings). Rows зі
+   * sourceRef!=null не зачіпаються — вони вже дедупляться (user,source,ref)
+   * upsert-ом. Діапазон [0,1]; `0` — dedup вимкнено. Default 0.97 —
+   * зливає лише майже-ідентичні перефразування, не чіпаючи різні факти.
+   */
+  AI_MEMORY_DEDUP_THRESHOLD: floatFromEnv(0.97),
   /** Concurrent worker-jobs для AI memory ingestion. */
   AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
   /** Max content-length у `MemoryIngestPayload.content` (символи). */
@@ -1081,7 +1105,7 @@ const envSchema = z.object({
    * лишається off-by-default навіть якщо `pnpm ops:n8n:apply` deploy-нув
    * JSON у n8n. Server-side digest-hook поки що відсутній (PR-21 — n8n-only
    * activation), але змінна вже парситься тут для парності з
-   * `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх server-side метрик
+   * `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх server-side ме��рик
    * (наприклад emit `ai_memory_digest_sent_total` із n8n callback-у).
    *
    * Subordinate до `AI_MEMORY_ENABLED` — без master-flag-у `ai_memories`

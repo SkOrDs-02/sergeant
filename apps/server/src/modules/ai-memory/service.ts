@@ -163,17 +163,70 @@ export function createAiMemoryService(
         );
       }
 
-      await deps.vectorStore.upsert(
-        consentedInputs.map((input, i) => ({
-          userId: input.userId,
-          source: input.source,
-          sourceRef: input.sourceRef,
-          content: input.content,
-          embedding: embeddings[i]!,
-          embeddingMeta: deps.embeddings.meta,
-          metadata: input.metadata,
-        })),
-      );
+      const writes = consentedInputs.map((input, i) => ({
+        userId: input.userId,
+        source: input.source,
+        sourceRef: input.sourceRef,
+        content: input.content,
+        embedding: embeddings[i]!,
+        embeddingMeta: deps.embeddings.meta,
+        metadata: input.metadata,
+      }));
+
+      // Near-duplicate guard. Тільки для вільних memory (sourceRef===null:
+      // chat-факти, digest-нотатки) — накопичувальний кейс, де однакові факти
+      // ("алергія на горіхи") пишуться знову й знову і засмічують recall. Rows
+      // зі sourceRef!=null уже дедупляться через (user,source,sourceRef) upsert,
+      // тож їх не чіпаємо. Переюзуємо ВЖЕ пораховані `embeddings[i]` — dedup-query
+      // йде лише в pgvector, БЕЗ додаткового Voyage-виклику. Fail-open: якщо
+      // similarity-query впав, пишемо запис (краще дубль, ніж втрата пам'яті).
+      const dedupThreshold = env.AI_MEMORY_DEDUP_THRESHOLD;
+      let finalWrites = writes;
+      if (dedupThreshold > 0) {
+        const keep = await Promise.all(
+          consentedInputs.map(async (input, i) => {
+            if (input.sourceRef !== null) return true;
+            try {
+              const near = await deps.vectorStore.query({
+                userId: input.userId,
+                embedding: embeddings[i]!,
+                topK: 1,
+                sources: [input.source],
+              });
+              const top = near[0];
+              if (top && top.score >= dedupThreshold) {
+                logger.debug({
+                  msg: "ai_memory_remember_deduped",
+                  userId: input.userId,
+                  source: input.source,
+                  score: top.score,
+                  threshold: dedupThreshold,
+                });
+                return false;
+              }
+            } catch (err) {
+              logger.warn({
+                msg: "ai_memory_dedup_query_failed",
+                userId: input.userId,
+                source: input.source,
+                err: err instanceof Error ? err.message : String(err),
+              });
+            }
+            return true;
+          }),
+        );
+        finalWrites = writes.filter((_, i) => keep[i]);
+      }
+
+      if (finalWrites.length === 0) {
+        logger.debug({
+          msg: "ai_memory_remember_all_deduped",
+          count: writes.length,
+        });
+        return;
+      }
+
+      await deps.vectorStore.upsert(finalWrites);
     },
 
     async recall(input: RecallInput): Promise<MemoryQueryResult[]> {
