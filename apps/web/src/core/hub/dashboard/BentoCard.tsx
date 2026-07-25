@@ -349,24 +349,29 @@ function GhostSparkline({
   d: string;
   colorClass: string;
 }) {
+  // Wrap in a span that carries the text-color so `stroke="currentColor"`
+  // inside the SVG inherits it. Avoids generating arbitrary `stroke-*`
+  // Tailwind classes that won't be present in the bundle without a safelist.
   return (
-    <svg
-      viewBox="0 0 48 28"
+    <span
       aria-hidden
       className={cn(
-        "mt-2 w-full max-w-[80px] h-auto opacity-20",
+        "block mt-2 opacity-20",
+        colorClass,
         "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
       )}
     >
-      <path
-        d={d}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        className={colorClass.replace("text-", "stroke-")}
-      />
-    </svg>
+      <svg viewBox="0 0 48 28" className="w-full max-w-[80px] h-auto">
+        <path
+          d={d}
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    </span>
   );
 }
 
@@ -381,37 +386,40 @@ function GhostRing({ pct, colorClass }: { pct: number; colorClass: string }) {
   const circumference = 2 * Math.PI * r;
   const dash = (Math.min(pct, 100) / 100) * circumference;
   return (
-    <svg
-      viewBox="0 0 28 28"
+    <span
       aria-hidden
       className={cn(
-        "mt-2 w-7 h-7 opacity-20",
+        "block mt-2 opacity-20",
+        colorClass,
         "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500",
       )}
     >
-      {/* Track */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        strokeWidth="3"
-        className="stroke-line/50"
-      />
-      {/* Fill arc */}
-      <circle
-        cx={cx}
-        cy={cy}
-        r={r}
-        fill="none"
-        strokeWidth="3"
-        strokeDasharray={`${dash} ${circumference}`}
-        strokeDashoffset={0}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${cx} ${cy})`}
-        className={colorClass.replace("text-", "stroke-")}
-      />
-    </svg>
+      <svg viewBox="0 0 28 28" className="w-7 h-7">
+        {/* Track — inherits color at lower opacity via inline style */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.25"
+          strokeWidth="3"
+        />
+        {/* Fill arc */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeDashoffset={0}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+      </svg>
+    </span>
   );
 }
 

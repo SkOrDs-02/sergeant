@@ -374,6 +374,69 @@ export function SkeletonWorkoutSet({
 }
 
 /**
+ * SkeletonHeroCard — shape-aware placeholder for the finyk HeroCard.
+ *
+ * Mirrors the two-zone layout of `HeroCard` exactly:
+ *  ─ Top zone: networth label + 2-line cards/debt breakdown
+ *  ─ Bottom zone: large day-budget number + status text + month progress bar
+ *
+ * Used as `<Suspense>` / loading fallback in `finyk/pages/overview` so the
+ * transition from skeleton → real card causes no layout shift.
+ */
+export function SkeletonHeroCard({
+  className,
+  shimmer = true,
+}: ShapeAwareSkeletonProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-line bg-panel overflow-hidden",
+        className,
+      )}
+      aria-hidden="true"
+    >
+      {/* Top zone — networth */}
+      <div className="px-5 pt-4 pb-3 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <SkeletonText shimmer={shimmer} className="w-14 h-2.5" />
+            <Skeleton shimmer={shimmer} className="w-28 h-7" />
+          </div>
+          <SkeletonText shimmer={shimmer} className="w-20 h-2.5" style={{ animationDelay: "30ms" }} />
+        </div>
+        <SkeletonText shimmer={shimmer} className="w-48 h-2.5" style={{ animationDelay: "60ms" }} />
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-line/40 mx-0" />
+
+      {/* Bottom zone — day budget */}
+      <div className="px-5 py-4 space-y-2">
+        {/* Big display number */}
+        <Skeleton shimmer={shimmer} className="w-36 h-9" style={{ animationDelay: "90ms" }} />
+        {/* Status text */}
+        <SkeletonText shimmer={shimmer} className="w-40 h-2.5" style={{ animationDelay: "120ms" }} />
+        {/* Month progress row */}
+        <div className="space-y-1 pt-1">
+          <div className="flex items-center justify-between gap-3">
+            <SkeletonText shimmer={shimmer} className="w-20 h-2" />
+            <SkeletonText shimmer={shimmer} className="w-6 h-2" />
+          </div>
+          {/* Progress track */}
+          <div className="h-1 rounded-full bg-panelHi overflow-hidden">
+            <Skeleton
+              shimmer={shimmer}
+              className="h-full w-4/5 rounded-full"
+              style={{ animationDelay: "150ms" }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * SkeletonMealCard — placeholder for a Nutrition meal entry: thumbnail
  * tile + name + macro chips row.
  */

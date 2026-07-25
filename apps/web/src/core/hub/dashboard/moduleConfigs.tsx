@@ -6,6 +6,7 @@ import {
   selectModulePreview,
   type ModulePreview,
 } from "@sergeant/shared";
+import type { HubModuleAction } from "@shared/lib/modules/hubNav";
 
 export interface ModuleConfig {
   icon: ReactNode;
@@ -61,6 +62,17 @@ export interface ModuleConfig {
    *  modules (routine, nutrition). When present, renders a partial arc
    *  instead of a sparkline silhouette. */
   ghostRingPct?: number | undefined;
+  /**
+   * #18 — long-press peek quick actions.
+   * Up to 3 items shown in the peek sheet when the user long-presses the
+   * BentoCard. Each action fires `openHubModuleWithAction` so the module
+   * opens directly to the right create-flow.
+   */
+  quickActions?: ReadonlyArray<{
+    action: HubModuleAction;
+    label: string;
+    icon: string; // lucide-compatible icon name for <Icon>
+  }> | undefined;
 }
 
 export type ModuleId = ModuleAccent;
@@ -107,6 +119,10 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyExample: "450 ₴",
     // #10 — ghost sparkline: gentle rising curve (net-worth trend shape)
     ghostPath: "M0,22 L8,18 L16,20 L24,14 L32,16 L40,10 L48,12",
+    // #18 — long-press peek
+    quickActions: [
+      { action: "add_expense", label: "Витрата", icon: "minus-circle" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "finyk",
@@ -145,6 +161,10 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     emptyExample: "5 трен.",
     // #10 — ghost sparkline: volume bars (weekly workout volume shape)
     ghostPath: "M4,24 L4,16 M12,24 L12,20 M20,24 L20,12 M28,24 L28,18 M36,24 L36,8 M44,24 L44,14",
+    // #18 — long-press peek
+    quickActions: [
+      { action: "start_workout", label: "Тренування", icon: "dumbbell" },
+    ],
     getPreview: () =>
       selectModulePreview(
         "fizruk",
