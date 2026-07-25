@@ -555,6 +555,46 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
   WHERE status = 'pending';
 `;
 
+/**
+ * `007_routine_completion_events.sql` — append-only журнал відміток звичок.
+ *
+ * Хвиля 1, СТАДІЯ 1 задачі W1-ROUTINE-APPEND. Дзеркалить PG-міграцію
+ * `apps/server/src/migrations/085_routine_completion_events.sql`. Без цієї
+ * інлайн-міграції таблиці НЕ буде на вже встановлених web/mobile клієнтах —
+ * runner застосовує лише те, чого нема в ledger-і `__migrations`.
+ *
+ * Чисто additive: один `CREATE TABLE IF NOT EXISTS` + два індекси. Жодна
+ * існуюча таблиця не чіпається, тому 12-крокового rebuild-рецепту (як у
+ * `002`/`003`/`005`/`006`) тут не потрібно.
+ *
+ * Append-only за конструкцією: немає ні `updated_at`, ні `deleted_at`, тож
+ * LWW-guard і soft-delete тут просто нема на що почепити. Писар
+ * (`sqliteWriter/adapter.completionEvents.ts`) використовує
+ * `INSERT OR IGNORE` з детермінованим `id`.
+ */
+const ROUTINE_007_COMPLETION_EVENTS_SQL = `
+CREATE TABLE IF NOT EXISTS routine_completion_events (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  habit_id       TEXT NOT NULL,
+  date_key       TEXT NOT NULL,
+  state          TEXT NOT NULL DEFAULT 'done'
+                 CHECK (state IN ('done','undone')),
+  occurred_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  tz_offset_min  INTEGER,
+  day_anchor     TEXT NOT NULL DEFAULT 'unknown',
+  source         TEXT NOT NULL DEFAULT 'ui',
+  device_id      TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS routine_completion_events_user_habit_date_idx_lite
+  ON routine_completion_events (user_id, habit_id, date_key, occurred_at);
+
+CREATE INDEX IF NOT EXISTS routine_completion_events_user_occurred_idx_lite
+  ON routine_completion_events (user_id, occurred_at);
+`;
+
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
@@ -570,6 +610,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "006_sync_op_outbox_user_id.sql",
     sql: SYNC_OP_OUTBOX_USER_ID_SQL,
+  },
+  {
+    name: "007_routine_completion_events.sql",
+    sql: ROUTINE_007_COMPLETION_EVENTS_SQL,
   },
 ] as const;
 

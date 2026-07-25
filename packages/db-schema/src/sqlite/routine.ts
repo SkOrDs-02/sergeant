@@ -60,6 +60,66 @@ export const routineEntries = sqliteTable(
 );
 
 /**
+ * SQLite schema for the `routine_completion_events` table.
+ *
+ * Mirrors the Postgres version from
+ * `apps/server/src/migrations/085_routine_completion_events.sql` and
+ * `packages/db-schema/src/pg/routine.ts`. Клієнтська міграція —
+ * `007_routine_completion_events.sql` у
+ * `packages/db-schema/src/sqlite/migrations/index.ts`.
+ *
+ * Append-only журнал відміток звичок (Хвиля 1, стадія 1 задачі
+ * W1-ROUTINE-APPEND). На цій стадії таблиця лише ПИШЕТЬСЯ паралельно з
+ * `routineEntries`; жоден читач (`sqliteReader`, streak / rate / heatmap)
+ * на неї ще не спирається.
+ *
+ * AI-DANGER: append-only. Немає ні `updated_at`, ні `deleted_at` — і не
+ * додавай. Запис іде через `INSERT OR IGNORE` з детермінованим `id`
+ * (див. `buildCompletionEventId` у `@sergeant/routine-domain`), тому
+ * повторне застосування тієї самої події ідемпотентне. Pull-шлях
+ * (`applyPullOp`) для цієї таблиці insert-only.
+ *
+ * Differences from Postgres: TIMESTAMPTZ → TEXT (ISO-8601 з offset),
+ * немає FK на `"user"(id)`, індекси мають суфікс `_lite`.
+ */
+export const routineCompletionEvents = sqliteTable(
+  "routine_completion_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    habitId: text("habit_id").notNull(),
+    /** YYYY-MM-DD як його порахував КЛІЄНТ; трактування залежить від `dayAnchor`. */
+    dateKey: text("date_key").notNull(),
+    /** `'done'` | `'undone'` — CHECK-констрейнт живе в inline-міграції. */
+    state: text().notNull().default("done"),
+    occurredAt: text("occurred_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    tzOffsetMin: integer("tz_offset_min"),
+    /** `'device-local'` | `'kyiv'` | `'unknown'` (backfill). */
+    dayAnchor: text("day_anchor").notNull().default("unknown"),
+    /** `'ui'` | `'chat'` | `'bulk'` | `'backfill'` | `'seed'`. */
+    source: text().notNull().default("ui"),
+    deviceId: text("device_id"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    index("routine_completion_events_user_habit_date_idx_lite").on(
+      table.userId,
+      table.habitId,
+      table.dateKey,
+      table.occurredAt,
+    ),
+    index("routine_completion_events_user_occurred_idx_lite").on(
+      table.userId,
+      table.occurredAt,
+    ),
+  ],
+);
+
+/**
  * SQLite schema for the `routine_streaks` table.
  *
  * Mirrors the Postgres version. Один рядок на користувача, реагує на
