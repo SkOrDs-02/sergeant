@@ -119,6 +119,7 @@ export function HubDashboard({
             coachLoading={s.coachLoading}
             coachError={s.coachError}
             coachInsightText={s.coachInsightText}
+            coachAdviceId={s.coachAdviceId}
             coachRefresh={s.coachRefresh}
             rest={s.rest}
             digestFresh={s.digestFresh}

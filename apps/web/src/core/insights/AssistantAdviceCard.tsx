@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -11,6 +11,10 @@ import {
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
+import {
+  markAdviceShown,
+  trackAdviceReaction,
+} from "../observability/adviceTelemetry";
 
 // Pro tiered model degradation (premium → standard → floor). `premium` is
 // the expected default and stays invisible — only degraded tiers get a
@@ -25,6 +29,24 @@ interface AssistantAdviceCardProps {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  /**
+   * Ідентичність поради для телеметрії (`advice_id`). Приходить із
+   * `useCoachInsight`. Без нього подій не буде — краще мовчання, ніж
+   * події-сироти, які не звести в петлю «побачив → зреагував».
+   */
+  adviceId?: string | null;
+  /**
+   * Чи розгорнута ЗОВНІШНЯ `CollapsibleSection`, всередині якої живе картка.
+   *
+   * КРИТИЧНО для знаменника: `CollapsibleSection` тримає дітей у DOM навіть
+   * згорнутою (`grid-rows-[0fr] overflow-hidden`), тож без цього прапорця
+   * impression стріляв би на mount — а картка сидить у ПОДВІЙНОМУ collapse.
+   * Знаменник роздувся б у рази і «цінність AI» вийшла б штучно низькою
+   * назавжди: переписати історію подій не можна.
+   *
+   * Дефолт `true` — для call-site-ів поза `CollapsibleSection`.
+   */
+  sectionOpen?: boolean;
 }
 
 const COLLAPSED_KEY = "hub_assistant_advice_collapsed";
@@ -43,6 +65,8 @@ export function AssistantAdviceCard({
   loading,
   error,
   onRefresh,
+  adviceId = null,
+  sectionOpen = true,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const aiTier = useAiTier();
@@ -51,11 +75,36 @@ export function AssistantAdviceCard({
       ? DEGRADED_TIER_LABEL[aiTier]
       : null;
 
-  const toggle = () => {
-    setCollapsed((prev) => {
-      writeCollapsed(!prev);
-      return !prev;
+  // Impression. Стоїть ПЕРЕД ранніми `return null` (Rules of Hooks), тому
+  // всі умови видимості перевіряються всередині ефекту:
+  //   1) зовнішня `CollapsibleSection` розгорнута (`sectionOpen`);
+  //   2) сама картка не згорнута (`hub_assistant_advice_collapsed`);
+  //   3) текст поради реально відрендерений (не скелетон і не порожньо).
+  // Дедуплікацію «рівно один раз на (advice_id, завантаження сторінки)"
+  // тримає `markAdviceShown`.
+  useEffect(() => {
+    if (!adviceId || !sectionOpen || collapsed) return;
+    if (typeof insight !== "string" || insight.length === 0) return;
+    markAdviceShown({
+      adviceId,
+      source: "coach_insight",
+      surface: "hub_dashboard",
+      // Лише довжина. Сам текст — вільна українська оповідь про фінанси/тіло/
+      // харчування конкретної людини; у payload він не існує (Hard Rule #21).
+      chars: insight.length,
     });
+  }, [adviceId, sectionOpen, collapsed, insight]);
+
+  // Побічні ефекти винесені з updater-а `setCollapsed`: під StrictMode
+  // updater викликається двічі, і подія полетіла б удвічі частіше за клік.
+  const toggle = () => {
+    const next = !collapsed;
+    writeCollapsed(next);
+    setCollapsed(next);
+    // Реакція на НАЯВНОМУ афордансі — нових кнопок картка не отримує.
+    // На «expand» impression ще не стріляв (ефект відпрацює наступним
+    // рендером), тому `seconds_since_shown` там буде 0 за конструкцією.
+    trackAdviceReaction(adviceId, next ? "collapse" : "expand");
   };
 
   // Hide the card entirely when there's an error and no cached insight
@@ -145,6 +194,16 @@ export function AssistantAdviceCard({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      // Подія — ДО консюмерського шляху: `trackAdviceReaction`
+                      // fire-and-forget і не кидає, зате throw у шині не з'їсть
+                      // реакцію.
+                      //
+                      // AI-NOTE: наявна поведінка, НЕ вводиться цим патчем —
+                      // prompt нижче вставляє ПОВНИЙ текст поради у чат. Це
+                      // існуючий продуктовий шлях (чат і так бачить контекст
+                      // користувача), і він НЕ є телеметрією — у payload події
+                      // тексту немає, лише `chars`.
+                      trackAdviceReaction(adviceId, "ask_ai");
                       emitHubBus("openChat", {
                         message: `Розкажи детальніше про цю пораду й що мені зробити далі: "${insight}"`,
                         autoSend: false,
@@ -156,7 +215,12 @@ export function AssistantAdviceCard({
                       "hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
                     )}
                   >
-                    <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
+                    <Icon
+                      name="sparkle"
+                      size={13}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     Запитати AI про це
                   </button>
                 )}
@@ -164,6 +228,7 @@ export function AssistantAdviceCard({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    trackAdviceReaction(adviceId, "refresh");
                     onRefresh();
                   }}
                   disabled={loading}

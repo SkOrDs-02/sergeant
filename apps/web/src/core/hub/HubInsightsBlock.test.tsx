@@ -42,19 +42,29 @@ vi.mock("@shared/lib/insights/useAllInsights", () => ({
   useAllInsights: () => insightsState.items,
 }));
 
+// Секція тримає дітей у DOM і згорнутою, тому стаб рендерить `children`
+// безумовно і лише ПОВІДОМЛЯЄ про стан через `onOpenChange` — рівно як
+// справжній `CollapsibleSection`. Кнопка дозволяє перемкнути стан у тесті.
 vi.mock("@shared/components/ui/CollapsibleSection", () => ({
   CollapsibleSection: ({
     title,
     collapsedSubtitle,
+    onOpenChange,
+    defaultOpen,
     children,
   }: {
     title: string;
     collapsedSubtitle: ReactNode;
+    onOpenChange?: (open: boolean) => void;
+    defaultOpen?: boolean;
     children: ReactNode;
   }) => (
     <section>
       <h2>{title}</h2>
       <p data-testid="collapsed-subtitle">{collapsedSubtitle}</p>
+      <button type="button" onClick={() => onOpenChange?.(!defaultOpen)}>
+        toggle section
+      </button>
       {children}
     </section>
   ),
@@ -80,13 +90,21 @@ vi.mock("../insights/AssistantAdviceCard", () => ({
     loading,
     error,
     onRefresh,
+    adviceId,
+    sectionOpen,
   }: {
     insight: string | null;
     loading: boolean;
     error: string | null;
     onRefresh: () => void;
+    adviceId?: string | null;
+    sectionOpen?: boolean;
   }) => (
-    <div data-testid="assistant-advice">
+    <div
+      data-testid="assistant-advice"
+      data-advice-id={adviceId ?? ""}
+      data-section-open={String(sectionOpen)}
+    >
       {loading ? "loading" : (error ?? insight)}
       <button type="button" onClick={onRefresh}>
         refresh advice
@@ -137,8 +155,21 @@ vi.mock("./HubInsightsPanel", () => ({
 }));
 
 vi.mock("../insights/WeeklyDigestCard", () => ({
-  WeeklyDigestCard: ({ onCollapse }: { onCollapse: () => void }) => (
-    <button type="button" onClick={onCollapse}>
+  WeeklyDigestCard: ({
+    onCollapse,
+    surface,
+    sectionOpen,
+  }: {
+    onCollapse: () => void;
+    surface?: string;
+    sectionOpen?: boolean;
+  }) => (
+    <button
+      type="button"
+      onClick={onCollapse}
+      data-surface={surface}
+      data-section-open={String(sectionOpen)}
+    >
       collapse digest
     </button>
   ),
@@ -166,6 +197,7 @@ function props(
     coachLoading: false,
     coachError: null,
     coachInsightText: "coach insight",
+    coachAdviceId: "advice-42",
     coachRefresh: vi.fn(),
     rest: [{ id: "rec-1", title: "Rest insight" } as Rec],
     digestFresh: true,
@@ -246,5 +278,35 @@ describe("HubInsightsBlock", () => {
     fireEvent.click(screen.getByText("collapse digest"));
 
     expect(blockProps.setDigestExpanded).toHaveBeenCalledWith(false);
+  });
+  // ── Телеметрія AI-поради (W2-AI-ADVICE-EVENTS, стадія 1) ─────────────────
+  //
+  // Блок сам подій не емітить — він постачає дітям те, без чого impression
+  // збрехав би: ідентичність поради і РЕАЛЬНИЙ стан розгорнутості секції.
+
+  it("прокидає advice_id і стан секції в AssistantAdviceCard", () => {
+    render(<HubInsightsBlock {...props({ insightsDefaultOpen: true })} />);
+
+    const advice = screen.getByTestId("assistant-advice");
+    expect(advice.getAttribute("data-advice-id")).toBe("advice-42");
+    expect(advice.getAttribute("data-section-open")).toBe("true");
+  });
+
+  it("віддає вниз згортання секції — картка дізнається, що її не видно", () => {
+    render(<HubInsightsBlock {...props({ insightsDefaultOpen: true })} />);
+
+    fireEvent.click(screen.getByText("toggle section"));
+
+    expect(
+      screen.getByTestId("assistant-advice").getAttribute("data-section-open"),
+    ).toBe("false");
+  });
+
+  it("позначає дайджест на дашборді як окрему поверхню й ділиться станом секції", () => {
+    render(<HubInsightsBlock {...props({ digestExpanded: true })} />);
+
+    const digest = screen.getByText("collapse digest");
+    expect(digest.getAttribute("data-surface")).toBe("hub_dashboard");
+    expect(digest.getAttribute("data-section-open")).toBe("true");
   });
 });

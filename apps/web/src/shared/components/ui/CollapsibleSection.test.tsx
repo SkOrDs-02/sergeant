@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -57,5 +57,28 @@ describe("CollapsibleSection", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(localStorage.getItem("sergeant.test.persist")).toBe("true");
+  });
+  // `onOpenChange` існує тому, що секція тримає дітей у DOM і згорнутою
+  // (`grid-rows-[0fr] overflow-hidden`): «змонтовано» ≠ «видно». Діти, які
+  // емітять impression-телеметрію, мусять знати РЕАЛЬНИЙ стан видимості.
+  it("повідомляє про стан розгорнутості на монтуванні і після кожного перемикання", () => {
+    const onOpenChange = vi.fn();
+    localStorage.setItem("sergeant.test.notify", "false");
+
+    render(
+      <CollapsibleSection
+        storageKey="sergeant.test.notify"
+        title="Інсайти"
+        onOpenChange={onOpenChange}
+      >
+        <p>payload</p>
+      </CollapsibleSection>,
+    );
+
+    // Початкове значення приходить зі сховища, а не з `defaultOpen`.
+    expect(onOpenChange.mock.calls.map((c) => c[0])).toEqual([false]);
+
+    fireEvent.click(screen.getByRole("button", { name: /Інсайти/ }));
+    expect(onOpenChange.mock.calls.map((c) => c[0])).toEqual([false, true]);
   });
 });

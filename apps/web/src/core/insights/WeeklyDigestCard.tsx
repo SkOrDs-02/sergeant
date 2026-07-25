@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import {
@@ -17,6 +17,11 @@ import {
   getWeekKey,
 } from "./useWeeklyDigest";
 import { WeeklyDigestStories } from "./WeeklyDigestStories";
+import {
+  adviceIdForScope,
+  markAdviceShown,
+  trackAdviceReaction,
+} from "../observability/adviceTelemetry";
 
 // `hasLiveWeeklyDigest` now lives in `@sergeant/shared` (DOM-free, reused by
 // mobile). The web-side adapter in `@shared/lib/weeklyDigestStorage` binds
@@ -227,6 +232,29 @@ function LoadingSpinner() {
   );
 }
 
+/** Чи має дайджест хоч один модульний блок (та сама умова, що `isEmpty`). */
+function hasDigestBody(d: DigestPayload | null | undefined): boolean {
+  return !!(d && (d.finyk || d.fizruk || d.nutrition || d.routine));
+}
+
+/**
+ * Довжина AI-тексту дайджесту. У payload події їде ЛИШЕ це число — сам текст
+ * не існує на рівні події (Hard Rule #21; `scrubPII` чистить за іменами
+ * ключів і поле з текстом не вирізав би).
+ */
+function digestChars(d: DigestPayload | null | undefined): number {
+  if (!d) return 0;
+  let total = 0;
+  for (const key of ["finyk", "fizruk", "nutrition", "routine"] as const) {
+    const block = d[key];
+    if (!block) continue;
+    total += (block.summary ?? "").length + (block.comment ?? "").length;
+    for (const rec of block.recommendations ?? []) total += rec.length;
+  }
+  for (const rec of d.overallRecommendations ?? []) total += rec.length;
+  return total;
+}
+
 interface DigestContentProps {
   digest: DigestPayload | null | undefined;
   loading: boolean;
@@ -235,6 +263,12 @@ interface DigestContentProps {
   onGenerate: () => void;
   onUpdate: () => void;
   onPlayStories: () => void;
+  /** `advice_id` цього дайджесту; `null` доки тіла звіту немає. */
+  adviceId: string | null;
+  /** Поверхня показу — property `surface` події `ai_advice_shown`. */
+  surface: string;
+  /** Чи розгорнута зовнішня `CollapsibleSection` (див. `AssistantAdviceCard`). */
+  sectionOpen: boolean;
 }
 
 function DigestContent({
@@ -245,8 +279,38 @@ function DigestContent({
   onGenerate,
   onUpdate,
   onPlayStories,
+  adviceId,
+  surface,
+  sectionOpen,
 }: DigestContentProps) {
   const [expanded, setExpanded] = useState(false);
+
+  // Impression дайджесту. Тіло звіту живе ВСЕРЕДИНІ `expanded`-регіону
+  // (`grid-rows-[0fr]` доки згорнуто), тож «картка змонтована» ≠ «пораду
+  // прочитали». Плюс зовнішній collapse секції — той самий подвійний
+  // collapse, що й у `AssistantAdviceCard`.
+  useEffect(() => {
+    if (!adviceId || !sectionOpen || !expanded || loading) return;
+    if (!hasDigestBody(digest)) return;
+    markAdviceShown({
+      adviceId,
+      source: "weekly_digest",
+      surface,
+      chars: digestChars(digest),
+    });
+  }, [adviceId, sectionOpen, expanded, loading, digest, surface]);
+
+  // Розгортання/згортання тіла звіту — наявні афорданси «Переглянути звіт» /
+  // «Згорнути». Нових кнопок не додаємо.
+  const setExpandedTracked = (next: boolean) => {
+    setExpanded(next);
+    trackAdviceReaction(adviceId, next ? "expand" : "collapse");
+  };
+
+  const handleRegenerate = (fn: () => void) => () => {
+    trackAdviceReaction(adviceId, "refresh");
+    fn();
+  };
 
   // DataState contract: `data === undefined` → render skeleton slot,
   // otherwise content/empty/error are evaluated. We force `data` to
@@ -270,7 +334,7 @@ function DigestContent({
       {isCurrentWeek && (
         <button
           type="button"
-          onClick={onGenerate}
+          onClick={handleRegenerate(onGenerate)}
           className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
         >
           Спробувати знову
@@ -380,7 +444,7 @@ function DigestContent({
                 {isCurrentWeek && (
                   <button
                     type="button"
-                    onClick={onUpdate}
+                    onClick={handleRegenerate(onUpdate)}
                     className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
                   >
                     Оновити звіт
@@ -394,7 +458,7 @@ function DigestContent({
             <div className="px-4 pb-3">
               <button
                 type="button"
-                onClick={() => setExpanded(true)}
+                onClick={() => setExpandedTracked(true)}
                 className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Переглянути звіт
@@ -405,7 +469,7 @@ function DigestContent({
             <div className="px-4 pb-3 border-t border-line pt-2">
               <button
                 type="button"
-                onClick={() => setExpanded(false)}
+                onClick={() => setExpandedTracked(false)}
                 className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 Згорнути
@@ -426,9 +490,24 @@ interface WeeklyDigestCardProps {
    * user can dismiss the expanded card the same way they opened it.
    */
   onCollapse?: () => void;
+  /**
+   * Поверхня показу — property `surface` події `ai_advice_shown`. Дефолт
+   * відповідає standalone-використанню у «Звітах»; хаб-дашборд передає
+   * `"hub_dashboard"` явно.
+   */
+  surface?: string;
+  /**
+   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — у «Звітах»
+   * картка не загорнута в секцію.
+   */
+  sectionOpen?: boolean;
 }
 
-export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
+export function WeeklyDigestCard({
+  onCollapse,
+  surface = "hub_reports",
+  sectionOpen = true,
+}: WeeklyDigestCardProps = {}) {
   const currentWeekKey = getWeekKey();
   const [selectedWeekKey, setSelectedWeekKey] = useState(currentWeekKey);
   const [showHistory, setShowHistory] = useState(false);
@@ -439,6 +518,18 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
   const { data: history = [] } = useDigestHistory();
 
   const handleGenerate = () => generate();
+
+  // Дайджест — теж AI-порада, тож іде тією самою парою подій із
+  // `source: "weekly_digest"`; окремої метрики не заводимо.
+  //
+  // Scope ідентифікує саму пораду (тиждень + момент генерації), а НЕ її текст:
+  // id мусить лишатись випадковим uuid, інакше подія стає прихованою
+  // сигнатурою змісту. Id стабільний у межах завантаження сторінки — цього
+  // достатньо для пари «показ → реакція»; для підрахунку УНІКАЛЬНИХ порад він
+  // непридатний (це роль серверного id, стадія 3).
+  const adviceId = digest?.generatedAt
+    ? adviceIdForScope(`weekly_digest:${selectedWeekKey}:${digest.generatedAt}`)
+    : null;
 
   const isPast = selectedWeekKey !== currentWeekKey;
 
@@ -526,7 +617,10 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
             <Tooltip content="Згорнути" placement="top-center">
               <button
                 type="button"
-                onClick={onCollapse}
+                onClick={() => {
+                  trackAdviceReaction(adviceId, "collapse");
+                  onCollapse();
+                }}
                 aria-label="Згорнути звіт тижня"
                 className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
@@ -587,6 +681,9 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
         onGenerate={handleGenerate}
         onUpdate={handleGenerate}
         onPlayStories={() => setStoriesOpen(true)}
+        adviceId={adviceId}
+        surface={surface}
+        sectionOpen={sectionOpen}
       />
 
       {storiesOpen && digest && (
