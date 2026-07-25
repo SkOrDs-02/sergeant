@@ -21,7 +21,9 @@ import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
 import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { getOnboardingGoals } from "@sergeant/shared";
+import { FinykDomain } from "@sergeant/finyk-domain";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -55,6 +57,39 @@ export function Overview({
   // людина прийшла. Читаються один раз — вони не змінюються за час сесії.
   const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
+  // Staleness банку (канон §6.3). `webhookSyncState` приїжджає з
+  // `useMonobankWebhook` крізь спред у `mergedMono`; поріг і вся логіка —
+  // у доменній функції, тут лише читання.
+  // `webhookActive` беремо з контракту (`MonoSyncStateSchema`), а не
+  // виводимо зі зведеного `syncState.status`: той злитий із Приватом, і
+  // помилка Привату гасила б staleness Monobank без жодного стосунку.
+  const webhookSyncState = (
+    mono as {
+      webhookSyncState?: {
+        lastEventAt?: string | null;
+        webhookActive?: boolean;
+      } | null;
+    }
+  ).webhookSyncState;
+  const monoLastEventAt = webhookSyncState?.lastEventAt ?? null;
+  const monoWebhookActive = webhookSyncState?.webhookActive ?? false;
+  const monoStaleness = useMemo(
+    () =>
+      FinykDomain.evaluateMonoStaleness({
+        lastEventAt: monoLastEventAt,
+        webhookActive: monoWebhookActive,
+        // WHY: тут потрібен саме UTC-anchored instant, а не київська межа
+        // доби. `evaluateMonoStaleness` рахує РІЗНИЦЮ двох моментів
+        // (скільки минуло від останньої події банку), а не «який сьогодні
+        // день». Київські хелпери дали б день-ключ, який для віднімання
+        // непридатний, і ще й зробив би результат залежним від того, о
+        // котрій годині впала подія.
+        // eslint-disable-next-line no-restricted-syntax
+        now: new Date(),
+      }),
+    [monoLastEventAt, monoWebhookActive],
+  );
+
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
     isLoading: d.loadingTx,
@@ -80,6 +115,15 @@ export function Overview({
                 error={d.monoError}
                 onRetry={d.monoRefresh}
                 loading={d.loadingTx}
+              />
+            )}
+
+            {monoStaleness.stale && monoStaleness.days !== null && (
+              <MonoStalenessBanner
+                days={monoStaleness.days}
+                onReconnect={
+                  onNavigate ? () => onNavigate("settings") : undefined
+                }
               />
             )}
 
