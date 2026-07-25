@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-25 by @github-actions[bot]. **Next review:** 2026-10-23.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -171,3 +171,14 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 - [add-feature-flag.md](./add-feature-flag.md) — якщо A/B тест двох промптів
 - `apps/server/src/modules/chat/toolDefs/systemPrompt.ts` — поточний промпт
 - [AGENTS.md](../../../AGENTS.md) — секція «Architecture: AI tool execution path»
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                    | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ | ---------- |
+| [#464](https://github.com/Skords-01/Sergeant/pull/464) | perf(server): unit-економіка AI — tool search, TTL 1h, Free-квота 15 → 5 | 2026-07-25 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

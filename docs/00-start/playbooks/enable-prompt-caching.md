@@ -1,6 +1,6 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-25 by @github-actions[bot]. **Next review:** 2026-10-23.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)
@@ -327,3 +327,14 @@ sum(rate(anthropic_prompt_cache_hit_total{outcome="miss"}[5m])) by (version)
 - `apps/server/src/lib/anthropic.ts` — `anthropicMessages` / `anthropicMessagesStream` / `recordUsage`
 - `apps/server/src/modules/chat/chat.ts` — `buildSystem`, `applyToolsCacheBreakpoint`, request payload-и.
 - Anthropic docs: https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                    | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------ | ---------- |
+| [#464](https://github.com/Skords-01/Sergeant/pull/464) | perf(server): unit-економіка AI — tool search, TTL 1h, Free-квота 15 → 5 | 2026-07-25 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
