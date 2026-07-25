@@ -16,6 +16,9 @@
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { notifyOutboxEnqueued } from "./outboxNudge.js";
+import { isSyncableUserId } from "./syncableUserId.js";
+
 export type OutboxUpsertOpKind = "insert" | "update" | "delete";
 
 export interface OutboxUpsertInput {
@@ -42,10 +45,32 @@ export interface OutboxUpsertInput {
   readonly idempotencyKey: string;
 }
 
+export interface EnqueueOutboxUpsertResult {
+  /** `sync_op_outbox.id`, або `null` коли рядок свідомо не писався. */
+  readonly id: number | null;
+  /** `true` лише коли цей виклик вставив новий рядок. */
+  readonly inserted: boolean;
+  /**
+   * Причина, з якої рядок не потрапив у чергу, або `null` коли потрапив
+   * (чи вже там лежав). `'non-syncable-user'` — синтетичний локальний id
+   * (анонім / демо), чиї операції нікуди не поїдуть; див.
+   * `syncableUserId.ts`.
+   */
+  readonly skipped: "non-syncable-user" | null;
+}
+
 /**
  * Durably append an upsert/delete op to the client-side sync_op_outbox.
  * Idempotent on idempotencyKey — a pre-existing row with the same key
  * is returned as-is (inserted: false).
+ *
+ * Ops belonging to a synthetic local user id (anonymous / demo) are NOT
+ * written: `drainSyncOpOutbox` scopes on the Better Auth session id, so
+ * such a row could never be pushed nor purged. The call resolves with
+ * `skipped: 'non-syncable-user'` instead.
+ *
+ * On a fresh insert the writer-runtime is nudged via
+ * `notifyOutboxEnqueued()` so the push does not wait for the periodic tick.
  *
  * Never throws on idempotency-key collision; SQL / disk errors propagate
  * to the caller unchanged.
@@ -53,13 +78,21 @@ export interface OutboxUpsertInput {
 export async function enqueueOutboxUpsert(
   client: SqliteMigrationClient,
   input: OutboxUpsertInput,
-): Promise<{ id: number; inserted: boolean }> {
+): Promise<EnqueueOutboxUpsertResult> {
   const { userId, table, op, row, clientTs, idempotencyKey } = input;
 
   if (typeof userId !== "string" || userId.length === 0) {
     throw new Error(
       "enqueueOutboxUpsert: userId is required (NOT NULL column).",
     );
+  }
+
+  // Синтетичний локальний id (анонім / демо) → рядок дренувати нікому:
+  // `drainSyncOpOutbox` фільтрує по id сесії Better Auth. Не пишемо його
+  // взагалі, інакше `pending` росте без межі — див. `syncableUserId.ts`.
+  // Локальний SQLite-запис уже стався вище по стеку і не залежить від цього.
+  if (!isSyncableUserId(userId)) {
+    return { id: null, inserted: false, skipped: "non-syncable-user" };
   }
 
   // Pre-check idempotency — mirrors enqueueOutboxIncrement semantics.
@@ -69,7 +102,7 @@ export async function enqueueOutboxUpsert(
   );
   const existingRow = existing[0];
   if (existingRow !== undefined) {
-    return { id: existingRow.id, inserted: false };
+    return { id: existingRow.id, inserted: false, skipped: null };
   }
 
   const rowJson = JSON.stringify(row);
@@ -92,5 +125,11 @@ export async function enqueueOutboxUpsert(
         `idempotency_key=${JSON.stringify(idempotencyKey)}, got ${after.length}`,
     );
   }
-  return { id: afterRow.id, inserted: true };
+
+  // Свіжий рядок у черзі — штовхаємо writer-runtime, щоб push не чекав
+  // до ~36 с наступного тіку інтервалу. Дедуп in-flight тіків живе в
+  // самому scheduler-і, тож пачка з N операцій дає один-два push-и.
+  notifyOutboxEnqueued();
+
+  return { id: afterRow.id, inserted: true, skipped: null };
 }

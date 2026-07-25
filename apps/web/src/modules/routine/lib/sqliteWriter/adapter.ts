@@ -10,6 +10,8 @@ import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
+import { notifyOutboxEnqueued } from "../../../../core/syncEngine/outboxNudge.js";
+import { isSyncableUserId } from "../../../../core/syncEngine/syncableUserId.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 import { appendCompletionEvent } from "./adapter.completionEvents.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
@@ -215,15 +217,7 @@ async function addCompletion(
     /* sync-enqueue failure is intentionally swallowed */
   });
   // Enqueue a streak increment (+1) so the server's PN-counter stays current.
-  void enqueueOutboxIncrement(client, {
-    userId,
-    table: "routine_streaks",
-    row: { user_id: userId, delta: 1 },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {
-    /* sync-enqueue failure is intentionally swallowed */
-  });
+  fireStreakIncrement(client, userId, 1, clientTs);
 }
 
 async function removeCompletion(
@@ -255,15 +249,38 @@ async function removeCompletion(
     /* sync-enqueue failure is intentionally swallowed */
   });
   // Enqueue a streak decrement (-1) so the server's PN-counter stays current.
+  fireStreakIncrement(client, userId, -1, clientTs);
+}
+
+/**
+ * Fire-and-forget PN-counter delta для `routine_streaks`.
+ *
+ * Синтетичний локальний id (анонім / демо) пропускаємо: `drainSyncOpOutbox`
+ * скоупиться на id сесії Better Auth, тож такий рядок не поїхав би ніколи
+ * і не був би прибраний (TTL-збирач `pending` не чіпає). Той самий гейт,
+ * що і в `enqueueOutboxUpsert` — тут окремо, бо `enqueueOutboxIncrement`
+ * живе в `db-schema`, спільному з mobile, і про web-синтетичні id не знає.
+ */
+function fireStreakIncrement(
+  client: SqliteMigrationClient,
+  userId: string,
+  delta: 1 | -1,
+  clientTs: string,
+): void {
+  if (!isSyncableUserId(userId)) return;
   void enqueueOutboxIncrement(client, {
     userId,
     table: "routine_streaks",
-    row: { user_id: userId, delta: -1 },
+    row: { user_id: userId, delta },
     clientTs,
     idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {
-    /* sync-enqueue failure is intentionally swallowed */
-  });
+  })
+    .then(() => {
+      notifyOutboxEnqueued();
+    })
+    .catch(() => {
+      /* sync-enqueue failure is intentionally swallowed */
+    });
 }
 
 async function renameHabit(

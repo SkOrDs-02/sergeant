@@ -65,7 +65,7 @@ describe("enqueueOutboxUpsert", () => {
 
     const result = await enqueueOutboxUpsert(client, makeInput());
 
-    expect(result).toEqual({ id: 7, inserted: true });
+    expect(result).toEqual({ id: 7, inserted: true, skipped: null });
 
     // pre-check SELECT
     expect(allMock).toHaveBeenNthCalledWith(
@@ -93,7 +93,7 @@ describe("enqueueOutboxUpsert", () => {
 
     const result = await enqueueOutboxUpsert(client, makeInput());
 
-    expect(result).toEqual({ id: 3, inserted: false });
+    expect(result).toEqual({ id: 3, inserted: false, skipped: null });
     expect(runMock).not.toHaveBeenCalled();
   });
 
