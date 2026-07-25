@@ -14,6 +14,8 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток.
+  "routine_completion_events",
   "fizruk_workouts",
   "fizruk_workout_items",
   "fizruk_workout_sets",
@@ -304,6 +306,80 @@ async function applyGenericRegistryRow(
   return "applied";
 }
 
+/**
+ * Append-only pull-шлях журналу відміток (W1-ROUTINE-APPEND, стадія 1).
+ *
+ * INSERT-ONLY і нічого більше. Свідомо НЕМАЄ:
+ *
+ *   - update-гілки — подія незмінна;
+ *   - delete-гілки — у таблиці нема `deleted_at`, а прибирати рядок
+ *     журналу означало б переписувати історію;
+ *   - LWW-guard-у — нема `updated_at`, і порівнювати нема з чим.
+ *
+ * Дублікат (той самий `id`, що вже застосований) — це `skipped`, а не
+ * помилка: `id` детермінований, тож повторна доставка нормальна.
+ * `op='update'|'delete'` від сервера сюди дійти не може (серверний
+ * apply-шлях відхиляє їх із `append_only_violation`), але якщо дійде —
+ * `rejected`, щоб розбіжність було видно, а не проковтнуто.
+ */
+async function applyRoutineCompletionEvents(
+  client: SqliteMigrationClient,
+  op: SyncV2PullOp,
+  userId: string,
+): Promise<ApplyPullOutcome> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id || row["user_id"] !== userId) return "rejected";
+  if (op.op !== "insert") return "rejected";
+
+  const habitId = typeof row["habit_id"] === "string" ? row["habit_id"] : null;
+  const dateKey = typeof row["date_key"] === "string" ? row["date_key"] : null;
+  if (!habitId || !dateKey) return "rejected";
+
+  const state = row["state"] === "undone" ? "undone" : "done";
+  const occurredAt =
+    typeof row["occurred_at"] === "string" ? row["occurred_at"] : op.client_ts;
+  const tzOffsetMin =
+    typeof row["tz_offset_min"] === "number" &&
+    Number.isInteger(row["tz_offset_min"])
+      ? row["tz_offset_min"]
+      : null;
+  const dayAnchor =
+    typeof row["day_anchor"] === "string" ? row["day_anchor"] : "unknown";
+  const source = typeof row["source"] === "string" ? row["source"] : "ui";
+  const deviceId =
+    typeof row["device_id"] === "string" ? row["device_id"] : null;
+  const createdAt =
+    typeof row["created_at"] === "string" ? row["created_at"] : op.client_ts;
+
+  const existing = await client.all<{ id: string }>(
+    `SELECT id FROM routine_completion_events WHERE id = ? AND user_id = ?`,
+    [id, userId],
+  );
+  if (existing.length > 0) return "skipped";
+
+  await client.run(
+    `INSERT OR IGNORE INTO routine_completion_events
+       (id, user_id, habit_id, date_key, state, occurred_at,
+        tz_offset_min, day_anchor, source, device_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      userId,
+      habitId,
+      dateKey,
+      state,
+      occurredAt,
+      tzOffsetMin,
+      dayAnchor,
+      source,
+      deviceId,
+      createdAt,
+    ],
+  );
+  return "applied";
+}
+
 const SPECIAL_HANDLERS: Record<
   string,
   (
@@ -314,6 +390,7 @@ const SPECIAL_HANDLERS: Record<
 > = {
   routine_entries: applyRoutineEntries,
   routine_streaks: applyRoutineStreaks,
+  routine_completion_events: applyRoutineCompletionEvents,
 };
 
 /**

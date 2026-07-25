@@ -11,6 +11,7 @@ import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
+import { appendCompletionEvent } from "./adapter.completionEvents.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
 import {
   CATEGORY_SOFT_DELETE_SQL,
@@ -56,6 +57,9 @@ import {
  *
  *   - `completion-add` / `completion-remove` → `routine_entries` +
  *     `routine_streaks` (increment ±1, fire-and-forget outbox enqueue)
+ *   - `completion-event-append` → `routine_completion_events` (append-only
+ *     журнал, W1-ROUTINE-APPEND стадія 1; `INSERT OR IGNORE`, без
+ *     streak-інкремента — його вже зробив старий шлях)
  *   - `habit-rename` → `routine_entries` (denormalized name cascade)
  *   - `habit-upsert` / `habit-delete` → `routine_habits`
  *   - `tag-upsert` / `tag-delete` → `routine_tags`
@@ -91,6 +95,14 @@ const applyOps = createApplyOps<RoutineDualWriteOp>({
     },
     "completion-remove": async (client, op, rt) => {
       await removeCompletion(client, op.habitId, op.dateKey, rt);
+      return "applied";
+    },
+    // W1-ROUTINE-APPEND стадія 1 — append-only журнал. Пишеться ПОРУЧ із
+    // completion-add/remove; реалізація живе в окремому файлі
+    // (`adapter.completionEvents.ts`), бо append-only-семантика не
+    // повинна змішуватись із LWW-upsert-ами решти таблиць.
+    "completion-event-append": async (client, op, rt) => {
+      await appendCompletionEvent(client, op, rt);
       return "applied";
     },
     "habit-rename": async (client, op, rt) => {
