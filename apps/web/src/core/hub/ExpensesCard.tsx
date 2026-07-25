@@ -235,8 +235,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   return (
     <div
       className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
+        "report-card bg-panel border border-line rounded-2xl transition-shadow",
+        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
       )}
     >
       <button
@@ -245,7 +245,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         aria-expanded={!collapsed}
         className={cn(
           "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-colors",
+          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
         <Icon

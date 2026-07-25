@@ -82,9 +82,9 @@ describe("HubReports — render smoke (F23)", () => {
     // component into the empty-state branch in `HubReports.tsx`.
     render(<HubReports />);
 
-    expect(
-      screen.getByText("Збери більше даних для інсайтів"),
-    ).toBeInTheDocument();
+    // Порожній стан тепер — ілюстрований `EmptyState` замість голого
+    // рядка (UX-пропозиція 2026-07).
+    expect(screen.getByText("Ще збираємо твої дані")).toBeInTheDocument();
   });
 
   it("renders all four domain card stubs via Suspense", () => {

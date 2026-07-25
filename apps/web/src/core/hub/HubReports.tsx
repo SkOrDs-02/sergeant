@@ -8,6 +8,8 @@
  */
 import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { EmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyListIllustration } from "@assets/illustrations";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
@@ -280,8 +282,13 @@ export function HubReports() {
           ))}
         </div>
       ) : (
-        <div className="bg-panel border border-line rounded-2xl p-4 text-center text-style-caption text-muted">
-          Збери більше даних для інсайтів
+        <div className="bg-panel border border-line rounded-2xl">
+          <EmptyState
+            size="sm"
+            illustration={<EmptyListIllustration size={112} />}
+            title="Ще збираємо твої дані"
+            description="Додай записи в модулях — і тут з'являться інсайти за твій період."
+          />
         </div>
       )}
 

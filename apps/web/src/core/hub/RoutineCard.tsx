@@ -2,7 +2,7 @@
  * Lazy-loaded per-domain card for routine/habits data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
@@ -19,26 +19,23 @@ import {
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
 
-// ── Local sub-components ──────────────────────────────────────────────
-
-function BarChart({
+// ── Habit consistency heatmap ─────────────────────────────────────────
+//
+// Календарний heatmap виконання звичок замість стовпчикового графіка:
+// для звичок важлива саме консистентність (скільки днів поспіль ти
+// «в зеленому»), а не форма тренду. Кожна клітинка — день, інтенсивність
+// кольору = % виконання за той день. Тижневий період дає 7 клітинок,
+// місячний — повний календарний ряд, і heatmap читається однаково добре
+// в обох (на відміну від 30 тонких стовпчиків).
+function HabitHeatmap({
   data,
   dates,
-  colorClass,
-  maxValue,
-  unit = "",
 }: {
   data: Record<string, number>;
   dates: string[];
-  colorClass: string;
-  maxValue?: number;
-  unit?: string;
 }) {
-  const [selected, setSelected] = useState<number | null>(null);
   const vals = dates.map((d) => data[d] ?? 0);
-  const max = maxValue || Math.max(...vals, 1);
   const hasData = vals.some((v) => v > 0);
-  const isWeek = dates.length <= 7;
 
   if (!hasData) {
     return (
@@ -48,94 +45,61 @@ function BarChart({
     );
   }
 
-  function labelStep(count: number) {
-    if (count <= 7) return 1;
-    if (count <= 15) return 2;
-    return Math.ceil(count / 8);
-  }
-  const step = labelStep(dates.length);
-
-  function formatLabel(dateStr: string) {
-    // `dateStr` is a `YYYY-MM-DD` Kyiv day-key; read its calendar parts
-    // in Europe/Kyiv (kyivTime) rather than host-local `getDay/getDate`,
-    // so labels never drift on a roaming clock (domain-invariants spec).
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    if (isWeek) {
-      const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[parts.weekday];
-    }
-    return String(parts.day);
+  // 5 щаблів інтенсивності (0 / 1–33 / 34–66 / 67–99 / 100). Пусті дні —
+  // тонкий нейтральний слот, щоб календарний ритм лишався видимим.
+  function levelClass(pct: number): string {
+    if (pct <= 0) return "bg-panelHi border border-line";
+    if (pct < 34) return "bg-chart-routine opacity-30";
+    if (pct < 67) return "bg-chart-routine opacity-55";
+    if (pct < 100) return "bg-chart-routine opacity-80";
+    return "bg-chart-routine opacity-100";
   }
 
   function formatTooltip(dateStr: string, value: number) {
     const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
     const day = String(parts.day).padStart(2, "0");
     const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
+    return `${day}.${month}: ${value}%`;
   }
-
-  const selectedDate = selected !== null ? dates[selected] : undefined;
-  const selectedVal = selected !== null ? vals[selected] : undefined;
 
   return (
     <div>
-      {selectedDate !== undefined && selectedVal !== undefined ? (
-        <div className="text-style-caption text-center text-text mb-1 h-4">
-          {formatTooltip(selectedDate, selectedVal)}
-        </div>
-      ) : (
-        <div className="h-4 mb-1" />
-      )}
       <div
-        className="flex items-end gap-0.5 h-20"
+        className="grid grid-cols-7 gap-1"
+        role="img"
         aria-label={messages.hub.reportChartAria}
       >
-        {vals.map((v, i) => {
-          const pct = Math.max(0, Math.min(100, (v / max) * 100));
-          const isToday = dates[i] === localDateKey();
-          const isSelected = selected === i;
+        {dates.map((d, i) => {
+          const v = vals[i] ?? 0;
+          const isToday = d === localDateKey();
           return (
-            <button
-              key={dates[i]}
-              type="button"
-              aria-label={formatTooltip(dates[i] ?? "", v)}
-              aria-pressed={isSelected}
-              className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
-              onClick={() => setSelected(isSelected ? null : i)}
-            >
-              <div
-                className={cn(
-                  "w-full rounded-t-sm transition-[height,background-color,opacity]",
-                  "motion-safe:animate-bar-grow",
-                  colorClass,
-                  (isToday || isSelected) && "opacity-100",
-                  !isToday && !isSelected && "opacity-60",
-                )}
-                style={{
-                  height: `${pct}%`,
-                  minHeight: v > 0 ? "2px" : "0",
-                  animationDelay: `${Math.min(i * 30, 600)}ms`,
-                }}
-              />
-            </button>
+            <div
+              key={d}
+              title={formatTooltip(d, v)}
+              aria-label={formatTooltip(d, v)}
+              className={cn(
+                "aspect-square rounded-md transition-[background-color,opacity]",
+                "motion-safe:animate-bar-grow",
+                levelClass(v),
+                isToday && "ring-2 ring-routine/60",
+              )}
+              style={{ animationDelay: `${Math.min(i * 20, 400)}ms` }}
+            />
           );
         })}
       </div>
-      <div className="flex gap-0.5 mt-1">
-        {dates.map((d, i) => {
-          const show = i % step === 0 || i === dates.length - 1;
-          return (
-            <span
-              key={d}
-              className={cn(
-                "flex-1 text-center text-style-caption leading-tight",
-                selected === i ? "text-text font-medium" : "text-muted",
-              )}
-            >
-              {show ? formatLabel(d) : ""}
-            </span>
-          );
-        })}
+      {/* Легенда інтенсивності — мовно-нейтральні мітки 0%→100% (i18n-safe,
+          без нових рядків у каталозі; шкала кольорів = % виконання за день). */}
+      <div className="mt-2 flex items-center justify-end gap-1.5">
+        <span className="text-style-caption text-muted tabular-nums">0%</span>
+        <span className="flex items-center gap-1" aria-hidden>
+          <span className="w-3 h-3 rounded-sm bg-panelHi border border-line" />
+          <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-30" />
+          <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-55" />
+          <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-80" />
+          <span className="w-3 h-3 rounded-sm bg-chart-routine opacity-100" />
+        </span>
+        <span className="text-style-caption text-muted tabular-nums">100%</span>
       </div>
     </div>
   );
@@ -234,8 +198,8 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   return (
     <div
       className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
+        "report-card bg-panel border border-line rounded-2xl transition-shadow",
+        collapsed ? "p-3" : "report-card-open p-4 space-y-3",
       )}
     >
       <button
@@ -244,7 +208,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
         aria-expanded={!collapsed}
         className={cn(
           "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-colors",
+          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
         <Icon
@@ -297,13 +261,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} {formattedPrev}%
           </p>
-          <BarChart
+          <HabitHeatmap
             key={`${period}-${offset}`}
             data={cur.daily}
             dates={dates}
-            colorClass="bg-chart-routine"
-            maxValue={100}
-            unit="%"
           />
         </>
       )}

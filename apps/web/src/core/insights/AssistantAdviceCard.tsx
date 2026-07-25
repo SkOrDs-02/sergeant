@@ -5,6 +5,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Badge } from "@shared/components/ui/Badge";
 import { useAiTier } from "@shared/api/useAiTier";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   safeReadStringLS,
   safeWriteLS,
@@ -133,22 +134,49 @@ export function AssistantAdviceCard({
             )}
 
             {!(loading && !insight) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRefresh();
-                }}
-                disabled={loading}
-                aria-label="Оновити пораду"
-                className={cn(
-                  "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
-                  loading &&
-                    "opacity-40 cursor-not-allowed motion-safe:animate-spin",
+              <div className="mt-2.5 flex items-center gap-2">
+                {/* Actionable insight (UX-пропозиція 2026-07): порада була
+                    суто текстовою — тепер із неї можна одразу перейти в
+                    дію. «Запитати AI про це» відкриває асистента із
+                    засіяним контекстом поради (autoSend: false, щоб юзер
+                    міг відредагувати питання перед відправкою). */}
+                {insight && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      emitHubBus("openChat", {
+                        message: `Розкажи детальніше про цю пораду й що мені зробити далі: "${insight}"`,
+                        autoSend: false,
+                      });
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl touch-target",
+                      "bg-brand-soft text-brand-soft-fg text-style-caption font-semibold",
+                      "hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+                    )}
+                  >
+                    <Icon name="sparkle" size={13} strokeWidth={2} aria-hidden />
+                    Запитати AI про це
+                  </button>
                 )}
-              >
-                <Icon name="refresh-cw" size={14} />
-              </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRefresh();
+                  }}
+                  disabled={loading}
+                  aria-label="Оновити пораду"
+                  className={cn(
+                    "p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
+                    loading &&
+                      "opacity-40 cursor-not-allowed motion-safe:animate-spin",
+                  )}
+                >
+                  <Icon name="refresh-cw" size={14} />
+                </button>
+              </div>
             )}
           </div>
         )}

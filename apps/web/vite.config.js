@@ -339,6 +339,14 @@ export default defineConfig(({ mode }) => {
       },
     },
     resolve: {
+      // `apps/mobile` тягне react-native 0.76 → react@19, і pnpm вкладає
+      // цю 19-ту копію під `react-router`/`react-router-dom` (їх peer —
+      // `react >=18`), тоді як `apps/web` пінить react@18.3.1. Без dedupe
+      // `RouterProvider` створює елементи React-ом 19, а решта дерева —
+      // React-ом 18 → рантайм-краш «Objects are not valid as a React
+      // child» на корені. Форсуємо єдину копію react/react-dom з цього
+      // workspace, щоб і роутер, і застосунок ділили один runtime.
+      dedupe: ["react", "react-dom", "react/jsx-runtime"],
       alias: {
         "@sergeant/shared": resolve(
           __dirname,
