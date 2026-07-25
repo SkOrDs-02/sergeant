@@ -6,6 +6,11 @@
 
 import { env } from "../../env.js";
 import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
+import {
+  buildToolSearchPayload,
+  isCacheable,
+  modelSupportsToolSearch,
+} from "./toolSearch.js";
 
 /**
  * Anthropic prompt-caching, три точки розриву (cache breakpoints). Порядок
@@ -20,9 +25,9 @@ import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
  *    оскільки tools рендеряться ПЕРЕД system, сумарний префікс tools+SYSTEM_PREFIX
  *    перевищує поріг і кешується.
  *
- * 2. **Останній tool** (`applyToolsCacheBreakpoint`) — кешує всі tools.
- *    Tools + SYSTEM_PREFIX разом — стабільний блок, спільний між усіма
- *    запитами; основний cache-read на кожному турі.
+ * 2. **Останній НЕ-deferred tool** (`applyToolsCacheBreakpoint`) — кешує
+ *    tools-блок. Tools + SYSTEM_PREFIX разом — стабільний блок, спільний між
+ *    усіма запитами; основний cache-read на кожному турі.
  *
  *    ВИМІРЯНО 2026-07-25: **77 інструментів, 43 КБ JSON, разом із
  *    SYSTEM_PREFIX ≈ 14 400-21 200 токенів.** Тут раніше стояло «~19 шт» і
@@ -30,12 +35,26 @@ import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
  *    побудовано заниження unit-економіки (див.
  *    `docs/01-product/launch/business/01-monetization-and-pricing.md` § 9.5).
  *
- *    AI-DANGER: наслідок TTL=5 хв — при спорадичному використанні (а
- *    персональний асистент саме такий) кожне повідомлення платить cache
- *    WRITE, а не read. При 21k токенів це $0.08 на Sonnet-турі плюс $0.027
- *    на Haiku — тобто холодне повідомлення дорожче за тепле на порядок.
- *    Перш ніж додавати інструменти, порахуй, скільки це додає до КОЖНОГО
- *    холодного запиту.
+ *    Саме цей вимір і породив дві зміни нижче — TTL=1h і tool search.
+ *
+ * **TTL.** Tools і SYSTEM_PREFIX кешуються на `ttl: "1h"`, повідомлення —
+ * на дефолтних 5 хв. Розрахунок для N повідомлень у межах години: 5 хв дає
+ * ≈1.25·N (майже кожне холодне), 1h дає 2 + 0.1·(N−1). Рівність при N≈1.65,
+ * тобто вже з другого повідомлення в сесії 1h вигідніший — а сесія з одного
+ * повідомлення в чат-асистенті практично не трапляється. Повідомлення
+ * лишаються на 5 хв свідомо: наступний тур приходить за секунди, і платити
+ * 2× за запис, який прочитають один раз, сенсу немає.
+ *
+ * AI-DANGER: Anthropic вимагає, щоб блоки з ДОВШИМ TTL стояли ПЕРЕД
+ * коротшими. Порядок рендеру `tools → system → messages` це задовольняє
+ * (1h, 1h, 5m). Якщо колись з'явиться четвертий breakpoint — став його з
+ * урахуванням цього правила, інакше отримаєш 400.
+ *
+ * **Tool search.** Решта інструментів іде з `defer_loading: true` і в
+ * контекст не потрапляє взагалі — деталі й обмеження в `toolSearch.ts`.
+ * Перш ніж додавати інструменти, порахуй, скільки це додає до КОЖНОГО
+ * холодного запиту (для гарячого набору — до кожного; для deferred —
+ * лише коли модель його знайде).
  *
  * 3. **Останнє повідомлення** (`applyMessagesCacheBreakpoint`) — кешує префікс
  *    історії діалогу. На наступному турі клієнт дошле історію як префікс, і
@@ -58,17 +77,34 @@ import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
  * Коли `context` порожній, Anthropic API відхиляє `text`-блоки з empty `text`,
  * тому під cap-ом повертаємо лише самий cached prefix.
  */
+export interface CacheControl {
+  type: "ephemeral";
+  ttl?: "1h";
+}
+
 export interface AnthropicSystemBlock {
   type: "text";
   text: string;
-  cache_control?: { type: "ephemeral" };
+  cache_control?: CacheControl;
+}
+
+/**
+ * `cache_control` для СТАБІЛЬНОГО префікса (tools + SYSTEM_PREFIX). Читає
+ * `CHAT_CACHE_TTL_1H` на кожному виклику, а не при імпорті — щоб тест міг
+ * перемкнути прапорець без перезавантаження модуля, і щоб kill-switch діяв
+ * без редеплою.
+ */
+function stableCacheControl(): CacheControl {
+  return env.CHAT_CACHE_TTL_1H
+    ? { type: "ephemeral", ttl: "1h" }
+    : { type: "ephemeral" };
 }
 
 export function buildSystem(context: string): AnthropicSystemBlock[] {
   const cached: AnthropicSystemBlock = {
     type: "text",
     text: SYSTEM_PREFIX,
-    cache_control: { type: "ephemeral" },
+    cache_control: stableCacheControl(),
   };
   if (!context) return [cached];
   return [cached, { type: "text", text: context }];
@@ -81,19 +117,30 @@ export function buildSystem(context: string): AnthropicSystemBlock[] {
  * Anthropic кешує весь префікс ДО цього блоку включно (порядок рендеру:
  * tools → system → messages). Разом із cache_control на SYSTEM_PREFIX це кешує
  * стабільний блок tools + system на кожному турі.
+ *
+ * AI-DANGER: breakpoint ставиться на останній tool БЕЗ `defer_loading` —
+ * Anthropic віддає 400 на `cache_control` разом із `defer_loading: true`.
+ * Оскільки `buildToolSearchPayload` кладе гарячі інструменти перед
+ * deferred-ими, «останній не-deferred» — це рівно кінець гарячого блоку.
+ * Якщо не-deferred інструментів немає взагалі, breakpoint не ставимо: без
+ * кешу дорожче, але запит хоча б проходить.
  */
 export function applyToolsCacheBreakpoint<T extends object>(
   tools: readonly T[],
-): Array<T & { cache_control?: { type: "ephemeral" } }> {
-  if (tools.length === 0) return [];
-  const cloned = tools.slice() as Array<
-    T & { cache_control?: { type: "ephemeral" } }
-  >;
-  const last = cloned[cloned.length - 1];
-  cloned[cloned.length - 1] = {
-    ...last,
-    cache_control: { type: "ephemeral" },
-  } as T & { cache_control: { type: "ephemeral" } };
+): Array<T & { cache_control?: CacheControl }> {
+  const cloned = tools.slice() as Array<T & { cache_control?: CacheControl }>;
+  let idx = -1;
+  for (let i = cloned.length - 1; i >= 0; i--) {
+    if (isCacheable(cloned[i] as { defer_loading?: unknown })) {
+      idx = i;
+      break;
+    }
+  }
+  if (idx === -1) return cloned;
+  cloned[idx] = {
+    ...cloned[idx],
+    cache_control: stableCacheControl(),
+  } as T & { cache_control: CacheControl };
   return cloned;
 }
 
@@ -138,6 +185,48 @@ export const TOOLS_WITH_CACHE = applyToolsCacheBreakpoint(
     ? keepStrictTrueOnly(TOOLS)
     : stripStrictModeForAnthropic(TOOLS),
 );
+
+/**
+ * Per-model tools-payload. Мемоїзований по model-id: масив 77 дефініцій —
+ * 43 КБ JSON, клонувати його на кожен запит було б помітно.
+ *
+ * Кеш лишається коректним, бо і `TOOLS`, і обидва прапорці читаються з
+ * оточення, яке в ран-таймі не змінюється. У тестах, що перемикають
+ * `CHAT_TOOL_SEARCH` / `CHAT_CACHE_TTL_1H`, викликай
+ * `__resetToolsPayloadCache()`.
+ */
+const toolsPayloadByModel = new Map<string, ReadonlyArray<object>>();
+
+/**
+ * Tools для конкретної моделі. Повертає tool-search-payload, коли модель це
+ * підтримує і `CHAT_TOOL_SEARCH` увімкнений; інакше — legacy-масив із усіма
+ * 77 дефініціями в контексті.
+ *
+ * Модель обов'язкова: `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` і
+ * `AI_PRO_*_CHAT_MODEL` env-керовані, тож ops може ре-тирити чат на модель
+ * без tool search. Ми це переживаємо деградацією, а не 400.
+ */
+export function buildToolsPayload(model: string): ReadonlyArray<object> {
+  const cached = toolsPayloadByModel.get(model);
+  if (cached) return cached;
+
+  const base = env.CHAT_STRICT_TOOLS
+    ? keepStrictTrueOnly(TOOLS)
+    : stripStrictModeForAnthropic(TOOLS);
+
+  const useToolSearch = env.CHAT_TOOL_SEARCH && modelSupportsToolSearch(model);
+  const tools: ReadonlyArray<object> = useToolSearch
+    ? buildToolSearchPayload(base)
+    : base;
+  const payload = applyToolsCacheBreakpoint(tools);
+  toolsPayloadByModel.set(model, payload);
+  return payload;
+}
+
+/** Тільки для тестів: скидає мемоїзацію після зміни env-прапорців. */
+export function __resetToolsPayloadCache(): void {
+  toolsPayloadByModel.clear();
+}
 
 /**
  * Вхід для `applyMessagesCacheBreakpoint` — мінімальна структурна форма

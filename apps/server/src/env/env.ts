@@ -404,6 +404,33 @@ const envSchema = z.object({
    */
   CHAT_STRICT_TOOLS: boolFromEnv(true),
   /**
+   * Anthropic **tool search tool** для `/api/chat`. Коли `true` (default),
+   * у payload додається серверний `tool_search_tool_regex_20251119`, а всі
+   * інструменти поза «гарячим» набором (`toolSearch.ts::HOT_TOOL_NAMES`)
+   * ідуть із `defer_loading: true` і в контекстне вікно не потрапляють.
+   *
+   * Мотивація — вимір 2026-07-25: 77 tools = 43 КБ JSON = 14 400-21 200
+   * токенів у КОЖНОМУ запиті, при TTL=5 хв переважно як cache write.
+   *
+   * `false` — kill-switch: миттєво повертає legacy-payload з усіма 77
+   * дефініціями в контексті, без редеплою. Вимикай, якщо метрика
+   * `chat_tool_invocations_total{outcome="proposed"}` покаже, що модель
+   * перестала знаходити потрібні інструменти. Непідтримані моделі
+   * відкочуються самі (див. `modelSupportsToolSearch`), прапорець для цього
+   * чіпати не треба.
+   */
+  CHAT_TOOL_SEARCH: boolFromEnv(true),
+  /**
+   * `ttl: "1h"` на стабільному prompt-cache префіксі (tools + SYSTEM_PREFIX).
+   * Cache write дорожчає 1.25× → 2×, але read лишається 0.1×, тож уже з
+   * другого повідомлення в межах години це вигідніше за дефолтні 5 хв
+   * (розрахунок — у докстрінгу `promptCache.ts`). Повідомлення завжди
+   * лишаються на 5 хв незалежно від цього прапорця.
+   *
+   * `false` — повернення до дефолтного 5-хвилинного TTL.
+   */
+  CHAT_CACHE_TTL_1H: boolFromEnv(true),
+  /**
    * Response-cache для ПЕРШОГО (non-streaming) туру `/api/chat` — TTL у мс.
    * Ключ = sha256(userId + model + system + messages). Оскільки `system`
    * містить живий фінансовий снапшот + RAG + coach-кореляції, БУДЬ-ЯКА зміна

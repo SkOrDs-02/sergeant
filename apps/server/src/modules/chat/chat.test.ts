@@ -792,7 +792,10 @@ describe("chat handler — system payload (prompt caching)", () => {
     expect(Array.isArray(payload.system)).toBe(true);
     expect(payload.system).toHaveLength(2);
     expect(payload!.system[0]!.type).toBe("text");
-    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.cache_control).toEqual({
+      type: "ephemeral",
+      ttl: "1h",
+    });
     // SYSTEM_PREFIX починається з "Ти персональний асистент…"
     expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
     expect(payload!.system[1]!.type).toBe("text");
@@ -819,14 +822,18 @@ describe("chat handler — system payload (prompt caching)", () => {
       system: Array<{ text: string; cache_control?: { type: string } }>;
     };
     expect(payload.system).toHaveLength(1);
-    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.cache_control).toEqual({
+      type: "ephemeral",
+      ttl: "1h",
+    });
   });
 
-  // AI-CONTEXT: SYSTEM_PREFIX сам по собі ~987 токенів, нижче мінімуму кешованого
-  // префіксу (Haiku 4.5 — 4096, Sonnet 4.6 — 2048). Реальний cache hit йде через
-  // breakpoint на ОСТАННЬОМУ tool: tools рендеряться перед system, тож префікс
-  // tools + SYSTEM_PREFIX (~6000+ токенів) перевищує поріг і кешується.
-  it("додає cache_control: ephemeral до останнього tool (реальний cache breakpoint)", async () => {
+  // AI-CONTEXT: SYSTEM_PREFIX сам по собі ~1.1-1.7k токенів (вимір 2026-07-25),
+  // нижче мінімуму кешованого префіксу Haiku 4.5 (4096). Breakpoint стоїть на
+  // останньому НЕ-deferred tool: tools рендеряться перед system, тож
+  // не-deferred tools + SYSTEM_PREFIX — це той суцільний блок, що кешується.
+  // Deferred-tools API виключає з префікса, тому вони поза кешем за визначенням.
+  it("ставить cache_control на останній НЕ-deferred tool, і рівно на один", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
       data: { content: [{ type: "text", text: "Ок." }] },
@@ -839,14 +846,27 @@ describe("chat handler — system payload (prompt caching)", () => {
     await handler(req, res);
 
     const payload = anthropicMessages!.mock.calls[0]![1] as {
-      tools: Array<{ cache_control?: { type: string } }>;
+      tools: Array<{
+        cache_control?: { type: string; ttl?: string };
+        defer_loading?: boolean;
+      }>;
     };
     expect(payload.tools.length).toBeGreaterThan(0);
-    const last = payload.tools[payload.tools.length - 1];
-    expect(last!.cache_control).toEqual({ type: "ephemeral" });
-    // Усі попередні tools — без cache_control (інакше марно палимо breakpoints)
-    for (let i = 0; i < payload.tools.length - 1; i++) {
-      expect(payload!.tools[i]!.cache_control).toBeUndefined();
+
+    const marked = payload.tools.filter((t) => t.cache_control !== undefined);
+    // Рівно один breakpoint — інакше марно палимо слоти (ліміт Anthropic 4).
+    expect(marked).toHaveLength(1);
+    expect(marked[0]!.cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+
+    // Робить неможливим 400 `cache_control` + `defer_loading` на одному tool:
+    // це не деградація кешу, а падіння КОЖНОГО /api/chat.
+    expect(marked[0]!.defer_loading).toBeUndefined();
+
+    // Breakpoint має стояти в КІНЦІ не-deferred блоку: усе після нього —
+    // deferred, інакше частина гарячих інструментів лишиться поза кешем.
+    const idx = payload.tools.indexOf(marked[0]!);
+    for (let i = idx + 1; i < payload.tools.length; i++) {
+      expect(payload.tools[i]!.defer_loading).toBe(true);
     }
   });
 
@@ -962,7 +982,10 @@ describe("chat handler — system payload (prompt caching)", () => {
       system: Array<{ cache_control?: { type: string } }>;
     };
     expect(Array.isArray(payload.system)).toBe(true);
-    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.cache_control).toEqual({
+      type: "ephemeral",
+      ttl: "1h",
+    });
   });
 
   it("два послідовні запити обидва шлють cache_control на system block", async () => {
@@ -999,13 +1022,23 @@ describe("chat handler — system payload (prompt caching)", () => {
           text: string;
           cache_control?: { type: string };
         }>;
-        tools: Array<{ cache_control?: { type: string } }>;
+        tools: Array<{
+          cache_control?: { type: string; ttl?: string };
+          defer_loading?: boolean;
+        }>;
       };
       expect(Array.isArray(payload.system)).toBe(true);
-      expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
+      expect(payload!.system[0]!.cache_control).toEqual({
+        type: "ephemeral",
+        ttl: "1h",
+      });
       expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
-      const lastTool = payload.tools[payload.tools.length - 1];
-      expect(lastTool!.cache_control).toEqual({ type: "ephemeral" });
+      const marked = payload.tools.filter((t) => t.cache_control !== undefined);
+      expect(marked).toHaveLength(1);
+      expect(marked[0]!.cache_control).toEqual({
+        type: "ephemeral",
+        ttl: "1h",
+      });
     }
   });
 });
