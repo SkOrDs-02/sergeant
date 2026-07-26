@@ -99,6 +99,34 @@ function CompareColumn({
 }
 
 /**
+ * Non-phone comparison surface for token / icon / ring level visual demos
+ * where a full device frame would be overkill. Fills its column with a
+ * centered, padded card.
+ */
+export function CompareTile({
+  children,
+  dim = false,
+  className,
+}: {
+  children: ReactNode;
+  dim?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "w-full min-h-[180px] rounded-2xl border border-line bg-panelHi",
+        "flex flex-col items-center justify-center gap-3 p-5 text-center",
+        dim && "opacity-90",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
  * Compact static phone frame reused by both columns. Smaller than the UI
  * section's frame so a before/after pair fits side by side on desktop.
  */
