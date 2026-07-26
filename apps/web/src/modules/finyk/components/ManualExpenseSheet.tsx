@@ -10,6 +10,7 @@
  */
 import { useState, useId, useMemo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { DateScrubber } from "@shared/components/ui/DateScrubber";
 import { useApiForm } from "@shared/forms";
@@ -328,12 +329,18 @@ export function ManualExpenseSheet({
   // tap satisfies the gesture, and any rejection (denied / unsupported /
   // Firefox) is swallowed so the feature degrades to "no hint" silently.
   useEffect(() => {
-    if (!open || isEditing) {
-      setClipboardHint(null);
-      return;
-    }
     let cancelled = false;
+    // The clipboard read is async, so every setState below lands in a later
+    // microtask/task — never synchronously inside the effect body (which
+    // would trigger cascading renders). We `await Promise.resolve()` first so
+    // even the "clear" branch stays deferred.
     void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      if (!open || isEditing) {
+        setClipboardHint(null);
+        return;
+      }
       try {
         if (!navigator.clipboard?.readText) return;
         const text = (await navigator.clipboard.readText()).trim();
@@ -520,13 +527,13 @@ export function ManualExpenseSheet({
       <div className="space-y-3">
         {/* UX-17: clipboard-to-action. Detected a parseable expense on the
             clipboard — offer a one-tap prefill. Whole row is the primary
-            action; the ✕ dismisses without prefilling. */}
+            action; the close button dismisses without prefilling. */}
         {clipboardHint ? (
           <div className="flex items-center gap-2 rounded-xl border border-finyk/30 bg-finyk/5 p-2 pl-3">
             <button
               type="button"
               onClick={applyClipboardHint}
-              className="flex flex-1 items-center gap-2 text-left min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg"
+              className="flex flex-1 items-center gap-2 text-left min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl"
             >
               <Icon
                 name="clipboard-list"
@@ -549,9 +556,9 @@ export function ManualExpenseSheet({
               type="button"
               onClick={dismissClipboardHint}
               aria-label="Сховати підказку"
-              className="shrink-0 touch-target flex items-center justify-center rounded-lg text-subtle hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+              className="shrink-0 touch-target flex items-center justify-center rounded-xl text-subtle hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
             >
-              <Icon name="x" size={16} aria-hidden />
+              <Icon name="close" size={16} aria-hidden />
             </button>
           </div>
         ) : null}
