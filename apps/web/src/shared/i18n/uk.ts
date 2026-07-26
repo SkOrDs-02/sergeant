@@ -435,7 +435,7 @@ export const messages = {
     demoCta: "Подивитись приклад",
     haveAccount: "У мене вже є акаунт",
     taglines: {
-      finyk: "Витрати, бюджети та тр��нди",
+      finyk: "Витрати, бюджети та тренди",
       fizruk: "Тренування, прогрес і заміри",
       routine: "Звички, серії днів і нагадування",
       nutrition: "Калорії, AI-аналіз фото та план",
@@ -807,7 +807,7 @@ export const messages = {
     waitlistAriaLabel: "Підписатися на запуск Sergeant",
     waitlistHeadline: "Лист, коли Premium буде готовий",
     waitlistSubcopy:
-      "Залиш email для launch-апдейту. Це той самий список інтер��су, але" +
+      "Залиш email для launch-апдейту. Це то�� самий список інтер��су, але" +
       " тепер із attribution `source=landing`.",
 
     // Pricing section
