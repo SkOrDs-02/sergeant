@@ -20,6 +20,8 @@ import { env } from "../../env/env.js";
 import { llmProviderInvocationsTotal } from "../../obs/metrics.js";
 import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
+import { getCounterpartyNames } from "../counterpartyNames.js";
+import { maskMachineText } from "../llmRedaction.js";
 
 /**
  * Канонічний дискримінатор provider-у. Розширюємо по мірі додавання
@@ -611,9 +613,39 @@ function outcomeFromResult(result: LLMGenerateResult): string {
 }
 
 /**
+ * Маскує промпт перед відправкою за периметр (рішення founder-а #10).
+ *
+ * AI-DANGER: це **єдина** точка маскування для порад коуча, тижневого
+ * звіту, категоризації транзакцій і збагачення Mono — усі чотири шляхи
+ * ходять сюди. Прибереш звідси — витече одразу з чотирьох місць, і
+ * жоден тип цього не помітить. Гейт, який ловить новий шлях повз маску,
+ * живе в `llmRedactionCoverage.test.ts`.
+ *
+ * `userId` тут уже є для cost-ledger-а, тож клас Б (імена контрагентів)
+ * підключається без додаткової проводки в кожного caller-а. Немає
+ * `userId` (машинний виклик) → лишається клас А.
+ */
+async function maskGenerateOpts(
+  opts: LLMGenerateOpts,
+): Promise<LLMGenerateOpts> {
+  const knownValues = await getCounterpartyNames(opts.userId);
+  const masked: LLMGenerateOpts = {
+    ...opts,
+    messages: opts.messages.map((m) => ({
+      ...m,
+      content: maskMachineText(m.content, knownValues),
+    })),
+  };
+  if (opts.system !== undefined) {
+    masked.system = maskMachineText(opts.system, knownValues);
+  }
+  return masked;
+}
+
+/**
  * Wraps `provider.generate(opts)` з Prometheus + Sentry sidecars. Повертає
  * той самий `LLMGenerateResult` — ця функція НЕ змінює бізнес-логіку, лише
- * додає observability.
+ * додає observability **і маскування PII** (див. `maskGenerateOpts`).
  *
  * Виклик ідемпотентний: помилка sidecar-а (Prom-registry / Sentry-hub
  * unavailable) ловиться і не пробивається до caller-а.
@@ -624,7 +656,7 @@ export async function invokeLLM(
   invokeOpts: InvokeLLMOptions = {},
 ): Promise<LLMGenerateResult> {
   const endpoint = opts.endpoint ?? "unknown";
-  const result = await provider.generate(opts);
+  const result = await provider.generate(await maskGenerateOpts(opts));
   const outcome = outcomeFromResult(result);
 
   try {

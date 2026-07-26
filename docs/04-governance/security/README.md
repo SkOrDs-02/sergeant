@@ -1,6 +1,6 @@
 # Security
 
-> **Last validated:** 2026-06-09 by @Skords-01. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-26 by @claude. **Next review:** 2026-10-24.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
@@ -25,6 +25,7 @@ Security policy, vulnerability response, audits, and recovery discipline.
 | [`distroless-upgrade-plan.md`](./distroless-upgrade-plan.md)     | План оновлення distroless-образу — кластер CVE libssl3       |
 | [`internal-api-keys.md`](./internal-api-keys.md)                 | Ротація, аудит та відкликання `INTERNAL_API_KEY`             |
 | [`logging-redaction-policy.md`](./logging-redaction-policy.md)   | Політика редакції Pino-логів (Hard Rule #21)                 |
+| [`llm-subprocessors.md`](./llm-subprocessors.md)                 | Куди виходять дані до AI-обробників і що замасковано         |
 | [`pii-handling.md`](./pii-handling.md)                           | Єдине джерело правди щодо обробки PII у всіх шарах           |
 | [`rate-limit-failure-mode.md`](./rate-limit-failure-mode.md)     | Поведінка системи при відмові rate-limit підсистеми          |
 | [`secret-rotation.md`](./secret-rotation.md)                     | Процедура ротації production-секретів (P0)                   |

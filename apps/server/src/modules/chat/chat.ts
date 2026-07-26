@@ -37,6 +37,8 @@ import {
 } from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
+import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
+import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
 
@@ -276,6 +278,26 @@ export default async function handler(
   const sessionUser = await getSessionUser(req).catch(() => null);
   const ledgerUserId = sessionUser?.id ?? undefined;
 
+  // Маскування перед відправкою за периметр (рішення founder-а #10).
+  //
+  // AI-DANGER: три входи чату мають РІЗНІ класи маскування, і плутати їх
+  // не можна. `context` (знімок фінансів) і `tool_results` (відповіді
+  // інструментів) — машинного походження, до них іде клас А + клас Б.
+  // `messages` — те, що людина набрала руками; до них іде ЛИШЕ клас А.
+  // Причина в `lib/llmRedaction.ts`: вирізати ім'я з фрази користувача —
+  // це клас В, відкладений власником, і без повернення імені у відповідь
+  // AI відповість «[особа] винна тобі 500».
+  //
+  // Кожен шлях маскується РІВНО ОДИН раз. Спокуса поставити маску і тут,
+  // і глибше («про всяк випадок») робить кожну точку окремо необов'язковою
+  // — тоді видалення однієї з них не ловиться жодним тестом, бо друга
+  // ще тримає. Ідемпотентність маски це приховує, а не рятує.
+  const knownValues = await getCounterpartyNames(ledgerUserId);
+  const maskedMessages = messages.map((m) => ({
+    ...m,
+    content: maskUserText(m.content),
+  }));
+
   // Другий крок: клієнт виконав tool calls і повертає результати
   if (tool_results && tool_calls_raw) {
     // M7 — hard cap на кількість tool_use-блоків з клієнтського
@@ -304,7 +326,11 @@ export default async function handler(
     const requestId = als.getStore()?.requestId ?? undefined;
     const normalizedToolResults = truncateToolResults(tool_results, {
       requestId,
-    });
+    }).map((r) =>
+      typeof r.content === "string"
+        ? { ...r, content: maskMachineText(r.content, knownValues) }
+        : r,
+    );
     // M8 — обгортаємо tool_result-content у `<tool_output tool="...">` envelope
     // і скануємо на prompt-injection маркери. SYSTEM_PREFIX (v8+) інструктує
     // модель трактувати все всередині envelope як ДАНІ. Це захищає від
@@ -335,7 +361,9 @@ export default async function handler(
     }));
 
     // Беремо лише останнє user-повідомлення (питання що спричинило tool call)
-    const lastUserMsg = [...(Array.isArray(messages) ? messages : [])]
+    const lastUserMsg = [
+      ...(Array.isArray(maskedMessages) ? maskedMessages : []),
+    ]
       .reverse()
       .find(
         (m) =>
@@ -367,7 +395,7 @@ export default async function handler(
     const payload = {
       model: proTier.model,
       max_tokens: 2500,
-      system: buildSystem(context),
+      system: buildSystem(maskMachineText(context, knownValues)),
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
@@ -421,7 +449,7 @@ export default async function handler(
   }
 
   // Перший запит — може повернути tool_use або текст
-  const cleaned = sanitizeMessages(messages);
+  const cleaned = sanitizeMessages(maskedMessages);
   if (cleaned.length === 0) {
     res.status(400).json({ error: "Немає повідомлень" });
     return;
@@ -443,11 +471,14 @@ export default async function handler(
   // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
   // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
   // Anthropic. Failure-mode → no-op (повертає baseContext).
-  const augmentedContext = await buildRagContext({
-    userId: sessionUser?.id ?? null,
-    baseContext: contextWithCorrelations,
-    messages: cleaned,
-  });
+  const augmentedContext = maskMachineText(
+    await buildRagContext({
+      userId: sessionUser?.id ?? null,
+      baseContext: contextWithCorrelations,
+      messages: cleaned,
+    }),
+    knownValues,
+  );
 
   const firstTurnSystem = buildSystem(augmentedContext);
 

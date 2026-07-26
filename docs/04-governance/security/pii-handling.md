@@ -2,6 +2,9 @@
 
 > **Last validated:** 2026-05-13 by Devin (child session, PII roast §P0-S1..S5). **Next review:** 2026-08-11.
 > **Status:** Active.
+> **Не тут:** дані, що виходять до сторонніх AI-обробників (Anthropic,
+> Voyage) — [`llm-subprocessors.md`](./llm-subprocessors.md).
+>
 > **Scope:** Server logs (Pino), Sentry payloads (server, web, **mobile**, **OpenClaw**),
 > Loki/Grafana retention, in-process error captures. Mobile/web log buffers — see
 > [`docs/03-operations/observability/frontend.md`](../../03-operations/observability/frontend.md).

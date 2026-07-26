@@ -28,6 +28,7 @@ import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
 import { pricingMessages } from "./uk.pricing";
+import { privacyMessages } from "./uk.privacy";
 
 export const messages = {
   auth: {
