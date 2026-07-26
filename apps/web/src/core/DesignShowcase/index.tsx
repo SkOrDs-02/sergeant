@@ -75,7 +75,11 @@ function ShowcaseShell() {
         reducedMotion === "force" ? "true" : "false"
       }
       className={cn(
-        "min-h-dvh bg-bg text-text",
+        // The app shell locks `#root` to `overflow: hidden` (PWA no-bounce
+        // shell), so a plain `min-h-dvh` styleguide gets clipped with no way
+        // to scroll. Own the scroll here: a fixed-height, independently
+        // scrollable container that works regardless of the locked ancestors.
+        "h-dvh overflow-y-auto overscroll-contain bg-bg text-text",
         // Density modifier: compact tightens vertical rhythm without
         // changing the underlying spacing scale shown in the Spacing
         // section. Hard Rule #16 is unaffected — only paddings shrink.
