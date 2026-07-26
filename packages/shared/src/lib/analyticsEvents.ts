@@ -243,9 +243,13 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //                            cta: "free" | "stripe_checkout" }
   //   CHECKOUT_OPENED        { plan: "pro", mode: "test" | "live" }
   //   WAITLIST_SUBMITTED     { tier_interest: "free" | "pro" | "unsure",
-  //                            source: "pricing_page" | "paywall" | "settings"
-  //                                   | "onboarding",
+  //                            source: "pricing_page" | "landing" | "paywall"
+  //                                   | "settings" | "onboarding",
   //                            created: boolean }
+  //
+  // `source` дзеркалить `WaitlistSourceSchema` у `schemas/api.ts` — той самий
+  // enum, що їде в тілі `POST /api/v1/waitlist`. `"landing"` шле маркетинговий
+  // сайт (`apps/landing`), решта — in-app поверхні.
   PRICING_VIEWED: "pricing_viewed",
   PRICING_CTA_CLICKED: "pricing_cta_clicked",
   CHECKOUT_OPENED: "checkout_opened",
@@ -286,18 +290,41 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // or `null` when that stamp is missing (e.g. data restored via sync).
   MULTI_MODULE_ACTIVATED: "multi_module_activated",
 
-  // Landing page (initiative 0010 Phase 6.1). Fired from `/` + `/pricing`
-  // public surfaces. Payload contracts:
+  // Landing page (initiative 0010 Phase 6.1). Fired from the in-app public
+  // surfaces (`/`, `/pricing`) and from the standalone marketing site
+  // `apps/landing` (`/`, `/thanks`, `/privacy`, `/404`). Payload contracts:
   //
-  //   LANDING_VIEWED          { path: "/" | "/pricing", referrer?: string,
+  //   LANDING_VIEWED          { path: "/" | "/pricing" | "/thanks"
+  //                                   | "/privacy" | "/404",
+  //                             referrer?: string,
   //                             locale: "uk" | "en" }
   //   LANDING_EMAIL_CAPTURED  { source: "hero" | "footer" | "sticky",
   //                             locale: "uk" | "en" }
+  //
+  // `apps/landing` шле лише ці дві події плюс `WAITLIST_SUBMITTED`, без
+  // autocapture і pageview-хуків: єдине поле вводу там — email, і жодна
+  // подія не має права його нести. Перелік продубльовано користувачу
+  // в політиці приватності лендінга.
   //
   // `locale` is the served locale at capture time — used to split funnel
   // metrics between UA-organic and EN-paid acquisition tracks.
   LANDING_VIEWED: "landing_viewed",
   LANDING_EMAIL_CAPTURED: "landing_email_captured",
+
+  // Telegram-вейтліст (спека `docs/90-work/planning/specs/telegram-waitlist.md`).
+  // Маркетинговий лендінг перевів конверсію з email на deep link бота, бо
+  // розсилка поштою заблокована відсутністю верифікованого домену, а бета-група
+  // і так живе в Telegram. Payload:
+  //
+  //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "thanks",
+  //                              locale: "uk" | "en" }
+  //
+  // Це ОСТАННЯ подія, яку бачить клієнт: сам `/start` відбувається вже в
+  // Telegram. Другу половину воронки (скільки кліків стали Start-ами) рахуємо
+  // як `COUNT(telegram_waitlist)` у БД — заводити серверний PostHog-транспорт
+  // заради однієї події не варто. Через це знаменник і чисельник живуть у
+  // РІЗНИХ системах: не зводити їх автоматично, звіряти вручну.
+  LANDING_TELEGRAM_CLICKED: "landing_telegram_clicked",
 
   // Auth multi-provider (initiative 0010 Phase 4.3). Better Auth wires
   // Apple + Google + Email/password fallback; these events split the

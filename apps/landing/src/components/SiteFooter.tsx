@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { telegramStartLink } from "../lib/links";
 
 export default function SiteFooter() {
   return (
@@ -6,14 +6,11 @@ export default function SiteFooter() {
       <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted">
         <p>© 2026 Sergeant. Made in Ukraine.</p>
         <nav aria-label="Футер" className="flex flex-wrap gap-5">
-          <Link to="/privacy" className="transition hover:text-foreground">
-            Приватність
-          </Link>
           <a
-            href="https://t.me/sergeant_app"
+            href={telegramStartLink("footer")}
             target="_blank"
             rel="noreferrer"
-            className="transition hover:text-foreground"
+            className="transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             Telegram
           </a>

@@ -1,0 +1,122 @@
+# @sergeant/landing
+
+> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Status:** Active
+
+Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
+Telegram-бот вейтліста. Окремий static-білд (Vite + React + Tailwind 4),
+деплоїться окремим Vercel-проєктом, не разом із `apps/web`.
+
+## Локальний запуск
+
+```bash
+pnpm --filter @sergeant/landing dev     # http://localhost:3100
+```
+
+Бекенд для роботи сторінки не потрібен — конверсія веде на `t.me`. `/api/*`
+проксіюється на `VITE_API_PROXY_TARGET` (дефолт `http://127.0.0.1:3000`) на
+випадок майбутніх запитів.
+
+## Перевірки
+
+```bash
+pnpm --filter @sergeant/landing lint
+pnpm --filter @sergeant/landing typecheck
+pnpm --filter @sergeant/landing test
+pnpm --filter @sergeant/landing build
+```
+
+## Деплой на Vercel
+
+Окремий проєкт у тому ж акаунті, що й `apps/web`.
+
+| Налаштування     | Значення                         |
+| ---------------- | -------------------------------- |
+| Root Directory   | `apps/landing`                   |
+| Framework Preset | Vite                             |
+| Build Command    | з `vercel.json` (не чіпати в UI) |
+| Output Directory | `dist`                           |
+
+> **Root Directory обовʼязково задати явно.** У проєкті з `rootDirectory: null`
+> Vercel білдить корінь монорепо й падає на кожному SHA, включно з docs-only —
+> така пастка вже трапилась із проєктом `mapleravenlucky-8058s`.
+
+### Змінні оточення
+
+| Змінна              | Обовʼязкова | Навіщо                                                                       |
+| ------------------- | ----------- | ---------------------------------------------------------------------------- |
+| `VITE_TELEGRAM_BOT` | ні          | Юзернейм бота без `@`. Дефолт `serg_qa_bot` — єдина точка конверсії сайту.   |
+| `SITE_URL`          | ні          | Публічний URL сайту без слеша. Вмикає `canonical`, `og:url`, `og:image`.     |
+| `VITE_POSTHOG_KEY`  | ні          | Без неї телеметрія — повний no-op, SDK навіть не вантажиться.                |
+| `VITE_POSTHOG_HOST` | ні          | Дефолт `https://eu.i.posthog.com`.                                           |
+| `BACKEND_URL`       | ні          | База API (Coolify) для edge-проксі. Сайт зараз API не викликає — див. нижче. |
+
+`SITE_URL` можна не задавати: якщо його немає, підхоплюється Vercel-івський
+`VERCEL_PROJECT_PRODUCTION_URL`. Задавати вручну треба лише коли зʼявиться
+власний домен.
+
+### Навіщо проксі, якщо форми немає
+
+Конверсія веде в Telegram, тож лендінг сам по собі API не викликає. Проксі
+лишається, бо коштує нуль і знімає цілий клас проблем наперед: щойно тут
+з'явиться будь-який запит до бекенду, він піде same-origin — CORS не
+задіяний, `getAllowedOrigins()` у
+[`apps/server/src/http/cors.ts`](../server/src/http/cors.ts) розширювати не
+треба.
+
+Без `BACKEND_URL` middleware — no-op, і `/api/*` чесно віддає 404 (негативний
+lookahead у `vercel.json` не дає SPA-rewrite підмінити його на HTML).
+
+## Конверсія
+
+Єдина точка — [`TelegramCta`](./src/components/TelegramCta.tsx) → deep link
+`t.me/<bot>?start=<placement>`. Email-форми на сторінці **немає**: бот не може
+написати першим, тож зібраний контакт має сенс лише коли людина сама відкриє
+діалог. Серверний `POST /api/v1/waitlist` і таблиця `waitlist_entries` живі —
+ними користується `apps/web`, — але лендінг у них більше не пише.
+
+`start`-payload = `placement`, тому канал видно і в PostHog, і в базі бота.
+
+## Телеметрія
+
+Дві події, обидві з `ANALYTICS_EVENTS` у `@sergeant/shared` (імена не
+вигадуються локально — ренейм ламає дашборди й губить історію):
+
+| Подія                      | Коли           | Payload                            |
+| -------------------------- | -------------- | ---------------------------------- |
+| `landing_viewed`           | зміна маршруту | `path`, `locale`, `referrer?`      |
+| `landing_telegram_clicked` | клік по CTA    | `source: hero \| footer`, `locale` |
+
+⚠️ **Воронка розірвана між двома системами.** Клік — остання подія, яку бачить
+клієнт; сам `/start` відбувається вже в Telegram і потрапляє в
+`telegram_waitlist`. Тобто чисельник у БД, знаменник у PostHog — зводити
+вручну, автоматичного звіту не буде. Деталі —
+[спека](../../docs/90-work/planning/specs/telegram-waitlist.md).
+
+Свідомі обмеження:
+
+- **Cookieless** (`persistence: "memory"`). Банер згоди не потрібен, але
+  крос-сесійна аналітика неможлива — кожне завантаження сторінки це новий
+  анонім.
+- **Без autocapture, session-recording і pageview-хуків.**
+- SDK вантажиться динамічним імпортом, тому ~220 kB аналітики не стоять на
+  критичному шляху першого рендера.
+
+Коротко продубльовано користувачу рядком під кнопкою на
+[головній](./src/pages/HomePage.tsx) — правити треба обидва місця разом.
+
+## Токени дизайну
+
+Кольори в [`src/index.css`](./src/index.css) дзеркалять
+`@sergeant/design-tokens`, але імпорту немає: пакет віддає Tailwind-3 preset
+для `apps/web`, а лендінг на Tailwind 4 з `@theme`. Синхронність тримає
+[`src/tokens.drift.test.ts`](./src/tokens.drift.test.ts) — він падає, щойно
+значення розійдуться.
+
+## og-картинка
+
+`public/og.png` закомічена. Перегенерувати після зміни копірайту чи токенів:
+
+```bash
+node apps/landing/scripts/generate-og.mjs
+```
