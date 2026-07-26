@@ -77,7 +77,7 @@
 
 ### `sergeant-design/prefer-focus-visible`
 
-Забороняє `focus:`-color / border / ring / shadow-утиліти (`focus:bg-panel`, `focus:border-brand-400`, `focus:ring-2`, `focus:ring-brand-500/45`, `focus:shadow-float`, `focus:text-text`, `focus:text-brand-strong`, …). Видимі focus-індикатори мають використовувати варіант `focus-visible:` — `focus:` спрацьовує для будь-якого focus-стану, включно з pointer-кліком, що дає миготливий колір кожного разу, коли користувач клікає кнопку чи інпут; `focus-visible:` спрацьовує лише для keyboard / assistive-tech focus. Контракт дизайн-системи Sergeant ([`docs/05-design/design/design-system.md`](../../docs/05-design/design/design-system.md)) явно вказує `focus-visible:ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface` як канонічний focus-індикатор. Правило скоуповано на color / border / ring / shadow / fill / stroke / divide / placeholder / caret / decoration / accent / outline-offset-утиліти; non-color-`text-`-хвости (розміри шрифту `text-xs`–`text-9xl`, Sergeant-токени `text-mini` / `text-dialog`, вирівнювання `text-center`, трансформація `text-uppercase`, …) навмисно вилучені, бо це не color-блимання. Variant-prefixed-токени (`lg:focus:bg-panel`, `hover:focus:text-brand-strong`, `dark:focus:border-brand-400`, `group-focus:bg-panel`, `peer-focus:ring-2`) несуть додаткову умову, яку bare-token-контракт правила не моделює, тож їх пропускають. Єдина легітимна `focus:`-утиліта — **`focus:outline-none`** (і інертні `focus:outline-hidden` / `focus:outline-transparent`) — канонічний скид user-agent-outline, який паруємо з `focus-visible:ring-*`, щоб ring дизайн-системи перебрав керування. Див. [AGENTS.md правило #14](../../AGENTS.md) і [`docs/05-design/design/dark-mode-audit.md`](../../docs/05-design/design/archive/dark-mode-audit.md). Severity: **error** (скоуп: лише `apps/web/**/*.{ts,tsx,js,jsx}` — React Native (`apps/mobile`, NativeWind) не має еквівалента псевдокласу `:focus-visible`).
+Забороняє `focus:`-color / border / ring / shadow-утиліти (`focus:bg-panel`, `focus:border-brand-400`, `focus:ring-2`, `focus:ring-brand-500/45`, `focus:shadow-float`, `focus:text-text`, `focus:text-brand-strong`, …). Видимі focus-індикатори мають використовувати варіант `focus-visible:` — `focus:` спрацьовує для будь-якого focus-стану, включно з pointer-кліком, що дає миготливий колір кожного разу, коли користувач клікає кнопку чи інпут; `focus-visible:` спрацьовує лише для keyboard / assistive-tech focus. Контракт дизайн-системи Sergeant ([`docs/05-design/design/design-system.md`](../../docs/05-design/design/design-system.md)) явно вказує `focus-visible:ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface` я�� канонічний focus-індикатор. Правило скоуповано на color / border / ring / shadow / fill / stroke / divide / placeholder / caret / decoration / accent / outline-offset-утиліти; non-color-`text-`-хвости (розміри шрифту `text-xs`–`text-9xl`, Sergeant-токени `text-mini` / `text-dialog`, вирівнювання `text-center`, трансформація `text-uppercase`, …) навмисно вилучені, бо це не color-блимання. Variant-prefixed-токени (`lg:focus:bg-panel`, `hover:focus:text-brand-strong`, `dark:focus:border-brand-400`, `group-focus:bg-panel`, `peer-focus:ring-2`) несуть додаткову умову, яку bare-token-контракт правила не моделює, тож їх пропускають. Єдина легітимна `focus:`-утиліта — **`focus:outline-none`** (і інертні `focus:outline-hidden` / `focus:outline-transparent`) — канонічний скид user-agent-outline, який паруємо з `focus-visible:ring-*`, щоб ring дизайн-системи перебрав керування. Див. [AGENTS.md правило #14](../../AGENTS.md) і [`docs/05-design/design/dark-mode-audit.md`](../../docs/05-design/design/archive/dark-mode-audit.md). Severity: **error** (скоуп: лише `apps/web/**/*.{ts,tsx,js,jsx}` — React Native (`apps/mobile`, NativeWind) не має еквівалента псевдокласу `:focus-visible`).
 
 ```tsx
 // ❌ BAD — pointer-клік по інпуту блимає brand-ring-ом
@@ -353,6 +353,19 @@ const el = document.getElementById("foo") as HTMLDivElement;
   integrity="sha384-<base64>"
   crossorigin="anonymous"
 ></script>
+```
+
+### `sergeant-design/no-inline-card-surface`
+
+Забороняє руками-сплетену card-поверхню в `className`: трійку `bg-panel` (або семантичний аліас `bg-surface`) + hairline `border-line` (або `border-border`) + одну з семантичних elevation-тіней (`shadow-e1..e5` чи legacy `shadow-card` / `shadow-float` / `shadow-soft`). Рецепт raised-card належить примітиву `<Card>` (`apps/web/src/shared/components/ui/Card.tsx`, `NON_MODULE_PROMINENCE`), тож обіцянка «зміни surface-токен → оновляться всі картки» тримається лише поки callsite-и йдуть через `<Card>`. Дизайн-аудит 2026-07 (finding **M1**) знайшов трійку інлайн у ~55 файлах — часто поруч із уже наявним імпортом `<Card>`. Правило спрацьовує **лише** при co-present усіх трьох маркерів (precision-over-recall), тож НЕ чіпає: пласку панель без тіні, нейтральну `secondary`-кнопку (`border-border-strong`, не hairline) і v2 glass-поверхню (`shadow-card-v2`). Звільнено: самі примітиви `Card` / `Surface`, `packages/design-tokens/**`, `index.css`, `*.stories.tsx`, `DesignShowcase/`, тестові фікстури. Заміна: `<Card>` (або `<Card prominence="flat">` / `padding="none"` для голого контейнера). Severity: **warn** під час in-flight sweep — lint-staged pre-commit (`eslint --max-warnings=0` на staged-файлах) змушує міграцію при наступному редагуванні файлу, після зачистки severity піде в **error**.
+
+```tsx
+// ❌ BAD — рецепт <Card> вручну в className
+<div className="p-4 bg-panel border border-line shadow-e1 rounded-2xl">…</div>
+
+// ✅ GOOD — примітив володіє поверхнею
+<Card>…</Card>
+<Card prominence="flat" padding="none">…</Card>
 ```
 
 ## Запуск тестів

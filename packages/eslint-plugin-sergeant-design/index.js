@@ -1300,7 +1300,7 @@ const noAnthropicKeyInLogs = {
   },
 };
 
-// ─── no-strict-bypass ───��───────────────────────────────────────────────
+// ─── no-strict-bypass ───���───────────────────────────────────────────────
 //
 // PR-6.E — forbid new type-safety bypasses in production code:
 //   1. `// @ts-expect-error` comments
@@ -1496,7 +1496,7 @@ const noHexInClassname = {
   },
 };
 
-// ──────────────────────────────────────────────────────���──────────────────
+// ─────────────────────────────────────────────────────������──────────────────
 // `no-emoji-icon` — forbid emoji in system icon fields
 // ─────────────────────────────────────────────────────────────────────────
 //
@@ -2165,7 +2165,7 @@ const noRawDarkPalette = {
 //   | :focus-visible   | ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface   |
 //
 //   "Focus — focus-visible:ring-brand-500/30, а не focus:, аби pointer-клік
-//    не блимав кільцем."
+//    не б��имав кільцем."
 //
 // `focus:` fires for any focus state, including pointer click — which
 // produces a flashing ring on every mouse interaction. `focus-visible:`
@@ -2528,6 +2528,120 @@ const noRoundedLg = {
     function report(node, value) {
       if (classNameHasRoundedLg(value)) {
         context.report({ node, messageId: "rounded" });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-inline-card-surface` — stop hand-rolling the <Card> surface in JSX
+// ─────────────────────────────────────────────────────────────────────────
+//
+// The raised-card surface is a design-system primitive: `bg-panel` (warm
+// paper in light / charcoal in dark) + a `border-line` hairline + one of
+// the semantic elevation shadows (`shadow-e1..e5`, or the legacy
+// `shadow-card` / `shadow-float` / `shadow-soft` aliases). `<Card>` owns
+// that recipe (see `apps/web/src/shared/components/ui/Card.tsx`,
+// `NON_MODULE_PROMINENCE`), so the promise "change the surface token →
+// every card updates" only holds while call-sites go through `<Card>`.
+//
+// Design-audit 2026-07 (finding M1) found the triple hand-rolled inline in
+// ~55 files, many of which *also* import `<Card>` a few lines away. When
+// `--c-panel` / `--c-line` / `--shadow-e1` shift, those inline panels drift
+// out of sync — a silent, un-linted regression. This rule closes that gap.
+//
+// Precision over recall — the rule fires ONLY when all three markers are
+// co-present in a single className string. That triple is unmistakably a
+// raised card; it will not match:
+//   - a flat bordered container (`bg-panel border border-line`, no shadow),
+//   - the neutral `secondary` Button (`bg-panel … border-border-strong
+//     shadow-e1` — `border-border-strong`, not the `border-line` hairline),
+//   - the v2 glass surface (`bg-surface-glass … shadow-card-v2`).
+// Flat panels are intentionally out of scope: without an elevation shadow
+// the intent is ambiguous (input group, toolbar, section), and a
+// false-positive-prone rule erodes trust in the whole plugin.
+//
+// Severity is `warn` in `eslint.web.js` (not `error`) because the ~55
+// existing call-sites are an in-flight incremental sweep — cleaned up when
+// a file is next touched, per docs/00-start/playbooks/cleanup-dead-code.md
+// and the tech-debt skill's "fix it when you're already in the file" rule.
+// The lint-staged pre-commit runs `eslint --max-warnings=0` on *staged*
+// files, so editing any offending file forces the migration there and then,
+// while the repo-wide `eslint .` gate stays green until the sweep completes
+// and the severity can be promoted to `error`.
+//
+// Exempt paths:
+//   - the `Card` / `Surface` primitive files (they legitimately author the
+//     recipe), `packages/design-tokens/**`, `apps/web/src/index.css`,
+//   - `*.stories.tsx` and DesignShowcase (they demo raw tokens),
+//   - `*.test.*` / `__tests__/**` (fixtures reference the raw class names).
+
+const NO_INLINE_CARD_SURFACE_MESSAGE =
+  "Hand-rolled card surface: `bg-panel` + `border-line` + `shadow-e*` is the <Card> recipe. " +
+  'Use <Card> (or <Card prominence="flat"> / padding="none" for a bare container) so the ' +
+  "surface stays token-driven and dark-mode / elevation changes propagate automatically. " +
+  "See apps/web/src/shared/components/ui/Card.tsx and design-audit finding M1.";
+
+// Each marker allows Tailwind variant prefixes (`hover:`, `dark:`, …) and an
+// optional `/<opacity>` suffix, and is anchored so it can't match a longer
+// token: `border-border` must NOT match `border-border-strong`, and
+// `bg-surface` must NOT match `bg-surface-glass`.
+const RX_CARD_PANEL_BG =
+  /(?:^|\s)(?:[\w-]+:)*bg-(?:panel|surface)(?:\/\d+)?(?:\s|$)/;
+const RX_CARD_HAIRLINE =
+  /(?:^|\s)(?:[\w-]+:)*border-(?:line|border)(?:\/\d+)?(?:\s|$)/;
+const RX_CARD_ELEVATION =
+  /(?:^|\s)(?:[\w-]+:)*shadow-(?:e[1-5]|card|float|soft)(?:\s|$)/;
+
+function classNameHasInlineCardSurface(value) {
+  if (typeof value !== "string") return false;
+  return (
+    RX_CARD_PANEL_BG.test(value) &&
+    RX_CARD_HAIRLINE.test(value) &&
+    RX_CARD_ELEVATION.test(value)
+  );
+}
+
+const noInlineCardSurface = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid hand-rolling the <Card> surface (bg-panel + border-line + shadow-e*) in raw classNames — use the <Card> primitive so the surface stays token-driven.",
+    },
+    schema: [],
+    messages: { inlineCard: NO_INLINE_CARD_SURFACE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt the surface-authoring primitives, token defs, legacy CSS,
+    // stories / showcase (they demo raw tokens), and test fixtures.
+    if (
+      /shared[\\/]components[\\/]ui[\\/](Card|Surface)\.tsx$/.test(filename) ||
+      /packages[\\/]design-tokens[\\/]/.test(filename) ||
+      /src[\\/]index\.css$/.test(filename) ||
+      /\.stories\.[jt]sx?$/.test(filename) ||
+      /[\\/]DesignShowcase[\\/]/.test(filename) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      if (classNameHasInlineCardSurface(value)) {
+        context.report({ node, messageId: "inlineCard" });
       }
     }
     return {
@@ -3846,7 +3960,7 @@ function isJsxLike(node) {
   if (node.type === "ConditionalExpression") {
     return isJsxLike(node.consequent) || isJsxLike(node.alternate);
   }
-  // LogicalExpression: `return cond && <A/>` — допускаємо.
+  // LogicalExpression: `return cond && <A/>` — допуск��ємо.
   if (node.type === "LogicalExpression") {
     return isJsxLike(node.left) || isJsxLike(node.right);
   }
@@ -5493,6 +5607,7 @@ const plugin = {
     "no-raw-dark-palette": noRawDarkPalette,
     "prefer-focus-visible": preferFocusVisible,
     "no-rounded-lg": noRoundedLg,
+    "no-inline-card-surface": noInlineCardSurface,
     "no-v1-gradient": noV1Gradient,
     "no-bare-empty-text": noBareEmptyText,
     "no-cyrillic-jsx-literal": noCyrillicJsxLiteral,

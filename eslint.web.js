@@ -169,6 +169,19 @@ export const webBlocks = [
       // so this is a tripwire for accidental v1 re-introduction.
       // See docs/design/redesign-v2-migration.md.
       "sergeant-design/no-v1-gradient": "error",
+      // `no-inline-card-surface` — design-audit 2026-07 (finding M1). The
+      // raised-card recipe (`bg-panel` + `border-line` hairline +
+      // `shadow-e*`) is owned by `<Card>`; hand-rolling it inline breaks the
+      // "change the surface token → every card updates" contract. Found
+      // inline in ~55 files, so severity is `warn` (not `error`) during the
+      // in-flight incremental sweep: the lint-staged pre-commit runs
+      // `eslint --max-warnings=0` on staged files, forcing migration when a
+      // file is next touched, while repo-wide `eslint .` stays green until
+      // the sweep completes and this can be promoted to `error`. Flat panels
+      // and the `secondary` Button (`border-border-strong`) are intentionally
+      // out of scope — see the rule doc in the plugin for the precision
+      // rationale. Prefer <Card> / <Card prominence="flat">.
+      "sergeant-design/no-inline-card-surface": "warn",
       // `no-emoji-icon` — design-audit F4: forbid emoji in `icon`
       // object-properties and JSX `icon=` attributes. Sergeant's SVG Icon
       // catalog (`@shared/components/ui/Icon`) is the canonical system-icon
