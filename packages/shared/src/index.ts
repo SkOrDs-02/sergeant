@@ -33,6 +33,7 @@ export * from "./lib/dashboard";
 // quick actions, the catalogue UI, and (PR 2) the system-prompt tool list.
 export * from "./lib/assistantCatalogue";
 export * from "./lib/toolRisk";
+export * from "./lib/exportCsv";
 
 // Platform-agnostic key/value store contract + factories. See
 // `docs/planning/storage-roadmap.md` → PR #006.

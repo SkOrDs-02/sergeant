@@ -226,6 +226,33 @@ export const messagesEn: Partial<MessageCatalog> = {
     },
   },
 
+  dataExport: {
+    busy: "Preparing export…",
+    downloadJson: "Download JSON",
+    downloadCsv: "Download CSV",
+    formatsHint:
+      "JSON is the complete file for moving your data elsewhere. CSV is a table for simply looking at it in Excel or Google Sheets.",
+    doneJson: "Server export downloaded as JSON.",
+    doneCsv: "Server export downloaded as CSV.",
+    failed: "Could not create the server export. Check that you are signed in.",
+    sections: {
+      moduleData: "Module data",
+      monoAccounts: "Monobank accounts",
+      monoTransactions: "Monobank transactions",
+      monoConnection: "Monobank connection",
+      subscriptions: "Subscriptions",
+      pushDevices: "Notification devices",
+      aiUsage: "AI usage by day",
+      aiMemories: "AI memory",
+    },
+    sunset: {
+      title: "If Sergeant ever shuts down",
+      body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
+      bankNote:
+        "One honest caveat: we do not duplicate bank transactions — they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+    },
+  },
+
   hub: {
     destructiveConfirm: {
       title: "Confirm an irreversible action",

@@ -26,7 +26,8 @@
 import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
-import { privacyMessages } from "./uk.privacy";
+import { dataExportMessages } from "./uk.dataExport";
+import { pricingMessages } from "./uk.pricing";
 
 export const messages = {
   auth: {
@@ -313,6 +314,8 @@ export const messages = {
       backup: "Завантажити копію",
     },
   },
+
+  dataExport: dataExportMessages,
 
   hub: {
     // Канон hub-coach §8 — згода ПЕРЕД незворотною дією. Копія називає
@@ -814,84 +817,7 @@ export const messages = {
   // `?lang=en` URL trigger (see `useLocale.ts`). Tier names ("Free",
   // "Premium") kept here for symmetry but they're brand-stable across
   // locales — the same identifiers ship in both `uk.ts` and `en.ts`.
-  pricing: {
-    pageTitle: "Тарифи",
-    backLabel: "Назад",
-    plansAriaLabel: "Тарифні плани",
-    hero: {
-      headlineLine1: "Sergeant безкоштовний для базового користування.",
-      headlineLine2: "Premium — коли треба все одразу.",
-      subtitle:
-        "Один платний план. Без рівнів, без довічної підписки, без trial-таймера. Натиснеш Premium — відкриється оплата (LiqPay / Plata).",
-    },
-    tiers: {
-      freeName: "Free",
-      freePrice: "0 ₴",
-      freeCadence: "назавжди",
-      freeTagline:
-        "Усі модулі, ручний трекінг без лімітів. AI — 5 повідомлень/день.",
-      premiumName: "Premium",
-      premiumCadence: "/ місяць (річний тариф — скоро)",
-      premiumTagline: "Усе розблоковано. Один план — без рівнів і доплат.",
-    },
-    features: {
-      allModules: "Усі 4 модулі — повний функціонал",
-      manualTracking: "Ручний трекінг без числових лімітів",
-      aiChat: "AI-чат",
-      cloudSync2Devices: "Cloud-sync на 2 пристрої",
-      expensesFinyk: "Витрати у Фініку",
-      aiPhotoFood: "AI-фото їжі у Харчуванні",
-      aiPhotoFoodShort: "AI-фото їжі",
-      manualMeals: "Ручні прийоми їжі",
-      activeWorkoutTemplate: "Активний шаблон тренування",
-      workoutTemplates: "Шаблони тренувань",
-      activeHabits: "Активні звички",
-      habits: "Звички",
-      pdfExport: "PDF-експорт звітів",
-      multiCurrency: "Активи в іноземній валюті",
-      monoAutoSync: "Авто-синхронізація з Monobank",
-      cloudSync: "CloudSync між пристроями",
-    },
-    limits: {
-      // Leading space intentional — composes як `${N} / місяць`.
-      perMonth: " / місяць",
-      unlimited: "без ліміту",
-      aiChatPerDay: "5 / день",
-    },
-    cta: {
-      tryPremium: "Спробувати Premium",
-      openingCheckout: "Відкриваємо оплату…",
-      manageSubscription: "Керувати підпискою",
-      openingPortal: "Відкриваємо керування…",
-      switchToFree: "Перейти на Free",
-      currentPlan: "Зараз ваш план",
-    },
-    status: {
-      // Renders як «Сесію оплати створено (test mode).» — caller appends `(${mode} mode).`.
-      checkoutCreatedPrefix: "Сесію оплати створено",
-    },
-    errors: {
-      checkoutUnavailable:
-        "Оплата тимчасово недоступна. Можеш залишити email нижче — напишемо, коли можна буде оплатити.",
-      portalNoBillingCustomer:
-        "Не знайдено платіжний профіль. Напиши у підтримку — підключимо вручну.",
-      portalUnavailable:
-        "Керування підпискою тимчасово недоступне. Спробуй пізніше.",
-      portalGeneric:
-        "Не вдалося відкрити керування підпискою. Перевір зв'язок і спробуй ще раз.",
-    },
-    toast: {
-      subscriptionActive: "Підписку активовано — ласкаво просимо в Premium!",
-      subscriptionActiveCta: "Перейти у налаштування",
-      paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
-    },
-    waitlist: {
-      headline: "Email для waitlist",
-      subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
-    },
-    footer:
-      "Ціни у гривні. Оплата через українські провайдери (LiqPay / Plata). Legacy Stripe-підписки керуються окремим платіжним порталом.",
-  },
+  pricing: pricingMessages,
 } as const satisfies MessageCatalog;
 
 /**
