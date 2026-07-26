@@ -19,6 +19,8 @@ import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 export interface UseWaterTrackerResult {
   todayMl: number;
+  /** Full day→ml log — needed by `WaterHistorySheet` for the 7/14/30-day views. */
+  log: WaterLog;
   add: (ml: number) => void;
   subtract: (ml: number) => void;
   reset: () => void;
@@ -61,5 +63,5 @@ export function useWaterTracker(): UseWaterTrackerResult {
     setLog((prev) => resetTodayWater(prev));
   }, [setLog]);
 
-  return { todayMl, add, subtract, reset };
+  return { todayMl, log, add, subtract, reset };
 }

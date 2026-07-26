@@ -78,6 +78,14 @@ describe("useWaterTracker", () => {
     expect(result.current.todayMl).toBe(0);
   });
 
+  it("log exposes the full day→ml map for history views", () => {
+    const { result } = renderHook(() => useWaterTracker());
+    act(() => {
+      result.current.add(600);
+    });
+    expect(result.current.log).toEqual({ "2026-06-04": 600 });
+  });
+
   it("add() updates hook state (SQLite persist covered by integration)", () => {
     // Teardown Phase 3 — the LS write-mirror was removed; persistence now
     // flows through the SQLite dual-write pipeline, a no-op until a
