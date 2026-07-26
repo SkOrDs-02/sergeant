@@ -12,6 +12,7 @@ import {
   Suspense,
   type ReactNode,
 } from "react";
+import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -78,17 +79,12 @@ const Section = memo(function Section({
   className,
 }: SectionProps) {
   return (
-    <div
-      className={cn(
-        "bg-panel border border-line rounded-2xl p-5 shadow-card",
-        className,
-      )}
-    >
+    <Card radius="lg" padding="lg" className={className}>
       <SectionHeading as="div" size="sm" className="mb-4">
         {title}
       </SectionHeading>
       {children}
-    </div>
+    </Card>
   );
 });
 
@@ -448,7 +444,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
               compact
               module="finyk"
               title="Поки немає витрат"
-              description="За цей місяць транзакцій не знайдено — обери інший період зверху."
+              description="За цей місяць транзакцій не знайдено — обери і��ший період зверху."
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
