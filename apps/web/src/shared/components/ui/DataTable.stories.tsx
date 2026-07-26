@@ -73,7 +73,9 @@ export const Compact: Story = { args: { density: "compact" } };
 
 /** Без zebra-смуг, нейтральний (без module-акценту) заголовок. */
 export const NeutralNoZebra: Story = {
-  args: { module: undefined, zebra: false },
+  // Omitting `module` (rather than passing `undefined`) keeps the header
+  // neutral under `exactOptionalPropertyTypes`.
+  args: { zebra: false },
 };
 
 /** Кожен модуль тонує заголовок своїм brand-акцентом. */
@@ -81,12 +83,7 @@ export const ModuleAccents: Story = {
   render: (args) => (
     <div className="space-y-6">
       {(["finyk", "fizruk", "routine", "nutrition"] as const).map((m) => (
-        <DataTable
-          key={m}
-          {...args}
-          module={m}
-          caption={`Витрати — ${m}`}
-        />
+        <DataTable key={m} {...args} module={m} caption={`Витрати — ${m}`} />
       ))}
     </div>
   ),

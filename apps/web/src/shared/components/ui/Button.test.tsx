@@ -58,29 +58,29 @@ describe("Button", () => {
   });
 
   it("primary hover/active are monotonically darker than the -strong base", () => {
-    // Regression guard: when the primary base was promoted to `bg-brand-strong`
-    // (= emerald-700), the old `hover:bg-brand-600 active:bg-brand-700`
-    // classes turned the interaction inverted (hover lighter than base) and
-    // dropped the active state (700 = base, no visible change). Pin the
-    // corrected progression so the inversion can't silently come back.
+    // Regression guard: the primary base is `bg-brand-strong` (= stone-800).
+    // Both hover and active must go *darker* (stone-900) so the interaction
+    // never inverts. Pin the progression so a lighter hover can't creep back.
     const { getByRole } = render(<Button variant="primary">Go</Button>);
     const cls = getByRole("button").className;
-    expect(cls).toContain("hover:bg-brand-800");
+    expect(cls).toContain("hover:bg-brand-900");
     expect(cls).toContain("active:bg-brand-900");
     expect(cls).not.toContain("hover:bg-brand-600");
     expect(cls).not.toContain("active:bg-brand-700");
   });
 
-  it("hub-level primary carries the «Чорнило» v3.1 § 7 dark treatment (accent fill + ink + glow)", () => {
-    // No `module` — this is the hub-chrome primary. Light keeps `-strong`
-    // + white; dark swaps to the luminescent `brand-400` accent (identical
-    // construction to the module primary buttons from #237) + ink text +
-    // a resting accent glow instead of a drop shadow.
+  it("hub-level primary is neutral stone ink-on-paper with no coloured accent glow (design-audit M1)", () => {
+    // No `module` — this is the hub-chrome primary. The hub is a neutral
+    // parent, so its primary is hueless: stone fill + white in light, an
+    // inverted light-stone chip + dark ink in dark. Crucially it must NOT
+    // carry a coloured accent glow, which would read as a fifth accent and
+    // break module-accent containment (Hard Rule #12).
     const { getByRole } = render(<Button variant="primary">Go</Button>);
     const cls = getByRole("button").className;
-    expect(cls).toContain("dark:bg-brand-400");
-    expect(cls).toContain("dark:text-bg");
-    expect(cls).toContain("dark:shadow-glow-accent-emerald");
+    expect(cls).toContain("dark:bg-brand-100");
+    expect(cls).toContain("dark:text-brand-900");
+    expect(cls).not.toContain("dark:shadow-glow-accent-emerald");
+    expect(cls).not.toContain("shadow-glow");
   });
 
   it.each([
