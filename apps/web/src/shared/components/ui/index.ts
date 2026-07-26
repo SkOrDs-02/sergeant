@@ -41,6 +41,12 @@ export type {
 export { Avatar } from "./Avatar";
 export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 
+export { DateScrubber } from "./DateScrubber";
+export type { DateScrubberProps } from "./DateScrubber";
+
+export { NumericAccessoryBar } from "./NumericAccessoryBar";
+export type { NumericAccessoryBarProps } from "./NumericAccessoryBar";
+
 export { EmptyState, ModuleEmptyState } from "./EmptyState";
 export type {
   EmptyStateProps,

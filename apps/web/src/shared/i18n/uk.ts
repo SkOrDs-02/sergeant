@@ -118,7 +118,7 @@ export const messages = {
     // разом з цим (тести закривають user-facing copy contract).
     tagNameRequired: "Введи назву тега",
     // PR-058 (web): Reducer-level dedupe в `applyCreateTag` /
-    // `applyCreateCategory` (case-insensitive trim) — UI ловить
+    // `applyCreateCategory` (case-insensitive trim) — UI лови��ь
     // `next === state` після `setRoutine` і показує цей copy у toast.
     tagNameDuplicate: "Тег з такою назвою вже існує",
     categoryNameDuplicate: "Категорія з такою назвою вже існує",
@@ -192,6 +192,9 @@ export const messages = {
     // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
     // header-міток і chip-ах.
     today: "Сьогодні",
+    // Abbreviated "today" for the DateScrubber (UI-12) chip where the full
+    // word doesn't fit under the day number.
+    todayShort: "Сьог",
     day: "День",
     week: "Тиждень",
     month: "Місяць",
@@ -392,7 +395,7 @@ export const messages = {
     tourResetConfirmTitle: "Почати знайомство з початку?",
     tourResetConfirmDescription:
       "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (транзакції, тренування, прийоми їжі) лишаться без змін.",
-    tourResetConfirmAction: "Почати з початку",
+    tourResetConfirmAction: "Почати з поча��ку",
     tourResetSuccess: "Знайомство перезапущено",
 
     // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
@@ -430,7 +433,7 @@ export const messages = {
     demoCta: "Подивитись приклад",
     haveAccount: "У мене вже є акаунт",
     taglines: {
-      finyk: "Витрати, бюджети та тренди",
+      finyk: "Витрати, бюджети та тр��нди",
       fizruk: "Тренування, прогрес і заміри",
       routine: "Звички, серії днів і нагадування",
       nutrition: "Калорії, AI-аналіз фото та план",

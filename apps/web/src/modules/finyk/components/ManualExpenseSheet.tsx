@@ -11,6 +11,7 @@
 import { useState, useId, useMemo, useEffect } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { DateScrubber } from "@shared/components/ui/DateScrubber";
 import { useApiForm } from "@shared/forms";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -476,12 +477,32 @@ export function ManualExpenseSheet({
         {date !== toLocalISODate() || showDateField ? (
           <div>
             <Label htmlFor={dateId}>Дата</Label>
-            <Input
-              id={dateId}
-              type="date"
-              disabled={isSubmitting}
-              {...register("date")}
+            {/* UI-12: swap the OS date sheet for a horizontal day-scrubber
+                for the common recent-date case. A hidden native input still
+                backs react-hook-form registration (and covers picking a date
+                older than the strip window via the "Інша дата" fallback). */}
+            <DateScrubber
+              aria-label="Дата витрати"
+              value={date || toLocalISODate()}
+              onChange={(iso) =>
+                setValue("date", iso, {
+                  shouldDirty: true,
+                  shouldValidate: false,
+                })
+              }
             />
+            <details className="mt-2">
+              <summary className="text-xs text-muted hover:text-text cursor-pointer list-none underline decoration-dotted underline-offset-2">
+                Інша дата
+              </summary>
+              <Input
+                id={dateId}
+                type="date"
+                className="mt-2"
+                disabled={isSubmitting}
+                {...register("date")}
+              />
+            </details>
           </div>
         ) : (
           <button
