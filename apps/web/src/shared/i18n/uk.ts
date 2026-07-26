@@ -192,9 +192,6 @@ export const messages = {
     // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
     // header-міток і chip-ах.
     today: "Сьогодні",
-    // Abbreviated "today" for the DateScrubber (UI-12) chip where the full
-    // word doesn't fit under the day number.
-    todayShort: "Сьог",
     day: "День",
     week: "Тиждень",
     month: "Місяць",
@@ -541,7 +538,7 @@ export const messages = {
     loadFailed: "Не вдалося завантажити сесії",
     revoke: "Завершити",
     revokeSuccess: "Сесію завершено",
-    revokeFailed: "Не вдалося завершити сесію",
+    revokeFailed: "Не вдалося зав��ршити сесію",
     expired: "Закінчилась",
     thisDevice: "Цей пристрій",
     unknownIp: "IP невідомий",
@@ -737,7 +734,7 @@ export const messages = {
     dismiss: "Зрозуміло",
   },
 
-  // Feedback loop (GTM § 3.2) — in-app feedback widget у Settings.
+  // Feedback loop (GTM �� 3.2) — in-app feedback widget у Settings.
   // Копія за style-guide: звертання «ти», заголовки без крапки,
   // toast-success — перфект минулого часу.
   feedback: {

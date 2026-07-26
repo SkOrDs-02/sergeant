@@ -1,5 +1,6 @@
 import type { MouseEvent } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 
 /**
@@ -45,7 +46,7 @@ export function NumericAccessoryBar({
   onValueChange,
   onDone,
   increments = [10, 100, 500],
-  doneLabel = "Готово",
+  doneLabel = messages.actions.done,
   className,
 }: NumericAccessoryBarProps) {
   const bump = (delta: number) => {
@@ -71,7 +72,7 @@ export function NumericAccessoryBar({
   return (
     <div
       role="toolbar"
-      aria-label="Швидке введення суми"
+      aria-label={messages.form.quickFill}
       className={cn(
         "flex items-center gap-2 overflow-x-auto no-scrollbar",
         "border-t border-line bg-panel/95 backdrop-blur px-3 py-2",

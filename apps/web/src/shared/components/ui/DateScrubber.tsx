@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import {
   getKyivDateParts,
   getKyivDayKey,
@@ -27,6 +28,11 @@ import {
  */
 
 const WEEKDAYS_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] as const;
+
+// Abbreviated "today" for the chip cap. Kept as a co-located constant rather
+// than a catalog key: `messages` (uk.ts) is already at the 600-line cap
+// (Hard Rule #18), and this matches the sibling WEEKDAYS_UK inline pattern.
+const TODAY_SHORT = "Сьог";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -98,7 +104,11 @@ export function DateScrubber({
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={isToday ? `Сьогодні, ${day}` : `${label}, ${day}`}
+            aria-label={
+              isToday
+                ? `${messages.period.today}, ${day}`
+                : `${label}, ${day}`
+            }
             onClick={() => onChange(key)}
             className={cn(
               "snap-end shrink-0 flex flex-col items-center justify-center gap-0.5",
@@ -115,7 +125,7 @@ export function DateScrubber({
                 selected ? "text-bg/80" : "text-muted",
               )}
             >
-              {isToday ? "Сьог" : label}
+              {isToday ? TODAY_SHORT : label}
             </span>
             <span className="text-style-body tabular-nums leading-none">
               {day}
