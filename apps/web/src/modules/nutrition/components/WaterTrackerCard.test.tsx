@@ -11,14 +11,16 @@ const add = vi.fn();
 const subtract = vi.fn();
 const reset = vi.fn();
 let todayMl = 0;
+let log: Record<string, number> = {};
 vi.mock("../hooks/useWaterTracker", () => ({
-  useWaterTracker: () => ({ todayMl, add, subtract, reset }),
+  useWaterTracker: () => ({ todayMl, log, add, subtract, reset }),
 }));
 
 import { WaterTrackerCard } from "./WaterTrackerCard";
 
 beforeEach(() => {
   todayMl = 0;
+  log = {};
   add.mockReset();
   subtract.mockReset();
   reset.mockReset();
@@ -127,5 +129,13 @@ describe("WaterTrackerCard", () => {
     expect(
       screen.queryByLabelText("Скинути воду за сьогодні"),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the history sheet on header tap", () => {
+    todayMl = 500;
+    render(<WaterTrackerCard goalMl={2000} />);
+    expect(screen.queryByText("Історія води")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Історія води/));
+    expect(screen.getByText("Історія води")).toBeInTheDocument();
   });
 });

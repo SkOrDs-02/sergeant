@@ -8,10 +8,12 @@ import { cn } from "@shared/lib/ui/cn";
 import { useWaterTracker } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { WaterHistorySheet } from "./WaterHistorySheet";
+import { messages } from "@shared/i18n/uk";
 
 const QUICK_ML = [200, 300, 500, 750];
 
-function fmt(ml: number) {
+export function fmt(ml: number) {
   return ml >= 1000 ? `${(ml / 1000).toFixed(1)} л` : `${ml} мл`;
 }
 
@@ -26,11 +28,12 @@ interface WaterTrackerCardProps {
 }
 
 export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
-  const { todayMl, add, subtract, reset } = useWaterTracker();
+  const { todayMl, log, add, subtract, reset } = useWaterTracker();
   const [resetPending, setResetPending] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const [customMl, setCustomMl] = useState("");
   const [lastAction, setLastAction] = useState<LastAction>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleAdd = (ml: number) => {
     const n = Number(ml);
@@ -70,7 +73,15 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   return (
     <Card radius="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          className={cn(
+            "flex items-center gap-2 -m-1 p-1 rounded-xl text-left",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+          )}
+          aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
+        >
           <Icon
             name="droplet"
             size="lg"
@@ -85,8 +96,15 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
               {done && <span aria-hidden="true"> ✓</span>}
             </div>
           </div>
-        </div>
+        </button>
       </div>
+
+      <WaterHistorySheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        log={log}
+        goalMl={goalMl}
+      />
 
       {/* Progress bar */}
       {goalMl > 0 && (

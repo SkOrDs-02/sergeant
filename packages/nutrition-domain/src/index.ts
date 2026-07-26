@@ -30,5 +30,6 @@ export * from "./nutritionPantries.js";
 export * from "./nutritionLog.js";
 export * from "./quickStats.js";
 export * from "./waterLog.js";
+export * from "./waterHistory.js";
 export * from "./shoppingList.js";
 export * from "./dailyPlanValidation.js";
