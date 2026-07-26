@@ -415,6 +415,24 @@ export const messagesEn: Partial<MessageCatalog> = {
       open: "Open",
       deleteDigit: "Delete",
     },
+
+    aiMemory: {
+      sectionTitle: "What the AI remembers about you",
+      sectionHint:
+        "Each fact can be deleted individually. Deleted facts are gone for good.",
+      loading: "Loading memory…",
+      loadError: "Could not load AI memory.",
+      empty:
+        "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat — an allergy, a goal, a constraint.",
+      loadMore: "Show more",
+      loadingMore: "Loading…",
+      deleteAria: "Delete fact",
+      confirmTitle: "Delete this fact?",
+      confirmBody:
+        "will be gone from the AI memory for good — there is no undo.",
+      confirmButton: "Delete permanently",
+      deleteError: "Could not delete the fact. Try again.",
+    },
   },
 
   biometrics: {

@@ -199,4 +199,89 @@ describe("createMeEndpoints", () => {
     expect(String(url)).toMatch(/\/api(?:\/v1)?\/ai-memory$/);
     expect((init as RequestInit).method).toBe("DELETE");
   });
+
+  // Hard Rule #3 — контрактна трійка для `/api/ai-memory/list` і
+  // `/api/ai-memory/{id}`. Асерти нижче цілять у розходження між клієнтом
+  // і сервером, які TypeScript не бачить: на дроті все одно JSON.
+  it("GET /api/ai-memory/list парсить сторінку і НЕ приймає bigint-стрінгу в id", async () => {
+    // Сервер коерцить `BIGSERIAL` у `number` (Hard Rule #1). Якщо коерцію
+    // колись приберуть, `id` приїде як "12" — і клієнт має впасти тут, а
+    // не мовчки роздвоїти RQ-кеш ("12" ≠ 12) на бойовому екрані.
+    const fetchMock = mockFetchOnce({
+      items: [
+        {
+          id: 12,
+          source: "chat",
+          content: "Алергія на горіхи",
+          topic: null,
+          createdAt: "2026-07-20T10:00:00.000Z",
+        },
+      ],
+      nextCursor: 12,
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    const res = await me.listAiMemory({ limit: 20 });
+    expect(res.items[0]?.id).toBe(12);
+    expect(res.nextCursor).toBe(12);
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toMatch(/\/ai-memory\/list\?limit=20$/);
+    expect((init as RequestInit).method).toBe("GET");
+  });
+
+  it("GET /api/ai-memory/list відхиляє id-стрінгу від сервера", async () => {
+    mockFetchOnce({
+      items: [
+        {
+          id: "12",
+          source: "chat",
+          content: "x",
+          topic: null,
+          createdAt: "2026-07-20T10:00:00.000Z",
+        },
+      ],
+      nextCursor: null,
+    });
+    const me = createMeEndpoints(createHttpClient());
+    await expect(me.listAiMemory()).rejects.toThrow();
+  });
+
+  it("GET /api/ai-memory/list без параметрів іде без query-string", async () => {
+    const fetchMock = mockFetchOnce({ items: [], nextCursor: null });
+    const me = createMeEndpoints(createHttpClient());
+    await me.listAiMemory();
+    expect(String(firstCall(fetchMock)[0])).toMatch(/\/ai-memory\/list$/);
+  });
+
+  it("GET /api/ai-memory/list передає cursor у query", async () => {
+    const fetchMock = mockFetchOnce({ items: [], nextCursor: null });
+    const me = createMeEndpoints(createHttpClient());
+    await me.listAiMemory({ limit: 5, cursor: 99 });
+    expect(String(firstCall(fetchMock)[0])).toContain("limit=5&cursor=99");
+  });
+
+  it("DELETE /api/ai-memory/{id} б'є в per-item шлях, а не в clear-all", async () => {
+    // Найдорожча помилка цього клієнта: промах у `/api/ai-memory` замість
+    // `/api/ai-memory/7` стер би ВСЮ памʼять юзера, повернувши при цьому
+    // цілком правдоподібний 200.
+    const fetchMock = mockFetchOnce({ ok: true, deleted: true });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.deleteAiMemory(7)).resolves.toEqual({
+      ok: true,
+      deleted: true,
+    });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toMatch(/\/ai-memory\/7$/);
+    expect((init as RequestInit).method).toBe("DELETE");
+  });
+
+  it("DELETE /api/ai-memory/{id} приймає deleted:false як успіх", async () => {
+    mockFetchOnce({ ok: true, deleted: false });
+    const me = createMeEndpoints(createHttpClient());
+    await expect(me.deleteAiMemory(999)).resolves.toEqual({
+      ok: true,
+      deleted: false,
+    });
+  });
 });

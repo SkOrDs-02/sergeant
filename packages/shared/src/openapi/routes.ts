@@ -125,6 +125,71 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/ai-memory/list": {
+    get: {
+      summary: "Список збережених фактів AI-пам'яті поточного користувача.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "limit",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          description: "Розмір сторінки.",
+        },
+        {
+          name: "cursor",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1 },
+          description:
+            "Keyset-курсор: `nextCursor` попередньої сторінки (повертає рядки з меншим id).",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Сторінка фактів (масив може бути порожнім).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryListResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/ai-memory/{id}": {
+    delete: {
+      summary: "Видалити один факт AI-пам'яті. Назавжди, без відновлення.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`ai_memories.id` з відповіді `/api/ai-memory/list`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description:
+            "Ідемпотентний успіх. `deleted:false` — рядка вже не було.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryDeleteResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
   "/api/ai-memory/recall": {
     post: {
       summary:

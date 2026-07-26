@@ -58,6 +58,16 @@ const AiMemoryClearResponse = schemas.AiMemoryClearResponseSchema.meta({
   description:
     "Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів.",
 });
+const AiMemoryListResponse = schemas.AiMemoryListResponseSchema.meta({
+  id: "AiMemoryListResponse",
+  description:
+    "Відповідь GET /api/ai-memory/list — сторінка фактів пам'яті + keyset-курсор.",
+});
+const AiMemoryDeleteResponse = schemas.AiMemoryDeleteResponseSchema.meta({
+  id: "AiMemoryDeleteResponse",
+  description:
+    "Відповідь DELETE /api/ai-memory/{id} — ідемпотентна; deleted:false означає, що рядка вже не було.",
+});
 const AnalyzePhoto = schemas.AnalyzePhotoSchema.meta({
   id: "AnalyzePhoto",
   description: "POST /api/nutrition/analyze-photo — base64 фото страви.",
@@ -310,6 +320,8 @@ export const namedSchemas = {
   RecallMemoryResult,
   RecallMemoryResponse,
   AiMemoryClearResponse,
+  AiMemoryListResponse,
+  AiMemoryDeleteResponse,
   AnalyzePhoto,
   RefinePhoto,
   ParsePantry,
