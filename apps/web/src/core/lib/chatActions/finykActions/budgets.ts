@@ -5,6 +5,7 @@ import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { toLocalISODate } from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -12,9 +13,28 @@ import type {
   Budget,
   BudgetLimit,
   BudgetGoal,
+  GoalContribution,
   MonthlyPlan,
   ChatActionResult,
 } from "../types";
+
+// Ціль накопичення більше не має редагованого числа «Відкладено» —
+// AI-екшн `update_budget(scope: "goal")` й далі приймає `saved_amount` як
+// абсолютну суму (той самий контракт, що й раніше), але тепер записує її
+// як єдиний запис логу поповнень замість прямого поля (goal-progress-
+// auto-sync). Порожній `saved_amount` (0) → порожній лог, як і раніше.
+function buildAiContribution(saved: number): GoalContribution[] {
+  if (saved <= 0) return [];
+  return [
+    {
+      id: `contrib_${Date.now()}`,
+      amountUah: saved,
+
+      date: toLocalISODate(new Date()),
+      note: "Через AI-асистента",
+    },
+  ];
+}
 
 export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
   const { category_id, limit, period = "month" } = action.input;
@@ -107,15 +127,16 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     if (idx >= 0) {
       const g = budgets[idx] as BudgetGoal;
       g.targetAmount = target;
-      g.savedAmount = saved;
       g.name = goalName;
+      g.contributions = buildAiContribution(saved);
     } else {
       budgets.push({
         id: `b_${Date.now()}`,
         type: "goal",
         name: goalName,
         targetAmount: target,
-        savedAmount: saved,
+        savedAmount: 0,
+        contributions: buildAiContribution(saved),
       });
     }
     finykChatWrite("finyk_budgets", budgets);

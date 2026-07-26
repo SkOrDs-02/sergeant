@@ -74,6 +74,7 @@ export const finykKeys = {
     accountId: string | undefined,
   ) => ["finyk", "mono", "transactions-db", from, to, accountId] as const,
   monoWebhookAccounts: ["finyk", "mono", "webhook-accounts"] as const,
+  monoWebhookJars: ["finyk", "mono", "webhook-jars"] as const,
   monoWebhookTransactions: (params?: string) =>
     ["finyk", "mono", "webhook-tx", params ?? "all"] as const,
   /**

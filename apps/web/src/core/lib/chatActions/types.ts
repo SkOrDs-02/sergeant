@@ -121,6 +121,7 @@ export type {
   // Domain entities
   BudgetLimit,
   BudgetGoal,
+  GoalContribution,
   Budget,
   Debt,
   Receivable,

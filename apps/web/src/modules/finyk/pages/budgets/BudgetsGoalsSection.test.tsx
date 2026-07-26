@@ -17,14 +17,18 @@ vi.mock("../../components/budgets/GoalBudgetCard", () => ({
     budget,
     isEditing,
     onBeginEdit,
-    onChangeSaved,
+    onAddContribution,
+    onDeleteContribution,
+    onChangeLinkedJar,
     onSave,
     onDelete,
   }: {
     budget: { id: string; name?: string };
     isEditing: boolean;
     onBeginEdit: () => void;
-    onChangeSaved: (n: number) => void;
+    onAddContribution: (amountUah: number, note?: string) => void;
+    onDeleteContribution: (id: string) => void;
+    onChangeLinkedJar: (jarId: string) => void;
     onSave: () => void;
     onDelete: () => void;
   }) => (
@@ -34,8 +38,14 @@ vi.mock("../../components/budgets/GoalBudgetCard", () => ({
     >
       <span>{budget.name ?? budget.id}</span>
       <button onClick={onBeginEdit}>begin-edit-{budget.id}</button>
-      <button onClick={() => onChangeSaved(999)}>
-        change-saved-{budget.id}
+      <button onClick={() => onAddContribution(999, "test")}>
+        add-contribution-{budget.id}
+      </button>
+      <button onClick={() => onDeleteContribution("mig_g1")}>
+        delete-contribution-{budget.id}
+      </button>
+      <button onClick={() => onChangeLinkedJar("jar-1")}>
+        change-jar-{budget.id}
       </button>
       <button onClick={onSave}>save-{budget.id}</button>
       <button onClick={onDelete}>delete-{budget.id}</button>
@@ -200,7 +210,7 @@ describe("BudgetsGoalsSection", () => {
     expect(setEditIdx).toHaveBeenCalledWith(null);
   });
 
-  it("onChangeSaved updates savedAmount in the budgets array", () => {
+  it("onAddContribution appends a contribution entry (migrating the old savedAmount first)", () => {
     const goal = makeGoal("g1");
     const budgets = [goal] as unknown as Budget[];
     const setBudgets = vi.fn();
@@ -214,13 +224,72 @@ describe("BudgetsGoalsSection", () => {
         })}
       />,
     );
-    fireEvent.click(screen.getByText("change-saved-g1"));
+    fireEvent.click(screen.getByText("add-contribution-g1"));
     expect(setBudgets).toHaveBeenCalled();
-    // Verify the updater produces the correct savedAmount
+    const updater = setBudgets.mock.calls[0]![0] as (bs: Budget[]) => Budget[];
+    const result = updater(budgets) as unknown as GoalBudget[];
+
+    // makeGoal has savedAmount: 2000 and no contributions — migrated first,
+    // then the new 999/"test" entry is appended.
+    expect(result[0]!.contributions).toHaveLength(2);
+    expect(result[0]!.contributions[0]).toMatchObject({
+      amountUah: 2000,
+      note: "Початковий залишок",
+    });
+    expect(result[0]!.contributions[1]).toMatchObject({
+      amountUah: 999,
+      note: "test",
+    });
+  });
+
+  it("onDeleteContribution filters the entry out (recalculating progress on next render)", () => {
+    const goal = {
+      ...makeGoal("g1"),
+      contributions: [
+        { id: "mig_g1", amountUah: 2000, date: "2026-01-01" },
+        { id: "c2", amountUah: 500, date: "2026-01-02" },
+      ],
+    } as unknown as GoalBudget;
+    const budgets = [goal] as unknown as Budget[];
+    const setBudgets = vi.fn();
+    render(
+      <BudgetsGoalsSection
+        {...buildProps({
+          goalsOpen: true,
+          goalBudgets: [goal],
+          budgets,
+          setBudgets,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("delete-contribution-g1"));
+    expect(setBudgets).toHaveBeenCalled();
+    const updater = setBudgets.mock.calls[0]![0] as (bs: Budget[]) => Budget[];
+    const result = updater(budgets) as unknown as GoalBudget[];
+    expect(result[0]!.contributions).toEqual([
+      { id: "c2", amountUah: 500, date: "2026-01-02" },
+    ]);
+  });
+
+  it("onChangeLinkedJar sets linkedJarId on the budget", () => {
+    const goal = makeGoal("g1");
+    const budgets = [goal] as unknown as Budget[];
+    const setBudgets = vi.fn();
+    render(
+      <BudgetsGoalsSection
+        {...buildProps({
+          goalsOpen: true,
+          goalBudgets: [goal],
+          budgets,
+          setBudgets,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("change-jar-g1"));
+    expect(setBudgets).toHaveBeenCalled();
     const updater = setBudgets.mock.calls[0]![0] as (bs: Budget[]) => Budget[];
     const result = updater(budgets);
-
-    expect(result[0]!).toMatchObject({ savedAmount: 999 });
+    expect(result[0]!).toMatchObject({ linkedJarId: "jar-1" });
   });
 
   it("onDelete removes the goal and shows an undo toast", () => {

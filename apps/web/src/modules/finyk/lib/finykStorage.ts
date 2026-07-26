@@ -18,11 +18,12 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { migrateGoalSavedAmountToContribution } from "@sergeant/finyk-domain/domain/budget";
 import {
   FINYK_STORAGE_KEYS,
   type FinykStorageKey,
 } from "@sergeant/finyk-domain/storage-keys";
-import { BudgetsSchema } from "@sergeant/shared";
+import { BudgetsSchema, toLocalISODate } from "@sergeant/shared";
 
 // Re-export the storage keys so existing web call sites keep working
 // without updating imports. New code (and mobile) should import from
@@ -98,19 +99,38 @@ export function saveCategories(
  * Повертає конфіг бюджетів (finyk_budgets).
  * Дані валідуються zod-схемою: записи з пошкодженими полями дропаються
  * (замість падіння у споживачів), решта повертається як є.
+ *
+ * Заодно лениво мігрує старі цілі: наявний `savedAmount > 0` без
+ * `contributions` конвертується в перший запис логу поповнень
+ * (goal-progress-auto-sync, design decision #4) — прогрес юзера не
+ * обнуляється. `migrateGoalSavedAmountToContribution` ідемпотентна, тож
+ * повторний виклик на кожному читанні безпечний; migrated-результат
+ * персистимо один раз, щоб наступні читання вже не перераховували.
  */
 export function getBudget(): Budget[] {
   const raw = readJSON<unknown>(FINYK_STORAGE_KEYS.budget, []);
   if (!Array.isArray(raw)) return [];
   const result = BudgetsSchema.safeParse(raw);
-  if (result.success) return result.data as Budget[];
-  // Одиничні биті записи не повинні руйнувати весь список — фільтруємо.
-  const clean: Budget[] = [];
-  for (const item of raw) {
-    const one = BudgetsSchema.element.safeParse(item);
-    if (one.success) clean.push(one.data as Budget);
-  }
-  return clean;
+  const clean: Budget[] = result.success
+    ? (result.data as Budget[])
+    : raw.reduce<Budget[]>((acc, item) => {
+        // Одиничні биті записи не повинні руйнувати весь список — фільтруємо.
+        const one = BudgetsSchema.element.safeParse(item);
+        if (one.success) acc.push(one.data as Budget);
+        return acc;
+      }, []);
+
+  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper toLocalISODate
+  const migrationDate = toLocalISODate(new Date());
+  let migrated = false;
+  const withMigratedGoals = clean.map((b) => {
+    if (b.type !== "goal") return b;
+    const next = migrateGoalSavedAmountToContribution(b, migrationDate);
+    if (next !== b) migrated = true;
+    return next;
+  });
+  if (migrated) saveBudget(withMigratedGoals);
+  return withMigratedGoals;
 }
 
 /**

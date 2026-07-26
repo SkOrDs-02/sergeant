@@ -1,16 +1,18 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-07-26
  * Status: Active
  */
-import { memo, useEffect, useId, useRef } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
+import { cn } from "@shared/lib/ui/cn";
 import { formatMoney, pluralDays } from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
+import { JarSelector, type JarOption } from "../JarSelector";
 
 interface GoalBudgetInput {
   id: string;
@@ -18,28 +20,48 @@ interface GoalBudgetInput {
   emoji?: string | undefined;
   name?: string | undefined;
   targetAmount: number;
-  savedAmount?: number | undefined;
   targetDate?: string | undefined;
   [extra: string]: unknown;
 }
 
+export interface GoalContributionLike {
+  id: string;
+  amountUah: number;
+  date: string;
+  note?: string | undefined;
+}
+
 interface GoalBudgetCardProps {
   budget: GoalBudgetInput;
+  /** Прогрес = баланс привʼязаної банки + сума ручних поповнень. */
   saved: number;
   pct: number;
   daysLeft: number | null;
   monthlyLabel?: string | null;
+  /** Частка `saved`, що прийшла з привʼязаної банки (в грн). */
+  fromJar?: number;
+  /** Частка `saved`, що прийшла з ручних поповнень (в грн). */
+  fromContributions?: number;
+  contributions?: readonly GoalContributionLike[];
+  linkedJarId?: string | undefined;
+  linkedJarLabel?: string | undefined;
+  /** Список банок для дропдауна привʼязки в режимі редагування. */
+  jars?: readonly JarOption[];
   isEditing: boolean;
   onBeginEdit: () => void;
-  onChangeSaved?: (next: number) => void;
   onChangeName?: (next: string) => void;
   onChangeTarget?: (next: number) => void;
   onChangeDate?: (next: string) => void;
+  onChangeLinkedJar?: (jarId: string) => void;
+  onAddContribution?: (amountUah: number, note?: string) => void;
+  onDeleteContribution?: (id: string) => void;
   onSave: () => void;
   onDelete: () => void;
 }
 
-// Картка цілі накопичення — детерміновані пропси, memo дозволяє не
+// Картка бюджету-цілі. Прогрес більше не редагується напряму — рахується
+// з привʼязаної банки Monobank + логу ручних поповнень
+// (goal-progress-auto-sync). Детерміновані пропси, memo дозволяє не
 // перераховувати розмітку при перерендерах сторінки Budgets.
 function GoalBudgetCardComponent({
   budget,
@@ -47,12 +69,20 @@ function GoalBudgetCardComponent({
   pct,
   daysLeft,
   monthlyLabel,
+  fromJar = 0,
+  fromContributions = 0,
+  contributions = [],
+  linkedJarId,
+  linkedJarLabel,
+  jars = [],
   isEditing,
   onBeginEdit,
-  onChangeSaved,
   onChangeName,
   onChangeTarget,
   onChangeDate,
+  onChangeLinkedJar,
+  onAddContribution,
+  onDeleteContribution,
   onSave,
   onDelete,
 }: GoalBudgetCardProps) {
@@ -64,8 +94,16 @@ function GoalBudgetCardComponent({
   const fieldId = useId();
   const nameId = `${fieldId}-name`;
   const targetId = `${fieldId}-target`;
-  const savedId = `${fieldId}-saved`;
+  const jarId = `${fieldId}-jar`;
   const dateId = `${fieldId}-date`;
+  const contribAmountId = `${fieldId}-contrib-amount`;
+  const contribNoteId = `${fieldId}-contrib-note`;
+
+  const [addingContribution, setAddingContribution] = useState(false);
+  const [contribAmount, setContribAmount] = useState("");
+  const [contribNote, setContribNote] = useState("");
+  // Список поповнень згорнутий за замовчуванням (design decision #2).
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (pct < 100) return;
@@ -73,6 +111,25 @@ function GoalBudgetCardComponent({
     celebratedRef.current = budget.id;
     goalCompleted(budget.name ?? "Ціль досягнута!", saved, "₴", "finyk");
   }, [pct, budget.id, budget.name, saved, goalCompleted]);
+
+  const contribAmountNum = Number(contribAmount);
+  const contribAmountValid =
+    contribAmount.trim() !== "" &&
+    Number.isFinite(contribAmountNum) &&
+    contribAmountNum > 0;
+
+  const handleAddContribution = () => {
+    if (!contribAmountValid) return;
+    onAddContribution?.(contribAmountNum, contribNote.trim() || undefined);
+    setContribAmount("");
+    setContribNote("");
+    setAddingContribution(false);
+    setHistoryOpen(true);
+  };
+
+  // Показуємо розбивку лише коли обидва джерела дійсно внесли щось —
+  // якщо ціль лише з банки або лише з поповнень, сума вже й так очевидна.
+  const hasBreakdown = fromJar > 0 && fromContributions > 0;
 
   return (
     <>
@@ -101,17 +158,16 @@ function GoalBudgetCardComponent({
                 onChange={(e) => onChangeTarget?.(Number(e.target.value))}
               />
             </div>
-            <div>
-              <Label htmlFor={savedId}>Відкладено</Label>
-              <Input
-                id={savedId}
-                size="sm"
-                type="number"
-                placeholder="Напр. 5000 ₴"
-                value={budget.savedAmount || ""}
-                onChange={(e) => onChangeSaved?.(Number(e.target.value))}
-              />
-            </div>
+            {jars.length > 0 && (
+              <div>
+                <Label htmlFor={jarId}>Банка Monobank</Label>
+                <JarSelector
+                  value={linkedJarId}
+                  onChange={(id) => onChangeLinkedJar?.(id)}
+                  jars={jars}
+                />
+              </div>
+            )}
             <DateField
               id={dateId}
               size="sm"
@@ -171,6 +227,111 @@ function GoalBudgetCardComponent({
                   : "Термін минув"
                 : "Без дедлайну"}
             </div>
+            {hasBreakdown && (
+              <div className="text-xs text-subtle mt-0.5">
+                з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
+                {formatMoney(fromJar)} · вручну {formatMoney(fromContributions)}
+              </div>
+            )}
+            <div className="mt-3 flex items-center gap-3">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setAddingContribution((v) => !v)}
+              >
+                + Поповнити
+              </Button>
+              {contributions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen((v) => !v)}
+                  aria-expanded={historyOpen}
+                  className="text-xs text-subtle hover:text-text flex items-center gap-1 transition-colors"
+                >
+                  Історія ({contributions.length})
+                  <Icon
+                    name="chevron-down"
+                    size={12}
+                    aria-hidden
+                    className={cn(
+                      "transition-transform",
+                      historyOpen ? "rotate-180" : "",
+                    )}
+                  />
+                </button>
+              )}
+            </div>
+            {addingContribution && (
+              <div className="mt-2 space-y-2 p-3 rounded-xl bg-bg border border-line">
+                <div>
+                  <Label htmlFor={contribAmountId}>Сума поповнення</Label>
+                  <Input
+                    id={contribAmountId}
+                    size="sm"
+                    type="number"
+                    placeholder="Напр. 500 ₴"
+                    value={contribAmount}
+                    onChange={(e) => setContribAmount(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={contribNoteId}>
+                    Нотатка (необов&apos;язково)
+                  </Label>
+                  <Input
+                    id={contribNoteId}
+                    size="sm"
+                    placeholder="Напр. Готівка"
+                    value={contribNote}
+                    onChange={(e) => setContribNote(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    size="sm"
+                    onClick={handleAddContribution}
+                    disabled={!contribAmountValid}
+                  >
+                    Додати
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setAddingContribution(false)}
+                  >
+                    Скасувати
+                  </Button>
+                </div>
+              </div>
+            )}
+            {historyOpen && contributions.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {[...contributions].reverse().map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex items-center justify-between gap-2 text-xs text-subtle"
+                  >
+                    <span>
+                      {c.date}
+                      {c.note ? ` · ${c.note}` : ""}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {formatMoney(c.amountUah)}
+                      <button
+                        type="button"
+                        onClick={() => onDeleteContribution?.(c.id)}
+                        aria-label={`Видалити поповнення ${formatMoney(c.amountUah)} від ${c.date}`}
+                        className="text-subtle hover:text-danger-strong dark:hover:text-danger transition-colors"
+                      >
+                        <Icon name="trash" size={14} aria-hidden />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </>
         )}
       </Card>

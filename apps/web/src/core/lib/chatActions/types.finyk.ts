@@ -161,12 +161,23 @@ export interface BudgetLimit {
   createdAt?: string;
 }
 
+/** Один запис логу поповнень цілі (goal-progress-auto-sync). */
+export interface GoalContribution {
+  id: string;
+  amountUah: number;
+  date: string;
+  note?: string;
+}
+
 export interface BudgetGoal {
   id: string;
   type: "goal";
   name: string;
   targetAmount: number;
+  /** @deprecated лишено для старих снапшотів — прогрес рахується через `contributions`. */
   savedAmount?: number;
+  contributions?: GoalContribution[];
+  linkedJarId?: string;
 }
 
 export type Budget = BudgetLimit | BudgetGoal;

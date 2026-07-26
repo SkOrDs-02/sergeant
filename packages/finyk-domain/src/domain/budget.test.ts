@@ -4,6 +4,7 @@ import {
   BUDGET_WARN_THRESHOLD,
   buildAtRiskKey,
   calculateGoalProgress,
+  calculateGoalSavedAmount,
   calculateLimitUsage,
   calculateRemainingBudget,
   calculateSafeToSpendPerDay,
@@ -14,8 +15,10 @@ import {
   getLimitBudgets,
   getMonthlyPlanUsage,
   isBudgetAlert,
+  migrateGoalSavedAmountToContribution,
   selectAtRiskForecasts,
   shouldShowProactiveAdvice,
+  sumGoalContributions,
   validateGoalBudgetForm,
   validateLimitBudgetForm,
   getLimitPeriodRange,
@@ -181,6 +184,96 @@ describe("budget: goal progress", () => {
     );
     expect(done.pct).toBe(100);
     expect(getGoalMonthlyLabel(done)).toMatch(/досягнута/);
+  });
+});
+
+describe("budget: goal saved amount (jar + contributions)", () => {
+  it("sumGoalContributions sums amountUah, ignoring bad entries", () => {
+    expect(sumGoalContributions(undefined)).toBe(0);
+    expect(sumGoalContributions(null)).toBe(0);
+    expect(sumGoalContributions([])).toBe(0);
+    expect(
+      sumGoalContributions([
+        { id: "1", amountUah: 500, date: "2026-01-01" },
+        { id: "2", amountUah: 250.5, date: "2026-01-02", note: "готівка" },
+      ]),
+    ).toBe(750.5);
+  });
+
+  it("calculateGoalSavedAmount = jar balance + contributions when a jar is linked", () => {
+    const saved = calculateGoalSavedAmount({
+      linkedJarBalanceUah: 1000,
+      contributions: [{ id: "1", amountUah: 200, date: "2026-01-01" }],
+    });
+    expect(saved).toBe(1200);
+  });
+
+  it("calculateGoalSavedAmount = sum of contributions only when there is no jar", () => {
+    const saved = calculateGoalSavedAmount({
+      contributions: [
+        { id: "1", amountUah: 300, date: "2026-01-01" },
+        { id: "2", amountUah: 100, date: "2026-01-05" },
+      ],
+    });
+    expect(saved).toBe(400);
+  });
+
+  it("calculateGoalSavedAmount is 0 for a goal with neither jar nor contributions", () => {
+    expect(calculateGoalSavedAmount({})).toBe(0);
+  });
+
+  it("deleting a contribution recalculates the total (caller filters, then re-sums)", () => {
+    const contributions = [
+      { id: "1", amountUah: 300, date: "2026-01-01" },
+      { id: "2", amountUah: 100, date: "2026-01-05" },
+    ];
+    const afterDelete = contributions.filter((c) => c.id !== "2");
+    expect(sumGoalContributions(afterDelete)).toBe(300);
+  });
+});
+
+describe("budget: migrateGoalSavedAmountToContribution", () => {
+  const baseGoal = {
+    id: "g1",
+    type: "goal" as const,
+    name: "Відпустка",
+    targetAmount: 10000,
+    savedAmount: 3000,
+    contributions: [],
+  };
+
+  it("converts an existing savedAmount into the first contribution entry", () => {
+    const migrated = migrateGoalSavedAmountToContribution(
+      baseGoal,
+      "2026-07-26",
+    );
+    expect(migrated.contributions).toHaveLength(1);
+    expect(migrated.contributions[0]).toMatchObject({
+      amountUah: 3000,
+      date: "2026-07-26",
+      note: "Початковий залишок",
+    });
+    // savedAmount lives on untouched — deprecated, but preserved for
+    // back-compat readers of old snapshots.
+    expect(migrated.savedAmount).toBe(3000);
+  });
+
+  it("is a no-op (idempotent) once contributions already exist", () => {
+    const already = {
+      ...baseGoal,
+      contributions: [{ id: "existing", amountUah: 500, date: "2026-01-01" }],
+    };
+    const migrated = migrateGoalSavedAmountToContribution(
+      already,
+      "2026-07-26",
+    );
+    expect(migrated).toBe(already);
+  });
+
+  it("does not fabricate a contribution for savedAmount <= 0", () => {
+    const zero = { ...baseGoal, savedAmount: 0 };
+    const migrated = migrateGoalSavedAmountToContribution(zero, "2026-07-26");
+    expect(migrated.contributions).toEqual([]);
   });
 });
 

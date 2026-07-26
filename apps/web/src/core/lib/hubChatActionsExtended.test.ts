@@ -331,13 +331,18 @@ describe("update_budget", () => {
         name?: string;
         targetAmount?: number;
         savedAmount?: number;
+        contributions?: Array<{ amountUah: number }>;
       }>
     >("finyk_budgets", []);
+    // Прогрес пишеться в лог поповнень, не в застаріле `savedAmount`
+    // (goal-progress-auto-sync).
+    expect(budgets[0]!.contributions).toEqual([
+      expect.objectContaining({ amountUah: 5000 }),
+    ]);
     expect(budgets[0]).toMatchObject({
       type: "goal",
       name: "Відпустка",
       targetAmount: 30000,
-      savedAmount: 5000,
     });
   });
 

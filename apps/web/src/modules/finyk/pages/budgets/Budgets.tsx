@@ -46,6 +46,7 @@ import type {
   TxCategoriesMap,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
@@ -67,6 +68,8 @@ export interface BudgetsMonoSlice {
   realTx: Transaction[];
   loadingTx: boolean;
   transactions?: Transaction[];
+  /** Банки Monobank юзера — для прогресу і дропдауна привʼязки цілі. */
+  jars?: MonoJarDto[];
 }
 
 /**
@@ -127,7 +130,7 @@ export function Budgets({
   onDismissMonthlyPlanFirstRunHint,
 }: BudgetsProps) {
   const toast = useToast();
-  const { realTx, loadingTx, transactions } = mono;
+  const { realTx, loadingTx, transactions, jars = [] } = mono;
   const {
     budgets,
     setBudgets,
@@ -322,7 +325,19 @@ export function Budgets({
   // додаткової валідації.
   const handleAddBudget = useCallback(
     (draft: NewBudgetDraft) => {
-      setBudgets((b) => [...b, { ...draft, id: crypto.randomUUID() }]);
+      setBudgets((b) => [
+        ...b,
+        draft.type === "goal"
+          ? // Нова ціль стартує з порожнього логу поповнень — savedAmount
+            // більше не вводиться при створенні (goal-progress-auto-sync).
+            {
+              ...draft,
+              id: crypto.randomUUID(),
+              savedAmount: 0,
+              contributions: [],
+            }
+          : { ...draft, id: crypto.randomUUID() },
+      ]);
       // Хвиля 2: подія переюзана як є — додані лише поля атрибуції петлі,
       // щоб «бюджет після сигналу про перевитрату» став вимірюваним без
       // нової події і без ренейму наявної.
@@ -453,12 +468,14 @@ export function Budgets({
               setEditIdx={setEditIdx}
               now={now}
               toast={toast}
+              jars={jars}
             />
 
             {showForm ? (
               <AddBudgetForm
                 existingBudgets={budgets}
                 expenseCategoryList={expenseCategoryList}
+                jars={jars}
                 onSubmit={handleAddBudget}
                 onCancel={handleCancelForm}
               />

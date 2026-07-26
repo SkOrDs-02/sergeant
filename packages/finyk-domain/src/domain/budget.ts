@@ -11,6 +11,7 @@ import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
 import type {
   Budget,
   GoalBudget,
+  GoalContribution,
   LimitBudget,
   RemainingBudget,
   Transaction,
@@ -204,6 +205,58 @@ export function buildAtRiskKey(
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const ids = atRisk.map((fc) => fc.categoryId).sort();
   return `${monthKey}|${ids.join(",")}`;
+}
+
+// Сума ручних поповнень цілі. Чиста арифметика — не знає ні про банку, ні
+// про storage; викликач передає лише масив.
+export function sumGoalContributions(
+  contributions: readonly GoalContribution[] | null | undefined,
+): number {
+  if (!Array.isArray(contributions)) return 0;
+  return contributions.reduce((s, c) => s + (Number(c?.amountUah) || 0), 0);
+}
+
+export interface GoalSavedInput {
+  contributions?: readonly GoalContribution[] | undefined;
+  /** Баланс привʼязаної банки в гривнях (UAH), вже сконвертований з копійок. */
+  linkedJarBalanceUah?: number | undefined;
+}
+
+// Прогрес цілі накопичення (design decision #1, goal-progress-auto-sync):
+// прогрес = баланс привʼязаної банки (якщо є) + сума ручних поповнень.
+// Обидва джерела співіснують — банка тягнеться з mono, поповнення додаються
+// поверх (готівка/інші джерела).
+export function calculateGoalSavedAmount(goal: GoalSavedInput): number {
+  const fromJar = Number(goal.linkedJarBalanceUah) || 0;
+  const fromContributions = sumGoalContributions(goal.contributions);
+  return fromJar + fromContributions;
+}
+
+// Міграція без втрат (design decision #4): наявний `savedAmount > 0`
+// конвертується в перший запис логу поповнень один раз. Ідемпотентна —
+// ціль з уже непорожнім `contributions` повертається без змін, тож повторний
+// виклик на кожному читанні `getBudget()` безпечний.
+export function migrateGoalSavedAmountToContribution(
+  goal: GoalBudget,
+  migrationDate: string,
+): GoalBudget {
+  if (Array.isArray(goal.contributions) && goal.contributions.length > 0) {
+    return goal;
+  }
+  if (!goal.savedAmount || goal.savedAmount <= 0) {
+    return { ...goal, contributions: goal.contributions ?? [] };
+  }
+  return {
+    ...goal,
+    contributions: [
+      {
+        id: `mig_${goal.id}`,
+        amountUah: goal.savedAmount,
+        date: migrationDate,
+        note: "Початковий залишок",
+      },
+    ],
+  };
 }
 
 export interface GoalInput {

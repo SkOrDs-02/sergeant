@@ -199,6 +199,7 @@ export {
   type MonoConnectionStatus,
   type MonoDisconnectResponse,
   type MonoJar,
+  type MonoJarDto,
   type MonoSyncState,
   type MonoTransactionDto,
   type MonoTransactionsPage,

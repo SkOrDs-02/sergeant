@@ -324,6 +324,41 @@
       }
     },
     {
+      "description": "a GET /api/v1/mono/jars request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 connected mono jar with balance 50000 and goal 200000 (in minor units)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/mono/jars"
+      },
+      "response": {
+        "body": [
+          {
+            "balance": 50000,
+            "currencyCode": 980,
+            "description": "Мрія",
+            "goal": 200000,
+            "lastSeenAt": "2026-05-13T08:30:00.000Z",
+            "monoJarId": "jar-pact-001",
+            "sendId": "abc123",
+            "title": "На відпустку",
+            "userId": "user-pact-001"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/mono/sync-state request",
       "providerStates": [
         {

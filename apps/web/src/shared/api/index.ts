@@ -88,6 +88,7 @@ export type {
   MonoAccountDto,
   MonoConnectionStatus,
   MonoJar,
+  MonoJarDto,
   MonoSyncState,
   MonoTransactionDto,
   MonoTransactionsPage,
