@@ -131,6 +131,18 @@ export const webBlocks = [
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
     rules: {
       "sergeant-design/no-raw-dark-palette": "error",
+      // `no-retired-module-hue` — a module's OWN raw palette hue after a
+      // migration (finyk emerald→teal 2026-07; fizruk teal→cyan). Catches
+      // the ghosts `no-foreign-module-accent` cannot: `hover:bg-emerald-800`
+      // left behind inside `modules/finyk/**` after `bg-finyk-strong`
+      // already resolved to teal. Web-only for the same reason as
+      // `no-raw-dark-palette`: the semantic `bg-{module}` replacement
+      // resolves through the `--c-{module}-*` CSS variables that only exist
+      // in `apps/web/src/index.css`. `apps/mobile` (NativeWind) still ships
+      // the pre-migration emerald/teal palette and is tracked as a separate
+      // hue-migration debt — do NOT widen this glob to apps/mobile until
+      // that migration lands or CI will go red on known debt.
+      "sergeant-design/no-retired-module-hue": "error",
       // `prefer-focus-visible` (Wave 2e of the dark-mode audit's
       // accessibility companion track — see `docs/design/design-system.md`
       // → "Focus — focus-visible:ring-…, а не focus:, аби pointer-клік

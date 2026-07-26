@@ -42,8 +42,8 @@ describe("Badge", () => {
     );
     const el = container.querySelector("span")!;
     expect(el.className).toContain("bg-transparent");
-    // `text-finyk-strong` (= emerald-700) clears WCAG AA on cream `bg-bg`;
-    // the previous `text-finyk` (=emerald-500) only cleared ~2.4:1.
+    // `text-finyk-strong` (= teal-800) clears WCAG AA on cream `bg-bg`;
+    // the plain `text-finyk` (= teal-700) is reserved for larger text.
     expect(el.className).toContain("text-finyk-strong");
     expect(el.className).toContain("border-finyk/60");
   });

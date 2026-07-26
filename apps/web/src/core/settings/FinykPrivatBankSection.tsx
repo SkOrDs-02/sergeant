@@ -221,7 +221,7 @@ export function FinykPrivatBankSection({
           <label className="flex items-center gap-2.5 cursor-pointer select-none touch-target">
             <input
               type="checkbox"
-              className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
+              className="w-4 h-4 rounded accent-teal-600 cursor-pointer"
               checked={rememberPrivat}
               onChange={(event) => setRememberPrivat(event.target.checked)}
             />

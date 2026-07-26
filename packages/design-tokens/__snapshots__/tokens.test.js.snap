@@ -181,8 +181,8 @@ exports[`@sergeant/design-tokens — tokens.js > elevation recipes snapshot — 
 exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snapshot) 1`] = `
 {
   "finyk": {
-    "default": "16 185 129",
-    "strong": "4 120 87",
+    "default": "15 118 110",
+    "strong": "17 94 89",
   },
   "fizruk": {
     "default": "14 116 144",
@@ -202,10 +202,10 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
 exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical finyk/fizruk/routine/nutrition primary+surface 1`] = `
 {
   "finyk": {
-    "primary": "#10b981",
-    "secondary": "#14b8a6",
-    "surface": "#ecfdf5",
-    "surfaceAlt": "#f0fdfa",
+    "primary": "#0f766e",
+    "secondary": "#0d9488",
+    "surface": "#f0fdfa",
+    "surfaceAlt": "#ccfbf1",
   },
   "fizruk": {
     "accent": "#c8f264",

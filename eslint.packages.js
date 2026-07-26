@@ -27,6 +27,7 @@ export const packageBlocks = [
       "sergeant-design/no-low-contrast-text-on-fill": "off",
       "sergeant-design/no-hex-in-classname": "off",
       "sergeant-design/no-foreign-module-accent": "off",
+      "sergeant-design/no-retired-module-hue": "off",
       "sergeant-design/no-raw-dark-palette": "off",
       "sergeant-design/prefer-focus-visible": "off",
       "sergeant-design/no-rounded-lg": "off",
