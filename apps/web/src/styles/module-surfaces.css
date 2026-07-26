@@ -22,29 +22,30 @@
   }
 }
 
-/* ── Finyk (emerald) ─────────────────────────────────────────────────── */
+/* ── Finyk (teal) ────────────────────────────────────────────────────── */
+/* 2026-07: migrated from emerald to teal (moduleColors.finyk = teal-700). */
 
 .module-card-finyk {
-  @apply module-card bg-linear-to-br from-emerald-50 via-teal-50/50 to-white;
-  border-color: rgba(167, 243, 208, 0.6);
+  @apply module-card bg-linear-to-br from-teal-50 via-teal-50/50 to-white;
+  border-color: rgba(153, 246, 228, 0.6); /* teal-200 */
 }
 
 .module-card-finyk::before {
   background: linear-gradient(
     135deg,
-    rgba(16, 185, 129, 0.08) 0%,
+    rgba(13, 148, 136, 0.08) 0%,
     transparent 60%
-  );
+  ); /* teal-600 */
 }
 
 .dark .module-card-finyk {
   @apply bg-panel;
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(13, 148, 136, 0.2); /* teal-600 */
   background-image: linear-gradient(
     135deg,
-    rgba(16, 185, 129, 0.12) 0%,
+    rgba(13, 148, 136, 0.12) 0%,
     transparent 60%
-  );
+  ); /* teal-600 */
 }
 
 /* ── Fizruk (cyan) ───────────────────────────────────────────────────── */

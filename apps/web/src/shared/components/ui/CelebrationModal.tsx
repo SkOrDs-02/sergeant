@@ -51,7 +51,7 @@ interface ConfettiParticle {
 }
 
 const MODULE_COLORS: Record<ModuleTheme, string[]> = {
-  finyk: ["#10B981", "#14B8A6", "#059669", "#34D399"],
+  finyk: ["#0F766E", "#14B8A6", "#0D9488", "#2DD4BF"], // teal family (2026-07: was emerald)
   fizruk: ["#14B8A6", "#0D9488", "#2DD4BF", "#0F766E"],
   routine: ["#F97066", "#FB923C", "#F59E0B", "#EF4444"],
   nutrition: ["#84CC16", "#A3E635", "#65A30D", "#BEF264"],
@@ -59,7 +59,7 @@ const MODULE_COLORS: Record<ModuleTheme, string[]> = {
 };
 
 const MODULE_GRADIENTS: Record<ModuleTheme, string> = {
-  finyk: "from-emerald-500/20 to-teal-500/10",
+  finyk: "from-teal-600/20 to-teal-400/10",
   fizruk: "from-cyan-500/20 to-cyan-400/10",
   routine: "from-coral-500/20 to-orange-500/10",
   nutrition: "from-lime-500/20 to-green-500/10",

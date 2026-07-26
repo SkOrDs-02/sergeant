@@ -84,7 +84,9 @@ describe("Button", () => {
   });
 
   it.each([
-    ["finyk", "hover:bg-emerald-800", "active:bg-emerald-900"],
+    // finyk's registered `teal` scale tops out at 900 (no 950 tier), so
+    // hover and active share the same darkest step (2026-07 emerald→teal).
+    ["finyk", "hover:bg-teal-900", "active:bg-teal-900"],
     // fizruk's registered `cyan` scale tops out at 900 (no 950 tier), so
     // hover and active share the same darkest step.
     ["fizruk", "hover:bg-cyan-900", "active:bg-cyan-900"],

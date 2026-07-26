@@ -259,33 +259,37 @@ const preset = {
         // MODULE-SPECIFIC COLORS — Each module has its own personality
         // ═══════════════════════════════════════════════════════════════════
 
-        /** Фінік — Emerald/Teal финансовый трекер */
+        /** Фінік — Teal фінансовий трекер (2026-07: was emerald). */
         finyk: {
           DEFAULT: moduleColors.finyk.primary,
           secondary: moduleColors.finyk.secondary,
           surface: moduleColors.finyk.surface,
           surfaceAlt: moduleColors.finyk.surfaceAlt,
-          hover: brandColors.emerald[600],
-          strong: brandColors.emerald[700],
-          ring: brandColors.emerald[200],
-          // Dark-mode subtitle companion. The DEFAULT emerald-500 clears AA
-          // for full-opacity dark text (≈6.7:1 on `--c-panel`), but the
-          // de-emphasised `/70` subtitle slot dips to ≈3.9:1 — sub-AA for
-          // normal text. `text-finyk-300` (emerald-300) is the lighter tier
-          // used ONLY in the `dark:` `/70` subtitle slot (emerald-300/70 ≈
-          // 6.05:1). Mirrors the `fizruk-300` precedent; do NOT use it for
-          // full-opacity finyk text — the DEFAULT already passes AA there.
-          300: brandColors.emerald[300],
+          hover: brandColors.teal[600], // 2026-07: was emerald-600
+          // teal-800 — WCAG-AA companion under `text-white`; matches
+          // `moduleAccentRgb.finyk.strong` + `chart-finyk` (2026-07: was
+          // emerald-700, which left `bg-finyk-strong` off-hue from the
+          // already-migrated teal DEFAULT).
+          strong: brandColors.teal[800],
+          ring: brandColors.teal[200], // 2026-07: was emerald-200
+          // Dark-mode subtitle companion. The DEFAULT teal clears AA for
+          // full-opacity dark text on `--c-panel`, but the de-emphasised
+          // `/70` subtitle slot dips sub-AA for normal text. `text-finyk-300`
+          // (teal-300) is the lighter tier used ONLY in the `dark:` `/70`
+          // subtitle slot. Mirrors the `fizruk-300` precedent; do NOT use it
+          // for full-opacity finyk text — the DEFAULT already passes AA.
+          // (2026-07: was emerald-300.)
+          300: brandColors.teal[300],
           // `soft` / `soft-border` / `soft-hover` are now theme-adaptive
-          // via `--c-finyk-soft*` (Wave 1b). Light values mirror the
-          // legacy hex (`emerald[50]` / `[200]` / `[100]`); dark values
-          // flip to the `-900` / `-800` family so dark mode stops showing
-          // a bright pale fill on the warm-charcoal panel.
+          // via `--c-finyk-soft*` (Wave 1b). Light values are the teal
+          // `-50` / `-200` / `-100` tiers; dark values flip to the
+          // `-900` / `-800` family so dark mode stops showing a bright
+          // pale fill on the warm-charcoal panel. (2026-07: was emerald.)
           soft: "rgb(var(--c-finyk-soft) / <alpha-value>)",
           "soft-border": "rgb(var(--c-finyk-soft-border) / <alpha-value>)",
           "soft-hover": "rgb(var(--c-finyk-soft-hover) / <alpha-value>)",
           // Theme-aware foreground for soft-fill controls (`Button`
-          // `finyk-soft`). Light = emerald-700 ink; dark = emerald-300 so
+          // `finyk-soft`). Light = teal-800 ink; dark = teal-300 so
           // text clears WCAG AA on `bg-finyk/15` over the dark panel.
           // Backed by `--c-finyk-soft-fg` (light/dark/HC in theme.css).
           "soft-fg": "rgb(var(--c-finyk-soft-fg) / <alpha-value>)",
@@ -528,7 +532,7 @@ const preset = {
         "r-2xl": "24px",
       },
 
-      // ═══════════════════════════════════════════════════════════════════
+      // ══════════���════════════════════════════════════════════════════════
       // BOX SHADOWS — Semantic elevation scale e0..e5
       //
       // The `e0..e5` scale is the canonical elevation contract — see
@@ -569,6 +573,7 @@ const preset = {
         // replacing the drop shadow under the dark ink direction. Applied
         // `dark:`-only so the light default keeps its shadow.
         "glow-accent-emerald": "0 0 24px rgba(52, 211, 153, 0.35)",
+        "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
         "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
         "glow-accent-coral": "0 0 24px rgba(255, 140, 120, 0.35)",
         "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
@@ -578,6 +583,7 @@ const preset = {
         // accent, it does not flip with the surface). Applied `dark:`-only
         // by Card hero surfaces so the light default is untouched.
         "glow-inset-emerald": "inset 0 0 40px rgba(52, 211, 153, 0.08)",
+        "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
         "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
         "glow-inset-coral": "inset 0 0 40px rgba(255, 140, 120, 0.08)",
         "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
@@ -586,7 +592,7 @@ const preset = {
         // `--c-{module}-accent` hex baked in (box-shadow colour can't take
         // a CSS-var opacity modifier). Replaces the generic `shadow-card`
         // on the hero surface; dark keeps its own `glow-inset-*` override.
-        "hero-finyk": "0 8px 20px rgba(4, 120, 87, 0.22)",
+        "hero-finyk": "0 8px 20px rgba(17, 94, 89, 0.22)", // teal-800 — matches --c-finyk-accent (2026-07: was emerald-700)
         "hero-fizruk": "0 8px 20px rgba(14, 116, 144, 0.22)",
         "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",
         "hero-nutrition": "0 8px 20px rgba(86, 124, 15, 0.22)",

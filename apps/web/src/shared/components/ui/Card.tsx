@@ -175,7 +175,7 @@ const MODULE_PROMINENCE: Record<
     // the light gradient by itself — no separate `dark:bg-none` reset
     // needed (§ 2). Same fix applies to all 4 modules below — see
     // screenshot bug report 2026-05-18.
-    hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-glow-inset-emerald",
+    hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-glow-inset-teal",
     soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
     tinted:
       "bg-panel border border-finyk-soft-border shadow-card dark:bg-brand-400/10 dark:border-brand-400/35 dark:shadow-none",

@@ -52,7 +52,7 @@ const PAIRS = [
     brandColors.coral[50],
     true,
   ],
-  ["finyk-strong on white", brandColors.emerald[700], "#ffffff", true],
+  ["finyk-strong on white", brandColors.teal[800], "#ffffff", true], // 2026-07: was emerald[700]
   ["fizruk-strong on white", brandColors.cyan[800], "#ffffff", true],
   // Routine hero (light) — реальні пари з рендера (design-audit F2):
   // світлий градієнт стиснуто до coral-800→700, текст hero-ink #fdf9f3.
@@ -148,7 +148,7 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   const onAccent = "#fdf9f3"; // text over an accent fill
   // Strong-tier module accents (AA on white / cream).
   const accents = {
-    finyk: "#047857",
+    finyk: "#115e59", // teal-800 (2026-07: was emerald-700 #047857)
     fizruk: "#0e7490",
     routine: "#c23a3a",
     nutrition: "#567c0f",
