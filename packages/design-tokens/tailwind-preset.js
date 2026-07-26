@@ -524,7 +524,7 @@ const preset = {
       // sweeps remaining call sites incrementally — when touching a file
       // you usually want `rounded-xl` for ≤ 40 px controls and `rounded-2xl`
       // for surfaces ≥ 48 px tall.
-      // ═══════════════════════════════════════════════════════════════════
+      // ════��══════════════════════════════════════════════════════════════
       borderRadius: {
         "2xl": "16px",
         "3xl": "24px",
@@ -576,7 +576,11 @@ const preset = {
         soft: "var(--shadow-e4)",
         card: "var(--shadow-e1)",
         float: "var(--shadow-e3)",
-        glow: "0 0 0 3px rgba(16, 185, 129, 0.15)", // emerald glow
+        // 2026-07 design-audit: was a hard-coded emerald `rgba(16,185,129)`,
+        // an orphan from before the hub decoupled from emerald. Now driven
+        // by the focus-ring color var so it tracks the active accent/theme
+        // instead of pinning a colour the shell no longer uses.
+        glow: "0 0 0 3px var(--focus-ring-color, rgba(20, 184, 166, 0.15))",
         "glow-teal": "0 0 0 3px rgba(20, 184, 166, 0.15)",
         "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
         "glow-coral": "0 0 0 3px rgba(249, 112, 102, 0.15)",
@@ -627,9 +631,11 @@ const preset = {
         // Streak glow — pulsing coral for active streaks
         "streak-glow":
           "0 0 16px rgba(249, 112, 102, 0.25), 0 0 4px rgba(249, 112, 102, 0.15)",
-        // Enhanced focus ring
+        // Enhanced focus ring. The var is set per-theme in theme.css; the
+        // fallback is only a last resort. 2026-07 design-audit: fallback
+        // aligned to teal (the shell's live accent) — was an orphan emerald.
         "focus-ring":
-          "0 0 0 var(--focus-ring-width, 3px) var(--focus-ring-color, rgba(16, 185, 129, 0.4))",
+          "0 0 0 var(--focus-ring-width, 3px) var(--focus-ring-color, rgba(20, 184, 166, 0.4))",
 
         // ═══════════════════════════════════════════════════════════════════
         // SERGEANT v2 REDESIGN SHADOWS (introduced 2026-05)
@@ -781,7 +787,7 @@ const preset = {
 
       // ═══════════════════════════════════════════════════════════════════
       // ANIMATIONS — Smooth, delightful, Duolingo-inspired
-      // ═══════════════════════════════════════════════════════════════════
+      // ═══════════════════════════���═══════════════════════════════════════
       //
       // ANIMATION BUDGET — 3 tiers, max 2 concurrent on-screen:
       //

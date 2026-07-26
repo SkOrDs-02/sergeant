@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-25",
+  "generated_at": "2026-07-26",
   "counts": {
     "adr": 77,
-    "audit": 9,
+    "audit": 10,
     "hard-rule": 26,
     "initiative": 5,
     "playbook": 60,
@@ -897,6 +897,15 @@
       "title": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**`",
       "path": "docs/90-work/audits/2026-07-24-cycle6-stage2-typography-core.md",
       "status": "Reference — звіт про виконання наряду циклу 6, стадія 2; baseline",
+      "tier": "core",
+      "meta": {}
+    },
+    {
+      "id": "audit:finyk-analytics-research",
+      "type": "audit",
+      "title": "Research: аналітика конкурентів і шортлист для Фініка (C6)",
+      "path": "docs/90-work/audits/finyk-analytics-research.md",
+      "status": "Active",
       "tier": "core",
       "meta": {}
     },
