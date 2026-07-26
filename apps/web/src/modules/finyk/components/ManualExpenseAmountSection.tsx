@@ -5,7 +5,8 @@
  * Amount block for ManualExpenseSheet — quick chips, hero preview,
  * numeric input, and voice dictation. Extracted for Hard Rule #18.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 import type { UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
@@ -29,6 +30,12 @@ interface ManualExpenseAmountSectionProps {
   isSubmitting: boolean;
   register: UseFormRegister<ExpenseFormValues>;
   setValue: UseFormSetValue<ExpenseFormValues>;
+  /**
+   * UX-15: the parent sheet populates this ref with a "focus the amount
+   * input" callback so batch entry ("Зберегти й додати ще") can jump the
+   * cursor back to the amount field for the next item.
+   */
+  focusRef?: MutableRefObject<(() => void) | null>;
 }
 
 export function ManualExpenseAmountSection({
@@ -40,10 +47,20 @@ export function ManualExpenseAmountSection({
   isSubmitting,
   register,
   setValue,
+  focusRef,
 }: ManualExpenseAmountSectionProps) {
   const isCoarse = useCoarsePointer();
   const [amountFocused, setAmountFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Publish a focus callback to the parent (batch entry re-focus).
+  useEffect(() => {
+    if (!focusRef) return;
+    focusRef.current = () => inputRef.current?.focus();
+    return () => {
+      focusRef.current = null;
+    };
+  }, [focusRef]);
   // RHF owns the field ref; keep a local handle too so the accessory bar can
   // read the live value and re-focus the input after a chip tap.
   const amountReg = register("amount");

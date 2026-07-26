@@ -8,14 +8,19 @@
  * lives in `./manualExpenseCategories`; pure helpers in
  * `./manualExpenseForm`.
  */
-import { useState, useId, useMemo, useEffect } from "react";
+import { useState, useId, useMemo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { DateScrubber } from "@shared/components/ui/DateScrubber";
 import { useApiForm } from "@shared/forms";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { toLocalISODate, useVisualKeyboardInset } from "@sergeant/shared";
+import {
+  toLocalISODate,
+  useVisualKeyboardInset,
+  parseExpenseSpeech,
+  formatMoney,
+} from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -112,6 +117,23 @@ export function ManualExpenseSheet({
   const isEditing = !!initialExpense?.id;
   const [kind, setKind] = useState<ManualExpenseKind>("expense");
 
+  // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
+  // whether to close or reset-and-stay. `batchFocusRef` lets the amount
+  // field register a focus callback so the next item starts amount-first.
+  const keepOpenRef = useRef(false);
+  const batchFocusRef = useRef<(() => void) | null>(null);
+
+  // UX-17 clipboard-to-action. When the sheet opens for a NEW entry we peek
+  // at the clipboard: if it parses as an expense ("кава 45 грн", "320"), we
+  // surface a one-tap prefill chip instead of making the user retype it.
+  const [clipboardHint, setClipboardHint] = useState<{
+    name: string;
+    amount: number;
+  } | null>(null);
+  // Remember what we already offered so we don't re-surface the same text
+  // after the user dismisses it or after a batch reset.
+  const dismissedClipRef = useRef<string>("");
+
   const { register, submit, reset, setValue, watch, formState, isSubmitting } =
     useApiForm<ExpenseFormValues, void>({
       schema: expenseFormSchema,
@@ -151,6 +173,26 @@ export function ManualExpenseSheet({
           date: toExpenseInstant(values.date || toLocalISODate()),
           kind,
         });
+
+        // UX-15: "Додати ще" keeps the sheet open for rapid batch entry.
+        // We reset only the per-item fields (description + amount) and keep
+        // category, date and kind so logging a run of same-category expenses
+        // (e.g. a grocery haul split by item) is amount-only. `keepOpenRef`
+        // is a ref, not state, so it never triggers a re-render mid-submit;
+        // it's consumed then immediately cleared for the next submit.
+        if (keepOpenRef.current) {
+          keepOpenRef.current = false;
+          reset({
+            description: "",
+            amount: "",
+            category: values.category,
+            date: values.date,
+          });
+          setDescFocused(false);
+          setAiAppliedCategory(null);
+          batchFocusRef.current?.();
+          return;
+        }
         onClose();
       },
     });
@@ -281,6 +323,59 @@ export function ManualExpenseSheet({
     reset,
   ]);
 
+  // UX-17: peek at the clipboard on open (create mode only). Reading the
+  // clipboard requires a user gesture + permission; opening the sheet via a
+  // tap satisfies the gesture, and any rejection (denied / unsupported /
+  // Firefox) is swallowed so the feature degrades to "no hint" silently.
+  useEffect(() => {
+    if (!open || isEditing) {
+      setClipboardHint(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (!navigator.clipboard?.readText) return;
+        const text = (await navigator.clipboard.readText()).trim();
+        if (cancelled || !text || text.length > 120) return;
+        if (text === dismissedClipRef.current) return;
+        const parsed = parseExpenseSpeech(text);
+        if (parsed && parsed.amount != null && parsed.amount > 0) {
+          setClipboardHint({
+            name: parsed.name || text,
+            amount: parsed.amount,
+          });
+        }
+      } catch {
+        // Permission denied / unsupported — no hint, no error surfaced.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isEditing]);
+
+  const applyClipboardHint = () => {
+    if (!clipboardHint) return;
+    if (clipboardHint.name) {
+      setValue("description", clipboardHint.name, { shouldDirty: true });
+    }
+    setValue("amount", String(clipboardHint.amount), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    dismissedClipRef.current = `${clipboardHint.name} ${clipboardHint.amount}`;
+    setClipboardHint(null);
+    hapticSuccess();
+  };
+
+  const dismissClipboardHint = () => {
+    dismissedClipRef.current = clipboardHint
+      ? `${clipboardHint.name} ${clipboardHint.amount}`
+      : "";
+    setClipboardHint(null);
+  };
+
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),
     [frequentCategories],
@@ -332,6 +427,20 @@ export function ManualExpenseSheet({
     void submit();
   };
 
+  // UX-15: submit but keep the sheet open for the next item. Sets the ref
+  // that `onSubmit` reads AFTER zod validation passes — so an invalid form
+  // still surfaces errors and does NOT reset/stay in a misleading state.
+  const handleSubmitKeepOpen = () => {
+    keepOpenRef.current = true;
+    void submit().then(() => {
+      // If validation failed, `onSubmit` never ran, so the ref would leak
+      // into the next (normal) submit. Clear it defensively here.
+      if (Object.keys(formState.errors).length > 0) {
+        keepOpenRef.current = false;
+      }
+    });
+  };
+
   // Segment switch (§1 fab-and-manual-income spec): resets category to the
   // new kind's default so a stale expense/income slug never gets saved
   // under the wrong taxonomy.
@@ -381,6 +490,16 @@ export function ManualExpenseSheet({
               {isEditing ? "Зберегти" : sheetTitle}
             </Button>
           </div>
+          {!isEditing ? (
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={handleSubmitKeepOpen}
+              disabled={isSubmitting}
+            >
+              Зберегти й додати ще
+            </Button>
+          ) : null}
           {isEditing && onDelete && initialExpense?.id ? (
             <Button
               variant="danger"
@@ -399,6 +518,44 @@ export function ManualExpenseSheet({
       }
     >
       <div className="space-y-3">
+        {/* UX-17: clipboard-to-action. Detected a parseable expense on the
+            clipboard — offer a one-tap prefill. Whole row is the primary
+            action; the ✕ dismisses without prefilling. */}
+        {clipboardHint ? (
+          <div className="flex items-center gap-2 rounded-xl border border-finyk/30 bg-finyk/5 p-2 pl-3">
+            <button
+              type="button"
+              onClick={applyClipboardHint}
+              className="flex flex-1 items-center gap-2 text-left min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg"
+            >
+              <Icon
+                name="clipboard-list"
+                size={16}
+                className="text-finyk-strong shrink-0"
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-style-caption text-muted">
+                  Вставити зі скопійованого
+                </span>
+                <span className="block text-style-label text-text truncate">
+                  {clipboardHint.name
+                    ? `${clipboardHint.name} · ${formatMoney(clipboardHint.amount)}`
+                    : formatMoney(clipboardHint.amount)}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={dismissClipboardHint}
+              aria-label="Сховати підказку"
+              className="shrink-0 touch-target flex items-center justify-center rounded-lg text-subtle hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+            >
+              <Icon name="x" size={16} aria-hidden />
+            </button>
+          </div>
+        ) : null}
+
         {/* §1 fab-and-manual-income spec: segment switch lives at the top
             of the form itself (no fan-menu, no long-press) — defaults to
             Витрата. Switching resets the category to the new kind's
@@ -455,6 +612,7 @@ export function ManualExpenseSheet({
           isSubmitting={isSubmitting}
           register={register}
           setValue={setValue}
+          focusRef={batchFocusRef}
         />
 
         <ManualExpenseDescriptionSection
