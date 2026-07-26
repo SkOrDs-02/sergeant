@@ -1,4 +1,5 @@
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 
 export interface NoBankBannerProps {
@@ -25,8 +26,10 @@ export function NoBankBanner({
   onContinueManually,
 }: NoBankBannerProps) {
   return (
-    <div
-      className="mx-3 mt-3 mb-1 rounded-2xl border border-line bg-panel p-4 shadow-card"
+    <Card
+      radius="lg"
+      padding="md"
+      className="mx-3 mt-3 mb-1"
       role="region"
       aria-label="Підключення Monobank"
     >
@@ -66,6 +69,6 @@ export function NoBankBanner({
           Без банку — продовжити
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
