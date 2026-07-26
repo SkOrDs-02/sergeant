@@ -1,16 +1,14 @@
-import { useState } from "react";
-import { cn } from "@shared/lib/ui/cn";
-import { PhoneFrame, ProposalCard } from "./_PhoneFrame";
+import { ProposalCard } from "./_PhoneFrame";
+import { ComparePair, MiniPhone } from "./_Compare";
 
 /**
- * R2-UI-19 — DataTable → card-list on mobile (density switch).
+ * R2-UI-19 — DataTable → card-list on mobile.
  *
- * A dense multi-column table is unreadable on a 360px screen. The proposal
- * collapses each row into a card that promotes the primary columns (name,
- * amount) and demotes the rest to a secondary line — with a density toggle
- * for power users who still want the compact table.
- *
- * Mock only — toggle between "Таблиця" and "Картки".
+ * Зараз: a dense multi-column table forces horizontal reading and truncation
+ * on a 360px screen — the amount column is the whole point yet the hardest to
+ * scan.
+ * Може бути: each row collapses into a card that promotes the primary columns
+ * (name, amount) and demotes the rest to a secondary line.
  */
 
 const ROWS = [
@@ -21,65 +19,53 @@ const ROWS = [
 ];
 
 export function TableToCardDemo() {
-  const [mode, setMode] = useState<"table" | "cards">("cards");
-
   return (
     <ProposalCard
       id="R2-UI-19"
       title="Таблиця → картки на мобільному"
-      intent="Щільна багатоколонкова таблиця згортається в картки з пріоритетом ключових полів. Перемкни щільність."
+      intent="Зараз щільна багатоколонкова таблиця тисне текст на вузькому екрані; у пропозиції кожен рядок — картка з пріоритетом ключових полів."
     >
-      <PhoneFrame>
-        <div className="flex-1 min-h-0 flex flex-col pt-2">
-          <div className="px-4 pb-3">
-            <div className="inline-flex rounded-full border border-line bg-panel p-0.5">
-              {(["cards", "table"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMode(m)}
-                  className={cn(
-                    "px-3 h-8 rounded-full text-style-caption font-medium transition-colors",
-                    mode === m ? "bg-accent text-bg" : "text-muted",
-                  )}
-                >
-                  {m === "cards" ? "Картки" : "Таблиця"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {mode === "cards" ? (
-            <div className="px-4 space-y-2">
-              {ROWS.map((r) => (
-                <div key={r.name} className="rounded-2xl bg-panel border border-line p-3 flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="text-style-label text-text truncate">{r.name}</p>
-                    <p className="text-2xs text-muted mt-0.5">{r.cat} · {r.date}</p>
-                  </div>
-                  <span className="text-style-label tabular-nums text-text shrink-0">{r.amount}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="px-4">
+      <ComparePair
+        before={
+          <MiniPhone dim>
+            <div className="flex-1 min-h-0 flex flex-col pt-3 px-3">
+              <span className="text-style-label text-text mb-2">Транзакції</span>
               <div className="rounded-xl border border-line overflow-hidden">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-2 px-2 py-1.5 bg-surface-muted text-2xs text-muted">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-1.5 bg-surface-muted text-[9px] text-muted">
                   <span>Назва</span><span>Дата</span><span className="text-right">Сума</span>
                 </div>
                 {ROWS.map((r) => (
-                  <div key={r.name} className="grid grid-cols-[1fr_auto_auto] gap-2 px-2 py-2 border-t border-line text-2xs">
+                  <div key={r.name} className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-2 border-t border-line text-[10px]">
                     <span className="text-text truncate">{r.name}</span>
                     <span className="text-muted whitespace-nowrap">{r.date}</span>
                     <span className="text-text tabular-nums text-right whitespace-nowrap">{r.amount}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-2xs text-muted mt-2">Компактно, але вимагає горизонтального читання.</p>
+              <p className="text-2xs text-muted mt-3">Дрібно, обрізано, читати по горизонталі.</p>
             </div>
-          )}
-        </div>
-      </PhoneFrame>
+          </MiniPhone>
+        }
+        after={
+          <MiniPhone>
+            <div className="flex-1 min-h-0 flex flex-col pt-3 px-3">
+              <span className="text-style-label text-text mb-2">Транзакції</span>
+              <div className="space-y-2">
+                {ROWS.map((r) => (
+                  <div key={r.name} className="rounded-2xl bg-panel border border-line p-3 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-style-label text-text truncate">{r.name}</p>
+                      <p className="text-2xs text-muted mt-0.5">{r.cat} · {r.date}</p>
+                    </div>
+                    <span className="text-style-label tabular-nums text-text shrink-0">{r.amount}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-2xs text-muted mt-3">Сума помітна, все читається згори вниз.</p>
+            </div>
+          </MiniPhone>
+        }
+      />
     </ProposalCard>
   );
 }
