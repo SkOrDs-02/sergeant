@@ -182,7 +182,7 @@ function TxRowImpl({
         </span>
       ) : (
         // 28px tinted circle — decorative, non-interactive (aria-hidden).
-        // bg-finyk/10 gives a soft emerald wash; text-finyk-strong
+        // bg-finyk/10 gives a soft teal wash; text-finyk-strong
         // ensures ≥4.5:1 contrast on the bg-panel surface in light mode.
         // dark:bg-finyk/15 lifts the wash slightly for dark-surface parity.
         <span

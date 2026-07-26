@@ -133,7 +133,7 @@
     --shadow-soft: var(--shadow-e4);
 
     /* Module glow drop-shadows for bottom nav icons (active state). */
-    --shadow-finyk-nav: 0 0 8px rgba(16, 185, 129, 0.3);
+    --shadow-finyk-nav: 0 0 8px rgba(15, 118, 110, 0.3); /* teal-700 (2026-07: was emerald-500) */
     --shadow-fizruk-nav: 0 0 8px rgba(14, 116, 144, 0.3);
     --shadow-routine-nav: 0 0 8px rgba(249, 112, 102, 0.3);
     --shadow-nutrition-nav: 0 0 8px rgba(132, 204, 22, 0.3);
@@ -361,7 +361,7 @@
        (`mockups/landing/directions/*`) referencing brighter chart colors
        are matching the dark-mode register; light-mode landing alignment
        depends on Q3 landing-direction lock. */
-    --c-chart-finyk: 4 120 87; /* emerald-700 — 5.23:1 vs cream */
+    --c-chart-finyk: 17 94 89; /* teal-800 — 5.12:1 vs cream (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 — 7.5:1 vs cream */
     --c-chart-routine: 194 58 58; /* coral-700 — 5.06:1 vs cream */
     --c-chart-nutrition: 70 98 18; /* lime-800 — 6.64:1 vs cream */
@@ -614,7 +614,7 @@
 
     /* Chart series — brighter -400 tier for visibility on dark warm bg.
        Sync with `:root` chart vars + `chart-{module}` Tailwind palette. */
-    --c-chart-finyk: 52 211 153; /* emerald-400 */
+    --c-chart-finyk: 45 212 191; /* teal-400 (2026-07: was emerald-400) */
     --c-chart-fizruk: 34 211 238; /* cyan-400 */
     --c-chart-routine: 255 140 120; /* coral-400 */
     --c-chart-nutrition: 176 230 54; /* lime-400 */
@@ -630,8 +630,8 @@
        `packages/design-tokens/tokens.js` — change them here independently
        when dark-mode tints need their own treatment.
        ─────────────────────────────────────────────────────────────────── */
-    --c-finyk-surface-dark: 16 185 129; /* emerald-500 */
-    --c-finyk-border-dark: 16 185 129; /* emerald-500 */
+    --c-finyk-surface-dark: 15 118 110; /* teal-700 — mirrors moduleColors.finyk.primary (2026-07: was emerald-500) */
+    --c-finyk-border-dark: 15 118 110; /* teal-700 — mirrors moduleColors.finyk.primary (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-routine-surface-dark: 249 112 102; /* coral-500 */
@@ -760,8 +760,8 @@
        still reads as accent vs. ivory bg. */
     --c-brand-soft: 167 243 208; /* emerald-200 */
     --c-brand-soft-border: 6 95 70; /* emerald-800 — solid edge */
-    --c-finyk-soft: 167 243 208;
-    --c-finyk-soft-border: 6 95 70;
+    --c-finyk-soft: 153 246 228; /* teal-200 (2026-07: was emerald-200) */
+    --c-finyk-soft-border: 17 94 89; /* teal-800 — solid edge (2026-07: was emerald-800) */
     --c-fizruk-soft: 165 243 252; /* cyan-200 */
     --c-fizruk-soft-border: 21 94 117;
     --c-routine-soft: 255 210 200; /* coral-200 */
@@ -845,7 +845,7 @@
 
     /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
        distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */
-    --c-chart-finyk: 110 231 183; /* emerald-300 */
+    --c-chart-finyk: 94 234 212; /* teal-300 (2026-07: was emerald-300) */
     --c-chart-fizruk: 103 232 249; /* cyan-300 */
     --c-chart-routine: 255 180 165; /* coral-300 */
     --c-chart-nutrition: 217 249 157; /* lime-300 */
@@ -965,9 +965,9 @@
        above so the two token families stay visually locked. */
     --hero-grad-finyk: linear-gradient(
       135deg,
-      #047857,
-      #10b981
-    ); /* emerald-700 → emerald-500 */
+      #0f766e,
+      #2dd4bf
+    ); /* teal-700 → teal-400 (2026-07: was emerald-700 → -500) */
     --hero-grad-fizruk: linear-gradient(
       135deg,
       #0e7490,
@@ -1068,7 +1068,7 @@
     --shadow-fab: 0 0 0 3px rgba(15, 118, 110, 1);
 
     /* Hero → solid module color. */
-    --hero-grad-finyk: #047857; /* emerald-700 */
+    --hero-grad-finyk: #115e59; /* teal-800 (2026-07: was emerald-700) */
     --hero-grad-fizruk: #155e75; /* cyan-800 */
     --hero-grad-routine: #c23a3a; /* coral-700 */
     --hero-grad-nutrition: #466212; /* lime-800 */
@@ -1096,7 +1096,7 @@
     --shadow-nav: 0 0 0 2px rgba(255, 255, 255, 0.8);
     --shadow-fab: 0 0 0 3px rgba(52, 211, 153, 1);
 
-    --hero-grad-finyk: #10b981; /* emerald-500 — brighter on dark HC */
+    --hero-grad-finyk: #2dd4bf; /* teal-400 — brighter on dark HC (2026-07: was emerald-500) */
     --hero-grad-fizruk: #06b6d4; /* cyan-500 */
     --hero-grad-routine: #ff8c78; /* coral-400 */
     --hero-grad-nutrition: #b0e636; /* lime-400 */

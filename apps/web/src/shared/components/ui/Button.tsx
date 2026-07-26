@@ -14,7 +14,7 @@ import { cn } from "../../lib/ui/cn";
  * - success: Confirmation actions
  *
  * Module-specific variants:
- * - finyk: Emerald finance theme
+ * - finyk: Teal finance theme
  * - fizruk: Cyan fitness theme
  * - routine: Coral habit theme
  * - nutrition: Lime nutrition theme
@@ -88,7 +88,7 @@ const variants: Record<ButtonVariant, string> = {
   // elevation. Text over the accent is ink, never white (Rule #9 needs no
   // `-strong` companion here).
   finyk:
-    "bg-finyk-strong text-white shadow-sm hover:bg-emerald-800 hover:shadow-glow active:bg-emerald-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-emerald",
+    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-teal",
   fizruk:
     "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
   routine:
