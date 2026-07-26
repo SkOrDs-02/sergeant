@@ -57,8 +57,10 @@ export interface DataTableColumn<T> {
 }
 
 export interface DataTableProps<T> {
-  columns: DataTableColumn<T>[];
-  rows: T[];
+  columns: readonly DataTableColumn<T>[];
+  // `readonly` so callers can pass `as const` catalogue data (e.g. i18n
+  // reference rows) without a defensive copy.
+  rows: readonly T[];
   /** Stable row key. */
   getRowKey: (row: T, rowIndex: number) => string;
   /** Module accent for the header. Omit for a neutral table. */

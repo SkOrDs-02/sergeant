@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { measurementGuideRows } from "@shared/i18n/uk.fizruk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { DataTable } from "@shared/components/ui/DataTable";
@@ -139,37 +140,7 @@ export function Measurements() {
                   cell: (row) => row.technique,
                 },
               ]}
-              rows={[
-                {
-                  metric: "Талія",
-                  place:
-                    "Посередині між нижнім ребром і верхом тазової кістки",
-                  technique:
-                    "Горизонтально, після звичайного видиху, не стягувати шкіру",
-                },
-                {
-                  metric: "Стегна",
-                  place: "Навколо найширшої частини сідниць",
-                  technique: "Горизонтально, ноги разом",
-                },
-                {
-                  metric: "Груди",
-                  place: "Навколо грудної клітки на рівні сосків",
-                  technique:
-                    "Горизонтально, руки розслаблені, без глибокого вдиху",
-                },
-                {
-                  metric: "Біцепс",
-                  place: "Посередині між плечем і ліктем",
-                  technique: "Рука розслаблена; щоразу міряти ту саму руку",
-                },
-                {
-                  metric: "Стегно",
-                  place: "Навколо найширшої частини верхнього стегна",
-                  technique:
-                    "Стояти рівно, вагу розподілити на обидві ноги",
-                },
-              ]}
+              rows={measurementGuideRows}
             />
             <p className="text-xs text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
