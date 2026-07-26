@@ -4,6 +4,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { DataTable } from "@shared/components/ui/DataTable";
 import {
   MEASURE_FIELDS,
   useMeasurements,
@@ -115,63 +116,61 @@ export function Measurements() {
               <li>{messages.fizruk.measurements.guideStep3}</li>
               <li>{messages.fizruk.measurements.guideStep4}</li>
             </ol>
-            <div className="overflow-x-auto rounded-2xl border border-line">
-              <table className="w-full min-w-[560px] text-left text-style-caption">
-                <thead className="bg-panelHi text-text">
-                  <tr>
-                    <th className="px-3 py-2">
-                      {messages.fizruk.measurements.guideMetricHeader}
-                    </th>
-                    <th className="px-3 py-2">
-                      {messages.fizruk.measurements.guidePlaceHeader}
-                    </th>
-                    <th className="px-3 py-2">
-                      {messages.fizruk.measurements.guideTechniqueHeader}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line text-subtle">
-                  {[
-                    [
-                      "Талія",
-                      "Посередині між нижнім ребром і верхом тазової кістки",
-                      "Горизонтально, після звичайного видиху, не стягувати шкіру",
-                    ],
-                    [
-                      "Стегна",
-                      "Навколо найширшої частини сідниць",
-                      "Горизонтально, ноги разом",
-                    ],
-                    [
-                      "Груди",
-                      "Навколо грудної клітки на рівні сосків",
-                      "Горизонтально, руки розслаблені, без глибокого вдиху",
-                    ],
-                    [
-                      "Біцепс",
-                      "Посередині між плечем і ліктем",
-                      "Рука розслаблена; щоразу міряти ту саму руку",
-                    ],
-                    [
-                      "Стегно",
-                      "Навколо найширшої частини верхнього стегна",
-                      "Стояти рівно, вагу розподілити на обидві ноги",
-                    ],
-                  ].map(([metric, place, technique]) => (
-                    <tr key={metric}>
-                      <th
-                        scope="row"
-                        className="px-3 py-2 font-semibold text-text"
-                      >
-                        {metric}
-                      </th>
-                      <td className="px-3 py-2">{place}</td>
-                      <td className="px-3 py-2">{technique}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              module="fizruk"
+              className="min-w-[560px] rounded-2xl border border-line"
+              caption={messages.fizruk.measurements.guideTitle}
+              getRowKey={(row) => row.metric}
+              columns={[
+                {
+                  id: "metric",
+                  header: messages.fizruk.measurements.guideMetricHeader,
+                  rowHeader: true,
+                  cell: (row) => row.metric,
+                },
+                {
+                  id: "place",
+                  header: messages.fizruk.measurements.guidePlaceHeader,
+                  cell: (row) => row.place,
+                },
+                {
+                  id: "technique",
+                  header: messages.fizruk.measurements.guideTechniqueHeader,
+                  cell: (row) => row.technique,
+                },
+              ]}
+              rows={[
+                {
+                  metric: "Талія",
+                  place:
+                    "Посередині між нижнім ребром і верхом тазової кістки",
+                  technique:
+                    "Горизонтально, після звичайного видиху, не стягувати шкіру",
+                },
+                {
+                  metric: "Стегна",
+                  place: "Навколо найширшої частини сідниць",
+                  technique: "Горизонтально, ноги разом",
+                },
+                {
+                  metric: "Груди",
+                  place: "Навколо грудної клітки на рівні сосків",
+                  technique:
+                    "Горизонтально, руки розслаблені, без глибокого вдиху",
+                },
+                {
+                  metric: "Біцепс",
+                  place: "Посередині між плечем і ліктем",
+                  technique: "Рука розслаблена; щоразу міряти ту саму руку",
+                },
+                {
+                  metric: "Стегно",
+                  place: "Навколо найширшої частини верхнього стегна",
+                  technique:
+                    "Стояти рівно, вагу розподілити на обидві ноги",
+                },
+              ]}
+            />
             <p className="text-xs text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
             </p>

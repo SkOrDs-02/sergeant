@@ -195,6 +195,13 @@ export type { SkeletonCardProps, SkeletonListProps } from "./SkeletonCard";
 export { DataState } from "./DataState";
 export type { DataStateProps, DataStateQueryLike } from "./DataState";
 
+export { DataTable } from "./DataTable";
+export type {
+  DataTableColumn,
+  DataTableDensity,
+  DataTableProps,
+} from "./DataTable";
+
 export { SkipLink } from "./SkipLink";
 export type { SkipLinkProps } from "./SkipLink";
 
