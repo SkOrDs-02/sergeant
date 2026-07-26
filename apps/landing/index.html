@@ -8,6 +8,14 @@
       name="description"
       content="Гроші, тіло, звички та їжа в одному застосунку. Sergeant помічає звʼязки, які поодинокі трекери не бачать. Local-first, українською. Приєднуйся до бети."
     />
+
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="theme-color" content="#fdf9f3" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sergeant" />
+    <meta property="og:locale" content="uk_UA" />
     <meta
       property="og:title"
       content="Sergeant — бачить усе твоє життя разом"
@@ -16,14 +24,25 @@
       property="og:description"
       content="Один застосунок для грошей, тіла, звичок і їжі. Помічає те, що ти сам не звів докупи. Приєднуйся до бети."
     />
-    <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#fdf9f3" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap"
-      rel="stylesheet"
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Sergeant — гроші, тіло, звички та їжа в одному застосунку"
     />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!--
+      Шрифт — самохостинг через `@fontsource-variable/manrope` (див. main.tsx).
+      Google Fonts прибрано: зовнішній запит віддавав IP кожного відвідувача
+      третій стороні, а DM Sans, що там вантажився, узагалі не має кирилиці.
+
+      `og:image`, `og:url` і `canonical` вимагають абсолютного URL, а публічний
+      домен ще не закріплений. Їх дописує `absoluteUrlMeta` у vite.config.ts,
+      коли відомий `SITE_URL` / `VERCEL_PROJECT_PRODUCTION_URL`. Хардкодити
+      здогадку не можна: помилковий canonical відправляє краулер індексувати
+      неіснуючий хост, і це гірше, ніж його відсутність.
+    -->
   </head>
   <body>
     <div id="root"></div>

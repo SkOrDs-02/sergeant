@@ -88,6 +88,9 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED).toBe(
       "landing_email_captured",
     );
+    expect(ANALYTICS_EVENTS.LANDING_TELEGRAM_CLICKED).toBe(
+      "landing_telegram_clicked",
+    );
 
     // Auth multi-provider (initiative 0010 Phase 4.3).
     expect(ANALYTICS_EVENTS.SIGNUP_PROVIDER_SELECTED).toBe(

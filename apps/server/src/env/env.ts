@@ -1205,6 +1205,28 @@ const envSchema = z.object({
   /** Forum-topic message_thread_id for the engineering topic. */
   TELEGRAM_TOPIC_ENGINEERING: stringWithDefault(""),
 
+  // ── Telegram-вейтліст (бот бети) ────────────────────────────────────
+  // Спека: `docs/90-work/planning/specs/telegram-waitlist.md`.
+  // Окремий бот від ops-алертів: користувачі й інциденти не мають ділити
+  // один діалоговий канал.
+  /**
+   * Bot API token бота вейтліста (`@serg_qa_bot`). Порожній → webhook
+   * відповідає 503 і нічого не пише: краще явна відмова, ніж мовчазне
+   * ковтання апдейтів, які Telegram більше не надішле.
+   */
+  TELEGRAM_WAITLIST_BOT_TOKEN: stringWithDefault(""),
+  /**
+   * Спільний секрет із `setWebhook(secret_token=...)`. Telegram шле його в
+   * `X-Telegram-Bot-Api-Secret-Token`. Порожній → ендпоінт вимкнений: без
+   * секрету він відкритий для будь-кого, хто знає URL.
+   */
+  TELEGRAM_WAITLIST_WEBHOOK_SECRET: stringWithDefault(""),
+  /**
+   * Інвайт-лінк у приватну бета-групу. Підставляється в текст розсилки
+   * (`scripts/telegram/broadcast-waitlist.mjs`).
+   */
+  TELEGRAM_BETA_INVITE_LINK: stringWithDefault(""),
+
   // ── PR-28 — n8n_webhook_events retention ───────────────────────────
   /**
    * Скільки днів зберігати рядки в `n8n_webhook_events` перед `DELETE`.

@@ -2,14 +2,23 @@
 
 /*
   Sergeant landing — Soft & Organic light theme.
-  Токени віддзеркалюють docs/05-design/design/brandbook.md
-  та design-system/01-tokens-colors.md (cream surface, warm black,
-  emerald brand, 4 модульні акценти). Шрифт — DM Sans (brandbook §Font).
+
+  Значення НЕ вигадуються тут: кожен модульний акцент дзеркалить
+  `moduleColors` з `packages/design-tokens/tokens.js`, а бренд-акцент —
+  `brandColors.emerald[700|800]`. Дрейф ловить `src/tokens.drift.test.ts`,
+  який читає цей файл і порівнює з пакетом токенів.
+
+  Чому не імпорт пресета напряму: `packages/design-tokens` — це Tailwind-3
+  preset для apps/web (rgb-триплети + `<alpha-value>`), а лендінг на
+  Tailwind 4 з `@theme`. Мостити дві версії заради восьми кольорів дорожче,
+  ніж тест, який падає при розходженні.
 */
 
 @theme {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
 
   /* Surfaces — cream */
   --color-background: #fdf9f3;
@@ -25,21 +34,54 @@
   --color-muted: #57534e;
   --color-subtle: #a8a29e;
 
-  /* Brand — emerald */
+  /* Brand — emerald-700 / -800 (brandColors.emerald) */
   --color-accent: #047857;
   --color-accent-hover: #065f46;
   --color-accent-soft: #ecfdf5;
   --color-accent-ink: #ffffff;
 
-  /* Module accents */
-  --color-finyk: #10b981;
-  --color-finyk-soft: #ecfdf5;
+  /*
+    Module accents — `moduleColors.<module>.primary` + `.surface`.
+    finyk — teal-700, НЕ emerald-500: дизайн-система пішла з emerald ще в
+    2026-07, лендінг лишався на старому кольорі.
+    nutrition — lime-800 (`moduleAccentRgb.nutrition.strong`), бо канонічний
+    lime-500 як текст на світлому не тримає контраст; `-strong` companion
+    існує саме для цього випадку.
+  */
+  --color-finyk: #0f766e;
+  --color-finyk-soft: #f0fdfa;
   --color-fizruk: #0e7490;
   --color-fizruk-soft: #ecfeff;
   --color-routine: #f97066;
   --color-routine-soft: #fff5f3;
-  --color-nutrition: #6f9e12;
+  --color-nutrition: #466212;
   --color-nutrition-soft: #f8fee7;
+
+  /*
+    Помилки. Раніше тут стояв `text-routine` — модульний акцент замість
+    семантичного кольору стану (той самий смелл, що ловить Hard Rule #12
+    у apps/web). coral-700 = `moduleAccentRgb.routine.strong`, тримає
+    контраст на білій картці.
+  */
+  --color-danger: #c23a3a;
+
+  /*
+    «Чорнило» — канонічний темний напрям продукту (`inkTheme` у
+    design-tokens, спека chornylo-visual-direction). Використовується рівно
+    в одній секції: суцільно кремова сторінка на 4000px не має хребта, а
+    модульні акценти тир-400 задумані саме як світіння на чорнилі.
+  */
+  --color-ink: #0d1512;
+  --color-ink-surface: #121c17;
+  --color-ink-line: rgba(255, 255, 255, 0.1);
+  --color-ink-text: #f2f6f2;
+  --color-ink-muted: #8a968e;
+
+  /* Акценти модулів у їхній ink-ролі — brandColors.*[400]. */
+  --color-finyk-glow: #2dd4bf;
+  --color-fizruk-glow: #22d3ee;
+  --color-routine-glow: #ff8c78;
+  --color-nutrition-glow: #b0e636;
 
   --radius-card: 24px;
 }
@@ -60,4 +102,10 @@ body {
   background:
     radial-gradient(60% 55% at 50% 0%, #ecfdf5 0%, rgba(236, 253, 245, 0) 70%),
     var(--color-background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
