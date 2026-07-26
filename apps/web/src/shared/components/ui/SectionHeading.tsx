@@ -40,11 +40,7 @@ export type SectionHeadingVariant =
  * by sheet sub-headers (see `apps/mobile/src/modules/finyk/pages/Transactions`).
  */
 export type SectionHeadingWeight =
-  | "normal"
-  | "medium"
-  | "semibold"
-  | "bold"
-  | "extrabold";
+  "normal" | "medium" | "semibold" | "bold" | "extrabold";
 
 // Size-only tokens (font-scale + casing + tracking). Weight is applied
 // separately so `weight` prop overrides can compose cleanly. The `2xs`
@@ -85,11 +81,12 @@ const variants: Record<SectionHeadingVariant, string> = {
   subtle: "text-subtle",
   muted: "text-muted",
   text: "text-text",
-  // `accent` uses `text-brand-strong` (= emerald-700) instead of the
-  // global `--c-accent` token (= emerald-500). The latter only clears
-  // ~2.4:1 against the cream `bg-bg`; `-strong` clears 5.23:1. See
-  // docs/design/archive/brand-palette-wcag-aa-proposal.md § 2.2 and the SectionHeading
-  // contract test that pins the className.
+  // `accent` uses `text-brand-strong` (= stone-800 / #292524, the hub
+  // ink identity after the 2026-07 design-audit M1 decoupled `brand`
+  // from teal/emerald) instead of the global `--c-accent` token, which
+  // only clears ~2.4:1 against the cream `bg-bg`. The dark `-strong`
+  // ink clears WCAG-AAA on cream. See the SectionHeading contract test
+  // that pins the className.
   accent: "text-brand-strong",
   // Module-branded tints — normalised to /70 so callers don't drift
   // between /70, /80, /90. In dark mode the de-emphasised /70 subtitle

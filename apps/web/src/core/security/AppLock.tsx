@@ -297,7 +297,7 @@ export function AppLock({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
+      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
       role="presentation"
     >
       <div

@@ -25,19 +25,10 @@ import { messages } from "@shared/i18n/uk";
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type CelebrationType =
-  | "achievement"
-  | "goal"
-  | "levelUp"
-  | "streak"
-  | "success"
-  | "confetti";
+  "achievement" | "goal" | "levelUp" | "streak" | "success" | "confetti";
 
 export type ModuleTheme =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "default";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "default";
 
 interface ConfettiParticle {
   id: number;
@@ -63,7 +54,11 @@ const MODULE_GRADIENTS: Record<ModuleTheme, string> = {
   fizruk: "from-cyan-500/20 to-cyan-400/10",
   routine: "from-coral-500/20 to-orange-500/10",
   nutrition: "from-lime-500/20 to-green-500/10",
-  default: "from-brand-500/20 to-emerald-500/10",
+  // 2026-07: was `from-brand-500/20 to-emerald-500/10`, a stray
+  // migration artefact — after the stone rebrand `brand-500` is a grey,
+  // so it paired a grey→green cross-temperature gradient. Normalised to
+  // a single-hue teal pair, matching every other module row above.
+  default: "from-teal-500/20 to-teal-400/10",
 };
 
 export interface CelebrationModalProps {
