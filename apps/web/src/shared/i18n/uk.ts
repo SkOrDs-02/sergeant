@@ -28,6 +28,7 @@ import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
 import { pricingMessages } from "./uk.pricing";
+import { privacyMessages } from "./uk.privacy";
 
 export const messages = {
   auth: {
@@ -524,6 +525,19 @@ export const messages = {
     reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
+    waterHistory: {
+      openLabel: "Історія води",
+      title: "Історія води",
+      weekChartTitle: "Останні 7 днів",
+      avg7Label: "Середнє за 7 днів",
+      avg30Label: "Середнє за 30 днів",
+      streakLabel: "Серія з ціллю",
+      streakUnit: "дн.",
+      dayListTitle: "Останні 14 днів",
+      goalPctSuffix: "% від цілі",
+      emptyTitle: "Поки немає історії",
+      emptyDescription: "Додай воду за сьогодні — і тут зʼявиться графік.",
+    },
   },
 
   routine: routinePageMessages,
