@@ -332,6 +332,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     reportHeading: "Finyk (expenses)",
     addLimitOrGoal: "+ Add limit or goal",
     transactionsFilterLabel: "Transaction filter",
+    daySummaryLabel: "day total",
     monoConnectErrors: {
       tokenRejected:
         "Mono rejected the token. Check that you copied it correctly.",

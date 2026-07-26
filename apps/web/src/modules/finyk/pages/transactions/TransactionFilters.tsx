@@ -9,6 +9,9 @@ export interface TransactionFiltersProps {
   catSpends: ReadonlyArray<{ id: string; label: string }>;
 }
 
+/** Base (non-category) filter pills — these never toggle off on re-tap. */
+const BASE_FILTER_IDS = new Set(["all", "expense", "income", "credit"]);
+
 /**
  * Horizontal pill strip for the Transactions filter (All / Expense /
  * Income / Credit + per-category chips). Stateless — the active id and
@@ -36,17 +39,14 @@ export function TransactionFilters({
     { id: "income", label: "Доходи" },
     ...(hasCreditAccounts ? [{ id: "credit", label: "Кредитна" }] : []),
     ...catSpends.map((c) => {
-      // Audit 05 F11: `c.label.split(" ")[0]` returned `string | undefined`
-      // under Hard Rule #19 (noUncheckedIndexedAccess) and was implicitly
-      // coerced. Categories without a leading emoji (legacy plain-text
-      // names) used to produce a leading space. Guard the split result
-      // explicitly: when there is no detectable emoji segment, fall back
-      // to the raw label so the pill renders cleanly.
+      // §1: chip labels drop the leading category emoji — was previously
+      // reconstructed verbatim (space > 0 branch just rejoined the same
+      // string), so emoji still leaked into the pill despite Audit 05 F11's
+      // noUncheckedIndexedAccess fix. Categories without a leading emoji
+      // (legacy plain-text names) have no space to strip, so they fall
+      // back to the raw label unchanged.
       const space = c.label.indexOf(" ");
-      const label =
-        space > 0
-          ? `${c.label.slice(0, space)} ${c.label.slice(space + 1)}`
-          : c.label;
+      const label = space > 0 ? c.label.slice(space + 1) : c.label;
       return { id: c.id, label };
     }),
   ];
@@ -94,7 +94,17 @@ export function TransactionFilters({
             data-pill
             data-compact
             type="button"
-            onClick={() => onChangeFilter(f.id)}
+            onClick={() =>
+              onChangeFilter(
+                // Category chips (§1): a repeat tap on the already-active
+                // chip clears the filter back to "all" instead of being a
+                // no-op — makes the chip strip read as a real filter, not
+                // just a spend summary. Base pills (all/expense/income/
+                // credit) already have "Всі" as their explicit off-switch,
+                // so they keep the plain single-select behaviour.
+                !BASE_FILTER_IDS.has(f.id) && filter === f.id ? "all" : f.id,
+              )
+            }
             aria-pressed={filter === f.id}
             tabIndex={f.id === activeId ? 0 : -1}
             className={cn(

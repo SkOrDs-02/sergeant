@@ -1,9 +1,12 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-07-26
  * Status: Active
  *
- * Secondary meta chips under the TxRow description (AI, transfer, account,
- * source, date). Extracted for Hard Rule #18 max-lines.
+ * Single fixed-order meta row under the TxRow description: card · category ·
+ * status badges (AI / transfer / override / source) · split · note. The
+ * note (§3, ex-#466) is always the last element so it truncates first when
+ * the row runs out of width — nothing else in the row shifts or wraps.
+ * Extracted for Hard Rule #18 max-lines.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import { Badge } from "@shared/components/ui/Badge";
@@ -21,6 +24,8 @@ interface TxRowMetaChipsProps {
   isCreditCard: boolean;
   account: MonoAccount | undefined;
   accountName: string | null;
+  /** User's own free-text annotation — rendered last, truncates first. */
+  note?: string | undefined;
 }
 
 export function TxRowMetaChips({
@@ -33,10 +38,19 @@ export function TxRowMetaChips({
   isCreditCard,
   account,
   accountName,
+  note,
 }: TxRowMetaChipsProps) {
   return (
-    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-      <span className="text-xs text-subtle">{catName}</span>
+    <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
+      {/* §2: card chip is always neutral — a small icon (not colour) marks
+          "credit". Red stays reserved for debt/asset surfaces elsewhere. */}
+      {account && (
+        <span className="shrink-0 inline-flex items-center gap-1 text-style-caption bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
+          {isCreditCard && <Icon name="credit-card" size={12} aria-hidden />}
+          {accountName}
+        </span>
+      )}
+      <span className="shrink-0 text-xs text-subtle">{catName}</span>
       {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
           so users can tell which categorizations are inferred (MCC +
           description match) vs explicit (user override, manual entry,
@@ -66,33 +80,28 @@ export function TxRowMetaChips({
           </Badge>
         )}
       {catId === INTERNAL_TRANSFER_ID && (
-        <span className="text-style-caption bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+        <span className="shrink-0 text-style-caption bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
           не в статистиці
         </span>
       )}
       {overrideCatId && catId !== INTERNAL_TRANSFER_ID && (
-        <span className="text-style-caption bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+        <span className="shrink-0 text-style-caption bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
           змін.
         </span>
       )}
+      {tx._source === "privatbank" && (
+        <span className="shrink-0 text-style-caption bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold">
+          П24
+        </span>
+      )}
       {existingSplitsCount > 0 && (
-        <span className="text-style-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+        <span className="shrink-0 text-style-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
           ⅔ спліт
         </span>
       )}
-      {isCreditCard && (
-        <span className="text-style-caption bg-danger/8 text-danger-strong dark:text-danger px-1.5 py-0.5 rounded-full font-semibold">
-          <Icon name="credit-card" size={12} aria-hidden /> {accountName}
-        </span>
-      )}
-      {!isCreditCard && account && (
-        <span className="text-style-caption bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
-          {accountName}
-        </span>
-      )}
-      {tx._source === "privatbank" && (
-        <span className="text-style-caption bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold shrink-0">
-          П24
+      {note && (
+        <span className="min-w-0 flex-1 truncate text-style-caption text-subtle">
+          {note}
         </span>
       )}
     </div>

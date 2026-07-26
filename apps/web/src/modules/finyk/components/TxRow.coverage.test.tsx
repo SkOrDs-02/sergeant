@@ -103,6 +103,30 @@ describe("TxRow", () => {
     expect(screen.getByText(/Чорна/)).toBeInTheDocument();
   });
 
+  it("renders the credit-card pill neutrally, without the red debt colour (§2)", () => {
+    const accounts: MonoAccount[] = [
+      {
+        id: "acc-credit",
+        type: "black",
+        balance: -10000,
+        creditLimit: 100000,
+      } as MonoAccount,
+    ];
+    render(
+      <TxRow tx={mkTx({ _accountId: "acc-credit" })} accounts={accounts} />,
+    );
+    const pill = screen.getByText(/Чорна/).closest("span");
+    expect(pill?.className).toContain("bg-panelHi");
+    expect(pill?.className).not.toContain("danger");
+  });
+
+  it("renders the note as the last element of the meta row (§3)", () => {
+    render(<TxRow tx={mkTx()} note="Обід з колегами" />);
+    const note = screen.getByText("Обід з колегами");
+    // Same row as the category label — no separate line beneath it.
+    expect(note.parentElement).toBe(screen.getByText("Продукти").parentElement);
+  });
+
   it("renders a plain account pill for non-credit accounts", () => {
     const accounts: MonoAccount[] = [
       {
