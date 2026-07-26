@@ -1300,7 +1300,7 @@ const noAnthropicKeyInLogs = {
   },
 };
 
-// ─── no-strict-bypass ───���───────────────────────────────────────────────
+// ─── no-strict-bypass ───������──────────────────────────────────────────────
 //
 // PR-6.E — forbid new type-safety bypasses in production code:
 //   1. `// @ts-expect-error` comments
@@ -2547,28 +2547,35 @@ const noRoundedLg = {
 // ─────────────────────────────────────────────────────────────────────────
 //
 // The raised-card surface is a design-system primitive: `bg-panel` (warm
-// paper in light / charcoal in dark) + a `border-line` hairline + one of
-// the semantic elevation shadows (`shadow-e1..e5`, or the legacy
-// `shadow-card` / `shadow-float` / `shadow-soft` aliases). `<Card>` owns
-// that recipe (see `apps/web/src/shared/components/ui/Card.tsx`,
+// paper in light / charcoal in dark) + a `border-line` hairline + the card
+// elevation shadow `shadow-e1` (or its legacy alias `shadow-card`). `<Card>`
+// owns that recipe (see `apps/web/src/shared/components/ui/Card.tsx`,
 // `NON_MODULE_PROMINENCE`), so the promise "change the surface token →
 // every card updates" only holds while call-sites go through `<Card>`.
 //
-// Design-audit 2026-07 (finding M1) found the triple hand-rolled inline in
-// ~55 files, many of which *also* import `<Card>` a few lines away. When
-// `--c-panel` / `--c-line` / `--shadow-e1` shift, those inline panels drift
-// out of sync — a silent, un-linted regression. This rule closes that gap.
+// Design-audit 2026-07 (finding M1) found the triple hand-rolled inline
+// across many files, several of which *also* import `<Card>` a few lines
+// away. When `--c-panel` / `--c-line` / `--shadow-e1` shift, those inline
+// panels drift out of sync — a silent, un-linted regression. This rule
+// closes that gap.
 //
 // Precision over recall — the rule fires ONLY when all three markers are
-// co-present in a single className string. That triple is unmistakably a
-// raised card; it will not match:
+// co-present in a single className string AND that className sits on a
+// static container element. It will NOT match:
 //   - a flat bordered container (`bg-panel border border-line`, no shadow),
 //   - the neutral `secondary` Button (`bg-panel … border-border-strong
 //     shadow-e1` — `border-border-strong`, not the `border-line` hairline),
-//   - the v2 glass surface (`bg-surface-glass … shadow-card-v2`).
-// Flat panels are intentionally out of scope: without an elevation shadow
-// the intent is ambiguous (input group, toolbar, section), and a
-// false-positive-prone rule erodes trust in the whole plugin.
+//   - the v2 glass surface (`bg-surface-glass … shadow-card-v2`),
+//   - floating / overlay primitives at a higher tier — `shadow-float` (e3),
+//     `shadow-soft` (e4), `shadow-e4` (Modal, Sheet, DropdownMenu, FAB,
+//     popovers). <Card> is hard-wired to e1, so it is the wrong replacement
+//     there; forcing it would downgrade the elevation.
+//   - interactive elements that merely reuse the surface (a `<button>`
+//     toggle, a search `<input>`, an anchor) — <Card> is a container
+//     primitive and cannot replace them 1:1 (see `classNameContext`).
+// Flat panels and higher tiers are intentionally out of scope: a
+// false-positive-prone rule (one you can never drive to zero) erodes trust
+// in the whole plugin.
 //
 // Severity is `warn` in `eslint.web.js` (not `error`) because the ~55
 // existing call-sites are an in-flight incremental sweep — cleaned up when
@@ -2586,7 +2593,7 @@ const noRoundedLg = {
 //   - `*.test.*` / `__tests__/**` (fixtures reference the raw class names).
 
 const NO_INLINE_CARD_SURFACE_MESSAGE =
-  "Hand-rolled card surface: `bg-panel` + `border-line` + `shadow-e*` is the <Card> recipe. " +
+  "Hand-rolled card surface: `bg-panel` + `border-line` + `shadow-e1`/`shadow-card` is the <Card> recipe. " +
   'Use <Card> (or <Card prominence="flat"> / padding="none" for a bare container) so the ' +
   "surface stays token-driven and dark-mode / elevation changes propagate automatically. " +
   "See apps/web/src/shared/components/ui/Card.tsx and design-audit finding M1.";
@@ -2599,8 +2606,15 @@ const RX_CARD_PANEL_BG =
   /(?:^|\s)(?:[\w-]+:)*bg-(?:panel|surface)(?:\/\d+)?(?:\s|$)/;
 const RX_CARD_HAIRLINE =
   /(?:^|\s)(?:[\w-]+:)*border-(?:line|border)(?:\/\d+)?(?:\s|$)/;
-const RX_CARD_ELEVATION =
-  /(?:^|\s)(?:[\w-]+:)*shadow-(?:e[1-5]|card|float|soft)(?:\s|$)/;
+// Elevation is deliberately narrowed to the *card* tier only: `shadow-e1`
+// and its legacy alias `shadow-card` (both === var(--shadow-e1)). `<Card>`
+// default prominence emits exactly `shadow-e1`, so it is a 1:1 replacement
+// only for this tier. The higher tiers — `shadow-float` (e3), `shadow-soft`
+// (e4), `shadow-e4` — belong to floating / overlay primitives (Modal, Sheet,
+// DropdownMenu, FAB, popover menus) that legitimately hand-author a raised
+// surface; migrating those to <Card> would DOWNGRADE their elevation to e1,
+// a real visual regression. They are a separate primitive, out of scope.
+const RX_CARD_ELEVATION = /(?:^|\s)(?:[\w-]+:)*shadow-(?:e1|card)(?:\s|$)/;
 
 function classNameHasInlineCardSurface(value) {
   if (typeof value !== "string") return false;
@@ -2609,6 +2623,56 @@ function classNameHasInlineCardSurface(value) {
     RX_CARD_HAIRLINE.test(value) &&
     RX_CARD_ELEVATION.test(value)
   );
+}
+
+// Interactive elements that reuse the card *surface* (a `<button>` toggle, a
+// search `<input>`, an anchor) are NOT container cards — <Card> cannot
+// replace them 1:1 (it drops `type`, changes semantics, and Card is a
+// container primitive). Skip them so the rule flags only static container
+// surfaces, which is exactly what <Card> exists to own.
+const INTERACTIVE_JSX_TAGS = new Set([
+  "button",
+  "a",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "summary",
+  "option",
+]);
+
+// Walk up from a string node to the enclosing JSX attribute. Returns:
+//   - "container"   → className/class on a non-interactive element  → flag
+//   - "interactive" → className/class on an interactive element      → skip
+//   - "non-class"   → string lives in some other JSX attribute       → skip
+//   - "unknown"     → not inside any JSX attribute (e.g. a shared
+//                     className variable) → flag (conservative recall)
+function classNameContext(node) {
+  let cur = node.parent;
+  let attr = null;
+  while (cur) {
+    if (cur.type === "JSXAttribute") {
+      attr = cur;
+      break;
+    }
+    if (cur.type === "JSXElement" || cur.type === "JSXFragment") break;
+    if (cur.type === "ReturnStatement" || cur.type === "FunctionDeclaration")
+      break;
+    cur = cur.parent;
+  }
+  if (!attr) return "unknown";
+  const attrName = attr.name && attr.name.name;
+  if (attrName !== "className" && attrName !== "class") return "non-class";
+  const opening = attr.parent;
+  const tag =
+    opening &&
+    opening.type === "JSXOpeningElement" &&
+    opening.name &&
+    opening.name.type === "JSXIdentifier"
+      ? opening.name.name
+      : null;
+  if (tag && INTERACTIVE_JSX_TAGS.has(tag)) return "interactive";
+  return "container";
 }
 
 const noInlineCardSurface = {
@@ -2640,9 +2704,13 @@ const noInlineCardSurface = {
     }
 
     function report(node, value) {
-      if (classNameHasInlineCardSurface(value)) {
-        context.report({ node, messageId: "inlineCard" });
-      }
+      if (!classNameHasInlineCardSurface(value)) return;
+      const ctx = classNameContext(node);
+      // Only flag static container surfaces (or strings we can't tie to a
+      // JSX element, kept conservative). Interactive elements and non-class
+      // string attributes reuse the surface for a different purpose.
+      if (ctx === "interactive" || ctx === "non-class") return;
+      context.report({ node, messageId: "inlineCard" });
     }
     return {
       Literal(node) {
@@ -3604,7 +3672,7 @@ const noLegacyTelegramParseMode = {
 // Storybook каталог у `apps/web/.storybook/` — основний playground для
 // `apps/web/src/shared/components/ui/**`. Кожен top-level UI-компонент
 // (PascalCase, default-export або named-export з функції/класу) повинен
-// мати сусідній `<Name>.stories.tsx` файл, інакше:
+// ��ати сусідній `<Name>.stories.tsx` файл, інакше:
 //   - Дизайн-партнери / нові розробники не бачать компонента у каталозі.
 //   - Visual regression (Phase 4) не покриває компонент.
 //   - При декомпозиції (initiative 0001) ламаємо рендер без сигналу.
@@ -4637,7 +4705,7 @@ const noConsolePii = {
 //
 // Audit `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2
 // (P1). Web-only guardrail для «псевдо-модалок» — JSX-елементів, що
-// займають увесь viewport (`fixed inset-0`, з опційним `z-*` чи
+// займ��ють увесь viewport (`fixed inset-0`, з опційним `z-*` чи
 // `pointer-events-*` сусідом), але не оголошують себе як dialog для
 // assistive tech: відсутні `role="dialog"` / `role="alertdialog"` /
 // `role="presentation"` АБО `aria-modal` на тому самому елементі.
@@ -5035,7 +5103,7 @@ const preferKyivTime = {
 //     функції визначені, включати їх у заборону означало б flag-ити власне
 //     оголошення.
 //   - Виключаємо `*.test.[jt]s(x)?` — тести можуть перевіряти legacy-поведінку
-//     через мок чи вже закритий шлях.
+//     через мок чи вже закритий шля��.
 //
 // Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
 // усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules

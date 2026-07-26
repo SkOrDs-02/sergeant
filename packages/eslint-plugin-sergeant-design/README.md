@@ -357,7 +357,17 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 ### `sergeant-design/no-inline-card-surface`
 
-Забороняє руками-сплетену card-поверхню в `className`: трійку `bg-panel` (або семантичний аліас `bg-surface`) + hairline `border-line` (або `border-border`) + одну з семантичних elevation-тіней (`shadow-e1..e5` чи legacy `shadow-card` / `shadow-float` / `shadow-soft`). Рецепт raised-card належить примітиву `<Card>` (`apps/web/src/shared/components/ui/Card.tsx`, `NON_MODULE_PROMINENCE`), тож обіцянка «зміни surface-токен → оновляться всі картки» тримається лише поки callsite-и йдуть через `<Card>`. Дизайн-аудит 2026-07 (finding **M1**) знайшов трійку інлайн у ~55 файлах — часто поруч із уже наявним імпортом `<Card>`. Правило спрацьовує **лише** при co-present усіх трьох маркерів (precision-over-recall), тож НЕ чіпає: пласку панель без тіні, нейтральну `secondary`-кнопку (`border-border-strong`, не hairline) і v2 glass-поверхню (`shadow-card-v2`). Звільнено: самі примітиви `Card` / `Surface`, `packages/design-tokens/**`, `index.css`, `*.stories.tsx`, `DesignShowcase/`, тестові фікстури. Заміна: `<Card>` (або `<Card prominence="flat">` / `padding="none"` для голого контейнера). Severity: **warn** під час in-flight sweep — lint-staged pre-commit (`eslint --max-warnings=0` на staged-файлах) змушує міграцію при наступному редагуванні файлу, після зачистки severity піде в **error**.
+Забороняє руками-сплетену card-поверхню в `className`: трійку `bg-panel` (або семантичний аліас `bg-surface`) + hairline `border-line` (або `border-border`) + card-tier тінь `shadow-e1` (або legacy-аліас `shadow-card`, який === `var(--shadow-e1)`). Рецепт raised-card належить примітиву `<Card>` (`apps/web/src/shared/components/ui/Card.tsx`, `NON_MODULE_PROMINENCE`), тож обіцянка «зміни surface-токен → оновляться всі картки» тримається лише поки callsite-и йдуть через `<Card>`. Дизайн-аудит 2026-07 (finding **M1**).
+
+**Precision-over-recall.** Правило спрацьовує **лише** коли всі три маркери co-present в одному className **і** цей className стоїть на статичному контейнерному елементі. Свідомо НЕ чіпає:
+
+- пласку панель без тіні;
+- нейтральну `secondary`-кнопку (`border-border-strong`, не hairline);
+- v2 glass-поверхню (`shadow-card-v2`);
+- **вищі elevation-tier-и оверлеїв** — `shadow-float` (e3), `shadow-soft` (e4), `shadow-e4` (Modal, Sheet, DropdownMenu, FAB, popover-и). `<Card>` жорстко прив'язаний до e1, тож там він знизив би тінь = візуальна регресія. Це окремий примітив, поза scope;
+- **інтерактивні елементи**, що лише переюзають поверхню (`<button>`-тогл, пошуковий `<input>`, `<a>`) — `<Card>` контейнерний і не замінює їх 1:1.
+
+Звільнено (path-based): самі примітиви `Card` / `Surface`, `packages/design-tokens/**`, `index.css`, `*.stories.tsx`, `DesignShowcase/`, тестові фікстури. Заміна: `<Card>` (або `<Card prominence="flat">` / `padding="none"` для голого контейнера; `radius="lg"` щоб зберегти 16px-радіус, бо default `<Card>` = 24px hero). Severity: **warn** під час in-flight sweep — lint-staged pre-commit (`eslint --max-warnings=0` на staged-файлах) змушує міграцію при наступному редагуванні файлу; після зачистки severity піде в **error**.
 
 ```tsx
 // ❌ BAD — рецепт <Card> вручну в className
