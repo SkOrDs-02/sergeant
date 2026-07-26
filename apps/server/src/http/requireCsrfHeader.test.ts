@@ -13,7 +13,8 @@ import { requireCsrfHeader } from "./requireCsrfHeader.js";
  *      повертає 200.
  *   3. Safe methods (GET/HEAD/OPTIONS) пропускаються БЕЗ header-а.
  *   4. Allowlist шляхи (`/api/auth/*`, `/api/mono/webhook`,
- *      `/api/csp-report`, `/api/metrics/web-vitals`, `/api/internal/*`)
+ *      `/api/v1/telegram/webhook`, `/api/csp-report`,
+ *      `/api/metrics/web-vitals`, `/api/internal/*`)
  *      пропускаються незалежно від методу і без header-а.
  *   5. Запити з `X-Api-Secret` header-ом пропускаються (S2S cron) —
  *      але CSRF-bypass НЕ означає auth-bypass: `requireApiSecret`
@@ -39,6 +40,9 @@ function makeApp(handler: express.RequestHandler) {
     res.status(200).json({ ok: true });
   });
   app.all("/api/mono/webhook/legacy", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+  app.all("/api/v1/telegram/webhook", (_req, res) => {
     res.status(200).json({ ok: true });
   });
   app.all("/api/csp-report", (_req, res) => {
@@ -101,9 +105,9 @@ describe("requireCsrfHeader — допустимі запити", () => {
     async (method) => {
       const app = makeApp(requireCsrfHeader());
       const res = await request(app)
-        [
-          method.toLowerCase() as "post" | "put" | "patch" | "delete"
-        ]("/api/foo")
+        [method.toLowerCase() as "post" | "put" | "patch" | "delete"](
+          "/api/foo",
+        )
         .set("X-Requested-With", "XMLHttpRequest");
       expect(res.status).toBe(200);
     },
@@ -127,6 +131,7 @@ describe("requireCsrfHeader — exempt paths", () => {
     "/api/auth/sign-in/email",
     "/api/mono/webhook",
     "/api/mono/webhook/legacy",
+    "/api/v1/telegram/webhook",
     "/api/csp-report",
     "/api/metrics/web-vitals",
     "/api/v1/metrics/web-vitals",
@@ -151,6 +156,9 @@ describe('requireCsrfHeader — exempt paths під `app.use("/api", …)` mount
     app.all("/api/mono/webhook", (_req, res) => {
       res.status(200).json({ ok: true });
     });
+    app.all("/api/v1/telegram/webhook", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
     app.all("/api/billing/stripe-webhook", (_req, res) => {
       res.status(200).json({ ok: true });
     });
@@ -173,6 +181,7 @@ describe('requireCsrfHeader — exempt paths під `app.use("/api", …)` mount
     "/api/auth/sign-up/email",
     "/api/auth/sign-in/email",
     "/api/mono/webhook",
+    "/api/v1/telegram/webhook",
     "/api/billing/stripe-webhook",
     "/api/csp-report",
     "/api/metrics/web-vitals",
