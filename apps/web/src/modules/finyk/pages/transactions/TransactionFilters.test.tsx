@@ -84,4 +84,26 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
     expect(onChange).toHaveBeenCalledWith("income");
   });
+
+  it("strips the leading emoji from category chip labels (§1)", () => {
+    renderStrip();
+    expect(
+      screen.getByRole("button", { name: "Транспорт" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /🚗/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("a repeat tap on the active category chip clears the filter back to 'all' (§1)", () => {
+    const onChange = renderStrip("food");
+    fireEvent.click(screen.getByRole("button", { name: /Їжа/ }));
+    expect(onChange).toHaveBeenCalledWith("all");
+  });
+
+  it("does not toggle off a base filter pill (all/income/expense/credit) on repeat tap", () => {
+    const onChange = renderStrip("income");
+    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
+    expect(onChange).toHaveBeenCalledWith("income");
+  });
 });

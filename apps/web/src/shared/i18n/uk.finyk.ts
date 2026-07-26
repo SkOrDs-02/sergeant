@@ -6,6 +6,7 @@ export const finykPageMessages = {
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр транзакцій",
+  daySummaryLabel: "сума за день",
   nonUahAssetsExcluded: {
     one: "актив в іноземній валюті не враховую в нетворсі",
     few: "активи в іноземній валюті не враховую в нетворсі",

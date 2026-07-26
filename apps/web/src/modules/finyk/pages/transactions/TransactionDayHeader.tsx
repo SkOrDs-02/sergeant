@@ -50,9 +50,18 @@ export function TransactionDayHeader({
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
       className={cn(
-        "w-full flex items-center justify-between gap-2 px-3 py-2",
-        "text-style-caption text-text tracking-wide transition-colors",
-        "hover:bg-panelHi",
+        "w-full flex items-center justify-between gap-2 px-3 py-2.5",
+        "pointer-coarse:min-h-[44px]",
+        // §4 polish: caption (12px, meta/timestamp role) read as "cheap" for
+        // what is effectively a section header — bumped to the label role
+        // (13–14px) + semibold for real visual weight. `tracking-wide` is
+        // dropped: wide letter-spacing on mixed-case day names (not
+        // uppercase) just looked sparse rather than deliberate.
+        "text-style-label font-semibold text-text transition-colors",
+        // A soft tint on the header band — distinct from the flush
+        // bg-panel rows beneath it — reads as "this label owns these
+        // rows" instead of blending into the first row's meta line.
+        "bg-panelHi/45 hover:bg-panelHi",
         // Separator only when the day is expanded and rows follow beneath —
         // a collapsed day is a self-contained card and needs no trailing line.
         !collapsed && "border-b border-line/60",
@@ -60,8 +69,8 @@ export function TransactionDayHeader({
     >
       <span className="flex items-center gap-2 min-w-0">
         <svg
-          width="12"
-          height="12"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -91,7 +100,11 @@ export function TransactionDayHeader({
           )}
         >
           {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}
-          <MaskedAmount masked={masked} interactive={false} label="сума за день">
+          <MaskedAmount
+            masked={masked}
+            interactive={false}
+            label={messages.finyk.daySummaryLabel}
+          >
             {fmtAmt(summary.total, CURRENCY.UAH)}
           </MaskedAmount>
         </span>

@@ -216,12 +216,8 @@ function TxRowImpl({
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          note={note}
         />
-        {note && (
-          <div className="text-style-caption text-subtle truncate mt-0.5">
-            {note}
-          </div>
-        )}
       </div>
     </>
   );
