@@ -1,7 +1,7 @@
 # Design-consistency audit (2026-07)
 
 > **Last touched:** 2026-07-26 by @it+v0agent. **Next review:** 2026-10-24.
-> **Status:** Active (in progress) — safe fixes landed, structural items pending decision.
+> **Status:** Resolved — all findings fixed (A–I) or dismissed (H). Button orthogonality (G) landed with byte-identical legacy aliases.
 
 > **Аудиторія:** дизайн-система maintainers, ревʼюери design-token PR-ів.
 > **Ціль:** зафіксувати результати повторної перевірки аудиту попередньої
@@ -67,21 +67,23 @@ shell більше не emerald. `focus-ring` fallback — той самий orp
 
 ---
 
-## Частина 2 — Відкладено (потребує рішення; НЕ чіпав)
+## Частина 1b — Виправлено в цій сесії (structural, узгоджено з власником)
 
-### E. Дубльована radius-шкала в token-preset
+### E. Дубльована radius-шкала — **консолідовано**
 
-У preset паралельно живуть іменовані `CONTROL/CARD/HERO` (12/16/24 px) і v2
-`r-lg`/`r-xl`/`r-2xl` (14/18/24 px). `r-2xl` (24) дублює HERO; значення
-14/18 не мають семантичного слота. Це прямо суперечить канонічному рішенню в
-[`radius-rhythm.md`](./radius-rhythm.md) («шару семантичних аліасів немає,
-іменувати треба на рівні компонента»).
+У preset паралельно жили іменовані `CONTROL/CARD/HERO` (12/16/24 px) і v2
+`r-md`/`r-lg`/`r-xl`/`r-2xl` (12/14/18/24 px). `r-md`=CONTROL і `r-2xl`=HERO
+дублювали ритм точно; `r-lg`/`r-xl` (14/18) — off-rhythm значення без слота.
+Додатковий латентний баг: кастомні ключі робили класи `rounded-r-*`, які
+**затіняли нативні Tailwind per-corner** утиліти `rounded-r-{size}`.
 
-- **Питання до рішення:** прибрати іменований/v2-шар і лишити тільки
-  Tailwind-примітиви (`rounded-sm/md/xl/2xl/3xl`), як велить radius-rhythm?
-  Це зачепить ~12 v2 call-site-ів.
+- **Fix:** v2-namespace видалено з `tailwind-preset.js` і `Card`
+  (`CardRadius` = `md | lg | xl`). Усі ~30 call-site-ів (14 className +
+  16 `radius="r-*"` пропів + `glass`-дефолт) зведено на канонічну шкалу:
+  `r-md→rounded-xl`, `r-lg`/`r-xl→rounded-2xl` (CARD), `r-2xl→rounded-3xl`
+  (HERO). Візуальні дельти ≤2px (14→16, 18→16), решта — точні збіги.
 
-### F. Enforcement radius — **аудит попередньої сесії тут помилявся**
+### F. Enforcement radius — **аудит попередньої сесії тут помилявся + docs-fix**
 
 Попередній аудит стверджував, що правило radius «existed only as prose,
 not enforced», і рахував «63/66 порушень». Перевірка:
@@ -91,47 +93,73 @@ not enforced», і рахував «63/66 порушень». Перевірка
 - «66» — це `rounded-lg` **+ `rounded-md`** разом. `rounded-md` — легітимний
   **Marker tier**, не порушення.
 - Реальних `rounded-lg` поза винятками (tokens / `index.css` / тести) — **21**,
-  і серед них DesignShowcase/UiAuditPage-демо (самі демонструють правило) та
-  задокументовані `eslint-disable` з посиланням на `docs/tech-debt/frontend.md`.
-- **Розбіжність у доках:** `radius-rhythm.md` § «Як це enforce-иться» досі
-  каже «Lint-правила поки немає» — застаріло, правило вже є. Maturity-matrix
-  у [`design/README.md`](./README.md) вже коректно згадує `no-rounded-lg`.
+  переважно DesignShowcase/UiAuditPage-демо (самі демонструють правило) та
+  задокументовані `eslint-disable`.
 
-- **Питання до рішення:** (1) оновити `radius-rhythm.md`, прибравши хибний
-  «lint поки немає» абзац; (2) чи проганяти залишкові справжні `rounded-lg`
-  борг-рядки (реально одиниці), чи лишити задокументовані disable-и.
+- **Fix:** `radius-rhythm.md` § «Як це enforce-иться» переписано (правило вже
+  є, «lint поки немає» видалено), правило 3 уточнено, застарілі `bg-brand-500`
+  приклади → `bg-accent`, і додано історичну нотатку про видалення v2-шкали.
 
-### G. Неортогональний `Button` — 15 злитих варіантів
+### I. Застарілий Card-тест — **новий, не з попереднього аудиту**
 
-`ButtonVariant` кодує роль+емфазу в одному рядку (`finyk`, `finyk-soft`,
-`primary-ink`, …), плюс дубль-механізм через `module` prop. `Badge` вже
-ортогональний (`variant × tone`); `Card` вже має orthogonal-модель
-(`module` × `prominence`) з legacy-мапінгом.
+`Card.test.tsx` пінив `dark:shadow-glow-inset-emerald` для finyk-hero, але
+код (після emerald→teal ребренду finyk-акценту) віддає `-teal`. Тест падав
+**ще до цієї сесії** (перевірено `git stash`) — pre-existing rebrand-борг.
 
-- **Питання до рішення:** перевести `Button` на `variant × tone` з
-  legacy-варіантами як deprecated-аліасами? Це API-зміна з широким blast
-  radius (усі call-site-и Button) — саме тому відкладено на обговорення.
+- **Fix:** ас��ерт оновлено на `dark:shadow-glow-inset-teal` (код був
+  правильний, застарів лише тест).
 
-### H. Канонічний шар + міграційний борг у документації
+### G. Неортогональний `Button` — **зроблено ортогональним**
 
-`design-system.md` не називає явно, який із трьох редизайн-шарів
-канонічний; бріф попередньої сесії згадував неіснуючий `modules/strategy/`.
-`CardVariant` deprecated з `@removeBy 2026-09-01` (дата близько).
+`ButtonVariant` кодував роль+емфазу в одному рядку (`finyk`, `finyk-soft`,
+`primary-ink`, …), плюс дубль-механізм через `module` prop — 15 злитих
+варіантів. `Badge` (`variant × tone`) і `Card` (`module × prominence`) вже
+ортогональні; `Button` випадав.
 
-- **Питання до рішення:** додати розділ «Canonical layer» + таблицю
-  deprecation з `@removeBy`; вирішити долю `CardVariant` до дедлайну.
+- **Fix:** додано канонічну ортогональну модель — `variant`
+  (`ButtonEmphasis`: `solid|soft|outline|ghost`) × `tone` (`ButtonTone`:
+  `neutral|finyk|fizruk|routine|nutrition|danger|success|ink`). Внутрішній
+  `variants`-record (15 класів) лишився джерелом істини; новий
+  `resolveStyleKey` збирає і канонічний, і легасі-шлях, і `module` prop в
+  один style-key. Усі 15 flat-варіантів + `module` — deprecated-аліаси
+  (`@removeBy 2026-12-01`) з **байт-ідентичним** виводом.
+- **Гарантія безпеки:** 19 нових equivalence-тестів пінять, що кожен
+  legacy-alias === його `(variant, tone)`-еквівалент (`toBe` на className).
+  Тому всі 433 call-site у 148 файлах не потребують змін. Мігровано лише
+  stories як довідковий приклад.
+
+---
+
+## Частина 2 — Відкладено (потребує рішення; НЕ чіпав)
+
+_Немає активних пунктів — усі знахідки або виправлені, або зняті._
+
+### H. Канонічний шар — **знято: канон уже оголо��ено**
+
+Перевірка спростувала передумову аудиту. Канон **вже явно оголошено**:
+`redesign-v2/README.md` (рядок 44) прямо каже — _«Канонічний контракт для
+нового UI-коду — `design-system.md`»_, а v2-редизайн (glass / mesh /
+ink-strong) — це **міграційний шар поверх нього**, не заміна. Тобто
+stone/`ink` — і є поточна ідентичність; emerald/teal-згадки, які фіксились у
+A–D та I, — це саме застарілі попередні версії.
+
+- **Залишковий борг (не блокер):** `CardVariant` deprecated з
+  `@removeBy 2026-09-01` — тримати в полі зору до дедлайну. Окремий розділ
+  «Canonical layer» **не потрібен** — дублював би `redesign-v2/README.md`.
 
 ---
 
 ## Зведення
 
-| #   | Пункт                                | Стан               | Blast radius          |
-| --- | ------------------------------------ | ------------------ | --------------------- |
-| A   | Celebration grey→green градієнт      | ✅ Fixed           | 1 рядок               |
-| B   | SectionHeading застарілий коментар   | ✅ Fixed           | коментар              |
-| C   | AppLock ad-hoc `z-[200]`             | ✅ Fixed           | 1 рядок               |
-| D   | orphan emerald `glow`/`focus-ring`   | ✅ Fixed           | 2 токени              |
-| E   | Дубльована radius-шкала              | ⏸ Pending decision | ~12 call-sites        |
-| F   | Radius enforcement (аудит помилявся) | ⏸ Docs-fix pending | doc + одиниці         |
-| G   | Button не ортогональний              | ⏸ Pending decision | усі Button call-sites |
-| H   | Канонічний шар / deprecation-борг    | ⏸ Pending decision | docs + Card           |
+| #   | Пункт                               | Стан                 | Blast radius             |
+| --- | ----------------------------------- | -------------------- | ------------------------ |
+| A   | Celebration grey→green градієнт     | ✅ Fixed             | 1 рядок                  |
+| B   | SectionHeading застарілий коментар  | ✅ Fixed             | коментар                 |
+| C   | AppLock ad-hoc `z-[200]`            | ✅ Fixed             | 1 рядок                  |
+| D   | orphan emerald `glow`/`focus-ring`  | ✅ Fixed             | 2 токени                 |
+| E   | Дубльована radius-шкала             | ✅ Fixed             | ~30 call-sites           |
+| F   | Radius enforcement + docs-fix       | ✅ Fixed             | doc                      |
+| I   | Застарілий Card-тест (emerald→teal) | ✅ Fixed             | 1 ассерт                 |
+| G   | Button не ортогональний             | ✅ Fixed             | Button + tests + stories |
+| H   | Канонічний шар                      | ✅ Знято (вже канон) | —                        |
+| I   | Застарілий Card-тест (emerald→teal) | ✅ Fixed             | 1 ассерт                 |

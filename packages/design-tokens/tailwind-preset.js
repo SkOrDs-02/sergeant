@@ -184,7 +184,7 @@ const preset = {
         // dull the focus indicator.
         //
         // WCAG-AA: stone-700 (#44403c) clears ~8.5:1 on cream for text/icons;
-        // `strong` → stone-800 (#292524, ~14:1 with text-white) for solid
+        // `strong` ��� stone-800 (#292524, ~14:1 with text-white) for solid
         // fills; white on stone-700 ≈ 9.6:1.
         // ═══════════════════════════════════════════════════════════════════
         brand: {
@@ -531,18 +531,13 @@ const preset = {
         "4xl": "32px",
         "5xl": "40px",
         full: "9999px",
-        // Sergeant v2 redesign radius scale (2026-05). Distinct keys to
-        // avoid colliding with the existing CONTROL/CARD/HERO contract
-        // (where `2xl=16` / `3xl=24`). Use `rounded-r-{lg,xl,2xl}` on v2
-        // surfaces — see docs/design/redesign-v2.md § Radius.
-        //   r-md  (12px) — alias of CONTROL
-        //   r-lg  (14px) — primary cards (v2 spec)
-        //   r-xl  (18px) — metric cards
-        //   r-2xl (24px) — hero cards, sheets
-        "r-md": "12px",
-        "r-lg": "14px",
-        "r-xl": "18px",
-        "r-2xl": "24px",
+        // 2026-07 design-audit: the parallel Sergeant v2 radius namespace
+        // (`r-md`/`r-lg`/`r-xl`/`r-2xl`, 12/14/18/24 px) was removed. It
+        // duplicated the CONTROL/CARD/HERO rhythm, introduced off-rhythm
+        // 14/18 px values, and its `rounded-r-*` classes shadowed
+        // Tailwind's native per-corner `rounded-r-{size}` utilities. All
+        // call sites were migrated onto the canonical scale above /
+        // `rounded-xl`. See docs/05-design/design/radius-rhythm.md.
       },
 
       // ══════════���════════════════════════════════════════════════════════

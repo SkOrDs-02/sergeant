@@ -249,7 +249,7 @@ export function NutritionDashboard({
   return (
     <div className="grid gap-3">
       {/* ── Hero card ── */}
-      <Card prominence="hero" module="nutrition" radius="r-2xl" padding="none">
+      <Card prominence="hero" module="nutrition" radius="xl" padding="none">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -313,10 +313,7 @@ export function NutritionDashboard({
                     goal: protein.goal,
                     variant: "nutrition",
                     unit: "г",
-                    outcome: formatMacroOutcome(
-                      protein.consumed,
-                      protein.goal,
-                    ),
+                    outcome: formatMacroOutcome(protein.consumed, protein.goal),
                   },
                   {
                     label: "Жири",

@@ -90,17 +90,17 @@ export type CardVariant =
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
-export type CardRadius = "md" | "lg" | "xl" | "r-lg" | "r-xl" | "r-2xl";
+// Canonical 3-tier radius rhythm — see docs/05-design/design/radius-rhythm.md.
+// 2026-07 design-audit: the parallel v2 namespace (`r-lg`/`r-xl`/`r-2xl`,
+// 14/18/24 px) was collapsed into this single scale. Its keys mapped onto
+// `md`/`lg`/`xl` (r-lg,r-xl → CARD; r-2xl → HERO) so all call sites now use
+// the one contract.
+export type CardRadius = "md" | "lg" | "xl";
 
 const radii: Record<CardRadius, string> = {
-  md: "rounded-xl", // 12px — CONTROL tier (legacy)
-  lg: "rounded-2xl", // 16px — CARD tier (legacy)
-  xl: "rounded-3xl", // 24px — HERO tier (legacy)
-  // Sergeant v2 redesign radii (parallel namespace introduced in PR-1).
-  // Use these on v2 glass surfaces — see docs/design/redesign-v2/governance.md.
-  "r-lg": "rounded-r-lg", // 14px — primary v2 card
-  "r-xl": "rounded-r-xl", // 18px — metric / sub-hero card
-  "r-2xl": "rounded-r-2xl", // 24px — hero / sheet
+  md: "rounded-xl", // 12px — CONTROL tier
+  lg: "rounded-2xl", // 16px — CARD tier
+  xl: "rounded-3xl", // 24px — HERO tier
 };
 
 const paddings: Record<CardPadding, string> = {
@@ -304,9 +304,9 @@ function defaultRadius(
   variant: CardVariant | undefined,
   prominence: CardProminence | undefined,
 ): CardRadius {
-  // v2 glass surfaces default to the v2 `r-lg` (14px) radius — matches
-  // the handoff spec for primary cards.
-  if (prominence === "glass") return "r-lg";
+  // Glass surfaces default to CARD tier (`lg` → rounded-2xl, 16px). This
+  // was the v2 `r-lg` (14px) before the 2026-07 radius consolidation.
+  if (prominence === "glass") return "lg";
   if (variant && SOFT_VARIANT_RE.test(variant)) return "lg";
   return "xl";
 }

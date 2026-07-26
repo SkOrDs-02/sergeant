@@ -17,7 +17,14 @@ export { Banner } from "./Banner";
 export type { BannerProps, BannerVariant } from "./Banner";
 
 export { Button } from "./Button";
-export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
+export type {
+  ButtonProps,
+  ButtonSize,
+  ButtonVariant,
+  ButtonEmphasis,
+  ButtonTone,
+  ButtonVariantLegacy,
+} from "./Button";
 
 export { IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";

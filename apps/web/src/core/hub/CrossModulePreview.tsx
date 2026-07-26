@@ -78,7 +78,7 @@ export function CrossModulePreview({
     <Card
       as="section"
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="md"
       className="relative overflow-hidden"
       aria-label={messages.hub.crossModulePreviewAria}

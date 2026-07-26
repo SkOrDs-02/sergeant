@@ -66,7 +66,7 @@ export function RecentWorkoutsSection({
     <Card
       as="section"
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       aria-label="Останні тренування"
     >
       <div className="flex items-baseline justify-between gap-2 mb-3">
@@ -87,7 +87,7 @@ export function RecentWorkoutsSection({
 
       {recent.length === 0 ? (
         <div
-          className="rounded-r-lg border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
+          className="rounded-2xl border border-dashed border-surface-line p-6 flex flex-col items-center text-center"
           data-testid="fizruk-dashboard-recent-empty"
         >
           <p className="text-style-label text-text">
@@ -102,7 +102,7 @@ export function RecentWorkoutsSection({
           {recent.map((row, idx) => (
             <li
               key={`${row.startedAt}-${idx}`}
-              className="rounded-r-lg p-3 flex items-center justify-between gap-3"
+              className="rounded-2xl p-3 flex items-center justify-between gap-3"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-style-label text-text truncate">

@@ -176,7 +176,7 @@ export function TodayFocusCard({
   return (
     <Card
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="none"
       className={cn(
         "relative overflow-hidden p-4",

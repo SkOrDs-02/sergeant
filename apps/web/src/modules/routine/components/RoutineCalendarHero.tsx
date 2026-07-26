@@ -27,7 +27,7 @@ export interface RoutineCalendarHeroProps {
 
 /**
  * Top "hero" card for the Routine calendar tab. Uses the v2 hero Card
- * shell (prominence="hero" module="routine" radius="r-2xl") with:
+ * shell (prominence="hero" module="routine" radius="xl") with:
  *
  *   - `HeroValueLine` — narrative sentence (date · progress · streak),
  *     animated `CounterReveal` metric, and the `DayProgressRing` (ring
@@ -81,7 +81,7 @@ export function RoutineCalendarHero({
       as="section"
       prominence="hero"
       module="routine"
-      radius="r-2xl"
+      radius="xl"
       aria-label={rangeLabel}
       className="routine-hero relative"
     >

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
-import { createRef } from "react";
+import { createRef, type ReactElement } from "react";
 import { afterEach } from "vitest";
 import { Button } from "./Button";
 
@@ -217,5 +217,143 @@ describe("Button", () => {
       expect(getByRole("button").className).toContain("bg-finyk-strong");
       expect(getByRole("button").className).not.toContain("bg-fizruk-strong");
     });
+  });
+
+  describe("orthogonal variant × tone API", () => {
+    it("solid/neutral renders the neutral stone primary", () => {
+      const { getByRole } = render(
+        <Button variant="solid" tone="neutral">
+          Go
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("bg-brand-strong");
+      expect(cls).toContain("text-white");
+    });
+
+    it("solid/danger renders the destructive treatment", () => {
+      const { getByRole } = render(
+        <Button variant="solid" tone="danger">
+          Delete
+        </Button>,
+      );
+      expect(getByRole("button").className).toContain("bg-danger-strong");
+    });
+
+    it("soft/danger renders the inline danger chip (not solid)", () => {
+      const { getByRole } = render(
+        <Button variant="soft" tone="danger">
+          Remove
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("bg-danger-soft");
+      expect(cls).not.toContain("bg-danger-strong");
+    });
+
+    it("outline/neutral renders the secondary outline button", () => {
+      const { getByRole } = render(
+        <Button variant="outline" tone="neutral">
+          Back
+        </Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("border-border-strong");
+      expect(cls).toContain("shadow-e1");
+    });
+
+    it("solid/ink renders the inverted ink primary", () => {
+      const { getByRole } = render(
+        <Button variant="solid" tone="ink">
+          Ink
+        </Button>,
+      );
+      expect(getByRole("button").className).toContain("bg-ink-strong");
+    });
+
+    it("unsupported (variant, tone) cell falls back to solid/neutral primary", () => {
+      // e.g. outline + a module tone has no dedicated cell → safe neutral.
+      const { getByRole } = render(
+        <Button variant="outline" tone="nutrition">
+          X
+        </Button>,
+      );
+      expect(getByRole("button").className).toContain("bg-brand-strong");
+    });
+
+    it("ghost is tone-agnostic (same treatment regardless of tone)", () => {
+      const { getByRole, rerender } = render(
+        <Button variant="ghost" tone="neutral">
+          A
+        </Button>,
+      );
+      expect(getByRole("button").className).toContain("bg-transparent");
+      rerender(
+        <Button variant="ghost" tone="finyk">
+          A
+        </Button>,
+      );
+      expect(getByRole("button").className).toContain("bg-transparent");
+    });
+  });
+
+  describe("legacy ⇄ canonical output equivalence", () => {
+    // The whole point of the refactor: every legacy alias must emit exactly
+    // the same class string as its orthogonal (variant, tone) equivalent, so
+    // 433 existing call-sites are provably unaffected.
+    const clsOf = (ui: ReactElement) => {
+      const { getByRole, unmount } = render(ui);
+      const cls = getByRole("button").className;
+      unmount();
+      return cls;
+    };
+
+    it.each([
+      ["primary", "solid", "neutral"],
+      ["secondary", "outline", "neutral"],
+      ["ghost", "ghost", "neutral"],
+      ["danger", "soft", "danger"],
+      ["destructive", "solid", "danger"],
+      ["success", "soft", "success"],
+      ["primary-ink", "solid", "ink"],
+      ["finyk", "solid", "finyk"],
+      ["fizruk", "solid", "fizruk"],
+      ["routine", "solid", "routine"],
+      ["nutrition", "solid", "nutrition"],
+      ["finyk-soft", "soft", "finyk"],
+      ["fizruk-soft", "soft", "fizruk"],
+      ["routine-soft", "soft", "routine"],
+      ["nutrition-soft", "soft", "nutrition"],
+    ] as const)(
+      "legacy variant='%s' === variant='%s' tone='%s'",
+      (legacy, variant, tone) => {
+        expect(clsOf(<Button variant={legacy}>X</Button>)).toBe(
+          clsOf(
+            <Button variant={variant} tone={tone}>
+              X
+            </Button>,
+          ),
+        );
+      },
+    );
+
+    it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
+      "module='%s' + primary === tone='%s' + solid",
+      (module) => {
+        expect(
+          clsOf(
+            <Button module={module} variant="primary">
+              X
+            </Button>,
+          ),
+        ).toBe(
+          clsOf(
+            <Button variant="solid" tone={module}>
+              X
+            </Button>,
+          ),
+        );
+      },
+    );
   });
 });
