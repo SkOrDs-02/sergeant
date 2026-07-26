@@ -1,13 +1,58 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-26
  * Status: Active
  */
-import type { Dispatch, Ref, SetStateAction } from "react";
+import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import type { NullableMacros } from "@sergeant/shared";
+
+/**
+ * Ключ підтвердження, що людина прочитала попередження про фото.
+ *
+ * AI-CONTEXT: рішення founder-а 2026-07-26 — на питання «що робимо з
+ * фото» обрано «попередження». Фото єдиний шлях за периметр, який
+ * **неможливо** замаскувати: у кадр разом із тарілкою потрапляє чек із
+ * адресою, чужа рука, екран телефона. Технічного рішення тут немає, є
+ * лише чесність або мовчання.
+ *
+ * Попередження одноразове навмисно: постійний банер над кожним фото
+ * перестають читати за тиждень, і тоді він захищає не людину, а нас.
+ */
+const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
+
+function PhotoPrivacyNotice() {
+  const [acked, setAcked] = useState(
+    // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
+    // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
+    // `"true"` з лапками і банер не зникав би ніколи.
+    () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
+  );
+  if (acked) return null;
+  return (
+    <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
+      <div className="text-style-label text-text">Куди їде фото</div>
+      <p className="mt-1 text-xs text-subtle leading-relaxed">
+        Щоб визначити КБЖВ, фото відправляється на розпізнавання до Anthropic —
+        це зовнішній сервіс. На відміну від тексту, фото ми не можемо частково
+        приховати: їде весь кадр. Перевір, що в нього не потрапило зайве.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          safeWriteLS(PHOTO_PRIVACY_ACK_KEY, true);
+          setAcked(true);
+        }}
+        className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
+      >
+        Зрозуміло
+      </button>
+    </div>
+  );
+}
 
 interface PhotoIngredient {
   name?: string;
@@ -73,6 +118,8 @@ export function PhotoAnalyzeCard({
           {busy ? "…" : "Аналізувати"}
         </button>
       </div>
+
+      <PhotoPrivacyNotice />
 
       {/* Drop-zone */}
       <label
