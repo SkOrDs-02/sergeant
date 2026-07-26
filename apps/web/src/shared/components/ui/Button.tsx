@@ -5,27 +5,76 @@ import { cn } from "../../lib/ui/cn";
 /**
  * Sergeant Design System — Button Component
  *
- * Variants:
- * - primary: Main hub CTA — NEUTRAL stone "ink on paper" (design-audit M1).
- *   The hub is a neutral parent, so its primary is deliberately hueless and
- *   never competes with the four module accents. Focus stays teal (--c-ring).
- * - secondary: Secondary actions, outlined
- * - ghost: Minimal, text-only actions
- * - danger: Soft destructive affordance (red-tinted, for inline "Delete" chips)
- * - destructive: Solid destructive CTA (use for confirmation dialogs / primary delete buttons)
- * - success: Confirmation actions
+ * ## Orthogonal API (canonical — use this for new code)
  *
- * Module-specific variants:
- * - finyk: Teal finance theme
- * - fizruk: Cyan fitness theme
- * - routine: Coral habit theme
- * - nutrition: Lime nutrition theme
+ * A button is described by two independent axes, matching the `Badge`
+ * (`variant` × `tone`) and `Card` (`module` × `prominence`) contracts so
+ * the primitives stay mentally consistent:
+ *
+ * - **`variant`** — the *emphasis / shape*: `solid` | `soft` | `outline` | `ghost`.
+ * - **`tone`** — the *colour family*: `neutral` | `finyk` | `fizruk` |
+ *   `routine` | `nutrition` | `danger` | `success` | `ink`.
+ *
+ * ```tsx
+ * <Button variant="solid"   tone="finyk">Додати</Button>   // module CTA
+ * <Button variant="soft"    tone="finyk">Скасувати</Button> // module secondary
+ * <Button variant="solid"   tone="danger">Видалити</Button> // destructive CTA
+ * <Button variant="outline" tone="neutral">Назад</Button>   // neutral outline
+ * ```
+ *
+ * Supported `(variant, tone)` cells map 1:1 onto the tested class strings in
+ * `variants` below; unsupported combos fall back to `solid/neutral`.
+ *
+ * ## Legacy variants (DEPRECATED — kept as thin aliases)
+ *
+ * The pre-2026-07 flat variant strings fused role + emphasis into one token
+ * (`finyk` vs `finyk-soft`) and were duplicated by the `module` prop. They
+ * still work — each resolves to a `(variant, tone)` cell with byte-identical
+ * output — but new code should use the orthogonal axes.
+ *
+ * | legacy        | → variant | tone       |
+ * |---------------|-----------|------------|
+ * | primary       | solid     | neutral    |
+ * | secondary     | outline   | neutral    |
+ * | ghost         | ghost     | neutral    |
+ * | danger        | soft      | danger     |
+ * | destructive   | solid     | danger     |
+ * | success       | soft      | success    |
+ * | finyk…nutrition        | solid | {module} |
+ * | {module}-soft          | soft  | {module} |
+ * | primary-ink   | solid     | ink        |
  *
  * Touch: `xs` / `sm` / icon-only sizes get `min 44×44px` under `@media (pointer: coarse)`
  * so primary controls stay tappable on phones while staying visually compact on desktop.
+ *
+ * @see ./Badge.tsx for the reference orthogonal (`variant` × `tone`) contract.
  */
 
-export type ButtonVariant =
+/**
+ * Emphasis / shape axis (canonical). Combine with {@link ButtonTone}.
+ */
+export type ButtonEmphasis = "solid" | "soft" | "outline" | "ghost";
+
+/**
+ * Colour-family axis (canonical). Combine with {@link ButtonEmphasis}.
+ */
+export type ButtonTone =
+  | "neutral"
+  | "finyk"
+  | "fizruk"
+  | "routine"
+  | "nutrition"
+  | "danger"
+  | "success"
+  | "ink";
+
+/**
+ * @deprecated The flat variant strings fuse emphasis + colour into one token.
+ * Prefer the orthogonal `variant` ({@link ButtonEmphasis}) × `tone`
+ * ({@link ButtonTone}) API. Kept as aliases; see the mapping table in the
+ * component JSDoc. @removeBy 2026-12-01
+ */
+export type ButtonVariantLegacy =
   | "primary"
   | "secondary"
   | "ghost"
@@ -40,16 +89,25 @@ export type ButtonVariant =
   | "fizruk-soft"
   | "routine-soft"
   | "nutrition-soft"
-  // Sergeant v2 redesign (2026-05, PR-4). Inverted primary: `--ink-strong`
-  // fill (emerald-900 in light, white in dark) with `--c-bg-base` text.
-  // The v2 design intent — primary CTAs read as "pen ink on paper" rather
-  // than the saturated emerald that competes with module accents. Opt-in;
-  // existing `primary` callers unchanged.
   | "primary-ink";
+
+/**
+ * `variant` accepts either a canonical {@link ButtonEmphasis} (use with
+ * `tone`) or a {@link ButtonVariantLegacy} alias (deprecated). `ghost` is
+ * intentionally shared between both — it is a legacy name *and* a canonical
+ * emphasis with identical output.
+ */
+export type ButtonVariant = ButtonEmphasis | ButtonVariantLegacy;
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
-const variants: Record<ButtonVariant, string> = {
+// Internal style source of truth — one class string per legacy key. The
+// orthogonal `(variant, tone)` API and the `module` prop both resolve DOWN
+// to one of these keys (see `resolveStyleKey`), so every code path emits a
+// string that is already covered by the contract tests. Do not inline these
+// into the resolver — keeping them flat guarantees byte-identical output
+// across the legacy and canonical entry points.
+const variants: Record<ButtonVariantLegacy, string> = {
   // Core variants. Hub primary = NEUTRAL stone "ink on paper" (design-audit
   // M1): stone-800 fill + white text in light; inverted light-stone chip +
   // dark ink in dark. No coloured accent glow — the hub carries no module
@@ -159,28 +217,56 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Progress value 0-100 for determinate loading state */
   progress?: number | undefined;
   /**
-   * When set, redirects the *neutral* `primary` / `secondary` variants to
-   * the host module's branded equivalent (e.g. `module="finyk"` +
-   * `variant="primary"` → renders the `finyk` solid variant; `+
-   * variant="secondary"` → renders the `finyk-soft` variant).
+   * The colour-family axis (canonical). Combine with an emphasis `variant`
+   * (`solid` / `soft` / `outline` / `ghost`). Ignored when `variant` is a
+   * legacy alias that already encodes its own colour (e.g. `finyk`,
+   * `destructive`) — the alias wins so existing call-sites are unaffected.
+   */
+  tone?: ButtonTone | undefined;
+  /**
+   * @deprecated Prefer `tone`. When set, redirects the *neutral* `primary` /
+   * `secondary` variants to the host module's branded equivalent (e.g.
+   * `module="finyk"` + `variant="primary"` → `finyk` solid; `+
+   * variant="secondary"` → `finyk-soft`). Equivalent to
+   * `tone="finyk"`. @removeBy 2026-12-01
    *
    * Other variants (`ghost`, `danger`, `destructive`, `success`, the
    * already-branded module variants) are passed through unchanged — a
    * destructive Delete button stays red even inside a Fizruk screen.
    *
-   * Use this when a CTA lives inside a single module's screen and should
-   * inherit that module's accent without forcing every call-site to
-   * pick the right variant string. Hub-level chrome (HubHeader,
-   * HubChat, dashboard) should leave `module` unset — it's intentionally
-   * brand-emerald so the four modules share a neutral parent.
+   * Hub-level chrome (HubHeader, HubChat, dashboard) should leave both
+   * `module` and `tone` unset — the neutral stone primary is intentional so
+   * the four modules share a hueless parent.
    */
   module?: ModuleAccent | undefined;
   children?: ReactNode | undefined;
 }
 
-const MODULE_VARIANT_OVERRIDE: Record<
+// The legacy variant union, as a runtime set, so the resolver can tell a
+// legacy alias apart from a canonical emphasis word.
+const LEGACY_VARIANTS = new Set<string>([
+  "primary",
+  "secondary",
+  "ghost",
+  "danger",
+  "destructive",
+  "success",
+  "finyk",
+  "fizruk",
+  "routine",
+  "nutrition",
+  "finyk-soft",
+  "fizruk-soft",
+  "routine-soft",
+  "nutrition-soft",
+  "primary-ink",
+]);
+
+// Legacy `module` prop: redirect a NEUTRAL primary/secondary to the module's
+// branded key. Mirrors the pre-2026-07 behaviour exactly (secondary → -soft).
+const MODULE_LEGACY_OVERRIDE: Record<
   ModuleAccent,
-  Partial<Record<ButtonVariant, ButtonVariant>>
+  Partial<Record<ButtonVariantLegacy, ButtonVariantLegacy>>
 > = {
   finyk: { primary: "finyk", secondary: "finyk-soft" },
   fizruk: { primary: "fizruk", secondary: "fizruk-soft" },
@@ -188,12 +274,62 @@ const MODULE_VARIANT_OVERRIDE: Record<
   nutrition: { primary: "nutrition", secondary: "nutrition-soft" },
 };
 
-function resolveVariant(
+// Canonical `(emphasis, tone)` → internal legacy style key. Only the cells
+// that map onto a tested class string are listed; anything else falls back
+// to `primary` (solid/neutral). `ghost` is tone-agnostic (single neutral
+// treatment), so it maps regardless of tone.
+const EMPHASIS_TONE_MAP: Record<
+  ButtonEmphasis,
+  Partial<Record<ButtonTone, ButtonVariantLegacy>>
+> = {
+  solid: {
+    neutral: "primary",
+    ink: "primary-ink",
+    danger: "destructive",
+    finyk: "finyk",
+    fizruk: "fizruk",
+    routine: "routine",
+    nutrition: "nutrition",
+  },
+  soft: {
+    danger: "danger",
+    success: "success",
+    finyk: "finyk-soft",
+    fizruk: "fizruk-soft",
+    routine: "routine-soft",
+    nutrition: "nutrition-soft",
+  },
+  outline: {
+    neutral: "secondary",
+  },
+  ghost: {
+    neutral: "ghost",
+  },
+};
+
+/**
+ * Collapse the public API (legacy alias OR canonical `variant` × `tone`,
+ * plus the deprecated `module` prop) down to a single internal style key.
+ */
+function resolveStyleKey(
   variant: ButtonVariant,
+  tone: ButtonTone | undefined,
   module: ModuleAccent | undefined,
-): ButtonVariant {
-  if (!module) return variant;
-  return MODULE_VARIANT_OVERRIDE[module][variant] ?? variant;
+): ButtonVariantLegacy {
+  // Legacy path: a flat alias already encodes emphasis + colour. Preserve
+  // the exact pre-2026-07 behaviour, including the `module` redirect.
+  if (LEGACY_VARIANTS.has(variant)) {
+    const legacy = variant as ButtonVariantLegacy;
+    if (module) return MODULE_LEGACY_OVERRIDE[module][legacy] ?? legacy;
+    return legacy;
+  }
+
+  // Canonical path: `variant` is an emphasis word. `tone` drives colour;
+  // `module` is honoured only as a neutral→module shortcut for parity.
+  const emphasis = variant as ButtonEmphasis;
+  const effectiveTone: ButtonTone =
+    (!tone || tone === "neutral") && module ? module : (tone ?? "neutral");
+  return EMPHASIS_TONE_MAP[emphasis][effectiveTone] ?? "primary";
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -201,6 +337,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     {
       className,
       variant = "primary",
+      tone,
       size = "md",
       type = "button",
       iconOnly = false,
@@ -216,7 +353,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const isDisabled = disabled || loading;
     const hasProgress = typeof progress === "number" && progress >= 0;
     const needsCoarseMinTarget = iconOnly || size === "xs" || size === "sm";
-    const resolvedVariant = resolveVariant(variant, module);
+    const resolvedVariant = resolveStyleKey(variant, tone, module);
 
     return (
       <button
@@ -235,8 +372,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           // Touch / coarse pointer: WCAG 2.5.5 / HIG ≥44×44px for compact controls.
           needsCoarseMinTarget &&
             "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
-          // Variant (potentially redirected by `module` prop — see
-          // resolveVariant for the mapping table).
+          // Resolved style key — legacy alias, or canonical variant×tone,
+          // collapsed by resolveStyleKey (see its mapping tables).
           variants[resolvedVariant],
           // Size
           iconOnly ? iconSizes[size] : sizes[size],

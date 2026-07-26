@@ -4,10 +4,18 @@ import { Button } from "./Button";
 /**
  * `Button` — головний CTA-примітив дизайн-системи Sergeant.
  *
- * Варіанти охоплюють core + чотири module brand-кольори (finyk / fizruk /
- * routine / nutrition) у solid та `-soft` варіантах. Розмір `xs` / `sm` /
- * icon-only автоматично отримує `min 44×44px` під `@media (pointer: coarse)`,
- * щоб primary controls лишались тапабельними на телефоні.
+ * ## Ортогональний API (канонічний)
+ *
+ * Кнопка описується двома незалежними осями (як `Badge`: `variant` × `tone`):
+ * - **`variant`** — емфаза/форма: `solid` | `soft` | `outline` | `ghost`
+ * - **`tone`** — колірна родина: `neutral` | `finyk` | `fizruk` | `routine` |
+ *   `nutrition` | `danger` | `success` | `ink`
+ *
+ * Старі плоскі варіанти (`primary`, `finyk-soft`, …) та проп `module`
+ * лишаються як **deprecated-аліаси** з байт-ідентичним виводом.
+ *
+ * Розмір `xs` / `sm` / icon-only автоматично отримує `min 44×44px` під
+ * `@media (pointer: coarse)`, щоб primary controls лишались тапабельними.
  */
 const meta: Meta<typeof Button> = {
   title: "UI / Button",
@@ -17,10 +25,16 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
+      description: "Емфаза (канонічна) або legacy-alias",
       options: [
+        // canonical emphasis
+        "solid",
+        "soft",
+        "outline",
+        "ghost",
+        // legacy aliases (deprecated)
         "primary",
         "secondary",
-        "ghost",
         "danger",
         "destructive",
         "success",
@@ -32,6 +46,21 @@ const meta: Meta<typeof Button> = {
         "fizruk-soft",
         "routine-soft",
         "nutrition-soft",
+        "primary-ink",
+      ],
+    },
+    tone: {
+      control: "select",
+      description: "Колірна родина (канонічна вісь)",
+      options: [
+        "neutral",
+        "finyk",
+        "fizruk",
+        "routine",
+        "nutrition",
+        "danger",
+        "success",
+        "ink",
       ],
     },
     size: { control: "select", options: ["xs", "sm", "md", "lg", "xl"] },
@@ -40,7 +69,8 @@ const meta: Meta<typeof Button> = {
   },
   args: {
     children: "Зберегти",
-    variant: "primary",
+    variant: "solid",
+    tone: "neutral",
     size: "md",
   },
 };
@@ -48,22 +78,81 @@ export default meta;
 
 type Story = StoryObj<typeof Button>;
 
-export const Primary: Story = {};
+export const Primary: Story = { args: { variant: "solid", tone: "neutral" } };
 
-export const Secondary: Story = { args: { variant: "secondary" } };
+export const Secondary: Story = {
+  args: { variant: "outline", tone: "neutral" },
+};
 
 export const Ghost: Story = { args: { variant: "ghost" } };
 
 export const Destructive: Story = {
-  args: { variant: "destructive", children: "Видалити" },
+  args: { variant: "solid", tone: "danger", children: "Видалити" },
 };
 
 export const Loading: Story = { args: { loading: true } };
 
 export const Disabled: Story = { args: { disabled: true } };
 
-/** Module brand variants — фіналізують hero-CTA на сторінках кожного модуля. */
-export const ModuleVariants: Story = {
+/**
+ * Канонічна матриця `variant × tone`. Кожен рядок — емфаза, кожна колонка —
+ * колірна родина. Порожні клітинки (немає виділеного стилю) безпечно
+ * відкочуються на solid/neutral.
+ */
+export const VariantToneMatrix: Story = {
+  render: () => (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="solid" tone="neutral">
+          solid / neutral
+        </Button>
+        <Button variant="solid" tone="ink">
+          solid / ink
+        </Button>
+        <Button variant="solid" tone="danger">
+          solid / danger
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="solid" tone="finyk">
+          solid / finyk
+        </Button>
+        <Button variant="solid" tone="fizruk">
+          solid / fizruk
+        </Button>
+        <Button variant="solid" tone="routine">
+          solid / routine
+        </Button>
+        <Button variant="solid" tone="nutrition">
+          solid / nutrition
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="soft" tone="finyk">
+          soft / finyk
+        </Button>
+        <Button variant="soft" tone="danger">
+          soft / danger
+        </Button>
+        <Button variant="soft" tone="success">
+          soft / success
+        </Button>
+        <Button variant="outline" tone="neutral">
+          outline / neutral
+        </Button>
+        <Button variant="ghost" tone="neutral">
+          ghost / neutral
+        </Button>
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Module brand variants через легасі-аліаси (deprecated). Еквівалент
+ * `variant="solid" tone="{module}"` — лишено як приклад зворотної сумісності.
+ */
+export const ModuleVariantsLegacy: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-3">
       <Button variant="finyk">Finyk</Button>

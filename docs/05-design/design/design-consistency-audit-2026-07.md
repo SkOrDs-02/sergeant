@@ -1,7 +1,7 @@
 # Design-consistency audit (2026-07)
 
 > **Last touched:** 2026-07-26 by @it+v0agent. **Next review:** 2026-10-24.
-> **Status:** Active (in progress) — safe fixes + radius consolidation (E) + docs-fix (F) landed; H resolved as already-canonical; only G (Button orthogonality) pending decision.
+> **Status:** Resolved — all findings fixed (A–I) or dismissed (H). Button orthogonality (G) landed with byte-identical legacy aliases.
 
 > **Аудиторія:** дизайн-система maintainers, ревʼюери design-token PR-ів.
 > **Ціль:** зафіксувати результати повторної перевірки аудиту попередньої
@@ -106,25 +106,35 @@ not enforced», і рахував «63/66 порушень». Перевірка
 код (після emerald→teal ребренду finyk-акценту) віддає `-teal`. Тест падав
 **ще до цієї сесії** (перевірено `git stash`) — pre-existing rebrand-борг.
 
-- **Fix:** ассерт оновлено на `dark:shadow-glow-inset-teal` (код був
+- **Fix:** ас��ерт оновлено на `dark:shadow-glow-inset-teal` (код був
   правильний, застарів лише тест).
+
+### G. Неортогональний `Button` — **зроблено ортогональним**
+
+`ButtonVariant` кодував роль+емфазу в одному рядку (`finyk`, `finyk-soft`,
+`primary-ink`, …), плюс дубль-механізм через `module` prop — 15 злитих
+варіантів. `Badge` (`variant × tone`) і `Card` (`module × prominence`) вже
+ортогональні; `Button` випадав.
+
+- **Fix:** додано канонічну ортогональну модель — `variant`
+  (`ButtonEmphasis`: `solid|soft|outline|ghost`) × `tone` (`ButtonTone`:
+  `neutral|finyk|fizruk|routine|nutrition|danger|success|ink`). Внутрішній
+  `variants`-record (15 класів) лишився джерелом істини; новий
+  `resolveStyleKey` збирає і канонічний, і легасі-шлях, і `module` prop в
+  один style-key. Усі 15 flat-варіантів + `module` — deprecated-аліаси
+  (`@removeBy 2026-12-01`) з **байт-ідентичним** виводом.
+- **Гарантія безпеки:** 19 нових equivalence-тестів пінять, що кожен
+  legacy-alias === його `(variant, tone)`-еквівалент (`toBe` на className).
+  Тому всі 433 call-site у 148 файлах не потребують змін. Мігровано лише
+  stories як довідковий приклад.
 
 ---
 
 ## Частина 2 — Відкладено (потребує рішення; НЕ чіпав)
 
-### G. Неортогональний `Button` — 15 злитих варіантів
+_Немає активних пунктів — усі знахідки або виправлені, або зняті._
 
-`ButtonVariant` кодує роль+емфазу в одному рядку (`finyk`, `finyk-soft`,
-`primary-ink`, …), плюс дубль-механізм через `module` prop. `Badge` вже
-ортогональний (`variant × tone`); `Card` вже має orthogonal-модель
-(`module` × `prominence`) з legacy-мапінгом.
-
-- **Питання до рішення:** перевести `Button` на `variant × tone` з
-  legacy-варіантами як deprecated-аліасами? Це API-зміна з широким blast
-  radius (усі call-site-и Button) — саме тому відкладено на обговорення.
-
-### H. Канонічний шар — **знято: канон уже оголошено**
+### H. Канонічний шар — **знято: канон уже оголо��ено**
 
 Перевірка спростувала передумову аудиту. Канон **вже явно оголошено**:
 `redesign-v2/README.md` (рядок 44) прямо каже — _«Канонічний контракт для
@@ -141,14 +151,15 @@ A–D та I, — це саме застарілі попередні версі
 
 ## Зведення
 
-| #   | Пункт                               | Стан                 | Blast radius          |
-| --- | ----------------------------------- | -------------------- | --------------------- |
-| A   | Celebration grey→green градієнт     | ✅ Fixed             | 1 рядок               |
-| B   | SectionHeading застарілий коментар  | ✅ Fixed             | коментар              |
-| C   | AppLock ad-hoc `z-[200]`            | ✅ Fixed             | 1 рядок               |
-| D   | orphan emerald `glow`/`focus-ring`  | ✅ Fixed             | 2 токени              |
-| E   | Дубльована radius-шкала             | ✅ Fixed             | ~30 call-sites        |
-| F   | Radius enforcement + docs-fix       | ✅ Fixed             | doc                   |
-| I   | Застарілий Card-тест (emerald→teal) | ✅ Fixed             | 1 ассерт              |
-| G   | Button не ортогональний             | ⏸ Pending decision   | усі Button call-sites |
-| H   | Канонічний шар                      | ✅ Знято (вже канон) | —                     |
+| #   | Пункт                               | Стан                 | Blast radius             |
+| --- | ----------------------------------- | -------------------- | ------------------------ |
+| A   | Celebration grey→green градієнт     | ✅ Fixed             | 1 рядок                  |
+| B   | SectionHeading застарілий коментар  | ✅ Fixed             | коментар                 |
+| C   | AppLock ad-hoc `z-[200]`            | ✅ Fixed             | 1 рядок                  |
+| D   | orphan emerald `glow`/`focus-ring`  | ✅ Fixed             | 2 токени                 |
+| E   | Дубльована radius-шкала             | ✅ Fixed             | ~30 call-sites           |
+| F   | Radius enforcement + docs-fix       | ✅ Fixed             | doc                      |
+| I   | Застарілий Card-тест (emerald→teal) | ✅ Fixed             | 1 ассерт                 |
+| G   | Button не ортогональний             | ✅ Fixed             | Button + tests + stories |
+| H   | Канонічний шар                      | ✅ Знято (вже канон) | —                        |
+| I   | Застарілий Card-тест (emerald→teal) | ✅ Fixed             | 1 ассерт                 |
