@@ -28,6 +28,7 @@ import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
 import { pricingMessages } from "./uk.pricing";
+import { privacyMessages } from "./uk.privacy";
 
 export const messages = {
   auth: {
@@ -395,7 +396,7 @@ export const messages = {
       "Екскурсія — повторний показ вітального екрану. Дані не зміняться. Почати з початку — знову обрати модулі та побачити перші підказки. Записи в модулях лишаться як є.",
     tourResetConfirmTitle: "Почати знайомство з початку?",
     tourResetConfirmDescription:
-      "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (транзакції, тренування, прийоми їжі) лишаться без змін.",
+      "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (тра��закції, тренування, прийоми їжі) лишаться без змін.",
     tourResetConfirmAction: "Почати з поча��ку",
     tourResetSuccess: "Знайомство перезапущено",
 
@@ -541,7 +542,7 @@ export const messages = {
     empty: "Немає сесій",
     loadFailed: "Не вдалося завантажити сесії",
     revoke: "Завершити",
-    revokeSuccess: "Сесію завершено",
+    revokeSuccess: "��есію завершено",
     revokeFailed: "Не вдалося зав��ршити сесію",
     expired: "Закінчилась",
     thisDevice: "Цей пристрій",
@@ -669,7 +670,7 @@ export const messages = {
     lastIncidentPrefix: "Останній інцидент:",
     errorTitle: "Не вдалося завантажити статус",
     errorRetry: "Спробувати ще",
-    errorFallback: "Не вдалося завантажити статус сервісу.",
+    errorFallback: "Не вдалося завантажити статус сер��ісу.",
     errorHttpPrefix: "Сервер відповів HTTP",
   },
 
@@ -806,7 +807,7 @@ export const messages = {
 
     // Footer
     footerText:
-      "Sergeant — український проєкт. Без реклами, без перепродажу даних," +
+      "Sergeant — український проєкт. Без реклами, без пер��продажу даних," +
       " без темних патернів. Telegram-канал з оновленнями і публічний" +
       " changelog у репозиторії.",
   },
