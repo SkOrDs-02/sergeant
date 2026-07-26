@@ -37,27 +37,35 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
     }
   });
 
-  describe("colors — derived brand scale stays in lockstep with brandColors", () => {
+  describe("colors — hub brand is the neutral stone ramp (design-audit M1)", () => {
     const { brand } = preset.theme.extend.colors;
 
-    it("brand.DEFAULT === emerald-500", () => {
-      expect(brand.DEFAULT).toBe(brandColors.emerald[500]);
+    // The hub/shell `brand` token is deliberately NEUTRAL (warm stone) so it
+    // carries no module hue and never reads as a fifth accent. Previously it
+    // aliased teal/emerald, making the hub indistinguishable from finyk.
+    it("brand.DEFAULT === stone-700", () => {
+      expect(brand.DEFAULT).toBe(brandColors.stone[700]);
     });
 
-    it("brand.light/dark/subtle map to emerald 400/600/50", () => {
-      expect(brand.light).toBe(brandColors.emerald[400]);
-      expect(brand.dark).toBe(brandColors.emerald[600]);
-      expect(brand.subtle).toBe(brandColors.emerald[50]);
+    it("brand.light/dark/subtle map to stone 500/800/100", () => {
+      expect(brand.light).toBe(brandColors.stone[500]);
+      expect(brand.dark).toBe(brandColors.stone[800]);
+      expect(brand.subtle).toBe(brandColors.stone[100]);
     });
 
-    it("brand.strong === emerald-700 (WCAG-AA companion)", () => {
-      expect(brand.strong).toBe(brandColors.emerald[700]);
+    it("brand.strong === stone-800 (WCAG-AAA companion for white-on-fill)", () => {
+      expect(brand.strong).toBe(brandColors.stone[800]);
     });
 
-    it("brand spreads the full emerald numeric scale", () => {
-      for (const step of Object.keys(brandColors.emerald)) {
-        expect(brand[step]).toBe(brandColors.emerald[step]);
+    it("brand spreads the full stone numeric scale", () => {
+      for (const step of Object.keys(brandColors.stone)) {
+        expect(brand[step]).toBe(brandColors.stone[step]);
       }
+    });
+
+    it("brand no longer aliases the teal/finyk hue", () => {
+      expect(brand.DEFAULT).not.toBe(brandColors.teal[700]);
+      expect(brand.strong).not.toBe(brandColors.teal[800]);
     });
   });
 
