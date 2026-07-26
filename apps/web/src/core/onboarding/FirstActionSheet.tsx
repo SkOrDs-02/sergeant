@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -216,8 +217,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
 
     return (
       <>
-        <section
-          className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
           aria-label="Перша дія"
         >
           <div className="flex items-start justify-between gap-3">
@@ -283,7 +287,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               );
             })}
           </div>
-        </section>
+        </Card>
         <PresetSheet
           open={activePresetId != null}
           moduleId={activePresetId}
@@ -297,8 +301,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
   if (picks.length > 1) {
     return (
       <>
-        <section
-          className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
           aria-label="Перша дія"
         >
           <div className="flex items-start justify-between gap-3">
@@ -368,7 +375,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               );
             })}
           </div>
-        </section>
+        </Card>
         <PresetSheet
           open={activePresetId != null}
           moduleId={activePresetId}
@@ -383,8 +390,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
 
   return (
     <>
-      <section
-        className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
+      <Card
+        as="section"
+        radius="lg"
+        padding="md"
+        className="relative space-y-3"
         aria-label="Перша дія"
       >
         <div className="flex items-start justify-between gap-3">
@@ -487,7 +497,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             })}
           </div>
         )}
-      </section>
+      </Card>
       <PresetSheet
         open={activePresetId != null}
         moduleId={activePresetId}
