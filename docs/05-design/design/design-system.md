@@ -1,7 +1,7 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
-> **Status:** Active (v2 redesign foundation merged 2026-05; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
+> **Last validated:** 2026-07-27 by @v0 (brand palette synced to M1 stone rebrand). **Next review:** 2026-10-25.
+> **Status:** Active (v2 redesign foundation merged 2026-05; brand → stone via 2026-07 M1; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
 **Харчування**. Документ — контракт між дизайном і кодом; будь-який новий
@@ -11,6 +11,13 @@
 > token namespace (glass surfaces, mesh background, ink-strong, нові radii)
 > поряд з legacy `--c-*` трітриплет-токенами які лишилися активні. Якщо ти
 > пишеш новий компонент — дивися [`redesign-v2/migration.md`](./redesign-v2/migration.md) для BEFORE/AFTER патернів. Для governance — [`redesign-v2/governance.md`](./redesign-v2/governance.md). Цей design-system.md лишається canonical довідник для shared контракту; v2-specific deviations документовані окремо.
+
+> **Brand palette — stone, не emerald (2026-07 M1).** `brand` — нейтральний
+> warm-stone (hub — тихий батько); `finyk` — teal, `fizruk` — cyan, focus ring —
+> teal через окремий `--c-ring`. Emerald **retired** як brand/CTA-колір. Якщо
+> бачиш emerald у новому коді або старій доці — це застаріле; канонічна таблиця
+>
+> - повна історія палітри у [`design-system/01-tokens-colors.md` §2.3/§2.6](./design-system/01-tokens-colors.md).
 
 > **TL;DR для контриб'ютора.** Якщо ти пишеш новий екран — імпорти все з
 > `@shared/components/ui` і використовуй семантичні класи Tailwind
