@@ -107,8 +107,10 @@ describe("Card", () => {
       expect(cls).toContain("dark:bg-hero-ink-finyk");
       // «Чорнило» hero (dark): luminescent tier-400 accent border /25 +
       // inset-glow, replacing the old faint soft-border/40 + drop shadow.
+      // 2026-07: inset-glow token followed the emerald→teal rebrand of the
+      // finyk accent (assertion was stale, code was already correct).
       expect(cls).toContain("dark:border-brand-400/25");
-      expect(cls).toContain("dark:shadow-glow-inset-emerald");
+      expect(cls).toContain("dark:shadow-glow-inset-teal");
     });
 
     it("variant='finyk-soft' maps to module='finyk' prominence='soft'", () => {

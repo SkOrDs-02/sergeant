@@ -401,7 +401,7 @@ export function HubSettingsPage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук налаштувань…"
-            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-r-lg text-style-body text-ink placeholder:text-muted"
+            className="input-focus w-full min-h-[48px] pl-11 pr-11 py-3 bg-panel border border-line rounded-2xl text-style-body text-ink placeholder:text-muted"
           />
           {query && visible.length > 0 && (
             <Button
@@ -426,7 +426,7 @@ export function HubSettingsPage({
             items={GROUPS.map((g) => ({ value: g.id, label: g.label }))}
             value={tab}
             onChange={(v) => setTab(v)}
-            className="overflow-x-auto border border-line bg-panel rounded-r-lg"
+            className="overflow-x-auto border border-line bg-panel rounded-2xl"
           />
         )}
       </div>

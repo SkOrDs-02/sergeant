@@ -184,7 +184,7 @@ export function Popover({
         zIndex: 1000,
       }}
       className={cn(
-        "bg-surface-glass backdrop-blur-md border border-surface-line shadow-nav rounded-r-2xl",
+        "bg-surface-glass backdrop-blur-md border border-surface-line shadow-nav rounded-3xl",
         "motion-safe:animate-fade-in",
         // Default padding only when no header/footer; with slots the
         // sections own their own padding for tighter alignment.

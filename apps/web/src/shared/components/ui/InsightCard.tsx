@@ -182,7 +182,7 @@ export function InsightCard({
         // v2 push-card chrome — ink-strong solid in light, glass-tinted
         // in dark (mirrors handoff `bg-em-900/95` intent without raw
         // palette). Shadow uses elevation `shadow-e3` (overlay tier).
-        "mx-3.5 mt-2 px-3 py-2.5 rounded-r-2xl",
+        "mx-3.5 mt-2 px-3 py-2.5 rounded-3xl",
         "bg-ink-strong text-bg-base",
         "flex items-center gap-3 shadow-e3",
         className,

@@ -67,7 +67,7 @@ const HeroCardImpl = function HeroCard({
     <Card
       prominence="hero"
       module="finyk"
-      radius="r-2xl"
+      radius="xl"
       padding="none"
       className="relative overflow-hidden"
     >
