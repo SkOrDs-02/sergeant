@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -22,6 +22,64 @@
 - Метрики за bearer-токен: `GET /metrics` з `Authorization: Bearer $METRICS_TOKEN`.
 - Логи — Pino JSON у stdout, з ALS-контекстом `{requestId, userId, module}`.
 - Sentry ловить fatal/error (включно з `err.cause` чейном).
+
+---
+
+## SergeantMetricsPipelineDown
+
+**Що горить**: `sum(up{job="sergeant-server"}) < 1`, або алерт у стані `NoData`
+(правило навмисно має `noDataState: Alerting` — зникнення серії і є симптом).
+
+**Що це означає**: Grafana Cloud **не отримує метрик взагалі**. Це не «сервіс
+лежить» — застосунок може бути повністю здоровий; лежить **колектор**.
+Перевіряй у цьому порядку, від найдешевшого:
+
+1. **Чи живий сам застосунок** (щоб не гнатись не за тим):
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" https://api.167-233-98-92.sslip.io/health
+   ```
+
+   `200` → проблема в колекторі, не в API. Крос-чек: PostHog і Sentry
+   продовжують приймати події, поки метрики мовчать.
+
+2. **Чи віддає сервер `/metrics`**:
+
+   ```bash
+   curl -s -H "Authorization: Bearer $METRICS_TOKEN" \
+     https://api.167-233-98-92.sslip.io/metrics | head -5
+   ```
+
+   Порожньо / 401 → проблема в самому сервері або в `METRICS_TOKEN`.
+
+3. **Чи живий Alloy.** Coolify → застосунок `grafana-alloy` → Logs. Здоровий
+   старт містить `{^_^} Alloy is running`. Немає застосунку взагалі — його
+   знесли або не перестворили після міграції хостингу (саме це сталось
+   2026-07-14, див. нижче). Розгортання — [`ops/grafana-alloy/README.md`](../../../ops/grafana-alloy/README.md).
+
+4. **Чи не вимкнувся Mimir-ruler услід.** Grafana Cloud глушить rule evaluation
+   тенанту без інжесту, тому довгий простій метрик тихо вбиває і алертинг:
+
+   ```bash
+   curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+     "https://skords01.grafana.net/api/datasources/proxy/uid/grafanacloud-prom/api/v1/rules" \
+     | head -c 200
+   ```
+
+   `"error":"rule evaluation is disabled for tenant …"` → після відновлення
+   скрейпу evaluation вмикається сам, ручного втручання не треба. Дай ~2 хв і
+   перевір ще раз.
+
+**Чому це правило Grafana-managed, а не в Mimir**: воно мусить пережити саме ту
+відмову, яку детектить. Mimir-правила замовкають разом з інжестом — тобто в
+момент інциденту їх немає. `sergeant-meta` оцінюється в Grafana й лишається
+живим.
+
+**Історія**: 2026-07-14 06:07 UTC → 2026-07-26 (12 днів наосліп). Коміт
+`1d20c958c` прибрав `ops/grafana-alloy/railway.toml` при виводі Railway, а
+Coolify-еквівалент не створили. Ніхто не помітив, бо єдиний сигнал ішов тим
+самим мертвим пайплайном. Зовнішній blackbox (UptimeRobot / synthetic) досі не
+підключений — це лишається діркою.
 
 ---
 

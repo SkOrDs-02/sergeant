@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -533,6 +533,8 @@ TTL in-memory дедуп-кешу для ідентичних GET-ів (key = up
 ### `EXPO_PUBLIC_SENTRY_DSN` _(optional)_
 
 Публічний Sentry DSN для RN-клієнта. Інлайниться у бандл на build-time (префікс `EXPO_PUBLIC_` → доступно в `process.env`). Optional — без нього `initObservability()` виконує no-op і жодних подій у Sentry не відправляється. Парний до `VITE_SENTRY_DSN` (web) і `SENTRY_DSN` (server). Дивись [`apps/mobile/src/lib/observability.ts`](../../../apps/mobile/src/lib/observability.ts).
+
+> **Звідки брати (з 2026-07-26).** До цієї дати Sentry-проєкту під mobile просто **не існувало** — org `dima-dk` мала лише `sergeant-api` і `sergeant-web`, тому `Sentry.init` на mobile викликався, але native-краші в проді нікуди не долітали. Проєкт `sergeant-mobile` (platform `react-native`) створено; DSN — Sentry → Settings → Projects → `sergeant-mobile` → **Client Keys (DSN)**. Клади його в EAS secrets (`eas secret:create --name EXPO_PUBLIC_SENTRY_DSN`), не в git.
 
 ### `EXPO_PUBLIC_SENTRY_RELEASE` _(optional)_
 

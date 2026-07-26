@@ -3,6 +3,28 @@
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **⚠️ Дашборд не працює станом на 2026-07-26 — цифрам не вір.**
+> Перевірено прямими запитами: 5 із 7 тайлів повертають **0 рядків**, а всі 7
+> мали `last_refresh: None` (жодного разу не рахувались до аудиту). Два
+> незалежні корені:
+>
+> 1. **Голова воронки не фаїться.** `signup_completed` — 1 подія за 365 днів
+>    (остання 2026-06-11) проти 100 `onboarding_completed`. Причина:
+>    `trackEvent(SIGNUP_COMPLETED)` живе тільки в email+пароль шляху
+>    (`apps/web/src/core/auth/AuthContext.tsx`), а `signIn.social()` для
+>    Google/Apple робить повний redirect — після повернення код не виконується.
+>    Користувачі обирають саме соцвхід: `signup_provider_selected` за рік —
+>    google 23, apple 1. Воронка вмирає на кроці 1, тому крок 4 нерелевантний.
+> 2. **Хвіст воронки теж мовчав.** `subscription_started` не фаявся жодного
+>    разу за 180 днів: `POSTHOG_PROJECT_API_KEY` був відсутній у Coolify, тож
+>    [`posthogCapture.ts`](../../../apps/server/src/lib/posthogCapture.ts)
+>    fail-open повертав `skipped` без помилки. Змінну додано і сервер
+>    передеплоєно 2026-07-26 — цей бік має відновитись сам із першим Stripe-івентом.
+>
+> «Funnel-ZEROES canary» (§ нижче) мала б зловити п.1 — але вона сама ніколи
+> не рахувалась, бо дашборд ніхто не відкривав. Канарка, яку не перевіряють,
+> не канарка.
+
 Operational runbook for the **Founder Pulse** PostHog dashboard — Sergeant's
 founder-facing growth dashboard. Aggregates DAU/WAU/MAU, WF-60 activation
 funnel (signup → onboarding → first action → subscription), per-module

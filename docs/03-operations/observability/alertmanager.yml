@@ -1,9 +1,15 @@
 # Alertmanager configuration for Sergeant.
 #
-# Legacy Alertmanager sample. Current production alert delivery is n8n WF-98 /
-# Telegram incidents + founder DM for `severity=page`, and Sentry/backlog for
-# `severity=ticket` (see ../SLO.md). Keep this file as a deployable Slack
-# fallback only if Alertmanager is introduced.
+# Status: Deprecated (2026-07-26). Not deployed, not referenced by any runtime.
+#
+# Production alert delivery goes through Grafana Cloud managed alerting:
+# contact point `telegram-ops`, routed by `severity=page` / `severity=ticket`
+# (notification policy lives in Grafana, not here). Verified 2026-07-26 —
+# self-hosted Alertmanager is not part of the topology and there is no plan
+# to introduce it.
+#
+# Kept only as a reference sample. Do not treat it as the source of truth for
+# routing — see ../SLO.md § Статус wiring.
 #
 # Secrets:
 #   $SLACK_WEBHOOK_URL — Slack incoming-webhook URL.
