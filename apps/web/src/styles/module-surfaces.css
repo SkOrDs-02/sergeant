@@ -227,3 +227,19 @@
 [data-module-accent] :is(input, textarea) {
   caret-color: rgb(var(--module-accent-rgb));
 }
+
+/* ── Module-scoped focus ring (V-20) ─────────────────────────────────────
+   Inputs already recolour their focus treatment above, but every OTHER
+   focusable inside a module (Button, tab, card, link, IconButton) still
+   painted the canonical teal `ring-focus`, so keyboard focus felt visually
+   detached from the host module's accent. `ring-focus*` utilities resolve
+   to `rgb(var(--c-ring) / …)`, so remapping the two ring triplets to the
+   accent (already published on the provider as `--module-accent-rgb` /
+   `--module-accent-strong-rgb`) recolours the whole focus system in one
+   cascade step — no per-call-site changes. Accents are tuned ≥3:1 against
+   module surfaces, so WCAG 2.4.11 / 1.4.11 still hold. The offset token is
+   left untouched so the ring stays legible against panels. */
+[data-module-accent] {
+  --c-ring: var(--module-accent-rgb);
+  --c-ring-strong: var(--module-accent-strong-rgb);
+}

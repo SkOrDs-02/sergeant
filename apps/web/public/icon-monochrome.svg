@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    Sergeant — monochrome app icon (Android 13+ themed icons / `purpose: monochrome`).
+    Transparent background + a single-tone silhouette: the launcher discards
+    colour and tints every non-transparent pixel with the user's system palette,
+    using the alpha channel as the mask. Opacity steps give tonal depth that
+    survives the tint. Composition mirrors the full-colour `icon.svg`
+    (hub-and-spoke: Фінік bar-chart, Фізрук dumbbell, Рутина calendar-check,
+    six-dot hub) scaled into the themed-icon safe zone.
+  -->
+  <g transform="translate(512,512) scale(0.82) translate(-512,-512)" fill="#fff">
+    <!-- Connection lines from hub to nodes -->
+    <g stroke="#fff" stroke-width="8" stroke-linecap="round" opacity="0.35">
+      <line x1="512" y1="512" x2="512" y2="238"/>
+      <line x1="512" y1="512" x2="734" y2="654"/>
+      <line x1="512" y1="512" x2="290" y2="654"/>
+    </g>
+
+    <!-- Фінік node (top) -->
+    <circle cx="512" cy="238" r="108" opacity="0.28"/>
+    <rect x="455" y="262" width="26" height="42" rx="6" opacity="0.6"/>
+    <rect x="489" y="246" width="26" height="58" rx="6" opacity="0.8"/>
+    <rect x="523" y="230" width="26" height="74" rx="6"/>
+
+    <!-- Фізрук node (bottom-right): dumbbell -->
+    <circle cx="734" cy="654" r="108" opacity="0.28"/>
+    <rect x="680" y="645" width="108" height="18" rx="9"/>
+    <rect x="670" y="628" width="22" height="52" rx="8"/>
+    <rect x="776" y="628" width="22" height="52" rx="8"/>
+    <rect x="653" y="636" width="20" height="36" rx="6" opacity="0.7"/>
+    <rect x="795" y="636" width="20" height="36" rx="6" opacity="0.7"/>
+
+    <!-- Рутина node (bottom-left): calendar with check -->
+    <circle cx="290" cy="654" r="108" opacity="0.28"/>
+    <rect x="242" y="624" width="96" height="80" rx="10" fill="none" stroke="#fff" stroke-width="7"/>
+    <line x1="242" y1="648" x2="338" y2="648" stroke="#fff" stroke-width="7"/>
+    <line x1="266" y1="614" x2="266" y2="635" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+    <line x1="314" y1="614" x2="314" y2="635" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+    <polyline points="262,672 278,688 318,660" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Hub center: ring + six-dot grid -->
+    <circle cx="512" cy="512" r="72" fill="none" stroke="#fff" stroke-width="6" opacity="0.5"/>
+    <circle cx="494" cy="502" r="7"/>
+    <circle cx="512" cy="502" r="7"/>
+    <circle cx="530" cy="502" r="7"/>
+    <circle cx="494" cy="520" r="7"/>
+    <circle cx="512" cy="520" r="7"/>
+    <circle cx="530" cy="520" r="7"/>
+  </g>
+</svg>
