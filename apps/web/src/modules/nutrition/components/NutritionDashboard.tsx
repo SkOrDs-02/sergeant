@@ -303,37 +303,34 @@ export function NutritionDashboard({
                   }
                 />
               </div>
-              <MacroBarRow
+              <MacroRings
                 macros={[
                   {
                     label: "Білки",
-                    value: protein.consumed,
-                    max: protein.goal,
-                    accent: "nutrition",
+                    consumed: protein.consumed,
+                    goal: protein.goal,
+                    variant: "nutrition",
                     unit: "г",
-                    valueDisplay: formatMacroOutcome(
+                    outcome: formatMacroOutcome(
                       protein.consumed,
                       protein.goal,
                     ),
                   },
                   {
                     label: "Жири",
-                    value: fat.consumed,
-                    max: fat.goal,
-                    accent: "warning",
+                    consumed: fat.consumed,
+                    goal: fat.goal,
+                    variant: "warning",
                     unit: "г",
-                    valueDisplay: formatMacroOutcome(fat.consumed, fat.goal),
+                    outcome: formatMacroOutcome(fat.consumed, fat.goal),
                   },
                   {
                     label: "Вугл.",
-                    value: carbs.consumed,
-                    max: carbs.goal,
-                    accent: "routine",
+                    consumed: carbs.consumed,
+                    goal: carbs.goal,
+                    variant: "routine",
                     unit: "г",
-                    valueDisplay: formatMacroOutcome(
-                      carbs.consumed,
-                      carbs.goal,
-                    ),
+                    outcome: formatMacroOutcome(carbs.consumed, carbs.goal),
                   },
                 ]}
               />
