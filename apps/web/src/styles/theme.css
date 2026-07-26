@@ -263,9 +263,12 @@
        `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
        See docs/design/archive/dark-mode-audit.md for the migration targets.
        ─────────────────────────────────────────────────────────────────── */
-    --c-brand-soft: 240 253 250; /* teal-50 (2026-07: was emerald-50) */
-    --c-brand-soft-border: 153 246 228; /* teal-200 */
-    --c-brand-soft-hover: 204 251 241; /* teal-100 */
+    /* Hub `brand` soft = NEUTRAL warm-stone (2026-07 design-audit M1); no
+       module hue so it never competes with the finyk/fizruk/routine/nutrition
+       soft fills below. */
+    --c-brand-soft: 245 245 244; /* stone-100 */
+    --c-brand-soft-border: 231 229 228; /* stone-200 */
+    --c-brand-soft-hover: 231 229 228; /* stone-200 */
 
     --c-finyk-soft: 240 253 250; /* teal-50 */
     --c-finyk-soft-border: 153 246 228; /* teal-200 */
@@ -299,7 +302,7 @@
        (see `.dark` / `html.hc*` below) so one `text-<m>-soft-fg` utility
        replaces the old `text-<m>-strong dark:text-<m>` pair — the saturated
        mid-accent in dark mode measured ~1.8:1 and was illegible. */
-    --c-brand-soft-fg: 17 94 89; /* teal-800 — brand accent on brand-soft (2026-07: was emerald-700) */
+    --c-brand-soft-fg: 41 37 36; /* stone-800 — neutral hub ink on brand-soft */
     --c-finyk-soft-fg: 17 94 89; /* teal-800 */
     --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
     --c-routine-soft-fg: 194 58 58; /* coral-700 */
@@ -401,7 +404,12 @@
        Used via `focus-visible:ring` utilities that read the custom property. */
     --focus-ring-width: 3px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: rgba(16, 185, 129, 0.4);
+    --focus-ring-color: rgba(
+      15,
+      118,
+      110,
+      0.4
+    ); /* teal-700 — focus stays teal, decoupled from the now-neutral hub brand */
 
     /* ═══════════════════════════════════════════════════════════════════════
        MOTION TOKENS — single source of truth for duration/easing.
@@ -554,9 +562,11 @@
        the dark panel background. `-soft-border` matches the
        corresponding `-800`; `-soft-hover` is one step brighter than
        `-soft` for a visible but subtle hover lift. */
-    --c-brand-soft: 19 78 74; /* teal-900 (2026-07: was emerald-900) */
-    --c-brand-soft-border: 17 94 89; /* teal-800 */
-    --c-brand-soft-hover: 17 94 89; /* teal-800 */
+    /* Hub `brand` soft = NEUTRAL deep stone on the dark panel (design-audit
+       M1); reads as quiet chrome, not a fifth accent. */
+    --c-brand-soft: 41 37 36; /* stone-800 */
+    --c-brand-soft-border: 68 64 60; /* stone-700 */
+    --c-brand-soft-hover: 68 64 60; /* stone-700 */
 
     --c-finyk-soft: 19 78 74; /* teal-900 */
     --c-finyk-soft-border: 17 94 89; /* teal-800 */
@@ -598,7 +608,7 @@
        — the fizruk soft button measured ~1.77:1 on prod (a11y fail). The
        `-300` tier clears WCAG AA with margin (≈7.9–10.3:1 on `bg-<m>/15`
        over `--c-panel`) while staying the module's own hue. */
-    --c-brand-soft-fg: 94 234 212; /* teal-300 — brand accent on brand-soft (2026-07: was emerald-300) */
+    --c-brand-soft-fg: 214 211 209; /* stone-300 — neutral hub ink on dark brand-soft */
     --c-finyk-soft-fg: 94 234 212; /* teal-300 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
     --c-routine-soft-fg: 255 180 165; /* coral-300 */
@@ -683,8 +693,8 @@
     --c-border-strong: 74 84 78; /* #4a544e */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
-    --c-brand-soft: 6 78 59;
-    --c-brand-soft-border: 6 95 70;
+    --c-brand-soft: 41 37 36; /* stone-800 — neutral hub (design-audit M1) */
+    --c-brand-soft-border: 68 64 60; /* stone-700 */
     --shadow-card:
       0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -705,8 +715,8 @@
     --c-border-strong: 28 25 23;
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
-    --c-brand-soft: 167 243 208;
-    --c-brand-soft-border: 6 95 70;
+    --c-brand-soft: 231 229 228; /* stone-200 — neutral hub (design-audit M1) */
+    --c-brand-soft-border: 41 37 36; /* stone-800 — solid edge */
   }
 
   [data-theme-preview="hc-dark"] {
@@ -724,8 +734,8 @@
     --c-border-strong: 234 226 215;
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
-    --c-brand-soft: 4 120 87;
-    --c-brand-soft-border: 16 185 129;
+    --c-brand-soft: 68 64 60; /* stone-700 — neutral hub (design-audit M1) */
+    --c-brand-soft-border: 120 113 108; /* stone-500 */
   }
 
   html.hc {
@@ -734,7 +744,9 @@
        Tailwind classes. */
     --ring-width-hc: 3px;
     --focus-ring-width: var(--ring-width-hc);
-    --focus-ring-color: rgb(var(--c-brand-strong, 4 120 87) / 0.85);
+    /* Focus stays teal (the canonical accent) — no longer keyed to `brand`,
+       which is now the neutral hub stone (design-audit M1). */
+    --focus-ring-color: rgb(var(--c-ring, 15 118 110) / 0.85);
 
     /* HC LIGHT — pure black text on warmer ivory so AAA contrast is
        reached without burning the eyes with #ffffff. Borders are
@@ -758,8 +770,8 @@
 
     /* Brand / module soft surfaces — bump one step deeper so HC light
        still reads as accent vs. ivory bg. */
-    --c-brand-soft: 167 243 208; /* emerald-200 */
-    --c-brand-soft-border: 6 95 70; /* emerald-800 — solid edge */
+    --c-brand-soft: 231 229 228; /* stone-200 — neutral hub (design-audit M1) */
+    --c-brand-soft-border: 41 37 36; /* stone-800 — solid edge */
     --c-finyk-soft: 153 246 228; /* teal-200 (2026-07: was emerald-200) */
     --c-finyk-soft-border: 17 94 89; /* teal-800 — solid edge (2026-07: was emerald-800) */
     --c-fizruk-soft: 165 243 252; /* cyan-200 */
@@ -773,7 +785,7 @@
        the bumped `-200` soft surface. Coral is hue-capped at ≈6.4:1 (still
        AA, and a lift over the base `-strong`): a warm coral ink can't reach
        AAA on a coral-200 surface within the registered palette. */
-    --c-brand-soft-fg: 19 78 74; /* teal-900 — brand accent on brand-soft (AAA) */
+    --c-brand-soft-fg: 28 25 23; /* stone-900 — neutral hub ink on brand-soft (AAA) */
     --c-finyk-soft-fg: 19 78 74; /* teal-900 */
     --c-fizruk-soft-fg: 22 78 99; /* cyan-900 */
     --c-routine-soft-fg: 134 46 46; /* coral-900 — hue-capped ≈6.4:1 (AA) */
@@ -797,8 +809,9 @@
   }
 
   html.hc.dark {
-    /* HC DARK — pure white text on warm charcoal; brand-emerald focus
-       ring colour stays solid (no /45 alpha) so it clears 3:1 vs. bg. */
+    /* HC DARK — pure white text on warm charcoal; focus ring is amber
+       (solid, no /45 alpha) so it clears 3:1 vs. bg. Amber is chosen for
+       max HC-dark visibility and is independent of the neutral hub brand. */
     --focus-ring-color: rgb(252 211 77 / 0.95); /* amber-300 */
 
     --c-text: 255 255 255; /* #ffffff — max contrast vs dark bg */
@@ -817,8 +830,8 @@
     --c-danger-soft: 185 28 28; /* red-700     */
     --c-info-soft: 3 105 161; /* sky-700     */
 
-    --c-brand-soft: 15 118 110; /* teal-700 (2026-07: was emerald-700) */
-    --c-brand-soft-border: 20 184 166; /* teal-500 */
+    --c-brand-soft: 68 64 60; /* stone-700 — neutral hub (design-audit M1) */
+    --c-brand-soft-border: 120 113 108; /* stone-500 */
     --c-finyk-soft: 15 118 110; /* teal-700 */
     --c-finyk-soft-border: 20 184 166; /* teal-500 */
     --c-fizruk-soft: 14 116 144; /* cyan-700 */
@@ -830,7 +843,7 @@
 
     /* Soft-fill foreground (HC dark) — brightest `-200` accent for ≥7:1
        AAA on the `bg-<m>/15` fill over the dark panel (≈10–12:1). */
-    --c-brand-soft-fg: 153 246 228; /* teal-200 — brand accent on brand-soft (AAA) */
+    --c-brand-soft-fg: 231 229 228; /* stone-200 — neutral hub ink on brand-soft (AAA) */
     --c-finyk-soft-fg: 153 246 228; /* teal-200 */
     --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
     --c-routine-soft-fg: 255 212 203; /* coral-200 */

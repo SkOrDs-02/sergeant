@@ -91,6 +91,26 @@ export const brandColors = {
     800: "#466212",
     900: "#3b5314",
   },
+  // Warm neutral (stone) — the HUB chrome family (2026-07 design-audit M1).
+  // The hub/shell is a *neutral parent* so the four module accents
+  // (finyk teal · fizruk cyan · routine coral · nutrition lime) each read
+  // as the single point of colour on any screen. Previously the hub `brand`
+  // token aliased teal, making the shell indistinguishable from finyk and
+  // effectively a fifth accent. This warm-gray ramp pairs with the cream
+  // page background yet carries no module hue of its own. Not a module
+  // colour — never use it as a module accent (Hard Rule #12).
+  stone: {
+    50: "#fafaf9",
+    100: "#f5f5f4",
+    200: "#e7e5e4",
+    300: "#d6d3d1",
+    400: "#a8a29e",
+    500: "#78716c",
+    600: "#57534e",
+    700: "#44403c",
+    800: "#292524",
+    900: "#1c1917",
+  },
 };
 
 /**

@@ -6,7 +6,9 @@ import { cn } from "../../lib/ui/cn";
  * Sergeant Design System — Button Component
  *
  * Variants:
- * - primary: Main CTA, emerald brand color
+ * - primary: Main hub CTA — NEUTRAL stone "ink on paper" (design-audit M1).
+ *   The hub is a neutral parent, so its primary is deliberately hueless and
+ *   never competes with the four module accents. Focus stays teal (--c-ring).
  * - secondary: Secondary actions, outlined
  * - ghost: Minimal, text-only actions
  * - danger: Soft destructive affordance (red-tinted, for inline "Delete" chips)
@@ -48,13 +50,14 @@ export type ButtonVariant =
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const variants: Record<ButtonVariant, string> = {
-  // Core variants. Dark «Чорнило» (spec § 7): the hub-level primary takes
-  // the same treatment as module buttons (§ 4, #237) — luminescent
-  // tier-400 fill + ink foreground + resting accent glow instead of a
-  // drop shadow. `primary-ink` stays the alternative for module-less
-  // contexts (auth, settings, legal). Light is unchanged.
+  // Core variants. Hub primary = NEUTRAL stone "ink on paper" (design-audit
+  // M1): stone-800 fill + white text in light; inverted light-stone chip +
+  // dark ink in dark. No coloured accent glow — the hub carries no module
+  // hue, so a saturated halo would read as a fifth accent. Module buttons
+  // (finyk/fizruk/…) keep their luminescent tier-400 fill + accent glow
+  // below. `primary-ink` remains the alternative near-black ink primary.
   primary:
-    "bg-brand-strong text-white shadow-sm hover:bg-brand-800 hover:shadow-glow active:bg-brand-900 active:scale-[0.98] dark:bg-brand-400 dark:text-bg dark:shadow-glow-accent-emerald",
+    "bg-brand-strong text-white shadow-sm hover:bg-brand-900 hover:shadow-md active:bg-brand-900 active:scale-[0.98] dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-200",
   // `secondary` is the neutral outline button. Its fill is `bg-panel`
   // (white in light / warm-charcoal in dark) — the SAME token as the
   // card & sheet surfaces it most often sits on, so the fill alone

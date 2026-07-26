@@ -169,24 +169,37 @@ const preset = {
         "hero-ink": "#fdf9f3",
 
         // ═══════════════════════════════════════════════════════════════════
-        // BRAND COLORS — Soft & Organic palette with deep Teal accent
+        // BRAND COLORS — Neutral hub chrome (warm stone)
         //
-        // 2026-07: shifted from emerald (#10b981) to teal-700 (#0f766e).
-        // Emerald-500 is the canonical "Tailwind/AI default" — teal-700 is
-        // deeper, less ubiquitous, and still harmonises with the warm cream
-        // backgrounds. WCAG-AA: teal-700 clears 4.79:1 on cream and 5.04:1
-        // on white. `strong` → teal-800 (7.1:1 on white) for solid fills.
+        // 2026-07 design-audit M1: `brand` is the HUB / shell identity and is
+        // deliberately NEUTRAL — a warm-stone ramp with no module hue. The
+        // four modules own the colour (finyk teal · fizruk cyan · routine
+        // coral · nutrition lime); the shell stays quiet so exactly one accent
+        // reads per screen. Previously `brand` aliased teal, making the hub
+        // indistinguishable from finyk and effectively a fifth accent — that
+        // weakened module-accent containment (Hard Rule #12).
+        //
+        // Keyboard focus is a SEPARATE concern: it stays teal via `--c-ring`
+        // (see theme.css § A11Y), so decoupling `brand` from teal does not
+        // dull the focus indicator.
+        //
+        // WCAG-AA: stone-700 (#44403c) clears ~8.5:1 on cream for text/icons;
+        // `strong` → stone-800 (#292524, ~14:1 with text-white) for solid
+        // fills; white on stone-700 ≈ 9.6:1.
         // ═══════════════════════════════════════════════════════════════════
         brand: {
-          DEFAULT: brandColors.teal[700],   // #0f766e — 5.04:1 on white, 4.79:1 on cream
-          light: brandColors.teal[500],     // #14b8a6
-          dark: brandColors.teal[800],      // #115e59
-          subtle: brandColors.teal[50],     // #f0fdfa
-          // `strong` — WCAG-AA companion for solid fills (text-white on top).
-          strong: brandColors.teal[800],    // #115e59 — 7.1:1 on white
-          ...brandColors.teal,
+          DEFAULT: brandColors.stone[700], // #44403c — hub text/icons on cream
+          light: brandColors.stone[500], // #78716c
+          dark: brandColors.stone[800], // #292524
+          subtle: brandColors.stone[100], // #f5f5f4
+          // `strong` — WCAG-AAA companion for solid fills (text-white on top).
+          strong: brandColors.stone[800], // #292524 — ~14:1 with text-white
+          ...brandColors.stone,
         },
+        // Still available for finyk module surfaces and explicit `teal-*`
+        // call-sites; `brand` no longer aliases it.
         teal: brandColors.teal,
+        stone: brandColors.stone,
         // Sergeant v2 fizruk accent palette (introduced 2026-05 redesign).
         // Use `cyan-700` / `cyan-800` instead of `teal-500` / `teal-700`
         // for fizruk module surfaces — see docs/design/redesign-v2.md.
