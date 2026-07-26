@@ -22,6 +22,7 @@ import { MenusSection } from "./sections/Menus";
 import { PrimitivesSection } from "./sections/Primitives";
 import { EmptyStatesSection } from "./sections/EmptyStates";
 import { ProposalsUISection } from "./sections/ProposalsUI";
+import { ProposalsUXSection } from "./sections/ProposalsUX";
 
 /**
  * DesignShowcase 2.0 — navigable internal styleguide.
@@ -129,6 +130,7 @@ function ShowcaseShell() {
           <PrimitivesSection />
           <EmptyStatesSection />
           <ProposalsUISection />
+          <ProposalsUXSection />
         </main>
       </div>
     </div>

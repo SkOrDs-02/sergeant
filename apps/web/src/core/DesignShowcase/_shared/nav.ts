@@ -30,4 +30,5 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   { id: "primitives", label: "Tooltip & Popover", maturity: "stable" },
   { id: "empty-states", label: "EmptyState", maturity: "stable" },
   { id: "proposals-ui", label: "Proposals · UI", maturity: "experimental" },
+  { id: "proposals-ux", label: "Proposals · UX", maturity: "experimental" },
 ] as const;
