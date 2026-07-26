@@ -5,6 +5,7 @@
 import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { markReengagementShown, pluralDays } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -29,8 +30,11 @@ export function ReEngagementCard({
   }, [daysInactive, onContinue]);
 
   return (
-    <section
-      className="relative bg-panel border border-line rounded-2xl p-5 shadow-card overflow-hidden"
+    <Card
+      as="section"
+      radius="lg"
+      padding="lg"
+      className="relative overflow-hidden"
       aria-label="Повернення"
     >
       <div className="flex flex-col items-center text-center space-y-3">
@@ -54,6 +58,6 @@ export function ReEngagementCard({
           </Button>
         </div>
       </div>
-    </section>
+    </Card>
   );
 }
