@@ -1,6 +1,6 @@
 import { memo, useRef, useMemo } from "react";
 import { chartAxis, chartGrid, chartTick, statusColors } from "@shared/charts";
-import { useChartScrub } from "@shared/hooks";
+import { useChartScrub, useTweenedValues } from "@shared/hooks";
 import { ChartScrubOverlay } from "@shared/components/charts";
 import { ChartGoalLine } from "@shared/components/charts";
 
@@ -22,7 +22,20 @@ interface NetworthChartProps {
 // `memo` запобігає перерендеру при незв'язаних оновленнях стану Overview.
 function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   if (!data || data.length < 2) return null;
+  return <NetworthChartInner data={data} goalValue={goalValue} />;
+}
 
+// Inner render body: `data` is guaranteed non-empty (length >= 2) here, so
+// every hook below runs unconditionally on every render of this component —
+// the length guard lives in the wrapper above, satisfying rules-of-hooks
+// without an early return interleaved with hook calls.
+function NetworthChartInner({
+  data,
+  goalValue,
+}: {
+  data: readonly NetworthPoint[];
+  goalValue?: number;
+}) {
   const values = data.map((d) => d.networth);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -37,10 +50,18 @@ function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
   const px = (i: number) => PAD.left + (i / (data.length - 1)) * chartW;
   const py = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
 
-  const points = data.map((d, i) => `${px(i)},${py(d.networth)}`).join(" ");
+  // V-18: tween the plotted y-values so the line/area morph smoothly when the
+  // series changes (e.g. account filter, new month) instead of snapping. The
+  // axis domain (min/max/range) stays anchored to the raw values, so only the
+  // curve animates — the scale doesn't jitter mid-tween. Reduced-motion and
+  // window-length changes fall back to an instant snap inside the hook.
+  const plotValues = useTweenedValues(values);
+  const vAt = (i: number) => plotValues[i] ?? data[i]?.networth ?? 0;
+
+  const points = data.map((_, i) => `${px(i)},${py(vAt(i))}`).join(" ");
   const areaPoints = [
     `${px(0)},${H - PAD.bottom}`,
-    ...data.map((d, i) => `${px(i)},${py(d.networth)}`),
+    ...data.map((_, i) => `${px(i)},${py(vAt(i))}`),
     `${px(data.length - 1)},${H - PAD.bottom}`,
   ].join(" ");
 
@@ -163,7 +184,7 @@ function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
         {/* Dots + labels */}
         {data.map((d, i) => (
           <g key={i}>
-            <circle cx={px(i)} cy={py(d.networth)} r="3" fill={color} />
+            <circle cx={px(i)} cy={py(vAt(i))} r="3" fill={color} />
             {/* Month label */}
             <text
               x={px(i)}
@@ -178,7 +199,7 @@ function NetworthChartComponent({ data, goalValue }: NetworthChartProps) {
             {(i === 0 || i === data.length - 1) && activeIndex === null && (
               <text
                 x={px(i)}
-                y={py(d.networth) - 5}
+                y={py(vAt(i)) - 5}
                 textAnchor={i === 0 ? "start" : "end"}
                 fontSize="8"
                 fill={color}

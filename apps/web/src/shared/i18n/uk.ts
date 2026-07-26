@@ -271,7 +271,7 @@ export const messages = {
       serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
       retry: "Спробуй ще раз",
       timeout: "Перевищено час очікування. Спробуй ще раз.",
-      unknown: "Щось пішло не так. Спробуй ще раз.",
+      unknown: "Щось пішло не так. Спробуй щ�� раз.",
 
       // Round 16 — short error labels та section-failure messages.
       // `title` — bare "Помилка" як заголовок банера/тулбара.
@@ -521,9 +521,9 @@ export const messages = {
     fromPantry: "З комори",
     mealType: "Прийом їжі",
     templates: "Шаблони",
-    // HubReports NutritionCard
-    reportHeading: "Їжа (ккал/день)",
+    reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
+    macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
   },
 
   routine: routinePageMessages,

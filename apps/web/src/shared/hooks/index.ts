@@ -106,3 +106,5 @@ export type {
   ModuleReminderTick,
   UseModuleReminderOptions,
 } from "./useModuleReminder";
+
+export { useTweenedValues } from "./useTweenedValues";

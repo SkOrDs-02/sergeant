@@ -14,7 +14,8 @@ import { QuickAddChips } from "./QuickAddChips";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ProgressRing } from "@shared/components/ui/ProgressRing";
-import { MacroBarRow } from "@shared/components/ui/MacroBarRow";
+import { MacroRings } from "./MacroRings";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import type {
@@ -49,7 +50,7 @@ function todayISO(): string {
  * Outcome-framed sub-label for macro stats. Replaces neutral "X / Y г"
  * with gap- or surplus-aware text on the Nutrition hero. Returns only
  * the right-hand outcome portion — the macro name is rendered separately
- * by MacroBarRow's `label` slot. Bands mirror the Phase 4.2 onboarding
+ * by MacroRings' caption slot. Bands mirror the Phase 4.2 onboarding
  * outcome-copy heuristic but stay Nutrition-local.
  *
  * Bands:
@@ -304,6 +305,7 @@ export function NutritionDashboard({
                 />
               </div>
               <MacroRings
+                aria-label={messages.nutrition.macrosToday}
                 macros={[
                   {
                     label: "Білки",

@@ -29,9 +29,16 @@ export interface MacroRingDatum {
   outcome?: string | undefined;
 }
 
-export function MacroRings({ macros }: { macros: MacroRingDatum[] }) {
+export function MacroRings({
+  macros,
+  "aria-label": ariaLabel,
+}: {
+  macros: MacroRingDatum[];
+  /** Group label, sourced from the i18n catalog by the caller. */
+  "aria-label": string;
+}) {
   return (
-    <ul className="grid grid-cols-3 gap-2" aria-label="Макроси за сьогодні">
+    <ul className="grid grid-cols-3 gap-2" aria-label={ariaLabel}>
       {macros.map(({ label, consumed, goal, variant, unit = "г", outcome }) => {
         const safeGoal = goal > 0 ? goal : 0;
         return (
