@@ -990,6 +990,22 @@ const envSchema = z.object({
   // ── External APIs ──────────────────────────────────────────────────
   /** USDA FoodData Central API key. Fallback: `DEMO_KEY`. */
   USDA_API_KEY: z.string().optional(),
+  /**
+   * UPCitemdb — третє (останнє) джерело каскаду штрихкодів.
+   *
+   * AI-DANGER: до 2026-07-25 endpoint був **захардкоджений** на
+   * `prod/trial` — 100 запитів на добу **на весь продукт**, не на
+   * користувача, і без жодного способу це змінити без релізу. Ризик не був
+   * задокументований ніде (на відміну від USDA `DEMO_KEY`, який хоча б
+   * згаданий в `env-vars.md`). Дефолт лишається тріальним — щоб нічого не
+   * зламати, — але тепер його видно і його можна замінити змінною оточення.
+   *
+   * Дослідження джерел і рекомендована послідовність дій:
+   * `docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md`.
+   */
+  UPCITEMDB_BASE_URL: stringWithDefault("https://api.upcitemdb.com/prod/trial"),
+  /** Ключ UPCitemdb. Порожній — тріальний endpoint без ключа. */
+  UPCITEMDB_API_KEY: z.string().optional(),
 
   // ── Shutdown ───────────────────────────────────────────────────────
   /** Grace-period (мс) для завершення in-flight запитів при SIGTERM. */

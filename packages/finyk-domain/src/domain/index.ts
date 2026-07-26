@@ -8,4 +8,5 @@ export * from "./selectors.js";
 export * from "./subscriptionUtils.js";
 export * from "./overview.js";
 export * from "./monoStaleness.js";
+export * from "./balanceReconciliation.js";
 export * from "./assets/index.js";
