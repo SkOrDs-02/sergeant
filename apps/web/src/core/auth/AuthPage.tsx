@@ -94,7 +94,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
           <Card
             prominence="hero"
-            radius="r-2xl"
+            radius="xl"
             padding="lg"
             className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
           >

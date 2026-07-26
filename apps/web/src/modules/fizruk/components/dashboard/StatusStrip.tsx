@@ -59,7 +59,7 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
     <Card
       as="button"
       prominence="glass"
-      radius="r-xl"
+      radius="lg"
       padding="none"
       onClick={onClick}
       aria-label={ariaLabel}

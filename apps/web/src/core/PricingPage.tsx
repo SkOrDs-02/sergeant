@@ -430,7 +430,7 @@ export function PricingPage() {
                   as="article"
                   module={isPremium ? "finyk" : undefined}
                   prominence={isPremium ? "hero" : "default"}
-                  radius="r-2xl"
+                  radius="xl"
                   padding="lg"
                   className={cn(
                     "flex flex-col gap-4 motion-safe:animate-stagger-in",

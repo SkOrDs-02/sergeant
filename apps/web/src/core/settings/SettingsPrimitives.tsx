@@ -94,7 +94,7 @@ export function SettingsGroup({
   return (
     <Card
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="none"
       // `shadow-e1` drop-shadow: the glass surface's own `shadow-card-v2`
       // is an inset top-highlight only (no drop shadow), so near-white
@@ -118,7 +118,7 @@ export function SettingsGroup({
           {icon && (
             <span
               className={cn(
-                "rounded-r-md p-1.5 border flex items-center justify-center shrink-0",
+                "rounded-xl p-1.5 border flex items-center justify-center shrink-0",
                 moduleBg ||
                   "bg-surface-soft-glass border-surface-line text-muted-v2",
               )}
@@ -279,7 +279,7 @@ export function ConfirmModal({
           // §HC v2 overrides: --surface-glass → rgba(255,255,255,1) /
           // rgba(32,28,25,1) dark-HC). No separate `html.hc &` needed.
           "bg-surface-glass backdrop-blur-xl border border-surface-line",
-          "rounded-r-2xl shadow-card-v2",
+          "rounded-3xl shadow-card-v2",
         )}
       >
         <h2
@@ -366,7 +366,7 @@ export function SectionSkeleton({
   return (
     <Card
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="none"
       className="overflow-hidden"
       role="status"
@@ -376,7 +376,7 @@ export function SectionSkeleton({
     >
       <div className="w-full px-4 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Skeleton shimmer className="w-9 h-9 rounded-r-md shrink-0" />
+          <Skeleton shimmer className="w-9 h-9 rounded-xl shrink-0" />
           <SkeletonText shimmer className="w-1/3 max-w-[180px]" />
         </div>
         <Skeleton shimmer className="w-4 h-4 rounded-sm shrink-0" />

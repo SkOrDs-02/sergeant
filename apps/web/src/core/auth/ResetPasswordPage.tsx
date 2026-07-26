@@ -137,12 +137,7 @@ export function ResetPasswordPage() {
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card
-          prominence="hero"
-          radius="r-2xl"
-          padding="lg"
-          className="space-y-5"
-        >
+        <Card prominence="hero" radius="xl" padding="lg" className="space-y-5">
           <div className="text-center">
             <h2
               ref={headingRef}

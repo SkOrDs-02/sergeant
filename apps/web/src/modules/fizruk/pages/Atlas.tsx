@@ -23,7 +23,7 @@ export function Atlas() {
           as="section"
           module="fizruk"
           prominence="hero"
-          radius="r-2xl"
+          radius="xl"
           padding="none"
           className="relative overflow-hidden"
           aria-label="Атлас мʼязів"

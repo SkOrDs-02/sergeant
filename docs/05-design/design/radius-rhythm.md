@@ -1,6 +1,6 @@
 # Ритм border-radius
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-07-26 by v0 (design-consistency audit — enforcement section corrected; v2 radius namespace removed). **Next review:** 2026-10-26.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web` або `apps/mobile`.
@@ -27,7 +27,7 @@ Sergeant використовує **size-driven** шкалу радіусів: �
 
 2. **Радіус має відповідати розміру елемента.** Icon-кнопка 48 × 48 px використовує `rounded-2xl`, а не `rounded-xl` (надто гострий для такого footprint-а) і не `rounded-3xl` (надто округлий — починає виглядати як pill). Icon-кнопка 32 × 32 використовує `rounded-xl`, а не `rounded-2xl`.
 
-3. **Не вводьте `rounded-lg` (8 px)** — він живе між Marker і Control без чіткої семантичної ролі. 53 наявні використання — це легасі дорадіусних часів; новий код має округлятися вгору до `rounded-xl` або вниз до `rounded-md` залежно від footprint-а елемента.
+3. **Не вводьте `rounded-lg` (8 px)** — він живе між Marker і Control без чіткої семантичної ролі. Це enforced лінтом (`no-rounded-lg`, error — див. нижче); решта наявних використань — легасі дорадіусних часів під `eslint-disable` з посиланням на tech-debt. Новий код має округлятися вгору до `rounded-xl` або вниз до `rounded-md` залежно від footprint-а елемента.
 
 4. **Не вводьте `rounded-4xl` / `rounded-5xl`** — ці токени є в Tailwind-preset-і для разових ілюстрацій (наприклад, onboarding-hero blob). Вони **не** є частиною звичайного ритму.
 
@@ -56,21 +56,32 @@ Sergeant використовує **size-driven** шкалу радіусів: �
 ```tsx
 // ❌ Ad-hoc rounded-lg для inline-чипа — сидить між Marker і Control
 // без чіткої ролі.
-<span className="px-1.5 py-0.5 rounded-lg bg-brand-500/10 …" />
+<span className="px-1.5 py-0.5 rounded-lg bg-accent/10 …" />
 
 // ✅ Marker (`rounded-md`) для чипів розміру лейбла.
-<span className="px-1.5 py-0.5 rounded-md bg-brand-500/10 …" />
+<span className="px-1.5 py-0.5 rounded-md bg-accent/10 …" />
 ```
 
 ## Як це enforce-иться
 
-Сьогодні: code review + цей документ. Lint-правила поки немає.
+`eslint-plugin-sergeant-design` містить правило **`no-rounded-lg`**, увімкнене як
+**error** для `apps/web`. Воно ловить `rounded-lg` (8 px) у className і пропонує
+`rounded-xl` / `rounded-md`. Легітимні винятки (демо-сторінки самого дизайн-system-у,
+кілька легасі-поверхонь) стоять під `// eslint-disable-next-line
+sergeant-design/no-rounded-lg` з коментарем-обґрунтуванням, тож борг видимий і
+трекнутий, а не мовчазний.
 
-Якщо дрейф радіусів стане проблемою — кандидати на правило:
+Ще не enforced (кандидати, якщо дрейф повернеться):
 
-- Заборонити `rounded-lg` поза міграційними path-ами `packages/design-tokens`.
-- Ворнити, коли сирий `rounded-2xl` / `rounded-3xl` використовується замість `<Card>` / `<Button>` для поверхонь 100 × 100+.
+- Ворнити, коли сирий `rounded-2xl` / `rounded-3xl` використовується замість
+  `<Card>` / `<Button>` для поверхонь 100 × 100+.
 - Заборонити `rounded-4xl` / `rounded-5xl` поза `apps/web/src/core/onboarding/**`.
+
+> **Історія:** у 2026-05 v2-редизайн увів паралельну radius-шкалу
+> (`rounded-r-{md,lg,xl,2xl}` = 12/14/18/24 px). Вона дублювала цей ритм, додавала
+> off-rhythm 14/18 px і затіняла нативні Tailwind per-corner утиліти `rounded-r-*`.
+> Design-audit 2026-07 звів усі call-site-и назад на канонічну шкалу і видалив
+> namespace із `tailwind-preset.js` та `Card` (`CardRadius` = `md | lg | xl`).
 
 ## Чому без семантичних аліасів?
 
