@@ -12,6 +12,7 @@ import {
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";
+import { MorphChevron } from "./MorphChevron";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
@@ -116,12 +117,11 @@ export function CollapsibleSection({
           aria-expanded={open}
           className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl -ml-0.5 pl-0.5"
         >
-          <Icon
-            name="chevron-down"
+          <MorphChevron
+            open
             size={12}
             strokeWidth={2.5}
             className="text-subtle"
-            aria-hidden
           />
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
@@ -161,12 +161,11 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <Icon
-            name="chevron-right"
+          <MorphChevron
+            open={false}
             size={16}
             strokeWidth={2}
-            className="text-subtle shrink-0"
-            aria-hidden
+            className="text-subtle"
           />
         </button>
       )}

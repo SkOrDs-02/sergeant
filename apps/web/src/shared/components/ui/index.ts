@@ -47,6 +47,9 @@ export type { DateScrubberProps } from "./DateScrubber";
 export { NumericAccessoryBar } from "./NumericAccessoryBar";
 export type { NumericAccessoryBarProps } from "./NumericAccessoryBar";
 
+export { MorphChevron } from "./MorphChevron";
+export type { MorphChevronProps } from "./MorphChevron";
+
 export { EmptyState, ModuleEmptyState } from "./EmptyState";
 export type {
   EmptyStateProps,

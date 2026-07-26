@@ -34,7 +34,7 @@ function NetworthChartInner({
   goalValue,
 }: {
   data: readonly NetworthPoint[];
-  goalValue?: number;
+  goalValue?: number | undefined;
 }) {
   const values = data.map((d) => d.networth);
   const min = Math.min(...values);
