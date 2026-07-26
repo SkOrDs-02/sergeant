@@ -75,7 +75,34 @@ async function main() {
     process.exit(1);
   }
 
-  const me = await api("getMe");
+  let me;
+  try {
+    me = await api("getMe");
+  } catch (err) {
+    // Telegram віддає рівно "404 Not Found" на будь-який недійсний токен —
+    // старий, відкликаний чи спотворений при копіюванні. Показуємо форму
+    // токена (без самого значення), щоб можна було звірити на око: справжній
+    // токен — це <bot_id>:<35 символів>, разом ~46 символів і рівно одна
+    // двокрапка.
+    if (/^getMe: 404/.test(err.message)) {
+      const parts = TOKEN.split(":");
+      console.error(
+        "Токен не впізнаний Telegram-ом (404). Найчастіші причини:\n" +
+          "  1) це старий/відкликаний токен — візьми свіжий у BotFather\n" +
+          "     (/mybots → бот → API Token → Revoke current token);\n" +
+          "  2) $env:TELEGRAM_WAITLIST_BOT_TOKEN виставлено в ІНШОМУ вікні\n" +
+          "     PowerShell, а не в тому, де запускається цей скрипт;\n" +
+          "  3) при копіюванні прилип пробіл, лапки чи перенос рядка.\n\n" +
+          `Форма зараз: довжина ${TOKEN.length}, двокрапок ${parts.length - 1}` +
+          (parts.length === 2
+            ? `, частина після ":" — ${parts[1]?.length ?? 0} символів`
+            : "") +
+          "\n(очікується: ~46 символів, рівно одна двокрапка).",
+      );
+      process.exit(1);
+    }
+    throw err;
+  }
   console.log(`Бот: @${me.username} (${me.first_name})`);
 
   if (has("--check")) {
