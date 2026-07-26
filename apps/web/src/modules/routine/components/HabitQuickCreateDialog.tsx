@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useState } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
@@ -82,8 +83,7 @@ export function HabitQuickCreateDialog({
   firstRunHint,
   onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, ref, { onEscape: onClose, inertBackground: true });
+  const kbInsetPx = useVisualKeyboardInset(open);
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
   const [internalFocusTick, setInternalFocusTick] = useState(0);
@@ -147,108 +147,64 @@ export function HabitQuickCreateDialog({
 
   const title = editingId ? "Редагувати звичку" : "Нова звичка";
 
-  return (
-    <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
-      role="presentation"
-    >
-      <div
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm motion-safe:animate-fade-in"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="habit-quick-create-title"
-        className={cn(
-          "relative z-10 w-full max-w-md mx-0 sm:mx-4",
-          "bg-bg rounded-t-3xl sm:rounded-3xl shadow-float border border-line",
-          "max-h-[92dvh] overflow-hidden flex flex-col",
-          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200",
-        )}
+  // Sticky footer keeps the primary CTA in the viewport regardless of how
+  // long the form scrolls. Without it, a habit with the advanced disclosure
+  // open pushes "Додати звичку" below the fold and forces a scroll-hunt on
+  // every save. Rendered via the Sheet footer slot (outside the scroll area).
+  const footer = (
+    <div className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}>
+      {editingId && (
+        <Button
+          type="button"
+          variant="secondary"
+          className="flex-1"
+          onClick={onClose}
+        >
+          {messages.actions.cancel}
+        </Button>
+      )}
+      <Button
+        type="button"
+        variant="routine"
+        className="w-full"
+        onClick={handleSave}
       >
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h2
-            id="habit-quick-create-title"
-            className="text-style-title text-text"
-          >
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-            aria-label={messages.actions.close}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 pb-3">
-          {firstRunHint && !editingId && (
-            <FirstRunHintBanner
-              variant="routine"
-              title={messages.routine.firstRun.title}
-              description={messages.routine.firstRun.description}
-              onDismiss={onDismissFirstRunHint ?? (() => {})}
-              className="mb-3"
-            />
-          )}
-          <HabitForm
-            routine={routine}
-            habitDraft={draft}
-            setHabitDraft={setDraft}
-            editingId={editingId ?? null}
-            onSave={handleSave}
-            onCancel={onClose}
-            focusTick={internalFocusTick}
-            hideHeading
-            hideActions
-            errors={errors}
-          />
-        </div>
-        {/* Sticky footer: keeps the primary CTA in the viewport regardless
-            of how long the form scrolls. Without this, a habit with the
-            advanced disclosure open pushes "Додати звичку" below the fold
-            and forces a scroll-hunt on every save. */}
-        <div className="border-t border-line bg-bg px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div
-            className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}
-          >
-            {editingId && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1"
-                onClick={onClose}
-              >
-                {messages.actions.cancel}
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="routine"
-              className="w-full"
-              onClick={handleSave}
-            >
-              {editingId ? "Зберегти зміни" : "Додати звичку"}
-            </Button>
-          </div>
-        </div>
-      </div>
+        {editingId ? "Зберегти зміни" : "Додати звичку"}
+      </Button>
     </div>
+  );
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      kbInsetPx={kbInsetPx}
+      zIndex={200}
+      panelClassName="max-w-md"
+      footer={footer}
+    >
+      {firstRunHint && !editingId && (
+        <FirstRunHintBanner
+          variant="routine"
+          title={messages.routine.firstRun.title}
+          description={messages.routine.firstRun.description}
+          onDismiss={onDismissFirstRunHint ?? (() => {})}
+          className="mb-3"
+        />
+      )}
+      <HabitForm
+        routine={routine}
+        habitDraft={draft}
+        setHabitDraft={setDraft}
+        editingId={editingId ?? null}
+        onSave={handleSave}
+        onCancel={onClose}
+        focusTick={internalFocusTick}
+        hideHeading
+        hideActions
+        errors={errors}
+      />
+    </Sheet>
   );
 }

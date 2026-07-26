@@ -96,11 +96,16 @@ export default defineConfig(({ mode }) => {
           registerType: "prompt",
           includeAssets: [
             "icon.svg",
+            "icon-monochrome.svg",
             "icon-192.png",
             "icon-512.png",
             "apple-touch-icon.png",
           ],
           manifest: {
+            // Stable identity so the OS treats every launch surface (icon,
+            // shortcut, share target) as the same installed app rather than
+            // minting separate instances.
+            id: "/",
             name: "Sergeant — Твій персональний хаб життя",
             short_name: "Sergeant",
             description:
@@ -111,6 +116,13 @@ export default defineConfig(({ mode }) => {
             background_color: "#fdf9f3",
             theme_color: "#fdf9f3",
             lang: "uk",
+            // UX-7: tapping an icon/shortcut while the PWA is already open
+            // focuses the running window instead of spawning a duplicate
+            // instance. Deep-link params (`?module=…&action=…`) are read by
+            // the in-app router, so navigate-existing keeps a single window.
+            launch_handler: {
+              client_mode: ["focus-existing", "navigate-existing", "auto"],
+            },
             shortcuts: [
               {
                 name: "Додати витрату",
@@ -158,6 +170,15 @@ export default defineConfig(({ mode }) => {
                 sizes: "any",
                 type: "image/svg+xml",
                 purpose: "any",
+              },
+              // V-5: Android 13+ themed icon. Single-tone, transparent
+              // background — the launcher tints it with the system palette so
+              // the home-screen icon matches the user's wallpaper/theme.
+              {
+                src: "/icon-monochrome.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+                purpose: "monochrome",
               },
             ],
           },
