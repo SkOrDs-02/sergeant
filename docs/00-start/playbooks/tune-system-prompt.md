@@ -1,6 +1,6 @@
 # Playbook: Tune System Prompt
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
@@ -105,11 +105,19 @@ curl -X POST http://localhost:3000/api/chat \
 ### 7. Token cost check
 
 ```bash
-# Кількість символів промпту (грубо ≈ tokens × 3 для української):
-node -e "console.log(require('./apps/server/src/modules/chat/toolDefs/systemPrompt.js').SYSTEM_PREFIX.length)"
+pnpm --filter @sergeant/server test -- promptPrefixBudget
 ```
 
-Якщо промпт виріс на >10% — це бачити на бюджеті Anthropic. Подумай, чи можна **видалити** щось зайве, перш ніж додавати.
+`promptPrefixBudget.test.ts` міряє те, що реально їде в контекстне вікно на
+кожному запиті: не-deferred tools + `SYSTEM_PREFIX`. Бюджет — 9 000 B
+(вимір 2026-07-25: 7 564 B). Якщо тест впав, промпт або гарячий набір
+інструментів виріс — спершу подумай, що **видалити**, і лише потім піднімай
+ліміт (тим самим PR-ом, з новим числом у
+[§ 9.6 монетизації](../../01-product/launch/business/01-monetization-and-pricing.md)).
+
+Раніше тут стояв `node -e ... SYSTEM_PREFIX.length` і правило «виріс на >10%».
+Це міряло 7% від реальної вартості: основна маса префікса — не промпт, а
+tool-дефініції.
 
 ### 8. Тести (юніт-рівень)
 
@@ -153,7 +161,8 @@ feat(server): tighten Finyk tool-calling rules in system prompt
 
 - **Не маскуй tool-bug як prompt-issue.** Якщо модель не викликає tool, бо tool definition двозначний (опис tool-а), фіксь у `toolDefs/<domain>.ts`, не в системному промпті.
 - **Системний промпт — НЕ місце для контексту юзера.** Юзер-специфічні дані (баланси, останні транзакції) ін'ектяться в `messages[0].content` як «[Останні операції] ...» блоки в `chat.ts`, не у `SYSTEM_PREFIX`.
-- **Про cost:** Anthropic Messages кешує prompt-prefix (prompt caching) — стабільний `SYSTEM_PREFIX` = дешеві наступні запити. Якщо змінюєш його часто, втрачається cache benefit.
+- **Про cost:** Anthropic Messages кешує prompt-prefix (prompt caching) — стабільний `SYSTEM_PREFIX` = дешеві наступні запити. Якщо змінюєш його часто, втрачається cache benefit. З 2026-07-25 стабільний префікс кешується на `ttl: "1h"`, а всі інструменти поза гарячим набором ідуть із `defer_loading: true` (tool search) — деталі й обмеження в `apps/server/src/modules/chat/toolSearch.ts`.
+- **Список інструментів у промпті — це пошуковий індекс.** `buildModuleToolList()` перелічує всі 77 імен у `SYSTEM_PREFIX`. З tool search модель не бачить самих дефініцій наперед, тож цей перелік — головна підказка, ЩО шукати. Не ріж його заради економії: 1.7 КБ тут дешевші за невикликаний інструмент.
 - **Якщо потрібен A/B тест двох промптів** — використовуй `featureFlags.ts` з `apps/server/src` (потрібен серверний контекст). Не роби це через два хардкоднутих рядки.
 
 ## See also

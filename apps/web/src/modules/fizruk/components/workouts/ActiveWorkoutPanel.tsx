@@ -2,7 +2,7 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import type {
   ChecklistItem,
   Workout,
@@ -11,6 +11,7 @@ import type {
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { Card } from "@shared/components/ui/Card";
+import { Label } from "@shared/components/ui/FormField";
 import { useRestSettings } from "../../hooks/useRestSettings";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { useToast } from "@shared/hooks/useToast";
@@ -89,6 +90,7 @@ export function ActiveWorkoutPanel({
   onCollapse,
 }: ActiveWorkoutPanelProps) {
   const { getDefaultForGroup } = useRestSettings();
+  const noteId = useId();
   const toast = useToast();
   const { CelebrationComponent } = useCelebration();
   const [groupSelectMode, setGroupSelectMode] = useState(false);
@@ -260,9 +262,13 @@ export function ActiveWorkoutPanel({
 
         {!activeWorkout.endedAt && (
           <div className="mt-3">
+            <Label htmlFor={noteId} optional>
+              Нотатки до тренування
+            </Label>
             <textarea
+              id={noteId}
               className="input-focus-fizruk w-full min-h-[72px] rounded-2xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
-              placeholder={`Нотатки до тренування (необов${"'"}язково)…`}
+              placeholder="Напр. Важко на присіданнях, болить коліно…"
               value={activeWorkout.note || ""}
               onChange={(e) =>
                 updateWorkout(activeWorkout.id, { note: e.target.value })

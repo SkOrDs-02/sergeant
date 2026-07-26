@@ -1,6 +1,6 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)
@@ -57,6 +57,42 @@ request 1: input=360 cache_creation=12284 cache_read=0
 request 2: input=3   cache_creation=357   cache_read=12284
 SMOKE OK
 ```
+
+---
+
+## Стан на 2026-07-25 — читай перед кроками нижче
+
+Rollout нижче виконано давно; відтоді реалізація змінилась у трьох місцях.
+Живий код — `apps/server/src/modules/chat/promptCache.ts` і `toolSearch.ts`,
+не сніпети цього плейбука.
+
+1. **Breakpoint на tools стоїть на останньому НЕ-deferred інструменті**, а не
+   просто на останньому. Anthropic віддає **400** на `cache_control` разом із
+   `defer_loading: true` — сніпет кроку 2 у сьогоднішньому payload-і поклав би
+   весь `/api/chat`.
+2. **TTL стабільного префікса — `ttl: "1h"`**, не дефолтні 5 хв. Блоки з
+   довшим TTL мають стояти **перед** коротшими; порядок `tools → system →
+messages` (1h, 1h, 5m) це задовольняє.
+3. **Більшість інструментів у контекст не потрапляє взагалі** — вони йдуть із
+   `defer_loading: true`, і модель дістає їх через серверний tool search.
+   Контекстний префікс: 46 440 B → 7 564 B.
+
+**Що це міняє для «важливого уроку з PR #790»:** мінімальна довжина кешованого
+префікса тепер працює проти нас у зворотний бік. Смоук тоді показав
+`cache_creation=12284` — цього вистачало з запасом. Сьогодні гарячий блок +
+`SYSTEM_PREFIX` ≈ 2 300 токенів, а мінімум для Haiku 4.5 — 4096. Тобто на
+першому турі кеш, найімовірніше, **не створюється зовсім**, тихо, з
+`cache_creation_input_tokens: 0`. Це очікувано і не є регресією (1× за 2.3k
+дешевше, ніж 1.25× за 14k), але старий критерій «SMOKE OK = non-zero
+cache_creation на обох турах» більше не валідний для Haiku-туру.
+
+> Той самий `cache_creation=12284` — єдиний у репо реальний вимір токенайзера
+> Anthropic. Він дав коефіцієнт ≈3.3 B/токен, яким перераховано § 9.5–9.6
+> [монетизації](../../01-product/launch/business/01-monetization-and-pricing.md).
+> Не загуби його при наступному редагуванні цього файлу.
+
+Бюджет контекстного префікса тепер тримає тест
+`apps/server/src/modules/chat/promptPrefixBudget.test.ts`.
 
 ---
 

@@ -5,6 +5,8 @@
 // поруч і додаються до assistant-message як metadata. Якщо tool
 // невідомий мапперу — повертаємо `null`, і UI лишає текстовий fallback.
 
+import { isRiskyTool as isRiskyToolShared } from "@sergeant/shared";
+
 import type { ChatAction } from "./chatActions/types";
 import { moduleFor } from "./hubChatActionCardsHelpers";
 import { iconFor } from "./hubChatActionCardsHelpers";
@@ -12,11 +14,7 @@ import { titleFor } from "./hubChatActionCardsHelpers";
 import { summaryFor } from "./hubChatActionCardsSummary";
 
 export type ChatActionCardModule =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "hub";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
 
 export type ChatActionCardStatus = "completed" | "failed";
 
@@ -63,17 +61,6 @@ const QUERY_TOOLS: ReadonlySet<string> = new Set([
   "habit_correlation",
   "query_nutrition",
   "nutrition_averages",
-]);
-
-/** Tools, які класифіковані як ризикові за специфікацією §4. */
-const RISKY_TOOLS: ReadonlySet<string> = new Set([
-  "batch_categorize",
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-  "delete_workout",
 ]);
 
 /**
@@ -194,7 +181,7 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   const summary = summaryFor(input.name, inputObj, input.result);
   const module = moduleFor(input.name);
   const icon = iconFor(input.name);
-  const risky = RISKY_TOOLS.has(input.name);
+  const risky = isRiskyToolShared(input.name);
   const data = QUERY_TOOLS.has(input.name);
 
   return {
@@ -210,8 +197,14 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   };
 }
 
+/**
+ * Реекспорт спільного гейта. Локальний набір жив тут із власною копією
+ * списку і встиг розійтися і з каталогом, і з мобільним клієнтом (деталі —
+ * докстрінг `toolRisk.ts`). Тримаємо тонку обгортку, щоб не переписувати
+ * десятки call-site-ів.
+ */
 export function isRiskyTool(name: string): boolean {
-  return RISKY_TOOLS.has(name);
+  return isRiskyToolShared(name);
 }
 
 /**

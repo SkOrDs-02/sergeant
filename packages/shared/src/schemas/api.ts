@@ -108,7 +108,15 @@ export const ChatRequestSchema = z.object({
   tool_results: z.array(ToolResult).max(20).optional(),
   // tool_calls_raw — сирий вміст від Anthropic, не валідуємо глибоко,
   // лише гарантуємо, що це масив розумного розміру.
-  tool_calls_raw: z.array(z.unknown()).max(20).optional(),
+  //
+  // AI-CONTEXT: cap підняли 20 → 60 разом із tool search (2026-07-25). Тепер
+  // у `content` крім `tool_use` приїжджають ще `server_tool_use` +
+  // `tool_search_tool_result` на КОЖЕН пошук, і Anthropic вимагає повернути
+  // їх назад НЕЗМІНЕНИМИ — інакше 400. Стеля на кількість самих `tool_use`
+  // лишається `MAX_TOOL_ITERATIONS = 8` і перевіряється окремо в `chat.ts`,
+  // тож це послаблення не розширює runaway-поверхню: воно лише перестає
+  // рубати легітимний пошуковий трафік нашою ж валідацією.
+  tool_calls_raw: z.array(z.unknown()).max(60).optional(),
   stream: z.boolean().optional(),
 });
 

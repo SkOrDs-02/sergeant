@@ -289,3 +289,166 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
     );
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Гейт підтвердження незворотних дій (канон hub-coach §8).
+//
+// AI-CONTEXT: юніт-тести самого `useDestructiveConfirm` доводять, що діалог
+// працює. Вони НЕ доводять, що він УВІМКНЕНИЙ у конвеєр — а це і є та
+// помилка, через яку контракт §8 роками існував лише на папері: класифікація
+// `RISKY_TOOLS` була, вона фарбувала картку, і всі вважали, що гейт є.
+// Тести нижче б'ють у сам `send()` і перевіряють `executeActions` —
+// єдиний спостережний доказ того, що дані не змінились.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("useChatSend — підтвердження незворотних дій (канон §8)", () => {
+  function destructiveResponse() {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "delete_transaction", input: { tx_id: "m_42" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+  }
+
+  it("НЕ виконує деструктивний інструмент, доки згоди немає", async () => {
+    // Робить неможливим повернення до старої моделі «виконали, а потім
+    // показали червону картку». Якщо гейт приберуть із `send()`,
+    // `executeActions` викличеться одразу і тест впаде.
+    destructiveResponse();
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("видали транзакцію m_42");
+      await Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
+        "delete_transaction",
+      ]),
+    );
+    expect(executeActionsMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      result.current.confirmDestructive.reject();
+      await sending;
+    });
+  });
+
+  it("відмова → нічого не виконано і другого запиту до моделі немає", async () => {
+    // Другий асерт не менш важливий за перший: `tool_calls_raw` їде саме в
+    // follow-up запиті, тож зайвий виклик і токени спалив би, і надіслав
+    // моделі tool_use без результату.
+    destructiveResponse();
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("видали транзакцію m_42");
+      await Promise.resolve();
+    });
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending).not.toBeNull(),
+    );
+
+    await act(async () => {
+      result.current.confirmDestructive.reject();
+      await sending;
+    });
+
+    expect(executeActionsMock).not.toHaveBeenCalled();
+    expect(streamMock).not.toHaveBeenCalled();
+  });
+
+  it("згода → інструмент виконується", async () => {
+    destructiveResponse();
+    executeActionsMock.mockResolvedValue([
+      { name: "delete_transaction", result: "Транзакцію m_42 видалено" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("видали транзакцію m_42");
+      await Promise.resolve();
+    });
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending).not.toBeNull(),
+    );
+
+    await act(async () => {
+      result.current.confirmDestructive.accept();
+      await sending;
+    });
+
+    await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("оборотний інструмент виконується БЕЗ діалогу", async () => {
+    // Друга половина рішення founder-а #8. Без цього асерта найпростіший
+    // спосіб «полагодити» падіння — гейтити все підряд, і діалог почав би
+    // вискакувати на кожну дію, знецінюючи себе.
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "hide_transaction", input: { tx_id: "m_7" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "hide_transaction", result: "Приховано" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const { result } = renderSend();
+
+    await act(async () => {
+      await result.current.send("сховай транзакцію m_7");
+    });
+
+    expect(result.current.confirmDestructive.pending).toBeNull();
+    await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("змішаний батч: відмова скасовує ВЕСЬ батч, не лише деструктивну частину", async () => {
+    // Часткове виконання лишило б стан, якого користувач не обмірковував:
+    // він відмовився від «видали і запиши», а отримав би половину.
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "log_water", input: { amount_ml: 250 } },
+        { id: "tc2", name: "delete_transaction", input: { tx_id: "m_42" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }, { id: "tc2" }],
+    });
+    const { result } = renderSend();
+
+    let sending!: Promise<void>;
+    await act(async () => {
+      sending = result.current.send("запиши воду і видали m_42");
+      await Promise.resolve();
+    });
+    await waitFor(() =>
+      expect(result.current.confirmDestructive.pending?.toolNames).toEqual([
+        "delete_transaction",
+      ]),
+    );
+
+    await act(async () => {
+      result.current.confirmDestructive.reject();
+      await sending;
+    });
+
+    expect(executeActionsMock).not.toHaveBeenCalled();
+  });
+});

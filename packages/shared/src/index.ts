@@ -32,6 +32,7 @@ export * from "./lib/dashboard";
 // Assistant capability catalogue — single source of truth for chat
 // quick actions, the catalogue UI, and (PR 2) the system-prompt tool list.
 export * from "./lib/assistantCatalogue";
+export * from "./lib/toolRisk";
 
 // Platform-agnostic key/value store contract + factories. See
 // `docs/planning/storage-roadmap.md` → PR #006.

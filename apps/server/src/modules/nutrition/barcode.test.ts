@@ -219,6 +219,40 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
+    it("б'є в URL з UPCITEMDB_BASE_URL, а не в захардкоджений тріал", async () => {
+      // Робить неможливим повернення хардкоду. Тріальний endpoint — це 100
+      // запитів на добу НА ВЕСЬ ПРОДУКТ; поки URL був зашитий у код, замінити
+      // його не можна було без релізу, і сам ризик не був задокументований
+      // ніде. Асерт дивиться на фактичний URL третього виклику, а не на те,
+      // що «функція повернула продукт».
+      const saved = process.env["UPCITEMDB_BASE_URL"];
+      process.env["UPCITEMDB_BASE_URL"] = "https://example.test/paid/";
+      vi.resetModules();
+      const { default: freshHandler } = await import("./barcode.js");
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const req = asReq({ barcode: "1234567890123" });
+      const res = mockRes();
+      await freshHandler(req, res);
+
+      const thirdUrl = String(
+        (global.fetch as unknown as { mock: { calls: unknown[][] } }).mock
+          .calls[2]![0],
+      );
+      // Кінцевий слеш у базі не має подвоїтись — інакше upstream віддасть 404
+      // на цілком валідному конфізі, і діагностувати це буде нічим.
+      expect(thirdUrl).toBe(
+        "https://example.test/paid/lookup?upc=1234567890123",
+      );
+
+      if (saved === undefined) delete process.env["UPCITEMDB_BASE_URL"];
+      else process.env["UPCITEMDB_BASE_URL"] = saved;
+      vi.resetModules();
+    });
+
     it("всі три upstream miss → 404 без crash", async () => {
       global.fetch = vi
         .fn()

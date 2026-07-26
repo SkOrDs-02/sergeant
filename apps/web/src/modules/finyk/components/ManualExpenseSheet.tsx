@@ -40,7 +40,6 @@ import {
   upgradeIncomeCategory,
 } from "./manualIncomeCategories";
 import {
-  CATEGORY_COLLAPSED_COUNT,
   buildAmountSuggestions,
   expenseFormSchema,
   sortCategoriesByFrequency,
@@ -187,9 +186,8 @@ export function ManualExpenseSheet({
   // чистою (description/amount/category/date).
   const [showDateField, setShowDateField] = useState(false);
 
-  // UI-only toggle-и, які скидаються в reset-ефекті нижче. Оголошені тут
-  // (перед ефектом), щоб їхні сеттери були доступні у момент виклику.
-  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  // UI-only toggle, який скидається в reset-ефекті нижче. Оголошений тут
+  // (перед ефектом), щоб його сеттер був доступний у момент виклику.
   const [descFocused, setDescFocused] = useState(false);
 
   const openInitKey = useMemo(
@@ -267,7 +265,6 @@ export function ManualExpenseSheet({
           date: toLocalISODate(),
         });
       }
-      setCategoriesExpanded(false);
       setDescFocused(false);
       setShowDateField(false);
       setAiAppliedCategory(null);
@@ -291,31 +288,16 @@ export function ManualExpenseSheet({
   const isIncome = kind === "income";
   const categoryDisplay = isIncome ? INCOME_CATEGORY_DISPLAY : CATEGORY_DISPLAY;
 
-  // Top-N категорії для згорнутого стану. Якщо обрана категорія випадає
-  // за межі top-N — підтягуємо її у видимий ряд, щоб активний чип завжди
-  // залишався видимим і не плутав користувача при відкритті аркуша.
   // Normalise the watched category value so comparison against slug list is
   // stable even if a legacy value slips through. Income has a fixed 5-slug
-  // taxonomy (§3, fab-and-manual-income spec) — no frequency sort / collapse.
+  // taxonomy (§3, fab-and-manual-income spec) — no frequency sort.
   const categorySlug = isIncome
     ? upgradeIncomeCategory(category)
     : upgradeCategory(category);
 
-  const visibleCategories = useMemo(() => {
-    if (isIncome) return INCOME_CATEGORY_SLUGS;
-    // Recompute the expense-taxonomy slug locally (rather than reuse the
-    // outer `categorySlug`, which is a `CategorySlug | IncomeCategorySlug`
-    // union) so `sortedCategories.includes(...)` below stays narrowly typed.
-    const expenseCategorySlug = upgradeCategory(category);
-    if (categoriesExpanded) return sortedCategories;
-    const base = sortedCategories.slice(0, CATEGORY_COLLAPSED_COUNT);
-    if (expenseCategorySlug && !base.includes(expenseCategorySlug)) {
-      return [expenseCategorySlug, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
-    }
-    return base;
-  }, [isIncome, sortedCategories, categoriesExpanded, category]);
-  const hasHiddenCategories =
-    !isIncome && sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
+  // Dropdown shows every category at once (D3 decision) — no collapsed
+  // top-N row, so frequency ordering just becomes the <option> order.
+  const categorySlugs = isIncome ? INCOME_CATEGORY_SLUGS : sortedCategories;
 
   // Merchant-driven quick amounts / description hints are expense-only —
   // they come from banking-merchant history and have no income analogue.
@@ -361,7 +343,6 @@ export function ManualExpenseSheet({
       { shouldDirty: true },
     );
     setAiAppliedCategory(null);
-    setCategoriesExpanded(false);
   };
 
   const sheetTitle = isEditing
@@ -517,10 +498,7 @@ export function ManualExpenseSheet({
           categoryDisplay={categoryDisplay}
           aiAppliedCategory={aiAppliedCategory}
           categorySlug={categorySlug}
-          visibleCategories={visibleCategories}
-          hasHiddenCategories={hasHiddenCategories}
-          categoriesExpanded={categoriesExpanded}
-          setCategoriesExpanded={setCategoriesExpanded}
+          categorySlugs={categorySlugs}
           setAiAppliedCategory={setAiAppliedCategory}
           setValue={setValue}
         />

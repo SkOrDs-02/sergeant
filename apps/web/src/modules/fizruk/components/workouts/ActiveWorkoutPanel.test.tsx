@@ -143,7 +143,7 @@ describe("ActiveWorkoutPanel", () => {
     render(
       wrap(<ActiveWorkoutPanel activeWorkout={makeWorkout()} {...props} />),
     );
-    const note = screen.getByPlaceholderText(/Нотатки до тренування/);
+    const note = screen.getByLabelText(/Нотатки до тренування/);
     fireEvent.change(note, { target: { value: "тяжко" } });
     expect(props.updateWorkout).toHaveBeenCalledWith("w1", { note: "тяжко" });
   });
@@ -199,7 +199,7 @@ describe("ActiveWorkoutPanel", () => {
       ),
     );
     expect(
-      screen.queryByPlaceholderText(/Нотатки до тренування/),
+      screen.queryByLabelText(/Нотатки до тренування/),
     ).not.toBeInTheDocument();
   });
 });

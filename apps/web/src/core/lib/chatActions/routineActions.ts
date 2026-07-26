@@ -313,7 +313,26 @@ export function handleRoutineAction(
       }
       habits[idx] = { ...habit, archived: doArchive };
       saveRoutineState({ ...state, habits });
-      return `Звичку "${habit.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`;
+      // Рішення founder-а #8: оборотні дії виконуються одразу, але з
+      // кнопкою «скасувати». Архівація оборотна за визначенням (той самий
+      // інструмент приймає `archived: false`), тож підтвердження їй не
+      // потрібне — потрібен undo. Читаємо стан заново, а не замикаємось на
+      // `state`: між дією і натисканням undo користувач міг змінити інші
+      // звички, і запис старого знімка стер би ті зміни.
+      const previous = !!habit.archived;
+      return {
+        result: `Звичку "${habit.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`,
+        undo: () => {
+          const current = loadRoutineState();
+          const list = current.habits.slice();
+          const at = list.findIndex((h) => h.id === id);
+          if (at < 0) return;
+          const target = list[at];
+          if (!target) return;
+          list[at] = { ...target, archived: previous };
+          saveRoutineState({ ...current, habits: list });
+        },
+      };
     }
     case "add_calendar_event": {
       const { name, date, time, emoji } = (action as AddCalendarEventAction)

@@ -206,20 +206,21 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       "aria-selected",
       "true",
     );
-    expect(
-      screen.getByRole("button", { name: "Зарплата" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Фріланс" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Подарунок" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Повернення" }),
-    ).toBeInTheDocument();
-    // Expense-only category chips must not leak into income mode.
-    expect(
-      screen.queryByRole("button", { name: "Продукти" }),
-    ).not.toBeInTheDocument();
+    const categorySelect = screen.getByLabelText(
+      "Категорія",
+    ) as HTMLSelectElement;
+    const optionLabels = Array.from(categorySelect.options).map(
+      (o) => o.textContent,
+    );
+    expect(optionLabels).toEqual([
+      "Зарплата",
+      "Фріланс",
+      "Подарунок",
+      "Повернення",
+      "Інше",
+    ]);
+    // Expense-only categories must not leak into income mode.
+    expect(optionLabels).not.toContain("Продукти");
     expect(
       screen.getByRole("button", { name: "Додати надходження" }),
     ).toBeInTheDocument();
@@ -234,7 +235,9 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "5000" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Зарплата" }));
+    fireEvent.change(screen.getByLabelText("Категорія"), {
+      target: { value: "salary" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
 
     await waitFor(() => {

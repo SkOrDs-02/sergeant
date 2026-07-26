@@ -56,6 +56,15 @@ vi.mock("./chat/useChatSend", () => ({
     cancelInFlight: cancelInFlightMock,
     paywallOpen: true,
     closePaywall: closePaywallMock,
+    // Гейт §8 — мок мусить нести його форму, інакше HubChat падає на
+    // читанні `pending`. Тримаємо закритим: цей сюїт про композицію,
+    // поведінка гейта покрита у `chat/useChatSend.test.tsx`.
+    confirmDestructive: {
+      pending: null,
+      request: vi.fn(),
+      accept: vi.fn(),
+      reject: vi.fn(),
+    },
     sendRef: { current: null },
     focusInputRef: { current: focusInputMock },
   }),
@@ -230,7 +239,9 @@ describe("HubChat", () => {
     );
     expect(screen.getByTestId("paywall")).toHaveAttribute("data-open", "true");
     expect(screen.getByTestId("paywall-description")).toHaveTextContent(
-      "Free-тариф має 15 AI-повідомлень на день",
+      // Ліміт зрізали 15 → 5 у PR #464 (сервер), але ця копія лишилась
+      // на 15 і почала брехати. Тест зробив свою роботу — спіймав правку.
+      "Free-тариф має 5 AI-повідомлень на день",
     );
 
     fireEvent.click(screen.getByText("details"));

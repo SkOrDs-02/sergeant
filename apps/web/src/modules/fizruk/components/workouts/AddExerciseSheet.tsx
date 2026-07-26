@@ -1,7 +1,14 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useId,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
@@ -67,6 +74,8 @@ export function AddExerciseSheet({
 }: AddExerciseSheetProps) {
   const kbInsetPx = useVisualKeyboardInset(open);
   const toast = useToast();
+  const nameId = useId();
+  const descriptionId = useId();
   // Inline validation message shown below «Назва (укр)» when the user
   // taps «Зберегти» with the field empty. Without it the click was
   // silently swallowed (just `if (!nameUk) return;`) and the user was
@@ -98,8 +107,10 @@ export function AddExerciseSheet({
     >
       <div className="space-y-3">
         <div>
+          <Label htmlFor={nameId}>Назва (укр) *</Label>
           <Input
-            placeholder="Назва (укр) *"
+            id={nameId}
+            placeholder="Напр. Присідання зі штангою"
             value={form.nameUk}
             onChange={(e) => {
               setForm((f) => ({ ...f, nameUk: e.target.value }));
@@ -241,13 +252,19 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <Input
-          placeholder="Опис"
-          value={form.description}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, description: e.target.value }))
-          }
-        />
+        <div>
+          <Label htmlFor={descriptionId} optional>
+            Опис
+          </Label>
+          <Input
+            id={descriptionId}
+            placeholder="Напр. Тримай спину рівною, коліна не виходять за носки"
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+          />
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">

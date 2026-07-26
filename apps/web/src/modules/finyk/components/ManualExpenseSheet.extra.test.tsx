@@ -3,7 +3,7 @@
  * Extra coverage for ManualExpenseSheet — exercises the interactive surfaces
  * the primary spec leaves uncovered: amount-suggestion chips (personal +
  * default), merchant suggestions + the silent AI-category application + badge
- * dismiss, the category picker (pick + expand/collapse), the amount hero
+ * dismiss, the category dropdown (pick + frequency ordering), the amount hero
  * preview, the "change date" reveal, and edit-mode optimistic delete.
  *
  * Money is integer kopiykas / hryvnia number; jsdom supplies no Web Speech so
@@ -120,23 +120,32 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();
   });
 
-  it("selects a category from the picker", () => {
+  it("selects a category from the dropdown", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const group = screen.getByRole("group", { name: "Категорія" });
-    // pick a non-default category chip
-    const transport = within(group).getByText("Транспорт");
-    fireEvent.click(transport);
-    // its button now reflects the active styling — assert it's still present
-    expect(transport).toBeInTheDocument();
+    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "transport" } });
+    expect(select).toHaveValue("transport");
   });
 
-  it("expands and collapses the hidden categories", () => {
+  it("lists every expense category in the dropdown (no collapsed row)", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const more = screen.getByRole("button", { name: /Більше/ });
-    fireEvent.click(more);
-    expect(screen.getByRole("button", { name: /Менше/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Менше/ }));
-    expect(screen.getByRole("button", { name: /Більше/ })).toBeInTheDocument();
+    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
+    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    expect(optionLabels).toEqual([
+      "Їжа",
+      "Продукти",
+      "Кафе та ресторани",
+      "Транспорт",
+      "Розваги",
+      "Здоров'я",
+      "Покупки",
+      "Комунальні",
+      "Техніка",
+      "Підписки",
+      "Навчання",
+      "Подорожі",
+      "Інше",
+    ]);
   });
 
   it("reveals the date field via 'Не сьогодні'", () => {
@@ -161,8 +170,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт ranks first → its chip exists in the collapsed row
-    expect(screen.getByText("Транспорт")).toBeInTheDocument();
+    // Транспорт has the highest frequency rank → first <option> in the dropdown.
+    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
+    expect(select.options[0]?.textContent).toBe("Транспорт");
   });
 
   describe("edit mode", () => {

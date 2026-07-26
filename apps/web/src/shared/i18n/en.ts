@@ -217,7 +217,22 @@ export const messagesEn: Partial<MessageCatalog> = {
     failed: "Action failed",
   },
 
+  durability: {
+    localOnly: {
+      title: "Data lives on this device only",
+      body: "Cash expenses, assets, debts and your own categories for bank transactions are stored here only. Clearing browser data wipes them, and the bank cannot bring them back. Signing in enables a server copy.",
+      signIn: "Sign in",
+      backup: "Download a copy",
+    },
+  },
+
   hub: {
+    destructiveConfirm: {
+      title: "Confirm an irreversible action",
+      body: "The assistant wants to do something that cannot be undone:",
+      confirm: "Yes, do it",
+      cancel: "Cancel",
+    },
     insights: "Insights",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
@@ -609,7 +624,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       freePrice: "₴0",
       freeCadence: "forever",
       freeTagline:
-        "All modules, unlimited manual tracking. AI — 15 messages/day.",
+        "All modules, unlimited manual tracking. AI — 5 messages/day.",
       premiumName: "Premium",
       premiumCadence: "/ month (yearly plan — coming soon)",
       premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
@@ -636,7 +651,7 @@ export const messagesEn: Partial<MessageCatalog> = {
       // Leading space matches uk — composes as `${N} / month`.
       perMonth: " / month",
       unlimited: "unlimited",
-      aiChatPerDay: "15 / day",
+      aiChatPerDay: "5 / day",
     },
     cta: {
       tryPremium: "Try Premium",

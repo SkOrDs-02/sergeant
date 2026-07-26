@@ -2896,7 +2896,7 @@
             }
           },
           "tool_calls_raw": {
-            "maxItems": 20,
+            "maxItems": 60,
             "type": "array",
             "items": {}
           },

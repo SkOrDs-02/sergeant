@@ -2,10 +2,11 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useId, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { formatMoney, pluralDays } from "@sergeant/shared";
@@ -60,6 +61,11 @@ function GoalBudgetCardComponent({
   // never double-fire even if the component remounts with the same goal.
   const { goalCompleted, CelebrationComponent } = useCelebration();
   const celebratedRef = useRef<string | null>(null);
+  const fieldId = useId();
+  const nameId = `${fieldId}-name`;
+  const targetId = `${fieldId}-target`;
+  const savedId = `${fieldId}-saved`;
+  const dateId = `${fieldId}-date`;
 
   useEffect(() => {
     if (pct < 100) return;
@@ -74,30 +80,43 @@ function GoalBudgetCardComponent({
       <Card radius="lg" padding="lg">
         {isEditing ? (
           <div className="space-y-2">
-            <Input
-              size="sm"
-              aria-label="Назва цілі"
-              value={budget.name || ""}
-              onChange={(e) => onChangeName?.(e.target.value)}
-            />
-            <Input
-              size="sm"
-              type="number"
-              aria-label="Сума цілі"
-              value={budget.targetAmount || ""}
-              onChange={(e) => onChangeTarget?.(Number(e.target.value))}
-            />
-            <Input
-              size="sm"
-              type="number"
-              placeholder="Відкладено ₴"
-              value={budget.savedAmount || ""}
-              onChange={(e) => onChangeSaved?.(Number(e.target.value))}
-            />
+            <div>
+              <Label htmlFor={nameId}>Назва цілі</Label>
+              <Input
+                id={nameId}
+                size="sm"
+                placeholder="Напр. На відпустку"
+                value={budget.name || ""}
+                onChange={(e) => onChangeName?.(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor={targetId}>Сума цілі</Label>
+              <Input
+                id={targetId}
+                size="sm"
+                type="number"
+                placeholder="Напр. 20000 ₴"
+                value={budget.targetAmount || ""}
+                onChange={(e) => onChangeTarget?.(Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <Label htmlFor={savedId}>Відкладено</Label>
+              <Input
+                id={savedId}
+                size="sm"
+                type="number"
+                placeholder="Напр. 5000 ₴"
+                value={budget.savedAmount || ""}
+                onChange={(e) => onChangeSaved?.(Number(e.target.value))}
+              />
+            </div>
             <DateField
+              id={dateId}
               size="sm"
-              emptyLabel="Дата завершення"
-              aria-label="Дата завершення цілі"
+              label="Дата завершення"
+              emptyLabel="Напр. 31.12.2026"
               value={budget.targetDate || ""}
               onChange={(e) => onChangeDate?.(e.target.value)}
             />
