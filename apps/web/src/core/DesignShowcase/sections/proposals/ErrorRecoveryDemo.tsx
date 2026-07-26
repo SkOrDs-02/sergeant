@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui";
 import { ComparePair, MiniPhone } from "./_Compare";
 
