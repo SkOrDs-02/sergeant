@@ -27,6 +27,9 @@ export type {
 export {
   createMeEndpoints,
   type AiMemoryClearResponse,
+  type AiMemoryDeleteResponse,
+  type AiMemoryListItem,
+  type AiMemoryListResponse,
   type MeDeleteResponse,
   type MeEndpoints,
   type MeExportResponse,

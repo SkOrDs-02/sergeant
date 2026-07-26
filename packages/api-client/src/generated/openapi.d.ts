@@ -199,6 +199,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai-memory/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Список збережених фактів AI-пам'яті поточного користувача. */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Розмір сторінки. */
+                    limit?: number;
+                    /** @description Keyset-курсор: `nextCursor` попередньої сторінки (повертає рядки з меншим id). */
+                    cursor?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Сторінка фактів (масив може бути порожнім). */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AiMemoryListResponse"];
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai-memory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Видалити один факт AI-пам'яті. Назавжди, без відновлення. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description `ai_memories.id` з відповіді `/api/ai-memory/list`. */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ідемпотентний успіх. `deleted:false` — рядка вже не було. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AiMemoryDeleteResponse"];
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai-memory/recall": {
         parameters: {
             query?: never;
@@ -3227,6 +3343,24 @@ export interface components {
             /** @constant */
             ok: true;
             deleted: number;
+        };
+        /** @description Відповідь GET /api/ai-memory/list — сторінка фактів пам'яті + keyset-курсор. */
+        AiMemoryListResponse: {
+            items: {
+                id: number;
+                source: string;
+                content: string;
+                topic: string | null;
+                /** Format: date-time */
+                createdAt: string;
+            }[];
+            nextCursor: number | null;
+        };
+        /** @description Відповідь DELETE /api/ai-memory/{id} — ідемпотентна; deleted:false означає, що рядка вже не було. */
+        AiMemoryDeleteResponse: {
+            /** @constant */
+            ok: true;
+            deleted: boolean;
         };
         /** @description Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім). */
         RecallMemoryResponse: {

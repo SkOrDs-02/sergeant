@@ -66,6 +66,15 @@ vi.mock("../legal/LegalLinks", () => ({
   LegalLinks: () => null,
 }));
 
+// AiMemoryList drives its own React Query traffic (`/api/ai-memory/list`).
+// This suite is about per-user PIN scoping — mounting the real list would
+// force a QueryClientProvider into every `render()` here and couple an
+// auth-audit regression test to an unrelated network surface. Its own
+// behaviour is covered in `AiMemoryList.test.tsx`.
+vi.mock("./AiMemoryList", () => ({
+  AiMemoryList: () => null,
+}));
+
 import { meApi } from "@shared/api";
 import { PrivacySection } from "./PrivacySection";
 
