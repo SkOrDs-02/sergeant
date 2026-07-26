@@ -11,10 +11,7 @@ export type ModuleAccent = "finyk" | "fizruk" | "routine" | "nutrition";
 
 /** Soft (tinted-surface) variants of module accents. */
 export type ModuleSoftAccent =
-  | "finyk-soft"
-  | "fizruk-soft"
-  | "routine-soft"
-  | "nutrition-soft";
+  "finyk-soft" | "fizruk-soft" | "routine-soft" | "nutrition-soft";
 
 /** Status / semantic colour identifiers used for feedback UI. */
 export type StatusColor = "success" | "warning" | "danger" | "info";
@@ -71,6 +68,31 @@ export declare const moduleAccentRgb: Readonly<
   Record<ModuleAccent, ModuleAccentRgb>
 >;
 
+/**
+ * «Чорнило» (Ink) — dark-first surface + text scale. Mirrors `inkTheme` in
+ * `tokens.js`; the runtime export existed since the Чорнило direction landed,
+ * but was missing here, so TypeScript consumers could not reach it.
+ *
+ * `accent` re-surfaces the tier-400 module tones: text over an accent fill is
+ * always `surface.bg` ink, never white.
+ */
+export declare const inkTheme: Readonly<{
+  surface: Readonly<{
+    bg: string;
+    surface: string;
+    surfaceHi: string;
+    line: string;
+    lineStrong: string;
+  }>;
+  text: Readonly<{
+    strong: string;
+    fg: string;
+    muted: string;
+    subtle: string;
+  }>;
+  accent: Readonly<Record<ModuleAccent, string>>;
+}>;
+
 /** Status / semantic colours, keyed by `StatusColor`. */
 export declare const statusColors: Readonly<Record<StatusColor, string>>;
 
@@ -105,12 +127,7 @@ export declare const elevation: Readonly<Record<ElevationLevel, ElevationStep>>;
 
 /** Semantic z-index tiers — match an `elevation.eN` level to its tier. */
 export type ZTier =
-  | "base"
-  | "dropdown"
-  | "sticky"
-  | "overlay"
-  | "modal"
-  | "toast";
+  "base" | "dropdown" | "sticky" | "overlay" | "modal" | "toast";
 
 /** Z-index tier values (numeric strings) keyed by semantic tier. */
 export declare const zTier: Readonly<Record<ZTier, string>>;

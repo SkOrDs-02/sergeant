@@ -1,6 +1,22 @@
-import WaitlistForm from "./WaitlistForm";
+import TelegramCta from "./TelegramCta";
 import { Eyebrow } from "./Eyebrow";
 
+/**
+ * Секції головної.
+ *
+ * Ритм навмисно нерівний. Раніше тут стояли чотири сітки карток поспіль
+ * (3 → 4 → 3 → 2) в однаковій оболонці, і сторінка читалась як шаблон:
+ * послідовність, перелік рівних сутностей і головна теза виглядали
+ * ідентично, хоча несуть різне. Тепер кожна секція має форму, яка щось
+ * означає — послідовність тече вертикально, модулі стали легендою, а теза
+ * продукту отримала власну поверхню.
+ */
+
+/**
+ * Крок процесу. Це справді послідовність (лог → зведення → підказка), тому
+ * нумерація тут несе інформацію, а не прикрашає — і виражена вертикальною
+ * рейкою, а не трьома рівними коробками.
+ */
 export function HowItWorks() {
   const steps = [
     {
@@ -23,96 +39,101 @@ export function HowItWorks() {
   return (
     <section
       id="how"
-      className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24"
+      className="mx-auto w-full max-w-5xl px-5 py-20 sm:px-8 sm:py-28"
     >
-      <Eyebrow className="block text-center font-semibold text-accent">
-        Як це працює
-      </Eyebrow>
-      <h2 className="mx-auto mt-3 max-w-2xl text-center font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
+      <h2 className="max-w-xl font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
         Цінність не в тому, що все в одному місці. А в{" "}
         <span className="text-accent">звʼязках</span> між сферами.
       </h2>
-      <p className="mx-auto mt-4 max-w-2xl text-center leading-relaxed text-muted">
-        Окрема апка для грошей не знає про твій сон. Трекер їжі — про твої
-        витрати. Sergeant тримає все поруч, тому бачить картину цілком.
-      </p>
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
-        {steps.map((s) => (
-          <article
+
+      <ol className="mt-14">
+        {steps.map((s, i) => (
+          <li
             key={s.n}
-            className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm"
+            className="relative grid grid-cols-[auto_1fr] gap-x-5 pb-12 last:pb-0 sm:gap-x-8"
           >
-            <span className="font-display text-sm font-bold text-accent">
-              {s.n}
-            </span>
-            <h3 className="mt-3 font-display text-lg font-bold text-foreground-strong">
-              {s.title}
-            </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{s.text}</p>
-          </article>
+            {/* Рейка — вертикальна лінія прогресу; на останньому кроці обривається. */}
+            {i < steps.length - 1 ? (
+              <span
+                aria-hidden="true"
+                className="absolute bottom-2 left-[7px] top-6 w-px bg-cardline-strong"
+              />
+            ) : null}
+            <span
+              aria-hidden="true"
+              className="mt-[7px] h-[15px] w-[15px] rounded-full border-[3px] border-accent bg-background"
+            />
+            <div>
+              <span className="font-display text-xs font-bold tabular-nums tracking-widest text-subtle">
+                {s.n}
+              </span>
+              <h3 className="mt-1 font-display text-xl font-bold text-foreground-strong sm:text-2xl">
+                {s.title}
+              </h3>
+              <p className="mt-2 max-w-md leading-relaxed text-muted">
+                {s.text}
+              </p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }
 
+/**
+ * Модулі — це легенда до всього іншого на сторінці, а не список переваг.
+ * Тому без карткової оболонки: чотири рівні сутності, кожна тримається на
+ * власному акценті. Іконок немає навмисно — геометричні гліфи в квадратиках
+ * нічого не пояснювали, а колір тут уже несе ідентичність.
+ */
 export function ModulesSection() {
   const modules = [
     {
-      icon: "₴",
-      title: "ФІНІК — гроші",
+      name: "ФІНІК",
+      domain: "гроші",
       text: "Бюджети в гривні, синк із Monobank, категорії та борги без ручного вводу.",
-      className: "text-finyk",
-      soft: "bg-finyk-soft",
+      rule: "bg-finyk",
+      label: "text-finyk",
     },
     {
-      icon: "▲",
-      title: "ФІЗРУК — тіло",
+      name: "ФІЗРУК",
+      domain: "тіло",
       text: "Плани тренувань, прогрес силових і біометрія в одному місці.",
-      className: "text-fizruk",
-      soft: "bg-fizruk-soft",
+      rule: "bg-fizruk",
+      label: "text-fizruk",
     },
     {
-      icon: "✓",
-      title: "Рутина — звички",
+      name: "Рутина",
+      domain: "звички",
       text: "Стріки й чек-іни з чесною статистикою — без прикрашання цифр.",
-      className: "text-routine",
-      soft: "bg-routine-soft",
+      rule: "bg-routine",
+      label: "text-routine",
     },
     {
-      icon: "◐",
-      title: "Харчування",
+      name: "Харчування",
+      domain: "їжа",
       text: "КБЖУ, сканер штрих-кодів і українська база продуктів.",
-      className: "text-nutrition",
-      soft: "bg-nutrition-soft",
+      rule: "bg-nutrition",
+      label: "text-nutrition",
     },
   ];
 
   return (
     <section
       id="modules"
-      className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24"
+      className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-20"
     >
-      <div className="mb-10 max-w-2xl">
-        <Eyebrow className="font-semibold text-accent">Чотири сфери</Eyebrow>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-          Кожна сфера — окремий модуль. Разом — одна картина.
-        </h2>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {modules.map((m) => (
-          <article
-            key={m.title}
-            className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm"
-          >
-            <div
+          <article key={m.name}>
+            <span
               aria-hidden="true"
-              className={`grid h-10 w-10 place-items-center rounded-xl text-base font-extrabold ${m.soft} ${m.className}`}
-            >
-              {m.icon}
-            </div>
+              className={`block h-[3px] w-10 rounded-full ${m.rule}`}
+            />
             <h3 className="mt-4 font-display text-base font-bold text-foreground-strong">
-              {m.title}
+              {m.name}{" "}
+              <span className={`font-medium ${m.label}`}>— {m.domain}</span>
             </h3>
             <p className="mt-1.5 text-sm leading-relaxed text-muted">
               {m.text}
@@ -124,80 +145,103 @@ export function ModulesSection() {
   );
 }
 
+/**
+ * СИГНАТУРА СТОРІНКИ.
+ *
+ * Єдине, чого не роблять окремі трекери, — речення, що звʼязує дві сфери.
+ * Раніше воно жило в трьох однакових картках 14-м кеглем і губилось серед
+ * решти. Тепер це власна темна поверхня, кожен звʼязок — намальований дріт
+ * між двома модулями, а сам висновок набраний як цитата, бо це і є цитата
+ * з продукту. Уся сміливість сторінки витрачена тут; решта — тиха.
+ */
 export function ConnectionsSection() {
   const links = [
     {
-      a: { label: "ФІЗРУК", className: "bg-fizruk-soft text-fizruk" },
-      b: { label: "ФІНІК", className: "bg-finyk-soft text-finyk" },
+      a: { label: "ФІЗРУК", dot: "bg-fizruk-glow", text: "text-fizruk-glow" },
+      b: { label: "ФІНІК", dot: "bg-finyk-glow", text: "text-finyk-glow" },
       insight:
         "У тижні, коли ти тренуєшся 3+ рази, замовлень доставки помітно менше.",
     },
     {
-      a: { label: "Харчування", className: "bg-nutrition-soft text-nutrition" },
-      b: { label: "Рутина", className: "bg-routine-soft text-routine" },
+      a: {
+        label: "Харчування",
+        dot: "bg-nutrition-glow",
+        text: "text-nutrition-glow",
+      },
+      b: {
+        label: "Рутина",
+        dot: "bg-routine-glow",
+        text: "text-routine-glow",
+      },
       insight:
         "Коли снідаєш вдома, ранкова рутина тримається довше, а зриви — рідше.",
     },
     {
-      a: { label: "ФІНІК", className: "bg-finyk-soft text-finyk" },
-      b: { label: "Харчування", className: "bg-nutrition-soft text-nutrition" },
+      a: { label: "ФІНІК", dot: "bg-finyk-glow", text: "text-finyk-glow" },
+      b: {
+        label: "Харчування",
+        dot: "bg-nutrition-glow",
+        text: "text-nutrition-glow",
+      },
       insight:
         "Імпульсивні витрати на їжу частішають у дні, коли пропускаєш обід.",
     },
   ];
 
   return (
-    <section
-      id="connections"
-      className="hero-wash mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-24"
-    >
-      <div className="mx-auto max-w-2xl text-center">
-        <Eyebrow className="font-semibold text-accent">Головна фішка</Eyebrow>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-          Окремі трекери показують цифри. Sergeant показує{" "}
-          <span className="text-accent">звʼязки</span> між ними.
+    <section id="connections" className="bg-ink py-20 sm:py-28">
+      <div className="mx-auto w-full max-w-5xl px-5 sm:px-8">
+        <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-balance text-ink-text sm:text-4xl">
+          Окремі трекери показують цифри. Sergeant показує звʼязки між ними.
         </h2>
-        <p className="mt-4 leading-relaxed text-muted">
-          Ось приклади того, що стає видно, коли всі сфери поруч. Sergeant
-          показує такі звʼязки лише коли впевнений — і чесно каже, коли даних ще
-          замало.
+
+        {/* Ліва межа збігається з рештою сторінки, але міра рядка тримається
+            читабельною — дріт не має розтягуватись на всю ширину екрана. */}
+        <div className="mt-16 flex max-w-3xl flex-col gap-14">
+          {links.map((l) => (
+            <figure key={l.insight}>
+              {/* Дріт: дві точки модулів, зʼєднані лінією. Форма повторює те,
+                  що описує речення нижче — звʼязок між двома сферами. */}
+              <div
+                aria-hidden="true"
+                className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.14em]"
+              >
+                <span className={`flex items-center gap-2 ${l.a.text}`}>
+                  <i className={`h-2 w-2 rounded-full ${l.a.dot}`} />
+                  {l.a.label}
+                </span>
+                <span className="h-px flex-1 bg-ink-line" />
+                <span className={`flex items-center gap-2 ${l.b.text}`}>
+                  {l.b.label}
+                  <i className={`h-2 w-2 rounded-full ${l.b.dot}`} />
+                </span>
+              </div>
+              <blockquote className="mt-5 font-display text-xl font-medium leading-snug text-balance text-ink-text sm:text-2xl">
+                {l.insight}
+              </blockquote>
+              {/* Дублюємо пару текстом для скрінрідерів — вище вона aria-hidden,
+                  бо там це декоративна графіка, а не читабельний зміст. */}
+              <figcaption className="sr-only">
+                Звʼязок між модулями {l.a.label} і {l.b.label}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+
+        <p className="mt-16 max-w-xl text-sm leading-relaxed text-ink-muted">
+          Приклади ілюстративні. Реальні звʼязки Sergeant будує на твоїх даних —
+          і показує лише ті, в яких упевнений.
         </p>
       </div>
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
-        {links.map((l) => (
-          <article
-            key={l.insight}
-            className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm"
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${l.a.className}`}
-              >
-                {l.a.label}
-              </span>
-              <span aria-hidden="true" className="text-lg text-subtle">
-                ×
-              </span>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${l.b.className}`}
-              >
-                {l.b.label}
-              </span>
-            </div>
-            <p className="text-sm leading-relaxed text-foreground">
-              {l.insight}
-            </p>
-          </article>
-        ))}
-      </div>
-      <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-subtle">
-        Приклади ілюстративні. Реальні звʼязки Sergeant будує на твоїх даних — і
-        з часом бачить їх дедалі точніше.
-      </p>
     </section>
   );
 }
 
+/**
+ * Чесність про стан — рідкісна для лендінга річ, тож вона має читатись як
+ * пряме порівняння, а не як дві однакові картки, де око не бачить різниці.
+ * Різницю робить типографіка й лінія, а не рамки.
+ */
 export function HonestSection() {
   const now = [
     "Автосинк фінансів через Monobank",
@@ -211,44 +255,35 @@ export function HonestSection() {
   ];
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-5 py-16 sm:px-8 sm:py-20">
-      <div className="max-w-2xl">
-        <Eyebrow className="font-semibold text-accent">Чесно про стан</Eyebrow>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
-          Що вже працює, а що ще збираємо
-        </h2>
-        <p className="mt-4 leading-relaxed text-muted">
-          Ми не обіцяємо магію. Sergeant показує звʼязки з тією впевненістю, яку
-          реально має, і мовчить, коли даних ще замало.
-        </p>
-      </div>
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        <div className="rounded-[var(--radius-card)] border border-cardline bg-card p-6 shadow-sm">
-          <h3 className="font-display text-lg font-bold text-foreground-strong">
-            Вже в застосунку
-          </h3>
-          <ul className="mt-4 flex flex-col gap-3">
+    <section className="mx-auto w-full max-w-5xl px-5 py-20 sm:px-8 sm:py-24">
+      <h2 className="max-w-lg font-display text-3xl font-bold tracking-tight text-balance text-foreground-strong sm:text-4xl">
+        Що вже працює, а що ще збираємо
+      </h2>
+      <p className="mt-4 max-w-xl leading-relaxed text-muted">
+        Ми не обіцяємо магію. Sergeant показує звʼязки з тією впевненістю, яку
+        реально має, і мовчить, коли даних ще замало.
+      </p>
+
+      <div className="mt-12 grid gap-10 sm:grid-cols-2 sm:gap-14">
+        <div>
+          <Eyebrow className="font-bold text-accent">Вже в застосунку</Eyebrow>
+          <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
             {now.map((item) => (
-              <li key={item} className="flex gap-3 text-sm leading-relaxed">
-                <span aria-hidden="true" className="mt-0.5 text-accent">
-                  ✓
-                </span>
-                <span className="text-foreground">{item}</span>
+              <li
+                key={item}
+                className="text-sm leading-relaxed text-foreground"
+              >
+                {item}
               </li>
             ))}
           </ul>
         </div>
-        <div className="rounded-[var(--radius-card)] border border-cardline bg-surface p-6 shadow-sm">
-          <h3 className="font-display text-lg font-bold text-foreground-strong">
-            У розробці
-          </h3>
-          <ul className="mt-4 flex flex-col gap-3">
+        <div>
+          <Eyebrow className="font-bold text-subtle">У розробці</Eyebrow>
+          <ul className="mt-5 flex flex-col gap-4 border-t border-cardline pt-5">
             {soon.map((item) => (
-              <li key={item} className="flex gap-3 text-sm leading-relaxed">
-                <span aria-hidden="true" className="mt-0.5 text-subtle">
-                  ◦
-                </span>
-                <span className="text-muted">{item}</span>
+              <li key={item} className="text-sm leading-relaxed text-muted">
+                {item}
               </li>
             ))}
           </ul>
@@ -260,26 +295,19 @@ export function HonestSection() {
 
 export function BetaCta() {
   return (
-    <section id="beta" className="mx-auto w-full max-w-4xl px-5 py-16 sm:px-8">
-      <div className="rounded-[var(--radius-card)] border border-cardline bg-accent-soft p-8 shadow-sm sm:p-12">
-        <Eyebrow className="inline-block rounded-full bg-accent px-3 py-1 font-bold text-accent-ink">
-          Рання бета
-        </Eyebrow>
-        <h2 className="mt-5 font-display text-3xl font-bold leading-tight tracking-tight text-balance text-foreground-strong sm:text-4xl">
-          Долучайся, поки ми будуємо це разом
-        </h2>
-        <p className="mt-4 max-w-xl leading-relaxed text-muted">
-          Ранні користувачі формують продукт: обираєш, які звʼязки Sergeant
-          вчиться помічати першими. Напишемо ��а пошту, щойно відкриємо доступ.
-        </p>
-        <div className="mt-8">
-          <WaitlistForm tierInterest="pro" buttonLabel="Приєднатись до бети" />
-        </div>
-        <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-          <li>Ранній доступ до нових модулів</li>
-          <li>Прямий звʼязок із командою</li>
-          <li>Без спаму — тільки по суті</li>
-        </ul>
+    <section
+      id="beta"
+      className="mx-auto w-full max-w-5xl px-5 pb-24 pt-4 sm:px-8"
+    >
+      <h2 className="font-display text-3xl font-bold leading-tight tracking-tight text-balance text-foreground-strong sm:text-4xl">
+        Долучайся, поки ми будуємо це разом
+      </h2>
+      <p className="mt-4 max-w-lg leading-relaxed text-pretty text-muted">
+        Ранні користувачі формують продукт: обираєш, які звʼязки Sergeant
+        вчиться помічати першими. Напишу в Telegram, щойно відкриємо доступ.
+      </p>
+      <div className="mt-8">
+        <TelegramCta placement="footer" label="Написати боту" />
       </div>
     </section>
   );
