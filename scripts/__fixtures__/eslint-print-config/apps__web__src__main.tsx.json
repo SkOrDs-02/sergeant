@@ -3156,6 +3156,9 @@
     "sergeant-design/no-hex-in-classname": [
       2
     ],
+    "sergeant-design/no-inline-card-surface": [
+      1
+    ],
     "sergeant-design/no-low-contrast-text-on-fill": [
       2
     ],
