@@ -23,6 +23,7 @@ import { PrimitivesSection } from "./sections/Primitives";
 import { EmptyStatesSection } from "./sections/EmptyStates";
 import { ProposalsUISection } from "./sections/ProposalsUI";
 import { ProposalsUXSection } from "./sections/ProposalsUX";
+import { ProposalsVisualSection } from "./sections/ProposalsVisual";
 
 /**
  * DesignShowcase 2.0 — navigable internal styleguide.
@@ -131,6 +132,7 @@ function ShowcaseShell() {
           <EmptyStatesSection />
           <ProposalsUISection />
           <ProposalsUXSection />
+          <ProposalsVisualSection />
         </main>
       </div>
     </div>
