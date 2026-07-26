@@ -696,6 +696,7 @@ const SQL_ONLY_TABLES = [
   "mono_account",
   "mono_ai_enrichment_queue",
   "mono_connection",
+  "mono_jar",
   "mono_transaction",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",

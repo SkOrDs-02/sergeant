@@ -10,7 +10,9 @@ import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
+import { JarSelector } from "../JarSelector";
 
 export type BudgetFormType = "limit" | "goal";
 
@@ -31,8 +33,8 @@ export type NewBudgetDraft =
       name: string;
       emoji: string;
       targetAmount: number;
-      savedAmount: number;
       targetDate: string;
+      linkedJarId?: string | undefined;
     };
 
 export interface ExpenseCategoryOption {
@@ -43,6 +45,8 @@ export interface ExpenseCategoryOption {
 interface AddBudgetFormProps {
   existingBudgets: readonly Budget[];
   expenseCategoryList: readonly ExpenseCategoryOption[];
+  /** Банки Monobank юзера — для дропдауна привʼязки цілі (design decision #3). */
+  jars?: readonly MonoJarDto[];
   onSubmit: (draft: NewBudgetDraft) => void;
   onCancel: () => void;
 }
@@ -81,12 +85,6 @@ const isPositiveNumberString = (value: string) => {
   );
 };
 
-const isNonNegativeNumberString = (value: string) => {
-  if (value.trim() === "") return true;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed >= 0;
-};
-
 const positiveNumberString = (message: string) =>
   z.string().refine(isPositiveNumberString, message);
 
@@ -102,8 +100,9 @@ type GoalFormValues = {
   name: string;
   emoji: string;
   targetAmount: string;
-  savedAmount: string;
   targetDate: string;
+  /** ID банки Monobank (`MonoJarDto.monoJarId`) або "" — без банки. */
+  linkedJarId: string;
 };
 
 const goalFormSchema = z.object({
@@ -111,15 +110,8 @@ const goalFormSchema = z.object({
   name: z.string().trim().min(1, messages.validation.goalNameRequired),
   emoji: z.string(),
   targetAmount: positiveNumberString(messages.validation.goalAmountRequired),
-  // savedAmount порожнє → 0; не порожнє → ціле число ≥ 0.
-  // Конверсія в number відбувається у `onSubmit`.
-  savedAmount: z
-    .string()
-    .refine(
-      isNonNegativeNumberString,
-      messages.validation.goalSavedNonNegative,
-    ),
   targetDate: z.string(),
+  linkedJarId: z.string(),
 });
 
 const LIMIT_DEFAULTS: LimitFormValues = {
@@ -134,13 +126,14 @@ const GOAL_DEFAULTS: GoalFormValues = {
   name: "",
   emoji: "🎯",
   targetAmount: "",
-  savedAmount: "",
   targetDate: "",
+  linkedJarId: "",
 };
 
 function AddBudgetFormComponent({
   existingBudgets,
   expenseCategoryList,
+  jars = [],
   onSubmit,
   onCancel,
 }: AddBudgetFormProps) {
@@ -149,7 +142,6 @@ function AddBudgetFormComponent({
   const limitAmountId = `${fieldId}-limit-amount`;
   const goalNameId = `${fieldId}-goal-name`;
   const goalAmountId = `${fieldId}-goal-amount`;
-  const goalSavedId = `${fieldId}-goal-saved`;
 
   // Schema із dedup-check бере замикання на `existingBudgets`. Memoize,
   // щоб resolver-reference не змінювався на кожен parent-render
@@ -202,8 +194,8 @@ function AddBudgetFormComponent({
         name: values.name.trim(),
         emoji: values.emoji,
         targetAmount: Number(values.targetAmount),
-        savedAmount: values.savedAmount ? Number(values.savedAmount) : 0,
         targetDate: values.targetDate,
+        linkedJarId: values.linkedJarId || undefined,
       });
     },
   });
@@ -212,7 +204,6 @@ function AddBudgetFormComponent({
   const limitAmountError = limitForm.formState.errors.limit?.message;
   const goalNameError = goalForm.formState.errors.name?.message;
   const goalAmountError = goalForm.formState.errors.targetAmount?.message;
-  const goalSavedError = goalForm.formState.errors.savedAmount?.message;
 
   const goalEmoji = goalForm.watch("emoji");
   const goalTargetDate = goalForm.watch("targetDate");
@@ -221,14 +212,34 @@ function AddBudgetFormComponent({
   const limitPeriod = limitForm.watch("period");
   const goalName = goalForm.watch("name");
   const goalTargetAmount = goalForm.watch("targetAmount");
-  const goalSavedAmount = goalForm.watch("savedAmount");
+  const goalLinkedJarId = goalForm.watch("linkedJarId");
+
+  const jarOptions = useMemo(
+    () =>
+      jars.map((j) => ({
+        id: j.monoJarId,
+        label: j.title?.trim() || j.monoJarId,
+      })),
+    [jars],
+  );
+
+  // Design decision #3: обираючи банку з власною ціллю (`jar.goal`),
+  // підставляємо її як дефолт суми цілі — лише якщо поле ще порожнє, щоб
+  // не перезаписувати те, що юзер уже встиг ввести.
+  const handleJarChange = (jarId: string) => {
+    goalForm.setValue("linkedJarId", jarId, { shouldDirty: true });
+    const jar = jars.find((j) => j.monoJarId === jarId);
+    if (jar?.goal != null && !goalForm.getValues("targetAmount").trim()) {
+      goalForm.setValue("targetAmount", String(Math.round(jar.goal / 100)), {
+        shouldDirty: true,
+      });
+    }
+  };
 
   const limitDraftValid =
     Boolean(limitCategoryId) && isPositiveNumberString(limitAmount);
-  const goalRequiredFieldsValid =
+  const goalDraftValid =
     goalName.trim() !== "" && isPositiveNumberString(goalTargetAmount);
-  const goalSavedAmountValid = isNonNegativeNumberString(goalSavedAmount);
-  const goalDraftValid = goalRequiredFieldsValid && goalSavedAmountValid;
 
   const isSubmitting =
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
@@ -414,25 +425,15 @@ function AddBudgetFormComponent({
               </p>
             )}
           </div>
-          <div>
-            <Label htmlFor={goalSavedId}>Вже відкладено</Label>
-            <Input
-              id={goalSavedId}
-              placeholder="Напр. 5000 ₴"
-              type="number"
-              aria-invalid={goalSavedError ? true : undefined}
-              disabled={isSubmitting}
-              {...goalForm.register("savedAmount")}
-            />
-            {goalSavedError && (
-              <p
-                className="mt-1 text-xs text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
-                role="alert"
-              >
-                {goalSavedError}
-              </p>
-            )}
-          </div>
+          {jarOptions.length > 0 && (
+            <div>
+              <JarSelector
+                value={goalLinkedJarId}
+                onChange={handleJarChange}
+                jars={jarOptions}
+              />
+            </div>
+          )}
           <div>
             <DateField
               id="budget-goal-target-date"
@@ -453,9 +454,7 @@ function AddBudgetFormComponent({
           </div>
           {!goalDraftValid ? (
             <p className="text-style-caption text-subtle" role="status">
-              {goalRequiredFieldsValid
-                ? "Вкажи відкладену суму 0 або більше."
-                : "Заповни назву та вкажи позитивну суму цілі."}
+              Заповни назву та вкажи позитивну суму цілі.
             </p>
           ) : null}
           <div className="flex gap-2">

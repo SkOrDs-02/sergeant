@@ -8,6 +8,7 @@ import {
   isApiError,
   type MonoSyncState,
   type MonoAccountDto,
+  type MonoJarDto,
   type MonoTransactionDto,
 } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
@@ -117,6 +118,20 @@ export function useMonobankWebhook({
     refetchOnWindowFocus: false,
     retry: authAwareRetry(1),
   });
+
+  // === Jars ("банки") ===
+  // Separate query from `accounts` (own endpoint/table, migration 088) —
+  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // reads a linked jar's balance to compute a goal's saved amount.
+  const jarsQuery = useQuery<MonoJarDto[]>({
+    queryKey: finykKeys.monoWebhookJars,
+    queryFn: ({ signal }) => monoWebhookApi.jars({ signal }),
+    enabled: enabled && isConnected,
+    staleTime: ACCOUNTS_STALE,
+    refetchOnWindowFocus: false,
+    retry: authAwareRetry(1),
+  });
+  const jars = jarsQuery.data ?? [];
 
   const webhookAccounts = accountsQuery.data;
   const accounts = useMemo(
@@ -304,9 +319,7 @@ export function useMonobankWebhook({
     return {
       status: statusMap[syncStateData.status] ?? "idle",
       source: (transactions.length > 0 ? "network" : "none") as
-        | "none"
-        | "network"
-        | "cache",
+        "none" | "network" | "cache",
       lastSuccess: lastUpdated,
       lastError:
         syncStateData.status === "invalid"
@@ -393,6 +406,9 @@ export function useMonobankWebhook({
         await queryClient.invalidateQueries({
           queryKey: finykKeys.monoWebhookAccounts,
         });
+        await queryClient.invalidateQueries({
+          queryKey: finykKeys.monoWebhookJars,
+        });
         queryClient.invalidateQueries({
           queryKey: hubKeys.preview("finyk"),
         });
@@ -463,6 +479,7 @@ export function useMonobankWebhook({
     queryClient.removeQueries({ queryKey: finykKeys.mono });
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
     queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });
+    queryClient.removeQueries({ queryKey: finykKeys.monoWebhookJars });
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
     setError("");
     setAuthError("");
@@ -481,6 +498,7 @@ export function useMonobankWebhook({
     token: "",
     clientInfo,
     accounts,
+    jars,
     transactions: overlayTransactions,
     realTx: overlayTransactions,
     connecting,

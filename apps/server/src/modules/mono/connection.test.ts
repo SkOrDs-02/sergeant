@@ -210,6 +210,72 @@ describe("connectHandler", () => {
     expect(webhookCall[0]!).toBe("https://api.monobank.ua/personal/webhook");
   });
 
+  it("connects successfully: also upserts jars from client-info (goal-progress-auto-sync)", async () => {
+    const accounts = [{ id: "acc_1", currencyCode: 980, balance: 100000 }];
+    const jars = [
+      {
+        id: "jar_1",
+        title: "На відпустку",
+        currencyCode: 980,
+        balance: 50000,
+        goal: 200000,
+      },
+    ];
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accounts, jars }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({}),
+    });
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+
+    expect(res.statusCode).toBe(200);
+    // 1 connection upsert + 1 account upsert + 1 jar upsert = 3 DB calls
+    expect(dbQuery).toHaveBeenCalledTimes(3);
+    const jarUpsertCall = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("INSERT INTO mono_jar"),
+    );
+    expect(jarUpsertCall).toBeDefined();
+    expect(jarUpsertCall![1]).toEqual([
+      "user_1",
+      "jar_1",
+      null,
+      "На відпустку",
+      null,
+      980,
+      50000,
+      200000,
+    ]);
+  });
+
+  it("connects successfully with no jars in client-info: no jar upsert call", async () => {
+    const accounts = [{ id: "acc_1", currencyCode: 980, balance: 100000 }];
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ accounts }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({}),
+    });
+    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+
+    expect(res.statusCode).toBe(200);
+    const jarUpsertCall = dbQuery.mock.calls.find((c) =>
+      String(c[0]).includes("INSERT INTO mono_jar"),
+    );
+    expect(jarUpsertCall).toBeUndefined();
+  });
+
   it("returns 502 when webhook registration fails", async () => {
     mockFetch
       .mockResolvedValueOnce({

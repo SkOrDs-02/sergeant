@@ -184,7 +184,7 @@ describe("updateBudget", () => {
     });
   });
 
-  it("updates an existing goal case-insensitively by name", () => {
+  it("updates an existing goal case-insensitively by name, writing a single AI contribution", () => {
     localStorage.setItem(
       "finyk_budgets",
       JSON.stringify([
@@ -208,10 +208,17 @@ describe("updateBudget", () => {
     expect(out).toContain("20000/80000 грн");
     const saved = writes.get("finyk_budgets") as Array<{
       targetAmount: number;
-      savedAmount: number;
+      contributions: Array<{ amountUah: number; note?: string }>;
     }>;
     expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({ targetAmount: 80000, savedAmount: 20000 });
+    expect(saved[0]!.targetAmount).toBe(80000);
+    // Прогрес більше не пишеться в `savedAmount` — AI-екшн замінює лог
+    // поповнень одним записом на всю задану суму (goal-progress-auto-sync).
+    expect(saved[0]!.contributions).toHaveLength(1);
+    expect(saved[0]!.contributions[0]).toMatchObject({
+      amountUah: 20000,
+      note: "Через AI-асистента",
+    });
   });
 
   it("rejects an unknown scope", () => {

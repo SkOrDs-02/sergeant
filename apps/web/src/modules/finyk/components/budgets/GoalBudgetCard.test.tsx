@@ -9,7 +9,6 @@ const baseBudget = {
   emoji: "🏖",
   name: "Відпустка",
   targetAmount: 10000,
-  savedAmount: 4000,
   targetDate: "2026-12-31",
 };
 
@@ -81,6 +80,42 @@ describe("GoalBudgetCard", () => {
     expect(screen.getByText("≈ 500 ₴ / міс")).toBeInTheDocument();
   });
 
+  it("shows the jar/manual breakdown only when both sources contributed", () => {
+    const { rerender } = render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={4000}
+        pct={40}
+        daysLeft={120}
+        fromJar={3000}
+        fromContributions={1000}
+        linkedJarLabel="На відпустку"
+        isEditing={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/з банки/)).toBeInTheDocument();
+    expect(screen.getByText(/вручну/)).toBeInTheDocument();
+
+    rerender(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={3000}
+        pct={30}
+        daysLeft={120}
+        fromJar={3000}
+        fromContributions={0}
+        isEditing={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/з банки/)).not.toBeInTheDocument();
+  });
+
   it("fires onBeginEdit when the edit pencil is clicked", () => {
     const onBeginEdit = vi.fn();
     render(
@@ -99,10 +134,10 @@ describe("GoalBudgetCard", () => {
     expect(onBeginEdit).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the edit form and fires save / delete / change handlers", () => {
+  it("renders the edit form (no more editable saved-amount field) and fires save / delete", () => {
     const onSave = vi.fn();
     const onDelete = vi.fn();
-    const onChangeSaved = vi.fn();
+    const onChangeTarget = vi.fn();
     render(
       <GoalBudgetCard
         budget={baseBudget}
@@ -111,18 +146,116 @@ describe("GoalBudgetCard", () => {
         daysLeft={120}
         isEditing
         onBeginEdit={vi.fn()}
-        onChangeSaved={onChangeSaved}
+        onChangeTarget={onChangeTarget}
         onSave={onSave}
         onDelete={onDelete}
       />,
     );
-    const input = screen.getByLabelText("Відкладено");
-    fireEvent.change(input, { target: { value: "5000" } });
-    expect(onChangeSaved).toHaveBeenCalledWith(5000);
+    expect(screen.queryByLabelText("Відкладено")).not.toBeInTheDocument();
+    const target = screen.getByLabelText("Сума цілі");
+    fireEvent.change(target, { target: { value: "12000" } });
+    expect(onChangeTarget).toHaveBeenCalledWith(12000);
     fireEvent.click(screen.getByText("Зберегти"));
     expect(onSave).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Видалити"));
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a jar dropdown in edit mode only when jars are available", () => {
+    const onChangeLinkedJar = vi.fn();
+    render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={4000}
+        pct={40}
+        daysLeft={120}
+        isEditing
+        jars={[{ id: "jar-1", label: "На відпустку" }]}
+        linkedJarId=""
+        onBeginEdit={vi.fn()}
+        onChangeLinkedJar={onChangeLinkedJar}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const select = screen.getByLabelText("Банка Monobank");
+    fireEvent.change(select, { target: { value: "jar-1" } });
+    expect(onChangeLinkedJar).toHaveBeenCalledWith("jar-1");
+  });
+
+  it("adds a contribution via the + Поповнити inline form", () => {
+    const onAddContribution = vi.fn();
+    render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={4000}
+        pct={40}
+        daysLeft={120}
+        isEditing={false}
+        onBeginEdit={vi.fn()}
+        onAddContribution={onAddContribution}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText("+ Поповнити"));
+    fireEvent.change(screen.getByLabelText("Сума поповнення"), {
+      target: { value: "500" },
+    });
+    fireEvent.change(screen.getByLabelText("Нотатка (необов'язково)"), {
+      target: { value: "Готівка" },
+    });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(onAddContribution).toHaveBeenCalledWith(500, "Готівка");
+  });
+
+  it("does not add a contribution with a non-positive amount", () => {
+    const onAddContribution = vi.fn();
+    render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={4000}
+        pct={40}
+        daysLeft={120}
+        isEditing={false}
+        onBeginEdit={vi.fn()}
+        onAddContribution={onAddContribution}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText("+ Поповнити"));
+    fireEvent.click(screen.getByText("Додати"));
+    expect(onAddContribution).not.toHaveBeenCalled();
+  });
+
+  it("shows a collapsed-by-default history list with a delete action per entry", () => {
+    const onDeleteContribution = vi.fn();
+    render(
+      <GoalBudgetCard
+        budget={baseBudget}
+        saved={1500}
+        pct={15}
+        daysLeft={120}
+        contributions={[
+          { id: "c1", amountUah: 1000, date: "2026-07-01", note: "Аванс" },
+          { id: "c2", amountUah: 500, date: "2026-07-15" },
+        ]}
+        isEditing={false}
+        onBeginEdit={vi.fn()}
+        onDeleteContribution={onDeleteContribution}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Аванс/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Історія (2)"));
+    expect(screen.getByText(/Аванс/)).toBeInTheDocument();
+    const deleteButtons = screen.getAllByRole("button", {
+      name: /Видалити поповнення/,
+    });
+    fireEvent.click(deleteButtons[0]!);
+    expect(onDeleteContribution).toHaveBeenCalledTimes(1);
   });
 
   it("fires the goal-completed celebration when progress hits 100%", () => {

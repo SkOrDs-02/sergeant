@@ -9,7 +9,11 @@ import {
   disconnectHandler,
   syncStateHandler,
 } from "../modules/mono/connection.js";
-import { accountsHandler, transactionsHandler } from "../modules/mono/read.js";
+import {
+  accountsHandler,
+  jarsHandler,
+  transactionsHandler,
+} from "../modules/mono/read.js";
 import {
   backfillHandler,
   backfillProgressHandler,
@@ -40,6 +44,7 @@ export function createMonoWebhookRouter(): Router {
   r.use("/api/mono/disconnect", setModule("finyk"));
   r.use("/api/mono/sync-state", setModule("finyk"));
   r.use("/api/mono/accounts", setModule("finyk"));
+  r.use("/api/mono/jars", setModule("finyk"));
   r.use("/api/mono/transactions", setModule("finyk"));
   r.use("/api/mono/backfill", setModule("finyk"));
   r.use("/api/mono/backfill-progress", setModule("finyk"));
@@ -76,6 +81,7 @@ export function createMonoWebhookRouter(): Router {
   r.post("/api/mono/disconnect", requireSession(), disconnectHandler);
   r.get("/api/mono/sync-state", requireSession(), syncStateHandler);
   r.get("/api/mono/accounts", requireSession(), accountsHandler);
+  r.get("/api/mono/jars", requireSession(), jarsHandler);
   r.get("/api/mono/transactions", requireSession(), transactionsHandler);
   r.post("/api/mono/backfill", requireSession(), backfillHandler);
   r.get(

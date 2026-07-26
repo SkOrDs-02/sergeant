@@ -187,9 +187,22 @@ function appendBudgetLines(lines: string[], d: AllData): void {
   const goals = d.budgets.filter((b): b is BudgetGoal => b.type === "goal");
   if (goals.length > 0) {
     lines.push(
-      `[Цілі] ${goals.map((b) => `${b.name}: ${fmt(b.savedAmount || 0)}/${fmt(b.targetAmount)} грн`).join(", ")}`,
+      `[Цілі] ${goals.map((b) => `${b.name}: ${fmt(goalSavedAmount(b))}/${fmt(b.targetAmount)} грн`).join(", ")}`,
     );
   }
+}
+
+// ponytail: AllData не несе баланс привʼязаної банки (goal-progress-auto-
+// sync), тож чат-контекст бачить лише ручну частину прогресу
+// (contributions). Апгрейд — протягнути jar-баланс сюди, коли знадобиться.
+function goalSavedAmount(goal: BudgetGoal): number {
+  if (Array.isArray(goal.contributions) && goal.contributions.length > 0) {
+    return goal.contributions.reduce(
+      (s, c) => s + (Number(c?.amountUah) || 0),
+      0,
+    );
+  }
+  return goal.savedAmount || 0;
 }
 
 function appendPlanAndSubscriptionLines(lines: string[], d: AllData): void {

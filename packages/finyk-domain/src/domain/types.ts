@@ -73,8 +73,24 @@ export interface LimitBudget {
 }
 
 /**
+ * Один запис логу поповнень цілі — ручно додана сума (готівка/інше поверх
+ * привʼязаної банки). `date` — межі доби Europe/Kyiv (`YYYY-MM-DD`),
+ * див. `toLocalISODate`.
+ */
+export interface GoalContribution {
+  id: string;
+  amountUah: number;
+  date: string;
+  note?: string | undefined;
+}
+
+/**
  * Бюджет-ціль — накопичення до `targetAmount` (з опційним дедлайном).
  * Поля віддзеркалюють те, що пише `AddBudgetForm` і читає `GoalBudgetCard`.
+ *
+ * Прогрес (`saved`) більше не редагується напряму — рахується як
+ * `баланс привʼязаної банки (linkedJarId) + сума contributions`
+ * (`calculateGoalSavedAmount` у `./budget`).
  */
 export interface GoalBudget {
   id: string;
@@ -82,7 +98,18 @@ export interface GoalBudget {
   name: string;
   emoji?: string;
   targetAmount: number;
+  /**
+   * @deprecated Заморожене значення на момент міграції зі старого
+   * редагованого поля «Відкладено» (goal-progress-auto-sync, 2026-07).
+   * Більше не пишеться/не читається з UI — прогрес рахується через
+   * `contributions`/`linkedJarId`. Лишено лише для сумісності зі старими
+   * снапшотами/бекапами.
+   */
   savedAmount: number;
+  /** Лог ручних поповнень. Мігрований `savedAmount` стає першим записом. */
+  contributions: GoalContribution[];
+  /** ID привʼязаної банки Monobank (`MonoJarDto.monoJarId`), якщо є. */
+  linkedJarId?: string | undefined;
   targetDate?: string;
   label?: string;
 }

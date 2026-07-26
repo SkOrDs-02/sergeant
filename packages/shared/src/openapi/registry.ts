@@ -169,6 +169,14 @@ const MonoAccountsResponse = schemas.MonoAccountsResponseSchema.meta({
   id: "MonoAccountsResponse",
   description: "Відповідь GET /api/mono/accounts — масив MonoAccountDto.",
 });
+const MonoJarDto = schemas.MonoJarDtoSchema.meta({
+  id: "MonoJarDto",
+  description: "Рядок `mono_jar` після нормалізації (bigint coerce).",
+});
+const MonoJarsResponse = schemas.MonoJarsResponseSchema.meta({
+  id: "MonoJarsResponse",
+  description: "Відповідь GET /api/mono/jars — масив MonoJarDto.",
+});
 const MonoTransactionDto = schemas.MonoTransactionDtoSchema.meta({
   id: "MonoTransactionDto",
   description:
@@ -336,6 +344,8 @@ export const namedSchemas = {
   MonoTransactionsQuery,
   MonoAccountDto,
   MonoAccountsResponse,
+  MonoJarDto,
+  MonoJarsResponse,
   MonoTransactionDto,
   MonoTransactionsPage,
   MonoSyncState,

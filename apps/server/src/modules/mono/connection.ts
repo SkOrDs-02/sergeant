@@ -19,6 +19,7 @@ import {
   type MonoTokenRow,
 } from "./tokenStore.js";
 import { scheduleHistoryBackfill } from "./historyFetch.js";
+import { upsertJars, type MonoClientInfoJar } from "./jars.js";
 
 /**
  * POST /api/mono/connect  — register Monobank webhook + persist connection.
@@ -30,7 +31,7 @@ import { scheduleHistoryBackfill } from "./historyFetch.js";
  */
 
 /** Timeout for outbound Monobank API calls (client-info, webhook register). */
-const MONO_API_TIMEOUT_MS = 15_000;
+export const MONO_API_TIMEOUT_MS = 15_000;
 
 interface AuthedRequest extends Request {
   user?: { id: string };
@@ -67,6 +68,7 @@ interface MonoClientInfoAccount {
 
 interface MonoClientInfoResponse {
   accounts?: MonoClientInfoAccount[];
+  jars?: MonoClientInfoJar[];
   [key: string]: unknown;
 }
 
@@ -251,6 +253,12 @@ export async function connectHandler(
       { op: "mono_account_upsert" },
     );
   }
+
+  // Jars ("банки") come back on the same client-info call as accounts —
+  // persist them now instead of dropping `clientInfo.jars` on the floor, so
+  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // has a linkable balance from the moment of connect.
+  await upsertJars(userId, clientInfo.jars ?? []);
 
   logger.info({
     msg: "mono_connected",

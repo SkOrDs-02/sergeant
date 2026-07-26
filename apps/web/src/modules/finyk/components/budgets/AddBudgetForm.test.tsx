@@ -8,6 +8,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import type { MonoJarDto } from "@shared/api";
 import { AddBudgetForm, type NewBudgetDraft } from "./AddBudgetForm";
 
 const categories = [
@@ -16,13 +17,17 @@ const categories = [
   { id: "income", label: "💰 Дохід" },
 ] as const;
 
-function setup(existing: readonly Budget[] = []) {
+function setup(
+  existing: readonly Budget[] = [],
+  jars: readonly MonoJarDto[] = [],
+) {
   const onSubmit = vi.fn();
   const onCancel = vi.fn();
   render(
     <AddBudgetForm
       existingBudgets={existing}
       expenseCategoryList={categories}
+      jars={jars}
       onSubmit={onSubmit}
       onCancel={onCancel}
     />,
@@ -169,18 +174,17 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits a valid goal budget with trimmed name and number conversion", async () => {
+  it("submits a valid goal budget with trimmed name and number conversion (no more editable saved-amount field)", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+
+    expect(screen.queryByLabelText("Вже відкладено")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
       target: { value: "  Нова авто  " },
     });
     fireEvent.change(screen.getByLabelText("Сума цілі"), {
       target: { value: "20000" },
-    });
-    fireEvent.change(screen.getByLabelText("Вже відкладено"), {
-      target: { value: "5000" },
     });
     fireEvent.change(screen.getByLabelText("Дата завершення"), {
       target: { value: "2026-12-31" },
@@ -193,10 +197,98 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
         name: "Нова авто",
         emoji: "🎯",
         targetAmount: 20000,
-        savedAmount: 5000,
         targetDate: "2026-12-31",
+        linkedJarId: undefined,
       } satisfies NewBudgetDraft);
     });
+  });
+
+  it("does not render the jar dropdown when the user has no Monobank jars", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    expect(screen.queryByLabelText("Банка Monobank")).not.toBeInTheDocument();
+  });
+
+  it("selecting a jar sets linkedJarId in the submit payload", async () => {
+    const jars: MonoJarDto[] = [
+      {
+        userId: "u1",
+        monoJarId: "jar-1",
+        sendId: null,
+        title: "На відпустку",
+        description: null,
+        currencyCode: 980,
+        balance: 30000,
+        goal: null,
+        lastSeenAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    const { onSubmit } = setup([], jars);
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+
+    fireEvent.change(screen.getByLabelText("Назва цілі"), {
+      target: { value: "Відпустка" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума цілі"), {
+      target: { value: "50000" },
+    });
+    fireEvent.change(screen.getByLabelText("Банка Monobank"), {
+      target: { value: "jar-1" },
+    });
+    fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ linkedJarId: "jar-1" }),
+      );
+    });
+  });
+
+  it("prefills the target amount from the jar's own goal when the field is still empty", () => {
+    const jars: MonoJarDto[] = [
+      {
+        userId: "u1",
+        monoJarId: "jar-1",
+        sendId: null,
+        title: "На відпустку",
+        description: null,
+        currencyCode: 980,
+        balance: 30000,
+        goal: 200000, // 2000 ₴ в копійках
+        lastSeenAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    setup([], jars);
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.change(screen.getByLabelText("Банка Monobank"), {
+      target: { value: "jar-1" },
+    });
+    expect(screen.getByLabelText("Сума цілі")).toHaveValue(2000);
+  });
+
+  it("does not overwrite a target amount the user already typed", () => {
+    const jars: MonoJarDto[] = [
+      {
+        userId: "u1",
+        monoJarId: "jar-1",
+        sendId: null,
+        title: "На відпустку",
+        description: null,
+        currencyCode: 980,
+        balance: 30000,
+        goal: 200000,
+        lastSeenAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    setup([], jars);
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+    fireEvent.change(screen.getByLabelText("Сума цілі"), {
+      target: { value: "9999" },
+    });
+    fireEvent.change(screen.getByLabelText("Банка Monobank"), {
+      target: { value: "jar-1" },
+    });
+    expect(screen.getByLabelText("Сума цілі")).toHaveValue(9999);
   });
 
   it("blocks goal submit when name is whitespace-only via .trim().min(1)", async () => {
@@ -216,28 +308,6 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("rejects negative savedAmount on goal", async () => {
-    const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
-    fireEvent.change(screen.getByLabelText("Назва цілі"), {
-      target: { value: "Кубокубок" },
-    });
-    fireEvent.change(screen.getByLabelText("Сума цілі"), {
-      target: { value: "1000" },
-    });
-    fireEvent.change(screen.getByLabelText("Вже відкладено"), {
-      target: { value: "-50" },
-    });
-    fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("Відкладена сума не може бути від'ємною"),
-      ).toBeInTheDocument();
-    });
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
   it("rejects a decimal goal target amount", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
@@ -253,31 +323,6 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText("Сума цілі")).toHaveAttribute(
-        "aria-invalid",
-        "true",
-      );
-    });
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("rejects a decimal saved goal amount", async () => {
-    const { onSubmit } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
-    fireEvent.change(screen.getByLabelText("Назва цілі"), {
-      target: { value: "Подорож" },
-    });
-    fireEvent.change(screen.getByLabelText("Сума цілі"), {
-      target: { value: "20000" },
-    });
-    fireEvent.change(screen.getByLabelText("Вже відкладено"), {
-      target: { value: "100.5" },
-    });
-
-    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
-    fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
-
-    await waitFor(() => {
-      expect(screen.getByLabelText("Вже відкладено")).toHaveAttribute(
         "aria-invalid",
         "true",
       );

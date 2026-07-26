@@ -925,6 +925,34 @@ export const MonoAccountsResponseSchema = z.array(MonoAccountDtoSchema);
 export type MonoAccountsResponse = z.infer<typeof MonoAccountsResponseSchema>;
 
 /**
+ * Row from `GET /api/mono/jars`. Mirrors the columns of `mono_jar` after
+ * `normalizeMonoJar()` coerces `bigint`→`number` (Hard Rule #1) and
+ * `Date`→ISO-8601 string. Jars ("банки") are Monobank's named savings
+ * sub-accounts — `goal` is the user-set target amount in the jar itself
+ * (nullable when the user never set one in the Monobank app), used as the
+ * default target when a Фінік goal links to this jar
+ * (docs/90-work/planning/specs/goal-progress-auto.md).
+ */
+export const MonoJarDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoJarId: z.string().min(1),
+  sendId: z.string().nullable(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  currencyCode: z.number().int(),
+  // bigint columns coerced to number by `normalizeMonoJar`; `null` when
+  // Monobank hadn't reported a balance/goal yet.
+  balance: z.number().nullable(),
+  goal: z.number().nullable(),
+  lastSeenAt: z.string().min(1),
+});
+export type MonoJarDto = z.infer<typeof MonoJarDtoSchema>;
+
+/** Response of `GET /api/mono/jars` — array of jars, no envelope. */
+export const MonoJarsResponseSchema = z.array(MonoJarDtoSchema);
+export type MonoJarsResponse = z.infer<typeof MonoJarsResponseSchema>;
+
+/**
  * Row from `GET /api/mono/transactions`. Mirrors the columns of
  * `mono_transaction` after `normalizeMonoTransaction()`. Bigint money
  * columns (`amount`, `operationAmount`, `cashbackAmount`,
