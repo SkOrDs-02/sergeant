@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -11,41 +11,89 @@ multi-burn-rate** алерти (Google SRE Workbook, Ch. 5). Формули SLI 
 у [`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Порядок дій під
 час алерту — у [`runbook.md`](./runbook.md).
 
-## Статус wiring (чесний зріз, 2026-06-26)
+## Статус wiring (чесний зріз, 2026-07-26)
 
-Раніше (2026-06-11) цей документ був «дизайн на потім» — Prometheus не був
-розгорнутий. **Станом на 2026-06-26 wiring завершено** (перевірено прямими
-запитами до Grafana Cloud): метрики, логи, помилки й алерти реально працюють
-у проді.
+> **Не читай «0 firing» як здоров'я, поки не перевірив, що ruler взагалі
+> оцінює правила.** Редакція від 2026-06-26 стверджувала «0 firing / 0 pending
+> — здоровий стан». Під час аудиту 2026-07-26 ruler відповідав
+> `rule evaluation is disabled for tenant 3147374` — тобто нуль означав «жоден
+> алерт не може спрацювати». Grafana Cloud **автоматично вимикає rule
+> evaluation тенанту, у який не надходять метрики**: інжест помер 14 липня,
+> слідом замовк і ruler. Після відновлення скрейпу evaluation увімкнувся сам,
+> без втручання в portal. Перевірочна команда:
+>
+> ```bash
+> curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+>   "https://skords01.grafana.net/api/datasources/proxy/uid/grafanacloud-prom/api/v1/rules" \
+>   | head -c 200
+> ```
+>
+> `"status":"error"` з `rule evaluation is disabled` = алертингу немає взагалі.
 
 **Wired сьогодні ✅**
 
-- **Метрики → Grafana Cloud Prometheus.** Сервіс `grafana-alloy` (колишній Railway-проєкт
-  `SERGEANT_N8N`) скрейпить `/metrics` сервера (кожні 15s, bearer `METRICS_TOKEN`)
-  і n8n (30s), `remote_write`-ить у Grafana Cloud
-  (`prometheus-prod-39-prod-eu-north-0`). `up{project="sergeant"}=1` для обох
-  targets, ~374 active series. Конфіг — [`ops/grafana-alloy/config.alloy`](../../../ops/grafana-alloy/config.alloy).
-- **Recording + alert rules → Grafana Cloud Mimir.** [`recording_rules.yml`](./prometheus/recording_rules.yml)
-  і [`alert_rules.yml`](./prometheus/alert_rules.yml) залиті в Grafana Cloud
-  (13 груп, 28 alerting + 25 recording rules, evaluating). Burn-rate-алерти
-  реально оцінюються (на момент перевірки 0 firing / 0 pending — здоровий стан).
-- **Логи → Grafana Cloud Loki.** Pino-transport [`obs/lokiTransport.ts`](../../../apps/server/src/obs/lokiTransport.ts)
-  (gated на `GRAFANA_CLOUD_LOKI_{URL,USERNAME,TOKEN}` — усі задані в проді).
+- **Метрики → Grafana Cloud Prometheus.** Сервіс `grafana-alloy` скрейпить
+  `/metrics` сервера (кожні 15s, bearer `METRICS_TOKEN`) і `remote_write`-ить у
+  Grafana Cloud (`prometheus-prod-39-prod-eu-north-0`, tenant `3147374`).
+  Живе на **Coolify** (Hetzner), не на Railway. `up{job="sergeant-server"}=1`,
+  ~250 семплів на скрейп.
+- **Grafana-managed алерти.** Група `sergeant-meta` у теці `Sergeant Ops`:
+  `SergeantMetricsPipelineDown` (детект зникнення метрик через `NoData` →
+  `Alerting`) і `SergeantHttp5xxBurnFast`. Оцінюються **в Grafana**, а не в
+  Mimir — тому переживають вимкнення тенант-ruler-а й лишаються останньою
+  лінією захисту саме тоді, коли Mimir замовкає. Маршрут — contact point
+  `telegram-ops` за `severity=page`. Форма правил канонічна
+  (`A(range) → B(reduce) → C(threshold)`): скорочена `A(instant) → C` дає
+  вічний `NoData` і мовчазно неробочий алерт.
 - **Помилки + performance traces → Sentry** (`SENTRY_DSN`, per-route sampling).
-- **Продуктова аналітика → PostHog EU.**
+  Проєкти: `sergeant-api`, `sergeant-web`, `sergeant-mobile`.
+- **Продуктова аналітика → PostHog EU** (проєкт `167740`), web-трафік.
+
+- **Mimir ruler → знову оцінює.** [`recording_rules.yml`](./prometheus/recording_rules.yml)
+  і [`alert_rules.yml`](./prometheus/alert_rules.yml) — 13 груп, **28 alerting +
+  25 recording rules**, 0 firing / 0 pending (цього разу справді здоровий стан).
+  `sli:*` recording-метрики знову обчислюються (`sli:http_latency_p95_ms:rate5m`
+  ≈ 27 ms на момент перевірки), тому burn-rate-панелі наповнюються.
+- **PostHog server-side capture увімкнено.** `POSTHOG_PROJECT_API_KEY` додано в
+  Coolify, сервер передеплоєно 2026-07-26 — `subscription_started` зі Stripe
+  тепер має долітати.
+
+**Зламано / не працює ❌**
+
+- **Логи → Loki не йдуть.** Креди валідні (прямий push дає `204`), env-змінні
+  `GRAFANA_CLOUD_LOKI_{URL,USERNAME,TOKEN}` задані в Coolify, `pino-loki` є в
+  залежностях — але інстанс порожній (0 лейблів за 29 днів). Транспорт мовчки
+  не емітить; причина не встановлена.
+- **Голова growth-воронки не фаїться.** `signup_completed` спрацював 1 раз за
+  365 днів проти 100 `onboarding_completed` — подія викликається лише в
+  email+пароль шляху (`AuthContext.tsx`), а OAuth-редиректи Google/Apple її
+  оминають. Наслідок: усі воронкові інсайти Founder Pulse віддають 0 рядків.
+
+> **Урок про fail-open.** `POSTHOG_PROJECT_API_KEY` був відсутній у Coolify,
+> тому [`posthogCapture.ts`](../../../apps/server/src/lib/posthogCapture.ts)
+> навмисно повертав `skipped` — і `subscription_started` не фаявся **жодного
+> разу за 180 днів**, не зронивши жодної помилки. Fail-open правильний для
+> Stripe-вебхука (аналітика не має ламати білінг), але означає, що відсутність
+> телеметрії треба ловити **окремим** сигналом — тишу ніхто не помічає.
 
 **Ще не зроблено / поза runtime 📐**
 
 - **Alertmanager не використовується.** [`alertmanager.yml`](./alertmanager.yml) —
-  legacy-артефакт; маршрутизація алертів іде через Grafana Cloud managed alerting
-  (contact point — Telegram через n8n), не через self-hosted Alertmanager.
+  **Deprecated** legacy-артефакт; маршрутизація йде через Grafana Cloud managed
+  alerting (contact point `telegram-ops`), не через self-hosted Alertmanager.
 - **Імпорт дашбордів** ([`dashboards/`](./dashboards/)) у Grafana Cloud — ручний
-  крок (`Dashboards → Import`); підтвердження статусу — у Grafana UI.
-- **UptimeRobot** (зовнішній blackbox-сигнал downtime, доповнює internal-метрики) —
-  досі founder-gated.
+  крок без звірки, тому drift накопичується мовчки.
+- **UptimeRobot** (зовнішній blackbox-сигнал downtime) — досі founder-gated.
+  Це єдина ланка, що не залежить від власного пайплайна.
 
-> **Примітка:** burn-rate-механіка нижче по документу тепер описує **поточну**
-> (а не цільову) поведінку — Prometheus її оцінює в реальному часі.
+### Інцидент 2026-07-14 → 2026-07-26 (12 днів без метрик)
+
+Коміт `1d20c958c` (2026-07-12) прибрав `ops/grafana-alloy/railway.toml` разом з
+рештою Railway-конфігів, але Coolify-еквівалент не створили. Колектор помер
+2026-07-14 06:07 UTC — обидва скрейп-таргети зникли одночасно. Ніхто не
+помітив, бо сигнал про смерть пайплайна мав іти **тим самим пайплайном**, а
+Mimir-ruler до того ж не оцінював правила. Урок закріплено правилом
+`SergeantMetricsPipelineDown`, яке спрацьовує саме на `NoData`.
 
 ## TL;DR
 

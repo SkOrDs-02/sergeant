@@ -22,6 +22,39 @@ ops/posthog/
 | [`dashboards/hub-tab-perf.json`](./dashboards/hub-tab-perf.json)   | P50/P95 `ttiMs` по табах Hub, long-task burden, cache-hit ratio, гістограма TTI, денний тренд — з подій `hub_tab_switch_perf`                                         | [`docs/03-operations/observability/hub-perf-baseline.md`](../../docs/03-operations/observability/hub-perf-baseline.md)         |
 | [`schema/dashboard.schema.json`](./schema/dashboard.schema.json)   | JSON Schema (draft-07) для всіх манифестів вище — на неї вказує поле `$schema` кожного файлу                                                                          | —                                                                                                                              |
 
+## Live-стан у PostHog (prod `167740`)
+
+> **Оновлено 2026-07-26** прямими запитами до PostHog API.
+
+| Дашборд       | id       | Стан                                                                                       |
+| ------------- | -------- | ------------------------------------------------------------------------------------------ |
+| FTUX overview | `660031` | 5 інсайтів, рахується. Не має маніфесту в репо — живе тільки в UI, тож drift не ловиться.  |
+| Founder Pulse | `777283` | 7 інсайтів. **Воронкові тайли віддають 0 рядків** — див. попередження нижче.               |
+| Hub tab perf  | `850531` | 5 інсайтів, усі з даними. Імпортовано 2026-07-26 — до того маніфест лежав у репо без діла. |
+
+> **Пастка importer-а.** `pnpm posthog:import` викликає
+> [`import-founder-pulse.mjs`](../../scripts/posthog/import-founder-pulse.mjs), у якого
+> `--manifest` **за замовчуванням прибитий до `founder-pulse.json`**. Будь-який
+> інший маніфест треба передавати явно, інакше він мовчки не імпортується —
+> саме так `hub-tab-perf.json` пролежав неімпортованим, поки подія
+> `hub_tab_switch_perf` збирала 188 записів за 30 днів:
+>
+> ```bash
+> POSTHOG_API_KEY=phx_… node scripts/posthog/import-founder-pulse.mjs \
+>   --manifest ops/posthog/dashboards/hub-tab-perf.json
+> ```
+>
+> Скрипт ідемпотентний (матчить за тегом, потім за назвою) — повторний запуск
+> не дублює. Спершуганяй з `--dry-run`.
+
+> **⚠️ Founder Pulse зараз показує нулі.** Подія `signup_completed` — голова
+> WF-60 воронки — спрацювала **1 раз за 365 днів** проти 100
+> `onboarding_completed`, бо фаїться лише в email+пароль шляху, а OAuth-редиректи
+> Google/Apple її оминають. Плюс `subscription_started` не фаявся жодного разу
+> за 180 днів (server-side capture був вимкнений — `POSTHOG_PROJECT_API_KEY`
+> відсутній у Coolify до 2026-07-26). Поки голова воронки не полагоджена, цифри
+> цього дашборда не інтерпретуються.
+
 ## Контракт JSON-файлу
 
 Manifest — наш власний portable shape, **не** raw PostHog dashboard export. Це свідома відмова від PostHog-native експорту: PostHog `Insight` / `Dashboard` об'єкти прив'язані до конкретних `project_id`, `team_id`, `short_id`, які різні в `prod (167740)` і `dev (167756)` проєктах. Portable shape переживає це, але вимагає тонкого importer-а під час deploy.

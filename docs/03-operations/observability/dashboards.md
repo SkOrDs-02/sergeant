@@ -13,6 +13,13 @@
 >
 > - [`posthog-founder-pulse.md`](./posthog-founder-pulse.md) — Founder Pulse: DAU/WAU/MAU, WF-60 funnel (signup → onboarding → first_action → subscription), per-module funnel, D1/D7/D30 retention, activation rate, new-MRR, funnel-ZEROES canary. Portable manifest у [`ops/posthog/dashboards/founder-pulse.json`](../../../ops/posthog/dashboards/founder-pulse.json).
 > - [`posthog-ftux-dashboards.md`](./posthog-ftux-dashboards.md) — FTUX overview: activation funnel, TTV histogram, vibe→first-entry matrix, D1/D7 retention by signup-cohort, celebration drop-off.
+> - [`hub-perf-baseline.md`](./hub-perf-baseline.md) — Hub tab perf: P50/P95 `ttiMs` по табах, long-task burden, cache-hit ratio, TTI-гістограма, денний тренд. Live-дашборд [`850531`](https://eu.posthog.com/project/167740/dashboard/850531), маніфест [`ops/posthog/dashboards/hub-tab-perf.json`](../../../ops/posthog/dashboards/hub-tab-perf.json) (імпортовано 2026-07-26).
+>
+> **Скільки дашбордів де і чому.** Grafana = інфраструктура (RED, USE, SLO
+> burn-rate, вартість) — 12 дашбордів. PostHog = продуктові воронки — 3.
+> Асиметрія нормальна: це різні шари, не дубль. Ненормальне інше — PostHog-шар
+> бачить **лише web** (мобільних подій 0 за 30 днів), а FTUX-дашборд не має
+> маніфесту в репо, тож існує тільки в UI.
 
 ## HTTP (RED)
 
