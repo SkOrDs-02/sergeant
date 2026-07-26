@@ -1300,7 +1300,7 @@ const noAnthropicKeyInLogs = {
   },
 };
 
-// ─── no-strict-bypass ───────────────────────────────────────────────────
+// ─── no-strict-bypass ───��───────────────────────────────────────────────
 //
 // PR-6.E — forbid new type-safety bypasses in production code:
 //   1. `// @ts-expect-error` comments
@@ -1496,7 +1496,7 @@ const noHexInClassname = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────���──────────────────
 // `no-emoji-icon` — forbid emoji in system icon fields
 // ─────────────────────────────────────────────────────────────────────────
 //
@@ -1781,6 +1781,166 @@ const noForeignModuleAccent = {
       }
       if (isHubChartFile) {
         reportBannedChartRaw(node, value);
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-retired-module-hue` — forbid a module's *retired* raw palette hue
+// ─────────────────────────────────────────────────────────────────────────
+//
+// `no-foreign-module-accent` (above) stops a module from borrowing ANOTHER
+// module's *semantic* accent tokens (`bg-routine` inside `modules/fizruk`).
+// It cannot catch the more insidious failure mode: a half-finished palette
+// migration that leaves the module's OWN, now-retired raw hue scattered
+// through hover/active states, gradients, shadows and confetti arrays.
+//
+//   • finyk migrated emerald → teal (2026-07). `bg-finyk-strong` already
+//     resolved to teal, but `hover:bg-emerald-800` / `dark:shadow-glow-
+//     accent-emerald` / `from-emerald-500` were left behind — a visible
+//     hue jump on hover that every existing lint passed, because
+//     `emerald-800` is a legal Tailwind utility that belongs to no *active*
+//     module accent.
+//   • fizruk migrated teal → cyan for the same disambiguation reason, so a
+//     raw `bg-teal-600` inside `modules/fizruk` is the same ghost.
+//
+// The rule fires ONLY inside the owning module's subtree, on the RAW
+// Tailwind palette family that module retired (plus arbitrary hex of the
+// retired hue). Semantic tokens (`bg-finyk`, `text-finyk-strong`,
+// `bg-chart-finyk`) are never flagged — they are the migration target.
+// Cross-module shells (`core/**`, `shared/**`, `stories/**`) and test files
+// are exempt, exactly like `no-foreign-module-accent`.
+
+// Map each module to the raw Tailwind palette family it RETIRED. Extend
+// this when a module migrates hue — that single edit turns the whole
+// module subtree red until every ghost is cleaned up.
+const RETIRED_MODULE_HUES = {
+  finyk: "emerald", // 2026-07: emerald → teal
+  fizruk: "teal", // teal → cyan (disambiguates from finyk)
+};
+
+// Retired-hue arbitrary hex literals (lowercased, no `#`). These are the
+// exact 500/700 tells the migrations moved off of; arbitrary hex bypasses
+// the semantic-token layer entirely, so `bg-[#10b981]` in a finyk file is
+// the same regression as `bg-emerald-500`.
+const RETIRED_HUE_HEXES = {
+  emerald: new Set([
+    "10b981",
+    "059669",
+    "047857",
+    "34d399",
+    "6ee7b7",
+    "a7f3d0",
+    "d1fae5",
+    "ecfdf5",
+    "065f46",
+    "064e3b",
+  ]),
+  teal: new Set([
+    "14b8a6",
+    "0d9488",
+    "0f766e",
+    "115e59",
+    "2dd4bf",
+    "5eead4",
+    "99f6e4",
+    "ccfbf1",
+    "f0fdfa",
+    "134e4a",
+  ]),
+};
+
+const RETIRED_MODULE_HUE_MESSAGE =
+  "`{{match}}` is `{{home}}`'s RETIRED `{{hue}}` hue — that module migrated off `{{hue}}`. Use the semantic `{{home}}` token instead (`bg-{{home}}`, `text-{{home}}-strong`, `bg-chart-{{home}}`, `hover:bg-{{home}}-…`). Add a new preset shade if a genuinely new tier is needed.";
+
+function buildRetiredHueRegex(hue) {
+  // `[variants:]<utility>-<hue>-<shade>[/<opacity>]` — mirror the accent
+  // regex, but the shade group is REQUIRED (a bare `-emerald` with no
+  // numeric/keyword shade is not a Tailwind utility) so we don't misfire
+  // on unrelated words that merely contain the hue name.
+  return new RegExp(
+    String.raw`\b(` +
+      TAILWIND_OPACITY_UTILITIES.join("|") +
+      String.raw`)-(` +
+      hue +
+      String.raw`)-(\d{2,3})(\/\d{1,3})?\b`,
+    "g",
+  );
+}
+
+function findRetiredHueClasses(value, hue) {
+  if (typeof value !== "string" || value.length === 0) return [];
+  // Cheap prefilter before the regex.
+  if (!value.includes(`-${hue}-`)) return [];
+  const rx = buildRetiredHueRegex(hue);
+  const hits = [];
+  let m;
+  while ((m = rx.exec(value)) !== null) hits.push(m[0]);
+  return hits;
+}
+
+// Arbitrary hex in a className (`bg-[#10b981]`, `shadow-[…#34d399…]`).
+const RX_ARBITRARY_HEX = /#([0-9a-fA-F]{6})\b/g;
+
+function findRetiredHueHex(value, hue) {
+  if (typeof value !== "string" || value.indexOf("#") === -1) return [];
+  const bank = RETIRED_HUE_HEXES[hue];
+  if (!bank) return [];
+  const hits = [];
+  let m;
+  RX_ARBITRARY_HEX.lastIndex = 0;
+  while ((m = RX_ARBITRARY_HEX.exec(value)) !== null) {
+    if (bank.has(m[1].toLowerCase())) hits.push(`#${m[1]}`);
+  }
+  return hits;
+}
+
+const noRetiredModuleHue = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid a module's retired raw palette hue inside `apps/*/src/modules/<X>/**` — catches half-finished palette migrations (finyk emerald→teal, fizruk teal→cyan) that `no-foreign-module-accent` cannot see.",
+    },
+    schema: [],
+    messages: { retired: RETIRED_MODULE_HUE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    const home = homeModuleFromFilename(filename);
+    if (!home) return {};
+    const hue = RETIRED_MODULE_HUES[home];
+    if (!hue) return {};
+    // Module-scoped tests reference the retired hue in migration comments
+    // and fixtures; skip them exactly like no-foreign-module-accent.
+    if (/\.(test|spec)\.[jt]sx?$/.test(filename)) return {};
+
+    function report(node, value) {
+      for (const match of findRetiredHueClasses(value, hue)) {
+        context.report({
+          node,
+          messageId: "retired",
+          data: { match, home, hue },
+        });
+      }
+      for (const match of findRetiredHueHex(value, hue)) {
+        context.report({
+          node,
+          messageId: "retired",
+          data: { match, home, hue },
+        });
       }
     }
     return {
@@ -2695,7 +2855,7 @@ const noCyrillicJsxLiteral = {
 //
 // Правило працює на шейпі «класовий літерал у className», тож ловить і
 // `cn("…")`, і шаблонні рядки. Мапінг у повідомленні — той самий, що в
-// таблиці звіту, щоб автор не шукав, чим замінити.
+// таблиці звіт��, щоб автор не шукав, чим замінити.
 const DEAD_TYPOGRAPHY_CLASSES = new Map([
   ["text-display-stat", "text-style-display tnum"],
   ["text-display-hero", "text-style-display"],
@@ -3550,7 +3710,7 @@ const requireStoriesForUiComponents = {
   },
 };
 
-// ─── prefer-data-state ──────────────────────────────────────────────────
+// ─── prefer-data-state ─────────────────────────────��────────────────────
 //
 // Initiative 0011 Phase 2.9 (Foundation adoption — DataState rollout).
 // `<DataState>` (`apps/web/src/shared/components/ui/DataState.tsx`) — це
@@ -3904,7 +4064,7 @@ const noInlineBodySizeLimit = {
 // поля об'єкта Express Request, включно з тими, що не у redact-list:
 // `req.signedCookies`, custom-headers від upstream-проксі, `req.user`
 // (Better Auth session), `req.body` для нових endpoint-ів. Pino
-// redact-paths не закривають "зростаюче дерево" — нові sensitive-поля
+// redact-paths не закривають "зрост��юче дерево" — нові sensitive-поля
 // з'являються без auto-redaction.
 //
 // Це правило змушує робити **явний destructure** замість raw-об'єкта:
@@ -5322,6 +5482,7 @@ const plugin = {
     "no-hex-in-classname": noHexInClassname,
     "no-emoji-icon": noEmojiIcon,
     "no-foreign-module-accent": noForeignModuleAccent,
+    "no-retired-module-hue": noRetiredModuleHue,
     "no-low-contrast-text-on-fill": noLowContrastTextOnFill,
     "no-bigint-string": noBigintString,
     "rq-keys-only-from-factory": rqKeysOnlyFromFactory,
@@ -5369,6 +5530,9 @@ export {
   NO_CONSOLE_PII_MESSAGE,
   NO_STRICT_BYPASS_MESSAGES,
   DEFAULT_FORBID_PATTERNS,
+  RETIRED_MODULE_HUES,
+  RETIRED_HUE_HEXES,
+  RETIRED_MODULE_HUE_MESSAGE,
   RAW_DARK_PALETTE_FAMILIES,
   RAW_DARK_PALETTE_UTILITIES,
   RAW_DARK_PALETTE_MESSAGE,

@@ -304,7 +304,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={progressData.volPoints}
               label="Обсяг"
               unit="кг"
-              color={chartSeries.fizruk.primary ?? "#14b8a6"}
+              color={chartSeries.fizruk.primary ?? "#0e7490"}
             />
           </Card>
         )}

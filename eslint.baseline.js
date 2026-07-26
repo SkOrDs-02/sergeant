@@ -202,6 +202,13 @@ export const baseline = [
       // Cross-module shells (`core/`, `shared/`, `stories/`) remain
       // free to reference all four module accents.
       "sergeant-design/no-foreign-module-accent": "error",
+      // `sergeant-design/no-retired-module-hue` is intentionally NOT
+      // registered in this top-level block. Like `no-raw-dark-palette`, its
+      // semantic-token replacement (`bg-{module}` → `--c-{module}-*`) only
+      // resolves in `apps/web`; NativeWind (`apps/mobile`) still ships the
+      // pre-migration emerald/teal palette. The rule is registered scoped
+      // to `apps/web/**` in `eslint.web.js` so it fires only where the
+      // migration target actually exists.
       // WCAG-AA `-strong` tier guardrail — every saturated brand `bg-*`
       // utility paired with `text-white` regresses to ~2.4–2.8 : 1
       // contrast (the bug class fixed in PRs #854 / #855). The fix is
