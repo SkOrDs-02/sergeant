@@ -414,6 +414,92 @@ describe("AuthContext", () => {
     expect(result.current.authError).toBe("Provider not configured");
   });
 
+  // WF-60 root cause: `signIn.social` full-page-redirects, so
+  // `loginWithGoogle`/`loginWithApple` never resolve on success and can't
+  // fire `signup_completed` themselves. `AuthContext` instead stashes the
+  // provider in sessionStorage pre-redirect and resolves it once `useUser()`
+  // reports the post-callback session, gated on how fresh `createdAt` is.
+  it("fires signup_completed with method=google after a fresh OAuth callback", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+
+    function Probe() {
+      const { user, status, loginWithGoogle } = useAuth();
+      return (
+        <div>
+          <div data-testid="probe">
+            {status}:{user?.id ?? ""}
+          </div>
+          <button onClick={() => void loginWithGoogle()}>go</button>
+        </div>
+      );
+    }
+
+    const { getByText, rerender } = render(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await act(async () => {
+      getByText("go").click();
+    });
+    expect(trackEventMock).not.toHaveBeenCalledWith(
+      "signup_completed",
+      expect.anything(),
+    );
+
+    // Simulate the OAuth callback landing: `me` now resolves a brand-new
+    // account (createdAt ≈ now).
+    setUser({
+      data: {
+        user: { ...SAMPLE_USER, createdAt: new Date().toISOString() },
+      },
+    });
+    rerender(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await waitFor(() =>
+      expect(trackEventMock).toHaveBeenCalledWith("signup_completed", {
+        method: "google",
+      }),
+    );
+  });
+
+  it("does NOT fire signup_completed when an OAuth session is a repeat login (old createdAt)", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+
+    function Probe() {
+      const { loginWithGoogle } = useAuth();
+      return <button onClick={() => void loginWithGoogle()}>go</button>;
+    }
+
+    const { getByText, rerender } = render(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await act(async () => {
+      getByText("go").click();
+    });
+
+    // Callback lands, but this account already existed (old createdAt) —
+    // must not be misattributed as a new signup.
+    setUser({ data: { user: SAMPLE_USER } });
+    rerender(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await waitFor(() => expect(useUserMock).toHaveBeenCalled());
+    expect(trackEventMock).not.toHaveBeenCalledWith(
+      "signup_completed",
+      expect.anything(),
+    );
+  });
+
   it("useAuth() throws when used outside AuthProvider", () => {
     setUser({ data: undefined });
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});

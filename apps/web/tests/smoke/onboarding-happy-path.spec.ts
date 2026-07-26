@@ -187,6 +187,14 @@ test("@critical onboarding: sign-up → welcome wizard → hub-overview fires on
     signupCompleted,
     "signup_completed event missing — WF-60 funnel head broken",
   ).toBeDefined();
+  // Regression guard for the WF-60 head-of-funnel bug: `AuthContext` must
+  // pass the real signup method, not a hardcoded/omitted value — the OAuth
+  // paths (`loginWithGoogle`/`loginWithApple`) fire the same event with
+  // `method: "google" | "apple"` via `consumePendingOAuthSignup()`, but a
+  // full OAuth redirect round-trip isn't exercisable in this smoke stack
+  // (no live Google/Apple provider) — covered by unit tests on
+  // `AuthContext` instead.
+  expect(signupCompleted!.payload).toMatchObject({ method: "email" });
 
   await page.goto("/welcome", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/welcome$/, { timeout: 10_000 });

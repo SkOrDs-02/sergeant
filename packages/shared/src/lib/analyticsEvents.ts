@@ -170,21 +170,25 @@ export const ANALYTICS_EVENTS = Object.freeze({
 
   // Acquisition — `signup_completed` рахується у WF-60 growth funnel
   // (`ops/n8n-workflows/60-growth-funnel-snapshot.json`) як перехід
-  // visit → signup. Fire-and-forget одразу після успішного
-  // `signUp.email` у `AuthContext` — Better Auth повертає
-  // ok-without-error на cтворення акаунта, тож подія = «акаунт
-  // створено», незалежно від email-verification flow. Payload-контракт:
+  // visit → signup. Payload-контракт:
   //
-  //   SIGNUP_COMPLETED { method: "email" | "google" }
+  //   SIGNUP_COMPLETED { method: "email" | "google" | "apple" }
   //
-  // Google OAuth наразі не диференціює signup vs login на клієнті
-  // (`signIn.social` повертає той самий shape для обох), тож на цей
-  // момент трекаємо тільки `method: "email"`. Google signup
-  // інструментується окремим follow-up PR коли callback-flow
-  // повертатиме `isNewUser` — див. план у docs/planning/pr-plan-2026-05.md
-  // (PR-06 follow-up). До того ж WF-60 рахує DISTINCT distinct_id за
-  // подією, тож відсутність google-signup тимчасово недо-зараховує
-  // signups, але не подвоює існуючі.
+  // Email: fire-and-forget одразу після успішного `signUp.email` у
+  // `AuthContext` — Better Auth повертає ok-without-error на cтворення
+  // акаунта, тож подія = «акаунт створено», незалежно від
+  // email-verification flow.
+  //
+  // Google/Apple: `signIn.social` full-page-redirects to the provider, so
+  // there is no synchronous "signup vs login" signal at call time —
+  // `AuthContext.loginWithGoogle`/`loginWithApple` never resolve on
+  // success. `AuthContext` instead stashes the chosen provider in
+  // sessionStorage before the redirect and, once the callback lands back
+  // on `/`, compares the freshly-loaded `user.createdAt` to now: Better
+  // Auth sets `createdAt` once at row insert, so a brand-new OAuth signup
+  // lands within ~2 minutes of the redirect return while a repeat login's
+  // `createdAt` is however old the account already is. See
+  // `consumePendingOAuthSignup` in `apps/web/src/core/auth/AuthContext.tsx`.
   SIGNUP_COMPLETED: "signup_completed",
 
   // Subscription / billing — placeholders. Білінг поки не підключено;

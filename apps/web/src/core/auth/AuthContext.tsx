@@ -25,6 +25,64 @@ import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearDemoFlag } from "../onboarding/onboardingGate";
 import { messages } from "../../shared/i18n/uk";
+import {
+  safeReadStringSS,
+  safeWriteSS,
+  safeRemoveSS,
+} from "@shared/lib/storage/storage";
+
+// WF-60 OAuth signup attribution — `signIn.social` full-page-redirects to the
+// provider, so `loginWithGoogle`/`loginWithApple` never resolve on success and
+// can't fire `SIGNUP_COMPLETED` themselves (see their JSDoc). We stash which
+// provider button was pressed in sessionStorage right before the redirect —
+// together with the timestamp of that redirect — then resolve signup-vs-login
+// after the callback lands back on `/`: Better Auth stamps `createdAt` once, at
+// row insert, so an account created no earlier than the redirect we just made
+// is by definition an account this redirect created, while a repeat login's
+// `createdAt` predates it by however long the account has existed. The flag is
+// read-once (removed unconditionally) so a login that merely follows an
+// earlier abandoned signup attempt can't misfire on a later real login.
+const PENDING_OAUTH_PROVIDER_KEY = "sergeant.auth.pendingOAuthProvider";
+
+// The account counts as created *by this redirect* if its `createdAt` is not
+// older than the moment we left for the provider. Anchoring to the redirect
+// start rather than to `Date.now()` keeps slow flows honest — 2FA, account
+// chooser or a distracted user can stretch an OAuth round-trip well past any
+// fixed "recent enough" window, and a missed signup here is exactly the
+// undercount this whole fix exists to remove.
+//
+// The tolerance absorbs client/server clock skew only: `createdAt` is stamped
+// by the server, the redirect timestamp by the browser. It is deliberately not
+// a "recency" budget — widening it does not make a stale login look fresh,
+// because a repeat login's account is older by days, not minutes.
+const OAUTH_CLOCK_SKEW_TOLERANCE_MS = 10 * 60 * 1000;
+
+function markPendingOAuthProvider(provider: "google" | "apple"): void {
+  safeWriteSS(PENDING_OAUTH_PROVIDER_KEY, `${provider}:${Date.now()}`);
+}
+
+function consumePendingOAuthSignup(createdAt: string | null): void {
+  const raw = safeReadStringSS(PENDING_OAUTH_PROVIDER_KEY);
+  safeRemoveSS(PENDING_OAUTH_PROVIDER_KEY);
+  if (!raw) return;
+
+  const sep = raw.lastIndexOf(":");
+  const provider = sep === -1 ? raw : raw.slice(0, sep);
+  if (provider !== "google" && provider !== "apple") return;
+
+  // Pre-timestamp flags (written by an older build still in a live tab) fall
+  // back to "now" so an in-flight upgrade degrades to the previous behaviour
+  // instead of dropping the event outright.
+  const startedAtMs = sep === -1 ? Date.now() : Number(raw.slice(sep + 1));
+  if (!Number.isFinite(startedAtMs)) return;
+
+  if (!createdAt) return;
+  const createdAtMs = new Date(createdAt).getTime();
+  if (Number.isNaN(createdAtMs)) return;
+
+  if (createdAtMs < startedAtMs - OAUTH_CLOCK_SKEW_TOLERANCE_MS) return;
+  trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: provider });
+}
 
 /**
  * AuthContext — єдине джерело правди «хто я» для веб-додатку.
@@ -239,6 +297,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // нічого.
   const loginWithGoogle = useCallback(async () => {
     setAuthError(null);
+    markPendingOAuthProvider("google");
     try {
       const result = await signIn.social({
         provider: "google",
@@ -271,6 +330,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // зрозуміле повідомлення з `messages.auth.providerNotFound`.
   const loginWithApple = useCallback(async () => {
     setAuthError(null);
+    markPendingOAuthProvider("apple");
     try {
       const result = await signIn.social({
         provider: "apple",
@@ -400,6 +460,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const prevId = lastIdentifiedUserIdRef.current;
     const sessionUser = userRef.current;
     if (currentId && sessionUser && currentId !== prevId) {
+      // WF-60: resolve any pending OAuth signup attribution now that `me`
+      // has resolved post-redirect — see `consumePendingOAuthSignup` JSDoc.
+      consumePendingOAuthSignup(sessionUser.createdAt ?? null);
       // `IdentifyTraits` має index-signature `[key: string]: unknown`,
       // тому присвоюється до `Record<string, unknown>` без касту.
       // Типи трейтів захищає сам `buildIdentifyTraits`.
