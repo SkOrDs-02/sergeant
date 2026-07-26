@@ -111,6 +111,29 @@ describe("api versioning — /api/v1/* дзеркалить /api/*", () => {
     expect(res.status).toBe(503);
   });
 
+  it("Telegram-вебхук досяжний і як /api/*, і як /api/v1/* — і не 403", async () => {
+    // Регресія (#493 → #495): роут спершу зареєстрували на
+    // `/api/v1/telegram/webhook`, а `apiVersionRewrite` зрізає `/v1` ДО
+    // маршрутизації — тому шлях був недосяжний у принципі. Паралельно
+    // CSRF-виняток теж прописали у `/v1`-формі, тож гард відсікав запит
+    // Telegram-а з 403 CSRF_HEADER_REQUIRED, і бот мовчав на /start.
+    //
+    // Тест ловить обидва: 403 означає, що exempt-list розійшовся з
+    // канонічним шляхом, 404 — що роут висить на недосяжному префіксі.
+    // 503 — правильна відповідь незконфігурованого вебхука (немає
+    // TELEGRAM_WAITLIST_* env), тобто запит дійшов до handler-а.
+    const app = createApp();
+    for (const path of ["/api/telegram/webhook", "/api/v1/telegram/webhook"]) {
+      const res = await request(app)
+        .post(path)
+        .set("Content-Type", "application/json")
+        .send({});
+      expect(res.status, `${path} має дійти до handler-а`).not.toBe(403);
+      expect(res.status, `${path} має бути зареєстрований`).not.toBe(404);
+      expect(res.status).toBe(503);
+    }
+  });
+
   it("не чіпає /api/auth/* префікс — Better Auth basePath незмінний", async () => {
     const app = createApp();
     // `/api/v1/auth/...` має бути переписаний на `/api/auth/...` і вже

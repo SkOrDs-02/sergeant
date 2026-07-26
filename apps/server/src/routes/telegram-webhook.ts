@@ -17,8 +17,15 @@ import {
 } from "../modules/telegram/waitlistBot.js";
 
 /**
- * `POST /api/v1/telegram/webhook` — апдейти бота вейтліста бети.
+ * `POST /api/telegram/webhook` — апдейти бота вейтліста бети.
  * Спека: `docs/90-work/planning/specs/telegram-waitlist.md`.
+ *
+ * **Шлях реєструється БЕЗ `/v1`, хоч зовні викликається як
+ * `/api/v1/telegram/webhook`.** `apiVersionRewrite` в `app.ts` переписує
+ * `req.url` з `/api/v1/*` на канонічний `/api/*` ДО маршрутизації, тож
+ * роутер, зареєстрований на `/api/v1/...`, недосяжний у принципі. Так само
+ * влаштовані всі інші роути репо — сюди дивиться перший, хто спробує
+ * «явно проставити версію» і зламає ендпоінт удруге.
  *
  * Ендпоінт публічний і анонімний за конструкцією: його викликає Telegram,
  * а не браузер із сесією. Автентифікація — спільний секрет із `setWebhook`
@@ -37,7 +44,7 @@ import {
  */
 export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
-  r.use("/api/v1/telegram/webhook", setModule("telegram-waitlist"));
+  r.use("/api/telegram/webhook", setModule("telegram-waitlist"));
 
   const handler = async (req: Request, res: Response): Promise<void> => {
     const secret = env.TELEGRAM_WAITLIST_WEBHOOK_SECRET;
@@ -130,7 +137,7 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
   };
 
   r.post(
-    "/api/v1/telegram/webhook",
+    "/api/telegram/webhook",
     // Telegram шле апдейти з обмеженого пулу IP; ліміт тут — захист від
     // флуду на випадок, якщо секрет колись витече, а не від самого Telegram.
     rateLimitExpress({

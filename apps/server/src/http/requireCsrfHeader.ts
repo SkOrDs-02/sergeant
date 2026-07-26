@@ -32,9 +32,11 @@ import type { RequestHandler } from "express";
  *     check лишається active.
  *   - `/api/mono/webhook[/...]` — Monobank сервер шле POST з HMAC у
  *     header-і; CSRF-токен від нашого фронту тут нерелевантний.
- *   - `/api/v1/telegram/webhook` — Telegram Bot API шле POST з власним
+ *   - `/api/telegram/webhook` — Telegram Bot API шле POST з власним
  *     `X-Telegram-Bot-Api-Secret-Token`; браузерний CSRF-токен тут так само
- *     нерелевантний, як і для mono/webhook.
+ *     нерелевантний, як і для mono/webhook. Зовні викликається як
+ *     `/api/v1/telegram/webhook`, але `apiVersionRewrite` зрізає `/v1` до
+ *     цього middleware — у списку мусить бути канонічна форма.
  *   - `/api/csp-report` — браузерний `report-uri` POST без custom
  *     header-ів (browser-controlled).
  *   - `/api/metrics/web-vitals` — sendBeacon-style телеметрія,
@@ -70,6 +72,11 @@ const EXEMPT_PATH_PREFIXES: readonly string[] = [
   "/api/auth/",
   "/api/auth", // exact match для самого root-у Better Auth (рідко, але можливо)
   "/api/mono/webhook",
+  // Канонічна (пост-rewrite) форма — саме її бачить цей middleware, бо
+  // `apiVersionRewrite` у `app.ts` зрізає `/v1` ДО нас. `/api/v1/...`-форма
+  // лишається як захист на випадок, якщо rewrite колись приберуть; дзеркалить
+  // те, як тут же продубльовано `web-vitals`.
+  "/api/telegram/webhook",
   "/api/v1/telegram/webhook",
   "/api/billing/stripe-webhook",
   "/api/csp-report",
