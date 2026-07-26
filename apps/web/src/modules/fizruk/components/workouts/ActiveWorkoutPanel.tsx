@@ -213,7 +213,10 @@ export function ActiveWorkoutPanel({
             items={activeWorkout.warmup}
             onToggle={(id: string) => handleWarmupToggle("warmup", id)}
             onInit={handleInitWarmup}
-            color={{ border: "border-orange-400/40", text: "text-orange-500" }}
+            color={{
+              border: "border-warning/40",
+              text: "text-warning-strong dark:text-warning",
+            }}
           />
         </div>
 
