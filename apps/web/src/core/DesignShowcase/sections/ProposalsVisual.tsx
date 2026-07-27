@@ -29,6 +29,23 @@ import { ChartTransitionDemo } from "./proposals/ChartTransitionDemo";
 import { IconMorphDemo } from "./proposals/IconMorphDemo";
 import { FocusGlowDemo } from "./proposals/FocusGlowDemo";
 import { AccentMorphDemo } from "./proposals/AccentMorphDemo";
+// Second review wave (triage 2026-07). IDs prefixed R2- and numbered to match
+// the review proposal list. V-10/16/18 of that list were dropped as already
+// shipped in this same showcase (DynamicThemeColor / EmptyStateIdle / BottomNavGlow).
+import { ViewTransitionDemo } from "./proposals/ViewTransitionDemo";
+import { SharedElementMorphDemo } from "./proposals/SharedElementMorphDemo";
+import { ContrastMoreDemo } from "./proposals/ContrastMoreDemo";
+import { ReducedTransparencyDemo } from "./proposals/ReducedTransparencyDemo";
+import { ForcedColorsDemo } from "./proposals/ForcedColorsDemo";
+import { DynamicTypeDemo } from "./proposals/DynamicTypeDemo";
+import { BreathingMeshDemo } from "./proposals/BreathingMeshDemo";
+import { ParallaxHeroDemo } from "./proposals/ParallaxHeroDemo";
+import { AccentSkeletonDemo } from "./proposals/AccentSkeletonDemo";
+import { OdometerRollupDemo } from "./proposals/OdometerRollupDemo";
+import { StreakTiersDemo } from "./proposals/StreakTiersDemo";
+import { ScrollRevealDemo } from "./proposals/ScrollRevealDemo";
+import { GrainOverlayDemo } from "./proposals/GrainOverlayDemo";
+import { SplashCrossfadeDemo } from "./proposals/SplashCrossfadeDemo";
 
 export function ProposalsVisualSection() {
   return (
@@ -113,9 +130,131 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-4"
           title="Морфінг акценту при навігації"
-          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модулями — одна суцільна поверхня, що перетінюється."
+          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модуля��и — одна суцільна поверхня, що перетінюється."
         >
           <AccentMorphDemo />
+        </ProposalCompareCard>
+
+        <div className="mt-2 flex items-center gap-3">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-2xs uppercase tracking-wide text-muted">Друга хвиля · review 2026-07</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+        <p className="text-2xs leading-relaxed text-muted">
+          Кожен мокап — пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю прибрано як уже реалізовані вище
+          (DynamicThemeColor · EmptyStateIdle · BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
+        </p>
+
+        <ProposalCompareCard
+          id="R2-V-1"
+          title="View Transitions API"
+          intent="Зараз переходи модуль↔хаб — кастомний PageTransition. Пропозиція: нативний startViewTransition з крос-фейдом/слайдом."
+        >
+          <ViewTransitionDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-2"
+          title="Shared-element morph"
+          intent="Зараз іконка модуля і хедер — окремі елементи, поява різка. Пропозиція: іконка «перелітає» в акцент-хедер спільним елементом переходу."
+        >
+          <SharedElementMorphDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-3"
+          title="prefers-contrast: more"
+          intent="Зараз один набір токенів для всіх. Пропозиція: high-contrast варіант — жирніші межі, темніший текст, чіткіші поверхні."
+        >
+          <ContrastMoreDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-4"
+          title="prefers-reduced-transparency"
+          intent="Зараз mesh/blur-шари завжди активні. Пропозиція: за системним прапорцем — суцільні поверхні без втрати ієрархії."
+        >
+          <ReducedTransparencyDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-5"
+          title="forced-colors (Windows HC)"
+          intent="Зараз у forced-colors режимі кольори «злипаються». Пропозиція: мапінг на системні кольори — межі й фокус лишаються читабельними."
+        >
+          <ForcedColorsDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-6"
+          title="Dynamic Type"
+          intent="Зараз розмір тексту фіксований. Пропозиція: масштаб із системного налаштування, зберігаючи ритм і tap-таргети."
+        >
+          <DynamicTypeDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-7"
+          title="Живий mesh-фон"
+          intent="Зараз MeshBackground статичний. Пропозиція: дуже повільне idle-дихання градієнта в межах motion-бюджету."
+        >
+          <BreathingMeshDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-8"
+          title="Паралакс hero"
+          intent="Зараз hub-hero плоский при скролі. Пропозиція: шари рухаються з різною швидкістю (useScrollParallax уже є в кодовій базі)."
+        >
+          <ParallaxHeroDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-9"
+          title="Акцент-aware skeleton"
+          intent="Зараз shimmer нейтральний для всіх модулів. Пропозиція: плейсхолдери підбирають hue активного модуля."
+        >
+          <AccentSkeletonDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-11"
+          title="Одометр великих тоталів"
+          intent="Зараз AnimatedNumber просто тікає. Пропозиція: кожна цифра — окремий барабан, що прокручується (натяк на лічильник)."
+        >
+          <OdometerRollupDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-12"
+          title="Streak-flame градації"
+          intent="Зараз полумʼя стрік однакове. Пропозиція: колір та інтенсивність ростуть tier-ами з довжиною серії."
+        >
+          <StreakTiersDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-17"
+          title="Scroll-driven reveal"
+          intent="Зараз картки просто присутні. Пропозиція: staggered fade-in при вході у viewport (тільки при першій появі)."
+        >
+          <ScrollRevealDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-19"
+          title="Grain / noise-overlay"
+          intent="Зараз cream-поверхні пласкі. Пропозиція: тонка «паперова» текстура (статичний SVG-шум 5% через multiply, без градієнтів)."
+        >
+          <GrainOverlayDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-V-20"
+          title="Splash → app crossfade"
+          intent="Зараз cold-start різкий. Пропозиція: брендовий splash плавно тане у Хаб, лого переходить у хедер."
+        >
+          <SplashCrossfadeDemo />
         </ProposalCompareCard>
       </div>
     </Sec>

@@ -2,10 +2,12 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { WheelPicker } from "@shared/components/ui/WheelPicker";
+import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { cn } from "@shared/lib/ui/cn";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
@@ -58,6 +60,23 @@ export function FoodPickerSection({
   pickedGrams,
   setPickedGrams,
 }: FoodPickerSectionProps) {
+  // R2-UI-18 · On touch devices the numeric grams field pops the OS numpad
+  // over half the sheet; a scroll-snap wheel keeps the value inline. Desktop
+  // keeps the precise +/− stepper + numeric field (arbitrary grams).
+  const coarsePointer = useCoarsePointer();
+  const gramValues = useMemo(() => {
+    const base: number[] = [];
+    for (let g = 5; g <= 1000; g += 5) base.push(g);
+    // Keep an adopted free-form value (e.g. 33 g from a barcode) exactly
+    // representable so the wheel highlights it without silently snapping.
+    const cur = Math.round(Number(pickedGrams));
+    if (cur > 0 && !base.includes(cur)) {
+      base.push(cur);
+      base.sort((a, b) => a - b);
+    }
+    return base;
+  }, [pickedGrams]);
+
   const applyPickedFood = useCallback(
     (p: PickedFood | null, gramsRaw: string | number) => {
       const g = Number(
@@ -189,51 +208,62 @@ export function FoodPickerSection({
             </button>
           </div>
 
-          {/* Порція з кроками */}
+          {/* П��рція з кроками */}
           <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
             <div className="text-xs text-subtle font-semibold shrink-0">
               Порція
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                aria-label="Зменшити"
-                onClick={() => {
-                  const cur = Number(pickedGrams) || 100;
-                  setPickedGrams(
-                    String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
-                  );
-                }}
-                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-              >
-                −
-              </button>
-              <div className="relative">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={pickedGrams}
-                  min={1}
-                  onChange={(e) => setPickedGrams(e.target.value)}
-                  aria-label="Грами"
-                  className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
-                  г
-                </span>
+            {coarsePointer ? (
+              <WheelPicker
+                values={gramValues}
+                value={Math.round(Number(pickedGrams)) || 100}
+                onChange={(g) => setPickedGrams(String(g))}
+                aria-label="Грами"
+                formatValue={(g) => `${g} г`}
+                className="w-[92px]"
+              />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Зменшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    setPickedGrams(
+                      String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
+                    );
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  −
+                </button>
+                <div className="relative">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={pickedGrams}
+                    min={1}
+                    onChange={(e) => setPickedGrams(e.target.value)}
+                    aria-label="Грами"
+                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
+                    г
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Збільшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  +
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Збільшити"
-                onClick={() => {
-                  const cur = Number(pickedGrams) || 100;
-                  setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
-                }}
-                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+            )}
             {/* Швидкі порції */}
             <div className="flex gap-1 flex-wrap">
               {[50, 100, 150, 200].map((g) => (

@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { startViewTransition } from "@shared/lib/ui/viewTransition";
 import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import type { HubModuleId } from "@shared/lib/modules/hubNav";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -103,8 +104,14 @@ export function useHubNavigation(): HubNavigation {
   >("module-enter");
 
   const goToHub = useCallback(() => {
-    setModuleAnimClass("hub-enter");
-    setActiveModule(null);
+    // R2-V-1/V-2 · Wrap the visible module→hub swap in a view transition
+    // so the module card morphs back into its hub tile. `navigate` stays
+    // outside the flushSync callback — the visible swap is driven by
+    // `activeModule`, and the URL update can settle asynchronously.
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+    });
     navigate("/", { replace: false });
   }, [navigate]);
 
@@ -116,8 +123,10 @@ export function useHubNavigation(): HubNavigation {
       return;
     }
     // Fresh entry / deep link with no in-app history — land on the hub.
-    setModuleAnimClass("hub-enter");
-    setActiveModule(null);
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+    });
     navigate("/", { replace: false });
   }, [navigate]);
 
@@ -172,8 +181,13 @@ export function useHubNavigation(): HubNavigation {
         /* ignore */
       }
 
-      setModuleAnimClass("module-enter");
-      setActiveModule(typedId);
+      // R2-V-1/V-2 · Hub→module entry: the tapped hub tile morphs into
+      // the module header via matching `view-transition-name`s while the
+      // rest of the surface crossfades.
+      startViewTransition(() => {
+        setModuleAnimClass("module-enter");
+        setActiveModule(typedId);
+      });
       // Best-effort tracker for `prefetchCriticalModules` priority —
       // see `core/lib/recentModules.ts`. Storage failures are swallowed
       // there; nothing here cares about the result.

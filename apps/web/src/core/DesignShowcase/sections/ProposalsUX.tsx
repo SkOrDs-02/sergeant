@@ -18,6 +18,13 @@ import { OfflineFeedbackDemo } from "./proposals/OfflineFeedbackDemo";
 import { BatchEntryDemo } from "./proposals/BatchEntryDemo";
 import { LaunchHandlerDemo } from "./proposals/LaunchHandlerDemo";
 import { ClipboardActionDemo } from "./proposals/ClipboardActionDemo";
+// Second review wave (triage 2026-07). IDs prefixed R2- and numbered to match
+// the review proposal list.
+import { SmartSuggestDemo } from "./proposals/SmartSuggestDemo";
+import { BatchSelectDemo } from "./proposals/BatchSelectDemo";
+import { CoachMarksDemo } from "./proposals/CoachMarksDemo";
+import { ErrorRecoveryDemo } from "./proposals/ErrorRecoveryDemo";
+import { DemoToRealDemo } from "./proposals/DemoToRealDemo";
 
 export function ProposalsUXSection() {
   return (
@@ -57,6 +64,52 @@ export function ProposalsUXSection() {
           intent="Зараз форма завжди порожня. Пропозиція: якщо в буфері число чи посилання — показати чип «Вставити 250 як витрату?» для створення в один тап."
         >
           <ClipboardActionDemo />
+        </ProposalCompareCard>
+
+        <div className="my-2 flex items-center gap-3">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-2xs uppercase tracking-wide text-muted">Друга хвиля · review 2026-07</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+
+        <ProposalCompareCard
+          id="R2-UX-8"
+          title="Розумні підказки за часом доби"
+          intent="Зараз форма відкривається порожня. Пропозиція: на основі часу доби й патернів показати 1-3 tap-to-fill підказки (Кава ₴65 вранці), що заповнюють суму й категорію в один тап."
+        >
+          <SmartSuggestDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-UX-12"
+          title="Пакетний вибір у списках"
+          intent="Зараз записи редагуються/видаляються по одному. Пропозиція: long-press вмикає режим вибору з чекбоксами й контекстною панеллю дій («Видалити 3 · Перенести»)."
+        >
+          <BatchSelectDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-UX-14"
+          title="Прогресивні coach-marks у модулях"
+          intent="Зараз лише глобальний FTUX, далі модуль відкривається наосліп. Пропозиція: при першому вході 2-3 контекстні підказки послідовно вказують на ключові контроли (раз на модуль)."
+        >
+          <CoachMarksDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-UX-18"
+          title="Відновлення після помилки з дією"
+          intent="Зараз падіння секції показує загальний boundary. Пропозиція: назвати ймовірну причину й дати конкретні дії inline («Повторити», «Скинути кеш секції»), відновлюючись на місці."
+        >
+          <ErrorRecoveryDemo />
+        </ProposalCompareCard>
+
+        <ProposalCompareCard
+          id="R2-UX-19"
+          title="Міст демо → реальний запис"
+          intent="Зараз демо-записи стираються на старті — перший екран порожніє. Пропозиція: кожен зразок має бейдж «зразок» і дію «Зробити своїм», що конвертує його в реальний запис."
+        >
+          <DemoToRealDemo />
         </ProposalCompareCard>
       </div>
     </Sec>

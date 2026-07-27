@@ -62,6 +62,29 @@ describe("Skeleton", () => {
     expect(multiLine.lastElementChild?.className).toContain("w-8/12");
   });
 
+  it("tints the base Skeleton with the module accent (R2-V-9)", () => {
+    const { container, rerender } = render(
+      <Skeleton module="finyk" className="tinted" />,
+    );
+    let el = container.querySelector(".tinted") as HTMLElement;
+    expect(el.className).toContain("bg-finyk/10");
+    expect(el.className).not.toContain("bg-panelHi");
+
+    // Without a module it falls back to the neutral surface.
+    rerender(<Skeleton className="tinted" />);
+    el = container.querySelector(".tinted") as HTMLElement;
+    expect(el.className).toContain("bg-panelHi");
+  });
+
+  it("tints single-line SkeletonText with the module accent (R2-V-9)", () => {
+    const { container } = render(
+      <SkeletonText module="nutrition" className="tinted-line" />,
+    );
+    const el = container.querySelector(".tinted-line") as HTMLElement;
+    expect(el.className).toContain("bg-nutrition/10");
+    expect(el.className).not.toContain("bg-panelHi");
+  });
+
   it("renders shape-aware module placeholders", () => {
     render(
       <div>

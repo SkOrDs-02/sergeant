@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { SetStateAction } from "react";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type {
   Category,
@@ -88,7 +89,25 @@ export function useTransactionFilters({
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
   const [showHidden, setShowHidden] = useState(false);
-  const [selMonth, setSelMonth] = useState(() => kyivNowMonth());
+  const [selMonth, setSelMonthState] = useState(() => kyivNowMonth());
+  // UI-16 · Dual-range amount filter. `null` = inactive (full span, does
+  // not narrow the list). Values are absolute UAH (not kopecks), matching
+  // the slider labels.
+  const [amountRange, setAmountRange] = useState<
+    readonly [number, number] | null
+  >(null);
+
+  // Wrap month changes so the amount range is reset in the same commit —
+  // the bounds are month-specific, so carrying a stale range across months
+  // would silently hide rows. Doing it here (rather than in an effect)
+  // avoids a set-state-in-effect re-render and keeps the two updates atomic.
+  const setSelMonth = useCallback(
+    (next: SetStateAction<ReturnType<typeof kyivNowMonth>>) => {
+      setSelMonthState(next);
+      setAmountRange(null);
+    },
+    [],
+  );
 
   const effectiveFilter = categoryFilter ?? filter;
 
@@ -161,7 +180,7 @@ export function useTransactionFilters({
         return { year: y, month: m };
       });
     },
-    [fetchMonth],
+    [fetchMonth, setSelMonth],
   );
 
   const monthLabel = new Date(
@@ -244,9 +263,31 @@ export function useTransactionFilters({
     return next;
   }, [txsToShow]);
 
+  // UI-16 · Slider bounds for the amount filter. Derived from the
+  // month's rows *before* the pill filter so the track stays stable while
+  // the user narrows other filters. `[0, maxAbs]` in UAH, with the ceiling
+  // rounded up to a tidy step for ergonomic thumb positions.
+  const amountBounds = useMemo<readonly [number, number]>(() => {
+    let maxAbs = 0;
+    for (const t of sortedTxs) {
+      const abs = Math.abs(t.amount / 100);
+      if (abs > maxAbs) maxAbs = abs;
+    }
+    if (maxAbs <= 0) return [0, 0] as const;
+    const rounded = Math.ceil(maxAbs / 50) * 50;
+    return [0, rounded] as const;
+  }, [sortedTxs]);
+
   const filtered = useMemo(() => {
     const m = perfMark("finyk:tx:filter");
     const res = sortedTxs.filter((t) => {
+      // Amount range is ANDed with the pill filter: a row must satisfy
+      // both. Compared in absolute UAH so it works for income and expense
+      // alike (the pill already handles sign when needed).
+      if (amountRange) {
+        const abs = Math.abs(t.amount / 100);
+        if (abs < amountRange[0] || abs > amountRange[1]) return false;
+      }
       if (effectiveFilter === "all") return true;
       if (effectiveFilter === "income") return t.amount > 0;
       if (effectiveFilter === "expense") return t.amount < 0;
@@ -258,7 +299,7 @@ export function useTransactionFilters({
     });
     perfEnd(m, { n: res.length });
     return res;
-  }, [sortedTxs, effectiveFilter, creditAccIds, getEffectiveCat]);
+  }, [sortedTxs, effectiveFilter, creditAccIds, getEffectiveCat, amountRange]);
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
@@ -355,6 +396,10 @@ export function useTransactionFilters({
     setFilter,
     showHidden,
     setShowHidden,
+    // UI-16 amount range
+    amountRange,
+    setAmountRange,
+    amountBounds,
     selMonth,
     isCurrentMonth,
     goMonth,

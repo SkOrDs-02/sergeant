@@ -56,6 +56,26 @@ Phases 3, 5, 6 у `execution-plan.md` мають zero acceptance criteria. Як�
 - [x] ~~CelebrationModal dual-file consolidate~~ **(Q8 resolved 2026-05-18 — renamed, not consolidated)**. Двa файли — РІЗНІ компоненти з однаковим іменем: `shared/ui/CelebrationModal.tsx` = multi-variant celebration system (6 types, used by AuthPage/RegisterForm). `core/onboarding/CelebrationModal.tsx` = first-entry celebration (specific). Не дублі — рішення rename specific-варіант на `FirstEntryCelebrationModal` щоб усунути name collision. Зроблено у cleanup PR.
 - [x] ~~Deprecate-кандидати~~ **(Q8 resolved 2026-05-18 — deleted)**: `FeatureSpotlight` + `SpotlightQueue`, `StreakProtection`, `StreakCelebration` — видалено у cleanup PR. `StreakFlame.StreakBadge` (used у `dashboardCards.tsx:14`) залишається canonical для streak-visualization потреби.
 
+### Parked features (review-триаж 2026-07 — не в скоупі, лишено на майбутнє)
+
+Ідеї з рев’ю UI/UX/візуалу, які founder свідомо **не взяв** у поточну хвилю, але
+варті збереження, щоб не переоткривати їх заново. Це **не commitment** — просто
+parking lot із достатнім контекстом, щоб повернутись.
+
+- [ ] **OCR / фото чека → авто-парсинг витрати (Фінік).** Розширює наявний AI-парсинг quick-add (REC-state, «Surface decisions» вище) з тексту/голосу на **зображення чека**. Наразі у коді камери/OCR немає (`getUserMedia` / `barcode` / `OCR` = 0 згадок); ввід суми — нативна цифрова клавіатура + `NumericAccessoryBar`, плюс голос через `VoiceMicButton` + `parseExpenseSpeech`.
+  - **Флоу (як може бути):** у `ManualExpenseSheet` третя дія поряд зі «Сказати» — «Сфотографувати чек» → `<input type="file" accept="image/*" capture="environment">` (на мобільному одразу камера, надійніше за `getUserMedia` у standalone iOS) → OCR витягує `total / date / merchant / currency` → префіл форми з підсвіткою авто-заповнених полів → користувач підтверджує (ніколи не зберігати мовчки).
+  - **Варіанти OCR:** (A) on-device Tesseract.js/wasm — приватно та офлайн, але важкий bundle і гірше з термочеками; (B) хмарний vision-модель через AI Gateway — найточніше, structured JSON, але онлайн + приватність фото; (C) гібрид — on-device чернетка + хмарне уточнення. Стартова рекомендація — **B**, з падінням на **A** якщо офлайн критичний.
+  - **Торкнеться (орієнтовно):** новий `ReceiptCaptureButton` (shared ui), `parseReceipt()` (edge/route або wasm-воркер), розширення `ManualExpenseSheet` станом «розпізнаю…» + прев’ю результату, опційне збереження зображення чека (Blob).
+  - **Ризики:** точність (завжди показувати розпізнане з правкою) · приватність (попередити для варіанту B) · PWA-камера (`capture` надійніший за `getUserMedia`).
+  - **Розмір:** L. **Джерело:** review-триаж 2026-07 (UX-5).
+
+- [ ] **Прогресивні coach-marks у модулях (потребує глибшого розбору).** Founder взяв у рев’ю-триажі 2026-07, але свідомо винесено на окремий розбір: зачіпає onboarding-архітектуру, персистентність «показано/не показано» per-модуль, та порядок з наявним глобальним FTUX. Мокап — `R2-UX-14` у `ProposalsUX` (`CoachMarksDemo`).
+  - **Як є:** глобальний first-run FTUX + one-shot `FirstEntryCelebrationModal` (`core/onboarding/`), далі кожен модуль відкривається без пояснень. `FeatureSpotlight`/`SpotlightQueue` **видалені** у cleanup PR 2026-05-18 — тобто інфраструктури спотлайтів зараз немає, її доведеться будувати заново.
+  - **Як може бути:** при першому вході в модуль — послідовність 2-3 контекстних підказок, що вказують на ключові контроли (anchor до реального DOM-елемента), із «Далі/Пропустити», раз на модуль.
+  - **Відкриті питання для розбору:** (1) де тримати стан «побачив coach-marks модуля X» — окремий kv-namespace vs розширення onboarding-стану; (2) anchor-механізм (portal + `getBoundingClientRect` vs `@floating-ui`) і поведінка при скролі/resize; (3) координація з FTUX, щоб не накладались; (4) a11y (focus-trap, `aria-describedby`, reduced-motion); (5) чи потрібен re-trigger після великих оновлень модуля.
+  - **Торкнеться (орієнтовно):** новий `CoachMarks` (shared ui) + anchor-хук, per-module kv-персистентність, точки монтування в кожному модулі, можливо повернення легкої версії черги замість видаленого `SpotlightQueue`.
+  - **Розмір:** L (через onboarding-координацію). **Джерело:** review-триаж 2026-07 (UX-14).
+
 ## Hidden tech-debt gaps (audit 2026-05-17 — handoff-package)
 
 > Знайдено канвою + grep по `apps/web/src/` 2026-05-17. Повний контекст — [`handoff-package/hidden-tech-debt-audit.md`](./handoff-package/hidden-tech-debt-audit.md). Спеціально не входило в оригінальний `redesign-v2/execution-plan.md`.

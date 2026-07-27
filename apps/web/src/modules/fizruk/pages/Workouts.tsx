@@ -4,6 +4,7 @@
  */
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { Button } from "@shared/components/ui/Button";
 import { DataState } from "@shared/components/ui/DataState";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
@@ -94,7 +95,22 @@ export function Workouts({
         ) : null}
 
         {o.view === "log" && (
-          <DataState query={o.journalQuery} skeleton={workoutsLoadingSkeleton}>
+          <DataState
+            query={o.journalQuery}
+            skeleton={workoutsLoadingSkeleton}
+            errorAction={
+              // R2-UX-18 · If a retry of the journal query keeps failing
+              // (e.g. corrupted local cache after a bad sync), a full
+              // reload is the reliable second path out.
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.reload()}
+              >
+                {messages.actions.reload}
+              </Button>
+            }
+          >
             {() => (
               <WorkoutJournalSection
                 activeWorkout={o.activeWorkout}
