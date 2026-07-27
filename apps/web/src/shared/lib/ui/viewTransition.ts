@@ -28,11 +28,14 @@ import { flushSync } from "react-dom";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
-interface DocumentWithViewTransition extends Document {
-  startViewTransition?: (callback: () => void) => {
-    finished: Promise<void>;
-  };
-}
+/**
+ * Minimal structural view of the API surface we use. Declared as an
+ * intersection rather than `extends Document` so we don't clash with the
+ * (broader) `startViewTransition` overloads shipped in recent lib.dom.
+ */
+type DocumentWithViewTransition = Document & {
+  startViewTransition?: (callback: () => void) => { finished: Promise<void> };
+};
 
 /** Non-hook reduced-motion read for use outside React render. */
 function prefersReducedMotion(): boolean {
@@ -47,8 +50,10 @@ function prefersReducedMotion(): boolean {
 /** Whether the current environment can run a native view transition. */
 export function supportsViewTransitions(): boolean {
   if (typeof document === "undefined") return false;
-  return typeof (document as DocumentWithViewTransition).startViewTransition ===
-    "function";
+  return (
+    typeof (document as DocumentWithViewTransition).startViewTransition ===
+    "function"
+  );
 }
 
 /**

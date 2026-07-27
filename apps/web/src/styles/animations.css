@@ -967,7 +967,7 @@
 
    Anything inheriting a CSS animation gets the same treatment via the
    universal selector — there is no opt-out at the call site.
-   ═══════════════════════════════════════════════════════════════════════ */
+   ═══════════��═══════════════════════════════════════════════════════════ */
 
 @keyframes rm-opacity-fade {
   from {
@@ -1087,4 +1087,46 @@
 
 .animate-progress-indeterminate {
   animation: progress-indeterminate 1.4s linear infinite;
+}
+
+/* ── R2-V-1 / V-2 · Hub ↔ module view transitions ───────────────────── */
+/*
+ * The hub↔module swap runs inside `document.startViewTransition` (see
+ * `shared/lib/ui/viewTransition.ts`, invoked from `useHubNavigation`).
+ *
+ * V-1 — the root snapshots crossfade (browser default), tuned here to a
+ *        calm 260ms ease so the surface change reads as one motion rather
+ *        than a hard cut.
+ * V-2 — the tapped bento tile and the destination module header share a
+ *        `sgt-module-<id>` name, so the browser morphs the tile's bounds
+ *        into the header (container-transform) and back on exit.
+ *
+ * The JS util already bails out of `startViewTransition` under
+ * `prefers-reduced-motion`, but we defensively neutralise the animations
+ * in CSS too — both for the OS setting and the in-app
+ * `.simulate-reduced-motion` toggle — so a snapshot can never animate.
+ */
+::view-transition-group(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Shared-element morph: match the tile↔header container transform speed. */
+::view-transition-group(*) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+.simulate-reduced-motion ::view-transition-group(*),
+.simulate-reduced-motion ::view-transition-old(*),
+.simulate-reduced-motion ::view-transition-new(*) {
+  animation: none !important;
 }
