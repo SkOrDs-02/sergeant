@@ -44,9 +44,9 @@ const FinykLoader = memo(function FinykLoader() {
       <div className="rounded-3xl border border-line bg-finyk-soft/20 dark:bg-finyk-surface-dark/10 p-5 space-y-3">
         <div className="flex items-center justify-between">
           <SkeletonText shimmer className="w-20" />
-          <Skeleton shimmer className="w-10 h-10 rounded-xl" />
+          <Skeleton shimmer module="finyk" className="w-10 h-10 rounded-xl" />
         </div>
-        <Skeleton shimmer className="h-8 w-32" />
+        <Skeleton shimmer module="finyk" className="h-8 w-32" />
         <div className="flex gap-4">
           <SkeletonText shimmer className="w-24" />
           <SkeletonText shimmer className="w-24" />
@@ -70,7 +70,11 @@ const FinykLoader = memo(function FinykLoader() {
             className="flex items-center gap-3 p-3 rounded-2xl border border-line bg-panel"
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            <Skeleton shimmer className="w-11 h-11 rounded-xl shrink-0" />
+            <Skeleton
+              shimmer
+              module="finyk"
+              className="w-11 h-11 rounded-xl shrink-0"
+            />
             <div className="flex-1 space-y-2">
               <SkeletonText shimmer className="w-32" />
               <SkeletonText shimmer className="w-20 h-2" />
@@ -96,8 +100,8 @@ const FizrukLoader = memo(function FizrukLoader() {
             key={i}
             className="rounded-2xl border border-line bg-fizruk-soft/20 dark:bg-fizruk-surface-dark/10 p-4 space-y-2"
           >
-            <Skeleton shimmer className="w-8 h-8 rounded-xl" />
-            <Skeleton shimmer className="h-6 w-12" />
+            <Skeleton shimmer module="fizruk" className="w-8 h-8 rounded-xl" />
+            <Skeleton shimmer module="fizruk" className="h-6 w-12" />
             <SkeletonText shimmer className="w-full" />
           </div>
         ))}
@@ -118,7 +122,11 @@ const FizrukLoader = memo(function FizrukLoader() {
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="flex items-center gap-3">
-              <Skeleton shimmer className="w-12 h-12 rounded-xl shrink-0" />
+              <Skeleton
+                shimmer
+                module="fizruk"
+                className="w-12 h-12 rounded-xl shrink-0"
+              />
               <div className="flex-1 space-y-2">
                 <SkeletonText shimmer className="w-40" />
                 <SkeletonText shimmer className="w-24 h-2" />
@@ -144,7 +152,7 @@ const RoutineLoader = memo(function RoutineLoader() {
     <>
       {/* Progress ring / streak */}
       <div className="flex items-center justify-center py-6">
-        <Skeleton shimmer className="w-28 h-28 rounded-full" />
+        <Skeleton shimmer module="routine" className="w-28 h-28 rounded-full" />
       </div>
 
       {/* Date selector */}
@@ -169,10 +177,18 @@ const RoutineLoader = memo(function RoutineLoader() {
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="flex items-center gap-2">
-              <Skeleton shimmer className="w-8 h-8 rounded-xl shrink-0" />
+              <Skeleton
+                shimmer
+                module="routine"
+                className="w-8 h-8 rounded-xl shrink-0"
+              />
               <SkeletonText shimmer className="flex-1" />
             </div>
-            <Skeleton shimmer className="h-2 w-full rounded-full" />
+            <Skeleton
+              shimmer
+              module="routine"
+              className="h-2 w-full rounded-full"
+            />
             <SkeletonText shimmer className="w-16 h-2" />
           </div>
         ))}
@@ -194,13 +210,21 @@ const NutritionLoader = memo(function NutritionLoader() {
           <Skeleton shimmer className="w-10 h-10 rounded-xl" />
         </div>
         <div className="flex items-center justify-center py-4">
-          <Skeleton shimmer className="w-24 h-24 rounded-full" />
+          <Skeleton
+            shimmer
+            module="nutrition"
+            className="w-24 h-24 rounded-full"
+          />
         </div>
         {/* Macro bars */}
         <div className="grid grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="space-y-2 text-center">
-              <Skeleton shimmer className="h-2 w-full rounded-full" />
+              <Skeleton
+                shimmer
+                module="nutrition"
+                className="h-2 w-full rounded-full"
+              />
               <SkeletonText shimmer className="w-8 mx-auto h-2" />
             </div>
           ))}

@@ -1,5 +1,6 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { AnimatedNumber } from "@shared/components/ui/AnimatedNumber";
 import { AssetsLiabilitiesBar } from "./AssetsBars";
 import type { useAssetsState } from "./useAssetsState";
 
@@ -39,7 +40,12 @@ export function AssetsNetworthCard({
         >
           {showBalance ? (
             <>
-              {networth.toLocaleString("uk-UA", { maximumFractionDigits: 0 })}
+              <AnimatedNumber
+                value={networth}
+                odometer
+                locale="uk-UA"
+                formatOptions={{ maximumFractionDigits: 0 }}
+              />
               <span
                 className={cn(
                   "text-style-headline ml-1",

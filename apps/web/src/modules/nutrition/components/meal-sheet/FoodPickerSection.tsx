@@ -208,51 +208,62 @@ export function FoodPickerSection({
             </button>
           </div>
 
-          {/* Порція з кроками */}
+          {/* П��рція з кроками */}
           <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
             <div className="text-xs text-subtle font-semibold shrink-0">
               Порція
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                aria-label="Зменшити"
-                onClick={() => {
-                  const cur = Number(pickedGrams) || 100;
-                  setPickedGrams(
-                    String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
-                  );
-                }}
-                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-              >
-                −
-              </button>
-              <div className="relative">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={pickedGrams}
-                  min={1}
-                  onChange={(e) => setPickedGrams(e.target.value)}
-                  aria-label="Грами"
-                  className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
-                  г
-                </span>
+            {coarsePointer ? (
+              <WheelPicker
+                values={gramValues}
+                value={Math.round(Number(pickedGrams)) || 100}
+                onChange={(g) => setPickedGrams(String(g))}
+                aria-label="Грами"
+                formatValue={(g) => `${g} г`}
+                className="w-[92px]"
+              />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-label="Зменшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    setPickedGrams(
+                      String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
+                    );
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  −
+                </button>
+                <div className="relative">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={pickedGrams}
+                    min={1}
+                    onChange={(e) => setPickedGrams(e.target.value)}
+                    aria-label="Грами"
+                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-subtle pointer-events-none">
+                    г
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Збільшити"
+                  onClick={() => {
+                    const cur = Number(pickedGrams) || 100;
+                    setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
+                  }}
+                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                >
+                  +
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Збільшити"
-                onClick={() => {
-                  const cur = Number(pickedGrams) || 100;
-                  setPickedGrams(String(cur + (cur >= 50 ? 10 : 5)));
-                }}
-                className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
-              >
-                +
-              </button>
-            </div>
+            )}
             {/* Швидкі порції */}
             <div className="flex gap-1 flex-wrap">
               {[50, 100, 150, 200].map((g) => (

@@ -25,10 +25,30 @@ export interface SkeletonProps {
    * outer `<div>` only.
    */
   style?: CSSProperties | undefined;
+  /**
+   * R2-V-9 · Optional module accent. When set, the placeholder block is
+   * tinted with the module hue (`bg-<module>/10`) instead of the neutral
+   * `bg-panelHi`, so loaders feel "at home" inside their module. Leave
+   * unset for chrome/global skeletons that shouldn't imply a module.
+   */
+  module?: ModuleAccent | undefined;
 }
 
 const SHIMMER_OVERLAY =
   "absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent";
+
+/**
+ * R2-V-9 · Single source of truth for module→tint mapping. Shared by the
+ * base `Skeleton`/`SkeletonText` and every shape-aware skeleton below so
+ * the accent stays consistent as tokens evolve. `/10` keeps the tint
+ * subtle enough to read as "loading" rather than "filled".
+ */
+export const MODULE_ACCENT_TINT: Record<ModuleAccent, string> = {
+  finyk: "bg-finyk/10",
+  fizruk: "bg-fizruk/10",
+  routine: "bg-routine/10",
+  nutrition: "bg-nutrition/10",
+};
 
 /**
  * Base skeleton loader with optional shimmer effect.
@@ -55,6 +75,7 @@ export function Skeleton({
   variant = "rect",
   pulse = true,
   style,
+  module,
 }: SkeletonProps) {
   const variantClass =
     variant === "avatar"
@@ -68,7 +89,7 @@ export function Skeleton({
   return (
     <div
       className={cn(
-        "bg-panelHi",
+        module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         variantClass,
         shimmer
           ? "relative overflow-hidden"
@@ -150,6 +171,7 @@ export function SkeletonText({
   style,
   lines = 1,
   gap = "gap-2",
+  module,
 }: SkeletonTextProps) {
   if (lines > 1) {
     // Deterministic pseudo-random widths from a small bag so the
@@ -172,6 +194,7 @@ export function SkeletonText({
               shimmer={shimmer}
               className={widths[widthIdx]}
               lines={1}
+              module={module}
             />
           );
         })}
@@ -181,7 +204,8 @@ export function SkeletonText({
   return (
     <div
       className={cn(
-        "bg-panelHi rounded-xl h-3",
+        module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
+        "rounded-xl h-3",
         shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
         className,
       )}
@@ -209,13 +233,6 @@ interface ShapeAwareSkeletonProps extends SkeletonProps {
    *  module color so loaders feel "at home" inside their module. */
   module?: ModuleAccent;
 }
-
-const MODULE_ACCENT_TINT: Record<ModuleAccent, string> = {
-  finyk: "bg-finyk/10",
-  fizruk: "bg-fizruk/10",
-  routine: "bg-routine/10",
-  nutrition: "bg-nutrition/10",
-};
 
 /**
  * SkeletonTransactionRow — placeholder for a Finyk transaction row.
