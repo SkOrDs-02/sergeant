@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { ProposalCard } from "./_PhoneFrame";
 import { ComparePair, MiniPhone } from "./_Compare";
 
