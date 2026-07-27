@@ -132,7 +132,11 @@ export function WheelPicker({
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || disabled) return;
-    const i = clamp(Math.round(el.scrollTop / itemHeight), 0, values.length - 1);
+    const i = clamp(
+      Math.round(el.scrollTop / itemHeight),
+      0,
+      values.length - 1,
+    );
     if (i !== activeIndex) setActiveIndex(i);
     // Commit only once the scroll settles so mid-flick rows don't spam the
     // parent with intermediate values.
@@ -173,13 +177,17 @@ export function WheelPicker({
 
   return (
     <div
-      className={cn("relative select-none", disabled && "opacity-60", className)}
+      className={cn(
+        "relative select-none",
+        disabled && "opacity-60",
+        className,
+      )}
       style={{ height: containerHeight, width: "100%" }}
     >
       {/* Centre selection band */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 rounded-lg border-y border-brand-strong/40 bg-brand-strong/5"
+        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 rounded-xl border-y border-brand-strong/40 bg-brand-strong/5"
         style={{ height: itemHeight }}
       />
       {/* Fade masks */}
@@ -200,7 +208,9 @@ export function WheelPicker({
         aria-valuemin={values[0]}
         aria-valuemax={values[values.length - 1]}
         aria-valuenow={selectedValue}
-        aria-valuetext={selectedValue !== undefined ? fmt(selectedValue) : undefined}
+        aria-valuetext={
+          selectedValue !== undefined ? fmt(selectedValue) : undefined
+        }
         aria-label={ariaLabel && !ariaLabelledBy ? ariaLabel : undefined}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={disabled || undefined}
@@ -208,7 +218,7 @@ export function WheelPicker({
         onKeyDown={onKeyDown}
         className={cn(
           "h-full overflow-y-auto no-scrollbar snap-y snap-mandatory outline-none",
-          "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-lg",
+          "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-xl",
           disabled && "overflow-hidden",
         )}
         style={{ scrollPaddingTop: pad }}
@@ -224,9 +234,7 @@ export function WheelPicker({
               className={cn(
                 "snap-center flex items-center justify-center gap-1 tabular-nums",
                 !reduced && "transition-all duration-150",
-                isSelected
-                  ? "text-text text-lg font-semibold"
-                  : "text-muted",
+                isSelected ? "text-text text-style-title" : "text-muted",
               )}
               style={{
                 height: itemHeight,
@@ -234,7 +242,9 @@ export function WheelPicker({
               }}
             >
               {fmt(v)}
-              {unit ? <span className="text-style-caption text-muted">{unit}</span> : null}
+              {unit ? (
+                <span className="text-style-caption text-muted">{unit}</span>
+              ) : null}
             </div>
           );
         })}

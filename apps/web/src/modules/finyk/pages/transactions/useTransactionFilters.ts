@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { SetStateAction } from "react";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type {
   Category,
@@ -88,14 +89,25 @@ export function useTransactionFilters({
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
   const [showHidden, setShowHidden] = useState(false);
-  const [selMonth, setSelMonth] = useState(() => kyivNowMonth());
+  const [selMonth, setSelMonthState] = useState(() => kyivNowMonth());
   // UI-16 · Dual-range amount filter. `null` = inactive (full span, does
   // not narrow the list). Values are absolute UAH (not kopecks), matching
-  // the slider labels. Reset whenever the month changes so a range set for
-  // June doesn't silently hide rows in a month with a different spread.
+  // the slider labels.
   const [amountRange, setAmountRange] = useState<
     readonly [number, number] | null
   >(null);
+
+  // Wrap month changes so the amount range is reset in the same commit —
+  // the bounds are month-specific, so carrying a stale range across months
+  // would silently hide rows. Doing it here (rather than in an effect)
+  // avoids a set-state-in-effect re-render and keeps the two updates atomic.
+  const setSelMonth = useCallback(
+    (next: SetStateAction<ReturnType<typeof kyivNowMonth>>) => {
+      setSelMonthState(next);
+      setAmountRange(null);
+    },
+    [],
+  );
 
   const effectiveFilter = categoryFilter ?? filter;
 
@@ -104,13 +116,6 @@ export function useTransactionFilters({
       onClearCategoryFilter?.();
     }
   }, [categoryFilter, onClearCategoryFilter]);
-
-  // Clear the amount range on month switch — the bounds are month-specific,
-  // so carrying a stale range across months is confusing. Runs a harmless
-  // null→null on mount.
-  useEffect(() => {
-    setAmountRange(null);
-  }, [selMonth]);
 
   const { year: kyivNowY, month: kyivNowM } = kyivNowMonth();
   const isCurrentMonth =
@@ -175,7 +180,7 @@ export function useTransactionFilters({
         return { year: y, month: m };
       });
     },
-    [fetchMonth],
+    [fetchMonth, setSelMonth],
   );
 
   const monthLabel = new Date(

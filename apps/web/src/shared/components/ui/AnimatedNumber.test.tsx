@@ -139,7 +139,7 @@ describe("AnimatedNumber — odometer mode (R2-V-11)", () => {
     const { container } = render(
       <AnimatedNumber value={1240} odometer immediate />,
     );
-    const root = container.querySelector("span[role='text']") as HTMLElement;
+    const root = container.querySelector("span[role='img']") as HTMLElement;
     // Grouped "1 240" → 4 digit glyphs (each a reel) + the group separator.
     expect(root).toBeTruthy();
     expect(root.getAttribute("aria-label")?.replace(/\s/g, " ")).toBe("1 240");
@@ -164,7 +164,7 @@ describe("AnimatedNumber — odometer mode (R2-V-11)", () => {
     const { container } = render(
       <AnimatedNumber value={50} odometer immediate prefix="₴" suffix="%" />,
     );
-    const root = container.querySelector("span[role='text']") as HTMLElement;
+    const root = container.querySelector("span[role='img']") as HTMLElement;
     expect(root.getAttribute("aria-label")).toBe("₴50%");
     expect(root.textContent).toContain("₴");
     expect(root.textContent).toContain("%");

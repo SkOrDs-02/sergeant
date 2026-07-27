@@ -181,8 +181,8 @@ export const AnimatedNumber = memo(function AnimatedNumber({
     return (
       <span
         className={cn("tabular-nums inline-flex items-baseline", className)}
+        role="img"
         aria-label={`${prefix}${rolled}${suffix}`}
-        role="text"
       >
         {prefix && <span aria-hidden="true">{prefix}</span>}
         {rolled.split("").map((ch, i) =>

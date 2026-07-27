@@ -23,6 +23,9 @@ export type { ThemeChoice, UseThemeReturn } from "./useTheme";
 
 export { useDebounce } from "./useDebounce";
 
+export { useListSelection } from "./useListSelection";
+export type { UseListSelectionResult } from "./useListSelection";
+
 export { useDialogFocusTrap } from "./useDialogFocusTrap";
 export type { DialogFocusTrapOptions } from "./useDialogFocusTrap";
 

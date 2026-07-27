@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { useListSelection } from "@shared/hooks/useListSelection";
 import type { useToast } from "@shared/hooks/useToast";
 import type {
   Transaction,
@@ -92,8 +93,18 @@ export function useTransactionSelection({
   onEditManualExpense,
   toast,
 }: UseTransactionSelectionParams): UseTransactionSelectionResult {
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // R2-UX-12 · Generic select-mode/`selectedIds`/`toggleSelect` core now
+  // lives in the shared `useListSelection` hook so other modules (Їжа,
+  // Фізрук, Рутина) can adopt the same batch pattern. This hook keeps only
+  // the Finyk-specific batch *actions* (category/hide/exclude with undo)
+  // and the stable row-handler wrappers.
+  const {
+    selectMode,
+    setSelectMode,
+    selectedIds,
+    toggleSelect,
+    exitSelectMode: clearSelection,
+  } = useListSelection<string>();
   const [batchCatPicker, setBatchCatPicker] = useState(false);
 
   // Stable refs for handlers used by memoized row — avoids re-rendering all
@@ -131,18 +142,6 @@ export function useTransactionSelection({
     onEditManualExpense,
     toast,
   ]);
-
-  // useCallback — `toggleSelect` передається у кожен рядок вибору.
-  // Сталий reference спільно з React.memo(TxRow)/обгорткою чекбокса дає
-  // змогу дочірнім елементам не перерендерюватись при оновленні батька.
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const stableHideTx = useCallback(
     (id: string) => handlersRef.current.hideTx(id),
@@ -205,11 +204,12 @@ export function useTransactionSelection({
     });
   }, []);
 
+  // Wrap the shared `clear` (which resets selectMode + selectedIds) with
+  // the Finyk-only concern of closing the batch category picker.
   const exitSelectMode = useCallback(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    clearSelection();
     setBatchCatPicker(false);
-  }, []);
+  }, [clearSelection]);
 
   // useCallback — використовується у batch-панелі; стабільний handler
   // дозволяє безпечно мемоїзувати toolbar у майбутньому.
