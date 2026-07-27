@@ -2,10 +2,12 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { WheelPicker } from "@shared/components/ui/WheelPicker";
+import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { cn } from "@shared/lib/ui/cn";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
@@ -58,6 +60,23 @@ export function FoodPickerSection({
   pickedGrams,
   setPickedGrams,
 }: FoodPickerSectionProps) {
+  // R2-UI-18 · On touch devices the numeric grams field pops the OS numpad
+  // over half the sheet; a scroll-snap wheel keeps the value inline. Desktop
+  // keeps the precise +/− stepper + numeric field (arbitrary grams).
+  const coarsePointer = useCoarsePointer();
+  const gramValues = useMemo(() => {
+    const base: number[] = [];
+    for (let g = 5; g <= 1000; g += 5) base.push(g);
+    // Keep an adopted free-form value (e.g. 33 g from a barcode) exactly
+    // representable so the wheel highlights it without silently snapping.
+    const cur = Math.round(Number(pickedGrams));
+    if (cur > 0 && !base.includes(cur)) {
+      base.push(cur);
+      base.sort((a, b) => a - b);
+    }
+    return base;
+  }, [pickedGrams]);
+
   const applyPickedFood = useCallback(
     (p: PickedFood | null, gramsRaw: string | number) => {
       const g = Number(
