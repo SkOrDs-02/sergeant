@@ -53,6 +53,15 @@ const merchants: FrequentMerchant[] = [
 ];
 
 describe("ManualExpenseSheet — interactive surfaces", () => {
+  it("uses an income-specific description placeholder", () => {
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    expect(
+      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток…"),
+    ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Кава, продукти, таксі…")).toBeNull();
+  });
+
   it("renders the amount hero preview when an amount is set", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
     fireEvent.change(screen.getByLabelText("Сума ₴"), {

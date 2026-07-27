@@ -243,18 +243,7 @@ describe("runMonoHistoryBackfill", () => {
     expect(client.query).toHaveBeenCalledWith("BEGIN");
     expect(client.query).toHaveBeenCalledWith("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
-    expect(harness.enqueueMemoryIngest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "user_1",
-        source: "finyk",
-        sourceRef: "tx1",
-        content: expect.stringContaining("Coffee"),
-        metadata: expect.objectContaining({
-          monoAccountId: "acc1",
-          categorySlug: "food",
-        }),
-      }),
-    );
+    expect(harness.enqueueMemoryIngest).not.toHaveBeenCalled();
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],

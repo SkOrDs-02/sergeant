@@ -247,6 +247,7 @@ function SwipeToActionImpl({
         </div>
       )}
       <div
+        data-no-swipe
         style={{
           transform: `translateX(${committed ? (offset < 0 ? -MAX_SWIPE * 2 : MAX_SWIPE * 2) : offset}px)`,
           transition:

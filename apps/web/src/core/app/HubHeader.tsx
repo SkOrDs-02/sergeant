@@ -155,7 +155,7 @@ export function HubHeader({
               aria-label={messages.nav.openAssistant}
               className={cn(
                 "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl",
-                "bg-brand-soft text-brand-strong hover:bg-brand-soft-hover transition-colors",
+                "bg-brand-strong text-white hover:bg-brand-strong/90 transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
               )}
             >

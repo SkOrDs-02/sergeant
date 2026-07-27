@@ -254,7 +254,7 @@ export function NutritionDashboard({
           <div className="flex items-center justify-between mb-3">
             <div>
               <div className="text-style-label text-hero-ink">Сьогодні</div>
-              <div className="text-xs text-hero-ink/60">
+              <div className="text-xs text-hero-ink">
                 {summary.mealCount}{" "}
                 {pluralUa(summary.mealCount, {
                   one: "прийом",
@@ -297,7 +297,7 @@ export function NutritionDashboard({
                       <span className="text-style-title text-hero-ink tabular-nums">
                         {kcalConsumed}
                       </span>
-                      <span className="text-style-caption text-hero-ink/60">
+                      <span className="text-style-caption text-hero-ink">
                         / {kcalGoal} ккал
                       </span>
                     </span>
@@ -344,7 +344,7 @@ export function NutritionDashboard({
                 as="div"
                 size="xs"
                 variant="nutrition"
-                className="text-hero-ink/80"
+                className="text-hero-ink"
               >
                 Встанови ціль калорій щоб бачити прогрес дня
               </SectionHeading>

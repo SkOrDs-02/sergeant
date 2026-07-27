@@ -244,7 +244,7 @@ export function MemoryBankSection() {
                   <div className="text-style-overline text-muted/70 mb-2">
                     {meta.label}
                   </div>
-                  <div className="space-y-1">
+                  <div className="max-h-80 space-y-1 overflow-y-auto pr-1">
                     {items.map((entry) => (
                       <div
                         key={entry.id}

@@ -13,7 +13,6 @@
 import { z } from "zod";
 import { pool } from "../../db.js";
 import { logger } from "../../obs/logger.js";
-import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
 import type { KeyRing } from "../../lib/keyRing.js";
 import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
@@ -30,6 +29,30 @@ const CURRENCY_SYMBOL: Record<number, string> = {
   826: "£",
   985: "zł",
 };
+
+/** Human-readable formatter kept for diagnostics/tests; raw transactions are
+ * deliberately not sent to AI memory. */
+export function buildMemoryContent(
+  item: BackfillItem,
+  categorySlug: string | null,
+): string {
+  const isExpense = item.amount < 0;
+  const verb = isExpense ? "Витрата" : "Надходження";
+  const symbol = CURRENCY_SYMBOL[item.currencyCode] ?? "";
+  const major = Math.abs(item.amount / 100);
+  const sign = isExpense ? "−" : "+";
+  const formatted = major.toLocaleString("uk-UA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const amountStr = symbol
+    ? `${sign}${formatted} ${symbol}`
+    : `${sign}${formatted}`;
+  const description = (item.description || "Без опису").trim().slice(0, 200);
+  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
+  const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
+  return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
+}
 
 export const BackfillItemSchema = z.object({
   id: z.string().min(1).max(64),
@@ -52,28 +75,6 @@ export const BackfillItemSchema = z.object({
   counterName: z.string().max(200).optional(),
 });
 type BackfillItem = z.infer<typeof BackfillItemSchema>;
-
-export function buildMemoryContent(
-  item: BackfillItem,
-  categorySlug: string | null,
-): string {
-  const isExpense = item.amount < 0;
-  const verb = isExpense ? "Витрата" : "Надходження";
-  const symbol = CURRENCY_SYMBOL[item.currencyCode] ?? "";
-  const major = Math.abs(item.amount / 100);
-  const sign = isExpense ? "−" : "+";
-  const formatted = major.toLocaleString("uk-UA", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const amountStr = symbol
-    ? `${sign}${formatted} ${symbol}`
-    : `${sign}${formatted}`;
-  const description = (item.description || "Без опису").trim().slice(0, 200);
-  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
-  const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
-  return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
-}
 
 async function upsertTransactions(
   userId: string,
@@ -123,20 +124,6 @@ async function upsertTransactions(
       );
       if (result.rows[0]?.inserted) {
         inserted++;
-        void enqueueMemoryIngest({
-          userId,
-          source: "finyk",
-          sourceRef: item.id,
-          content: buildMemoryContent(item, categorySlug),
-          metadata: {
-            monoAccountId,
-            amount: item.amount,
-            currencyCode: item.currencyCode,
-            mcc: item.mcc ?? null,
-            categorySlug,
-            time: new Date(item.time * 1000).toISOString(),
-          },
-        });
       }
     }
     await client.query("COMMIT");

@@ -241,12 +241,14 @@ export const FloatingActionButton = memo(function FloatingActionButton({
       <button
         type="button"
         onClick={handleClick}
+        onContextMenu={(event) => event.preventDefault()}
         tabIndex={hidden ? -1 : undefined}
         aria-label={ariaLabel || label || "Action"}
         aria-haspopup={hasActions ? "menu" : undefined}
         aria-expanded={hasActions ? isOpen : undefined}
         className={cn(
           "inline-flex items-center justify-center rounded-full",
+          "touch-manipulation select-none",
           "shadow-lg transition-all duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand",
           "active:scale-95",
