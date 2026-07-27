@@ -102,6 +102,17 @@ export interface DataStateProps<TData, TError = unknown> {
   error?: ReactNode | ((error: TError, retry: () => void) => ReactNode);
 
   /**
+   * R2-UX-18 · Optional contextual recovery action rendered *next to*
+   * the retry button in the default error fallback. Use it to give the
+   * user a second way out that fits the surface — e.g. "Додати вручну"
+   * on a list that failed to load, or "Перезавантажити" when a retry
+   * alone is unlikely to help. Ignored when a custom `error` slot is
+   * provided (that slot owns its own affordances). Function form gets
+   * the same `retry` callback so the action can compose with it.
+   */
+  errorAction?: ReactNode | ((retry: () => void) => ReactNode);
+
+  /**
    * Stale slot — rendered alongside the children when fresh data is
    * already on screen but a background refetch is in flight. Useful
    * for unobtrusive "оновлюється…" badges that don't block content.
@@ -135,9 +146,12 @@ const DEFAULT_EMPTY: <T>(data: T) => boolean = (data) => {
 function DefaultErrorFallback<TError>({
   error,
   onRetry,
+  secondaryAction,
 }: {
   error: TError;
   onRetry: () => void;
+  /** R2-UX-18 · Contextual recovery CTA rendered beside retry. */
+  secondaryAction?: ReactNode;
 }) {
   const message =
     error instanceof Error
@@ -158,6 +172,7 @@ function DefaultErrorFallback<TError>({
           {messages.sync.retryCta}
         </Button>
       }
+      secondaryAction={secondaryAction}
     />
   );
 }
@@ -168,6 +183,7 @@ export function DataState<TData, TError = unknown>({
   empty,
   isEmpty,
   error,
+  errorAction,
   stale,
   children,
   className,
@@ -192,10 +208,22 @@ export function DataState<TData, TError = unknown>({
   const hasError = isError === true || queryError != null;
   if (hasError) {
     const err = queryError as TError;
+    // Resolve the optional contextual action once so both branches and
+    // the function/node forms collapse to a single ReactNode.
+    const resolvedErrorAction =
+      typeof errorAction === "function"
+        ? (errorAction as (r: () => void) => ReactNode)(retry)
+        : errorAction;
     const node =
       typeof error === "function"
         ? (error as (e: TError, r: () => void) => ReactNode)(err, retry)
-        : (error ?? <DefaultErrorFallback error={err} onRetry={retry} />);
+        : (error ?? (
+            <DefaultErrorFallback
+              error={err}
+              onRetry={retry}
+              secondaryAction={resolvedErrorAction}
+            />
+          ));
     return <div className={className}>{node}</div>;
   }
 

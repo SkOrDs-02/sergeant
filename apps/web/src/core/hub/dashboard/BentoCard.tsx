@@ -406,7 +406,7 @@ export const BentoCard = memo(function BentoCard({
   );
 });
 
-/* ─── #18 BentoCardPeek sheet ──────��─────────────────────────────────────── */
+/* ─── #18 BentoCardPeek sheet ──────���─────────────────────────────────────── */
 
 /**
  * Compact action sheet that appears on long-press of a BentoCard.
@@ -694,6 +694,13 @@ export const SortableCard = memo(function SortableCard({
         "min-w-0 h-full relative",
         isDragging && "ring-2 ring-focus/40 rounded-3xl",
       )}
+      // R2-V-2 · Shared-element morph: this tile and the matching module
+      // header carry the same `view-transition-name`, so tapping the card
+      // makes it visually expand into the module chrome (and reverse on
+      // exit). Suppressed in edit mode — during drag/reorder the tile is
+      // transformed and there is no navigation to transition into, so a
+      // captured name would only risk snapshotting a mid-drag frame.
+      style={editMode ? undefined : { viewTransitionName: `sgt-module-${id}` }}
       // #18 — long-press peek: attach to the wrapper so the gesture works
       // regardless of which child element is under the pointer.
       {...(!longPressDisabled ? longPressHandlers : {})}

@@ -119,6 +119,12 @@ export function ModuleHeader({
           : "bg-panel/95 border-b border-line",
         className,
       )}
+      // R2-V-2 · Shared-element morph counterpart to the hub bento tile
+      // (see `BentoCard` SortableCard root). Matching `view-transition-name`
+      // makes the module chrome grow out of the tapped card on entry and
+      // collapse back on exit. Only set when the header is module-scoped;
+      // generic headers stay part of the plain root crossfade.
+      style={module ? { viewTransitionName: `sgt-module-${module}` } : undefined}
     >
       <div className="flex min-h-[68px] items-center px-4 py-2 sm:px-5 gap-3">
         {left}

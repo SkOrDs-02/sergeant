@@ -8,6 +8,8 @@ import {
   DataState,
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
+import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { DailyPlanCard } from "../components/DailyPlanCard";
 import type { PlanMeal } from "../components/DailyPlanMealRow";
@@ -96,8 +98,23 @@ export function NutritionMenuPage({
           ]}
         />
         {menuSubTab === "plan" ? (
-          <DataState query={dayPlanQuery} skeleton={dayPlanLoadingSkeleton}>
-            {() => (
+        <DataState
+          query={dayPlanQuery}
+          skeleton={dayPlanLoadingSkeleton}
+          errorAction={
+            // R2-UX-18 · The day-plan derives from cached prefs + recipes;
+            // when it fails, a full reload rebuilds that state reliably
+            // when a bare retry of the query doesn't.
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              {messages.actions.reload}
+            </Button>
+          }
+        >
+          {() => (
               <DailyPlanCard
                 prefs={prefs}
                 setPrefs={setPrefs}
