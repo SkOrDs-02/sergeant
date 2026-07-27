@@ -2,7 +2,8 @@
  * Last validated: 2026-07-20
  * Status: Active
  *
- * Inline split editor for TxRow. Extracted for Hard Rule #18 max-lines.
+ * Split editor body for TxRow's modal Sheet. Extracted for Hard Rule #18
+ * max-lines; keeping the body separate lets the row stay virtualized.
  */
 import type { Dispatch, SetStateAction } from "react";
 import { formatMoney } from "@sergeant/shared";

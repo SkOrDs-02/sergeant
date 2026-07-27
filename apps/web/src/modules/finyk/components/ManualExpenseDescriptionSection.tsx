@@ -18,6 +18,7 @@ interface ManualExpenseDescriptionSectionProps {
   formId: string;
   descId: string;
   isSubmitting: boolean;
+  isIncome?: boolean;
   showMerchantHints: boolean;
   merchantSuggestions: FrequentMerchant[];
   setDescFocused: Dispatch<SetStateAction<boolean>>;
@@ -31,6 +32,7 @@ export function ManualExpenseDescriptionSection({
   formId,
   descId,
   isSubmitting,
+  isIncome = false,
   showMerchantHints,
   merchantSuggestions,
   setDescFocused,
@@ -45,7 +47,11 @@ export function ManualExpenseDescriptionSection({
       </Label>
       <Input
         id={descId}
-        placeholder="Кава, продукти, таксі…"
+        placeholder={
+          isIncome
+            ? "Зарплата, повернення боргу, підробіток…"
+            : "Кава, продукти, таксі…"
+        }
         disabled={isSubmitting}
         aria-controls={showMerchantHints ? `${formId}-merchants` : undefined}
         aria-autocomplete="list"

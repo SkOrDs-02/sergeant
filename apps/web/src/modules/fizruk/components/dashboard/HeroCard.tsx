@@ -231,12 +231,7 @@ function HeroKicker({
     // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
     // invisible on the saturated hero gradient) with hero-ink;
     // `dark:text-fizruk-300/70` already reads fine on the dark hero.
-    <SectionHeading
-      as="p"
-      size="sm"
-      variant="fizruk"
-      className="text-hero-ink/80"
-    >
+    <SectionHeading as="p" size="sm" variant="fizruk" className="text-hero-ink">
       {greeting} · {today}
     </SectionHeading>
   );
@@ -250,7 +245,7 @@ function HeroKicker({
  */
 function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   return (
-    <SectionHeading as="p" size="sm" className="mt-3 text-hero-ink/80">
+    <SectionHeading as="p" size="sm" className="mt-3 text-hero-ink">
       {children}
     </SectionHeading>
   );

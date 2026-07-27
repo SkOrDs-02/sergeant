@@ -172,7 +172,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         <span
           aria-hidden="true"
           className={cn(
-            "relative inline-flex items-center rounded-full",
+            "inline-flex items-center rounded-full",
             "transition-colors duration-200",
             "outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg",
             ringColor,
@@ -180,16 +180,16 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
             trackBg,
             disabled ? "cursor-not-allowed" : "cursor-pointer",
           )}
-        >
-          <span
-            className={cn(
-              "absolute left-[3px] rounded-full bg-panel shadow-card",
-              "transition-transform duration-200",
-              thumbSize[size],
-              thumbCheckedTranslate[size],
-            )}
-          />
-        </span>
+        ></span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute left-[3px] rounded-full bg-panel shadow-card",
+            "transition-transform duration-200",
+            thumbSize[size],
+            thumbCheckedTranslate[size],
+          )}
+        />
       </span>
 
       {(label || description) && (

@@ -10,18 +10,12 @@
  */
 import { useState, useId, useMemo, useEffect, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { DateScrubber } from "@shared/components/ui/DateScrubber";
 import { useApiForm } from "@shared/forms";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
-import {
-  toLocalISODate,
-  useVisualKeyboardInset,
-  parseExpenseSpeech,
-  formatMoney,
-} from "@sergeant/shared";
+import { toLocalISODate, useVisualKeyboardInset } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -123,17 +117,6 @@ export function ManualExpenseSheet({
   // field register a focus callback so the next item starts amount-first.
   const keepOpenRef = useRef(false);
   const batchFocusRef = useRef<(() => void) | null>(null);
-
-  // UX-17 clipboard-to-action. When the sheet opens for a NEW entry we peek
-  // at the clipboard: if it parses as an expense ("кава 45 грн", "320"), we
-  // surface a one-tap prefill chip instead of making the user retype it.
-  const [clipboardHint, setClipboardHint] = useState<{
-    name: string;
-    amount: number;
-  } | null>(null);
-  // Remember what we already offered so we don't re-surface the same text
-  // after the user dismisses it or after a batch reset.
-  const dismissedClipRef = useRef<string>("");
 
   const { register, submit, reset, setValue, watch, formState, isSubmitting } =
     useApiForm<ExpenseFormValues, void>({
@@ -324,65 +307,6 @@ export function ManualExpenseSheet({
     reset,
   ]);
 
-  // UX-17: peek at the clipboard on open (create mode only). Reading the
-  // clipboard requires a user gesture + permission; opening the sheet via a
-  // tap satisfies the gesture, and any rejection (denied / unsupported /
-  // Firefox) is swallowed so the feature degrades to "no hint" silently.
-  useEffect(() => {
-    let cancelled = false;
-    // The clipboard read is async, so every setState below lands in a later
-    // microtask/task — never synchronously inside the effect body (which
-    // would trigger cascading renders). We `await Promise.resolve()` first so
-    // even the "clear" branch stays deferred.
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-      if (!open || isEditing) {
-        setClipboardHint(null);
-        return;
-      }
-      try {
-        if (!navigator.clipboard?.readText) return;
-        const text = (await navigator.clipboard.readText()).trim();
-        if (cancelled || !text || text.length > 120) return;
-        if (text === dismissedClipRef.current) return;
-        const parsed = parseExpenseSpeech(text);
-        if (parsed && parsed.amount != null && parsed.amount > 0) {
-          setClipboardHint({
-            name: parsed.name || text,
-            amount: parsed.amount,
-          });
-        }
-      } catch {
-        // Permission denied / unsupported — no hint, no error surfaced.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, isEditing]);
-
-  const applyClipboardHint = () => {
-    if (!clipboardHint) return;
-    if (clipboardHint.name) {
-      setValue("description", clipboardHint.name, { shouldDirty: true });
-    }
-    setValue("amount", String(clipboardHint.amount), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    dismissedClipRef.current = `${clipboardHint.name} ${clipboardHint.amount}`;
-    setClipboardHint(null);
-    hapticSuccess();
-  };
-
-  const dismissClipboardHint = () => {
-    dismissedClipRef.current = clipboardHint
-      ? `${clipboardHint.name} ${clipboardHint.amount}`
-      : "";
-    setClipboardHint(null);
-  };
-
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),
     [frequentCategories],
@@ -525,44 +449,6 @@ export function ManualExpenseSheet({
       }
     >
       <div className="space-y-3">
-        {/* UX-17: clipboard-to-action. Detected a parseable expense on the
-            clipboard — offer a one-tap prefill. Whole row is the primary
-            action; the close button dismisses without prefilling. */}
-        {clipboardHint ? (
-          <div className="flex items-center gap-2 rounded-xl border border-finyk/30 bg-finyk/5 p-2 pl-3">
-            <button
-              type="button"
-              onClick={applyClipboardHint}
-              className="flex flex-1 items-center gap-2 text-left min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl"
-            >
-              <Icon
-                name="clipboard-list"
-                size={16}
-                className="text-finyk-strong shrink-0"
-                aria-hidden
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block text-style-caption text-muted">
-                  Вставити зі скопійованого
-                </span>
-                <span className="block text-style-label text-text truncate">
-                  {clipboardHint.name
-                    ? `${clipboardHint.name} · ${formatMoney(clipboardHint.amount)}`
-                    : formatMoney(clipboardHint.amount)}
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={dismissClipboardHint}
-              aria-label="Сховати підказку"
-              className="shrink-0 touch-target flex items-center justify-center rounded-xl text-subtle hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
-            >
-              <Icon name="close" size={16} aria-hidden />
-            </button>
-          </div>
-        ) : null}
-
         {/* §1 fab-and-manual-income spec: segment switch lives at the top
             of the form itself (no fan-menu, no long-press) — defaults to
             Витрата. Switching resets the category to the new kind's
@@ -626,6 +512,7 @@ export function ManualExpenseSheet({
           formId={formId}
           descId={descId}
           isSubmitting={isSubmitting}
+          isIncome={isIncome}
           showMerchantHints={showMerchantHints}
           merchantSuggestions={merchantSuggestions}
           setDescFocused={setDescFocused}

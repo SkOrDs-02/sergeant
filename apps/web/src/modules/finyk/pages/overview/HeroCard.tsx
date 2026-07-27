@@ -82,7 +82,7 @@ const HeroCardImpl = function HeroCard({
       <div className="relative px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-style-caption text-hero-ink/60">Капітал</p>
+            <p className="text-style-caption text-hero-ink">Капітал</p>
             <p
               className={cn(
                 "text-style-title tabular-nums leading-tight mt-0.5",
@@ -113,12 +113,12 @@ const HeroCardImpl = function HeroCard({
             </p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-hero-ink/75 tabular-nums">
+            <p className="text-xs text-hero-ink tabular-nums">
               {daysLeft} дн до кінця
             </p>
           </div>
         </div>
-        <p className="text-xs text-hero-ink/75 mt-1.5 leading-snug">
+        <p className="text-xs text-hero-ink mt-1.5 leading-snug">
           {showBalance ? (
             <>
               <span>На картках </span>
@@ -129,7 +129,7 @@ const HeroCardImpl = function HeroCard({
                 })}{" "}
                 ₴
               </span>
-              <span className="text-hero-ink/60"> · </span>
+              <span className="text-hero-ink"> · </span>
               <span>Борги </span>
               <span className="font-semibold tabular-nums text-hero-ink">
                 −
@@ -170,14 +170,14 @@ const HeroCardImpl = function HeroCard({
             "••••"
           )}
         </div>
-        <p className="text-sm text-hero-ink/75 mt-1">
+        <p className="text-sm text-hero-ink mt-1">
           <span>Можна сьогодні</span>
-          <span className="text-hero-ink/60"> · </span>
+          <span className="text-hero-ink"> · </span>
           <span className={color}>{statusText}</span>
         </p>
 
         <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-hero-ink/75 mb-1">
+          <div className="flex items-center justify-between text-xs text-hero-ink mb-1">
             <span>
               День {daysPassed} з {daysInMonth}
             </span>

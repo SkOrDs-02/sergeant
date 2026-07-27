@@ -58,6 +58,8 @@ interface HubBottomNavTabProps {
   active: boolean;
   onClick: () => void;
   label: string;
+  /** Optional compact label for the narrow visual pill; full label remains in SR text. */
+  visibleLabel?: string | undefined;
   iconName: string;
   className?: string | undefined;
   panelId: string;
@@ -105,6 +107,7 @@ function HubBottomNavTab({
   active,
   onClick,
   label,
+  visibleLabel,
   iconName,
   className,
   panelId,
@@ -180,7 +183,7 @@ function HubBottomNavTab({
               : "max-w-0 opacity-0 pointer-events-none",
           )}
         >
-          {label}
+          {visibleLabel ?? label}
         </span>
       </span>
       {/* Screen-reader-only label so every tab has an accessible name */}
@@ -361,6 +364,7 @@ export function HubBottomNav({
     iconName: "settings",
     prefetchPage: "settings",
     label: "Налаштування",
+    visibleLabel: "Налашт.",
   });
 
   return (
@@ -385,6 +389,7 @@ export function HubBottomNav({
               onClick={tab.onClick}
               iconName={tab.iconName}
               label={tab.label}
+              visibleLabel={tab.visibleLabel}
               className={tab.className}
               prefetchPage={tab.prefetchPage}
               hiddenSlot={tab.hiddenSlot}
@@ -404,6 +409,7 @@ export function HubBottomNav({
             onClick={authAction.onClick}
             iconName={authAction.iconName}
             label={authAction.label}
+            visibleLabel={authAction.visibleLabel}
             className={authAction.className}
             prefetchPage={authAction.prefetchPage}
             hiddenSlot={authAction.hiddenSlot}

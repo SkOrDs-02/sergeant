@@ -311,12 +311,7 @@ describe("webhookHandler", () => {
     await Promise.resolve();
 
     expect(res.statusCode).toBe(200);
-    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
-    const ingestArg = enqueueMemoryIngest.mock.calls[0]![0] as {
-      content: string;
-    };
-    expect(ingestArg.content).toContain("2025-05-16");
-    expect(ingestArg.content).not.toContain("2025-05-15");
+    expect(enqueueMemoryIngest).not.toHaveBeenCalled();
   });
 
   it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {

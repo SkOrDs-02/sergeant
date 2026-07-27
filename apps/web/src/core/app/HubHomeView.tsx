@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useRef, type CSSProperties } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { type User } from "@sergeant/shared";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
@@ -19,7 +19,6 @@ import { lazyImport } from "../lib/lazyImport";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
-import { useScrollDirection } from "@shared/hooks/useScrollDirection";
 
 // The shortcuts modal body is heavy (portal + focus-trap + key grid) and
 // only renders on the `?` hotkey, so it ships as its own chunk and loads
@@ -89,21 +88,6 @@ export function HubHomeView(props: HubHomeViewProps) {
   // Important: after the onboarding route is finished, the hub must still
   // allow the user to sign in. Otherwise they can land on the dashboard
   // (no entries yet) with no discoverable auth entry point.
-  // #3 — header collapse on scroll-down. We capture the PullToRefresh
-  // scroll container from HubMainContent and pass it to useScrollDirection.
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const handleScrollContainer = useCallback((el: HTMLDivElement | null) => {
-    scrollContainerRef.current = el;
-  }, []);
-  const { scrolled, direction } = useScrollDirection({
-    containerRef: scrollContainerRef,
-    threshold: 8,
-    hysteresis: 6,
-  });
-  // Condense when: scrolled past threshold AND direction is down.
-  // Re-expand immediately when direction flips back to up.
-  const headerCondensed = scrolled && direction === "down";
-
   const hasFirstRealEntry = hasAnyRealEntry();
   const inFtuxSession = !hasFirstRealEntry && !isFirstRealEntryDone();
 
@@ -185,7 +169,10 @@ export function HubHomeView(props: HubHomeViewProps) {
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
-        condensed={headerCondensed}
+        // Keep the header at a stable height while the content scrolls. A
+        // live height change here shifts the scroll viewport on iOS and was
+        // the source of the reported jump/hide/show loop.
+        condensed={false}
       />
 
       <HubMainContent
@@ -196,7 +183,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         user={user}
         onShowAuth={onOpenAuth}
         inFtuxSession={inFtuxSession}
-        onScrollContainer={handleScrollContainer}
       />
 
       <HubBottomNav

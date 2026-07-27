@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
@@ -56,20 +56,6 @@ function TxListItemImpl({
     ? typeof onSwipeDeleteManual === "function"
     : !hidden && typeof onSwipeHideTx === "function";
 
-  // #7 — swipe-right quick action. Monotonic counter opens TxRow's inline
-  // category picker; manual rows jump straight to their editor instead.
-  const [catPickerRequest, setCatPickerRequest] = useState(0);
-  const canQuickCategorize =
-    !isManual && !hidden && typeof onCatChange === "function";
-  const canSwipeRight = isManual
-    ? typeof onEditManual === "function"
-    : canQuickCategorize;
-  const onSwipeRight = !canSwipeRight
-    ? undefined
-    : isManual
-      ? () => onEditManual?.(tx._manualId)
-      : () => setCatPickerRequest((n) => n + 1);
-
   return (
     <div
       className={cn(
@@ -113,7 +99,10 @@ function TxListItemImpl({
                 : () => onSwipeHideTx?.(tx.id)
               : undefined
           }
-          onSwipeRight={onSwipeRight}
+          // Keep one directional quick action only. Editing/category changes
+          // stay in the explicit row menu so this gesture cannot compete
+          // with the module's page swipe.
+          onSwipeRight={undefined}
           rightLabel={isManual ? "Видалити" : "Приховати"}
           rightColor={isManual ? "bg-danger" : "bg-warning/80"}
           leftLabel={
@@ -152,7 +141,6 @@ function TxListItemImpl({
             onSplitChange={onSplitChange}
             customCategories={customCategories}
             divider={false}
-            catPickerRequest={catPickerRequest}
           />
         </SwipeToAction>
       </div>

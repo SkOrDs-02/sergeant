@@ -77,11 +77,17 @@ export function TransactionsBatchToolbar({
                 </button>
               </div>
             </div>
-            <p className="mt-1 px-1 text-style-caption text-muted">
-              «Не враховувати» прибирає вибрані транзакції з підсумків і
-              графіків, але не видаляє їх. Це зручно для переказів між власними
-              картками та інших технічних операцій.
-            </p>
+            <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-caption text-muted">
+              <p>
+                <strong className="text-text">Приховати</strong> — прибере
+                операції зі звичайного списку, але їх можна повернути в
+                «Прихованих».
+              </p>
+              <p className="mt-1">
+                <strong className="text-text">Не враховувати</strong> — залишить
+                операції у списку, але не включатиме їх у підсумки та графіки.
+              </p>
+            </div>
           </div>
         </div>
       )}

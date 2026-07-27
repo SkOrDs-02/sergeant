@@ -113,6 +113,7 @@ export function useTransactionSelection({
   // only when one of the source handlers actually changes identity (F22).
   const handlersRef = useRef({
     hideTx,
+    hiddenTxIds,
     overrideCategory,
     setSplitTx,
     setTxNote,
@@ -124,6 +125,7 @@ export function useTransactionSelection({
   useEffect(() => {
     handlersRef.current = {
       hideTx,
+      hiddenTxIds,
       overrideCategory,
       setSplitTx,
       setTxNote,
@@ -134,6 +136,7 @@ export function useTransactionSelection({
     };
   }, [
     hideTx,
+    hiddenTxIds,
     overrideCategory,
     setSplitTx,
     setTxNote,
@@ -143,10 +146,19 @@ export function useTransactionSelection({
     toast,
   ]);
 
-  const stableHideTx = useCallback(
-    (id: string) => handlersRef.current.hideTx(id),
-    [],
-  );
+  const stableHideTx = useCallback((id: string) => {
+    const {
+      hideTx: toggle,
+      hiddenTxIds: hidden,
+      toast: currentToast,
+    } = handlersRef.current;
+    const wasHidden = hidden.includes(id);
+    toggle(id);
+    showUndoToast(currentToast, {
+      msg: wasHidden ? "Операцію повернуто" : "Операцію приховано",
+      onUndo: () => toggle(id),
+    });
+  }, []);
   const stableOverrideCategory = useCallback(
     (id: string, catId: string | null) =>
       handlersRef.current.overrideCategory(id, catId),
@@ -166,10 +178,19 @@ export function useTransactionSelection({
     const fn = handlersRef.current.onEditManualExpense;
     if (typeof fn === "function" && typeof manualId === "string") fn(manualId);
   }, []);
-  const stableSwipeHideTx = useCallback(
-    (id: string) => handlersRef.current.hideTx(id),
-    [],
-  );
+  const stableSwipeHideTx = useCallback((id: string) => {
+    const {
+      hideTx: toggle,
+      hiddenTxIds: hidden,
+      toast: currentToast,
+    } = handlersRef.current;
+    const wasHidden = hidden.includes(id);
+    toggle(id);
+    showUndoToast(currentToast, {
+      msg: wasHidden ? "Операцію повернуто" : "Операцію приховано",
+      onUndo: () => toggle(id),
+    });
+  }, []);
   const stableSwipeDeleteManual = useCallback((tx: Transaction) => {
     const { removeManualExpense, addManualExpense, toast } =
       handlersRef.current;

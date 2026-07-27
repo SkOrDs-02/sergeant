@@ -24,6 +24,7 @@ import { TxRowAmountActions } from "./TxRowAmountActions";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
+import { Sheet } from "@shared/components/ui/Sheet";
 
 export type { TxRowTx };
 
@@ -42,7 +43,9 @@ interface TxRowProps {
   hideAmount?: boolean | undefined;
   txSplits?: TxSplitsMap | undefined;
   onSplitChange?:
-    ((id: string, split: TxSplit[] | null) => void) | null | undefined;
+    | ((id: string, split: TxSplit[] | null) => void)
+    | null
+    | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
   /**
    * Draw the built-in bottom hairline. Defaults to `true` for the Assets
@@ -271,22 +274,32 @@ function TxRowImpl({
       </div>
 
       {splitEditor && onSplitChange && (
-        <TxRowSplitEditor
-          totalAmt={totalAmt}
-          draftSplits={draftSplits}
-          setDraftSplits={setDraftSplits}
-          splitCategoryPicker={splitCategoryPicker}
-          setSplitCategoryPicker={setSplitCategoryPicker}
-          splitCategoryOptions={splitCategoryOptions}
-          remaining={remaining}
-          existingSplitsCount={existingSplits.length}
-          onSave={saveSplits}
-          onDelete={() => {
-            onSplitChange(tx.id, null);
-            setSplitEditor(false);
-          }}
+        <Sheet
+          open
           onClose={() => setSplitEditor(false)}
-        />
+          title="Розподіл операції"
+          description={`Загальна сума: ${totalAmt.toLocaleString("uk-UA", { minimumFractionDigits: 2 })}`}
+          panelClassName="finyk-sheet"
+          zIndex={70}
+          bodyClassName="px-4 pb-6"
+        >
+          <TxRowSplitEditor
+            totalAmt={totalAmt}
+            draftSplits={draftSplits}
+            setDraftSplits={setDraftSplits}
+            splitCategoryPicker={splitCategoryPicker}
+            setSplitCategoryPicker={setSplitCategoryPicker}
+            splitCategoryOptions={splitCategoryOptions}
+            remaining={remaining}
+            existingSplitsCount={existingSplits.length}
+            onSave={saveSplits}
+            onDelete={() => {
+              onSplitChange(tx.id, null);
+              setSplitEditor(false);
+            }}
+            onClose={() => setSplitEditor(false)}
+          />
+        </Sheet>
       )}
 
       {catPicker && (
