@@ -169,10 +169,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
-        // Keep the header at a stable height while the content scrolls. A
-        // live height change here shifts the scroll viewport on iOS and was
-        // the source of the reported jump/hide/show loop.
-        condensed={false}
       />
 
       <HubMainContent
