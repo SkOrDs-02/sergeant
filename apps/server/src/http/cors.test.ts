@@ -39,7 +39,7 @@ describe("setCorsHeaders", () => {
     );
   });
 
-  it("allows browser auth and tracing headers by default", () => {
+  it("allows browser auth, sync, and tracing headers by default", () => {
     const headers: Record<string, string> = {};
     const res = {
       setHeader(name: string, value: string) {
@@ -50,6 +50,9 @@ describe("setCorsHeaders", () => {
     setCorsHeaders(res as never, req as never);
     expect(headers["Access-Control-Allow-Headers"]).toContain(
       "X-Requested-With",
+    );
+    expect(headers["Access-Control-Allow-Headers"]).toContain(
+      "X-Origin-Device-Id",
     );
     expect(headers["Access-Control-Allow-Headers"]).toContain("traceparent");
   });

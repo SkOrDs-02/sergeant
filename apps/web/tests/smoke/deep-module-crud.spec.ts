@@ -127,13 +127,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await waitForInitialSqliteRefresh(page, "finyk");
 
     await page.getByRole("button", { name: "Додати витрату" }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Додати витрату" }),
-    ).toBeVisible();
+    const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
+    await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
     await page.getByLabel("Назва").fill("DCRUD кава");
     await waitForSqliteRefreshAfter(page, "finyk", async () => {
-      await page.getByRole("button", { name: "Додати", exact: true }).click();
+      await createDialog
+        .getByRole("button", { name: "Додати витрату", exact: true })
+        .click();
     });
 
     await page.getByRole("button", { name: /Розгорнути Сьогодні/ }).click();

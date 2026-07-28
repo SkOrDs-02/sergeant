@@ -57,6 +57,18 @@ describe("apiCorsMiddleware()", () => {
     },
   );
 
+  it("allows the sync origin-device header in browser preflights", async () => {
+    const res = await request(makeApp())
+      .options("/api/v2/sync/pull")
+      .set("Origin", "http://127.0.0.1:4173")
+      .set("Access-Control-Request-Method", "GET")
+      .set("Access-Control-Request-Headers", "x-origin-device-id");
+    expect(res.status).toBe(200);
+    expect(res.headers["access-control-allow-headers"]).toContain(
+      "X-Origin-Device-Id",
+    );
+  });
+
   it("дозволені методи покривають state-changing requests", async () => {
     const res = await request(makeApp())
       .options("/api/auth/sign-up/email")

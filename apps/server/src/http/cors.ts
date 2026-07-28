@@ -34,6 +34,7 @@ const DEFAULT_ALLOW_HEADERS = [
   "Authorization",
   "X-Requested-With",
   "X-Api-Secret",
+  "X-Origin-Device-Id",
   "traceparent",
   "tracestate",
 ].join(", ");
