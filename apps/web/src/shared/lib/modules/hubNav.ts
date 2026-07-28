@@ -19,11 +19,7 @@ export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 // дубльованих декларацій (aislop `ai-slop/duplicate-type-declaration`).
 export type HubModuleId = ModuleAccent;
 export type HubModuleAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_meal_photo"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
 
 export interface HubOpenModuleDetail {
   module: HubModuleId;
@@ -31,12 +27,18 @@ export interface HubOpenModuleDetail {
   action?: HubModuleAction;
 }
 
-const VALID_HUB_MODULES = new Set<HubModuleId>([
+export const HUB_MODULE_IDS = [
   "finyk",
   "fizruk",
   "routine",
   "nutrition",
-]);
+] as const satisfies readonly HubModuleId[];
+
+const VALID_HUB_MODULES: ReadonlySet<string> = new Set(HUB_MODULE_IDS);
+
+export function isHubModuleId(value: unknown): value is HubModuleId {
+  return typeof value === "string" && VALID_HUB_MODULES.has(value);
+}
 
 /**
  * Перемкнути активний модуль Hub (з опційним hash для вкладки всередині).

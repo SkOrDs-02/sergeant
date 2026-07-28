@@ -19,6 +19,7 @@ const slotsValue = {
   customCategories: [] as unknown[],
   subscriptions: [] as unknown[],
   dismissedRecurring: [] as string[],
+  excludedStatTxIds: [] as string[],
 };
 vi.mock("./useFinykStorageSlots", () => ({
   useFinykStorageSlots: () => slotsValue,
@@ -30,6 +31,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
   cachedState.transactions = [];
+  slotsValue.excludedStatTxIds = [];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -63,6 +65,32 @@ describe("useFinykInsights", () => {
     const { result } = renderHook(() => useFinykInsights());
     expect(result.current.length).toBeGreaterThanOrEqual(1);
     expect(result.current.some((i) => i.id.includes("coffee"))).toBe(true);
+
+    slotsValue.txCategories = {};
+  });
+
+  it("does not build insights from transactions excluded from statistics", () => {
+    const tx = (id: string, dateMs: number, amount: number) =>
+      ({
+        id,
+        time: Math.floor(dateMs / 1000),
+        date: new Date(dateMs).toISOString().slice(0, 10),
+        amount,
+        description: "café",
+        mcc: 5812,
+      }) as unknown;
+    cachedState.transactions = [
+      tx("excluded", new Date(2026, 5, 5).getTime(), -20000),
+      tx("previous", new Date(2026, 4, 5).getTime(), -10000),
+    ];
+    slotsValue.txCategories = {
+      excluded: "restaurant",
+      previous: "restaurant",
+    };
+    slotsValue.excludedStatTxIds = ["excluded"];
+
+    const { result } = renderHook(() => useFinykInsights());
+    expect(result.current.some((i) => i.id.includes("coffee"))).toBe(false);
 
     slotsValue.txCategories = {};
   });

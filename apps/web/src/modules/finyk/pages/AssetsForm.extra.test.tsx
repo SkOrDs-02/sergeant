@@ -2,7 +2,7 @@
 /**
  * Extra coverage for AssetsForm — exercises branches left uncovered by the
  * primary test suite: empty-name guards, DebtForm voice input,
- * AssetForm currency gate (non-UAH blocked + allowed), and
+ * AssetForm UAH-only behavior and legacy non-UAH messaging, and
  * SubscriptionForm empty-name guard.
  */
 import { describe, it, expect, vi } from "vitest";
@@ -16,21 +16,6 @@ import {
   ReceivableForm,
 } from "./AssetsForm";
 import { createRef, type ReactNode } from "react";
-
-// ── Mocks needed for AssetForm (billing gate) ────────────────────────────────
-
-const requireAccessMock = vi.fn(() => false);
-const closePaywallMock = vi.fn();
-
-vi.mock("../../../core/billing", () => ({
-  useFeatureGate: vi.fn(() => ({
-    requireAccess: requireAccessMock,
-    paywallOpen: false,
-    closePaywall: closePaywallMock,
-    paywallSurface: undefined,
-  })),
-  PaywallModal: () => null,
-}));
 
 // ── VoiceMicButton exposes onResult ─────────────────────────────────────────
 
@@ -163,97 +148,10 @@ describe("AssetForm (extra) — empty name guard", () => {
   });
 });
 
-// ── AssetForm — currency gate (non-UAH blocked) ──────────────────────────────
+// ── AssetForm — UAH-only + legacy non-UAH hint ──────────────────────────────
 
-describe("AssetForm (extra) — currency gate", () => {
-  it("does not update currency when requireAccess returns false for non-UAH", () => {
-    requireAccessMock.mockReturnValue(false);
-    const setNewAsset = vi.fn();
-    render(
-      withQueryClient(
-        <AssetForm
-          newAsset={{
-            name: "Cash",
-            amount: "1000",
-            currency: "UAH",
-            emoji: "",
-          }}
-          setNewAsset={setNewAsset}
-          setManualAssets={vi.fn()}
-          setShowAssetForm={vi.fn()}
-          assetFormRef={createRef()}
-          assetNameInputRef={createRef()}
-        />,
-      ),
-    );
-    const select = screen.getByRole("combobox", {
-      name: /валюта активу/i,
-    }) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "USD" } });
-    // requireAccess returned false → no update
-    expect(setNewAsset).not.toHaveBeenCalled();
-  });
-
-  it("updates currency to UAH without requiring premium access", () => {
-    requireAccessMock.mockReturnValue(false);
-    const setNewAsset = vi.fn();
-    render(
-      withQueryClient(
-        <AssetForm
-          newAsset={{
-            name: "Cash",
-            amount: "1000",
-            currency: "USD",
-            emoji: "",
-          }}
-          setNewAsset={setNewAsset}
-          setManualAssets={vi.fn()}
-          setShowAssetForm={vi.fn()}
-          assetFormRef={createRef()}
-          assetNameInputRef={createRef()}
-        />,
-      ),
-    );
-    const select = screen.getByRole("combobox", {
-      name: /валюта активу/i,
-    }) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "UAH" } });
-    // UAH is free — always allowed
-    expect(setNewAsset).toHaveBeenCalled();
-  });
-
-  it("updates currency when requireAccess returns true for non-UAH", () => {
-    requireAccessMock.mockReturnValue(true);
-    const setNewAsset = vi.fn();
-    render(
-      withQueryClient(
-        <AssetForm
-          newAsset={{
-            name: "Cash",
-            amount: "1000",
-            currency: "UAH",
-            emoji: "",
-          }}
-          setNewAsset={setNewAsset}
-          setManualAssets={vi.fn()}
-          setShowAssetForm={vi.fn()}
-          assetFormRef={createRef()}
-          assetNameInputRef={createRef()}
-        />,
-      ),
-    );
-    const select = screen.getByRole("combobox", {
-      name: /валюта активу/i,
-    }) as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "EUR" } });
-    expect(setNewAsset).toHaveBeenCalled();
-  });
-});
-
-// ── AssetForm — currency selector options + non-UAH hint (F-MULTICUR) ───────
-
-describe("AssetForm (extra) — currency options and non-UAH hint", () => {
-  it("does not offer BTC as a currency option", () => {
+describe("AssetForm (extra) — UAH-only", () => {
+  it("does not expose a currency selector or a premium gate", () => {
     render(
       withQueryClient(
         <AssetForm
@@ -271,11 +169,10 @@ describe("AssetForm (extra) — currency options and non-UAH hint", () => {
         />,
       ),
     );
-    const select = screen.getByRole("combobox", {
-      name: /валюта активу/i,
-    }) as HTMLSelectElement;
-    const optionValues = Array.from(select.options).map((o) => o.value);
-    expect(optionValues).toEqual(["UAH", "USD", "EUR"]);
+    expect(screen.getByText("UAH")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: /валюта активу/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the non-UAH networth hint when currency is USD", () => {
@@ -296,12 +193,10 @@ describe("AssetForm (extra) — currency options and non-UAH hint", () => {
         />,
       ),
     );
-    expect(
-      screen.getByText(/поки не враховую його в загальному капіталі/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/старий запис у USD/i)).toBeInTheDocument();
   });
 
-  it("hides the non-UAH networth hint when currency is UAH", () => {
+  it("hides the legacy-currency hint when currency is UAH", () => {
     render(
       withQueryClient(
         <AssetForm
@@ -319,9 +214,7 @@ describe("AssetForm (extra) — currency options and non-UAH hint", () => {
         />,
       ),
     );
-    expect(
-      screen.queryByText(/поки не враховую його в загальному капіталі/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/старий запис у/i)).not.toBeInTheDocument();
   });
 });
 

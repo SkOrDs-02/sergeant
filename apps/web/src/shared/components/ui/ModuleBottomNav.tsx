@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 
@@ -120,6 +120,43 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const isTablist = role === "tablist";
   const kbInsetPx = useVisualKeyboardInset(true);
   const hidden = kbInsetPx > 0;
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  const handleTablistKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!isTablist || hidden) return;
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    const tabs = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ??
+        [],
+    );
+    if (tabs.length === 0) return;
+
+    event.preventDefault();
+    const focusedIndex = tabs.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    const activeIndex = Math.max(
+      0,
+      items.findIndex((item) => item.id === activeId),
+    );
+    const fromIndex = focusedIndex >= 0 ? focusedIndex : activeIndex;
+    const targetIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : event.key === "ArrowRight"
+            ? (fromIndex + 1) % tabs.length
+            : (fromIndex - 1 + tabs.length) % tabs.length;
+    const target = tabs[targetIndex];
+    const item = items[targetIndex];
+    if (!target || !item) return;
+    target.focus();
+    onChange(item.id);
+  };
 
   return (
     <nav
@@ -134,8 +171,10 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       )}
     >
       <div
+        ref={tablistRef}
         className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
         role={isTablist ? "tablist" : undefined}
+        onKeyDown={isTablist ? handleTablistKeyDown : undefined}
       >
         {items.map((item) => {
           const active = activeId === item.id;
@@ -155,7 +194,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               className={cn(
                 "relative flex-1 flex items-center justify-center min-h-touch-target",
                 "my-1.5 rounded-xl border border-transparent",
-                "transition-all duration-200",
+                "transition-[color,transform,border-color] duration-200",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active ? "text-bg" : "text-text hover:text-text/80",

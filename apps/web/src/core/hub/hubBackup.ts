@@ -16,10 +16,10 @@ import {
   applyNutritionBackupPayload,
   buildNutritionBackupPayload,
 } from "../../modules/nutrition/domain/nutritionBackup";
+import { isHubModuleId } from "@shared/lib/modules/hubNav";
 
 const HUB_MODULE_KEY = "hub_last_module";
 const HUB_CHAT_KEY = "hub_chat_history";
-const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
 export const HUB_BACKUP_KIND = "hub-backup";
 export const HUB_BACKUP_SCHEMA_VERSION = 1;
@@ -157,7 +157,7 @@ export function applyHubBackupPayload(parsed: unknown): void {
   }
   if (parsed.hub && typeof parsed.hub === "object") {
     const h = parsed.hub;
-    if (h.lastModule && VALID_MODULES.has(h.lastModule)) {
+    if (isHubModuleId(h.lastModule)) {
       safeWriteLS(HUB_MODULE_KEY, h.lastModule);
     }
     if (typeof h.chatHistory === "string") {

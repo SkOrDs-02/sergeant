@@ -17,6 +17,7 @@ import type {
   DetectAnomaliesAction,
   SpendingTrendAction,
 } from "../types";
+import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 
 export function spendingTrend(action: SpendingTrendAction): string {
   const { period_days } = (action as SpendingTrendAction).input || {};
@@ -31,9 +32,13 @@ export function spendingTrend(action: SpendingTrendAction): string {
     description?: string;
     mcc?: number;
   }>;
-  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
+  const cached = getCachedFinykSqliteState();
+  const hiddenTxIds = cached.hiddenTransactions;
   const trendSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const txs = allTxs.filter((t) => !hiddenTxIds.includes(t.id || ""));
+  const txs = filterStatTransactions(
+    allTxs as never,
+    cached.excludedStatTxIds,
+  ).filter((t) => !hiddenTxIds.includes(t.id || "")) as typeof allTxs;
   const currentPeriod = txs.filter((t) => {
     const ts = (t.time || 0) * 1000;
     return ts >= currentStart && ts <= now;
@@ -76,15 +81,19 @@ export function categoryBreakdown(action: CategoryBreakdownAction): string {
     description?: string;
     mcc?: number;
   }>;
-  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
-  const customC = getCachedFinykSqliteState().customCategories;
-  const catMap = getCachedFinykSqliteState().txCategories;
+  const cached = getCachedFinykSqliteState();
+  const hiddenTxIds = cached.hiddenTransactions;
+  const customC = cached.customCategories;
+  const catMap = cached.txCategories;
   const breakdownSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const expenses = allTxsCat.filter((t) => {
+  const expenses = filterStatTransactions(
+    allTxsCat as never,
+    cached.excludedStatTxIds,
+  ).filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;
     const ts = (t.time || 0) * 1000;
     return t.amount < 0 && ts >= cutoff;
-  });
+  }) as typeof allTxsCat;
   interface CatDef {
     id: string;
     label: string;
@@ -127,13 +136,17 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
     description?: string;
     mcc?: number;
   }>;
-  const hiddenTxIds = getCachedFinykSqliteState().hiddenTransactions;
+  const cached = getCachedFinykSqliteState();
+  const hiddenTxIds = cached.hiddenTransactions;
   const anomalySplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const expenses = allTxsAnomaly.filter((t) => {
+  const expenses = filterStatTransactions(
+    allTxsAnomaly as never,
+    cached.excludedStatTxIds,
+  ).filter((t) => {
     if (hiddenTxIds.includes(t.id || "")) return false;
     const ts = (t.time || 0) * 1000;
     return t.amount < 0 && ts >= cutoff;
-  });
+  }) as typeof allTxsAnomaly;
   if (expenses.length < 3)
     return "Недостатньо транзакцій для аналізу аномалій.";
   const amounts = expenses

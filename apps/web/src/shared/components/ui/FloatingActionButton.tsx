@@ -210,7 +210,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Bottom offset = 6rem (96px) + safe-area-inset-bottom. Clears the v2
   // floating glass `ModuleBottomNav` pill (mx-3 mb-3 outer + 60-64px
   // inner + safe-area-pb) with breathing room above. Per
-  // docs/design/unified-bottom-nav.md the FAB sits 76px above the nav;
+  // docs/05-design/design/unified-bottom-nav.md the FAB sits 76px above the nav;
   // we round up to 96 to keep clearance on smaller iPhones where the
   // nav's own safe-area-pb stacks below the inner height. Pre-fix
   // (~24px) the FAB clipped the navbar on every module screen.
@@ -232,7 +232,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
-        "transition-all duration-300 ease-out",
+        "transition-[transform,opacity] duration-300 ease-out",
         hidden && "translate-y-24 opacity-0 pointer-events-none",
         className,
       )}
@@ -249,7 +249,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
         className={cn(
           "inline-flex items-center justify-center rounded-full",
           "touch-manipulation select-none",
-          "shadow-lg transition-all duration-200",
+          "shadow-lg transition-[transform,box-shadow,background-color,color] duration-200",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand",
           "active:scale-95",
           variantStyles[variant],
@@ -302,7 +302,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
                   "flex items-center gap-3 pl-4 pr-5 py-2.5 rounded-full",
                   "bg-panel border border-line shadow-float",
                   "hover:bg-panel-hi active:scale-95",
-                  "transition-all duration-200",
+                  "transition-[transform,background-color,color,border-color] duration-200",
                   "motion-safe:animate-fab-item",
                 )}
                 style={{

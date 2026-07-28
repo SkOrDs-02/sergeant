@@ -12,7 +12,6 @@ import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 
 const EQUIPMENT_OPTIONS = [
@@ -72,7 +71,6 @@ export function AddExerciseSheet({
   musclesByPrimaryGroup,
   addExercise,
 }: AddExerciseSheetProps) {
-  const kbInsetPx = useVisualKeyboardInset(open);
   const toast = useToast();
   const nameId = useId();
   const descriptionId = useId();
@@ -101,7 +99,6 @@ export function AddExerciseSheet({
       title="Додати вправу"
       description="Збережеться локально на цьому пристрої"
       closeLabel="Закрити форму"
-      kbInsetPx={kbInsetPx}
       panelClassName="fizruk-sheet"
       zIndex={100}
     >

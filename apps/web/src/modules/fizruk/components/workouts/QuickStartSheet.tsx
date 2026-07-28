@@ -5,7 +5,6 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -84,7 +83,6 @@ export function QuickStartSheet({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set<string>(),
   );
-  const kbInsetPx = useVisualKeyboardInset(open && step === "pick");
 
   const [prevOpen, setPrevOpen] = useState(open);
   if (open && !prevOpen) {
@@ -227,7 +225,6 @@ export function QuickStartSheet({
           : "Познач хоча б одну вправу — таймер запуститься після старту."
       }
       closeLabel="Закрити підбір"
-      kbInsetPx={kbInsetPx}
       panelClassName="fizruk-sheet"
       zIndex={90}
       headerRight={

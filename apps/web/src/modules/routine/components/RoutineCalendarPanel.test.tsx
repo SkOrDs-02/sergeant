@@ -49,7 +49,7 @@ vi.mock("./HabitDetailSheet", () => ({
     </div>
   ),
 }));
-vi.mock("./FizrukDayPlanSheet", () => ({
+vi.mock("@fizruk/components/planning/FizrukDayPlanSheet", () => ({
   FizrukDayPlanSheet: ({
     dateKey,
     onClose,

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
@@ -83,7 +82,6 @@ export function HabitQuickCreateDialog({
   firstRunHint,
   onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
-  const kbInsetPx = useVisualKeyboardInset(open);
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
   const [internalFocusTick, setInternalFocusTick] = useState(0);
@@ -179,7 +177,6 @@ export function HabitQuickCreateDialog({
       open={open}
       onClose={onClose}
       title={title}
-      kbInsetPx={kbInsetPx}
       zIndex={200}
       panelClassName="max-w-md"
       footer={footer}

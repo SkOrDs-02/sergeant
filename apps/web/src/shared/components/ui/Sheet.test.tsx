@@ -1,9 +1,16 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/react";
+import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
 import { Sheet } from "./Sheet";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetVisualKeyboardInsetAdapter();
+});
 
 /**
  * Contract tests for the DS Sheet primitive. Focus: open ⇄ unmount,
@@ -128,5 +135,19 @@ describe("Sheet", () => {
     const dialog = getByRole("dialog");
     expect(dialog.style.marginBottom).toBe("320px");
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
+  });
+
+  it("detects the software-keyboard inset without caller wiring", () => {
+    setVisualKeyboardInsetAdapter((active) => (active ? 280 : 0));
+
+    const { getByRole } = render(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+
+    const dialog = getByRole("dialog");
+    expect(dialog.style.marginBottom).toBe("280px");
+    expect(dialog.style.maxHeight).toContain("100dvh - 280px");
   });
 });

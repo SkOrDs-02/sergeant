@@ -12,7 +12,7 @@ import { Segmented } from "@shared/components/ui/Segmented";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { WeekDayStrip } from "./WeekDayStrip";
 import { HabitDetailSheet } from "./HabitDetailSheet";
-import { FizrukDayPlanSheet } from "./FizrukDayPlanSheet";
+import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";

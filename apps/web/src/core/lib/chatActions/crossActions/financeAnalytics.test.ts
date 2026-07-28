@@ -26,7 +26,10 @@ vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => {
 });
 
 import { ls } from "../../hubChatUtils";
-import { getTxStatAmount } from "../../../../modules/finyk/utils";
+import {
+  calcCategorySpent,
+  getTxStatAmount,
+} from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getCachedFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import {
@@ -39,6 +42,7 @@ const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockGetCached = vi.mocked(getCachedFinykSqliteState);
 const mockGetMirror = vi.mocked(getCachedFinykMonoMirrorState);
 const mockGetTxAmount = vi.mocked(getTxStatAmount);
+const mockCalcCategorySpent = vi.mocked(calcCategorySpent);
 
 const RECENT_SEC = Math.floor((Date.now() - 3600 * 1000) / 1000);
 
@@ -177,5 +181,25 @@ describe("categoryBreakdown", () => {
   it("returns empty breakdown when no expenses", () => {
     const result = categoryBreakdown({ name: "category_breakdown", input: {} });
     expect(result).toContain("0 грн");
+  });
+
+  it("omits transactions excluded from statistics", () => {
+    mockGetCached.mockReturnValue({
+      ...makeState(),
+      excludedStatTxIds: ["excluded"],
+    });
+    mockGetMirror.mockReturnValue({
+      transactions: [
+        { id: "excluded", amount: -100000, time: RECENT_SEC },
+        { id: "included", amount: -5000, time: RECENT_SEC },
+      ] as never,
+      accounts: [],
+      refreshedAt: new Date().toISOString(),
+    });
+
+    categoryBreakdown({ name: "category_breakdown", input: {} });
+
+    const expenses = mockCalcCategorySpent.mock.calls[0]?.[0];
+    expect(expenses).toEqual([expect.objectContaining({ id: "included" })]);
   });
 });

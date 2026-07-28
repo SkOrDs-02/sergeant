@@ -12,7 +12,6 @@ import {
   calcReceivableRemaining,
   calcCategorySpent,
   calcFinykSpendingTotal,
-  getMonoTotals,
 } from "../../utils";
 import type { useStorage } from "../../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../../hooks/useUnifiedFinanceData";
@@ -33,6 +32,7 @@ import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts, getDaysInMonth } from "@shared/lib/time/kyivTime";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
+import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -173,10 +173,10 @@ export function useOverviewData({
   const projectedSpend =
     daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
 
-  const { balance: monoOnlyTotal, debt: monoTotalDebt } = useMemo(
+  const assetsSummary = useMemo(
     () =>
-      getMonoTotals(
-        accounts
+      computeAssetsSummary({
+        accounts: accounts
           .filter(
             (a): a is Extract<typeof a, { _source: "monobank" }> =>
               a._source === "monobank",
@@ -186,34 +186,31 @@ export function useOverviewData({
               typeof a.balance === "number",
           ),
         hiddenAccounts,
-      ),
-    [accounts, hiddenAccounts],
+        manualAssets: (manualAssets || []).map((asset) => ({
+          id: asset.id,
+          name: asset.name ?? "",
+          amount: asset.amount,
+          currency: asset.currency ?? "",
+          ...(asset.emoji !== undefined ? { emoji: asset.emoji } : {}),
+        })),
+        manualDebts,
+        receivables,
+        transactions,
+      }),
+    [
+      accounts,
+      hiddenAccounts,
+      manualAssets,
+      manualDebts,
+      receivables,
+      transactions,
+    ],
   );
-  const monoTotal = monoOnlyTotal + privatTotal;
-  const manualDebtTotal = useMemo(
-    () =>
-      manualDebts.reduce(
-        (s: number, d) => s + calcDebtRemaining(d, transactions),
-        0,
-      ),
-    [manualDebts, transactions],
-  );
-  const totalDebt = monoTotalDebt + manualDebtTotal;
-  const totalReceivable = useMemo(
-    () =>
-      receivables.reduce(
-        (s: number, r) => s + calcReceivableRemaining(r, transactions),
-        0,
-      ),
-    [receivables, transactions],
-  );
-  const { manualAssetTotal, nonUahManualAssetCount } = useMemo(() => {
+  const monoTotal = assetsSummary.monoBalance + privatTotal;
+  const totalDebt = assetsSummary.totalLiabilities;
+  const nonUahManualAssetCount = useMemo(() => {
     const all = manualAssets || [];
-    const uah = all.filter((a) => a.currency === "UAH");
-    return {
-      manualAssetTotal: uah.reduce((s: number, a) => s + Number(a.amount), 0),
-      nonUahManualAssetCount: all.length - uah.length,
-    };
+    return all.filter((a) => a.currency !== "UAH").length;
   }, [manualAssets]);
   useEffect(() => {
     if (nonUahManualAssetCount > 0) {
@@ -222,7 +219,7 @@ export function useOverviewData({
       );
     }
   }, [nonUahManualAssetCount]);
-  const networth = monoTotal + manualAssetTotal + totalReceivable - totalDebt;
+  const networth = assetsSummary.networth + privatTotal;
 
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
 

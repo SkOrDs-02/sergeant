@@ -32,6 +32,7 @@ import { useCoffeeLimitInsight } from "./useCoffeeLimitInsight";
 import { useBudgetOverrunInsight } from "./useBudgetOverrunInsight";
 import { useRecurringDetectedInsight } from "./useRecurringDetectedInsight";
 import type { Insight } from "@shared/lib/insights/types";
+import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 
 /** Max insights this wrapper surfaces. */
 const MAX_VISIBLE = 3;
@@ -46,27 +47,31 @@ export function useFinykInsights(): Insight[] {
   }, [mirrorTick]);
 
   const slots = useFinykStorageSlots();
+  const statTransactions = useMemo(
+    () => filterStatTransactions(transactions, slots.excludedStatTxIds),
+    [transactions, slots.excludedStatTxIds],
+  );
 
   const overrunInsight = useBudgetOverrunInsight({
     budgets: slots.budgets,
-    transactions,
+    transactions: statTransactions,
     txCategories: slots.txCategories,
     txSplits: slots.txSplits,
     customCategories: slots.customCategories,
   });
 
   const coffeeInsight = useCoffeeLimitInsight({
-    transactions,
+    transactions: statTransactions,
     txCategories: slots.txCategories,
     txSplits: slots.txSplits,
     customCategories: slots.customCategories,
   });
 
   const recurringInsight = useRecurringDetectedInsight({
-    transactions,
+    transactions: statTransactions,
     subscriptions: slots.subscriptions,
     dismissedRecurring: slots.dismissedRecurring,
-    excludedTxIds: undefined,
+    excludedTxIds: slots.excludedStatTxIds,
   });
 
   return useMemo((): Insight[] => {

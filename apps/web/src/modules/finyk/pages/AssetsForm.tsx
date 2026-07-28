@@ -5,8 +5,6 @@ import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
-import { useLocale } from "@shared/i18n/useLocale";
-import { PaywallModal, useFeatureGate } from "../../../core/billing";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import type {
   Debt,
@@ -297,17 +295,7 @@ export function AssetForm({
   editingId?: string | null;
   onUpdate?: (id: string, value: ManualAsset) => void;
 }) {
-  // Phase 7 D2 — multi-currency assets (non-UAH) are gated to Premium.
-  // UAH stays free for everyone; touching the picker to switch off UAH
-  // opens the paywall and reverts the selection. `useLocale` resolves
-  // paywall copy under `?lang=en` override; UA users see UK copy via
-  // the resolver's fall-through.
-  const currencyGate = useFeatureGate("multi-currency");
-  const { messages } = useLocale();
-  const onCurrencyChange = (next: string) => {
-    if (next !== "UAH" && !currencyGate.requireAccess()) return;
-    setNewAsset((a) => ({ ...a, currency: next }));
-  };
+  const isLegacyNonUah = newAsset.currency !== "UAH";
   return (
     <>
       <Card
@@ -340,22 +328,19 @@ export function AssetForm({
             setNewAsset((a) => ({ ...a, amount: e.target.value }))
           }
         />
-        <select
-          aria-label="Валюта активу"
-          className="input-focus-finyk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text"
-          value={newAsset.currency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
-        >
-          <option value="UAH">UAH</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-        </select>
-        {newAsset.currency !== "UAH" && (
+        <div className="rounded-2xl border border-line bg-panelHi px-4 py-3">
+          <div className="text-style-caption text-muted">Валюта активу</div>
+          <div className="text-style-label text-text">
+            {isLegacyNonUah ? newAsset.currency : "UAH"}
+          </div>
+        </div>
+        {isLegacyNonUah && (
           <p
             className="text-style-caption text-warning-strong dark:text-warning"
             role="status"
           >
-            {messages.finyk.nonUahAssetHint}
+            Це старий запис у {newAsset.currency}. Валюту не змінюю без
+            реального курсу, а суму поки не враховую в загальному капіталі.
           </p>
         )}
         {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
@@ -411,13 +396,6 @@ export function AssetForm({
           </Button>
         </div>
       </Card>
-      <PaywallModal
-        open={currencyGate.paywallOpen}
-        onClose={currencyGate.closePaywall}
-        surface={currencyGate.paywallSurface}
-        title={messages.paywall["multi-currency"].title}
-        description={messages.paywall["multi-currency"].description}
-      />
     </>
   );
 }
