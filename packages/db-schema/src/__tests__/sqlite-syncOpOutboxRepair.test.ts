@@ -213,6 +213,7 @@ describe("repairPartialOutboxMigration", () => {
       "005_sync_op_outbox_quarantine.sql",
       "006_sync_op_outbox_user_id.sql",
       "007_routine_completion_events.sql",
+      "008_anonymous_profile_migration.sql",
     ]);
     expect(rerun.skipped).toEqual(["001_routine_spike.sql"]);
 

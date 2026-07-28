@@ -58,6 +58,13 @@ export const messages = {
   },
 
   sync: {
+    anonymousMigrationProgress:
+      "Переносимо дані в профіль і зберігаємо на сервері…",
+    anonymousMigrationFailure:
+      "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
+    anonymousMigrationRetry: "Повторити",
+    anonymousMigrationSuccess:
+      "Дані перенесено й безпечно збережено у профілі.",
     // Reserved legacy sync error copy. Historical retry cycle:
     //   network                → перевір з'єднання
     //   server retryable       → 5xx → invite-retry

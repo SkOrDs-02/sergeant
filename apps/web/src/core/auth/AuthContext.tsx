@@ -474,26 +474,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       void swSetActiveUser(currentId).catch((err) =>
         logger.warn("[auth.identify] swSetActiveUser failed", err),
       );
-      // Audit 10 / F17: point the lazy SQLite singleton at this user's
-      // partition so the OPFS DB file becomes `sergeant-<id>.db`. Dynamic
-      // import keeps `core/db/sqlite` (and its ~700 KB WASM chunk) out of the
-      // eager bundle — see `sqlite.lazy.test.ts`.
-      void import("../db/sqlite")
-        .then((m) => m.setSqliteUser(currentId))
-        .then(() =>
-          import("../syncEngine/singleton.js").then((m) =>
-            m.bootSyncEngineReader({
-              captureException: (error, context) =>
-                logger.warn("[auth.identify] sync reader boot failed", {
-                  error,
-                  context,
-                }),
-            }),
-          ),
-        )
-        .catch((err) =>
-          logger.warn("[auth.identify] setSqliteUser failed", err),
-        );
+      // SQLite partition selection and reader boot are owned by
+      // AnonymousDataMigrationProvider. Switching here would race the
+      // local-anon snapshot on the first authenticated render.
     } else if (!currentId && prevId) {
       resetPostHog();
       lastIdentifiedUserIdRef.current = null;

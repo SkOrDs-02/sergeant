@@ -595,6 +595,25 @@ CREATE INDEX IF NOT EXISTS routine_completion_events_user_occurred_idx_lite
   ON routine_completion_events (user_id, occurred_at);
 `;
 
+/**
+ * Durable checkpoint for the anonymous-to-profile handoff. The row lives in
+ * the anonymous partition and binds an in-flight batch to exactly one Better
+ * Auth user id. A reload reuses the same batch id (and therefore the same
+ * Sync V2 idempotency keys); completion is recorded only after every pushed
+ * row has been acknowledged by the server.
+ */
+const ROUTINE_008_ANONYMOUS_PROFILE_MIGRATION_SQL = `
+CREATE TABLE IF NOT EXISTS anonymous_profile_migrations (
+  source_user_id TEXT PRIMARY KEY,
+  target_user_id TEXT NOT NULL,
+  batch_id       TEXT NOT NULL UNIQUE,
+  status         TEXT NOT NULL DEFAULT 'pending'
+                 CHECK (status IN ('pending', 'completed')),
+  started_at     TEXT NOT NULL,
+  completed_at   TEXT
+);
+`;
+
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
@@ -614,6 +633,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "007_routine_completion_events.sql",
     sql: ROUTINE_007_COMPLETION_EVENTS_SQL,
+  },
+  {
+    name: "008_anonymous_profile_migration.sql",
+    sql: ROUTINE_008_ANONYMOUS_PROFILE_MIGRATION_SQL,
   },
 ] as const;
 
