@@ -97,9 +97,11 @@ describe("AssetsNetworthCard", () => {
         showBalance={true}
       />,
     );
-    const bars = container.querySelectorAll('[role="img"]');
-    const nonLucideBars = Array.from(bars).filter((el) => !el.closest("svg"));
-    expect(nonLucideBars.length).toBe(0);
+    expect(
+      container.querySelector(
+        '[aria-describedby="finyk-assets-liabilities-summary"]',
+      ),
+    ).toBeNull();
   });
 
   it("colours networth red when negative", () => {
@@ -113,7 +115,9 @@ describe("AssetsNetworthCard", () => {
     );
     const valueEl = container.querySelector(".text-danger-strong");
     expect(valueEl).not.toBeNull();
-    expect(valueEl?.textContent).toContain("-68");
+    expect(valueEl?.querySelector('[role="img"]')).toHaveAccessibleName(
+      /-68[\s\u00a0]?499/,
+    );
   });
 
   it("colours networth in finyk tone when non-negative", () => {

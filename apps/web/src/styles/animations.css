@@ -967,7 +967,7 @@
 
    Anything inheriting a CSS animation gets the same treatment via the
    universal selector — there is no opt-out at the call site.
-   ═══════════��═══════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════════════ */
 
 @keyframes rm-opacity-fade {
   from {

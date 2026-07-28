@@ -13,6 +13,17 @@ export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
+  dayPlan: {
+    assignedTemplate: "Призначений шаблон",
+    removeTemplate: "Зняти",
+    exercises: "Вправи",
+    emptyTitle: "Тренування не призначено",
+    emptyDescription:
+      "Обери шаблон нижче, щоб запланувати тренування на цей день.",
+    changeTemplate: "Змінити шаблон",
+    chooseTemplate: "Обрати шаблон",
+    noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
+  },
   // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
   progress: {
     title: "Прогрес",

@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HubChatHeader, type HubChatHeaderProps } from "./HubChatHeader";
 
 vi.mock("@shared/components/ui/Icon", () => ({
@@ -64,12 +65,23 @@ function makeProps(overrides: Partial<HubChatHeaderProps> = {}) {
   } satisfies HubChatHeaderProps;
 }
 
+function renderHeader(props: HubChatHeaderProps) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <HubChatHeader {...props} />
+    </QueryClientProvider>,
+  );
+}
+
 describe("HubChatHeader", () => {
   afterEach(() => cleanup());
 
   it("renders the assistant trigger and toggles the details popover", () => {
     const props = makeProps();
-    render(<HubChatHeader {...props} />);
+    renderHeader(props);
 
     expect(screen.getByText("Асистент")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "toggle-details" }));
@@ -79,7 +91,7 @@ describe("HubChatHeader", () => {
 
   it("shows ready context details and opens chat history from the popover", () => {
     const props = makeProps({ detailsOpen: true });
-    render(<HubChatHeader {...props} />);
+    renderHeader(props);
 
     expect(screen.getByRole("status")).toHaveTextContent("Контекст готовий");
     expect(screen.getByText(/4 з останніх 10 повідомлень/)).toBeInTheDocument();
@@ -97,7 +109,7 @@ describe("HubChatHeader", () => {
       contextState: { status: "building", ts: 2 },
       hasData: false,
     });
-    render(<HubChatHeader {...props} />);
+    renderHeader(props);
 
     expect(screen.getByRole("status")).toHaveTextContent("Готую контекст…");
     expect(screen.getByText(/Mono не підключено/)).toBeInTheDocument();
@@ -110,13 +122,11 @@ describe("HubChatHeader", () => {
   });
 
   it("renders the waiting status when context is neither ready nor building", () => {
-    render(
-      <HubChatHeader
-        {...makeProps({
-          detailsOpen: true,
-          contextState: { status: "idle", ts: 3 },
-        })}
-      />,
+    renderHeader(
+      makeProps({
+        detailsOpen: true,
+        contextState: { status: "idle", ts: 3 },
+      }),
     );
 
     expect(screen.getByRole("status")).toHaveTextContent("Очікую");

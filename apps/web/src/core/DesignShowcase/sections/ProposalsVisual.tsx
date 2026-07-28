@@ -1,3 +1,4 @@
+/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- Design-showcase narratives are local review artifacts, not product copy. */
 // Showcase section — "Proposals · Visual". Each idea is shown as a
 // «Зараз → Може бути» pair (same format as the UX section):
 //   V-3   dynamic theme-color (per-module system chrome)
@@ -130,19 +131,22 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-4"
           title="Морфінг акценту при навігації"
-          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модуля��и — одна суцільна поверхня, що перетінюється."
+          intent="Система акцентів модулів уже є ([data-module-accent]), але акцент міняється миттєво. Пропозиція: плавний crossfade акценту між модулями — одна суцільна поверхня, що перетінюється."
         >
           <AccentMorphDemo />
         </ProposalCompareCard>
 
         <div className="mt-2 flex items-center gap-3">
           <span className="h-px flex-1 bg-line" />
-          <span className="text-2xs uppercase tracking-wide text-muted">Друга хвиля · review 2026-07</span>
+          <span className="text-style-eyebrow text-muted">
+            Друга хвиля · review 2026-07
+          </span>
           <span className="h-px flex-1 bg-line" />
         </div>
         <p className="text-2xs leading-relaxed text-muted">
-          Кожен мокап — пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю прибрано як уже реалізовані вище
-          (DynamicThemeColor · EmptyStateIdle · BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
+          Кожен мокап — пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
+          прибрано як уже реалізовані вище (DynamicThemeColor · EmptyStateIdle ·
+          BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.
         </p>
 
         <ProposalCompareCard

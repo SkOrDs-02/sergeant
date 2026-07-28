@@ -19,8 +19,10 @@ describe("PageLoader — Suspense fallback shell", () => {
 
   it("renders skeleton placeholders for the hub header and cards", () => {
     const { container } = render(<PageLoader />);
-    const skeletons = container.querySelectorAll('[class*="animate-pulse"]');
-    expect(skeletons.length).toBeGreaterThanOrEqual(4);
+    const pulses = container.querySelectorAll('[class*="animate-pulse"]');
+    const skeletons = container.querySelectorAll('[aria-hidden="true"]');
+    expect(pulses).toHaveLength(1);
+    expect(skeletons.length).toBeGreaterThanOrEqual(6);
     expect(screen.getByText(messages.status.loading)).toHaveClass("sr-only");
   });
 });

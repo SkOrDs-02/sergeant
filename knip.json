@@ -44,14 +44,12 @@
       // Scaffolded module barrels — all carry @scaffolded + @nextStep markers per AGENTS.md
       // Hard Rule #10. Do NOT delete; wire the barrel consumers in follow-up PRs.
       "ignore": [
-        "src/core/cloudSync/index.ts",
         "src/core/errors/index.ts",
         "src/core/profile/index.ts",
         "src/modules/finyk/index.ts",
         "src/modules/fizruk/index.ts",
         "src/modules/nutrition/index.ts",
         "src/modules/routine/index.ts",
-        "src/shared/forms/index.ts",
         "src/shared/lib/insights/index.ts"
       ],
       "ignoreDependencies": [
@@ -63,6 +61,9 @@
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
         "@tanstack/query-persist-client-core"
       ]
+    },
+    "apps/landing": {
+      "entry": ["middleware.ts", "scripts/generate-og.mjs"]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],

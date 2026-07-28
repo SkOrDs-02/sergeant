@@ -24,9 +24,9 @@ test("@critical finyk: planning route opens the limit/goal form", async ({
   await expect(
     page.getByRole("form", { name: "Новий ліміт бюджету" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Період ліміту")).toBeVisible();
-  // `exact: true` — інакше підрядкове зіставлення accessible name ловить ще
-  // форму «Новий ліміт бюджету» і селект «Період ліміту» (strict mode violation).
+  await expect(page.getByLabel("Період", { exact: true })).toBeVisible();
+  // `exact: true` — інакше підрядкове зіставлення accessible name може
+  // зачепити інший елемент форми з тим самим словом.
   await expect(page.getByLabel("Ліміт", { exact: true })).toBeVisible();
 
   expect(errors, "Uncaught page errors on Finyk planning add flow").toEqual([]);

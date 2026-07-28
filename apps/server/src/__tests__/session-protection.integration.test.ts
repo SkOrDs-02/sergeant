@@ -230,6 +230,10 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // Mono webhook — secret-in-URL, not session.
   "/api/mono/webhook",
   "/api/mono/webhook/:secret",
+  // Telegram Bot API webhook — provider-to-provider POST authenticated by
+  // `X-Telegram-Bot-Api-Secret-Token` through `isValidWebhookSecret` before
+  // the payload is processed; user-session middleware cannot apply here.
+  "/api/telegram/webhook",
   // Stripe webhook — signature-verified by Stripe lib; calling it
   // requires possession of `STRIPE_WEBHOOK_SECRET`, not a user session.
   "/api/billing/stripe-webhook",

@@ -87,9 +87,6 @@ export type {} from "./AnimatedNumber";
 export { MaskedAmount } from "./MaskedAmount";
 export type { MaskedAmountProps } from "./MaskedAmount";
 
-export { QuickActionsMenu } from "./QuickActionsMenu";
-export type { QuickAction } from "./QuickActionsMenu";
-
 export { PageTransition } from "./PageTransition";
 export type { TransitionDirection } from "./PageTransition";
 

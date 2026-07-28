@@ -15,7 +15,7 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 24 consumer interactions across 15
+// **Coverage:** the pact file has 25 consumer interactions across 16
 // unique routes, including the chat-usage extension. Of those, 8 routes are fully-verified
 // here via supertest replay against `createApp()`:
 //
@@ -204,14 +204,15 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 24 expected consumer interactions across 15 routes", () => {
+  it("pact file has 25 expected consumer interactions across 16 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(24);
+    expect(pact.interactions).toHaveLength(25);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
       "GET /api/v1/mono/accounts",
+      "GET /api/v1/mono/jars",
       "POST /api/v1/push/register",
       "POST /api/v1/nutrition/analyze-photo",
       "POST /api/v1/chat",

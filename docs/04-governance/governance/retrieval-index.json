@@ -1,20 +1,20 @@
 {
   "$schema": "./schemas/retrieval-index.schema.json",
   "version": 1,
-  "generated_at": "2026-07-25",
+  "generated_at": "2026-07-28",
   "sourceHashes": {
-    "knowledge-graph": "9432f0c944ee8874f855696b180b560d3b1605e29b7f937b9948363e4bf12854",
+    "knowledge-graph": "1248f341500e381c0c673e71a69b8e3d8a59da0021d712efc260f34cca0a282a",
     "symbol-index": "93dba76ae0340aa2a6cb630c7c708b6d8620f29135ff065669b2f80e9b2ac80e"
   },
   "counts": {
     "adr": 77,
-    "audit": 9,
+    "audit": 10,
     "export": 286,
     "hard-rule": 26,
     "initiative": 5,
     "playbook": 60,
     "skill": 23,
-    "total": 486
+    "total": 487
   },
   "chunks": [
     {
@@ -894,6 +894,17 @@
       "status": "Reference — звіт про виконання наряду циклу 6, стадія 2; baseline",
       "text": "Цикл 6, стадія 2 — сирі Tailwind-розміри в `core/**` · audit:2026-07-24-cycle6-stage2-typography-core · audit · Reference — звіт про виконання наряду циклу 6, стадія 2; baseline · Цикл 6, стадія 2 — сирі Tailwind-розміри в core/ · Headline 26 vs 34.6 — fluid-scale, не баг · Результат · Виконання · Вага (важлива системна примітка) · Гейти · Винятки (21 лишок, навмисно) · Флаги для дизайн-звірки · Не в скоупі (stage 3)",
       "contentHash": "73330d5fd5ccc33269e87099aa1a96c4dc4d76f7b01323853274db8fafd6c4c7"
+    },
+    {
+      "id": "audit:finyk-analytics-research",
+      "type": "audit",
+      "path": "docs/90-work/audits/finyk-analytics-research.md",
+      "line": 1,
+      "title": "Research: аналітика конкурентів і шортлист для Фініка (C6)",
+      "tier": "core",
+      "status": "Active",
+      "text": "Research: аналітика конкурентів і шортлист для Фініка (C6) · audit:finyk-analytics-research · audit · Active · 1. Таблиця: що дають конкуренти · 2. Що юзери цінують / шум (HN + агрегатори; Reddit напряму недоступний — застереження) · 3. Ранжований шортлист для Фініка (без ML-інфраструктури, на локальних mono-даних) · 4. Джерела · 5. Застереження",
+      "contentHash": "a1d23ddb84b680bed907292cef6196fa93c4b83f21a2db705446fd46ab2e28d4"
     },
     {
       "id": "audit:product-knowledge-finyk",
@@ -4089,8 +4100,8 @@
       "title": "Enable Anthropic Prompt Caching",
       "tier": "core",
       "status": "Active",
-      "text": "Enable Anthropic Prompt Caching · playbook:enable-prompt-caching · playbook · Active · Playbook: Enable Anthropic Prompt Caching · Owner surface · Контекст · Важливий урок з PR #790 · Steps · 1. Перетвори system з string на блоки · 2. Додай tools breakpoint · 3. (Опц.) Beta header — лише для старих моделей · 4. Версіонуй SYSTEMPREFIX · 5. Метрики cachecreation / cacheread · 6. Тести · 7. Manual verification у dev · 1. Старт сервера з реальним ANTHROPICAPIKEY (не AIQUOTADISABLED smoke). · 2. Перший запит до /api/chat від тестового юзера. · У логах response.usage → шукай cachecreationinputtokens > 0. · 3. Другий ідентичний запит протягом ~5 хв. · cachereadinputtokens > 0. · 8. Production rollout · Verification · Notes · Моніторинг (як перевірити в production) · Prometheus метрики · Grafana queries · Cache hit rate (%)",
-      "contentHash": "5515fc9bd8f06ba6957d3043d3f737393231bf95d7ea130b09015b119bac82c4"
+      "text": "Enable Anthropic Prompt Caching · playbook:enable-prompt-caching · playbook · Active · Playbook: Enable Anthropic Prompt Caching · Owner surface · Контекст · Важливий урок з PR #790 · Стан на 2026-07-25 — читай перед кроками нижче · Steps · 1. Перетвори system з string на блоки · 2. Додай tools breakpoint · 3. (Опц.) Beta header — лише для старих моделей · 4. Версіонуй SYSTEMPREFIX · 5. Метрики cachecreation / cacheread · 6. Тести · 7. Manual verification у dev · 1. Старт сервера з реальним ANTHROPICAPIKEY (не AIQUOTADISABLED smoke). · 2. Перший запит до /api/chat від тестового юзера. · У логах response.usage → шукай cachecreationinputtokens > 0. · 3. Другий ідентичний запит протягом ~5 хв. · cachereadinputtokens > 0. · 8. Production rollout · Verification · Notes · Моніторинг (як перевірити в production) · Prometheus метрики · Grafana queries",
+      "contentHash": "196804a2a2c41e90b896f34b74662c6e46891f78867dccd95419655da6312989"
     },
     {
       "id": "playbook:execute-planning-batch",
@@ -4485,8 +4496,8 @@
       "title": "Tune System Prompt",
       "tier": "core",
       "status": "Active",
-      "text": "Tune System Prompt · playbook:tune-system-prompt · playbook · Active · Playbook: Tune System Prompt · Owner surface · Контекст · Steps · 1. Прочитай поточний промпт повністю · 2. Сформулюй зміну як delta · 3. Mini-eval перед запуском · 4. Запусти модель локально · 1) Стартни сервер з реальним ANTHROPICAPIKEY: · 2) Стартни web: · 3) Відкрий localhost:5173, увійди тестовим юзером (AGENTS.md), піди в HubChat, · прогни eval-set вручну. · 5. Зроби зміну · 6. Repeat eval після зміни · 7. Token cost check · Кількість символів промпту (грубо ≈ tokens × 3 для української): · 8. Тести (юніт-рівень) · 9. PR з прикладами · Verification · Notes · See also",
-      "contentHash": "7acae51f9193a7b3742f62d3f42d69c8829ed410cef1986d69da59062b123045"
+      "text": "Tune System Prompt · playbook:tune-system-prompt · playbook · Active · Playbook: Tune System Prompt · Owner surface · Контекст · Steps · 1. Прочитай поточний промпт повністю · 2. Сформулюй зміну як delta · 3. Mini-eval перед запуском · 4. Запусти модель локально · 1) Стартни сервер з реальним ANTHROPICAPIKEY: · 2) Стартни web: · 3) Відкрий localhost:5173, увійди тестовим юзером (AGENTS.md), піди в HubChat, · прогни eval-set вручну. · 5. Зроби зміну · 6. Repeat eval після зміни · 7. Token cost check · 8. Тести (юніт-рівень) · 9. PR з прикладами · Verification · Notes · See also",
+      "contentHash": "5f3a497dee8b8b47eaa92276aad6880521ace5d9039f57821ddcbe35969f5bb8"
     },
     {
       "id": "playbook:write-e2e-test",

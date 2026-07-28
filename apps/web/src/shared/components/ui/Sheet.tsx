@@ -12,6 +12,7 @@ import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
 import { useAnnounce } from "./ScreenReaderAnnouncer";
 import { Icon } from "./Icon";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
  * Sergeant Design System — Sheet (bottom sheet / modal)
@@ -32,7 +33,7 @@ import { Icon } from "./Icon";
  *   - animated slide-up with safe-area + bottom-nav margin so the
  *     panel always clears the module bottom tab bar (see ModuleShell's
  *     `--bottom-nav-height` CSS variable) and the iOS home indicator
- *   - keyboard-inset-aware margin if kbInsetPx is supplied
+ *   - keyboard-inset-aware margin through the shared platform adapter
  *
  * Callers are still responsible for their own form state, validation,
  * and action footer — Sheet only owns the shell.
@@ -65,7 +66,7 @@ export interface SheetProps {
    * node so the dialog remains labelled.
    */
   hideHeader?: boolean | undefined;
-  /** Keyboard (visual viewport) inset in px — shifts panel up when an on-screen keyboard is visible. */
+  /** Optional keyboard inset override. Normally Sheet detects it centrally. */
   kbInsetPx?: number | undefined;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
   zIndex?: number | undefined;
@@ -106,6 +107,8 @@ export function Sheet({
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const detectedKbInsetPx = useVisualKeyboardInset(open);
+  const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
   useDialogFocusTrap(open, panelRef, {
     onEscape: onClose,
     inertBackground: true,
@@ -142,18 +145,18 @@ export function Sheet({
 
   // Lift the panel above the module bottom nav (set via the
   // `--bottom-nav-height` CSS variable on ModuleShell) plus the iOS
-  // home-indicator inset. `kbInsetPx` overrides the offset entirely
+  // home-indicator inset. The resolved keyboard inset overrides the offset
   // when the soft keyboard is visible — we want the sheet to hug the
   // keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
-    kbInsetPx && kbInsetPx > 0
+    resolvedKbInsetPx > 0
       ? {
-          marginBottom: kbInsetPx,
+          marginBottom: resolvedKbInsetPx,
           // The keyboard occupies part of the layout viewport. Lifting a
           // 90dvh sheet without shrinking it pushes its header and focused
           // field above the screen; cap it to the actually visible area so
           // only the sheet body scrolls.
-          maxHeight: `calc(100dvh - ${kbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          maxHeight: `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
         }
       : {
           marginBottom:

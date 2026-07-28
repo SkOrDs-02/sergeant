@@ -127,13 +127,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await waitForInitialSqliteRefresh(page, "finyk");
 
     await page.getByRole("button", { name: "Додати витрату" }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Додати витрату" }),
-    ).toBeVisible();
+    const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
+    await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
     await page.getByLabel("Назва").fill("DCRUD кава");
     await waitForSqliteRefreshAfter(page, "finyk", async () => {
-      await page.getByRole("button", { name: "Додати" }).click();
+      await createDialog
+        .getByRole("button", { name: "Додати витрату", exact: true })
+        .click();
     });
 
     await page.getByRole("button", { name: /Розгорнути Сьогодні/ }).click();
@@ -217,7 +218,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     const pantryInput = page.getByPlaceholder("напр. лосось 300г");
     await pantryInput.fill("DCRUD йогурт");
     await waitForSqliteRefreshAfter(page, "nutrition", async () => {
-      await page.getByRole("button", { name: "Додати" }).click();
+      await page.getByRole("button", { name: "Додати", exact: true }).click();
     });
     await expect(page.getByText("dcrud йогурт")).toBeVisible();
 
@@ -287,7 +288,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
       .click();
     const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
     await expect(createDialog).toBeVisible();
-    await createDialog.getByPlaceholder("Назва").fill("DCRUD вода");
+    await createDialog.getByLabel("Назва звички").fill("DCRUD вода");
     await createDialog
       .getByRole("button", { name: "Додати звичку", exact: true })
       .click();
@@ -303,7 +304,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
       name: "Редагувати звичку",
     });
     await expect(editDialog).toBeVisible();
-    await editDialog.getByPlaceholder("Назва").fill("DCRUD вода оновлено");
+    await editDialog.getByLabel("Назва звички").fill("DCRUD вода оновлено");
     await editDialog
       .getByRole("button", { name: "Зберегти зміни" })
       .press("Enter");

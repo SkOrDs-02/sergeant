@@ -7,6 +7,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -145,17 +146,20 @@ describe("HabitQuickCreateDialog", () => {
   it("close button (✕) calls onClose", () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
-    fireEvent.click(screen.getByRole("button", { name: /закрити/i }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /закрити/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
   it("backdrop click calls onClose", () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
+    const dialog = screen.getByRole("dialog");
     const backdrop = screen
-      .getByRole("dialog")
-      .parentElement!.querySelector("[aria-hidden]") as HTMLElement;
-    fireEvent.click(backdrop);
+      .getAllByRole("button", { name: /закрити/i })
+      .find((button) => !dialog.contains(button));
+    expect(backdrop).toBeDefined();
+    fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalled();
   });
 

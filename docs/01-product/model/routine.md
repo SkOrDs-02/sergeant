@@ -369,17 +369,13 @@ pushup-даних із routine — **нелегітимне довгострок
 > пряма інверсія founder-наміру. Доки це фіксують як «display-only» читання,
 > але власника не переносять. Шов розібрати: pushup → fizruk-активність.
 
-**FizrukDayPlanSheet — переїжджає.** Дослівно узгоджено з fizruk-каноном «план
-— власність fizruk».
+**FizrukDayPlanSheet — переїхав у fizruk.** Дослівно узгоджено з
+fizruk-каноном «план — власність fizruk».
 
-> **Код: routine-UI жорстко пришитий до fizruk-внутрішньостей.**
-> `FizrukDayPlanSheet.tsx:11-13` прямо імпортує `useMonthlyPlan`,
-> `useWorkoutTemplates`, `useExerciseCatalog` (fizruk-хуки), живе в
-> `routine/components/`, монтується з `RoutineCalendarPanel.tsx:617`. Вузький,
-> але прямий шов; page-audit також зафіксував запозичення fizruk-акценту
-> `sky` замість routine-токенів (Hard Rule #12,
-> `page-audit-09:113-131`). Разом із крос-модульним календарем (§1) це
-> «календарна» частина routine, яку founder-намір відкочує до чистого трекера.
+> **Код: ownership вирівняно 2026-07-28.** Sheet і його тести живуть у
+> `modules/fizruk/components/planning/`; `RoutineCalendarPanel` імпортує цю
+> публічну Fizruk-поверхню й передає лише `dateKey`/`onClose`. Routine більше
+> не володіє UI або станом планування тренувань.
 
 ## 11. Платформи
 

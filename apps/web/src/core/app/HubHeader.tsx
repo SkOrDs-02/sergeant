@@ -80,12 +80,6 @@ interface HubHeaderProps {
   hideAuthButton?: boolean;
   /** System notifications (SW update / PWA install) surfaced in the bell. */
   notifications?: readonly HubNotification[];
-  /**
-   * #3 — Scroll-collapse. When `true` the header compresses to row-1 only
-   * (logo + actions), hiding the greeting/date row. Driven by the scroll
-   * container in `HubHomeView` via `useScrollDirection`.
-   */
-  condensed?: boolean | undefined;
 }
 
 export function HubHeader({
@@ -96,7 +90,6 @@ export function HubHeader({
   onShowAuth,
   hideAuthButton = false,
   notifications,
-  condensed = false,
 }: HubHeaderProps) {
   const greetingText = useMemo(() => {
     const tod = getTimeOfDay();
@@ -112,12 +105,7 @@ export function HubHeader({
     <header
       className={cn(
         "px-5 max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full",
-        "shrink-0 z-40",
-        // #3 — transition padding so the header smoothly shrinks/grows.
-        // motion-safe guards against triggering layout animation under
-        // prefers-reduced-motion (Hard Rule #17).
-        "motion-safe:transition-[padding] motion-safe:duration-[var(--motion-duration-base)] motion-safe:ease-[var(--motion-ease-standard)]",
-        condensed ? "pt-3 pb-1.5" : "pt-6 pb-2.5",
+        "shrink-0 z-40 pt-6 pb-2.5",
       )}
     >
       {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
@@ -223,42 +211,21 @@ export function HubHeader({
           елементом екрана випадково ставав демо-банер. Привітання стає
           ink-якорем (display-вага), дата — mono-мета: число живе в
           JetBrains Mono, як усі технічні значення Sergeant. */}
-      {/* #3 — greeting/date row collapses on scroll-down, re-appears on
-          scroll-up. CSS grid-rows transition gives a smooth height fade:
-          grid-rows-[1fr] → grid-rows-[0fr] shrinks to zero height without
-          changing the DOM, so AT still reads the greeting. The inner div
-          `overflow-hidden` prevents the text from peeking out during
-          the collapse. motion-safe keeps it instant under reduced-motion. */}
-      <div
-        aria-hidden={condensed}
-        className={cn(
-          "grid motion-safe:transition-[grid-template-rows,opacity]",
-          "motion-safe:duration-[var(--motion-duration-base)] motion-safe:ease-[var(--motion-ease-standard)]",
-          condensed
-            ? "grid-rows-[0fr] opacity-0"
-            : "grid-rows-[1fr] opacity-100",
-        )}
-      >
-        <div className="overflow-hidden">
-          <p className="mt-2 ml-[3px] truncate">
-            {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба,
-                якір екрана з мови «Папір» (П2), а не заголовок секції. */}
-            <span className="text-style-headline text-text">
-              {greetingText}
+      <p className="mt-2 ml-[3px] truncate">
+        {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба,
+            якір екрана з мови «Папір» (П2), а не заголовок секції. */}
+        <span className="text-style-headline text-text">{greetingText}</span>
+        {dateStr && (
+          <>
+            <span className="mx-2 text-subtle" aria-hidden="true">
+              ·
             </span>
-            {dateStr && (
-              <>
-                <span className="mx-2 text-subtle" aria-hidden="true">
-                  ·
-                </span>
-                <span className="font-mono text-style-caption text-muted tabular-nums">
-                  {dateStr}
-                </span>
-              </>
-            )}
-          </p>
-        </div>
-      </div>
+            <span className="font-mono text-style-caption text-muted tabular-nums">
+              {dateStr}
+            </span>
+          </>
+        )}
+      </p>
     </header>
   );
 }

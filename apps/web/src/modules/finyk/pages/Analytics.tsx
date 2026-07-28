@@ -444,7 +444,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
               compact
               module="finyk"
               title="Поки немає витрат"
-              description="За цей місяць транзакцій не знайдено — обери і��ший період зверху."
+              description="За цей місяць транзакцій не знайдено — обери інший період зверху."
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>

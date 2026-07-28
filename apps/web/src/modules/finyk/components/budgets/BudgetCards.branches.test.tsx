@@ -99,12 +99,12 @@ describe("LimitBudgetCard", () => {
       />,
     );
 
-    fireEvent.change(screen.getByPlaceholderText("Ліміт ₴"), {
+    fireEvent.change(screen.getByLabelText("Ліміт"), {
       target: { value: "7500" },
     });
     expect(onChangeLimit).toHaveBeenCalledWith(7500);
 
-    fireEvent.change(screen.getByLabelText("Період ліміту"), {
+    fireEvent.change(screen.getByLabelText("Період"), {
       target: { value: "one_time" },
     });
     expect(onChangePeriod).toHaveBeenCalledWith("one_time");

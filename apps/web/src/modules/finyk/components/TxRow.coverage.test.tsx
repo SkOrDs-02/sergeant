@@ -74,7 +74,7 @@ describe("TxRow", () => {
     // MaskedAmount (#9 blur-to-reveal) більше не малює «••••» — значення
     // лишається в DOM розмитим і прихованим від AT, з sr-only підписом.
     render(<TxRow tx={mkTx()} hideAmount />);
-    expect(screen.getByText(/Прихована сума/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Прихована сума/)).toBeInTheDocument();
   });
 
   it("renders a foreign-currency operation amount", () => {
@@ -156,170 +156,28 @@ describe("TxRow", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("applies line-through styling and renders 'Відновити' for hidden rows", () => {
-    const onHide = vi.fn();
-    render(<TxRow tx={mkTx()} hidden onHide={onHide} />);
-    expect(screen.getByLabelText("Відновити")).toBeInTheDocument();
+  it("applies line-through styling for hidden rows", () => {
+    render(<TxRow tx={mkTx()} hidden />);
+    expect(screen.getByText("АТБ маркет")).toHaveClass("line-through");
   });
 
-  it("calls onHide with the tx id when the hide button is clicked", () => {
-    const onHide = vi.fn();
-    render(<TxRow tx={mkTx()} onHide={onHide} />);
-    fireEvent.click(screen.getByLabelText("Приховати"));
-    expect(onHide).toHaveBeenCalledWith("tx-1");
+  it("renders the 'змін.' tag when an override is set", () => {
+    render(<TxRow tx={mkTx()} overrideCatId="transport" />);
+    expect(screen.getByText("змін.")).toBeInTheDocument();
   });
 
-  describe("category picker", () => {
-    it("toggles open and calls onCatChange when a category is picked", () => {
-      const onCatChange = vi.fn();
-      render(<TxRow tx={mkTx()} onCatChange={onCatChange} />);
-      fireEvent.click(screen.getByLabelText("Змінити категорію"));
-      // a list of category buttons appears; pick the first one
-      const buttons = screen.getAllByRole("button");
-      // click any category-option button (one containing an emoji + label)
-      const food = buttons.find((b) => /Їжа|їжа|АТБ/.test(b.textContent ?? ""));
-      // fallback: just click one of the picker buttons
-      fireEvent.click(food ?? buttons[buttons.length - 1]!);
-      expect(onCatChange).toHaveBeenCalled();
-    });
-
-    it("shows a reset option when an override is active", () => {
-      const onCatChange = vi.fn();
-      render(
-        <TxRow tx={mkTx()} onCatChange={onCatChange} overrideCatId="food" />,
-      );
-      fireEvent.click(screen.getByLabelText("Змінити категорію"));
-      const reset = screen.getByRole("button", { name: /скинути/i });
-      fireEvent.click(reset);
-      expect(onCatChange).toHaveBeenCalledWith("tx-1", null);
-    });
-
-    it("renders income categories in the picker for income rows", () => {
-      const onCatChange = vi.fn();
-      render(
-        <TxRow
-          tx={mkTx({ amount: 100000, description: "Дохід" })}
-          onCatChange={onCatChange}
-        />,
-      );
-      fireEvent.click(screen.getByLabelText("Змінити категорію"));
-      // income picker buttons are present
-      expect(screen.getAllByRole("button").length).toBeGreaterThan(1);
-    });
-
-    it("renders the 'змін.' tag when an override is set", () => {
-      render(<TxRow tx={mkTx()} overrideCatId="transport" />);
-      expect(screen.getByText("змін.")).toBeInTheDocument();
-    });
-  });
-
-  describe("split editor", () => {
-    const categoryPickers = () =>
-      screen
-        .getAllByRole("button")
-        .filter((button) => button.getAttribute("aria-haspopup") === "listbox");
-
-    it("opens, shows the default two-row split and the total label", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      expect(screen.getByText(/Розподіл/)).toBeInTheDocument();
-      expect(categoryPickers()).toHaveLength(2);
-      expect(categoryPickers()[0]).toHaveAccessibleName("Продукти");
-      expect(categoryPickers()[0]).not.toHaveTextContent("🛒");
-    });
-
-    it("adds a split part via '+ Додати частину'", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      fireEvent.click(screen.getByText("+ Додати частину"));
-      expect(categoryPickers()).toHaveLength(3);
-    });
-
-    it("changes a split category from the split picker", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-
-      fireEvent.click(categoryPickers()[0]!);
-      expect(screen.getByRole("listbox")).toBeInTheDocument();
-
-      const option = screen
-        .getAllByRole("option")
-        .find((button) => /Транспорт/.test(button.textContent ?? ""));
-      fireEvent.click(option!);
-
-      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-      expect(categoryPickers()[0]).toHaveAccessibleName("Транспорт");
-    });
-
-    it("saves a balanced split via onSplitChange", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      const inputs = screen.getAllByRole("spinbutton");
-      // total is 250.00; assign both parts to sum to 250 (remaining ≈ 0)
-      fireEvent.change(inputs[0]!, { target: { value: "150" } });
-      fireEvent.change(inputs[1]!, { target: { value: "100" } });
-      expect(screen.getByText(/Суми збігаються/)).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
-      expect(onSplitChange).toHaveBeenCalledWith("tx-1", expect.any(Array));
-    });
-
-    it("disables save while amounts do not balance", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      const inputs = screen.getAllByRole("spinbutton");
-      fireEvent.change(inputs[0]!, { target: { value: "10" } });
-      const save = screen.getByRole("button", { name: "Зберегти" });
-      expect(save).toBeDisabled();
-    });
-
-    it("removes an extra split row with the ✕ control", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      fireEvent.click(screen.getByText("+ Додати частину"));
-      expect(categoryPickers()).toHaveLength(3);
-      fireEvent.click(
-        screen.getAllByRole("button", {
-          name: "Видалити частину розподілу",
-        })[0]!,
-      );
-      expect(categoryPickers()).toHaveLength(2);
-    });
-
-    it("closes the split editor with the ✕ cancel button", () => {
-      const onSplitChange = vi.fn();
-      render(<TxRow tx={mkTx()} onSplitChange={onSplitChange} />);
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      expect(screen.getByText(/Розподіл/)).toBeInTheDocument();
-      fireEvent.click(
-        screen.getByRole("button", { name: "Закрити редактор розподілу" }),
-      );
-      expect(screen.queryByText(/Розподіл/)).not.toBeInTheDocument();
-    });
-
-    it("pre-populates from existing splits and offers a delete option", () => {
-      const onSplitChange = vi.fn();
-      const txSplits = {
-        "tx-1": [
-          { categoryId: "food", amount: 150 },
-          { categoryId: "transport", amount: 100 },
-        ],
-      };
-      render(
-        <TxRow tx={mkTx()} onSplitChange={onSplitChange} txSplits={txSplits} />,
-      );
-      // the "спліт" pill shows because existing splits are present
-      expect(screen.getByText(/спліт/)).toBeInTheDocument();
-      fireEvent.click(screen.getByLabelText("Розподілити транзакцію"));
-      const del = screen.getByText("Видалити");
-      fireEvent.click(del);
-      expect(onSplitChange).toHaveBeenCalledWith("tx-1", null);
-    });
+  it("shows the existing split count without embedding an editor", () => {
+    const txSplits = {
+      "tx-1": [
+        { categoryId: "food", amount: 150 },
+        { categoryId: "transport", amount: 100 },
+      ],
+    };
+    render(<TxRow tx={mkTx()} txSplits={txSplits} />);
+    expect(screen.getByText(/спліт/)).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Розподілити транзакцію"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the transfer tag and hides AI badge for internal transfers", () => {

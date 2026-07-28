@@ -34,9 +34,11 @@ describe("createPromptsInternalRouter", () => {
     expect(res.headers["content-type"]).toContain("text/markdown");
     expect(res.text).toBe("# Prompt\n\nUse tools carefully.");
     expect(readFileMock).toHaveBeenCalledTimes(1);
-    expect(String(readFileMock.mock.calls[0]?.[0])).toContain(
-      "ai-prompts/openclaw/before-dispatch.md",
+    const promptPath = String(readFileMock.mock.calls[0]?.[0]).replaceAll(
+      "\\",
+      "/",
     );
+    expect(promptPath).toContain("ai-prompts/openclaw/before-dispatch.md");
   });
 
   it("rejects unsafe prompt segments before reading from disk", async () => {

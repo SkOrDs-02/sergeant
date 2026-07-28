@@ -17,7 +17,11 @@ iOS Safari **ігнорує** `interactive-widget=resizes-content` (мета в�
 ## Що вже існує (не дублювати)
 
 - `apps/web/src/shared/hooks/useVisualKeyboardInset.ts` — web-адаптер спільного контракту `@sergeant/shared` (`setVisualKeyboardInsetAdapter`): підписка на `visualViewport` `resize` + `scroll`, формула `window.innerHeight − vv.height − vv.offsetTop`, поріг 56px проти browser-chrome resize. Side-effect-імпорт у `apps/web/src/main.tsx`; call-sites імпортують хук з `@sergeant/shared`.
-- Споживачі inset-а: `apps/web/src/shared/components/ui/Sheet.tsx` (проп `kbInsetPx` → панель притискається до клавіатури), `modules/finyk/components/ManualExpenseSheet.tsx`, `modules/nutrition/components/AddMealSheet.tsx`, `modules/fizruk/components/workouts/AddExerciseSheet.tsx` і `QuickStartSheet.tsx`, `core/hub/HubChat.tsx`.
+- Канонічні споживачі inset-а: `apps/web/src/shared/components/ui/Sheet.tsx`
+  сам викликає `useVisualKeyboardInset(open)` і автоматично притискає будь-який
+  sheet до клавіатури; `ModuleBottomNav` та Hub-навігація ховаються при inset > 0.
+  Форми не підписуються на inset окремо. `kbInsetPx` у `Sheet` лишився тільки як
+  явний override для тестів і спеціальних платформних адаптерів.
 - `Sheet.tsx` вже має **iOS-safe body-lock** (`position: fixed`, не лише `overflow: hidden` — коментар на ~рядку 123) і sticky footer поза скрол-зоною.
 
 ## Розслідування (гіпотези, перевірити в такому порядку)
@@ -37,8 +41,8 @@ iOS Safari **ігнорує** `interactive-widget=resizes-content` (мета в�
 
 ### Реалізована геометрія Sheet (2026-07-28)
 
-Під час відкритої клавіатури спільний `Sheet` не лише піднімається на
-`kbInsetPx`, а й обмежує власну висоту до видимої частини viewport-а:
+Під час відкритої клавіатури спільний `Sheet` сам отримує inset, піднімається
+на його значення й обмежує власну висоту до видимої частини viewport-а:
 `100dvh − kbInsetPx − safe-area/top-gap`. До цього панель зберігала
 `max-height: 90dvh` і після підйому виштовхувала заголовок та сфокусоване поле
 за верхній край; користувач бачив клавіатуру посеред форми, а внутрішній скрол

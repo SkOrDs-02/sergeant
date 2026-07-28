@@ -17,7 +17,7 @@ const getTemplateForDate = vi.fn<(dateKey: string) => string | null>(
 );
 const setDayTemplate = vi.fn();
 
-vi.mock("../../fizruk/hooks/useMonthlyPlan", () => ({
+vi.mock("../../hooks/useMonthlyPlan", () => ({
   useMonthlyPlan: () => ({ getTemplateForDate, setDayTemplate }),
 }));
 
@@ -25,7 +25,7 @@ const mockTemplates = vi.fn<
   () => { id: string; name: string; exerciseIds: string[] }[]
 >(() => []);
 
-vi.mock("../../fizruk/hooks/useWorkoutTemplates", () => ({
+vi.mock("../../hooks/useWorkoutTemplates", () => ({
   useWorkoutTemplates: () => ({ templates: mockTemplates() }),
 }));
 
@@ -38,7 +38,7 @@ const mockExercises = vi.fn<
   }[]
 >(() => []);
 
-vi.mock("../../fizruk/hooks/useExerciseCatalog", () => ({
+vi.mock("../../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: () => ({ exercises: mockExercises() }),
 }));
 

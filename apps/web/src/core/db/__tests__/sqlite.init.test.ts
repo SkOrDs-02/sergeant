@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logger } from "@shared/lib";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
 
@@ -7,7 +8,7 @@ import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
  * Initialisation path: with a JSDOM-mocked OPFS we expect
  * `getSqliteDb()` to:
  *
- * 1. Probe `crossOriginIsolated` and emit a `console.warn` + Sentry
+ * 1. Probe `crossOriginIsolated` and emit a debug diagnostic + Sentry
  *    breadcrumb when COOP/COEP headers are missing (jsdom default).
  * 2. Lazy-load `@sqlite.org/sqlite-wasm` via dynamic `import()` and
  *    install the OPFS-SAH Pool VFS once support is detected.
@@ -46,8 +47,8 @@ describe("getSqliteDb — init", () => {
     vi.restoreAllMocks();
   });
 
-  it("warns when the page is not crossOriginIsolated and still resolves", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("records a diagnostic when the page is not crossOriginIsolated and still resolves", async () => {
+    const debugSpy = vi.spyOn(logger, "debug").mockImplementation(() => {});
     Object.defineProperty(globalThis, "crossOriginIsolated", {
       value: false,
       configurable: true,
@@ -57,7 +58,7 @@ describe("getSqliteDb — init", () => {
 
     expect(handle.crossOriginIsolated).toBe(false);
     expect(handle.vfs).toBe("opfs-sahpool");
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(debugSpy).toHaveBeenCalledWith(
       expect.stringContaining("crossOriginIsolated"),
     );
     const { addSentryBreadcrumb } = await import("../../observability/sentry");

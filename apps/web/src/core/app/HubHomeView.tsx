@@ -169,10 +169,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
-        // Keep the header at a stable height while the content scrolls. A
-        // live height change here shifts the scroll viewport on iOS and was
-        // the source of the reported jump/hide/show loop.
-        condensed={false}
       />
 
       <HubMainContent
@@ -190,7 +186,7 @@ export function HubHomeView(props: HubHomeViewProps) {
         onChange={ui.setHubView}
         // UX-feedback 2026-05-08: «Звіти» була прихована до першого
         // реального запису (щоб не показувати порожній екран). Юзери
-        // не ро��уміли, куди зник tab («куди зникла сторінка звіти?»),
+        // не розуміли, куди зник tab («куди зникла сторінка звіти?»),
         // тому показуємо tab завжди — `HubReports` сам рендерить
         // «Немає даних» empty-state до першого запису.
         showReports

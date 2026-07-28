@@ -18,7 +18,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import type {
   Meal,
@@ -76,7 +75,6 @@ export function AddMealSheet({
   onConsumePantryItem,
   onRequestPhoto,
 }: AddMealSheetProps) {
-  const kbInsetPx = useVisualKeyboardInset(open);
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
@@ -302,7 +300,6 @@ export function AddMealSheet({
         title={title}
         panelClassName="nutrition-sheet"
         zIndex={120}
-        kbInsetPx={kbInsetPx}
       >
         {step === "source" ? (
           <>

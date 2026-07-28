@@ -209,6 +209,26 @@
     {
       "pattern": "^https?://doaj\\.org/article/",
       "reason": "DOAJ-запис валідаційного дослідження точності MyFitnessPal (JMIR 2020), цитоване в docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md. DOAJ 403-ить автоматизовані запити."
+    },
+    {
+      "pattern": "^https?://(www\\.)?revolut\\.com/",
+      "reason": "Revolut product та research pages цитуються в docs/90-work/audits/finyk-analytics-research.md як джерела про spending analytics, subscriptions і budgeting. Revolut стабільно повертає 403 CI link-checker-у через anti-bot, хоча сторінки відкриваються у браузері."
+    },
+    {
+      "pattern": "^https?://moneylover\\.zendesk\\.com/hc/en-us/articles/34533897137177(-.*)?$",
+      "reason": "Money Lover Report Definition цитовано в docs/90-work/audits/finyk-analytics-research.md. Zendesk повертає 403 небраузерному CI User-Agent; pattern обмежено конкретною статтею."
+    },
+    {
+      "pattern": "^https?://(www\\.)?teamblind\\.com/post/what-does-your-personal-finance-app-lack-tskkxgh6$",
+      "reason": "Blind-тред з user feedback цитовано в docs/90-work/audits/finyk-analytics-research.md. Teamblind блокує автоматизовані запити кодом 403; pattern обмежено конкретним дослідницьким джерелом."
+    },
+    {
+      "pattern": "^https?://mobanking\\.com\\.ua/uk/statistika/?$",
+      "reason": "Сторінка статистики мобільного банкінгу цитована в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретним дослідницьким джерелом."
+    },
+    {
+      "pattern": "^https?://zenfinanceai\\.com/ynab-vs-copilot-ai/?$",
+      "reason": "Порівняння YNAB і Copilot цитовано в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретною статтею."
     }
   ]
 }

@@ -150,7 +150,7 @@ describe("SubscriptionForm", () => {
 });
 
 describe("AssetForm", () => {
-  it("renders the form title and currency select", () => {
+  it("renders the form as UAH-only without a currency selector", () => {
     render(
       withQueryClient(
         <AssetForm
@@ -165,6 +165,10 @@ describe("AssetForm", () => {
     );
     expect(screen.getByText("Новий актив")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Сума")).toBeInTheDocument();
+    expect(screen.getByText("UAH")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: /валюта активу/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
   });
 
@@ -190,7 +194,7 @@ describe("AssetForm", () => {
     expect(setShowAssetForm).toHaveBeenCalledWith(false);
   });
 
-  it("emits name, amount, and currency field updates", () => {
+  it("emits name and amount field updates without changing currency", () => {
     const setNewAsset = vi.fn();
     render(
       withQueryClient(
@@ -211,9 +215,6 @@ describe("AssetForm", () => {
     fireEvent.change(screen.getByLabelText("Сума активу"), {
       target: { value: "2500" },
     });
-    fireEvent.change(screen.getByLabelText("Валюта активу"), {
-      target: { value: "UAH" },
-    });
 
     const updaters = setNewAsset.mock.calls.map(
       ([updater]) =>
@@ -232,7 +233,7 @@ describe("AssetForm", () => {
     const base = { name: "Cash", amount: "100", currency: "USD", emoji: "" };
     expect(updaters[0]!(base)).toMatchObject({ name: expect.any(String) });
     expect(updaters[1]!(base)).toMatchObject({ amount: expect.any(String) });
-    expect(updaters[2]!(base)).toMatchObject({ currency: "UAH" });
+    expect(updaters).toHaveLength(2);
   });
 
   it("rejects non-positive amounts and saves a positive one", () => {

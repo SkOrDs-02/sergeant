@@ -287,16 +287,13 @@ best1rm) best1rm = est`, `apps/web/src/modules/fizruk/pages/Exercise.tsx:89,343`
 - **Соціальне** — теж не «ніколи». Зараз існує лише як share-картки/спільнота в
   GTM, не як fizruk-контракт.
 
-**Планування тренувань — власність fizruk, код дрейфнув. Дослівно: «Fizruk —
-план його, код дрейфнув».**
+**Планування тренувань — власність fizruk. Дослівно: «Fizruk — план його».**
 
-> **Код підтверджує дрейф буквально.** `FizrukDayPlanSheet.tsx` фізично живе в
-> **`apps/web/src/modules/routine/components/`** — тобто ним володіє routine, — але
-> споживає fizruk-хуки `useMonthlyPlan`/`useWorkoutTemplates`/`useExerciseCatalog`
-> (`FizrukDayPlanSheet.tsx:11-13`) і призначає шаблон на дату. Історичний
-> артефакт (вкладку «План» замінили deep-link'ом у routine-календар).
-> Продуктова власність — fizruk; фізичне розташування — routine. Граф показує 9
-> ребер ізсередини fizruk у цей файл. [Напруга 5 diff-звіту](../../90-work/audits/product-knowledge-fizruk.md).
+> **Дрейф закрито 2026-07-28.** `FizrukDayPlanSheet.tsx` фізично живе в
+> `apps/web/src/modules/fizruk/components/planning/` і споживає fizruk-хуки
+> `useMonthlyPlan`/`useWorkoutTemplates`/`useExerciseCatalog`. Routine-календар
+> лише відкриває публічну Fizruk-поверхню для обраної дати; доменним станом і
+> UI плану володіє fizruk.
 
 **Тіло/вага: «fizruk володіє тілом, nutrition читає». Дослівно: «Fizruk володіє
 тілом, nutrition читає».** Одне джерело істини ваги тіла — fizruk.

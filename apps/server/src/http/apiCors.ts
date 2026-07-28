@@ -28,7 +28,7 @@ import { setCorsHeaders } from "./cors.js";
  * allowed origin (defense-in-depth проти XSS / протечки секрета в logs).
  */
 const ALLOW_HEADERS =
-  "Content-Type, Authorization, X-Requested-With, traceparent, tracestate, X-Token, X-Privat-Id, X-Privat-Token";
+  "Content-Type, Authorization, X-Requested-With, X-Origin-Device-Id, traceparent, tracestate, X-Token, X-Privat-Id, X-Privat-Token";
 
 // `Retry-After` — Monobank-proxy повертає його на 429, щоб клієнт (Monobank
 // pagination loop, `api-client/endpoints/mono.ts`) міг зробити targeted

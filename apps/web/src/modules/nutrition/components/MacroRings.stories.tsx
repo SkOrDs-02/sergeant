@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MacroRings } from "./MacroRings";
 
 const meta: Meta<typeof MacroRings> = {

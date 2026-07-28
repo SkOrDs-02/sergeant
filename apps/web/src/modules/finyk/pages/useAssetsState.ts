@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isMonoDebt } from "../utils";
 import {
-  getMonoTotals,
-  isMonoDebt,
-  calcDebtRemaining,
-  calcReceivableRemaining,
-} from "../utils";
-import { filterVisibleAccounts } from "@sergeant/finyk-domain/domain/assets/aggregates";
+  computeAssetsSummary,
+  filterVisibleAccounts,
+} from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
@@ -170,28 +168,33 @@ export function useAssetsState({
   const debtNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const monoAccounts = accounts as MonoAccount[];
-  const { balance: monoTotal, debt: monoTotalDebt } = getMonoTotals(
-    monoAccounts,
+  const assetsSummary = computeAssetsSummary({
+    accounts: monoAccounts,
     hiddenAccounts,
-  );
+    manualAssets: manualAssets.map((asset) => ({
+      id: asset.id,
+      name: asset.name ?? "",
+      amount: asset.amount,
+      currency: asset.currency ?? "",
+      ...(asset.emoji !== undefined ? { emoji: asset.emoji } : {}),
+    })),
+    manualDebts,
+    receivables,
+    transactions,
+  });
+  const {
+    monoBalance: monoTotal,
+    monoDebt: monoTotalDebt,
+    totalLiabilities: totalDebt,
+    receivableTotal: totalReceivable,
+    manualAssetTotal,
+    networth,
+    totalAssets,
+  } = assetsSummary;
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
   ).filter((a) => isMonoDebt(a));
-  const manualDebtTotal = manualDebts.reduce(
-    (s, d) => s + calcDebtRemaining(d, transactions),
-    0,
-  );
-  const totalDebt = monoTotalDebt + manualDebtTotal;
-  const totalReceivable = receivables.reduce(
-    (s, r) => s + calcReceivableRemaining(r, transactions),
-    0,
-  );
-  const manualAssetTotal = manualAssets
-    .filter((a) => a.currency === "UAH")
-    .reduce((s, a) => s + Number(a.amount), 0);
-  const networth = monoTotal + manualAssetTotal + totalReceivable - totalDebt;
-  const totalAssets = monoTotal + manualAssetTotal + totalReceivable;
 
   const [todayStart] = useState<Date>(startOfToday);
 

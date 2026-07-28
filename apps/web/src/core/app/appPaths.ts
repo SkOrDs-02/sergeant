@@ -6,6 +6,8 @@
 // that adding a new route to `StandaloneRoutes.tsx` automatically updates the
 // allowlist without a parallel edit here.
 
+import { HUB_MODULE_IDS } from "@shared/lib/modules/hubNav";
+
 // Canonical document title. Mirrors `apps/web/index.html` <title> and the
 // PWA manifest `name` (vite.config.js). Some sub-routes were observed losing
 // the static title (browser falling back to the URL), so `RootLayout` keeps
@@ -126,12 +128,9 @@ export const STATUS_PATH = "/status";
  * Order: nutrition (PR #2104), finyk (PR #2108), fizruk (PR #2541),
  * routine (Phase 2.d). All four Phase 2 modules now path-based.
  */
-export const PATH_BASED_MODULE_IDS: ReadonlySet<string> = new Set([
-  "nutrition",
-  "finyk",
-  "fizruk",
-  "routine",
-]);
+export const PATH_BASED_MODULE_IDS: ReadonlySet<string> = new Set(
+  HUB_MODULE_IDS,
+);
 
 /**
  * Returns true when `pathname` is owned by a path-based module

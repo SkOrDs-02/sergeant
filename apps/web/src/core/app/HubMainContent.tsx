@@ -99,12 +99,6 @@ export interface HubMainContentProps {
   user: User | null;
   onShowAuth: () => void;
   inFtuxSession?: boolean;
-  /**
-   * #3 — fires once the scrollable main container is available (or null on
-   * unmount). `HubHomeView` threads this into `useScrollDirection` so the
-   * header collapses when the user scrolls down.
-   */
-  onScrollContainer?: ((el: HTMLDivElement | null) => void) | undefined;
 }
 
 export const HubMainContent = memo(function HubMainContent({
@@ -115,7 +109,6 @@ export const HubMainContent = memo(function HubMainContent({
   user,
   onShowAuth,
   inFtuxSession = false,
-  onScrollContainer,
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
@@ -142,14 +135,10 @@ export const HubMainContent = memo(function HubMainContent({
   // «Жива» вкладка для scroll-listener-а: він пише позицію саме тієї
   // вкладки, що зараз на екрані, а не тієї, на яку ми щойно перемкнулись.
   const liveViewRef = useRef<HubView>(hubView);
-  const handleScrollElement = useCallback(
-    (el: HTMLDivElement | null) => {
-      scrollElRef.current = el;
-      setScrollElement(el);
-      onScrollContainer?.(el);
-    },
-    [onScrollContainer],
-  );
+  const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
+    scrollElRef.current = el;
+    setScrollElement(el);
+  }, []);
 
   // Безперервно фіксуємо позицію активної вкладки — так до моменту
   // перемикання ми вже маємо збережений `scrollTop` вихідної вкладки.

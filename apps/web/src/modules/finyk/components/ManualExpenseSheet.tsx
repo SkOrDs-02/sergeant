@@ -15,7 +15,7 @@ import { DateScrubber } from "@shared/components/ui/DateScrubber";
 import { useApiForm } from "@shared/forms";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { toLocalISODate, useVisualKeyboardInset } from "@sergeant/shared";
+import { toLocalISODate } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -108,7 +108,6 @@ export function ManualExpenseSheet({
   const amountId = `${formId}-amount`;
   const dateId = `${formId}-date`;
   const catLabelId = `${formId}-cat-label`;
-  const kbInsetPx = useVisualKeyboardInset(open);
   const isEditing = !!initialExpense?.id;
   const [kind, setKind] = useState<ManualExpenseKind>("expense");
 
@@ -399,7 +398,6 @@ export function ManualExpenseSheet({
       open={open}
       onClose={onClose}
       title={sheetTitle}
-      kbInsetPx={kbInsetPx}
       panelClassName="finyk-sheet"
       bodyClassName="space-y-4"
       footer={

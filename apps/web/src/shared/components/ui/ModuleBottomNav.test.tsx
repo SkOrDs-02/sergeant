@@ -138,6 +138,36 @@ describe("ModuleBottomNav", () => {
     );
   });
 
+  it("supports Arrow, Home and End navigation for tablists", () => {
+    const onChange = vi.fn();
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={onChange}
+        module="routine"
+        role="tablist"
+        ariaLabel="Module tabs"
+      />,
+    );
+
+    const overview = screen.getByRole("tab", { name: "Overview" });
+    const stats = screen.getByRole("tab", { name: "Stats" });
+
+    overview.focus();
+    fireEvent.keyDown(screen.getByRole("tablist"), { key: "ArrowRight" });
+    expect(stats).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith("stats");
+
+    fireEvent.keyDown(screen.getByRole("tablist"), { key: "Home" });
+    expect(overview).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith("overview");
+
+    fireEvent.keyDown(screen.getByRole("tablist"), { key: "End" });
+    expect(stats).toHaveFocus();
+    expect(onChange).toHaveBeenLastCalledWith("stats");
+  });
+
   it("shows the unread badge only on inactive items", () => {
     render(
       <ModuleBottomNav

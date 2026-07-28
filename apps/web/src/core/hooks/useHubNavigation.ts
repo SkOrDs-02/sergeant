@@ -1,14 +1,12 @@
 import { useCallback, useState } from "react";
 import { startViewTransition } from "@shared/lib/ui/viewTransition";
 import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
-import type { HubModuleId } from "@shared/lib/modules/hubNav";
+import { isHubModuleId, type HubModuleId } from "@shared/lib/modules/hubNav";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
-
-const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
 /**
  * Subset of {@link VALID_MODULES} which has graduated from the legacy
@@ -48,7 +46,7 @@ export interface HubNavigation {
 }
 
 function parseModule(value: string | null): HubModuleId | null {
-  if (value && VALID_MODULES.has(value)) return value as HubModuleId;
+  if (isHubModuleId(value)) return value;
   return null;
 }
 
@@ -153,30 +151,16 @@ export function useHubNavigation(): HubNavigation {
   const openModule = useCallback(
     (id: string | null | undefined, opts: OpenModuleOptions = {}) => {
       const nextId = String(id ?? "").trim();
-      if (!VALID_MODULES.has(nextId)) return;
-      const typedId = nextId as HubModuleId;
-      const isSame = typedId === activeModule;
-
-      const isPathBased = PATH_BASED_MODULES.has(typedId);
-      let hashStr = "";
+      if (!isHubModuleId(nextId)) return;
+      const typedId = nextId;
       let pathSuffix = "";
       try {
         const raw = opts.hash != null ? String(opts.hash).trim() : "";
         if (raw) {
-          // For path-based modules, "log" means `/nutrition/log`; for
-          // hash-based ones it stays `#log` until they migrate.
-          // Strip leading `#` either way so callers can pass either form.
+          // All modules are path-based. Strip a legacy leading hash so old
+          // callers can keep passing either "log" or "#log".
           const cleaned = raw.startsWith("#") ? raw.slice(1) : raw;
-          if (isPathBased) {
-            pathSuffix = cleaned ? `/${cleaned}` : "";
-          } else {
-            hashStr = `#${cleaned}`;
-            window.location.hash = hashStr;
-          }
-        } else if (!isPathBased && !isSame) {
-          // Legacy hash-router modules expect a clean hash on entry
-          // when no specific page was requested.
-          window.location.hash = "";
+          pathSuffix = cleaned ? `/${cleaned}` : "";
         }
       } catch {
         /* ignore */
@@ -193,12 +177,9 @@ export function useHubNavigation(): HubNavigation {
       // see `core/lib/recentModules.ts`. Storage failures are swallowed
       // there; nothing here cares about the result.
       recordModuleOpen(typedId);
-      const target = isPathBased
-        ? `/${typedId}${pathSuffix}`
-        : `/?module=${typedId}${hashStr}`;
-      navigate(target, { replace: false });
+      navigate(`/${typedId}${pathSuffix}`, { replace: false });
     },
-    [activeModule, navigate],
+    [navigate],
   );
 
   const locKey = `${location.pathname}|${location.search}`;

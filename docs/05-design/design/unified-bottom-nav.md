@@ -1,17 +1,17 @@
 # Unified Bottom Navigation
 
-> **Last validated:** 2026-06-26 by @claude (form unification verified in code — divergence closed). **Next review:** 2026-09-24.
+> **Last validated:** 2026-07-28 by Codex (solid active indicator, active-only label і tablist keyboard contract verified). **Next review:** 2026-10-26.
 > **Status:** Active — **form unified**. `HubBottomNav` і `ModuleBottomNav` ділять один shell.
 
 > **TL;DR:** Хаб і 4 модулі живуть під **одним** навігаційним патерном —
 > `bottom-nav`. Hybrid «top-tabs у хабі + bottom-nav у модулях» більше немає.
 >
-> ✅ **Form unified (verified 2026-06-26).** Обидва nav використовують ІДЕНТИЧНИЙ
-> shell — `bottom-nav-shell border border-line bg-panel shadow-lg` (floating pill:
-> `mx-3`, `rounded-3xl`, `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`), і однаковий
-> active-indicator — rounded **outline** (`rounded-2xl border`, не sliding top-pill).
-> Module identity несе **колір outline**: `HubBottomNav` → `border-ink-strong/25`
-> (brand-agnostic), `ModuleBottomNav` → `border-{module}/40` (module-tinted).
+> ✅ **Form unified (verified 2026-07-28).** Обидва nav використовують спільний
+> shell — `bottom-nav-shell border border-line bg-panel shadow-lg` — і один
+> патерн вибору: активний item отримує **solid fill** та розкриває текстову
+> назву; неактивні items показують лише іконку (назва лишається `sr-only`).
+> Hub використовує brand fill, модулі — власний `*-strong` fill у світлій темі
+> та luminescent accent у «Чорнилі».
 > Це і є target-стан, що раніше трекався як «pending PR-8» — закрито у redesign-v2
 > (Phases 0–6, fully closed 2026-05-21). Реалізована форма відрізняється від раннього
 > ескізу (`bg-panel` shell, не `bg-surface-strong-glass`; `rounded-3xl`, не `rounded-r-2xl`).
@@ -63,9 +63,8 @@
 
 ## `HubBottomNav` vs `ModuleBottomNav`
 
-**Поточна реальність (verified 2026-06-26):** **одна форма.** Обидва nav ділять
-shell `bottom-nav-shell` і outline-indicator; різниця лише в кольорі outline
-(identity carrier). Контракт нижче — фактичний стан коду.
+**Поточна реальність (verified 2026-07-28):** **одна форма.** Обидва nav ділять
+shell `bottom-nav-shell`, solid active-indicator та active-only visible label.
 
 ### Уніфікований контракт (shipped)
 
@@ -74,15 +73,15 @@ shell `bottom-nav-shell` і outline-indicator; різниця лише в кол
 | Items            | 2-3 (Головна / Звіти? / Налаштування)                    | 4 per module (finyk/fizruk/routine/nutrition)                                        |
 | Shell            | `bottom-nav-shell border border-line bg-panel shadow-lg` | `bottom-nav-shell border border-line bg-panel shadow-lg` (identical)                 |
 | Shell shape      | `mx-3`, `rounded-3xl`, safe-area `mb`                    | identical (через `bottom-nav-shell` utility)                                         |
-| Active indicator | rounded **outline** `rounded-2xl border`                 | rounded **outline** `rounded-2xl border` (identical mechanism)                       |
-| Active tint      | `border-ink-strong/25` (brand-agnostic)                  | `border-{module}/40` (module-tinted — **identity carrier**)                          |
+| Active indicator | rounded solid fill + visible label                       | rounded solid fill + visible label                                                   |
+| Active tint      | brand solid fill                                         | `bg-{module}-strong`; dark luminescent accent — **identity carrier**                 |
 | `safe-area-pb`   | ✓ (через `bottom-nav-shell`)                             | ✓                                                                                    |
-| `role`           | tablist                                                  | nav (default; tablist опційно)                                                       |
+| `role`           | tablist + ArrowLeft/Right/Home/End                       | nav; у режимі tablist — та сама клавіатурна модель                                   |
 | Висота           | items `min-h-[48px]` / `pointer-coarse:52px`             | identical                                                                            |
 | FAB integration  | N/A                                                      | Routine special-case: center FAB як sibling (z-index >, над pill); інші модулі — N/A |
 
-> **Module identity:** несе **колір outline** активного таба (`border-{module}/40`),
-> а не окрема форма. Hub лишається brand-agnostic (`border-ink-strong/25`). Це
+> **Module identity:** несе **колір solid fill** активного таба, а не окрема
+> форма. Hub лишається brand-agnostic. Це
 > уніфікація без втрати модульної ідентичності.
 
 > **PWA standalone vs browser:** `bottom-nav-shell` docks edge-to-edge у standalone

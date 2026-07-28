@@ -7,11 +7,12 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
-import { useMonthlyPlan } from "../../fizruk/hooks/useMonthlyPlan";
-import { useWorkoutTemplates } from "../../fizruk/hooks/useWorkoutTemplates";
-import { useExerciseCatalog } from "../../fizruk/hooks/useExerciseCatalog";
-import { parseDateKey } from "../lib/hubCalendarAggregate";
+import { useMonthlyPlan } from "../../hooks/useMonthlyPlan";
+import { useWorkoutTemplates } from "../../hooks/useWorkoutTemplates";
+import { useExerciseCatalog } from "../../hooks/useExerciseCatalog";
+import { parseDateKey } from "../../../routine/lib/hubCalendarAggregate";
 
 interface CatalogExercise {
   id: string;
@@ -79,7 +80,7 @@ export function FizrukDayPlanSheet({
           className="w-full"
           onClick={onClose}
         >
-          Закрити
+          {messages.actions.close}
         </Button>
       }
     >
@@ -90,7 +91,7 @@ export function FizrukDayPlanSheet({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <SectionHeading as="p" size="xs" variant="subtle">
-                    Призначений шаблон
+                    {messages.fizruk.dayPlan.assignedTemplate}
                   </SectionHeading>
                   <p className="text-style-title text-text mt-0.5">
                     {currentTemplate.name}
@@ -103,7 +104,7 @@ export function FizrukDayPlanSheet({
                   className="text-xs! border border-line shrink-0"
                   onClick={() => handleAssign(null)}
                 >
-                  Зняти
+                  {messages.fizruk.dayPlan.removeTemplate}
                 </Button>
               </div>
 
@@ -115,7 +116,7 @@ export function FizrukDayPlanSheet({
                     variant="subtle"
                     className="mb-1.5"
                   >
-                    Вправи ({exerciseList.length})
+                    {messages.fizruk.dayPlan.exercises} ({exerciseList.length})
                   </SectionHeading>
                   <ul className="space-y-1.5">
                     {exerciseList.map((ex) => (
@@ -141,19 +142,20 @@ export function FizrukDayPlanSheet({
           ) : (
             <EmptyState
               compact
-              title="Тренування не призначено"
-              description="Обери шаблон нижче, щоб запланувати тренування на цей день."
+              title={messages.fizruk.dayPlan.emptyTitle}
+              description={messages.fizruk.dayPlan.emptyDescription}
             />
           )}
 
           <div>
             <SectionHeading as="p" size="xs" variant="subtle" className="mb-2">
-              {currentTemplate ? "Змінити шаблон" : "Обрати шаблон"}
+              {currentTemplate
+                ? messages.fizruk.dayPlan.changeTemplate
+                : messages.fizruk.dayPlan.chooseTemplate}
             </SectionHeading>
             {templates.length === 0 ? (
-              // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
               <p className="text-xs text-subtle">
-                Шаблонів поки немає. Створи їх у Фізруку → Тренування.
+                {messages.fizruk.dayPlan.noTemplates}
               </p>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">
