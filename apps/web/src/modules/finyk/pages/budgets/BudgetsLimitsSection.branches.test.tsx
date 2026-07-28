@@ -202,6 +202,49 @@ describe("BudgetsLimitsSection (branches)", () => {
     expect(setEditIdx).toHaveBeenCalledWith(0);
   });
 
+  it("matches normalized limit copies by id and edits only the selected card", () => {
+    const storedFood = makeLimit("b1", "food");
+    const storedTransport = makeLimit("b2", "transport");
+    const normalizedFood = { ...storedFood } as LimitBudget;
+    const normalizedTransport = { ...storedTransport } as LimitBudget;
+    const budgets = [storedFood, storedTransport] as unknown as Budget[];
+    const setEditIdx = vi.fn();
+
+    const { rerender } = render(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitsOpen: true,
+          limitBudgets: [normalizedFood, normalizedTransport],
+          budgets,
+          setEditIdx,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("begin-edit-transport"));
+    expect(setEditIdx).toHaveBeenCalledWith(1);
+
+    rerender(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitsOpen: true,
+          limitBudgets: [normalizedFood, normalizedTransport],
+          budgets,
+          editIdx: 1,
+          setEditIdx,
+        })}
+      />,
+    );
+    expect(screen.getByTestId("limit-card-food")).toHaveAttribute(
+      "data-editing",
+      "false",
+    );
+    expect(screen.getByTestId("limit-card-transport")).toHaveAttribute(
+      "data-editing",
+      "true",
+    );
+  });
+
   it("onChangeLimit updates the limit amount", () => {
     const limit = makeLimit("b1", "food");
     const budgets = [limit] as unknown as Budget[];

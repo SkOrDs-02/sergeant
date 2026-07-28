@@ -83,6 +83,7 @@ export default function App({
   const storage = useStorage({ toast });
   const [page, navigate] = useFinykRoute();
   const focusLimitCategoryId = useFinykQueryParam("cat");
+  const focusAssetSection = useFinykQueryParam("section");
 
   // First-run state
   const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
@@ -294,6 +295,7 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             showBalance={showBalance}
+            initialOpenSubscriptions={focusAssetSection === "subscriptions"}
           />
         </SectionErrorBoundary>
       );
@@ -409,20 +411,17 @@ export default function App({
           </div>
         </div>
 
-        {!showLoginOverlay &&
-          (page === "overview" ||
-            page === "transactions" ||
-            page === "budgets") && (
-            <FloatingActionButton
-              variant="v2-finyk"
-              icon="plus"
-              onClick={() => {
-                setEditingManualExpenseId(null);
-                setShowExpenseSheet(true);
-              }}
-              aria-label="Додати витрату"
-            />
-          )}
+        {!showLoginOverlay && (
+          <FloatingActionButton
+            variant="v2-finyk"
+            icon="plus"
+            onClick={() => {
+              setEditingManualExpenseId(null);
+              setShowExpenseSheet(true);
+            }}
+            aria-label="Додати витрату"
+          />
+        )}
 
         {mono.authError && (
           <AuthErrorBanner

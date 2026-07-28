@@ -153,44 +153,49 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               tabIndex={hidden ? -1 : isTablist ? (active ? 0 : -1) : undefined}
               onClick={() => onChange(item.id)}
               className={cn(
-                "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-                "my-1.5 rounded-xl border min-h-touch-target",
+                "relative flex-1 flex items-center justify-center min-h-touch-target",
+                "my-1.5 rounded-xl border border-transparent",
                 "transition-all duration-200",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                active
-                  ? cn(
-                      // Solid module-accent fill in both themes (fix spec
-                      // v2 § 1) — light: strong-tier, dark: tier-400. `text-bg`
-                      // is itself theme-aware (cream in light, ink in dark).
-                      "text-bg border-transparent",
-                      tokens.fillLight,
-                      tokens.fillDark,
-                    )
-                  : "text-text border-transparent hover:text-text/80",
+                active ? "text-bg" : "text-text hover:text-text/80",
               )}
             >
               <span
                 className={cn(
-                  "relative transition-all duration-200",
-                  active && "text-bg",
+                  "relative flex items-center justify-center gap-1.5 rounded-2xl py-1.5",
+                  "transition-[background-color,padding,color] duration-200",
+                  active
+                    ? cn("px-3 text-bg", tokens.fillLight, tokens.fillDark)
+                    : "px-2 text-text",
                 )}
                 aria-hidden
               >
-                {item.icon}
-                {item.badge && !active && (
-                  <span
-                    className={cn(
-                      "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
-                      tokens.badge,
-                    )}
-                    aria-hidden
-                  />
-                )}
+                <span className="relative shrink-0">
+                  {item.icon}
+                  {item.badge && !active && (
+                    <span
+                      className={cn(
+                        "absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-panel",
+                        tokens.badge,
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+                    "transition-[max-width,opacity] duration-200 motion-reduce:transition-none",
+                    active
+                      ? "max-w-[88px] opacity-100"
+                      : "max-w-0 opacity-0 pointer-events-none",
+                  )}
+                >
+                  {item.label}
+                </span>
               </span>
-              <span className="text-style-caption font-semibold leading-none">
-                {item.label}
-              </span>
+              <span className="sr-only">{item.label}</span>
             </button>
           );
         })}

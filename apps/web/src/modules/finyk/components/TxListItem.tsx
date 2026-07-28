@@ -23,11 +23,8 @@ interface TxListItemProps {
   onToggleSelect: (id: string) => void;
   onSwipeHideTx?: ((id: string) => void) | undefined;
   onSwipeDeleteManual?: ((tx: TxRowTx) => void) | undefined;
-  onEditManual?: ((manualId?: string) => void) | undefined;
-  onHideTx?: ((id: string) => void) | undefined;
-  onCatChange?: ((id: string, categoryId: string | null) => void) | undefined;
-  onSplitChange?: ((id: string, splits: unknown) => void) | undefined;
-  onNoteChange?: ((id: string, note: string | null) => void) | undefined;
+  /** Canonical entry point for both manual and imported transaction details. */
+  onOpenDetails?: ((tx: TxRowTx) => void) | undefined;
 }
 
 function TxListItemImpl({
@@ -45,11 +42,7 @@ function TxListItemImpl({
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
-  onEditManual,
-  onHideTx,
-  onCatChange,
-  onSplitChange,
-  onNoteChange,
+  onOpenDetails,
 }: TxListItemProps) {
   const isManual = !!tx._manual;
   const canSwipeLeft = isManual
@@ -99,19 +92,11 @@ function TxListItemImpl({
                 : () => onSwipeHideTx?.(tx.id)
               : undefined
           }
-          // Keep one directional quick action only. Editing/category changes
-          // stay in the explicit row menu so this gesture cannot compete
-          // with the module's page swipe.
+          // Keep one directional destructive quick action only. Editing is
+          // canonical on row tap and cannot compete with the page swipe.
           onSwipeRight={undefined}
           rightLabel={isManual ? "Видалити" : "Приховати"}
           rightColor={isManual ? "bg-danger" : "bg-warning/80"}
-          leftLabel={
-            <span className="flex items-center gap-1.5">
-              <Icon name={isManual ? "edit" : "tag"} size={18} aria-hidden />
-              {isManual ? "Редагувати" : "Категорія"}
-            </span>
-          }
-          leftColor={isManual ? "bg-primary" : "bg-finyk"}
           // Surface the swipe-affordance peek on the first row of the list
           // for first-time users only — `SwipeToAction` reads/writes a
           // single localStorage flag (`sergeant:swipe_hint_shown`) so the
@@ -124,21 +109,13 @@ function TxListItemImpl({
         >
           <TxRow
             tx={tx}
-            onClick={
-              isManual && typeof onEditManual === "function"
-                ? () => onEditManual(tx._manualId)
-                : undefined
-            }
-            onHide={isManual ? undefined : onHideTx}
+            onClick={onOpenDetails ? () => onOpenDetails(tx) : undefined}
             hidden={hidden}
             overrideCatId={overrideCatId}
-            onCatChange={isManual ? undefined : onCatChange}
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}
             note={isManual ? undefined : note}
-            onNoteChange={isManual ? undefined : onNoteChange}
-            onSplitChange={onSplitChange}
             customCategories={customCategories}
             divider={false}
           />

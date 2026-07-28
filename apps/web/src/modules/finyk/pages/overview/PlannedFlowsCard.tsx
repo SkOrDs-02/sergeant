@@ -30,7 +30,7 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
           variant="ghost"
           size="xs"
           module="finyk"
-          onClick={() => onNavigate("budgets")}
+          onClick={() => onNavigate("assets?section=subscriptions")}
         >
           Усі →
         </Button>

@@ -7,8 +7,15 @@ export function Assets({
   storage,
   showBalance = true,
   initialOpenDebt = false,
+  initialOpenSubscriptions = false,
 }: AssetsProps) {
-  const state = useAssetsState({ mono, storage, showBalance, initialOpenDebt });
+  const state = useAssetsState({
+    mono,
+    storage,
+    showBalance,
+    initialOpenDebt,
+    initialOpenSubscriptions,
+  });
 
   if (state.txPicker) {
     return (

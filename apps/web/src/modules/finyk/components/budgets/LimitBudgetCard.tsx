@@ -73,6 +73,22 @@ function LimitBudgetCardComponent({
     <Card radius="lg" padding="lg">
       {isEditing ? (
         <div className="space-y-2">
+          <div className="flex items-center gap-2 pb-1">
+            <Icon
+              name="calendar"
+              size={16}
+              className="text-finyk"
+              aria-hidden
+            />
+            <div>
+              <p className="text-style-caption text-muted">
+                Редагування ліміту
+              </p>
+              <p className="text-style-label text-text">
+                {categoryLabel || "Без категорії"}
+              </p>
+            </div>
+          </div>
           <div>
             <Label htmlFor={limitId}>Ліміт</Label>
             <Input

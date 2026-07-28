@@ -62,6 +62,7 @@ export type AssetsProps = {
   storage: StorageSlice;
   showBalance?: boolean;
   initialOpenDebt?: boolean;
+  initialOpenSubscriptions?: boolean;
 };
 
 export type SectionOpenState = {
@@ -75,6 +76,7 @@ export function useAssetsState({
   storage,
   showBalance = true,
   initialOpenDebt = false,
+  initialOpenSubscriptions = false,
 }: AssetsProps) {
   const { accounts, transactions, loadingTx, error, refetchTransactions } =
     mono;
@@ -158,7 +160,7 @@ export function useAssetsState({
     | null;
   const [txPicker, setTxPicker] = useState<TxPicker>(null);
   const [open, setOpen] = useState<SectionOpenState>({
-    subscriptions: false,
+    subscriptions: initialOpenSubscriptions,
     assets: false,
     liabilities: initialOpenDebt,
   });
@@ -193,7 +195,7 @@ export function useAssetsState({
 
   const [todayStart] = useState<Date>(startOfToday);
 
-  const { urgentLiability } = useMemo(
+  const { urgentLiability, subsMonthly } = useMemo(
     () =>
       computeFinykSchedule({
         subscriptions,
@@ -291,6 +293,7 @@ export function useAssetsState({
     totalAssets,
     todayStart,
     urgentLiability,
+    subsMonthly,
 
     // Section toggle state
     open,

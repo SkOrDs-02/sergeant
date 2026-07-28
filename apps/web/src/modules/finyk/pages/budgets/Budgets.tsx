@@ -8,8 +8,6 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
-import { computeFinykSchedule, startOfToday } from "../../lib/upcomingSchedule";
-import { FinykStatsStrip } from "../../components/FinykStatsStrip";
 import { buildExpenseCategoryList } from "@sergeant/finyk-domain/domain/categories";
 import {
   getLimitBudgets,
@@ -124,13 +122,12 @@ export interface BudgetsProps {
 export function Budgets({
   mono,
   storage,
-  showBalance = true,
   focusLimitCategoryId = null,
   monthlyPlanFirstRunHint = false,
   onDismissMonthlyPlanFirstRunHint,
 }: BudgetsProps) {
   const toast = useToast();
-  const { realTx, loadingTx, transactions, jars = [] } = mono;
+  const { realTx, loadingTx, jars = [] } = mono;
   const {
     budgets,
     setBudgets,
@@ -140,9 +137,6 @@ export function Budgets({
     txCategories,
     txSplits,
     customCategories,
-    subscriptions = [],
-    manualDebts = [],
-    receivables = [],
     manualExpenses = [],
   } = storage;
 
@@ -216,22 +210,6 @@ export function Budgets({
     [statTx, txSplits],
   );
   const factSavings = factIncome - totalExpenseFact;
-
-  // Upcoming-schedule feed for the stats strip (reuses the same
-  // computation as the Активи page so Сума підписок + Наступний платіж
-  // stay consistent across tabs).
-  const [todayStart] = useState<Date>(startOfToday);
-  const schedule = useMemo(
-    () =>
-      computeFinykSchedule({
-        subscriptions,
-        manualDebts,
-        receivables,
-        transactions: transactions ?? [],
-        todayStart,
-      }),
-    [subscriptions, manualDebts, receivables, transactions, todayStart],
-  );
 
   // Per-(month, category) dismissed-advice registry. Persisted under a
   // dedicated localStorage namespace so it survives reloads but doesn't
@@ -407,18 +385,6 @@ export function Budgets({
         <div className="flex-1 overflow-y-auto">
           <h1 className="sr-only">Бюджети</h1>
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
-            {/* Сума підписок + Наступний платіж з тих самих даних, що й на
-            сторінці Активи — без пасив-з-дедлайном тайлу (у Плануванні
-            це не релевантно). Зникає цілком, якщо обидва слоти пусті. */}
-            <FinykStatsStrip
-              subsMonthly={schedule.subsMonthly}
-              subsCount={schedule.subsCount}
-              nextCharge={schedule.nextCharge}
-              urgentLiability={null}
-              todayStart={todayStart}
-              showBalance={showBalance}
-            />
-
             <MonthlyPlanCard
               monthlyPlan={monthlyPlan}
               onChangeMonthlyPlan={setMonthlyPlan}

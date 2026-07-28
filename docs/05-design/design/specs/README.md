@@ -1,6 +1,6 @@
 # Design specs
 
-> **Last touched:** 2026-07-28 by @dimastahov16012003. **Next review:** 2026-10-26.
+> **Last touched:** 2026-07-28 by @Skords-01. **Next review:** 2026-10-26.
 > **Status:** Active
 
 Design-специ для нетривіальних product-side фіч (раніше `agents/specs/`).
@@ -27,6 +27,7 @@ Design-специ для нетривіальних product-side фіч (ран�
 | 2026-07-13 | [`2026-07-13-pwa-usability-polish-design.md`](./2026-07-13-pwa-usability-polish-design.md)                             | Draft                               | —         |
 | 2026-07-16 | [`2026-07-16-founder-feedback-remediation-design.md`](./2026-07-16-founder-feedback-remediation-design.md)             | Active                              | —         |
 | 2026-07-28 | [`2026-07-28-anonymous-profile-data-migration-design.md`](./2026-07-28-anonymous-profile-data-migration-design.md)     | Shipped — implementation pending PR | —         |
+| 2026-07-28 | [`2026-07-28-finyk-transaction-details-design.md`](./2026-07-28-finyk-transaction-details-design.md)                   | Active — implementation ready       | —         |
 
 ### Архів superseded спеків
 

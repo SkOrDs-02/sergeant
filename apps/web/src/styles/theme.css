@@ -1080,11 +1080,14 @@
     --shadow-nav: 0 0 0 2px rgba(0, 0, 0, 0.7);
     --shadow-fab: 0 0 0 3px rgba(15, 118, 110, 1);
 
-    /* Hero → solid module color. */
-    --hero-grad-finyk: #115e59; /* teal-800 (2026-07: was emerald-700) */
-    --hero-grad-fizruk: #155e75; /* cyan-800 */
-    --hero-grad-routine: #c23a3a; /* coral-700 */
-    --hero-grad-nutrition: #466212; /* lime-800 */
+    /* Hero → solid module color. These variables feed Tailwind's
+       `background-image` utilities, so a bare hex value is invalid CSS and
+       silently drops the fill. A one-colour gradient preserves the HC solid
+       contract while keeping the utility valid. */
+    --hero-grad-finyk: linear-gradient(#115e59 0 0); /* teal-800 */
+    --hero-grad-fizruk: linear-gradient(#155e75 0 0); /* cyan-800 */
+    --hero-grad-routine: linear-gradient(#c23a3a 0 0); /* coral-700 */
+    --hero-grad-nutrition: linear-gradient(#466212 0 0); /* lime-800 */
   }
 
   html.hc.dark {
@@ -1109,10 +1112,17 @@
     --shadow-nav: 0 0 0 2px rgba(255, 255, 255, 0.8);
     --shadow-fab: 0 0 0 3px rgba(52, 211, 153, 1);
 
-    --hero-grad-finyk: #2dd4bf; /* teal-400 — brighter on dark HC (2026-07: was emerald-500) */
-    --hero-grad-fizruk: #06b6d4; /* cyan-500 */
-    --hero-grad-routine: #ff8c78; /* coral-400 */
-    --hero-grad-nutrition: #b0e636; /* lime-400 */
+    /* Card's dark variant consumes `--hero-ink-*`, not `--hero-grad-*`.
+       Override both families so HC keeps strong module identity instead of
+       falling back to the near-neutral Chornylo hero. */
+    --hero-grad-finyk: linear-gradient(#2dd4bf 0 0); /* teal-400 */
+    --hero-grad-fizruk: linear-gradient(#06b6d4 0 0); /* cyan-500 */
+    --hero-grad-routine: linear-gradient(#ff8c78 0 0); /* coral-400 */
+    --hero-grad-nutrition: linear-gradient(#b0e636 0 0); /* lime-400 */
+    --hero-ink-finyk: linear-gradient(#134e4a 0 0); /* teal-900 */
+    --hero-ink-fizruk: linear-gradient(#164e63 0 0); /* cyan-900 */
+    --hero-ink-routine: linear-gradient(#7f1d1d 0 0); /* red-900 */
+    --hero-ink-nutrition: linear-gradient(#365314 0 0); /* lime-900 */
   }
 }
 

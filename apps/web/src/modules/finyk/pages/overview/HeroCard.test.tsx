@@ -98,6 +98,13 @@ describe("HeroCard", () => {
     expect(screen.getByText("Перевитрата")).toBeInTheDocument();
   });
 
+  it("keeps the daily allowance readable on the light hero", () => {
+    render(<HeroCard {...baseProps} />);
+    const amount = screen.getByText("1 691").parentElement;
+    expect(amount?.className).toContain("text-hero-ink");
+    expect(screen.getByText("В нормі").className).toContain("text-hero-ink");
+  });
+
   it("renders negative networth in danger color", () => {
     const { container } = render(<HeroCard {...baseProps} />);
     // The danger color lives on the <p> wrapper; the "−" sign and the

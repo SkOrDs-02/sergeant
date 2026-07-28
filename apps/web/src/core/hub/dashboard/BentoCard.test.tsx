@@ -48,6 +48,7 @@ describe("BentoCard", () => {
     fireEvent.click(card);
 
     expect(onClick).toHaveBeenCalledTimes(1);
+    expect(card.className).toContain("select-none");
     expect(primaryRef).toHaveBeenCalledWith(screen.getByTestId("primary-card"));
     expect(screen.getByText("4/5")).toBeInTheDocument();
     expect(screen.getByText("Серія: 3 дні")).toBeInTheDocument();

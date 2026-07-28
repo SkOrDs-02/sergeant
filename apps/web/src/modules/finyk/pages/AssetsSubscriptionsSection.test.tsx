@@ -98,6 +98,7 @@ function buildState(
     setNewSub,
     setTxPicker,
     showBalance: true,
+    subsMonthly: 1250,
     // unused fields required by the state type
     manualAssets: [],
     setManualAssets: vi.fn(),
@@ -141,6 +142,14 @@ describe("AssetsSubscriptionsSection", () => {
   it("shows the 'Додати підписку' button when showSubForm is false", () => {
     render(<AssetsSubscriptionsSection state={makeState()} />);
     expect(screen.getByText("+ Додати підписку")).toBeInTheDocument();
+  });
+
+  it("shows the canonical monthly subscription total", () => {
+    render(<AssetsSubscriptionsSection state={makeState()} />);
+    expect(
+      screen.getByText("Витрати на підписки за місяць"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 250 ₴")).toBeInTheDocument();
   });
 
   it("does NOT show the calendar link when there are no subscriptions", () => {

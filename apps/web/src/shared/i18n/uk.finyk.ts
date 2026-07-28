@@ -7,6 +7,23 @@ export const finykPageMessages = {
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр транзакцій",
   daySummaryLabel: "сума за день",
+  transactionDetails: {
+    title: "Деталі операції",
+    bankFactsReadonly: "дані банку не змінюються",
+    done: "Готово",
+    bankTransactionFallback: "Банківська операція",
+    categoryAndNote: "Категорія та нотатка",
+    splitTitle: "Розподіл за категоріями",
+    splitPartsSuffix: "частини",
+    splitHint: "За потреби розділи одну оплату на кілька категорій",
+    changeSplit: "Змінити",
+    createSplit: "Розділити",
+    excludeLabel: "Не враховувати у статистиці",
+    excludeDescription:
+      "Операція лишиться у списку, але не впливатиме на аналітику",
+    hideLabel: "Приховати зі списку",
+    hideDescription: "Її можна повернути через показ прихованих операцій",
+  },
   nonUahAssetsExcluded: {
     one: "актив в іноземній валюті не враховую в нетворсі",
     few: "активи в іноземній валюті не враховую в нетворсі",

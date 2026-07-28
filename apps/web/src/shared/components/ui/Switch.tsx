@@ -151,7 +151,13 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         className,
       )}
     >
-      <span className="relative inline-flex shrink-0 items-center">
+      <label
+        htmlFor={inputId}
+        className={cn(
+          "relative inline-flex shrink-0 items-center touch-target",
+          disabled ? "cursor-not-allowed" : "cursor-pointer",
+        )}
+      >
         <input
           ref={ref}
           id={inputId}
@@ -190,15 +196,15 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
             thumbCheckedTranslate[size],
           )}
         />
-      </span>
+      </label>
 
       {(label || description) && (
         // The toggle is the `<input role="switch">` above; the label /
         // description block is a passive presentational region. The
         // input is `aria-labelledby` + `aria-describedby` so AT reads
         // them as part of the switch — and because the input is `peer`
-        // sr-only with `id`, an outer `<label htmlFor>` can still
-        // forward clicks.
+        // sr-only with `id`, both this text label and the visible track
+        // forward clicks to the same native control.
         <span className="flex-1 min-w-0 leading-snug select-none">
           {label && (
             <label

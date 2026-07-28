@@ -23,7 +23,6 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import type {
   Transaction,
   TxCategoriesMap,
-  TxSplit,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
@@ -131,11 +130,8 @@ export interface TransactionListProps {
   onToggleSelect: (id: string) => void;
   onSwipeHideTx: (id: string) => void;
   onSwipeDeleteManual: (tx: Transaction) => void;
-  onEditManual: (manualId?: string) => void;
-  onHideTx: (id: string) => void;
-  onCatChange: (id: string, catId: string | null) => void;
-  onSplitChange: (id: string, splits: TxSplit[]) => void;
-  onNoteChange?: ((id: string, note: string | null) => void) | undefined;
+  /** Row tap opens the canonical editor for either transaction source. */
+  onOpenTransaction: (tx: Transaction) => void;
   /** Bottom-of-list "still loading…" text shown when refreshing a non-
    * empty list. */
   trailing?: ReactNode;
@@ -185,11 +181,7 @@ export function TransactionList({
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
-  onEditManual,
-  onHideTx,
-  onCatChange,
-  onSplitChange,
-  onNoteChange,
+  onOpenTransaction,
   trailing,
   header,
   footer,
@@ -379,13 +371,7 @@ export function TransactionList({
                       onToggleSelect={onToggleSelect}
                       onSwipeHideTx={onSwipeHideTx}
                       onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
-                      onEditManual={onEditManual}
-                      onHideTx={onHideTx}
-                      onCatChange={onCatChange}
-                      onSplitChange={(id, splits) =>
-                        onSplitChange(id, (splits ?? []) as TxSplit[])
-                      }
-                      onNoteChange={onNoteChange}
+                      onOpenDetails={() => onOpenTransaction(t)}
                     />
                   </DayCardShell>
                 );

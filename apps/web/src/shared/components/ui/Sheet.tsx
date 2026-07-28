@@ -147,7 +147,14 @@ export function Sheet({
   // keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
     kbInsetPx && kbInsetPx > 0
-      ? { marginBottom: kbInsetPx }
+      ? {
+          marginBottom: kbInsetPx,
+          // The keyboard occupies part of the layout viewport. Lifting a
+          // 90dvh sheet without shrinking it pushes its header and focused
+          // field above the screen; cap it to the actually visible area so
+          // only the sheet body scrolls.
+          maxHeight: `calc(100dvh - ${kbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+        }
       : {
           marginBottom:
             "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",

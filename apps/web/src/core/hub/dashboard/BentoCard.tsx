@@ -191,7 +191,7 @@ export const BentoCard = memo(function BentoCard({
         }
         data-inactive={inactive ? "true" : undefined}
         className={cn(
-          "group relative flex flex-col w-full h-full rounded-3xl border border-line overflow-hidden",
+          "group relative flex flex-col w-full h-full rounded-3xl border border-line overflow-hidden select-none",
           "p-3.5 pointer-coarse:p-4",
           "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
@@ -704,6 +704,7 @@ export const SortableCard = memo(function SortableCard({
       // #18 — long-press peek: attach to the wrapper so the gesture works
       // regardless of which child element is under the pointer.
       {...(!longPressDisabled ? longPressHandlers : {})}
+      onContextMenu={(event) => event.preventDefault()}
     >
       <BentoCard
         config={cfg}

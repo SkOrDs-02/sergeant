@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 // `VirtualList` needs ResizeObserver / a real layout to compute virtual items.
 // For the DataState routing test we only care which slot is rendered
@@ -49,10 +49,7 @@ const baseProps = {
   onToggleSelect: NOOP,
   onSwipeHideTx: NOOP,
   onSwipeDeleteManual: NOOP,
-  onEditManual: NOOP,
-  onHideTx: NOOP,
-  onCatChange: NOOP,
-  onSplitChange: NOOP,
+  onOpenTransaction: NOOP,
 };
 
 const SAMPLE_TX: Transaction = {
@@ -167,7 +164,8 @@ describe("TransactionList — DataState routing", () => {
     expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
   });
 
-  it("shows the split action for a manual expense", () => {
+  it("routes a manual row tap to the canonical transaction editor", () => {
+    const onOpenTransaction = vi.fn();
     const manualTx = {
       ...SAMPLE_TX,
       id: "manual-1",
@@ -184,11 +182,14 @@ describe("TransactionList — DataState routing", () => {
         groupedByDate={[{ key: "2026-05-04", items: [manualTx] }]}
         groupCounts={[1]}
         flatItems={[manualTx]}
+        onOpenTransaction={onOpenTransaction}
       />,
     );
 
+    fireEvent.click(screen.getByText("Сільпо"));
+    expect(onOpenTransaction).toHaveBeenCalledWith(manualTx);
     expect(
-      screen.getByRole("button", { name: "Розподілити транзакцію" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Розподілити транзакцію" }),
+    ).not.toBeInTheDocument();
   });
 });

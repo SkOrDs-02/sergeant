@@ -43,8 +43,7 @@ describe("ModuleBottomNav", () => {
     expect(nav.className).toContain("bottom-nav-shell");
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
-    expect(statsTab.className).toContain("justify-end");
-    expect(statsTab.className).toContain("pb-1.5");
+    expect(statsTab.className).toContain("justify-center");
   });
 
   it("active tab gets a solid accent fill + ink foreground in both themes (fix spec v2 § 1)", () => {
@@ -64,11 +63,36 @@ describe("ModuleBottomNav", () => {
     // Light: strong-tier solid fill. Dark: luminescent tier-400 solid
     // fill. `text-bg` is theme-aware (cream in light, ink in dark), so
     // one bare class covers the foreground in both themes.
-    expect(activeTab.className).toContain("bg-finyk-strong");
-    expect(activeTab.className).toContain("dark:bg-brand-400");
+    expect(activeTab.firstElementChild?.className).toContain("bg-finyk-strong");
+    expect(activeTab.firstElementChild?.className).toContain(
+      "dark:bg-brand-400",
+    );
     expect(activeTab.className).toContain("text-bg");
     expect(activeTab.className).toContain("border-transparent");
-    expect(inactiveTab.className).not.toContain("dark:bg-brand-400");
+    expect(inactiveTab.firstElementChild?.className).not.toContain(
+      "dark:bg-brand-400",
+    );
+  });
+
+  it("shows the label only for the active item, matching Hub navigation", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const activeVisualLabel = screen.getByText("Overview", {
+      selector: "span:not(.sr-only)",
+    });
+    const inactiveVisualLabel = screen.getByText("Stats", {
+      selector: "span:not(.sr-only)",
+    });
+    expect(activeVisualLabel.className).toContain("max-w-[88px]");
+    expect(inactiveVisualLabel.className).toContain("max-w-0");
   });
 
   it("calls onChange when a nav item is clicked", () => {

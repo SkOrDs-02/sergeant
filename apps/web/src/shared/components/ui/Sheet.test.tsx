@@ -117,4 +117,16 @@ describe("Sheet", () => {
       /\banimate-slide-up\b|\bmotion-safe:animate-slide-up\b/,
     );
   });
+
+  it("shrinks to the visible area when the software keyboard is open", () => {
+    const { getByRole } = render(
+      <Sheet open onClose={() => {}} title="T" kbInsetPx={320}>
+        body
+      </Sheet>,
+    );
+
+    const dialog = getByRole("dialog");
+    expect(dialog.style.marginBottom).toBe("320px");
+    expect(dialog.style.maxHeight).toContain("100dvh - 320px");
+  });
 });
