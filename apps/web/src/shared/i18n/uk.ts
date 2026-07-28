@@ -128,7 +128,7 @@ export const messages = {
     // разом з цим (тести закривають user-facing copy contract).
     tagNameRequired: "Введи назву тега",
     // PR-058 (web): Reducer-level dedupe в `applyCreateTag` /
-    // `applyCreateCategory` (case-insensitive trim) — UI лови��ь
+    // `applyCreateCategory` (case-insensitive trim) — UI ловить
     // `next === state` після `setRoutine` і показує цей copy у toast.
     tagNameDuplicate: "Тег з такою назвою вже існує",
     categoryNameDuplicate: "Категорія з такою назвою вже існує",
@@ -279,7 +279,7 @@ export const messages = {
       serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
       retry: "Спробуй ще раз",
       timeout: "Перевищено час очікування. Спробуй ще раз.",
-      unknown: "Щось пішло не так. Спробуй щ�� раз.",
+      unknown: "Щось пішло не так. Спробуй ще раз.",
 
       // Round 16 — short error labels та section-failure messages.
       // `title` — bare "Помилка" як заголовок банера/тулбара.
@@ -403,8 +403,8 @@ export const messages = {
       "Екскурсія — повторний показ вітального екрану. Дані не зміняться. Почати з початку — знову обрати модулі та побачити перші підказки. Записи в модулях лишаться як є.",
     tourResetConfirmTitle: "Почати знайомство з початку?",
     tourResetConfirmDescription:
-      "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (тра��закції, тренування, прийоми їжі) лишаться без змін.",
-    tourResetConfirmAction: "Почати з поча��ку",
+      "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (транзакції, тренування, прийоми їжі) лишаться без змін.",
+    tourResetConfirmAction: "Почати з початку",
     tourResetSuccess: "Знайомство перезапущено",
 
     // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
@@ -562,8 +562,8 @@ export const messages = {
     empty: "Немає сесій",
     loadFailed: "Не вдалося завантажити сесії",
     revoke: "Завершити",
-    revokeSuccess: "��есію завершено",
-    revokeFailed: "Не вдалося зав��ршити сесію",
+    revokeSuccess: "Сесію завершено",
+    revokeFailed: "Не вдалося завершити сесію",
     expired: "Закінчилась",
     thisDevice: "Цей пристрій",
     unknownIp: "IP невідомий",
@@ -690,7 +690,7 @@ export const messages = {
     lastIncidentPrefix: "Останній інцидент:",
     errorTitle: "Не вдалося завантажити статус",
     errorRetry: "Спробувати ще",
-    errorFallback: "Не вдалося завантажити статус сер��ісу.",
+    errorFallback: "Не вдалося завантажити статус сервісу.",
     errorHttpPrefix: "Сервер відповів HTTP",
   },
 
@@ -722,7 +722,7 @@ export const messages = {
     dismiss: "Зрозуміло",
   },
 
-  // Feedback loop (GTM �� 3.2) — in-app feedback widget у Settings.
+  // Feedback loop (GTM § 3.2) — in-app feedback widget у Settings.
   // Копія за style-guide: звертання «ти», заголовки без крапки,
   // toast-success — перфект минулого часу.
   feedback: {
@@ -740,7 +740,7 @@ export const messages = {
     messageLabel: "Повідомлення",
     placeholderIdea: "Чого тобі бракує в застосунку?",
     placeholderBug: "Що саме поламалось і на якому екрані?",
-    placeholderOther: "Розкажи, ��о думаєш",
+    placeholderOther: "Розкажи, що думаєш",
     contextLabel: "Додати контекст сторінки",
     contextDescription:
       "Адреса поточної сторінки та розмір екрана — допоможе відтворити проблему.",
@@ -814,7 +814,7 @@ export const messages = {
     waitlistAriaLabel: "Підписатися на запуск Sergeant",
     waitlistHeadline: "Лист, коли Premium буде готовий",
     waitlistSubcopy:
-      "Залиш email для launch-апдейту. Це то�� самий список інтер��су, але" +
+      "Залиш email для launch-апдейту. Це той самий список інтересу, але" +
       " тепер із attribution `source=landing`.",
 
     // Pricing section
@@ -827,7 +827,7 @@ export const messages = {
 
     // Footer
     footerText:
-      "Sergeant — український проєкт. Без реклами, без пер��продажу даних," +
+      "Sergeant — український проєкт. Без реклами, без перепродажу даних," +
       " без темних патернів. Telegram-канал з оновленнями і публічний" +
       " changelog у репозиторії.",
   },

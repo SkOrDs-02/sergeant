@@ -208,7 +208,7 @@ export function FoodPickerSection({
             </button>
           </div>
 
-          {/* П��рція з кроками */}
+          {/* Порція з кроками */}
           <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
             <div className="text-xs text-subtle font-semibold shrink-0">
               Порція

@@ -274,6 +274,10 @@ describe("AssetsTxPickerView", () => {
         txPicker={{ type: "monoDebt", id: "acc-1" }}
       />,
     );
-    expect(screen.getAllByText("••••").length).toBeGreaterThan(0);
+    const maskedAmounts = screen.getAllByRole("button", {
+      name: /Прихована сума, натисніть щоб показати/,
+    });
+    expect(maskedAmounts.length).toBeGreaterThan(0);
+    expect(maskedAmounts[0]).toHaveStyle({ filter: "blur(5px)" });
   });
 });

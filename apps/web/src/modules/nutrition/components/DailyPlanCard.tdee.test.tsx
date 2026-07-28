@@ -10,6 +10,7 @@
 //   - calls `setPrefs` with the matching numbers when one is picked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   defaultNutritionPrefs,
@@ -45,20 +46,22 @@ function renderCard(overrides: { biometrics?: Biometrics } = {}) {
     >();
   const prefs = defaultNutritionPrefs();
   render(
-    <DailyPlanCard
-      prefs={prefs}
-      setPrefs={setPrefs}
-      pantryItems={[]}
-      busy={false}
-      dayPlan={null}
-      dayPlanBusy={false}
-      fetchDayPlan={() => {}}
-      regenMeal={() => {}}
-      addMealToLog={() => {}}
-      weekPlan={null}
-      weekPlanBusy={false}
-      fetchWeekPlan={() => {}}
-    />,
+    <MemoryRouter>
+      <DailyPlanCard
+        prefs={prefs}
+        setPrefs={setPrefs}
+        pantryItems={[]}
+        busy={false}
+        dayPlan={null}
+        dayPlanBusy={false}
+        fetchDayPlan={() => {}}
+        regenMeal={() => {}}
+        addMealToLog={() => {}}
+        weekPlan={null}
+        weekPlanBusy={false}
+        fetchWeekPlan={() => {}}
+      />
+    </MemoryRouter>,
   );
   return { setPrefs, prefs };
 }

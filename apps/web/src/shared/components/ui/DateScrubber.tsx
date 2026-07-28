@@ -66,7 +66,11 @@ export function DateScrubber({
     for (let i = days - 1; i >= 0; i--) {
       const at = anchor.getTime() - i * DAY_MS;
       const parts = getKyivDateParts(at);
-      out.push({ key: getKyivDayKey(at), weekday: parts.weekday, day: parts.day });
+      out.push({
+        key: getKyivDayKey(at),
+        weekday: parts.weekday,
+        day: parts.day,
+      });
     }
     return out;
   }, [days, todayKey]);
@@ -76,7 +80,7 @@ export function DateScrubber({
   // Keep the active day visible whenever the value changes (including the
   // initial mount, where today sits at the far right edge).
   useEffect(() => {
-    selectedRef.current?.scrollIntoView({
+    selectedRef.current?.scrollIntoView?.({
       inline: "center",
       block: "nearest",
       behavior: "smooth",
@@ -105,9 +109,7 @@ export function DateScrubber({
             role="radio"
             aria-checked={selected}
             aria-label={
-              isToday
-                ? `${messages.period.today}, ${day}`
-                : `${label}, ${day}`
+              isToday ? `${messages.period.today}, ${day}` : `${label}, ${day}`
             }
             onClick={() => onChange(key)}
             className={cn(
@@ -120,10 +122,7 @@ export function DateScrubber({
             )}
           >
             <span
-              className={cn(
-                "text-2xs",
-                selected ? "text-bg/80" : "text-muted",
-              )}
+              className={cn("text-2xs", selected ? "text-bg/80" : "text-muted")}
             >
               {isToday ? TODAY_SHORT : label}
             </span>

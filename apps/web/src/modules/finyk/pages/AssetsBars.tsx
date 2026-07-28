@@ -65,7 +65,6 @@ export function AssetsLiabilitiesBar({
           Пасиви {liabilitiesPct}%
         </span>
       </div>
-      {}
       <div id={summaryId} className="sr-only">
         <p>
           Співвідношення активів і пасивів. Активи:{" "}
@@ -75,7 +74,6 @@ export function AssetsLiabilitiesBar({
           ({liabilitiesPct}%).
         </p>
       </div>
-      {}
     </div>
   );
 }

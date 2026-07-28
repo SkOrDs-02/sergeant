@@ -1,3 +1,4 @@
+/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- Developer-only comparison mockups keep review copy beside each visual variant. */
 /**
  * UI Mockups Page — раунд 3.
  *
@@ -14,7 +15,7 @@
  * узгодження, а не фінальна імплементація у відповідних компонентах.
  */
 
-import { useState } from "react";
+import { NavNowGlow, NavVarIconPill } from "./UiMockupsNav";
 
 /* ─── tiny helpers ─────────────────────────────────────────────────────── */
 
@@ -37,7 +38,7 @@ function SectionHeader({
       </div>
       <div>
         <h2
-          className="text-xl font-bold leading-tight mb-1"
+          className="text-style-title leading-tight mb-1"
           style={{ color: "rgb(var(--c-text))" }}
         >
           {title}
@@ -108,7 +109,7 @@ function VariantCard({
         </span>
         {hint ? (
           <span
-            className="ml-auto text-[11px] font-medium"
+            className="ml-auto text-style-caption"
             style={{ color: "rgb(var(--c-muted))" }}
           >
             {hint}
@@ -118,7 +119,7 @@ function VariantCard({
       <div className="p-5">{children}</div>
       {note ? (
         <p
-          className="px-5 pb-4 -mt-2 text-[11px] leading-relaxed"
+          className="px-5 pb-4 -mt-2 text-xs leading-relaxed"
           style={{ color: "rgb(var(--c-subtle))" }}
         >
           {note}
@@ -160,7 +161,7 @@ function FakeHeader({ title }: { title: string }) {
   return (
     <div className="pt-7 px-4 pb-2">
       <p
-        className="text-[10px] font-bold uppercase tracking-widest"
+        className="text-style-eyebrow"
         style={{ color: "rgb(var(--c-muted))" }}
       >
         {title}
@@ -206,11 +207,11 @@ function catColor(c: string) {
   return CAT_COLOR[c] ?? "var(--c-finyk-accent)";
 }
 
-function Amount({ a, small }: { a: string; small?: boolean }) {
+function Amount({ a }: { a: string }) {
   const positive = a.startsWith("+");
   return (
     <span
-      className={`${small ? "text-[11px]" : "text-xs"} font-bold tabular-nums shrink-0`}
+      className="text-xs font-bold tabular-nums shrink-0"
       style={{
         color: positive ? "rgb(var(--c-success))" : "rgb(var(--c-text))",
         fontFamily: "var(--font-mono, monospace)",
@@ -222,13 +223,7 @@ function Amount({ a, small }: { a: string; small?: boolean }) {
 }
 
 /** Реалістичний sticky-заголовок дня (як наявний TransactionDayHeader). */
-function DayHeaderRow({
-  day,
-  filled,
-}: {
-  day: string;
-  filled?: boolean;
-}) {
+function DayHeaderRow({ day, filled }: { day: string; filled?: boolean }) {
   const positive = (DAY_TOTAL[day] ?? "").startsWith("+");
   return (
     <div
@@ -253,19 +248,19 @@ function DayHeaderRow({
         <polyline points="6 9 12 15 18 9" />
       </svg>
       <span
-        className="text-[10px] font-bold uppercase tracking-wide"
+        className="text-style-eyebrow"
         style={{ color: "rgb(var(--c-text))" }}
       >
         {day}
       </span>
       <span
-        className="text-[10px] font-semibold tabular-nums"
+        className="text-xs font-semibold tabular-nums"
         style={{ color: "rgb(var(--c-muted))" }}
       >
         · {DAY_COUNT[day]}
       </span>
       <span
-        className="ml-auto text-[10px] font-bold tabular-nums"
+        className="ml-auto text-xs font-bold tabular-nums"
         style={{
           color: positive ? "rgb(var(--c-success))" : "rgb(var(--c-text))",
           fontFamily: "var(--font-mono, monospace)",
@@ -305,7 +300,7 @@ function TxNowZebra() {
                     }}
                   >
                     <div
-                      className="w-7 h-7 rounded-lg shrink-0"
+                      className="w-7 h-7 rounded-xl shrink-0"
                       style={{ background: "rgb(var(--c-panel-hi))" }}
                     />
                     <div className="min-w-0 flex-1">
@@ -316,7 +311,7 @@ function TxNowZebra() {
                         {tx.t}
                       </p>
                       <p
-                        className="text-[10px]"
+                        className="text-xs"
                         style={{ color: "rgb(var(--c-subtle))" }}
                       >
                         {tx.c}
@@ -372,7 +367,7 @@ function TxHybridInset() {
                     }}
                   >
                     <div
-                      className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center"
+                      className="w-7 h-7 rounded-xl shrink-0 flex items-center justify-center"
                       style={{
                         background: `rgb(${catColor(tx.c)} / 0.14)`,
                         marginLeft: i === 0 ? 0 : -38,
@@ -391,7 +386,7 @@ function TxHybridInset() {
                         {tx.t}
                       </p>
                       <p
-                        className="text-[10px] font-medium"
+                        className="text-style-caption"
                         style={{ color: `rgb(${catColor(tx.c)})` }}
                       >
                         {tx.c}
@@ -442,7 +437,7 @@ function TxHybridPills() {
                     }}
                   >
                     <div
-                      className="w-6 h-6 rounded-lg shrink-0 flex items-center justify-center"
+                      className="w-6 h-6 rounded-xl shrink-0 flex items-center justify-center"
                       style={{ background: `rgb(${catColor(tx.c)} / 0.14)` }}
                     >
                       <span
@@ -456,7 +451,7 @@ function TxHybridPills() {
                     >
                       {tx.t}
                     </span>
-                    <Amount a={tx.a} small />
+                    <Amount a={tx.a} />
                   </div>
                 ))}
               </div>
@@ -465,140 +460,6 @@ function TxHybridPills() {
         })}
       </div>
     </PhoneFrame>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
-   #20 — ІНДИКАТОР АКТИВНОЇ ВКЛАДКИ BOTTOM-NAV · дані
-   ══════════════════════════════════════════════════════════════════════════ */
-
-const NAV = [
-  { label: "Дім", d: "M3 11l9-8 9 8M5 10v10h14V10" },
-  { label: "Гроші", d: "M3 6h18v12H3zM3 10h18" },
-  { label: "Спорт", d: "M6 12h12M8 8v8M16 8v8" },
-  { label: "Профіль", d: "M12 12a4 4 0 100-8 4 4 0 000 8zM4 20a8 8 0 0116 0" },
-];
-const ACCENT = "rgb(var(--c-finyk-accent))";
-const EASE = "cubic-bezier(0.22,1,0.36,1)";
-
-function NavIcon({ d, color }: { d: string; color: string }) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d={d} />
-    </svg>
-  );
-}
-
-function NavShell({ children }: { children: React.ReactNode }) {
-  return (
-    <PhoneFrame height={260}>
-      <div className="flex items-center justify-center h-full">
-        <p className="text-[11px]" style={{ color: "rgb(var(--c-subtle))" }}>
-          Тапни вкладку ↓
-        </p>
-      </div>
-      {children}
-    </PhoneFrame>
-  );
-}
-
-/* ── #20 · Зараз: лише glow-тінь ────────────────────────────────────────── */
-function NavNowGlow() {
-  const [active, setActive] = useState(0);
-  return (
-    <NavShell>
-      <div
-        className="absolute bottom-0 inset-x-0 h-14 flex items-center justify-around"
-        style={{
-          background: "rgb(var(--c-panel))",
-          borderTop: "1px solid rgb(var(--c-line))",
-        }}
-      >
-        {NAV.map((n, i) => {
-          const on = i === active;
-          return (
-            <button
-              key={n.label}
-              onClick={() => setActive(i)}
-              className="flex flex-col items-center gap-0.5 rounded-xl px-2 py-1"
-              style={{
-                boxShadow: on
-                  ? `0 0 12px 2px rgb(var(--c-finyk-accent) / 0.5)`
-                  : "none",
-              }}
-            >
-              <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
-              <span
-                className="text-[9px]"
-                style={{ color: on ? ACCENT : "rgb(var(--c-muted))" }}
-              >
-                {n.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </NavShell>
-  );
-}
-
-/* ── #20 · Варіант C (ОБРАНО): pill навколо іконки + лейбл лише в активної ─ */
-function NavVarIconPill() {
-  const [active, setActive] = useState(0);
-  return (
-    <NavShell>
-      <div
-        className="absolute bottom-0 inset-x-0 h-14 flex items-center justify-around px-1"
-        style={{
-          background: "rgb(var(--c-panel))",
-          borderTop: "1px solid rgb(var(--c-line))",
-        }}
-      >
-        {NAV.map((n, i) => {
-          const on = i === active;
-          return (
-            <button
-              key={n.label}
-              onClick={() => setActive(i)}
-              className="flex items-center rounded-full overflow-hidden"
-              style={{
-                gap: on ? 6 : 0,
-                paddingLeft: on ? 10 : 8,
-                paddingRight: on ? 12 : 8,
-                paddingTop: 6,
-                paddingBottom: 6,
-                background: on
-                  ? "rgb(var(--c-finyk-accent) / 0.16)"
-                  : "transparent",
-                transition: `background 260ms ${EASE}, gap 260ms ${EASE}, padding 260ms ${EASE}`,
-              }}
-            >
-              <NavIcon d={n.d} color={on ? ACCENT : "rgb(var(--c-muted))"} />
-              <span
-                className="text-[10px] font-semibold whitespace-nowrap"
-                style={{
-                  color: ACCENT,
-                  maxWidth: on ? 60 : 0,
-                  opacity: on ? 1 : 0,
-                  transition: `max-width 260ms ${EASE}, opacity 200ms ${EASE}`,
-                }}
-              >
-                {n.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </NavShell>
   );
 }
 
@@ -620,7 +481,10 @@ export function UiMockupsPage() {
         }}
       >
         <div className="mx-auto max-w-4xl px-4 h-14 flex items-center gap-2 flex-wrap">
-          <h1 className="font-extrabold" style={{ color: "rgb(var(--c-text))" }}>
+          <h1
+            className="font-extrabold"
+            style={{ color: "rgb(var(--c-text))" }}
+          >
             UI Mockups · раунд 3
           </h1>
           <span className="text-xs" style={{ color: "rgb(var(--c-muted))" }}>
@@ -650,7 +514,7 @@ export function UiMockupsPage() {
           <SectionHeader
             number="13"
             title="Роздільники списку транзакцій"
-            subtitle="Покращуємо наявний гр��пувальник по днях. Гібрид між A і C."
+            subtitle="Покращуємо наявний групувальник по днях. Гібрид між A і C."
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <VariantCard

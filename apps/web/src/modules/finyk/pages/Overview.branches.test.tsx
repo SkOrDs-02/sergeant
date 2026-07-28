@@ -18,6 +18,10 @@ import { Overview } from "./Overview";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 
+vi.mock("../../../core/durability/LocalOnlyDataBanner", () => ({
+  LocalOnlyDataBanner: () => null,
+}));
+
 const KYIV = new Date("2026-06-15T09:00:00Z");
 
 type StorageLike = ReturnType<typeof useStorage>;

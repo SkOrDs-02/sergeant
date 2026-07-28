@@ -406,7 +406,7 @@ export const BentoCard = memo(function BentoCard({
   );
 });
 
-/* ─── #18 BentoCardPeek sheet ──────���─────────────────────────────────────── */
+/* ─── #18 BentoCardPeek sheet ───────────────────────────────────────────── */
 
 /**
  * Compact action sheet that appears on long-press of a BentoCard.
