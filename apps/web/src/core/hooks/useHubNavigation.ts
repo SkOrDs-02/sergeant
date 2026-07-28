@@ -7,7 +7,6 @@ import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
-import { useBrowserLocation } from "./useBrowserLocation";
 
 const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
@@ -85,8 +84,10 @@ function readHistoryIdx(): number {
 
 export function useHubNavigation(): HubNavigation {
   const navigate = useNavigate();
-  const routerLocation = useLocation();
-  const location = useBrowserLocation(routerLocation);
+  // Module entry is path/search driven. React Router is the canonical
+  // location; a second native-location snapshot can be stale between rapid
+  // clicks and incorrectly re-apply the previous module.
+  const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
 
   // Pathname wins over `?module=` — once a domain has migrated, the
@@ -105,14 +106,14 @@ export function useHubNavigation(): HubNavigation {
 
   const goToHub = useCallback(() => {
     // R2-V-1/V-2 · Wrap the visible module→hub swap in a view transition
-    // so the module card morphs back into its hub tile. `navigate` stays
-    // outside the flushSync callback — the visible swap is driven by
-    // `activeModule`, and the URL update can settle asynchronously.
+    // so the module card morphs back into its hub tile. Keep the state swap
+    // and URL mutation in the same transition transaction so neither can
+    // race the other during rapid taps.
     startViewTransition(() => {
       setModuleAnimClass("hub-enter");
       setActiveModule(null);
+      navigate("/", { replace: false });
     });
-    navigate("/", { replace: false });
   }, [navigate]);
 
   const goBackOrHub = useCallback(() => {
@@ -126,8 +127,8 @@ export function useHubNavigation(): HubNavigation {
     startViewTransition(() => {
       setModuleAnimClass("hub-enter");
       setActiveModule(null);
+      navigate("/", { replace: false });
     });
-    navigate("/", { replace: false });
   }, [navigate]);
 
   const goToModuleSettings = useCallback(

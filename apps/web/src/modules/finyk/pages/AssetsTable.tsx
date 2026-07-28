@@ -90,19 +90,21 @@ export function AssetsTable({ state }: { state: State }) {
       />
 
       {/* Subscriptions section */}
-      <SectionBar
-        title="Підписки"
-        iconName="refresh-cw"
-        iconTone="finyk"
-        summary={`${subscriptions.length} активн${
-          subscriptions.length === 1 ? "а" : "их"
-        }`}
-        open={open.subscriptions}
-        onToggle={() =>
-          setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
-        }
-      />
-      {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
+      <div id="finyk-subscriptions-section">
+        <SectionBar
+          title="Підписки"
+          iconName="refresh-cw"
+          iconTone="finyk"
+          summary={`${subscriptions.length} активн${
+            subscriptions.length === 1 ? "а" : "их"
+          }`}
+          open={open.subscriptions}
+          onToggle={() =>
+            setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
+          }
+        />
+        {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
+      </div>
 
       {/* Assets section */}
       <SectionBar

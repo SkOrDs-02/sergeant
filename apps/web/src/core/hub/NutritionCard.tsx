@@ -87,55 +87,68 @@ function BarChart({
         <div className="h-4 mb-1" />
       )}
       <div
-        className="flex items-end gap-0.5 h-20"
-        aria-label={messages.hub.reportChartAria}
+        data-testid="report-chart-scroller"
+        className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain"
       >
-        {vals.map((v, i) => {
-          const pct = Math.max(0, Math.min(100, (v / max) * 100));
-          const isToday = dates[i] === localDateKey();
-          const isSelected = selected === i;
-          return (
-            <button
-              key={dates[i]}
-              type="button"
-              aria-label={formatTooltip(dates[i] ?? "", v)}
-              aria-pressed={isSelected}
-              className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
-              onClick={() => setSelected(isSelected ? null : i)}
-            >
-              <div
-                className={cn(
-                  "w-full rounded-t-sm transition-[height,background-color,opacity]",
-                  "motion-safe:animate-bar-grow",
-                  colorClass,
-                  (isToday || isSelected) && "opacity-100",
-                  !isToday && !isSelected && "opacity-60",
-                )}
-                style={{
-                  height: `${pct}%`,
-                  minHeight: v > 0 ? "2px" : "0",
-                  animationDelay: `${Math.min(i * 30, 600)}ms`,
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex gap-0.5 mt-1">
-        {dates.map((d, i) => {
-          const show = i % step === 0 || i === dates.length - 1;
-          return (
-            <span
-              key={d}
-              className={cn(
-                "flex-1 text-center text-style-caption leading-tight",
-                selected === i ? "text-text font-medium" : "text-muted",
-              )}
-            >
-              {show ? formatLabel(d) : ""}
-            </span>
-          );
-        })}
+        <div
+          className="min-w-full"
+          style={{
+            width: dates.length > 14 ? `${dates.length * 24}px` : "100%",
+          }}
+        >
+          <div
+            className="flex items-end gap-0.5 h-20"
+            aria-label={messages.hub.reportChartAria}
+          >
+            {vals.map((v, i) => {
+              const pct = Math.max(0, Math.min(100, (v / max) * 100));
+              const isToday = dates[i] === localDateKey();
+              const isSelected = selected === i;
+              return (
+                <button
+                  key={dates[i]}
+                  type="button"
+                  data-compact
+                  aria-label={formatTooltip(dates[i] ?? "", v)}
+                  aria-pressed={isSelected}
+                  className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
+                  onClick={() => setSelected(isSelected ? null : i)}
+                >
+                  <div
+                    className={cn(
+                      "w-full rounded-t-sm transition-[height,background-color,opacity]",
+                      "motion-safe:animate-bar-grow",
+                      colorClass,
+                      (isToday || isSelected) && "opacity-100",
+                      !isToday && !isSelected && "opacity-60",
+                    )}
+                    style={{
+                      height: `${pct}%`,
+                      minHeight: v > 0 ? "2px" : "0",
+                      animationDelay: `${Math.min(i * 30, 600)}ms`,
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-0.5 mt-1">
+            {dates.map((d, i) => {
+              const show = i % step === 0 || i === dates.length - 1;
+              return (
+                <span
+                  key={d}
+                  className={cn(
+                    "flex-1 text-center text-style-caption leading-tight",
+                    selected === i ? "text-text font-medium" : "text-muted",
+                  )}
+                >
+                  {show ? formatLabel(d) : ""}
+                </span>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

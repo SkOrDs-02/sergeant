@@ -20,11 +20,22 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
     setNewSub,
     setTxPicker,
     showBalance,
+    subsMonthly,
   } = state;
   const toast = useToast();
 
   return (
     <div className="mb-3 space-y-0">
+      <div className="mb-2 rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 py-3 flex items-center justify-between gap-3">
+        <span className="text-style-caption text-finyk-strong">
+          Витрати на підписки за місяць
+        </span>
+        <strong className="text-style-label tabular-nums text-finyk-strong">
+          {showBalance
+            ? `${subsMonthly.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
+            : "••••"}
+        </strong>
+      </div>
       {subscriptions.length > 0 && (
         <button
           type="button"

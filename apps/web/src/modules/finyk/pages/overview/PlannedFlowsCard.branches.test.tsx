@@ -46,7 +46,7 @@ describe("PlannedFlowsCard (branches)", () => {
     expect(screen.queryByText("Flow f5")).toBeNull();
   });
 
-  it("navigates to budgets when 'Усі →' is clicked", () => {
+  it("navigates to the open subscriptions section when 'Усі →' is clicked", () => {
     const onNavigate = vi.fn();
     render(
       <PlannedFlowsCard
@@ -56,7 +56,7 @@ describe("PlannedFlowsCard (branches)", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Усі →" }));
-    expect(onNavigate).toHaveBeenCalledWith("budgets");
+    expect(onNavigate).toHaveBeenCalledWith("assets?section=subscriptions");
   });
 
   it("masks amounts when showBalance is false", () => {

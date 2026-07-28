@@ -106,5 +106,11 @@ describe("ExpensesCard", () => {
     render(<ExpensesCard period="month" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+
+    const scroller = screen.getByTestId("report-chart-scroller");
+    expect(scroller.className).toContain("overflow-x-auto");
+    expect(
+      scroller.querySelectorAll("button[data-compact]").length,
+    ).toBeGreaterThan(28);
   });
 });

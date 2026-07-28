@@ -345,6 +345,18 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
   });
 
+  it.each([
+    "overview",
+    "transactions",
+    "budgets",
+    "analytics",
+    "assets",
+  ] as const)("keeps the add-operation FAB available on %s", (page) => {
+    vi.mocked(useFinykRoute).mockReturnValueOnce([page, navigateMock]);
+    render(<FinykApp />);
+    expect(screen.getByTestId("fab")).toBeInTheDocument();
+  });
+
   it("closing ManualExpenseSheet hides it", () => {
     render(<FinykApp />);
     fireEvent.click(screen.getByTestId("fab"));

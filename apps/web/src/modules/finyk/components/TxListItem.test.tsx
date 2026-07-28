@@ -54,12 +54,22 @@ vi.mock("@shared/components/ui/SwipeToAction", () => ({
 vi.mock("./TxRow", () => ({
   TxRow: ({
     onClick,
-    catPickerRequest,
+    onCatChange,
+    onSplitChange,
+    onHide,
   }: {
     onClick?: () => void;
-    catPickerRequest?: number;
+    onCatChange?: () => void;
+    onSplitChange?: () => void;
+    onHide?: () => void;
   }) => (
-    <button type="button" onClick={onClick} data-cat-request={catPickerRequest}>
+    <button
+      type="button"
+      onClick={onClick}
+      data-inline-category={String(Boolean(onCatChange))}
+      data-inline-split={String(Boolean(onSplitChange))}
+      data-inline-hide={String(Boolean(onHide))}
+    >
       transaction
     </button>
   ),
@@ -183,8 +193,8 @@ describe("TxListItem swipe label", () => {
     );
   });
 
-  it("opens the manual editor from the row click", () => {
-    const onEditManual = vi.fn();
+  it("opens canonical details for a manual transaction from the row click", () => {
+    const onOpenDetails = vi.fn();
     const tx = {
       id: "manual-3",
       amount: -100,
@@ -193,68 +203,40 @@ describe("TxListItem swipe label", () => {
       _manualId: "manual-3",
     } as TxRowTx;
 
-    render(<TxListItem {...baseProps} tx={tx} onEditManual={onEditManual} />);
+    render(<TxListItem {...baseProps} tx={tx} onOpenDetails={onOpenDetails} />);
 
     fireEvent.click(screen.getByRole("button", { name: "transaction" }));
-    expect(onEditManual).toHaveBeenCalledWith("manual-3");
+    expect(onOpenDetails).toHaveBeenCalledWith(tx);
   });
 
-  // #7 — swipe-right quick action.
-  it("swipe-right on an imported tx bumps the category-picker trigger", () => {
+  it("opens canonical details for an imported transaction from the row click", () => {
+    const onOpenDetails = vi.fn();
     const tx = {
       id: "bank-9",
       amount: -100,
       description: "Кава",
     } as TxRowTx;
 
-    render(
-      <TxListItem {...baseProps} tx={tx} onCatChange={vi.fn()} />,
-    );
+    render(<TxListItem {...baseProps} tx={tx} onOpenDetails={onOpenDetails} />);
 
     const row = screen.getByRole("button", { name: "transaction" });
-    // Starts unset (no swipe yet).
-    expect(row).toHaveAttribute("data-cat-request", "0");
-    // The left action (revealed by a right-swipe) is the finyk-accent
-    // "Категорія" affordance, and onSwipeRight must be wired.
-    expect(screen.getByTestId("swipe")).toHaveAttribute(
-      "data-left-color",
-      "bg-finyk",
-    );
-    expect(screen.getByTestId("swipe")).toHaveAttribute("data-has-right", "true");
-
-    fireEvent.click(screen.getByRole("button", { name: "swipe-right" }));
-    expect(row).toHaveAttribute("data-cat-request", "1");
+    fireEvent.click(row);
+    expect(onOpenDetails).toHaveBeenCalledWith(tx);
   });
 
-  it("swipe-right on a manual tx opens its editor instead of the picker", () => {
-    const onEditManual = vi.fn();
-    const tx = {
-      id: "manual-9",
-      amount: -100,
-      description: "Кава",
-      _manual: true,
-      _manualId: "manual-9",
-    } as TxRowTx;
-
-    render(<TxListItem {...baseProps} tx={tx} onEditManual={onEditManual} />);
-
-    expect(screen.getByTestId("swipe")).toHaveAttribute(
-      "data-left-color",
-      "bg-primary",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "swipe-right" }));
-    expect(onEditManual).toHaveBeenCalledWith("manual-9");
-  });
-
-  it("omits the swipe-right action when no quick handler is available", () => {
+  it("does not expose duplicate inline edit actions on an imported row", () => {
     const tx = {
       id: "bank-10",
       amount: -100,
       description: "Кава",
     } as TxRowTx;
 
-    // No onCatChange → nothing to categorize into → no right action.
-    render(<TxListItem {...baseProps} tx={tx} onSwipeHideTx={vi.fn()} />);
+    render(<TxListItem {...baseProps} tx={tx} onOpenDetails={vi.fn()} />);
+
+    const row = screen.getByRole("button", { name: "transaction" });
+    expect(row).toHaveAttribute("data-inline-category", "false");
+    expect(row).toHaveAttribute("data-inline-split", "false");
+    expect(row).toHaveAttribute("data-inline-hide", "false");
     expect(screen.getByTestId("swipe")).toHaveAttribute(
       "data-has-right",
       "false",

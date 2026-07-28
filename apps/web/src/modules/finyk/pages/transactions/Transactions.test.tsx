@@ -235,6 +235,54 @@ describe("Transactions page shell", () => {
     expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
   });
 
+  it("opens the canonical bank details sheet from a transaction row", () => {
+    const overrideCategory = vi.fn();
+    renderTransactions({
+      mono: { realTx: [SAMPLE_TX] },
+      storage: { overrideCategory },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Розгорнути четвер, 4 червня/i }),
+    );
+    fireEvent.click(screen.getByText("Сільпо"));
+
+    expect(
+      screen.getByRole("dialog", { name: "Деталі операції" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Змінити категорію" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
+    expect(overrideCategory).toHaveBeenCalledWith("tx-1", "transport");
+  });
+
+  it("keeps manual rows on the existing full manual-expense editor", () => {
+    const onEditManualExpense = vi.fn();
+    const manualTransaction = {
+      ...SAMPLE_TX,
+      id: "manual-row-1",
+      manual: true,
+      manualId: "manual-1",
+      _manual: true,
+      _manualId: "manual-1",
+      source: "manual",
+      _source: "manual",
+    } as Transaction;
+    renderTransactions({
+      mono: { realTx: [manualTransaction] },
+      onEditManualExpense,
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Розгорнути четвер, 4 червня/i }),
+    );
+    fireEvent.click(screen.getByText("Сільпо"));
+
+    expect(onEditManualExpense).toHaveBeenCalledWith("manual-1");
+    expect(
+      screen.queryByRole("dialog", { name: "Деталі операції" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("handlePullRefresh calls monoRefresh and requestCloudPull(2500)", async () => {
     renderTransactions();
     fireEvent.click(screen.getByTestId("trigger-refresh"));

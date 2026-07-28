@@ -47,7 +47,7 @@ const HeroCardImpl = function HeroCard({
   spendPlanRatio = 0,
   showBalance = true,
 }: HeroCardProps) {
-  const { color, statusText } = computePulseStyle({
+  const { statusText } = computePulseStyle({
     hasExpensePlan,
     spendPlanRatio,
     dayBudget,
@@ -148,8 +148,7 @@ const HeroCardImpl = function HeroCard({
       <div className="relative border-t border-hero-ink/15 px-5 py-4">
         <div
           className={cn(
-            "text-style-display",
-            color,
+            "text-style-display text-hero-ink",
             !showBalance && "tracking-widest",
           )}
         >
@@ -162,7 +161,7 @@ const HeroCardImpl = function HeroCard({
                 entranceFrom={0}
                 duration={800}
               />
-              <span className="text-style-headline ml-1 opacity-70">
+              <span className="text-style-headline ml-1 text-hero-ink/85">
                 ₴/день
               </span>
             </>
@@ -173,7 +172,7 @@ const HeroCardImpl = function HeroCard({
         <p className="text-sm text-hero-ink mt-1">
           <span>Можна сьогодні</span>
           <span className="text-hero-ink"> · </span>
-          <span className={color}>{statusText}</span>
+          <span className="text-hero-ink font-semibold">{statusText}</span>
         </p>
 
         <div className="mt-3">

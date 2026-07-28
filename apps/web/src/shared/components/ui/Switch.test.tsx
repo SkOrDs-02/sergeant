@@ -28,6 +28,19 @@ describe("Switch", () => {
     expect(input.checked).toBe(true);
   });
 
+  it("toggles when the visible track is clicked", () => {
+    const onChange = vi.fn();
+    const { getByRole } = render(<Switch label="Notif" onChange={onChange} />);
+    const input = getByRole("switch") as HTMLInputElement;
+    const trackLabel = input.closest("label");
+
+    expect(trackLabel).not.toBeNull();
+    fireEvent.click(trackLabel!);
+
+    expect(onChange).toHaveBeenCalledWith(true);
+    expect(input.checked).toBe(true);
+  });
+
   it("stays under caller control when `checked` is passed (controlled)", () => {
     const onChange = vi.fn();
     const { getByRole, rerender } = render(

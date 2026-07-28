@@ -131,7 +131,10 @@ export function BudgetsLimitsSection({
           const cat = resolveExpenseCategoryMeta(categoryId, customCategories);
           const bspent = calcSpent(b);
           const usage = calculateLimitUsage(b, bspent);
-          const globalIdx = budgets.indexOf(b);
+          // `getLimitBudgets` normalizes limits into fresh objects, so
+          // reference equality (`indexOf`) always returned -1 and made every
+          // card enter edit mode at once. Budget ids are the stable identity.
+          const globalIdx = budgets.findIndex((budget) => budget.id === b.id);
           const showAdvice = shouldShowProactiveAdvice(usage, null);
           const isEditing = editIdx === globalIdx;
           const catLabel = cat?.label || "—";
@@ -186,7 +189,9 @@ export function BudgetsLimitsSection({
                       }
                     : undefined
                 }
-                onBeginEdit={() => setEditIdx(globalIdx)}
+                onBeginEdit={() => {
+                  if (globalIdx >= 0) setEditIdx(globalIdx);
+                }}
                 onChangeLimit={(nextLimit) =>
                   setBudgets((bs) =>
                     bs.map((x, j) =>

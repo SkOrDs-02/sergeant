@@ -35,7 +35,7 @@ export interface UseTransactionSelectionParams {
   hideTx: (id: string) => void;
   toggleExcludeFromStats: (id: string) => void;
   overrideCategory: (id: string, catId: string | null) => void;
-  setSplitTx: (id: string, splits: TxSplit[]) => void;
+  setSplitTx: (id: string, splits: TxSplit[] | null) => void;
   setTxNote: (id: string, note: string | null) => void;
   removeManualExpense: ((id: string) => void) | undefined;
   addManualExpense: ((expense: ManualExpense) => void) | undefined;
@@ -65,7 +65,7 @@ export interface UseTransactionSelectionResult {
   /** Stable handler: TxRow → category override picker. */
   stableOverrideCategory: (id: string, catId: string | null) => void;
   /** Stable handler: TxRow → split editor confirm. */
-  stableSetSplitTx: (id: string, splits: TxSplit[]) => void;
+  stableSetSplitTx: (id: string, splits: TxSplit[] | null) => void;
   /** Stable handler: TxRow → note edit. */
   stableSetTxNote: (id: string, note: string | null) => void;
 }
@@ -165,7 +165,7 @@ export function useTransactionSelection({
     [],
   );
   const stableSetSplitTx = useCallback(
-    (id: string, splits: TxSplit[]) =>
+    (id: string, splits: TxSplit[] | null) =>
       handlersRef.current.setSplitTx?.(id, splits),
     [],
   );

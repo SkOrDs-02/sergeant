@@ -482,7 +482,7 @@ export function ManualExpenseSheet({
             className={cn(
               "touch-target rounded-md text-style-body font-medium transition-colors duration-150",
               isIncome
-                ? "bg-success-strong text-white shadow-sm"
+                ? "bg-finyk-strong text-white shadow-sm"
                 : "text-muted hover:text-text",
             )}
           >

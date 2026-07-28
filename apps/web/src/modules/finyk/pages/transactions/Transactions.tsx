@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { TransactionsHeader } from "./TransactionsHeader";
@@ -9,6 +9,7 @@ import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { useTransactionSelection } from "./useTransactionSelection";
+import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import type {
   Transaction,
   TxCategoriesMap,
@@ -99,7 +100,7 @@ export interface TransactionsStorageSlice {
   customCategories: Category[] | undefined;
   overrideCategory: (id: string, catId: string | null) => void;
   txSplits: TxSplitsMap;
-  setSplitTx: (id: string, splits: TxSplit[]) => void;
+  setSplitTx: (id: string, splits: TxSplit[] | null) => void;
   /** User's own free-text annotation per bank transaction — bank facts
    * (amount/date/merchant) stay immutable, this is the user's note. */
   txNotes: Record<string, string | undefined>;
@@ -142,6 +143,8 @@ export function Transactions({
   onEditManualExpense,
 }: TransactionsProps) {
   const toast = useToast();
+  const [editingBankTransaction, setEditingBankTransaction] =
+    useState<Transaction | null>(null);
   const {
     realTx,
     loadingTx,
@@ -216,92 +219,121 @@ export function Transactions({
   });
 
   return (
-    <TransactionList
-      loading={filters.activeLoading}
-      activeTx={filters.activeTx}
-      filtered={filters.filtered}
-      groupedByDate={filters.groupedByDate}
-      groupCounts={filters.groupCounts}
-      flatItems={filters.flatItems}
-      collapsedKeys={filters.collapsedKeys}
-      daySummaries={filters.daySummaries}
-      showBalance={showBalance}
-      toggleDay={filters.toggleDay}
-      selectMode={selection.selectMode}
-      selectedIds={selection.selectedIds}
-      hiddenTxIdSet={filters.hiddenTxIdSet}
-      txCategories={txCategories}
-      txSplits={txSplits}
-      txNotes={txNotes}
-      accounts={accounts}
-      customCategories={customCategories}
-      onToggleSelect={selection.toggleSelect}
-      onSwipeHideTx={selection.stableSwipeHideTx}
-      onSwipeDeleteManual={selection.stableSwipeDeleteManual}
-      onEditManual={selection.stableOnEditManual}
-      onHideTx={selection.stableHideTx}
-      onCatChange={selection.stableOverrideCategory}
-      onSplitChange={selection.stableSetSplitTx}
-      onNoteChange={selection.stableSetTxNote}
-      onRefresh={handlePullRefresh}
-      header={
-        <section aria-label="Керування операціями" className="mb-4 space-y-2.5">
-          <TransactionsHeader
-            monthLabel={filters.monthLabel}
-            isCurrentMonth={filters.isCurrentMonth}
-            goMonth={filters.goMonth}
-            selectMode={selection.selectMode}
-            exitSelectMode={selection.exitSelectMode}
-            setSelectMode={selection.setSelectMode}
-            showHidden={filters.showHidden}
-            setShowHidden={filters.setShowHidden}
-            hiddenCount={hiddenTxIds.length}
-            selectedCount={selection.selectedIds.size}
-          />
-          <TransactionSyncPill
-            syncState={{
-              status: isPillStatus(syncState.status)
-                ? syncState.status
-                : "idle",
-              source: syncState.source,
-              accountsOk: syncState.accountsOk,
-              accountsTotal: syncState.accountsTotal,
-            }}
-            lastUpdated={lastUpdated}
-          />
-          <TransactionFilters
-            filter={filters.filter}
-            onChangeFilter={filters.setFilter}
-            hasCreditAccounts={filters.creditAccIds.size > 0}
-            catSpends={filters.catSpends}
-          />
-          {filters.amountBounds[1] > filters.amountBounds[0] && (
-            <TransactionAmountFilter
-              bounds={filters.amountBounds}
-              value={filters.amountRange}
-              onChange={filters.setAmountRange}
+    <>
+      <TransactionList
+        loading={filters.activeLoading}
+        activeTx={filters.activeTx}
+        filtered={filters.filtered}
+        groupedByDate={filters.groupedByDate}
+        groupCounts={filters.groupCounts}
+        flatItems={filters.flatItems}
+        collapsedKeys={filters.collapsedKeys}
+        daySummaries={filters.daySummaries}
+        showBalance={showBalance}
+        toggleDay={filters.toggleDay}
+        selectMode={selection.selectMode}
+        selectedIds={selection.selectedIds}
+        hiddenTxIdSet={filters.hiddenTxIdSet}
+        txCategories={txCategories}
+        txSplits={txSplits}
+        txNotes={txNotes}
+        accounts={accounts}
+        customCategories={customCategories}
+        onToggleSelect={selection.toggleSelect}
+        onSwipeHideTx={selection.stableSwipeHideTx}
+        onSwipeDeleteManual={selection.stableSwipeDeleteManual}
+        onOpenTransaction={(transaction) => {
+          if (transaction._manual) {
+            selection.stableOnEditManual(transaction._manualId);
+            return;
+          }
+          setEditingBankTransaction(transaction);
+        }}
+        onRefresh={handlePullRefresh}
+        header={
+          <section
+            aria-label="Керування операціями"
+            className="mb-4 space-y-2.5"
+          >
+            <TransactionsHeader
+              monthLabel={filters.monthLabel}
+              isCurrentMonth={filters.isCurrentMonth}
+              goMonth={filters.goMonth}
+              selectMode={selection.selectMode}
+              exitSelectMode={selection.exitSelectMode}
+              setSelectMode={selection.setSelectMode}
+              showHidden={filters.showHidden}
+              setShowHidden={filters.setShowHidden}
+              hiddenCount={hiddenTxIds.length}
+              selectedCount={selection.selectedIds.size}
             />
+            <TransactionSyncPill
+              syncState={{
+                status: isPillStatus(syncState.status)
+                  ? syncState.status
+                  : "idle",
+                source: syncState.source,
+                accountsOk: syncState.accountsOk,
+                accountsTotal: syncState.accountsTotal,
+              }}
+              lastUpdated={lastUpdated}
+            />
+            <TransactionFilters
+              filter={filters.filter}
+              onChangeFilter={filters.setFilter}
+              hasCreditAccounts={filters.creditAccIds.size > 0}
+              catSpends={filters.catSpends}
+            />
+            {filters.amountBounds[1] > filters.amountBounds[0] && (
+              <TransactionAmountFilter
+                bounds={filters.amountBounds}
+                value={filters.amountRange}
+                onChange={filters.setAmountRange}
+              />
+            )}
+          </section>
+        }
+        trailing={
+          filters.activeLoading && filters.activeTx.length > 0 ? (
+            <p className="text-center text-xs text-subtle py-2">⟳ оновлення…</p>
+          ) : null
+        }
+        footer={
+          <TransactionsBatchToolbar
+            selectMode={selection.selectMode}
+            selectedSize={selection.selectedIds.size}
+            onOpenCatPicker={() => selection.setBatchCatPicker(true)}
+            onApplyHide={selection.applyBatchHide}
+            onApplyExclude={selection.applyBatchExclude}
+            batchCatPicker={selection.batchCatPicker}
+            onCloseCatPicker={() => selection.setBatchCatPicker(false)}
+            onApplyCategory={selection.applyBatchCategory}
+            customCategories={customCategories}
+          />
+        }
+      />
+
+      {editingBankTransaction && (
+        <BankTransactionDetailsSheet
+          transaction={editingBankTransaction}
+          accounts={accounts}
+          hidden={hiddenTxIds.includes(editingBankTransaction.id)}
+          excludedFromStats={(excludedStatTxIds ?? []).includes(
+            editingBankTransaction.id,
           )}
-        </section>
-      }
-      trailing={
-        filters.activeLoading && filters.activeTx.length > 0 ? (
-          <p className="text-center text-xs text-subtle py-2">⟳ оновлення…</p>
-        ) : null
-      }
-      footer={
-        <TransactionsBatchToolbar
-          selectMode={selection.selectMode}
-          selectedSize={selection.selectedIds.size}
-          onOpenCatPicker={() => selection.setBatchCatPicker(true)}
-          onApplyHide={selection.applyBatchHide}
-          onApplyExclude={selection.applyBatchExclude}
-          batchCatPicker={selection.batchCatPicker}
-          onCloseCatPicker={() => selection.setBatchCatPicker(false)}
-          onApplyCategory={selection.applyBatchCategory}
+          overrideCatId={txCategories[editingBankTransaction.id]}
+          note={txNotes[editingBankTransaction.id]}
+          txSplits={txSplits}
           customCategories={customCategories}
+          hideAmount={!showBalance}
+          onCategoryChange={selection.stableOverrideCategory}
+          onNoteChange={selection.stableSetTxNote}
+          onSplitChange={selection.stableSetSplitTx}
+          onToggleHidden={selection.stableHideTx}
+          onToggleExcludedFromStats={toggleExcludeFromStats}
+          onClose={() => setEditingBankTransaction(null)}
         />
-      }
-    />
+      )}
+    </>
   );
 }
