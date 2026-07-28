@@ -221,6 +221,14 @@
     {
       "pattern": "^https?://(www\\.)?teamblind\\.com/post/what-does-your-personal-finance-app-lack-tskkxgh6$",
       "reason": "Blind-тред з user feedback цитовано в docs/90-work/audits/finyk-analytics-research.md. Teamblind блокує автоматизовані запити кодом 403; pattern обмежено конкретним дослідницьким джерелом."
+    },
+    {
+      "pattern": "^https?://mobanking\\.com\\.ua/uk/statistika/?$",
+      "reason": "Сторінка статистики мобільного банкінгу цитована в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретним дослідницьким джерелом."
+    },
+    {
+      "pattern": "^https?://zenfinanceai\\.com/ynab-vs-copilot-ai/?$",
+      "reason": "Порівняння YNAB і Copilot цитовано в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретною статтею."
     }
   ]
 }
