@@ -110,6 +110,18 @@ function sanitizeUserKey(userId: string | null | undefined): string {
  * effect; it never loads the WASM module.
  */
 export function setSqliteUser(userId: string | null | undefined): void {
+  void switchSqliteUser(userId).catch((err) => {
+    logger.warn("[sqlite] closing stale per-user handle failed", err);
+  });
+}
+
+/**
+ * Awaitable partition switch for workflows that must never overlap two
+ * SQLite handles (notably the anonymous-data migration).
+ */
+export async function switchSqliteUser(
+  userId: string | null | undefined,
+): Promise<void> {
   const key = sanitizeUserKey(userId);
   if (key === activeUserKey) return;
   // Forensic trace of the storage-layer partition switch (page-audit-10 F17,
@@ -132,9 +144,7 @@ export function setSqliteUser(userId: string | null | undefined): void {
   inFlightKey = null;
   currentOpen = null;
   if (stale) {
-    void stale.close().catch((err) => {
-      logger.warn("[sqlite] closing stale per-user handle failed", err);
-    });
+    await stale.close();
   }
 }
 

@@ -25,7 +25,11 @@
  */
 
 import { DEMO_LOCAL_USER_ID, isDemoActive } from "../onboarding/onboardingGate";
+import { useAnonymousDataMigrationReady } from "../durability/AnonymousDataMigrationProvider";
 import { useAuth } from "./AuthContext";
+import { LOCAL_ANON_USER_ID } from "./localIdentity";
+
+export { LOCAL_ANON_USER_ID } from "./localIdentity";
 
 /**
  * Synthetic id scoping the rows an anonymous visitor writes. Lives in
@@ -38,11 +42,10 @@ import { useAuth } from "./AuthContext";
  * account. Do not treat this constant as private to the boot hooks;
  * the migration will need it too.
  */
-export const LOCAL_ANON_USER_ID = "local-anon";
-
 export function useLocalUserId(): string | null {
   const { user, status } = useAuth();
-  if (user?.id) return user.id;
+  const migrationReady = useAnonymousDataMigrationReady();
+  if (user?.id) return migrationReady ? user.id : null;
   if (status === "loading") return null;
   return isDemoActive() ? DEMO_LOCAL_USER_ID : LOCAL_ANON_USER_ID;
 }

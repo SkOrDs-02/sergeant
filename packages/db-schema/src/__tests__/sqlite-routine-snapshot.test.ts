@@ -527,8 +527,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration, then the Stage 10 full-state migration, then the poison-row quarantine migration, then the HIGH-#2 user-id migration, then the W1-ROUTINE-APPEND completion-events migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(7);
+  it("exports the ordered Routine migrations through anonymous-profile migration 008", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(8);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -675,6 +675,19 @@ describe("sqlite/migrations exports", () => {
     expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/deleted_at/);
     expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/updated_at/);
     expect(ROUTINE_CLIENT_MIGRATIONS[6]!.sql).not.toMatch(/ALTER TABLE/);
+
+    expect(ROUTINE_CLIENT_MIGRATIONS[7]!.name).toBe(
+      "008_anonymous_profile_migration.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[7]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS anonymous_profile_migrations/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[7]!.sql).toMatch(
+      /target_user_id\s+TEXT NOT NULL/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[7]!.sql).toMatch(
+      /CHECK \(status IN \('pending', 'completed'\)\)/,
+    );
   });
 
   it("uses the standard `__migrations` ledger table", () => {

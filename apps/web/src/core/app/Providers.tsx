@@ -17,6 +17,7 @@ import { HashRedirect } from "./HashRedirect";
 import { PageviewTracker } from "../observability/PageviewTracker";
 import { RouteChangeTracker } from "../observability/RouteChangeTracker";
 import { ShellDeepLinkBridge } from "./ShellDeepLinkBridge";
+import { AnonymousDataMigrationProvider } from "../durability/AnonymousDataMigrationProvider";
 
 /**
  * Single, well-defined provider stack for `apps/web`.
@@ -64,16 +65,18 @@ export function Providers({ children }: { children: ReactNode }) {
         <ScreenReaderAnnouncerProvider>
           <ApiClientProvider client={apiClient}>
             <AuthProvider>
-              <AppLockProvider>
-                <CommandPaletteProvider>
-                  {/* Track 5 — global ⌘K palette. The portal-mounted UI
+              <AnonymousDataMigrationProvider>
+                <AppLockProvider>
+                  <CommandPaletteProvider>
+                    {/* Track 5 — global ⌘K palette. The portal-mounted UI
                       lives next to the provider so any module that calls
                       `useRegisterCommand` can also see the rendered
                       surface without an additional mount point. */}
-                  <CommandPalette />
-                  {children}
-                </CommandPaletteProvider>
-              </AppLockProvider>
+                    <CommandPalette />
+                    {children}
+                  </CommandPaletteProvider>
+                </AppLockProvider>
+              </AnonymousDataMigrationProvider>
             </AuthProvider>
           </ApiClientProvider>
         </ScreenReaderAnnouncerProvider>
