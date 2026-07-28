@@ -56,6 +56,7 @@ const {
       res.json({ ok: true, handler: "syncState" }),
     ),
     accounts: vi.fn((_req, res) => res.json({ ok: true, handler: "accounts" })),
+    jars: vi.fn((_req, res) => res.json({ ok: true, handler: "jars" })),
     transactions: vi.fn((_req, res) =>
       res.json({ ok: true, handler: "transactions" }),
     ),
@@ -140,6 +141,7 @@ vi.mock("../modules/mono/connection.js", () => ({
 }));
 vi.mock("../modules/mono/read.js", () => ({
   accountsHandler: monoHandlers.accounts,
+  jarsHandler: monoHandlers.jars,
   transactionsHandler: monoHandlers.transactions,
 }));
 vi.mock("../modules/mono/backfill.js", () => ({
@@ -310,6 +312,7 @@ describe("Monobank route wiring", () => {
     ["post", "/api/mono/disconnect", "disconnect"],
     ["get", "/api/mono/sync-state", "syncState"],
     ["get", "/api/mono/accounts", "accounts"],
+    ["get", "/api/mono/jars", "jars"],
     ["get", "/api/mono/transactions", "transactions"],
   ] as const)("protects %s %s with session", async (method, path, handler) => {
     const app = appWith(createMonoWebhookRouter());

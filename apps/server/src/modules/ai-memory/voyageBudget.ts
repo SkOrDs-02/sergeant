@@ -324,9 +324,7 @@ function maybeFireMonthlyProjectionAlert(
   if (monthly <= 0 || usage <= 0) return;
   const nowDate = new Date(now);
   const daysInMonth = new Date(
-    nowDate.getUTCFullYear(),
-    nowDate.getUTCMonth() + 1,
-    0,
+    Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth() + 1, 0),
   ).getUTCDate();
   const projected = usage * daysInMonth;
   if (projected < monthly) return;
