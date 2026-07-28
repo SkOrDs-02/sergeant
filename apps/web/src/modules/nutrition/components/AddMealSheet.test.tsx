@@ -215,10 +215,14 @@ vi.mock("../lib/mealId", () => ({
   newMealId: vi.fn(() => "meal-test-id"),
 }));
 
-vi.mock("@sergeant/shared", () => ({
-  useVisualKeyboardInset: vi.fn(() => 0),
-  isCapacitor: vi.fn(() => false),
-}));
+vi.mock("@sergeant/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@sergeant/shared")>();
+  return {
+    ...actual,
+    useVisualKeyboardInset: vi.fn(() => 0),
+    isCapacitor: vi.fn(() => false),
+  };
+});
 
 vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticSuccess: vi.fn(),

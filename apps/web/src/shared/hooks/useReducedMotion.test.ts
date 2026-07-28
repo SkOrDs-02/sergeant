@@ -59,6 +59,14 @@ afterEach(() => {
 });
 
 describe("useReducedMotion", () => {
+  it("falls back to false when matchMedia is unavailable", () => {
+    vi.stubGlobal("matchMedia", undefined);
+
+    const { result } = renderHook(() => useReducedMotion());
+
+    expect(result.current).toBe(false);
+  });
+
   it("returns true when prefers-reduced-motion matches on mount", () => {
     installMatchMedia(true);
     const { result } = renderHook(() => useReducedMotion());

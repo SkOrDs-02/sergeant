@@ -86,18 +86,19 @@ describe("HubBottomNav", () => {
     renderNav({ hubView: "settings" });
 
     const settings = screen.getByRole("tab", { name: /Налаштування/ });
+    const settingsPill = settings.firstElementChild as HTMLElement;
     // Fix spec v2 § 1: light mirrors dark — solid emerald fill + ink-on-
     // cream foreground, not an outline. `text-bg` is theme-aware, so one
     // bare class covers both themes' foreground.
-    expect(settings.className).toContain("bg-brand-strong");
-    expect(settings.className).toContain("dark:bg-brand-400");
-    expect(settings.className).toContain("text-bg");
-    expect(settings.className).toContain("border-transparent");
+    expect(settingsPill.className).toContain("bg-brand-strong");
+    expect(settingsPill.className).toContain("dark:bg-brand-400");
+    expect(settingsPill.className).toContain("text-bg");
 
     const home = screen.getByRole("tab", { name: /Головна/ });
-    expect(home.className).toContain("border-transparent");
-    expect(home.className).not.toContain("bg-brand-strong");
-    expect(home.className).not.toContain("dark:bg-brand-400");
+    const homePill = home.firstElementChild as HTMLElement;
+    expect(homePill.className).toContain("bg-transparent");
+    expect(homePill.className).not.toContain("bg-brand-strong");
+    expect(homePill.className).not.toContain("dark:bg-brand-400");
   });
 
   it("виклик onChange при кліку на таб", () => {
@@ -119,7 +120,7 @@ describe("HubBottomNav", () => {
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
     expect(settingsTab.className).toContain("justify-center");
-    expect(settingsTab.className).toContain("my-1.5");
+    expect(settingsTab.firstElementChild).toHaveClass("rounded-2xl", "py-1.5");
   });
 
   it("tablist semantics: кожен таб має aria-controls", () => {
