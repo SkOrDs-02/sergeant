@@ -31,7 +31,7 @@ export function AssetsNetworthCard({
         </p>
         <div
           className={cn(
-            "text-style-display tnum mt-2",
+            "text-style-display tnum mt-2 flex items-center gap-1.5",
             isNegative
               ? "text-danger-strong dark:text-danger"
               : "text-finyk-strong dark:text-finyk",
@@ -43,12 +43,13 @@ export function AssetsNetworthCard({
               <AnimatedNumber
                 value={networth}
                 odometer
+                className="items-center"
                 locale="uk-UA"
                 formatOptions={{ maximumFractionDigits: 0 }}
               />
               <span
                 className={cn(
-                  "text-style-headline ml-1",
+                  "text-style-headline leading-none",
                   isNegative
                     ? "text-danger-strong/60 dark:text-danger/60"
                     : "text-finyk/60",

@@ -66,6 +66,9 @@ describe("BankTransactionDetailsSheet", () => {
     expect(
       screen.getByText(/Monobank · дані банку не змінюються/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("tablist", { name: "Тип запису" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Нотатка до транзакції")).toBeInTheDocument();
     expect(
       screen.getByRole("switch", { name: /Не враховувати у статистиці/ }),

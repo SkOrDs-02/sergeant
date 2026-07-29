@@ -132,6 +132,23 @@ describe("AssetsNetworthCard", () => {
     expect(container.querySelector(".text-finyk-strong")).not.toBeNull();
     expect(container.querySelector(".text-danger-strong")).toBeNull();
   });
+
+  it("vertically centres the currency next to the networth amount", () => {
+    render(
+      <AssetsNetworthCard
+        networth={-38839}
+        totalAssets={3719}
+        totalDebt={42558}
+        showBalance={true}
+      />,
+    );
+
+    const currency = screen.getByText("₴", { selector: "span" });
+    const amount = screen.getByRole("img", { name: /-38[\s\u00a0]?839/ });
+    expect(currency.parentElement).toHaveClass("flex", "items-center");
+    expect(currency).toHaveClass("leading-none");
+    expect(amount).toHaveClass("items-center");
+  });
 });
 
 type TableState = Parameters<typeof AssetsTable>[0]["state"];

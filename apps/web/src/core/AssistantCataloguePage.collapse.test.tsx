@@ -1,12 +1,25 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { ASSISTANT_CAPABILITIES } from "@sergeant/shared";
+import { __resetHubBusForTests, onHubBus } from "@shared/lib/modules/hubBus";
 import { AssistantCataloguePage } from "./AssistantCataloguePage";
 
 // Stub the detail modal — it pulls in chat plumbing we don't need to
 // exercise the per-group collapse contract.
 vi.mock("./components/CapabilityDetailModal", () => ({
-  CapabilityDetailModal: () => null,
+  CapabilityDetailModal: ({
+    capability,
+    onTryInChat,
+  }: {
+    capability: (typeof ASSISTANT_CAPABILITIES)[number] | null;
+    onTryInChat: (capability: (typeof ASSISTANT_CAPABILITIES)[number]) => void;
+  }) =>
+    capability ? (
+      <button type="button" onClick={() => onTryInChat(capability)}>
+        try capability
+      </button>
+    ) : null,
 }));
 
 const COLLAPSED_LS_KEY = "assistant_catalogue_collapsed_v1";
@@ -14,8 +27,12 @@ const COLLAPSED_LS_KEY = "assistant_catalogue_collapsed_v1";
 describe("AssistantCataloguePage — group collapsing", () => {
   beforeEach(() => {
     localStorage.clear();
+    __resetHubBusForTests();
   });
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    __resetHubBusForTests();
+  });
 
   it("groups are expanded by default and a representative row is visible", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
@@ -24,6 +41,30 @@ describe("AssistantCataloguePage — group collapsing", () => {
     ).toBeTruthy();
     const finykToggle = screen.getByTestId("catalogue-module-finyk-toggle");
     expect(finykToggle.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("closes the catalogue and forwards the selected capability to chat", () => {
+    const onClose = vi.fn();
+    const capability = ASSISTANT_CAPABILITIES.find(
+      (candidate) => candidate.id === "create_transaction",
+    );
+    expect(capability).toBeDefined();
+    const received: Array<{ message: string | null; autoSend?: boolean }> = [];
+    onHubBus("openChat", (detail) => received.push(detail));
+
+    render(<AssistantCataloguePage onClose={onClose} />);
+    fireEvent.click(
+      screen.getByTestId("catalogue-capability-create_transaction"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "try capability" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(received).toEqual([
+      {
+        message: capability?.prompt,
+        autoSend: !capability?.requiresInput,
+      },
+    ]);
   });
 
   it("clicking a module header collapses just that group and persists to localStorage", () => {

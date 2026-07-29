@@ -213,6 +213,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       (o) => o.textContent,
     );
     expect(optionLabels).toEqual([
+      "Оберіть категорію",
       "Зарплата",
       "Фріланс",
       "Подарунок",
@@ -281,6 +282,46 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     ).toBeInTheDocument();
   });
 
+  it("requires a new category when an edited income becomes an expense", async () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        onSave={onSave}
+        initialExpense={{
+          id: "1",
+          description: "Зарплата",
+          amount: 5000,
+          category: "salary",
+          kind: "income",
+          date: "2026-06-01T12:00:00.000Z",
+        }}
+      />,
+    );
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("tab", { name: "Витрата" }));
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
+    });
+    expect(onSave).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Категорія"), {
+      target: { value: "transport" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "transport", kind: "expense" }),
+    );
+  });
+
   it("editing a legacy type: income entry (no kind, HubChat-era) also preselects Надходження", async () => {
     render(
       <ManualExpenseSheet
@@ -304,7 +345,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     );
   });
 
-  it("switching kind mid-edit resets the category to the new kind's default", async () => {
+  it("switching kind clears the old taxonomy category", async () => {
     const onSave = vi.fn();
     render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
     await act(async () => {});
@@ -317,12 +358,8 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => {
-      expect(onSave).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
     });
-    const call = onSave.mock.calls[0]![0] as { category: string; kind: string };
-    // Back-to-expense reset lands on DEFAULT_CATEGORY ("other"), never a
-    // leftover income slug like "salary".
-    expect(call.category).toBe("other");
-    expect(call.kind).toBe("expense");
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

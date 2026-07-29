@@ -99,6 +99,11 @@ export function dismissNudge(store: KVStore, nudgeId: string): void {
   writeJSON(store, NUDGE_DISMISSED_KEY, map);
 }
 
+/** Check whether a namespaced engagement item was permanently dismissed. */
+export function isNudgeDismissed(store: KVStore, nudgeId: string): boolean {
+  return getDismissedMap(store)[nudgeId] === true;
+}
+
 interface NudgeSnoozeMap {
   /** Epoch ms after which the nudge becomes eligible again. */
   [nudgeId: string]: number;

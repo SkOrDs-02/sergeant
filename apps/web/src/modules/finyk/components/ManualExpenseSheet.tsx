@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-07-29
  * Status: Active
  *
  * Manual expense add/edit sheet. Orchestrates form state and delegates
@@ -35,7 +35,6 @@ import {
   type CategorySlug,
 } from "./manualExpenseCategories";
 import {
-  DEFAULT_INCOME_CATEGORY,
   INCOME_CATEGORY_DISPLAY,
   INCOME_CATEGORY_SLUGS,
   upgradeIncomeCategory,
@@ -185,6 +184,7 @@ export function ManualExpenseSheet({
   const date = watch("date");
   const amount = watch("amount");
   const amountError = formState.errors.amount?.message;
+  const categoryError = formState.errors.category?.message;
 
   // 6.2 hero preview — show big display-hero typography above the input
   // once a value is set. Input stays editable below. Parsed defensively
@@ -317,9 +317,11 @@ export function ManualExpenseSheet({
   // Normalise the watched category value so comparison against slug list is
   // stable even if a legacy value slips through. Income has a fixed 5-slug
   // taxonomy (§3, fab-and-manual-income spec) — no frequency sort.
-  const categorySlug = isIncome
-    ? upgradeIncomeCategory(category)
-    : upgradeCategory(category);
+  const categorySlug = category
+    ? isIncome
+      ? upgradeIncomeCategory(category)
+      : upgradeCategory(category)
+    : "";
 
   // Dropdown shows every category at once (D3 decision) — no collapsed
   // top-N row, so frequency ordering just becomes the <option> order.
@@ -371,17 +373,12 @@ export function ManualExpenseSheet({
     });
   };
 
-  // Segment switch (§1 fab-and-manual-income spec): resets category to the
-  // new kind's default so a stale expense/income slug never gets saved
-  // under the wrong taxonomy.
+  // A kind change invalidates the old taxonomy category. The required empty
+  // value makes the user explicitly choose from the new taxonomy before save.
   const handleKindChange = (nextKind: ManualExpenseKind) => {
     if (nextKind === kind) return;
     setKind(nextKind);
-    setValue(
-      "category",
-      nextKind === "income" ? DEFAULT_INCOME_CATEGORY : DEFAULT_CATEGORY,
-      { shouldDirty: true },
-    );
+    setValue("category", "", { shouldDirty: true, shouldValidate: true });
     setAiAppliedCategory(null);
   };
 
@@ -568,10 +565,11 @@ export function ManualExpenseSheet({
           catLabelId={catLabelId}
           categoryDisplay={categoryDisplay}
           aiAppliedCategory={aiAppliedCategory}
+          categoryError={categoryError}
           categorySlug={categorySlug}
           categorySlugs={categorySlugs}
+          register={register}
           setAiAppliedCategory={setAiAppliedCategory}
-          setValue={setValue}
         />
       </div>
     </Sheet>
