@@ -32,7 +32,9 @@ export function DemoToRealDemo() {
               <Icon name="file-text" size={20} />
             </span>
             <p className="text-style-caption text-text">Поки що порожньо</p>
-            <p className="text-2xs text-muted">Демо-записи стерлись на старті.</p>
+            <p className="text-2xs text-muted">
+              Демо-записи стерлись на старті.
+            </p>
           </div>
         </MiniPhone>
       }
@@ -47,18 +49,30 @@ export function DemoToRealDemo() {
                   key={s.id}
                   className={cn(
                     "rounded-xl border p-2.5 flex items-center gap-2",
-                    isReal ? "border-line bg-panel" : "border-dashed border-accent/40 bg-accent/5",
+                    isReal
+                      ? "border-line bg-panel"
+                      : "border-dashed border-accent/40 bg-accent/5",
                   )}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-style-caption text-text">{s.name}</span>
-                      {!isReal ? <Badge variant="warning" tone="soft" size="sm">зразок</Badge> : null}
+                      <span className="text-style-caption text-text">
+                        {s.name}
+                      </span>
+                      {!isReal ? (
+                        <Badge variant="warning" tone="soft" size="sm">
+                          зразок
+                        </Badge>
+                      ) : null}
                     </div>
-                    <span className="text-2xs tabular-nums text-muted">{s.amount}</span>
+                    <span className="text-2xs tabular-nums text-muted">
+                      {s.amount}
+                    </span>
                   </div>
                   {isReal ? (
-                    <span className="text-accent"><Icon name="check-circle" size={16} /></span>
+                    <span className="text-accent">
+                      <Icon name="check-circle" size={16} />
+                    </span>
                   ) : (
                     <button
                       type="button"
@@ -71,7 +85,9 @@ export function DemoToRealDemo() {
                 </div>
               );
             })}
-            <p className="text-2xs text-muted pt-1">Зразок стає реальним записом, а не зникає.</p>
+            <p className="text-2xs text-muted pt-1">
+              Зразок стає реальним записом, а не зникає.
+            </p>
           </div>
         </MiniPhone>
       }

@@ -100,13 +100,13 @@ describe("resolveOriginDeviceId", () => {
     expect(resolveOriginDeviceId({ store })).toBe("global-random-id");
   });
 
-  it("falls back when global crypto.randomUUID is unavailable", () => {
+  it("fails closed when Web Crypto is unavailable", () => {
     const store = createMemoryKVStore();
-    vi.spyOn(Date, "now").mockReturnValue(0x19a9e0);
-    vi.spyOn(Math, "random").mockReturnValueOnce(0).mockReturnValueOnce(0.5);
     vi.stubGlobal("crypto", {});
 
-    expect(resolveOriginDeviceId({ store })).toBe("d19a9e0-7fffffff00000000");
+    expect(() => resolveOriginDeviceId({ store })).toThrow(
+      "Web Crypto is required",
+    );
   });
 
   it("falls back when randomUUID returns whitespace-only", () => {

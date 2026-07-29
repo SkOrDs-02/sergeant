@@ -13,7 +13,7 @@ type SwResponse =
     };
 
 function makeRequestId(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  return `${prefix}_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 async function postToSw(msg: SwRequest): Promise<void> {

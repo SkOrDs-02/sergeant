@@ -38,4 +38,4 @@
 
 - [README](./README.md) — індекс беклогу.
 - [docs/04-governance/security/vulnerability-sla.md](../../vulnerability-sla.md) — SLA для Critical = 24h на acknowledge + 14d на fix.
-- [docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md](../../../../90-work/audits/archive/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).
+- [docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-implementation-roadmap.md) — попередній roadmap (для крос-контексту).

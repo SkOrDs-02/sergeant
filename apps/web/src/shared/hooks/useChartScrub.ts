@@ -77,14 +77,16 @@ export function useChartScrub({
 }: UseChartScrubOptions): UseChartScrubResult {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [scrubX, setScrubX] = useState<number | undefined>(undefined);
-  const [scrubY, setScrubY] = useState<number | undefined>(undefined);
 
   const haptic = useHaptic();
   const reducedMotion = useReducedMotion();
   const prevIndexRef = useRef<number | null>(null);
 
   const resolveIndex = useCallback(
-    (clientX: number, clientY: number): { idx: number; vx: number; vy: number } | null => {
+    (
+      clientX: number,
+      clientY: number,
+    ): { idx: number; vx: number; vy: number } | null => {
       const svg = svgRef.current;
       if (!svg || pointCount === 0 || xPositions.length === 0) return null;
 
@@ -93,7 +95,7 @@ export function useChartScrub({
 
       // Map client coords → viewBox coords
       const vx = ((clientX - rect.left) / rect.width) * viewBoxWidth;
-      const vy = ((clientY - rect.top) / rect.height);
+      const vy = (clientY - rect.top) / rect.height;
 
       // Find nearest point by x-distance
       let nearestIdx = 0;
@@ -132,7 +134,6 @@ export function useChartScrub({
     prevIndexRef.current = null;
     setActiveIndex(null);
     setScrubX(undefined);
-    setScrubY(undefined);
     onIndexChange?.(null);
   }, [onIndexChange]);
 
@@ -165,20 +166,17 @@ export function useChartScrub({
   }, [clearScrub]);
 
   // Clean up on unmount
-  useEffect(() => () => { prevIndexRef.current = null; }, []);
-
-  // Suppress crosshair position update (but keep index) when reduced motion
-  useEffect(() => {
-    if (reducedMotion && activeIndex !== null) {
-      setScrubX(undefined);
-      setScrubY(undefined);
-    }
-  }, [reducedMotion, activeIndex]);
+  useEffect(
+    () => () => {
+      prevIndexRef.current = null;
+    },
+    [],
+  );
 
   return {
     activeIndex,
-    scrubX,
-    scrubY,
+    scrubX: reducedMotion ? undefined : scrubX,
+    scrubY: undefined,
     bind: { onPointerMove, onPointerLeave, onTouchMove, onTouchEnd },
   };
 }

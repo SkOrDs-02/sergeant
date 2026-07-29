@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => {
       // Монорепо лінкується hoisted (`node-linker=hoisted`), тож react живе
       // в кореневому node_modules і збігається з версією apps/web. `dedupe`
       // тримає один інстанс, якщо транзитивна залежність притягне копію.
-      dedupe: ["react", "react-dom", "react-router-dom"],
+      dedupe: ["react", "react-dom"],
     },
     server: {
       host: true,

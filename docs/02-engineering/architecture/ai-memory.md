@@ -78,12 +78,12 @@ API endpoint: `POST /api/internal/ai-memory-dlq/{list,replay}` (bearer-auth, `IN
 
 ### Metrics
 
-| Signal                                      | Help                             |
+| Signal | Help |
 | ------------------------------------------- | -------------------------------- | -------- | -------------- | -------------------- | -------------------------------------------------------------- |
-| `ai_memory_ingest_enqueued_total{mode}`     | `queued                          | fallback | enqueue_error  | disabled             | source_disabled`.                                              |
+| `ai_memory_ingest_enqueued_total{mode}` | `queued                          | fallback | enqueue_error  | disabled             | source_disabled`. |
 | `ai_memory_ingest_processed_total{outcome}` | `ok                              | retry    | permanent_fail | dlq                  | skipped`. `dlq`counted IN ADDITION to`permanent_fail`/`retry`. |
-| `ai_memory_ingest_duration_ms{outcome}`     | Histogram per-job duration (мс). |
-| `ai_memory_ingest_queue_depth{status}`      | Gauge `waiting                   | active   | delayed        | failed`, polled 30s. |
+| `ai_memory_ingest_duration_ms{outcome}` | Histogram per-job duration (мс). |
+| `ai_memory_ingest_queue_depth{status}` | Gauge `waiting                   | active   | delayed        | failed`, polled 30s. |
 
 DLQ-row count поки не expose-ється як gauge — operator SQL-ить безпосередньо:
 

@@ -36,7 +36,9 @@ export function MonochromeIconDemo() {
               <div className="h-14 w-14 rounded-2xl bg-surface-muted border border-dashed border-accent/50 flex items-center justify-center">
                 <Icon name="sparkles" size={26} className="text-accent" />
               </div>
-              <span className="text-2xs text-accent font-medium">monochrome</span>
+              <span className="text-2xs text-accent font-medium">
+                monochrome
+              </span>
             </div>
           </div>
           <p className="text-2xs text-muted">

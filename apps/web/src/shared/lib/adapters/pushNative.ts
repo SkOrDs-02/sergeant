@@ -42,8 +42,7 @@ async function loadPushNative(): Promise<PushNativeModule | null> {
   if (!isCapacitor()) return null;
   try {
     const mod = (await import("@sergeant/mobile-shell/pushNative")) as
-      | PushNativeModule
-      | { default?: PushNativeModule };
+      PushNativeModule | { default?: PushNativeModule };
     if ("subscribeNativePush" in mod) return mod as PushNativeModule;
     return mod.default ?? null;
   } catch {

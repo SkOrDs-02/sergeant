@@ -8,14 +8,13 @@ describe("generatePrefixedId", () => {
     vi.unstubAllGlobals();
   });
 
-  it("uses the shared prefix, timestamp, and eight-character random suffix format", () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
+  it("uses the shared prefix and native UUID", () => {
     vi.stubGlobal("crypto", {
       randomUUID: () => "abcdef12-3456-7890-abcd-ef1234567890",
     });
 
     expect(generatePrefixedId("expense")).toBe(
-      "expense_1700000000000_abcdef12",
+      "expense_abcdef12-3456-7890-abcd-ef1234567890",
     );
   });
 });

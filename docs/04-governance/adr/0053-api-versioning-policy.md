@@ -7,7 +7,7 @@
 - **Related:**
   - [ADR-0018](./0018-api-versioning-policy.md)
   - [`docs/02-engineering/architecture/api-v1.md`](../../02-engineering/architecture/api-v1.md)
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-08-api-versioning-consolidation.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
   - [`docs/02-engineering/notes/spikes/2026-05-api-v1-usage.md`](../../02-engineering/notes/spikes/2026-05-api-v1-usage.md)
 
 > **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.

@@ -17,7 +17,14 @@ import { ComparePair, MiniPhone } from "./_Compare";
  */
 
 const CATEGORIES = [
-  "Їжа", "Транспорт", "Житло", "Здоровʼя", "Розваги", "Одяг", "Підписки", "Інше",
+  "Їжа",
+  "Транспорт",
+  "Житло",
+  "Здоровʼя",
+  "Розваги",
+  "Одяг",
+  "Підписки",
+  "Інше",
 ];
 
 export function SegmentedSheetFallbackDemo() {
@@ -34,7 +41,9 @@ export function SegmentedSheetFallbackDemo() {
         before={
           <MiniPhone dim>
             <div className="flex-1 min-h-0 px-3 pt-2">
-              <p className="text-style-caption text-muted mb-2">Категорія витрати</p>
+              <p className="text-style-caption text-muted mb-2">
+                Категорія витрати
+              </p>
               <div className="flex gap-0.5 rounded-xl border border-line bg-panel p-0.5 overflow-hidden">
                 {CATEGORIES.slice(0, 5).map((c, i) => (
                   <span
@@ -47,9 +56,13 @@ export function SegmentedSheetFallbackDemo() {
                     <span className="text-[9px] truncate">{c}</span>
                   </span>
                 ))}
-                <span className="h-8 px-1 flex items-center text-2xs text-muted">…</span>
+                <span className="h-8 px-1 flex items-center text-2xs text-muted">
+                  …
+                </span>
               </div>
-              <p className="text-2xs text-muted mt-3">Мітки обрізані, дрібні цілі, ще 3 не влізли.</p>
+              <p className="text-2xs text-muted mt-3">
+                Мітки обрізані, дрібні цілі, ще 3 не влізли.
+              </p>
             </div>
           </MiniPhone>
         }
@@ -57,7 +70,9 @@ export function SegmentedSheetFallbackDemo() {
           <MiniPhone>
             <div className="relative flex-1 min-h-0 flex flex-col">
               <div className="px-3 pt-2 space-y-3">
-                <p className="text-style-caption text-muted">Категорія витрати</p>
+                <p className="text-style-caption text-muted">
+                  Категорія витрати
+                </p>
                 <button
                   type="button"
                   onClick={() => setOpen(true)}
@@ -66,10 +81,14 @@ export function SegmentedSheetFallbackDemo() {
                   <span className="text-style-body text-text">{value}</span>
                   <Icon name="chevron-down" size={18} className="text-muted" />
                 </button>
-                <p className="text-2xs text-muted">Один селектор → шторка з усіма 8.</p>
+                <p className="text-2xs text-muted">
+                  Один селектор → шторка з усіма 8.
+                </p>
               </div>
 
-              <div
+              <button
+                type="button"
+                aria-label="Закрити вибір категорії"
                 className={cn(
                   "absolute inset-0 z-10 bg-black/30 transition-opacity",
                   open ? "opacity-100" : "opacity-0 pointer-events-none",
@@ -84,7 +103,9 @@ export function SegmentedSheetFallbackDemo() {
                 )}
               >
                 <div className="mx-auto h-1 w-10 rounded-full bg-line mb-3" />
-                <p className="text-style-label text-text mb-2">Оберіть категорію</p>
+                <p className="text-style-label text-text mb-2">
+                  Оберіть категорію
+                </p>
                 <div className="space-y-1">
                   {CATEGORIES.map((c) => {
                     const sel = c === value;
@@ -92,10 +113,15 @@ export function SegmentedSheetFallbackDemo() {
                       <button
                         key={c}
                         type="button"
-                        onClick={() => { setValue(c); setOpen(false); }}
+                        onClick={() => {
+                          setValue(c);
+                          setOpen(false);
+                        }}
                         className={cn(
                           "w-full h-12 rounded-2xl px-4 flex items-center justify-between border",
-                          sel ? "bg-accent/10 border-accent/40 text-accent" : "bg-panel border-line text-text",
+                          sel
+                            ? "bg-accent/10 border-accent/40 text-accent"
+                            : "bg-panel border-line text-text",
                         )}
                       >
                         <span className="text-style-body">{c}</span>

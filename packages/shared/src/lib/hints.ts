@@ -35,17 +35,10 @@ export type HintId =
  * (`{ retention_day_1, retention_day_3, retention_day_7 }`) without TS errors.
  */
 export type RetentionHintId =
-  | "retention_day_1"
-  | "retention_day_3"
-  | "retention_day_7";
+  "retention_day_1" | "retention_day_3" | "retention_day_7";
 
 export type HintSurface =
-  | "welcome"
-  | "hub"
-  | "module"
-  | "settings"
-  | "auth"
-  | "other";
+  "welcome" | "hub" | "module" | "settings" | "auth" | "other";
 
 export interface HintContext {
   platform: "web" | "mobile";

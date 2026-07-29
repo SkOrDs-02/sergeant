@@ -50,7 +50,7 @@
 
 ### 6. Маршрутизуй фоллов-ап
 
-- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](../../90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)).
+- Mock-test-only coverage → відкривай PR із real-Postgres / real-fixture e2e (як PR 3.2 / PR 3.3 ініціативи [0011](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)).
 - Залишковий ризик у самій карті → онови `Status` від `Closed` до `Closed (partial)` + перерахуй у §Deferred карти + лінкуй на новий tracker.
 - Готовність до external pen-test → передай transcript у [`docs/01-product/launch/business/04-launch-readiness.md`](../../01-product/launch/business/04-launch-readiness.md) як evidence-документ.
 

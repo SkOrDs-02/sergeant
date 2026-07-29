@@ -1,4 +1,4 @@
-﻿# Audits — каталог документів та статусів
+# Audits — каталог документів та статусів
 
 > **Last validated:** 2026-07-29 by Codex (code-reconcile cleanup). **Next review:** 2026-10-27.
 > **Status:** Active
@@ -9,19 +9,18 @@
 
 ## Що тут лежить
 
-| Шлях                                                                                           | Призначення                                                                                                                                                                                                                                                                                                                                |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`_runner-report.md`](./_runner-report.md)                                                     | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`)                                                                                                                                                                                            |
-| [`user-story-ledger.csv`](./user-story-ledger.csv)                                             | CSV ledger user-story проходів                                                                                                                                                                                                                                                                                                             |
-| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md)                                   | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                                                                                                                                                                                                             |
-| `product-knowledge-*.md` (6)                                                                   | **Reference.** Завершена тріангуляція founder ↔ доки ↔ код по `finyk`, `fizruk`, `hub-coach`, `nutrition`, `routine` + парасолька `overview`. Канони — [`docs/01-product/model/`](../../01-product/model/README.md); єдиний виконуваний наступник — [`../planning/product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md) |
-| [`finyk-analytics-research.md`](./finyk-analytics-research.md)                                 | **Reference.** Дослідження завершене; прийняті й відкладені рекомендації зведено в [`../planning/product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md)                                                                                                                                                                  |
-| [`2026-07-24-cycle6-stage2-typography-core.md`](./2026-07-24-cycle6-stage2-typography-core.md) | Цикл 6, стадія 2 (`core/**`) — Reference; **stage 3 (модульні поверхні) ще не виконано**, тому цикл лишається в активній зоні разом зі стадією 1                                                                                                                                                                                           |
-| [`2026-07-22-cycle6-typography-shared-ui.md`](./2026-07-22-cycle6-typography-shared-ui.md)     | Цикл 6, стадія 1 (`shared/components/ui`) — Reference                                                                                                                                                                                                                                                                                      |
-| [`archive/`](./archive/)                                                                       | Усі завершені / Closed / Draft-stub аудити й прожарки (fast-forward 2026-07-20, розчистка 2026-07-25)                                                                                                                                                                                                                                      |
+| Шлях                                                                                                                                  | Призначення                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`_runner-report.md`](./_runner-report.md)                                                                                            | Останній triage digest audits-runner (Reference; шляхи всередині можуть вказувати на pre-archive локації — канон після 2026-07-20 = `archive/`)                                                                                                                                                                                            |
+| [`user-story-ledger.csv`](./user-story-ledger.csv)                                                                                    | CSV ledger user-story проходів                                                                                                                                                                                                                                                                                                             |
+| [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md)                                                                          | Дизайн-аудит apps/web (Reference): скоринг-baseline для наступної ітерації + уроки методології                                                                                                                                                                                                                                             |
+| `product-knowledge-*.md` (6)                                                                                                          | **Reference.** Завершена тріангуляція founder ↔ доки ↔ код по `finyk`, `fizruk`, `hub-coach`, `nutrition`, `routine` + парасолька `overview`. Канони — [`docs/01-product/model/`](../../01-product/model/README.md); єдиний виконуваний наступник — [`../planning/product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md) |
+| [`finyk-analytics-research.md`](./finyk-analytics-research.md)                                                                        | **Reference.** Дослідження завершене; прийняті й відкладені рекомендації зведено в [`../planning/product-knowledge-backlog.md`](../planning/product-knowledge-backlog.md)                                                                                                                                                                  |
+| [`2026-07-24-cycle6-stage2-typography-core.md`](./2026-07-24-cycle6-stage2-typography-core.md)                                        | Цикл 6, стадія 2 (`core/**`) — Reference; **stage 3 (модульні поверхні) ще не виконано**, тому цикл лишається в активній зоні разом зі стадією 1                                                                                                                                                                                           |
+| [`2026-07-22-cycle6-typography-shared-ui.md`](./2026-07-22-cycle6-typography-shared-ui.md)                                            | Цикл 6, стадія 1 (`shared/components/ui`) — Reference                                                                                                                                                                                                                                                                                      |
+| [Історичний archive](https://github.com/Skords-01/Sergeant/tree/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive) | Усі завершені / Closed / Draft-stub аудити й прожарки у Git history                                                                                                                                                                                                                                                                        |
 
-Новий аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` — `git mv`
-у `archive/`. Виняток — звіт, на який спирається **незавершений** цикл: baseline
+Новий аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` та merge evidence frozen-файл видаляється cleanup-комітом, а inbound references переводяться на permalink. Виняток — звіт, на який спирається **незавершений** цикл: baseline
 `2026-07-21-design-audit.md` і стадії циклу 6 лишаються в корені, доки stage 3 не
 закрито.
 
@@ -31,7 +30,7 @@
 
 ## Архів (зведення)
 
-Повний список — у [`archive/`](./archive/). Ключові групи:
+Повний історичний список — у [Git snapshot](https://github.com/Skords-01/Sergeant/tree/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive). Ключові групи:
 
 - **Прожарки 2026-05** — `archive/2026-05-13-*-roast.md`, UX/revenue/security/testing/…
 - **Page-audits** — `archive/2026-05-13-page-audit-*.md` + consolidated
@@ -40,7 +39,7 @@
 - **Production-readiness / browser loops** — `archive/production-readiness-*.md`, `archive/*-browser-*.md`, `archive/user-story-loop.md`
 - **Draft stubs** — `archive/2026-08-XX-sync-engine-roast.md`, `archive/2026-08-XX-openclaw-internal-roast.md`
 
-**Batch 2026-07-20** (fast-forward, 90-day gate skipped): усі ще живі Closed/Done/Reference аудити перенесено з кореня в `archive/`. Деталі — [`archive/README.md`](./archive/README.md).
+**Batch 2026-07-20** (fast-forward, 90-day gate skipped): усі ще живі Closed/Done/Reference аудити перенесено з кореня в `archive/`. Деталі — [`archive/README.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/README.md).
 
 **Batch 2026-07-25** (розчистка активної зони): закриті дизайн-цикли 3–5 + супутні звіти — `archive/2026-07-22-cycle-3.md`, `archive/2026-07-22-cycle-4.md`, `archive/2026-07-22-cycle-5-typography.md`, `archive/2026-07-21-light-language.md`, `archive/2026-07-22-first-60-seconds.md`.
 
@@ -52,6 +51,6 @@
 ## Process
 
 - При злитті PR-у, що закриває recommendation з аудиту: оновити inline статус у самому документі.
-- Коли документ повністю `Closed` / `Done` / `Reference` і більше не є living tracker — `git mv` у `archive/` + оновити inbound-лінки (`pnpm docs:check-links`, `pnpm lint:archive-move-depth`). Fast-forward без 90 днів — лише за явним рішенням founder-а (як Batch 2026-07-20).
-- CI freshness-gate (`scripts/check-tech-debt-freshness.mjs`) форсить `Last validated:` на living tracker-ах; архівні файли — read-only (`Next review: ніколи`).
-- Для нових аудитів використовуй шаблон з [`archive/2026-04-28-ux-ui-audit.md`](./archive/2026-04-28-ux-ui-audit.md) (front-matter + Lifecycle-status + явний tracker).
+- Коли документ повністю `Closed` / `Done` / `Reference` і більше не є living tracker — зафіксувати Outcome, merge evidence, потім видалити frozen-файл і перевести inbound-лінки на commit permalink.
+- CI freshness-gate (`scripts/check-tech-debt-freshness.mjs`) форсить `Last validated:` на living tracker-ах; Git history не бере участі у freshness-gate.
+- Для нових аудитів використовуй шаблон з [`archive/2026-04-28-ux-ui-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md) (front-matter + Lifecycle-status + явний tracker).

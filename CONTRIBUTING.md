@@ -119,19 +119,19 @@ pnpm typecheck
 pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 ```
 
-`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності — типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс — `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. Той же gate стоїть у CI (`format-lint-test-build` matrix у `.github/workflows/ci.yml`, audit item P2-1 у [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](./docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md)).
+`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності — типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс — `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. Той же gate стоїть у CI (`format-lint-test-build` matrix у `.github/workflows/ci.yml`, audit item P2-1 у [`docs/90-work/audits/2026-05-13-testing-devx-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md)).
 
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](./docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`. Migration-only PR теж тригерить Detox через `apps/server/src/migrations/**` — schema-change майже завжди передує перейменуванню serializer-а.
 - `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR торкає `apps/server/src/routes/**` або `apps/server/src/migrations/**`, Detox iOS + Android jobs запускаються автоматично (stack-pulse PR-18 / M2: response-shape change без зміни `apps/mobile/**` ламала mobile у prod). Якщо тести впадуть, перегенеруй `packages/api-client/**` типи у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
 - `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
-- `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
+- `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
 
 Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.
 
@@ -198,25 +198,16 @@ Reviewer checklist живе в [docs/04-governance/governance/review-checklist.m
 5. **Conventional Commits: explicit scope enum**
 6. **No force push to main/master**
 7. **Pre-commit hooks via Husky — do not skip**
-8. **Tailwind colour-opacity steps must be on the registered scale**
-9. **Saturated brand fills behind `text-white` must use the `-strong` companion**
-10. **Lifecycle markers — every file/doc declares its status**
-11. **No arbitrary hex colors in `className`**
-12. **Module-accent containment — no foreign accents inside a module subtree**
-13. **No raw-palette light/dark `className` pairs**
-14. **Visible focus indicators must use `focus-visible:`, not `focus:`**
-15. **Read governance before coding; update docs alongside code; internal docs in Ukrainian**
-16. **Typography scale — semantic styles + 12px floor**
-17. **Animation budget — max 2 concurrent, 3 tiers**
-18. **Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS**
-19. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
-20. **No OpenClaw PATs in production**
-21. **Pino redaction policy enforced**
-22. **Skill body security scan — no injection/exfiltration patterns in SKILL.md**
-23. **Archive-move depth integrity — no broken `../X` links in docs archives**
-24. **Catalogs registered in `knowledge-graph.json` must have a `--check` generator**
-25. **Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker**
-26. **Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json`**
+8. **Lifecycle markers — every file/doc declares its status**
+9. **Read governance before coding; update docs alongside code; internal docs in Ukrainian**
+10. **Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS**
+11. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
+12. **No OpenClaw PATs in production**
+13. **Pino redaction policy enforced**
+14. **Skill body security scan — no injection/exfiltration patterns in SKILL.md**
+15. **Archive-move depth integrity — no broken `../X` links in docs archives**
+16. **Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker**
+17. **Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json`**
 
 Джерела істини:
 

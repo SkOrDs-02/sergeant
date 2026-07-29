@@ -4,7 +4,7 @@
 # Audit runner report
 
 > **Last validated:** 2026-06-25 by audits-runner workflow. **Next review:** ніколи (історичний знімок; living audits = 0 після Batch 2026-07-20).
-> **Status:** Reference — triage snapshot 2026-06-25. Після fast-forward archive усі згадані файли лежать у [`archive/`](./archive/); шляхи нижче без `archive/` — historical. Наступний runner-pass має регенерувати цей файл проти `open-work.md` (0 open audits).
+> **Status:** Reference — triage snapshot 2026-06-25. Після fast-forward archive усі згадані файли лежать у [`archive/`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/); шляхи нижче без `archive/` — historical. Наступний runner-pass має регенерувати цей файл проти `open-work.md` (0 open audits).
 
 ## Triage digest — 2026-06-25
 

@@ -32,7 +32,7 @@
 3. **Profile B** (or mobile foreground): pull ≤60s.
 4. **Pass:** habit visible in list.
 
-Handoff: [`sync-client-wiring-phase2-handoff.md`](../../90-work/planning/archive/sync-client-wiring-phase2-handoff.md) §3.
+Handoff: [`sync-client-wiring-phase2-handoff.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sync-client-wiring-phase2-handoff.md) §3.
 
 ## C. Echo suppression
 

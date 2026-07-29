@@ -13,11 +13,7 @@
 const DAY_SECONDS = 86_400;
 
 export type RecurringCadence =
-  | "weekly"
-  | "biweekly"
-  | "monthly"
-  | "quarterly"
-  | "yearly";
+  "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
 export type RecurringConfidence = "high" | "medium" | "low";
 

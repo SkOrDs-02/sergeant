@@ -33,7 +33,10 @@ export function DynamicThemeColorDemo() {
             className="h-9 shrink-0 flex items-center justify-between px-4"
             style={{ backgroundColor: "#fdf9f3" }}
           >
-            <span className="text-2xs font-semibold" style={{ color: "#1c1917" }}>
+            <span
+              className="text-2xs font-semibold"
+              style={{ color: "#1c1917" }}
+            >
               9:41
             </span>
             <span className="text-2xs" style={{ color: "#1c1917" }}>

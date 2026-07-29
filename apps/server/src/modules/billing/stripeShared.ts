@@ -25,8 +25,7 @@ export function extractSubscriptionPricing(
   const price =
     first && typeof first === "object" && !Array.isArray(first)
       ? ((first as Record<string, unknown>)["price"] as
-          | Record<string, unknown>
-          | undefined)
+          Record<string, unknown> | undefined)
       : undefined;
   const recurring =
     price &&

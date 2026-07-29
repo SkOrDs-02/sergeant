@@ -7,7 +7,7 @@
 - **Supersedes:** —
 - **Related:**
   - [ADR-0034](./0034-visual-regression-testing.md) — visual regression via Argos + Playwright on hub surfaces.
-  - [`docs/90-work/initiatives/archive/_0007-design-system-tooling.md`](../../90-work/initiatives/archive/_0007-design-system-tooling.md) — Design-system tooling initiative (Phases 1–5).
+  - [`docs/90-work/initiatives/archive/_0007-design-system-tooling.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md) — Design-system tooling initiative (Phases 1–5).
   - [`apps/web/.storybook/main.ts`](../../../apps/web/.storybook/main.ts) — Storybook 10 config (Vite 8, framework `@storybook/react-vite`).
   - [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml) — Storybook GitHub Pages deploy.
   - [`packages/eslint-plugin-sergeant-design/index.js`](../../../packages/eslint-plugin-sergeant-design/index.js) § `require-stories-for-ui-components`.
@@ -108,7 +108,7 @@ Argos counts every screenshot toward the monthly quota and computes a diff for e
 
 ## 7. Links
 
-- Initiative: [`docs/90-work/initiatives/archive/_0007-design-system-tooling.md`](../../90-work/initiatives/archive/_0007-design-system-tooling.md).
+- Initiative: [`docs/90-work/initiatives/archive/_0007-design-system-tooling.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md).
 - Sister ADR (hub-surface VRT): [ADR-0034](./0034-visual-regression-testing.md).
 - Storybook contributor guide: [`docs/05-design/design/storybook.md`](../../05-design/design/storybook.md).
 - Storybook deploy workflow: [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml).

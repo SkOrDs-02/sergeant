@@ -63,9 +63,7 @@ export function MultiSelectDemo() {
                   onClick={() => mode && toggle(r.id)}
                   className={cn(
                     "w-full flex items-center gap-3 h-16 px-3 rounded-2xl border text-left transition-colors",
-                    on
-                      ? "border-accent bg-accent/10"
-                      : "border-line bg-panel",
+                    on ? "border-accent bg-accent/10" : "border-line bg-panel",
                   )}
                 >
                   {mode ? (

@@ -87,35 +87,18 @@ Do not mix dead-code deletion, lint-rule cleanup, and module decomposition in on
 - Do not move logic to `packages/shared/` without a `sergeant-monorepo-boundaries` check.
 - Do not create a single "cleanup PR" that mixes all three debt classes.
 
-## Scheduled janitors
+## Прямі entropy checks
 
-Three weekly janitors (Monday 06:00 UTC, `Europe/Kyiv` 09:00) live in
-`tools/entropy-janitors/` and surface entropy as **issues** — never PRs —
-via `.github/workflows/entropy-janitors.yml`:
+Загальний weekly-wrapper retired за ADR-0081. Запускай джерела сигналу напряму:
 
-| Janitor | What it catches | Local invocation |
-|---|---|---|
-| `doc-drift` | Broken `path:line` references in docs, missing RQ-key symbols in `queryKeys.ts` | `pnpm janitors:doc-drift` |
-| `dead-code` | Unused files / exports / dependencies (Knip wrapper, JSON mode) | `pnpm janitors:dead-code` |
-| `dep-cycles` | Circular dependencies in `apps/` and `packages/` | `pnpm janitors:dep-cycles` |
+| Сигнал | Локальна перевірка |
+| --- | --- |
+| Dead files / exports / dependencies | `pnpm dead-code:files` і `pnpm knip` |
+| Docs drift / broken links | `pnpm docs:check-links` і freshness checks |
+| Dependency cycles | `pnpm lint` (`import/no-cycle`) |
+| Dual-write residue | `pnpm check:dualwrite-residue` |
 
-When an agent session opens an issue with label
-`entropy-janitor/<type>`, treat it as a debt inventory signal:
-
-1. Read the issue body — every finding has `path:line` and a short
-   rationale.
-2. Apply the existing lifecycle-marker table above (Knip, doc-drift,
-   dep-cycles) before deleting anything.
-3. If the finding is a false positive, document it in
-   `docs/04-governance/governance/entropy-janitors/README.md` (per-janitor
-   `ignorePatterns`) so the next run does not re-open the issue.
-4. Open **one** cleanup PR per janitor type — never mix the three classes
-   in a single PR (same rule as ESLint baseline / module size).
-
-The hand-rolled `dep-cycles` resolver covers only relative imports
-(`.ts`/`.tsx`/`.js`/`.mjs`). Workspace aliases (`@sergeant/...`) are
-intentionally out of scope — the package boundary is enforced by
-`pnpm-workspace.yaml` and `pnpm install` already.
+Перед видаленням застосуй lifecycle-marker table вище. False positive виправляй у канонічному config конкретного інструмента, не в окремій wrapper-allowlist.
 
 ## Playbooks
 

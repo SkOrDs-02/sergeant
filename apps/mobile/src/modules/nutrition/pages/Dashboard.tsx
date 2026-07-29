@@ -258,7 +258,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const handleAddMealToLog = useCallback(
     (meal: PlanMeal) => {
       const now = new Date();
-      const id = `meal_${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`;
+      const id = `meal_${now.getTime()}_${crypto.randomUUID()}`;
       const mealType = (meal.type ?? "snack") as MealTypeId;
       const label =
         (meal.type ? MEAL_TYPE_LABELS[String(meal.type)] : undefined) ??

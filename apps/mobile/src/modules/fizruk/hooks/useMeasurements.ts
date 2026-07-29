@@ -36,7 +36,7 @@ import {
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 function makeId(): string {
-  return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `m_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 function numericOrUndef(

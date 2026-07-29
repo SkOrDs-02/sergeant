@@ -35,7 +35,6 @@ export function KeyboardAccessoryDemo() {
       <PhoneFrame>
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="px-4 pt-2 flex-1 flex flex-col items-center justify-center">
-            {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- in-mock field label, part of the prototype UI being reviewed */}
             <span className="text-2xs uppercase tracking-wide text-subtle">
               Сума витрати
             </span>

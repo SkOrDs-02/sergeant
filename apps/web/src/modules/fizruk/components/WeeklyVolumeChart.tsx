@@ -37,6 +37,27 @@ export function WeeklyVolumeChart({
       ? volumeKg
       : [0, 0, 0, 0, 0, 0, 0];
   const totalVol = vals.reduce((a, v) => a + (Number(v) || 0), 0);
+  const w = 320;
+  const h = 120;
+  const padL = 36;
+  const padR = 8;
+  const padT = 12;
+  const padB = 28;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const n = vals.length;
+  const step = innerW / (n - 1 || 1);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => vals.map((_, index) => padL + index * step),
+    [vals, step],
+  );
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: n,
+    xPositions,
+    viewBoxWidth: w,
+  });
 
   if (totalVol <= 0) {
     return (
@@ -65,17 +86,6 @@ export function WeeklyVolumeChart({
   }
 
   const max = Math.max(1, ...vals.map((v) => Number(v) || 0));
-  const w = 320;
-  const h = 120;
-  const padL = 36;
-  const padR = 8;
-  const padT = 12;
-  const padB = 28;
-  const innerW = w - padL - padR;
-  const innerH = h - padT - padB;
-  const n = vals.length;
-  const step = innerW / (n - 1 || 1);
-
   const points = vals.map((v, i) => {
     const x = padL + i * step;
     const y = padT + innerH - (Math.min(Number(v) || 0, max) / max) * innerH;
@@ -103,21 +113,6 @@ export function WeeklyVolumeChart({
       ? padT + innerH - (Math.min(weeklyGoal, max) / max) * innerH
       : undefined;
 
-  // #1 — scrubbing
-  const svgRef = useRef<SVGSVGElement>(null);
-  const xPositions = useMemo(
-    () => points.map((p) => p.x),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [n, padL, step],
-  );
-
-  const { activeIndex, scrubX, bind } = useChartScrub({
-    svgRef,
-    pointCount: n,
-    xPositions,
-    viewBoxWidth: w,
-  });
-
   const activePoint = activeIndex !== null ? points[activeIndex] : null;
   const activeDotY = activePoint?.y;
   const activeDay = activeIndex !== null ? LABELS_UK[activeIndex] : null;
@@ -135,7 +130,10 @@ export function WeeklyVolumeChart({
         >
           {/* Live scrub label replaces static unit hint */}
           {activeDay !== null && activeVol !== undefined ? (
-            <span className="tabular-nums font-semibold" style={{ color: chartSeries.fizruk.primary }}>
+            <span
+              className="tabular-nums font-semibold"
+              style={{ color: chartSeries.fizruk.primary }}
+            >
               {activeDay} · {formatYAxis(activeVol)} кг×повт
             </span>
           ) : (
@@ -236,19 +234,22 @@ export function WeeklyVolumeChart({
         })}
 
         {/* #1 — scrub crosshair + tooltip */}
-        {activePoint !== null && activeDotY !== undefined && activeVol !== undefined && activeDay !== null && (
-          <ChartScrubOverlay
-            x={scrubX}
-            top={padT}
-            bottom={padT + innerH}
-            dotY={activeDotY}
-            dotColor={chartSeries.fizruk.primary}
-            label={`${formatYAxis(activeVol)}`}
-            subLabel={activeDay}
-            viewBoxWidth={w}
-            flipNearEdge={true}
-          />
-        )}
+        {activePoint !== null &&
+          activeDotY !== undefined &&
+          activeVol !== undefined &&
+          activeDay !== null && (
+            <ChartScrubOverlay
+              x={scrubX}
+              top={padT}
+              bottom={padT + innerH}
+              dotY={activeDotY}
+              dotColor={chartSeries.fizruk.primary}
+              label={`${formatYAxis(activeVol)}`}
+              subLabel={activeDay}
+              viewBoxWidth={w}
+              flipNearEdge={true}
+            />
+          )}
       </svg>
       <div id={summaryId} className="sr-only">
         <p>

@@ -49,7 +49,7 @@ export function normalizeSavedRecipe(raw: unknown): SavedRecipe {
   const id =
     o.id && String(o.id).trim()
       ? String(o.id).trim()
-      : `rcp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      : `rcp_${Date.now()}_${crypto.randomUUID()}`;
   return {
     id,
     title: title || "Без назви",

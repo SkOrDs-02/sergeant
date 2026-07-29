@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "../../../..");
@@ -22,13 +22,13 @@ function extensionOf(path: string): string {
 }
 
 function listFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((entry) => {
-    const fullPath = join(dir, entry);
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = join(dir, entry.name);
     if (fullPath.includes(`${join("src", "generated")}`)) {
       return [];
     }
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) return listFiles(fullPath);
+    if (entry.isDirectory()) return listFiles(fullPath);
+    if (!entry.isFile()) return [];
     if (!EXTENSIONS.has(extensionOf(fullPath))) return [];
     return [fullPath];
   });

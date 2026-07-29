@@ -4,7 +4,7 @@
   "source": "AGENTS.md § Hard rules (do not break)",
   "generated": false,
   "_comment": [
-    "Single source of truth for the Hard Rules numbering & enforcement map.",
+    "Single source of truth for the Hard Rules numbering \u0026 enforcement map.",
     "Sync is enforced by `pnpm lint:hard-rules-registry`:",
     "  AGENTS.md § Hard rules ↔ this file ↔ CONTRIBUTING.md § Hard rules.",
     "When you add or rewrite a Hard Rule, do all three in the same PR."
@@ -134,7 +134,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "GitHub branch protection: 'Allow force pushes' = off on main"
+          "ref": "GitHub branch protection: \u0027Allow force pushes\u0027 = off on main"
         }
       ],
       "links": [
@@ -160,64 +160,6 @@
         {
           "type": "agents",
           "ref": "#7"
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "title": "Tailwind colour-opacity steps must be on the registered scale",
-      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/valid-tailwind-opacity (error)"
-        }
-      ],
-      "links": [
-        {
-          "type": "pr",
-          "ref": "#814"
-        },
-        {
-          "type": "agents",
-          "ref": "#8"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Saturated brand fills behind `text-white` must use the `-strong` companion",
-      "scope": ["apps/web/src/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/no-low-contrast-text-on-fill (error)"
-        },
-        {
-          "kind": "doc",
-          "ref": "docs/05-design/design/brandbook.md § WCAG-AA -strong Tier"
-        }
-      ],
-      "links": [
-        {
-          "type": "pr",
-          "ref": "#854"
-        },
-        {
-          "type": "pr",
-          "ref": "#855"
-        },
-        {
-          "type": "pr",
-          "ref": "#857"
-        },
-        {
-          "type": "agents",
-          "ref": "#9"
         }
       ]
     },
@@ -254,87 +196,6 @@
       ]
     },
     {
-      "id": 11,
-      "title": "No arbitrary hex colors in `className`",
-      "scope": ["apps/web/src/**", "apps/mobile/src/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/no-hex-in-classname (error)"
-        }
-      ],
-      "links": [
-        {
-          "type": "agents",
-          "ref": "#11"
-        }
-      ]
-    },
-    {
-      "id": 12,
-      "title": "Module-accent containment — no foreign accents inside a module subtree",
-      "scope": [
-        "apps/web/src/modules/finyk/**",
-        "apps/web/src/modules/fizruk/**",
-        "apps/web/src/modules/nutrition/**",
-        "apps/web/src/modules/routine/**"
-      ],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/no-foreign-module-accent (error)"
-        }
-      ],
-      "links": [
-        {
-          "type": "agents",
-          "ref": "#12"
-        }
-      ]
-    },
-    {
-      "id": 13,
-      "title": "No raw-palette light/dark `className` pairs",
-      "scope": ["apps/web/src/**", "apps/mobile/src/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/no-raw-dark-palette (error)"
-        }
-      ],
-      "links": [
-        {
-          "type": "agents",
-          "ref": "#13"
-        }
-      ]
-    },
-    {
-      "id": 14,
-      "title": "Visible focus indicators must use `focus-visible:`, not `focus:`",
-      "scope": ["apps/web/src/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "eslint-rule",
-          "ref": "sergeant-design/prefer-focus-visible (error)"
-        }
-      ],
-      "links": [
-        {
-          "type": "agents",
-          "ref": "#14"
-        }
-      ]
-    },
-    {
       "id": 15,
       "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
       "scope": ["**/*"],
@@ -351,7 +212,7 @@
         },
         {
           "kind": "ci",
-          "ref": "pnpm lint:hard-rules-registry (this rule's own enforcer)"
+          "ref": "pnpm lint:hard-rules-registry (this rule\u0027s own enforcer)"
         },
         {
           "kind": "pr-template",
@@ -366,60 +227,6 @@
       ]
     },
     {
-      "id": 16,
-      "title": "Typography scale — semantic styles + 12px floor",
-      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "convention",
-          "ref": "packages/design-tokens/tailwind-preset.js → plugins.semanticTypography (.text-style-* utilities are the canonical type slots)"
-        },
-        {
-          "kind": "doc",
-          "ref": "docs/05-design/design/design-system.md § Типографічна шкала"
-        }
-      ],
-      "links": [
-        {
-          "type": "doc",
-          "ref": "docs/90-work/audits/archive/2026-04-28-ux-ui-audit.md"
-        },
-        {
-          "type": "agents",
-          "ref": "#16"
-        }
-      ]
-    },
-    {
-      "id": 17,
-      "title": "Animation budget — max 2 concurrent, 3 tiers",
-      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "convention",
-          "ref": "AGENTS.md § Hard rules #17 (AMBIENT/RESPONSE/CELEBRATE tiers; max 1 AMBIENT + 1 RESPONSE simultaneously; stagger ≤ 30 ms × N capped at 150 ms; CELEBRATE only on milestones 7/30/100/365)"
-        },
-        {
-          "kind": "doc",
-          "ref": "docs/05-design/design/design-system.md § 14. Animations"
-        }
-      ],
-      "links": [
-        {
-          "type": "external",
-          "ref": "https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html"
-        },
-        {
-          "type": "agents",
-          "ref": "#17"
-        }
-      ]
-    },
-    {
       "id": 18,
       "title": "Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS",
       "scope": ["apps/web/src/**", "apps/server/src/**"],
@@ -429,17 +236,9 @@
         {
           "kind": "convention",
           "ref": "eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to apps/web/src/**/*.{ts,tsx} and apps/server/src/**/*.{js,ts}; tests, __tests__ exempt)"
-        },
-        {
-          "kind": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
         }
       ],
       "links": [
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0001-module-decomposition.md"
-        },
         {
           "type": "agents",
           "ref": "#18"
@@ -460,17 +259,9 @@
         {
           "kind": "convention",
           "ref": "tools/tsconfig-guard/allowlist.json — every override of a GUARDED strict-family flag MUST have an entry with path/option/value/reason/expires/owner"
-        },
-        {
-          "kind": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
         }
       ],
       "links": [
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md"
-        },
         {
           "type": "doc",
           "ref": "docs/90-work/tech-debt/frontend.md"
@@ -507,10 +298,6 @@
       ],
       "links": [
         {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md"
-        },
-        {
           "type": "agents",
           "ref": "#20"
         }
@@ -541,10 +328,6 @@
         }
       ],
       "links": [
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md"
-        },
         {
           "type": "agents",
           "ref": "#21"
@@ -596,78 +379,15 @@
       ],
       "links": [
         {
-          "type": "doc",
-          "ref": "docs/90-work/audits/archive/2026-05-13-dead-code-hard-rules-roast.md § P2"
-        },
-        {
           "type": "agents",
           "ref": "#23"
         }
       ]
     },
     {
-      "id": 24,
-      "title": "Catalogs registered in `knowledge-graph.json` must have a `--check` generator",
-      "scope": [
-        "docs/04-governance/governance/*.auto.json",
-        "docs/04-governance/governance/symbol-index.json",
-        "docs/04-governance/governance/knowledge-graph.json",
-        "docs/04-governance/governance/retrieval-index.json"
-      ],
-      "severity": "blocker",
-      "category": "lint-enforced-convention",
-      "enforced_by": [
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-graph"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm agent:check-index"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-symbols"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-repo-map"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-service-catalog"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-architecture-diagrams"
-        },
-        {
-          "kind": "ci",
-          "ref": "pnpm docs:check-pr-ledger"
-        }
-      ],
-      "links": [
-        {
-          "type": "doc",
-          "ref": "docs/04-governance/adr/0058-knowledge-graph-schema.md"
-        },
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
-        },
-        {
-          "type": "agents",
-          "ref": "#24"
-        }
-      ]
-    },
-    {
       "id": 25,
-      "title": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker",
+      "title": "Auto-generated docs must start with `\u003c!-- AUTO-GENERATED --\u003e` marker",
       "scope": [
-        "docs/04-governance/governance/knowledge-graph.html",
-        "docs/04-governance/governance/symbol-index.html",
-        "docs/02-engineering/architecture/diagrams/c3-workspaces.md",
         "docs/open-work.md",
         "docs/90-work/initiatives/follow-ups.md",
         "docs/00-start/playbooks/INDEX.md"
@@ -684,10 +404,6 @@
         {
           "type": "doc",
           "ref": "docs/04-governance/adr/0058-knowledge-graph-schema.md"
-        },
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
         },
         {
           "type": "agents",
@@ -720,10 +436,6 @@
         {
           "type": "doc",
           "ref": "docs/04-governance/adr/0061-pr-backlink-storage.md"
-        },
-        {
-          "type": "doc",
-          "ref": "docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md"
         },
         {
           "type": "agents",

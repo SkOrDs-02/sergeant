@@ -70,7 +70,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 **Pricing (ADR-0068):** `Free + Pro`, ₴199/₴1490, reverse trial 7d. ADR-0051 superseded.
 
-**Agent retrieval (ADR-0066):** `pnpm agent:find "<query>"` — lexical/semantic пошук по knowledge graph замість сліпого grep.
+**Agent retrieval (ADR-0081):** codebase-memory MCP (`search_graph`, `trace_path`, `get_code_snippet`); fallback — TypeScript/LSP, Knip або `rg`.
 
 ## 5. Plop generators (boilerplate без копіпаста)
 

@@ -1,6 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift -- contrast preview table
-   intentionally renders raw eyebrow th-cells so the layout matches the
-   primitives.tsx DoDont table exactly. */
 import { Button, Icon, IconButton } from "@shared/components/ui";
 import {
   CodeBlock,

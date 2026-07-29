@@ -20,7 +20,7 @@
 - Primary surface: OpenClaw → GitHub auth (GitHub App-flow only after Phase 2).
 - Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `apps/server/src/env/env.ts` (assertStartupEnv hard-block), `docs/02-engineering/integrations/env-vars.md`.
 - Governing skill: `sergeant-deploy-and-observability` (secrets + env-vars rollout).
-- Governing ADR / план: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md).
+- Governing ADR / план: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md).
 
 ## Required context
 
@@ -156,7 +156,7 @@ flowchart TD
 - [`declare-incident.md`](./declare-incident.md) — escalation для emergency-кейсу.
 - [`docs/04-governance/governance/security-incident-policy.md`](../../04-governance/governance/security-incident-policy.md) — що рахується security-інцидентом, а що — звичайною ротацією.
 - ADR-0031 — оригінальна архітектура OpenClaw (PAT-епоха).
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-06-openclaw-github-app.md) — migration-план, що ввів цей runbook.
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

@@ -10,7 +10,7 @@
   - [`apps/web/tests/a11y/ds-visual-qa.spec.ts`](../../../apps/web/tests/a11y/ds-visual-qa.spec.ts) — design-system spec (4 viewports × 2 themes × 7 hub surfaces = 56 screenshots).
   - [`.github/workflows/visual-regression.yml`](../../../.github/workflows/visual-regression.yml) — CI job.
   - [ADR-0020](./0020-testing-pyramid.md) — testing pyramid (visual regression сидить як 6-й шар поверх a11y/smoke).
-  - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../../90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1 — audit row, що тригернув формалізацію.
+  - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1 — audit row, що тригернув формалізацію.
 
 ---
 
@@ -120,6 +120,6 @@ Sergeant не має Storybook (свідоме рішення: компонен�
 
 ## 7. Links
 
-- Audit row: [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../../90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1.
+- Audit row: [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1.
 - Argos docs: <https://argos-ci.com/docs>.
 - Playwright visual comparisons: <https://playwright.dev/docs/test-snapshots>.

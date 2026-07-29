@@ -139,7 +139,6 @@ export function HubChatHistoryDrawer({
               >
                 <Icon name="sparkle" size={20} className="text-subtle" />
               </div>
-              {/* eslint-disable-next-line sergeant-design/no-bare-empty-text -- drawer-internal mini empty state inside scrollable list, full <EmptyState> tier would be visually too heavy here */}
               <div>Поки немає інших бесід.</div>
             </div>
           ) : (

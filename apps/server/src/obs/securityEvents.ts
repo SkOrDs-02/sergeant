@@ -44,11 +44,7 @@ export type SecurityEventName =
   | "openclaw_write_nonce_invalid";
 
 export type SecurityEventSeverity =
-  | "critical"
-  | "high"
-  | "medium"
-  | "low"
-  | "info";
+  "critical" | "high" | "medium" | "low" | "info";
 
 export interface SecurityEvent {
   event: SecurityEventName;

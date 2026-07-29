@@ -42,7 +42,7 @@ type WorkoutTemplatesSectionProps = {
 };
 
 function uid(prefix = "g"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 export function WorkoutTemplatesSection({
@@ -339,7 +339,6 @@ export function WorkoutTemplatesSection({
                       </span>
                       {group && (
                         <span
-                          // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Inline superset/circuit pill at text-2xs with dynamic module tint; defer Badge migration.
                           className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success-strong dark:text-success border border-success/30"}`}
                         >
                           {group.type === "circuit" ? "Коло" : "СС"}

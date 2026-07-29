@@ -230,7 +230,6 @@ export const FINYK_TOOLS: AnthropicTool[] = [
         tx_id: {
           type: "string",
           description:
-            // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (m_<suffix> placeholder), not user-facing copy
             "ID ручної транзакції (формат 'm_...'). Напр. 'm_abc123'",
         },
       },
@@ -282,7 +281,6 @@ export const FINYK_TOOLS: AnthropicTool[] = [
       properties: {
         debt_id: {
           type: "string",
-          // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (d_<suffix> placeholder), not user-facing copy
           description: "ID боргу (формат 'd_...')",
         },
         amount: {

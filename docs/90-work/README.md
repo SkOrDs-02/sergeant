@@ -17,14 +17,11 @@ ready-now роботу від зовнішніх блокерів, owner-ріш�
 | ----------------------------------------- | ----------------------------------------------------------------------------- |
 | [`initiatives/`](./initiatives/README.md) | Нумеровані multi-PR ініціативи з acceptance-критеріями і вікном стабілізації. |
 | [`planning/`](./planning/README.md)       | Активні роадмапи, infra-плани, staged improvements.                           |
-| [`audits/`](./audits/README.md)           | Індекс аудитів; живих tracker-ів 0 — історія в `audits/archive/`.             |
+| [`audits/`](./audits/README.md)           | Індекс аудитів; завершена історія доступна через Git history/permalinks.      |
 | [`tech-debt/`](./tech-debt/README.md)     | Реєстри боргу й cleanup-плани (per-platform, з freshness-гейтом).             |
 | [`superpowers/`](./superpowers/README.md) | High-leverage one-page гайди; завершені плани під `plans/archive/`.           |
 
-> **Архівація:** `Closed` / `Done` / `Reference` / `Deprecated` tracker-и переносяться у
-> сусідній `archive/` (див. README кожного розділу). Default gate — ≥90 днів після
-> `Closed`; **fast-forward** (skip 90d) дозволено за явним рішенням founder-а
-> (Batch 2026-07-20 на цій гілці). Withdrawn ініціативи лишаються в активному списку.
+> **Завершення:** `Closed` / `Done` / `Reference` tracker спершу фіксує Outcome і merge evidence, після чого frozen-файл можна прибрати окремим cleanup-комітом. Історія доступна через Git; локальні archive-дерева для audits/initiatives/planning retired за ADR-0081. Withdrawn ініціативи лишаються у живому списку для аудит-сліду.
 
 Зведена матриця hardening-карток (stack-pulse-2026-05 + \_0008 + \_0009): [`initiatives/hardening-matrix.md`](./initiatives/hardening-matrix.md).
 

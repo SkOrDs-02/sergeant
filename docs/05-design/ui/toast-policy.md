@@ -6,7 +6,7 @@
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
 показувати, що покласти в `action`, які anti-pattern-и. Закриває
-рекомендацію §3.4 з [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](../../90-work/audits/archive/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
+рекомендацію §3.4 з [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
 Машинно гайдиться правилом
 [`sergeant-design/require-toast-error-action`](../../../packages/eslint-plugin-sergeant-design/index.js).
 
@@ -81,10 +81,6 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
   → `resume()`. Реалізовано в [`useToast.tsx:118-140`](../../../apps/web/src/shared/hooks/useToast.tsx).
 - Countdown bar анімація → `[animation-play-state:paused]` коли paused.
 
-## Burndown
+## Review policy
 
-ESLint rule `sergeant-design/require-toast-error-action` (`warn`)
-тегує всі НОВІ `toast.error(...)` без `action`. Існуючі call-site-и —
-у [`apps/web/eslint.toast-error-action-allowlist.json`](../../../apps/web/eslint.toast-error-action-allowlist.json):
-видаляй пункт, коли refactor-иш callsite. Коли файл `[]` — promote
-rule до `error` (one-line edit у `eslint.config.js`).
+Для recoverable `toast.error(...)` додавай явну action під час product-review. AST-rule та allowlist retired за [ADR-0081](../../04-governance/adr/0081-repository-simplification.md): коректність дії залежить від сценарію й не має надійного синтаксичного сигналу.

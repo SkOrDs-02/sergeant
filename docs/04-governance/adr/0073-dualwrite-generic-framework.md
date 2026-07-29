@@ -250,7 +250,7 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - Поведінка в рантаймі байт-ідентична за визначенням гейта; жодних змін API, схем чи міграцій БД.
 - residualImport-и лишаються майже незмінними (лише shared константа + скелет, якщо крок 10 схвалено).
-- **Dual-write teardown (2026-07-10):** production LS-write модульних даних прибрано (PR #169); каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; shim-и видалено; entropy-janitor `dualwrite-residue` guard-ить регресії. Деталі — [`dualwrite-teardown.md`](../../90-work/planning/archive/dualwrite-teardown.md).
+- **Dual-write teardown (2026-07-10):** production LS-write модульних даних прибрано (PR #169); каталоги `lib/dualWrite/` перейменовано на `lib/sqliteWriter/`; shim-и видалено; entropy-janitor `dualwrite-residue` guard-ить регресії. Деталі — [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md).
 
 ## Risks
 
@@ -276,7 +276,7 @@ Rollback-важіль: кожен крок — ізольований PR, яки
 
 - **Гейт байт-ідентичності:** SQL-snapshot-тести з кроку 0 живуть поруч з адаптерами (`*.sqlsnapshot.test.ts`), ганяються звичайним `pnpm check`; будь-який міграційний PR, що міняє snapshot, — червоний за визначенням.
 - **Заборона правити тести в міграційних PR** — перевіряється на рев'ю (`sergeant-review-and-merge`); PR-body зобов'язаний містити рядок «tests untouched: yes/no + чому».
-- Після завершення міграції: janitor-перевірка «нових локальних копій `applyDualWriteOps`-циклу немає» — grep-правило в entropy-janitors (`tools/entropy-janitors/`), issue-only. ✅ Реалізовано як `dualwrite-residue` (2026-07-10, Phase 5 teardown).
+- Після завершення міграції: перевірка «нових локальних копій `applyDualWriteOps`-циклу немає». ✅ Реалізовано як standalone `pnpm check:dualwrite-residue` (2026-07-10, Phase 5 teardown; wrapper retired за ADR-0081).
 - Статус цього ADR: `Accepted` 2026-07-03 — власник закрив усі 7 open questions (див. § Open questions); крок 1 розблоковано.
 
 ## Links

@@ -37,7 +37,7 @@ export type DailyLogNumericField =
 // WorkoutTemplatesSection.tsx, useWorkoutTemplates.ts and activeWorkoutLib.ts —
 // keep them in lockstep if this changes.)
 function uid() {
-  return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**

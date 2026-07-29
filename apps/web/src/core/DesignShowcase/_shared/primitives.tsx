@@ -1,7 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift -- showcase primitives
-   intentionally render the eyebrow / maturity / DoDont chrome that the
-   styleguide is about; replacing them with <SectionHeading> would defeat
-   the purpose of demonstrating the raw eyebrow shape. */
 import type { ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui";

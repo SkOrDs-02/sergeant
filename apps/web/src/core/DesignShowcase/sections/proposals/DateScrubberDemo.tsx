@@ -50,7 +50,6 @@ export function DateScrubberDemo() {
                   )}
                   aria-pressed={isSel}
                 >
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- in-mock weekday label, part of the prototype UI being reviewed */}
                   <span className="text-2xs uppercase tracking-wide">
                     {d.weekday}
                   </span>

@@ -176,7 +176,7 @@ ${ingredientsList}
           if (seenNames.has(key)) return null;
           seenNames.add(key);
           return {
-            id: `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: `si_${Date.now()}_${crypto.randomUUID()}`,
             name: itemName,
             quantity: String(itemRec["quantity"] || "").trim(),
             note: String(itemRec["note"] || "").trim(),

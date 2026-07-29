@@ -20,7 +20,7 @@ export interface SubscriptionEditSheetProps {
 }
 
 function makeId(): string {
-  return `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  return `sub-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 const EMPTY: Subscription = {

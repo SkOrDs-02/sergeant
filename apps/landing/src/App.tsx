@@ -1,4 +1,3 @@
-import { Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -27,8 +26,7 @@ function externalReferrer(): string | undefined {
   return ref;
 }
 
-function usePageview() {
-  const { pathname } = useLocation();
+function usePageview(pathname: string) {
   useEffect(() => {
     const ref = externalReferrer();
     track(ANALYTICS_EVENTS.LANDING_VIEWED, {
@@ -39,24 +37,13 @@ function usePageview() {
   }, [pathname]);
 }
 
-function ScrollToTop() {
-  const { pathname } = useLocation();
+export default function App() {
+  const pathname = window.location.pathname;
+  usePageview(pathname);
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [pathname]);
-  return null;
-}
+  }, []);
 
-export default function App() {
-  usePageview();
-
-  return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </>
-  );
+  return pathname === "/" ? <HomePage /> : <NotFoundPage />;
 }

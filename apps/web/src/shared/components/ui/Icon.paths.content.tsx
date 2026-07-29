@@ -125,7 +125,7 @@ export const CONTENT_PATHS: Record<string, ReactNode> = {
   // ═══════════════════════════════════════════════════════════════════════
   // Added by the design-audit F4 re-pass (2026-07): these two replaced raw
   // emoji glyphs (📷 / 💧) that stood in as system icons in the Nutrition
-  // module — see `sergeant-design/no-emoji-icon`.
+  // module; user-picked emoji remain valid content.
   // ═══════════════════════════════════════════════════════════════════════
 
   // `camera` — Lucide `camera`. Nutrition "Сфотографувати страву" CTA.

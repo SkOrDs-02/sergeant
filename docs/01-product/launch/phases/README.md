@@ -102,7 +102,7 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 - [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
 - [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік, reverse trial 7 днів (Supersedes ADR-0051)
 - [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
-- [Initiative 0002](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
+- [Initiative 0002](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
 ---
 
@@ -329,7 +329,7 @@ Vite/React лендінгом. До public launch лишається підтв�
 
 ### Initiatives
 
-- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
+- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md)
 
 ### Release playbooks

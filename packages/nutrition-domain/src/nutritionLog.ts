@@ -41,8 +41,7 @@ export function normalizeMeal(m: unknown, idx: number): Meal {
     raw["id"] != null && String(raw["id"]).trim()
       ? String(raw["id"]).trim()
       : "";
-  if (!id)
-    id = `meal_mig_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 8)}`;
+  if (!id) id = `meal_mig_${Date.now()}_${idx}_${crypto.randomUUID()}`;
 
   const name = raw["name"] != null ? String(raw["name"]).trim() : "";
   const time = raw["time"] != null ? String(raw["time"]).trim() : "";

@@ -21,24 +21,35 @@ function HeroScroll({ parallax }: { parallax: boolean }) {
   const fore = active ? y * 0.08 : y * 0.08;
 
   return (
-    <div ref={ref} onScroll={() => ref.current && setY(ref.current.scrollTop)} className="no-scrollbar h-full overflow-y-auto">
+    <div
+      ref={ref}
+      onScroll={() => ref.current && setY(ref.current.scrollTop)}
+      className="no-scrollbar h-full overflow-y-auto"
+    >
       <div className="relative h-40 overflow-hidden bg-panel">
         <div
           aria-hidden
           className="absolute inset-0"
           style={{
             transform: `translateY(${back * -1}px) scale(1.1)`,
-            background: "radial-gradient(60% 60% at 50% 20%, rgb(var(--c-accent-rgb)/0.4), transparent 70%)",
+            background:
+              "radial-gradient(60% 60% at 50% 20%, rgb(var(--c-accent-rgb)/0.4), transparent 70%)",
           }}
         />
-        <div className="absolute inset-x-0 bottom-3 px-4" style={{ transform: `translateY(${fore * -1}px)` }}>
+        <div
+          className="absolute inset-x-0 bottom-3 px-4"
+          style={{ transform: `translateY(${fore * -1}px)` }}
+        >
           <p className="text-2xs uppercase tracking-wide text-muted">Баланс</p>
           <p className="text-2xl font-semibold text-text">₴ 12 480</p>
         </div>
       </div>
       <div className="space-y-2 p-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-12 rounded-xl bg-panel border border-line" />
+          <div
+            key={i}
+            className="h-12 rounded-xl bg-panel border border-line"
+          />
         ))}
       </div>
     </div>

@@ -296,8 +296,7 @@ describe("GoalFirstScreen", () => {
     fireEvent.click(screen.getByTestId("goal-first-skip"));
 
     const firstCall = onChoose.mock.calls[0] as
-      | [string, OnboardingOutcomeCopy["module"]]
-      | undefined;
+      [string, OnboardingOutcomeCopy["module"]] | undefined;
     expect(firstCall?.[0]).toBeTruthy();
     expect(["finyk", "fizruk", "routine", "nutrition"]).toContain(
       firstCall?.[1],

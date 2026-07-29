@@ -40,7 +40,8 @@ export function ViewTransitionDemo() {
                 !reduced && "transition-all duration-500 ease-out",
               )}
               style={{
-                transform: afterPage === "hub" ? "translateX(0)" : "translateX(-8%)",
+                transform:
+                  afterPage === "hub" ? "translateX(0)" : "translateX(-8%)",
                 opacity: afterPage === "hub" ? 1 : 0,
               }}
             >
@@ -52,7 +53,8 @@ export function ViewTransitionDemo() {
                 !reduced && "transition-all duration-500 ease-out",
               )}
               style={{
-                transform: afterPage === "mod" ? "translateX(0)" : "translateX(8%)",
+                transform:
+                  afterPage === "mod" ? "translateX(0)" : "translateX(8%)",
                 opacity: afterPage === "mod" ? 1 : 0,
               }}
             >
@@ -78,14 +80,23 @@ function Screen({ page }: { page: "hub" | "mod" }) {
           <p className="text-style-caption text-muted mb-2">Хаб</p>
           <div className="grid grid-cols-2 gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-panel border border-line" />
+              <div
+                key={i}
+                className="h-16 rounded-xl bg-panel border border-line"
+              />
             ))}
           </div>
         </>
       ) : (
         <>
           <div className="flex items-center gap-2 mb-2">
-            <span className="h-7 w-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}>
+            <span
+              className="h-7 w-7 rounded-lg flex items-center justify-center"
+              style={{
+                backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+                color,
+              }}
+            >
               <Icon name="credit-card" size={16} />
             </span>
             <span className="text-style-caption text-text">Фінік</span>

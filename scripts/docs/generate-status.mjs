@@ -259,7 +259,7 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("## 🧱 Стек");
   lines.push("");
   lines.push(
-    "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів + tool workspace `tools/entropy-janitors`. Канонічні джерела:",
+    "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів. Канонічні джерела:",
   );
   lines.push("");
   lines.push(

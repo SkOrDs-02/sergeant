@@ -3,7 +3,7 @@
 // `eslint --print-config` stays byte-identical
 // (`pnpm lint:eslint-config-diff`). Scope: `apps/web/**`.
 //
-// The three JSON burndown allowlists live here (not in the root) because
+// The i18n JSON burndown allowlist lives here (not in the root) because
 // only web blocks consume them. `import.meta.url` resolves relative to this
 // file, which sits at the repo root next to `eslint.config.js`, so the
 // `./apps/web/...` paths are unchanged.
@@ -20,43 +20,6 @@ import { readFileSync } from "node:fs";
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
-    "utf8",
-  ),
-);
-
-// Toast-policy burndown gate (audit 2026-05-13 § 1 P0). Files exempt
-// from `sergeant-design/require-toast-error-action` — i.e. legacy
-// `toast.error(...)` call-sites without an `action: { label, onClick }`.
-// New error-toasts MUST include an action; existing ones are tracked
-// here and removed as they are refactored. When the array becomes
-// `[]`, promote the rule from "warn" to "error". See
-// `docs/ui/toast-policy.md` and audit
-// `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F1.
-const toastErrorActionAllowlist = JSON.parse(
-  readFileSync(
-    new URL(
-      "./apps/web/eslint.toast-error-action-allowlist.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
-
-// Bare-fixed-inset-modal burndown gate (audit 2026-05-13 § F2 P1).
-// File-path inventory of `fixed inset-0` overlays that are intentional
-// dialog surfaces — the 6 canonical primitives (Modal, Sheet,
-// ConfirmDialog, InputDialog, KeyboardShortcutsModal, OnboardingWizard)
-// plus the other ad-hoc dialogs that already declare `role`/`aria-modal`.
-// True offenders (e.g. HubChat, BarcodeScanner) are intentionally left
-// OUT so the rule keeps warning on them until partII (file fixes + axe
-// prop-tests). Remove entries as they migrate to a canonical primitive.
-// See `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2.
-const bareFixedInsetModalAllowlist = JSON.parse(
-  readFileSync(
-    new URL(
-      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
-      import.meta.url,
-    ),
     "utf8",
   ),
 );
@@ -130,155 +93,12 @@ export const webBlocks = [
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
     rules: {
-      "sergeant-design/no-raw-dark-palette": "error",
-      // `no-retired-module-hue` — a module's OWN raw palette hue after a
-      // migration (finyk emerald→teal 2026-07; fizruk teal→cyan). Catches
-      // the ghosts `no-foreign-module-accent` cannot: `hover:bg-emerald-800`
-      // left behind inside `modules/finyk/**` after `bg-finyk-strong`
-      // already resolved to teal. Web-only for the same reason as
-      // `no-raw-dark-palette`: the semantic `bg-{module}` replacement
-      // resolves through the `--c-{module}-*` CSS variables that only exist
-      // in `apps/web/src/index.css`. `apps/mobile` (NativeWind) still ships
-      // the pre-migration emerald/teal palette and is tracked as a separate
-      // hue-migration debt — do NOT widen this glob to apps/mobile until
-      // that migration lands or CI will go red on known debt.
-      "sergeant-design/no-retired-module-hue": "error",
-      // `prefer-focus-visible` (Wave 2e of the dark-mode audit's
-      // accessibility companion track — see `docs/design/design-system.md`
-      // → "Focus — focus-visible:ring-…, а не focus:, аби pointer-клік
-      // не блимав кільцем"). The rule bans `focus:` colour/border/ring/
-      // shadow utilities; only `focus:outline-none` (the canonical reset
-      // that pairs with `focus-visible:ring-*`) is allowed. Web-only —
-      // React Native (NativeWind) doesn't expose a `:focus-visible`
-      // pseudo-class equivalent.
-      "sergeant-design/prefer-focus-visible": "error",
-      // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
-      // Severity promoted to `error` 2026-05-21. Audit showed zero un-disabled
-      // call-sites in `apps/web/src/{core,modules,shared}/**` (one explicit
-      // `eslint-disable-next-line` with tech-debt ref in `SearchResults.tsx:104`).
-      // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
-      // semantic role; use `rounded-md` or `rounded-xl` instead.
-      // See docs/design/radius-rhythm.md.
-      "sergeant-design/no-rounded-lg": "error",
-      // `no-v1-gradient` — Sergeant v2 redesign (2026-05) replaced v1 module
-      // gradient vars (`--gradient-{module}`, `--gradient-card-{module}-dark`)
-      // and their `bg-card-{module}-dark` Tailwind utilities with the
-      // brighter `--hero-grad-{module}` set + `bg-hero-grad-{module}`. The
-      // v1 vars are JSDoc-@deprecated in theme.css but kept for migration
-      // back-compat. Severity `error` — recon shows zero current consumers,
-      // so this is a tripwire for accidental v1 re-introduction.
-      // See docs/design/redesign-v2-migration.md.
-      "sergeant-design/no-v1-gradient": "error",
-      // `no-inline-card-surface` — design-audit 2026-07 (finding M1). The
-      // raised-card recipe (`bg-panel` + `border-line` hairline +
-      // `shadow-e1`/`shadow-card`) on a static container is owned by
-      // `<Card>`; hand-rolling it inline breaks the "change the surface
-      // token → every card updates" contract. Scope is deliberately narrow —
-      // only the e1 card tier and only container elements; overlays
-      // (`shadow-float`/`soft`/`e4`) and interactive elements are out of
-      // scope (see the rule doc for the precision rationale). Severity is
-      // `warn` (not `error`) during the in-flight incremental sweep: the
-      // lint-staged pre-commit runs `eslint --max-warnings=0` on staged
-      // files, forcing migration when a file is next touched, while repo-wide
-      // `eslint .` stays green until the sweep completes and this can be
-      // promoted to `error`. Prefer <Card> / <Card prominence="flat">.
-      "sergeant-design/no-inline-card-surface": "warn",
-      // `no-emoji-icon` — design-audit F4: forbid emoji in `icon`
-      // object-properties and JSX `icon=` attributes. Sergeant's SVG Icon
-      // catalog (`@shared/components/ui/Icon`) is the canonical system-icon
-      // source; a raw emoji standing in for one can't inherit the module
-      // accent color. Emoji as user content (habit names, AI-generated
-      // recommendation glyphs) uses a different field name and isn't
-      // flagged. See `packages/eslint-plugin-sergeant-design/README.md`.
-      "sergeant-design/no-emoji-icon": "error",
-      // `no-bare-empty-text` — enforce empty-state tier discipline.
-      // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
-      // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
-      //
-      // Promoted to `error` 2026-05-22 (audit-2026-05-15 closure): baseline
-      // cleanup complete. Remaining call-sites either live inside an
-      // <EmptyState>/<ModuleEmptyState> ancestor (rule auto-exempts) or
-      // carry a targeted `eslint-disable-next-line` with a WHY for the
-      // narrow tier-3/hero-shell exceptions documented per call-site.
-      "sergeant-design/no-bare-empty-text": "error",
-      // `no-cyrillic-jsx-literal` — i18n burndown gate (item #18 Phase 3).
-      // New cyrillic JSX text or attribute string literals must reference
-      // `messages.<group>.<key>` from `apps/web/src/shared/i18n/uk.ts`.
-      // Existing call-sites live in `apps/web/eslint.i18n-allowlist.json`
-      // (loaded at config-import time above). Migrate strings → catalog
-      // → remove path from JSON. When the file becomes `[]`, promote to
-      // "error". See docs/i18n/readiness.md § Burndown.
       "sergeant-design/no-cyrillic-jsx-literal": [
         "warn",
         { allowlist: i18nAllowlist },
       ],
-      // `prefer-text-style` — semantic typography over hand-rolled combos.
-      // Replace (text-sm font-medium) with text-style-label etc.
-      // See docs/design/design-system.md § Typography.
-      //
-      // Severity flow: був глобальний `warn` + точковий `error` для
-      // `apps/web/src/modules/**`. Промовано до глобального `error`
-      // 2026-07-22 (D8-sweep, дизайн-аудит цикл 5): після зняття legacy-шкали
-      // й злиття 12 інвентарних слотів у 8 ролей порушень не лишилось на
-      // жодній поверхні, тож warn більше нічого не «рампує» — він лише
-      // дозволив би другій шкалі відрости. Правило тепер несе і гард від
-      // реанімації знятих класів (`text-h1`, `text-meta`,
-      // `text-style-body-sm`, …) — див. `DEAD_TYPOGRAPHY_CLASSES`.
-      "sergeant-design/prefer-text-style": "error",
-      // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
-      // `text-[Nrem]` literals; route every call-site through a named
-      // utility from index.css (`text-display`, `text-h1..h3`,
-      // `text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`,
-      // `text-meta`, `text-micro`, `text-display-stat`,
-      // `text-display-hero`, `text-style-*`) or a Tailwind preset
-      // (`text-xs..text-5xl`). Closes the vertical-rhythm drift +
-      // sub-WCAG 8 px regression family.
-      // See docs/design/design-system.md § Typography.
-      "sergeant-design/no-arbitrary-text-size": "error",
-      // `no-flat-shared-lib` — guard the 2026-05-03 reorg
-      // (PR #1479): `apps/web/src/shared/lib/` is now organized into
-      // five thematic subdirs (`api/`, `storage/`, `modules/`,
-      // `adapters/`, `ui/`). New top-level flat files would re-flatten
-      // the namespace and erase the grouping. The rule resolves both
-      // `@shared/lib/<x>` (alias) and relative imports, so it survives
-      // future import-style refactors. Place new utils in the right
-      // subdir, or import via the `@shared/lib` barrel.
       "sergeant-design/no-flat-shared-lib": "error",
-      // `prefer-kyiv-time` — Theme 1 (consolidated audit 2026-05-13).
-      // Bans `Date.prototype.get{FullYear,Month,Date,Day,Hours,Minutes,Seconds}`
-      // in web client code; use helpers in `@shared/lib/time/kyivTime.ts`
-      // so day boundaries stay anchored to Europe/Kyiv per the domain-
-      // invariants spec. Allowlisted: `kyivTime.ts` itself, `apps/server/**`,
-      // and `*.test.{ts,tsx,js}` (mock-clock tests). Severity `warn`
-      // initially; ramps to `error` after the burndown sweep closes.
-      // See docs/04-governance/governance/rules/kyiv-time-helpers.md.
       "sergeant-design/prefer-kyiv-time": "warn",
-      // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
-      // every error-toast must include an `action: { label, onClick }`
-      // so the user has a recovery path. Bare `toast.error("...")`
-      // calls are tracked in `apps/web/eslint.toast-error-action-allowlist.json`
-      // and removed as they are refactored. When the file becomes `[]`,
-      // promote this rule from "warn" to "error".
-      // See `docs/ui/toast-policy.md`.
-      "sergeant-design/require-toast-error-action": [
-        "warn",
-        { allowlist: toastErrorActionAllowlist },
-      ],
-      // `no-bare-fixed-inset-modal` — audit 2026-05-13 § F2 (P1):
-      // JSX elements that wear `fixed inset-0` overlay classNames but
-      // forget to announce themselves as dialog/presentation for
-      // assistive tech are flagged as warnings. Canonical modal
-      // primitives (Modal, Sheet, ConfirmDialog, InputDialog,
-      // KeyboardShortcutsModal, OnboardingWizard) own focus-trap +
-      // scroll-lock + a11y plumbing — they're opted out via the
-      // inline `allow` list. Existing offenders (QuickActionsMenu,
-      // StreakCelebration, FeatureSpotlight, …) stay as warnings
-      // until partII (file fixes + axe prop-tests). See
-      // docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
-      "sergeant-design/no-bare-fixed-inset-modal": [
-        "warn",
-        { allow: bareFixedInsetModalAllowlist },
-      ],
     },
   },
   // Hash-router migration gate — initiative 0006 (frontend routing &
@@ -303,61 +123,6 @@ export const webBlocks = [
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
       "sergeant-design/no-hash-router-in-modules": "error",
-    },
-  },
-  // Storybook coverage enforcement — initiative 0007 (Design-system
-  // tooling: Storybook + visual regression). Кожен top-level
-  // UI-компонент у `apps/web/src/shared/components/ui/` має с��сідній
-  // `<Name>.stories.tsx`, інакше Storybook playground і visual
-  // regression baseline не покривають компонент.
-  //
-  // Round-10 (2026-05-05) закрив Phase 2: shared/ui coverage піднято
-  // з 35% до 100% non-allowlisted (37 stories на 37 компонентів-
-  // кандидатів — див. § Outcome у
-  // `docs/90-work/initiatives/archive/_0007-design-system-tooling.md`). Решта 23
-  // файли — barrel / Icon.paths sub-modules / utility / gesture /
-  // transient overlay-компоненти — навмисно allowlisted у самому
-  // правилі (`packages/eslint-plugin-sergeant-design/index.js` §
-  // require-stories-for-ui-components, секція `DEFAULT_REQUIRE_STORIES_
-  // ALLOWLIST`) із per-file rationale.
-  //
-  // Severity: **error**. Коли додаєш новий публічний компонент у
-  // `apps/web/src/shared/components/ui/`, додай поряд `<Name>.stories.tsx`
-  // (мінімум — Default story). Якщо файл навмисно НЕ компонент
-  // (helper / illustration / sub-module / gesture-обгортка / transient
-  // overlay), додай шлях у `DEFAULT_REQUIRE_STORIES_ALLOWLIST` із
-  // коментарем-обґрунтуванням у тому ж commit-і.
-  {
-    files: ["apps/web/src/shared/components/ui/**/*.tsx"],
-    rules: {
-      "sergeant-design/require-stories-for-ui-components": "error",
-    },
-  },
-  // DataState adoption canary — initiative 0011 Phase 2.9 (foundation
-  // adoption — DataState rollout). Phases 2.4–2.8 мігрували існуючі
-  // manual-ladder callsite-и у `apps/web/src/modules/**` на
-  // `<DataState>` (finyk Mono / fizruk Workouts / nutrition Menu /
-  // routine Timeline / digest). Canary був warn-only від merge PR-#1823
-  // (2026-05-05) — за baseline-вікно 0 hits across 174 модульних
-  // файлів (success-criterion з
-  // `docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`
-  // § 6 — `<DataState>` adopted; carry-over `2026-06-30` Phase 2.9 finalize
-  // закрита 2026-05-10). Severity promoted до `error` — нові manual-ladder
-  // callsite-и блокуються у CI. Default allowlist (DataState.tsx сама +
-  // `apps/web/src/core/auth/**` для auth-form patterns) живе у самому
-  // правилі (`packages/eslint-plugin-sergeant-design/index.js`
-  // § prefer-data-state).
-  {
-    files: ["apps/web/src/modules/**/*.{ts,tsx}"],
-    rules: {
-      "sergeant-design/prefer-data-state": "error",
-      // T5 ramp completed 2026-05-21 in #3070 (101 violations migrated across
-      // 65 files; 1 eslint-disable escape with TODO(T5) for responsive
-      // sm:text-sm in PushupsWidget.tsx). Severity promoted to `error` here
-      // so any new module call-site that hand-rolls `text-{size} font-{weight}`
-      // fails CI. Other surfaces (`apps/web/src/{core,shared}/**`, packages,
-      // tools) still inherit the global `warn` from above.
-      "sergeant-design/prefer-text-style": "error",
     },
   },
   // Web localStorage guardrail — direct `localStorage.*` access is a

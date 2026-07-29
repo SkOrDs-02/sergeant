@@ -113,9 +113,7 @@ export function monoDebtLinksFromMap(
 /** Convert a NetworthEntry[] LS array into FinykNetworthEntry[]. */
 export function networthHistoryFrom(
   arr:
-    | ReadonlyArray<{ month?: unknown; networth?: unknown }>
-    | null
-    | undefined,
+    ReadonlyArray<{ month?: unknown; networth?: unknown }> | null | undefined,
 ): FinykNetworthEntry[] {
   if (!Array.isArray(arr)) return [];
   const out: FinykNetworthEntry[] = [];

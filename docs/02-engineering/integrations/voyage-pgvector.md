@@ -154,12 +154,12 @@ Backoff: 30s → 2min → 8min → 32min → 2h. Сумарно ~2.5h, дост�
 
 ### Метрики
 
-| Метрика                                    | Лейбли              |
+| Метрика | Лейбли |
 | ------------------------------------------ | ------------------- | -------- | ------------------------- | ------------------------ |
-| `ai_memory_ingest_enqueued_total`          | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
-| `ai_memory_ingest_processed_total`         | `outcome=ok         | retry    | permanent_fail`, `source` |
+| `ai_memory_ingest_enqueued_total` | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
+| `ai_memory_ingest_processed_total` | `outcome=ok         | retry    | permanent_fail`, `source` |
 | `ai_memory_ingest_duration_ms` (histogram) | `outcome`, `source` |
-| `ai_memory_ingest_queue_depth` (gauge)     | `state=waiting      | active   | delayed                   | failed`                  |
+| `ai_memory_ingest_queue_depth` (gauge) | `state=waiting      | active   | delayed                   | failed` |
 
 ### Failure mode
 

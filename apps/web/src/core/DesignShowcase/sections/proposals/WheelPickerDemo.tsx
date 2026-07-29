@@ -53,8 +53,26 @@ export function WheelPickerDemo() {
               </div>
               {/* fake OS numpad covering lower half */}
               <div className="mt-auto grid grid-cols-3 gap-px bg-line border-t border-line">
-                {["1","2","3","4","5","6","7","8","9",".","0","⌫"].map((k) => (
-                  <div key={k} className="h-9 bg-panelHi flex items-center justify-center text-style-caption text-text">{k}</div>
+                {[
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  ".",
+                  "0",
+                  "⌫",
+                ].map((k) => (
+                  <div
+                    key={k}
+                    className="h-9 bg-panelHi flex items-center justify-center text-style-caption text-text"
+                  >
+                    {k}
+                  </div>
                 ))}
               </div>
             </div>
@@ -85,9 +103,15 @@ export function WheelPickerDemo() {
                         key={v}
                         className={cn(
                           "snap-center flex items-center justify-center tabular-nums transition-all",
-                          dist === 0 ? "text-text text-xl font-semibold" : "text-muted",
+                          dist === 0
+                            ? "text-text text-xl font-semibold"
+                            : "text-muted",
                         )}
-                        style={{ height: ITEM_H, opacity: dist === 0 ? 1 : Math.max(0.25, 1 - dist * 0.28) }}
+                        style={{
+                          height: ITEM_H,
+                          opacity:
+                            dist === 0 ? 1 : Math.max(0.25, 1 - dist * 0.28),
+                        }}
                       >
                         {v} г
                       </div>
@@ -96,7 +120,9 @@ export function WheelPickerDemo() {
                   <div style={{ height: 80 }} />
                 </div>
               </div>
-              <p className="text-2xs text-muted">Обрано: {VALUES[index]} г · без numpad</p>
+              <p className="text-2xs text-muted">
+                Обрано: {VALUES[index]} г · без numpad
+              </p>
             </div>
           </MiniPhone>
         }

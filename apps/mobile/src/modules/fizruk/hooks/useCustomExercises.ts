@@ -50,7 +50,7 @@ export interface CustomExerciseDraft {
 }
 
 function uid(): string {
-  return `cex_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `cex_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**

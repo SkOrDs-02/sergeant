@@ -26,7 +26,6 @@ interface MacrosEditorProps {
 export function MacrosEditor({ form, field }: MacrosEditorProps) {
   return (
     <View className="mb-1">
-      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- section heading in form */}
       <Text className="text-xs font-bold uppercase text-fg-muted mb-2 tracking-wider">
         КБЖВ
       </Text>

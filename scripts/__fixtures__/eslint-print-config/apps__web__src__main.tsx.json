@@ -70,6 +70,7 @@
       "CSSConditionRule": false,
       "CSSContainerRule": false,
       "CSSCounterStyleRule": false,
+      "CSSFontFaceDescriptors": false,
       "CSSFontFaceRule": false,
       "CSSFontFeatureValuesRule": false,
       "CSSFontPaletteValuesRule": false,
@@ -106,6 +107,7 @@
       "CSSPositionTryRule": false,
       "CSSPositionValue": false,
       "CSSPropertyRule": false,
+      "CSSPseudoElement": false,
       "CSSRotate": false,
       "CSSRule": false,
       "CSSRuleList": false,
@@ -426,6 +428,7 @@
       "KeyboardLayoutMap": false,
       "KeyframeEffect": false,
       "LanguageDetector": false,
+      "LanguageModel": false,
       "LargestContentfulPaint": false,
       "LaunchParams": false,
       "LaunchQueue": false,
@@ -482,6 +485,7 @@
       "MessagePort": false,
       "MimeType": false,
       "MimeTypeArray": false,
+      "ModelContext": false,
       "ModelGenericSession": false,
       "ModelManager": false,
       "MouseEvent": false,
@@ -876,6 +880,7 @@
       "WebGLTransformFeedback": false,
       "WebGLUniformLocation": false,
       "WebGLVertexArrayObject": false,
+      "WebMCPEvent": false,
       "WebSocket": false,
       "WebSocketError": false,
       "WebSocketStream": false,
@@ -1200,7 +1205,7 @@
       "when": false,
       "window": false
     },
-    "parser": "typescript-eslint/parser@8.59.2",
+    "parser": "typescript-eslint/parser@8.63.0",
     "parserOptions": {
       "ecmaFeatures": {
         "jsx": true
@@ -1214,7 +1219,7 @@
   },
   "plugins": [
     "@",
-    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.59.2",
+    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.63.0",
     "react",
     "jsx-a11y:eslint-plugin-jsx-a11y@6.10.2",
     "react-hooks:eslint-plugin-react-hooks@7.0.0",
@@ -2016,6 +2021,14 @@
       2,
       "never"
     ],
+    "import/no-cycle": [
+      2,
+      {
+        "allowUnsafeDynamicCyclicDependency": false,
+        "disableScc": false,
+        "ignoreExternal": true
+      }
+    ],
     "indent": [
       0
     ],
@@ -2699,16 +2712,16 @@
       2
     ],
     "react-hooks/purity": [
-      0
+      2
     ],
     "react-hooks/refs": [
-      0
+      2
     ],
     "react-hooks/rules-of-hooks": [
       2
     ],
     "react-hooks/set-state-in-effect": [
-      0
+      2
     ],
     "react-hooks/set-state-in-render": [
       2
@@ -2857,40 +2870,6 @@
     "sergeant-design/no-anthropic-key-in-logs": [
       2
     ],
-    "sergeant-design/no-arbitrary-text-size": [
-      2
-    ],
-    "sergeant-design/no-bare-empty-text": [
-      2
-    ],
-    "sergeant-design/no-bare-fixed-inset-modal": [
-      1,
-      {
-        "allow": [
-          "apps/web/src/core/app/WelcomeScreen.tsx",
-          "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
-          "apps/web/src/core/hub/search/HubSearch.tsx",
-          "apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx",
-          "apps/web/src/core/onboarding/OnboardingWizard.tsx",
-          "apps/web/src/core/profile/DeleteAccountDialog.tsx",
-          "apps/web/src/core/security/AppLock.tsx",
-          "apps/web/src/core/settings/SettingsPrimitives.tsx",
-          "apps/web/src/core/stories/WeeklyDigestStories.tsx",
-          "apps/web/src/modules/finyk/FinykApp.tsx",
-          "apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx",
-          "apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx",
-          "apps/web/src/shared/components/ui/CelebrationModal.tsx",
-          "apps/web/src/shared/components/ui/CommandPalette.tsx",
-          "apps/web/src/shared/components/ui/ConfirmDialog.tsx",
-          "apps/web/src/shared/components/ui/FloatingActionButton.tsx",
-          "apps/web/src/shared/components/ui/InputDialog.tsx",
-          "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
-          "apps/web/src/shared/components/ui/Modal.tsx",
-          "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
-          "apps/web/src/shared/components/ui/Sheet.tsx"
-        ]
-      }
-    ],
     "sergeant-design/no-console-pii": [
       2
     ],
@@ -3003,12 +2982,19 @@
           "apps/web/src/modules/finyk/components/FinykLoginScreen.tsx",
           "apps/web/src/modules/finyk/components/FinykManualExpenseConflictBanner.tsx",
           "apps/web/src/modules/finyk/components/FinykStatsStrip.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseAmountSection.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseCategorySection.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseDescriptionSection.tsx",
           "apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx",
           "apps/web/src/modules/finyk/components/NoBankBanner.tsx",
           "apps/web/src/modules/finyk/components/RecurringSuggestions.tsx",
           "apps/web/src/modules/finyk/components/SubCard.tsx",
           "apps/web/src/modules/finyk/components/TxListItem.tsx",
           "apps/web/src/modules/finyk/components/TxRow.tsx",
+          "apps/web/src/modules/finyk/components/TxRowAmountActions.tsx",
+          "apps/web/src/modules/finyk/components/TxRowCategoryPicker.tsx",
+          "apps/web/src/modules/finyk/components/TxRowMetaChips.tsx",
+          "apps/web/src/modules/finyk/components/TxRowSplitEditor.tsx",
           "apps/web/src/modules/finyk/components/analytics/CategoryPieChart.tsx",
           "apps/web/src/modules/finyk/components/analytics/MerchantList.tsx",
           "apps/web/src/modules/finyk/components/budgets/AddBudgetForm.tsx",
@@ -3138,31 +3124,10 @@
         ]
       }
     ],
-    "sergeant-design/no-ellipsis-dots": [
-      2
-    ],
-    "sergeant-design/no-eyebrow-drift": [
-      2
-    ],
     "sergeant-design/no-finyk-token-in-storage": [
       2
     ],
     "sergeant-design/no-flat-shared-lib": [
-      2
-    ],
-    "sergeant-design/no-foreign-module-accent": [
-      2
-    ],
-    "sergeant-design/no-hex-in-classname": [
-      2
-    ],
-    "sergeant-design/no-inline-card-surface": [
-      1
-    ],
-    "sergeant-design/no-low-contrast-text-on-fill": [
-      2
-    ],
-    "sergeant-design/no-raw-dark-palette": [
       2
     ],
     "sergeant-design/no-raw-local-storage": [
@@ -3171,53 +3136,13 @@
     "sergeant-design/no-raw-storage-key": [
       1
     ],
-    "sergeant-design/no-rounded-lg": [
-      2
-    ],
-    "sergeant-design/no-small-button-touch-target": [
-      1
-    ],
     "sergeant-design/no-strict-bypass": [
-      2
-    ],
-    "sergeant-design/no-v1-gradient": [
-      2
-    ],
-    "sergeant-design/prefer-focus-visible": [
       2
     ],
     "sergeant-design/prefer-kyiv-time": [
       1
     ],
-    "sergeant-design/prefer-text-style": [
-      1
-    ],
-    "sergeant-design/require-toast-error-action": [
-      1,
-      {
-        "allowlist": [
-          "apps/web/src/core/hub/HubBackupPanel.tsx",
-          "apps/web/src/core/pricing/WaitlistForm.tsx",
-          "apps/web/src/core/profile/BiometricsSection.tsx",
-          "apps/web/src/core/profile/DangerZoneSection.tsx",
-          "apps/web/src/core/profile/MemoryBankSection.tsx",
-          "apps/web/src/core/profile/PersonalInfoSection.tsx",
-          "apps/web/src/core/profile/ProfilePage.tsx",
-          "apps/web/src/core/profile/SessionsSection.tsx",
-          "apps/web/src/core/settings/DashboardSection.tsx",
-          "apps/web/src/core/settings/PWASection.tsx",
-          "apps/web/src/modules/finyk/FinykApp.tsx",
-          "apps/web/src/modules/finyk/components/FinykLoginScreen.tsx",
-          "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
-          "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
-          "apps/web/src/shared/lib/ui/undoToast.tsx"
-        ]
-      }
-    ],
     "sergeant-design/rq-keys-only-from-factory": [
-      2
-    ],
-    "sergeant-design/valid-tailwind-opacity": [
       2
     ],
     "space-after-function-name": [

@@ -37,16 +37,24 @@ export function ErrorRecoveryDemo() {
                 <span className="h-10 w-10 rounded-full bg-accent/15 flex items-center justify-center text-accent">
                   <Icon name="check-circle" size={20} />
                 </span>
-                <p className="text-style-caption text-text">Секцію відновлено</p>
-                <p className="text-2xs text-muted">Дані підвантажились без перезавантаження.</p>
+                <p className="text-style-caption text-text">
+                  Секцію відновлено
+                </p>
+                <p className="text-2xs text-muted">
+                  Дані підвантажились без перезавантаження.
+                </p>
               </>
             ) : (
               <>
                 <span className="h-10 w-10 rounded-full bg-danger/15 flex items-center justify-center text-danger">
                   <Icon name="cloud-off" size={20} />
                 </span>
-                <p className="text-style-caption text-text">Не вдалось завантажити звіт</p>
-                <p className="text-2xs text-muted">Схоже, зникла мережа під час синку.</p>
+                <p className="text-style-caption text-text">
+                  Не вдалось завантажити звіт
+                </p>
+                <p className="text-2xs text-muted">
+                  Схоже, зникла мережа під час синку.
+                </p>
                 <div className="flex flex-col gap-1.5 w-full pt-1">
                   <button
                     type="button"

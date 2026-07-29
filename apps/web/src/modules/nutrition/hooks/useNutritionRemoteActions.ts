@@ -27,8 +27,7 @@ import type {
 import type { ShoppingCategory } from "../lib/shoppingListStorage";
 
 type AnySetter<T = unknown> =
-  | Dispatch<SetStateAction<T>>
-  | ((value: T) => void);
+  Dispatch<SetStateAction<T>> | ((value: T) => void);
 
 interface BuildMutationHandlersParams<TData> {
   setBusy?: AnySetter<boolean>;
@@ -297,8 +296,7 @@ export function useNutritionRemoteActions({
     },
     onSuccess: (data) => {
       const plan = (data?.plan ?? null) as
-        | (ApiNutritionWeekPlan & Record<string, unknown>)
-        | null;
+        (ApiNutritionWeekPlan & Record<string, unknown>) | null;
       setWeekPlan(plan);
       setWeekPlanRaw(typeof data?.rawText === "string" ? data.rawText : "");
       hapticSuccess();

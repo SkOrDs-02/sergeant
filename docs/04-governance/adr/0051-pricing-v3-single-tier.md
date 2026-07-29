@@ -85,4 +85,4 @@
 
 - [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.1](../../90-work/initiatives/0010-revenue-first-launch.md)
 - [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md)
-- [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../../90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md)
+- [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md)

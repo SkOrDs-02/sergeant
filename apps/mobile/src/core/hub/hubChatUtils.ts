@@ -49,7 +49,7 @@ const INTRO_TEXT =
 
 export function newMsgId(): string {
   const rnd = globalThis.crypto?.randomUUID?.();
-  return rnd ?? `m_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  return rnd ?? `m_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 export function makeAssistantMsg(text: string): ChatMessage {
@@ -71,7 +71,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
       ...m,
       id:
         (typeof m.id === "string" && m.id) ||
-        `legacy_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        `legacy_${i}_${Date.now()}_${crypto.randomUUID()}`,
     }),
   );
 }

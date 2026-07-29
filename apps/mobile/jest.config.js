@@ -28,12 +28,11 @@ module.exports = {
   // the 4 GB v8 default heap and the runner OOMs with
   // `FATAL ERROR: Reached heap limit Allocation failed`.
   //
-  // `'50%'` (≈ 4 workers on a 8-vCPU runner, ≈ 6 on a 12-vCPU host)
-  // is the upstream `jest-expo` recommendation for Reanimated / Expo
-  // suites, and `workerIdleMemoryLimit: '512MB'` recycles each worker
-  // once it crosses the threshold so long-lived modules don't pile up
+  // Turbo runs one other workspace task concurrently, so use two workers
+  // locally and one on CI. `workerIdleMemoryLimit: '512MB'` recycles each
+  // worker once it crosses the threshold so long-lived modules don't pile up
   // across suite boundaries.
-  maxWorkers: "50%",
+  maxWorkers: process.env.CI ? 1 : 2,
   workerIdleMemoryLimit: "512MB",
   // `@sergeant/*-domain` packages use NodeNext `.js`-extension imports
   // inside their TS source (required so they compile cleanly under the

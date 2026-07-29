@@ -158,7 +158,6 @@ export function PendingVoiceChip({
         className="flex-1 min-w-0 text-left text-style-caption leading-tight text-text hover:text-brand-strong line-clamp-2"
         title="Зберегти зараз"
       >
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <span className="block text-style-caption uppercase tracking-wide text-subtle">
           Голос
         </span>

@@ -48,6 +48,7 @@ const goalBudget: GoalBudget = {
   name: "Car",
   targetAmount: 100000,
   savedAmount: 25000,
+  contributions: [],
 };
 
 const subscription: Subscription = {

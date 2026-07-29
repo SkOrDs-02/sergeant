@@ -1,6 +1,6 @@
 # ADR-0070: Scheduled Entropy Janitors
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-06-29
 - **Author:** @Skords-01 (Harness Engineering v1)
 - **Deciders:** @Skords-01

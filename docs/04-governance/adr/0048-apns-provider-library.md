@@ -10,7 +10,7 @@
 - **Related:**
   - [ADR-0019 — Push notifications](./0019-push-notifications.md)
   - [`apps/server/src/push/apnsClient.ts`](../../../apps/server/src/push/apnsClient.ts)
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-09-apns-library-adr.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-09-apns-library-adr.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-09-apns-library-adr.md)
 
 ## Context and Problem Statement
 

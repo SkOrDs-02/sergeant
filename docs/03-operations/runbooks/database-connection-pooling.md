@@ -5,7 +5,7 @@
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_POOL` і pool-safety правила лишаються чинними, але Railway-кроки provisioning/DNS нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженого Coolify pgBouncer resource; топологію треба окремо обрати й задокументувати до rollout.
 
-> Закриває Stage 6 PR #046 із [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md):
+> Закриває Stage 6 PR #046 із [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md):
 > deploy-shape для **pgBouncer connection pooler** перед Railway Postgres,
 > ENV-перемикач `DATABASE_URL_POOL`, та правила, які API-маршрути / cron / міграції
 > ходять через який URL.
@@ -164,4 +164,4 @@ HTTP request ────┤
 - Runtime пул: `apps/server/src/db.ts` (`POOL_VIA_PGBOUNCER`, `getPoolStats`).
 - Migration runner: `apps/server/migrate.mjs` (`MIGRATE_DATABASE_URL` має пріоритет
   над `DATABASE_URL`).
-- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6.
+- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) Stage 6.

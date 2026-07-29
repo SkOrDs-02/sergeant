@@ -10,11 +10,16 @@ function DigitReel({ digit, reduced }: { digit: number; reduced: boolean }) {
         className="absolute left-0 top-0 flex flex-col"
         style={{
           transform: `translateY(-${digit * 10}%)`,
-          transition: reduced ? undefined : "transform 700ms cubic-bezier(0.22,1,0.36,1)",
+          transition: reduced
+            ? undefined
+            : "transform 700ms cubic-bezier(0.22,1,0.36,1)",
         }}
       >
         {Array.from({ length: 10 }).map((_, n) => (
-          <span key={n} className="flex h-[1.1em] items-center justify-center leading-none">
+          <span
+            key={n}
+            className="flex h-[1.1em] items-center justify-center leading-none"
+          >
             {n}
           </span>
         ))}
@@ -44,7 +49,9 @@ export function OdometerRollupDemo() {
         before={
           <MiniPhone dim>
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">Баланс місяця</p>
+              <p className="text-2xs uppercase tracking-wide text-muted">
+                Баланс місяця
+              </p>
               <div className="flex items-baseline text-4xl font-semibold text-text tabular-nums">
                 <span className="mr-1 text-2xl text-muted">₴</span>
                 {String(value).padStart(5, "0")}
@@ -56,7 +63,9 @@ export function OdometerRollupDemo() {
         after={
           <MiniPhone>
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">Баланс місяця</p>
+              <p className="text-2xs uppercase tracking-wide text-muted">
+                Баланс місяця
+              </p>
               <div className="flex items-baseline text-4xl font-semibold text-text">
                 <span className="mr-1 text-2xl text-muted">₴</span>
                 {digits.map((d, i) => (

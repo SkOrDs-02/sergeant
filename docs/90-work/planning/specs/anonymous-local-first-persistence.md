@@ -182,4 +182,4 @@ Checkpoint 008 і детерміновані idempotency keys роблять п�
 Знайдено під час циклу 3 дизайн-аудиту (наряд Claude Design
 `cycle-3-task-for-claude-code.md` §1). Первинне формулювання було «пресет-шит
 не створює запис»; вимір показав ширший клас. Контекст:
-[`2026-07-22-first-60-seconds.md`](../../audits/archive/2026-07-22-first-60-seconds.md) §5.
+[`2026-07-22-first-60-seconds.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-07-22-first-60-seconds.md) §5.

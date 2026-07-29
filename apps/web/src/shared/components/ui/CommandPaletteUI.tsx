@@ -337,10 +337,7 @@ function CommandGroup({
 }: CommandGroupProps) {
   return (
     <div role="group" aria-label={group.label} className="mb-1.5">
-      <div
-        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional palette group-header eyebrow; SectionHeading is overkill for inline list.
-        className="px-4 pt-1 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
-      >
+      <div className="px-4 pt-1 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle">
         {group.label}
       </div>
       <ul role="presentation" className="px-1.5 space-y-0.5">

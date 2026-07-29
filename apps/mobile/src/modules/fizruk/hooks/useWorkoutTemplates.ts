@@ -44,7 +44,7 @@ export interface WorkoutTemplate {
 }
 
 function uid(): string {
-  return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `tpl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /** Project a cache row onto the loose hook shape. */

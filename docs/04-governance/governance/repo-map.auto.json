@@ -249,26 +249,6 @@
       "owner": "@SkOrDs-02"
     },
     {
-      "name": "@sergeant/entropy-janitors",
-      "path": "tools/entropy-janitors",
-      "category": "tool",
-      "private": true,
-      "version": "0.1.0",
-      "type": "module",
-      "frameworkDeps": [
-        {
-          "name": "tsx",
-          "version": "^4.23.0"
-        },
-        {
-          "name": "typescript",
-          "version": "*"
-        }
-      ],
-      "testRunner": "node-test",
-      "owner": null
-    },
-    {
       "name": "@sergeant/api-client",
       "path": "packages/api-client",
       "category": "package",

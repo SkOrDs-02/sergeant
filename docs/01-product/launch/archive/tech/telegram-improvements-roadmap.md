@@ -5,7 +5,7 @@
 > **Last touched:** 2026-07-20 by @cursoragent. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/01-product/launch/tech/telegram-improvements-roadmap.md`.
 >
-> **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03** (до ADR-0075). Canonical pointer: [openclaw-roadmap.md](./openclaw-roadmap.md) + [openclaw-migration-plan](../../../../90-work/planning/archive/openclaw-migration-plan.md).
+> **Snapshot banner (2026-07-10):** статуси PR нижче — зріз **2026-05-03** (до ADR-0075). Canonical pointer: [openclaw-roadmap.md](./openclaw-roadmap.md) + [openclaw-migration-plan](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/openclaw-migration-plan.md).
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
 > (`@Sergeant_alert_bot`, `@OpenClaw_sergeant_bot`), супергрупи
@@ -14,7 +14,7 @@
 > Цей файл — **operating roadmap для Telegram-сурфейсів**, не ADR. Конкретні
 > архітектурні рішення в межах кожної ідеї будуть оформлені окремими ADR-ами
 > (вказано у колонці "ADR" таблиці нижче).
-> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/90-work/planning/openclaw-migration-plan.md`](../../../../90-work/planning/archive/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
+> OpenClaw Gateway/migration/cutover status is not tracked here; canonical owner is [`docs/90-work/planning/openclaw-migration-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/openclaw-migration-plan.md). OpenClaw items below are Telegram-surface UX/backlog context only.
 >
 > Пов'язане:
 > [openclaw-roadmap.md](./openclaw-roadmap.md) (фази OpenClaw),

@@ -55,9 +55,20 @@ export interface MaskedAmountProps {
   className?: string;
 }
 
-function MaskedAmountImpl({
+function MaskedAmountImpl(props: MaskedAmountProps) {
+  if (!props.masked) {
+    return (
+      <span className={cn("tabular-nums", props.className)}>
+        {props.children}
+      </span>
+    );
+  }
+
+  return <MaskedValue {...props} />;
+}
+
+function MaskedValue({
   children,
-  masked,
   interactive = true,
   label = "сума",
   className,
@@ -75,12 +86,6 @@ function MaskedAmountImpl({
     };
   }, [revealed]);
 
-  // If the global mask toggles off, drop any local peek so the two states
-  // never disagree.
-  useEffect(() => {
-    if (!masked) setRevealed(false);
-  }, [masked]);
-
   const toggle = useCallback(
     (e: MouseEvent) => {
       // The amount often sits inside a clickable row — don't trigger the
@@ -91,11 +96,6 @@ function MaskedAmountImpl({
     },
     [haptic],
   );
-
-  // Not masked → fully transparent passthrough.
-  if (!masked) {
-    return <span className={cn("tabular-nums", className)}>{children}</span>;
-  }
 
   const blurred = !revealed;
   const blurStyle = { filter: blurred ? `blur(${BLUR_PX}px)` : undefined };

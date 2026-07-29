@@ -41,10 +41,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStepId[] = [...];
 
 ```ts
 export type OnboardingStepId =
-  | "welcome"
-  | "modules"
-  | "goals"
-  | "your_new_step"; // ➕
+  "welcome" | "modules" | "goals" | "your_new_step"; // ➕
 
 export const ONBOARDING_STEPS: readonly OnboardingStepId[] = [
   "welcome",

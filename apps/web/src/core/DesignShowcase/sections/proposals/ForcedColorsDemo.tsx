@@ -15,10 +15,7 @@ import { ComparePair, CompareTile } from "./_Compare";
 
 export function ForcedColorsDemo() {
   return (
-    <ComparePair
-      before={<Card forced={false} />}
-      after={<Card forced />}
-    />
+    <ComparePair before={<Card forced={false} />} after={<Card forced />} />
   );
 }
 
@@ -26,13 +23,32 @@ function Card({ forced }: { forced: boolean }) {
   // Emulate a forced (black/white) system palette on the right.
   const wrap = forced ? { backgroundColor: "#000", color: "#fff" } : undefined;
   return (
-    <CompareTile dim={!forced} className="justify-start items-stretch text-left">
-      <div className="rounded-2xl p-3 w-full border" style={forced ? { ...wrap, borderColor: "#fff" } : undefined}>
+    <CompareTile
+      dim={!forced}
+      className="justify-start items-stretch text-left"
+    >
+      <div
+        className="rounded-2xl p-3 w-full border"
+        style={forced ? { ...wrap, borderColor: "#fff" } : undefined}
+      >
         <div className="flex items-center justify-between">
-          <span className="text-style-label" style={forced ? { color: "#fff" } : undefined}>Рутина</span>
+          <span
+            className="text-style-label"
+            style={forced ? { color: "#fff" } : undefined}
+          >
+            Рутина
+          </span>
           <span
             className="h-7 w-7 rounded-lg flex items-center justify-center border"
-            style={forced ? { borderColor: "#fff", color: "#fff" } : { borderColor: "transparent", background: "rgb(var(--c-chart-routine) / 0.15)", color: "rgb(var(--c-chart-routine))" }}
+            style={
+              forced
+                ? { borderColor: "#fff", color: "#fff" }
+                : {
+                    borderColor: "transparent",
+                    background: "rgb(var(--c-chart-routine) / 0.15)",
+                    color: "rgb(var(--c-chart-routine))",
+                  }
+            }
           >
             <Icon name="check-circle" size={15} />
           </span>
@@ -42,14 +58,24 @@ function Card({ forced }: { forced: boolean }) {
             <div
               key={t}
               className="h-8 rounded-lg flex items-center px-2 text-2xs border"
-              style={forced ? { borderColor: "#fff", color: "#fff" } : { borderColor: "rgb(var(--c-line))", color: "rgb(var(--c-text))" }}
+              style={
+                forced
+                  ? { borderColor: "#fff", color: "#fff" }
+                  : {
+                      borderColor: "rgb(var(--c-line))",
+                      color: "rgb(var(--c-text))",
+                    }
+              }
             >
               {t}
             </div>
           ))}
         </div>
       </div>
-      <p className="text-2xs mt-2" style={forced ? { color: "#fff" } : { color: "rgb(var(--c-muted))" }}>
+      <p
+        className="text-2xs mt-2"
+        style={forced ? { color: "#fff" } : { color: "rgb(var(--c-muted))" }}
+      >
         {forced ? "forced-colors: борди зберігають межі" : "Стандарт"}
       </p>
     </CompareTile>

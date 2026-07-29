@@ -48,8 +48,7 @@ export interface UseApiFormOptions<TValues extends FieldValues, TResponse> {
   resetOnSuccess?: boolean | undefined;
   /** Додаткові опції для `useForm` (mode, criteriaMode, тощо). */
   formOptions?:
-    | Omit<UseFormProps<TValues>, "resolver" | "defaultValues">
-    | undefined;
+    Omit<UseFormProps<TValues>, "resolver" | "defaultValues"> | undefined;
 }
 
 export interface UseApiFormReturn<

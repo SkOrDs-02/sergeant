@@ -70,6 +70,7 @@
       "CSSConditionRule": false,
       "CSSContainerRule": false,
       "CSSCounterStyleRule": false,
+      "CSSFontFaceDescriptors": false,
       "CSSFontFaceRule": false,
       "CSSFontFeatureValuesRule": false,
       "CSSFontPaletteValuesRule": false,
@@ -106,6 +107,7 @@
       "CSSPositionTryRule": false,
       "CSSPositionValue": false,
       "CSSPropertyRule": false,
+      "CSSPseudoElement": false,
       "CSSRotate": false,
       "CSSRule": false,
       "CSSRuleList": false,
@@ -426,6 +428,7 @@
       "KeyboardLayoutMap": false,
       "KeyframeEffect": false,
       "LanguageDetector": false,
+      "LanguageModel": false,
       "LargestContentfulPaint": false,
       "LaunchParams": false,
       "LaunchQueue": false,
@@ -482,6 +485,7 @@
       "MessagePort": false,
       "MimeType": false,
       "MimeTypeArray": false,
+      "ModelContext": false,
       "ModelGenericSession": false,
       "ModelManager": false,
       "MouseEvent": false,
@@ -876,6 +880,7 @@
       "WebGLTransformFeedback": false,
       "WebGLUniformLocation": false,
       "WebGLVertexArrayObject": false,
+      "WebMCPEvent": false,
       "WebSocket": false,
       "WebSocketError": false,
       "WebSocketStream": false,
@@ -1200,7 +1205,7 @@
       "when": false,
       "window": false
     },
-    "parser": "typescript-eslint/parser@8.59.2",
+    "parser": "typescript-eslint/parser@8.63.0",
     "parserOptions": {
       "ecmaFeatures": {
         "jsx": true
@@ -1214,13 +1219,13 @@
   },
   "plugins": [
     "@",
-    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.59.2",
+    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.63.0",
     "react",
     "jsx-a11y:eslint-plugin-jsx-a11y@6.10.2",
     "react-hooks:eslint-plugin-react-hooks@7.0.0",
     "sergeant-design",
     "import",
-    "security:eslint-plugin-security@4.0.0"
+    "security:eslint-plugin-security@4.0.1"
   ],
   "rules": {
     "@babel/object-curly-spacing": [
@@ -2010,6 +2015,14 @@
     "implicit-arrow-linebreak": [
       0
     ],
+    "import/no-cycle": [
+      2,
+      {
+        "allowUnsafeDynamicCyclicDependency": false,
+        "disableScc": false,
+        "ignoreExternal": true
+      }
+    ],
     "indent": [
       0
     ],
@@ -2650,25 +2663,25 @@
       2
     ],
     "react-hooks/immutability": [
-      0
+      2
     ],
     "react-hooks/incompatible-library": [
       1
     ],
     "react-hooks/preserve-manual-memoization": [
-      0
+      2
     ],
     "react-hooks/purity": [
-      0
+      2
     ],
     "react-hooks/refs": [
-      0
+      2
     ],
     "react-hooks/rules-of-hooks": [
       2
     ],
     "react-hooks/set-state-in-effect": [
-      0
+      2
     ],
     "react-hooks/set-state-in-render": [
       2
@@ -2832,25 +2845,10 @@
     "sergeant-design/no-console-pii": [
       2
     ],
-    "sergeant-design/no-ellipsis-dots": [
-      2
-    ],
-    "sergeant-design/no-eyebrow-drift": [
-      2
-    ],
     "sergeant-design/no-finyk-token-in-storage": [
       2
     ],
-    "sergeant-design/no-foreign-module-accent": [
-      2
-    ],
-    "sergeant-design/no-hex-in-classname": [
-      2
-    ],
     "sergeant-design/no-inline-body-size-limit": [
-      2
-    ],
-    "sergeant-design/no-low-contrast-text-on-fill": [
       2
     ],
     "sergeant-design/no-raw-req-in-pino-log": [
@@ -2861,9 +2859,6 @@
     ],
     "sergeant-design/prefer-parse-body-over-validate-body": [
       1
-    ],
-    "sergeant-design/valid-tailwind-opacity": [
-      2
     ],
     "space-after-function-name": [
       0

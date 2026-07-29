@@ -52,7 +52,7 @@ function saveAssignments(store: KVStore, map: AssignmentMap): void {
 function getOrCreateFingerprint(store: KVStore): string {
   const existing = store.getString(FINGERPRINT_KEY);
   if (existing) return existing;
-  const fp = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const fp = Date.now().toString(36) + crypto.randomUUID();
   store.setString(FINGERPRINT_KEY, fp);
   return fp;
 }

@@ -497,10 +497,6 @@ export function WorkoutItemCard({
           {cardioMetrics && (
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
-                {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                    Cardio metric caption at text-style-caption (smaller than
-                    SectionHeading xs's text-style-caption) inside a compact stat
-                    tile; intentional microtype. */}
                 <div className="text-style-caption font-bold text-subtle uppercase tracking-widest">
                   Темп
                 </div>
@@ -509,8 +505,6 @@ export function WorkoutItemCard({
                 </div>
               </div>
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
-                {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                    Matching caption on the speed tile; see sibling above. */}
                 <div className="text-style-caption font-bold text-subtle uppercase tracking-widest">
                   Швидкість
                 </div>

@@ -198,9 +198,7 @@ export function AddMealSheet({
     const contentSource: MealSource =
       macroSource === "photoAI" ? "photo" : "manual";
     onSave({
-      id:
-        initialMeal?.id ||
-        `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: initialMeal?.id || `meal_${Date.now()}_${crypto.randomUUID()}`,
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
@@ -381,7 +379,7 @@ export function AddMealSheet({
           <View className="items-center my-3">
             <View className="flex-row items-center gap-3">
               <View className="flex-1 h-px bg-cream-300" />
-              {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- divider text */}
+
               <Text className="text-[10px] text-fg-subtle uppercase tracking-wider">
                 або
               </Text>

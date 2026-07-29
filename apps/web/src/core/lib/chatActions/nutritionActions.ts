@@ -208,7 +208,7 @@ export function handleNutritionAction(
         };
         action_msg = "оновлено";
       } else {
-        createdId = `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        createdId = `si_${Date.now()}_${crypto.randomUUID()}`;
         items.push({
           id: createdId,
           name: itemName,
@@ -319,7 +319,7 @@ export function handleNutritionAction(
       if (!Number.isFinite(n) || n <= 0)
         return "Вага має бути додатним числом (кг).";
       const entry = {
-        id: `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`,
         at: new Date().toISOString(),
         weightKg: n,
         sleepHours: null,
@@ -394,7 +394,7 @@ export function handleNutritionAction(
       for (const m of copied) {
         nextLog = addLogEntry(nextLog, todayKey, {
           ...m,
-          id: `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          id: `m_${Date.now()}_${crypto.randomUUID()}`,
         });
       }
       persistNutritionLog(nextLog);

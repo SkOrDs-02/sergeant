@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-05-typescript-types-node-downgrade.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-05-typescript-types-node-downgrade.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-05-typescript-types-node-downgrade.md)
   - [`renovate.json`](../../../renovate.json) — `allowedVersions` rule for `@types/node`
   - [`package.json`](../../../package.json) — `pnpm.overrides["@types/node"]`
 

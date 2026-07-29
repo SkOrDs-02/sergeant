@@ -85,28 +85,15 @@ Classify each selected card before fan-out, then route it:
   `today.md`.
 - Bump the touched doc's `Last validated:` freshness marker (single marker only).
 
-## Archival policy — fast-forward (skip the 90-day gate)
+## Completed-document cleanup
 
-Archive a planning doc **only when** work has driven it to fully complete:
-follow-ups closed, no open `- [ ]`, the doc is now a frozen snapshot. When that
-bar is met, move it to `docs/90-work/planning/archive/` immediately — **do not wait the
-90-day stabilization window.** Founder has standing approval for fast-forward
-archival (precedent: [`docs/90-work/initiatives/README.md`](../../../docs/90-work/initiatives/README.md)
-batch archival 2026-05-13 / 2026-06-01, "90-day waiting period skipped за
-рішенням founder-а").
-
-On move, apply the archive frontmatter from
-[`docs/90-work/planning/README.md`](../../../docs/90-work/planning/README.md) § Конвенція
-архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) and update
-inbound links to the `archive/` path. If no doc meets the bar this run,
-archival is a deliberate no-op — never force it.
+Clean up a planning doc **only when** work has driven it to fully complete: follow-ups closed, no open `- [ ]`, Outcome and PR/commit evidence recorded. Merge that state first; a follow-up may delete the frozen snapshot and update inbound references to an immutable commit permalink. If no doc meets the bar, cleanup is a deliberate no-op.
 
 ## Verification
 
 - `pnpm docs:check-open-work`, `pnpm docs:check-today` green (trackers match).
 - `pnpm docs:check-freshness-single-marker`, `pnpm docs:check-freshness-cadence`.
 - `pnpm docs:check-links` (no broken links after any archive move).
-- `pnpm lint:archive-move-depth` if a doc was archived.
 - For code cards: `pnpm typecheck` after each surface (per deliver-squad).
 - Land the whole batch as **one PR** on the batch branch.
 

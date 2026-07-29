@@ -32,7 +32,7 @@ export interface HubChatSession {
 function newId(): string {
   return (
     globalThis.crypto?.randomUUID?.() ??
-    `s_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    `s_${Date.now()}_${crypto.randomUUID()}`
   );
 }
 

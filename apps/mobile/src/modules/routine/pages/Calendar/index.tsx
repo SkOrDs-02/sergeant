@@ -116,7 +116,6 @@ export function Calendar({ testID }: CalendarProps = {}) {
       contentContainerClassName="gap-4 px-4 pt-4 pb-8"
     >
       <View className="gap-1">
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Module hero kicker mirroring apps/web/src/modules/routine/RoutineApp.tsx */}
         <Text className="text-2xs font-bold uppercase tracking-widest text-ink-500">
           Hub календар
         </Text>

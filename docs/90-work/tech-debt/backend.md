@@ -551,7 +551,7 @@ two-phase DROP цього класу змін не покриває.
 
 > 🚫 **Blocked-reason: owner-decision** — backlog, не брати зараз. Тригер → ініціатива власника `@Skords-01` після env-var incident / плановий SOC2-audit. Деталі owner/trigger — нижче у секції.
 
-> **Контекст.** Action item §A5 з [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](../audits/archive/2026-05-04-csp-disable-retrospective.md) — staging-gate ловить deploy-config drift у репо (`vercel.json`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у PaaS dashboard. Бекенд переїхав з Railway на **Hetzner + Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); gap лишився: Coolify UI/API env edits теж поза git.
+> **Контекст.** Action item §A5 з [`docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md) — staging-gate ловить deploy-config drift у репо (`vercel.json`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у PaaS dashboard. Бекенд переїхав з Railway на **Hetzner + Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); gap лишився: Coolify UI/API env edits теж поза git.
 
 **Gap (перенесено з Railway-ери; актуальний для Coolify):**
 

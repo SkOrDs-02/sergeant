@@ -4,13 +4,13 @@
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Lifecycle:** historical dual-track record. The locked shell-sunset schedule below was superseded operationally by [ADR-0052](./0052-mobile-strategy-capacitor-primary.md), which keeps `apps/mobile-shell` primary until Expo/RN parity and a new accepted replacement decision.
 - **Date:** 2026-04-27
-- **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
+- **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - **Updated:** 2026-05-19 — marked the sunset timeline as historical after ADR-0052 made Capacitor primary.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
   - [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) — зведений статус web / native / capacitor-shell, включно з [feature-parity матрицею](../../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
-  - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, що формалізує дедлайн і guardrails.
+  - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, що формалізує дедлайн і guardrails.
   - [`docs/02-engineering/mobile/overview.md`](../../02-engineering/mobile/overview.md) — API-контракт для мобільного клієнта (auth, deep links, push).
   - [`docs/02-engineering/mobile/shell.md`](../../02-engineering/mobile/shell.md) — operator-референс для shell, секція [Sunset](../../02-engineering/mobile/shell.md#sunset).
   - [`docs/02-engineering/mobile/react-native-migration.md`](../../02-engineering/mobile/react-native-migration.md) — детальний roadmap порту web → RN.
@@ -45,7 +45,7 @@ long-term нативний клієнт. Обидва коекзистують �
 
 > Locked-in deprecation timeline for `apps/mobile-shell`. Status `accepted` with the lifecycle marker `dual-track with locked sunset`
 > означає, що dual-track — тимчасовий стан, не steady state. Дати нижче — **operational
-> commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) Outcome,
+> commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) Outcome,
 > з обґрунтуванням на основі feature-parity матриці у
 > [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
 

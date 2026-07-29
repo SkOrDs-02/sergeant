@@ -37,7 +37,7 @@
         "id": {
           "type": "string",
           "minLength": 1,
-          "description": "Stable slug used as the node id when this catalog is folded into knowledge-graph.json."
+          "description": "Stable slug used as the service catalog entry id."
         },
         "title": { "type": "string", "minLength": 1 },
         "workspace": {

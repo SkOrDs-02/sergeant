@@ -187,10 +187,10 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(getByTestId("catalogue-legend")).toBeTruthy();
     expect(getByText("Позначки:")).toBeTruthy();
     // Badge labels also appear on real rows (e.g. compare_weeks is a chip
-    // and isNew), so allow ≥1 match for the chip text.
+    // and isNew), so allow ≥1 match for each badge text.
     expect(getAllByText("⚡ ЧІП").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("⚠ РИЗИК").length).toBeGreaterThanOrEqual(1);
-    expect(getAllByText("✨ НОВИНКА").length).toBeGreaterThanOrEqual(1);
+    expect(getAllByText("НОВИНКА").length).toBeGreaterThanOrEqual(1);
     // The captions are legend-only.
     expect(getByText("швидкий сценарій")).toBeTruthy();
     expect(getByText("критична дія")).toBeTruthy();

@@ -9,7 +9,7 @@
 >
 > **Замінює (як SSOT для FTUX):**
 >
-> - [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
+> - [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
 > - [`docs/01-product/launch/ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md) — sprint-roadmap (історія, frozen).
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
@@ -64,7 +64,7 @@
 >
 > **Paywall placement decided 2026-05-06 (updated 2026-07-10):** post-first-real-entry sheet sketch у [`paywall-ux-placement.md`](./paywall-ux-placement.md). **Implementation** follows ADR-0068 reverse trial (7d auto Pro → downgrade), not 14d opt-in trial. PR-19 landed; PR-20 billing scaffold shipped.
 >
-> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/03-operations/observability/ftux-slo.yml`](../../../03-operations/observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/90-work/audits/2026-05-13-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-13-ftux-onboarding-roast.md).
+> **Roast #1/10 — 2026-05-13 progress (parent-driven, freeze override):** 3 carryover items закрито у `2026-05-13-ftux-onboarding-roast` PR — (1) **B-11 §2.9** generic «Що далі» tip → module-aware `nextStepTip` у [`FIRST_ENTRY_CELEBRATIONS`](../../../../packages/shared/src/lib/onboardingCelebrations.ts); (2) **P2-15 §4** generic «Продовжити» CTA → module-aware `primaryCtaLabel`; (3) **M-10** FTUX SLO відсутні → declarative [`docs/03-operations/observability/ftux-slo.yml`](../../../03-operations/observability/ftux-slo.yml). Audit guards у [`onboardingCelebrations.test.ts`](../../../../packages/shared/src/lib/onboardingCelebrations.test.ts) блокують regression. Roast doc: [`docs/90-work/audits/2026-05-13-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-ftux-onboarding-roast.md).
 
 **Стан 2026-05-05:**
 
@@ -510,7 +510,7 @@ slos:
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 
-> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](../../../90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](../../../90-work/audits/archive/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md).
+> Джерело: [`docs/90-work/audits/2026-05-06-ux-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/90-work/audits/2026-05-06-ux-roast-pr-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../04-governance/adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
 
@@ -536,7 +536,7 @@ slos:
 
 > **Frozen references** (NE редагуємо вище ↑ — вищі відмітки оновлюються тут).
 
-- [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
+- [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
 - [`docs/01-product/launch/ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md) — оригінальний sprint-plan з повним PR-розписом (Sprint 0-5 + 6 cleanup batch). Деталі implementation per sprint-item — там. Має redirect-banner на цей master tracker.
 - `reports/sergeant-onboarding-ux-roast-2026-05-05.md` (поза репо) — мега-прожарка 2026-05-05. Інкорпорована в §8.4.
 - `reports/sergeant-pr-plan-2026-05-05.md` (поза репо) — PR-план. Інкорпорований в §3.
@@ -548,7 +548,7 @@ slos:
 ## Editing rules (для майбутніх агентів)
 
 1. **Редагуй тут** — оновлення статусів, нові findings (post-freeze), нові decisions.
-2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
+2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](../archive/product-os/ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
 3. **Status legend:**
    - ✅ Closed — shipped to `main`
    - 🚧 Partial / Mitigation — частково або в роботі

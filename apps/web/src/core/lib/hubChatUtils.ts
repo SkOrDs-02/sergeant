@@ -142,7 +142,7 @@ export async function consumeHubChatSse(
 export function newMsgId(): string {
   return (
     globalThis.crypto?.randomUUID?.() ??
-    `m_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    `m_${Date.now()}_${crypto.randomUUID()}`
   );
 }
 
@@ -168,7 +168,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
     ...m,
     id:
       (typeof m.id === "string" && m.id) ||
-      `legacy_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      `legacy_${i}_${Date.now()}_${crypto.randomUUID()}`,
   }));
 }
 

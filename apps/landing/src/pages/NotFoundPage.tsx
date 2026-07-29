@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 
@@ -41,12 +40,12 @@ export default function NotFoundPage() {
           Можливо, посилання застаріло. Головна на місці — там же й форма
           вейтліста.
         </p>
-        <Link
-          to="/"
+        <a
+          href="/"
           className="mt-8 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-ink shadow-sm transition hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           На головну
-        </Link>
+        </a>
       </main>
       <SiteFooter />
     </>

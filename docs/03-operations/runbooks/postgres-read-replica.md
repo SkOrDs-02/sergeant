@@ -5,7 +5,7 @@
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_REPLICA` і правила routing лишаються чинними, але Railway-кроки provisioning/DNS/monitoring нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженої Coolify-топології replica; її треба окремо обрати й задокументувати до rollout.
 
-> Закриває Stage 6 PR #047 із [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md):
+> Закриває Stage 6 PR #047 із [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md):
 > deploy-shape для **streaming-replication read replica** Postgres у Railway
 > production-tier, ENV-перемикач `DATABASE_URL_REPLICA`, та правила, які
 > запити мають право ходити в replica.

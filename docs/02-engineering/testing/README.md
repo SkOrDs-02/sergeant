@@ -90,7 +90,7 @@ ratchet — автоматична «гребінка», що рухається
 
 ## Cross-links
 
-- Initiative 0009 (Agent OS hardening, M3 — testing posture): [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md).
-- Testing & DevX PR-план 2026-05: [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](../../90-work/planning/archive/pr-plan-testing-devx-2026-05.md) — активні картки T-1…T-8 + D-1…D-4, dependency-граф, acceptance gates.
-- Web deep-dive §7 (testing diagnostic): [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
+- Initiative 0009 (Agent OS hardening, M3 — testing posture): [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md).
+- Testing & DevX PR-план 2026-05: [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md) — активні картки T-1…T-8 + D-1…D-4, dependency-граф, acceptance gates.
+- Web deep-dive §7 (testing diagnostic): [`docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
 - Critical-flow E2E config: [`apps/web/playwright.smoke.config.ts`](../../../apps/web/playwright.smoke.config.ts) (job `critical-flow` у `.github/workflows/ci.yml` запускає `--grep @critical`).

@@ -7,7 +7,7 @@
 
 ## Update strategy: prompt + idle-auto + hard-floor
 
-Stack-pulse 2026-05 / [PR-21](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-21-sw-prompt-mode-auto-update.md) додає три шари до базового `prompt`-mode-у `vite-plugin-pwa`. Усі шари компонуються — кожен «зловить» свій клас stale-станів без зайвих UI-сюрпризів для активного user-а.
+Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-21-sw-prompt-mode-auto-update.md) додає три шари до базового `prompt`-mode-у `vite-plugin-pwa`. Усі шари компонуються — кожен «зловить» свій клас stale-станів без зайвих UI-сюрпризів для активного user-а.
 
 ### Шар 1 — manual prompt (baseline)
 

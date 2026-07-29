@@ -52,7 +52,6 @@ function asRecord(value: unknown): Record<string, unknown> {
 beforeEach(() => {
   invokeLLM.mockReset();
   vi.spyOn(Date, "now").mockReturnValue(1_778_000_000_000);
-  vi.spyOn(Math, "random").mockReturnValue(0.123456);
 });
 
 describe("shopping-list handler", () => {
@@ -99,7 +98,9 @@ describe("shopping-list handler", () => {
           name: "Овочі та гриби",
           items: [
             {
-              id: "si_1778000000000_4fzyo8",
+              id: expect.stringMatching(
+                /^si_1778000000000_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+              ),
               name: "Печериці",
               quantity: "400 г",
               note: "свіжі",
@@ -111,7 +112,9 @@ describe("shopping-list handler", () => {
           name: "Інше",
           items: [
             {
-              id: "si_1778000000000_4fzyo8",
+              id: expect.stringMatching(
+                /^si_1778000000000_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+              ),
               name: "Кефір",
               quantity: "1 л",
               note: "",
@@ -122,6 +125,14 @@ describe("shopping-list handler", () => {
       ],
       rawText: null,
     });
+
+    const categories = (
+      res.body as { categories: { items: { id: string }[] }[] }
+    ).categories;
+    const itemIds = categories.flatMap((category) =>
+      category.items.map((item) => item.id),
+    );
+    expect(new Set(itemIds).size).toBe(itemIds.length);
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     expect(JSON.stringify(opts["messages"])).toContain(

@@ -6,7 +6,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/archive/_0008-platform-hardening.md`](../../90-work/initiatives/archive/_0008-platform-hardening.md) §Phase 3
+  - [`docs/90-work/initiatives/archive/_0008-platform-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) §Phase 3
   - [`docs/04-governance/security/hardening/H2-dependabot.md`](../security/hardening/archive/H2-dependabot.md) (Dependabot setup card)
   - [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md)
   - [`renovate.json`](../../../renovate.json), [`.github/dependabot.yml`](../../../.github/dependabot.yml)

@@ -58,7 +58,7 @@ async function seedLocalStorage(page: Page) {
 async function signUpFlow(
   page: Page,
 ): Promise<{ email: string; password: string }> {
-  const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const nonce = crypto.randomUUID();
   const email = `wk_${nonce}@example.com`;
   const password = `pw_${nonce}_long_enough`;
 

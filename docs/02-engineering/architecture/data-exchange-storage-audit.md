@@ -31,7 +31,7 @@ v1 cloud sync повністю видалений (ADR-0047, web phase PR #053a,
 - **Web:** `cloudSync/engine/`, `cloudSync/queue/`, `cloudSync/conflict/`, `storagePatch.ts`, `enqueue.ts` — всі видалені. `cloudSync/` тепер — мінімальний barrel, що експортує лише `useSyncStatus` (статус поточного v2 sync cycle).
 - **Mobile:** `sync/config.ts`, `sync/api.ts`, `sync/useSyncedStorage.ts`, та вся v1 mobile engine tree — видалені у PR #052c/053c.
 - **Server:** `POST /api/sync` і `GET /api/sync` routes тепер повертають `410 Gone` через `respondV1Gone` middleware (PR #2003). `module_data` table дропнута міграцією 046 (Stage 7 cleanup).
-- **`SYNC_MODULES` registry** (`packages/shared/src/sync/modules.ts`) — практично видалений: усі продуктові модулі знято з v1 в окремих PRs (Routine → PR #026, Fizruk → PR #030, Nutrition → PR #034, Finyk → PR #039, Coach → PR #053a + міграція 045). Реєстр тримає лише `profile` entry (`USER_PROFILE`, `HUB_BIOMETRICS`) як test-fixture для ESLint parity-check `no-raw-tracked-storage`. Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](../../90-work/planning/archive/storage-roadmap.md). `MAX_OFFLINE_QUEUE` / `MAX_QUEUE_ATTEMPTS` константи з того ж файла теж лишилися як test-fixture, runtime-споживачів немає (v2 outbox у SQLite не cap-нутий цією константою).
+- **`SYNC_MODULES` registry** (`packages/shared/src/sync/modules.ts`) — практично видалений: усі продуктові модулі знято з v1 в окремих PRs (Routine → PR #026, Fizruk → PR #030, Nutrition → PR #034, Finyk → PR #039, Coach → PR #053a + міграція 045). Реєстр тримає лише `profile` entry (`USER_PROFILE`, `HUB_BIOMETRICS`) як test-fixture для ESLint parity-check `no-raw-tracked-storage`. Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md). `MAX_OFFLINE_QUEUE` / `MAX_QUEUE_ATTEMPTS` константи з того ж файла теж лишилися як test-fixture, runtime-споживачів немає (v2 outbox у SQLite не cap-нутий цією константою).
 
 ### 2.3. Sync v2 / operation log — primary sync шлях
 
@@ -141,7 +141,7 @@ DB-level safety:
 
 ### 4.1. SQLite cut-over — завершено; sync client wiring — outstanding
 
-**Оновлено 2026-07-10** після [`dualwrite-teardown.md`](../../90-work/planning/archive/dualwrite-teardown.md):
+**Оновлено 2026-07-10** після [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md):
 
 - **Клієнтський SQLite** (web OPFS / mobile expo-sqlite) — **єдиний source-of-truth** для модульних даних finyk / fizruk / nutrition / routine. Production LS/MMKV-write модульних ключів прибрано; `sqliteWriter/` — canonical mutation path.
 - **Свідомі винятки** (не residue): demo-seed LS bridge, `fizruk_rest_settings_v1`, web nutrition recipes (IndexedDB), Mono client mirror, kv_store, TanStack Query persister.

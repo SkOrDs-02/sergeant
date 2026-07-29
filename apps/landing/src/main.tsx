@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
 // Самохостинг шрифту замість Google Fonts: сторінка суцільно україномовна, а
 // попередній DM Sans узагалі не має кириличного набору (U+0400–04FF відсутній
 // у нього в обох підмножинах), тож кирилиця падала на системний шрифт і в
@@ -17,8 +16,6 @@ initAnalytics();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <App />
   </StrictMode>,
 );

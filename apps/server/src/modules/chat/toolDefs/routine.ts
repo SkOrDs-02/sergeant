@@ -11,7 +11,6 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
       properties: {
         habit_id: {
           type: "string",
-          // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (id:<id> placeholder), not user-facing copy
           description: "ID звички (id:... з блоку [Рутина сьогодні])",
         },
         date: {

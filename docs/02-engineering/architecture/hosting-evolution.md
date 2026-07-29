@@ -14,7 +14,7 @@ Reference-документ: де зараз живе кожен сервіс Ser
 - [`docs/01-product/launch/business/03-services-and-toolstack.md`](../../01-product/launch/business/03-services-and-toolstack.md) — повний каталог сервісів з цінами.
 - [`docs/02-engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md) — як налаштувати поточний стек (Railway + Vercel).
 - [`docs/03-operations/observability/`](../../03-operations/observability) — SLO, метрики, runbook.
-- [`docs/90-work/planning/dev-stack-roadmap.md`](../../90-work/planning/archive/dev-stack-roadmap-ff-2026-07-20.md) — топ-15 dev-інструментів.
+- [`docs/90-work/planning/dev-stack-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dev-stack-roadmap-ff-2026-07-20.md) — топ-15 dev-інструментів.
 
 ---
 

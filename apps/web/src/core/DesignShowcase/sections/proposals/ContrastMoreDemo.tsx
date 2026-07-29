@@ -15,12 +15,7 @@ import { ComparePair, CompareTile } from "./_Compare";
  */
 
 export function ContrastMoreDemo() {
-  return (
-    <ComparePair
-      before={<Card high={false} />}
-      after={<Card high />}
-    />
-  );
+  return <ComparePair before={<Card high={false} />} after={<Card high />} />;
 }
 
 function Card({ high }: { high: boolean }) {
@@ -33,12 +28,22 @@ function Card({ high }: { high: boolean }) {
         )}
       >
         <div className="flex items-center gap-2">
-          <span className={cn("h-8 w-8 rounded-lg flex items-center justify-center", high ? "bg-accent text-bg" : "bg-accent/15 text-accent")}>
+          <span
+            className={cn(
+              "h-8 w-8 rounded-lg flex items-center justify-center",
+              high ? "bg-accent text-bg" : "bg-accent/15 text-accent",
+            )}
+          >
             <Icon name="credit-card" size={16} />
           </span>
           <span className="text-style-label text-text">Витрати</span>
         </div>
-        <p className={cn("text-2xs mt-2", high ? "text-text font-medium" : "text-muted")}>
+        <p
+          className={cn(
+            "text-2xs mt-2",
+            high ? "text-text font-medium" : "text-muted",
+          )}
+        >
           Вторинний підпис — {high ? "посилений контраст" : "стандартний тон"}
         </p>
         <button
@@ -51,7 +56,9 @@ function Card({ high }: { high: boolean }) {
           Додати
         </button>
       </div>
-      <p className="text-2xs text-muted mt-2">{high ? "prefers-contrast: more" : "Стандарт"}</p>
+      <p className="text-2xs text-muted mt-2">
+        {high ? "prefers-contrast: more" : "Стандарт"}
+      </p>
     </CompareTile>
   );
 }

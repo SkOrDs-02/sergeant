@@ -23,7 +23,9 @@ export function FocusGlowDemo() {
             defaultValue="Сума"
             className="w-40 rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           />
-          <p className="text-2xs text-muted">Нейтральний ring — однаковий скрізь</p>
+          <p className="text-2xs text-muted">
+            Нейтральний ring — однаковий скрізь
+          </p>
         </CompareTile>
       }
       after={
@@ -34,17 +36,23 @@ export function FocusGlowDemo() {
               defaultValue="Фінік"
               aria-label="Finyk field"
               className="rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-text outline-none focus-visible:ring-2"
-              style={{ ["--tw-ring-color" as string]: "rgb(var(--c-chart-finyk))" }}
+              style={{
+                ["--tw-ring-color" as string]: "rgb(var(--c-chart-finyk))",
+              }}
             />
             <input
               type="text"
               defaultValue="Фізрук"
               aria-label="Fizruk field"
               className="rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-text outline-none focus-visible:ring-2"
-              style={{ ["--tw-ring-color" as string]: "rgb(var(--c-chart-fizruk))" }}
+              style={{
+                ["--tw-ring-color" as string]: "rgb(var(--c-chart-fizruk))",
+              }}
             />
           </div>
-          <p className="text-2xs text-muted">Ring тінтиться під акцент модуля</p>
+          <p className="text-2xs text-muted">
+            Ring тінтиться під акцент модуля
+          </p>
         </CompareTile>
       }
     />

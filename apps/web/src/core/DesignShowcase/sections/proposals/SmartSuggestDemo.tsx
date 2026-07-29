@@ -50,7 +50,9 @@ export function SmartSuggestDemo() {
         after={
           <MiniPhone>
             <div className="flex-1 min-h-0 px-3 pt-2">
-              <p className="text-style-caption text-muted mb-2">Нова витрата · {time.toLowerCase()}</p>
+              <p className="text-style-caption text-muted mb-2">
+                Нова витрата · {time.toLowerCase()}
+              </p>
               <div className="space-y-1.5">
                 {BY_TIME[time].map((s) => (
                   <button
@@ -59,12 +61,18 @@ export function SmartSuggestDemo() {
                     className="w-full h-11 rounded-xl border border-accent/40 bg-accent/10 flex items-center gap-2 px-3"
                   >
                     <Icon name={s.icon} size={16} className="text-accent" />
-                    <span className="text-style-caption text-text">{s.label}</span>
-                    <span className="ml-auto text-style-caption tabular-nums text-accent">{s.amount}</span>
+                    <span className="text-style-caption text-text">
+                      {s.label}
+                    </span>
+                    <span className="ml-auto text-style-caption tabular-nums text-accent">
+                      {s.amount}
+                    </span>
                   </button>
                 ))}
               </div>
-              <p className="text-2xs text-muted mt-3">Тап — і сума з категорією вже в формі.</p>
+              <p className="text-2xs text-muted mt-3">
+                Тап — і сума з категорією вже в формі.
+              </p>
             </div>
           </MiniPhone>
         }
@@ -77,7 +85,9 @@ export function SmartSuggestDemo() {
             onClick={() => setTime(t)}
             className={cn(
               "px-2.5 py-1 rounded-full text-2xs border transition-colors",
-              t === time ? "bg-accent text-bg border-transparent" : "bg-surface-muted text-muted border-line",
+              t === time
+                ? "bg-accent text-bg border-transparent"
+                : "bg-surface-muted text-muted border-line",
             )}
           >
             {t}

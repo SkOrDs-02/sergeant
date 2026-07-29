@@ -8,11 +8,7 @@ import {
 import { cn } from "../../lib/ui/cn";
 
 export type TransitionDirection =
-  | "forward"
-  | "backward"
-  | "up"
-  | "down"
-  | "fade";
+  "forward" | "backward" | "up" | "down" | "fade";
 
 interface PageTransitionProps {
   /** The content to render */

@@ -22,10 +22,9 @@ trace рішення, контрастні таблиці, migration waves, по
 
 ## Чому архів, а не видалення
 
-Обидва документи активно цитуються з governance:
+Обидва документи зберігають історичний rationale візуальної системи:
 
-- Hard-rule [`../../governance/rules/09-saturated-brand-fills-strong-companion.md`](../../../04-governance/governance/rules/09-saturated-brand-fills-strong-companion.md) → `brand-palette-wcag-aa-proposal.md`
-- Hard-rule [`../../governance/rules/13-no-raw-palette-light-dark-pairs.md`](../../../04-governance/governance/rules/13-no-raw-palette-light-dark-pairs.md) → `dark-mode-audit.md`
+- [ADR-0081](../../../04-governance/adr/0081-repository-simplification.md) retired visual-taste hard rules but retained tokens/Storybook/review as enforcement.
 - ADR [`../../adr/0007-tailwind-opacity-and-strong-tier.md`](../../../04-governance/adr/0007-tailwind-opacity-and-strong-tier.md) → `brand-palette-wcag-aa-proposal.md`
 
-Видалення зруйнує контекст “чому це правило існує”.
+Видалення зруйнує контекст походження токенів і палітри.

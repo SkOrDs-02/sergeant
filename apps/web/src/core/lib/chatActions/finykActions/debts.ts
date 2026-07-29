@@ -75,9 +75,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       ? Math.abs(Number(amount))
       : Number(debt.totalAmount) || 0;
   if (payAmount <= 0) return "Сума погашення має бути додатною.";
-  const txId = `m_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const txId = `m_${crypto.randomUUID()}`;
   const manualExpenses = ls<
     Array<{
       id: string;

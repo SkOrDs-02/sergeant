@@ -419,9 +419,17 @@ export function SkeletonHeroCard({
             <SkeletonText shimmer={shimmer} className="w-14 h-2.5" />
             <Skeleton shimmer={shimmer} className="w-28 h-7" />
           </div>
-          <SkeletonText shimmer={shimmer} className="w-20 h-2.5" style={{ animationDelay: "30ms" }} />
+          <SkeletonText
+            shimmer={shimmer}
+            className="w-20 h-2.5"
+            style={{ animationDelay: "30ms" }}
+          />
         </div>
-        <SkeletonText shimmer={shimmer} className="w-48 h-2.5" style={{ animationDelay: "60ms" }} />
+        <SkeletonText
+          shimmer={shimmer}
+          className="w-48 h-2.5"
+          style={{ animationDelay: "60ms" }}
+        />
       </div>
 
       {/* Divider */}
@@ -430,9 +438,17 @@ export function SkeletonHeroCard({
       {/* Bottom zone — day budget */}
       <div className="px-5 py-4 space-y-2">
         {/* Big display number */}
-        <Skeleton shimmer={shimmer} className="w-36 h-9" style={{ animationDelay: "90ms" }} />
+        <Skeleton
+          shimmer={shimmer}
+          className="w-36 h-9"
+          style={{ animationDelay: "90ms" }}
+        />
         {/* Status text */}
-        <SkeletonText shimmer={shimmer} className="w-40 h-2.5" style={{ animationDelay: "120ms" }} />
+        <SkeletonText
+          shimmer={shimmer}
+          className="w-40 h-2.5"
+          style={{ animationDelay: "120ms" }}
+        />
         {/* Month progress row */}
         <div className="space-y-1 pt-1">
           <div className="flex items-center justify-between gap-3">

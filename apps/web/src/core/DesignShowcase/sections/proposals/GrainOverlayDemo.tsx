@@ -16,7 +16,9 @@ function Surface({ grain }: { grain: boolean }) {
       )}
       <div className="relative space-y-3">
         <div className="rounded-2xl bg-panel p-4">
-          <p className="text-style-caption uppercase tracking-wide text-muted">Картка</p>
+          <p className="text-style-caption uppercase tracking-wide text-muted">
+            Картка
+          </p>
           <p className="text-lg font-semibold text-fg">Паперова текстура</p>
         </div>
         <div className="h-20 rounded-2xl bg-accent/15" />

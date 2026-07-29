@@ -1,4 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift */
 import { StoryShell } from "./StoryShell";
 import type { RoutineSlideData } from "../../types";
 import type { HabitStat } from "../../../insights/useWeeklyDigest";

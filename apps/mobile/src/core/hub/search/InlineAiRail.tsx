@@ -13,7 +13,13 @@
  *    Phase-2 PR).
  */
 
-import { AlertCircle, ArrowUpRight, MessageCircle, RefreshCw, X } from "lucide-react-native";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  MessageCircle,
+  RefreshCw,
+  X,
+} from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";

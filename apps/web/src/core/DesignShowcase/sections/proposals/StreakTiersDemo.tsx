@@ -31,16 +31,25 @@ function Flame({ days, tiered }: { days: number; tiered: boolean }) {
     <div className="flex h-full flex-col items-center justify-center gap-5">
       <div
         className="flex h-28 w-28 items-center justify-center rounded-full"
-        style={{ background: `radial-gradient(circle, rgb(${t.color}/${tiered ? t.glow : 0.3}) 0%, transparent 70%)` }}
+        style={{
+          background: `radial-gradient(circle, rgb(${t.color}/${tiered ? t.glow : 0.3}) 0%, transparent 70%)`,
+        }}
       >
-        <svg width="64" height="64" viewBox="0 0 24 24" style={{ transform: `scale(${size})` }}>
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          style={{ transform: `scale(${size})` }}
+        >
           <path d={FLAME_PATH} fill={`rgb(${t.color})`} />
         </svg>
       </div>
       <p className="text-3xl font-semibold text-text">
         {days} <span className="text-base font-normal text-muted">днів</span>
       </p>
-      <p className="text-2xs text-muted">{tiered ? t.label : "Завжди однаково"}</p>
+      <p className="text-2xs text-muted">
+        {tiered ? t.label : "Завжди однаково"}
+      </p>
     </div>
   );
 }
@@ -51,8 +60,16 @@ export function StreakTiersDemo() {
   return (
     <div className="flex flex-col items-center gap-4">
       <ComparePair
-        before={<MiniPhone dim><Flame days={days} tiered={false} /></MiniPhone>}
-        after={<MiniPhone><Flame days={days} tiered /></MiniPhone>}
+        before={
+          <MiniPhone dim>
+            <Flame days={days} tiered={false} />
+          </MiniPhone>
+        }
+        after={
+          <MiniPhone>
+            <Flame days={days} tiered />
+          </MiniPhone>
+        }
       />
       <div className="w-full max-w-[280px]">
         <input
@@ -66,7 +83,12 @@ export function StreakTiersDemo() {
         />
         <div className="flex justify-between text-2xs text-muted mt-1">
           {TIERS.map((tier) => (
-            <span key={tier.label} style={{ color: days >= tier.min ? `rgb(${tier.color})` : undefined }}>
+            <span
+              key={tier.label}
+              style={{
+                color: days >= tier.min ? `rgb(${tier.color})` : undefined,
+              }}
+            >
               {tier.min}д
             </span>
           ))}

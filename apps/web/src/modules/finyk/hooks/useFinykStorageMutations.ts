@@ -234,7 +234,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     candidate: RecurringCandidate | null | undefined,
   ) => {
     if (!candidate || !candidate.key) return null;
-    const id = `auto_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = `auto_${Date.now().toString(36)}_${crypto.randomUUID()}`;
     const sub: {
       id: string;
       name: string;
@@ -312,7 +312,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       if (prev.length >= 80) return prev;
       if (prev.some((c) => c.label.toLowerCase() === trimmed.toLowerCase()))
         return prev;
-      const id = `cus_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+      const id = `cus_${Date.now().toString(36)}_${crypto.randomUUID()}`;
       const entry: {
         id: string;
         label: string;

@@ -5,17 +5,17 @@
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
 - **Supersedes:** ADR-0010
-- **Superseded sections (non-ADR):** sunset-direction sections in [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
+- **Superseded sections (non-ADR):** sunset-direction sections in [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
 - **Related:**
   - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)
-  - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
+  - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
   - [ADR-0010 Mobile dual-track](./0010-mobile-dual-track-capacitor-expo.md)
 
 ---
 
 ## Context and Problem Statement
 
-[ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) і [ініціатива 0002](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) зафіксували sunset schedule для Capacitor shell (T₀ — 2026-09-01, T₁ — 2026-11-30, T₂ — 2026-12-30). Однак у контексті revenue-first пріоритетів 0010 власник ухвалив інше рішення: обидва стеки підтримуються паралельно без активного sunset-треку, поки Expo не досягне feature parity з web.
+[ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) і [ініціатива 0002](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) зафіксували sunset schedule для Capacitor shell (T₀ — 2026-09-01, T₁ — 2026-11-30, T₂ — 2026-12-30). Однак у контексті revenue-first пріоритетів 0010 власник ухвалив інше рішення: обидва стеки підтримуються паралельно без активного sunset-треку, поки Expo не досягне feature parity з web.
 
 Без формалізації цього рішення:
 
@@ -79,7 +79,7 @@
 
 ## Links
 
-- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, яку це рішення supersedes у частині sunset-direction
+- [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, яку це рішення supersedes у частині sunset-direction
 - [ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) — dual-track original decision
 - [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) — feature-parity матриця (Exit dashboard)
 - [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.2](../../90-work/initiatives/0010-revenue-first-launch.md)
