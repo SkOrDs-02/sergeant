@@ -8,7 +8,7 @@
     "hard-rule": 26,
     "initiative": 5,
     "playbook": 60,
-    "pr": 135,
+    "pr": 136,
     "skill": 23
   },
   "nodes": [
@@ -2982,6 +2982,16 @@
       }
     },
     {
+      "id": "pr:508",
+      "type": "pr",
+      "title": "PR #508",
+      "tier": "extended",
+      "meta": {
+        "number": 508,
+        "url": "https://github.com/Skords-01/Sergeant/pull/508"
+      }
+    },
+    {
       "id": "pr:51",
       "type": "pr",
       "title": "PR #51",
@@ -3549,6 +3559,11 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0003",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0004",
       "to": "pr:51",
       "type": "touched-by"
@@ -3809,6 +3824,11 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0043",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0047",
       "to": "hard-rule:4",
       "type": "references"
@@ -3826,6 +3846,11 @@
     {
       "from": "adr:0047",
       "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0047",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -3899,13 +3924,28 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0058",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0059",
       "to": "pr:2889",
       "type": "touched-by"
     },
     {
+      "from": "adr:0059",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0060",
       "to": "pr:2898",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0060",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -3931,6 +3971,11 @@
     {
       "from": "adr:0061",
       "to": "pr:2899",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0061",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -3969,6 +4014,11 @@
       "type": "touched-by"
     },
     {
+      "from": "adr:0066",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "adr:0067",
       "to": "hard-rule:15",
       "type": "references"
@@ -3986,6 +4036,11 @@
     {
       "from": "adr:0067",
       "to": "pr:3665",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0067",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -4066,6 +4121,11 @@
     {
       "from": "adr:0073",
       "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "adr:0073",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -4166,6 +4226,11 @@
     {
       "from": "initiative:0015",
       "to": "pr:3551",
+      "type": "touched-by"
+    },
+    {
+      "from": "initiative:0015",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -4429,6 +4494,11 @@
       "type": "touched-by"
     },
     {
+      "from": "initiative:hardening-matrix",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "playbook:add-hard-rule",
       "to": "hard-rule:15",
       "type": "references"
@@ -4519,8 +4589,18 @@
       "type": "touched-by"
     },
     {
+      "from": "playbook:modify-n8n-workflow",
+      "to": "pr:508",
+      "type": "touched-by"
+    },
+    {
       "from": "playbook:onboard-external-api",
       "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:onboard-external-api",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {
@@ -4556,6 +4636,11 @@
     {
       "from": "playbook:rotate-openclaw-credentials",
       "to": "pr:334",
+      "type": "touched-by"
+    },
+    {
+      "from": "playbook:rotate-openclaw-credentials",
+      "to": "pr:508",
       "type": "touched-by"
     },
     {

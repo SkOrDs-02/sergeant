@@ -102,7 +102,8 @@ Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 а
 
 | PR                                                       | Title                                                                       | Merged     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                       | PENDING    |
 | [#2898](https://github.com/Skords-01/Sergeant/pull/2898) | feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4) | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

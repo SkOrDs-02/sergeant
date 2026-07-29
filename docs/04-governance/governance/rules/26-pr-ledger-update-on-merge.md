@@ -56,7 +56,8 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/04-governance/pr-ledger/in
 
 | PR                                                       | Title                                                              | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | PENDING    |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

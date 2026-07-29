@@ -3,7 +3,7 @@
   "version": 1,
   "generated_at": "2026-07-29",
   "sourceHashes": {
-    "knowledge-graph": "d20d0b17514dc262a682b1a4b2d06df7abfc0183cb67676432d36b45514a8f57",
+    "knowledge-graph": "67d33e90b5afda71703b3d2d3674569f0e5c86590b171ea0ee686e33b9d1c066",
     "symbol-index": "ea7cceca2ef2531b8d240042ec4e8b9a9e6e661a8d5369b5af3d70c0d433a2ea"
   },
   "counts": {
@@ -617,8 +617,8 @@
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "56afa881ab0969bf978f1aa5810f022519aa13f9e30240e88d783f66a8d88bd1"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "de74f427a69c3fc266f94f9d0245bcd98cba30167adddbdb552f4f1a855e8c55"
     },
     {
       "id": "adr:0059",
@@ -628,8 +628,8 @@
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "615e0c6e65f73e4dbefeca35d9f40a3c4159a6a44f466fd01579d67f7a185c76"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "d45066ca2b7ba4b1f7f1c7952a88515a0ee263cc79e0629fe8be1fb586af4e57"
     },
     {
       "id": "adr:0060",
@@ -639,8 +639,8 @@
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "31fbb23967153764d6962cebddfa2b20a813eb0d915c6b51a45642a519e7d702"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "c74027a843de5384c7eb6c016637f81286a0c1e462d88d4b6dbb70e9cd46e528"
     },
     {
       "id": "adr:0061",
@@ -650,8 +650,8 @@
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "38930116fe07dca5204c71d4e9b70f1a1c814443db2b3d00c74d074f2fccd0eb"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "85df4fd9ec9d4eaa4dbe45dc47657cff8f4a64f6cb2458239e86932cb07e614c"
     },
     {
       "id": "adr:0062",
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "457d5fa2796385e9799e8cc7766a4e291bdeba53a1bdd3cbf4b75027ce0a69fe"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "d2a715a82b74131eadc770c445f842628d48727fbec7e84b49ae972c756843d0"
     },
     {
       "id": "adr:0067",
@@ -782,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-24 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
-      "contentHash": "95373fb7475a7d8009418d5e548b28677be2a805a89044a564e9328677b2326d"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-29 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
+      "contentHash": "94dcd21975b6b7fc4ed75e41ead82d3558a0c61c5622b817c1156e1f0058517a"
     },
     {
       "id": "adr:0074",
