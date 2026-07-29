@@ -1,6 +1,6 @@
 # Беклог виправлень за підсумками knowledge-аудиту
 
-> **Last touched:** 2026-07-25 by @Skords-01 (зведення: Claude Fable 5).
+> **Last touched:** 2026-07-29 by Codex (code-reconcile cleanup).
 > **Status:** Active
 
 Зведення всіх рішень «фікс» із шести diff-звітів
@@ -34,7 +34,7 @@
 | Tombstone-resurrection: toggle→untoggle→toggle губить чекін                                      | routine   | code | крит  | routine E-1                                        | ✅        |
 | Weekday off-by-one у create/edit executor звичок                                                 | routine   | code | агент | routine E-5                                        | ✅        |
 | Paywall-текст «10 повідомлень» → фактичний ліміт                                                 | hub-coach | code | агент | hub-coach E1                                       | ✅        |
-| Пре-існуючі червоні тести finyk (spending, FinykApp.extra)                                       | finyk     | code | агент | finyk verification                                 |           |
+| Пре-існуючі червоні тести finyk (spending, FinykApp.extra)                                       | finyk     | code | агент | finyk verification                                 | ✅        |
 | Пакет docs-фіксів: Privat-статус, mobile-паритет, глосарій, env-vars, докстрінги, ліміт 20 tools | крос      | docs | агент | finyk E1-E3 · hub-coach E5/D1 · fizruk E4          | ✅        |
 | Звірити GTM-обіцянки з кодом: «500K+ база», проактивність, тір-гейти                             | крос      | docs | агент | overview B-6 · nutrition D-3 · routine напруги 3-4 | ✅        |
 | Фантомний лічильник `routine_streaks` — перейменувати або зняти                                  | routine   | code | недок | routine E-4                                        | ✅        |
@@ -47,21 +47,25 @@
 > [ADR-0076](../../04-governance/adr/0076-cash-on-hand-entity.md).
 > **Баг лишається живим до релізу фічі.**
 
+> **Verification 2026-07-29:** targeted suites більше не червоні: `finyk-domain`
+> spending — 18/18, web `FinykApp.extra` — 39/39. Старий Wave 0 рядок закрито
+> як stale baseline, а не окремою зміною продуктового коду в цьому cleanup.
+
 ## Хвиля 1 — Фундамент даних
 
 «Сервер — джерело істини» (брейншторм 1.2) починається тут: append-only
 події замість мутованого стану, одна часова доктрина, одне джерело кожної
 цифри. Блокує все, що рахує (стріки, coverage, digest, звірки).
 
-| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан                             |
-| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | -------------------------------- |
-| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 | стадія 1 стадія 1 · ADR-0079     |
-| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 | стадія 1 стадія 1 · ADR-0077     |
-| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 стадії 1-2 · ADR-0079 |
-| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       | ✅ ADR-0078                      |
-| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | стадія 1 стадія 1 · ADR-0079     |
-| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | стадії 1-2 стадії 1-2 · ADR-0080 |
-| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 стадії 1-2 · ADR-0079 |
+| Задача                                                                       | Модуль    | Тип          | Насл. | Джерело           | Стан                  |
+| ---------------------------------------------------------------------------- | --------- | ------------ | ----- | ----------------- | --------------------- |
+| Append-only completions — єдине джерело істини; стрік/rate/heatmap — derived | routine   | code         | крит  | routine беклог #1 | стадія 1 · ADR-0079   |
+| Комора: споживання/поповнення як append-only події, залишок derived          | nutrition | code         | крит  | nutrition E-2/E-7 | стадія 1 · ADR-0077   |
+| Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 · ADR-0079 |
+| Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       | ✅ ADR-0078           |
+| Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | стадія 1 · ADR-0079   |
+| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | стадії 1-2 · ADR-0080 |
+| Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | стадії 1-2 · ADR-0079 |
 
 > **SoT ваги тіла — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1 (read-union):
 > новий доменний селектор `packages/fizruk-domain/src/domain/body/bodyWeight.ts`

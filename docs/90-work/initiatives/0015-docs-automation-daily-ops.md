@@ -1,8 +1,8 @@
 # 0015 — Docs automation for daily ops
 
-> **Last validated:** 2026-07-20 by @cursoragent (code↔doc reconcile). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-29 by Codex (agent-queue reconcile). **Next review:** 2026-10-27.
 > **Status:** In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` field on all initiatives + `lint:initiative-agent-ready` gate. Remaining = Phase 1 **observational acceptance only** (maintainer 5/7-day `today.md` usage self-report). **7-day consecutive-green streak MET** for `docs-daily-brief.yml`: green 2026-07-02 → 2026-07-09 (8 runs) after fail 2026-07-01. **Cron removed on purpose** 2026-07-09 (`dca267eeb` — Actions-minutes hygiene; workflow лишився `workflow_dispatch`-only). Це пояснює відсутність schedule-runs після 07-09 — не broken cron. Stays In progress until self-report closes.
-> **Agent-ready:** yes
+> **Agent-ready:** blocked — залишилось лише maintainer-only самоспостереження за 5/7 днями використання `today.md`; окремої агентської задачі немає.
 
 ## TL;DR
 

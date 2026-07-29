@@ -1,7 +1,7 @@
 # Продуктовий брейншторм за підсумками knowledge-аудиту (2026-07)
 
-> **Last touched:** 2026-07-24 by @Skords-01 (рішення founder-а, фасилітація Claude Fable 5).
-> **Status:** Active
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Status:** Reference — рішення спожиті продуктовими канонами та `product-knowledge-backlog.md`; два telemetry-залежні питання лишаються продуктово відкритими, але не є готовими агентськими задачами.
 
 Закриття відкритих питань, накопичених п'ятьма канонами
 (`docs/01-product/model/`) і diff-звітами (`docs/90-work/audits/`).

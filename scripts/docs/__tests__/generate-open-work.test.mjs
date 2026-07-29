@@ -26,6 +26,7 @@ import {
   applySkillMapping,
   agentReadyRank,
   sortByAgentReady,
+  matchesTrackerExclude,
 } from "../generate-open-work.mjs";
 
 describe("stripStatusPrefix", () => {
@@ -163,6 +164,24 @@ describe("shouldSkipFile", () => {
   });
 });
 
+describe("matchesTrackerExclude", () => {
+  it("matches tracker-local directory and exact-file substrings", () => {
+    assert.equal(matchesTrackerExclude("prompts/a.md", ["prompts/"]), true);
+    assert.equal(
+      matchesTrackerExclude("specs/TEMPLATE.md", ["specs/TEMPLATE.md"]),
+      true,
+    );
+    assert.equal(
+      matchesTrackerExclude("specs/feature.md", ["prompts/"]),
+      false,
+    );
+  });
+
+  it("normalizes Windows separators", () => {
+    assert.equal(matchesTrackerExclude("prompts\\a.md", ["prompts/"]), true);
+  });
+});
+
 describe("truncateStatus", () => {
   it("returns short status untouched", () => {
     assert.equal(truncateStatus("Active"), "Active");
@@ -252,8 +271,8 @@ describe("parseDocument + listMarkdown + collectOpenWork (integration)", () => {
         ["# Nested", "> **Status:** Draft"].join("\n"),
       );
 
-      // Recursive=true should pick up `sub/nested.md` but skip
-      // README/archive/_-prefix.
+      // Recursive=true sees `sub/nested.md`; tracker.exclude removes it while
+      // universal rules still skip README/archive/_-prefix.
       const sections = collectOpenWork(tmp, [
         {
           id: "my",
@@ -261,12 +280,13 @@ describe("parseDocument + listMarkdown + collectOpenWork (integration)", () => {
           blurb: "test",
           rootDir: "docs/myTracker",
           recursive: true,
+          exclude: ["sub/"],
         },
       ]);
 
       assert.equal(sections.length, 1);
       const titles = sections[0].entries.map((e) => e.title).sort();
-      assert.deepEqual(titles, ["Active thing", "Nested"]);
+      assert.deepEqual(titles, ["Active thing"]);
 
       // PR extraction propagates from doc body
       const active = sections[0].entries.find(

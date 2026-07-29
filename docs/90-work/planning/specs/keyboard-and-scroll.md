@@ -1,7 +1,7 @@
 # Клавіатура iOS: мертва зона під навбаром і стрибання шитів
 
-> **Last touched:** 2026-07-28 by Codex. **Next review:** 2026-08-28.
-> **Status:** Active
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-08-12.
+> **Status:** Implemented — код змерджено в PR #439; лишилося ручне приймання founder-а на iPhone Safari/PWA.
 
 Самодостатня спека для виконання у свіжій сесії. Виконавець: прочитай `.agents/skills/sergeant-start-here/SKILL.md`, потім `sergeant-bugfix-and-regression` (це diagnose-then-fix задача) і `sergeant-web-ui`. Рішення § Дизайн-рішення узгоджені з founder-ом — не переглядай; гіпотези § Розслідування — перевір і підтверджуй/спростовуй кодом.
 

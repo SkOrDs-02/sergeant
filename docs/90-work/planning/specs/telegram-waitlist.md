@@ -1,7 +1,8 @@
 # Спека: Telegram-вейтліст
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Scaffolded (спека, не реалізовано)
+> **Agent-ready:** needs-decision — перед стартом founder підтверджує рішення з § «Рішення, ухвалені за замовчуванням».
 
 ## Проблема
 

@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-07-20 by @cursoragent (S10-Q1 + harness follow-ups closed). **Next review:** 2026-10-18.
+> **Last validated:** 2026-07-29 by Codex (semantic work-tracker reconcile). **Next review:** 2026-10-27.
 > **Status:** Active
 
 Активні roadmap-и, дослідницькі плани і decision-rationale документи розвитку Sergeant.
@@ -15,19 +15,19 @@
 
 Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; Closed — у [`archive/specs/`](./archive/specs/).
 
-> Станом на 2026-07-25 у `specs/` живі: `anonymous-local-first-persistence.md`, `keyboard-and-scroll.md`, `test-observations-fixes-ab.md` (+ `TEMPLATE.md`). Спеки UA-billing / coach-correlations / chornylo перенесені в архів після code-reconcile 2026-07-20; шість спек knowledge-аудиту (`product-knowledge-audit*.md`) — у `archive/specs/` після Batch 2026-07-25, бо їхній делівербл (diff-звіти) уже лежить у [`../audits/`](../audits/README.md).
+> Станом на 2026-07-29 у `specs/` дві відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual) і `telegram-waitlist.md` (потрібне founder-рішення). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` мають статус `Implemented` і чекають лише ручного founder-QA; `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
 
 ### Зведені роадмапи
 
-| Документ                                                             | Скоуп                                                           | Статус                                                                           |
-| -------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)             | План спринтів 9–10: performance / reliability / product-surface | Active — reconcile 2026-07-20; відкриті: S10-T2 + залишки S10-R2/R1/F2/Q1        |
-| [`sync-client-wiring.md`](./sync-client-wiring.md)                   | Multi-device op-log wiring після SQLite cut-over                | Active — Phase 1–2 code shipped; Phase 2 verification + Phase 3–4 open           |
-| [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) | Операційний playbook sync wiring                                | Active                                                                           |
-| [`product-knowledge-backlog.md`](./product-knowledge-backlog.md)     | ~55 задач у 6 хвилях за підсумками knowledge-аудиту 6 модулів   | Active — хвилі 0–3 = передумова invite-gate                                      |
-| [`product-brainstorm-2026-07.md`](./product-brainstorm-2026-07.md)   | Продуктовий брейншторм: напрями після knowledge-аудиту          | Active                                                                           |
-| [`ai-coding-improvements.md`](./ai-coding-improvements.md)           | План покращення AI-coding workflow                              | Active — 4 блоки `next` (PR-template sampling, operator dashboards, privacy ops) |
-| [`harness-engineering-v1.md`](./harness-engineering-v1.md)           | Harness-engineering v1 rollout + follow-ups                     | Reference — v1 rollout завершено 2026-06-29                                      |
+| Документ                                                             | Скоуп                                                           | Статус                                                                    |
+| -------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)             | План спринтів 9–10: performance / reliability / product-surface | Active — reconcile 2026-07-29; відкриті: S10-R2 + залишок S10-R1 (`/app`) |
+| [`sync-client-wiring.md`](./sync-client-wiring.md)                   | Multi-device op-log wiring після SQLite cut-over                | Active — Phase 1–2 code shipped; Phase 2 verification + Phase 3–4 open    |
+| [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) | Операційний playbook sync wiring                                | Active                                                                    |
+| [`product-knowledge-backlog.md`](./product-knowledge-backlog.md)     | ~55 задач у 6 хвилях за підсумками knowledge-аудиту 6 модулів   | Active — хвилі 0–3 = передумова invite-gate                               |
+| [`product-brainstorm-2026-07.md`](./product-brainstorm-2026-07.md)   | Продуктовий брейншторм: рішення після knowledge-аудиту          | Reference — рішення спожиті канонами й `product-knowledge-backlog.md`     |
+| [`ai-coding-improvements.md`](./ai-coding-improvements.md)           | План покращення AI-coding workflow                              | Active — 3 напрями `next`; перед виконанням кожен потребує окремої спеки  |
+| [`harness-engineering-v1.md`](./harness-engineering-v1.md)           | Harness-engineering v1 rollout + follow-ups                     | Reference — v1 rollout завершено 2026-06-29                               |
 
 ## Архів
 
@@ -43,5 +43,9 @@
 - `archive/specs/product-knowledge-audit*.md` — шість спек knowledge-аудиту (finyk, fizruk, hub-coach, nutrition, overview, routine); делівербл кожної — diff-звіт у [`../audits/`](../audits/README.md), а зведення фіксів — [`product-knowledge-backlog.md`](./product-knowledge-backlog.md)
 - `archive/sync-client-wiring-phase2-handoff.md` — Phase 2 залита в код, handoff спожитий; живий трек лишається в [`sync-client-wiring.md`](./sync-client-wiring.md)
 - `archive/ci-main-green-2026-07-21.md` — Closed
+
+**Code-reconcile 2026-07-29:**
+
+- `archive/specs/test-observations-fixes-ab.md` — усі групи A/B змерджено в PR #427
 
 Конвенція: Status → Archived (read-only), inbound-лінки на `archive/` шлях.

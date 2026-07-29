@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/knowledge-graph.schema.json",
   "version": 1,
-  "generated_at": "2026-07-26",
+  "generated_at": "2026-07-29",
   "counts": {
     "adr": 77,
     "audit": 10,
@@ -905,7 +905,7 @@
       "type": "audit",
       "title": "Research: аналітика конкурентів і шортлист для Фініка (C6)",
       "path": "docs/90-work/audits/finyk-analytics-research.md",
-      "status": "Active",
+      "status": "Reference — дослідження завершене; реалізаційні рекомендації ведуться в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -914,7 +914,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: finyk — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-finyk.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -923,7 +923,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: fizruk — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-fizruk.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -932,7 +932,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-hub-coach.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -941,7 +941,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: nutrition — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-nutrition.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -950,7 +950,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: product-overview (парасолька) — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-overview.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -959,7 +959,7 @@
       "type": "audit",
       "title": "Продуктовий аудит знань: routine — diff-звіт тріангуляції",
       "path": "docs/90-work/audits/product-knowledge-routine.md",
-      "status": "Active",
+      "status": "Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.",
       "tier": "core",
       "meta": {}
     },
@@ -1387,7 +1387,7 @@
       "type": "initiative",
       "title": "Зведена матриця hardening-карток",
       "path": "docs/90-work/initiatives/hardening-matrix.md",
-      "status": "Active",
+      "status": "Reference — зведений індекс; виконувана робота живе у статусах самих hardening-карток.",
       "tier": "core",
       "meta": {}
     },

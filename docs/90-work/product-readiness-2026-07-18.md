@@ -1,6 +1,6 @@
 # Готовність продукту й залишок робіт — 2026-07-18
 
-> **Last validated:** 2026-07-20 by @cursor (docs-drift sweep). **Next review:** 2026-08-18.
+> **Last validated:** 2026-07-29 by Codex (fresh `pnpm snapshot --refresh`). **Next review:** 2026-08-18.
 > **Status:** Active
 
 Це ручний portfolio-зріз поверх автоматичного [`open-work.md`](../open-work.md).
@@ -16,8 +16,9 @@ production-ready launch. Основні модулі й інженерна ос�
 1. повний multi-device sync ще не має завершеного локального й production E2E;
 2. billing-код існує, але live Stripe, legal/ФОП і перший реальний платіж не
    пройшли acceptance;
-3. `main` не має стабільно зеленого release signal: останній snapshot показав
-   failures у coverage, links, docs automation і server integration.
+3. `main` не має стабільно зеленого release signal: snapshot 2026-07-29 показав
+   шість невдалих CI run-ів у групах post-deploy smoke, Markdown links, Trivy,
+   Test coverage і `check`; це baseline-ризик, не результат цього docs cleanup.
 
 Функціональна ширина продукту висока, але operational confidence середня.
 Тому нові великі фічі не є пріоритетом до закриття цих трьох контурів.
@@ -29,7 +30,7 @@ production-ready launch. Основні модулі й інженерна ос�
 | P0    | [`sync-client-wiring.md`](./planning/sync-client-wiring.md) | Ready після локального verification handoff | Testcontainers, два профілі/device E2E, `pnpm check`; потім Phase 3 SSE/ops                                         |
 | P0    | Стабілізація release signal                                 | Ready                                       | Розібрати актуальні failures `main`, відділити flaky/baseline від regressions, повернути обов'язкові checks у green |
 | P1    | S10-Q1 mutation-testing workflow                            | Done (workflow shipped)                     | `.github/workflows/mutation-testing.yml` (weekly + `workflow_dispatch`); далі — score ≥ 70% на live runs            |
-| P1    | S10-T2 bundle cuts                                          | Ready, але після P0                         | Підтверджений size report і знижений budget без UX-регресії                                                         |
+| P1    | S10-T2 bundle cuts                                          | Done (2026-07-20)                           | Native DnD + `@tanstack/react-virtual`; старий ≤820 kB acceptance superseded чинним 1.2 MB budget                   |
 | P1    | Повний EN-locale contract із S10-R2                         | Ready                                       | Parity gate та критичні launch screens без hard-coded UA copy                                                       |
 | P2    | Tech-debt burndown                                          | Ready вибірково                             | `eslint-disable` cleanup і аудит реальних rate-limit gaps; не брати trigger-gated пункти                            |
 
@@ -66,8 +67,9 @@ production-ready launch. Основні модулі й інженерна ос�
 - Expo SDK 53 plan застарів відносно актуальних dependency PR;
 - founder-feedback audit лишався активним після merge PR #304, #306 і #307.
 
-Після lifecycle reconciliation автоматична черга зменшилась з **70 до 34**
-відкритих документів. Це ще не 42 незалежні задачі: launch-документи й tech-debt
+Після lifecycle reconciliation і code-reconcile 2026-07-29 автоматична черга
+зменшилась з **70 до 28** відкритих документів. Це не 28 незалежних задач:
+launch-документи й tech-debt
 registries агрегують багато пунктів, а частина відкритого залежить від рішення або
 зовнішньої інфраструктури.
 

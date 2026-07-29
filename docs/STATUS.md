@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last validated:** 2026-07-26 by docs:gen-status. **Next review:** 2026-07-26.
+> **Last validated:** 2026-07-29 by docs:gen-status. **Next review:** 2026-07-29.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,32 +30,34 @@
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 
-## 🔵 В роботі — 35 відкритих
+## 🔵 В роботі — 28 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 4        |
-| Планування                       | 6        |
+| Ініціативи                       | 3        |
+| Планування                       | 7        |
 | Launch / запуск                  | 13       |
-| Аудити й прожарки                | 7        |
+| Аудити й прожарки                | 0        |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
 
 **Найактивніше (8, за останніми PR):**
 
-- [`90-work/initiatives/hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md) — Зведена матриця hardening-карток — Active _(Ініціативи)_
 - [`90-work/initiatives/0015-docs-automation-daily-ops.md`](./90-work/initiatives/0015-docs-automation-daily-ops.md) — 0015 — Docs automation for daily ops — In progress — **Phase 1 + Phase 2 code-complete.** Phase 2 (Bundle Beta) shipped: skill+playbook columns + `agent-ready` _(Ініціативи)_
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
 - [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 - [`01-product/launch/product-os/ftux-master-tracker.md`](./01-product/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Launch / запуск)_
-- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — Sprint 9 code-side closed; Sprint 10: S10-T2 + S10-Q1 + S10-X1 + S10-T3 (JSON) shipped; відкриті залишки: S10-R _(Планування)_
+- [`90-work/planning/sprint-9-10-plan-2026.md`](./90-work/planning/sprint-9-10-plan-2026.md) — Sergeant — план Спринтів 9-10 (2026-07-07 – 2026-08-01) — Active — Sprint 9 code-side closed; Sprint 10 shipped S10-T2, S10-Q1, S10-X1, S10-T3 (JSON), S10-F2 and OG/Twitter slice _(Планування)_
+- [`01-product/launch/phases/02-capacitor-launch.md`](./01-product/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Launch / запуск)_
 
 ## ⏭️ Наступний крок / заблоковано
 
-_Жодного `Phase X next` / `Stage X blocked` маркера. Деталі по фазах — у самих трекерах._
+Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
+
+- [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
 ## 🧱 Стек
 
