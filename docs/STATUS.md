@@ -19,8 +19,8 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./04-governance/pr-ledger/index.json).
 
-- [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(PENDING)_
-- [#4521](https://github.com/Skords-01/Sergeant/pull/4521) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(PENDING)_
+- [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
+- [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 - [#3638](https://github.com/Skords-01/Sergeant/pull/3638) — Audit triage digest (auto, twice-weekly) _(2026-06-19)_
 - [#3649](https://github.com/Skords-01/Sergeant/pull/3649) — chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs _(2026-06-19)_
@@ -30,13 +30,13 @@
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 - [#3573](https://github.com/Skords-01/Sergeant/pull/3573) — docs(agents): archive initiative 0018 (agent:find, code-complete) _(2026-06-14)_
 
-## 🔵 В роботі — 28 відкритих
+## 🔵 В роботі — 27 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 3        |
 | Планування                       | 7        |
-| Launch / запуск                  | 13       |
+| Launch / запуск                  | 12       |
 | Аудити й прожарки                | 0        |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
@@ -61,7 +61,7 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 
 ## 🧱 Стек
 
-pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tools/openclaw` + 12 пакетів. Канонічні джерела:
+pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів + tool workspace `tools/entropy-janitors`. Канонічні джерела:
 
 - [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
 - [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.

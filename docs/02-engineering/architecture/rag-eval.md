@@ -25,7 +25,7 @@ embeddings + pgvector). Складається з трьох частин:
 
 PR-22 cron (`.github/workflows/rag-quality-gate.yml`) запускає CLI weekly
 й opens issue + Sentry-alert при degradation. Day-60 decision-point: якщо
-recall@4 < 0.4 → kill module (set `AI_MEMORY_ENABLED=false` на Railway).
+recall@4 < 0.4 → kill module (set `AI_MEMORY_ENABLED=false` у Coolify app `sergeant-api` і redeploy).
 
 ## Golden-set — структура та curation
 

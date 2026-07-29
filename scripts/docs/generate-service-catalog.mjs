@@ -3,9 +3,9 @@
 //
 // Build a machine-readable mirror of `docs/02-engineering/architecture/service-catalog.md`
 // by enumerating production surfaces from:
-//   - Dockerfile.api / Dockerfile.openclaw / Dockerfile.openclaw-gateway
-//   - deploy artifacts (Dockerfile.api → Coolify via deploy-api.yml; Railway decommissioned — ADR-0074)
-//   - workspace folders (apps/web / apps/mobile / apps/mobile-shell)
+//   - Dockerfile.api
+//   - deploy artifacts (Dockerfile.api → Coolify via deploy-api.yml)
+//   - workspace folders (apps/web / apps/landing / apps/mobile / apps/mobile-shell)
 //
 // Output: `docs/04-governance/governance/service-catalog.auto.json`.
 //
@@ -108,10 +108,6 @@ function detectHealthcheckPath(workspaceRel) {
     const text = readSafe(routesIndex);
     if (text.includes("/health")) return "/health";
   }
-  // OpenClaw Gateway convention (historically set via Railway config-as-code).
-  if (workspaceRel === "ops/openclaw" || workspaceRel === "tools/openclaw") {
-    return "/healthz";
-  }
   return null;
 }
 
@@ -140,6 +136,20 @@ export function buildServiceCatalog() {
       railwayService: null,
       healthcheckPath: null,
       owner: ownerFor("apps/web", owners),
+    });
+  }
+
+  // Standalone marketing landing
+  if (existsSync(resolve(REPO_ROOT, "apps/landing/package.json"))) {
+    surfaces.push({
+      id: "marketing-landing",
+      title: "Marketing landing",
+      workspace: "apps/landing",
+      deployTarget: "vercel",
+      deployArtifact: "vercel.json",
+      railwayService: null,
+      healthcheckPath: null,
+      owner: ownerFor("apps/landing", owners),
     });
   }
 
@@ -185,39 +195,6 @@ export function buildServiceCatalog() {
       railwayService: null,
       healthcheckPath: null,
       owner: ownerFor("apps/mobile-shell", owners),
-    });
-  }
-
-  // OpenClaw (legacy Telegram bot)
-  if (
-    existsSync(resolve(REPO_ROOT, "tools/openclaw/package.json")) &&
-    dockerfileExists("Dockerfile.openclaw")
-  ) {
-    surfaces.push({
-      id: "openclaw",
-      title: "OpenClaw (Telegram bot)",
-      workspace: "tools/openclaw",
-      deployTarget: "decommissioned",
-      deployArtifact: "Dockerfile.openclaw",
-      railwayService: null,
-      healthcheckPath: null,
-      owner: ownerFor("tools/openclaw", owners),
-    });
-  }
-
-  // OpenClaw Gateway (Phase 7 cutover — ADR-0055)
-  if (dockerfileExists("Dockerfile.openclaw-gateway")) {
-    surfaces.push({
-      id: "openclaw-gateway",
-      title: "OpenClaw Gateway",
-      workspace: existsSync(resolve(REPO_ROOT, "ops/openclaw"))
-        ? "ops/openclaw"
-        : null,
-      deployTarget: "decommissioned",
-      deployArtifact: "Dockerfile.openclaw-gateway",
-      railwayService: null,
-      healthcheckPath: detectHealthcheckPath("ops/openclaw"),
-      owner: ownerFor("ops/openclaw", owners),
     });
   }
 

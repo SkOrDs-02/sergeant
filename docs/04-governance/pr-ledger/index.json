@@ -1,12 +1,12 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-06-29",
+  "generated_at": "2026-07-29",
   "prs": [
     {
       "number": 334,
       "title": "docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants)",
-      "merged_at": "PENDING",
+      "merged_at": "2026-07-21T00:32:09Z",
       "author": "@claude",
       "touchedDocs": [
         "AGENTS.md",
@@ -220,9 +220,9 @@
       ]
     },
     {
-      "number": 4521,
+      "number": 74,
       "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "PENDING",
+      "merged_at": "2026-06-30T13:28:53Z",
       "author": "@Skords-01",
       "touchedDocs": [
         "docs/04-governance/adr/0066-entropy-janitors.md",

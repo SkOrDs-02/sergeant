@@ -1,9 +1,11 @@
 <!-- AUTO-GENERATED: no generator exists; hand-edit this file directly. -->
 
-# Distroless base-image upgrade plan — libssl3 CVE cluster (expires 2026-07-02)
+# Distroless base-image upgrade record — libssl3 CVE cluster
 
 > **Last validated:** 2026-06-09 by @platform-hardening-engineer. **Next review:** 2026-09-05 (90 days).
-> **Status:** Resolved — `Dockerfile.api` migrated to `nodejs22-debian13:nonroot`; `.trivyignore` cleared. `Dockerfile.openclaw-gateway` uses alpine (not distroless) — separate track.
+> **Status:** Deprecated — completed point-in-time plan; current image policy lives in [`../../03-operations/ops/docker-image-policy.md`](../../03-operations/ops/docker-image-policy.md).
+>
+> `Dockerfile.api` migrated to `nodejs22-debian13:nonroot`; `.trivyignore` was cleared. Historical OpenClaw gateway notes below are no longer actionable because the gateway was removed by [ADR-0075](../adr/0075-openclaw-gateway-decommissioned.md).
 
 ## TL;DR
 

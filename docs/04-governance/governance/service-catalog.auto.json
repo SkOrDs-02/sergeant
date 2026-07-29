@@ -1,12 +1,22 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-20",
+  "generated_at": "2026-07-29",
   "surfaces": [
     {
       "id": "web-pwa",
       "title": "Web / PWA",
       "workspace": "apps/web",
+      "deployTarget": "vercel",
+      "deployArtifact": "vercel.json",
+      "railwayService": null,
+      "healthcheckPath": null,
+      "owner": "@SkOrDs-02"
+    },
+    {
+      "id": "marketing-landing",
+      "title": "Marketing landing",
+      "workspace": "apps/landing",
       "deployTarget": "vercel",
       "deployArtifact": "vercel.json",
       "railwayService": null,

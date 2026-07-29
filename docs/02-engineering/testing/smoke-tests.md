@@ -1,6 +1,6 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-20.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).
@@ -21,7 +21,7 @@ Sister-сторінки:
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | GitHub-issue `[Smoke] Post-deploy smoke failed — <env> YYYY-MM-DD` (label `smoke-test-fail`) | `post-deploy-smoke` workflow знайшов ≥1 endpoint з verdict `fail` (status / latency / shape mismatch).                    | Відкрий issue → `smoke-report` artifact → класифікуй failures.                          |
 | `post-deploy-smoke` job `failure` на `deployment_status` trigger                             | Deploy завершився, але smoke завалився — кандидат на **rollback**.                                                        | Перевір `GITHUB_STEP_SUMMARY` цього run-у; якщо user-facing → пуш rollback або hotfix.  |
-| `post-deploy-smoke` job `failure` на schedule                                                | Drift після deploy, який раніше пройшов smoke (e.g. dep-провайдер outage Mono/Anthropic, або running-handler regression). | Перевір зовнішні dep-status (Mono, Anthropic), Sentry на runtime-помилки, Railway logs. |
+| `post-deploy-smoke` job `failure` на schedule                                                | Drift після deploy, який раніше пройшов smoke (e.g. dep-провайдер outage Mono/Anthropic, або running-handler regression). | Перевір зовнішні dep-status (Mono, Anthropic), Sentry на runtime-помилки, Coolify logs. |
 | Issue reopen-ається > 2x за тиждень                                                          | Flaky endpoint **або** real regression, який ще не закомічили.                                                            | Eskalate: pair з owner → patch або тимчасово понизь tier на `extended`.                 |
 
 ## Як працює workflow
@@ -29,7 +29,7 @@ Sister-сторінки:
 - Файл: [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) (§ Workflow YAML — дзеркало).
 - Тригери:
   - `workflow_dispatch` з `base_url` / `tier` / `strict` inputs (ad-hoc прогон з UI Actions).
-  - `deployment_status` — стартує одразу після успішного GitHub deployment-у (e.g. Vercel preview / Railway prod). `if: deployment_status.state == 'success'`.
+  - `deployment_status` — стартує одразу після успішного GitHub deployment-у (e.g. Vercel preview). `if: deployment_status.state == 'success'`.
   - `schedule: "30 6 * * *"` — 06:30 UTC щодня, на 30 хв пізніше за `pact-drift` (06:00 UTC), щоб триaге-лейн не coalesce-ився.
 - Скрипт: [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) — параметри: `--base-url`, `--report`, `--json`, `--config`, `--tier`, `--only`, `--skip`, `--strict`, `--dry-run`, `--concurrency`.
 - Конфіг: [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json) — JSON-список тестів.
@@ -126,11 +126,11 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 Якщо `[Smoke] Post-deploy smoke failed` issue з'явився:
 
 1. **Класифікуй failures** з `smoke-report` artifact:
-   - `fetch_error` (DNS / connection refused / timeout) — deploy не доступний з GH runner-а: перевір DNS staging-домену, статус деплоя на Railway/Vercel, чи WAF не блочить GH-IPS.
+   - `fetch_error` (DNS / connection refused / timeout) — deploy не доступний з GH runner-а: перевір DNS staging-домену, статус деплоя на Coolify/Vercel, чи WAF не блочить GH-IPS.
    - `status_mismatch` (5xx) — runtime crash; перевір Sentry → grouped by `route:<path>`.
    - `status_mismatch` (401 на endpoint, що раніше повертав 200) — `STAGING_SESSION_COOKIE` прострочився; поновіть.
    - `shape_mismatch` — handler змінив response shape; одна з: a) PR-42 contract update забутий, b) infra додала middleware, що нормалізує/обрізає тіло, c) handler bug.
-   - `latency_severe_overrun` — DB connection pool exhausted? зовнішній API провайдер повільний? Перевір Railway → Database → Active queries, Anthropic / Voyage / Mono dashboards.
+   - `latency_severe_overrun` — DB connection pool exhausted? зовнішній API провайдер повільний? Перевір Coolify Postgres metrics/logs, Anthropic / Voyage / Mono dashboards.
 2. **Якщо `deployment_status` тригер + `critical` tier завалився:**
    - **Rollback first, fix second.** GitHub → Deployments → revert.
    - Опен hotfix-PR, recreate smoke вручну через `workflow_dispatch` після hotfix-merge.
@@ -155,7 +155,7 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 
 ## Майбутні розширення
 
-- **Rollback automation:** на `critical`-tier fail після `deployment_status` — автоматичний revert у Railway / Vercel API.
+- **Rollback automation:** на `critical`-tier fail після `deployment_status` — автоматичний rollback у Coolify / Vercel API.
 - **Latency histograms:** замість єдиного `latencyBudgetMs`, мати p50/p95/p99 budgets, заміряти кілька runs.
 - **Sentry route**: окремий alert-route `smoke-test-fail` через існуючий n8n WF-98 alert-bot pipeline (#2535).
 - **Mutation tests opt-in:** `--include-mutations` для `POST /api/auth/sign-in` із dedicated test-user-ом — щоб ловити Better Auth regression. Зараз skipped, бо мутації забруднюють staging state.

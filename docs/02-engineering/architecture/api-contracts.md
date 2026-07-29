@@ -1,6 +1,6 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 >
 > **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.
@@ -153,13 +153,13 @@ jobs:
 
 ⁽¹⁾ Provider replays `{platform: "ios"}` (same `{ ok, platform }` envelope). Це гарантує, що `PushRegisterResponseSchema` consumer-shape валідний для всіх трьох платформ; web-branch покритий module-load env у `apps/server/src/routes/pushTest.test.ts`.
 
-⁽²⁾ Added in the persona-extend PR (poverh PR-42). 5 new endpoints обрано за критерієм «real use в `apps/web/`» + cross-surface critical (`monoWebhookApi` + `nutritionApi` + `coachApi` — топ-3 за кількістю RQ-hooks). Routes як `fizruk/workouts/today` або `openclaw/health` не існують як public REST (`fizruk` — local-first CRDT-sync; `openclaw` — бот, який не консумить `@sergeant/api-client`).
+⁽²⁾ Added in the persona-extend PR (poverh PR-42). 5 new endpoints обрано за критерієм «real use в `apps/web/`» + cross-surface critical (`monoWebhookApi` + `nutritionApi` + `coachApi` — топ-3 за кількістю RQ-hooks). Routes як `fizruk/workouts/today` не існують як public REST (`fizruk` — local-first CRDT-sync). Історичний `openclaw/health` видалено разом з OpenClaw ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 ⁽³⁾ Anthropic-gated: provider-replay ніяк не торкається `api.anthropic.com`. Паттерн — `vi.mock("./../../lib/anthropic.js", () => createAnthropicMockHandle())` + `anthropicMessages.mockResolvedValueOnce(anthropicResponses.text(...))` зі спільного harness-у у `apps/server/src/test/__mocks__/anthropic.ts`. `ANTHROPIC_API_KEY` і `AI_QUOTA_DISABLED=true` піняться через `vi.hoisted` перед імпортом `createApp` — так `requireAnthropicKey` + `requireAiQuota` middleware-и пропускають запит до реального handler-а.
 
-### `openclaw` — навмисно не покритий
+### Telegram waitlist webhook — навмисно не покритий Pact
 
-OpenClaw — це Telegram-бот, який є **отримувачем webhook-ів від Telegram** і не консумить `@sergeant/api-client` для HTTP-комунікації. Контракти між Telegram → OpenClaw перевіряються інакше (signature-validation у `tools/openclaw/src/openclaw/` + smoke-test). У consumer-driven контрактах OpenClaw не має сенсу — у нього немає consumer-боку.
+Поточний Telegram ingress — `POST /api/telegram/webhook` усередині `apps/server`. Він перевіряє `X-Telegram-Bot-Api-Secret-Token` і має route/module tests, але не має окремого HTTP consumer-а з версіонованим контрактом, тому Pact тут не додає користі. Колишній OpenClaw consumer повністю декомісовано ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 ## 🔁 Pact файл як артефакт
 
@@ -186,8 +186,6 @@ OpenClaw — це Telegram-бот, який є **отримувачем webhook-
 1. **Streaming Anthropic stub** для `POST /api/v1/chat` provider-replay (зняти `it.todo`). v2 уже довів — `nutrition/day-plan` ганяє Anthropic-stub без проблем; chat треба окремо через streaming-shape.
 2. **Vision Anthropic stub** для `POST /api/v1/nutrition/analyze-photo` provider-replay (зняти `it.todo`).
 3. **Pact matchers** (`like()`, `term()`) для полів, де ми навмисно хочемо схему, а не значення (наприклад, `requestId` ULID-strings, `nextCursor` опаковий рядок).
-4. **Pact Broker** інтеграція — якщо буде потрібен contract-version-matrix на CI (web vs mobile vs openclaw consumers різних версій).
+4. **Pact Broker** інтеграція — якщо буде потрібен contract-version-matrix на CI (web vs mobile consumers різних версій).
 5. **Streaming SSE контракт** для `/api/v1/chat` — Pact JSON не виражає SSE-фрейми; альтернатива — окремий `chat-stream.contract.test.ts` із власним адаптером.
-6. **Fizruk + openclaw покриття** — обидві персони навмисно не покриті v2:
-   - **fizruk** — local-first CRDT sync через `/api/v2/sync/*`; sync-payload бінарний (Yjs), не JSON, тому Pact без custom encoder-а не підходить. Альтернатива — окремий contract test за байт-вовнішньою фіксурою.
-   - **openclaw** — Telegram-бот, що консумить власний internal-API (`/api/internal/openclaw/*`) через Bearer-ключ, а не через `@sergeant/api-client`. Якщо потрібна contract-валідація — це окрема (consumer=`sergeant-openclaw-bot`, provider=`sergeant-server-internal`) pact-пара, що жила б у `tools/openclaw/src/__tests__/contracts/`.
+6. **Fizruk binary contract** — local-first CRDT sync через `/api/v2/sync/*`; sync-payload бінарний (Yjs), не JSON, тому Pact без custom encoder-а не підходить. Альтернатива — окремий contract test за байтовою фікстурою.

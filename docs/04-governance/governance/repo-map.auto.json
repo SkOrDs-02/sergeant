@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-07-25",
+  "generated_at": "2026-07-29",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -18,12 +18,16 @@
       "type": "module",
       "frameworkDeps": [
         {
+          "name": "playwright",
+          "version": "^1.61.1"
+        },
+        {
           "name": "react",
-          "version": "^19.2.0"
+          "version": "^18.3.0"
         },
         {
           "name": "react-dom",
-          "version": "^19.2.0"
+          "version": "^18.3.0"
         },
         {
           "name": "tailwindcss",
@@ -36,10 +40,14 @@
         {
           "name": "vite",
           "version": "^7.0.0"
+        },
+        {
+          "name": "vitest",
+          "version": "^3.2.4"
         }
       ],
-      "testRunner": null,
-      "owner": null
+      "testRunner": "vitest",
+      "owner": "@SkOrDs-02"
     },
     {
       "name": "@sergeant/mobile",

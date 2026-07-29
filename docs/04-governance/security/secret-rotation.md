@@ -3,7 +3,7 @@
 <!-- Last validated: 2026-06-03 -->
 <!-- Next review: 2026-09-03 -->
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 # Ротація Production Secrets
@@ -48,7 +48,7 @@
 
 - **Локально:** заміни значення `GITHUB_TOKEN` у `.env`
 - **GitHub Actions:** Settings → Secrets and variables → Actions → `GITHUB_TOKEN` (якщо це repo-level secret)
-- **Railway:** якщо токен використовується у Railway service → Railway dashboard → Variables → онови
+- **Coolify:** якщо токен використовує backend → app `sergeant-api` → Environment Variables → онови й redeploy
 
 ---
 
@@ -150,7 +150,7 @@
 #### Оновити
 
 - **Локально:** заміни `VOYAGE_API_KEY` у `.env`
-- **Railway:** якщо backend використовує Voyage AI → Railway dashboard → Service → Variables → онови `VOYAGE_API_KEY`
+- **Coolify:** app `sergeant-api` → Environment Variables → онови `VOYAGE_API_KEY` і redeploy
 
 ---
 
@@ -176,7 +176,7 @@
 #### Оновити
 
 - **Локально:** заміни `SENTRY_DSN` у `.env`
-- **Railway:** Railway dashboard → Service → Variables → онови `SENTRY_DSN`
+- **Coolify:** app `sergeant-api` → Environment Variables → онови `SENTRY_DSN` і redeploy
 - **Frontend:** якщо `SENTRY_DSN` використовується у `apps/web` → онови environment variable у Vercel dashboard
 
 ---
@@ -205,7 +205,7 @@
 #### Оновити
 
 - **Локально:** заміни `POSTHOG_API_KEY` та `POSTHOG_PROJECT_TOKEN` у `.env`
-- **Railway:** Railway dashboard → Service → Variables → онови обидва значення
+- **Coolify:** app `sergeant-api` → Environment Variables → онови backend-значення і redeploy
 - **Frontend:** Vercel dashboard → Environment Variables → онови `POSTHOG_PROJECT_TOKEN`
 
 ---
@@ -235,7 +235,7 @@
 #### Оновити
 
 - **Локально:** заміни `GRAFANA_API_KEY` та `LOKI_KEY` у `.env`
-- **Railway:** якщо backend відправляє логи у Loki → Railway dashboard → Service → Variables → онови обидва значення
+- **Coolify:** якщо Alloy/backend використовує ці ключі → онови їх у відповідному Coolify resource/app і redeploy
 
 ---
 
@@ -284,14 +284,13 @@ git commit -m "docs(security): update secret rotation guide after 2026-06 audit"
 
 - **GitHub Actions secret scanning** — автоматичне виявлення leaked tokens
 - **HashiCorp Vault** або **AWS Secrets Manager** — централізоване управління секретами
-- **Railway service tokens** замість user tokens — для CI/CD
+- **Scoped Coolify deploy/webhook credentials** замість персональних owner credentials — для CI/CD
 - **Short-lived tokens** (1 година) замість long-lived — де можливо
 
 ## Додаткові ресурси
 
 - [GitHub Security Best Practices](https://docs.github.com/en/code-security/getting-started/github-security-features)
 - [Vercel Security](https://vercel.com/docs/security)
-- [Railway Security](https://docs.railway.app/reference/security)
 - [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
 
 ---

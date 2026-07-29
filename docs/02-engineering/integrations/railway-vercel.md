@@ -1,9 +1,9 @@
 # Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 >
-> **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2) — історичний контекст доміграційного стеку; Railway виведено повністю (config-файли `railway*.toml` видалено з репо 2026-07-19), OpenClaw Gateway не задеплоєний — міграція на Coolify або deprecation TBD. **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) — топологія з ADR-0009 не змінилась, переписано лише Vercel env `BACKEND_URL`.
+> **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2, §8) — історичний контекст доміграційного стеку; Railway config видалено, а OpenClaw повністю декомісовано [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) з `BACKEND_URL` на Coolify API.
 
 ## 1. PostgreSQL на Railway (історичне — актуальний бекенд-деплой у [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md))
 
@@ -57,7 +57,7 @@
 > Safari (ITP) блокує third-party cookie, коли фронт і API на різних доменах.
 > Edge Middleware (`apps/web/middleware.ts`) проксіює `/api/*` на `BACKEND_URL`,
 > роблячи cookie same-origin. Фронтенд використовує відносні шляхи — `VITE_API_BASE_URL`
-> **видали** (або залиш порожнім), щоб запити йшли через проксі, а не напряму на Railway.
+> **видали** (або залиш порожнім), щоб запити йшли через same-origin proxy, а не напряму на backend origin.
 
 Перезбери фронт після зміни змінних.
 
@@ -88,7 +88,9 @@ ALLOWED_ORIGINS=http://localhost:5173
 
 ## 6. Моніторинг і логи
 
-- **Healthcheck**:\n+ - **Uptime**: `GET /livez` кожні 1–5 хв.\n+ - **Readiness (з БД)**: `GET /readyz` (або `/health`) — корисно, якщо хочеш алертити саме проблеми з Postgres.\n+ - Алерт при **не 200** або тілі не `ok`.
+- **Uptime:** `GET /livez` кожні 1–5 хв.
+- **Readiness (з БД):** `GET /readyz` (або `/health`) — корисно, якщо треба алертити саме проблеми з Postgres.
+- Алерт при **не 200** або тілі не `ok`.
 - **Coolify health-probe**: `/health` віддає сам Node через Coolify proxy (див. [`apps/server/AGENTS.md`](../../../apps/server/AGENTS.md)). Container-level health-check вимкнено для distroless-образу (без curl/wget). Pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js`. Це окремо від зовнішнього uptime-моніторингу вище.
 - **Логи (Coolify container logs)**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.

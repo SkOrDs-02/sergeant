@@ -2,10 +2,10 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Після grammy-бота тепер прибрано й сам gateway (`Dockerfile.openclaw-gateway`, `packages/openclaw-plugin`, `ops/openclaw`, серверний `modules/openclaw`). Файл лишено як історичний запис (лінкується immutable-ADR 0032/0041).
 
-> ⚠️ **REMOVED 2026-06-08.** Цей grammy-бот (`tools/openclaw` workspace + `Dockerfile.openclaw` + `railway.openclaw.toml`) і Railway-сервіс `sergeant-hubchat` **видалено** (Locked Decision #17 executed). Жива OpenClaw-поверхня тепер — **gateway** (`sergeant-openclaw-gateway`, `Dockerfile.openclaw-gateway`, `packages/openclaw-plugin`). Цей файл лишено як історичний record.
+> ⚠️ **Історичний зріз 2026-06-08:** тоді grammy-бот було видалено, а successor-ом став gateway. Gateway згодом теж повністю декомісовано 2026-07-20 (ADR-0075); твердження про «живу surface» нижче описують лише проміжний стан і не є операторською інструкцією.
 
 > **Status:** Archived (grammy bot removed 2026-06-08)
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Власник:** `sergeant-openclaw` skill (OpenClaw governance).
 > **Railway service:** `sergeant-openclaw` (раніше `sergeant-hubchat`, перейменовано у PR-47 per ADR-0032 / Pain P10 — див. §«Railway service rename runbook» нижче).
 > **Webhook delivery (ADR-0041):** ✅ live in production з 2026-05-03 21:26 UTC. URL `https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` (раніше `sergeant-hubchat-production…`), secret set, healthcheck `GET /healthz`. Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy.

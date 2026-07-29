@@ -1,6 +1,6 @@
 # CodeQL — SAST taint-flow analysis для TypeScript
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 ## Огляд
@@ -8,7 +8,7 @@
 Workflow [`.github/workflows/codeql.yml`](../../../.github/workflows/codeql.yml)
 запускає [CodeQL](https://codeql.github.com/) — статичний taint-flow
 analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
-`apps/server`, `tools/openclaw`, `apps/mobile`, `packages/**`). Закриває
+`apps/landing`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `packages/**`, `tools/**`). Закриває
 [`hardening/I1-codeql-workflow.md`](hardening/archive/I1-codeql-workflow.md)
 і завершує SAST/SCA trio:
 

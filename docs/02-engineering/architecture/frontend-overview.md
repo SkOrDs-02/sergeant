@@ -1,6 +1,6 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps`: web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md) (0 production); mobile — [apps-mobile-exhaustive-deps.md](./apps-mobile-exhaustive-deps.md).
@@ -56,7 +56,6 @@
 
 - **`packages/design-tokens`**: спільні токени + Tailwind preset для веб і мобайлу
 - **Доменні пакети**: `finyk-domain`, `fizruk-domain`, `nutrition-domain`, `routine-domain`, `shared`, `insights`
-- **OpenClaw Gateway плагін**: `packages/openclaw-plugin` — споживається Gateway-сервісом (не апами)
 - **`packages/api-client`**: єдиний клієнт API для веб і мобайлу; включає `SyncEnginePushScheduler`, `SyncEngineFlushOnReconnect` для v2 sync
 - **`packages/db-schema`**: Drizzle схеми для Postgres + SQLite-WASM; `sync_op_outbox` + per-domain tables
 

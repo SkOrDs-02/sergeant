@@ -1,12 +1,12 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-29",
   "package": "@sergeant/api-client",
   "entryFile": "packages/api-client/src/index.ts",
   "stats": {
-    "exportCount": 201,
-    "totalImporters": 43,
+    "exportCount": 205,
+    "totalImporters": 47,
     "deadExports": 107
   },
   "exports": [
@@ -194,6 +194,27 @@
       "usageCount": 0
     },
     {
+      "name": "AiMemoryDeleteResponse",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "AiMemoryListItem",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": ["apps/web/src/core/settings/AiMemoryList.tsx"],
+      "usageCount": 1
+    },
+    {
+      "name": "AiMemoryListResponse",
+      "kind": "re-export",
+      "fromFile": "./endpoints/me",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
       "name": "MeDeleteResponse",
       "kind": "re-export",
       "fromFile": "./endpoints/me",
@@ -283,9 +304,11 @@
       "fromFile": "./endpoints/syncV2",
       "usedBy": [
         "apps/mobile/src/core/syncEngine/applyPullOp.ts",
+        "apps/web/src/core/durability/anonymousDataMigration.ts",
+        "apps/web/src/core/syncEngine/applyPullGoalPeriods.ts",
         "apps/web/src/core/syncEngine/applyPullOp.ts"
       ],
-      "usageCount": 2
+      "usageCount": 4
     },
     {
       "name": "SyncV2PullOptions",
@@ -308,8 +331,8 @@
       "name": "SyncV2PushOp",
       "kind": "re-export",
       "fromFile": "./endpoints/syncV2",
-      "usedBy": [],
-      "usageCount": 0
+      "usedBy": ["apps/web/src/core/syncEngine/outboxDrainChain.test.ts"],
+      "usageCount": 1
     },
     {
       "name": "SyncV2PushOptions",
@@ -322,8 +345,8 @@
       "name": "SyncV2PushResponse",
       "kind": "re-export",
       "fromFile": "./endpoints/syncV2",
-      "usedBy": [],
-      "usageCount": 0
+      "usedBy": ["apps/web/src/core/syncEngine/outboxDrainChain.test.ts"],
+      "usageCount": 1
     },
     {
       "name": "buildSyncV2IncrementOp",
@@ -1133,6 +1156,13 @@
     },
     {
       "name": "MonoJar",
+      "kind": "re-export",
+      "fromFile": "./endpoints/mono",
+      "usedBy": ["apps/web/src/shared/api/index.ts"],
+      "usageCount": 1
+    },
+    {
+      "name": "MonoJarDto",
       "kind": "re-export",
       "fromFile": "./endpoints/mono",
       "usedBy": ["apps/web/src/shared/api/index.ts"],

@@ -1,9 +1,9 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
-> **Update 2026-07-21:** Server env vars (`BETTER_AUTH_*`, `MONO_*`) — **Coolify** app `sergeant-api` ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Кроки нижче з «Railway Variables» — заміни на Coolify → app → Environment Variables + Redeploy. n8n env (legacy Railway) — окремо, якщо workflow торкається n8n.
+> **Hosting:** server env vars (`BETTER_AUTH_*`, `MONO_*`) живуть у **Coolify** app `sergeant-api` ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Після кожної зміни Environment Variables виконай redeploy. n8n env (legacy hosting) оновлюється окремо лише для workflow-consumer-ів.
 
 ## Який ключ ротувати
 
@@ -38,7 +38,7 @@ openssl rand -hex 32           # → <NEW_HEX>
 # 2. Прочитати поточний (звичайно v1)
 echo "$BETTER_AUTH_TOKEN_ENC_KEY"   # → <V1_HEX>
 
-# 3. Виставити обидва ключі у Railway → Project → Variables
+# 3. Виставити обидва ключі у Coolify → sergeant-api → Environment Variables
 BETTER_AUTH_TOKEN_ENC_KEYS=v1:<V1_HEX>,v2:<NEW_HEX>
 BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION=v1
 # (current=v1 на цьому кроці — нові записи поки що під старим ключем)
@@ -66,7 +66,7 @@ BETTER_AUTH_TOKEN_ENC_KEYS=v2:<NEW_HEX>
 
 ### Крок 0 — preconditions
 
-1. У Railway env-варіаблах присутній **один** із двох:
+1. У Coolify env-варіаблах app `sergeant-api` присутній **один** із двох:
    - **Legacy:** `BETTER_AUTH_TOKEN_ENC_KEY=<64-hex>`. Це v1.
    - **Multi-key:** `BETTER_AUTH_TOKEN_ENC_KEYS=v1:<hex>,...` +
      `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION=v1`.
@@ -85,9 +85,9 @@ echo "v2:${NEW_KEY}"
 Зберегти `NEW_KEY` у password-manager-і (1Password vault `infra-prod-keys`
 або еквівалент). Підпис `key-rotation-YYYY-MM-DD`.
 
-### Крок 2 — додати v2 у Railway variables, current ще = v1
+### Крок 2 — додати v2 у Coolify variables, current ще = v1
 
-Railway → Project → Variables:
+Coolify → app `sergeant-api` → Environment Variables:
 
 ```
 BETTER_AUTH_TOKEN_ENC_KEYS=v1:<existing-hex>,v2:<NEW_KEY>
@@ -122,7 +122,7 @@ console.log({ versions: ring?.versions, current: ring?.current.version });
 
 ### Крок 4 — bump current до v2
 
-Railway:
+Coolify app `sergeant-api`:
 
 ```
 BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION=v2
@@ -157,7 +157,7 @@ sum(rate(auth_token_lazy_reencrypt_total{row_version="1"}[5m])) by (field)
 плато і не почне спадати (старі рядки гасяться, або з re-encrypt, або з
 revoke / user delete).
 
-Прогнати `pnpm db:psql` (або `railway connect postgres`):
+Прогнати `pnpm db:psql` з production connection string:
 
 ```sql
 SELECT
@@ -180,7 +180,7 @@ ORDER BY 1;
 
 ### Крок 7 — retire v1
 
-Railway:
+Coolify app `sergeant-api`:
 
 ```
 BETTER_AUTH_TOKEN_ENC_KEYS=v2:<NEW_KEY>
@@ -223,7 +223,7 @@ Deploy. Тепер read-у row-а під v1 буде throw-ити з `keyRing` �
 Кроки ідентичні Better Auth happy-path (вгорі), з підстановкою env-var-ів:
 
 1. `openssl rand -hex 32` → `<NEW_HEX>`.
-2. У Railway виставити `MONO_TOKEN_ENC_KEYS=v1:<OLD_HEX>,v2:<NEW_HEX>` (якщо
+2. У Coolify app `sergeant-api` виставити `MONO_TOKEN_ENC_KEYS=v1:<OLD_HEX>,v2:<NEW_HEX>` (якщо
    досі single-key `MONO_TOKEN_ENC_KEY=<OLD_HEX>` — старий стає `v1`).
 3. Деплой — новий код читає обидва ключі; нічого ще не пише під v2.
 4. Виставити `MONO_TOKEN_ENC_KEY_CURRENT_VERSION=v2`, redeploy. Тепер:
