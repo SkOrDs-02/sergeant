@@ -62,7 +62,7 @@ If you skip step 2 or 3 the new catalog is unenforced and the rule is violated.
 
 | PR                                                       | Title                                                              | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

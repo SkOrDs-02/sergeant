@@ -1,6 +1,6 @@
 # Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-29 by @github-actions[bot]. **Next review:** 2026-10-27.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -71,7 +71,7 @@
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
