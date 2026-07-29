@@ -51,15 +51,14 @@ export function HubChatOverlay() {
   // The sheet's open-state lives in app-root context (in-memory `useState`
   // inside `useHubChatOverlayState`) and survives navigations by design;
   // this effect is the single hook that links route lifecycle back to
-  // overlay state. `firstRenderRef` skips the very first run.
-  // `previousOpenRef` deliberately updates after this route effect: when one
-  // action both leaves `/assistant` and opens chat, the route change must not
-  // immediately close the newly-opened sheet. A later navigation still closes
-  // a sheet that was already open before that navigation began.
+  // overlay state. `firstRenderRef` skips the very first run so the
+  // overlay opens on the route where the user invoked it, then closes only
+  // on subsequent navigations.
   const firstRenderRef = useRef(true);
-  const previousOpenRef = useRef(open);
+  const openRef = useRef(open);
   const closeChatRef = useRef(closeChat);
   useLayoutEffect(() => {
+    openRef.current = open;
     closeChatRef.current = closeChat;
   });
   useEffect(() => {
@@ -67,11 +66,8 @@ export function HubChatOverlay() {
       firstRenderRef.current = false;
       return;
     }
-    if (previousOpenRef.current) closeChatRef.current();
+    if (openRef.current) closeChatRef.current();
   }, [location.pathname]);
-  useEffect(() => {
-    previousOpenRef.current = open;
-  }, [open]);
 
   if (!open) return null;
 
