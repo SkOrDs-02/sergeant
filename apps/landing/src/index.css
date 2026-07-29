@@ -32,7 +32,7 @@
   --color-foreground: #1c1917;
   --color-foreground-strong: #0a0a09;
   --color-muted: #57534e;
-  --color-subtle: #a8a29e;
+  --color-subtle: #6f6862;
 
   /* Brand — emerald-700 / -800 (brandColors.emerald) */
   --color-accent: #047857;
@@ -97,11 +97,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Warm ambient hero wash — subtle, analogous emerald tint only */
 .hero-wash {
-  background:
-    radial-gradient(60% 55% at 50% 0%, #ecfdf5 0%, rgba(236, 253, 245, 0) 70%),
-    var(--color-background);
+  background: var(--color-background);
+  border-top: 1px solid var(--color-cardline);
+}
+
+.product-frame-shadow {
+  box-shadow: 0 28px 70px rgb(13 21 18 / 18%);
 }
 
 @media (prefers-reduced-motion: reduce) {
