@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last validated:** 2026-07-28 by docs:gen-today. **Next review:** 2026-08-04.
+> **Last validated:** 2026-07-29 by docs:gen-today. **Next review:** 2026-08-05.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -9,7 +9,9 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 ## Топ-7 на сьогодні
 
-_Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._
+Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
+
+- [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_
 
 ## Прострочений review (0)
 

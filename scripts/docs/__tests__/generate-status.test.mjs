@@ -11,9 +11,26 @@ import { join } from "node:path";
 
 import {
   extractFocus,
+  formatPriorityTag,
   loadShipped,
   summariseInFlight,
 } from "../generate-status.mjs";
+
+describe("formatPriorityTag", () => {
+  it("renders agent-ready work without a synthetic phase", () => {
+    assert.equal(
+      formatPriorityTag({ priorityKind: "agent-ready", priorityPhase: null }),
+      "agent-ready",
+    );
+  });
+
+  it("keeps phase-based blocked labels", () => {
+    assert.equal(
+      formatPriorityTag({ priorityKind: "blocked", priorityPhase: "3" }),
+      "Phase 3 blocked 🚧",
+    );
+  });
+});
 
 describe("extractFocus", () => {
   it("returns the default placeholder when there is no existing file", () => {

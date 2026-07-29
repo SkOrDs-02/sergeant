@@ -162,6 +162,14 @@ function fmtInFlight(item) {
   return `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} — ${status} _(${item.tracker.title})_`;
 }
 
+export function formatPriorityTag(item) {
+  if (item.priorityKind === "agent-ready") return "agent-ready";
+  if (item.priorityKind === "blocked") {
+    return `Phase ${item.priorityPhase} blocked 🚧`;
+  }
+  return `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+}
+
 // ── Markdown rendering ───────────────────────────────────────────────────────
 
 function render({ focus, shipped, inflight, priority }) {
@@ -231,18 +239,15 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
   if (priority.length === 0) {
     lines.push(
-      "_Жодного `Phase X next` / `Stage X blocked` маркера. Деталі по фазах — у самих трекерах._",
+      "_Жодного `Agent-ready: yes` або `Phase X next` / `Stage X blocked` маркера. Деталі — у самих трекерах._",
     );
   } else {
     lines.push(
-      "Items із явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.",
+      "Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.",
     );
     lines.push("");
     for (const item of priority) {
-      const tag =
-        item.priorityKind === "blocked"
-          ? `Phase ${item.priorityPhase} blocked 🚧`
-          : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+      const tag = formatPriorityTag(item);
       lines.push(
         `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} → **${tag}** _(${item.tracker.title})_`,
       );

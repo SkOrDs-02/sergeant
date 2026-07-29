@@ -119,7 +119,8 @@ export const TRACKERS = [
     blurb:
       "Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).",
     rootDir: "docs/90-work/planning",
-    recursive: false,
+    recursive: true,
+    exclude: ["prompts/", "specs/TEMPLATE.md"],
   },
   {
     id: "launch",
@@ -462,6 +463,8 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
     for (const abs of files) {
       const relToRoot = relative(repoRoot, abs).split(sep).join("/");
       if (shouldSkipFile(relToRoot)) continue;
+      const relToRootDir = relative(rootAbs, abs).split(sep).join("/");
+      if (matchesTrackerExclude(relToRootDir, tracker.exclude)) continue;
       const doc = parseDocument(abs);
       if (!doc) continue;
       if (doc.status === "closed" || doc.status === "reference") continue;
@@ -497,7 +500,7 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
         // Path relative to the output file's directory (`docs/`), used to
         // build navigation links that work from `docs/open-work.md`.
         linkPath: relative(OUTPUT_DIR, abs).split(sep).join("/"),
-        relToRootDir: relative(rootAbs, abs).split(sep).join("/"),
+        relToRootDir,
         ...doc,
         rawStatus: rewrittenStatus,
         skill,
@@ -508,6 +511,23 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
     result.push({ tracker, entries });
   }
   return result;
+}
+
+/**
+ * Return true when a tracker-local path matches one of the configured
+ * forward-slash substrings. This intentionally stays simpler than glob syntax:
+ * tracker config documents substring semantics and only needs directory or
+ * exact-file exclusions.
+ */
+export function matchesTrackerExclude(relPath, patterns = []) {
+  if (!relPath || !Array.isArray(patterns)) return false;
+  const normalizedPath = String(relPath).split("\\").join("/");
+  return patterns.some((pattern) => {
+    const normalizedPattern = String(pattern).split("\\").join("/");
+    return (
+      normalizedPattern.length > 0 && normalizedPath.includes(normalizedPattern)
+    );
+  });
 }
 
 /**

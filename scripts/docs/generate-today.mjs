@@ -7,10 +7,9 @@
 // the maintainer opens in the morning to decide what to give agents.
 //
 // Sections of `today.md`:
-//   1. Top items — up to N (default 5) actionable documents with a
-//      `Phase X next` / `Stage X pending` / `Phase X blocked` / similar
-//      marker in their Status header, sorted by file mtime descending
-//      (most recently touched = freshest context).
+//   1. Top items — up to N actionable documents with `Agent-ready: yes` or a
+//      `Phase X next` / `Stage X pending` / `Phase X blocked` marker, sorted
+//      by readiness and file mtime descending.
 //   2. Overdue review — documents whose `Next review:` date is in the past.
 //   3. WIP warnings — per-tracker count vs limits, surfaced only when at
 //      least one tracker is at soft or hard.
@@ -89,7 +88,8 @@ export function extractNextPhase(status) {
 
 /**
  * For a list of open-work entries (already produced by `collectOpenWork`),
- * pull the ones that carry a `Phase/Stage X next/pending/...` marker.
+ * pull the ones that carry a `Phase/Stage X next/pending/...` marker or an
+ * explicit `Agent-ready: yes` header.
  * Each kept entry is decorated with `{ priorityPhase, priorityKind, mtimeMs }`
  * for downstream sorting.
  */
@@ -98,7 +98,7 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
   for (const { tracker, entries } of report) {
     for (const e of entries) {
       const sig = extractNextPhase(e.rawStatus);
-      if (!sig) continue;
+      if (!sig && e.agentReady !== "yes") continue;
       let mtimeMs = 0;
       try {
         mtimeMs = statSync(resolve(repoRoot, e.relPath)).mtimeMs;
@@ -109,8 +109,8 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
       out.push({
         tracker,
         ...e,
-        priorityPhase: sig.phase,
-        priorityKind: sig.kind,
+        priorityPhase: sig?.phase ?? null,
+        priorityKind: sig?.kind ?? "agent-ready",
         mtimeMs,
       });
     }
@@ -118,10 +118,10 @@ export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
   // `blocked` sorts above `next/pending/in progress` because unblocking
   // is usually the constraint. Within the same kind bucket, freshest
   // file mtime wins (recently touched = warm context).
-  const kindRank = { blocked: 0 };
+  const kindRank = { blocked: 0, "agent-ready": 1 };
   out.sort((a, b) => {
-    const ka = kindRank[a.priorityKind] ?? 1;
-    const kb = kindRank[b.priorityKind] ?? 1;
+    const ka = kindRank[a.priorityKind] ?? 2;
+    const kb = kindRank[b.priorityKind] ?? 2;
     if (ka !== kb) return ka - kb;
     return b.mtimeMs - a.mtimeMs;
   });
@@ -169,11 +169,13 @@ function fmtPriorityItem(item) {
   // does not produce nested bold markers (which render as literal `**`
   // in many viewers).
   const phase =
-    item.priorityKind === "in progress"
-      ? `Phase ${item.priorityPhase} в роботі`
-      : item.priorityKind === "blocked"
-        ? `Phase ${item.priorityPhase} blocked 🚧`
-        : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+    item.priorityKind === "agent-ready"
+      ? "agent-ready"
+      : item.priorityKind === "in progress"
+        ? `Phase ${item.priorityPhase} в роботі`
+        : item.priorityKind === "blocked"
+          ? `Phase ${item.priorityPhase} blocked 🚧`
+          : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
   return `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} → **${phase}** _(${item.tracker.title})_`;
 }
 
@@ -217,11 +219,11 @@ function render({ priority, overdue, wipRows }) {
   lines.push("");
   if (priority.length === 0) {
     lines.push(
-      "_Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._",
+      "_Нема items з `Agent-ready: yes` або `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або metadata потребує уточнення (Rule #10)._",
     );
   } else {
     lines.push(
-      "Sorted: `blocked` items first, потім за `mtime` desc (свіже = warm context).",
+      "Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).",
     );
     lines.push("");
     for (const item of priority) lines.push(fmtPriorityItem(item));

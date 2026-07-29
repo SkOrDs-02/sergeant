@@ -1,7 +1,7 @@
 # Зведена матриця hardening-карток
 
-> **Last touched:** 2026-07-20 by @cursoragent (stats reconcile). **Next review:** 2026-10-18.
-> **Status:** Active
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Status:** Reference — зведений індекс; виконувана робота живе у статусах самих hardening-карток.
 
 > **Попередження:** Ручний знімок; source of truth — самі картки. Оновлено 2026-07-20 (PR-25 Closed; M9 → archive; \_0009 stats → 18/18 closed).
 

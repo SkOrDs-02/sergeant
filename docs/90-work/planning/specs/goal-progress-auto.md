@@ -1,7 +1,7 @@
 # Автопрогрес цілей накопичення: банки Monobank + лог поповнень
 
-> **Last touched:** 2026-07-26 by Claude (Fable 5). **Next review:** 2026-08-26.
-> **Status:** Active
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-08-12.
+> **Status:** Implemented — PR #481 змерджено; лишилося ручне founder-QA з реальним Monobank-токеном.
 
 Самодостатня спека (C4 з тест-сесії founder-а). Виконавець: свіжа сесія, прочитай `.agents/skills/sergeant-start-here/SKILL.md` + `sergeant-feature-delivery` (owner), для серверної частини — `sergeant-server-api`, для web — `sergeant-web-ui`. Рішення зафіксовані founder-ом 2026-07-26 — не переглядай. Main рухливий — читай актуальний код.
 

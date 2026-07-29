@@ -1,7 +1,7 @@
 # Продуктовий аудит знань: hub-coach — diff-звіт тріангуляції
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
-> **Status:** Active
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
+> **Status:** Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по
 > крос-модульному AI-шару **hub-coach** (hub, HubChat, coach-інсайт,
