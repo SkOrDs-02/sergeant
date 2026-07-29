@@ -2,7 +2,7 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Цей playbook більше не діє — OpenClaw GitHub-інтеграції немає. Лишається лише fail-closed guard проти залишкового `OPENCLAW_GITHUB_PAT` у prod (Hard Rule #20). Для загальної ротації секретів див. [`rotate-secrets.md`](./rotate-secrets.md). Файл лишено як історичний запис (лінкується immutable-ADR-0055).
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-29 by @github-actions[bot]. **Next review:** 2026-10-27.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
 **Trigger:** _(deprecated — OpenClaw decommissioned ADR-0075)_ ротація будь-якого OpenClaw GitHub credential —
@@ -167,5 +167,4 @@ flowchart TD
 | [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | PENDING |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
