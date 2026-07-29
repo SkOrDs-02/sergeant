@@ -65,6 +65,7 @@ scripts/check-tsconfig-strict.mjs       @SkOrDs-02
 # ── Frontend web (placeholder secondary: frontend-engineer) ──────────────────
 # placeholder — replace with real frontend-engineer when hired
 /apps/web/                               @SkOrDs-02
+/apps/landing/                           @SkOrDs-02
 
 # ── Mobile (placeholder secondary: mobile-engineer) ──────────────────────────
 # placeholder — replace with real mobile-engineer when hired

@@ -1,6 +1,6 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 Це architectural review: **чи достатньо Telegram-бота, щоб масштабувати
@@ -34,7 +34,7 @@ Telegram + n8n + HubChat сьогодні закривають перші два
 
 | Аспект                     | Чому працює зараз                                                                                                                                      |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Cost**                   | Telegram free, n8n self-hosted ~$3–5/міс на Railway, supergroup без квот.                                                                              |
+| **Cost**                   | Telegram free; n8n self-hosted cost depends on the still-legacy runtime and must be verified before budgeting; supergroup без квот.                    |
 | **Mobile-first**           | Founder reads alerts on phone у будь-якому контексті. Push notification робиться сам.                                                                  |
 | **Setup latency**          | Від "треба новий канал alert-ів" до "канал є + бот пише" — < 5 хвилин.                                                                                 |
 | **Forum mode (Topics)**    | Нативна сегментація без створення multi-chat zoo. До 100 топіків на supergroup.                                                                        |

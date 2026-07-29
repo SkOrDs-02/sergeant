@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -15,7 +15,7 @@
 - **Monorepo:** Turborepo 2 — pipelines defined in [`turbo.json`](../../../turbo.json). All apps run under `pnpm dev`, `pnpm build`, `pnpm test`, `pnpm lint`, `pnpm typecheck`.
 - **Pre-commit:** Husky 9 (`.husky/pre-commit` runs `lint-staged`; `.husky/commit-msg` runs `commitlint`). Pipeline matrix in [`CONTRIBUTING.md § Pre-commit hooks`](../../../CONTRIBUTING.md#pre-commit-hooks). Hard Rule #7 forbids `--no-verify` skips.
 
-## Apps (`apps/`) and `tools/openclaw`
+## Apps (`apps/`)
 
 | App                 | Stack                                                                                                            | Purpose                                                                                                                                                                                                                                                                               |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -23,8 +23,7 @@
 | `apps/server`       | Express + PostgreSQL (`pg`) + Better Auth + Anthropic fetch client + Voyage fetch client + Vitest/Testcontainers | REST API + chat orchestrator + Mono webhook ingestion. Dockerfile: `Dockerfile.api` → `ghcr.io` → Hetzner/Coolify (ADR-0074).                                                                                                                                                         |
 | `apps/mobile`       | Expo 52 + React Native 0.76 + NativeWind + MMKV + Jest                                                           | iOS/Android app via Expo Router. Local-first storage in MMKV.                                                                                                                                                                                                                         |
 | `apps/mobile-shell` | Capacitor 7 wrapper                                                                                              | Native shell that re-uses the `apps/web` build artifacts; no app code lives here, only build glue.                                                                                                                                                                                    |
-| `apps/landing`      | Vite 7 + React 19 + React Router 7 + Tailwind CSS 4                                                              | Marketing landing page with waitlist ([#444](https://github.com/Skords-01/Sergeant/pull/444)). Standalone build; shares no code with `apps/web`. No test stack yet — only `dev` / `build` / `preview` / `typecheck`.                                                                  |
-| `tools/openclaw`    | grammy + Anthropic SDK + Vitest                                                                                  | Internal Telegram bot (ops + marketing dispatcher). Multi-agent. Internal only — never user-facing.                                                                                                                                                                                   |
+| `apps/landing`      | Vite 7 + React 18 + React Router 7 + Tailwind CSS 4 + Vitest                                                     | Standalone marketing landing with Telegram waitlist conversion ([#444](https://github.com/Skords-01/Sergeant/pull/444), [#487](https://github.com/Skords-01/Sergeant/pull/487)). Separate Vercel build; shares analytics contracts through `@sergeant/shared`.                        |
 
 ## Packages (`packages/`)
 
@@ -42,12 +41,10 @@
 | `@sergeant/fizruk-domain`       | Fizruk module domain logic (workouts, sets, biometrics).                                                                   |
 | `@sergeant/nutrition-domain`    | Nutrition module domain logic (meals, OFF lookups, kcal math).                                                             |
 | `@sergeant/routine-domain`      | Routine module domain logic (habits, streaks, calendar).                                                                   |
-| `@sergeant/openclaw-plugin`     | OpenClaw Gateway plugin that registers Sergeant tools/hooks and proxies to `apps/server /api/internal/openclaw/*`.         |
 
 ## Ops & tooling (`ops/`, `tools/`, `scripts/`)
 
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
-- `tools/openclaw/` — Telegram bot (above). Sidecar `tsconfig.json` extends `tsconfig.node.json`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
 - `tools/entropy-janitors/` — workspace-пакет `@sergeant/entropy-janitors` (harness-v1, ADR-0070): три weekly janitor-скрипти (doc-drift, dead-code/knip, dep-cycles), відкривають лише issues, ніколи не PR. Запуск: `pnpm janitors:*`; cron `.github/workflows/entropy-janitors.yml`.
 - `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.kilocode/snapshot.md`.
@@ -56,15 +53,16 @@
 ## Test stacks per surface
 
 - `apps/web` — Vitest + MSW + Testing Library; a11y via `pnpm test:a11y`; Playwright for e2e (`pnpm e2e`).
+- `apps/landing` — Vitest (design-token drift) + Playwright dependency for browser checks; lint/typecheck/build run through Turbo.
 - `apps/server` — Vitest + Testcontainers (real Postgres). Snapshot tests on response shapes lock Hard Rule #1 / #3.
 - `apps/mobile` — Jest.
-- `tools/openclaw` — Vitest. Includes the dispatcher contract test against `ops/n8n-workflows/20-agent-dispatcher.json`.
 - `packages/eslint-plugin-sergeant-design` — `node --test` (`__tests__/*.mjs`).
 - All other `packages/*` — Vitest.
 
 ## Build / deployment outputs
 
 - `apps/web` — Vercel preview deploy on each PR. Bundle output copied into `apps/server/dist/assets/*` for unified-mode serving. `size-limit` paths point through that copy.
+- `apps/landing` — standalone Vercel static build from `apps/landing/vercel.json`; public domain is configured outside the repo.
 - `apps/server` — Hetzner CX23 + Coolify via `Dockerfile.api` (образ `ghcr.io/.../sergeant-api`, GitHub Actions `deploy-api.yml`). Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Migrations require `MIGRATE_DATABASE_URL` (= public DB URL). Rationale: [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md).
 - `apps/mobile` — Expo build (EAS).
 - `apps/mobile-shell` — Capacitor build wrapping `apps/web` output.

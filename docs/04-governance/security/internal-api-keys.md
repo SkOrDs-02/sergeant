@@ -1,6 +1,6 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-07-10 by @cursoragent (OpenClaw consumer path → external gateway). **Next review:** 2026-10-08.
+> **Last validated:** 2026-07-29 by @Skords-01 (Coolify topology; OpenClaw consumer removed). **Next review:** 2026-10-27.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/90-work/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md).
@@ -26,32 +26,30 @@ The bearer is defined once and consumed by a single shared guard:
 
 **There is no per-route ACL and no per-key identity.** Every sub-router mounted in `index.ts` sits behind the same bearer; any holder reaches the entire internal surface.
 
-### Consumer surfaces (the four families)
+### Consumer surfaces
 
 All four consume the same shared bearer via the `index.ts` guard (PR-27 §Context):
 
-| Consumer route group        | File                                                                   | What it serves                                                                                                                                                                             |
-| --------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces                                                                                                                                      |
-| Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                                                                                                                                                                  |
-| ~~OpenClaw bot callback~~   | _(removed — ADR-0075)_                                                 | Internal OpenClaw route surface decommissioned 2026-07-20; historical audit: [`2026-08-XX-openclaw-internal-roast.md`](../../90-work/audits/archive/2026-08-XX-openclaw-internal-roast.md) |
-| Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                                                                                                                                                                |
+| Consumer route group        | File                                                                   | What it serves                                        |
+| --------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| Admin / internal operations | `apps/server/src/routes/internal/index.ts` (+ all mounted sub-routers) | the shared guard + all `/api/internal/*` sub-surfaces |
+| Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                             |
+| Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                           |
 
 > n8n workflows (`ops/n8n-workflows/*`) are the largest external consumer of the bearer — ~25 workflows send `Authorization: Bearer <INTERNAL_API_KEY>` (see the HMAC rollout playbook). They are not a server route but must be re-pointed on every rotation.
 
 ### Secret ownership
 
-`INTERNAL_API_KEY` is owned by the **Founder**, stored in Railway prod env (and local `.env` / CI where needed), per the [secret-ownership register](./secret-ownership-register.md). It is **not** yet broken out as its own register row — it currently rides under the general internal/auth secret groups. When PR-27 lands, add a dedicated register row (owner, storage, consumers, rotation cadence, blast radius).
+`INTERNAL_API_KEY` is owned by the **Founder**, stored in the Coolify `sergeant-api` env (and local `.env` / CI where needed), per the [secret-ownership register](./secret-ownership-register.md). It is **not** yet broken out as its own register row — it currently rides under the general internal/auth secret groups. When the per-key design lands, add a dedicated register row (owner, storage, consumers, rotation cadence, blast radius).
 
 ## Manual rotation (works today — no tooling)
 
 Because it is a single shared secret, a rotation is a coordinated, brief-downtime update. Do it during a low-traffic window. Cross-reference [`secret-rotation.md`](./secret-rotation.md) for the general rotation procedure.
 
 1. **Generate** a new key: `openssl rand -hex 32`.
-2. **Set** the new value as `INTERNAL_API_KEY` on the **server** Railway env (this is the source of truth the guard compares against). Redeploy.
+2. **Set** the new value as `INTERNAL_API_KEY` in Coolify app `sergeant-api` (this is the source of truth the guard compares against). Redeploy.
 3. **Update every consumer** to send the new bearer, in lockstep:
    - n8n: the ~25 `INTERNAL_API_KEY`-using workflows (set `INTERNAL_API_KEY` on the n8n Railway env; see [`api-internal-hmac.md`](./api-internal-hmac.md) for the workflow list pattern).
-   - External OpenClaw Gateway + `packages/openclaw-plugin`: the gateway service env (historical `tools/openclaw` removed — see ADR-0055).
    - Monobank webhook secret config, if it references this key.
 4. **Verify** internal traffic recovers: watch `401` rate on `/api/internal/*` in Grafana / Sentry. A spike means a consumer wasn't updated.
 5. If compromise is suspected, also rotate `WEBHOOK_HMAC_SECRET` per [`api-internal-hmac.md`](./api-internal-hmac.md) so a captured signature is invalidated immediately (the 5-minute replay window means a leaked signature is useless after a few minutes regardless).
@@ -62,15 +60,15 @@ Because it is a single shared secret, a rotation is a coordinated, brief-downtim
 
 PR-27 replaces the single shared secret with named, scoped, TTL'd keys stored hashed in Postgres. **None of this exists in the codebase yet.** Summary of the design (full detail in [PR-27](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md)):
 
-- **`internal_api_keys` table** — `key_hash` (bcrypt), unique `name` (`mono-webhook` / `n8n-alerts` / `openclaw-callback` / `admin-cli` / `bootstrap`), `scopes TEXT[]`, mandatory `expires_at` TTL, `created_by`, `last_used_at`, `revoked_at`.
+- **`internal_api_keys` table** — `key_hash` (bcrypt), unique `name` (`mono-webhook` / `n8n-alerts` / `admin-cli` / `bootstrap`), `scopes TEXT[]`, mandatory `expires_at` TTL, `created_by`, `last_used_at`, `revoked_at`.
 - **Hash-based lookup middleware** — the current `apps/server/src/http/requireInternalIp.ts`, renamed to `requireInternalApiKey.ts`: header `X-Internal-Api-Key: <raw-key>`, `bcrypt.compare` against the active row for the expected `name`, update `last_used_at` (throttled — only if `now - last_used > 60s`).
 - **Dual-key rotation** — multiple non-revoked rows may share a `name`; both valid for 24h, then revoke the old via CLI. This removes the downtime window the manual procedure has today.
 - **Bootstrap compatibility** — the env `INTERNAL_API_KEY` stays valid as a `name='bootstrap'` row with a 30-day expiry; drop the env var only after all consumers migrate.
 - **Sentry tagging** — `internal_key_name` tag on every internal request, so a leak can be scoped to one named key and revoked with minimal blast radius.
 
-## Planned: `/internal-key` CLI (planned — not yet live)
+## Planned operator interface (not yet live)
 
-PR-27 adds a `/internal-key` command group to the OpenClaw Telegram bot (planned surface on the external gateway; historical stub was `tools/openclaw/src/agents/ops/internalKey.ts`), gated by the `ops` role. **These commands are stubs in this doc — they are not implemented yet.** Update this section to remove the "planned" tag once the implementing code merges.
+Первинний PR-27 планував `/internal-key` commands через OpenClaw, але ця surface декомісована [ADR-0075](../adr/0075-openclaw-gateway-decommissioned.md). Якщо per-key модель відновиться, operator interface треба спроєктувати заново як локальний admin CLI або інший fail-closed канал; наведені нижче команди — лише бажаний capability contract, не обіцянка Telegram-реалізації.
 
 | Command                                           | Purpose (planned)                                                                              |
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |

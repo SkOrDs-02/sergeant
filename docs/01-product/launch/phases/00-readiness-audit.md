@@ -1,11 +1,11 @@
-# 00 — Launch readiness audit: 4 поверхні Sergeant
+# 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
-> **Канон 2026-07-10:** billing scaffold і in-app landing shipped (`LandingPage` на `/`, `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*`). Public launch блокується legal publish, live Stripe env/cookie consent/store readiness — не відсутністю коду. Окремий marketing-домен `sergeant.com.ua` — ще TBD.
+> **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface не підтверджені з репо лише зовнішні Vercel production deployment і `sergeant.com.ua` DNS. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
 
-> Read-only zoom-out на готовність 4 продуктових поверхонь (Web, Server, Capacitor shell, Native Expo) + Landing-питання — до запуску з реальними юзерами. Цей документ — baseline для 3 наступних phase-роадмапів (web/Capacitor/native). Зміни статусів — через окремі PR-и.
+> Read-only zoom-out на готовність 5 app surfaces (Web, Landing, Server, Capacitor shell, Native Expo) до запуску з реальними юзерами. Цей документ — baseline для 3 наступних phase-роадмапів (web/Capacitor/native). Зміни статусів — через окремі PR-и.
 
 > **Cross-refs (root-anchors):**
 > [`docs/01-product/launch/business/04-launch-readiness.md`](../business/04-launch-readiness.md) ·
@@ -21,7 +21,7 @@
 
 ## 1. TL;DR
 
-Sergeant фактично вже **технічно деплоїться у прод**: `apps/web` живе на Vercel, `apps/server` — на Hetzner/Coolify (`Dockerfile.api`, ADR-0074; Railway виведено), Capacitor-shell має повний AAB+APK release-pipeline для Android і scaffold для iOS. **In-app landing** (`LandingPage` на `/` + waitlist) і **billing scaffold** уже shipped. **Public launch заблокований не кодом, а legal-/config-/store-шаром**: legal pages потребують publish/review, live Stripe/LiqPay production keys + ФОП, Apple/Google SSO — UI shipped (env-gated), **окремого marketing-сайту** на `sergeant.com.ua` ще немає (in-app `/` покриває cold-start). Native Expo — internal dev-client (production EAS-profile є, store-listing-у нема). Реалістичний наступний крок — **web closed beta з 10–30 запрошеними юзерами** на поточному стеку, паралельно довести legal + live payment env для public launch → Capacitor Play Internal/TestFlight → native як «pro-channel».
+Sergeant фактично вже **технічно деплоїться у прод**: `apps/web` живе на Vercel, `apps/server` — на Hetzner/Coolify (`Dockerfile.api`, ADR-0074; Railway виведено), Capacitor-shell має повний AAB+APK release-pipeline для Android і scaffold для iOS. **In-app landing**, standalone **`apps/landing`** і **billing scaffold** уже shipped у коді. **Public launch заблокований не створенням лендінгу, а legal-/config-/store-шаром**: legal pages потребують publish/review, live LiqPay/Plata/legacy Stripe keys + ФОП, Apple/Google SSO — UI shipped (env-gated), а для marketing surface треба підтвердити Vercel production deployment і `sergeant.com.ua` DNS. Native Expo — internal dev-client (production EAS-profile є, store-listing-у нема).
 
 ---
 
@@ -31,13 +31,13 @@ Sergeant фактично вже **технічно деплоїться у пр
 >
 > «Real-user tested?» = чи проходили flow зовнішні (не founder-/Devin-) користувачі.
 
-| Surface                        | Deploy ready?                                                | Auth ready?                                                 | Observability?                  | Release playbook?                                                                                                                                    | Real-user tested?        | Top blockers                                                                                                         |
-| ------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                              | 🟡 Email/password live; Apple/Google UI shipped (env-gated) | ✅ Sentry + PostHog + CSP-RO    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Legal publish; live Stripe env; cookie banner                                                                        |
-| **Server** (`apps/server`)     | ✅ Coolify/Hetzner `Dockerfile.api` (ADR-0074)               | ✅ Better Auth (cookie + bearer)                            | ✅ Sentry + Prom + alert-bot    | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | Live payment prod keys; прод APNs/FCM creds                                                                          |
-| **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending               | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505)     | 🟡 web-side observability reuse | ✅ [`release.md §2`](../../../00-start/playbooks/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../02-engineering/mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
-| **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit                    | ✅ Better Auth Expo + bearer                                | 🟡 PostHog wired, Sentry TBD    | ✅ [`release.md §3`](../../../00-start/playbooks/release.md#3-expo) + [`mobile/overview.md`](../../../02-engineering/mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
-| **Landing**                    | 🟡 in-app `/` shipped (`LandingPage`); standalone domain TBD | n/a                                                         | n/a                             | n/a                                                                                                                                                  | 🟡 (in-app only)         | `sergeant.com.ua` Astro one-pager для SEO/OG; demo-video                                                             |
+| Surface                        | Deploy ready?                                                                | Auth ready?                                                 | Observability?                     | Release playbook?                                                                                                                                    | Real-user tested?        | Top blockers                                                                                                         |
+| ------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                                              | 🟡 Email/password live; Apple/Google UI shipped (env-gated) | ✅ Sentry + PostHog + CSP-RO       | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Legal publish; live Stripe env; cookie banner                                                                        |
+| **Server** (`apps/server`)     | ✅ Coolify/Hetzner `Dockerfile.api` (ADR-0074)                               | ✅ Better Auth (cookie + bearer)                            | ✅ Sentry + Prom + alert-bot       | ✅ [`release.md §1`](../../../00-start/playbooks/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | Live payment prod keys; прод APNs/FCM creds                                                                          |
+| **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending                               | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505)     | 🟡 web-side observability reuse    | ✅ [`release.md §2`](../../../00-start/playbooks/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../02-engineering/mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
+| **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit                                    | ✅ Better Auth Expo + bearer                                | 🟡 PostHog wired, Sentry TBD       | ✅ [`release.md §3`](../../../00-start/playbooks/release.md#3-expo) + [`mobile/overview.md`](../../../02-engineering/mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
+| **Landing** (`apps/landing`)   | 🟡 standalone build/config shipped; external Vercel prod + domain unverified | n/a                                                         | 🟡 cookieless PostHog when env set | [`apps/landing/README.md`](../../../../apps/landing/README.md)                                                                                       | 🟥 unverified externally | Confirm Vercel project/root directory, `sergeant.com.ua`, Telegram CTA/OG smoke                                      |
 
 ---
 
@@ -45,21 +45,21 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.1 Web (`apps/web`)
 
-- **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Railway API), per-PR preview-середовища.
+- **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Coolify API), per-PR preview-середовища.
 - **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO — UI + server wiring shipped** (`GoogleSignInButton`, `AppleSignInButton` у `AuthPage.tsx`); production rollout залежить від OAuth env secrets (initiative [`0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) §4.3).
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../../apps/web/vercel.json)), Permissions-Policy жорстка.
 - **Billing UI/API:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook, server `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а також API-client billing helpers. **Public launch work — live Stripe env/account/legal rollout + remaining placement polish**, не побудова billing skeleton з нуля.
-- **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку. Public launch потребує: legal publish, cookie-banner, live Stripe env, Apple/Google OAuth prod secrets, standalone marketing site (in-app landing уже є).
+- **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку. Public launch потребує: legal publish, cookie-banner, live payment env, Apple/Google OAuth prod secrets і підтверджений production deploy/domain уже створеного `apps/landing`.
 
 ### 3.2 Server (`apps/server`)
 
-- **Стан:** `active`. Node 22 + Express + Postgres 16 + Better Auth + Anthropic + Voyage embeddings. Деплой — Railway через [`Dockerfile.api`](../../../../Dockerfile.api); pre-deploy запускає `pnpm db:migrate` (`MIGRATE_DATABASE_URL`). Health-check `/health` p95 < 100ms (informal SLO).
+- **Стан:** `active`. Node 22 + Express + Coolify-managed `pgvector/pgvector:pg18` + Better Auth + Anthropic + Voyage embeddings. Деплой — Hetzner/Coolify через [`Dockerfile.api`](../../../../Dockerfile.api); pre-deploy запускає `node dist-server/migrate.js` (`MIGRATE_DATABASE_URL`). Health-check `/health` p95 < 100ms (SLO target).
 - **API:** v1 + v2 surfaces; sync v2 (SQLite-WASM + outbox) живе у проді; Voyage daily cost alert, alert-bot 60/120-min escalation, `/ai_cost` slash-команда — все мерджено за останні 50 коммітів.
 - **Auth secrets / Hard Rule #20:** OpenClaw PATs заборонені в проді, ротація через [`docs/00-start/playbooks/rotate-secrets.md`](../../../00-start/playbooks/rotate-secrets.md). `BETTER_AUTH_TOKEN_ENC_KEY` + `NUTRITION_BACKUP_KEY_SECRET` — required у проді (з `.env.example`).
 - **Observability:** Pino JSON + ALS-контекст + redaction policy (Hard Rule #21), Prometheus `prom-client` (`GET /metrics` за `METRICS_TOKEN`), Sentry із trace-sampling-presets, GCS log-retention archive cron, n8n webhook events Grafana dashboard.
-- **Billing schema:** `subscriptions` / Stripe webhook-event storage уже є в billing implementation path; перед public launch треба перевірити, що migrations виконані в target Railway DB і Stripe env налаштовано.
+- **Billing schema:** `subscriptions` / billing webhook-event storage уже є в implementation path; перед public launch треба перевірити, що migrations виконані в target Coolify Postgres і production provider env налаштовано.
 - **Push:** native APNs/FCM register endpoint живе, **fan-out у проді ще потребує credentials** ([`docs/90-work/tech-debt/backend.md#push-credentials`](../../../90-work/tech-debt/backend.md)).
 - **Висновок:** server-side готовий до closed beta «as is»; public launch вимагає `subscriptions` + Stripe webhook + прод push creds.
 
@@ -84,41 +84,38 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.5 Landing site
 
-- **Стан:** **in-app landing shipped** — `apps/web/src/core/LandingPage.tsx` на `/` для cold visitors (non-auth), `WaitlistForm`, analytics `LANDING_VIEWED`. `/welcome` — onboarding entry для returning users. `PricingPage` на `/pricing`. Demo-режим `?demo=1` — first-class CTA (PR-05 #1986).
-- **Ще немає:** окремого marketing-домену `sergeant.com.ua` (Astro/Framer SSG) для SEO і share-cards без SPA-shell.
-- **План у docs:**
-  - [`02-go-to-market.md`](../business/02-go-to-market.md) § 2.2 пропонує **окремий лендінг на `sergeant.com.ua`** (Astro/Framer/Vite SSG) + `app.sergeant.com.ua` для PWA + `sergeant.com.ua/blog` для SEO.
-  - Pre-launch checklist [`02-go-to-market.md`](../business/02-go-to-market.md) § 2.1 рядок #2 «Задеплоїти landing page» — **🟥 open**.
-  - [`04-launch-readiness.md`](../business/04-launch-readiness.md) § 7 пункт #13 «Landing page» — **[x] in-app**; **[ ] standalone** `sergeant.com.ua`.
-- **Trade-off:** Astro SSG лендінг = +2–5 днів сетапу, але дає SEO juice і не вимагає завантажити React-бандл для маркетингового відвідувача. `/welcome` всередині `apps/web` дає швидкий time-to-launch, але вимагає вантажити SPA-shell + service-worker.
-- **Висновок (детально у § 4):** на **closed beta** in-app `/` достатньо. На **public web launch** додатково потрібен standalone Astro one-pager на `sergeant.com.ua` для SEO (in-app landing уже покриває product entry).
+- **In-app surface:** `apps/web/src/core/LandingPage.tsx` на `/` для cold visitors, `/welcome` для onboarding, `/pricing` для тарифів.
+- **Standalone surface:** `apps/landing` — Vite 7 + React 18 static build, окремий `vercel.json`, OG/robots/404, Telegram waitlist CTA і cookieless `landing_*` PostHog events. Email-форму свідомо прибрано: бот отримує контакт лише після `/start`.
+- **Підтверджено репо:** lint/typecheck/test/build scripts, Vercel root/build contract, `SITE_URL`/`VITE_TELEGRAM_BOT`/PostHog env contract.
+- **Не можна підтвердити локально:** чи існує активний Vercel production project з правильним Root Directory, чи прив'язаний `sergeant.com.ua`, які production env реально задані, чи CTA веде на production-бота.
+- **Висновок:** створювати ще один Astro/Framer one-pager не треба. До public launch потрібен операторський deploy/DNS/env/smoke-check уже готового `apps/landing`; блог лишається окремим майбутнім scope.
 
 ---
 
 ## 4. Чи треба окремий лендінг-сайт?
 
-**Коротка рекомендація:** так, але **не до closed beta**. Закрита бета зашиплюється з `/welcome` всередині `apps/web` як ad-hoc лендінгом (через invite-link з UTM-параметрами), і паралельно за 1–2 тижні до public launch виставляється окремий мінімальний static-site лендінг на `sergeant.com.ua`.
+**Рішення вже виконано:** так, окрема surface потрібна, і вона вже існує як `apps/landing`. Повторний вибір стеку закритий фактичним кодом; поточна робота — production rollout, не нова реалізація.
 
 **Чому НЕ обходитись лише `/welcome`-ом для public launch:**
 
-1. **SEO-критично:** PWA-shell з service-worker-ом + Workbox-cache headers — погана платформа для landing-pages, які мають індексуватись Google і ділитись OG-картками. Окремий Astro/Next-SSG-лендінг дає клік-friendly OG, sub-1s LCP без React-бандла, і не змагається за CSP/COEP-headers, як `/welcome`.
+1. **SEO/share-критично:** PWA-shell з service-worker-ом + Workbox-cache headers — погана платформа для landing-pages, які мають індексуватись і ділитись OG-картками. `apps/landing` уже ізолює marketing bundle та metadata від `/welcome`.
 2. **Розділення marketing vs product feature-flag-планів:** marketing-копії й A/B-тести лендінгу не повинні залежати від `pnpm --filter @sergeant/web build` циклу, інакше кожен copy-change тригерить full CI + size-limit-gate.
 3. **Domain-routing план уже зафіксовано** у [`02-go-to-market.md` § 2.2](../business/02-go-to-market.md): `sergeant.com.ua` → лендінг, `app.sergeant.com.ua` → PWA, `sergeant.com.ua/blog` → SEO. Це дозволяє паралельно тестувати кілька лендінгів без зачіпання product surface.
 4. **CSP/Permissions-Policy `apps/web`** жорсткі (camera/microphone/clipboard = none) — для лендінгу з демо-відео цю політику доводиться послаблювати, що збільшує security-surface на product domain.
 
-**Коли все ж OK почати з `/welcome`-only:**
+**Коли все ще OK використовувати `/welcome`-only:**
 
 - closed beta з ≤30 інвайт-юзерами (без public registration), де SEO не релевантне;
 - founder-driven content-marketing (Twitter/X + DOU) поки що лінкує одразу на `/welcome` з UTM;
-- waitlist-сторінка може жити на простому Tally/Loops form-у — не потрібно власного fronend-у.
+- якщо зовнішній домен тимчасово не готовий, invite-flow може вести напряму в product entry або Telegram-бота.
 
-**Recommended stack для окремого лендінгу** (узгоджується з [`02-go-to-market.md` § 2.2](../business/02-go-to-market.md)):
+**Зафіксований stack і scope:**
 
-- Astro SSG або Framer (для нон-dev копірайтингу) на окремому Vercel project;
-- email-capture через Loops free tier (або ConvertKit) → синк у PostHog;
-- блог на тому ж domain-prefix (`/blog`) — Astro Content Collections;
-- OG-cards автогенерація через `@vercel/og` або Cloudinary;
-- CSP лояльніша, бо немає health/financial PII-flow.
+- Vite 7 + React 18 + Tailwind 4 на окремому Vercel project;
+- Telegram deep link як єдина conversion action; `/start` зберігається у `telegram_waitlist`;
+- cookieless PostHog без autocapture/session recording;
+- статична OG-картка + canonical/`og:url` із `SITE_URL` або Vercel production URL;
+- блог не входить у поточний `apps/landing` і потребує окремого рішення, якщо стане launch blocker-ом.
 
 ---
 
@@ -168,7 +165,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 - **Entry:** CP-1 exit + Privacy/ToS finalized, Stripe Checkout живий у staging, Apple+Google SSO мерджено, Cookie consent banner у проді, окремий лендінг на `sergeant.com.ua` опублікований, GDPR endpoints (`/api/me/export` + `DELETE /api/me`) задеплоєні.
 - **Exit:** Stripe webhook events стабільні ≥7 днів, ≥10 paid Pro-subscriptions, OG-share/SEO повертає 200 без CSP-violations, Lighthouse LCP/FCP/TBT under thresholds (median).
-- **Sequence:** [`release.md § 1`](../../../00-start/playbooks/release.md#1-web--api) (`pnpm db:migrate` → Railway API → Vercel web).
+- **Sequence:** [`release.md § 1`](../../../00-start/playbooks/release.md#1-web--api) (Coolify pre-deploy migration → API image rollout → Vercel web).
 
 ### CP-3 → Capacitor closed beta (week 6–8)
 

@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                        |
@@ -149,7 +149,7 @@ Cons:
 | B    | `<VerifyEmailGate />` banner у hub layout                    | `apps/web/src/modules/hub/layout/`                | 2 days | A complete; PostHog event `email_verified_banner_shown` works     |
 | C    | Reminder cadence (day +1, +7, +13) через `auth-mail` BullMQ  | `apps/server/src/modules/auth/email-reminders.ts` | 1 day  | B complete; staging Resend account receives test sends            |
 | D    | `forceVerifyAt` колонка + Better Auth sign-in hook patch     | `apps/server/src/auth.ts`, новий migration NNN    | 2 days | C complete; integration test покриває soft-block scenario         |
-| E    | Global flip `REQUIRE_EMAIL_VERIFICATION=true` у Railway prod | env-update via Railway dashboard                  | 5 min  | D complete; verified-rate ≥ 80% (≥ 14 days після Phase D rollout) |
+| E    | Global flip `REQUIRE_EMAIL_VERIFICATION=true` у Coolify prod | env-update у `sergeant-api` + redeploy            | 5 min  | D complete; verified-rate ≥ 80% (≥ 14 days після Phase D rollout) |
 
 ETA повного циклу: ~6 робочих днів implementation + 14+ днів observation-вікно = **3 тижні calendar-time** від старту до Phase E.
 

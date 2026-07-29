@@ -119,7 +119,6 @@ sub-processor data sharing з Sentry/Loki/Railway, який не обумовл�
 - `apps/server/src/sentry.ts` — `applyBeforeSend` + `applyBeforeBreadcrumb` + `SENTRY_DENY_URLS` (health-probe noise) для Sentry SDK на Node.
 - `apps/web/src/core/observability/sentry.ts` — `applyWebBeforeSend()` + `WEB_SENTRY_DENY_URLS` (health + browser-extension noise) для browser SDK.
 - `apps/mobile/src/lib/observability.ts` — `applyMobileBeforeSend()` (RN SDK parity, since 2026-05-13).
-- `tools/openclaw/src/obs/sentry.ts` — `applyOpenclawBeforeSend()` + `OPENCLAW_SENTRY_DENY_URLS` (since 2026-05-13).
 - `apps/server/src/obs/sensitiveUrl.ts` — `redactSensitiveUrl()` для path-secrets (C1).
 
 ### Class B — особисті ідентифікатори (replaced with hash or deleted)
@@ -250,12 +249,11 @@ for false-positive trade-offs.
 
 ## Per-surface SDK config
 
-| Surface  | Module                                                                                            | `beforeSend`              | `beforeBreadcrumb`      | `denyUrls`                                       |
-| -------- | ------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------- | ------------------------------------------------ |
-| Server   | [`apps/server/src/sentry.ts`](../../../apps/server/src/sentry.ts)                                 | `applyBeforeSend`         | `applyBeforeBreadcrumb` | `/api/health`, `/health`, `/favicon.ico`         |
-| Web      | [`apps/web/src/core/observability/sentry.ts`](../../../apps/web/src/core/observability/sentry.ts) | `applyWebBeforeSend`      | —                       | `/api/health`, `/health`, browser-extension URLs |
-| Mobile   | [`apps/mobile/src/lib/observability.ts`](../../../apps/mobile/src/lib/observability.ts)           | `applyMobileBeforeSend`   | —                       | —                                                |
-| OpenClaw | `tools/openclaw/src/obs/sentry.ts`                                                                | `applyOpenclawBeforeSend` | —                       | `/api/health`, `/health`                         |
+| Surface | Module                                                                                            | `beforeSend`            | `beforeBreadcrumb`      | `denyUrls`                                       |
+| ------- | ------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------- | ------------------------------------------------ |
+| Server  | [`apps/server/src/sentry.ts`](../../../apps/server/src/sentry.ts)                                 | `applyBeforeSend`       | `applyBeforeBreadcrumb` | `/api/health`, `/health`, `/favicon.ico`         |
+| Web     | [`apps/web/src/core/observability/sentry.ts`](../../../apps/web/src/core/observability/sentry.ts) | `applyWebBeforeSend`    | —                       | `/api/health`, `/health`, browser-extension URLs |
+| Mobile  | [`apps/mobile/src/lib/observability.ts`](../../../apps/mobile/src/lib/observability.ts)           | `applyMobileBeforeSend` | —                       | —                                                |
 
 All surfaces set `sendDefaultPii: false`. The shared scrubbers
 (`scrubPII`, `scrubPIIString`, `redactSensitiveQueryParams`) are

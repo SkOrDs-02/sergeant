@@ -135,9 +135,9 @@ Agent-OS hardening: lint-гейти проти дрейфу, уніфікаці�
 
 | PR                                                       | Title                                                                            | Merged     |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                            | PENDING    |
 | [#3649](https://github.com/Skords-01/Sergeant/pull/3649) | chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs             | 2026-06-19 |
 | [#3536](https://github.com/Skords-01/Sergeant/pull/3536) | docs(docs): doc-layer wave 2 — genre contract, monolith splits, hardening matrix | 2026-06-12 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
-
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
+> **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_POOL` і pool-safety правила лишаються чинними, але Railway-кроки provisioning/DNS нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженого Coolify pgBouncer resource; топологію треба окремо обрати й задокументувати до rollout.
+
 > Закриває Stage 6 PR #046 із [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md):
 > deploy-shape для **pgBouncer connection pooler** перед Railway Postgres,
 > ENV-перемикач `DATABASE_URL_POOL`, та правила, які API-маршрути / cron / міграції
@@ -69,7 +71,7 @@ HTTP request ────┤
   `MIGRATE_DATABASE_URL` fallback в `apps/server/migrate.mjs` (Pre-Deploy-job
   на Railway, окремо від runtime pool).
 
-## Railway-deploy шейп
+## Історичний Railway deploy shape (не виконувати)
 
 1. Створити окремий Railway-сервіс `pgbouncer` із image
    [`edoburu/pgbouncer`](https://hub.docker.com/r/edoburu/pgbouncer).

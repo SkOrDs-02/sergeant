@@ -1,6 +1,6 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
@@ -549,20 +549,21 @@ Positioning statement:
 - [ ] **Store screenshots** — 5–8 штук для Play Store (кожен модуль + AI chat + dashboard).
 - [ ] **Feature graphic** — 1024×500 банер для Play Store.
 - [ ] **Demo video** — 30–60 с для Store + landing.
-- [ ] **Open Graph images** — для шерінгу лінків (sergeant.com.ua).
+- [x] **Open Graph image** — `apps/landing/public/og.png`; canonical/`og:url` вмикаються через `SITE_URL` або Vercel production URL.
 - [ ] **Favicon / PWA icons** — перевірити всі розміри (192, 512, maskable).
 
 ### 7.3 Landing page
 
-Зараз web app = landing (юзер одразу бачить додаток). Для маркетингу краще мати
-**окремий лендінг**:
+Окремий marketing surface уже shipped у `apps/landing` (Vite/React, окремий
+Vercel config). Production domain/deploy підтверджуються поза репо:
 
 ```
 sergeant.com.ua                → Landing page (маркетинг)
 app.sergeant.com.ua            → Додаток (PWA)
 ```
 
-Landing має містити:
+Поточний MVP свідомо має одну conversion action — Telegram waitlist CTA. Нижче —
+backlog для розширення після перевірки базової конверсії, а не вимоги до першого deploy:
 
 - [ ] Hero з демо-скріншотом / анімацією.
 - [ ] 4 модулі (фінанси, фітнес, звички, їжа) з іконками.
@@ -577,10 +578,10 @@ Landing має містити:
 PWA SEO складніший (SPA = один HTML), але можна:
 
 - [ ] **Pre-rendering** для landing (Vite SSG або Astro site).
-- [ ] **Meta tags** — title, description, OG image для кожної маркетингової сторінки.
+- [x] **Meta tags** — title, description, canonical/OG для поточної marketing-сторінки.
 - [ ] **Structured data** — JSON-LD для SoftwareApplication (schema.org).
 - [ ] **Sitemap.xml** — для landing і блогу.
-- [ ] **robots.txt** — перевірити.
+- [x] **robots.txt** — shipped у `apps/landing/public/robots.txt`.
 - [ ] **Blog** — SEO-контент (як рахувати калорії, як вести бюджет, etc.).
 
 ---

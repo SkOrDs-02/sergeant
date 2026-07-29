@@ -310,9 +310,9 @@ accepted.
 
 | PR                                                       | Title                                                                             | Merged     |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------- |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                             | PENDING    |
 | [#3555](https://github.com/Skords-01/Sergeant/pull/3555) | fix(web): correct recommendation icon rendering and design checkbox a11y          | 2026-06-13 |
 | [#3486](https://github.com/Skords-01/Sergeant/pull/3486) | chore(server,config): hard rule #18 server max-lines, OTel align, distroless docs | 2026-06-09 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
-
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

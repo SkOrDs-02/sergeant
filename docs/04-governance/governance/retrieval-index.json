@@ -3,18 +3,18 @@
   "version": 1,
   "generated_at": "2026-07-29",
   "sourceHashes": {
-    "knowledge-graph": "d20d0b17514dc262a682b1a4b2d06df7abfc0183cb67676432d36b45514a8f57",
-    "symbol-index": "93dba76ae0340aa2a6cb630c7c708b6d8620f29135ff065669b2f80e9b2ac80e"
+    "knowledge-graph": "67d33e90b5afda71703b3d2d3674569f0e5c86590b171ea0ee686e33b9d1c066",
+    "symbol-index": "ea7cceca2ef2531b8d240042ec4e8b9a9e6e661a8d5369b5af3d70c0d433a2ea"
   },
   "counts": {
     "adr": 77,
     "audit": 10,
-    "export": 286,
+    "export": 294,
     "hard-rule": 26,
     "initiative": 5,
     "playbook": 60,
     "skill": 23,
-    "total": 487
+    "total": 495
   },
   "chunks": [
     {
@@ -617,8 +617,8 @@
       "title": "ADR-0058: Knowledge graph schema and storage format",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "56afa881ab0969bf978f1aa5810f022519aa13f9e30240e88d783f66a8d88bd1"
+      "text": "ADR-0058: Knowledge graph schema and storage format · adr:0058 · adr · Active · 58 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "de74f427a69c3fc266f94f9d0245bcd98cba30167adddbdb552f4f1a855e8c55"
     },
     {
       "id": "adr:0059",
@@ -628,8 +628,8 @@
       "title": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "615e0c6e65f73e4dbefeca35d9f40a3c4159a6a44f466fd01579d67f7a185c76"
+      "text": "ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph) · adr:0059 · adr · Active · 59 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "d45066ca2b7ba4b1f7f1c7952a88515a0ee263cc79e0629fe8be1fb586af4e57"
     },
     {
       "id": "adr:0060",
@@ -639,8 +639,8 @@
       "title": "ADR-0060: Architecture diagrams — automation scope (workspace graph only)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "31fbb23967153764d6962cebddfa2b20a813eb0d915c6b51a45642a519e7d702"
+      "text": "ADR-0060: Architecture diagrams — automation scope (workspace graph only) · adr:0060 · adr · Active · 60 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "c74027a843de5384c7eb6c016637f81286a0c1e462d88d4b6dbb70e9cd46e528"
     },
     {
       "id": "adr:0061",
@@ -650,8 +650,8 @@
       "title": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "38930116fe07dca5204c71d4e9b70f1a1c814443db2b3d00c74d074f2fccd0eb"
+      "text": "ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block) · adr:0061 · adr · Active · 61 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "85df4fd9ec9d4eaa4dbe45dc47657cff8f4a64f6cb2458239e86932cb07e614c"
     },
     {
       "id": "adr:0062",
@@ -705,8 +705,8 @@
       "title": "ADR-0066: Agent semantic retrieval over the knowledge graph",
       "tier": "core",
       "status": "Active",
-      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-24 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
-      "contentHash": "457d5fa2796385e9799e8cc7766a4e291bdeba53a1bdd3cbf4b75027ce0a69fe"
+      "text": "ADR-0066: Agent semantic retrieval over the knowledge graph · adr:0066 · adr · Active · 66 · 2026-07-29 · Context and Problem Statement · Considered Options · Decision · Rationale · Consequences · Positive · Negative · Neutral · Compliance · Links · Recent PRs",
+      "contentHash": "d2a715a82b74131eadc770c445f842628d48727fbec7e84b49ae972c756843d0"
     },
     {
       "id": "adr:0067",
@@ -782,8 +782,8 @@
       "title": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів",
       "tier": "core",
       "status": "Accepted",
-      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-24 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
-      "contentHash": "95373fb7475a7d8009418d5e548b28677be2a805a89044a564e9328677b2326d"
+      "text": "ADR-0073: Generic dual-write framework для 4 модульних пайплайнів · adr:0073 · adr · Accepted · 73 · 2026-07-29 · Context and Problem Statement · Inventory: 4 пайплайни і що саме в них різне · Considered Options · Decision · Що будуємо (sketch, не фінальні файли) · Чого фреймворк НЕ робить · Rationale · Статус виконання (жива відмітка — оновлюй з кожним кроком) · Migration plan (pipeline-by-pipeline, з verification gate на кожному кроці) · Що ми свідомо НЕ абстрагуємо (semantic, not incidental) · Consequences · Positive · Negative · Neutral · Risks · Open questions — рішення власника (2026-07-03) · Compliance · Links · Recent PRs",
+      "contentHash": "94dcd21975b6b7fc4ed75e41ead82d3558a0c61c5622b817c1156e1f0058517a"
     },
     {
       "id": "adr:0074",
@@ -980,6 +980,33 @@
       "tier": "extended",
       "text": "AiMemoryClearResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/me · used 0× · dead export unused",
       "contentHash": "29f259b35c13c2ed5d2a7a1317751f99a3e1aca409210c452e31586287b1c44b"
+    },
+    {
+      "id": "export:@sergeant/api-client:AiMemoryDeleteResponse",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/me",
+      "title": "AiMemoryDeleteResponse (re-export)",
+      "tier": "extended",
+      "text": "AiMemoryDeleteResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/me · used 0× · dead export unused",
+      "contentHash": "06739949e879a9d1a8561e868d72db6efa17aedfdee6b95bed5bf9862c56081a"
+    },
+    {
+      "id": "export:@sergeant/api-client:AiMemoryListItem",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/me",
+      "title": "AiMemoryListItem (re-export)",
+      "tier": "extended",
+      "text": "AiMemoryListItem · re-export · @sergeant/api-client · packages/api-client/src/endpoints/me · used 1×",
+      "contentHash": "827a7af6956ff0ca4836a3516b5d5e64c6ea0ac9a10f6d7ead117df50c4eac14"
+    },
+    {
+      "id": "export:@sergeant/api-client:AiMemoryListResponse",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/me",
+      "title": "AiMemoryListResponse (re-export)",
+      "tier": "extended",
+      "text": "AiMemoryListResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/me · used 0× · dead export unused",
+      "contentHash": "22a77fb6234f61092d8f58d978e35d85f48790268bff91b07cd3a49315c5bdf3"
     },
     {
       "id": "export:@sergeant/api-client:ApiClient",
@@ -1774,6 +1801,15 @@
       "contentHash": "45308d933321ff8562c1c82191706ff0b72c5c2ca013b6ddea500ccbae1443ac"
     },
     {
+      "id": "export:@sergeant/api-client:MonoJarDto",
+      "type": "export",
+      "path": "packages/api-client/src/endpoints/mono",
+      "title": "MonoJarDto (re-export)",
+      "tier": "extended",
+      "text": "MonoJarDto · re-export · @sergeant/api-client · packages/api-client/src/endpoints/mono · used 1×",
+      "contentHash": "ab1951fde81a22a4305bb8e7d1ec690c090fb5e4e40964a4f1ddfe0c840c5bec"
+    },
+    {
       "id": "export:@sergeant/api-client:MonoSyncState",
       "type": "export",
       "path": "packages/api-client/src/endpoints/mono",
@@ -2517,8 +2553,8 @@
       "path": "packages/api-client/src/endpoints/syncV2",
       "title": "SyncV2PullOp (re-export)",
       "tier": "extended",
-      "text": "SyncV2PullOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 2×",
-      "contentHash": "4e901da27a1b6c4e5dea47805e58308bd805d5d7037565366201900b0e41d628"
+      "text": "SyncV2PullOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 4×",
+      "contentHash": "72c7ccb8390b533d314627280c322aff1edecede9ef0d7cc983d0da9da8078d5"
     },
     {
       "id": "export:@sergeant/api-client:SyncV2PullOptions",
@@ -2553,8 +2589,8 @@
       "path": "packages/api-client/src/endpoints/syncV2",
       "title": "SyncV2PushOp (re-export)",
       "tier": "extended",
-      "text": "SyncV2PushOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 0× · dead export unused",
-      "contentHash": "69beb92989fcbcc29c00a9fda222aa8825005dfe9eb25daaf855a763dfe85804"
+      "text": "SyncV2PushOp · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 1×",
+      "contentHash": "2ed1b4aa54190164331bc6d05232a9b90c37a243aa97679a71a866ae82e13121"
     },
     {
       "id": "export:@sergeant/api-client:SyncV2PushOptions",
@@ -2571,8 +2607,8 @@
       "path": "packages/api-client/src/endpoints/syncV2",
       "title": "SyncV2PushResponse (re-export)",
       "tier": "extended",
-      "text": "SyncV2PushResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 0× · dead export unused",
-      "contentHash": "f26126d2a430dda5e99ee81b92f7832bb3f3d6e1b84c6177a3270d276d9b961b"
+      "text": "SyncV2PushResponse · re-export · @sergeant/api-client · packages/api-client/src/endpoints/syncV2 · used 1×",
+      "contentHash": "caebe4c63fd791a7f79c91056b980c89931059fd3b183e6072cc22ec2a98bc45"
     },
     {
       "id": "export:@sergeant/api-client:TokenProvider",
@@ -2872,13 +2908,22 @@
       "contentHash": "8de37f41e3f86bdb1859eba70892796d2a6b557356362776431d41dee5c8c15b"
     },
     {
+      "id": "export:@sergeant/design-tokens:inkTheme",
+      "type": "export",
+      "path": "packages/design-tokens/index.d.ts",
+      "title": "inkTheme (const)",
+      "tier": "extended",
+      "text": "inkTheme · const · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 0× · dead export unused",
+      "contentHash": "0aa1711fa212f39bf8b43a6f56a3f865b005e517916821899f7988028a1c80b9"
+    },
+    {
       "id": "export:@sergeant/design-tokens:ModuleAccent",
       "type": "export",
       "path": "packages/design-tokens/index.d.ts",
       "title": "ModuleAccent (type)",
       "tier": "extended",
-      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 15×",
-      "contentHash": "9552f16011ba00356a502bf599fd2fe612dd1c6e0503643079b345491206f3cb"
+      "text": "ModuleAccent · type · @sergeant/design-tokens · packages/design-tokens/index.d.ts · used 16×",
+      "contentHash": "70311e171c920c9119df726c80e4f1fecdef21dd5be25e3764a4ffa7dbfdb2be"
     },
     {
       "id": "export:@sergeant/design-tokens:moduleAccentRgb",
@@ -3437,6 +3482,33 @@
       "tier": "extended",
       "text": "RAW_TRACKED_STORAGE_MESSAGE · re-export · eslint-plugin-sergeant-design · packages/eslint-plugin-sergeant-design/index.js · used 0× · dead export unused",
       "contentHash": "38c22c9bada99bd2bf818f924dd1e7924d06bd63e9e47fa7cfb8ecc049111fec"
+    },
+    {
+      "id": "export:eslint-plugin-sergeant-design:RETIRED_HUE_HEXES",
+      "type": "export",
+      "path": "packages/eslint-plugin-sergeant-design/index.js",
+      "title": "RETIRED_HUE_HEXES (re-export)",
+      "tier": "extended",
+      "text": "RETIRED_HUE_HEXES · re-export · eslint-plugin-sergeant-design · packages/eslint-plugin-sergeant-design/index.js · used 0× · dead export unused",
+      "contentHash": "47031c948c1a648e57b690aa241bef8041cb6205fd24111bbe7b35a6b22c2dcd"
+    },
+    {
+      "id": "export:eslint-plugin-sergeant-design:RETIRED_MODULE_HUE_MESSAGE",
+      "type": "export",
+      "path": "packages/eslint-plugin-sergeant-design/index.js",
+      "title": "RETIRED_MODULE_HUE_MESSAGE (re-export)",
+      "tier": "extended",
+      "text": "RETIRED_MODULE_HUE_MESSAGE · re-export · eslint-plugin-sergeant-design · packages/eslint-plugin-sergeant-design/index.js · used 0× · dead export unused",
+      "contentHash": "64522d80b34e2b55301882f009f2f690212e86ac9a6cbae41fe96c27fbfe78e3"
+    },
+    {
+      "id": "export:eslint-plugin-sergeant-design:RETIRED_MODULE_HUES",
+      "type": "export",
+      "path": "packages/eslint-plugin-sergeant-design/index.js",
+      "title": "RETIRED_MODULE_HUES (re-export)",
+      "tier": "extended",
+      "text": "RETIRED_MODULE_HUES · re-export · eslint-plugin-sergeant-design · packages/eslint-plugin-sergeant-design/index.js · used 0× · dead export unused",
+      "contentHash": "fe135e1eec5518e952297ef2c7c4ddc9ffcd0e750e736e737ac424da52689843"
     },
     {
       "id": "export:eslint-plugin-sergeant-design:RQ_KEYS_MESSAGE",

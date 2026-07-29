@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active — draft roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 16 тижнів від `W-4` до `W+12`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
@@ -56,7 +56,7 @@ Phase 1 — це **16-тижнева кампанія від "web-PWA шипит
 По суті — мінімальний readiness checklist щоб взагалі починати pre-launch:
 
 - [x] **Web app деплоїться на Vercel** з `apps/web` → `apps/server/dist/` (unified-mode). Підтверджено в `apps/web/README.md` (production-ready stack).
-- [x] **Backend стабільно тримає Coolify/Hetzner** + Postgres 16, міграції gated через `pnpm db:migrate` (ADR-0074; Railway retired).
+- [x] **Backend стабільно тримає Coolify/Hetzner** + `pgvector/pgvector:pg18`, міграції gated через Coolify pre-deploy `node dist-server/migrate.js` (ADR-0074; Railway retired).
 - [x] **Auth working end-to-end:** Better Auth cookie-сесії, sign-up, sign-in, password reset на `/reset-password` (`apps/web/src/core/auth/`).
 - [x] **FTUX funnel працює:** 8 канонічних подій у PostHog (`onboarding_started → … → celebration_shown`); див. [`posthog-ftux-dashboards.md` §2](../../../03-operations/observability/posthog-ftux-dashboards.md).
 - [x] **Sentry alerts активні** для error-rate, unhandled exceptions.
@@ -154,7 +154,9 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 ### 2.4 Мінімальний MVP-варіант Опції C (W-4 / W-3)
 
-Структура `sergeant.com.ua` — **одна сторінка**, 5 секцій. Реалізація — Astro starter + 1 author-component, deploy на Vercel:
+> **Стан 2026-07-29:** рішення виконано іншим стеком — `apps/landing` є окремим Vite 7 + React 18 build з Telegram CTA, OG/robots/404 і cookieless PostHog. Опис Astro нижче — початковий design intent; для execution використовуй [`apps/landing/README.md`](../../../../apps/landing/README.md).
+
+Структура `sergeant.com.ua` — **одна сторінка**, 5 секцій. Реалізація — наявний `apps/landing`, deploy на окремий Vercel project:
 
 ```
 ┌─ Hero (h1, sub-headline, CTA → email capture) ─┐
@@ -213,10 +215,10 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 **Concrete actions:**
 
 - [ ] **Купити `sergeant.com.ua`** (~₴500/рік через Imena.ua або UA-DNS). Налаштувати DNS на Vercel.
-- [ ] **Створити Astro starter:** `pnpm create astro@latest apps/landing` у monorepo (або окремий repo). Заходимо на 5 секцій з §2.4.
+- [x] **Створити standalone app:** `apps/landing` (Vite 7 + React 18) у monorepo; Telegram CTA, OG/robots/404, lint/typecheck/test/build shipped.
 - [ ] **Deploy на Vercel:** apex `sergeant.com.ua` → landing; subdomain `app.sergeant.com.ua` → existing apps/web. Тест: SSL працює, OG cards рендеряться.
-- [ ] **PostHog проект для landing:** окремий project (`landing prod`) або підключити до існуючого `Default project` (167740) — обираємо існуючий для уніфікації funnel.
-- [ ] **`waitlistApi` connection test:** POST з лендінгу → запис у БД. Через 5 тестових сабмітів — переконатися, що email приходить у admin-вьюху.
+- [ ] **PostHog production config:** підтвердити `VITE_POSTHOG_KEY`/host і події `landing_viewed` + `landing_telegram_clicked` у вибраному project.
+- [ ] **Telegram waitlist smoke:** CTA → `/start` production-бота → запис у `telegram_waitlist`; email `waitlistApi` standalone-лендінг більше не використовує.
 - [ ] **Telegram-канал «Sergeant 🎖️»:** створити, налаштувати pinned-message про waitlist, додати join-link на лендінг.
 - [ ] **Telegram-бот для subscribe:** не критично у W-4, можна перенести на W-3.
 
@@ -440,7 +442,7 @@ Moment of truth: реальні юзери торкаються продукту
 - [ ] **First maker comment:** template з §4.1 — «Привіт, Product Hunt! Я [Ім'я], засновник Sergeant…».
 - [ ] **Outreach 20+ supporters:** написати DM на LinkedIn/Twitter за 3 дні до launch.
 - [ ] **Monitor + respond:** перші 12 годин — відповідь на кожен коментар протягом 1 години.
-- [ ] **Sentry / PostHog on alert:** ozhydaemo signup-spike 5-10x normal — backend і API мають витримати. Якщо traffic перевищує Railway free-tier — instant upgrade.
+- [ ] **Sentry / PostHog on alert:** очікуємо signup-spike 5-10x normal — backend і API мають витримати. Якщо saturation росте — scale/redeploy через Coolify.
 - [ ] **Status page update:** [Instatus](https://instatus.com/) показує "Operational" протягом всього launch day.
 
 **Acceptance gate:**
@@ -866,7 +868,7 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 | R-2 | **FTUX wizard має поточну conversion < 30%** (W0-W3)                                | Medium     | High     | FTUX SLO живий у `ftux-slo.yml`; якщо < 30%, повтор W2-W3, не йди у W4. Iteration на hero copy + first action — швидкі PR-и.                                                  |
 | R-3 | **Product Hunt launch flop** — top-20 не досягнуто                                  | Medium     | Medium   | Self-launch ОК (per [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook)). Backup-канал — DOU/AIN/Threads UA уже працюють. Не залежимо на PH. |
 | R-4 | **Privacy Policy не готова до public launch** — block W4                            | Medium     | High     | Termly Pro stub-у W-1; повний review до W3. Якщо юрист не встигає — затримати W4 на 1 тиждень.                                                                                |
-| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W6)                        | Medium     | Critical | Railway upgrade option known; preemptive load-test у W5 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.                                                             |
+| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W6)                        | Medium     | Critical | Coolify/VPS scaling і rollback path мають бути перевірені; preemptive load-test у W5 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.                                |
 | R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W2                               | Medium     | High     | Recruit з 3 каналів одночасно (особисті + Telegram + DOU); follow-up DM через 48h для тихих. Telegram-група має «one post per day» правило.                                   |
 | R-7 | **Activation rate < 20%** на стабільному cohort у W3                                | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                 |
 | R-8 | **Mobile strategy змінилась після ADR-0010**                                        | Medium     | Medium   | ADR-0052 робить Capacitor primary; Phase 2 brief має перевірити актуальну parity-стратегію, а не старий T₀/T₁/T₂ sunset-графік.                                               |
@@ -888,14 +890,14 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 ### 8.1 Already in stack (підтвердити що live)
 
-| Tool              | Purpose                               | Plan                                       | Stato   |
-| ----------------- | ------------------------------------- | ------------------------------------------ | ------- |
-| **Vercel**        | Web hosting (apps/web + apps/landing) | Free / Pro $20/міс при traffic > free-tier | ✅ Live |
-| **Railway**       | Backend + Postgres 16                 | $5/міс starter, $20+/міс при scale         | ✅ Live |
-| **Sentry**        | Error monitoring + alerts             | Free tier 5K events/міс                    | ✅ Live |
-| **PostHog**       | Product analytics + FTUX dashboards   | Cloud EU, free до 1M events/міс            | ✅ Live |
-| **GitHub**        | Issues + PRs + CI Actions             | Free для public, $4/seat private           | ✅ Live |
-| **GitHub Issues** | Bug-tracking                          | Free                                       | ✅ Live |
+| Tool                | Purpose                               | Plan                                       | Stato   |
+| ------------------- | ------------------------------------- | ------------------------------------------ | ------- |
+| **Vercel**          | Web hosting (apps/web + apps/landing) | Free / Pro $20/міс при traffic > free-tier | ✅ Live |
+| **Hetzner/Coolify** | Backend + Postgres 18 + Redis         | ~$7/міс fixed CX23                         | ✅ Live |
+| **Sentry**          | Error monitoring + alerts             | Free tier 5K events/міс                    | ✅ Live |
+| **PostHog**         | Product analytics + FTUX dashboards   | Cloud EU, free до 1M events/міс            | ✅ Live |
+| **GitHub**          | Issues + PRs + CI Actions             | Free для public, $4/seat private           | ✅ Live |
+| **GitHub Issues**   | Bug-tracking                          | Free                                       | ✅ Live |
 
 ### 8.2 Add у Phase 1
 
@@ -929,7 +931,7 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 ```
 Vercel:       $0 (free, ймовірно до W12)
-Railway:      $5-20 (starter, при traffic росте)
+Hetzner:      ~$7 (CX23 fixed; scale окремим рішенням)
 Sentry:       $0 (free до 5K events)
 PostHog:      $0 (free до 1M events)
 Loops:        $0-39 (free до 1K contacts)

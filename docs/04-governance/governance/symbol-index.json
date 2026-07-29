@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-29",
   "summary": {
-    "packages": 17,
-    "totalExports": 286,
-    "totalDeadExports": 181
+    "packages": 18,
+    "totalExports": 294,
+    "totalDeadExports": 185
   },
   "packages": [
     {
@@ -12,8 +12,8 @@
       "path": "packages/api-client",
       "entryFile": "packages/api-client/src/index.ts",
       "stats": {
-        "exportCount": 201,
-        "totalImporters": 43,
+        "exportCount": 205,
+        "totalImporters": 47,
         "deadExports": 107
       },
       "exports": [
@@ -201,6 +201,27 @@
           "usageCount": 0
         },
         {
+          "name": "AiMemoryDeleteResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "AiMemoryListItem",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": ["apps/web/src/core/settings/AiMemoryList.tsx"],
+          "usageCount": 1
+        },
+        {
+          "name": "AiMemoryListResponse",
+          "kind": "re-export",
+          "fromFile": "./endpoints/me",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
           "name": "MeDeleteResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/me",
@@ -290,9 +311,11 @@
           "fromFile": "./endpoints/syncV2",
           "usedBy": [
             "apps/mobile/src/core/syncEngine/applyPullOp.ts",
+            "apps/web/src/core/durability/anonymousDataMigration.ts",
+            "apps/web/src/core/syncEngine/applyPullGoalPeriods.ts",
             "apps/web/src/core/syncEngine/applyPullOp.ts"
           ],
-          "usageCount": 2
+          "usageCount": 4
         },
         {
           "name": "SyncV2PullOptions",
@@ -315,8 +338,8 @@
           "name": "SyncV2PushOp",
           "kind": "re-export",
           "fromFile": "./endpoints/syncV2",
-          "usedBy": [],
-          "usageCount": 0
+          "usedBy": ["apps/web/src/core/syncEngine/outboxDrainChain.test.ts"],
+          "usageCount": 1
         },
         {
           "name": "SyncV2PushOptions",
@@ -329,8 +352,8 @@
           "name": "SyncV2PushResponse",
           "kind": "re-export",
           "fromFile": "./endpoints/syncV2",
-          "usedBy": [],
-          "usageCount": 0
+          "usedBy": ["apps/web/src/core/syncEngine/outboxDrainChain.test.ts"],
+          "usageCount": 1
         },
         {
           "name": "buildSyncV2IncrementOp",
@@ -1146,6 +1169,13 @@
           "usageCount": 1
         },
         {
+          "name": "MonoJarDto",
+          "kind": "re-export",
+          "fromFile": "./endpoints/mono",
+          "usedBy": ["apps/web/src/shared/api/index.ts"],
+          "usageCount": 1
+        },
+        {
           "name": "MonoSyncState",
           "kind": "re-export",
           "fromFile": "./endpoints/mono",
@@ -1566,9 +1596,9 @@
       "path": "packages/design-tokens",
       "entryFile": "packages/design-tokens/index.d.ts",
       "stats": {
-        "exportCount": 21,
-        "totalImporters": 18,
-        "deadExports": 19
+        "exportCount": 22,
+        "totalImporters": 19,
+        "deadExports": 20
       },
       "exports": [
         {
@@ -1582,6 +1612,7 @@
             "apps/web/src/shared/components/layout/ModuleHeader.tsx",
             "apps/web/src/shared/components/layout/ModuleShell.tsx",
             "apps/web/src/shared/components/ui/Button.tsx",
+            "apps/web/src/shared/components/ui/DataTable.tsx",
             "apps/web/src/shared/components/ui/EmptyState.tsx",
             "apps/web/src/shared/components/ui/Skeleton.tsx",
             "apps/web/src/shared/components/ui/Tabs.tsx",
@@ -1591,7 +1622,7 @@
             "packages/insights/src/recommendations/types.ts",
             "packages/shared/src/lib/recommendations.ts"
           ],
-          "usageCount": 15
+          "usageCount": 16
         },
         {
           "name": "ModuleSoftAccent",
@@ -1666,6 +1697,12 @@
           "usageCount": 0
         },
         {
+          "name": "inkTheme",
+          "kind": "const",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
           "name": "statusColors",
           "kind": "const",
           "usedBy": [],
@@ -1727,7 +1764,7 @@
       "entryFile": "packages/dualwrite-core/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 23,
+        "totalImporters": 26,
         "deadExports": 0
       },
       "exports": [
@@ -1757,7 +1794,7 @@
       "entryFile": "packages/finyk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 11,
+        "totalImporters": 13,
         "deadExports": 0
       },
       "exports": [
@@ -1776,7 +1813,7 @@
       "entryFile": "packages/fizruk-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 90,
+        "totalImporters": 96,
         "deadExports": 0
       },
       "exports": [
@@ -1807,6 +1844,17 @@
           "usageCount": 0
         }
       ]
+    },
+    {
+      "name": "@sergeant/landing",
+      "path": "apps/landing",
+      "entryFile": null,
+      "stats": {
+        "exportCount": 0,
+        "totalImporters": 0,
+        "deadExports": 0
+      },
+      "exports": []
     },
     {
       "name": "@sergeant/mobile",
@@ -1885,7 +1933,7 @@
       "entryFile": "packages/nutrition-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 97,
+        "totalImporters": 100,
         "deadExports": 0
       },
       "exports": [
@@ -1904,7 +1952,7 @@
       "entryFile": "packages/routine-domain/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 71,
+        "totalImporters": 77,
         "deadExports": 0
       },
       "exports": [
@@ -1934,7 +1982,7 @@
       "entryFile": "packages/shared/src/index.ts",
       "stats": {
         "exportCount": 1,
-        "totalImporters": 384,
+        "totalImporters": 419,
         "deadExports": 0
       },
       "exports": [
@@ -1963,9 +2011,9 @@
       "path": "packages/eslint-plugin-sergeant-design",
       "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
       "stats": {
-        "exportCount": 48,
+        "exportCount": 51,
         "totalImporters": 0,
-        "deadExports": 47
+        "deadExports": 50
       },
       "exports": [
         {
@@ -2048,6 +2096,24 @@
         },
         {
           "name": "DEFAULT_FORBID_PATTERNS",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RETIRED_MODULE_HUES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RETIRED_HUE_HEXES",
+          "kind": "re-export",
+          "usedBy": [],
+          "usageCount": 0
+        },
+        {
+          "name": "RETIRED_MODULE_HUE_MESSAGE",
           "kind": "re-export",
           "usedBy": [],
           "usageCount": 0

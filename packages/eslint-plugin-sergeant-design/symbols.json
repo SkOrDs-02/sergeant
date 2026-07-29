@@ -1,13 +1,13 @@
 {
   "$schema": "../../docs/04-governance/governance/schemas/symbol-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-21",
+  "generated_at": "2026-07-29",
   "package": "eslint-plugin-sergeant-design",
   "entryFile": "packages/eslint-plugin-sergeant-design/index.js",
   "stats": {
-    "exportCount": 48,
+    "exportCount": 51,
     "totalImporters": 0,
-    "deadExports": 47
+    "deadExports": 50
   },
   "exports": [
     {
@@ -90,6 +90,24 @@
     },
     {
       "name": "DEFAULT_FORBID_PATTERNS",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RETIRED_MODULE_HUES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RETIRED_HUE_HEXES",
+      "kind": "re-export",
+      "usedBy": [],
+      "usageCount": 0
+    },
+    {
+      "name": "RETIRED_MODULE_HUE_MESSAGE",
       "kind": "re-export",
       "usedBy": [],
       "usageCount": 0

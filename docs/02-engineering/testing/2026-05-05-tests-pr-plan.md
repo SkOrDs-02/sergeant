@@ -1,7 +1,9 @@
 # Sergeant — PR-план для тестів
 
 > **Last validated:** 2026-07-10 by @cursoragent (PR-T13–T17 S10-X1 closure). **Next review:** 2026-10-08.
-> **Status:** Active
+> **Status:** Deprecated — point-in-time execution plan; merged/open labels below are a historical snapshot, not the current agent queue.
+>
+> **Replacement:** current testing contracts live in [`README.md`](./README.md); actionable work must appear in [`docs/open-work.md`](../../open-work.md) or the canonical `docs/90-work` queue before an agent picks it up.
 >
 > Repo: `Skords-01/Sergeant`. Базується на [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md) (попередній аналіз).
 

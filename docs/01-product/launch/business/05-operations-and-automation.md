@@ -1,7 +1,9 @@
 # 05. Operations і автоматизація: як контролювати, відстежувати, організовувати
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
-> **Status:** Active
+> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Status:** Deprecated — pre-MVP operating model centered on the removed OpenClaw/Railway stack.
+>
+> **Replacement:** current runtime ownership, deploy and incident procedures live in [`service-catalog.md`](../../../02-engineering/architecture/service-catalog.md) and [`operations-runbook.md`](../../../03-operations/runbooks/operations-runbook.md). OpenClaw is fully decommissioned ([ADR-0075](../../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)); Railway backend hosting is superseded by Hetzner/Coolify ([ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)). The body below is retained only as historical automation design context.
 
 > Як адмініструвати весь стек, не вигорівши: 6 операційних зон, правило «3 вкладки», daily/weekly ритуал, автоматизація через n8n + OpenClaw.
 > Pre-MVP draft. Цифри (вартість self-host, LLM, час на task) — оцінкові.

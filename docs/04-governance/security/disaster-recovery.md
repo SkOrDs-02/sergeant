@@ -15,12 +15,12 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 
 ## Recovery targets
 
-| Surface                       | Target RPO   | Target RTO | Notes                                                                             |
-| ----------------------------- | ------------ | ---------- | --------------------------------------------------------------------------------- |
-| PostgreSQL system of record   | <= 24h       | <= 4h      | Recovery depends on Railway snapshot availability and restore rehearsal freshness |
-| Web / API runtime             | <= 1 deploy  | <= 1h      | Prefer redeploy or rollback before infrastructure rebuild                         |
-| Mobile distribution lanes     | <= 1 release | <= 24h     | Store propagation can dominate recovery time                                      |
-| Console / automation surfaces | <= 24h       | <= 4h      | Secrets and workflow manifests must remain reconstructable                        |
+| Surface                       | Target RPO   | Target RTO | Notes                                                                               |
+| ----------------------------- | ------------ | ---------- | ----------------------------------------------------------------------------------- |
+| PostgreSQL system of record   | <= 24h       | <= 4h      | Recovery depends on Coolify/VPS backup availability and restore rehearsal freshness |
+| Web / API runtime             | <= 1 deploy  | <= 1h      | Prefer redeploy or rollback before infrastructure rebuild                           |
+| Mobile distribution lanes     | <= 1 release | <= 24h     | Store propagation can dominate recovery time                                        |
+| Console / automation surfaces | <= 24h       | <= 4h      | Secrets and workflow manifests must remain reconstructable                          |
 
 ## Minimum controls
 
@@ -48,7 +48,7 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | PostgreSQL data loss or corruption            | Stop write-heavy deploys, preserve current snapshot, restore latest verified backup into a fresh database        | [`database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md)                                                                    | RPO <= 24h, RTO <= 4h            |
 | Bad migration on production                   | Do not run `down.sql`; ship a compensating migration or restore into a fresh DB if data is corrupt               | [`database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md) + AGENTS.md hard rule #4                                           | RTO depends on data impact       |
-| Railway API/runtime outage                    | Roll back or redeploy `apps/server` before rebuilding infra; verify `/healthz` and `/health/workers`             | [`operations-runbook.md`](../../03-operations/runbooks/operations-runbook.md)                                                                              | RTO <= 1h                        |
+| Coolify API/runtime outage                    | Roll back to the previous image or redeploy `apps/server` before rebuilding infra; verify `/health`              | [`operations-runbook.md`](../../03-operations/runbooks/operations-runbook.md)                                                                              | RTO <= 1h                        |
 | Vercel web deploy/header regression           | Promote previous green deployment or revert the header PR; verify COOP/COEP/CSP headers                          | [`../deploy/vercel.md`](../../03-operations/deploy/vercel.md)                                                                                              | RTO <= 1h                        |
 | n8n workflow corruption or accidental UI edit | Re-import the JSON from `ops/n8n-workflows/`, then validate the manifest and smoke-trigger the affected workflow | [`operations-runbook.md`](../../03-operations/runbooks/operations-runbook.md)                                                                              | RTO <= 4h                        |
 | Secret compromise                             | Rotate the provider key, redeploy affected surfaces, and record the incident/exception trail                     | [`rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md), [`encryption-key-rotation.md`](../../03-operations/runbooks/encryption-key-rotation.md) | RTO <= 4h for auth/provider keys |
@@ -61,5 +61,5 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 
 ## Operational runbooks
 
-- [database-backup-restore.md](../../03-operations/runbooks/database-backup-restore.md) — Railway-specific `pg_dump`/`pg_restore` commands, smoke-test SQL, migration-skew handling (PR #049 docs portion).
+- [database-backup-restore.md](../../03-operations/runbooks/database-backup-restore.md) — Coolify/Postgres `pg_dump`/`pg_restore` commands, smoke-test SQL, migration-skew handling.
 - [encryption-key-rotation.md](../../03-operations/runbooks/encryption-key-rotation.md) — Better Auth + Mono token-encryption rotation.
