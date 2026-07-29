@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-const { brandColors, moduleColors } =
+const { brandColors, inkTheme, moduleColors } =
   await import("@sergeant/design-tokens/tokens");
 
 const fontDir = path.join(
@@ -45,37 +45,59 @@ body {
   width: 1200px; height: 630px;
   font-family: "Manrope", sans-serif;
   color: ${"#1c1917"};
-  background:
-    radial-gradient(60% 60% at 50% 0%, ${brandColors.emerald[50]} 0%, rgba(236,253,245,0) 70%),
-    #fdf9f3;
-  padding: 72px 80px;
-  display: flex; flex-direction: column; justify-content: space-between;
+  background: #fdf9f3;
+  padding: 58px 64px;
 }
 .mark { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; }
 .mark span { color: ${brandColors.emerald[700]}; }
-h1 { font-size: 84px; font-weight: 800; line-height: 1.03; letter-spacing: -0.035em; max-width: 15ch; }
-h1 em { font-style: normal; color: ${brandColors.emerald[700]}; }
-.row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.chip {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 22px; font-weight: 700;
-  padding: 10px 20px; border-radius: 999px;
-  background: #fff; border: 1px solid #ebe4da;
+.layout {
+  height: 470px;
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 54px;
+  align-items: center;
 }
-.dot { width: 13px; height: 13px; border-radius: 999px; }
-.foot { font-size: 22px; color: #57534e; font-weight: 500; }
+h1 { font-size: 60px; font-weight: 800; line-height: 1.04; letter-spacing: -0.035em; }
+.copy p { margin-top: 24px; font-size: 22px; line-height: 1.5; color: #57534e; }
+.visual {
+  height: 390px;
+  padding: 42px 38px;
+  border-radius: 24px;
+  color: ${inkTheme.text.strong};
+  background: ${inkTheme.surface.bg};
+  box-shadow: 0 28px 70px rgb(13 21 18 / 18%);
+}
+.visual h2 { font-size: 24px; }
+.visual p { margin-top: 8px; font-size: 16px; color: ${inkTheme.text.muted}; }
+.domains { margin-top: 48px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; }
+.wire { width: 100%; height: 98px; margin-top: -10px; }
+.insight { margin-top: 10px; padding: 22px; border: 1px solid rgba(255,255,255,.1); border-radius: 16px; font-size: 18px; line-height: 1.5; background: ${inkTheme.surface.surface}; }
 </style>
 <div class="mark">Sergeant<span>.</span></div>
-<h1>Бачить усе твоє життя <em>разом</em></h1>
-<div class="row">
-  <div class="chip"><i class="dot" style="background:${moduleColors.finyk.primary}"></i>Гроші</div>
-  <div class="chip"><i class="dot" style="background:${moduleColors.fizruk.primary}"></i>Тіло</div>
-  <div class="chip"><i class="dot" style="background:${moduleColors.routine.primary}"></i>Звички</div>
-  <div class="chip"><i class="dot" style="background:${moduleColors.nutrition.primary}"></i>Їжа</div>
-  <div class="foot">· Local-first · українською</div>
+<div class="layout">
+  <div class="copy">
+    <h1>Бачить звʼязки між усім, що важливо</h1>
+    <p>Гроші, тіло, звички й харчування в одному приватному просторі.</p>
+  </div>
+  <div class="visual">
+    <h2>Одна картина</h2>
+    <p>Звʼязок між сферами життя</p>
+    <div class="domains"><span>Фінік</span><span>Рутина</span><span>Тренування</span><span>Харчування</span></div>
+    <svg class="wire" viewBox="0 0 500 100" fill="none">
+      <path d="M18 50 C90 6 130 94 185 50 S290 6 340 50 S430 94 482 50" stroke="${brandColors.emerald[400]}" stroke-width="3"/>
+      <circle cx="18" cy="50" r="6" fill="${inkTheme.surface.bg}" stroke="${moduleColors.finyk.primary}" stroke-width="3"/>
+      <circle cx="185" cy="50" r="6" fill="${inkTheme.surface.bg}" stroke="${moduleColors.routine.primary}" stroke-width="3"/>
+      <circle cx="340" cy="50" r="6" fill="${inkTheme.surface.bg}" stroke="${moduleColors.fizruk.primary}" stroke-width="3"/>
+      <circle cx="482" cy="50" r="6" fill="${inkTheme.surface.bg}" stroke="${moduleColors.nutrition.primary}" stroke-width="3"/>
+    </svg>
+    <div class="insight">Одна підказка замість чотирьох окремих звітів.</div>
+  </div>
 </div>`;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({
+  executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+});
 const page = await browser.newPage({
   viewport: { width: 1200, height: 630 },
   deviceScaleFactor: 1,

@@ -10,7 +10,7 @@ export default function SiteFooter() {
             href={telegramStartLink("footer")}
             target="_blank"
             rel="noreferrer"
-            className="transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="inline-flex min-h-11 items-center transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             Telegram
           </a>
