@@ -11,7 +11,7 @@ import {
   act,
   cleanup,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Overview } from "./Overview";
@@ -28,7 +28,22 @@ type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
 
 function Providers({ children }: { children: ReactNode }) {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  return (
+    <MemoryRouter>
+      {children}
+      <LocationProbe />
+    </MemoryRouter>
+  );
+}
+
+function LocationProbe() {
+  const location = useLocation();
+  return (
+    <span data-testid="router-location">
+      {location.pathname}
+      {location.search}
+    </span>
+  );
 }
 
 function mkTx(id: string, amount: number): Transaction {
@@ -138,6 +153,19 @@ describe("Overview page (branches)", () => {
       mono: buildMono({ realTx: [mkTx("t1", -5000)] }),
     });
     expect(screen.getByText("Капітал")).toBeInTheDocument();
+    expect(screen.getByText("Сьогодні")).toBeInTheDocument();
+  });
+
+  it("opens the today-filtered transaction route from the daily summary", () => {
+    renderOverview({
+      mono: buildMono({ realTx: [mkTx("t1", -5000)] }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Відкрити операції за сьогодні" }),
+    );
+    expect(screen.getByTestId("router-location")).toHaveTextContent(
+      "/finyk/transactions?date=today",
+    );
   });
 
   it("shows SyncStatusBadge when mono reports an error", () => {

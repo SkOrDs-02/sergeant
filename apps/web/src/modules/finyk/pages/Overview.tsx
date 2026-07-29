@@ -5,6 +5,7 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { SyncStatusBadge } from "../components/SyncStatusBadge";
+import { useNavigate } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
@@ -12,6 +13,7 @@ import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 import { FirstInsightBanner } from "./overview/FirstInsightBanner";
 import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
+import { TodaySummaryCard } from "./overview/TodaySummaryCard";
 import { MonthPulseCard } from "./overview/MonthPulseCard";
 import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
@@ -53,6 +55,7 @@ export function Overview({
   onNavigate,
   showBalance = true,
 }: OverviewProps) {
+  const navigate = useNavigate();
   const d = useOverviewData({ mono, storage, onNavigate });
   // Цілі з онбордингу підбирають копію порожнього стану під те, по що
   // людина прийшла. Читаються один раз — вони не змінюються за час сесії.
@@ -152,6 +155,14 @@ export function Overview({
                   showBalance={showBalance}
                 />
 
+                <TodaySummaryCard
+                  spent={d.todaySpent}
+                  income={d.todayIncome}
+                  dailyPlan={d.dailyPlan}
+                  showBalance={showBalance}
+                  onOpen={() => navigate("/finyk/transactions?date=today")}
+                />
+
                 <FinykInsightsBlock
                   transactions={d.realTx}
                   budgets={storage.budgets}
@@ -203,6 +214,11 @@ export function Overview({
                   txCategories={d.txCategories}
                   txSplits={d.txSplits}
                   customCategories={d.customCategories}
+                  onOpenLimit={(categoryId) =>
+                    navigate(
+                      `/finyk/budgets?cat=${encodeURIComponent(categoryId)}`,
+                    )
+                  }
                 />
 
                 <PlannedFlowsCard

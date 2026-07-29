@@ -11,6 +11,7 @@ describe("MODULE_CONFIGS", () => {
   it("registers the four dashboard modules with goal metadata", () => {
     expect(Object.keys(MODULE_CONFIGS).sort()).toEqual([...MODULE_IDS].sort());
     expect(MODULE_CONFIGS.finyk.hasGoal).toBe(false);
+    expect(MODULE_CONFIGS.finyk.description).toBe("Сьогодні витрачено");
     expect(MODULE_CONFIGS.fizruk.hasGoal).toBe(false);
     expect(MODULE_CONFIGS.routine.hasGoal).toBe(true);
     expect(MODULE_CONFIGS.nutrition.hasGoal).toBe(true);
@@ -36,7 +37,7 @@ describe("MODULE_CONFIGS", () => {
 
     expect(MODULE_CONFIGS.finyk.getPreview()).toEqual({
       main: "120 ₴",
-      sub: "Залишок: 880 ₴",
+      sub: "Залишок плану: 880 ₴",
     });
     expect(MODULE_CONFIGS.fizruk.getPreview()).toEqual({
       main: "3 трен.",

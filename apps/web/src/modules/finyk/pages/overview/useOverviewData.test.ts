@@ -221,6 +221,44 @@ describe("useOverviewData", () => {
     });
   });
 
+  describe("today summary", () => {
+    it("uses the Kyiv day, excludes transfers, and derives the daily plan", () => {
+      const todayTime = Math.floor(
+        new Date("2026-06-04T08:00:00Z").getTime() / 1000,
+      );
+      const yesterdayTime = Math.floor(
+        new Date("2026-06-03T08:00:00Z").getTime() / 1000,
+      );
+      const realTx = [
+        mkTx("today-expense", -10_000, { time: todayTime }),
+        mkTx("today-income", 20_000, { time: todayTime }),
+        mkTx("transfer", -70_000, { time: todayTime }),
+        mkTx("yesterday", -90_000, { time: yesterdayTime }),
+      ] as UseOverviewDataParams["mono"]["realTx"];
+
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({ realTx }),
+          storage: buildStorage({
+            excludedTxIds: new Set(["transfer"]),
+            monthlyPlan: { income: 0, expense: 3000, savings: 0 },
+          }),
+        }),
+      );
+
+      expect(result.current.todaySpent).toBe(100);
+      expect(result.current.todayIncome).toBe(200);
+      expect(result.current.dailyPlan).toBe(100);
+    });
+
+    it("returns no daily plan when the monthly plan is absent", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: buildMono(), storage: buildStorage() }),
+      );
+      expect(result.current.dailyPlan).toBeNull();
+    });
+  });
+
   describe("budget alerts", () => {
     it("budgetAlerts is empty when no limit budgets are defined", () => {
       const { result } = renderHook(() =>

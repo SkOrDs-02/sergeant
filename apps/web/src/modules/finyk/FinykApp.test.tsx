@@ -291,9 +291,9 @@ describe("FinykApp smoke tests", () => {
 
     render(<FinykApp />);
 
-    expect(
-      screen.getByLabelText("Стан синхронізації: оновлення"),
-    ).toHaveTextContent("оновлення");
+    const syncPill = screen.getByLabelText("Стан синхронізації: оновлення");
+    expect(syncPill).toHaveTextContent("оновлення");
+    expect(screen.getByText("оновлення")).toHaveClass("hidden", "sm:inline");
   });
 
   it("shows sync state for connected PrivatBank without Monobank", () => {

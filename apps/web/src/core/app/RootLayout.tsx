@@ -31,6 +31,9 @@ import { useSWUpdate } from "./useSWUpdate";
 import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
 import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWriteBoot";
+import { useFinykMonoMirrorBoot } from "../../modules/finyk/hooks/useFinykMonoMirrorBoot";
+import { useFinykQuickStatsBoot } from "../../modules/finyk/hooks/useFinykQuickStatsBoot";
+import { useFinykSqliteReadBoot } from "../../modules/finyk/hooks/useFinykSqliteReadBoot";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
 // Side-effect-only child rendered exclusively for authenticated users.
@@ -45,12 +48,14 @@ function NutritionBootGate() {
   return user ? <AuthenticatedNutritionBoot /> : null;
 }
 
-// Installs the Finyk dual-write CONTEXT app-wide (not just on the Finyk
-// screen) so the hub AI assistant's chat-action mutators can mirror writes
-// into the canonical SQLite store from anywhere. The Finyk SQLite read
-// overlay + Mono mirror stay screen-scoped inside `useStorage`.
+// Installs the Finyk storage context app-wide. The lightweight read/mirror
+// boots also rebuild the derived Hub quick-stats snapshot after login, so the
+// card never depends on opening the Finyk screen first.
 function AuthenticatedFinykBoot() {
   useFinykDualWriteBoot();
+  useFinykSqliteReadBoot();
+  useFinykMonoMirrorBoot();
+  useFinykQuickStatsBoot();
   return null;
 }
 

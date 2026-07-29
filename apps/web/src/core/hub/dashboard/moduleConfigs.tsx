@@ -114,7 +114,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     inkClass: "text-finyk",
     cardBg:
       "bg-panel border-finyk/30 dark:bg-finyk-surface-dark/10 dark:border-finyk-border-dark/25",
-    description: "Транзакції та бюджети",
+    description: "Сьогодні витрачено",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
     emptyPromise: "Тут зʼявиться баланс — напр.",

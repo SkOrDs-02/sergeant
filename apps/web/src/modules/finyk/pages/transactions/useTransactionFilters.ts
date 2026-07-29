@@ -10,7 +10,7 @@ import type {
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { getCategory, getIncomeCategory } from "../../utils";
 import {
@@ -53,6 +53,8 @@ export interface UseTransactionFiltersParams {
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
   onClearCategoryFilter?: (() => void) | undefined;
+  /** URL-driven calendar shortcut from Overview (`date=today`). */
+  dayFilter?: string | null | undefined;
 }
 
 /**
@@ -86,6 +88,7 @@ export function useTransactionFilters({
   fetchMonth,
   categoryFilter,
   onClearCategoryFilter,
+  dayFilter,
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
   const [showHidden, setShowHidden] = useState(false);
@@ -280,7 +283,14 @@ export function useTransactionFilters({
 
   const filtered = useMemo(() => {
     const m = perfMark("finyk:tx:filter");
+    const todayKey = dayFilter === "today" ? getKyivDayKey() : null;
     const res = sortedTxs.filter((t) => {
+      if (todayKey) {
+        const time = Number(t.time);
+        if (!Number.isFinite(time) || time <= 0) return false;
+        const timeMs = time > 10_000_000_000 ? time : time * 1000;
+        if (getKyivDayKey(timeMs) !== todayKey) return false;
+      }
       // Amount range is ANDed with the pill filter: a row must satisfy
       // both. Compared in absolute UAH so it works for income and expense
       // alike (the pill already handles sign when needed).
@@ -299,7 +309,14 @@ export function useTransactionFilters({
     });
     perfEnd(m, { n: res.length });
     return res;
-  }, [sortedTxs, effectiveFilter, creditAccIds, getEffectiveCat, amountRange]);
+  }, [
+    sortedTxs,
+    effectiveFilter,
+    creditAccIds,
+    getEffectiveCat,
+    amountRange,
+    dayFilter,
+  ]);
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");

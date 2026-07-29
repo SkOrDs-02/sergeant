@@ -76,13 +76,11 @@ function asFiniteNumber(value: unknown): number | null {
 }
 
 /**
- * Select the preview shape for a given module from a raw JSON
- * payload. Implements the web truthiness rules 1:1 so no row on
- * either platform drifts:
+ * Select the preview shape for a given module from a raw JSON payload:
  *
- *  - Every numeric field passes through a truthy check — `0` is
- *    rendered as "no meaningful number yet" (`null`), matching the
- *    original `stats.todaySpent ? …` semantics in the web source.
+ *  - Finyk renders a finite `todaySpent`, including `0`, because a zero-spend
+ *    day is valid live data rather than an onboarding empty state.
+ *  - Other optional counters retain their product-specific truthiness rules.
  *  - `routine` and `nutrition` additionally emit `progress: 0`
  *    instead of omitting the field, so UI that forwards `progress`
  *    to a `<ProgressBar>` can treat the value as always-present.
@@ -104,8 +102,11 @@ export function selectModulePreview(
       const todaySpent = asFiniteNumber(stats["todaySpent"]);
       const budgetLeft = asFiniteNumber(stats["budgetLeft"]);
       return {
-        main: todaySpent ? formatMoney(todaySpent) : null,
-        sub: budgetLeft ? `Залишок: ${formatMoney(budgetLeft)}` : null,
+        // A valid zero is still real data: showing the FTUX placeholder for
+        // "0 грн spent today" falsely tells returning users they have no
+        // records. Missing/malformed values remain null.
+        main: todaySpent !== null ? formatMoney(todaySpent) : null,
+        sub: budgetLeft ? `Залишок плану: ${formatMoney(budgetLeft)}` : null,
       };
     }
     case "fizruk": {

@@ -33,6 +33,7 @@ import {
   handleNativeSortableKeyDown,
   type NativeSortableHandlers,
 } from "./nativeSortable";
+import { useHubStorageBump } from "../useHubStorageBump";
 
 // ─── #18 Long-press peek ──────────────────────────────────────────────────
 
@@ -157,6 +158,10 @@ export const BentoCard = memo(function BentoCard({
   handleProps,
   adaptiveReason,
 }: BentoCardProps) {
+  // Quick-stat writers update localStorage outside this component. Subscribe
+  // to the typed Hub signal so the tile swaps its placeholder for live data
+  // immediately, without requiring a route round-trip.
+  useHubStorageBump();
   const preview = config.getPreview();
   const showProgress =
     !inactive &&

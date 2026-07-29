@@ -1,6 +1,13 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { BentoCard } from "./BentoCard";
 import type { ModuleConfig } from "./moduleConfigs";
 
@@ -108,5 +115,23 @@ describe("BentoCard", () => {
     expect(screen.getByText("ранкова кава")).toBeInTheDocument();
     expect(handleRef).toHaveBeenCalledWith(handle);
     expect(onPointerDown).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-reads quick stats after a same-tab storage update", () => {
+    let preview: ReturnType<ModuleConfig["getPreview"]> = {
+      main: null,
+      sub: null,
+    };
+    const config = makeConfig(preview);
+    config.getPreview = () => preview;
+
+    render(<BentoCard config={config} onClick={vi.fn()} />);
+    expect(screen.getByText(config.emptyPromise)).toBeInTheDocument();
+
+    preview = { main: "0 ₴", sub: null };
+    act(() => emitHubBus("storageUpdated", undefined));
+
+    expect(screen.getByText("0 ₴")).toBeInTheDocument();
+    expect(screen.queryByText(config.emptyPromise)).not.toBeInTheDocument();
   });
 });
