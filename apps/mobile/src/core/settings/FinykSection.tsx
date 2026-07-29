@@ -46,7 +46,7 @@ const MAX_LABEL_LENGTH = 80;
 
 function makeCategoryId(): string {
   const ts = Date.now().toString(36);
-  const rand = Math.random().toString(36).slice(2, 10);
+  const rand = crypto.randomUUID();
   return `c_${ts}_${rand}`;
 }
 

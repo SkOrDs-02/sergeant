@@ -42,5 +42,5 @@
 
 - Routing catalog: [`agent-skills-catalog.md`](./agent-skills-catalog.md)
 - Workflow decision trees: [`agent-workflows.md`](./agent-workflows.md)
-- Initiative 0009 phase 2.1: [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md)
+- Initiative 0009 phase 2.1: [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md)
 - ADR-0033 OpenClaw multi-personas and council: [`docs/04-governance/adr/0033-openclaw-multi-personas-and-council.md`](../../04-governance/adr/0033-openclaw-multi-personas-and-council.md)

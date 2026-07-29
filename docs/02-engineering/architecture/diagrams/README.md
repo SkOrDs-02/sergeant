@@ -3,7 +3,7 @@
 > **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 > **Status:** Active
 
-GitHub-renderable Mermaid діаграми. Чотири рівні C4 + ключові sequence-flows. Запит виник у [`docs/90-work/audits/2026-05-03-web-deep-dive` §9.2](../../../90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
+GitHub-renderable Mermaid діаграми. Чотири рівні C4 + ключові sequence-flows. Запит виник у [`docs/90-work/audits/2026-05-03-web-deep-dive` §9.2](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
 
 ## Як читати C4
 
@@ -20,17 +20,16 @@ GitHub-renderable Mermaid діаграми. Чотири рівні C4 + клю�
 
 ## Каталог діаграм
 
-| Рівень | Файл                                               | Покриває                                                                                                                                                                                                                                                                                      |
-| ------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1     | [`c1-system-context.md`](./c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Mobile-Shell ↔ зовнішні системи (Postgres, Redis, Anthropic, Sentry, Mono, n8n, SMTP, OpenFoodFacts).                                                                                                                                                          |
-| C2     | [`c2-containers.md`](./c2-containers.md)           | Деплоймент-топологія: `apps/web` і `apps/landing` (Vercel), `apps/server` (Hetzner + Coolify, Express + BullMQ in-process), `apps/mobile` / `apps/mobile-shell`, Postgres/Redis/n8n/Sentry.                                                                                                   |
-| C3     | [`c3-cloudsync.md`](./c3-cloudsync.md)             | Внутрішня структура sync engine **v2** (op-log outbox): UI → SQLite-WASM → `SyncEnginePushScheduler` → `/api/v2/sync/push`. CloudSync v1 знятий (ADR-0047). _(ім'я файлу історичне)_                                                                                                          |
-| C3     | [`c3-chat-tool-use.md`](./c3-chat-tool-use.md)     | HubChat tool-use loop: Anthropic stream → `tool_use` блоки → client `chatActions` handlers → `tool_result` → продовження стрімінгу.                                                                                                                                                           |
-| C3     | [`c3-workspaces.md`](./c3-workspaces.md)           | **Auto-gen.** Workspace dependency graph (`@sergeant/*` import edges), derived from `docs/04-governance/governance/symbol-index.json`. Drift-detected by `pnpm docs:check-architecture-diagrams`. Див. [ADR-0060](../../../04-governance/adr/0060-architecture-diagrams-automation-scope.md). |
-| Flow   | [`flow-signin.md`](./flow-signin.md)               | Better Auth sign-in cookie flow (email + password).                                                                                                                                                                                                                                           |
-| Flow   | [`flow-cloudsync.md`](./flow-cloudsync.md)         | Sync **v2** push/pull: web → `/api/v2/sync/push` ↔ Postgres (op-log). v1 `POST /api/sync` → `410 Gone` (ADR-0047). _(ім'я файлу історичне)_                                                                                                                                                   |
-| Flow   | [`flow-chat-tool-use.md`](./flow-chat-tool-use.md) | Runtime цикл tool-use всередині однієї chat-сесії.                                                                                                                                                                                                                                            |
-| Flow   | [`flow-reminder-fire.md`](./flow-reminder-fire.md) | n8n cron → server `POST /api/push/send` → APNs/FCM → пристрій.                                                                                                                                                                                                                                |
+| Рівень | Файл                                               | Покриває                                                                                                                                                                                    |
+| ------ | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1     | [`c1-system-context.md`](./c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Mobile-Shell ↔ зовнішні системи (Postgres, Redis, Anthropic, Sentry, Mono, n8n, SMTP, OpenFoodFacts).                                                        |
+| C2     | [`c2-containers.md`](./c2-containers.md)           | Деплоймент-топологія: `apps/web` і `apps/landing` (Vercel), `apps/server` (Hetzner + Coolify, Express + BullMQ in-process), `apps/mobile` / `apps/mobile-shell`, Postgres/Redis/n8n/Sentry. |
+| C3     | [`c3-cloudsync.md`](./c3-cloudsync.md)             | Внутрішня структура sync engine **v2** (op-log outbox): UI → SQLite-WASM → `SyncEnginePushScheduler` → `/api/v2/sync/push`. CloudSync v1 знятий (ADR-0047). _(ім'я файлу історичне)_        |
+| C3     | [`c3-chat-tool-use.md`](./c3-chat-tool-use.md)     | HubChat tool-use loop: Anthropic stream → `tool_use` блоки → client `chatActions` handlers → `tool_result` → продовження стрімінгу.                                                         |
+| Flow   | [`flow-signin.md`](./flow-signin.md)               | Better Auth sign-in cookie flow (email + password).                                                                                                                                         |
+| Flow   | [`flow-cloudsync.md`](./flow-cloudsync.md)         | Sync **v2** push/pull: web → `/api/v2/sync/push` ↔ Postgres (op-log). v1 `POST /api/sync` → `410 Gone` (ADR-0047). _(ім'я файлу історичне)_                                                 |
+| Flow   | [`flow-chat-tool-use.md`](./flow-chat-tool-use.md) | Runtime цикл tool-use всередині однієї chat-сесії.                                                                                                                                          |
+| Flow   | [`flow-reminder-fire.md`](./flow-reminder-fire.md) | n8n cron → server `POST /api/push/send` → APNs/FCM → пристрій.                                                                                                                              |
 
 ## Як оновлювати
 

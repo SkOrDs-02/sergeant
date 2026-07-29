@@ -96,48 +96,48 @@ Nested-bullets (відступ + `-`) **зливаються** у parent-опи�
 
 ## Нещодавно завершені
 
-`Done` / `Closed` ініціативи коротко лишаються тут для carry-over пошуку. Далі — `git mv` у [`archive/`](./archive) (default ≥90 днів після `Closed`; fast-forward дозволено за рішенням founder-а — див. Batch 2026-07-20 нижче).
+`Done` / `Closed` ініціативи коротко лишаються тут для carry-over пошуку. Після merge Outcome/evidence frozen snapshot можна прибрати cleanup-комітом; історія лишається у Git.
 
 _Наразі порожньо — усі завершені ініціативи в [архіві](#архів)._
 
 ## Архів
 
-Не активні джерела рішень. Файли в [`archive/`](./archive). Канонічні правила з ініціатив — у `AGENTS.md` Hard Rules / `docs/04-governance/governance/` / `docs/90-work/tech-debt/`.
+Не активні джерела рішень. [Історичний snapshot](https://github.com/Skords-01/Sergeant/tree/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive) доступний у Git; канонічні правила — у `AGENTS.md`, governance та tech-debt.
 
 **Batch 2026-07-25** (fast-forward за рішенням founder-а — розчистка активної зони):
 
-- [`archive/_0006-frontend-routing-and-code-split.md`](./archive/_0006-frontend-routing-and-code-split.md) — **Withdrawn**: обов'язкові routing-фази виконано; optional loader/bundle tuning пішов у performance-backlog. ESLint-канарка `hash-router` лишається `warn` і посилається на архівний шлях.
-- [`archive/stack-pulse-2026-05/`](./archive/stack-pulse-2026-05/README.md) — **Closed** (2026-07-20): 39/39 PR-планів; картки в [`archive/stack-pulse-2026-05/archive/`](./archive/stack-pulse-2026-05/archive/). Зведення відкритих пунктів серії — [`hardening-matrix.md`](./hardening-matrix.md).
+- [`archive/_0006-frontend-routing-and-code-split.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md) — **Withdrawn**: обов'язкові routing-фази виконано; optional loader/bundle tuning пішов у performance-backlog. ESLint-канарка `hash-router` лишається `warn` і посилається на архівний шлях.
+- [`archive/stack-pulse-2026-05/`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/README.md) — **Closed** (2026-07-20): 39/39 PR-планів; картки в [`archive/stack-pulse-2026-05/archive/`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/). Зведення відкритих пунктів серії — [`hardening-matrix.md`](./hardening-matrix.md).
 
-**Batch 2026-05-13** (виконано — `90 days` waiting period не застосовано за рішенням founder-а, [`archive/2026-08-02-batch-archival-plan.md`](./archive/2026-08-02-batch-archival-plan.md)):
+**Batch 2026-05-13** (виконано — `90 days` waiting period не застосовано за рішенням founder-а, [`archive/2026-08-02-batch-archival-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/2026-08-02-batch-archival-plan.md)):
 
-- [archive/\_0001-module-decomposition.md](./archive/_0001-module-decomposition.md) — archived 2026-05-13; canonical home: Hard Rule #18 (`max-lines: 600`) + successor [`./archive/_0013-module-decomposition-round-2.md`](./archive/_0013-module-decomposition-round-2.md) (carry-over allowlist drain).
-- [archive/\_0004-server-observability.md](./archive/_0004-server-observability.md) — archived 2026-05-13; canonical home: [`../adr/0035-distributed-tracing-opentelemetry.md`](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) (OTLP/HTTP, `RouteAwareSampler`).
-- [archive/\_0005-ai-cost-and-prompt-cache.md](./archive/_0005-ai-cost-and-prompt-cache.md) — archived 2026-05-13; canonical home: [`../adr/0039-anthropic-prompt-cache-policy.md`](../../04-governance/adr/0039-anthropic-prompt-cache-policy.md).
-- [archive/\_0007-design-system-tooling.md](./archive/_0007-design-system-tooling.md) — archived 2026-05-13; canonical home: [`../adr/0046-storybook-vrt-scope.md`](../../04-governance/adr/0046-storybook-vrt-scope.md) + Storybook live deploy `https://skords-01.github.io/Sergeant/`.
-- [archive/\_0008-platform-hardening.md](./archive/_0008-platform-hardening.md) — archived 2026-05-13; canonical home: `RATE_LIMIT_POLICIES` registry (`apps/server/src/config/rateLimit.ts`) + [`../adr/0044-renovate-vs-dependabot.md`](../../04-governance/adr/0044-renovate-vs-dependabot.md).
-- [archive/\_0009-agent-os-hardening.md](./archive/_0009-agent-os-hardening.md) — archived 2026-05-13; canonical home: Hard Rules #15 + AGENTS.md slim (907 → 137 LOC) + `docs/04-governance/governance/rules/`.
-- [archive/\_0012-perfect-strictness-rollout.md](./archive/_0012-perfect-strictness-rollout.md) — archived 2026-05-13; canonical home: Hard Rule #19 (`noUncheckedIndexedAccess: true` + `tools/tsconfig-guard/allowlist.json`).
+- [archive/\_0001-module-decomposition.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) — archived 2026-05-13; canonical home: Hard Rule #18 (`max-lines: 600`) + successor [`./archive/_0013-module-decomposition-round-2.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0013-module-decomposition-round-2.md) (carry-over allowlist drain).
+- [archive/\_0004-server-observability.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0004-server-observability.md) — archived 2026-05-13; canonical home: [`../adr/0035-distributed-tracing-opentelemetry.md`](../../04-governance/adr/0035-distributed-tracing-opentelemetry.md) (OTLP/HTTP, `RouteAwareSampler`).
+- [archive/\_0005-ai-cost-and-prompt-cache.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0005-ai-cost-and-prompt-cache.md) — archived 2026-05-13; canonical home: [`../adr/0039-anthropic-prompt-cache-policy.md`](../../04-governance/adr/0039-anthropic-prompt-cache-policy.md).
+- [archive/\_0007-design-system-tooling.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md) — archived 2026-05-13; canonical home: [`../adr/0046-storybook-vrt-scope.md`](../../04-governance/adr/0046-storybook-vrt-scope.md) + Storybook live deploy `https://skords-01.github.io/Sergeant/`.
+- [archive/\_0008-platform-hardening.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) — archived 2026-05-13; canonical home: `RATE_LIMIT_POLICIES` registry (`apps/server/src/config/rateLimit.ts`) + [`../adr/0044-renovate-vs-dependabot.md`](../../04-governance/adr/0044-renovate-vs-dependabot.md).
+- [archive/\_0009-agent-os-hardening.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) — archived 2026-05-13; canonical home: Hard Rules #15 + AGENTS.md slim (907 → 137 LOC) + `docs/04-governance/governance/rules/`.
+- [archive/\_0012-perfect-strictness-rollout.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0012-perfect-strictness-rollout.md) — archived 2026-05-13; canonical home: Hard Rule #19 (`noUncheckedIndexedAccess: true` + `tools/tsconfig-guard/allowlist.json`).
 
 **Batch 2026-06-01** (виконано — `90 days` waiting period не застосовано за рішенням founder-а; усі п'ять — `Done`/`Closed`, без активних regресій / follow-up-ів):
 
-- [archive/\_0002-mobile-platform-decision.md](./archive/_0002-mobile-platform-decision.md) — archived 2026-06-01 (Closed); canonical home: [`../adr/0052-mobile-strategy-capacitor-primary.md`](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) + [`./0010-revenue-first-launch.md`](./0010-revenue-first-launch.md).
-- [archive/\_0011-foundation-adoption-and-process-discipline.md](./archive/_0011-foundation-adoption-and-process-discipline.md) — archived 2026-06-01 (Done); canonical home: Hard Rule #15 (`validate-pr-body.mjs`) + [`../launch/email-verification-sweep.md`](../../01-product/launch/email-verification-sweep.md).
-- [archive/\_0013-module-decomposition-round-2.md](./archive/_0013-module-decomposition-round-2.md) — archived 2026-06-01 (Done); canonical home: Hard Rule #18 (`max-lines: 600`) + [`../tech-debt/frontend.md`](../tech-debt/frontend.md).
-- [archive/\_0014-knowledge-graph-and-catalogs.md](./archive/_0014-knowledge-graph-and-catalogs.md) — archived 2026-06-01 (Done); canonical home: [`../adr/0058-knowledge-graph-schema.md`](../../04-governance/adr/0058-knowledge-graph-schema.md) + `docs/02-engineering/architecture/` generated catalogs.
-- [archive/\_0016-changelog-release-cut.md](./archive/_0016-changelog-release-cut.md) — archived 2026-06-01 (Done); canonical home: `changelog:cut` script + [`../../CHANGELOG.md`](../../../CHANGELOG.md).
+- [archive/\_0002-mobile-platform-decision.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — archived 2026-06-01 (Closed); canonical home: [`../adr/0052-mobile-strategy-capacitor-primary.md`](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) + [`./0010-revenue-first-launch.md`](./0010-revenue-first-launch.md).
+- [archive/\_0011-foundation-adoption-and-process-discipline.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) — archived 2026-06-01 (Done); canonical home: Hard Rule #15 (`validate-pr-body.mjs`) + [`../launch/email-verification-sweep.md`](../../01-product/launch/email-verification-sweep.md).
+- [archive/\_0013-module-decomposition-round-2.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0013-module-decomposition-round-2.md) — archived 2026-06-01 (Done); canonical home: Hard Rule #18 (`max-lines: 600`) + [`../tech-debt/frontend.md`](../tech-debt/frontend.md).
+- [archive/\_0014-knowledge-graph-and-catalogs.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) — archived 2026-06-01 (Done); canonical home: [`../adr/0058-knowledge-graph-schema.md`](../../04-governance/adr/0058-knowledge-graph-schema.md) + `docs/02-engineering/architecture/` generated catalogs.
+- [archive/\_0016-changelog-release-cut.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0016-changelog-release-cut.md) — archived 2026-06-01 (Done); canonical home: `changelog:cut` script + [`../../CHANGELOG.md`](../../../CHANGELOG.md).
 
 **Batch 2026-06-15:**
 
-- [archive/\_0020-agent-decisions-log.md](./archive/_0020-agent-decisions-log.md) — archived 2026-06-15; canonical home: docs/00-start/agents/decisions.md (curated decisions ledger) promoted via sergeant-start-here.
+- [archive/\_0020-agent-decisions-log.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0020-agent-decisions-log.md) — archived 2026-06-15; canonical home: docs/00-start/agents/decisions.md (curated decisions ledger) promoted via sergeant-start-here.
 
 **Batch 2026-07-20** (fast-forward — 90-day gate skipped за рішенням founder-а; docs-drift reconcile):
 
-- [archive/\_0003-sync-v2-rollout-and-v1-sunset.md](./archive/_0003-sync-v2-rollout-and-v1-sunset.md) — archived 2026-07-20 (Closed); Phase 7 #326; canonical: ADR-0043/0047 + `apps/server/src/routes/sync.ts` (v2 only).
-- [archive/\_0017-hub-tabs-mount-perf.md](./archive/_0017-hub-tabs-mount-perf.md) — archived 2026-07-20 (Closed); RUM follow-ups were observational; re-open only if aggregateReport P95 regresses.
-- [archive/\_0021-react-hooks-v7-cleanup.md](./archive/_0021-react-hooks-v7-cleanup.md) — archived 2026-07-20 (Done); canonical: `eslint.baseline.js` react-hooks v7 `"error"`.
-- [archive/session-log-0018-agent-find-measurement-2026-06-08.md](./archive/session-log-0018-agent-find-measurement-2026-06-08.md) — archived 2026-07-20 (Reference session log).
-- [archive/session-log-0018-semantic-measurement-2026-06-14.md](./archive/session-log-0018-semantic-measurement-2026-06-14.md) — archived 2026-07-20 (Reference session log).
+- [archive/\_0003-sync-v2-rollout-and-v1-sunset.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0003-sync-v2-rollout-and-v1-sunset.md) — archived 2026-07-20 (Closed); Phase 7 #326; canonical: ADR-0043/0047 + `apps/server/src/routes/sync.ts` (v2 only).
+- [archive/\_0017-hub-tabs-mount-perf.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0017-hub-tabs-mount-perf.md) — archived 2026-07-20 (Closed); RUM follow-ups were observational; re-open only if aggregateReport P95 regresses.
+- [archive/\_0021-react-hooks-v7-cleanup.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0021-react-hooks-v7-cleanup.md) — archived 2026-07-20 (Done); canonical: `eslint.baseline.js` react-hooks v7 `"error"`.
+- [archive/session-log-0018-agent-find-measurement-2026-06-08.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/session-log-0018-agent-find-measurement-2026-06-08.md) — archived 2026-07-20 (Reference session log).
+- [archive/session-log-0018-semantic-measurement-2026-06-14.md](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/session-log-0018-semantic-measurement-2026-06-14.md) — archived 2026-07-20 (Reference session log).
 
 ## Статуси
 
@@ -145,14 +145,14 @@ _Наразі порожньо — усі завершені ініціатив�
 - **In progress** — є PR-и в роботі, статус видно у мердж-чек-листі ініціативи.
 - **Done** — всі PR-и змерджено, `Критерії DONE` виконано, **Outcome** секція написана. Активна частина роботи завершена; carry-over (якщо є) зафіксовано у `### Carry-over → successor` блоці й автоматично попадає у [`follow-ups.md`](./follow-ups.md).
 - **Closed** — `Done` + carry-over (якщо є) **передано далі** (tech-debt registry / successor initiative / `Що НЕ увійшло` секція з посиланнями). Команда явно сигналізує: «нічого більше у цьому файлі не планується». Стан "ready для архівації після ≥90 днів".
-- **Archived** — файл фізично перенесено у [`docs/90-work/initiatives/archive/`](./archive), а в README рядок замінено 1-рядковим redirect-stub-ом (`archived YYYY-MM-DD; superseded by …`). Канонічні правила, що ініціатива породила, продовжують жити у `AGENTS.md` Hard Rules / `docs/04-governance/governance/`.
+- **Archived** — історичний статус для вже закритих ініціатив у Git history. Нові завершені snapshot-и після merge можна видалити cleanup-комітом; inbound references переводяться на immutable permalink. Канонічні правила продовжують жити у `AGENTS.md` / `docs/04-governance/governance/`.
 - **Withdrawn** — ініціативу відкликано (проблема зникла / змінилися пріоритети). Поясніть у файлі.
 
 ### Lifecycle progression
 
 ```
-Proposed → In progress → Done → Closed → Archived
-            (NNNN-…)    └ rename → _NNNN-…  ──┘ (≥90 днів верифікації, потім git mv → archive/_NNNN-…)
+Proposed → In progress → Done → Closed → Git history
+            (NNNN-…)    └ rename → _NNNN-…  ──┘ (Outcome + evidence, потім cleanup)
 Withdrawn — termination без проходження `Done` (e.g., передумови зникли).
            Файл лишається у активному списку зі статусом `Withdrawn`; префікс не додаємо.
 ```
@@ -172,11 +172,7 @@ CI-гейт `lint:initiative-status-sync` (`scripts/check-initiative-status-sync
    - Перенести рядок з активної таблиці у `## Нещодавно завершені`. Шлях у `[name](./_NNNN-slug.md)` лінку — з префіксом.
    - Sanity check перед PR-ом: `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm docs:check-initiative-followups`.
 5. **Перехід `Done` → `Closed`** — коли вся carry-over робота передана до tech-debt / successor / `Що НЕ увійшло` (явний сигнал «нічого більше не планується»). Status у файлі та README — `Closed`. Пишемо у тому самому рядку — `Завершено`-дату не змінюємо. Файл лишається `_NNNN-slug.md` (префікс не змінюється; додався вже на кроці 4).
-6. **Архівація** (`Closed` → `Archived`; default ≥90 днів від `Closed`, або **fast-forward** за рішенням founder-а):
-   - Перенести файл у `docs/90-work/initiatives/archive/_NNNN-slug.md` — `_`-префікс лишається.
-   - Замінити рядок у `## Нещодавно завершені` 1-рядковим redirect-stub-ом у `## Архів`.
-   - Канонічні правила лишаються у `AGENTS.md` / `docs/04-governance/governance/`.
-   - Перевірка: `pnpm lint:initiative-status-sync` + `pnpm docs:check-links` + `pnpm lint:archive-move-depth`.
+6. **Cleanup завершеної ініціативи:** після merge стану `Closed` з Outcome і evidence frozen-файл можна видалити окремим cleanup-комітом. Переведи inbound references на commit permalink; канонічні правила лишаються у `AGENTS.md` / `docs/04-governance/governance/`. Перевірка: `pnpm lint:initiative-status-sync` + `pnpm docs:check-links`.
 
 ## Зведена матриця hardening-карток
 

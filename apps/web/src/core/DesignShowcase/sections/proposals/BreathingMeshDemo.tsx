@@ -19,7 +19,11 @@ export function BreathingMeshDemo() {
       before={
         <MiniPhone dim>
           <div className="relative flex-1 min-h-0 overflow-hidden">
-            <div aria-hidden className="absolute -inset-8 opacity-70" style={{ background: mesh }} />
+            <div
+              aria-hidden
+              className="absolute -inset-8 opacity-70"
+              style={{ background: mesh }}
+            />
             <div className="relative flex h-full flex-col justify-end p-4">
               <p className="text-2xs uppercase tracking-wide text-muted">Hub</p>
               <p className="text-lg font-semibold text-text">Доброго ранку</p>
@@ -34,12 +38,19 @@ export function BreathingMeshDemo() {
             <div
               aria-hidden
               className="absolute -inset-8 opacity-70"
-              style={{ background: mesh, animation: reduced ? undefined : "r2-breathe 14s ease-in-out infinite" }}
+              style={{
+                background: mesh,
+                animation: reduced
+                  ? undefined
+                  : "r2-breathe 14s ease-in-out infinite",
+              }}
             />
             <div className="relative flex h-full flex-col justify-end p-4">
               <p className="text-2xs uppercase tracking-wide text-muted">Hub</p>
               <p className="text-lg font-semibold text-text">Доброго ранку</p>
-              <p className="text-2xs text-muted mt-1">{reduced ? "Reduced motion — статично" : "Idle-дихання ~14s"}</p>
+              <p className="text-2xs text-muted mt-1">
+                {reduced ? "Reduced motion — статично" : "Idle-дихання ~14s"}
+              </p>
             </div>
           </div>
           <style>{`

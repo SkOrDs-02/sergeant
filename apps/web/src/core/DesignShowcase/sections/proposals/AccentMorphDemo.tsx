@@ -17,9 +17,24 @@ import { cn } from "@shared/lib/ui/cn";
 
 const MODULES = [
   { id: "finyk", label: "Фінік", icon: "wallet", token: "--c-chart-finyk" },
-  { id: "fizruk", label: "Фізрук", icon: "dumbbell", token: "--c-chart-fizruk" },
-  { id: "routine", label: "Рутина", icon: "repeat", token: "--c-chart-routine" },
-  { id: "nutrition", label: "Їжа", icon: "utensils", token: "--c-chart-nutrition" },
+  {
+    id: "fizruk",
+    label: "Фізрук",
+    icon: "dumbbell",
+    token: "--c-chart-fizruk",
+  },
+  {
+    id: "routine",
+    label: "Рутина",
+    icon: "repeat",
+    token: "--c-chart-routine",
+  },
+  {
+    id: "nutrition",
+    label: "Їжа",
+    icon: "utensils",
+    token: "--c-chart-nutrition",
+  },
 ] as const;
 
 export function AccentMorphDemo() {
@@ -82,21 +97,31 @@ function AccentCard({
     <div
       className={cn(
         "w-40 rounded-2xl border-2 bg-panel p-4 flex flex-col items-center gap-2",
-        morph && "transition-[border-color,background-color,color] duration-500",
+        morph &&
+          "transition-[border-color,background-color,color] duration-500",
       )}
-      style={{ borderColor: color, backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)` }}
+      style={{
+        borderColor: color,
+        backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)`,
+      }}
     >
       <span
         className={cn(
           "h-10 w-10 rounded-xl flex items-center justify-center",
           morph && "transition-colors duration-500",
         )}
-        style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
+        style={{
+          backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+          color,
+        }}
       >
         <Icon name={mod.icon} size={20} />
       </span>
       <span
-        className={cn("text-style-label", morph && "transition-colors duration-500")}
+        className={cn(
+          "text-style-label",
+          morph && "transition-colors duration-500",
+        )}
         style={{ color }}
       >
         {mod.label}

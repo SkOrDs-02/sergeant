@@ -46,7 +46,6 @@ export function CategoryFilterSheet({
         contentContainerStyle={{ paddingBottom: 16, gap: 4 }}
         testID={`${testID}-filter-cat-sheet`}
       >
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <Text className="text-[11px] uppercase tracking-wide text-fg-subtle px-3 pt-2 pb-1">
           Витрати
         </Text>
@@ -68,7 +67,6 @@ export function CategoryFilterSheet({
             </Pressable>
           );
         })}
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <Text className="text-[11px] uppercase tracking-wide text-fg-subtle px-3 pt-3 pb-1">
           Доходи
         </Text>

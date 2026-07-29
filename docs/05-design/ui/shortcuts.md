@@ -5,7 +5,7 @@
 > **Status:** Active.
 
 Канонічний реєстр клавіатурних шорткатів `apps/web` + browser-conflict
-аналіз для §3.11 з [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](../../90-work/audits/archive/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
+аналіз для §3.11 з [`docs/90-work/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/01-frontend-ergonomics.md).
 
 Шорткати реєструються через [`useRegisterShortcuts`](../../../apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx)
 у `ShortcutRegistryContext` і автоматично з'являються в модальці

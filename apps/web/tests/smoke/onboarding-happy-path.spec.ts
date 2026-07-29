@@ -119,7 +119,7 @@ test("@critical onboarding: sign-up → welcome wizard → hub-overview fires on
     }
   });
 
-  const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const nonce = crypto.randomUUID();
   const email = `smoke_${nonce}@example.com`;
   const password = `pw_${nonce}_long_enough`;
 

@@ -3,11 +3,7 @@
 // legacy synonym for `budgets` (kept to keep older Hub recommendations and
 // share-cards working through the Phase-3 hash-redirect shim).
 export type FinykPage =
-  | "overview"
-  | "transactions"
-  | "budgets"
-  | "analytics"
-  | "assets";
+  "overview" | "transactions" | "budgets" | "analytics" | "assets";
 
 const VALID_FINYK_PAGES: readonly FinykPage[] = [
   "overview",
@@ -86,8 +82,7 @@ export function finykRoutePath(next: FinykPage | null | undefined): string {
  * landed on the default tab".
  */
 export function parseLegacyFinykHash():
-  | (ParsedFinykRoute & { search?: string })
-  | null {
+  (ParsedFinykRoute & { search?: string }) | null {
   if (typeof window === "undefined") return null;
   const raw = (window.location.hash || "").replace(/^#\/?/, "").trim();
   if (!raw) return null;

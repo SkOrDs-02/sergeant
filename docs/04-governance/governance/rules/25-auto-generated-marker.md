@@ -12,9 +12,6 @@
 
 Every auto-generated artifact in the repo. Currently:
 
-- `docs/04-governance/governance/knowledge-graph.html`
-- `docs/04-governance/governance/symbol-index.html`
-- `docs/02-engineering/architecture/diagrams/c3-workspaces.md`
 - `docs/open-work.md`
 - `docs/90-work/initiatives/follow-ups.md`
 - `docs/00-start/playbooks/INDEX.md`
@@ -41,11 +38,11 @@ The `<!-- AUTO-GENERATED -->` marker is the visible signal in plain text. Marker
 
 For HTML dashboards the marker is an HTML comment block at the top of `<body>`.
 
-For JSON outputs (e.g. `knowledge-graph.json`, `repo-map.auto.json`), JSON has no comments — instead the `$schema` field points at the canonical schema and the schema's `description` documents that the artifact is auto-generated. The `--check` mode of each generator catches hand edits the same way (diff fail).
+For JSON outputs (e.g. `repo-map.auto.json`), JSON has no comments — instead the `$schema` field points at the canonical schema and the schema's `description` documents that the artifact is auto-generated. The `--check` mode of each generator catches hand edits the same way (diff fail).
 
 ## Tracking
 
-- Initiative — [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
+- Initiative — [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md).
 - ADR-0058 — [`docs/04-governance/adr/0058-knowledge-graph-schema.md`](../../adr/0058-knowledge-graph-schema.md) (schema-first principle).
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->

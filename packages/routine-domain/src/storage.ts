@@ -32,13 +32,10 @@ const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const ROUTINE_SCHEMA_VERSION = 3;
 
 /**
- * Generate a reasonably-unique id with a domain prefix. Pure (reads
- * `Date.now()` + `Math.random()`); not cryptographically random.
+ * Generate a collision-resistant id with a domain prefix.
  */
 export function routineUid(prefix: string): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 9)}`;
+  return `${prefix}_${crypto.randomUUID()}`;
 }
 
 /**

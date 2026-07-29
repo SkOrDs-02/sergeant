@@ -38,12 +38,10 @@ const baseRef = process.env.BUMP_BASE_REF || "origin/main";
 const headRef = process.env.BUMP_HEAD_REF || "HEAD";
 let diff;
 try {
-  // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- git triple-dot range syntax, not a UI string
   diff = execSync(`git diff --name-only ${baseRef}...${headRef}`, {
     encoding: "utf8",
   });
 } catch {
-  // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- git triple-dot range syntax, not a UI string
   diff = execSync("git diff --name-only HEAD~1...HEAD", { encoding: "utf8" });
 }
 const touched = diff.split("\n").filter(Boolean);

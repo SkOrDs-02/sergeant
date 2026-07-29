@@ -1,4 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift */
 import { cn } from "@shared/lib/ui/cn";
 
 interface Props {

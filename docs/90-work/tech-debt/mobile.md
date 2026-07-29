@@ -232,7 +232,7 @@ Quick-grep flaky-індикаторів (`flaky`, `unstable`, `retries`, `setTim
 `it`) виявив 2 файли, що використовують `jest.useFakeTimers()` — це норма для
 hook-тестів з `useEffect` cleanup, не сигнал flaky.
 
-**T7 verification gate ([sprint-roadmap §1.1](../planning/archive/sprint-roadmap-q2q3-2026.md#11-tech-борг)).**
+**T7 verification gate ([sprint-roadmap §1.1](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md#11-tech-борг)).**
 Гіпотеза «mobile suite є flaky через `isReduceMotionEnabled` mock» закрита у
 PR [#2453](https://github.com/Skords-01/Sergeant/pull/2453) (commit
 [`53853e00`](https://github.com/Skords-01/Sergeant/commit/53853e00) для

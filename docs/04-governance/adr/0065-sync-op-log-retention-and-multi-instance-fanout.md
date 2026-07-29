@@ -5,9 +5,9 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/audits/2026-08-XX-sync-engine-roast.md`](../../90-work/audits/archive/2026-08-XX-sync-engine-roast.md) — DLQ-TTL + transaction-boundary trace
+  - [`docs/90-work/audits/2026-08-XX-sync-engine-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-08-XX-sync-engine-roast.md) — DLQ-TTL + transaction-boundary trace
   - [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md) § "Database & migrations review" (PR-050 backlog)
-  - [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) — Stage 5 SSE / Stage 8–9 mobile dual-write
+  - [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) — Stage 5 SSE / Stage 8–9 mobile dual-write
   - [`docs/04-governance/adr/0047-cloudsync-v1-410-gone.md`](./0047-cloudsync-v1-410-gone.md) — v1 sunset (retry-семантика)
   - [`apps/server/src/modules/sync/syncV2Stream.ts`](../../../apps/server/src/modules/sync/syncV2Stream.ts) — in-process fan-out
   - [`packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts`](../../../packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts) — client-side DLQ TTL (already shipped)
@@ -153,4 +153,4 @@ silent data divergence без жодної помилки. Тому будь-я�
 - [`apps/server/src/modules/sync/syncV2Stream.ts`](../../../apps/server/src/modules/sync/syncV2Stream.ts) — `opLogEmitter` (TODO → ця ADR)
 - [`apps/server/src/modules/sync/audit.ts`](../../../apps/server/src/modules/sync/audit.ts) — нереалізований retention-намір
 - [`docs/90-work/tech-debt/backend.md`](../../90-work/tech-debt/backend.md) — PR-050 беклог
-- [`docs/90-work/audits/2026-08-XX-sync-engine-roast.md`](../../90-work/audits/archive/2026-08-XX-sync-engine-roast.md) — джерело findings
+- [`docs/90-work/audits/2026-08-XX-sync-engine-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-08-XX-sync-engine-roast.md) — джерело findings

@@ -22,11 +22,7 @@ import { hapticTap } from "@shared/lib/adapters/haptic";
  */
 
 export type SegmentedVariant =
-  | "brand"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "finyk";
+  "brand" | "fizruk" | "routine" | "nutrition" | "finyk";
 export type SegmentedStyle = "solid" | "soft";
 export type SegmentedSize = "sm" | "md";
 

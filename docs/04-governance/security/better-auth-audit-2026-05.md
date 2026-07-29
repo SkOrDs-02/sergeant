@@ -3,12 +3,12 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Reference
 
-| Field        | Value                                                                                                                                                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Owner**    | platform                                                                                                                                                           |
-| **Source**   | [`pr-plan-2026-05.md` PR-48](../../90-work/planning/archive/pr-plan-2026-05.md) — round 2 (slim audit beyond crypto)                                               |
-| **Previous** | [`better-auth-crypto-review.md`](./better-auth-crypto-review.md) — round 1 (crypto / cookies / fingerprint) by 2026-05-06                                          |
-| **Related**  | [ADR-0017](../adr/0017-better-auth-choice-and-session-model.md), [ADR-0042](../adr/0042-password-hashing-strategy.md), [ADR-0049](../adr/0049-auth-vendor-risk.md) |
+| Field        | Value                                                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Owner**    | platform                                                                                                                                                                                                |
+| **Source**   | [`pr-plan-2026-05.md` PR-48](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-2026-05.md) — round 2 (slim audit beyond crypto) |
+| **Previous** | [`better-auth-crypto-review.md`](./better-auth-crypto-review.md) — round 1 (crypto / cookies / fingerprint) by 2026-05-06                                                                               |
+| **Related**  | [ADR-0017](../adr/0017-better-auth-choice-and-session-model.md), [ADR-0042](../adr/0042-password-hashing-strategy.md), [ADR-0049](../adr/0049-auth-vendor-risk.md)                                      |
 
 ## Контекст
 

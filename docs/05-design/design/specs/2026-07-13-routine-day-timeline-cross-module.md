@@ -202,5 +202,5 @@ MVP зберігає наявні режими day/week/month, але day/timeli
 - [`apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx`](../../../../apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx)
 - [`apps/web/src/modules/routine/lib/hubCalendarAggregate.ts`](../../../../apps/web/src/modules/routine/lib/hubCalendarAggregate.ts)
 - [`apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts`](../../../../apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts)
-- [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](../../../90-work/audits/archive/2026-05-13-page-audit-09-routine-strategy.md)
+- [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-page-audit-09-routine-strategy.md)
 - [`docs/90-work/research/2026-06-28-audience-discovery-trackers.md`](../../../90-work/research/2026-06-28-audience-discovery-trackers.md)

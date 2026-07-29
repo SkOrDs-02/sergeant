@@ -117,4 +117,4 @@ linux/amd64`. Зменшіть platform-mismatch правкою в `docker-compo
 - Pool sizing runbook: [`docs/03-operations/observability/pg-pool-sizing.md`](../../03-operations/observability/pg-pool-sizing.md).
 - Backup/restore runbook: [`docs/03-operations/runbooks/database-backup-restore.md`](../../03-operations/runbooks/database-backup-restore.md).
 - Renovate operations: [`docs/03-operations/ops/renovate.md`](../../03-operations/ops/renovate.md).
-- Initiative: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md).
+- Initiative: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-37-postgres-image-sha-pin.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-37-postgres-image-sha-pin.md).

@@ -26,7 +26,9 @@ export function PressDepthDemo() {
             </span>
             <span className="text-style-label text-text">Фінік</span>
           </button>
-          <p className="text-2xs text-muted">Лише scale — «пласке» натискання</p>
+          <p className="text-2xs text-muted">
+            Лише scale — «пласке» натискання
+          </p>
         </CompareTile>
       }
       after={

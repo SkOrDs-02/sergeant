@@ -10,7 +10,7 @@ next_review: 2026-08-06
 > **Status:** active.
 > **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
 > Виконує acceptance criteria stack-pulse PR-13
-> ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-13-postgres-pool-sizing.md)).
+> ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-13-postgres-pool-sizing.md)).
 > Перетинається з [`docs/03-operations/runbooks/database-connection-pooling.md`](../runbooks/database-connection-pooling.md)
 > (deploy-shape pgBouncer pooler) і [`docs/03-operations/observability/runbook.md`](./runbook.md)
 > (response для алертів `DbPoolWaitingSustained` / `DbPoolSaturated`).

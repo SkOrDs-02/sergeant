@@ -18,7 +18,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 
 Якщо скіл виносить довгі довідкові блоки у `references/` (3-tier progressive disclosure), дотримуйся [`skill-authoring-guide.md`](./skill-authoring-guide.md): naming `{prefix}-{name}.md` і обов'язковий frontmatter (`title`, `impact` із закритого набору, `impactDescription`, `tags`), який валідує `check-skill-shape.mjs` у складі `pnpm lint:skills`.
 
-Гейти введено initiative-ою [`0009-agent-os-hardening`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
+Гейти введено initiative-ою [`0009-agent-os-hardening`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
 ## Active Skills
 
@@ -42,7 +42,6 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-security-audit`](../../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety                    | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain           |
 | [`sergeant-tech-debt`](../../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline                            | Knip, eslint-baseline.js, module-size #18, noUncheckedIndexedAccess #19     |
 | _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, entropy issues, PR-ledger    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback |
-| _tooling:_ [`tools/entropy-janitors`](../../../tools/entropy-janitors/README.md)                          | Scheduled weekly entropy scan (doc-drift, dead-code, dep-cycles) | Issues-only (no auto-PR), Pino redaction, hand-rolled cycle resolver        |
 | [`sergeant-writing-skills`](../../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`                          | TDD-for-skills, frontmatter shape, lock SHA-256, security scan              |
 | [`sergeant-review-squad`](../../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team             | Parallel lens coverage (contract, design, security, docs)                   |
 | [`sergeant-deliver-squad`](../../../.agents/skills/sergeant-deliver-squad/SKILL.md)                       | Cross-surface feature delivery (DB→server→api-client→web/mobile) | Sequential handoff order, bigint coercion chain, contract triplet           |

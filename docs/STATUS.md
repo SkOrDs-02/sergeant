@@ -61,7 +61,7 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 
 ## 🧱 Стек
 
-pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів + tool workspace `tools/entropy-janitors`. Канонічні джерела:
+pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів. Канонічні джерела:
 
 - [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
 - [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.

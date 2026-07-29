@@ -39,7 +39,9 @@ export function CoachMarksDemo() {
               </div>
               <div className="h-16 rounded-xl bg-panel border border-line" />
             </div>
-            <p className="text-2xs text-muted mt-3">Модуль відкривається «наосліп».</p>
+            <p className="text-2xs text-muted mt-3">
+              Модуль відкривається «наосліп».
+            </p>
           </div>
         </MiniPhone>
       }
@@ -62,11 +64,19 @@ export function CoachMarksDemo() {
               className="absolute z-10 w-40 rounded-xl bg-panelHi border border-accent/40 shadow-card p-2.5"
               style={{ top: active.top, left: active.left }}
             >
-              <p className="text-2xs text-text leading-relaxed">{active.text}</p>
+              <p className="text-2xs text-text leading-relaxed">
+                {active.text}
+              </p>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex gap-1">
                   {STEPS.map((_, i) => (
-                    <span key={i} className={cn("h-1.5 w-1.5 rounded-full", i === step ? "bg-accent" : "bg-line")} />
+                    <span
+                      key={i}
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        i === step ? "bg-accent" : "bg-line",
+                      )}
+                    />
                   ))}
                 </div>
                 <button

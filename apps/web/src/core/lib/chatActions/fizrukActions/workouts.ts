@@ -33,7 +33,7 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
     return "Некоректна дата або час.";
   }
   const startedAt = new Date(startedAtTs).toISOString();
-  const wid = `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const wid = `w_${Date.now().toString(36)}_${crypto.randomUUID()}`;
   const items: WorkoutItem[] = Array.isArray(exercises)
     ? exercises
         .filter((ex) => ex && ex.name)
@@ -52,7 +52,7 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
             reps,
           }));
           return {
-            id: `i_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+            id: `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
             exerciseId: "",
             nameUk: String(ex.name).trim(),
             primaryGroup: "",
@@ -117,7 +117,7 @@ export function logSet(action: LogSetAction): ChatActionResult {
   } else {
     created = true;
     workout = {
-      id: `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `w_${Date.now().toString(36)}_${crypto.randomUUID()}`,
       startedAt: new Date().toISOString(),
       endedAt: null,
       items: [],
@@ -140,7 +140,7 @@ export function logSet(action: LogSetAction): ChatActionResult {
     };
   } else {
     workout.items.push({
-      id: `i_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
       exerciseId: "",
       nameUk: exName,
       primaryGroup: "",
@@ -192,7 +192,7 @@ export function startWorkout(action: StartWorkoutAction): ChatActionResult {
   ) {
     return `Вже є активне тренування (id:${existingActiveId}). Спочатку заверши його (finish_workout).`;
   }
-  const wid = `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const wid = `w_${Date.now().toString(36)}_${crypto.randomUUID()}`;
   const newW: Workout = {
     id: wid,
     startedAt,
@@ -262,10 +262,10 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   if (!Number.isFinite(copyStartedAtTs)) {
     return "Некоректна дата.";
   }
-  const wid = `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  const wid = `w_${Date.now().toString(36)}_${crypto.randomUUID()}`;
   const copiedItems: WorkoutItem[] = source.items.map((item, i) => ({
     ...item,
-    id: `i_${Date.now().toString(36)}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+    id: `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
     sets: (item.sets ?? []).map((s) => ({ ...s })),
   }));
   const newW: Workout = {

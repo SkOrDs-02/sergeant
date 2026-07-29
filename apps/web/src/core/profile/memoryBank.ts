@@ -222,6 +222,6 @@ export function removeMemoryEntry(
 export function makeMemoryId(): string {
   return (
     globalThis.crypto?.randomUUID?.() ??
-    `mem_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+    `mem_${Date.now().toString(36)}_${crypto.randomUUID()}`
   );
 }

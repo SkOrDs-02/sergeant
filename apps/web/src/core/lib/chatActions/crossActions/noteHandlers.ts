@@ -13,7 +13,7 @@ export function saveNote(action: SaveNoteAction): ChatActionResult {
     Array<{ id: string; text: string; tag: string; createdAt: string }>
   >("hub_notes_v1", []);
   const note = {
-    id: `note_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `note_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     text: trimmed.slice(0, 1000),
     tag: (tag || "other").trim().toLowerCase(),
     createdAt: new Date().toISOString(),

@@ -41,19 +41,28 @@ export function BatchSelectDemo() {
           <div className="flex-1 min-h-0 px-3 pt-2 space-y-1.5">
             <p className="text-style-caption text-muted mb-1">Витрати</p>
             {ITEMS.map((it) => (
-              <div key={it.id} className="h-11 rounded-xl border border-line bg-panel flex items-center justify-between px-3">
+              <div
+                key={it.id}
+                className="h-11 rounded-xl border border-line bg-panel flex items-center justify-between px-3"
+              >
                 <span className="text-style-caption text-text">{it.name}</span>
-                <span className="text-2xs tabular-nums text-muted">{it.amount}</span>
+                <span className="text-2xs tabular-nums text-muted">
+                  {it.amount}
+                </span>
               </div>
             ))}
-            <p className="text-2xs text-muted pt-1">Видалення — по одному запису.</p>
+            <p className="text-2xs text-muted pt-1">
+              Видалення — по одному запису.
+            </p>
           </div>
         </MiniPhone>
       }
       after={
         <MiniPhone>
           <div className="flex-1 min-h-0 flex flex-col px-3 pt-2">
-            <p className="text-style-caption text-muted mb-1">Витрати · вибір</p>
+            <p className="text-style-caption text-muted mb-1">
+              Витрати · вибір
+            </p>
             <div className="space-y-1.5 flex-1">
               {ITEMS.map((it) => {
                 const sel = selected.has(it.id);
@@ -64,19 +73,27 @@ export function BatchSelectDemo() {
                     onClick={() => toggle(it.id)}
                     className={cn(
                       "w-full h-11 rounded-xl border flex items-center gap-2 px-3 transition-colors",
-                      sel ? "border-accent/50 bg-accent/10" : "border-line bg-panel",
+                      sel
+                        ? "border-accent/50 bg-accent/10"
+                        : "border-line bg-panel",
                     )}
                   >
                     <span
                       className={cn(
                         "h-5 w-5 rounded-full border flex items-center justify-center shrink-0",
-                        sel ? "bg-accent border-accent text-bg" : "border-line text-transparent",
+                        sel
+                          ? "bg-accent border-accent text-bg"
+                          : "border-line text-transparent",
                       )}
                     >
                       <Icon name="check-circle" size={14} />
                     </span>
-                    <span className="text-style-caption text-text">{it.name}</span>
-                    <span className="ml-auto text-2xs tabular-nums text-muted">{it.amount}</span>
+                    <span className="text-style-caption text-text">
+                      {it.name}
+                    </span>
+                    <span className="ml-auto text-2xs tabular-nums text-muted">
+                      {it.amount}
+                    </span>
                   </button>
                 );
               })}
@@ -88,7 +105,9 @@ export function BatchSelectDemo() {
                 selected.size ? "opacity-100" : "opacity-40",
               )}
             >
-              <span className="text-style-caption font-medium">Обрано {selected.size}</span>
+              <span className="text-style-caption font-medium">
+                Обрано {selected.size}
+              </span>
               <span className="flex items-center gap-3">
                 <Icon name="arrow-up-right" size={16} />
                 <Icon name="x-circle" size={16} />

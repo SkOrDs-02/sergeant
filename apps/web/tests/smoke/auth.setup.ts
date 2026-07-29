@@ -29,7 +29,7 @@ export { HUB_USER_AUTH_STATE };
 setup("authenticate hub user", async ({ page }) => {
   // Deterministic email per run (CI artifact persistence is bounded; we
   // don't reuse accounts across runs because the smoke DB is wiped).
-  const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const nonce = crypto.randomUUID();
   const email = `smoke_setup_${nonce}@example.com`;
   const password = `pw_${nonce}_long_enough`;
 

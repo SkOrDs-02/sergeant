@@ -88,7 +88,6 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           Калорії по днях (останні {Math.min(statsRange, statsRows.length)})
         </SectionHeading>
         {statsRows.length === 0 ? (
-          // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
           <div className="text-xs text-muted">Поки що порожньо</div>
         ) : (
           (() => {
@@ -123,7 +122,6 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             Топ страв
           </SectionHeading>
           {statsTop.length === 0 ? (
-            // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
             <div className="text-xs text-muted">Поки що порожньо</div>
           ) : (
             <ol className="space-y-1">
@@ -151,7 +149,6 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             Розподіл прийомів
           </SectionHeading>
           {Object.keys(statsMealTypes).length === 0 ? (
-            // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
             <div className="text-xs text-muted">Поки що порожньо</div>
           ) : (
             <ul className="space-y-1">

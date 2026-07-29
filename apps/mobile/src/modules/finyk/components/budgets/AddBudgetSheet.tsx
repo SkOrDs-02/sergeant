@@ -62,7 +62,7 @@ const EMPTY: FormState = {
 };
 
 function makeId(): string {
-  return `b-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `b-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 export function AddBudgetSheet({
@@ -122,6 +122,7 @@ export function AddBudgetSheet({
         name: res.normalized.name ?? form.name,
         targetAmount: res.normalized.targetAmount,
         savedAmount: res.normalized.savedAmount,
+        contributions: [],
         ...(form.emoji ? { emoji: form.emoji } : {}),
         ...(form.targetDate ? { targetDate: form.targetDate } : {}),
       };

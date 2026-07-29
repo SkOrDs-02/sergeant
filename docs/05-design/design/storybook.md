@@ -148,7 +148,7 @@ Failed deploy → previous Pages build stays live. Investigate via the workflow 
 
 - [ADR-0046 — Storybook visual regression scope](../../04-governance/adr/0046-storybook-vrt-scope.md)
 - [ADR-0034 — Visual regression testing via Argos + Playwright](../../04-governance/adr/0034-visual-regression-testing.md)
-- [Initiative 0007 — Design-system tooling](../../90-work/initiatives/archive/_0007-design-system-tooling.md)
+- [Initiative 0007 — Design-system tooling](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md)
 - [`apps/web/.storybook/main.ts`](../../../apps/web/.storybook/main.ts)
 - [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design)
 - [Storybook 10 docs](https://storybook.js.org/docs)

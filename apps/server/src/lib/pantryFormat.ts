@@ -1,7 +1,5 @@
 export type PantryPromptItemFormat =
-  | "nameOnly"
-  | "nameQuantity"
-  | "nameQuantityNotes";
+  "nameOnly" | "nameQuantity" | "nameQuantityNotes";
 
 export interface PantryPromptFormatOptions {
   itemFormat: PantryPromptItemFormat;

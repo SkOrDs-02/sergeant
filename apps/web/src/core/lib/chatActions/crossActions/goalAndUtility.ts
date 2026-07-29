@@ -27,7 +27,7 @@ export function setGoal(action: SetGoalAction): string {
     }>
   >("hub_goals_v1", []);
   const goal: (typeof goals)[0] = {
-    id: `goal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `goal_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     description: desc,
     createdAt: new Date().toISOString(),
   };

@@ -40,4 +40,4 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 
 - Incident playbooks: [`docs/00-start/playbooks/declare-incident.md`](../../00-start/playbooks/declare-incident.md), [`docs/00-start/playbooks/restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md), [`docs/00-start/playbooks/test-backup-restore.md`](../../00-start/playbooks/test-backup-restore.md).
 - Disaster recovery policy: [`docs/04-governance/security/disaster-recovery.md`](../../04-governance/security/disaster-recovery.md).
-- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md).
+- Storage roadmap: [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md).

@@ -51,7 +51,10 @@ export function TransactionAmountFilter({
   };
 
   return (
-    <div data-no-swipe className="rounded-2xl border border-line bg-panelHi px-4 py-3">
+    <div
+      data-no-swipe
+      className="rounded-2xl border border-line bg-panelHi px-4 py-3"
+    >
       <div className="flex items-center justify-between gap-2">
         <span id={labelId} className="text-style-caption font-medium text-text">
           Сума

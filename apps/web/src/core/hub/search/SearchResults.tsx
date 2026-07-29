@@ -106,7 +106,6 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
               <button
                 type="button"
                 onClick={onClearRecents}
-                // eslint-disable-next-line sergeant-design/no-rounded-lg -- pre-existing tech debt; semantic fix tracked in docs/tech-debt/frontend.md
                 className="text-style-caption text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg px-1.5 py-0.5"
               >
                 Очистити

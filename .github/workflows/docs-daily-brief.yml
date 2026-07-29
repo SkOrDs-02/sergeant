@@ -69,21 +69,13 @@ jobs:
         #   4. trust badge         — reads pickOverdueReview from today
         #   5. hard-rules matrix   — date-stamped; re-stamps Last validated
         #   6. freshness dashboard — consumes tracker headers across all trackers
-        #   7. knowledge graph     — walks 17 workspaces' source
-        #   8. symbol index        — walks per-workspace exports
-        #   9. repo map            — workspace manifest snapshot
-        #  10. service catalog     — surfaces tag snapshot
-        #  11. architecture diagrams (c3-workspaces.md)
+        #   7. repo map            — workspace manifest snapshot
+        #   8. service catalog     — surfaces tag snapshot
         # follow-ups + hard-rules are sequenced before the freshness dashboard
         # so the dashboard reflects their refreshed Last-validated dates in the
         # same run (they were previously off-cron and drifted every new day).
         # Steps 1–6 are the original "light" artifacts (sub-second each).
-        # Steps 7–11 are heavier — they walk the code tree — but still finish
-        # in under a minute total on the runner. Centralising the refresh
-        # here closes the per-PR drift that was accumulating across both
-        # `docs/04-governance/governance/*.{json,html,auto.json}` and
-        # `apps/*/symbols.json` because none of those generators were on
-        # the daily cron until now.
+        # Steps 7–8 walk workspace manifests and surface metadata.
         run: pnpm docs:gen-daily
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
@@ -110,20 +102,9 @@ jobs:
             docs/README.md
             docs/04-governance/governance/hard-rules-matrix.md
             docs/04-governance/governance/freshness-dashboard.html
-            docs/04-governance/governance/knowledge-graph.json
-            docs/04-governance/governance/knowledge-graph.html
-            docs/04-governance/governance/symbol-index.json
-            docs/04-governance/governance/symbol-index.html
             docs/04-governance/governance/repo-map.auto.json
             docs/04-governance/governance/service-catalog.auto.json
-            docs/04-governance/governance/retrieval-index.json
-            docs/02-engineering/architecture/diagrams/c3-workspaces.md
           )
-          # Per-workspace symbol-index snapshots — globbed because the
-          # workspace set evolves; one new workspace tomorrow should not
-          # silently fall out of the refresh.
-          mapfile -t SYMBOL_FILES < <(git ls-files '*/symbols.json')
-          REFRESH_PATHS+=("${SYMBOL_FILES[@]}")
           if git diff --quiet -- "${REFRESH_PATHS[@]}"; then
             echo "no drift — nothing to commit"
             exit 0

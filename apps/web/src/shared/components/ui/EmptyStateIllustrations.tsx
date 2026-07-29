@@ -378,11 +378,7 @@ export const GenericEmptyIllustration = memo(function GenericEmptyIllustration({
 });
 
 export type ModuleIllustration =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "generic";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "generic";
 
 const ILLUSTRATIONS: Record<
   ModuleIllustration,

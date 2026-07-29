@@ -16,7 +16,17 @@ import { ComparePair, MiniPhone } from "./_Compare";
  * Mock only — scroll the row and toggle chips on the right.
  */
 
-const CHIPS = ["Усі", "Їжа", "Кава", "Транспорт", "Підписки", "Здоровʼя", "Розваги", "Дім", "Інше"];
+const CHIPS = [
+  "Усі",
+  "Їжа",
+  "Кава",
+  "Транспорт",
+  "Підписки",
+  "Здоровʼя",
+  "Розваги",
+  "Дім",
+  "Інше",
+];
 
 export function ChipsFilterRowDemo() {
   const [active, setActive] = useState<string>("Усі");
@@ -39,9 +49,14 @@ export function ChipsFilterRowDemo() {
                 </span>
               </div>
               <div className="px-4 pt-4 space-y-2">
-                <p className="text-2xs text-muted">Активний фільтр невидимий — треба відкрити модалку.</p>
+                <p className="text-2xs text-muted">
+                  Активний фільтр невидимий — треба відкрити модалку.
+                </p>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-12 rounded-2xl bg-panel border border-line" />
+                  <div
+                    key={i}
+                    className="h-12 rounded-2xl bg-panel border border-line"
+                  />
                 ))}
               </div>
             </div>
@@ -67,7 +82,9 @@ export function ChipsFilterRowDemo() {
                         aria-pressed={sel}
                         className={cn(
                           "shrink-0 h-9 px-4 rounded-full border text-style-caption font-medium transition-colors",
-                          sel ? "bg-accent border-accent text-bg" : "bg-panel border-line text-muted",
+                          sel
+                            ? "bg-accent border-accent text-bg"
+                            : "bg-panel border-line text-muted",
                         )}
                       >
                         {c}
@@ -78,10 +95,14 @@ export function ChipsFilterRowDemo() {
               </div>
               <div className="px-4 pt-4 space-y-2">
                 <p className="text-2xs text-muted">
-                  Фільтр: <span className="text-text">{active}</span> · {active === "Усі" ? 24 : 6} записів
+                  Фільтр: <span className="text-text">{active}</span> ·{" "}
+                  {active === "Усі" ? 24 : 6} записів
                 </p>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-12 rounded-2xl bg-panel border border-line" />
+                  <div
+                    key={i}
+                    className="h-12 rounded-2xl bg-panel border border-line"
+                  />
                 ))}
               </div>
             </div>

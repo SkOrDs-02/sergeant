@@ -59,7 +59,9 @@ export function PhoneFrame({
   return (
     <div className="w-full max-w-[320px]">
       {label ? (
-        <p className="mb-1.5 text-center text-style-caption text-muted">{label}</p>
+        <p className="mb-1.5 text-center text-style-caption text-muted">
+          {label}
+        </p>
       ) : null}
       <div className="rounded-[2rem] border border-line bg-panelHi p-2 shadow-card">
         <div

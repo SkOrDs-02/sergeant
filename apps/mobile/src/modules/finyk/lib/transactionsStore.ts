@@ -221,7 +221,7 @@ export function useFinykTxFilters(seed?: Partial<FinykTxFilterState>): {
 }
 
 function genId(): string {
-  return `me_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `me_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**

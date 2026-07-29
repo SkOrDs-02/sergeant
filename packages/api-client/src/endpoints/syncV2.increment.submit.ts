@@ -102,8 +102,7 @@ export interface SubmitSyncV2IncrementOpRejected {
 }
 
 export type SubmitSyncV2IncrementOpResult =
-  | SubmitSyncV2IncrementOpEnqueued
-  | SubmitSyncV2IncrementOpRejected;
+  SubmitSyncV2IncrementOpEnqueued | SubmitSyncV2IncrementOpRejected;
 
 /**
  * Function-shaped dependency that durably enqueues an

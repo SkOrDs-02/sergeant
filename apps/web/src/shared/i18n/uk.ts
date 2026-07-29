@@ -242,8 +242,7 @@ export const messages = {
     // ці ключі — для inline empty-state-ів, де <EmptyState> не вписується
     // (mini-stat tier).
     //
-    // ESLint `sergeant-design/no-bare-empty-text` ловить bare empty-text
-    // patterns поза <EmptyState>; цей каталог покриває inline-tier.
+    // Цей каталог покриває inline-tier порожніх станів поза <EmptyState>.
     nothingYet: "Поки що порожньо",
     noDataYet: "Ще немає даних",
     nothingFound: "Нічого не знайдено",

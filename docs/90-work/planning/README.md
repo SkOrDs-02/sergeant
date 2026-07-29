@@ -13,7 +13,7 @@
 
 ### Спеки фіч
 
-Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; Closed — у [`archive/specs/`](./archive/specs/).
+Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; закриті snapshot-и доступні у Git history.
 
 > Станом на 2026-07-29 у `specs/` дві відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual) і `telegram-waitlist.md` (потрібне founder-рішення). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` мають статус `Implemented` і чекають лише ручного founder-QA; `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
 
@@ -29,9 +29,9 @@
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md)           | План покращення AI-coding workflow                              | Active — 3 напрями `next`; перед виконанням кожен потребує окремої спеки  |
 | [`harness-engineering-v1.md`](./harness-engineering-v1.md)           | Harness-engineering v1 rollout + follow-ups                     | Reference — v1 rollout завершено 2026-06-29                               |
 
-## Архів
+## Історія завершених планів
 
-[`archive/`](./archive) — Closed / Reference / Deprecated плани. Індекс батчу — [`archive/README.md`](./archive/README.md). Ключові переноси Batch 2026-07-20 (90-day gate skipped):
+[Git snapshot](https://github.com/Skords-01/Sergeant/tree/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive) містить колишні Closed / Reference / Deprecated плани. Локальний archive retired за ADR-0081. Ключові історичні групи:
 
 - `archive/storage-roadmap.md` + `archive/storage-roadmap/*` — усі 13 stages complete
 - `archive/sprint-roadmap-q2q3-2026.md`, `archive/pr-plan-*-2026-05.md`, `archive/tools-research-*`, `archive/tailwind-v4-migration.md`, `archive/dev-stack-roadmap*.md`
@@ -48,4 +48,4 @@
 
 - `archive/specs/test-observations-fixes-ab.md` — усі групи A/B змерджено в PR #427
 
-Конвенція: Status → Archived (read-only), inbound-лінки на `archive/` шлях.
+Конвенція: перед cleanup зафіксувати Outcome й merge evidence; після видалення inbound-лінки ведуть на immutable commit permalink.

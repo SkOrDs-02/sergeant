@@ -1,22 +1,5 @@
-/**
- * English message catalog for apps/web.
- *
- * Structurally complete — every top-level group present in `uk.ts` is also
- * present here so the EN locale can be used standalone via `getMessages("en")`.
- *
- * Voice: 1st-person singular ("I"), friendly-not-corporate, concrete.
- * "Premium" stays capitalized (ADR-0051). Interpolation placeholders are
- * preserved verbatim from the UK source.
- *
- * Merge contract (see `index.ts`): top-level keys here REPLACE the same key
- * in `uk.ts`. Groups must be fully translated — partial group coverage is
- * forbidden by the `messagesEn contract` test in `index.test.ts`.
- *
- * Roadmap: see `docs/i18n/readiness.md` for the per-surface migration
- * sequence.
- */
-
 import type { MessageCatalog } from "./uk";
+import { pricingEn } from "./en.pricing";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -633,85 +616,5 @@ export const messagesEn: Partial<MessageCatalog> = {
       " changelog in the repo.",
   },
 
-  // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
-  // surface; EN translation is the gating reason a non-UA visitor can
-  // self-checkout. Tier names ("Free", "Premium") are brand-stable across
-  // locales — identical to UK.
-  pricing: {
-    pageTitle: "Plans",
-    backLabel: "Back",
-    plansAriaLabel: "Pricing plans",
-    hero: {
-      headlineLine1: "Sergeant is free for everyday use.",
-      headlineLine2: "Premium — when you need everything at once.",
-      subtitle:
-        "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and payment opens (LiqPay / Plata).",
-    },
-    tiers: {
-      freeName: "Free",
-      freePrice: "₴0",
-      freeCadence: "forever",
-      freeTagline:
-        "All modules, unlimited manual tracking. AI — 5 messages/day.",
-      premiumName: "Premium",
-      premiumCadence: "/ month (yearly plan — coming soon)",
-      premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
-    },
-    features: {
-      allModules: "All 4 modules — full access",
-      manualTracking: "Manual tracking with no numeric limits",
-      aiChat: "AI chat",
-      cloudSync2Devices: "Cloud sync on 2 devices",
-      expensesFinyk: "Finyk expenses",
-      aiPhotoFood: "AI meal photo in Nutrition",
-      aiPhotoFoodShort: "AI meal photo",
-      manualMeals: "Manual meal entries",
-      activeWorkoutTemplate: "Active workout template",
-      workoutTemplates: "Workout templates",
-      activeHabits: "Active habits",
-      habits: "Habits",
-      pdfExport: "PDF report export",
-      multiCurrency: "Foreign-currency assets",
-      monoAutoSync: "Monobank auto-sync",
-      cloudSync: "Cross-device CloudSync",
-    },
-    limits: {
-      // Leading space matches uk — composes as `${N} / month`.
-      perMonth: " / month",
-      unlimited: "unlimited",
-      aiChatPerDay: "5 / day",
-    },
-    cta: {
-      tryPremium: "Try Premium",
-      openingCheckout: "Opening payment…",
-      manageSubscription: "Manage subscription",
-      openingPortal: "Opening management…",
-      switchToFree: "Switch to Free",
-      currentPlan: "Your current plan",
-    },
-    status: {
-      checkoutCreatedPrefix: "Payment session created",
-    },
-    errors: {
-      checkoutUnavailable:
-        "Payment is temporarily unavailable. Leave your email below and we'll follow up when you can pay.",
-      portalNoBillingCustomer:
-        "No billing profile found. Reach out to support — we'll set it up manually.",
-      portalUnavailable:
-        "Subscription management is temporarily unavailable. Try again later.",
-      portalGeneric:
-        "Couldn't open subscription management. Check your connection and try again.",
-    },
-    toast: {
-      subscriptionActive: "Subscription active — welcome to Premium!",
-      subscriptionActiveCta: "Go to settings",
-      paymentCanceled: "Payment canceled. No subscription was created.",
-    },
-    waitlist: {
-      headline: "Waitlist email",
-      subtitle: "One email when Premium launches. No spam, no auto-charges.",
-    },
-    footer:
-      "Prices in UAH. UA payments go through LiqPay / Plata. Legacy Stripe subscriptions use a separate billing portal.",
-  },
+  pricing: pricingEn,
 };

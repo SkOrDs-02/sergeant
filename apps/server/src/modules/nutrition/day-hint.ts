@@ -56,14 +56,11 @@ export default async function handler(
       ? `Походження КБЖВ (кількість прийомів): ${JSON.stringify(macroSources)}.\nЯкщо багато AI — обережно формулюй висновки, можеш порадити уточнити вагу/порцію.\n`
       : "";
 
-  /* eslint-disable sergeant-design/no-ellipsis-dots --
-     {"hint":"..."} is a JSON-schema format hint for the LLM, not user-facing copy. */
   const prompt = `Мова: ${loc}.
 ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"}, білки ${m.protein_g ?? "—"} г, жири ${m.fat_g ?? "—"} г, вуглеводи ${m.carbs_g ?? "—"} г.
 Цілі (якщо є): ккал ${t.dailyTargetKcal ?? "—"}, білки ${t.dailyTargetProtein_g ?? "—"}, жири ${t.dailyTargetFat_g ?? "—"}, вуглеводи ${t.dailyTargetCarbs_g ?? "—"}.
 
 Дай 2–4 речення: коротко порівняй з цілями (якщо цілі задані), що добре / що звернути увагу завтра. Без моралізаторства. Відповідь ТІЛЬКИ JSON: {"hint":"..."}`;
-  /* eslint-enable sergeant-design/no-ellipsis-dots */
 
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,

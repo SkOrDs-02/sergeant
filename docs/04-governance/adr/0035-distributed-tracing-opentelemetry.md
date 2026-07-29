@@ -10,7 +10,7 @@
   - [ADR-0015](./0015-observability-stack.md) — observability stack (Pino + Prometheus + Sentry); цей ADR розширює його traces-шаром.
   - [`docs/03-operations/observability/frontend.md`](../../03-operations/observability/frontend.md) §7 «Sentry-події не з'єднані» — поточний gap.
   - [`apps/server/src/obs/requestContext.ts`](../../../apps/server/src/obs/requestContext.ts) — ALS-based request context (вже є `requestId`, але без trace propagation).
-  - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../../90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2 — audit row.
+  - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2 — audit row.
 
 ---
 
@@ -29,7 +29,7 @@
 
 ## 0. TL;DR
 
-**Прийнято ї реалізовано з vendor-agnostic-варіантом.** Сервер-side OTel SDK (NodeSDK + OTLP/HTTP exporter, route-aware sampler, Anthropic `aiSpan`-instrumentation, ALS-bridge для Pino-`traceId`) шипнуто 2026-05-05 у рамках ініціативи [0004 Phase 2 + 4](../../90-work/initiatives/archive/_0004-server-observability.md). Відмінно від оригінальної пропозиції — не фіксуємо Honeycomb як єдиний backend, а приймаємо будь-який OTLP/HTTP collector через `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (Honeycomb / Grafana Cloud Tempo / self-hosted Tempo). Web-бок генерує W3C `traceparent` header вручну (без SDK у бандлі) — це закриває web→server correlation gap без +50KB gzip у веб. Sentry web tracing НЕ вимикаємо автоматично — після ввімкнення OTLP-endpoint оператор може виставити `SENTRY_TRACES_SAMPLE_RATE=0` ї явно (одна env-лінія, без код-змін). Final-backend вибір — окремо після volume-оцінки в prod-і (див. § 7.1 Implementation status).
+**Прийнято ї реалізовано з vendor-agnostic-варіантом.** Сервер-side OTel SDK (NodeSDK + OTLP/HTTP exporter, route-aware sampler, Anthropic `aiSpan`-instrumentation, ALS-bridge для Pino-`traceId`) шипнуто 2026-05-05 у рамках ініціативи [0004 Phase 2 + 4](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0004-server-observability.md). Відмінно від оригінальної пропозиції — не фіксуємо Honeycomb як єдиний backend, а приймаємо будь-який OTLP/HTTP collector через `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (Honeycomb / Grafana Cloud Tempo / self-hosted Tempo). Web-бок генерує W3C `traceparent` header вручну (без SDK у бандлі) — це закриває web→server correlation gap без +50KB gzip у веб. Sentry web tracing НЕ вимикаємо автоматично — після ввімкнення OTLP-endpoint оператор може виставити `SENTRY_TRACES_SAMPLE_RATE=0` ї явно (одна env-лінія, без код-змін). Final-backend вибір — окремо після volume-оцінки в prod-і (див. § 7.1 Implementation status).
 
 ---
 
@@ -186,7 +186,7 @@ Total: ~3 working days (замість оригінальних 5) — секо�
 
 ## 8. Links
 
-- Audit row: [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](../../90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2.
+- Audit row: [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-2.
 - OTel JS docs: <https://opentelemetry.io/docs/languages/js/>.
 - Honeycomb OTLP: <https://docs.honeycomb.io/getting-data-in/otel-collector/>.
 - W3C Trace Context: <https://www.w3.org/TR/trace-context/>.

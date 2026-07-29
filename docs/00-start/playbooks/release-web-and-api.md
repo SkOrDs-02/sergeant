@@ -8,7 +8,7 @@ lang-reason: "Superseded stub kept only as historical anchor (`Status: Deprecate
 > **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
 > **Status:** Deprecated
 
-> **Superseded by:** [release.md § Web + API](./release.md#1-web--api) — merged 2026-05-04 (initiative [0009](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).
+> **Superseded by:** [release.md § Web + API](./release.md#1-web--api) — merged 2026-05-04 (initiative [0009](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 2.3).
 
 **Trigger:** historical anchor — open [release.md § Web + API](./release.md#1-web--api) instead.
 

@@ -3,7 +3,7 @@
 > **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит: RN-рядок приведено до реального стану — лише Overview змонтовано). **Next review:** 2026-10-18.
 > **Status:** Active.  
 > **Mobile strategy:** [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor shell **primary**, Expo/RN **parallel** (без активного sunset ADR-0010). Історичний sunset schedule — лише в [`mobile/shell.md`](../mobile/shell.md) § Historical sunset note.  
-> **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md).
+> **Initiative:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md).
 
 Короткий репорт «що готово до запуску, що треба доробити» по трьох варіантах Sergeant-а. Живе поруч з `docs/02-engineering/mobile/overview.md` (API-контракт) і `docs/02-engineering/mobile/react-native-migration.md` (роадмап порту web → RN).
 
@@ -168,7 +168,7 @@
 ## 📊 Related docs
 
 - **Детальний статус app/packages:** [`apps-status-matrix.md`](./apps-status-matrix.md)
-- **Feature parity інлання:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../90-work/initiatives/archive/_0002-mobile-platform-decision.md)
+- **Feature parity інлання:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
 - **API контракт:** [`docs/02-engineering/mobile/overview.md`](../mobile/overview.md)
 - **RN migration roadmap:** [`docs/02-engineering/mobile/react-native-migration.md`](../mobile/react-native-migration.md)
 - **Mobile strategy ADR:** [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) (supersedes ADR-0010 sunset)

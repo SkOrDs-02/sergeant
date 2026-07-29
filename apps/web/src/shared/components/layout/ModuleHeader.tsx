@@ -124,7 +124,9 @@ export function ModuleHeader({
       // makes the module chrome grow out of the tapped card on entry and
       // collapse back on exit. Only set when the header is module-scoped;
       // generic headers stay part of the plain root crossfade.
-      style={module ? { viewTransitionName: `sgt-module-${module}` } : undefined}
+      style={
+        module ? { viewTransitionName: `sgt-module-${module}` } : undefined
+      }
     >
       <div className="flex min-h-[68px] items-center px-4 py-2 sm:px-5 gap-3">
         {left}

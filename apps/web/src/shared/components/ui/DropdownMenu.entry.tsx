@@ -44,7 +44,6 @@ export function DropdownMenuEntryView({
     return (
       <div
         role="presentation"
-        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional group-header eyebrow inside DropdownMenu; SectionHeading is overkill here.
         className="px-3 pt-2 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
       >
         {entry.label}

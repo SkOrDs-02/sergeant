@@ -110,9 +110,7 @@ describe("DataTable", () => {
   });
 
   it("still renders the table (not empty) when no empty slot is given", () => {
-    render(
-      <DataTable columns={columns} rows={[]} getRowKey={(r) => r.name} />,
-    );
+    render(<DataTable columns={columns} rows={[]} getRowKey={(r) => r.name} />);
     // Header still present; just no body rows.
     expect(screen.getByRole("table")).toBeTruthy();
   });
@@ -149,9 +147,7 @@ describe("DataTable", () => {
         stickyHeader
       />,
     );
-    thead = screen
-      .getByRole("columnheader", { name: "Name" })
-      .closest("thead");
+    thead = screen.getByRole("columnheader", { name: "Name" }).closest("thead");
     expect(thead?.className).toContain("sticky");
     expect(thead?.className).toContain("z-sticky");
   });

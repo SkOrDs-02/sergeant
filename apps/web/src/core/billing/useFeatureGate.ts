@@ -19,9 +19,7 @@ import type { PaywallSurface } from "./PaywallModal";
  */
 
 export type PremiumFeatureId =
-  | "ai-photo-analysis"
-  | "multi-currency"
-  | "analytics-export-pdf";
+  "ai-photo-analysis" | "multi-currency" | "analytics-export-pdf";
 
 /**
  * Maps a `PremiumFeatureId` to the existing `PaywallSurface` analytics

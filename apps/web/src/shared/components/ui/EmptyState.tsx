@@ -61,11 +61,7 @@ import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 export type EmptyStateSize = "sm" | "md" | "lg";
 
 export type EmptyStateVariant =
-  | "neutral"
-  | "info"
-  | "success"
-  | "warning"
-  | "danger";
+  "neutral" | "info" | "success" | "warning" | "danger";
 
 export interface EmptyStateProps {
   icon?: ReactNode | undefined;
@@ -333,7 +329,6 @@ export function EmptyState({
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-100",
           )}
         >
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional example label */}
           <p className="text-style-caption text-muted mb-2 uppercase tracking-wide font-medium">
             Приклад
           </p>

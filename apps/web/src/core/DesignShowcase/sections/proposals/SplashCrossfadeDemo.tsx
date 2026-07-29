@@ -62,7 +62,9 @@ export function SplashCrossfadeDemo() {
               style={{
                 opacity: phase === "app" ? 1 : 0,
                 transform: phase === "app" ? "none" : "translateY(10px)",
-                transition: reduced ? undefined : "opacity 500ms 150ms, transform 500ms 150ms",
+                transition: reduced
+                  ? undefined
+                  : "opacity 500ms 150ms, transform 500ms 150ms",
                 height: "100%",
               }}
             >
@@ -80,8 +82,13 @@ export function SplashCrossfadeDemo() {
               <div
                 className="h-14 w-14 rounded-2xl bg-onAccent/90"
                 style={{
-                  transform: phase === "splash" ? "scale(1)" : "scale(0.4) translate(-40%, -60%)",
-                  transition: reduced ? undefined : "transform 700ms cubic-bezier(0.22,1,0.36,1)",
+                  transform:
+                    phase === "splash"
+                      ? "scale(1)"
+                      : "scale(0.4) translate(-40%, -60%)",
+                  transition: reduced
+                    ? undefined
+                    : "transform 700ms cubic-bezier(0.22,1,0.36,1)",
                 }}
               />
             </div>

@@ -66,8 +66,14 @@ export function LaunchHandlerDemo() {
         <Stage>
           <ShortcutTap />
           <div className="relative h-24 w-full flex items-center justify-center">
-            <MiniWindow label="Sergeant" className="absolute -translate-x-6 -translate-y-2 rotate-[-4deg] opacity-70" />
-            <MiniWindow label="Sergeant" className="absolute translate-x-6 translate-y-2 rotate-[4deg]" />
+            <MiniWindow
+              label="Sergeant"
+              className="absolute -translate-x-6 -translate-y-2 rotate-[-4deg] opacity-70"
+            />
+            <MiniWindow
+              label="Sergeant"
+              className="absolute translate-x-6 translate-y-2 rotate-[4deg]"
+            />
           </div>
           <span className="inline-flex items-center gap-1 text-2xs text-warning">
             <Icon name="x" size={12} />
@@ -82,7 +88,10 @@ export function LaunchHandlerDemo() {
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="h-20 w-20 rounded-full bg-accent/10 blur-md" />
             </div>
-            <MiniWindow label="Sergeant" className="relative ring-2 ring-accent/50" />
+            <MiniWindow
+              label="Sergeant"
+              className="relative ring-2 ring-accent/50"
+            />
           </div>
           <span className="inline-flex items-center gap-1 text-2xs text-success">
             <Icon name="check-circle" size={12} />

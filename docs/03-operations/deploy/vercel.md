@@ -10,7 +10,7 @@ Vercel hosts the React PWA from `apps/web`. The API surface runs on \*\*Hetzner 
   for the current backend topology (supersedes the Railway split in
   [`../../04-governance/adr/0009-hosting-split-railway-vercel.md`](../../04-governance/adr/0009-hosting-split-railway-vercel.md)).
   The Vercel edge-proxy (`/api/_`→`BACKEND_URL`) and same-origin cookie contract are
-unchanged — only Vercel's `BACKEND_URL` env now points at the Coolify host.
+  unchanged — only Vercel's `BACKEND_URL` env now points at the Coolify host.
 
 ## Single source of truth: `vercel.json` lives at `apps/web/vercel.json`
 

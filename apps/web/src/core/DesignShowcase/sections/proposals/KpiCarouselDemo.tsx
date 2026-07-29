@@ -17,10 +17,38 @@ import { ComparePair, MiniPhone } from "./_Compare";
  */
 
 const KPIS = [
-  { id: "spend", label: "Витрати сьогодні", value: "₴ 640", icon: "credit-card", token: "--c-chart-finyk", hint: "−12% до вчора" },
-  { id: "streak", label: "Серія рутин", value: "14 днів", icon: "check-circle", token: "--c-chart-routine", hint: "особистий рекорд" },
-  { id: "kcal", label: "Калорії", value: "1 820", icon: "pie-chart", token: "--c-chart-nutrition", hint: "з 2 100 ккал" },
-  { id: "load", label: "Обʼєм тренувань", value: "4.2 т", icon: "trending-up", token: "--c-chart-fizruk", hint: "+8% за тиждень" },
+  {
+    id: "spend",
+    label: "Витрати сьогодні",
+    value: "₴ 640",
+    icon: "credit-card",
+    token: "--c-chart-finyk",
+    hint: "−12% до вчора",
+  },
+  {
+    id: "streak",
+    label: "Серія рутин",
+    value: "14 днів",
+    icon: "check-circle",
+    token: "--c-chart-routine",
+    hint: "особистий рекорд",
+  },
+  {
+    id: "kcal",
+    label: "Калорії",
+    value: "1 820",
+    icon: "pie-chart",
+    token: "--c-chart-nutrition",
+    hint: "з 2 100 ккал",
+  },
+  {
+    id: "load",
+    label: "Обʼєм тренувань",
+    value: "4.2 т",
+    icon: "trending-up",
+    token: "--c-chart-fizruk",
+    hint: "+8% за тиждень",
+  },
 ] as const;
 
 export function KpiCarouselDemo() {
@@ -58,18 +86,30 @@ export function KpiCarouselDemo() {
               <div className="px-4">
                 <div
                   className="rounded-3xl border p-4 flex flex-col gap-3"
-                  style={{ borderColor: finyk, backgroundColor: `color-mix(in srgb, ${finyk} 8%, transparent)` }}
+                  style={{
+                    borderColor: finyk,
+                    backgroundColor: `color-mix(in srgb, ${finyk} 8%, transparent)`,
+                  }}
                 >
                   <span
                     className="h-9 w-9 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `color-mix(in srgb, ${finyk} 18%, transparent)`, color: finyk }}
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${finyk} 18%, transparent)`,
+                      color: finyk,
+                    }}
                   >
                     <Icon name="credit-card" size={18} />
                   </span>
                   <div>
-                    <p className="text-style-caption text-muted">Витрати сьогодні</p>
-                    <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">₴ 640</p>
-                    <p className="text-2xs mt-1" style={{ color: finyk }}>−12% до вчора</p>
+                    <p className="text-style-caption text-muted">
+                      Витрати сьогодні
+                    </p>
+                    <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">
+                      ₴ 640
+                    </p>
+                    <p className="text-2xs mt-1" style={{ color: finyk }}>
+                      −12% до вчора
+                    </p>
                   </div>
                 </div>
                 <div className="mt-3 space-y-2">
@@ -77,7 +117,9 @@ export function KpiCarouselDemo() {
                   <div className="h-10 rounded-xl bg-panel border border-line" />
                 </div>
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2 pt-4">Лише одна метрика зверху</p>
+              <p className="text-2xs text-muted text-center px-4 pb-2 pt-4">
+                Лише одна метрика зверху
+              </p>
             </div>
           </MiniPhone>
         }
@@ -97,7 +139,10 @@ export function KpiCarouselDemo() {
                 {KPIS.map((k) => {
                   const color = `rgb(var(${k.token}))`;
                   return (
-                    <div key={k.id} className="snap-center shrink-0 w-full px-4">
+                    <div
+                      key={k.id}
+                      className="snap-center shrink-0 w-full px-4"
+                    >
                       <div
                         className="rounded-3xl border p-4 flex flex-col gap-3"
                         style={{
@@ -107,14 +152,23 @@ export function KpiCarouselDemo() {
                       >
                         <span
                           className="h-9 w-9 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
+                          style={{
+                            backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+                            color,
+                          }}
                         >
                           <Icon name={k.icon} size={18} />
                         </span>
                         <div>
-                          <p className="text-style-caption text-muted">{k.label}</p>
-                          <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">{k.value}</p>
-                          <p className="text-2xs mt-1" style={{ color }}>{k.hint}</p>
+                          <p className="text-style-caption text-muted">
+                            {k.label}
+                          </p>
+                          <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">
+                            {k.value}
+                          </p>
+                          <p className="text-2xs mt-1" style={{ color }}>
+                            {k.hint}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -136,7 +190,9 @@ export function KpiCarouselDemo() {
                   />
                 ))}
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2 pt-3">4 метрики — один флик пальцем</p>
+              <p className="text-2xs text-muted text-center px-4 pb-2 pt-3">
+                4 метрики — один флик пальцем
+              </p>
             </div>
           </MiniPhone>
         }

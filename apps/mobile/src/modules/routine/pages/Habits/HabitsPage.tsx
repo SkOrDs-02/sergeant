@@ -54,9 +54,7 @@ import { HabitForm } from "./HabitForm";
 import { HabitListItem } from "./HabitListItem";
 
 type FormState =
-  | { mode: "closed" }
-  | { mode: "new" }
-  | { mode: "edit"; habit: Habit };
+  { mode: "closed" } | { mode: "new" } | { mode: "edit"; habit: Habit };
 
 export interface HabitsPageProps {
   /** Optional root `testID` — children derive stable sub-ids. */

@@ -25,11 +25,10 @@ export interface WorkoutTemplate {
 }
 
 type TemplatesUpdater =
-  | WorkoutTemplate[]
-  | ((prev: WorkoutTemplate[]) => WorkoutTemplate[]);
+  WorkoutTemplate[] | ((prev: WorkoutTemplate[]) => WorkoutTemplate[]);
 
 function uid() {
-  return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `tpl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 function readInitialTemplates(): WorkoutTemplate[] {

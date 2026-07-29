@@ -70,6 +70,7 @@
       "CSSConditionRule": false,
       "CSSContainerRule": false,
       "CSSCounterStyleRule": false,
+      "CSSFontFaceDescriptors": false,
       "CSSFontFaceRule": false,
       "CSSFontFeatureValuesRule": false,
       "CSSFontPaletteValuesRule": false,
@@ -106,6 +107,7 @@
       "CSSPositionTryRule": false,
       "CSSPositionValue": false,
       "CSSPropertyRule": false,
+      "CSSPseudoElement": false,
       "CSSRotate": false,
       "CSSRule": false,
       "CSSRuleList": false,
@@ -426,6 +428,7 @@
       "KeyboardLayoutMap": false,
       "KeyframeEffect": false,
       "LanguageDetector": false,
+      "LanguageModel": false,
       "LargestContentfulPaint": false,
       "LaunchParams": false,
       "LaunchQueue": false,
@@ -482,6 +485,7 @@
       "MessagePort": false,
       "MimeType": false,
       "MimeTypeArray": false,
+      "ModelContext": false,
       "ModelGenericSession": false,
       "ModelManager": false,
       "MouseEvent": false,
@@ -876,6 +880,7 @@
       "WebGLTransformFeedback": false,
       "WebGLUniformLocation": false,
       "WebGLVertexArrayObject": false,
+      "WebMCPEvent": false,
       "WebSocket": false,
       "WebSocketError": false,
       "WebSocketStream": false,
@@ -1940,6 +1945,14 @@
     "implicit-arrow-linebreak": [
       0
     ],
+    "import/no-cycle": [
+      2,
+      {
+        "allowUnsafeDynamicCyclicDependency": false,
+        "disableScc": false,
+        "ignoreExternal": true
+      }
+    ],
     "indent": [
       0
     ],
@@ -2540,25 +2553,25 @@
       2
     ],
     "react-hooks/immutability": [
-      0
+      2
     ],
     "react-hooks/incompatible-library": [
       1
     ],
     "react-hooks/preserve-manual-memoization": [
-      0
+      2
     ],
     "react-hooks/purity": [
-      0
+      2
     ],
     "react-hooks/refs": [
-      0
+      2
     ],
     "react-hooks/rules-of-hooks": [
       2
     ],
     "react-hooks/set-state-in-effect": [
-      0
+      2
     ],
     "react-hooks/set-state-in-render": [
       2
@@ -2704,49 +2717,7 @@
     "sergeant-design/ai-marker-syntax": [
       2
     ],
-    "sergeant-design/no-arbitrary-text-size": [
-      0
-    ],
-    "sergeant-design/no-bare-empty-text": [
-      0
-    ],
-    "sergeant-design/no-ellipsis-dots": [
-      0
-    ],
-    "sergeant-design/no-eyebrow-drift": [
-      2
-    ],
-    "sergeant-design/no-foreign-module-accent": [
-      0
-    ],
-    "sergeant-design/no-hex-in-classname": [
-      0
-    ],
-    "sergeant-design/no-low-contrast-text-on-fill": [
-      0
-    ],
-    "sergeant-design/no-raw-dark-palette": [
-      0
-    ],
     "sergeant-design/no-raw-storage-key": [
-      0
-    ],
-    "sergeant-design/no-rounded-lg": [
-      0
-    ],
-    "sergeant-design/no-small-button-touch-target": [
-      0
-    ],
-    "sergeant-design/prefer-focus-visible": [
-      0
-    ],
-    "sergeant-design/prefer-text-style": [
-      0
-    ],
-    "sergeant-design/require-toast-error-action": [
-      0
-    ],
-    "sergeant-design/valid-tailwind-opacity": [
       0
     ],
     "space-after-function-name": [

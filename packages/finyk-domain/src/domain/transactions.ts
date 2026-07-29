@@ -208,7 +208,7 @@ export function normalizeTransaction(
   const note = resolveNote(tx, source);
 
   // Стабільний id: або власний, або детермінований від source/time/amount + рандомний хвіст.
-  const fallbackId = `${source}_${time}_${normalizedAmount}_${Math.random().toString(36).slice(2, 8)}`;
+  const fallbackId = `${source}_${time}_${normalizedAmount}_${crypto.randomUUID()}`;
 
   // legacy _source: якщо на вхід приходив оригінальний label (monobank/privatbank/unknown)
   // — зберігаємо його для існуючих перевірок у UI (TxRow і т.п.).

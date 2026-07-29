@@ -42,10 +42,6 @@ export function WorkoutStatTile({
         className,
       )}
     >
-      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-          Summary-sheet stat caption on the fizruk hero gradient —
-          `text-fizruk-soft-fg` isn't expressed by the SectionHeading tone
-          scale (which targets neutral surfaces). */}
       <div className="text-style-caption uppercase tracking-wide text-fizruk-soft-fg">
         {label}
       </div>

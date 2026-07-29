@@ -5,7 +5,7 @@
 
 > **⚠️ Платформа мігрована ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md), 2026-07-11):** Postgres переїхав з Railway на **Coolify-керований `pgvector/pgvector:pg18`** на Hetzner CX23 VPS. Операторські кроки нижче (§1–2, §6–7) переписано під Coolify; platform-agnostic частини (§3–5 — `pg_dump`/`pg_restore`/`psql` smoke-тести) чинні без змін, бо це чистий Postgres. Автоматичний weekly-verify job ([`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml)) теж мігровано — деталі у §6.
 
-> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Coolify-керованому Postgres + smoke-test schema integrity. Ручний monthly drill лишається для operator rehearsal.
+> Закриває **docs portion** з [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) Stage 6 PR #049 — концентрує операторські команди для full-restore-from-backup на Coolify-керованому Postgres + smoke-test schema integrity. Ручний monthly drill лишається для operator rehearsal.
 >
 > Цей runbook **доповнює** концептуальні playbook-и
 > [`restore-from-backup.md`](../../00-start/playbooks/restore-from-backup.md) (incident flow) і

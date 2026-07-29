@@ -3,11 +3,7 @@ import { safeWriteLS } from "@shared/lib/storage/storage";
 import { PWA_ACTION_KEY, consumePwaAction } from "../app/pwaAction";
 
 export type PwaAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_meal_photo"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
 
 const VALID_ACTIONS = new Set<PwaAction>([
   "add_expense",

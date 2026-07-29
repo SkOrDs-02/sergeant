@@ -84,7 +84,7 @@ flowchart TB
 
 > `mono-enrich` зараз — **DB-queue** (`apps/server/src/modules/mono/enrichmentWorker.ts`): polling Postgres замість Redis BullMQ (спрощення після аудиту). Не потребує Redis для роботи. `sampleEnrichmentQueueDepth()` репортить Prometheus gauge.
 
-**Ризик** — крах в worker-loop може уронити API. Виокремлення у standalone worker process — у [`docs/90-work/audits/2026-05-03-web-deep-dive` §1.6](../../../90-work/audits/archive/2026-05-03-web-deep-dive/02-architecture-and-state.md). Поки workers in-process, моніторити Sentry на crashes у `bullmq.Worker.run`.
+**Ризик** — крах в worker-loop може уронити API. Виокремлення у standalone worker process — у [`docs/90-work/audits/2026-05-03-web-deep-dive` §1.6](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/02-architecture-and-state.md). Поки workers in-process, моніторити Sentry на crashes у `bullmq.Worker.run`.
 
 ## Нові server modules (з 2026-04)
 

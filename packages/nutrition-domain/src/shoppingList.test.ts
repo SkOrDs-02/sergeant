@@ -1,7 +1,6 @@
 // Pure-helpers для списку покупок: normalizeShoppingList (sanitize + dedup),
 // toggleShoppingItem, removeCheckedItems, getCheckedItems, getTotalCount.
-// Без `localStorage` / `window`; ID-фабрика всередині sanitizeItem використовує
-// `Date.now()` + `Math.random()` — у дедуп-тестах достатньо перевіряти що ID
+// Без `localStorage` / `window`; у дедуп-тестах достатньо перевіряти, що UUID
 // унікальні (без точних значень).
 import { describe, expect, it } from "vitest";
 

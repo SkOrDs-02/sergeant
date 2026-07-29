@@ -1,4 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift */
 import { StoryShell } from "./StoryShell";
 import { StatRow } from "./StatRow";
 import { fmtNum } from "../../formatters";

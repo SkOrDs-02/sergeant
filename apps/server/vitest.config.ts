@@ -7,15 +7,19 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
+    // The server suite contains hundreds of module-heavy files. Letting Vitest
+    // size the worker pool from the host CPU count overloads module imports
+    // during the monorepo-wide Turbo fan-out and produces false 15s timeouts.
+    maxWorkers: process.env.CI ? 2 : 4,
     // Flaky-test quarantine (item #20): retry once on CI only — mirrors
     // baseVitestConfig in packages/config/vitest.base.js. See
     // docs/testing/README.md → "Flaky-test quarantine".
     retry: process.env.CI ? 1 : 0,
-    // Coverage instrumentation + dynamic `await import("./module.js")` inside
-    // tests (e.g. push.test.ts re-imports push.ts per case to pick up env
-    // changes) can blow past the 5s default under turbo concurrency. Lift to
-    // 15s to absorb that without masking real hangs.
-    testTimeout: 15_000,
+    // Coverage instrumentation, cold route-registry imports, and dynamic
+    // `await import("./module.js")` inside tests can blow past the 5s default
+    // under Turbo concurrency. Keep a finite 30s ceiling for those module-heavy
+    // cases without masking genuine hangs.
+    testTimeout: 30_000,
     coverage: {
       ...baseCoverageConfig,
       include: ["src/**/*.ts"],

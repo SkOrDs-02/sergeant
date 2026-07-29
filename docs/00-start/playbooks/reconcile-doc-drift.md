@@ -15,7 +15,7 @@
 
 - Прочитай [`AGENTS.md`](../../../AGENTS.md) → Hard Rule #10 (lifecycle markers), #15 (governance + UA docs), #23 (archive-move depth), #26 (PR ledger).
 - Зрозумій формат дашборду відкритої роботи: [`docs/open-work.md`](../../open-work.md) (source = `> **Status:**` хедер кожного документа).
-- Процедура архівації ініціатив: [`docs/90-work/initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md).
+- Процедура архівації ініціатив: [`docs/90-work/initiatives/archive/README.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/README.md).
 - Суміжні скіли: `audits-runner` (триаж відкритих аудитів), `initiative-task` (наступний невиконаний таск ініціативи).
 
 ---
@@ -165,32 +165,9 @@ pnpm dead-code:files             # marker-aware wrapper (поважає @scaffol
 4. **Freshness:** онови `Next review`; `Last validated` підбʼє pre-commit hook при коміті.
 5. **Ініціативи:** після зміни статусу прожени `pnpm lint:initiative-status-sync` — він звіряє статус у файлі ↔ рядок у `initiatives/README.md`.
 
-### 5. Архівувати завершене
+### 5. Прибрати завершене
 
-Архівація = **фізичний переніс** файла в `<tracker>/archive/` + 1-рядковий redirect-stub. Передумова: статус `Closed`/`Done`/`Implemented`, ≥ 90 днів без регресій, нема нових follow-up-ів, канонічні правила вже винесені (Q4).
-
-**Ініціативи** (canonical процедура — [`initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md)):
-
-```bash
-git mv docs/90-work/initiatives/<NNNN-slug>.md docs/90-work/initiatives/archive/<NNNN-slug>.md
-```
-
-У `docs/90-work/initiatives/README.md`: прибери рядок з § «Нещодавно завершені», додай stub у § «Архів»:
-
-```
-- [archive/<NNNN-slug>.md](./archive/<NNNN-slug>.md) — archived YYYY-MM-DD; superseded by <successor / canonical home>.
-```
-
-**Аудити / planning / design** — той самий патерн у відповідний `archive/`:
-
-```bash
-git mv docs/90-work/audits/<file>.md docs/90-work/audits/archive/<file>.md
-git mv docs/90-work/planning/<file>.md docs/90-work/planning/archive/<file>.md
-```
-
-Додай рядок у таблицю/список архіву відповідного `archive/README.md` (Статус, Закрито YYYY-MM-DD, 1-рядковий підсумок + посилання на PR-и). Якщо в archive-папці ще нема `README.md` — створи його за зразком [`docs/05-design/design/archive/README.md`](../../05-design/design/archive/README.md) (freshness + Status + «Чому архів, а не видалення»).
-
-> **Rule #23 (archive-move depth):** після `git mv` глибина вкладеності зростає на 1 — усі відносні посилання `../X` всередині перенесеного файла поламаються. Полагодь їх (зазвичай `../` → `../../`) і прожени `pnpm lint:archive-move-depth`.
+Перед cleanup документ повинен мати статус `Closed`/`Done`/`Implemented`, заповнений Outcome, PR/commit evidence, без нових follow-up-ів; канонічні правила вже винесені (Q4). Спершу merge-ни цей стан. Потім окремим cleanup-комітом видали frozen tracker із `docs/90-work/{audits,initiatives,planning}` і переведи inbound references на immutable GitHub permalink попереднього commit. Локальні archive-дерева для цих трьох tracker-ів retired за ADR-0081.
 
 ### 6. Зафіксувати й верифікувати
 
@@ -198,7 +175,7 @@ git mv docs/90-work/planning/<file>.md docs/90-work/planning/archive/<file>.md
 
 ```bash
 git checkout -b devin/$(date +%s)-docs-reconcile-drift
-git commit -m "docs(docs): reconcile drift, mark done tasks, archive completed <tracker>"
+git commit -m "docs(docs): reconcile drift and close completed trackers"
 ```
 
 ---
@@ -208,10 +185,9 @@ git commit -m "docs(docs): reconcile drift, mark done tasks, archive completed <
 - [ ] `pnpm docs:gen-open-work` перегенеровано; заархівовані/закриті документи зникли з [`docs/open-work.md`](../../open-work.md), лічильники оновились
 - [ ] `pnpm docs:check-open-work` — зелено (дашборд синхронний)
 - [ ] `pnpm lint:initiative-status-sync` — зелено (статус у файлі ↔ рядок у README)
-- [ ] `pnpm docs:check-links` — нема битих посилань (включно з archive-depth)
-- [ ] `pnpm lint:archive-move-depth` — зелено для всіх `git mv` у `archive/`
+- [ ] `pnpm docs:check-links` — нема битих посилань; історичні references ведуть на commit permalinks
 - [ ] `pnpm docs:check-freshness-cadence` — нема нових overdue (де торкнувся — оновлено)
-- [ ] Кожен заархівований файл має redirect-stub у відповідному `README.md § Архів`
+- [ ] Кожен видалений frozen tracker має Outcome/evidence у Git history
 - [ ] Канонічні правила (Hard Rules / lint / ADR) живі в `AGENTS.md`/`docs/04-governance/governance/`, а не лише в архіві
 - [ ] `pnpm lint` — зелено
 
@@ -221,12 +197,12 @@ git commit -m "docs(docs): reconcile drift, mark done tasks, archive completed <
 - **Виконати наступний таск ініціативи** (а не звіряти статус) — скіл `initiative-task`.
 - **Триаж/виконання відкритих аудитів** як основна ціль — скіл `audits-runner` (`mode:"triage"|"execute"`); цей playbook лише архівує аудити, що вже закриті.
 - **Тільки prettier-форматування** `docs/**/*.md` — [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md).
-- Документ зі статусом `Withdrawn` — **не архівуй**, він лишається в активному списку для аудит-сліду (див. `initiatives/archive/README.md § Чим це не є`).
+- Документ зі статусом `Withdrawn` не видаляй: він лишається в активному списку для аудит-сліду.
 
 ## Notes
 
 - Single source of truth відкритої роботи — `> **Status:**` хедер кожного документа (Rule #10). Дашборд лише агрегує; ніколи не редагуй `docs/open-work.md` руками (AUTO-GENERATED).
-- Архівація — це історичний контекст, не живий контракт. Перед `git mv` переконайся, що все канонічне винесено в `AGENTS.md`/`docs/04-governance/governance/` (Q4 / §5).
+- Git history — це історичний контекст, не живий контракт. Перед cleanup переконайся, що все канонічне винесено в `AGENTS.md`/`docs/04-governance/governance/` (Q4 / §5).
 - Дрифт ≠ прострочений `Next review`. Перше — контент розійшовся з реальністю; друге — лише нагадування перечитати. Не став свіжу дату, не перевіривши контент.
 - Веди звірку й архівацію **окремим PR** від feature-роботи (soft rule).
 
@@ -234,7 +210,7 @@ git commit -m "docs(docs): reconcile drift, mark done tasks, archive completed <
 
 - [AGENTS.md](../../../AGENTS.md) — Hard Rules #10, #15, #23, #26
 - [`docs/open-work.md`](../../open-work.md) — згенерований single-pane всієї відкритої роботи
-- [`docs/90-work/initiatives/archive/README.md`](../../90-work/initiatives/archive/README.md) — canonical процедура архівації ініціатив
+- [`docs/90-work/initiatives/archive/README.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/README.md) — canonical процедура архівації ініціатив
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — видалення мертвого коду (окремий PR)
 - [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md) — форматування docs
 - Скіли: `audits-runner` (триаж аудитів), `initiative-task` (наступний таск ініціативи), `sergeant-tech-debt` (governing)

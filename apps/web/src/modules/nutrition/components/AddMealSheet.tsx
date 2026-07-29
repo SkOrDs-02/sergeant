@@ -395,9 +395,6 @@ export function AddMealSheet({
               </div>
             )}
 
-            {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                "або" divider row between two bg-line spans — delimiter, not
-                a section heading. */}
             <div className="mt-5 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
               <span className="flex-1 h-px bg-line" />
               або

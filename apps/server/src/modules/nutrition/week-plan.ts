@@ -53,8 +53,6 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
   };
 }
 
-/* eslint-disable sergeant-design/no-ellipsis-dots --
-   JSON-schema format hint for the LLM (placeholder-style `"..."` entries), not user-facing copy. */
 const SYSTEM = `Ти шеф-кухар і планувальник харчування. Відповідай ТІЛЬКИ українською.
 
 ${ADVICE_BOUNDARY_RULE}
@@ -67,7 +65,6 @@ ${ADVICE_BOUNDARY_RULE}
   ]
 }
 Максимум 7 днів. Не вигадуй екзотичні інгредієнти поза списком — дозволено додати сіль, олію, базові спеції.`;
-/* eslint-enable sergeant-design/no-ellipsis-dots */
 
 /**
  * POST /api/nutrition/week-plan — згенерувати план харчування на тиждень.

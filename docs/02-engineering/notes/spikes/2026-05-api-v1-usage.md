@@ -77,7 +77,7 @@ prod-mobile одним релізом сервера.
 
 - [x] [ADR-0053](../../../04-governance/adr/0053-api-versioning-policy.md) — політика
       версіонування + умови видалення shim.
-- [x] [`pr-08-api-versioning-consolidation.md`](../../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
+- [x] [`pr-08-api-versioning-consolidation.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-08-api-versioning-consolidation.md)
       — статус оновлений на «Closed — research, decision = keep mirror».
 - [ ] (Future) Розширити `apiVersionRewrite` Sentry-breadcrumb-ом, коли треба
       буде кількісно міряти долю `/api/v1/*` traffic.

@@ -102,7 +102,7 @@ export async function callShoppingList(
   return data.categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
-      id: `sl_${catIdx}_${itIdx}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `sl_${catIdx}_${itIdx}_${crypto.randomUUID()}`,
       name: String(it.name ?? ""),
       quantity: String(it.quantity ?? ""),
       note: String(it.note ?? ""),

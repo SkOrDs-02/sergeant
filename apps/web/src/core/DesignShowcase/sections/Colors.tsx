@@ -69,13 +69,12 @@ export function ColorsSection() {
         description={
           <>
             Якщо ставиш <code>text-white</code> на бренд-fill — використовуй
-            <code>-strong</code> companion. Lint:{" "}
-            <code>sergeant-design/no-low-contrast-text-on-fill</code>.
+            <code>-strong</code> companion. Контраст перевіряється у Storybook і
+            design-review.
           </>
         }
       >
         <div className="flex flex-wrap gap-3">
-          {/* eslint-disable-next-line sergeant-design/no-low-contrast-text-on-fill -- showcase демонструє AA-fail, а не пропонує його як патерн */}
           <div className="bg-brand text-white rounded-xl px-3 py-2 text-style-code">
             bg-brand · text-white (~2.7:1 — fail)
           </div>

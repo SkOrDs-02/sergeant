@@ -5,7 +5,7 @@ import type { LogWellbeingAction, ChatActionResult } from "../types";
 export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   const input = action.input || {};
   const entry: Record<string, number | string | null> = {
-    id: `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     at: new Date().toISOString(),
     weightKg: null,
     sleepHours: null,

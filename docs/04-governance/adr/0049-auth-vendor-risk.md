@@ -8,7 +8,7 @@
 - **Related:**
   - [ADR-0042 — password-hashing-strategy](./0042-password-hashing-strategy.md)
   - [`docs/04-governance/security/better-auth-crypto-review.md`](../security/better-auth-crypto-review.md)
-  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
+  - [`docs/90-work/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
   - [`docs/04-governance/security/hardening/H4-encryption-key-rotation.md`](../security/hardening/archive/H4-encryption-key-rotation.md)
 
 ---
@@ -150,4 +150,4 @@ write-test pinning behaviour, (b) ESLint правило заборонити п�
 - [Auth.js](https://authjs.dev/) — primary fallback candidate
 - [Lucia](https://lucia-auth.com/) — alternate fallback (lighter,
   expects more glue code)
-- [`pr-10-better-auth-security-review`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
+- [`pr-10-better-auth-security-review`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)

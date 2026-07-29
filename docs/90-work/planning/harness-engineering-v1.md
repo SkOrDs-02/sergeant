@@ -17,12 +17,12 @@
 
 ## Components
 
-| #   | Компонент              | Ключові файли                                                                                                                                                    | ADR                                                                    | PR                                                   | Commit      |
-| --- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- | ----------- |
-| 1   | **AI-PR Checklist**    | `.github/PULL_REQUEST_TEMPLATE.md`, `.github/workflows/ai-pr-checklist.yml`, `docs/04-governance/governance/ai-pr-checklist.md`                                  | [0069](../../../docs/04-governance/adr/0069-ai-pr-checklist.md)        | [#72](https://github.com/Skords-01/Sergeant/pull/72) | `61c88579c` |
-| 2   | **Dynamic Snapshot**   | `tools/agent-snapshot/snapshot.mjs`, `tools/agent-snapshot/README.md`, §0.1 у `sergeant-start-here`                                                              | [0067](../../../docs/04-governance/adr/0071-dynamic-agent-snapshot.md) | [#73](https://github.com/Skords-01/Sergeant/pull/73) | `03601c59b` |
-| 3   | **Harness Versioning** | `.kilo/harness-versions.json`, `scripts/ci-bump-harness-version.mjs`, `.github/workflows/harness-a-b.yml`, `docs/04-governance/governance/harness-versioning.md` | [0068](../../../docs/04-governance/adr/0072-harness-versioning.md)     | [#75](https://github.com/Skords-01/Sergeant/pull/75) | `a8b656320` |
-| 4   | **Entropy Janitors**   | `tools/entropy-janitors/**` (package), `.github/workflows/entropy-janitors.yml`, `docs/04-governance/governance/entropy-janitors/README.md`                      | [0066](../../../docs/04-governance/adr/0070-entropy-janitors.md)       | [#74](https://github.com/Skords-01/Sergeant/pull/74) | `60aa46057` |
+| #   | Компонент              | Ключові файли                                                                                                                                                    | ADR                                                                                                                                         | PR                                                   | Commit      |
+| --- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----------- |
+| 1   | **AI-PR Checklist**    | `.github/PULL_REQUEST_TEMPLATE.md`, `.github/workflows/ai-pr-checklist.yml`, `docs/04-governance/governance/ai-pr-checklist.md`                                  | [0069](../../../docs/04-governance/adr/0069-ai-pr-checklist.md)                                                                             | [#72](https://github.com/Skords-01/Sergeant/pull/72) | `61c88579c` |
+| 2   | **Dynamic Snapshot**   | `tools/agent-snapshot/snapshot.mjs`, `tools/agent-snapshot/README.md`, §0.1 у `sergeant-start-here`                                                              | [0067](../../../docs/04-governance/adr/0071-dynamic-agent-snapshot.md)                                                                      | [#73](https://github.com/Skords-01/Sergeant/pull/73) | `03601c59b` |
+| 3   | **Harness Versioning** | `.kilo/harness-versions.json`, `scripts/ci-bump-harness-version.mjs`, `.github/workflows/harness-a-b.yml`, `docs/04-governance/governance/harness-versioning.md` | [0068](../../../docs/04-governance/adr/0072-harness-versioning.md)                                                                          | [#75](https://github.com/Skords-01/Sergeant/pull/75) | `a8b656320` |
+| 4   | **Entropy Janitors**   | Retired 2026-07-29; прямі Knip/docs/ESLint checks + standalone dual-write residue                                                                                | [0070](../../../docs/04-governance/adr/0070-entropy-janitors.md), [0081](../../../docs/04-governance/adr/0081-repository-simplification.md) | [#74](https://github.com/Skords-01/Sergeant/pull/74) | `60aa46057` |
 
 ### Деталі по кожному
 
@@ -42,20 +42,14 @@ fallback, `<50 KB` cap. Інтегровано в `sergeant-start-here` як §0
 "Dynamic context".
 
 **Harness Versioning (PR #75, ADR-0072).** Append-only registry
-`.kilo/harness-versions.json` (schemaVersion 1, поточна `1.0.0` —
-promoted 2026-07-20), PR-time bumper `scripts/ci-bump-harness-version.mjs`
+`.kilo/harness-versions.json` (schemaVersion 1, поточна `2.0.2`), PR-time
+bumper `scripts/ci-bump-harness-version.mjs`
 з auto-detect `patch`/`minor`/`major` за diff від `origin/main`,
 weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
 `[main, experimental/loop-detect]`. Bench-step активний: `pnpm harness:bench`
 проти `docs/00-start/agents/harness-golden-tasks.json` (12 tasks).
 
-**Entropy Janitors (PR #74, ADR-0070).** Workspace package
-`tools/entropy-janitors/` з трьома незалежними скриптами:
-`doc-drift` (ESM file walker + reference extractor),
-`dead-code` (обгортка над `knip --reporter json`),
-`dep-cycles` (hand-rolled ESM resolver — без нових runtime-deps).
-Weekly cron Mon 06:00 UTC, **тільки issues** (не PR), debounce через
-`gh issue list --search in:title`. Pino-style redaction (Hard Rule #21).
+**Entropy Janitors (PR #74, ADR-0070; retired ADR-0081).** Історичний workspace-wrapper і weekly issue workflow прибрано. Сигнали запускаються напряму через Knip, docs checks і ESLint `import/no-cycle`; доменний `pnpm check:dualwrite-residue` лишився standalone.
 
 ## Metrics
 
@@ -100,20 +94,10 @@ Weekly cron Mon 06:00 UTC, **тільки issues** (не PR), debounce чере�
 
 ### Відкриті
 
-- **Janitor performance baselines.** ADR-0070 §Follow-ups: track
-  false-positive rate per janitor протягом 4 тижнів production;
-  `ignorePatterns` allowlist якщо noise > 10%.
 - **Snapshot skill entry в `agent-skills-catalog.md`.** Snapshot не
   додано як окремий skill (це CLI-скрипт, а не skill file), але
   catalog посилається на нього з `sergeant-start-here` — формалізувати
   це посилання у catalog table.
-- **Wire janitor issue labels у agent snapshot** (ADR-0070 §Follow-up).
-  Залежить від §2.4 acceptance — частково реалізовано (snapshot already
-  lists open entropy issues), але без label-based filtering.
-- **PR #74 lockfile drift:** локальний `pnpm install --frozen-lockfile`
-  падає через `tools/entropy-janitors/package.json` deps
-  (`knip`, `tsx`, `typescript`). CI має сам re-lock на наступному push
-  і це expected; задокументовано у `WORKLOG.md` summary-сесії.
 
 ## References
 
@@ -132,15 +116,12 @@ Weekly cron Mon 06:00 UTC, **тільки issues** (не PR), debounce чере�
 - **Governance docs:**
   - [docs/04-governance/governance/ai-pr-checklist.md](../../../docs/04-governance/governance/ai-pr-checklist.md)
   - [docs/04-governance/governance/harness-versioning.md](../../../docs/04-governance/governance/harness-versioning.md)
-  - [docs/04-governance/governance/entropy-janitors/README.md](../../../docs/04-governance/governance/entropy-janitors/README.md)
 - **Tooling:**
   - [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — `pnpm snapshot`
-  - [tools/entropy-janitors/README.md](../../../tools/entropy-janitors/README.md) — `pnpm janitors:*`
   - [`.kilo/harness-versions.json`](../../../.kilo/harness-versions.json) — registry
   - [scripts/ci-bump-harness-version.mjs](../../../scripts/ci-bump-harness-version.mjs) — bumper
 - **Workflows:**
   - `.github/workflows/ai-pr-checklist.yml` — on PR open/edit/reopen
-  - `.github/workflows/entropy-janitors.yml` — weekly Mon 06:00 UTC
   - `.github/workflows/harness-a-b.yml` — weekly Sun 00:00 UTC
 - **Skill integration:** §0.1 "Dynamic context" у
   [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md)

@@ -27,21 +27,36 @@ export function SharedElementMorphDemo() {
           <div className="flex-1 min-h-0 px-3 pt-2">
             <p className="text-style-caption text-muted mb-2">Хаб → Їжа</p>
             <div className="h-16 rounded-xl bg-panel border border-line flex items-center gap-2 px-3">
-              <span className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`, color }}>
+              <span
+                className="h-8 w-8 rounded-lg flex items-center justify-center"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)`,
+                  color,
+                }}
+              >
                 <Icon name="pie-chart" size={16} />
               </span>
               <span className="text-style-caption text-text">Їжа</span>
             </div>
-            <p className="text-2xs text-muted mt-3">Іконка просто зникає й зʼявляється зверху.</p>
+            <p className="text-2xs text-muted mt-3">
+              Іконка просто зникає й зʼявляється зверху.
+            </p>
           </div>
         </MiniPhone>
       }
       after={
         <MiniPhone>
           <div className="relative flex-1 min-h-0 px-3 pt-2 overflow-hidden">
-            <p className="text-style-caption text-muted mb-2">{open ? "Їжа" : "Хаб → Їжа"}</p>
+            <p className="text-style-caption text-muted mb-2">
+              {open ? "Їжа" : "Хаб → Їжа"}
+            </p>
             {/* tile (hidden when open) */}
-            <div className={cn("h-16 rounded-xl bg-panel border border-line flex items-center gap-2 px-3 transition-opacity", open && "opacity-0")}>
+            <div
+              className={cn(
+                "h-16 rounded-xl bg-panel border border-line flex items-center gap-2 px-3 transition-opacity",
+                open && "opacity-0",
+              )}
+            >
               <span className="h-8 w-8" />
               <span className="text-style-caption text-text">Їжа</span>
             </div>

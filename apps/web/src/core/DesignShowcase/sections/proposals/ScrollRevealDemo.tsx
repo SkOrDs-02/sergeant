@@ -2,15 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "../../../../shared/hooks/useReducedMotion";
 import { ComparePair, MiniPhone } from "./_Compare";
 
-function RevealRow({ index, reduced, animate }: { index: number; reduced: boolean; animate: boolean }) {
+function RevealRow({
+  index,
+  reduced,
+  animate,
+}: {
+  index: number;
+  reduced: boolean;
+  animate: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(reduced || !animate);
+  const [shown, setShown] = useState(false);
+  const isShown = reduced || !animate || shown;
 
   useEffect(() => {
-    if (reduced || !animate) {
-      setShown(true);
-      return;
-    }
+    if (reduced || !animate) return;
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
@@ -30,9 +36,10 @@ function RevealRow({ index, reduced, animate }: { index: number; reduced: boolea
       style={
         animate
           ? {
-              opacity: shown ? 1 : 0,
-              transform: shown ? "none" : "translateY(16px) scale(0.98)",
-              transition: "opacity 500ms ease, transform 500ms cubic-bezier(0.22,1,0.36,1)",
+              opacity: isShown ? 1 : 0,
+              transform: isShown ? "none" : "translateY(16px) scale(0.98)",
+              transition:
+                "opacity 500ms ease, transform 500ms cubic-bezier(0.22,1,0.36,1)",
               transitionDelay: `${(index % 3) * 60}ms`,
             }
           : undefined
@@ -44,10 +51,21 @@ function RevealRow({ index, reduced, animate }: { index: number; reduced: boolea
   );
 }
 
-function ScrollList({ animate, reduced }: { animate: boolean; reduced: boolean }) {
+function ScrollList({
+  animate,
+  reduced,
+}: {
+  animate: boolean;
+  reduced: boolean;
+}) {
   return (
-    <div data-scrollroot className="no-scrollbar h-full space-y-3 overflow-y-auto p-4">
-      <div className="pt-1 pb-1 text-style-caption uppercase tracking-wide text-muted">Активність</div>
+    <div
+      data-scrollroot
+      className="no-scrollbar h-full space-y-3 overflow-y-auto p-4"
+    >
+      <div className="pt-1 pb-1 text-style-caption uppercase tracking-wide text-muted">
+        Активність
+      </div>
       {Array.from({ length: 9 }).map((_, i) => (
         <RevealRow key={i} index={i} reduced={reduced} animate={animate} />
       ))}

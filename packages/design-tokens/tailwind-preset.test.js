@@ -101,21 +101,19 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
     });
   });
 
-  describe("borderRadius — v2 scale keys are present and don't clobber legacy", () => {
+  describe("borderRadius — canonical semantic scale", () => {
     const { borderRadius } = preset.theme.extend;
 
-    it("exposes the v2 r-* radius scale", () => {
-      expect(borderRadius["r-md"]).toBe("12px");
-      expect(borderRadius["r-lg"]).toBe("14px");
-      expect(borderRadius["r-xl"]).toBe("18px");
-      expect(borderRadius["r-2xl"]).toBe("24px");
+    it("does not expose the retired parallel r-* namespace", () => {
+      expect(borderRadius).not.toHaveProperty("r-md");
+      expect(borderRadius).not.toHaveProperty("r-lg");
+      expect(borderRadius).not.toHaveProperty("r-xl");
+      expect(borderRadius).not.toHaveProperty("r-2xl");
     });
 
-    it("keeps the legacy CONTROL/CARD/HERO contract distinct from r-*", () => {
-      // `2xl=16` is the legacy CONTROL value; `r-2xl=24` is the v2 hero
-      // value. They must NOT collide.
+    it("keeps the canonical CARD and HERO values", () => {
       expect(borderRadius["2xl"]).toBe("16px");
-      expect(borderRadius["2xl"]).not.toBe(borderRadius["r-2xl"]);
+      expect(borderRadius["3xl"]).toBe("24px");
     });
 
     it("full radius is the pill value", () => {

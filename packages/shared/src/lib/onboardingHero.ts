@@ -38,10 +38,7 @@
  * order they should win the slot.
  */
 export type OnboardingHeroId =
-  | "reengagement"
-  | "first-action"
-  | "soft-auth"
-  | "today-focus";
+  "reengagement" | "first-action" | "soft-auth" | "today-focus";
 
 /**
  * Eligibility flags for each candidate. Callers compute these from

@@ -52,7 +52,7 @@ export interface MeasurementEntry {
 }
 
 function uid() {
-  return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `m_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 // F3: min/max bounds guard against out-of-range PII writes (e.g. NaN,

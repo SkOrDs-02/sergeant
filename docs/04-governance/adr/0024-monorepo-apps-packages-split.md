@@ -153,7 +153,7 @@ pnpm + turbo ці глоби однаково підтримують, але п�
 ESLint resolver шукає `eslint-plugin-*` за naming convention.
 Перейменувати — означає писати ручний resolver. Не варте.
 
-**Audit-quote:** [2026-04-26 audit](../../90-work/audits/archive/2026-04-26-sergeant-audit-devin.md),
+**Audit-quote:** [2026-04-26 audit](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md),
 пункт 1: "5 apps + 9 `@sergeant/*` packages (+ `eslint-plugin-sergeant-design` = 10 total), `pnpm-workspace.yaml` чітко як `apps/*` +
 `packages/*`. … Domain packages — справжня доменна ізоляція, не fake." (`tools/openclaw` додано після audit-у — Telegram-bot для ops/marketing.)
 
@@ -225,5 +225,5 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
 
 - [pnpm — workspace globs](https://pnpm.io/workspaces)
 - [Monorepo Tools — comparison matrix](https://monorepo.tools/) — навіщо `apps/`+`packages/` стандартизована форма.
-- [`docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`](../../90-work/audits/archive/2026-04-26-sergeant-audit-devin.md) — пункт 1, "Архітектура монорепи".
+- [`docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md) — пункт 1, "Архітектура монорепи".
 - ADR-0023 — Turbo task-runner, що залежить від цього split-у.

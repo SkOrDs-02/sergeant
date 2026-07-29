@@ -3,12 +3,12 @@
 > **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
 > **Status:** Reference
 
-| Field        | Value                                                                                                                                                                                                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Severity** | High (H4 in `docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md`)                                                                                                                                         |
-| **Owner**    | platform                                                                                                                                                                                                           |
-| **Source**   | [`pr-10-better-auth-security-review`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)                                                                          |
-| **Related**  | [ADR-0042](../adr/0042-password-hashing-strategy.md), [ADR-0049](../adr/0049-auth-vendor-risk.md), [H4](hardening/archive/H4-encryption-key-rotation.md), [H3](hardening/archive/H3-session-revoke-and-binding.md) |
+| Field        | Value                                                                                                                                                                                                                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity** | High (H4 in `docs/90-work/initiatives/stack-pulse-2026-05/00-overview.md`)                                                                                                                                                   |
+| **Owner**    | platform                                                                                                                                                                                                                     |
+| **Source**   | [`pr-10-better-auth-security-review`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md) |
+| **Related**  | [ADR-0042](../adr/0042-password-hashing-strategy.md), [ADR-0049](../adr/0049-auth-vendor-risk.md), [H4](hardening/archive/H4-encryption-key-rotation.md), [H3](hardening/archive/H3-session-revoke-and-binding.md)           |
 
 ## Контекст
 
@@ -253,7 +253,7 @@ severity: high finding адресований у тому самому PR») tri
 - [H4 — encryption-key-rotation](hardening/archive/H4-encryption-key-rotation.md)
 - [H5 — trusted-origins-exp-scheme](hardening/archive/H5-trusted-origins-exp-scheme.md)
 - [H6 — email-verification](hardening/archive/H6-email-verification.md)
-- [`pr-10-better-auth-security-review`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
+- [`pr-10-better-auth-security-review`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
 - [Better Auth changelog](https://better-auth.com/changelog)
 - [Safari ITP cookie policy](https://webkit.org/tracking-prevention/)
 - [OWASP ASVS authentication chapter](https://owasp.org/www-project-application-security-verification-standard/)

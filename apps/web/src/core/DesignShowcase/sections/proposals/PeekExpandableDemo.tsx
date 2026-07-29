@@ -39,7 +39,9 @@ export function PeekExpandableDemo() {
               <span className="h-6 w-6 rounded-md bg-finyk-soft text-finyk flex items-center justify-center">
                 <Icon name="wallet" size={14} />
               </span>
-              <span className="text-style-label text-text">Останні витрати</span>
+              <span className="text-style-label text-text">
+                Останні витрати
+              </span>
               <span className="ml-auto text-2xs text-subtle tabular-nums">
                 {ITEMS.length} шт
               </span>
@@ -75,10 +77,7 @@ export function PeekExpandableDemo() {
               aria-expanded={open}
             >
               {open ? "Згорнути" : `Ще ${hidden}`}
-              <Icon
-                name={open ? "chevron-up" : "chevron-down"}
-                size={14}
-              />
+              <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
             </button>
           </div>
         </div>

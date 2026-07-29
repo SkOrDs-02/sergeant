@@ -11,12 +11,12 @@
 >
 > **Не редагуй цей файл** окрім: (а) `Last validated:` bump, (б) додавання історичних retro-нотаток. Status-update-и поточних спринтів — у master tracker §2.
 
-> Implementation roadmap для 22 рекомендацій з [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) + 13 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §7a).
+> Implementation roadmap для 22 рекомендацій з [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) + 13 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §7a).
 > 6 спринтів × 2 тижні (+S0 1 тиждень, +S5 опційний) ≈ 12–14 тижнів.
 > Ціль: **2–3× activation funnel** (з baseline >25% до >40-60% per [`01-monetization-and-pricing.md`](../../business/01-monetization-and-pricing.md)).
 >
 > **Cross-refs:**
-> [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
+> [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
 > [`01-monetization-and-pricing.md` §7](../../business/01-monetization-and-pricing.md) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../../business/04-launch-readiness.md) — funnel definitions ·
 > [`docs/04-governance/governance/feature-flags.md`](../../../../04-governance/governance/feature-flags.md) — flag conventions ·
@@ -251,7 +251,7 @@
 
 ## 7a. Sprint 6 — Cleanup batch (раніше прогавлене) (2 тижні)
 
-**Goal:** Закрити 13 пунктів аудиту [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../../../../90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), що або **не дійшли до P0/P1/P2 numbered-списку** (body-only items у §2.x), або **не дійшли до PR-розбивки у sprint-plan** (numbered, але без рядка). Відкрито після систематичної перевірки 2026-05-04; доповнено 3 пунктами (B-2, B-10, B-11) при ревізії 2026-05-05.
+**Goal:** Закрити 13 пунктів аудиту [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), що або **не дійшли до P0/P1/P2 numbered-списку** (body-only items у §2.x), або **не дійшли до PR-розбивки у sprint-plan** (numbered, але без рядка). Відкрито після систематичної перевірки 2026-05-04; доповнено 3 пунктами (B-2, B-10, B-11) при ревізії 2026-05-05.
 
 ### Класифікація
 

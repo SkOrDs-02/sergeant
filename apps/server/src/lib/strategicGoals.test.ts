@@ -60,17 +60,15 @@ function mockPool(rows: FakeRow[]): {
   pool: Pool;
   queryFn: ReturnType<typeof vi.fn>;
 } {
-  const queryFn = vi.fn(
-    async <T extends QueryResultRow = QueryResultRow>(): Promise<
-      QueryResult<T>
-    > => ({
-      rows: rows as unknown as T[],
-      rowCount: rows.length,
-      command: "INSERT",
-      oid: 0,
-      fields: [],
-    }),
-  );
+  const queryFn = vi.fn(async <
+    T extends QueryResultRow = QueryResultRow,
+  >(): Promise<QueryResult<T>> => ({
+    rows: rows as unknown as T[],
+    rowCount: rows.length,
+    command: "INSERT",
+    oid: 0,
+    fields: [],
+  }));
   const pool = { query: queryFn } as unknown as Pool;
   return { pool, queryFn };
 }

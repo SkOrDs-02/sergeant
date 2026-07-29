@@ -29,7 +29,6 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
     <View className="mb-4">
       <View className={timeVisible ? "flex-row gap-3" : ""}>
         <View className={timeVisible ? "flex-1" : ""}>
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- form label */}
           <Text className="text-xs font-bold uppercase text-fg-muted mb-1 tracking-wider">
             Назва страви
           </Text>
@@ -69,7 +68,6 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
         </View>
         {timeVisible ? (
           <View className="w-24">
-            {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- form label */}
             <Text className="text-xs font-bold uppercase text-fg-muted mb-1 tracking-wider">
               Час
             </Text>

@@ -64,9 +64,6 @@ export function WeekDayStrip({
                   isToday && !isSel && "ring-1 ring-routine/40",
                 )}
               >
-                {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                    Day-of-week caption at text-style-caption inside a compact day-picker
-                    tile — smaller than SectionHeading xs's text-style-caption. */}
                 <span className="text-style-caption uppercase tracking-wide text-subtle">
                   {short[i]}
                 </span>

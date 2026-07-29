@@ -432,19 +432,14 @@ function BentoCardPeek({
   if (!actions || actions.length === 0) return null;
 
   return (
-    // Outer dialog wrapper: role="dialog" + aria-modal satisfies both the
-    // a11y spec and sergeant-design/no-bare-fixed-inset-modal.
-    // The backdrop button sits inside this dialog context, so the lint rule
-    // does not flag `fixed inset-0` as a bare overlay.
+    // Outer dialog wrapper provides the required modal semantics.
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`Швидкі дії: ${config.label}`}
     >
       {/* Invisible backdrop — tap anywhere outside to dismiss.
-          role="presentation" satisfies sergeant-design/no-bare-fixed-inset-modal.
           jsx-a11y permits onClick/onKeyDown on role="presentation" elements. */}
-      {}
       <div
         role="presentation"
         aria-hidden="true"

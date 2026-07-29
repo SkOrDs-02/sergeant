@@ -38,9 +38,7 @@ const ajv = new Ajv({ allErrors: true, strict: false });
 ajv.addSchema(document, "openapi://sergeant");
 
 type RoundtripRoute =
-  | "/api/me"
-  | "/api/billing/status"
-  | "/api/billing/providers";
+  "/api/me" | "/api/billing/status" | "/api/billing/providers";
 
 function responseValidator(
   route: RoundtripRoute,

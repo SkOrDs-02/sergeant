@@ -366,19 +366,20 @@ function main() {
   const schemaErrs = validate(registry, schema);
   for (const e of schemaErrs) errors.push(`schema: ${e}`);
 
-  // 2. Dense numbering
+  // 2. Stable numbering. Retired rules leave intentional gaps; ids are never
+  // reused because old PRs and audit evidence link to those numbers.
   if (Array.isArray(registry.rules)) {
     const ids = registry.rules
       .map((r) => r?.id)
       .filter((n) => Number.isInteger(n));
     const sorted = [...ids].sort((a, b) => a - b);
-    for (let i = 0; i < sorted.length; i++) {
-      if (sorted[i] !== i + 1) {
-        errors.push(
-          `numbering: rule ids are not dense 1..N — found ${sorted.join(",")}`,
-        );
-        break;
-      }
+    if (
+      ids.some((id) => id < 1) ||
+      ids.some((id, index) => id !== sorted[index])
+    ) {
+      errors.push(
+        `numbering: rule ids must be positive and ascending — found ${ids.join(",")}`,
+      );
     }
     const seen = new Set();
     for (const id of ids) {

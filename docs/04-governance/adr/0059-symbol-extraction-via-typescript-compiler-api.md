@@ -1,17 +1,17 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
 > **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active
+> **Status:** Deprecated
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-05-15
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
   - [`docs/04-governance/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md)
-  - [`scripts/docs/generate-symbol-catalog.mjs`](../../../scripts/docs/generate-symbol-catalog.mjs)
-  - [`docs/04-governance/governance/schemas/symbol-catalog.schema.json`](../governance/schemas/symbol-catalog.schema.json)
+  - [`scripts/docs/generate-symbol-catalog.mjs`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/scripts/docs/generate-symbol-catalog.mjs)
+  - [`docs/04-governance/governance/schemas/symbol-catalog.schema.json`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/04-governance/governance/schemas/symbol-catalog.schema.json)
 
 ---
 
@@ -95,7 +95,7 @@ Hybrid не обираємо — entry-AST + cross-package regex вже є де-
 
 ## Links
 
-- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 2
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

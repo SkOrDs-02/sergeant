@@ -447,5 +447,5 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 - [`docs/00-start/agents/README.md`](./README.md) — індекс agent-OS docs.
 - [`docs/00-start/agents/agent-skills-catalog.md`](./agent-skills-catalog.md) — поточна skill-routing таблиця.
-- [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](../../90-work/initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
+- [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
 - [`docs/04-governance/governance/audit-freeze-2026-05-05.md`](../../04-governance/governance/audit-freeze-2026-05-05.md) — чому це не initiative.

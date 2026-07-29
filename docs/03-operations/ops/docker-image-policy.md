@@ -143,6 +143,6 @@ Native-binding deps (наприклад `sharp`) — НЕ у поточному 
 - [`Dockerfile.api`](../../../Dockerfile.api) — Hub API multi-stage build.
 - [`.github/workflows/container-scan.yml`](../../../.github/workflows/container-scan.yml) — Trivy CI gate.
 - [`.github/workflows/deploy-api.yml`](../../../.github/workflows/deploy-api.yml) — CI build → ghcr.io → Coolify.
-- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](../../90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
+- [`docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-30-dockerfile-cleanup-cve.md) — PR-30 design doc.
 - [`docs/04-governance/security/hardening/L13-docker-platform-pin.md`](../../04-governance/security/hardening/archive/L13-docker-platform-pin.md) — `--platform=linux/amd64` pin policy.
 - [Distroless images](https://github.com/GoogleContainerTools/distroless) — upstream README.

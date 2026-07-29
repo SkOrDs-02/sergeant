@@ -40,14 +40,28 @@ describe("WheelPicker", () => {
 
   it("ArrowUp selects the next-larger value", () => {
     const onChange = vi.fn();
-    render(<WheelPicker values={VALUES} value={50} onChange={onChange} aria-label="v" />);
+    render(
+      <WheelPicker
+        values={VALUES}
+        value={50}
+        onChange={onChange}
+        aria-label="v"
+      />,
+    );
     fireEvent.keyDown(screen.getByRole("spinbutton"), { key: "ArrowUp" });
     expect(onChange).toHaveBeenCalledWith(75);
   });
 
   it("ArrowDown selects the next-smaller value", () => {
     const onChange = vi.fn();
-    render(<WheelPicker values={VALUES} value={50} onChange={onChange} aria-label="v" />);
+    render(
+      <WheelPicker
+        values={VALUES}
+        value={50}
+        onChange={onChange}
+        aria-label="v"
+      />,
+    );
     fireEvent.keyDown(screen.getByRole("spinbutton"), { key: "ArrowDown" });
     expect(onChange).toHaveBeenCalledWith(25);
   });
@@ -55,19 +69,38 @@ describe("WheelPicker", () => {
   it("clamps at the bounds", () => {
     const onChange = vi.fn();
     const { rerender } = render(
-      <WheelPicker values={VALUES} value={0} onChange={onChange} aria-label="v" />,
+      <WheelPicker
+        values={VALUES}
+        value={0}
+        onChange={onChange}
+        aria-label="v"
+      />,
     );
     fireEvent.keyDown(screen.getByRole("spinbutton"), { key: "ArrowDown" });
     expect(onChange).not.toHaveBeenCalled(); // already at min
 
-    rerender(<WheelPicker values={VALUES} value={150} onChange={onChange} aria-label="v" />);
+    rerender(
+      <WheelPicker
+        values={VALUES}
+        value={150}
+        onChange={onChange}
+        aria-label="v"
+      />,
+    );
     fireEvent.keyDown(screen.getByRole("spinbutton"), { key: "ArrowUp" });
     expect(onChange).not.toHaveBeenCalled(); // already at max
   });
 
   it("Home/End jump to first/last", () => {
     const onChange = vi.fn();
-    render(<WheelPicker values={VALUES} value={50} onChange={onChange} aria-label="v" />);
+    render(
+      <WheelPicker
+        values={VALUES}
+        value={50}
+        onChange={onChange}
+        aria-label="v"
+      />,
+    );
     const spin = screen.getByRole("spinbutton");
     fireEvent.keyDown(spin, { key: "End" });
     expect(onChange).toHaveBeenLastCalledWith(150);
@@ -77,7 +110,14 @@ describe("WheelPicker", () => {
 
   it("PageUp/PageDown move by 5 steps (clamped)", () => {
     const onChange = vi.fn();
-    render(<WheelPicker values={VALUES} value={50} onChange={onChange} aria-label="v" />);
+    render(
+      <WheelPicker
+        values={VALUES}
+        value={50}
+        onChange={onChange}
+        aria-label="v"
+      />,
+    );
     const spin = screen.getByRole("spinbutton");
     fireEvent.keyDown(spin, { key: "PageUp" }); // index 2 + 5 = 7 → clamp 6 → 150
     expect(onChange).toHaveBeenLastCalledWith(150);
@@ -86,9 +126,19 @@ describe("WheelPicker", () => {
   });
 
   it("highlights the nearest value when value is not an exact member", () => {
-    render(<WheelPicker values={VALUES} value={60} onChange={() => {}} aria-label="v" />);
+    render(
+      <WheelPicker
+        values={VALUES}
+        value={60}
+        onChange={() => {}}
+        aria-label="v"
+      />,
+    );
     // nearest to 60 is 50 (dist 10) vs 75 (dist 15)
-    expect(screen.getByRole("spinbutton")).toHaveAttribute("aria-valuenow", "50");
+    expect(screen.getByRole("spinbutton")).toHaveAttribute(
+      "aria-valuenow",
+      "50",
+    );
   });
 
   it("does not respond to keys when disabled", () => {
@@ -116,6 +166,9 @@ describe("WheelPicker", () => {
         aria-label="v"
       />,
     );
-    expect(screen.getByRole("spinbutton")).toHaveAttribute("aria-valuetext", "50g");
+    expect(screen.getByRole("spinbutton")).toHaveAttribute(
+      "aria-valuetext",
+      "50g",
+    );
   });
 });

@@ -4,7 +4,7 @@
 > **Status:** Reference — deliverable завершено; виконувані залишки консолідовані в `product-knowledge-backlog.md`.
 
 > **Що це.** Звіт тріангуляції «founder ↔ документація ↔ код» по модулю finyk
-> за спекою [`docs/90-work/planning/specs/product-knowledge-audit.md`](../planning/archive/specs/product-knowledge-audit.md).
+> за спекою [`docs/90-work/planning/specs/product-knowledge-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/specs/product-knowledge-audit.md).
 > Канон, який цей аудит породив: [`docs/01-product/model/finyk.md`](../../01-product/model/finyk.md).
 >
 > **Метод.** 37 питань банку (§3 спеки) поставлені трьом незалежним колонкам:

@@ -28,7 +28,7 @@ export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
     calf_r_cm: "calfRCm",
   };
   const entry: MeasurementEntry = {
-    id: `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `m_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     at: new Date().toISOString(),
   };
   const changed: string[] = [];

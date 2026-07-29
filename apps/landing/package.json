@@ -16,8 +16,7 @@
     "@sergeant/shared": "workspace:*",
     "posthog-js": "^1.399.2",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "react-router-dom": "^7.9.0"
+    "react-dom": "^18.3.0"
   },
   "devDependencies": {
     "@sergeant/design-tokens": "workspace:*",

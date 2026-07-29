@@ -220,8 +220,7 @@ export function getReplicaPoolStats() {
  * решта reason-ів дзеркалять `EndPoolResult` від primary-drain-у.
  */
 export type DrainReplicaResult =
-  | EndPoolResult
-  | { ok: true; reason: "skipped" };
+  EndPoolResult | { ok: true; reason: "skipped" };
 
 /**
  * Bounded drain для replica pool під час graceful shutdown. No-op (повертає

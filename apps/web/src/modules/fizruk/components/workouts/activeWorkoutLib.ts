@@ -5,7 +5,7 @@
 
 /** Generate a short collision-safe id for client-side groups / sets. */
 export function uid(prefix = "id") {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**

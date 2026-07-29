@@ -8,7 +8,7 @@
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
   - [`docs/04-governance/adr/0058-knowledge-graph-schema.md`](./0058-knowledge-graph-schema.md) — graph schema with `pr` node type
   - [`scripts/docs/generate-open-work.mjs`](../../../scripts/docs/generate-open-work.mjs) — existing forward extractor (docs → PR mentions)
   - [`.github/workflows/pr-backlinks.yml`](../../../.github/workflows/pr-backlinks.yml) — implementation
@@ -107,7 +107,7 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 ## Links
 
-- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 5
 - [`docs/04-governance/governance/schemas/pr-ledger.schema.json`](../governance/schemas/pr-ledger.schema.json)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->

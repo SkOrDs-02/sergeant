@@ -27,7 +27,7 @@ node scripts/strip-js-extensions.mjs --write    # apply in-place
 
 Codemods — це **одноразові міграційні інструменти**, не CI tooling. Вони не дзвоняться з `package.json` чи з GitHub Actions. Тримання їх поряд із operational scripts (`check-*`, `lint-*`, `generate-*`) розмиває межу "що з цього бажано видалити після виконання". `scripts/codemods/<name>/` чітко сигналізує: «це історичний artefact; зберігається на випадок forensics або re-run на окремому файловому дереві».
 
-Конвенція тут — це **не** Hard Rule, а acceptable practice, виявлена в [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md`](../../../docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) §3.
+Конвенція тут — це **не** Hard Rule, а acceptable practice, виявлена в [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) §3.
 
 ## Idempotency
 
@@ -57,4 +57,4 @@ node scripts/codemods/strip-js-extensions/script.mjs --write    # apply
 ## Related
 
 - [`docs/90-work/tech-debt/frontend.md` § 3](../../../docs/90-work/tech-debt/frontend.md) — historical context (виконану секцію позначено strikethrough).
-- [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md` §3](../../../docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) — пропозиція винести codemods у `scripts/codemods/` (закрито цим PR).
+- [`docs/90-work/audits/2026-05-02-doc-hygiene-audit.md` §3](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-02-doc-hygiene-audit.md) — пропозиція винести codemods у `scripts/codemods/` (закрито цим PR).

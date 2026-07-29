@@ -89,7 +89,7 @@
 3. If the user explicitly asks for agents, run `docs-governance-auditor`.
 4. Ask it to inspect active trackers, source audits, canonical-owner links, generated catalogs, and lifecycle/header drift.
 5. Implement only after the auditor returns concrete file/status recommendations.
-6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-graph`) and run the matching `--check` scripts.
+6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-repo-map`) and run the matching `--check` scripts.
 
 ## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
 
@@ -102,9 +102,9 @@ Use when the trigger is «check that docs aren't lagging behind code» / «recon
 1. Start with `sergeant-start-here`; load `sergeant-tech-debt` (governing skill for docs hygiene).
 2. **Inventory (serial, once).** Regenerate every dashboard so drift is computed against live state, not cache:
    - `pnpm docs:gen-daily` (open-work + today + trust-badge), `pnpm docs:gen-initiative-followups`.
-   - Run the code-derived catalog `--check`s to surface "docs lagging code": `docs:check-symbols`, `docs:check-repo-map`, `docs:check-service-catalog`, `docs:check-graph`, `docs:check-architecture-diagrams`. Any failure = regenerate with the matching `gen` script (mechanical, safe).
+   - Run the maintained code-derived catalog `--check`s to surface "docs lagging code": `docs:check-repo-map`, `docs:check-service-catalog`. Any failure = regenerate with the matching `gen` script (mechanical, safe).
    - Run the docs-derived `--check`s: `docs:check-open-work`, `docs:check-initiative-followups`, `docs:check-freshness-cadence`, `docs:check-links`.
-3. **Split the inventory into disjoint surfaces** so parallel agents never touch the same file. One owner per tracker directory: `docs/90-work/initiatives`, `docs/90-work/planning`, `docs/90-work/audits` + `docs/04-governance/security/hardening`, `docs/01-product/launch`. **Never** hand an agent an `AUTO-GENERATED` file (`open-work.md`, `follow-ups.md`, `today.md`, `*.auto.json`, `symbol-index.*`) — those are regenerated in step 5, not edited.
+3. **Split the inventory into disjoint surfaces** so parallel agents never touch the same file. One owner per tracker directory: `docs/90-work/initiatives`, `docs/90-work/planning`, `docs/90-work/audits` + `docs/04-governance/security/hardening`, `docs/01-product/launch`. **Never** hand an agent an `AUTO-GENERATED` file (`open-work.md`, `follow-ups.md`, `today.md`, `*.auto.json`) — those are regenerated in step 5, not edited.
 4. **Fan out (parallel).** Spawn one read-only analysis agent per surface. Each agent: for every `Active`/`In progress`/`Draft` doc in its directory, (a) check whether all `#NNNN` PR-mentions are merged (`docs/04-governance/pr-ledger/index.json`); (b) grep `main` for evidence that `- [ ]` items are actually shipped; (c) return **precise, evidence-backed edits only** — which checkboxes to flip to `- [x]`, which `> **Status:**` headers to close, which `Next review` dates are stale. Conservative bias: when evidence is ambiguous, leave the doc unchanged and report it as "needs human". Do **not** archive in this sweep (archival is a separate, ≥90-day-gated pass — see playbook §5).
 5. **Apply + regenerate (serial).** Apply the high-confidence edits, then regenerate the dashboards (`pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`) so closed docs drop out of `open-work.md`.
 6. **Verify (serial).** Run the playbook's Verification gates: `docs:check-open-work`, `docs:check-initiative-followups`, `lint:initiative-status-sync`, `docs:check-links`, `docs:check-freshness-cadence`, plus every regenerated catalog's `--check`. Land the whole sweep as **one PR** (all surfaces are docs-sync; no feature work mixed in).
@@ -119,8 +119,8 @@ Use when the trigger is «виконай N тасків з планінгу» / 
 4. **Fan out (parallel, read-only first).** One analysis agent per surface verifies which cards are genuinely shipped (`main` + pr-ledger) and which docs are fully complete; returns precise, evidence-backed recommendations only (ambiguous → "needs human").
 5. **Execute code cards.** Independent cards run as parallel Agent Team teammates; a single cross-surface card stays a sequential `sergeant-deliver-squad` chain (migration → server → api-client → web/mobile). `pnpm typecheck` after each surface.
 6. **Apply + regenerate (serial).** Flip completed cards' `Status` to `✅ Виконано` with PR/commit evidence; regenerate `pnpm docs:gen-daily`.
-7. **Fast-forward archive (conditional).** Only when work drove a doc to fully complete (follow-ups closed, no open `- [ ]`): move it to `docs/90-work/planning/archive/` immediately, skipping the 90-day gate per standing founder approval (`docs/90-work/initiatives/README.md`). Apply archive frontmatter, fix inbound links. If nothing qualifies, archival is a deliberate no-op.
-8. **Verify (serial).** `docs:check-open-work`, `docs:check-today`, `docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-links`, `lint:archive-move-depth` (if archived). Land the whole batch as **one PR** on the batch branch.
+7. **Close completed docs (conditional).** Only when work drove a doc to fully complete (follow-ups closed, no open `- [ ]`): record completion evidence, merge it, then remove the frozen tracker in a follow-up so history remains in Git. If nothing qualifies, cleanup is a deliberate no-op.
+8. **Verify (serial).** `docs:check-open-work`, `docs:check-today`, `docs:check-freshness-single-marker`, `docs:check-freshness-cadence`, `docs:check-links`. Land the whole batch as **one PR** on the batch branch.
 
 ## 13. Single-Surface Specialist Playbooks
 

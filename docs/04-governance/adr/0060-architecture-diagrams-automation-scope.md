@@ -1,16 +1,16 @@
 # ADR-0060: Architecture diagrams — automation scope (workspace graph only)
 
 > **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active
+> **Status:** Deprecated
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-05-15
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
   - [`docs/02-engineering/architecture/diagrams/README.md`](../../02-engineering/architecture/diagrams/README.md) — C4 model policy
-  - [`docs/04-governance/governance/symbol-index.json`](../governance/symbol-index.json) — input source (Phase 2)
+  - [`docs/04-governance/governance/symbol-index.json`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/04-governance/governance/symbol-index.json) — input source (Phase 2)
   - [`docs/04-governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md`](./0059-symbol-extraction-via-typescript-compiler-api.md)
 
 ---
@@ -94,7 +94,7 @@ Initiative 0014 §Phase 4 спочатку планував auto-gen C3 і C4 а
 
 ## Links
 
-- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md) §Phase 4
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

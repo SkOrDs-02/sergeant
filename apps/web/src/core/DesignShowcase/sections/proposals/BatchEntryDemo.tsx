@@ -51,7 +51,9 @@ export function BatchEntryDemo() {
         <MiniPhone dim>
           <SheetShell>
             <div className="px-3 mb-2">
-              <div className="text-style-label text-text mb-1">Нова витрата</div>
+              <div className="text-style-label text-text mb-1">
+                Нова витрата
+              </div>
               <div className="rounded-xl border border-line bg-panel px-3 py-2 text-style-title text-text tabular-nums">
                 120 ₴
               </div>

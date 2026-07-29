@@ -108,7 +108,6 @@ describe("formatApiError", () => {
     const err = new ApiError({
       kind: "parse",
       message: "Unexpected token <",
-      // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- literal HTML fixture, not user-facing copy
       bodyText: "<!doctype html><html>...</html>",
       url: URL,
     });

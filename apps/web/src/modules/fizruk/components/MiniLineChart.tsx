@@ -39,6 +39,28 @@ export function MiniLineChart({
     (d: MiniLineChartDataPoint) =>
       d.value != null && Number.isFinite(Number(d.value)),
   );
+  const w = 320;
+  const h = 100;
+  const padL = 40;
+  const padR = 8;
+  const padT = 10;
+  const padB = 28;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const n = data.length;
+  const step = innerW / (n - 1 || 1);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => data.map((_, index) => padL + index * step),
+    [data, step],
+  );
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: data.length,
+    xPositions,
+    viewBoxWidth: w,
+  });
+
   if (valid.length === 0) {
     return (
       <EmptyState
@@ -64,17 +86,6 @@ export function MiniLineChart({
   const minVal = Math.min(...vals);
   const maxVal = Math.max(...vals);
   const range = maxVal - minVal || 1;
-
-  const w = 320;
-  const h = 100;
-  const padL = 40;
-  const padR = 8;
-  const padT = 10;
-  const padB = 28;
-  const innerW = w - padL - padR;
-  const innerH = h - padT - padB;
-  const n = data.length;
-  const step = innerW / (n - 1 || 1);
 
   // Map each data point to x,y (null points get x position but no y)
   const points: MappedPoint[] = data.map(
@@ -143,21 +154,6 @@ export function MiniLineChart({
     labelIndices.add(Math.floor((2 * n) / 3));
   }
 
-  // #1 — scrubbing
-  const svgRef = useRef<SVGSVGElement>(null);
-  const xPositions = useMemo(
-    () => points.map((p) => p.x),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [n, padL, step],
-  );
-
-  const { activeIndex, scrubX, bind } = useChartScrub({
-    svgRef,
-    pointCount: points.length,
-    xPositions,
-    viewBoxWidth: w,
-  });
-
   const activePoint = activeIndex !== null ? points[activeIndex] : null;
   const activeDotY = activePoint?.y ?? undefined;
   const activeVal = activePoint?.v;
@@ -165,7 +161,10 @@ export function MiniLineChart({
   // #2 — goal line y-position (clamp to visible range)
   const goalY =
     goalValue !== undefined
-      ? padT + innerH - ((Math.min(Math.max(goalValue, minVal), maxVal) - minVal) / range) * innerH
+      ? padT +
+        innerH -
+        ((Math.min(Math.max(goalValue, minVal), maxVal) - minVal) / range) *
+          innerH
       : undefined;
 
   return (
@@ -268,22 +267,24 @@ export function MiniLineChart({
         })}
 
         {/* #1 — scrub crosshair + tooltip */}
-        {activePoint != null && activeDotY !== undefined && activeVal !== null && activeVal !== undefined && (
-          <ChartScrubOverlay
-            x={scrubX}
-            top={padT}
-            bottom={padT + innerH}
-            dotY={activeDotY}
-            dotColor={color}
-            label={`${activeVal.toFixed(1)} ${unit}`}
-            subLabel={activePoint.label}
-            viewBoxWidth={w}
-            flipNearEdge={true}
-          />
-        )}
+        {activePoint != null &&
+          activeDotY !== undefined &&
+          activeVal !== null &&
+          activeVal !== undefined && (
+            <ChartScrubOverlay
+              x={scrubX}
+              top={padT}
+              bottom={padT + innerH}
+              dotY={activeDotY}
+              dotColor={color}
+              label={`${activeVal.toFixed(1)} ${unit}`}
+              subLabel={activePoint.label}
+              viewBoxWidth={w}
+              flipNearEdge={true}
+            />
+          )}
       </svg>
 
-      {}
       <div id={summaryId} className="sr-only">
         <p>
           Тренд {metricLabel}. Поточне значення: {lastValid.value} {unit}.
@@ -299,7 +300,6 @@ export function MiniLineChart({
           ))}
         </ul>
       </div>
-      {}
 
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-xl font-extrabold tabular-nums text-text">

@@ -44,9 +44,7 @@ export const DEFAULT_PROMPT_DURATION_MS = 6000;
  * system catches typos at every call-site.
  */
 export type CrossModulePromptId =
-  | "finyk-restaurant-to-meal"
-  | "finyk-food-to-meal"
-  | "fizruk-finish-to-meal";
+  "finyk-restaurant-to-meal" | "finyk-food-to-meal" | "fizruk-finish-to-meal";
 
 interface PromptRecord {
   /** Timestamps (ms) of the last few dismiss events, oldest → newest. */

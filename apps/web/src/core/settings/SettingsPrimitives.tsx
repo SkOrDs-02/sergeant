@@ -169,7 +169,6 @@ export function SettingsSubGroup({
         )}
       >
         <ChevronIcon expanded={open} />
-        {}
         <span className="text-style-overline text-text group-hover:text-brand-strong transition-colors">
           {title}
         </span>

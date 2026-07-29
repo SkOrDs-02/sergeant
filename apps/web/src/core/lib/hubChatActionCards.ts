@@ -185,7 +185,7 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   const data = QUERY_TOOLS.has(input.name);
 
   return {
-    id: `card_${input.name}_${Math.random().toString(36).slice(2, 10)}`,
+    id: `card_${input.name}_${crypto.randomUUID()}`,
     toolName: input.name,
     status,
     title,

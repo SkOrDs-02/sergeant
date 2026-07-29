@@ -40,24 +40,6 @@ export const crossSurfaceBlocks = [
       "import/extensions": ["error", "never"],
     },
   },
-  // DS primitives that legitimately define the eyebrow treatment.
-  // SectionHeading owns the uppercase+tracking+text size tokens, Label
-  // owns the field-label eyebrow variant, and chartTheme defines the
-  // tooltip label token — all three are the single source-of-truth
-  // callers should import from. Mobile mirrors the same primitive at
-  // `apps/mobile/src/components/ui/SectionHeading.tsx`; treat both
-  // platforms' source-of-truth files identically.
-  {
-    files: [
-      "apps/web/src/shared/components/ui/SectionHeading.tsx",
-      "apps/web/src/shared/components/ui/FormField.tsx",
-      "apps/web/src/shared/charts/chartTheme.ts",
-      "apps/mobile/src/components/ui/SectionHeading.tsx",
-    ],
-    rules: {
-      "sergeant-design/no-eyebrow-drift": "off",
-    },
-  },
   // Jest setup / test files need jest globals.
   {
     files: [
@@ -457,31 +439,6 @@ export const crossSurfaceBlocks = [
     ],
     rules: {
       "sergeant-design/no-raw-storage-key": "warn",
-    },
-  },
-  // Theme 2 (consolidated audit 2026-05-13): `no-small-button-touch-target` —
-  // warn-level gate for raw `<button>` elements with height/size classes below
-  // 44px without a touch-target compensator. WCAG 2.5.5 requires ≥ 44×44px.
-  // Use the `Button` primitive (auto-applies `pointer-coarse:min-h-[44px]`) or
-  // add `min-h-[44px] min-w-[44px]` manually. The rule is `warn` because some
-  // call-sites are data-cell contexts (calendar cells, chart bars) where 44px
-  // would break layout. Burn-down: 2026-Q3.
-  // See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 2.
-  {
-    files: [
-      "apps/web/src/**/*.{ts,tsx}",
-      "apps/mobile/src/**/*.{ts,tsx}",
-      "apps/mobile/app/**/*.{ts,tsx}",
-    ],
-    ignores: [
-      "apps/web/src/**/*.test.{ts,tsx}",
-      "apps/web/src/**/__tests__/**",
-      "apps/web/src/**/*.stories.{ts,tsx}",
-      "apps/mobile/src/**/*.test.{ts,tsx}",
-      "apps/mobile/src/**/__tests__/**",
-    ],
-    rules: {
-      "sergeant-design/no-small-button-touch-target": "warn",
     },
   },
   // Theme 1 (consolidated audit 2026-05-13) — `new Date()` guard.

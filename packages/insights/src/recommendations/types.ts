@@ -16,11 +16,7 @@ import type { ModuleAccent, StatusColor } from "@sergeant/design-tokens";
  * правди є цей пакет, `hubNav.ts` реекспортує звідси.
  */
 export type HubModuleAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_meal_photo"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
 
 export type Module = ModuleAccent | "hub";
 export type RecSeverity = StatusColor;

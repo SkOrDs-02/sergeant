@@ -88,11 +88,9 @@ flowchart TD
 
 Застосуй високовпевнені правки: переведи `- **Status:**` завершених карток у `✅ Виконано` з посиланням на PR/commit + однорядкова нотатка-доказ; перенеси відповідні `Last validated:` маркери (рівно один маркер на док). Потім перегенеруй дашборди (`pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`), щоб закриті доки випали з `open-work.md`.
 
-### 6. Fast-forward архівація (skip 90-day gate)
+### 6. Cleanup завершених planning-доків
 
-Архівуй planning-док **лише коли** робота довела його до повністю виконано: follow-up-и закриті, немає відкритих `- [ ]`, док став frozen-снапшотом. Тоді переноси у [`docs/90-work/planning/archive/`](../../90-work/planning/archive) **одразу — без 90-денного stabilization-вікна.** Founder має standing-дозвіл на fast-forward (прецедент: [`docs/90-work/initiatives/README.md`](../../90-work/initiatives/README.md) — «90-day waiting period skipped за рішенням founder-а», батчі 2026-05-13 і 2026-06-01).
-
-При переносі застав archive-frontmatter з [`docs/90-work/planning/README.md`](../../90-work/planning/README.md) § Конвенція архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) і онови inbound-лінки на `archive/`-шлях. Якщо жоден док не дотягнув до повністю виконано цього прогону — архівація це свідомий no-op; **ніколи не форсуй її** за віком чи «виглядає старим».
+Planning-док готовий до cleanup лише коли follow-up-и закриті, немає відкритих `- [ ]`, Outcome і PR/commit evidence зафіксовані та merged. Після цього окремим cleanup-комітом видали frozen snapshot і переведи inbound references на immutable commit permalink. Якщо жоден док не дотягнув до повністю виконаного стану — cleanup є свідомим no-op.
 
 ### 7. Верифікація + один PR
 

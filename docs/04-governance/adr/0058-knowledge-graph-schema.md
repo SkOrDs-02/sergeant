@@ -1,15 +1,15 @@
 # ADR-0058: Knowledge graph schema and storage format
 
 > **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active
+> **Status:** Deprecated
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-05-15
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
-  - [`docs/04-governance/governance/schemas/knowledge-graph.schema.json`](../governance/schemas/knowledge-graph.schema.json)
+  - [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
+  - [`docs/04-governance/governance/schemas/knowledge-graph.schema.json`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/04-governance/governance/schemas/knowledge-graph.schema.json)
   - [`scripts/docs/check-adr-graph.mjs`](../../../scripts/docs/check-adr-graph.mjs) — existing ADR-only graph validator
   - [`scripts/docs/generate-open-work.mjs`](../../../scripts/docs/generate-open-work.mjs) — existing one-way `docs → PR` extractor
   - [`docs/04-governance/adr/0045-hard-rules-taxonomy.md`](./0045-hard-rules-taxonomy.md) — precedent for JSON registry as source of truth
@@ -86,7 +86,7 @@ Sergeant має 7 розрізнених каталогів артефактів
 
 ## Links
 
-- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](../../90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
+- [`docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0014-knowledge-graph-and-catalogs.md)
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

@@ -173,8 +173,7 @@ describe("lockStorage", () => {
       await savePinHash("1234");
       expect(deriveBitsSpy).toHaveBeenCalled();
       const params = deriveBitsSpy.mock.calls[0]?.[0] as
-        | { iterations?: number }
-        | undefined;
+        { iterations?: number } | undefined;
       expect(params?.iterations).toBe(600_000);
     });
 

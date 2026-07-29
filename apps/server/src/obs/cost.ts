@@ -26,12 +26,7 @@ import { infraMonthlyCostUsd, voyageDailyBudgetUsd } from "./metrics.js";
  */
 interface InfraCostEntry {
   provider:
-    | "hetzner"
-    | "vercel"
-    | "posthog"
-    | "sentry"
-    | "anthropic"
-    | "voyage";
+    "hetzner" | "vercel" | "posthog" | "sentry" | "anthropic" | "voyage";
   plan: string;
   usdMonth: number;
 }

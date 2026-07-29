@@ -254,7 +254,7 @@ export function FirstEntryCelebrationModal({
 
         {/* Tips for next steps */}
         <div className="w-full p-3 rounded-xl bg-panelHi/50 border border-line/50 text-left space-y-2">
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift, sergeant-design/no-cyrillic-jsx-literal -- intentional overlay typography + pre-existing copy (i18n extraction tracked separately) */}
+          {/* eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- intentional overlay typography + pre-existing copy (i18n extraction tracked separately) */}
           <p className="text-style-caption text-subtle uppercase tracking-wide font-medium">
             Що далі
           </p>

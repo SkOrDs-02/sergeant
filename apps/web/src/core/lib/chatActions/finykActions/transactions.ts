@@ -39,9 +39,7 @@ export function createTransaction(
     const meta = resolveExpenseCategoryMeta(category.trim(), customC);
     categoryLabel = meta?.label || category.trim();
   }
-  const manualId = `m_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const manualId = `m_${crypto.randomUUID()}`;
   const manualExpenses = ls<
     Array<{
       id: string;

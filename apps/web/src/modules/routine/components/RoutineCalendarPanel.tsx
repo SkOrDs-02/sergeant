@@ -443,7 +443,6 @@ export function RoutineCalendarPanel({
                   >
                     <div
                       className={cn(
-                        // eslint-disable-next-line sergeant-design/no-inline-card-surface -- не контейнерна картка, а swipe-рядок з динамічним accent-stripe (border-l-4 + border-l-info/success/habit) і асиметричним паддингом (pl-4 pr-4 py-3); <Card> має пресетні paddings і не мапить це 1:1 без візуальної регресії
                         "overflow-hidden rounded-2xl border border-line bg-panel pl-4 pr-4 py-3 shadow-card flex flex-col gap-2 border-l-4",
                         e.fizruk
                           ? "border-l-info"

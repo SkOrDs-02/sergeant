@@ -26,7 +26,6 @@ System architecture and runtime surface inventory for Sergeant.
 | [`diagrams/c2-containers.md`](./diagrams/c2-containers.md)           | Deployment topology: apps/web (Vercel), apps/server (Hetzner + Coolify), apps/mobile | 2026-05-05    |
 | [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal sync engine v2 (op-log outbox → `/api/v2/sync/push`); v1 retired            | 2026-06-09    |
 | [`diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md)     | HubChat tool-use loop with Anthropic streaming                                       | 2026-05-05    |
-| [`diagrams/c3-workspaces.md`](./diagrams/c3-workspaces.md)           | Workspace-level `@sergeant/*` import-edge dependency graph (auto-gen)                | 2026-06-01    |
 | [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                          | 2026-05-05    |
 | [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Sync v2 push/pull: web ↔ `/api/v2/sync/push` ↔ Postgres; v1 → 410 Gone               | 2026-06-09    |
 | [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                                         | 2026-05-05    |

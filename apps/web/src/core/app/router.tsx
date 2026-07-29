@@ -116,23 +116,6 @@ export const router = createBrowserRouter([
         index: true,
         lazy: () => import("./HubPage").then((m) => ({ Component: m.HubPage })),
       },
-      // UI Audit — design review page (dev/internal)
-      {
-        path: "ui-audit",
-        lazy: () =>
-          import("../../pages/UiAuditPage").then((m) => ({
-            Component: m.UiAuditPage,
-          })),
-      },
-      // UI Mockups — «зараз / може бути» прев'ю для узгодження UI/UX-ідей
-      // (dev/internal, не лінкується з основної навігації).
-      {
-        path: "ui-mockups",
-        lazy: () =>
-          import("../../pages/UiMockupsPage").then((m) => ({
-            Component: m.UiMockupsPage,
-          })),
-      },
       // Catch-all: standalone routes + 404.
       // Uses `Component` (not `element`) to force fresh JSX per match.
       {

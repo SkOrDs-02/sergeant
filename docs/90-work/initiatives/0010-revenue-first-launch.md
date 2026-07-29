@@ -14,7 +14,7 @@
 >   **Priority:** P0 (Sprint 1–4)
 >   **Owner:** `@Skords-01`
 >   **ETA:** ops-блокери (код фаз 0–6 done)
->   **Sources:** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md), [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md), [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md), [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md)
+>   **Sources:** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md), [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md), [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md), [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md), [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md)
 >   **Canonical delivery owner:** цей документ; поточний sprint slice — [`sprint-9-10-plan-2026.md`](../planning/sprint-9-10-plan-2026.md).
 
 ## TL;DR
@@ -390,12 +390,12 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 
 ## Посилання
 
-- **Аудит-сорс:** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/archive/2026-05-04-revenue-and-marketing-roast.md).
+- **Аудит-сорс:** [`docs/90-work/audits/2026-05-04-revenue-and-marketing-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-04-revenue-and-marketing-roast.md).
 - **Поточна pricing-модель (буде оновлена):** [`docs/01-product/launch/business/01-monetization-and-pricing.md`](../../01-product/launch/business/01-monetization-and-pricing.md).
 - **GTM (буде звужений):** [`docs/01-product/launch/business/02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md).
 - **Технічний skeleton білінгу:** [`docs/01-product/launch/business/06-monetization-architecture.md`](../../01-product/launch/business/06-monetization-architecture.md).
-- **FTUX carry-over:** [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](../audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/archive/product-os/ftux-sprint-plan.md).
-- **Mobile picks:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](./archive/_0002-mobile-platform-decision.md).
+- **FTUX carry-over:** [`docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-ftux-onboarding-roast.md), [`docs/01-product/launch/product-os/ftux-sprint-plan.md`](../../01-product/launch/archive/product-os/ftux-sprint-plan.md).
+- **Mobile picks:** [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../../.agents/skills/better-auth-best-practices/SKILL.md).
 - **OpenClaw roadmap (active parallel, not in scope):** [`docs/01-product/launch/tech/openclaw-roadmap.md`](../../01-product/launch/archive/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.
@@ -447,7 +447,7 @@ Billing backend реалізовано поза plan-документом; ко�
 
 - `apps/web/src/core/billing/TrialBanner.tsx` (new) — читає `usePlan()`, рендерить інлайн-банер для `subscription.status === 'trialing'` коли `daysLeft ≤ 7`; ≤ 1 день → sticky-варіант з акцентом. CTA → `/pricing?source=trial_banner`. A11y `role="status"` + `aria-live="polite"`. Touch-target 44×44 через `<Button size="sm">`. Mounted у `HubMainContent` banner stack за існуючим `!inFtuxSession`-гейтом.
 - Тести: `apps/web/src/core/billing/TrialBanner.test.tsx` (8 тестів — loading / free / active / >7d / 3d inline / 1d sticky / 0d past-due / CTA navigation).
-- Закриває audit-item `P1-9` у [`docs/90-work/audits/2026-05-13-revenue-monetization-roast.md`](../audits/archive/2026-05-13-revenue-monetization-roast.md).
+- Закриває audit-item `P1-9` у [`docs/90-work/audits/2026-05-13-revenue-monetization-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-revenue-monetization-roast.md).
 
 **Наступний крок:** `POST /api/billing/portal` (Phase 3.1) → `usePlan()` + `PaywallModal` (Phase 4.1) → real `/pricing` з portal link (Phase 4.2).
 
@@ -521,7 +521,7 @@ Without env vars: сервер логує warn-free start (Apple branch silently
 
 > **Update 2026-07-20 — знято зі scaffold-only.** Код пішов далі за цей історичний запис: `liqpayProvider`/`plataProvider` реалізовані (не `NotImplementedError`-stub), додано `registry.ts` (`providerRegistry`) і `plata.ts` (mig 081/082). Resolver перейменовано на `getEnabledProviders({country})` і **для `UA` повертає лише `liqpay`+`plata` — Stripe свідомо dormant, ніколи не для українців** (`provider.ts:126-142`), тобто «resolver у проді завжди повертає stripe» нижче — застаріле. Лишилось власнику (ops, не код): ФОП для LiqPay-мерчанта + `LIQPAY_ENABLED`/`LIQPAY_PUBLIC_KEY`/`LIQPAY_PRIVATE_KEY` у prod.
 
-Закриває `P1-5` (LiqPay placeholder) у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](../planning/archive/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
+Закриває `P1-5` (LiqPay placeholder) у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-revenue-2026-05.md). **Scaffold-only — жодного live-платежу.**
 
 - `apps/server/src/modules/billing/provider.ts` — `BillingProvider` interface (checkout / portal / status / webhook verify+process) + `getProviderForCountry({ country, liqpayEnabled })` resolver. Правило: UA + `LIQPAY_ENABLED` → `liqpay`; інакше → `stripe`.
 - `apps/server/src/modules/billing/liqpay.ts` — `liqpayProvider` stub реалізує `BillingProvider`; кожен метод кидає `NotImplementedError` (async-методи через rejected Promise). `verifyWebhookSignature` — sync throw.

@@ -33,7 +33,10 @@ export function ChartTransitionDemo() {
       <ComparePair
         before={
           <CompareTile dim className="justify-end">
-            <div key={fadeKey} className="flex items-end gap-1.5 h-24 animate-[fade-in_260ms_ease]">
+            <div
+              key={fadeKey}
+              className="flex items-end gap-1.5 h-24 animate-[fade-in_260ms_ease]"
+            >
               {values.map((v, i) => (
                 <span
                   key={i}
@@ -42,7 +45,9 @@ export function ChartTransitionDemo() {
                 />
               ))}
             </div>
-            <p className="text-2xs text-muted">Ремаунт + fade — стовпці «блимають»</p>
+            <p className="text-2xs text-muted">
+              Ремаунт + fade — стовпці «блимають»
+            </p>
           </CompareTile>
         }
         after={
@@ -56,7 +61,9 @@ export function ChartTransitionDemo() {
                 />
               ))}
             </div>
-            <p className="text-2xs text-muted">Плавний tween висоти — дані «перетікають»</p>
+            <p className="text-2xs text-muted">
+              Плавний tween висоти — дані «перетікають»
+            </p>
           </CompareTile>
         }
       />

@@ -14,10 +14,7 @@ import { ComparePair, CompareTile } from "./_Compare";
 
 export function ReducedTransparencyDemo() {
   return (
-    <ComparePair
-      before={<Scene reduced={false} />}
-      after={<Scene reduced />}
-    />
+    <ComparePair before={<Scene reduced={false} />} after={<Scene reduced />} />
   );
 }
 
@@ -42,17 +39,23 @@ function Scene({ reduced }: { reduced: boolean }) {
           <div
             className={cn(
               "rounded-2xl border p-3",
-              reduced ? "bg-panelHi border-line" : "bg-panelHi/60 border-white/40 backdrop-blur-md",
+              reduced
+                ? "bg-panelHi border-line"
+                : "bg-panelHi/60 border-white/40 backdrop-blur-md",
             )}
           >
             <p className="text-style-caption text-text">Підсумок дня</p>
             <p className="text-2xs text-muted mt-1">
-              {reduced ? "Суцільна панель, без blur" : "Скляна панель поверх mesh"}
+              {reduced
+                ? "Суцільна панель, без blur"
+                : "Скляна панель поверх mesh"}
             </p>
           </div>
         </div>
       </div>
-      <p className="text-2xs text-muted p-2">{reduced ? "prefers-reduced-transparency" : "Стандарт (glass + mesh)"}</p>
+      <p className="text-2xs text-muted p-2">
+        {reduced ? "prefers-reduced-transparency" : "Стандарт (glass + mesh)"}
+      </p>
     </CompareTile>
   );
 }

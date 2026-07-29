@@ -18,7 +18,6 @@ interface MealTypePickerProps {
 export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
   return (
     <View className="mb-4">
-      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- section heading in form */}
       <Text className="text-xs font-bold uppercase text-fg-muted mb-2 tracking-wider">
         Прийом їжі
       </Text>

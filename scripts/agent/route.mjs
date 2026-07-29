@@ -6,7 +6,7 @@
 // explicit paths), it prints:
 //   • the specialist Sergeant skill(s) to load, and
 //   • the hard rules currently in scope for those paths, and
-//   • a suggested `agent:find` query
+//   • a discovery hint
 // so an agent (or a harness SessionStart hook) lands on the right skill + rules
 // without the maintainer re-explaining every time.
 //
@@ -112,7 +112,6 @@ function changedFiles(opts) {
   const files = new Set();
   // `base...HEAD` is git's merge-base diff range (changes on this branch), not
   // a typographic ellipsis — hence the targeted lint suppression.
-  // eslint-disable-next-line sergeant-design/no-ellipsis-dots
   const branchRange = `${base}...HEAD`;
   for (const out of [
     git(["diff", "--name-only", branchRange]),
@@ -180,7 +179,7 @@ function main() {
   const topSurface = files.length
     ? files[0].split("/").slice(0, 2).join("/") || files[0]
     : "";
-  const suggestion = `pnpm agent:find "<what you're changing in ${topSurface || "the repo"}>"`;
+  const suggestion = `Use codebase-memory MCP for ${topSurface || "the repo"}; fallback to TypeScript/Knip/rg`;
 
   if (opts.json) {
     console.log(
@@ -214,7 +213,7 @@ function main() {
       console.log(`  • #${r.id} — ${r.title}${r.universal ? " (always)" : ""}`);
     }
   }
-  console.log(`\nLocate related docs:\n  ${suggestion}`);
+  console.log(`\nLocate related code/docs:\n  ${suggestion}`);
 }
 
 main();

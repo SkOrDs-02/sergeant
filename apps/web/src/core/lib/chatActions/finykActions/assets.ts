@@ -29,9 +29,7 @@ export function addAsset(action: AddAssetAction): ChatActionResult {
   // manual UI's AssetsForm assigns a uuid. Generate a stable id here too
   // so the dual-write upsert targets a real row (id-less rows are skipped
   // by the blob extractor) and undo can delete it by id.
-  const assetId = `a_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const assetId = `a_${Date.now().toString(36)}_${crypto.randomUUID()}`;
   const newEntry: AssetEntry = {
     id: assetId,
     name: trimmed,
@@ -71,7 +69,7 @@ export function recurringExpense(
     }>
   >("finyk_subs", []);
   const newSub = {
-    id: `sub_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `sub_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     name: trimmed,
     amount: amt,
     dayOfMonth: dayN,

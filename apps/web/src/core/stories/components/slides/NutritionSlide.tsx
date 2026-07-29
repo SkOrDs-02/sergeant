@@ -1,4 +1,3 @@
-/* eslint-disable sergeant-design/no-eyebrow-drift */
 import { StoryShell } from "./StoryShell";
 import { fmtNum } from "../../formatters";
 import type { NutritionSlideData } from "../../types";

@@ -56,13 +56,13 @@
 }
 ```
 
-**Allowlist (закрито).** Декомпозиція завершена в межах ініціативи [0001](../../../90-work/initiatives/archive/_0001-module-decomposition.md) (closed) — окремого allowlist-блоку файлів-монолітів у `eslint.config.js` більше **немає**: `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` без винятків (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`). Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
+**Allowlist (закрито).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed) — окремого allowlist-блоку файлів-монолітів у `eslint.config.js` більше **немає**: `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` без винятків (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`). Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
 **Scope rationale.**
 
-- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](../../../90-work/initiatives/archive/_0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
+- `apps/mobile/**` — поза правилом (mobile-стратегія обговорюється в [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md); декомпозиція ≠ заморозка платформи).
 - `packages/**/src/**` — поза правилом (бібліотечні файли — публічний API, поріг для них інший; зачепимо в окремій ініціативі).
 
 **Що блокує:**

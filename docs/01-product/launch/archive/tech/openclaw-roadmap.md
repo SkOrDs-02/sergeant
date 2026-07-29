@@ -4,7 +4,7 @@
 
 > **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only). Fast-forward archived 2026-07-20 (90-day gate skipped за рішенням founder-а). Source: `docs/01-product/launch/tech/openclaw-roadmap.md`.
-> **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/90-work/planning/openclaw-migration-plan.md`](../../../../90-work/planning/archive/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
+> **Canonical active owner:** OpenClaw Gateway/migration work lives in [`docs/90-work/planning/openclaw-migration-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/openclaw-migration-plan.md). This file is retained as historical context for the old `@OpenClaw_sergeant_bot` roadmap only; do not add new active migration tasks here.
 
 > **2026-05-12 — Reality update.** Phase 1…4.5 нижче описує feature-set, який raніше працював у grammy `tools/openclaw/src/openclaw/` і паралельно живе у Gateway-плагіні. У Gateway-плагіні станом на сьогодні **переписано тільки read-tools** (Stage 2 — 25 tools); write-tools (Phase 4) + hooks (Phase 4.5 audit/budget) + council orchestration (Phase 2.5) + strategic modes (Phase 3) — лежать у `packages/openclaw-plugin/src/legacy/` і чекають Stage 3/4/5 rewrite на real `openclaw@2026.5.7` SDK. У grammy-боті усі ці фічі залишаються активними як fallback до Phase 7 cutover.
 
@@ -16,7 +16,7 @@
 > використовується (він для end-користувачів додатку).
 >
 > Historical baseline для старого grammy-бота. Для майбутніх PR-ів, які торкаються
-> Gateway/cutover/deletion, звірятися з [`openclaw-migration-plan.md`](../../../../90-work/planning/archive/openclaw-migration-plan.md)
+> Gateway/cutover/deletion, звірятися з [`openclaw-migration-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/openclaw-migration-plan.md)
 > і з ADR-ами нижче.
 >
 > Пов'язане: [ADR-0027](../../../../04-governance/adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),

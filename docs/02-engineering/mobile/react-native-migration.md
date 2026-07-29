@@ -340,7 +340,7 @@ sergeant/
    `expo-sqlite`). Для модулів routine/fizruk/nutrition/finyk SQLite
    уже cut-over для read-path за фіче-флагом
    `feature.<m>.sqlite_v2.read_sqlite` (Q11/Q12/Q13). Деталі — §6,
-   первинний source-of-truth — [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md).
+   первинний source-of-truth — [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md).
 
 ## 4. Фазований план
 
@@ -885,7 +885,7 @@ foodDb export / import, UI). Жодних змін у публічному API `
 > Закриті рішення — так, ці питання колись були відкритими. Якщо треба
 > переглянути — окремий PR з мотивацією у «Нотатки». Q11–Q14 додано
 > після того як storage-roadmap і `apps/mobile-shell` стали окремими
-> треками; повний контекст — у [`docs/90-work/planning/storage-roadmap.md`](../../90-work/planning/archive/storage-roadmap.md).
+> треками; повний контекст — у [`docs/90-work/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md).
 
 - **Q1. Доля `apps/web` після міграції.** ✅ **(a) — залишаємо PWA + mobile паралельно.**
   Сайт продовжує розвиватись як окремий продуктивний клієнт для

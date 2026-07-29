@@ -39,9 +39,7 @@ export type IncrementOpTable = (typeof INCREMENT_OP_SUPPORTED_TABLES)[number];
 export const INCREMENT_DELTA_MAX_ABS = 1000;
 
 export type BuildSyncV2IncrementOpReason =
-  | "op_not_supported"
-  | "missing_delta"
-  | "invalid_delta";
+  "op_not_supported" | "missing_delta" | "invalid_delta";
 
 export interface BuildSyncV2IncrementOpInput {
   /**
