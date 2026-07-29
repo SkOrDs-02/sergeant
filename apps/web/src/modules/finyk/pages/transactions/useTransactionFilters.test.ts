@@ -68,6 +68,7 @@ function buildDefaultParams(
     fetchMonth: NOOP_FETCH,
     categoryFilter: null,
     onClearCategoryFilter: undefined,
+    dayFilter: null,
     ...overrides,
   };
 }
@@ -151,6 +152,27 @@ describe("useTransactionFilters", () => {
         useTransactionFilters(buildDefaultParams({ categoryFilter: "food" })),
       );
       expect(result.current.filter).toBe("food");
+    });
+  });
+
+  describe("external dayFilter", () => {
+    it("keeps only the current Kyiv day for dayFilter='today'", () => {
+      const today = mkTx("today", -100, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const yesterday = mkTx("yesterday", -200, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [today, yesterday],
+            dayFilter: "today",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id)).toEqual(["today"]);
     });
   });
 

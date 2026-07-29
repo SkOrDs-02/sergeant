@@ -1,6 +1,6 @@
 # Design specs
 
-> **Last touched:** 2026-07-28 by @Skords-01. **Next review:** 2026-10-26.
+> **Last touched:** 2026-07-29 by Codex. **Next review:** 2026-10-27.
 > **Status:** Active
 
 Design-специ для нетривіальних product-side фіч (раніше `agents/specs/`).
@@ -20,14 +20,15 @@ Design-специ для нетривіальних product-side фіч (ран�
 
 ## Реєстр
 
-| Дата       | Спек                                                                                                                   | Статус                              | Successor |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------- |
-| 2026-04-25 | [`2026-04-25-assistant-capability-catalogue-design.md`](./archive/2026-04-25-assistant-capability-catalogue-design.md) | Shipped — archived 2026-07-19       | —         |
-| 2026-05-06 | [`2026-05-06-sync-engine-writer-wiring-design.md`](./archive/2026-05-06-sync-engine-writer-wiring-design.md)           | Shipped — archived 2026-07-19       | —         |
-| 2026-07-13 | [`2026-07-13-pwa-usability-polish-design.md`](./2026-07-13-pwa-usability-polish-design.md)                             | Draft                               | —         |
-| 2026-07-16 | [`2026-07-16-founder-feedback-remediation-design.md`](./2026-07-16-founder-feedback-remediation-design.md)             | Active                              | —         |
-| 2026-07-28 | [`2026-07-28-anonymous-profile-data-migration-design.md`](./2026-07-28-anonymous-profile-data-migration-design.md)     | Shipped — implementation pending PR | —         |
-| 2026-07-28 | [`2026-07-28-finyk-transaction-details-design.md`](./2026-07-28-finyk-transaction-details-design.md)                   | Active — implementation ready       | —         |
+| Дата       | Спек                                                                                                                                   | Статус                              | Successor |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------- |
+| 2026-04-25 | [`2026-04-25-assistant-capability-catalogue-design.md`](./archive/2026-04-25-assistant-capability-catalogue-design.md)                 | Shipped — archived 2026-07-19       | —         |
+| 2026-05-06 | [`2026-05-06-sync-engine-writer-wiring-design.md`](./archive/2026-05-06-sync-engine-writer-wiring-design.md)                           | Shipped — archived 2026-07-19       | —         |
+| 2026-07-13 | [`2026-07-13-pwa-usability-polish-design.md`](./2026-07-13-pwa-usability-polish-design.md)                                             | Draft                               | —         |
+| 2026-07-16 | [`2026-07-16-founder-feedback-remediation-design.md`](./2026-07-16-founder-feedback-remediation-design.md)                             | Active                              | —         |
+| 2026-07-28 | [`2026-07-28-anonymous-profile-data-migration-design.md`](./2026-07-28-anonymous-profile-data-migration-design.md)                     | Shipped — implementation pending PR | —         |
+| 2026-07-28 | [`2026-07-28-finyk-transaction-details-design.md`](./2026-07-28-finyk-transaction-details-design.md)                                   | Active — implementation ready       | —         |
+| 2026-07-29 | [`2026-07-29-finyk-daily-pulse-and-transfer-suggestions-design.md`](./2026-07-29-finyk-daily-pulse-and-transfer-suggestions-design.md) | Active — implementation ready       | —         |
 
 ### Архів superseded спеків
 

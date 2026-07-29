@@ -29,7 +29,11 @@ import {
 } from "@sergeant/finyk-domain/domain/transactions";
 import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { getKyivDateParts, getDaysInMonth } from "@shared/lib/time/kyivTime";
+import {
+  getKyivDateParts,
+  getDaysInMonth,
+  getKyivDayKey,
+} from "@shared/lib/time/kyivTime";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
@@ -170,6 +174,19 @@ export function useOverviewData({
     [txForStats, excludedTxIds, txSplits],
   );
   const income = monthlySummary.income;
+  const todaySummary = useMemo(() => {
+    const todayKey = getKyivDayKey(nowMs);
+    const todayTransactions = txForStats.filter((tx) => {
+      const time = Number(tx.time);
+      if (!Number.isFinite(time) || time <= 0) return false;
+      const timeMs = time > 10_000_000_000 ? time : time * 1000;
+      return getKyivDayKey(timeMs) === todayKey;
+    });
+    return getMonthlySummary(todayTransactions, {
+      excludedTxIds,
+      txSplits,
+    });
+  }, [txForStats, excludedTxIds, txSplits, nowMs]);
   const projectedSpend =
     daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
 
@@ -383,6 +400,7 @@ export function useOverviewData({
   );
 
   const planExpense = Number(monthlyPlan?.expense || 0);
+  const dailyPlan = planExpense > 0 ? planExpense / daysInMonth : null;
   const remainingDays = Math.max(1, daysInMonth - daysPassed + 1);
   const expenseTarget = planExpense > 0 ? planExpense : projectedSpend;
   const currentYear = kyivYear;
@@ -464,6 +482,9 @@ export function useOverviewData({
     dateLabel,
     spent,
     income,
+    todaySpent: todaySummary.spent,
+    todayIncome: todaySummary.income,
+    dailyPlan,
     showMonthForecast,
     projectedSpend,
     planExpense,

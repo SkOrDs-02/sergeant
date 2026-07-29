@@ -84,6 +84,7 @@ export default function App({
   const [page, navigate] = useFinykRoute();
   const focusLimitCategoryId = useFinykQueryParam("cat");
   const focusAssetSection = useFinykQueryParam("section");
+  const focusTransactionDate = useFinykQueryParam("date");
 
   // First-run state
   const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
@@ -247,6 +248,8 @@ export default function App({
             showBalance={showBalance}
             categoryFilter={categoryFilter}
             onClearCategoryFilter={() => setCategoryFilter(null)}
+            dayFilter={focusTransactionDate}
+            onClearDayFilter={() => navigate("transactions")}
             onEditManualExpense={(id) => {
               setEditingManualExpenseId(String(id));
               setShowExpenseSheet(true);
@@ -550,7 +553,7 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
     <div
       className={cn(
         "flex items-center gap-1.5 select-none shrink-0",
-        "text-style-caption px-2 py-0.5 rounded-full border",
+        "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
         "transition-colors duration-200",
         syncTone.pill,
       )}
@@ -558,7 +561,7 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
-      <span>{syncTone.text}</span>
+      <span className="hidden sm:inline">{syncTone.text}</span>
     </div>
   );
 }

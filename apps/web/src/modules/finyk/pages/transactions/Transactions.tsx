@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { TransactionsHeader } from "./TransactionsHeader";
@@ -10,6 +10,11 @@ import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
+import { Button } from "@shared/components/ui/Button";
+import { TransferSuggestionCard } from "./TransferSuggestionCard";
+import { findInternalTransferSuggestions } from "@sergeant/finyk-domain/domain/transferMatching";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { messages } from "@shared/i18n/uk";
 import type {
   Transaction,
   TxCategoriesMap,
@@ -117,6 +122,8 @@ export interface TransactionsProps {
   categoryFilter?: string | null;
   onClearCategoryFilter?: () => void;
   onEditManualExpense?: (id: string) => void;
+  dayFilter?: string | null;
+  onClearDayFilter?: () => void;
 }
 
 /**
@@ -141,6 +148,8 @@ export function Transactions({
   categoryFilter,
   onClearCategoryFilter,
   onEditManualExpense,
+  dayFilter,
+  onClearDayFilter,
 }: TransactionsProps) {
   const toast = useToast();
   const [editingBankTransaction, setEditingBankTransaction] =
@@ -189,7 +198,35 @@ export function Transactions({
     fetchMonth,
     categoryFilter,
     onClearCategoryFilter,
+    dayFilter,
   });
+
+  const [dismissedTransferKeys, setDismissedTransferKeys] = useState<
+    Set<string>
+  >(() => new Set());
+  const transferSuggestions = useMemo(() => {
+    const hidden = new Set(hiddenTxIds);
+    return findInternalTransferSuggestions(
+      filters.activeTx.filter((tx) => !hidden.has(tx.id)),
+      { txCategories },
+    );
+  }, [filters.activeTx, hiddenTxIds, txCategories]);
+  const visibleTransferSuggestion = transferSuggestions.find(
+    (suggestion) =>
+      !dismissedTransferKeys.has(
+        `${suggestion.outgoing.id}:${suggestion.incoming.id}`,
+      ),
+  );
+  const visibleTransferKey = visibleTransferSuggestion
+    ? `${visibleTransferSuggestion.outgoing.id}:${visibleTransferSuggestion.incoming.id}`
+    : null;
+  const dismissTransferSuggestion = useCallback((key: string) => {
+    setDismissedTransferKeys((current) => {
+      const next = new Set(current);
+      next.add(key);
+      return next;
+    });
+  }, []);
 
   // PTR refresh runs the bank-side refetch (Mono + Privat, via the
   // unified `mergedRefresh`) **and** asks the App-level cloud-sync
@@ -278,6 +315,45 @@ export function Transactions({
               }}
               lastUpdated={lastUpdated}
             />
+            {dayFilter === "today" && (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-finyk/25 bg-finyk-soft px-3 py-2">
+                <span className="text-style-caption text-finyk-strong dark:text-finyk">
+                  {messages.finyk.todayFilter.label}
+                </span>
+                {onClearDayFilter && (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    tone="finyk"
+                    onClick={onClearDayFilter}
+                    aria-label={messages.finyk.todayFilter.showAllAria}
+                  >
+                    {messages.finyk.todayFilter.showAll}
+                  </Button>
+                )}
+              </div>
+            )}
+            {visibleTransferSuggestion && visibleTransferKey && (
+              <TransferSuggestionCard
+                suggestion={visibleTransferSuggestion}
+                accounts={accounts}
+                showBalance={showBalance}
+                onConfirm={() => {
+                  overrideCategory(
+                    visibleTransferSuggestion.outgoing.id,
+                    INTERNAL_TRANSFER_ID,
+                  );
+                  overrideCategory(
+                    visibleTransferSuggestion.incoming.id,
+                    INTERNAL_TRANSFER_ID,
+                  );
+                  dismissTransferSuggestion(visibleTransferKey);
+                  toast.success(messages.finyk.transferSuggestion.confirmed);
+                }}
+                onDismiss={() => dismissTransferSuggestion(visibleTransferKey)}
+              />
+            )}
             <TransactionFilters
               filter={filters.filter}
               onChangeFilter={filters.setFilter}

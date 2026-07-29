@@ -21,6 +21,9 @@ const {
   useNutritionDualWriteBootMock,
   useNutritionSqliteReadBootMock,
   useFinykDualWriteBootMock,
+  useFinykSqliteReadBootMock,
+  useFinykMonoMirrorBootMock,
+  useFinykQuickStatsBootMock,
   setFlagMock,
   navigationState,
 } = vi.hoisted(() => ({
@@ -39,6 +42,9 @@ const {
   useNutritionDualWriteBootMock: vi.fn(),
   useNutritionSqliteReadBootMock: vi.fn(),
   useFinykDualWriteBootMock: vi.fn(),
+  useFinykSqliteReadBootMock: vi.fn(),
+  useFinykMonoMirrorBootMock: vi.fn(),
+  useFinykQuickStatsBootMock: vi.fn(),
   setFlagMock: vi.fn(),
   navigationState: { activeModule: null as string | null },
 }));
@@ -141,6 +147,15 @@ vi.mock("../../modules/nutrition/hooks/useNutritionSqliteReadBoot", () => ({
 vi.mock("../../modules/finyk/hooks/useFinykDualWriteBoot", () => ({
   useFinykDualWriteBoot: useFinykDualWriteBootMock,
 }));
+vi.mock("../../modules/finyk/hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: useFinykSqliteReadBootMock,
+}));
+vi.mock("../../modules/finyk/hooks/useFinykMonoMirrorBoot", () => ({
+  useFinykMonoMirrorBoot: useFinykMonoMirrorBootMock,
+}));
+vi.mock("../../modules/finyk/hooks/useFinykQuickStatsBoot", () => ({
+  useFinykQuickStatsBoot: useFinykQuickStatsBootMock,
+}));
 
 import { RootLayout } from "./RootLayout";
 import { titleForPath } from "./appPaths";
@@ -198,6 +213,9 @@ describe("RootLayout", () => {
     expect(useNutritionDualWriteBootMock).not.toHaveBeenCalled();
     expect(useNutritionSqliteReadBootMock).not.toHaveBeenCalled();
     expect(useFinykDualWriteBootMock).not.toHaveBeenCalled();
+    expect(useFinykSqliteReadBootMock).not.toHaveBeenCalled();
+    expect(useFinykMonoMirrorBootMock).not.toHaveBeenCalled();
+    expect(useFinykQuickStatsBootMock).not.toHaveBeenCalled();
   });
 
   it("boots nutrition and finyk sqlite hooks when a user is present", () => {
@@ -206,6 +224,9 @@ describe("RootLayout", () => {
     expect(useNutritionDualWriteBootMock).toHaveBeenCalled();
     expect(useNutritionSqliteReadBootMock).toHaveBeenCalled();
     expect(useFinykDualWriteBootMock).toHaveBeenCalled();
+    expect(useFinykSqliteReadBootMock).toHaveBeenCalled();
+    expect(useFinykMonoMirrorBootMock).toHaveBeenCalled();
+    expect(useFinykQuickStatsBootMock).toHaveBeenCalled();
   });
 
   it("pins the document title for the active route", () => {

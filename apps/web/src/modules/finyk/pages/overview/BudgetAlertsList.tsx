@@ -16,6 +16,7 @@ interface BudgetAlertsListProps {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?: readonly CustomCategoryInput[];
+  onOpenLimit: (categoryId: string) => void;
 }
 
 /**
@@ -28,12 +29,13 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
   txCategories,
   txSplits,
   customCategories,
+  onOpenLimit,
 }: BudgetAlertsListProps) {
   if (budgetAlerts.length === 0) return null;
 
   return (
     <div className="space-y-1.5">
-      {budgetAlerts.map((b, i) => {
+      {budgetAlerts.map((b) => {
         const cat = resolveExpenseCategoryMeta(b.categoryId, customCategories);
         const s = calcCategorySpent(
           statTx,
@@ -44,13 +46,17 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
         );
         const pct = b.limit > 0 ? Math.round((s / b.limit) * 100) : 0;
         return (
-          <div
-            key={i}
+          <button
+            type="button"
+            key={b.id}
+            onClick={() => onOpenLimit(b.categoryId)}
+            aria-label={`${cat?.label || b.categoryId}: ${pct}%. Відкрити ліміт у плануванні`}
             className={cn(
-              "rounded-2xl px-4 py-3 flex items-center justify-between border",
+              "w-full rounded-2xl px-4 py-3 flex items-center justify-between border text-left",
+              "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
               pct >= 100
-                ? "bg-danger/8 border-danger/20"
-                : "bg-warning/8 border-warning/20",
+                ? "bg-danger/8 border-danger/20 hover:bg-danger/10"
+                : "bg-warning/8 border-warning/20 hover:bg-warning/10",
             )}
           >
             <span className="text-style-label">
@@ -74,7 +80,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                 messages.finyk.budgetOverSixtyPercent
               )}
             </span>
-          </div>
+          </button>
         );
       })}
     </div>

@@ -201,6 +201,86 @@ describe("Transactions page shell", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows and clears the URL-driven today filter", () => {
+    const onClearDayFilter = vi.fn();
+    renderTransactions({ dayFilter: "today", onClearDayFilter });
+    expect(screen.getByText("Лише сьогодні")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Показати всі дні" }));
+    expect(onClearDayFilter).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirms an unambiguous transfer pair on both transactions", () => {
+    const overrideCategory = vi.fn();
+    const outgoing = {
+      ...SAMPLE_TX,
+      id: "transfer-out",
+      amount: -50_000,
+      description: "Переказ між картками",
+      accountId: "black",
+      _accountId: "black",
+    };
+    const incoming = {
+      ...SAMPLE_TX,
+      id: "transfer-in",
+      amount: 50_000,
+      description: "З картки на картку",
+      accountId: "white",
+      _accountId: "white",
+      type: "income" as const,
+    };
+    renderTransactions({
+      mono: {
+        realTx: [outgoing, incoming],
+        accounts: [
+          { id: "black", type: "black", maskedPan: ["****1111"] },
+          { id: "white", type: "white", maskedPan: ["****2222"] },
+        ],
+      },
+      storage: { overrideCategory },
+    });
+
+    expect(screen.getByText("Схоже на внутрішній переказ")).toBeInTheDocument();
+    expect(screen.getByText(/Чорна.*Біла/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Це переказ" }));
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      1,
+      "transfer-out",
+      "internal_transfer",
+    );
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      2,
+      "transfer-in",
+      "internal_transfer",
+    );
+  });
+
+  it("dismisses a transfer suggestion for the current page mount", () => {
+    const pair = [
+      {
+        ...SAMPLE_TX,
+        id: "transfer-out",
+        amount: -10_000,
+        description: "Переказ",
+        accountId: "black",
+        _accountId: "black",
+      },
+      {
+        ...SAMPLE_TX,
+        id: "transfer-in",
+        amount: 10_000,
+        description: "Переказ",
+        accountId: "white",
+        _accountId: "white",
+        type: "income" as const,
+      },
+    ];
+    renderTransactions({ mono: { realTx: pair } });
+    fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
+
   it("routes the list to the skeleton slot on first-paint loading", () => {
     renderTransactions({
       mono: buildMono({ loadingTx: true, realTx: [] }),

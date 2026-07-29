@@ -50,19 +50,18 @@ describe("selectModulePreview — finyk", () => {
     expect(preview.main).toMatch(/₴$/);
     expect(preview.main).toContain("1");
     expect(preview.main).toContain("250");
-    expect(preview.sub).toMatch(/Залишок:/);
+    expect(preview.sub).toMatch(/Залишок плану:/);
     expect(preview.sub).toMatch(/₴$/);
     expect(preview.sub).toContain("7");
     expect(preview.sub).toContain("300");
     expect(preview.progress).toBeUndefined();
   });
 
-  it("renders zeros as null (parity with web truthiness)", () => {
+  it("renders zero spent as live data instead of the onboarding placeholder", () => {
     const raw = JSON.stringify({ todaySpent: 0, budgetLeft: 0 });
-    expect(selectModulePreview("finyk", raw)).toEqual({
-      main: null,
-      sub: null,
-    });
+    const preview = selectModulePreview("finyk", raw);
+    expect(preview.main).toMatch(/^0.*₴$/);
+    expect(preview.sub).toBeNull();
   });
 
   it("coerces non-number values to null", () => {
