@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
+import { useEffect } from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { ASSISTANT_CAPABILITIES } from "@sergeant/shared";
 import { __resetHubBusForTests, onHubBus } from "@shared/lib/modules/hubBus";
+import {
+  HubChatOverlayProvider,
+  useHubChatOverlay,
+  useHubChatOverlayState,
+} from "./hub/useHubChatOverlay";
 import { AssistantCataloguePage } from "./AssistantCataloguePage";
 
 // Stub the detail modal — it pulls in chat plumbing we don't need to
@@ -24,6 +31,52 @@ vi.mock("./components/CapabilityDetailModal", () => ({
 
 const COLLAPSED_LS_KEY = "assistant_catalogue_collapsed_v1";
 
+function ChatBusBridge() {
+  const { openChat } = useHubChatOverlay();
+  useEffect(
+    () =>
+      onHubBus("openChat", (detail) => {
+        openChat({
+          initialMessage: detail.message ?? "",
+          autoSend: detail.autoSend ?? false,
+        });
+      }),
+    [openChat],
+  );
+  return null;
+}
+
+function ChatStateProbe() {
+  const chat = useHubChatOverlay();
+  const location = useLocation();
+  return (
+    <>
+      <output data-testid="assistant-current-path">{location.pathname}</output>
+      <output data-testid="assistant-chat-open">{String(chat.open)}</output>
+      <output data-testid="assistant-chat-message">
+        {chat.initialMessage}
+      </output>
+    </>
+  );
+}
+
+function AssistantChatHarness({ onClose }: { onClose: () => void }) {
+  const chatOverlay = useHubChatOverlayState();
+  const navigate = useNavigate();
+  return (
+    <HubChatOverlayProvider value={chatOverlay}>
+      <ChatBusBridge />
+      <ChatStateProbe />
+      <AssistantCataloguePage
+        onClose={() => {
+          onClose();
+          navigate("/");
+        }}
+      />
+    </HubChatOverlayProvider>
+  );
+}
+
 describe("AssistantCataloguePage — group collapsing", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -43,28 +96,30 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(finykToggle.getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("closes the catalogue and forwards the selected capability to chat", () => {
+  it("keeps the catalogue route mounted and forwards the selected capability to chat", () => {
     const onClose = vi.fn();
     const capability = ASSISTANT_CAPABILITIES.find(
       (candidate) => candidate.id === "create_transaction",
     );
     expect(capability).toBeDefined();
-    const received: Array<{ message: string | null; autoSend?: boolean }> = [];
-    onHubBus("openChat", (detail) => received.push(detail));
-
-    render(<AssistantCataloguePage onClose={onClose} />);
+    render(
+      <MemoryRouter initialEntries={["/assistant"]}>
+        <AssistantChatHarness onClose={onClose} />
+      </MemoryRouter>,
+    );
     fireEvent.click(
       screen.getByTestId("catalogue-capability-create_transaction"),
     );
     fireEvent.click(screen.getByRole("button", { name: "try capability" }));
 
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(received).toEqual([
-      {
-        message: capability?.prompt,
-        autoSend: !capability?.requiresInput,
-      },
-    ]);
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId("assistant-current-path")).toHaveTextContent(
+      "/assistant",
+    );
+    expect(screen.getByTestId("assistant-chat-open")).toHaveTextContent("true");
+    expect(screen.getByTestId("assistant-chat-message").textContent).toBe(
+      capability?.prompt,
+    );
   });
 
   it("clicking a module header collapses just that group and persists to localStorage", () => {

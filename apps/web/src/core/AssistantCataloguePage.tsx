@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-07-29
  * Status: Active
  */
 import { useCallback, useMemo, useState } from "react";
@@ -124,7 +124,9 @@ export function AssistantCataloguePage({
 
   const handleTryFromDetail = (cap: AssistantCapability) => {
     setDetail(null);
-    onClose();
+    // AI-CONTEXT: keep `/assistant` mounted under the global chat sheet.
+    // Calling `onClose()` navigates to Hub, whose route-change lifecycle
+    // immediately dismisses the newly-opened overlay on real devices.
     // requiresInput=false ⇒ auto-send (no further details expected);
     // requiresInput=true ⇒ prefill so the user can finish the prompt.
     dispatchOpenChat(cap.prompt, !cap.requiresInput);
