@@ -5,6 +5,7 @@ import { createMemoryKVStore } from "../test-utils";
 import {
   getActiveNudge,
   dismissNudge,
+  isNudgeDismissed,
   snoozeNudge,
   recordLastActiveDate,
   getDaysInactive,
@@ -53,6 +54,15 @@ describe("getActiveNudge", () => {
     dismissNudge(store, first!.id);
     const second = getActiveNudge(store, 3, { picks: ["finyk"] });
     expect(second === null || second.id !== first!.id).toBe(true);
+  });
+
+  it("reports namespaced engagement items as dismissed", () => {
+    const store = createMemoryKVStore();
+    const id = "finyk:goal-completed:g-1";
+
+    expect(isNudgeDismissed(store, id)).toBe(false);
+    dismissNudge(store, id);
+    expect(isNudgeDismissed(store, id)).toBe(true);
   });
 
   it("skips routine nudge if routine not in picks", () => {

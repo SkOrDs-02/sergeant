@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-07-29
  * Status: Active
  *
  * Pure form helpers for ManualExpenseSheet — schema, amount chips,
@@ -54,7 +54,7 @@ export function buildAmountSuggestions(
 
 // `amount` зберігається як string (бо Input value="" легше описується як
 // string); refine перевіряє parse + > 0. description / category / date —
-// вільні string-поля без mandatory-валідаторів, бо UI дає дефолти.
+// string-поля; category стає порожньою після зміни типу й вимагає нового вибору.
 export const expenseFormSchema = z.object({
   description: z.string(),
   amount: z
@@ -63,7 +63,7 @@ export const expenseFormSchema = z.object({
       (v) => Boolean(v) && !Number.isNaN(parseFloat(v)) && parseFloat(v) > 0,
       "Вкажи суму більше 0",
     ),
-  category: z.string().min(1),
+  category: z.string().min(1, "Оберіть категорію"),
   date: z.string(),
 });
 

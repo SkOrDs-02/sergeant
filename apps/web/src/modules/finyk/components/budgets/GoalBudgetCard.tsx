@@ -1,8 +1,8 @@
 /**
- * Last validated: 2026-07-26
+ * Last validated: 2026-07-29
  * Status: Active
  */
-import { memo, useEffect, useId, useRef, useState } from "react";
+import { memo, useEffect, useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -10,7 +10,13 @@ import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { formatMoney, pluralDays } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
+import {
+  dismissNudge,
+  formatMoney,
+  isNudgeDismissed,
+  pluralDays,
+} from "@sergeant/shared";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { JarSelector, type JarOption } from "../JarSelector";
 
@@ -86,11 +92,9 @@ function GoalBudgetCardComponent({
   onSave,
   onDelete,
 }: GoalBudgetCardProps) {
-  // W3 — fire goal-completed celebration exactly once per goal id when
-  // progress reaches 100%. celebratedRef persists across re-renders so we
-  // never double-fire even if the component remounts with the same goal.
+  // W3 — fire goal-completed celebration exactly once per goal id. Persist
+  // the dedup state because navigating away remounts the card and resets refs.
   const { goalCompleted, CelebrationComponent } = useCelebration();
-  const celebratedRef = useRef<string | null>(null);
   const fieldId = useId();
   const nameId = `${fieldId}-name`;
   const targetId = `${fieldId}-target`;
@@ -107,8 +111,9 @@ function GoalBudgetCardComponent({
 
   useEffect(() => {
     if (pct < 100) return;
-    if (celebratedRef.current === budget.id) return;
-    celebratedRef.current = budget.id;
+    const celebrationId = `finyk:goal-completed:${budget.id}`;
+    if (isNudgeDismissed(webKVStore, celebrationId)) return;
+    dismissNudge(webKVStore, celebrationId);
     goalCompleted(budget.name ?? "Ціль досягнута!", saved, "₴", "finyk");
   }, [pct, budget.id, budget.name, saved, goalCompleted]);
 

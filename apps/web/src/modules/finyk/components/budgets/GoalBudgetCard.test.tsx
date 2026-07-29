@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { GoalBudgetCard } from "./GoalBudgetCard";
 
@@ -13,6 +13,10 @@ const baseBudget = {
 };
 
 describe("GoalBudgetCard", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("renders the goal name, amounts and progress percent in read mode", () => {
     render(
       <GoalBudgetCard
@@ -273,5 +277,25 @@ describe("GoalBudgetCard", () => {
     );
     // The celebration modal renders its "Ціль досягнуто!" description.
     expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+  });
+
+  it("does not repeat a completed-goal celebration after the card remounts", () => {
+    const props = {
+      budget: baseBudget,
+      saved: 10000,
+      pct: 100,
+      daysLeft: 10,
+      isEditing: false,
+      onBeginEdit: vi.fn(),
+      onSave: vi.fn(),
+      onDelete: vi.fn(),
+    };
+    const firstRender = render(<GoalBudgetCard {...props} />);
+
+    expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+    firstRender.unmount();
+    render(<GoalBudgetCard {...props} />);
+
+    expect(screen.queryByText(/Ціль досягнуто/)).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-25
+ * Last validated: 2026-07-29
  * Status: Active
  *
  * Category dropdown + AI-applied badge for ManualExpenseSheet. Extracted
@@ -18,7 +18,7 @@
  * (see `sortCategoriesByFrequency` / `categorySlugs` in the parent).
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { UseFormSetValue } from "react-hook-form";
+import type { UseFormRegister } from "react-hook-form";
 import { Icon } from "@shared/components/ui/Icon";
 import { Badge } from "@shared/components/ui/Badge";
 import { Label } from "@shared/components/ui/FormField";
@@ -31,22 +31,26 @@ interface ManualExpenseCategorySectionProps {
   /** Slug → display map for the active kind (expense or income taxonomy). */
   categoryDisplay: Record<string, CategoryDisplay>;
   aiAppliedCategory: string | null;
+  categoryError?: string | undefined;
   categorySlug: string;
   /** Ordered slugs for the active kind — frequency-sorted for expense, fixed for income. */
   categorySlugs: string[];
+  register: UseFormRegister<ExpenseFormValues>;
   setAiAppliedCategory: Dispatch<SetStateAction<string | null>>;
-  setValue: UseFormSetValue<ExpenseFormValues>;
 }
 
 export function ManualExpenseCategorySection({
   catLabelId,
   categoryDisplay,
   aiAppliedCategory,
+  categoryError,
   categorySlug,
   categorySlugs,
+  register,
   setAiAppliedCategory,
-  setValue,
 }: ManualExpenseCategorySectionProps) {
+  const categoryRegistration = register("category");
+  const errorId = `${catLabelId}-error`;
   return (
     <div>
       <Label htmlFor={catLabelId}>Категорія</Label>
@@ -81,11 +85,14 @@ export function ManualExpenseCategorySection({
         </div>
       ) : null}
       <Select
+        {...categoryRegistration}
         id={catLabelId}
         value={categorySlug}
+        error={Boolean(categoryError)}
+        aria-describedby={categoryError ? errorId : undefined}
         onChange={(e) => {
           const slug = e.target.value;
-          setValue("category", slug, { shouldDirty: true });
+          void categoryRegistration.onChange(e);
           // Manual category pick supersedes any AI suggestion; clear the
           // badge so it doesn't linger after an explicit user choice.
           if (slug !== aiAppliedCategory) {
@@ -93,12 +100,24 @@ export function ManualExpenseCategorySection({
           }
         }}
       >
+        <option value="" disabled>
+          Оберіть категорію
+        </option>
         {categorySlugs.map((slug) => (
           <option key={slug} value={slug}>
             {categoryDisplay[slug]?.label ?? slug}
           </option>
         ))}
       </Select>
+      {categoryError ? (
+        <p
+          id={errorId}
+          role="alert"
+          className="mt-1 text-style-caption text-danger-strong dark:text-danger"
+        >
+          {categoryError}
+        </p>
+      ) : null}
     </div>
   );
 }

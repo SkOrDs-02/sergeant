@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 
 // ─── Collaborator mocks ───────────────────────────────────────────────────────
 
@@ -77,6 +77,35 @@ function renderOverlay(initialPath = "/") {
   );
 }
 
+function NavigationHarness() {
+  const navigate = useNavigate();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          overlayState.open = true;
+          navigate("/");
+        }}
+      >
+        open while leaving catalogue
+      </button>
+      <button type="button" onClick={() => navigate("/next")}>
+        navigate while open
+      </button>
+      <HubChatOverlay />
+    </>
+  );
+}
+
+function renderNavigationHarness(initialPath = "/assistant") {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <NavigationHarness />
+    </MemoryRouter>,
+  );
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("HubChatOverlay", () => {
@@ -107,6 +136,30 @@ describe("HubChatOverlay", () => {
     act(() => {
       screen.getByRole("button", { name: "Закрити" }).click();
     });
+    expect(closeChatMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps chat open when opening it and leaving the catalogue in one action", () => {
+    renderNavigationHarness();
+
+    act(() => {
+      screen
+        .getByRole("button", { name: "open while leaving catalogue" })
+        .click();
+    });
+
+    expect(screen.getByTestId("sheet")).toBeInTheDocument();
+    expect(closeChatMock).not.toHaveBeenCalled();
+  });
+
+  it("still closes chat when navigating away after it was already open", () => {
+    overlayState.open = true;
+    renderNavigationHarness("/");
+
+    act(() => {
+      screen.getByRole("button", { name: "navigate while open" }).click();
+    });
+
     expect(closeChatMock).toHaveBeenCalledTimes(1);
   });
 });
