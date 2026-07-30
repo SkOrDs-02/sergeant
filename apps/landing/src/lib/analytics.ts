@@ -60,6 +60,15 @@ export function initAnalytics(): void {
         disable_session_recording: true,
       });
 
+      // Та сама супер-властивість, що й у `apps/web`. Ключ PostHog один на
+      // всі поверхні, щоб воронка «лендінг → бот → реєстрація» лишалась
+      // цілою — а отже фільтр `environment = production` не повинен
+      // випадково викидати події лендінга. Без цього рядка вони мали б
+      // `null` і зникали б з будь-якої вибірки по середовищу.
+      posthog.register({
+        environment: import.meta.env["VITE_APP_ENV"] || "production",
+      });
+
       capture = (event, payload) => posthog.capture(event, payload);
       for (const [event, payload] of queue) capture(event, payload);
       queue = [];

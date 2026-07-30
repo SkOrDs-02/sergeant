@@ -79,7 +79,18 @@ describe("initPostHog", () => {
     expect(posthogRegister).toHaveBeenCalledWith({
       platform: "web",
       is_capacitor: false,
+      environment: "production",
     });
+  });
+
+  it("бере environment із VITE_APP_ENV, щоб бета не зливалась із продом", async () => {
+    vi.stubEnv("VITE_APP_ENV", "beta");
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogRegister).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: "beta" }),
+    );
   });
 
   it("дефолтний host — EU, якщо VITE_POSTHOG_HOST не виставлений", async () => {
@@ -119,6 +130,7 @@ describe("initPostHog", () => {
     expect(posthogRegister).toHaveBeenCalledWith({
       platform: "ios",
       is_capacitor: true,
+      environment: "production",
     });
   });
 });
