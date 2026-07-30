@@ -14,9 +14,37 @@
 import { isoWeekdayFromDateKey, parseDateKey } from "./dateKeys.js";
 import type { Habit } from "./types.js";
 
-export function habitScheduledOnDate(habit: Habit, dateKey: string): boolean {
+/** Опції предиката розкладу. */
+export interface HabitScheduledOptions {
+  /**
+   * День «сьогодні» (`YYYY-MM-DD`), від якого пауза починає діяти.
+   *
+   * AI-CONTEXT: заморозка минулого, ADR-0079 §3 — «пауза, поставлена
+   * сьогодні, не вимиває звичку з минулорічного heatmap». Проблема в тому,
+   * що `paused` — **недатований булеан**: коли саме користувач натиснув
+   * паузу, ніде не збережено (міграція 085 знімка розкладу не робить). Тому
+   * єдине чесне трактування — «пауза діє від сьогодні вперед», і саме його
+   * вмикає цей параметр.
+   *
+   * Без нього поведінка лишається історичною: пауза відсіює **всі** дати,
+   * включно з минулими. Дефолт навмисно не змінено — перемикання рухає
+   * число, яке користувач уже бачив, і потребує `metricsVersion`.
+   */
+  pausedFrom?: string | undefined;
+}
+
+export function habitScheduledOnDate(
+  habit: Habit,
+  dateKey: string,
+  opts: HabitScheduledOptions = {},
+): boolean {
   if (habit.archived) return false;
-  if (habit.paused) return false;
+  // `pausedFrom` присутній → пауза ретроактивною не є: минулі дати
+  // лишаються запланованими, майбутні й сьогоднішня — ні.
+  if (habit.paused) {
+    if (opts.pausedFrom === undefined) return false;
+    if (dateKey >= opts.pausedFrom) return false;
+  }
   const start =
     habit.startDate ||
     (habit.createdAt ? String(habit.createdAt).slice(0, 10) : dateKey);
