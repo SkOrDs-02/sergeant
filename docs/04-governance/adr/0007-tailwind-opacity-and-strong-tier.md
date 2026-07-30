@@ -225,3 +225,14 @@ accepted.
 
 - **Tailwind v4 міграція.** v4 знімає вимогу реєструвати opacity-step-и (підтримує arbitrary). Наша шкала перетворюється на «recommendation» замість «hard-rule», ESLint правило стає optional. Якщо мігруємо на v4 — ADR-7.1 переходить у `superseded`.
 - **Mobile (NativeWind 2.x).** NativeWind 2 переводить Tailwind classnames у React Native style-об'єкти; `bg-{family}-strong` працює, але ESLint правил саме для `apps/mobile/**` поки не виконуємо (плагін run-ається тільки на web). При наступній mobile-frontend reset-фазі винести правила на mobile.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                      | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------- | ---------- |
+| [#521](https://github.com/Skords-01/Sergeant/pull/521) | fix(docs): полагодити governance-sync — 14 помилок до нуля | 2026-07-30 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
