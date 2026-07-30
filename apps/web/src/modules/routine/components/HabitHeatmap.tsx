@@ -86,13 +86,21 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     const { year, month, day } = getKyivDateParts();
     const today = new Date(year, month - 1, day, 12, 0, 0, 0);
 
-    // Single source of the heatmap math — shared with the mobile grid
-    // (`@sergeant/routine-domain`). `denominator: "active"` is the
-    // historical web behaviour (every non-archived habit counts every
-    // day); switching it to "scheduled" is a separate cutover decision.
+    // AI-CONTEXT: знаменник за розкладом — ADR-0079 §3, стадія 3 Хвилі 1.
+    // Раніше було `"active"`: кожна неархівна звичка рахувалась у знаменник
+    // КОЖНОГО дня, тож звичка «Пн/Ср/Пт», виконана 3/3, давала 43%, а не
+    // 100%. Тепер знаменник — дні, коли звичка була запланована, і хітмап
+    // сходиться з `completionRateForRange` у модулі.
+    //
+    // `freezePausedPast` обовʼязковий у парі: без нього пауза, поставлена
+    // сьогодні, вимила б звичку з усієї історії — ADR §3 прямо цього
+    // забороняє. Вмикати `"scheduled"` без freeze не можна.
+    //
+    // Числа зросли одноразово, тому METRICS_VERSION піднято до 2.
     const grid = buildHeatmapGrid(habits, completions, today, HISTORY_WEEKS, {
       futureWeeks: FUTURE_WEEKS,
-      denominator: "active",
+      denominator: "scheduled",
+      freezePausedPast: true,
     });
 
     const weeks: HeatmapCell[][] = grid.weeks.map((week) =>
@@ -303,9 +311,11 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                     data-cell-key={cell.key}
                     onClick={() => handleClick(cell.key)}
                     onKeyDown={(e) => handleCellKeyDown(e, cell.key)}
-                    aria-label={`${cell.key}: ${cell.cnt} з ${cell.total} ${
-                      cell.total === 1 ? "звички" : "звичок"
-                    }`}
+                    aria-label={
+                      cell.total === 0
+                        ? `${cell.key}: нічого не заплановано`
+                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих`
+                    }
                     aria-pressed={cell.key === selected}
                     data-today={cell.isToday ? "true" : undefined}
                     className={cn(
@@ -341,10 +351,11 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
               {detailCell.isFuture
                 ? "ще не настало"
                 : detailCell.total === 0
-                  ? "немає звичок"
-                  : `${detailCell.cnt} з ${detailCell.total} ${
-                      detailCell.total === 1 ? "звички" : "звичок"
-                    } виконано`}
+                  ? // Зі знаменником за розкладом нуль означає «цього дня
+                    // нічого не було заплановано» — день відпочинку, а не
+                    // відсутність звичок узагалі.
+                    "нічого не заплановано"
+                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано`}
             </span>
           </div>
         ) : (

@@ -38,7 +38,7 @@ describe("HabitHeatmap", () => {
       <HabitHeatmap habits={habits} completions={completions} />,
     );
     expect(
-      container.querySelector('[aria-label="2026-06-16: 1 з 1 звички"]'),
+      container.querySelector('[aria-label="2026-06-16: 1 з 1 запланованих"]'),
     ).not.toBeNull();
   });
 
@@ -51,7 +51,7 @@ describe("HabitHeatmap", () => {
     // (current year) — not the oldest cell ~52 weeks back.
     expect(focusable).toHaveLength(1);
     expect(focusable[0]?.getAttribute("aria-label")).toBe(
-      "2026-06-16: 1 з 1 звички",
+      "2026-06-16: 1 з 1 запланованих",
     );
     expect(focusable[0]).toHaveAttribute("data-today", "true");
   });
@@ -61,7 +61,7 @@ describe("HabitHeatmap", () => {
       <HabitHeatmap habits={habits} completions={completions} />,
     );
     expect(getAllByText(/сьогодні/).length).toBeGreaterThan(0);
-    expect(getByText("1 з 1 звички виконано")).toBeInTheDocument();
+    expect(getByText("1 з 1 запланованих виконано")).toBeInTheDocument();
   });
 
   it("keeps real historical dates a year back on the oldest cells (does not rewrite history)", () => {
@@ -71,7 +71,7 @@ describe("HabitHeatmap", () => {
     // The 53-week grid's leftmost cell is legitimately ~52 weeks ago, so 2025
     // is the CORRECT year there — the fix must not shift historical labels.
     expect(
-      container.querySelector('[aria-label="2025-06-16: 1 з 1 звички"]'),
+      container.querySelector('[aria-label="2025-06-16: 1 з 1 запланованих"]'),
     ).not.toBeNull();
   });
 });
