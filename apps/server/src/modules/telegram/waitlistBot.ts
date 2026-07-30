@@ -27,6 +27,7 @@ export interface TelegramUpdate {
 export type ParsedCommand =
   | { kind: "start"; payload: string | null }
   | { kind: "stop" }
+  | { kind: "stats" }
   | { kind: "ignore" };
 
 /**
@@ -45,6 +46,10 @@ export function parseCommand(update: TelegramUpdate): ParsedCommand {
   const command = rawCommand?.split("@")[0]?.toLowerCase();
 
   if (command === "/stop") return { kind: "stop" };
+  // `/stats` парситься для всіх, але відповідає лише власнику — гейт за
+  // chat_id живе в роутері. Незнайомець отримує ту саму тишу, що й на
+  // будь-яку невідому команду, тож саме існування команди не видає себе.
+  if (command === "/stats") return { kind: "stats" };
   if (command !== "/start") return { kind: "ignore" };
 
   const payload = rest[0];
@@ -142,6 +147,95 @@ export async function recordStop(pool: Pool, chatId: number): Promise<void> {
       WHERE chat_id = $1 AND opted_out_at IS NULL`,
     [chatId],
   );
+}
+
+export interface WaitlistStats {
+  pending: number;
+  notified: number;
+  optedOut: number;
+  total: number;
+  lastSignupAt: Date | null;
+  byChannel: Array<{ channel: string; count: number }>;
+}
+
+/**
+ * Зведення для власника. Замінює похід у psql: єдине, що досі відповідало на
+ * питання «чи видно, що людина подалась».
+ *
+ * `chat_id` і хендли НЕ повертаються навмисно — це персональні дані, а для
+ * рішення «пора запрошувати» достатньо чисел.
+ */
+export async function countWaitlistStats(pool: Pool): Promise<WaitlistStats> {
+  const totals = await pool.query<{
+    pending: string;
+    notified: string;
+    opted_out: string;
+    total: string;
+    last_signup: Date | null;
+  }>(
+    `SELECT
+       count(*) FILTER (WHERE notified_at IS NULL AND opted_out_at IS NULL) AS pending,
+       count(*) FILTER (WHERE notified_at IS NOT NULL)                      AS notified,
+       count(*) FILTER (WHERE opted_out_at IS NOT NULL)                     AS opted_out,
+       count(*)                                                             AS total,
+       max(created_at)                                                      AS last_signup
+     FROM telegram_waitlist`,
+  );
+
+  const channels = await pool.query<{ channel: string; count: string }>(
+    `SELECT coalesce(start_payload, 'без каналу') AS channel, count(*) AS count
+       FROM telegram_waitlist
+      GROUP BY 1
+      ORDER BY count(*) DESC, 1
+      LIMIT 10`,
+  );
+
+  // Hard Rule #1: `count(*)` у pg — bigint, тобто рядок. Коерція тут, а не
+  // в шаблоні відповіді, інакше "5" + 1 дало б "51".
+  const row = totals.rows[0];
+  return {
+    pending: Number(row?.pending ?? 0),
+    notified: Number(row?.notified ?? 0),
+    optedOut: Number(row?.opted_out ?? 0),
+    total: Number(row?.total ?? 0),
+    lastSignupAt: row?.last_signup ?? null,
+    byChannel: channels.rows.map((r) => ({
+      channel: r.channel,
+      count: Number(r.count),
+    })),
+  };
+}
+
+export function formatStatsReply(s: WaitlistStats): string {
+  if (s.total === 0) {
+    return "Вейтліст порожній — ще ніхто не натиснув Start.";
+  }
+
+  const lines = [
+    `Вейтліст: ${s.total}`,
+    "",
+    `Чекають:      ${s.pending}`,
+    `Запрошені:    ${s.notified}`,
+    `Відписались:  ${s.optedOut}`,
+  ];
+
+  if (s.byChannel.length > 0) {
+    lines.push("", "Канали:");
+    for (const c of s.byChannel) lines.push(`  ${c.channel} — ${c.count}`);
+  }
+
+  if (s.lastSignupAt) {
+    // Europe/Kyiv — доменний інваріант проєкту; сервер живе в UTC, і без
+    // явної зони власник читав би час на 2-3 години назад.
+    lines.push(
+      "",
+      `Останній: ${s.lastSignupAt.toLocaleString("uk-UA", {
+        timeZone: "Europe/Kyiv",
+      })}`,
+    );
+  }
+
+  return lines.join("\n");
 }
 
 export const START_REPLY_NEW =

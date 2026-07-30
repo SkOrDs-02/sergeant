@@ -6,6 +6,8 @@ import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 import { createTelegramApiClient } from "../modules/alerts/telegramShipper.js";
 import {
+  countWaitlistStats,
+  formatStatsReply,
   isValidWebhookSecret,
   parseCommand,
   recordStart,
@@ -93,9 +95,22 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
       return;
     }
 
+    // `/stats` — тільки власнику. Чужому не відмовляємо повідомленням, а
+    // мовчимо так само, як на будь-яку невідому команду: інакше сама відмова
+    // підтверджувала б, що команда існує.
+    const adminChatId = env.TELEGRAM_WAITLIST_ADMIN_CHAT_ID;
+    if (command.kind === "stats") {
+      if (!adminChatId || String(chatId) !== adminChatId) {
+        res.json({ ok: true });
+        return;
+      }
+    }
+
     let reply: string;
     try {
-      if (command.kind === "stop") {
+      if (command.kind === "stats") {
+        reply = formatStatsReply(await countWaitlistStats(pool));
+      } else if (command.kind === "stop") {
         await recordStop(pool, chatId);
         reply = STOP_REPLY;
       } else {

@@ -491,6 +491,12 @@ const envSchema = z.object({
   TELEGRAM_WAITLIST_WEBHOOK_SECRET: stringWithDefault(""),
 
   TELEGRAM_BETA_INVITE_LINK: stringWithDefault(""),
+  /**
+   * `chat_id` власника — єдиний, кому бот відповідає на `/stats`. Порожній →
+   * команда інертна для всіх, включно з власником: сліпий режим безпечніший,
+   * ніж випадково відкрита статистика.
+   */
+  TELEGRAM_WAITLIST_ADMIN_CHAT_ID: stringWithDefault(""),
 
   WEBHOOK_EVENTS_RETENTION_DAYS: intFromEnv(30),
 
