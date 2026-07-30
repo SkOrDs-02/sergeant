@@ -236,7 +236,13 @@ describe("FinykApp smoke tests", () => {
 
   it("renders the module title with the short finance subtitle", () => {
     render(<FinykApp />);
-    expect(screen.getByRole("heading", { name: "Фінік" })).toBeInTheDocument();
+    // «Фінік» присутній двічі — у титулі хедера і в чіпі перемикача модулів.
+    expect(screen.getAllByText("Фінік").length).toBeGreaterThan(0);
+    // Назва модуля — хром оболонки, а не heading: сторінковий `h1` має
+    // лишатись першим у структурі заголовків.
+    expect(
+      screen.queryByRole("heading", { name: "Фінік" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Фінанси")).toBeInTheDocument();
   });
 

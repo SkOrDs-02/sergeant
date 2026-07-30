@@ -65,6 +65,44 @@ describe("Segmented", () => {
     expect(active!.className!).toContain("border-fizruk");
   });
 
+  it("supports roving tabindex: only the active tab is a tab stop", () => {
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={() => {}} />,
+    );
+    const tabs = getAllByRole("tab");
+    expect(tabs[0]!.tabIndex).toBe(-1);
+    expect(tabs[1]!.tabIndex).toBe(0);
+    expect(tabs[2]!.tabIndex).toBe(-1);
+  });
+
+  it("ArrowRight moves focus + selection to the next tab, wrapping at the end", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="month" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[2]!.focus();
+    fireEvent.keyDown(tabs[2]!, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it("Home/End jump to the first/last tab", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[1]!.focus();
+    fireEvent.keyDown(tabs[1]!, { key: "End" });
+    expect(onChange).toHaveBeenCalledWith("month");
+    expect(document.activeElement).toBe(tabs[2]);
+
+    fireEvent.keyDown(tabs[2]!, { key: "Home" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
   it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {
     const { getAllByRole } = render(
       <Segmented

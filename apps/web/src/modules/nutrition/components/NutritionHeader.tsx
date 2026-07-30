@@ -10,6 +10,7 @@ import {
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
+import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 
 function AppleBadge() {
   return (
@@ -72,7 +73,7 @@ export function NutritionHeader({
     <ModuleHeader
       module="nutrition"
       left={left}
-      title="ЇЖА"
+      title={MODULE_LABELS.nutrition}
       subtitle="Мій раціон"
       right={
         <div className="flex items-center gap-2">

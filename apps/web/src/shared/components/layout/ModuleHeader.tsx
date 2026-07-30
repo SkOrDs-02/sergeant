@@ -139,7 +139,7 @@ export function ModuleHeader({
                 </span>
               ) : null}
               {title ? (
-                <h2 className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2">
+                <p className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2">
                   {mt ? (
                     <span
                       aria-hidden
@@ -150,7 +150,7 @@ export function ModuleHeader({
                     />
                   ) : null}
                   <span className="truncate">{title}</span>
-                </h2>
+                </p>
               ) : null}
               {subtitle ? (
                 <span

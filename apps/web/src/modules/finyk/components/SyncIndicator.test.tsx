@@ -12,24 +12,28 @@ describe("getSyncTone", () => {
     const tone = getSyncTone({ status: "success" }, false);
     expect(tone.text).toBe("не підключено");
     expect(tone.dot).toBe("bg-muted");
+    expect(tone.icon).toBe("wifi-off");
   });
 
   it("returns the error tone for status=error", () => {
     const tone = getSyncTone({ status: "error" });
     expect(tone.text).toBe("помилка");
     expect(tone.dot).toBe("bg-danger");
+    expect(tone.icon).toBe("alert-circle");
   });
 
   it("returns the partial tone for status=partial", () => {
     const tone = getSyncTone({ status: "partial" });
     expect(tone.text).toBe("частково");
     expect(tone.dot).toBe("bg-warning");
+    expect(tone.icon).toBe("alert-triangle");
   });
 
   it("returns the loading tone for status=loading", () => {
     const tone = getSyncTone({ status: "loading" });
     expect(tone.text).toBe("оновлення");
     expect(tone.dot).toBe("bg-muted");
+    expect(tone.icon).toBe("refresh-cw");
   });
 
   it("falls back to the ok tone for unknown / missing status", () => {
@@ -37,6 +41,7 @@ describe("getSyncTone", () => {
     expect(getSyncTone(null).text).toBe("ок");
     expect(getSyncTone({ status: "whatever" }).text).toBe("ок");
     expect(getSyncTone({}).dot).toBe("bg-success");
+    expect(getSyncTone({}).icon).toBe("check-circle");
   });
 
   it("exposes the canonical swipe threshold", () => {

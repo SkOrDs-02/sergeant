@@ -137,7 +137,7 @@ function HubBottomNavTab({
   // under prefers-reduced-motion via the `reduceMotion` prop).
   const transition = reduceMotion
     ? "transition-opacity"
-    : "transition-[width,opacity,padding]";
+    : "transition-[max-width,opacity]";
 
   return (
     <button
@@ -152,7 +152,7 @@ function HubBottomNavTab({
       className={cn(
         "relative flex-1 flex items-center justify-center",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
-        "active:scale-95",
+        "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         "text-text",
         hiddenSlot && "invisible pointer-events-none",
@@ -364,7 +364,6 @@ export function HubBottomNav({
     iconName: "settings",
     prefetchPage: "settings",
     label: "Налаштування",
-    visibleLabel: "Налашт.",
   });
 
   return (

@@ -211,19 +211,24 @@ export function HubHeader({
           елементом екрана випадково ставав демо-банер. Привітання стає
           ink-якорем (display-вага), дата — mono-мета: число живе в
           JetBrains Mono, як усі технічні значення Sergeant. */}
-      <p className="mt-2 ml-[3px] truncate">
+      <p className="mt-2 ms-[3px] flex flex-wrap items-baseline gap-x-2">
         {/* Роль, не розмір (D8-sweep, Р1): привітання — це H1 хаба,
-            якір екрана з мови «Папір» (П2), а не заголовок секції. */}
-        <span className="text-style-headline text-text">{greetingText}</span>
+            якір екрана з мови «Папір» (П2), а не заголовок секції.
+            `truncate` живе лише на привітанні: довге ім'я не повинно
+            зʼїдати дату — вона переноситься на новий рядок замість
+            того, щоб зникати разом з привітанням на вузьких екранах. */}
+        <span className="text-style-headline text-text truncate min-w-0">
+          {greetingText}
+        </span>
         {dateStr && (
-          <>
-            <span className="mx-2 text-subtle" aria-hidden="true">
+          <span className="flex items-baseline gap-x-2">
+            <span className="text-subtle" aria-hidden="true">
               ·
             </span>
             <span className="font-mono text-style-caption text-muted tabular-nums">
               {dateStr}
             </span>
-          </>
+          </span>
         )}
       </p>
     </header>
