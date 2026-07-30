@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
 import { getVisibleFinykMonoMirrorState } from "../lib/monoMirrorReader";
@@ -26,15 +26,15 @@ export function useFinykQuickStatsBoot(): void {
     // zero while either canonical cache is still loading.
     if (!storage.refreshedAt || !mono.refreshedAt) return;
 
-    const transferTxIds = Object.entries(storage.txCategories)
-      .filter(([, categoryId]) => categoryId === INTERNAL_TRANSFER_ID)
-      .map(([transactionId]) => transactionId);
-    const excludedTxIds = new Set<string>([
-      ...storage.hiddenTransactions,
-      ...transferTxIds,
-      ...storage.receivables.flatMap((item) => item.linkedTxIds || []),
-      ...(storage.excludedStatTxIds ?? []),
-    ]);
+    // Zero-delta заміна ручної збірки на канонічну `buildFinykExcludedTxIds`
+    // (W1-CANON-AGG стадія 2а): попередній інлайн уже мав усі чотири
+    // частини, тож жодне число quick-stats не зрушило.
+    const excludedTxIds = buildFinykExcludedTxIds({
+      hiddenTxIds: storage.hiddenTransactions,
+      txCategories: storage.txCategories,
+      receivables: storage.receivables,
+      excludedStatTxIds: storage.excludedStatTxIds,
+    });
     const manualTxs = storage.manualExpenses.map((expense) =>
       manualExpenseToTransaction(expense),
     );

@@ -303,20 +303,24 @@ describe("парність метрики «витрати за період»",
     // Hub-Reports теж банк-only → та сама розбіжність із каноном (-250 грн).
   });
 
-  it("РОЗБІЖНІСТЬ: HubChat-контекст не знає finyk_excluded_stat_txs", () => {
+  it("ЗБІГ: HubChat-контекст поважає finyk_excluded_stat_txs (стадія 2а)", () => {
     const d = readAllData();
     expect(d.excludedIds.has("t-hidden")).toBe(true);
     expect(d.excludedIds.has("t-transfer")).toBe(true);
     expect(d.excludedIds.has("t-recv")).toBe(true);
-    // ↓ ось він, борг: явно виключена зі статистики транзакція лишається
-    // у всесвіті чату (канон finyk §5 вимагає протилежного).
-    expect(d.excludedIds.has("t-excl-stat")).toBe(false);
+    // Борг закрито: `readAllData` збирає excluded-set канонічною
+    // `buildFinykExcludedTxIds`, тож явно виключена зі статистики
+    // транзакція більше не потрапляє у всесвіт чату (канон finyk §5).
+    expect(d.excludedIds.has("t-excl-stat")).toBe(true);
 
     const chatSpent = calcFinykSpendingTotal(d.statTx, {
       txSplits: TX_SPLITS,
     });
-    // 300 + 600 + 200 = 1100 (без готівки, зате з виключеною транзакцією).
-    expect(chatSpent).toBe(1100);
+    // 300 + 600 = 900. Було 1100 — зайві 200 давала `t-excl-stat`.
+    // Тепер чат сходиться з дайджестом і Hub-Reports (обидва 900).
+    // Із каноном (1150) розбіжність ЛИШАЄТЬСЯ: чат банк-only, готівки не
+    // бачить — це стадія 2г, окреме рішення, не цей патч.
+    expect(chatSpent).toBe(900);
   });
 
   it("РОЗБІЖНІСТЬ: чат-тулза aggregate_spending має власний всесвіт", () => {
