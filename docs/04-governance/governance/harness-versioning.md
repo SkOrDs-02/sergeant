@@ -2,7 +2,7 @@
 
 > **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
 > **Status:** Active
-> **Owns:** [.kilo/harness-versions.json](../../../.kilo/harness-versions.json), [`.github/workflows/harness-a-b.yml`](../../../.github/workflows/harness-a-b.yml), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
+> **Owns:** [.kilo/harness-versions.json](../../../.kilo/harness-versions.json), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
 > **Decided by:** [ADR-0072](../adr/0072-harness-versioning.md).
 
 ## Scope

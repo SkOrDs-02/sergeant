@@ -1,6 +1,6 @@
 # ADR-0034: Visual regression testing via Argos + Playwright
 
-- **Status:** accepted
+- **Status:** superseded by [ADR-0082](./0082-private-storage-repo-posture.md)
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01
@@ -8,7 +8,6 @@
 - **Related:**
   - [`apps/web/playwright.visual.config.ts`](../../../apps/web/playwright.visual.config.ts) — visual config (Argos reporter when `ARGOS_TOKEN` set, HTML report otherwise).
   - [`apps/web/tests/a11y/ds-visual-qa.spec.ts`](../../../apps/web/tests/a11y/ds-visual-qa.spec.ts) — design-system spec (4 viewports × 2 themes × 7 hub surfaces = 56 screenshots).
-  - [`.github/workflows/visual-regression.yml`](../../../.github/workflows/visual-regression.yml) — CI job.
   - [ADR-0020](./0020-testing-pyramid.md) — testing pyramid (visual regression сидить як 6-й шар поверх a11y/smoke).
   - [`docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-04-28-sergeant-comprehensive-audit.md) §P3-1 — audit row, що тригернув формалізацію.
 

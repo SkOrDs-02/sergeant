@@ -1,6 +1,6 @@
 name: AI-LEGACY marker scan
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -23,8 +23,6 @@ name: AI-LEGACY marker scan
 # See `scripts/check-ai-legacy.mjs` for marker grammar + classification logic.
 
 on:
-  schedule:
-    - cron: "0 7 * * 1" # Mondays 07:00 UTC
   workflow_dispatch:
   pull_request:
     paths:

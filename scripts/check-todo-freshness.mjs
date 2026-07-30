@@ -53,7 +53,6 @@ const IGNORE_FILES = new Set([
   "check-todo-freshness.mjs", // цей скрипт
   "eslint.baseline.js", // baseline violations не потребують дедлайнів
   "knip.json", // конфігурація
-  "CHANGELOG.md", // історія релізів
 ]);
 
 const IGNORE_EXTENSIONS = new Set([

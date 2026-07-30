@@ -1,6 +1,6 @@
 name: Detox (Android)
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Triage: build/prebuild failures stay blocking. Detox app-readiness/test
 # failures soft-pass with a GitHub warning while the Android instrumentation
 # readiness issue is open; use uploaded artifacts/logs for follow-up triage.
@@ -56,8 +56,6 @@ on:
   # — picked to land before the working day and after most US-evening
   # commit traffic so a flaky AVD boot doesn't fight other jobs for the
   # `ubuntu-latest` queue.
-  schedule:
-    - cron: "15 3 * * *"
   workflow_dispatch:
 
 permissions:

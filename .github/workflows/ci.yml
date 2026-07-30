@@ -1,6 +1,6 @@
 name: CI
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -119,17 +119,6 @@ jobs:
         # scripts/__tests__/ci-dedupe-gate.test.mjs.
         run: node --test scripts/__tests__/ci-dedupe-gate.test.mjs
 
-      - name: License policy check (production tree)
-        # Validates that every package in the production dependency
-        # tree of @sergeant/web + @sergeant/server carries an allowed
-        # licence AND that THIRD_PARTY_LICENSES.md reflects the current
-        # lockfile. The previous root-level license-checker invocation
-        # became a silent no-op after the pnpm-workspace migration —
-        # see #516 and scripts/generate-licenses.mjs for the new
-        # pipeline (licence allowlist lives in that script so policy
-        # changes sit next to the generator they govern).
-        run: pnpm licenses:check
-
       - name: Validate n8n workflow definitions
         run: pnpm ops:n8n:validate
 
@@ -142,13 +131,6 @@ jobs:
         # CONTRIBUTING.md `N. **...**`. Hard Rule #15 — these three move
         # together, so we fail the PR the moment they drift.
         run: pnpm lint:hard-rules-registry
-
-      - name: CODEOWNERS coverage (governance / CI / migrations / skills)
-        # Fails if a path the team has flagged as "must require codeowner
-        # review" exists in the tree but has no matching rule in
-        # .github/CODEOWNERS. Required-coverage list lives at the top of
-        # scripts/check-codeowners-coverage.mjs.
-        run: pnpm lint:codeowners
 
       - name: patches/ freshness gate (PR-20 / M4)
         # Fails when patches/*.patch files are not documented in

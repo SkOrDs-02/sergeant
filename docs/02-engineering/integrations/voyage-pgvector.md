@@ -154,12 +154,12 @@ Backoff: 30s → 2min → 8min → 32min → 2h. Сумарно ~2.5h, дост�
 
 ### Метрики
 
-| Метрика | Лейбли |
+| Метрика                                    | Лейбли              |
 | ------------------------------------------ | ------------------- | -------- | ------------------------- | ------------------------ |
-| `ai_memory_ingest_enqueued_total` | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
-| `ai_memory_ingest_processed_total` | `outcome=ok         | retry    | permanent_fail`, `source` |
+| `ai_memory_ingest_enqueued_total`          | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
+| `ai_memory_ingest_processed_total`         | `outcome=ok         | retry    | permanent_fail`, `source` |
 | `ai_memory_ingest_duration_ms` (histogram) | `outcome`, `source` |
-| `ai_memory_ingest_queue_depth` (gauge) | `state=waiting      | active   | delayed                   | failed` |
+| `ai_memory_ingest_queue_depth` (gauge)     | `state=waiting      | active   | delayed                   | failed`                  |
 
 ### Failure mode
 
@@ -281,11 +281,10 @@ Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scali
 
 Усі CI-workflow-и Sergeant-а використовують `pgvector/pgvector:pg17` (multi-arch manifest, SHA-pinned для supply-chain hardening):
 
-| Workflow                                                                    | Job                 | Файл                                                                 |
-| --------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------- |
-| [`ci.yml`](../../../.github/workflows/ci.yml)                               | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg17@sha256:feb68f4f…`  |
-| [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml)           | `Extended-flow E2E` | той самий digest                                                     |
-| [`visual-regression.yml`](../../../.github/workflows/visual-regression.yml) | `Visual regression` | той самий digest (workflow піднімає API сервер → міграції → preview) |
+| Workflow                                                          | Job                 | Файл                                                                |
+| ----------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------- |
+| [`ci.yml`](../../../.github/workflows/ci.yml)                     | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg17@sha256:feb68f4f…` |
+| [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml) | `Extended-flow E2E` | той самий digest                                                    |
 
 Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` залишається на `postgres:17-alpine`, бо AI-memory feature-flag-нутий через `AI_MEMORY_ENABLED=false` за замовчуванням і dev-loop не виконує міграцію 025 без ручного flip-а; коли вмикаєш фічу локально — переключай на `pgvector/pgvector:pg17` точково.
 

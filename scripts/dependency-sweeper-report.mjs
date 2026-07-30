@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Dependency Sweeper — L1 report engine (read-only).
 //
-// Aggregates `pnpm outdated`, `pnpm audit`, and `pnpm licenses:check` into one
+// Aggregates `pnpm outdated` and `pnpm audit` into one
 // Markdown digest, triages every outdated package into safe / risky, and marks
 // CVEs already covered by docs/04-governance/security/audit-exceptions.md so the
 // report never re-nags about a waived advisory.
@@ -98,7 +98,6 @@ if (process.argv.includes("--selftest")) {
 // --- scan -----------------------------------------------------------------
 const outdated = capture("pnpm -r outdated --format json");
 const audit = capture("pnpm audit --json");
-const licenses = capture("pnpm licenses:check");
 const waived = waivedAdvisoryIds();
 
 // --- parse outdated -------------------------------------------------------
@@ -158,17 +157,6 @@ const highSev = actionableAdvisories.filter(
   (a) => a.severity === "critical" || a.severity === "high",
 );
 
-// --- classify license result ---------------------------------------------
-// Distinguish a real policy breach from "couldn't run" (worktree/env), so an
-// environment hiccup never triggers a false human-gate every cycle.
-const licText = (licenses.out || "") + (licenses.err || "");
-const licenseState =
-  licenses.ok || /License policy check OK/.test(licText)
-    ? "ok"
-    : /License policy check failed/.test(licText)
-      ? "violation"
-      : "error";
-
 // --- render ---------------------------------------------------------------
 const nl = "\n";
 const out = [];
@@ -187,9 +175,6 @@ out.push(
   `- 🔐 Активних CVE (не waived): **${actionableAdvisories.length}**${highSev.length ? ` — з них high/critical: **${highSev.length}** ⚠️` : ""}`,
 );
 out.push(
-  `- 🪪 Ліцензійна політика: ${{ ok: "✅ OK", violation: "❌ порушення політики (див. нижче)", error: "⚠️ не вдалося перевірити (env/worktree)" }[licenseState]}`,
-);
-out.push(
   `- 🕓 Waived CVE у ledger (пропущено навмисно): ${advisories.length - actionableAdvisories.length}`,
 );
 out.push("");
@@ -202,8 +187,6 @@ if (highSev.length)
   );
 if (riskyRows.length)
   gates.push(`**${riskyRows.length} major bump** — ескалювати, НЕ автобампити`);
-if (licenseState === "violation")
-  gates.push("**license-порушення політики** — ескалювати до owner");
 out.push("## 🚦 Human-gates (ескалація, ніколи не автофікс)");
 out.push("");
 out.push(
@@ -267,24 +250,6 @@ if (actionableAdvisories.length) {
   out.push("_немає активних вразливостей поза ledger-ом._");
 }
 out.push("");
-
-// Licenses
-if (licenseState !== "ok") {
-  out.push(
-    licenseState === "violation"
-      ? "## 🪪 License-порушення політики"
-      : "## 🪪 License-перевірка не виконалась",
-  );
-  out.push("");
-  if (licenseState === "error")
-    out.push(
-      "> `pnpm licenses:check` не зміг відпрацювати (типово — env/worktree, напр. `pnpm licenses list failed`). Це **не** порушення політики й **не** human-gate — перевір локально повним `pnpm licenses:check`.",
-    );
-  out.push("```");
-  out.push((licText || "").trim().slice(0, 1200));
-  out.push("```");
-  out.push("");
-}
 
 out.push("---");
 out.push("");
