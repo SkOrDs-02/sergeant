@@ -165,12 +165,15 @@ export const fizrukMeasurements = sqliteTable(
     id: text().primaryKey(),
     userId: text("user_id").notNull(),
     measuredAt: text("measured_at").notNull(),
-    weightKg: integer("weight_kg"),
-    waistCm: integer("waist_cm"),
-    chestCm: integer("chest_cm"),
-    hipsCm: integer("hips_cm"),
-    bicepCm: integer("bicep_cm"),
-    sleepHours: integer("sleep_hours"),
+    // Postgres оголошує ці шість як REAL (`029_fizruk_tables.sql`).
+    // Дзеркало помилково мало `integer`, і писачі округлювали значення до
+    // цілого — 81.4 кг ставало 81. Тип вирівняно з PG.
+    weightKg: real("weight_kg"),
+    waistCm: real("waist_cm"),
+    chestCm: real("chest_cm"),
+    hipsCm: real("hips_cm"),
+    bicepCm: real("bicep_cm"),
+    sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),
     createdAt: text("created_at")

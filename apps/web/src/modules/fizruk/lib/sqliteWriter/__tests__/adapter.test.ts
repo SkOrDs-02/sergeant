@@ -304,6 +304,41 @@ describe("applyFizrukDualWriteOps", () => {
     expect(after[0]!["deleted_at"]).toBe(TS2);
   });
 
+  it("зберігає дробові заміри без округлення", async () => {
+    // Регресія: писач ганяв ці поля через `toIntOrNull`, тож 81.4 кг ставало
+    // 81, а 7.5 год сну — 8. Обидві колонки — REAL і в Postgres
+    // (`029_fizruk_tables.sql`), і в SQLite-дзеркалі. Наявний тест вище цього
+    // не ловив, бо використовував цілі числа.
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: {
+          id: "m-frac",
+          at: "2026-05-02T08:00:00Z",
+          weightKg: 81.4,
+          waistCm: 85.5,
+          sleepHours: 7.5,
+          energyLevel: 4,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_measurements WHERE id = ?",
+      ["m-frac"],
+    );
+    expect(rows[0]!["weight_kg"]).toBe(81.4);
+    expect(rows[0]!["waist_cm"]).toBe(85.5);
+    expect(rows[0]!["sleep_hours"]).toBe(7.5);
+    // `energy_level` лишається INTEGER — так само, як у Postgres.
+    expect(rows[0]!["energy_level"]).toBe(4);
+  });
+
   // --- Error handling ---
 
   it("counts every applied op in a clean batch", async () => {
