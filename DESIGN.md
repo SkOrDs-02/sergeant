@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` + Hard Rules #8–#17 (`AGENTS.md`).
 
@@ -16,12 +16,12 @@
 
 **Акцент = модуль** (module-accent containment, Hard Rule #12 — чужий акцент у чужому модулі заборонений):
 
-| Модуль    | primary               | strong (WCAG-AA під text-white) | surface   |
-| --------- | --------------------- | ------------------------------- | --------- |
-| finyk     | teal-700 `#0f766e`    | teal-800 `#115e59`              | `#f0fdfa` |
-| fizruk    | cyan-700 `#0e7490`    | cyan-800 `#155e75`              | `#ecfeff` |
-| routine   | coral-500 `#f97066`   | coral-700 `#c23a3a`             | `#fff5f3` |
-| nutrition | lime-500 `#92cc17`    | lime-800 `#466212`              | `#f8fee7` |
+| Модуль    | primary             | strong (WCAG-AA під text-white) | surface   |
+| --------- | ------------------- | ------------------------------- | --------- |
+| finyk     | teal-700 `#0f766e`  | teal-800 `#115e59`              | `#f0fdfa` |
+| fizruk    | cyan-700 `#0e7490`  | cyan-800 `#155e75`              | `#ecfeff` |
+| routine   | coral-500 `#f97066` | coral-700 `#c23a3a`             | `#fff5f3` |
+| nutrition | lime-500 `#92cc17`  | lime-800 `#466212`              | `#f8fee7` |
 
 Правило `-strong`: насичений brand-fill під `text-white` → тільки `-strong` companion (Hard Rule #9). У коді — через `--module-accent-rgb` / `--module-accent-strong-rgb` (ModuleAccentProvider), не хардкод hex.
 

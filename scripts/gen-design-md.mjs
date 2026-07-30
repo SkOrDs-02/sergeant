@@ -21,6 +21,7 @@
 //   node scripts/gen-design-md.mjs --check    # CI: exit 1 if out of date
 //
 import { readFileSync, writeFileSync } from "node:fs";
+import prettier from "prettier";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createRequire } from "node:module";
@@ -105,7 +106,17 @@ function buildBlock() {
   ].join("\n");
 }
 
-function main() {
+// AI-CONTEXT: вихід генератора ОБОВʼЯЗКОВО проганяється через Prettier — так
+// само, як у `scripts/docs/generate-hard-rules-matrix.mjs`. Без цього два
+// гейти суперечать один одному: `design:check-md` порівнює блок палітри
+// дослівно, а `format:check` перевирівнює markdown-таблицю, і полагодити
+// обидва одночасно стає неможливо (кожен фікс ламає інший).
+async function formatMarkdown(content) {
+  const opts = (await prettier.resolveConfig(designMdPath)) ?? {};
+  return prettier.format(content, { ...opts, parser: "markdown" });
+}
+
+async function main() {
   const check = process.argv.includes("--check");
   const md = readFileSync(designMdPath, "utf8");
 
@@ -121,7 +132,7 @@ function main() {
 
   const before = md.slice(0, beginIdx);
   const after = md.slice(endIdx + END.length);
-  const next = `${before}${buildBlock()}${after}`;
+  const next = await formatMarkdown(`${before}${buildBlock()}${after}`);
 
   if (next === md) {
     if (check) console.log("[gen-design-md] DESIGN.md palette is up to date.");
@@ -140,4 +151,4 @@ function main() {
   console.log("[gen-design-md] DESIGN.md palette regenerated from tokens.js.");
 }
 
-main();
+await main();
