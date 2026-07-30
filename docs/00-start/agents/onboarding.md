@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -40,7 +40,6 @@ CI hard-rules ловляться різними механізмами. Стар
 | `sergeant-design/no-raw-palette-dark-pair` (Hard Rule #13) | Те саме, правило #13. Lift у design-tokens layer (`bg-success-soft`, `text-brand-strong`).                                                                                                                                        |
 | `sergeant-design/prefer-focus-visible` (Hard Rule #14)     | Те саме, правило #14. `focus:` → `focus-visible:` всюди, крім `focus:outline-none`.                                                                                                                                               |
 | `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                                       |
-| `lint:codeowners`                                          | [`scripts/check-codeowners-coverage.mjs`](../../../scripts/check-codeowners-coverage.mjs) — кожна governance/CI/migrations поверхня має CODEOWNERS-rule.                                                                          |
 | `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                                    |
 
 Повна enforcement-матриця — у [`hard-rules-matrix.md`](../../04-governance/governance/hard-rules-matrix.md). Категорійна семантика (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) описана в `AGENTS.md` § Hard rules intro.

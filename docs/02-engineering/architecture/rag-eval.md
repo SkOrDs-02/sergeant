@@ -245,9 +245,7 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
 3. Зеркало у [`scripts/eval-rag-recall.mjs`](../../../scripts/eval-rag-recall.mjs)
    — функція + insertion у `aggregateBundle`.
 4. Розшир `--baseline` comparison у `compareToBaseline()`.
-5. Update workflow step-summary table
-   ([`.github/workflows/rag-quality-gate.yml`](../../../.github/workflows/rag-quality-gate.yml)).
-6. Update цей файл (нова секція з формулою).
+5. Update цей файл (нова секція з формулою).
 
 ## Weekly automation layer (post-PR-20)
 

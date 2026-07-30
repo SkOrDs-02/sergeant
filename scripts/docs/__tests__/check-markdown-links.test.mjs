@@ -110,10 +110,6 @@ describe("classifyTarget", () => {
 });
 
 describe("shouldSkipFile", () => {
-  it("skips THIRD_PARTY_LICENSES.md", () => {
-    assert.equal(shouldSkipFile("THIRD_PARTY_LICENSES.md"), true);
-  });
-
   it("skips .agents/skills/**", () => {
     assert.equal(shouldSkipFile(".agents/skills/foo/AGENTS.md"), true);
   });

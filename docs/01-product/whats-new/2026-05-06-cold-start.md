@@ -1,6 +1,6 @@
 # 2026-05-06 — Перший екран більше не порожній
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
 > **Status:** Active
 
 > **Modal id:** `2026-05-06-cold-start` —
@@ -41,7 +41,7 @@
   замість 4-х розрізнених install-ів.
 - **Improvement** — `THIRD_PARTY_LICENSES.md` — автогенерація + drift-check
   у CI (`pnpm licenses:check`); 1036 shipped-packages, allowlist у
-  `scripts/generate-licenses.mjs`.
+  генератор ліцензій (прибрано — ADR-0082).
 
 ## Чому
 

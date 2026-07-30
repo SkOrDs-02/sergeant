@@ -121,7 +121,7 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
   - [`.kilo/harness-versions.json`](../../../.kilo/harness-versions.json) — registry
   - [scripts/ci-bump-harness-version.mjs](../../../scripts/ci-bump-harness-version.mjs) — bumper
 - **Workflows:**
-  - `.github/workflows/ai-pr-checklist.yml` — on PR open/edit/reopen
+  - `.github/workflows/ai-pr-checklist.yml` — прибрано ([ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md))
   - `.github/workflows/harness-a-b.yml` — weekly Sun 00:00 UTC
 - **Skill integration:** §0.1 "Dynamic context" у
   [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md)

@@ -1,6 +1,6 @@
 name: Deploy API image (ghcr.io)
 
-# Owner: @SkOrDs-02 (solo maintainer per .github/CODEOWNERS).
+# Owner: @SkOrDs-02 (solo maintainer).
 #
 # Будує Hub API-образ з `Dockerfile.api` і пушить у GitHub Container
 # Registry (`ghcr.io/<owner>/sergeant-api`). Coolify на Hetzner VPS тягне

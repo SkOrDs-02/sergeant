@@ -1,11 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  appendFileSync,
-  existsSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -57,43 +51,6 @@ function appendSkillToLock(slug) {
   lock.skills = sorted;
   writeFileSync(lockPath, JSON.stringify(lock, null, 2) + "\n");
   return `appended ${slug} to .agents/skills-lock.json (hash ${hash.slice(0, 12)}…)`;
-}
-
-/**
- * Append `/packages/<slug>/  @<owner>` to `.github/CODEOWNERS` keeping the
- * `/packages/...` block sorted alphabetically. Idempotent: skips the write if
- * the path is already covered. Without this, `pnpm lint:codeowners` would fail
- * the next push because every workspace path under `/packages/` must have a
- * codeowner entry.
- */
-function appendPackageCodeowner(slug, owner) {
-  const coPath = resolve(__dirname, ".github/CODEOWNERS");
-  const raw = readFileSync(coPath, "utf8");
-  const lines = raw.split("\n");
-  const newRule = `/packages/${slug}/`;
-  if (lines.some((l) => l.trimStart().startsWith(newRule))) {
-    return `CODEOWNERS already covers ${newRule} (skipped)`;
-  }
-  // Find the contiguous run of `/packages/<x>/` lines and re-emit it sorted.
-  const blockStart = lines.findIndex((l) => /^\/packages\//.test(l));
-  if (blockStart === -1) {
-    appendFileSync(coPath, `${newRule.padEnd(40)} @${owner}\n`);
-    return `appended ${newRule} to CODEOWNERS (no existing /packages/ block found)`;
-  }
-  let blockEnd = blockStart;
-  while (blockEnd < lines.length && /^\/packages\//.test(lines[blockEnd])) {
-    blockEnd++;
-  }
-  const block = lines.slice(blockStart, blockEnd);
-  block.push(`${newRule.padEnd(40)} @${owner}`);
-  block.sort();
-  const out = [
-    ...lines.slice(0, blockStart),
-    ...block,
-    ...lines.slice(blockEnd),
-  ].join("\n");
-  writeFileSync(coPath, out);
-  return `inserted ${newRule} into CODEOWNERS /packages/ block (sorted)`;
 }
 
 /**
@@ -203,13 +160,6 @@ export default function (plop) {
   // lockfile out of sync and CI fails on the very next push.
   plop.setActionType("appendSkillToLock", (answers) => {
     return appendSkillToLock(answers.slug);
-  });
-
-  // Custom action: insert a /packages/<slug>/ entry into .github/CODEOWNERS
-  // (alphabetically within the existing /packages/ block) so that
-  // `pnpm lint:codeowners` passes immediately after `pnpm gen new-package`.
-  plop.setActionType("appendPackageCodeowner", (answers) => {
-    return appendPackageCodeowner(answers.slug, answers.owner);
   });
 
   // Custom action: insert a manifest entry for the new n8n workflow so that
@@ -548,7 +498,7 @@ export default function (plop) {
   // ── new-package ────────────────────────────────────────────────────────────
   plop.setGenerator("new-package", {
     description:
-      "New workspace package (packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md}) with CODEOWNERS entry",
+      "New workspace package (packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md})",
     prompts: [
       {
         type: "input",
@@ -594,13 +544,6 @@ export default function (plop) {
         ],
         default: "lib",
       },
-      {
-        type: "input",
-        name: "owner",
-        message: "Owner GitHub handle for CODEOWNERS (without @):",
-        default: "Skords-01",
-        validate: (v) => /^[A-Za-z0-9-]+$/.test(v) || "GitHub handle only",
-      },
     ],
     actions: () => {
       const base = "packages/{{slug}}";
@@ -635,12 +578,10 @@ export default function (plop) {
           path: `${base}/README.md`,
           templateFile: "plop-templates/new-package/README.md.hbs",
         },
-        { type: "appendPackageCodeowner" },
         (answers) =>
           `Next steps: (1) \`pnpm install\` (registers the new workspace package), ` +
           `(2) replace the stub export in src/index.ts with real surface, ` +
-          `(3) \`pnpm --filter @sergeant/${answers.slug} typecheck && pnpm --filter @sergeant/${answers.slug} test\` to verify, ` +
-          `(4) \`pnpm lint:codeowners\` to confirm the CODEOWNERS entry was inserted correctly.`,
+          `(3) \`pnpm --filter @sergeant/${answers.slug} typecheck && pnpm --filter @sergeant/${answers.slug} test\` to verify.`,
       ];
     },
   });
