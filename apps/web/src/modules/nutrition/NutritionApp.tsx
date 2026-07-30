@@ -533,7 +533,9 @@ export default function NutritionApp({
     // role moves to MeshBackground (Hard Rule #12 — accent published
     // first, mesh DOM element inside).
     <ModuleAccentProvider module="nutrition" className="contents">
-      <MeshBackground>
+      {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
+          тож і змінну висоти для `Sheet` виставляє він. */}
+      <MeshBackground className="bottom-nav-height-var">
         <NutritionHeader
           busy={busy}
           onBackToHub={onBackToHub}

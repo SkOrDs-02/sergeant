@@ -348,7 +348,10 @@ export default function App({
   // Render
   return (
     <ModuleAccentProvider module="finyk" className="contents">
-      <MeshBackground>
+      {/* `bottom-nav-height-var` — модуль малює власний `ModuleBottomNav`,
+          тож змінну для портальованих `Sheet` має виставити саме він:
+          маршрутна оболонка (`core/app/ModuleShell`) навігації не володіє. */}
+      <MeshBackground className="bottom-nav-height-var">
         <ModuleHeader
           module="finyk"
           left={
