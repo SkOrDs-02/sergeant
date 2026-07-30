@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  countWaitlistStats,
+  formatStatsReply,
   isValidWebhookSecret,
   parseCommand,
   recordStart,
@@ -45,6 +47,11 @@ describe("parseCommand", () => {
 
   it("читає /stop", () => {
     expect(parseCommand(msg("/stop"))).toEqual({ kind: "stop" });
+  });
+
+  it("читає /stats (гейт за chat_id — у роутері, не тут)", () => {
+    expect(parseCommand(msg("/stats"))).toEqual({ kind: "stats" });
+    expect(parseCommand(msg("/stats@serg_qa_bot"))).toEqual({ kind: "stats" });
   });
 
   it("ігнорує звичайний текст, порожнечу і апдейт без повідомлення", () => {
@@ -125,5 +132,82 @@ describe("recordStop", () => {
     expect(sql).not.toContain("DELETE");
     expect(sql).toContain("opted_out_at = NOW()");
     expect(query.mock.calls[0]?.[1]).toEqual([7]);
+  });
+});
+
+describe("countWaitlistStats", () => {
+  it("коерсить bigint-рядки з pg у числа (Hard Rule #1)", async () => {
+    const query = vi
+      .fn()
+      // `count(*)` у pg — bigint, і драйвер віддає його РЯДКОМ.
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            pending: "3",
+            notified: "1",
+            opted_out: "2",
+            total: "6",
+            last_signup: new Date("2026-07-29T10:00:00Z"),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { channel: "hero", count: "4" },
+          { channel: "footer", count: "2" },
+        ],
+      });
+
+    const stats = await countWaitlistStats({ query } as never);
+
+    expect(stats.pending).toBe(3);
+    expect(stats.total).toBe(6);
+    expect(stats.byChannel).toEqual([
+      { channel: "hero", count: 4 },
+      { channel: "footer", count: 2 },
+    ]);
+    // Без коерції `total + 1` дало б "61" — саме це правило й ловить.
+    expect(stats.total + 1).toBe(7);
+  });
+
+  it("не витягує chat_id і хендли — лише числа", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ total: "0" }] })
+      .mockResolvedValueOnce({ rows: [] });
+    await countWaitlistStats({ query } as never);
+
+    const sql = query.mock.calls.map((c) => String(c[0])).join(" ");
+    expect(sql).not.toMatch(/chat_id/);
+    expect(sql).not.toMatch(/telegram_username/);
+  });
+});
+
+describe("formatStatsReply", () => {
+  const base = {
+    pending: 0,
+    notified: 0,
+    optedOut: 0,
+    total: 0,
+    lastSignupAt: null,
+    byChannel: [],
+  };
+
+  it("порожній список читається як порожній, а не як нулі", () => {
+    expect(formatStatsReply(base)).toMatch(/порожній/);
+  });
+
+  it("показує розбивку за каналом і час у Києві", () => {
+    const out = formatStatsReply({
+      ...base,
+      pending: 2,
+      total: 2,
+      lastSignupAt: new Date("2026-07-29T07:30:00Z"),
+      byChannel: [{ channel: "hero", count: 2 }],
+    });
+    expect(out).toMatch(/Вейтліст: 2/);
+    expect(out).toMatch(/hero — 2/);
+    // 07:30 UTC = 10:30 Kyiv. Без явної зони власник читав би час назад.
+    expect(out).toMatch(/10:30/);
   });
 });
