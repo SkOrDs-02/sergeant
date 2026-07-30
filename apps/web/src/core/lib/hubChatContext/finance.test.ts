@@ -90,6 +90,36 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("[Останні операції]");
   });
 
+  it("monthly totals are windowed to the current month (стадія 2c)", () => {
+    // Раніше «Витрати місяця» сумували ВЕСЬ mono-mirror-кеш і підписувались
+    // як місяць: транзакція за травень тягнулась у червневе число, а прогноз
+    // до кінця місяця будувався на завищеній середній. Тепер вікно явне.
+    const out = joined(
+      baseData({
+        statTx: [
+          {
+            id: "t-june",
+            amount: -25000, // 250 грн, поточний місяць
+            time: Math.floor(Date.parse("2026-06-10T12:00:00Z") / 1000),
+            description: "ATB",
+          },
+          {
+            id: "t-may",
+            amount: -100000, // 1000 грн, минулий місяць
+            time: Math.floor(Date.parse("2026-05-20T12:00:00Z") / 1000),
+            description: "Сільпо",
+          },
+        ],
+        txCategories: { "t-june": "food", "t-may": "food" },
+      }),
+      NOW,
+    );
+    expect(out).toContain("[Витрати місяця] 250 грн");
+    // Категорійна розбивка ріжеться тим самим вікном — інакше сума категорій
+    // суперечила б підсумку в тому ж промпт-блоці.
+    expect(out).toContain("[Категорії витрат] 🛒 Продукти: 250 грн");
+  });
+
   it("emits debt details for active manual debts", () => {
     const out = joined(
       baseData({

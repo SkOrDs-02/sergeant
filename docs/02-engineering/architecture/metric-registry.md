@@ -1,6 +1,6 @@
 # Реєстр метрик — одна метрика, одна агрегація
 
-> **Last touched:** 2026-07-30 by Claude (W1-CANON-AGG стадія 2а: перший перемкнутий call-site). **Next review:** 2026-10-28.
+> **Last touched:** 2026-07-30 by Claude (W1-CANON-AGG стадії 2b-2d: метрика «витрати за період» зійшлася на всіх web-поверхнях). **Next review:** 2026-10-28.
 > **Status:** Active
 
 > Канон, який цей файл обслуговує: [`hub-coach.md §6.1`](../../01-product/model/hub-coach.md) —
@@ -29,7 +29,40 @@
 канонічною `buildFinykExcludedTxIds`, тож витрати тижня в HubChat на фікстурі
 parity-тесту **1100 → 900 грн** — чат зійшовся з дайджестом і Hub-Reports.
 Заразом на ту саму функцію переведені `lsStats.ts` і `useFinykQuickStatsBoot.ts`
-(обидва zero-delta). Розбіжність із каноном (1150) лишається — див. стадію 2d.
+(обидва zero-delta).
+
+**Статус стадій 2b-2d (2026-07-30): метрика «витрати за період» ЗІЙШЛАСЯ.**
+Усі шість web-конвеєрів дають **1150 грн** на фікстурі parity-тесту:
+
+- **2b** — чат-тулзи (`queryFinykActions.ts`): **2500 → 1150**. Найбільший
+  розрив закрито. Тулза виключала лише `hidden` і не застосовувала спліти.
+  Тут же зафіксовано розділення на ДВА всесвіти: `aggregate_spending` і
+  `compare_periods` рахують по статистичному (канонічний excluded-set +
+  спліти), а `query_transactions` лишається пошуковим (лише `hidden`, без
+  сплітів) — інакше «де мій переказ на 500?» перестало б знаходитись, а
+  пошук за сумою шукав би статистичну частку замість фактичного списання.
+- **2c** — `hubChatContext/finance.ts` на `calcFinykPeriodAggregate`. Тут
+  знайшовся баг, якого реєстр не передбачав: «Витрати місяця» **не були
+  обмежені місяцем узагалі** — інлайн-редьюс сумував увесь mono-mirror-кеш
+  і підписував це як місяць, а прогноз до кінця місяця будувався на
+  завищеній середній. Помилка мовчки залежала від глибини кеша. Вікно тепер
+  явне, і тим самим вікном ріжеться `[Категорії витрат]`, щоб сума категорій
+  не суперечила підсумку в тому ж промпт-блоці.
+- **2d** — **перша зміна Хвилі 1, що піднімає число**: тижневий дайджест,
+  коуч-інсайт, картка Витрат у Звітах і HubChat-контекст перейшли з
+  банк-only на канонічний всесвіт `bank + manual`, **900 → 1150 грн**.
+  `METRICS_VERSION` 3 → 4 у тому ж патчі. Дайджест і коуч виявились одним
+  call-site-ом — обидва ходять через `readFinykStatsContext`, тож фікс
+  зроблено там, а не двічі.
+
+Дві деталі 2d, що не були в плані. По-перше, `categoryKey` дайджесту не знав
+про ручні записи: `finyk_tx_cats` ключується банківськими id, а MCC у
+готівки немає — уся готівка осідала б у «Інше» й топ-категорії брехали б
+рівно на суму ручного світу. Гілка навмисно звужена до `manual`, бо
+банківські рядки теж несуть `categoryId`, і читати його там означало б тихо
+перекроїти вже показану розбивку. По-друге, у `readAllData` готівка додана
+**лише** до `statTx`: `transactions` лишається банк-only, бо на ньому
+рахуються борги й receivables — зовсім інша метрика.
 
 ### Чесна межа обіцянки
 
@@ -45,7 +78,7 @@ mobile обмінюються даними тільки через `/api/sync`, 
 
 | Метрика                   | Канонічна функція                                                          | Де рахується сьогодні                                                  | Збігається?                          |
 | ------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------ |
-| Витрати за період         | `buildFinykSpendingUniverse` + `calcFinykPeriodAggregate` (`finyk-domain`) | 6 конвеєрів (див. § нижче)                                             | ❌ 4 різні всесвіти транзакцій       |
+| Витрати за період         | `buildFinykSpendingUniverse` + `calcFinykPeriodAggregate` (`finyk-domain`) | 6 конвеєрів (див. § нижче)                                             | ⚠️ web зійшовся, mobile поза скоупом |
 | % виконання звичок        | `calcRoutinePeriodCompletion` (`routine-domain/period-completion`)         | модуль, дайджест web, Hub-Reports web — за розкладом; mobile — плоский | ⚠️ web зійшовся, mobile поза скоупом |
 | Середні ккал/день         | `calcNutritionPeriodAverages` (`nutrition-domain/quick-stats`)             | дайджест web і Hub-Reports web — канон; mobile — свої копії            | ⚠️ web зійшовся, mobile поза скоупом |
 | Знаменник heatmap звичок  | `buildHeatmapGrid` (`routine-domain/domain/heatmap`)                       | web (`scheduled`) + mobile (дефолт) — спільна реалізація               | ⚠️ спільний код, різні опції         |
@@ -60,12 +93,12 @@ mobile обмінюються даними тільки через `/api/sync`, 
 | #   | Конвеєр                                                                           | Всесвіт                                                                   | Витрати тижня | Δ до канону |
 | --- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- | ----------- |
 | 0   | **Канон** (`buildFinykSpendingUniverse`)                                          | банк + готівка, канонічний excluded-set, спліти                           | **1150 грн**  | —           |
-| 1   | Overview (`useOverviewData.ts`)                                                   | те саме, що канон (єдина поверхня, що бачить готівку)                     | 1150 грн      | 0           |
-| 2   | Тижневий дайджест (`useWeeklyDigest.ts` → `aggregateFinyk`)                       | лише банк; excluded-set канонічний                                        | 900 грн       | −250        |
-| 3   | Коуч-інсайт (`useCoachInsight.ts`)                                                | те саме, що (2)                                                           | 900 грн       | −250        |
-| 4   | Hub-Reports / `ExpensesCard`                                                      | те саме, що (2)                                                           | 900 грн       | −250        |
-| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                                | банк; excluded-set канонічний ✅ стадія 2а                                | 900 грн       | −250        |
-| 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)                           | банк + готівка; виключає **лише `hidden`**; спліти не застосовує          | 2500 грн      | +1350       |
+| 1   | Overview (`useOverviewData.ts`)                                                   | те саме, що канон                                                         | 1150 грн      | 0           |
+| 2   | Тижневий дайджест (`useWeeklyDigest.ts` → `aggregateFinyk`)                       | канон ✅ стадія 2d (було: лише банк)                                      | 1150 грн      | 0           |
+| 3   | Коуч-інсайт (`useCoachInsight.ts`)                                                | канон ✅ стадія 2d (спільний `readFinykStatsContext` з (2))               | 1150 грн      | 0           |
+| 4   | Hub-Reports / `ExpensesCard`                                                      | канон ✅ стадія 2d                                                        | 1150 грн      | 0           |
+| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                                | канон ✅ стадії 2а (excluded-set) + 2d (готівка)                          | 1150 грн      | 0           |
+| 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)                           | канон ✅ стадія 2b (було: лише `hidden`, без сплітів)                     | 1150 грн      | 0           |
 | 7   | Mobile Hub-Reports (`apps/mobile/src/core/hub/reports/hubReports.aggregation.ts`) | банк із MMKV; excluded = hidden + transfers; **спліти не застосовуються** | не в тесті ¹  | —           |
 | 8   | Mobile дайджест (`weeklyDigestAggregates.ts`), `coachSnapshot.ts`                 | inline-копії без сплітів / `excluded_stat` / receivables                  | не в тесті ¹  | —           |
 
@@ -168,15 +201,15 @@ prefer-kyiv-time`), а HubChat-контекст — за Києвом (`getKyivD
 Кожна стадія рухає число, яке користувач уже бачив, тому кожна — окремий PR із
 явним call-out-ом.
 
-1. **Стадія 2 — витрати finyk, по одному call-site:** ✅ (2a) `readAllData.ts` +
-   `finyk_excluded_stat_txs` — **зроблено**: HubChat-контекст збирає excluded-set
-   канонічною `buildFinykExcludedTxIds`, витрати тижня у фікстурі 1100 → 900 грн,
-   тобто чат зійшовся з дайджестом і Hub-Reports. Заразом на ту саму функцію
-   переведені `lsStats.ts` і `useFinykQuickStatsBoot.ts` (обидва zero-delta —
-   їхній ручний інлайн уже мав усі чотири частини набору); (2b)
-   `queryFinykActions.ts` на канонічний excluded-set + спліти; (2c)
-   `hubChatContext/finance.ts` на `calcFinykPeriodAggregate`; (2d) дайджест і
-   коуч починають враховувати готівку (**перша зміна, що піднімає число**).
+1. **Стадія 2 — витрати finyk, по одному call-site:** ✅ **зроблено повністю**.
+   (2a) `readAllData.ts` + `finyk_excluded_stat_txs` — HubChat-контекст збирає
+   excluded-set канонічною `buildFinykExcludedTxIds`, 1100 → 900 грн; заразом
+   переведені `lsStats.ts` і `useFinykQuickStatsBoot.ts` (обидва zero-delta).
+   (2b) `queryFinykActions.ts` на канонічний excluded-set + спліти, 2500 → 1150.
+   (2c) `hubChatContext/finance.ts` на `calcFinykPeriodAggregate` + явне вікно
+   місяця (раніше «витрати місяця» сумували весь кеш). (2d) дайджест, коуч,
+   `ExpensesCard` і HubChat-контекст враховують готівку, 900 → 1150 —
+   **перша зміна, що піднімає число**, `METRICS_VERSION` 3 → 4.
 2. **Стадія 3 — розфорк mobile:** видалити `hubReports.aggregation.ts`,
    inline-математику `weeklyDigestAggregates.ts` і `coachSnapshot.ts`;
    імпортувати канон із domain-пакетів (експорти вже резолвляться на mobile).

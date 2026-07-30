@@ -155,7 +155,21 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     excludedTxIds,
     txSplits,
     categoryKey: (tx) => {
-      const raw = txCategories[tx.id] ?? tx.mcc ?? "other";
+      // W1-CANON-AGG стадія 2d: ручний запис не має ані рядка в
+      // `finyk_tx_cats` (там ключі банківських id), ані MCC — його
+      // категорія приїжджає полем `categoryId` з
+      // `manualExpenseToTransaction`. Без цієї гілки вся готівка осідала б
+      // у «Інше», і топ-категорії брехали б рівно на суму ручного світу.
+      // Гілка навмисно звужена до `manual`: банківські рядки теж несуть
+      // `categoryId`, і зчитувати його тут означало б тихо перекроїти вже
+      // показану користувачу розбивку банківських витрат.
+      const manualTx = tx as typeof tx & {
+        manual?: boolean;
+        categoryId?: string;
+      };
+      const manualCategory =
+        manualTx.manual && manualTx.categoryId ? manualTx.categoryId : null;
+      const raw = txCategories[tx.id] ?? manualCategory ?? tx.mcc ?? "other";
       return resolveCatLabel(raw, customCategories as Category[]);
     },
   });
