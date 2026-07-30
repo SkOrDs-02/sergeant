@@ -136,6 +136,54 @@ describe("weekly-digest handler · validation", () => {
     await expect(handler(req, res)).rejects.toBeInstanceOf(ValidationError);
     expect(provider.calls).toHaveLength(0);
   });
+
+  // Контрактна трійка Hard Rule #3 для `metricsVersion` (ADR-0079 §3-§4):
+  // zod-схема ↔ серверний handler ↔ цей тест.
+  it("приймає metricsVersion і НЕ падає без нього (старіші бандли)", async () => {
+    const section = {
+      routine: { habitsTracked: 1, overallRate: 100, perHabit: [] },
+    };
+
+    // Зі штампом — так шле поточний бандл.
+    const withVersion = buildHandler();
+    await withVersion.handler(
+      asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", metricsVersion: 1, ...section },
+      }),
+      makeRes(),
+    );
+    expect(withVersion.provider.calls).toHaveLength(1);
+
+    // Без штампа — так шле PWA зі старим service-worker-ом. Поле опційне
+    // навмисно: інакше кожен незалогінений апдейт бандла давав би 400.
+    const withoutVersion = buildHandler();
+    await withoutVersion.handler(
+      asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", ...section },
+      }),
+      makeRes(),
+    );
+    expect(withoutVersion.provider.calls).toHaveLength(1);
+  });
+
+  it("ValidationError на некоректний metricsVersion", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: {
+        weekRange: "2026-W01",
+        metricsVersion: -1,
+        routine: { habitsTracked: 1, overallRate: 100, perHabit: [] },
+      },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    expect(provider.calls).toHaveLength(0);
+  });
 });
 
 describe("weekly-digest handler · prompt assembly", () => {
