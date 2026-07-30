@@ -359,25 +359,39 @@ describe("парність метрики «% виконання звичок»"
     expect(canon).toEqual({ completed: 3, scheduled: 3, rate: 1 });
   });
 
-  it("РОЗБІЖНІСТЬ: дайджест ділить на 7 днів — 43% замість 100%", () => {
+  it("ЗБІГ: дайджест рахує за розкладом — 100% (стадія 4)", () => {
     const digest = aggregateRoutine(WEEK_KEY);
     expect(digest).not.toBeNull();
+    // `total` тепер «скільки днів звичка була запланована», а не «7».
     expect(digest!.habits[0]).toMatchObject({
       done: 3,
-      total: 7,
-      completionRate: 43,
+      total: 3,
+      completionRate: 100,
     });
-    expect(digest!.overallRate).toBe(43);
+    expect(digest!.overallRate).toBe(100);
   });
 
-  it("РОЗБІЖНІСТЬ: Hub-Reports теж ділить на 7 днів — 43%", () => {
+  it("ЗБІГ: Hub-Reports теж рахує за розкладом — 100% (стадія 4)", () => {
     const reports = aggregateHabits(
-      { habits: [{ id: "h1" }], completions: COMPLETIONS },
+      { habits: [HABIT] as never, completions: COMPLETIONS },
       WEEK_DAYS,
     );
-    expect(reports.pct).toBe(43);
-    // Обидва знаменники плоскі. Вирівнювання — стадія 4, і воно ЗАБЛОКОВАНЕ
-    // невирішеною суперечністю rate↔heatmap (канон routine.md §176-192).
+    expect(reports.pct).toBe(100);
+  });
+
+  it("зрізана звичка без розкладу повертає старе плоске число", () => {
+    // Регресія на AI-DANGER у `aggregateHabits`: якщо викликач знову почне
+    // зрізати звички до `{id}`, `habitScheduledOnDate` візьме дефолтний
+    // щоденний розклад — знаменник стане 7 і 43% тихо повернеться. Цей тест
+    // існує, щоб таке падіння було видно як зміну ТЕСТУ, а не як тишу.
+    const stripped = aggregateHabits(
+      {
+        habits: [{ id: "h1", name: "Зарядка" }] as never,
+        completions: COMPLETIONS,
+      },
+      WEEK_DAYS,
+    );
+    expect(stripped.pct).toBe(43);
   });
 });
 
@@ -400,12 +414,12 @@ describe("парність метрики «середні ккал/день»",
     expect(digest!.daysLogged).toBe(2);
   });
 
-  it("РОЗБІЖНІСТЬ: Hub-Reports рахує порожній день у знаменнику — 400 ккал", () => {
+  it("ЗБІГ: Hub-Reports більше не рахує порожній день — 600 ккал (стадія 4)", () => {
     const reports = aggregateKcal(NUTRITION_LOG as never, WEEK_DAYS);
+    // `total` не рухався — рухався лише знаменник: 1200 / 2, а не 1200 / 3.
+    // `2026-05-06` має запис із порожнім `meals` і більше не тягне середнє вниз.
     expect(reports.total).toBe(1200);
-    expect(reports.avg).toBe(400);
-    // 1200 / 3, бо `2026-05-06` має запис із порожнім `meals`. Канон
-    // nutrition.md §5.2 вимагає 1200 / 2 = 600. Закривається стадією 4.
+    expect(reports.avg).toBe(600);
   });
 });
 

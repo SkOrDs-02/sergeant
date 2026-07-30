@@ -24,6 +24,7 @@ export * from "./habitOrder.js";
 export * from "./schedule.js";
 export * from "./streaks.js";
 export * from "./quickStats.js";
+export * from "./periodCompletion.js";
 export * from "./drafts.js";
 export * from "./storage.js";
 export * from "./reducers.js";

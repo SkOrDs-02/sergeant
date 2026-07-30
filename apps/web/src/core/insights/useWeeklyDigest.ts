@@ -27,6 +27,8 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
+import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
@@ -285,39 +287,29 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
   const targetKcal = prefs.dailyTargetKcal ?? 2000;
 
   const monday = new Date(`${weekKey}T00:00:00`);
-  let totalKcal = 0,
-    totalProtein = 0,
-    totalFat = 0,
-    totalCarbs = 0,
-    daysLogged = 0;
-
+  const weekDays: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
     d.setDate(monday.getDate() + i);
-    const dk = localDateKey(d);
-    const dayData = log?.[dk];
-    const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
-    if (meals.length > 0) {
-      daysLogged++;
-      for (const m of meals) {
-        totalKcal += m?.macros?.kcal ?? 0;
-        totalProtein += m?.macros?.protein_g ?? 0;
-        totalFat += m?.macros?.fat_g ?? 0;
-        totalCarbs += m?.macros?.carbs_g ?? 0;
-      }
-    }
+    weekDays.push(localDateKey(d));
   }
 
-  if (daysLogged === 0) return null;
+  // AI-CONTEXT: W1-CANON-AGG стадія 4 — числа не рухаються (дайджест уже
+  // рахував за канонічною семантикою «дні з ≥1 прийомом»), рухається лише
+  // джерело коду: inline-копія замінена викликом канону. Збіг, який тримався
+  // на дисципліні, тепер тримається на спільній функції.
+  const period = calcNutritionPeriodAverages(log, weekDays);
+
+  if (period.daysLogged === 0) return null;
 
   return {
-    avgKcal: Math.round(totalKcal / daysLogged),
-    avgProtein: Math.round(totalProtein / daysLogged),
-    avgFat: Math.round(totalFat / daysLogged),
-    avgCarbs: Math.round(totalCarbs / daysLogged),
+    avgKcal: period.avgKcal,
+    avgProtein: period.avgProtein,
+    avgFat: period.avgFat,
+    avgCarbs: period.avgCarbs,
     targetKcal,
-    daysLogged,
+    daysLogged: period.daysLogged,
   };
 }
 
@@ -350,32 +342,33 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   const completions = state.completions;
   const monday = new Date(`${weekKey}T00:00:00`);
 
-  const habitStats: HabitStat[] = habits.map((h) => {
-    let done = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-      d.setDate(monday.getDate() + i);
-      const dk = localDateKey(d);
-      const dayList = completions[h.id];
-      if (Array.isArray(dayList) && dayList.includes(dk)) {
-        done++;
-      }
-    }
-    return {
-      name: h.name || "Звичка",
-      done,
-      total: 7,
-      completionRate: Math.round((done / 7) * 100),
-    };
-  });
+  const weekDays: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
+    d.setDate(monday.getDate() + i);
+    weekDays.push(localDateKey(d));
+  }
 
-  const totalDone = habitStats.reduce((s, h) => s + h.done, 0);
-  const totalPossible = habits.length * 7;
-  const overallRate =
-    totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
+  // AI-CONTEXT: W1-CANON-AGG стадія 4 — знаменник більше не «7 днів на
+  // звичку». Локальний підрахунок замінено делегуванням у канонічну
+  // `calcRoutinePeriodCompletion`, тож дайджест, Hub-Reports і модуль Звички
+  // читають один і той самий код. `total` у `HabitStat` тепер означає
+  // «скільки днів звичка була запланована», а не «7».
+  const period = calcRoutinePeriodCompletion(habits, completions, weekDays);
 
-  return { habitCount: habits.length, overallRate, habits: habitStats };
+  const habitStats: HabitStat[] = period.perHabit.map((h) => ({
+    name: h.name,
+    done: h.done,
+    total: h.scheduled,
+    completionRate: h.completionRate,
+  }));
+
+  return {
+    habitCount: habits.length,
+    overallRate: period.pct,
+    habits: habitStats,
+  };
 }
 
 async function generateWeeklyDigest(weekKey: string): Promise<{

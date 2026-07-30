@@ -171,14 +171,15 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
-    // `aggregateHabits` expects the loose legacy shape; the domain `archived`
-    // is `boolean | undefined`, so coerce it to a strict boolean.
+    //
+    // AI-DANGER: передаємо звички ЦІЛКОМ. Раніше тут стояв `.map()`, що
+    // зрізав кожну до `{id, archived}` — і саме через це Hub-Reports фізично
+    // не міг порахувати знаменник за розкладом: `recurrence` / `weekdays` /
+    // `startDate` до агрегатора не доїжджали. Повернення зрізу поверне й
+    // старе плоске число (W1-CANON-AGG стадія 4).
     const routine = loadRoutineState();
     const routineState = {
-      habits: routine.habits.map((h) => ({
-        id: h.id,
-        archived: h.archived ?? false,
-      })),
+      habits: routine.habits,
       completions: routine.completions,
     };
     const curRange = getPeriodRange(period, offset);

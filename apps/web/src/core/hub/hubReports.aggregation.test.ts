@@ -32,12 +32,25 @@ import {
   getPeriodRange,
   localDateKey,
 } from "./hubReports.aggregation";
+import type { Habit } from "@sergeant/routine-domain/types";
 
 // ── Helper: фіксуємо `now` для детермінованих тестів ─────────────────────────
 //
 // Середа, 2025-04-09, 14:30 — посередині тижня (понеділок 2025-04-07,
 // неділя 2025-04-13) і посередині місяця (квітень 2025: 1–30).
 const NOW_WED = new Date(2025, 3, 9, 14, 30, 0);
+
+// Стадія 4: `aggregateHabits` рахує знаменник за розкладом, тож фікстура мусить
+// бути повноцінною доменною звичкою, а не зрізом `{id}`. Щоденний розклад лишає
+// всі числа цих кейсів такими, якими вони були до cutover-у.
+const habit = (id: string, extra: Partial<Habit> = {}): Habit =>
+  ({
+    id,
+    name: id,
+    recurrence: "daily",
+    startDate: "2025-01-01",
+    ...extra,
+  }) as Habit;
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -340,7 +353,7 @@ describe("aggregateHabits", () => {
 
   it("усі архівовані → 0/0 (effectively empty)", () => {
     const state = {
-      habits: [{ id: "h1", archived: true }],
+      habits: [habit("h1", { archived: true })],
       completions: { h1: dates },
     };
     expect(aggregateHabits(state, dates)).toEqual({ pct: 0, daily: {} });
@@ -348,7 +361,7 @@ describe("aggregateHabits", () => {
 
   it("100% виконання: 2 звички × 3 дні = всі 6 виконано", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }],
+      habits: [habit("h1"), habit("h2")],
       completions: { h1: dates, h2: dates },
     };
     expect(aggregateHabits(state, dates)).toMatchInlineSnapshot(`
@@ -365,7 +378,7 @@ describe("aggregateHabits", () => {
 
   it("частково: 2 звички × 3 дні; h1 виконано двічі, h2 один раз → pct = round(3/6*100) = 50", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }],
+      habits: [habit("h1"), habit("h2")],
       completions: {
         h1: ["2025-04-07", "2025-04-09"], // 2 з 3
         h2: ["2025-04-08"], // 1 з 3
@@ -385,7 +398,7 @@ describe("aggregateHabits", () => {
 
   it("daily-pct округлюється: 1 з 3 → 33%, 2 з 3 → 67%", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }, { id: "h3" }],
+      habits: [habit("h1"), habit("h2"), habit("h3")],
       completions: {
         h1: ["2025-04-07"],
         h2: ["2025-04-08", "2025-04-09"],
@@ -403,8 +416,8 @@ describe("aggregateHabits", () => {
   it("архівована звичка не зменшує знаменник", () => {
     const state = {
       habits: [
-        { id: "h1" },
-        { id: "h2", archived: true }, // не рахується
+        habit("h1"),
+        habit("h2", { archived: true }), // не рахується
       ],
       completions: {
         h1: dates, // 100% активних
@@ -469,7 +482,10 @@ describe("aggregateKcal", () => {
     };
     expect(aggregateKcal(log, dates)).toEqual({
       total: 300,
-      avg: 150, // 2 ключі (один з 0, інший з 300) → avg = 300/2 = 150
+      // Стадія 4: знаменник — дні з ≥1 прийомом, тож 300/1. Раніше було
+      // 300/2 = 150, бо день зі зламаним `meals` мав ключ і сидів у
+      // знаменнику нулем — саме та розбіжність із каноном nutrition.md §5.2.
+      avg: 300,
       daily: {
         "2025-04-07": 0,
         "2025-04-08": 300,
@@ -517,7 +533,7 @@ describe("aggregateReport — cross-module snapshot", () => {
         txSplits: {},
       },
       routineState: {
-        habits: [{ id: "h1" }, { id: "h2" }],
+        habits: [habit("h1"), habit("h2")],
         completions: {
           h1: ["2025-04-07", "2025-04-08", "2025-04-09"],
           h2: ["2025-04-07"],
