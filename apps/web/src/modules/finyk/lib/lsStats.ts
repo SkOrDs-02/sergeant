@@ -4,8 +4,8 @@
    finyk_tx_splits / finyk_custom_cats_v1) для дашбордних агрегаторів без
    mounted-хука useStorage. Ключі в burn-down 2026-Q3; міграція на
    STORAGE_KEYS — окремий крок. Читання raw тут навмисне. */
+import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { INTERNAL_TRANSFER_ID } from "../constants";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 
 // Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама логіка, що
@@ -13,24 +13,19 @@ import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 // Це дозволяє іншим сторінкам (Звіти, AI Digest) використовувати ту саму логіку
 // без mounted-хука useStorage.
 export function getFinykExcludedTxIdsFromStorage() {
-  const hidden = safeReadLS<string[]>("finyk_hidden_txs", []);
-  const txCats = safeReadLS<Record<string, string>>("finyk_tx_cats", {});
-  const recv = safeReadLS<Array<{ linkedTxIds?: string[] }>>("finyk_recv", []);
-  const extra = safeReadLS<string[]>("finyk_excluded_stat_txs", []);
-  const transferIds = Object.entries(
-    txCats && typeof txCats === "object" ? txCats : {},
-  )
-    .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
-    .map(([k]) => k);
-  const recvIds = Array.isArray(recv)
-    ? recv.flatMap((r) => (Array.isArray(r?.linkedTxIds) ? r.linkedTxIds : []))
-    : [];
-  return new Set([
-    ...(Array.isArray(hidden) ? hidden : []),
-    ...transferIds,
-    ...recvIds,
-    ...(Array.isArray(extra) ? extra : []),
-  ]);
+  // Читання ключів лишається тут (це і є призначення модуля), а сам набір
+  // збирає канонічна `buildFinykExcludedTxIds` — та сама, що обслуговує
+  // HubChat-контекст і quick-stats. Заміна zero-delta: попередня ручна
+  // збірка вже мала всі чотири частини, тож жодне число не зрушило.
+  return buildFinykExcludedTxIds({
+    hiddenTxIds: safeReadLS<string[]>("finyk_hidden_txs", []),
+    txCategories: safeReadLS<Record<string, string>>("finyk_tx_cats", {}),
+    receivables: safeReadLS<Array<{ linkedTxIds?: string[] }>>(
+      "finyk_recv",
+      [],
+    ),
+    excludedStatTxIds: safeReadLS<string[]>("finyk_excluded_stat_txs", []),
+  });
 }
 
 export function getFinykTxSplitsFromStorage() {

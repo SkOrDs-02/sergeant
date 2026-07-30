@@ -5,7 +5,8 @@
    have no SQLite canon yet and are on the 2026-Q3 burn-down list. The two
    tombstoned keys (finyk_tx_cache / finyk_info_cache) were removed in
    Dual-write teardown Phase 3 and replaced by the mirror reader below. */
-import { INTERNAL_TRANSFER_ID } from "../../../modules/finyk/constants";
+import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
+
 import { ls } from "../hubChatUtils";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import type {
@@ -42,15 +43,19 @@ export function readAllData(): AllData {
     {},
   );
 
-  const transferTxIds = Object.entries(txCategories)
-    .filter(([, catId]) => catId === INTERNAL_TRANSFER_ID)
-    .map(([txId]) => txId);
-
-  const excludedIds = new Set<string>([
-    ...hiddenTxIds,
-    ...transferTxIds,
-    ...receivables.flatMap((r) => r.linkedTxIds || []),
-  ]);
+  // AI-CONTEXT: канонічний excluded-set (Хвиля 1, W1-CANON-AGG стадія 2а).
+  // Раніше цей файл будував set вручну з ТРЬОХ частин і мовчки губив
+  // четверту — `finyk_excluded_stat_txs`, тобто транзакції, які користувач
+  // явно позначив «виключити зі статистики». Через це чат бачив ширший
+  // всесвіт витрат, ніж дайджест і Звіти, і називав більшу суму.
+  // Канон finyk §5 вимагає одного всесвіту на всіх поверхнях; реєстр
+  // розбіжностей — docs/02-engineering/architecture/metric-registry.md.
+  const excludedIds = buildFinykExcludedTxIds({
+    hiddenTxIds,
+    txCategories,
+    receivables,
+    excludedStatTxIds: ls<string[]>("finyk_excluded_stat_txs", []),
+  });
 
   const statTx = transactions.filter((t) => !excludedIds.has(t.id));
 

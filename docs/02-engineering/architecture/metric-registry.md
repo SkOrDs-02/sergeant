@@ -57,7 +57,7 @@ mobile обмінюються даними тільки через `/api/sync`, 
 | 2   | Тижневий дайджест (`useWeeklyDigest.ts` → `aggregateFinyk`)       | лише банк; excluded-set канонічний                                        | 900 грн       | −250        |
 | 3   | Коуч-інсайт (`useCoachInsight.ts`)                                | те саме, що (2)                                                           | 900 грн       | −250        |
 | 4   | Hub-Reports / `ExpensesCard`                                      | те саме, що (2)                                                           | 900 грн       | −250        |
-| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                | банк; excluded-set **без `finyk_excluded_stat_txs`**                      | 1100 грн      | −50         |
+| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                | банк; excluded-set канонічний ✅ стадія 2а                                | 900 грн       | −250        |
 | 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)           | банк + готівка; виключає **лише `hidden`**; спліти не застосовує          | 2500 грн      | +1350       |
 | 7   | Mobile Hub-Reports (`apps/mobile/.../hubReports.aggregation.ts`)  | банк із MMKV; excluded = hidden + transfers; **спліти не застосовуються** | не в тесті ¹  | —           |
 | 8   | Mobile дайджест (`weeklyDigestAggregates.ts`), `coachSnapshot.ts` | inline-копії без сплітів / `excluded_stat` / receivables                  | не в тесті ¹  | —           |
@@ -132,8 +132,12 @@ prefer-kyiv-time`), а HubChat-контекст — за Києвом (`getKyivD
 Кожна стадія рухає число, яке користувач уже бачив, тому кожна — окремий PR із
 явним call-out-ом.
 
-1. **Стадія 2 — витрати finyk, по одному call-site:** (2a) `readAllData.ts` +
-   `finyk_excluded_stat_txs` (чистий bugfix проти канону); (2b)
+1. **Стадія 2 — витрати finyk, по одному call-site:** ✅ (2a) `readAllData.ts` +
+   `finyk_excluded_stat_txs` — **зроблено**: HubChat-контекст збирає excluded-set
+   канонічною `buildFinykExcludedTxIds`, витрати тижня у фікстурі 1100 → 900 грн,
+   тобто чат зійшовся з дайджестом і Hub-Reports. Заразом на ту саму функцію
+   переведені `lsStats.ts` і `useFinykQuickStatsBoot.ts` (обидва zero-delta —
+   їхній ручний інлайн уже мав усі чотири частини набору); (2b)
    `queryFinykActions.ts` на канонічний excluded-set + спліти; (2c)
    `hubChatContext/finance.ts` на `calcFinykPeriodAggregate`; (2d) дайджест і
    коуч починають враховувати готівку (**перша зміна, що піднімає число**).
