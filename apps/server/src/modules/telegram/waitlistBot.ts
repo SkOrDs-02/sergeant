@@ -90,6 +90,19 @@ export interface StartInput {
 export interface StartResult {
   /** `true` — це перший `/start` цього чату. */
   created: boolean;
+  /**
+   * Порядковий номер у списку, рахуючи з 1.
+   *
+   * Стабільний назавжди: рахується від власного `id` рядка (`BIGSERIAL`,
+   * монотонний, рядки ніколи не видаляються — `/stop` лише ставить
+   * `opted_out_at`). Тому повторний `/start` покаже те саме число.
+   *
+   * Свідомо НЕ перераховується з урахуванням відписок: інакше номер стрибав
+   * би вниз щоразу, коли хтось попереду натиснув `/stop`, і людина читала б
+   * це як помилку. Черга на розсилку все одно рухається правильно — вибірку
+   * робить `broadcast-waitlist.mjs`, і вона відписаних пропускає.
+   */
+  position: number;
 }
 
 /**
@@ -107,7 +120,11 @@ export async function recordStart(
   pool: Pool,
   input: StartInput,
 ): Promise<StartResult> {
-  const result = await pool.query<{ created: boolean }>(
+  // `id` — BIGSERIAL, тож pg віддає його РЯДКОМ (Hard Rule #1). Тут він
+  // нікуди далі не тече — лише назад у наступний запит як параметр, — тому
+  // лишаємо рядком і не коерсимо: Number() на bigint був би втратою точності
+  // без жодної потреби.
+  const result = await pool.query<{ created: boolean; id: string }>(
     `INSERT INTO telegram_waitlist
        (chat_id, telegram_username, first_name, language_code, start_payload)
      VALUES ($1, $2, $3, $4, $5)
@@ -122,7 +139,7 @@ export async function recordStart(
      -- xmax = 0 — канонічний спосіб відрізнити INSERT від UPDATE в
      -- RETURNING після ON CONFLICT. Читати тут старе значення колонки не
      -- можна: RETURNING віддає рядок УЖЕ після UPDATE.
-     RETURNING (xmax = 0) AS created`,
+     RETURNING (xmax = 0) AS created, id`,
     [
       input.chatId,
       input.username,
@@ -132,7 +149,22 @@ export async function recordStart(
     ],
   );
 
-  return { created: result.rows[0]?.created ?? false };
+  const row = result.rows[0];
+  if (!row) return { created: false, position: 0 };
+
+  // Позиція від власного id, а не від created_at: id монотонний і не має
+  // колізій, тож ранг стабільний між викликами. Hard Rule #1 — count(*) у pg
+  // це bigint, тобто РЯДОК; коерція тут, інакше `position > limit` порівняє
+  // рядок із числом і дасть тихо неправильну гілку відповіді.
+  const rank = await pool.query<{ position: string }>(
+    `SELECT count(*) AS position FROM telegram_waitlist WHERE id <= $1`,
+    [row.id],
+  );
+
+  return {
+    created: row.created,
+    position: Number(rank.rows[0]?.position ?? 0),
+  };
 }
 
 /**
@@ -245,6 +277,25 @@ export const START_REPLY_NEW =
 
 export const START_REPLY_AGAIN =
   "Ти вже в списку — місце за тобою. Напишу, щойно відкриємо доступ.";
+
+/**
+ * Відповідь тим, хто прийшов після заповнення хвилі.
+ *
+ * Свідомо НЕ «ти не встиг». Відмова відсіює людину назавжди, а черга нам
+ * потрібна: натиснути Start і реально зареєструватись у застосунку — різні
+ * дії, і між ними відвал. Із запрошеної хвилі доходить помітно менше, ніж
+ * запрошено, тож добирати доводиться саме з черги.
+ *
+ * Тому називаємо номер і причину, чому він рухається — це утримує.
+ */
+export function startReplyQueued(position: number): string {
+  return (
+    `Перша хвиля вже заповнена — ти ${position}-й у черзі.\n\n` +
+    "Напишу, щойно звільниться місце: частина запрошених не доходить, " +
+    "і черга рухається швидше, ніж здається.\n\n" +
+    "Не актуально — надішли /stop."
+  );
+}
 
 export const STOP_REPLY =
   "Прибрав тебе зі списку. Захочеш повернутись — просто надішли /start.";

@@ -6,6 +6,7 @@ import {
   parseCommand,
   recordStart,
   recordStop,
+  startReplyQueued,
 } from "./waitlistBot.js";
 
 describe("parseCommand", () => {
@@ -80,8 +81,18 @@ describe("isValidWebhookSecret", () => {
   });
 });
 
-function fakePool(rows: unknown[] = [{ created: true }]) {
-  const query = vi.fn().mockResolvedValue({ rows, rowCount: rows.length });
+/**
+ * `recordStart` робить ДВА запити: upsert і підрахунок позиції. Мок віддає їх
+ * по черзі, щоб тест ловив зміну кількості запитів, а не мовчки її ковтав.
+ */
+function fakePool(
+  rows: unknown[] = [{ created: true, id: "1" }],
+  position = "1",
+) {
+  const query = vi
+    .fn()
+    .mockResolvedValueOnce({ rows, rowCount: rows.length })
+    .mockResolvedValue({ rows: [{ position }], rowCount: 1 });
   return { pool: { query } as never, query };
 }
 
@@ -109,7 +120,7 @@ describe("recordStart", () => {
   });
 
   it("розрізняє вставку й оновлення через xmax", async () => {
-    const { pool } = fakePool([{ created: false }]);
+    const { pool } = fakePool([{ created: false, id: "7" }], "7");
     await expect(
       recordStart(pool, {
         chatId: 1,
@@ -118,7 +129,51 @@ describe("recordStart", () => {
         languageCode: null,
         startPayload: null,
       }),
-    ).resolves.toEqual({ created: false });
+    ).resolves.toEqual({ created: false, position: 7 });
+  });
+
+  it("коерсить позицію з bigint-рядка (Hard Rule #1)", async () => {
+    // Без коерції `position > TELEGRAM_BETA_WAVE_SIZE` порівняло б рядок із
+    // числом: "40" > 35 у JS дає true випадково, а "9" > 35 — false.
+    const { pool } = fakePool([{ created: true, id: "40" }], "40");
+    const r = await recordStart(pool, {
+      chatId: 2,
+      username: null,
+      firstName: null,
+      languageCode: null,
+      startPayload: null,
+    });
+    expect(r.position).toBe(40);
+    expect(r.position + 1).toBe(41);
+  });
+
+  it("рахує позицію від власного id, а не від живих підписників", async () => {
+    const { pool, query } = fakePool([{ created: true, id: "36" }], "36");
+    await recordStart(pool, {
+      chatId: 3,
+      username: null,
+      firstName: null,
+      languageCode: null,
+      startPayload: null,
+    });
+
+    const sql = String(query.mock.calls[1]?.[0]);
+    expect(sql).toContain("count(*)");
+    expect(sql).toContain("id <= $1");
+    // opted_out_at свідомо НЕ фільтрується: інакше номер стрибав би вниз
+    // щоразу, коли хтось попереду відписався, і читався б як помилка.
+    expect(sql).not.toContain("opted_out_at");
+    expect(query.mock.calls[1]?.[1]).toEqual(["36"]);
+  });
+});
+
+describe("startReplyQueued", () => {
+  it("називає номер і не каже «не встиг»", () => {
+    const out = startReplyQueued(41);
+    expect(out).toContain("41-й у черзі");
+    // Відмова відсіює людину назавжди, а черга нам потрібна для добору.
+    expect(out).not.toMatch(/не встиг/i);
+    expect(out).toContain("/stop");
   });
 });
 

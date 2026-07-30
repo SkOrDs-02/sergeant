@@ -14,6 +14,7 @@ import {
   recordStop,
   START_REPLY_AGAIN,
   START_REPLY_NEW,
+  startReplyQueued,
   STOP_REPLY,
   type TelegramUpdate,
 } from "../modules/telegram/waitlistBot.js";
@@ -114,14 +115,20 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
         await recordStop(pool, chatId);
         reply = STOP_REPLY;
       } else {
-        const { created } = await recordStart(pool, {
+        const { created, position } = await recordStart(pool, {
           chatId,
           username: message.from?.username ?? null,
           firstName: message.from?.first_name ?? null,
           languageCode: message.from?.language_code ?? null,
           startPayload: command.payload,
         });
-        reply = created ? START_REPLY_NEW : START_REPLY_AGAIN;
+        // Позиція стабільна, тож повторний /start за межами хвилі покаже той
+        // самий номер — гілка навмисно перевіряється ДО `created`.
+        if (position > env.TELEGRAM_BETA_WAVE_SIZE) {
+          reply = startReplyQueued(position);
+        } else {
+          reply = created ? START_REPLY_NEW : START_REPLY_AGAIN;
+        }
       }
     } catch (err) {
       // Єдиний випадок, де ретрай справді потрібен: апдейт не втрачається.
