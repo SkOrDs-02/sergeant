@@ -20,7 +20,12 @@ const { sendMessageMock, envStub } = vi.hoisted(() => ({
     TELEGRAM_WAITLIST_BOT_TOKEN: "token-stub",
     TELEGRAM_WAITLIST_WEBHOOK_SECRET: "webhook-secret-stub",
     TELEGRAM_WAITLIST_ADMIN_CHAT_ID: "555000111",
-  } as Record<string, string>,
+    // Число, не рядок: у проді zod (`coerceInt.positive().default(35)`) віддає
+    // саме число, і мок мусить це дзеркалити. Якби тут лишився `undefined`,
+    // `position > undefined` дало б `false` — тобто ліміт мовчки зник би,
+    // і тест на 36-го проходив би як «всі в хвилі».
+    TELEGRAM_BETA_WAVE_SIZE: 35,
+  } as Record<string, string | number>,
 }));
 
 vi.mock("../env/env.js", () => ({ env: envStub }));
@@ -47,6 +52,16 @@ function makeApp(queryImpl: ReturnType<typeof vi.fn>) {
   app.use(express.json());
   app.use(createTelegramWebhookRouter({ pool: { query: queryImpl } as never }));
   return app;
+}
+
+function startUpdate(chatId: number) {
+  return {
+    message: {
+      chat: { id: chatId, type: "private" },
+      from: { id: chatId, is_bot: false, username: "u", first_name: "F" },
+      text: "/start hero",
+    },
+  };
 }
 
 function statsUpdate(chatId: number) {
@@ -119,6 +134,40 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
     // у кого chat_id випадково збігся з порожнім рядком.
     expect(sendMessageMock).not.toHaveBeenCalled();
     expect(query).not.toHaveBeenCalled();
+  });
+
+  it("36-й отримує номер у черзі, а не «ти в списку»", async () => {
+    // Ліміт хвилі — 35 (TELEGRAM_BETA_WAVE_SIZE, дефолт). Мок віддає upsert,
+    // потім позицію 36.
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ created: true, id: "36" }] })
+      .mockResolvedValueOnce({ rows: [{ position: "36" }] });
+
+    await request(makeApp(query))
+      .post("/api/telegram/webhook")
+      .set("X-Telegram-Bot-Api-Secret-Token", SECRET)
+      .send(startUpdate(777000111));
+
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).toContain("36-й у черзі");
+    expect(text).not.toContain("Готово");
+  });
+
+  it("35-й ще потрапляє в хвилю", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ created: true, id: "35" }] })
+      .mockResolvedValueOnce({ rows: [{ position: "35" }] });
+
+    await request(makeApp(query))
+      .post("/api/telegram/webhook")
+      .set("X-Telegram-Bot-Api-Secret-Token", SECRET)
+      .send(startUpdate(777000222));
+
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).toContain("Готово");
+    expect(text).not.toContain("черзі");
   });
 
   it("невірний секрет → 401 і жодного запиту в базу", async () => {
