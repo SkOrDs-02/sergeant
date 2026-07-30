@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-07-30 by @Skords-01. **Next review:** 2026-10-28.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -16,6 +16,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Ship any production release                    | [`release.md`](./release.md)                                                              | `sergeant-deploy-and-observability`                     | Human + agent |
 | Change deploy-config (vercel/fly/etc)          | [`deploy-config-change.md`](./deploy-config-change.md)                                    | `sergeant-deploy-and-observability`                     | Human + agent |
 | Declare a production incident                  | [`declare-incident.md`](./declare-incident.md)                                            | `sergeant-deploy-and-observability`                     | Human + agent |
+| Run or close a closed-beta wave                | [`run-beta-wave.md`](./run-beta-wave.md)                                                  | `sergeant-deploy-and-observability`                     | Human         |
 | Any privileged access governance event         | [`access-governance.md`](./access-governance.md)                                          | `sergeant-review-and-merge`                             | Human + agent |
 | Write a postmortem                             | [`write-postmortem.md`](./write-postmortem.md)                                            | `sergeant-review-and-merge`                             | Human + agent |
 | Retire a feature flag                          | [`retire-feature-flag.md`](./retire-feature-flag.md)                                      | `sergeant-review-and-merge`                             | Human + agent |

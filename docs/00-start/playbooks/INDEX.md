@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-07-21 by @devin-ai. **Next review:** 2026-10-19.
+> **Last validated:** 2026-07-30 by @devin-ai. **Next review:** 2026-10-28.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -52,6 +52,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`restore-from-backup.md`](./restore-from-backup.md)                               | Restore from Backup                                       | критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.                                                                                                    |
 | [`retire-feature-flag.md`](./retire-feature-flag.md)                               | Retire Feature Flag                                       | feature flag завершив rollout, expired, або перетворився на rollout-debt і його треба прибрати з кодової бази та registry.                                                                                                            |
 | [`rotate-secrets.md`](./rotate-secrets.md)                                         | Rotate Secrets                                            | "Secret leaked" / планова ротація / security audit / підозріла активність.                                                                                                                                                            |
+| [`run-beta-wave.md`](./run-beta-wave.md)                                           | Провести хвилю закритої бети                              | Час відкрити доступ черговій групі людей із Telegram-вейтліста — або згорнути хвилю бети й забрати доступ назад.                                                                                                                      |
 | [`run-council.md`](./run-council.md)                                               | Council — рада директорів для product рішень              | Засновник губиться, не знає що робити далі, або хоче валідувати ідею/рішення з кількох точок зору одночасно.                                                                                                                          |
 | [`run-squad-deliver.md`](./run-squad-deliver.md)                                   | Squad deliver — sequential cross-surface feature delivery | Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.                                                                                                           |
 | [`run-squad-qa.md`](./run-squad-qa.md)                                             | Squad QA — паралельний QA по всіх surfaces                | Перед release, після великого рефактора, або коли потрібен per-surface звіт про стан тестів (не лише агрегований pass/fail).                                                                                                          |
