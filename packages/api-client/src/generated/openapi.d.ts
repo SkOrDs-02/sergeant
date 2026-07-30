@@ -3039,6 +3039,7 @@ export interface components {
         /** @description POST /api/digest/weekly. */
         WeeklyDigest: {
             weekRange?: string;
+            metricsVersion?: number;
             finyk?: {
                 totalSpent?: number | null;
                 totalIncome?: number | null;
