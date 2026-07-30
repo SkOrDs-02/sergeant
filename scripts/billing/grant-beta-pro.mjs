@@ -1,18 +1,23 @@
 #!/usr/bin/env node
+// AI-LEGACY: expires 2026-10-31 — тимчасова інфраструктура закритої бети;
+// видалити разом із docs/90-work/beta-launch/ (перелік — у README тієї теки).
 /**
  * Видача та відкликання Pro-доступу для тестерів бети.
+ *
+ * ⚠️ ТИМЧАСОВИЙ ОПЕРАТОРСЬКИЙ СКРИПТ на час закритої бети.
+ * Інструкція й порядок запуску: docs/90-work/beta-launch/run-beta-wave.md
  * Спека: docs/90-work/planning/specs/telegram-waitlist.md
  *
  *   node scripts/billing/grant-beta-pro.mjs --list
  *   node scripts/billing/grant-beta-pro.mjs --emails a@b.com,c@d.com --dry-run
- *   node scripts/billing/grant-beta-pro.mjs --emails a@b.com --days 60
+ *   node scripts/billing/grant-beta-pro.mjs --emails a@b.com --days 14
  *   node scripts/billing/grant-beta-pro.mjs --emails a@b.com --revoke --dry-run
  *
  * Прапорці:
  *   --list             показує зареєстрованих і їхній поточний план; нічого не змінює
  *   --emails a,b       кому видати/відкликати (через кому)
  *   --emails-file p    те саме, але зі файлу (по одному на рядок, `#` — коментар)
- *   --days N           тривалість доступу, дефолт 60
+ *   --days N           тривалість доступу, дефолт 14
  *   --revoke           відкликати замість видати
  *   --dry-run          виконати всі записи в транзакції й ВІДКОТИТИ
  *
@@ -36,7 +41,7 @@ const valueOf = (flag) => {
 const DRY_RUN = has("--dry-run");
 const REVOKE = has("--revoke");
 const LIST = has("--list");
-const DAYS = Number(valueOf("--days") ?? 60);
+const DAYS = Number(valueOf("--days") ?? 14);
 
 const DATABASE_URL = process.env.DATABASE_URL;
 

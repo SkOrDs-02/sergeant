@@ -1,7 +1,8 @@
-# Playbook: Провести хвилю закритої бети
+# Провести хвилю закритої бети
 
 > **Last touched:** 2026-07-30 by @Skords-01. **Next review:** 2026-10-28.
-> **Status:** Active
+> **Status:** Scaffolded — тимчасовий док на час закритої бети, термін 2026-10-31.
+> Прибрати разом з усією текою: [`README.md`](./README.md) § Що прибрати.
 
 **Trigger:** Час відкрити доступ черговій групі людей із Telegram-вейтліста — або згорнути хвилю бети й забрати доступ назад.
 
@@ -13,7 +14,7 @@
 
 ## Required context
 
-- Спека вейтліста: [`docs/90-work/planning/specs/telegram-waitlist.md`](../../90-work/planning/specs/telegram-waitlist.md)
+- Спека вейтліста: [`docs/90-work/planning/specs/telegram-waitlist.md`](../planning/specs/telegram-waitlist.md)
 - Змінні оточення (канон): [`docs/02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md)
 - Два операторські скрипти — обидва запускаються **з твого ноута**, у прод не деплояться:
   - [`scripts/telegram/broadcast-waitlist.mjs`](../../../scripts/telegram/broadcast-waitlist.mjs) — розсилка інвайтів
@@ -134,7 +135,7 @@ node scripts/billing/grant-beta-pro.mjs --emails a@b.com,c@d.com --dry-run
 ### 2.3 Видати
 
 ```bash
-node scripts/billing/grant-beta-pro.mjs --emails a@b.com,c@d.com --days 60
+node scripts/billing/grant-beta-pro.mjs --emails a@b.com,c@d.com --days 14
 ```
 
 Тестери побачать Pro після перезавантаження сторінки. Багато адрес — склади список у файл (по одній на рядок, `#` — коментар) і передай `--emails-file beta.txt`.
@@ -210,7 +211,7 @@ Local-first сховище скоупиться по origin. Підняти що
 | `BACKEND_URL`             | **так**     | Origin бекенда з Coolify (без шляху). Вмикає edge-проксі, і запити стають same-origin                                                                       |
 | `VITE_POSTHOG_KEY`        | ні          | PostHog → Project Settings → Project API Key. **Той самий, що на лендінгу** — інакше воронка «клік у боті → реєстрація» розірветься на два незведені потоки |
 | `VITE_POSTHOG_HOST`       | ні          | Дефолт `https://eu.i.posthog.com`; задавати лише якщо інстанс не EU                                                                                         |
-| `VITE_SENTRY_DSN`         | ні          | sentry.io → Project Settings → Client Keys (DSN). У беті корисний: інакше помилки тестерів видно лише зі слів                                               |
+| `VITE_SENTRY_DSN`         | ні          | sentry.io → Project Settings → Client Keys (DSN). Це DSN **браузера** — не той `SENTRY_DSN`, що стоїть у Coolify для сервера (див. нижче)                   |
 | `VITE_SENTRY_ENVIRONMENT` | ні          | `beta` — щоб помилки тестерів не змішались із прод-помилками                                                                                                |
 
 ### Чого задавати НЕ треба
@@ -221,7 +222,33 @@ Local-first сховище скоупиться по origin. Підняти що
 | `SITE_URL`              | Vercel підставляє `VERCEL_PROJECT_PRODUCTION_URL` сам                                                                                                                                         |
 | `VITE_INTERNAL_API_KEY` | **Ніколи в прод-білді.** Це dev-only ключ; у бандлі він став би публічним (Hard Rule #20)                                                                                                     |
 
-> `VITE_*` вкомпільовуються в бандл під час білду, а не читаються в рантаймі. Зміна такої змінної в UI **не діє, поки не перебілдиш**.
+#### Що означає префікс `VITE_`
+
+Vite — збирач фронтенду. Він бачить **лише** ті змінні, що починаються з `VITE_`, і **вкомпільовує їхні значення прямо в JS-бандл**, який їде в браузер. Звідси два наслідки:
+
+- зміна `VITE_*` у Vercel UI **не діє, поки не перебілдиш** — це не рантайм-конфіг;
+- усе, що з `VITE_`, стає **публічним**. Ніколи не клади туди секрет.
+
+Тому одна й та сама річ має дві різні змінні на двох поверхнях:
+
+| Поверхня                  | Змінна            | Де живе                           |
+| ------------------------- | ----------------- | --------------------------------- |
+| Сервер (Node на Coolify)  | `SENTRY_DSN`      | env сервера, читається в рантаймі |
+| Браузер (бандл на Vercel) | `VITE_SENTRY_DSN` | вкомпільовується в JS             |
+
+**Значення може бути те саме**, якщо хочеш бачити помилки сервера й браузера в одному Sentry-проєкті. Але краще завести два проєкти: у них різні стектрейси, різні алерти, і фронтові помилки тестерів не топитимуть серверні. DSN — не секрет за дизайном (він write-only, для того й придуманий, щоб лежати у браузерному коді), тож у бандлі йому нормально.
+
+Те саме стосується `VITE_POSTHOG_KEY`: це публічний ключ проєкту, а не приватний API-ключ.
+
+#### Що саме класти в `BACKEND_URL`
+
+Це **публічний** URL API — той самий хост Coolify, який віддає `/api/*`. Не внутрішня адреса: middleware виконується на edge-мережі Vercel, тож ходить ззовні через інтернет.
+
+- **Тільки origin**, без шляху. Значення проходить через `backendUrl.origin` ([`apps/web/middleware.ts`](../../../apps/web/middleware.ts)), тому `https://api-хост/api` мовчки втратить `/api`. Правильно — `https://api-хост`.
+- **Тільки `https://`** (виняток — `localhost`). Інша схема робить middleware no-op, щоб проксі не даунґрейднувся на незашифрований канал.
+- **Без префікса `VITE_`** — принципово: `VITE_*` потрапляють у клієнтський бандл, а `BACKEND_URL` читається на сервері й лишається там.
+
+Значення те саме, що пішло б у `VITE_API_BASE_URL`. Різниця в тому, хто ходить на бекенд: тут — edge Vercel (запити same-origin, CORS не задіяний), там — браузер напряму, і домен бети довелося б додавати в `ALLOWED_ORIGINS`.
 
 ### Змінні для скриптів (локально, не у Vercel)
 
@@ -246,13 +273,13 @@ Local-first сховище скоупиться по origin. Підняти що
 
 ## Коли НЕ використовувати цей плейбук
 
-- Проблема з самим ботом (не відповідає, webhook падає) — це [`hotfix-prod-regression.md`](./hotfix-prod-regression.md) плюс спека вейтліста.
+- Проблема з самим ботом (не відповідає, webhook падає) — це [`hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) плюс спека вейтліста.
 - Зміна тарифів, підключення платіжного провайдера, реальні підписки — це білінг, а не бета; тут лише ручна видача `provider = 'manual'`.
-- Зміна деплой-конфігу (`vercel.json`, `Dockerfile`) — [`deploy-config-change.md`](./deploy-config-change.md).
+- Зміна деплой-конфігу (`vercel.json`, `Dockerfile`) — [`deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md).
 
 ## Related
 
-- [`deploy-config-change.md`](./deploy-config-change.md) — коли чіпаєш `vercel.json` бета-проєкту
-- [`hotfix-prod-regression.md`](./hotfix-prod-regression.md) — якщо під час бети щось лягло
-- [`rotate-secrets.md`](./rotate-secrets.md) — якщо токен бота або DB-URL засвітився
+- [`deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md) — коли чіпаєш `vercel.json` бета-проєкту
+- [`hotfix-prod-regression.md`](../../00-start/playbooks/hotfix-prod-regression.md) — якщо під час бети щось лягло
+- [`rotate-secrets.md`](../../00-start/playbooks/rotate-secrets.md) — якщо токен бота або DB-URL засвітився
 - Skill: `sergeant-deploy-and-observability`
