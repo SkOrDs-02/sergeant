@@ -1,6 +1,6 @@
 # Playbook: Підняти застосунок локально після мержу
 
-> **Last validated:** 2026-07-30 by @Skords-01. **Next review:** 2026-10-28.
+> **Last touched:** 2026-07-30 by @github-actions[bot]. **Next review:** 2026-10-28.
 > **Status:** Active
 
 **Trigger:** Щось змержено в `main` (або треба перевірити відкритий PR), і потрібно клікнути живий застосунок у себе на машині.
@@ -120,3 +120,14 @@ cloudflared tunnel --url http://localhost:3000
 - [`fix-failing-ci.md`](./fix-failing-ci.md)
 - [`docs/02-engineering/integrations/env-vars.md`](../../02-engineering/integrations/env-vars.md)
 - Skill: `sergeant-verify-before-done`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                         | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------- | ---------- |
+| [#528](https://github.com/Skords-01/Sergeant/pull/528) | feat(web): environment у PostHog + плейбук локального запуску | 2026-07-30 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
