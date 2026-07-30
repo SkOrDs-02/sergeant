@@ -15,6 +15,9 @@
 
 import { parseFizrukWorkouts } from "@shared/lib/ui/parseFizrukWorkouts";
 import { calcFinykSpendingByDate } from "@finyk/utils";
+import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
+import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
+import type { Habit } from "@sergeant/routine-domain/types";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -25,6 +28,13 @@ export interface PeriodRange {
   end: Date;
 }
 
+/* eslint-disable sergeant-design/prefer-kyiv-time --
+   Pre-existing kyiv-time burndown (Theme 1), успадкований від inline-логіки
+   `HubReports.tsx`. Ці date-helper-и читають host-local частини дати; переведення
+   їх на `@shared/lib/time/kyivTime` рухає МЕЖІ ДОБИ для всіх чотирьох звітних
+   карток одразу, тож це окрема задача з власним `METRICS_VERSION`, а не
+   побічний ефект зміни знаменника. Скоуп disable-у обмежений блоком
+   date-helper-ів нижче — агрегатори під ним правило перевіряє як завжди. */
 export function localDateKey(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -71,6 +81,7 @@ export function datesInRange(start: Date, end: Date): string[] {
   }
   return dates;
 }
+/* eslint-enable sergeant-design/prefer-kyiv-time */
 
 // ── Per-module aggregators ───────────────────────────────────────────────────
 
@@ -164,20 +175,26 @@ export function aggregateSpending(
   });
 }
 
-interface Habit {
-  id: string;
-  archived?: boolean;
-}
-
 export interface RoutineState {
   habits?: Habit[];
   completions?: Record<string, string[]>;
 }
 
 /**
- * Рахує % виконання звичок: `done / possible * 100` сумарно по всіх днях у
- * діапазоні, плюс daily-розклад для bar-chart-у. Архівовані звички
- * виключаються з `possible` (ефективно "не існували в цьому періоді").
+ * Рахує % виконання звичок за період плюс daily-розклад для bar-chart-у.
+ *
+ * AI-CONTEXT: W1-CANON-AGG стадія 4 — знаменник тепер **заплановані дні**, а
+ * не «кількість звичок × кожен день». Раніше звичка «Пн/Ср/Пт», виконана 3/3,
+ * показувалась як 43%: чотири дні, у які вона й не планувалась, сиділи в
+ * знаменнику як провали. Тепер це 100% — та сама семантика, що в модулі
+ * Звички (`completionRateForRange`) і в heatmap. Розрахунок делегований
+ * канонічній `calcRoutinePeriodCompletion`, тож розсихання неможливе за
+ * побудовою.
+ *
+ * AI-DANGER: щоб знаменник узагалі можна було порахувати, викликач мусить
+ * передати **повні** звички з розкладом (`recurrence` / `weekdays` /
+ * `startDate`). Зрізаний `{id, archived}` мовчки дасть щоденний розклад за
+ * дефолтом `habitScheduledOnDate` і поверне старе плоске число.
  *
  * Інваріант: `state == null` → `pct: 0, daily: {}` (HubReports повертав той же
  * shape; знаменник 0 теж дає 0 без NaN).
@@ -187,29 +204,21 @@ export function aggregateHabits(
   dates: string[],
 ): HabitsAggregate {
   if (!state) return { pct: 0, daily: {} };
-  const habits = Array.isArray(state.habits)
-    ? state.habits.filter((h) => !h.archived)
-    : [];
-  const completions = state.completions ?? {};
+  // `archived` фільтруємо і тут, і в каноні. Дублювання навмисне: канон
+  // зобов'язаний бути самодостатнім, а рання втеча тримає історичний контракт
+  // «нема живих звичок → `daily: {}`». Без неї bar-chart отримав би ряд
+  // нульових стовпців там, де раніше не малював нічого.
+  const habits = (Array.isArray(state.habits) ? state.habits : []).filter(
+    (h) => h && !h.archived,
+  );
   if (!habits.length) return { pct: 0, daily: {} };
 
-  const daily: Record<string, number> = {};
-  let totalPossible = 0;
-  let totalDone = 0;
-  for (const dk of dates) {
-    const possible = habits.length;
-    const done = habits.filter(
-      (h) =>
-        Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
-    ).length;
-    totalPossible += possible;
-    totalDone += done;
-    daily[dk] = possible > 0 ? Math.round((done / possible) * 100) : 0;
-  }
-  return {
-    pct: totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0,
-    daily,
-  };
+  const { pct, daily } = calcRoutinePeriodCompletion(
+    habits,
+    state.completions ?? {},
+    dates,
+  );
+  return { pct, daily };
 }
 
 interface NutritionMeal {
@@ -224,9 +233,16 @@ export type NutritionLog = Record<string, NutritionDayLog>;
 
 /**
  * Сума ккал у meal-log за період. Daily-точка — сума `meal.macros.kcal` усіх
- * прийомів за день (округлюється). `avg` — це **середнє по днях, де є хоч
- * один meal**, а не по всіх днях періоду — навмисно, бо HubReports так і
- * робив (нульові дні не "розмазують" середнє).
+ * прийомів за день (округлюється).
+ *
+ * AI-CONTEXT: W1-CANON-AGG стадія 4 — `avg` тепер ділиться на **дні з ≥1
+ * прийомом**, як вимагає канон `nutrition.md §5.2` («неповний день — це
+ * неповні дані, а не дефіцит»). Докстрінг це й обіцяв, але код брав
+ * `Object.keys(daily).length` — тобто дні, для яких **існує ключ** у лозі.
+ * День із записом і порожнім `meals` (створюється, наприклад, коли юзер
+ * відкрив день і нічого не додав) потрапляв у знаменник нулем і занижував
+ * середнє: 1200 ккал за два дні читалось як 400, а не 600. `total` і `daily`
+ * не змінились — рухається лише `avg`.
  */
 export function aggregateKcal(
   log: NutritionLog | null | undefined,
@@ -238,15 +254,18 @@ export function aggregateKcal(
   let total = 0;
   for (const dk of Object.keys(safeLog)) {
     if (!dateSet.has(dk)) continue;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- `Array.isArray` уже звузив, але TS цього не бачить крізь індексний доступ
     const meals = Array.isArray(safeLog[dk]?.meals) ? safeLog[dk].meals! : [];
     const kcal = meals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
     total += kcal;
     daily[dk] = Math.round(kcal);
   }
-  const daysWithData = Object.keys(daily).length;
+  // Знаменник — канонічний. Суми лишаємо власні: канон рахує лише по `dates`,
+  // а `daily` тут історично покриває той самий зріз, тож числа збігаються.
+  const { daysLogged } = calcNutritionPeriodAverages(safeLog, dates);
   return {
     total: Math.round(total),
-    avg: daysWithData > 0 ? Math.round(total / daysWithData) : 0,
+    avg: daysLogged > 0 ? Math.round(total / daysLogged) : 0,
     daily,
   };
 }
