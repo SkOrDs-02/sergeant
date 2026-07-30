@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
 > **Status:** Active (vendor/setup reference; behavior SSOT is architecture doc)
 
 AI memory підсистема. Canonical behavior/ownership lives in [`docs/02-engineering/architecture/ai-memory.md`](../architecture/ai-memory.md); цей файл лишається reference для Voyage/pgvector setup, env, retry/cost knobs. ADR — [`0028-pgvector-ai-memory.md`](../../04-governance/adr/0028-pgvector-ai-memory.md).
@@ -154,12 +154,12 @@ Backoff: 30s → 2min → 8min → 32min → 2h. Сумарно ~2.5h, дост�
 
 ### Метрики
 
-| Метрика                                    | Лейбли              |
+| Метрика | Лейбли |
 | ------------------------------------------ | ------------------- | -------- | ------------------------- | ------------------------ |
-| `ai_memory_ingest_enqueued_total`          | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
-| `ai_memory_ingest_processed_total`         | `outcome=ok         | retry    | permanent_fail`, `source` |
+| `ai_memory_ingest_enqueued_total` | `mode=queued        | fallback | disabled                  | enqueue_error`, `source` |
+| `ai_memory_ingest_processed_total` | `outcome=ok         | retry    | permanent_fail`, `source` |
 | `ai_memory_ingest_duration_ms` (histogram) | `outcome`, `source` |
-| `ai_memory_ingest_queue_depth` (gauge)     | `state=waiting      | active   | delayed                   | failed`                  |
+| `ai_memory_ingest_queue_depth` (gauge) | `state=waiting      | active   | delayed                   | failed` |
 
 ### Failure mode
 

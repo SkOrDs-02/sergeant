@@ -1,6 +1,6 @@
 # ADR-0069: AI-PR Checklist and validation workflow
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
 > **Status:** Superseded by ADR-0082
 
 - **Status:** superseded by [ADR-0082](./0082-private-storage-repo-posture.md)
