@@ -369,7 +369,17 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // `calcRoutinePeriodCompletion`, тож дайджест, Hub-Reports і модуль Звички
   // читають один і той самий код. `total` у `HabitStat` тепер означає
   // «скільки днів звичка була запланована», а не «7».
-  const period = calcRoutinePeriodCompletion(habits, completions, weekDays);
+  //
+  // `pausedFrom` — заморозка минулого (ADR-0079 §2). Для дайджеста це
+  // критичніше, ніж будь-де: він рахує ЗАКРИТІ тижні, тож без параметра
+  // пауза, поставлена сьогодні, переписувала б підсумки за минулі тижні —
+  // рівно те, що ADR називає «цифри за минуле перераховуються поточною
+  // конфігурацією».
+  // Host-local, як і `weekDays` вище; київська межа доби — окремий борг
+  // реєстру метрик (стадія 5г).
+  const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
+    pausedFrom: localDateKey(new Date()),
+  });
 
   const habitStats: HabitStat[] = period.perHabit.map((h) => ({
     name: h.name,

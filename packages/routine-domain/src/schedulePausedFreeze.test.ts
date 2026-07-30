@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { habitScheduledOnDate } from "./schedule.js";
 import { buildHeatmapGrid } from "./domain/heatmap/grid.js";
+import { completionRateForRange } from "./streaks.js";
 import type { Habit } from "./types.js";
 
 /**
@@ -68,6 +69,56 @@ describe("habitScheduledOnDate · paused", () => {
     expect(
       habitScheduledOnDate(active, "2025-03-15", { pausedFrom: "2026-07-30" }),
     ).toBe(true);
+  });
+});
+
+describe("completionRateForRange · pausedFrom", () => {
+  // Rate — друга половина тієї ж обіцянки ADR-0079: §1 прямо називає
+  // «пауза звички переписує rate/heatmap за минуле» серед проявів вади.
+  // Heatmap заморозили раніше, rate — тут.
+  const pausedHabit: Habit = {
+    id: "h1",
+    name: "Зарядка",
+    recurrence: "daily",
+    startDate: "2026-07-01",
+    paused: true,
+  } as Habit;
+  const completions = { h1: ["2026-07-20", "2026-07-21"] };
+
+  it("БЕЗ pausedFrom пауза обнуляє минулий діапазон", () => {
+    const r = completionRateForRange(
+      [pausedHabit],
+      completions,
+      "2026-07-15",
+      "2026-07-25",
+    );
+    // Знаменник порожній — виконані дні просто зникли зі статистики.
+    expect(r).toEqual({ completed: 0, scheduled: 0, rate: 0 });
+  });
+
+  it("З pausedFrom минулий діапазон лишається порахованим", () => {
+    const r = completionRateForRange(
+      [pausedHabit],
+      completions,
+      "2026-07-15",
+      "2026-07-25",
+      { pausedFrom: "2026-07-30" },
+    );
+    // 11 днів у діапазоні, дві відмітки — і жодна з них більше не губиться
+    // від того, що сьогодні натиснули «пауза».
+    expect(r.scheduled).toBe(11);
+    expect(r.completed).toBe(2);
+  });
+
+  it("З pausedFrom діапазон із сьогодні й далі лишається порожнім", () => {
+    const r = completionRateForRange(
+      [pausedHabit],
+      completions,
+      "2026-07-30",
+      "2026-08-05",
+      { pausedFrom: "2026-07-30" },
+    );
+    expect(r.scheduled).toBe(0);
   });
 });
 

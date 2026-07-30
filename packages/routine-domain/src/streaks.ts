@@ -111,11 +111,27 @@ export interface CompletionRateResult {
   rate: number;
 }
 
+export interface CompletionRateOptions {
+  /**
+   * День «сьогодні» (`YYYY-MM-DD`), від якого пауза починає діяти.
+   *
+   * Передається наскрізь у `habitScheduledOnDate` — див. його доку про те,
+   * чому `paused` як недатований булеан інакше вимиває звичку з усієї
+   * історії. ADR-0079 §1 називає саме rate серед проявів цієї вади
+   * («натиснув „пауза“ — і 60-денний стрік обнулився»), а §2 вимагає, щоб
+   * закрите минуле оцінювалось тим, що діяло тоді.
+   *
+   * Дефолт (не передано) зберігає історичну поведінку: пауза ретроактивна.
+   */
+  pausedFrom?: string | undefined;
+}
+
 export function completionRateForRange(
   habits: Habit[],
   completions: Record<string, string[]>,
   startKey: string,
   endKey: string,
+  opts: CompletionRateOptions = {},
 ): CompletionRateResult {
   const days: string[] = [];
   const d = parseDateKey(startKey);
@@ -127,13 +143,16 @@ export function completionRateForRange(
     d.setDate(d.getDate() + 1);
   }
 
+  const scheduleOpts =
+    opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom };
+
   let scheduled = 0;
   let completed = 0;
   for (const h of habits) {
     if (h.archived) continue;
     const set = new Set(completions[h.id] || []);
     for (const dk of days) {
-      if (!habitScheduledOnDate(h, dk)) continue;
+      if (!habitScheduledOnDate(h, dk, scheduleOpts)) continue;
       scheduled += 1;
       if (set.has(dk)) completed += 1;
     }

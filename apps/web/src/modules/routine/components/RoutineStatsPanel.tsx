@@ -13,6 +13,9 @@ import type { RoutineState } from "../lib/types";
 
 function dateKeyMinusDays(baseKey: string, daysBack: number): string {
   const d = parseDateKey(baseKey);
+  // Календарна арифметика на вже київському ключі (`baseKey` приходить з
+  // `getKyivDayKey`), а не читання host-local доби — зсув на N днів назад.
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- calendar arithmetic on a Kyiv-anchored key; not a host day key
   d.setDate(d.getDate() - daysBack);
   d.setHours(12, 0, 0, 0);
   return dateKeyFromDate(d);
@@ -41,23 +44,30 @@ export function RoutineStatsPanel({
       const m = maxStreakAllTime(h, completions[h.id] || []);
       return m > acc ? m : acc;
     }, 0);
+    // `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2). Саме тут вона
+    // найпомітніша: 7/30/90-денні зрізи цілком лежать у минулому, тож без
+    // параметра пауза, поставлена сьогодні, обнуляла б їх усі три одразу.
+    const freeze = { pausedFrom: todayKey };
     const r7 = completionRateForRange(
       habits,
       completions,
       dateKeyMinusDays(todayKey, 6),
       todayKey,
+      freeze,
     );
     const r30 = completionRateForRange(
       habits,
       completions,
       dateKeyMinusDays(todayKey, 29),
       todayKey,
+      freeze,
     );
     const r90 = completionRateForRange(
       habits,
       completions,
       dateKeyMinusDays(todayKey, 89),
       todayKey,
+      freeze,
     );
     return { maxAllTime, r7, r30, r90 };
   }, [routine.habits, routine.completions, todayKey]);

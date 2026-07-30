@@ -202,6 +202,12 @@ export function useRoutineDerivedData({
     [routine.habits, routine.completions, todayKey],
   );
 
+  // AI-CONTEXT: `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2).
+  // `paused` — недатований булеан, тож без цього параметра пауза, поставлена
+  // сьогодні, ретроактивно вимиває звичку з усього діапазону: людина ставить
+  // паузу і бачить, як її минулий місяць переписується. Те саме трактування
+  // вже діє в heatmap (`freezePausedPast`), тут воно доводить rate до тієї ж
+  // семантики.
   const completionRateVal = useMemo(
     () =>
       completionRateForRange(
@@ -209,10 +215,20 @@ export function useRoutineDerivedData({
         routine.completions,
         range.startKey,
         range.endKey,
+        { pausedFrom: todayKey },
       ),
-    [routine.habits, routine.completions, range.startKey, range.endKey],
+    [
+      routine.habits,
+      routine.completions,
+      range.startKey,
+      range.endKey,
+      todayKey,
+    ],
   );
 
+  // Zero-delta: діапазон — рівно сьогодні, а `dateKey >= pausedFrom` відсіює
+  // сьогоднішній день так само, як недатована пауза. Параметр стоїть заради
+  // однієї семантики на всіх викликах, а не заради зміни числа.
   const dayProgress = useMemo(
     () =>
       completionRateForRange(
@@ -220,6 +236,7 @@ export function useRoutineDerivedData({
         routine.completions,
         todayKey,
         todayKey,
+        { pausedFrom: todayKey },
       ),
     [routine.habits, routine.completions, todayKey],
   );
