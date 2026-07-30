@@ -109,6 +109,15 @@ export function initPostHog(): Promise<void> {
       posthog.register({
         platform: getPlatform(),
         is_capacitor: isCapacitor(),
+        // Середовище, з якого прилетіла подія. Ключ PostHog свідомо один
+        // на всі середовища — інакше воронка «лендінг → бот → реєстрація»
+        // розпалась би на кілька незведених проєктів. Ціна цього рішення —
+        // події закритої бети незрізняються від прод-подій, якщо їх нічим
+        // не позначити; ця властивість і є позначкою.
+        //
+        // Дефолт `production`, бо незаданий `VITE_APP_ENV` у проді —
+        // нормальний стан, а в бета-/preview-збірках змінна задається явно.
+        environment: import.meta.env["VITE_APP_ENV"] || "production",
       });
 
       posthogModule = posthog;
