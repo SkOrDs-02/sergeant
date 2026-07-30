@@ -38,3 +38,14 @@
 - ADR-0034 (visual regression) і ADR-0069 (AI-PR checklist) стають superseded: механізми прибрано.
 - Ліцензійна відповідність більше не перевіряється механічно. Це прийнятно, доки код не розповсюджується; при поверненні до дистрибуції гейт треба відновити разом з `THIRD_PARTY_LICENSES.md`.
 - Якщо репо перемкнуть у private, окремо доведеться переглянути `codeql.yml` (потребує GitHub Advanced Security) і `storybook-deploy.yml` (Pages з private repo потребує платного плану).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                   | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
+| [#514](https://github.com/Skords-01/Sergeant/pull/514) | chore(ci): прибрати release/distribution та solo-overhead автоматизацію | 2026-07-30 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
