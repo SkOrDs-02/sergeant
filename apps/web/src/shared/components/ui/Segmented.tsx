@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 
@@ -100,12 +100,53 @@ export function Segmented<V extends string = string>({
 }: SegmentedProps<V>) {
   const activeClass =
     style === "solid" ? VARIANT_SOLID[variant] : VARIANT_SOFT[variant];
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  // Roving tabindex — one tab stop per tablist, ArrowLeft/ArrowRight/Home/End
+  // move focus AND selection, mirroring `ModuleBottomNav`'s tablist mode.
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const tabs = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ??
+        [],
+    );
+    if (tabs.length === 0) return;
+
+    event.preventDefault();
+    const focusedIndex = tabs.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    const activeIndex = Math.max(
+      0,
+      items.findIndex((item) => item.value === value),
+    );
+    const fromIndex = focusedIndex >= 0 ? focusedIndex : activeIndex;
+    const targetIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : event.key === "ArrowRight"
+            ? (fromIndex + 1) % tabs.length
+            : (fromIndex - 1 + tabs.length) % tabs.length;
+    const target = tabs[targetIndex];
+    const item = items[targetIndex];
+    if (!target || !item) return;
+    target.focus();
+    if (item.value !== value) {
+      hapticTap();
+      onChange(item.value);
+    }
+  };
 
   return (
     <div
+      ref={tablistRef}
       role="tablist"
       aria-label={ariaLabel}
-      className={cn("flex flex-wrap items-center gap-1.5", className)}
+      className={cn("flex flex-wrap items-center gap-3", className)}
     >
       {items.map((item) => {
         const isActive = item.value === value;
@@ -117,6 +158,8 @@ export function Segmented<V extends string = string>({
             aria-selected={isActive}
             aria-label={item.ariaLabel}
             title={item.title}
+            tabIndex={isActive ? 0 : -1}
+            onKeyDown={handleKeyDown}
             onClick={() => {
               if (item.value !== value) {
                 hapticTap();

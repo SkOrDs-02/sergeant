@@ -55,6 +55,7 @@ import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
   getSyncTone,
+  type SyncTone,
   SwipeProgressBar,
   SWIPE_THRESHOLD_PX,
 } from "./components/SyncIndicator";
@@ -545,7 +546,7 @@ function FinykHeaderIcon(): React.ReactElement {
 }
 
 interface SyncPillProps {
-  syncTone: { dot: string; text: string; pill: string };
+  syncTone: SyncTone;
 }
 
 function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
@@ -560,6 +561,10 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
       role="status"
       aria-label={`Стан синхронізації: ${syncTone.text}`}
     >
+      {/* Іконка — другий, не-кольоровий канал стану: сама крапка одна на
+          вузьких екранах (текст ховається `hidden sm:inline`) не дає зрячим
+          людям розрізнити 5 станів без кольору. */}
+      <Icon name={syncTone.icon} size="xs" className="shrink-0" />
       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
       <span className="hidden sm:inline">{syncTone.text}</span>
     </div>
