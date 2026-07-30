@@ -49,7 +49,7 @@
     "lint:governance-sync": "node scripts/check-governance-sync.mjs",
     "lint:agents-family-sync": "node scripts/check-agents-family-sync.mjs",
     "lint:pii-handling-drift": "node scripts/lint-pii-handling-drift.mjs",
-    "lint:hard-rules-registry": "node scripts/check-hard-rules-registry.mjs",
+    "lint:hard-rules-registry": "node scripts/check-hard-rules-registry.mjs && node --test scripts/__tests__/check-hard-rules-registry.test.mjs",
     "lint:todo-freshness": "node scripts/check-todo-freshness.mjs",
     "api:generate-openapi": "node scripts/api/generate-openapi.mjs",
     "api:check-openapi": "node scripts/api/check-openapi-fresh.mjs",

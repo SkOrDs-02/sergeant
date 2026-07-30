@@ -191,23 +191,31 @@ Reviewer checklist живе в [docs/04-governance/governance/review-checklist.m
 
 ### Hard rules (з `AGENTS.md`)
 
-1. **DB types: coerce `bigint` to `number` in serializers**
-2. **RQ keys: only via centralized factories**
-3. **API contract: server response shape ↔ `api-client` types ↔ test**
-4. **SQL migrations: sequential, no gaps, two-phase for DROP**
-5. **Conventional Commits: explicit scope enum**
-6. **No force push to main/master**
-7. **Pre-commit hooks via Husky — do not skip**
-8. **Lifecycle markers — every file/doc declares its status**
-9. **Read governance before coding; update docs alongside code; internal docs in Ukrainian**
-10. **Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS**
-11. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
-12. **No OpenClaw PATs in production**
-13. **Pino redaction policy enforced**
-14. **Skill body security scan — no injection/exfiltration patterns in SKILL.md**
-15. **Archive-move depth integrity — no broken `../X` links in docs archives**
-16. **Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker**
-17. **Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json`**
+Нумерація — канонічна, з розривами: правила #8, #9, #11–#14, #16, #17 і #24
+retired рішенням [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md).
+Тому список — таблиця, а не ordered list: Prettier нормалізує маркери ordered
+list-а і схлопує розриви в `1..N`, мовчки перенумеровуючи все після першого
+розриву.
+
+| #   | Rule                                                                                     |
+| --- | ---------------------------------------------------------------------------------------- |
+| 1   | DB types: coerce `bigint` to `number` in serializers                                     |
+| 2   | RQ keys: only via centralized factories                                                  |
+| 3   | API contract: server response shape ↔ `api-client` types ↔ test                          |
+| 4   | SQL migrations: sequential, no gaps, two-phase for DROP                                  |
+| 5   | Conventional Commits: explicit scope enum                                                |
+| 6   | No force push to main/master                                                             |
+| 7   | Pre-commit hooks via Husky — do not skip                                                 |
+| 10  | Lifecycle markers — every file/doc declares its status                                   |
+| 15  | Read governance before coding; update docs alongside code; internal docs in Ukrainian    |
+| 18  | Module-size discipline — `max-lines: 600` for web TS/TSX and server TS/JS                |
+| 19  | Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo         |
+| 20  | No OpenClaw PATs in production                                                           |
+| 21  | Pino redaction policy enforced                                                           |
+| 22  | Skill body security scan — no injection/exfiltration patterns in SKILL.md                |
+| 23  | Archive-move depth integrity — no broken `../X` links in docs archives                   |
+| 25  | Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker                     |
+| 26  | Merged PRs touching canonical docs must update `docs/04-governance/pr-ledger/index.json` |
 
 Джерела істини:
 

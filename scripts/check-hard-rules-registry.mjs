@@ -236,9 +236,14 @@ function parseAgentsRules(text) {
   return parseAgentsHeadingRules(text);
 }
 
+// AI-CONTEXT: канонічна форма — та сама компактна таблиця, що в AGENTS.md.
+// Ordered list більше не тримає нумерацію: ADR-0081 вилучив правила
+// #8/#9/#11–#14/#16/#17/#24, тож живий набір має розриви (…7, 10, 15, 18…), а
+// Prettier нормалізує маркери ordered list-а і схлопує їх у 1..N. Legacy-форма
+// лишається валідною — фікстури й сторонні файли її ще використовують.
 function parseContribRules(text) {
+  const out = parseAgentsTableRules(text);
   const re = /^(\d+)\.\s+\*\*(.+?)\*\*/gm;
-  const out = new Map();
   let m;
   while ((m = re.exec(text)) !== null) {
     out.set(Number(m[1]), m[2].trim());

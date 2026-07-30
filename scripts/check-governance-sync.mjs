@@ -76,7 +76,7 @@ function ok(msg) {
 // Compact rules table parser (post-0009 PR 3.2 canonical AGENTS.md format).
 // Mirrors `scripts/check-hard-rules-registry.mjs` so both gates agree on what
 // "the AGENTS.md rule list" means.
-function parseAgentsTableRules(text) {
+export function parseAgentsTableRules(text) {
   const out = new Map();
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
@@ -123,9 +123,18 @@ function checkHardRulesSync() {
     }
   }
 
-  // Extract rule numbers from CONTRIBUTING.md (N. **...**)
+  // Extract rule numbers from CONTRIBUTING.md. Canonical form is the same
+  // compact table as AGENTS.md; the legacy `N. **...**` ordered list is still
+  // accepted.
+  //
+  // AI-CONTEXT: ordered lists cannot carry the canonical numbering any more.
+  // ADR-0081 retired rules #8/#9/#11–#14/#16/#17/#24, so the live set has gaps
+  // (…7, 10, 15, 18…). Prettier normalises ordered-list markers and collapses
+  // those gaps to 1..N, which silently renumbered every rule past the first gap
+  // and made this check report the tail as "missing". A table has no such
+  // markers, so the numbers survive `pnpm format`.
+  const contribRules = new Set(parseAgentsTableRules(contribContent).keys());
   const contribRuleRe = /^(\d+)\.\s+\*\*(.+?)\*\*/gm;
-  const contribRules = new Set();
   let match;
   while ((match = contribRuleRe.exec(contribContent)) !== null) {
     contribRules.add(parseInt(match[1], 10));

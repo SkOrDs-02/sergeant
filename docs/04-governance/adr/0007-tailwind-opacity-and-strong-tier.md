@@ -1,6 +1,7 @@
 # ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong` tier
 
 - **Status:** accepted
+- **Enforcement:** частково superseded — [ADR-0081](./0081-repository-simplification.md) вилучив ESLint-правила `valid-tailwind-opacity` і `no-low-contrast-text-on-fill` разом із їхніми тестами. Сама шкала й `-strong` tier лишаються канонічними в design tokens; механічного gate більше немає.
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01
@@ -64,7 +65,10 @@ Tailwind v3 у режимі JIT генерує утиліту `<color>/<N>` ті
    - `theme.opacity` у preset-і (інакше Tailwind не згенерує утиліту).
    - `ALLOWED_TAILWIND_OPACITY_STEPS` у ESLint-плагіні (інакше CI зламає валідне використання).
 
-   Mismatch — ловиться unit-тестом плагіна (`packages/eslint-plugin-sergeant-design/__tests__/valid-tailwind-opacity.test.mjs`), що читає preset і порівнює дві шкали. Розсихання (drift) — СI-error.
+   Mismatch колись ловився unit-тестом плагіна `valid-tailwind-opacity`, що читав
+   preset і порівнював дві шкали. **Правило й тест вилучені** рішенням
+   [ADR-0081](./0081-repository-simplification.md) — сьогодні шкала тримається
+   лише preset-ом і design-review; механічного gate немає.
 
 ### Consequences
 
@@ -183,9 +187,12 @@ accepted.
 
 ### Decision
 
-**Unit-тест плагіна** (`packages/eslint-plugin-sergeant-design/__tests__/valid-tailwind-opacity.test.mjs`) імпортує preset і порівнює `Object.keys(preset.theme.opacity)` з `ALLOWED_TAILWIND_OPACITY_STEPS`. Mismatch — fail. Цей тест запускається `pnpm lint:plugins` → CI-job `check`.
+**Unit-тест плагіна** імпортував preset і порівнював `Object.keys(preset.theme.opacity)` з `ALLOWED_TAILWIND_OPACITY_STEPS`; mismatch — fail у `pnpm lint:plugins` → CI-job `check`. Той самий принцип діяв для `-strong`.
 
-Той самий принцип для `-strong` — є unit-тест, що `bg-{family}-strong` розв'язується preset-ом для кожного `family` зі списку у `no-low-contrast-text-on-fill`.
+> **Статус на 2026-07-30:** правила `valid-tailwind-opacity` і
+> `no-low-contrast-text-on-fill` разом із їхніми тестами вилучені рішенням
+> [ADR-0081](./0081-repository-simplification.md) (Hard Rules #8/#9 retired).
+> Секція лишається як історичний запис рішення 2026-04-27.
 
 ### Consequences
 

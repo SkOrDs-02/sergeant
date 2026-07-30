@@ -48,7 +48,7 @@ mobile обмінюються даними тільки через `/api/sync`, 
 | Витрати за період         | `buildFinykSpendingUniverse` + `calcFinykPeriodAggregate` (`finyk-domain`) | 6 конвеєрів (див. § нижче)                                  | ❌ 4 різні всесвіти транзакцій    |
 | % виконання звичок        | `completionRateForRange` (`routine-domain/streaks`)                        | модуль (канон), дайджест web+mobile, Hub-Reports            | ❌ 2 несумісні знаменники         |
 | Середні ккал/день         | `calcNutritionPeriodAverages` (`nutrition-domain/quick-stats`)             | дайджест web+mobile, Hub-Reports                            | ❌ 2 знаменники                   |
-| Знаменник heatmap звичок  | `buildHeatmapGrid` (`routine-domain/domain/heatmap`)                       | web + mobile — одна реалізація після G1                     | ⚠️ збіг реалізації, не семантики  |
+| Знаменник heatmap звичок  | `buildHeatmapGrid` (`routine-domain/domain/heatmap`)                       | web (`scheduled`) + mobile (дефолт) — спільна реалізація    | ⚠️ спільний код, різні опції      |
 | Обʼєм тренувань за період | `calcFizrukPeriodAggregate` (`fizruk-domain/lib`)                          | дайджест web, дайджест mobile, Hub-Reports (лише кількість) | ✅ числа збігаються, 3 копії коду |
 
 ### Витрати за період — 6 конвеєрів
@@ -57,17 +57,17 @@ mobile обмінюються даними тільки через `/api/sync`, 
 зі сплітом 600/400 + 200 грн `excluded_stat` + 500 грн внутрішній переказ +
 250 грн погашення боргу + 150 грн прихована + **250 грн готівки**):
 
-| #   | Конвеєр                                                           | Всесвіт                                                                   | Витрати тижня | Δ до канону |
-| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- | ----------- |
-| 0   | **Канон** (`buildFinykSpendingUniverse`)                          | банк + готівка, канонічний excluded-set, спліти                           | **1150 грн**  | —           |
-| 1   | Overview (`useOverviewData.ts`)                                   | те саме, що канон (єдина поверхня, що бачить готівку)                     | 1150 грн      | 0           |
-| 2   | Тижневий дайджест (`useWeeklyDigest.ts` → `aggregateFinyk`)       | лише банк; excluded-set канонічний                                        | 900 грн       | −250        |
-| 3   | Коуч-інсайт (`useCoachInsight.ts`)                                | те саме, що (2)                                                           | 900 грн       | −250        |
-| 4   | Hub-Reports / `ExpensesCard`                                      | те саме, що (2)                                                           | 900 грн       | −250        |
-| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                | банк; excluded-set канонічний ✅ стадія 2а                                | 900 грн       | −250        |
-| 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)           | банк + готівка; виключає **лише `hidden`**; спліти не застосовує          | 2500 грн      | +1350       |
-| 7   | Mobile Hub-Reports (`apps/mobile/.../hubReports.aggregation.ts`)  | банк із MMKV; excluded = hidden + transfers; **спліти не застосовуються** | не в тесті ¹  | —           |
-| 8   | Mobile дайджест (`weeklyDigestAggregates.ts`), `coachSnapshot.ts` | inline-копії без сплітів / `excluded_stat` / receivables                  | не в тесті ¹  | —           |
+| #   | Конвеєр                                                                           | Всесвіт                                                                   | Витрати тижня | Δ до канону |
+| --- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------- | ----------- |
+| 0   | **Канон** (`buildFinykSpendingUniverse`)                                          | банк + готівка, канонічний excluded-set, спліти                           | **1150 грн**  | —           |
+| 1   | Overview (`useOverviewData.ts`)                                                   | те саме, що канон (єдина поверхня, що бачить готівку)                     | 1150 грн      | 0           |
+| 2   | Тижневий дайджест (`useWeeklyDigest.ts` → `aggregateFinyk`)                       | лише банк; excluded-set канонічний                                        | 900 грн       | −250        |
+| 3   | Коуч-інсайт (`useCoachInsight.ts`)                                                | те саме, що (2)                                                           | 900 грн       | −250        |
+| 4   | Hub-Reports / `ExpensesCard`                                                      | те саме, що (2)                                                           | 900 грн       | −250        |
+| 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                                | банк; excluded-set канонічний ✅ стадія 2а                                | 900 грн       | −250        |
+| 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)                           | банк + готівка; виключає **лише `hidden`**; спліти не застосовує          | 2500 грн      | +1350       |
+| 7   | Mobile Hub-Reports (`apps/mobile/src/core/hub/reports/hubReports.aggregation.ts`) | банк із MMKV; excluded = hidden + transfers; **спліти не застосовуються** | не в тесті ¹  | —           |
+| 8   | Mobile дайджест (`weeklyDigestAggregates.ts`), `coachSnapshot.ts`                 | inline-копії без сплітів / `excluded_stat` / receivables                  | не в тесті ¹  | —           |
 
 > ¹ Mobile-модулі не резолвляться у web-vitest (RN-граф). Симетричний
 > parity-тест для mobile — стадія 3, разом із розфорком.
@@ -86,10 +86,22 @@ mobile обмінюються даними тільки через `/api/sync`, 
 | Дайджест web (`aggregateRoutine`) і mobile         | 7 днів × кількість звичок                | 43%                             |
 | Hub-Reports (`aggregateHabits`)                    | кількість звичок × кожен день            | 43%                             |
 
-Вирівнювання **заблоковане**: канон `routine.md §176-192` фіксує суперечність
-rate ↔ heatmap як невирішену, і перемикання дайджесту на schedule-aware
-знаменник без рішення founder-а означає мовчки вибрати сторону. Див.
-відкрите питання в задачі W1-CANON-AGG.
+**Розблоковано 2026-07-30.** Суперечність rate ↔ heatmap знята
+[ADR-0079](../../04-governance/adr/0079-frozen-past-and-canonical-denominator.md) §3:
+сторона обрана явно — знаменник **за розкладом**, і модульний heatmap на вебі вже
+на ньому (`denominator: "scheduled"` + `freezePausedPast`). Тобто перемикання
+дайджесту й Hub-Reports більше не «мовчки вибрати сторону» — воно лише доганяє
+вже ухвалене рішення. Лишається як **стадія 4** W1-CANON-AGG.
+
+Дві застороги для стадії 4:
+
+- **Число користувача зрушить** (43% → 100% на прикладі вище), тож PR має бампнути
+  `METRICS_VERSION` (`packages/shared/src/lib/metricsVersion.ts`) — інакше тренд
+  порівнюватиме несумісні версії (ADR-0079 §4).
+- **Мобілка навмисно поза скоупом** (рішення власника: фокус на вебі для тестування
+  продукту), тож до розфорку web і mobile показуватимуть різні відсотки. Це
+  свідомий, а не випадковий розрив — зафіксовано в
+  [`routine.md §5`](../../01-product/model/routine.md).
 
 ### Середні ккал/день — 2 знаменники
 
