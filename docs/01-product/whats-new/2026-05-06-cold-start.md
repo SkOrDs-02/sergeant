@@ -41,7 +41,7 @@
   замість 4-х розрізнених install-ів.
 - **Improvement** — `THIRD_PARTY_LICENSES.md` — автогенерація + drift-check
   у CI (`pnpm licenses:check`); 1036 shipped-packages, allowlist у
-  `scripts/generate-licenses.mjs`.
+  генератор ліцензій (прибрано — ADR-0082).
 
 ## Чому
 

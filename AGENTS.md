@@ -93,7 +93,7 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 
 ## Module ownership map
 
-Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/02-engineering/architecture/module-ownership.md`](./docs/02-engineering/architecture/module-ownership.md). CODEOWNERS coverage and `Secondary` column completeness are enforced by `pnpm lint:codeowners`.
+Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/02-engineering/architecture/module-ownership.md`](./docs/02-engineering/architecture/module-ownership.md).
 
 | Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                    |
 | ---------------------------------------- | ------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -104,7 +104,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 | `packages/**`                            | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/02-engineering/architecture/module-ownership.md#packages)         |
 | `ops/**`, `tools/**`, `scripts/**`       | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/02-engineering/architecture/module-ownership.md#ops-surfaces) |
 
-> ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/00-start/playbooks/operational-continuity.md`](./docs/00-start/playbooks/operational-continuity.md). Empty Secondary cells fail `pnpm lint:codeowners`.
+> ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/00-start/playbooks/operational-continuity.md`](./docs/00-start/playbooks/operational-continuity.md).
 
 ## Hard rules (do not break)
 
@@ -195,7 +195,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ## Verification before PR
 
-`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test --concurrency=2`, який запускає обидва pipelines паралельно без перепідписування вкладених test worker-ів). When changing UI: attach a screenshot. When bumping deps or shipping a heavy import: `pnpm licenses:check` + `pnpm --filter @sergeant/web size` (both blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
+`pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test --concurrency=2`, який запускає обидва pipelines паралельно без перепідписування вкладених test worker-ів). When changing UI: attach a screenshot. When shipping a heavy import: `pnpm --filter @sergeant/web size` (blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
 
 ## Deployment & test users
 
@@ -231,7 +231,5 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 Rollout завершено 2026-06-29. Чотири компоненти:
 
 - **Dynamic snapshot** — `tools/agent-snapshot/snapshot.mjs`, runs `pnpm snapshot`
-- **AI-PR checklist** — `.github/PULL_REQUEST_TEMPLATE.md` § AI-Generation Signals,
-  enforced by `.github/workflows/ai-pr-checklist.yml`
 - **Harness versioning** — `.kilo/harness-versions.json`, A/B workflow
   Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)

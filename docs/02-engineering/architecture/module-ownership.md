@@ -54,4 +54,3 @@
 - [`repo-map.md`](./repo-map.md) — per-app stack matrix + per-package purpose.
 - [`module-structure.md`](./module-structure.md) — canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + per-module deviations.
 - [`docs/04-governance/governance/rules/`](../../04-governance/governance/rules) — per-rule canonical bodies referenced by the table notes.
-- [`.github/CODEOWNERS`](../../../.github/CODEOWNERS) — branch-protection-enforced reviewer assignment per path; coverage gate is `pnpm lint:codeowners`.

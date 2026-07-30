@@ -228,7 +228,7 @@ pnpm gen migration      # apps/server/src/migrations/<NNN>_<name>.sql + .down.sq
 pnpm gen rq-hook        # apps/web/src/modules/<module>/hooks/use<Name>.ts
 pnpm gen hubchat-tool   # server toolDef stub + web action stub
 pnpm gen endpoint       # server handler + test + api-client stub
-pnpm gen new-package    # packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md} + CODEOWNERS entry
+pnpm gen new-package    # packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md}
 ```
 
 `new-skill` і `new-playbook` за замовчуванням генерують UA-текст (Hard Rule #15). Якщо матеріал свідомо англомовний (зовнішній/user-facing), вибери `lang: en` у промпті — генератор додасть `lang: en` у frontmatter і linter візьме файл у allowlist.
@@ -246,7 +246,6 @@ pnpm docs:check-playbook-index
 pnpm lint:governance-sync --strict
 pnpm lint:hard-rules-registry
 pnpm hard-rules:check
-pnpm lint:codeowners
 pnpm lint:skills
 ```
 

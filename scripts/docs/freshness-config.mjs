@@ -99,12 +99,10 @@ export const DEFAULT_CONFIG = {
     "**/coverage/**",
     // ADR are immutable — see docs/04-governance/governance/doc-freshness.md § "Свідомо виключено"
     "docs/04-governance/adr/**",
-    // Templates / index files / changelogs are not "validated docs"
+    // Templates / index files are not "validated docs"
     "**/_TEMPLATE*.md",
     "**/TEMPLATE*.md",
     "docs/00-start/playbooks/INDEX.md",
-    "CHANGELOG.md",
-    "THIRD_PARTY_LICENSES.md",
     // Skill / agent libraries shipped from upstream — owned outside this repo's
     // documentation cadence
     ".agents/**",

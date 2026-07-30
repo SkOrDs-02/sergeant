@@ -1,7 +1,7 @@
 # AI-PR Checklist та guard workflow
 
 > **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
-> **Status:** Active
+> **Status:** Deprecated (механізм прибрано — ADR-0082)
 
 Цей документ пояснює **навіщо** в Sergeant існує AI-Generation Signals секція
 в PR-шаблоні та **як** саме `.github/workflows/ai-pr-checklist.yml` її
@@ -100,8 +100,7 @@ False positive (workflow не помітив AI сигналів) — bypass н�
 
 - ADR [`0069-ai-pr-checklist.md`](../adr/0069-ai-pr-checklist.md) —
   контекст рішення, alternatives, наслідки
-- Workflow [`.github/workflows/ai-pr-checklist.yml`](../../../.github/workflows/ai-pr-checklist.yml)
-- PR template [`.github/PULL_REQUEST_TEMPLATE.md`](../../../.github/PULL_REQUEST_TEMPLATE.md) § _AI-Generation Signals_
+- Workflow і PR-template секція прибрані — [ADR-0082](../adr/0082-private-storage-repo-posture.md)
 - Hard Rules (зокрема #15 — read governance before coding)
 - AI markers: [`AGENTS.md § AI markers`](../../../AGENTS.md#ai-markers)
   (якщо існує) — повний список marker-ів і syntax
