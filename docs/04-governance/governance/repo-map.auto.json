@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/repo-map.schema.json",
   "version": 1,
-  "generated_at": "2026-07-29",
+  "generated_at": "2026-07-30",
   "toolchain": {
     "node": "22.x",
     "pnpm": "pnpm@9.15.1",
@@ -47,7 +47,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/mobile",
@@ -98,7 +98,7 @@
         }
       ],
       "testRunner": "jest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/mobile-shell",
@@ -126,7 +126,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/server",
@@ -182,7 +182,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/web",
@@ -246,7 +246,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/api-client",
@@ -274,7 +274,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/config",
@@ -285,7 +285,7 @@
       "type": "module",
       "frameworkDeps": [],
       "testRunner": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/db-schema",
@@ -313,7 +313,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/design-tokens",
@@ -329,7 +329,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/dualwrite-core",
@@ -369,7 +369,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/fizruk-domain",
@@ -389,7 +389,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/insights",
@@ -409,7 +409,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/nutrition-domain",
@@ -429,7 +429,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/routine-domain",
@@ -449,7 +449,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "@sergeant/shared",
@@ -473,7 +473,7 @@
         }
       ],
       "testRunner": "vitest",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "name": "eslint-plugin-sergeant-design",
@@ -484,7 +484,7 @@
       "type": "module",
       "frameworkDeps": [],
       "testRunner": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     }
   ]
 }

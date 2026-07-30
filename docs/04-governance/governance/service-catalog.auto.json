@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-07-29",
+  "generated_at": "2026-07-30",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -11,7 +11,7 @@
       "deployArtifact": "vercel.json",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "id": "marketing-landing",
@@ -21,7 +21,7 @@
       "deployArtifact": "vercel.json",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "id": "api",
@@ -31,7 +31,7 @@
       "deployArtifact": "Dockerfile.api",
       "railwayService": null,
       "healthcheckPath": "/health",
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "id": "mobile-expo",
@@ -41,7 +41,7 @@
       "deployArtifact": "eas.json",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "id": "mobile-shell",
@@ -51,7 +51,7 @@
       "deployArtifact": "capacitor.config.ts",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     },
     {
       "id": "n8n-workflows",
@@ -61,7 +61,7 @@
       "deployArtifact": "ops/n8n-workflows/",
       "railwayService": null,
       "healthcheckPath": null,
-      "owner": "@SkOrDs-02"
+      "owner": null
     }
   ]
 }
