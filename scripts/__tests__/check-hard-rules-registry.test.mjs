@@ -24,12 +24,16 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = resolve(__dirname, "..", "check-hard-rules-registry.mjs");
 const SCRIPT_SRC = readFileSync(SCRIPT_PATH, "utf-8");
+// Layout must track check-hard-rules-registry.mjs — the script resolves the
+// registry under `docs/04-governance/governance/`. The docs reorg moved it
+// there; this test kept the old `docs/governance/` path and had been dying at
+// import time (and is wired into no CI lane, so nothing reported it).
+const GOVERNANCE_DIR = ["docs", "04-governance", "governance"];
 const SCHEMA_PATH = resolve(
   __dirname,
   "..",
   "..",
-  "docs",
-  "governance",
+  ...GOVERNANCE_DIR,
   "hard-rules.schema.json",
 );
 const SCHEMA_SRC = readFileSync(SCHEMA_PATH, "utf-8");
@@ -44,17 +48,17 @@ function buildFixture({
   const dir = mkdtempSync(join(tmpdir(), "hard-rules-test-"));
   const root = join(dir, "repo");
   mkdirSync(join(root, "scripts"), { recursive: true });
-  mkdirSync(join(root, "docs", "governance"), { recursive: true });
+  mkdirSync(join(root, ...GOVERNANCE_DIR), { recursive: true });
   writeFileSync(
     join(root, "scripts", "check-hard-rules-registry.mjs"),
     SCRIPT_SRC,
   );
   writeFileSync(
-    join(root, "docs", "governance", "hard-rules.schema.json"),
+    join(root, ...GOVERNANCE_DIR, "hard-rules.schema.json"),
     SCHEMA_SRC,
   );
   writeFileSync(
-    join(root, "docs", "governance", "hard-rules.json"),
+    join(root, ...GOVERNANCE_DIR, "hard-rules.json"),
     JSON.stringify(registry, null, 2),
   );
 
@@ -203,7 +207,11 @@ test("rule missing from CONTRIBUTING.md fails with contrib-sync error", () => {
   }
 });
 
-test("non-dense numbering (gap) fails with numbering error", () => {
+// Нумерація навмисно НЕ щільна. ADR-0081 вилучив правила #8/#9/#11–#14/#16/
+// #17/#24, а id ніколи не перевикористовуються — інакше посилання на «правило
+// #8» у старих PR і ADR почали б вказувати на інше правило. Тому розриви
+// валідні, а чек ловить лише дублікати й спадання.
+test("numbering: gaps from retired rules are valid", () => {
   const { dir, scriptDest } = buildFixture({
     registry: {
       version: 1,
@@ -221,10 +229,68 @@ test("non-dense numbering (gap) fails with numbering error", () => {
   });
   try {
     const r = run(scriptDest);
+    assert.equal(
+      r.status,
+      0,
+      `expected gapped numbering to pass, got: ${JSON.stringify(r.json?.errors)}`,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("numbering: duplicate rule ids still fail", () => {
+  const { dir, scriptDest } = buildFixture({
+    registry: {
+      version: 1,
+      source: "AGENTS.md",
+      rules: [minimalRule(1, "First"), minimalRule(1, "Duplicate")],
+    },
+    agentsRules: [{ id: 1, title: "First" }],
+    contribRules: [{ id: 1, title: "First" }],
+  });
+  try {
+    const r = run(scriptDest);
     assert.equal(r.status, 1);
     assert.ok(
-      r.json.errors.some((e) => /not dense/.test(e)),
-      `expected dense-numbering error, got: ${JSON.stringify(r.json.errors)}`,
+      r.json.errors.some((e) => /duplicate rule id/.test(e)),
+      `expected duplicate-id error, got: ${JSON.stringify(r.json.errors)}`,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Регресія цього PR: CONTRIBUTING.md веде правила таблицею, бо Prettier
+// нормалізує маркери ordered list-а і схлопує розриви в 1..N.
+test("contrib-sync: table form of CONTRIBUTING.md is accepted", () => {
+  const { dir, scriptDest } = buildFixture({
+    registry: {
+      version: 1,
+      source: "AGENTS.md",
+      rules: [minimalRule(1, "First"), minimalRule(3, "Third")],
+    },
+    agentsRules: [
+      { id: 1, title: "First" },
+      { id: 3, title: "Third" },
+    ],
+    contribRules: [],
+    contribOverride: [
+      "### Hard rules (з `AGENTS.md`)",
+      "",
+      "| #   | Rule  |",
+      "| --- | ----- |",
+      "| 1   | First |",
+      "| 3   | Third |",
+      "",
+    ].join("\n"),
+  });
+  try {
+    const r = run(scriptDest);
+    assert.equal(
+      r.status,
+      0,
+      `expected table form to satisfy contrib-sync, got: ${JSON.stringify(r.json?.errors)}`,
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
