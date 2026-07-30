@@ -132,6 +132,20 @@ export interface BuildHeatmapGridOptions {
    * therefore `startKey`) is unaffected.
    */
   futureWeeks?: number | undefined;
+  /**
+   * Заморозити минуле щодо `paused` — ADR-0079 §3.
+   *
+   * AI-CONTEXT: `paused` у моделі звички — недатований булеан, тож
+   * `habitScheduledOnDate` за замовчуванням відсіює за ним УСІ дати. У режимі
+   * `"scheduled"` це означає, що пауза, поставлена сьогодні, вимиває звичку з
+   * минулорічної сітки — рівно те, чого ADR обіцяє не робити. Прапорець
+   * вмикає трактування «пауза діє від сьогодні вперед».
+   *
+   * Дефолт `false` навмисно: разом із перемиканням `denominator` це рухає
+   * число, яке користувач уже бачив, тож їде окремою поставкою з
+   * `metricsVersion`.
+   */
+  freezePausedPast?: boolean | undefined;
 }
 
 /**
@@ -176,6 +190,9 @@ export function buildHeatmapGrid(
   const todayAtNoon = new Date(today);
   todayAtNoon.setHours(12, 0, 0, 0);
   const todayKey = dateKeyFromDate(todayAtNoon);
+  // Заморозка минулого (ADR-0079 §3): пауза діє від сьогодні вперед. Без
+  // прапорця опції порожні — предикат поводиться історично.
+  const scheduleOpts = opts.freezePausedPast ? { pausedFrom: todayKey } : {};
 
   const mondayThisWeek = mondayOfWeek(todayAtNoon);
   const startDate = addDaysAt12(
@@ -201,7 +218,7 @@ export function buildHeatmapGrid(
       let scheduledTotal = 0;
       let scheduledCnt = 0;
       for (const h of active) {
-        if (!habitScheduledOnDate(h, dateKey)) continue;
+        if (!habitScheduledOnDate(h, dateKey, scheduleOpts)) continue;
         scheduledTotal += 1;
         if (completionSets.get(h.id)?.has(dateKey)) scheduledCnt += 1;
       }
