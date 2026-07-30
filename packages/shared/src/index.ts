@@ -33,6 +33,9 @@ export * from "./lib/dashboard";
 // quick actions, the catalogue UI, and (PR 2) the system-prompt tool list.
 export * from "./lib/assistantCatalogue";
 export * from "./lib/toolRisk";
+
+// Провенанс метрик — версія методики підрахунку (ADR-0079 §3-§4).
+export * from "./lib/metricsVersion";
 export * from "./lib/exportCsv";
 
 // Platform-agnostic key/value store contract + factories. See

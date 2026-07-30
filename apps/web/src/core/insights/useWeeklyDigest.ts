@@ -3,7 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "@shared/lib";
 import { coachApi, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
-import { STORAGE_KEYS, getWeekKey as sharedGetWeekKey } from "@sergeant/shared";
+import {
+  METRICS_VERSION,
+  STORAGE_KEYS,
+  getWeekKey as sharedGetWeekKey,
+} from "@sergeant/shared";
 import {
   safeListLSKeys,
   safeReadLS,
@@ -392,6 +396,11 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
   // `isApiError(query.error)`.
   const json = await weeklyDigestApi.generate({
     weekRange: currentWeekRange,
+    // AI-CONTEXT: провенанс методики (ADR-0079 §3-§4). Числа вище пораховані
+    // агрегаторами цього бандла, тож дайджест штампується версією, чинною на
+    // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
+    // прочитає майбутній стрибок визначення як зміну поведінки користувача.
+    metricsVersion: METRICS_VERSION,
     finyk,
     fizruk,
     nutrition,

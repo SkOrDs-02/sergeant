@@ -494,6 +494,17 @@ const RoutineDigestSchema = z
 // клієнт пропускає поле, чи надсилає його як `null`.
 export const WeeklyDigestSchema = z.object({
   weekRange: z.string().max(80).optional(),
+  // Версія МЕТОДИКИ підрахунку, якою клієнт порахував числа нижче — див.
+  // `@sergeant/shared` → `METRICS_VERSION`. Опційне навмисно: старіші бандли
+  // (PWA з service-worker-ом) поля не шлють, і їхні дайджести мають
+  // прийматись, а не 400-ити. Відсутнє поле означає легасі-версію `0`, а НЕ
+  // поточну — методика на момент запису невідома.
+  //
+  // AI-DANGER: споживач, що будує ТРЕНД (коуч по 8 тижнях із `coach_memory`,
+  // тижневий графік, «порівняй тижні»), НЕ має права порівнювати записи
+  // різних версій — інакше стрибок визначення читається як зміна поведінки
+  // користувача. Перевірка — `comparableAsTrend` у `@sergeant/shared`.
+  metricsVersion: z.number().int().min(0).optional(),
   finyk: FinykDigestSchema.nullish(),
   fizruk: FizrukDigestSchema.nullish(),
   nutrition: NutritionDigestSchema.nullish(),
