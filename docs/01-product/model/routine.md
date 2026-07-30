@@ -231,7 +231,8 @@ activeHabits().length` — усі **не-архівні** звички **щод�
 
 **✅ Суперечність знята на вебі 2026-07-30** рішенням
 [ADR-0079](../../04-governance/adr/0079-frozen-past-and-canonical-denominator.md) §3.
-Модульний heatmap (`apps/web/.../HabitHeatmap.tsx`) тепер рахує знаменник
+Модульний heatmap
+(`apps/web/src/modules/routine/components/HabitHeatmap.tsx`) тепер рахує знаменник
 **за розкладом** — тією ж `habitScheduledOnDate`, що й `completionRateForRange`.
 Звичка «Пн/Ср/Пт», виконана 3/3, показує **100%**, а не 43%.
 
