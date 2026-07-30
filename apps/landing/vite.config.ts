@@ -39,15 +39,14 @@ function resolveSiteUrl(env: Record<string, string>): string | undefined {
   return undefined;
 }
 
-// Маркетинговий лендінг Sergeant. Окремий static-білд на Vercel; запити
-// `/api/*` у проді проксіює edge-middleware (`middleware.ts`) на `BACKEND_URL`,
-// у dev — проксі нижче. Обидва шляхи роблять API same-origin, тому клієнт
-// усюди ходить відносним шляхом і CORS не задіяний.
+// Маркетинговий лендінг Sergeant: суто статичний білд на Vercel. Бекенду не
+// потребує — єдина конверсія веде в Telegram, тож жодного `fetch` на сторінці
+// немає. Якщо тут колись зʼявиться запит до API, треба буде повернути
+// edge-проксі (`middleware.ts` в історії git), а не додавати абсолютний URL:
+// `getAllowedOrigins()` в `apps/server/src/http/cors.ts` — fail-closed
+// allowlist, і same-origin-проксі дешевший, ніж вписувати туди домен лендінга.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiProxyTarget = (
-    env["VITE_API_PROXY_TARGET"] || "http://127.0.0.1:3000"
-  ).replace(/\/$/, "");
 
   return {
     plugins: [react(), tailwindcss(), absoluteUrlMeta(resolveSiteUrl(env))],
@@ -61,12 +60,6 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: 3100,
       allowedHosts: true,
-      proxy: {
-        "/api": {
-          target: apiProxyTarget,
-          changeOrigin: true,
-        },
-      },
     },
   };
 });
