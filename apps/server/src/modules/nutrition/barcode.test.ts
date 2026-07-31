@@ -284,7 +284,9 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    it("всі три upstream кидають → 404 (handler не падає)", async () => {
+    it("всі три upstream кидають → 503 «бази не відповідають», а не 404", async () => {
+      // Аудит nutrition § G5: 404 тут брехав — він стверджує, що продукту
+      // немає, тоді як насправді ніхто не відповів. Handler так само не падає.
       global.fetch = vi
         .fn()
         .mockRejectedValueOnce(new Error("OFF down"))
@@ -293,7 +295,7 @@ describe("barcode handler", () => {
       const req = asReq({ barcode: "9999999999999" });
       const res = mockRes();
       await handler(req, res);
-      expect(res.statusCode).toBe(404);
+      expect(res.statusCode).toBe(503);
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
@@ -456,7 +458,8 @@ describe("barcode handler", () => {
         .mockRejectedValueOnce(new Error("UPCitemdb down"));
       const res1 = mockRes();
       await handler(asReq({ barcode: "9999999999999" }), res1);
-      expect(res1.statusCode).toBe(404);
+      // Збій джерел — неавторитетна відповідь (503), тож у кеш не йде.
+      expect(res1.statusCode).toBe(503);
       expect(global.fetch).toHaveBeenCalledTimes(3);
 
       // Повторний lookup — оскільки miss НЕ закешований (upstream-и кинули),
@@ -467,6 +470,8 @@ describe("barcode handler", () => {
         .mockResolvedValueOnce(UPCITEMDB_MISS);
       const res2 = mockRes();
       await handler(asReq({ barcode: "9999999999999" }), res2);
+      // А ось тепер джерела ВІДПОВІЛИ і продукту справді немає — 404.
+      // Той самий штрихкод, дві різні відповіді: у цьому й суть G5.
       expect(res2.statusCode).toBe(404);
       expect(global.fetch).toHaveBeenCalledTimes(6);
     });
@@ -480,7 +485,8 @@ describe("barcode handler", () => {
 
       const res1 = mockRes();
       await handler(asReq({ barcode: "9999999999999" }), res1);
-      expect(res1.statusCode).toBe(404);
+      // 503/500/429 від усіх трьох — це «бази лежать», не «немає продукту».
+      expect(res1.statusCode).toBe(503);
       expect(global.fetch).toHaveBeenCalledTimes(3);
 
       (global.fetch as ReturnType<typeof vi.fn>)

@@ -256,14 +256,17 @@ describe("contract: /api/barcode producer — error envelope", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("handler emits { error: string } with status 404 when every upstream aborts (transient miss, not cached)", async () => {
+  it("handler emits 503 (NOT 404) when every upstream aborts — «база лежить» ≠ «не знайдено»", async () => {
     // Each upstream lookup is wrapped in its own try/catch inside the
     // cascade, so an AbortError from all three is swallowed as a transient
     // failure (`upstreamThrew = true`) rather than propagating to the outer
-    // catch. The contract is therefore a 404 "not found" envelope that is
-    // explicitly NOT cached, so a retry re-runs the full cascade. (The
-    // dedicated 504 branch only fires for an abort raised outside the
-    // per-upstream cascade.)
+    // catch. (The dedicated 504 branch only fires for an abort raised
+    // OUTSIDE the per-upstream cascade.)
+    //
+    // Раніше цей шлях віддавав 404 «Продукт не знайдено» — те саме, що й
+    // справжній all-miss. Аудит nutrition § G5: користувач не мав як
+    // відрізнити «такого штрихкоду немає в базах» від «бази не відповіли»,
+    // і в другому випадку заводив вручну те, що система вміє знайти.
     globalThis.fetch = (async () => {
       const err = new Error("The operation was aborted");
       err.name = "AbortError";
@@ -273,9 +276,33 @@ describe("contract: /api/barcode producer — error envelope", () => {
     const res = makeRes();
     await handler(makeReq("12345678901"), res);
 
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(503);
     const parsed = BarcodeLookupErrorSchema.safeParse(res.body);
     expect(parsed.success).toBe(true);
+    // Повідомлення мусить прямо знімати хибний висновок «продукту немає» —
+    // саме на текст спирається сканер-UI, щоб розрізнити ці два випадки.
+    expect(String((res.body as { error?: string }).error)).toContain(
+      "не означає, що продукту немає",
+    );
+  });
+
+  it("транзієнтний збій НЕ кешується як miss — повторний запит проганяє cascade знову", async () => {
+    // Друга половина того самого контракту: 503 неавторитетний, тож
+    // miss-sentinel ставити не можна. Інакше одна хвилина недоступності
+    // OFF зробила б штрихкод «неіснуючим» на всі 30 хвилин miss-TTL.
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      const err = new Error("The operation was aborted");
+      err.name = "AbortError";
+      throw err;
+    }) as unknown as typeof fetch;
+
+    await handler(makeReq("12345678902"), makeRes());
+    const callsAfterFirst = calls;
+
+    await handler(makeReq("12345678902"), makeRes());
+    expect(calls).toBeGreaterThan(callsAfterFirst);
   });
 });
 
