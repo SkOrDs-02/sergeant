@@ -66,7 +66,7 @@ interface DateContext {
   weekRange: string;
 }
 
-interface CoachSnapshot {
+export interface CoachSnapshot {
   dateContext: DateContext;
   finyk: FinykSnapshot;
   fizruk: FizrukSnapshot | null;
@@ -252,7 +252,51 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   return { dateContext, finyk, fizruk, nutrition, routine };
 }
 
+/**
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень.
+ *
+ * Рахуємо не «поле не null», а наявність даних: `finyk` у снапшоті не
+ * nullable і приходить із нулями навіть тоді, коли транзакцій немає, а
+ * `fizruk` матеріалізується вже за самим фактом теплого кешу.
+ */
+export function coachSnapshotSignals(snapshot: CoachSnapshot): number {
+  let signals = 0;
+  if (snapshot.finyk.txCount > 0) signals++;
+  if ((snapshot.fizruk?.workoutsCount ?? 0) > 0) signals++;
+  if ((snapshot.nutrition?.daysLogged ?? 0) > 0) signals++;
+  if ((snapshot.routine?.habitCount ?? 0) > 0) signals++;
+  return signals;
+}
+
+/**
+ * Поріг публікації — канон hub-coach §6.2 «краще мовчати, ніж шуміти».
+ *
+ * AI-CONTEXT (аудит hub-coach § G2): поріг існував ЛИШЕ для статистичних
+ * кореляцій (`digestCorrelations.ts`: `MIN_N` спільних днів + `NOTABLE_R`
+ * сила зв'язку — немає зв'язку, блок не друкується). Для текстових інсайтів
+ * порогу не було взагалі: снапшот їхав на модель навіть тоді, коли всі
+ * чотири модулі порожні, і вона писала пораду з нічого. Тобто захищено було
+ * найнадійнішу частину — ту, що рахує код, — і не захищено найризикованішу,
+ * ту, що пише модель.
+ *
+ * Канон вимагає саме порогу, а не промпт-побажання: «Це контракт із прямим
+ * технічним наслідком: потрібен поріг публікації, а не просто
+ * промпт-побажання» (§6.2).
+ *
+ * Поріг навмисно мінімальний і безспірний: нуль сигналів — мовчимо. Ширша
+ * ГРАДАЦІЯ впевненості (скільки саме даних треба на впевнене твердження) —
+ * окремий рядок Хвилі 4, і вона потребує продуктового рішення, якого канон
+ * поки не дає.
+ */
+const MIN_SIGNAL_MODULES = 1;
+
 async function fetchCoachInsight(): Promise<string | null> {
+  const snapshot = aggregateCurrentSnapshot();
+
+  // Гейт СТОЇТЬ ПЕРЕД усіма мережевими викликами: порожній тиждень не має
+  // ані будити модель, ані палити денну AI-квоту користувача.
+  if (coachSnapshotSignals(snapshot) < MIN_SIGNAL_MODULES) return null;
+
   let memory: string | null = null;
   try {
     const memJson = await coachApi.getMemory();
@@ -260,8 +304,6 @@ async function fetchCoachInsight(): Promise<string | null> {
   } catch {
     // Пам'ять не обов'язкова — інсайт будуємо й без неї.
   }
-
-  const snapshot = aggregateCurrentSnapshot();
 
   const insightJson = await coachApi.postInsight({ snapshot, memory });
   return (insightJson as { insight?: string }).insight ?? null;
