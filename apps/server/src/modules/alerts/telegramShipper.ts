@@ -61,6 +61,14 @@ export interface TelegramSendMessageInput {
   messageThreadId?: number | undefined;
   text: string;
   disableNotification?: boolean | undefined;
+  /**
+   * `reply_markup` як є — сьогодні це inline-клавіатура опитувань бота
+   * бети (`modules/telegram/waitlistBot.ts`). Тип свідомо не звужений до
+   * `InlineKeyboardMarkup`: Telegram кладе сюди щонайменше чотири різні
+   * форми (inline / reply / remove / force-reply), і моделювати їх усі
+   * заради однієї — марна робота. Значення просто йде в тіло запиту.
+   */
+  replyMarkup?: unknown;
 }
 
 export interface TelegramSendMessageOutput {
@@ -82,9 +90,17 @@ export interface TelegramEditMessageOutput {
   description?: string | undefined;
 }
 
+export interface TelegramAnswerCallbackQueryInput {
+  callbackQueryId: string;
+  /** Спливашка в клієнті. Telegram ріже на 200 символах. */
+  text?: string | undefined;
+  /** `true` — модалка з кнопкою OK замість тосту вгорі екрана. */
+  showAlert?: boolean | undefined;
+}
+
 /**
- * Minimal Telegram-API surface, що потрібен shipper-у. Винесений у
- * port-інтерфейс, бо:
+ * Minimal Telegram-API surface, спільний для alert-шипера і бота
+ * вейтліста. Винесений у port-інтерфейс, бо:
  *   1. У Vitest мокаємо без мережі.
  *   2. Майбутні мігранти на grammy-клієнт можуть підставити свій
  *      adapter без зміни shipper-у.
@@ -96,6 +112,16 @@ export interface TelegramApiClient {
   editMessageText(
     input: TelegramEditMessageInput,
   ): Promise<TelegramEditMessageOutput>;
+  /**
+   * Обовʼязкова відповідь на натискання inline-кнопки.
+   *
+   * Не косметика: поки виклик не пройшов, клієнт Telegram крутить годинник
+   * на кнопці близько 30 секунд. Людина за цей час встигає натиснути ще
+   * раз, вирішивши, що не спрацювало.
+   */
+  answerCallbackQuery(
+    input: TelegramAnswerCallbackQueryInput,
+  ): Promise<{ ok: boolean }>;
 }
 
 /**
@@ -120,6 +146,9 @@ export function createTelegramApiClient(botToken: string): TelegramApiClient {
             text: input.text,
             ...(input.disableNotification !== undefined && {
               disable_notification: input.disableNotification,
+            }),
+            ...(input.replyMarkup !== undefined && {
+              reply_markup: input.replyMarkup,
             }),
           }),
         },
@@ -166,6 +195,28 @@ export function createTelegramApiClient(botToken: string): TelegramApiClient {
         };
       }
       return { ok: true };
+    },
+
+    async answerCallbackQuery(input) {
+      const res = await fetch(
+        `https://api.telegram.org/bot${botToken}/answerCallbackQuery`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            callback_query_id: input.callbackQueryId,
+            ...(input.text !== undefined && { text: input.text }),
+            ...(input.showAlert !== undefined && {
+              show_alert: input.showAlert,
+            }),
+          }),
+        },
+      );
+      // Відповідь Telegram тут нас не цікавить деталями: єдина дія на
+      // провал — залогувати. Callback уже оброблено, і ретраїти саме цей
+      // виклик означало б лише ще раз спробувати прибрати годинник, який
+      // Telegram і сам зніме за 30 секунд.
+      return { ok: res.ok };
     },
   };
 }
