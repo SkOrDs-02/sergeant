@@ -186,9 +186,15 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     const prevRange = getPeriodRange(period, offset - 1);
     const curDates = datesInRange(curRange.start, curRange.end);
     const prevDates = datesInRange(prevRange.start, prevRange.end);
+    // Заморозка минулого (ADR-0079 §2): картка показує й попередній період,
+    // тож без `pausedFrom` пауза, поставлена сьогодні, переписала б обидва
+    // числа заднім числом — включно з тим, проти якого рахується дельта.
+    // Host-local, як і решта дат цього модуля (`localDateKey`); київська межа
+    // доби — окремий борг реєстру метрик (стадія 5г).
+    const pausedFrom = localDateKey(new Date());
     return {
-      cur: aggregateHabits(routineState, curDates),
-      prev: aggregateHabits(routineState, prevDates),
+      cur: aggregateHabits(routineState, curDates, { pausedFrom }),
+      prev: aggregateHabits(routineState, prevDates, { pausedFrom }),
       dates: curDates,
     };
   }, [period, offset, bump]);

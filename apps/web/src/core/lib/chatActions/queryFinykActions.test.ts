@@ -304,6 +304,97 @@ describe("aggregate_spending · AI-created manual expense (UUID id)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// W1-CANON-AGG стадія 2b — два всесвіти: статистика і пошук
+// ---------------------------------------------------------------------------
+describe("канонічний excluded-set і спліти (стадія 2b)", () => {
+  /**
+   * 1000 грн зі сплітом 600 «їжа» + 400 «внутрішній переказ» → у витрати
+   * має піти 600. Решта рядків — по одному представнику кожної з чотирьох
+   * частин канонічного excluded-set.
+   */
+  function seedExcluded(): void {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m_cash",
+          date: "2026-04-14",
+          description: "Ринок",
+          amount: 250,
+          category: "food",
+        },
+      ] as unknown as ManualExpense[],
+      txCategories: { b_split: "food", b_transfer: "internal_transfer" },
+      txSplits: {
+        b_split: [
+          { categoryId: "food", amount: 600 },
+          { categoryId: "internal_transfer", amount: 400 },
+        ],
+      } as never,
+      hiddenTransactions: ["b_hidden"],
+      receivables: [{ id: "r1", linkedTxIds: ["b_recv"] }] as never,
+      excludedStatTxIds: ["b_excl"],
+    });
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "b_split", date: "2026-04-10", amount: -100000 },
+        { id: "b_excl", date: "2026-04-11", amount: -20000 },
+        { id: "b_transfer", date: "2026-04-12", amount: -50000 },
+        { id: "b_recv", date: "2026-04-13", amount: -25000 },
+        { id: "b_hidden", date: "2026-04-14", amount: -15000 },
+      ] as never[],
+    });
+  }
+
+  const APRIL = { date_from: "2026-04-01", date_to: "2026-04-30" };
+
+  it("aggregate_spending: 850 грн = спліт-частка 600 + готівка 250", () => {
+    seedExcluded();
+    const out = call({ name: "aggregate_spending", input: { ...APRIL } });
+    // Без фіксу було б 1900: спліт цілком (1000) + виключені (200 + 500 + 250)
+    // + готівка (250). Кожен з чотирьох excluded-рядків мусить випасти, а
+    // спліт — увійти лише не-переказною часткою.
+    expect(out).toContain("850 грн усього (2 транзакц.)");
+  });
+
+  it("compare_periods рахує по тому самому всесвіту", () => {
+    seedExcluded();
+    const out = call({
+      name: "compare_periods",
+      input: {
+        period_a_from: "2026-04-01",
+        period_a_to: "2026-04-30",
+        period_b_from: "2026-03-01",
+        period_b_to: "2026-03-31",
+      },
+    });
+    expect(out).toContain("= 850 грн");
+  });
+
+  it("query_transactions лишається всесвітом ПОШУКУ — знаходить виключене", () => {
+    seedExcluded();
+    const out = call({
+      name: "query_transactions",
+      input: { query: "b_transfer" },
+    });
+    // Виключення зі статистики не робить транзакцію невидимою для пошуку:
+    // «де мій переказ на 500?» мусить давати відповідь. Ховається лише
+    // `hidden` — і це єдина різниця між двома всесвітами.
+    expect(out).toContain("b_transfer");
+    expect(out).toContain("500 грн");
+  });
+
+  it("query_transactions не застосовує спліт до суми рядка", () => {
+    seedExcluded();
+    const out = call({
+      name: "query_transactions",
+      input: { query: "b_split" },
+    });
+    // Фактичне списання — 1000 грн, а не статистична частка 600.
+    expect(out).toContain("1000 грн");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // router
 // ---------------------------------------------------------------------------
 describe("handleQueryFinykAction router", () => {

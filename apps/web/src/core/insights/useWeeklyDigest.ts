@@ -155,7 +155,21 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     excludedTxIds,
     txSplits,
     categoryKey: (tx) => {
-      const raw = txCategories[tx.id] ?? tx.mcc ?? "other";
+      // W1-CANON-AGG стадія 2d: ручний запис не має ані рядка в
+      // `finyk_tx_cats` (там ключі банківських id), ані MCC — його
+      // категорія приїжджає полем `categoryId` з
+      // `manualExpenseToTransaction`. Без цієї гілки вся готівка осідала б
+      // у «Інше», і топ-категорії брехали б рівно на суму ручного світу.
+      // Гілка навмисно звужена до `manual`: банківські рядки теж несуть
+      // `categoryId`, і зчитувати його тут означало б тихо перекроїти вже
+      // показану користувачу розбивку банківських витрат.
+      const manualTx = tx as typeof tx & {
+        manual?: boolean;
+        categoryId?: string;
+      };
+      const manualCategory =
+        manualTx.manual && manualTx.categoryId ? manualTx.categoryId : null;
+      const raw = txCategories[tx.id] ?? manualCategory ?? tx.mcc ?? "other";
       return resolveCatLabel(raw, customCategories as Category[]);
     },
   });
@@ -277,6 +291,17 @@ export interface NutritionAggregate {
   avgCarbs: number;
   targetKcal: number;
   daysLogged: number;
+  /**
+   * Скільки днів у періоді всього (для тижня — 7).
+   *
+   * AI-CONTEXT: знаменник coverage. Середні свідомо рахуються лише по
+   * залогованих днях (канон nutrition §5.2 — «неповний день це неповні
+   * дані, а не дефіцит»), але без цього числа поруч «середнє 1950, 95%
+   * цілі» за ДВА залоговані дні читається як чудовий тиждень. Аудит
+   * nutrition § E-4 називає це success theater: інструмент ховає власний
+   * провал від єдиної людини, яка його оцінює.
+   */
+  daysInPeriod: number;
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
@@ -310,6 +335,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     avgCarbs: period.avgCarbs,
     targetKcal,
     daysLogged: period.daysLogged,
+    daysInPeriod: period.daysInPeriod,
   };
 }
 
@@ -355,7 +381,17 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // `calcRoutinePeriodCompletion`, тож дайджест, Hub-Reports і модуль Звички
   // читають один і той самий код. `total` у `HabitStat` тепер означає
   // «скільки днів звичка була запланована», а не «7».
-  const period = calcRoutinePeriodCompletion(habits, completions, weekDays);
+  //
+  // `pausedFrom` — заморозка минулого (ADR-0079 §2). Для дайджеста це
+  // критичніше, ніж будь-де: він рахує ЗАКРИТІ тижні, тож без параметра
+  // пауза, поставлена сьогодні, переписувала б підсумки за минулі тижні —
+  // рівно те, що ADR називає «цифри за минуле перераховуються поточною
+  // конфігурацією».
+  // Host-local, як і `weekDays` вище; київська межа доби — окремий борг
+  // реєстру метрик (стадія 5г).
+  const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
+    pausedFrom: localDateKey(new Date()),
+  });
 
   const habitStats: HabitStat[] = period.perHabit.map((h) => ({
     name: h.name,

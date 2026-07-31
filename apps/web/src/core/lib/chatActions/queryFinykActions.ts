@@ -1,5 +1,10 @@
 import { getWeekKey } from "@sergeant/shared";
-import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
+import {
+  buildFinykExcludedTxIds,
+  getTxStatAmount,
+  resolveExpenseCategoryMeta,
+  type TxSplitsLike,
+} from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -14,8 +19,21 @@ import type { ChatAction, ChatActionResult } from "./types";
 /**
  * Read-only "talk to your data" виконавці для Фініка (PR1 talk-to-your-data).
  * Дзеркало серверних `QUERY_FINYK_TOOLS` (`toolDefs/queryFinyk.ts`). Жоден з
- * них НЕ пише у localStorage — лише читають (manual + bank, з урахуванням
- * прихованих) і повертають числові відповіді / агрегації.
+ * них НЕ пише у localStorage — лише читають (manual + bank) і повертають
+ * числові відповіді / агрегації.
+ *
+ * AI-CONTEXT (W1-CANON-AGG, стадія 2b): тут живуть ДВА всесвіти, і різниця
+ * між ними навмисна.
+ *   - `readQueryTransactions` — всесвіт ПОШУКУ: відсіює лише `hidden`.
+ *     Транзакція, виключена зі статистики, все одно має знаходитись, коли
+ *     користувач питає «де мій переказ на 500?».
+ *   - `readStatTransactions` — всесвіт СТАТИСТИКИ: канонічний excluded-set
+ *     (`buildFinykExcludedTxIds` — hidden + внутрішні перекази + погашення
+ *     боргів + явно виключені), плюс спліти в сумі. Його бачать
+ *     `aggregate_spending` і `compare_periods`, бо це метрика «витрати за
+ *     період», і вона мусить збігатися з рештою поверхонь.
+ * До стадії 2b обидві тулзи рахували по всесвіту пошуку й без сплітів — на
+ * фікстурі parity-тесту це давало 2500 грн проти 1150 канонічних.
  *
  * Реєструється у `hubChatActions.ts` dispatch-chain окремою гілкою, не
  * чіпаючи мутаційний `handleFinykAction`.
@@ -115,6 +133,27 @@ function readQueryTransactions(): FinykSearchTx[] {
   ].filter((tx): tx is FinykSearchTx => tx !== null);
 }
 
+/**
+ * Всесвіт СТАТИСТИКИ: пошуковий всесвіт мінус канонічний excluded-set.
+ * Той самий набір, що обслуговує Overview, дайджест, Hub-Reports і
+ * HubChat-контекст (`buildFinykExcludedTxIds`), тож «витрати за період» на
+ * усіх цих поверхнях відповідають на одне питання однаково.
+ */
+function readStatTransactions(): FinykSearchTx[] {
+  const sqlite = getCachedFinykSqliteState();
+  const excluded = buildFinykExcludedTxIds({
+    hiddenTxIds: sqlite.hiddenTransactions,
+    txCategories: sqlite.txCategories,
+    receivables: sqlite.receivables,
+    excludedStatTxIds: sqlite.excludedStatTxIds,
+  });
+  return readQueryTransactions().filter((tx) => !excluded.has(tx.id));
+}
+
+function readTxSplits(): TxSplitsLike {
+  return getCachedFinykSqliteState().txSplits;
+}
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 function normalizeText(value: unknown): string {
@@ -180,9 +219,22 @@ function txDirection(tx: FinykSearchTx): TxDirection {
   return tx.amount < 0 ? "expense" : "income";
 }
 
-/** Абсолютна сума у грн (kopiyka-нормалізація для bank — у `toDisplayAmount`). */
-function txAmountGrn(tx: FinykSearchTx): number {
-  return toDisplayAmount(tx, txSource(tx));
+/**
+ * Абсолютна сума у грн (kopiyka-нормалізація для bank — у `toDisplayAmount`).
+ *
+ * `txSplits` передають ЛИШЕ статистичні викликачі: розбита транзакція входить
+ * у витрати тією часткою, що не є внутрішнім переказом (канонічний
+ * `getTxStatAmount`). Пошук splits НЕ передає навмисно — на питання «знайди
+ * транзакцію на 1000 грн» має відповідати фактична сума списання, а не її
+ * статистична частка. Спліти живуть лише на банківських рядках, тож
+ * `manual` іде повз них.
+ */
+function txAmountGrn(tx: FinykSearchTx, txSplits?: TxSplitsLike): number {
+  const source = txSource(tx);
+  if (source === "bank") {
+    return getTxStatAmount({ id: tx.id, amount: tx.amount }, txSplits ?? {});
+  }
+  return toDisplayAmount(tx, source);
 }
 
 function readCustomCats(): unknown[] {
@@ -316,7 +368,8 @@ export function aggregateSpending(
   const top = clamp(input.top, 10, 30);
 
   const customCats = readCustomCats();
-  const rows = readQueryTransactions().filter(
+  const txSplits = readTxSplits();
+  const rows = readStatTransactions().filter(
     (tx) => txDirection(tx) === direction && tx.date >= from && tx.date <= to,
   );
 
@@ -328,7 +381,7 @@ export function aggregateSpending(
   const groups = new Map<string, { sum: number; count: number }>();
   let total = 0;
   for (const tx of rows) {
-    const amount = txAmountGrn(tx);
+    const amount = txAmountGrn(tx, txSplits);
     total += amount;
     const key = groupKeyFor(tx, groupBy, customCats);
     const acc = groups.get(key) ?? { sum: 0, count: 0 };
@@ -364,7 +417,8 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
     return "Потрібні обидва періоди у форматі YYYY-MM-DD: period_a_from/to і period_b_from/to.";
   }
   const metric = normalizeMetric(input.metric);
-  const all = readQueryTransactions();
+  const all = readStatTransactions();
+  const txSplits = readTxSplits();
 
   const measure = (from: string, to: string): number => {
     const inRange = all.filter((tx) => tx.date >= from && tx.date <= to);
@@ -372,7 +426,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
     const direction: TxDirection = metric === "income" ? "income" : "expense";
     return inRange
       .filter((tx) => txDirection(tx) === direction)
-      .reduce((sum, tx) => sum + txAmountGrn(tx), 0);
+      .reduce((sum, tx) => sum + txAmountGrn(tx, txSplits), 0);
   };
 
   const a = roundGrn(measure(aFrom, aTo));

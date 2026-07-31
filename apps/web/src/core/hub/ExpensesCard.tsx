@@ -9,11 +9,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
-import {
-  getFinykExcludedTxIdsFromStorage,
-  getFinykTxSplitsFromStorage,
-} from "@finyk/utils";
-import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
+import { readFinykStatsContext } from "@finyk/utils";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import {
   aggregateSpending,
@@ -223,12 +219,17 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   const { cur, prev, dates } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
-    const txList = getVisibleFinykMonoMirrorState().transactions;
+    // W1-CANON-AGG стадія 2d: картка більше не збирає всесвіт власноруч із
+    // самого лише mono-mirror — вона бере той самий канонічний контекст, що
+    // й тижневий дайджест і коуч, тож готівкові витрати входять у Звіти.
+    // Раніше та сама людина бачила в дайджесті одне число, а в цій картці —
+    // менше на суму всього ручного світу.
+    const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
 
     const inputs: SpendingInputs = {
-      txList: txList as SpendingInputs["txList"],
-      excludedTxIds: getFinykExcludedTxIdsFromStorage(),
-      txSplits: getFinykTxSplitsFromStorage() as Record<string, unknown[]>,
+      txList: txs as SpendingInputs["txList"],
+      excludedTxIds,
+      txSplits: txSplits as Record<string, unknown[]>,
     };
 
     const curRange = getPeriodRange(period, offset);
