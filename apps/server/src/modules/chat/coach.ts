@@ -452,16 +452,17 @@ ${snapshotText}
 
   // Routed through the LLMProvider factory so coach can be re-targeted off
   // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
-  // redeploy; Anthropic stays the fallback. `env.CHAT_MODEL_SYNTHESIS`
-  // (default `claude-sonnet-4-6`) is the model the Anthropic provider (and
-  // the OpenRouter fallback target) uses.
+  // redeploy; Anthropic stays the fallback. `env.COACH_MODEL_ANTHROPIC`
+  // (default `claude-sonnet-4-6`) is the model the Anthropic provider uses —
+  // окрема від `CHAT_MODEL_SYNTHESIS`, бо той під `CHAT_VIA_OPENROUTER`
+  // несе OpenRouter-only id, на який Anthropic віддає 404.
   const provider = getLLMProvider({
     provider: env.LLM_COACH_PROVIDER,
     anthropicApiKey: apiKey,
     openrouterModel: tier.model,
   });
   const aiResult = await invokeLLM(provider, {
-    model: env.CHAT_MODEL_SYNTHESIS,
+    model: env.COACH_MODEL_ANTHROPIC,
     maxTokens: 300,
     messages: [{ role: "user", content: systemPrompt }],
     timeoutMs: 20_000,

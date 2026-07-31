@@ -157,7 +157,9 @@ async function callAnthropicWithContinuation(
     const { response, data } = await anthropicMessages(
       apiKey,
       { ...basePayload, messages: currentMessages },
-      options,
+      // Чат — єдина поверхня, що мігрує на OpenRouter (CHAT_VIA_OPENROUTER);
+      // digest/nutrition/mono/classify лишаються на прямому шляху.
+      { ...options, allowOpenRouter: true },
     );
     lastResponse = response;
     lastData = data as AnthropicMessagesResponseData;

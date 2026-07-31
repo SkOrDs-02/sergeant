@@ -24,10 +24,50 @@ interface StreamEvent {
    * систематично занижує `output`-вартість (для Sonnet — ~70-80% бюджету,
    * бо output $15/Mtok vs input $3/Mtok).
    *
+   * OpenRouter розкладає usage інакше: у `message_start` вхідні токени
+   * приходять нулем, а справжнє значення (і `cost`) — теж у фінальному
+   * `message_delta`. Тому обидві події зливаються через `mergeStreamUsage`.
+   *
    * Доку з SSE-схемою: https://docs.anthropic.com/en/api/messages-streaming
    * (секція "Event types" → message_delta).
    */
   usage?: StreamUsage;
+}
+
+const USAGE_KEYS = [
+  "input_tokens",
+  "output_tokens",
+  "cache_creation_input_tokens",
+  "cache_read_input_tokens",
+  "cost",
+] as const satisfies ReadonlyArray<keyof StreamUsage>;
+
+/**
+ * Зливає usage із кількох SSE-подій одного стріму, беручи по кожному полю
+ * БІЛЬШЕ зі значень.
+ *
+ * WHY максимум, а не «останнє виграє»: провайдери розкладають usage
+ * по-різному (Anthropic — input у `message_start`, output у `message_delta`;
+ * OpenRouter — нулі у `message_start` і повна картина у `message_delta`), і
+ * жоден із них у межах одного стріму не зменшує вже повідомлене число. Отже
+ * нуль ніколи не затре реальне значення, а порядок подій перестає мати
+ * значення. Без цього після переїзду на шлюз у `ai_usage_daily` писались би
+ * нульові вхідні токени, і `anthropicBudgetGuard` втратив би стелю вартості.
+ */
+function mergeStreamUsage(
+  prev: StreamUsage | null,
+  next: StreamUsage,
+): StreamUsage {
+  const merged: StreamUsage = { ...(prev ?? {}) };
+  for (const key of USAGE_KEYS) {
+    const incoming = next[key];
+    if (typeof incoming !== "number" || !Number.isFinite(incoming)) continue;
+    const current = merged[key];
+    if (typeof current !== "number" || incoming > current) {
+      merged[key] = incoming;
+    }
+  }
+  return merged;
 }
 
 /**
@@ -123,15 +163,12 @@ async function streamOneIterationToSse(
           if (ev.delta?.stop_reason) {
             stopReason = ev.delta.stop_reason;
           }
-          // Top-level `usage.output_tokens` приходить ЛИШЕ тут (див.
-          // коментар біля `StreamEvent.usage`). Merge у `usage`, що ми
-          // зібрали з `message_start`, інакше кост рахується тільки на
-          // input + cache, і `kind=completion` лічильник лишається порожнім.
-          if (ev.usage?.output_tokens != null) {
-            usage = { ...(usage ?? {}), output_tokens: ev.usage.output_tokens };
-          }
+          // Фінальний `message_delta` несе output-токени (Anthropic) і, за
+          // OpenRouter-ом, ще й реальні input-токени з `cost` — див.
+          // `mergeStreamUsage`.
+          if (ev.usage) usage = mergeStreamUsage(usage, ev.usage);
         } else if (ev.type === "message_start" && ev.message?.usage) {
-          usage = ev.message.usage;
+          usage = mergeStreamUsage(usage, ev.message.usage);
         }
       }
     }
@@ -175,6 +212,8 @@ export async function streamAnthropicToSse(
         endpoint,
         timeoutMs: 60000,
         signal: abortSignal,
+        // Чат — єдина поверхня, що мігрує на OpenRouter (CHAT_VIA_OPENROUTER).
+        allowOpenRouter: true,
       }));
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -286,6 +325,7 @@ export async function streamAnthropicToSse(
               endpoint: `${endpoint}-cont`,
               timeoutMs: 60000,
               signal: abortSignal,
+              allowOpenRouter: true,
             },
           );
         if (!nextResponse.ok) {

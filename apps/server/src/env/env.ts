@@ -1,4 +1,6 @@
 import { z } from "zod";
+
+import { defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
 
 const coerceInt = z.coerce.number().int();
@@ -157,7 +159,12 @@ const envSchema = z.object({
 
   CHAT_MODEL_FIRST_TURN: stringWithDefault("claude-haiku-4-5-20251001"),
 
-  CHAT_MODEL_SYNTHESIS: stringWithDefault("claude-sonnet-4-6"),
+  CHAT_MODEL_SYNTHESIS: stringWithDefault(defaultChatModel("synthesis")),
+
+  // Kill-switch транспорту чату: `true` — Messages API OpenRouter-а,
+  // `false` (дефолт) — прямий Anthropic-ендпоінт. Впливає лише на
+  // `/api/chat`; digest, nutrition, mono й classify ходять напряму завжди.
+  CHAT_VIA_OPENROUTER: boolFromEnv(false),
 
   CHAT_STRICT_TOOLS: boolFromEnv(true),
 
@@ -229,9 +236,9 @@ const envSchema = z.object({
 
   AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
 
-  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault(defaultChatModel("standard")),
 
-  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault(defaultChatModel("floor")),
 
   AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
     "google/gemini-2.5-flash-lite",
@@ -559,6 +566,12 @@ const envSchema = z.object({
   OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
 
+  // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
+  // OpenRouter-ом). WHY окрема змінна: раніше тут стояв
+  // `CHAT_MODEL_SYNTHESIS`, а він тепер може нести OpenRouter-only id —
+  // Anthropic на такий відповість 404 і зніме коучу останню сітку безпеки.
+  COACH_MODEL_ANTHROPIC: stringWithDefault("claude-sonnet-4-6"),
+
   NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
 
   LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
@@ -635,6 +648,16 @@ export function assertStartupEnv(): void {
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(
       "OPENROUTER_API_KEY is not set but LLM_*_PROVIDER=openrouter — those paths will degrade to StubProvider.",
+    );
+  }
+
+  // Відкат тут повний (`chatViaOpenRouter()` вимагає ключа, тож і транспорт,
+  // і model-id повертаються на Anthropic разом), тому чат лишається робочим.
+  // Але прапорець виставили не просто так — мовчати про те, що він не подіяв,
+  // означає лишити ops у переконанні, що міграція відбулась.
+  if (env.CHAT_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "CHAT_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids; the flag has no effect.",
     );
   }
 
