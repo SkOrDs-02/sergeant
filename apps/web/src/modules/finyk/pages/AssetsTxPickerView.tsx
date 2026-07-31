@@ -156,25 +156,27 @@ export function AssetsTxPickerView({
     const hasRecent = allTransactions.some(
       (item) => transactionInstant(item.time) >= cutoff,
     );
-    return allTransactions.filter((item) => {
-      const instant = transactionInstant(item.time);
-      const itemMonth =
-        instant > 0
-          ? new Intl.DateTimeFormat("en-CA", {
-              timeZone: "Europe/Kyiv",
-              year: "numeric",
-              month: "2-digit",
-            }).format(instant)
-          : "";
-      const inRange = month
-        ? itemMonth === month
-        : !hasRecent || instant >= cutoff || linkedIds.has(item.id);
-      const haystack =
-        `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
-      return (
-        inRange && (!normalizedQuery || haystack.includes(normalizedQuery))
-      );
-    });
+    return allTransactions
+      .filter((item) => {
+        const instant = transactionInstant(item.time);
+        const itemMonth =
+          instant > 0
+            ? new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Europe/Kyiv",
+                year: "numeric",
+                month: "2-digit",
+              }).format(instant)
+            : "";
+        const inRange = month
+          ? itemMonth === month
+          : !hasRecent || instant >= cutoff || linkedIds.has(item.id);
+        const haystack =
+          `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
+        return (
+          inRange && (!normalizedQuery || haystack.includes(normalizedQuery))
+        );
+      })
+      .sort((a, b) => transactionInstant(b.time) - transactionInstant(a.time));
   }, [allTransactions, linkedIds, month, openedAt, query]);
   const pickerControls = (
     <div className="mb-3 space-y-2">
@@ -247,8 +249,14 @@ export function AssetsTxPickerView({
       );
     }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
+    // Same rule as AssetsLiabilitiesSection: spending on the card itself is
+    // never a repayment, everything else linked here is.
     const paid = transactions
-      .filter((t) => linkedIds.includes(t.id))
+      .filter(
+        (t) =>
+          linkedIds.includes(t.id) &&
+          !(t._accountId === txPicker.id && t.amount < 0),
+      )
       .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
     const remaining = getMonoDebt(account);
     const total = paid + remaining;

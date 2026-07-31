@@ -53,6 +53,26 @@ export function TransferSuggestionCard({
   const amount = `${Math.round(suggestion.amountMinor / 100).toLocaleString(
     "uk-UA",
   )} ₴`;
+  // Account labels alone ("Чорна • 1234 → Банка") do not let the user recall
+  // which pair of operations this is about. Show each side's own description
+  // and date, the way the transaction list identifies them.
+  const sideLabel = (tx: InternalTransferSuggestion["outgoing"]): string => {
+    const seconds = Number(tx.time);
+    const instant = Number.isFinite(seconds)
+      ? seconds > 10_000_000_000
+        ? seconds
+        : seconds * 1000
+      : 0;
+    const date = instant
+      ? new Date(instant).toLocaleDateString("uk-UA", {
+          timeZone: "Europe/Kyiv",
+          day: "numeric",
+          month: "short",
+        })
+      : "";
+    const description = (tx.description ?? "").trim();
+    return [date, description].filter(Boolean).join(" · ");
+  };
 
   return (
     <Card module="finyk" prominence="soft" radius="lg" className="space-y-3">
@@ -63,6 +83,12 @@ export function TransferSuggestionCard({
           </p>
           <p className="text-xs text-muted mt-0.5 truncate">
             {accountLabel(fromId, accounts)} → {accountLabel(toId, accounts)}
+          </p>
+          <p className="text-xs text-subtle mt-1 truncate">
+            −{sideLabel(suggestion.outgoing)}
+          </p>
+          <p className="text-xs text-subtle truncate">
+            +{sideLabel(suggestion.incoming)}
           </p>
         </div>
         <span className="text-style-label tabular-nums text-finyk-strong dark:text-finyk shrink-0">

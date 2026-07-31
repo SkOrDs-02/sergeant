@@ -513,7 +513,7 @@ describe("useOverviewData", () => {
       expect(keys).toContain("showFirstInsight");
       expect(keys).toContain("hasAnyData");
       expect(keys).toContain("dayBudget");
-      expect(keys).toContain("forecastBarClass");
+      expect(keys).toContain("projectedSpend");
     });
 
     it("dateLabel is a non-empty string", () => {
@@ -525,18 +525,6 @@ describe("useOverviewData", () => {
       );
       expect(typeof result.current.dateLabel).toBe("string");
       expect(result.current.dateLabel.length).toBeGreaterThan(0);
-    });
-
-    it("forecastBarClass is one of 'bg-danger', 'bg-warning', 'bg-success'", () => {
-      const { result } = renderHook(() =>
-        useOverviewData({
-          mono: buildMono(),
-          storage: buildStorage(),
-        }),
-      );
-      expect(["bg-danger", "bg-warning", "bg-success"]).toContain(
-        result.current.forecastBarClass,
-      );
     });
   });
 });

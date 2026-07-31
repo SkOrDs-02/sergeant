@@ -17,8 +17,6 @@ describe("MonthPulseCard", () => {
     hasExpensePlan: false,
     spendPlanRatio: 0,
     planExpense: 0,
-    forecastTrendPct: 6,
-    forecastBarClass: "bg-success",
     recurringOutThisMonth: 0,
     recurringInThisMonth: 0,
     unknownOutCount: 0,

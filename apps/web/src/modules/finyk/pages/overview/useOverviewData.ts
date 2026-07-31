@@ -436,15 +436,12 @@ export function useOverviewData({
   const dayBudget = expenseLeft / remainingDays;
 
   const showMonthForecast = daysPassed > 0 && projectedSpend > 0;
-  const forecastTrendPct = showMonthForecast
-    ? Math.min(100, Math.round((spent / projectedSpend) * 100))
-    : 0;
-  const forecastBarClass =
-    forecastTrendPct > 75
-      ? "bg-danger"
-      : forecastTrendPct > 50
-        ? "bg-warning"
-        : "bg-success";
+  // No `forecastTrendPct` here on purpose. It used to be
+  // `spent / projectedSpend`, but `projectedSpend` is itself
+  // `spent / daysPassed * daysInMonth`, so `spent` cancels and the value
+  // collapsed to `daysPassed / daysInMonth` — a progress bar that tracked the
+  // calendar while claiming to track spending. A forecast bar needs an
+  // independent reference (a plan, or available funds) to mean anything.
 
   // "Has a plan" must reflect a real user-set monthly plan, not the
   // forecast fallback baked into `expenseTarget` (which is only for the
@@ -488,8 +485,6 @@ export function useOverviewData({
     showMonthForecast,
     projectedSpend,
     planExpense,
-    forecastTrendPct,
-    forecastBarClass,
     recurringOutThisMonth,
     recurringInThisMonth,
     unknownOutCount,
