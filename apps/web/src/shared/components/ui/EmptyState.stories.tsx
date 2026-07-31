@@ -129,6 +129,31 @@ export const Compact: Story = {
 };
 
 /**
+ * **Empty-state як ціла сторінка** — коли `EmptyState` є єдиним вмістом
+ * маршруту (404, повноекранна помилка), він мусить нести заголовок
+ * сторінки: інакше маршрут їде взагалі без `h1`. Для цього — `titleAs`.
+ *
+ * За замовчуванням `title` рендериться як `<p>`, бо у вкладеному випадку
+ * заголовок уже належить сторінці, і зайвий `h1`/`h2` зламав би аутлайн.
+ */
+export const AsPageHeading: Story = {
+  args: {
+    size: "lg",
+    variant: "info",
+    eyebrow: "404",
+    title: "Сторінку не знайдено",
+    titleAs: "h1",
+    description:
+      "Здається, ця адреса вже не існує. Перевір посилання або повернись на головну.",
+    primaryAction: (
+      <Button variant="primary" size="lg">
+        На головну
+      </Button>
+    ),
+  },
+};
+
+/**
  * **Tier 2 / compact, без action** — empty-state суто описовий, бо
  * primary-CTA уже видно на тому самому екрані (див. anti-pattern у
  * `docs/design/empty-states.md` — не дублюємо кнопку).

@@ -69,6 +69,14 @@ export interface EmptyStateProps {
   /** Short caps tag above the title (e.g. "404", "ERROR"). */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
+  /**
+   * Element used for `title`. Defaults to `p`, because an empty state is
+   * normally nested inside a page that already owns the heading — emitting
+   * a heading there would inject an arbitrary level into the outline.
+   * Pass a heading level when the empty state *is* the whole page (the 404
+   * surface), otherwise that page ships with no heading at all.
+   */
+  titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
@@ -234,6 +242,7 @@ export function EmptyState({
   illustration,
   eyebrow,
   title,
+  titleAs: TitleTag = "p",
   description,
   action,
   primaryAction,
@@ -308,7 +317,9 @@ export function EmptyState({
           {eyebrow}
         </span>
       )}
-      <p className={cn("text-text text-balance", tokens.title)}>{title}</p>
+      <TitleTag className={cn("text-text text-balance", tokens.title)}>
+        {title}
+      </TitleTag>
       {description && (
         <p
           className={cn(

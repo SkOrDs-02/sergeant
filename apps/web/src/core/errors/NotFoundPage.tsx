@@ -37,6 +37,9 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         eyebrow="404"
         illustration={<NotFoundIllustration size={200} />}
         title="Сторінку не знайдено"
+        // The empty state is the entire 404 surface, so it has to carry the
+        // page heading — otherwise this route ships with no heading at all.
+        titleAs="h1"
         description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну — звідти можна знайти потрібний модуль."
         primaryAction={
           <Button
