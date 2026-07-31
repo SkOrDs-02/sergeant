@@ -276,13 +276,23 @@ function parseSqlFile(content) {
     }
   }
 
-  // ALTER TABLE ... ADD COLUMN [IF NOT EXISTS] col type
-  const addColRe =
-    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([`"']?\w+[`"']?)\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"']?\w+[`"']?)/gi;
-  for (const m of stripped.matchAll(addColRe)) {
-    const tbl = normId(m[1]);
-    if (!tables.has(tbl)) tables.set(tbl, new Set());
-    tables.get(tbl).add(normId(m[2]));
+  // ALTER TABLE ... ADD COLUMN [IF NOT EXISTS] col type [, ADD COLUMN ...]
+  //
+  // Один `ALTER TABLE` може додати кілька колонок через кому. Регекс,
+  // прив'язаний до `ALTER TABLE … ADD COLUMN`, бачив лише першу клаузу —
+  // решта колонок мовчки лишалась «Drizzle-only» (міграція 092 додає
+  // `stop_reason_awaited_at` і `stop_reason` одним стейтментом). Тому спершу
+  // виділяємо стейтмент до `;`, а вже в ньому шукаємо всі `ADD COLUMN`.
+  const alterTableRe =
+    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([`"']?\w+[`"']?)([^;]*)/gi;
+  const addColClauseRe =
+    /\bADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"']?\w+[`"']?)/gi;
+  for (const stmt of stripped.matchAll(alterTableRe)) {
+    const tbl = normId(stmt[1]);
+    for (const clause of stmt[2].matchAll(addColClauseRe)) {
+      if (!tables.has(tbl)) tables.set(tbl, new Set());
+      tables.get(tbl).add(normId(clause[1]));
+    }
   }
 
   // ALTER TABLE ... DROP COLUMN [IF EXISTS] col
@@ -698,6 +708,10 @@ const SQL_ONLY_TABLES = [
   "mono_connection",
   "mono_jar",
   "mono_transaction",
+  // ПриватБанк merchant-креденшели під AES-256-GCM (міграція 091). Той самий
+  // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
+  // серверний банк-проксі, у Drizzle його свідомо немає.
+  "privat_connection",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",
@@ -715,6 +729,9 @@ const SQL_ONLY_TABLES = [
   // Telegram alerting — ack-и алертів та архів топіків; server-only.
   "tg_alert_acks",
   "tg_topic_archive",
+  // Відповіді на мікро-опитування бета-тестерів у Telegram-боті (міграція 091).
+  // Пише лише webhook-хендлер бота, клієнт цих рядків не бачить.
+  "telegram_beta_survey_responses",
   // Growth / product analytics — агреговані daily/weekly таблиці, наповнюються
   // серверними job-ами; клієнт не читає їх через Drizzle.
   "app_store_reviews",
