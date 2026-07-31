@@ -122,14 +122,14 @@ describe("api-client react hooks", () => {
     expect(privatDisabled.enabled).toBe(false);
     expect(privatDisabled.queryKey).toEqual(["privat", "balance-final", ""]);
 
-    const creds = { merchantId: "mid", merchantToken: "token" };
-    usePrivatBalanceFinal(creds);
+    usePrivatBalanceFinal("mid");
     const privat = lastQuery();
     expect(privat.enabled).toBe(true);
     await privat.queryFn?.({ signal });
+    // Жодних креденшелів у виклику — лише signal (спека F1).
     expect(
       useApiClientMock.mock.results.at(-1)?.value.privat.balanceFinal,
-    ).toHaveBeenCalledWith(creds, { signal });
+    ).toHaveBeenCalledWith({ signal });
   });
 
   it("builds mutation hooks with client-backed mutation functions", async () => {

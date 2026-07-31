@@ -424,6 +424,16 @@ const envSchema = z.object({
 
   AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
 
+  // Per-account credential bucket (F2). Keyed on the targeted email, not the
+  // caller's IP, so renting more IPs does not buy more guesses. 10 per 15 min
+  // is deliberately looser than the per-IP 5/60s: it must not fire during
+  // ordinary "I mistyped my password four times" use, only against sustained
+  // guessing. Window, not permanent lockout — a permanent one would let an
+  // attacker lock any account out of its own login.
+  AUTH_ACCOUNT_RATE_LIMIT_MAX: intFromEnv(10),
+
+  AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+
   RATE_LIMIT_IP_MAX: intFromEnv(200),
 
   SYNC_AUDIT_ADMIN_USER_IDS: stringWithDefault(""),

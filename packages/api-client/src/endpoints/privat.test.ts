@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 //
 // Unit coverage for the `privat` endpoint module — a thin proxy client for
-// Privatbank corporate API calls (`GET /api/privat?path=…`). All calls carry
-// merchant credentials as `X-Privat-Id` / `X-Privat-Token` headers rather
-// than in the query string, and `balanceFinal` is a canned convenience
-// wrapper over the generic `request()` with fixed path + query.
+// Privatbank corporate API calls (`GET /api/privat?path=…`). Calls carry NO
+// merchant credentials: the server resolves them from `privat_connection` by
+// session (spec beta-security-readiness, F1). `balanceFinal` is a canned
+// convenience wrapper over the generic `request()` with fixed path + query.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
@@ -35,15 +35,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const creds = { merchantId: "merchant-1", merchantToken: "secret-token" };
-
 describe("createPrivatEndpoints.request", () => {
-  it("GETs /api/privat with the path + query merged and credential headers set", async () => {
+  it("GETs /api/privat with the path + query merged and NO credential headers", async () => {
     const fetchMock = mockFetchOnce({ status: "SUCCESS" });
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const privat = createPrivatEndpoints(http);
 
-    const res = await privat.request(creds, "/statements/interim", {
+    const res = await privat.request("/statements/interim", {
       acc: "UA1234",
     });
 
@@ -53,9 +51,11 @@ describe("createPrivatEndpoints.request", () => {
     expect(parsed.pathname).toBe("/api/v1/privat");
     expect(parsed.searchParams.get("path")).toBe("/statements/interim");
     expect(parsed.searchParams.get("acc")).toBe("UA1234");
+    // Регресійний якір F1: щойно тут знову зʼявиться токен, він знову
+    // муситиме десь зберігатися на клієнті.
     const headers = new Headers((init as RequestInit).headers);
-    expect(headers.get("X-Privat-Id")).toBe("merchant-1");
-    expect(headers.get("X-Privat-Token")).toBe("secret-token");
+    expect(headers.get("X-Privat-Id")).toBeNull();
+    expect(headers.get("X-Privat-Token")).toBeNull();
   });
 
   it("works with no extra query params", async () => {
@@ -63,7 +63,7 @@ describe("createPrivatEndpoints.request", () => {
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const privat = createPrivatEndpoints(http);
 
-    await privat.request(creds, "/statements/balance/final");
+    await privat.request("/statements/balance/final");
 
     const [url] = firstCall(fetchMock);
     const parsed = new URL(String(url));
@@ -76,7 +76,7 @@ describe("createPrivatEndpoints.request", () => {
     const privat = createPrivatEndpoints(http);
     const controller = new AbortController();
 
-    await privat.request(creds, "/statements/interim", undefined, {
+    await privat.request("/statements/interim", undefined, {
       signal: controller.signal,
     });
 
@@ -94,7 +94,7 @@ describe("createPrivatEndpoints.balanceFinal", () => {
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const privat = createPrivatEndpoints(http);
 
-    const res = await privat.balanceFinal(creds);
+    const res = await privat.balanceFinal();
 
     expect(res.balances).toHaveLength(1);
     const [url] = firstCall(fetchMock);
@@ -110,7 +110,7 @@ describe("createPrivatEndpoints.balanceFinal", () => {
     const privat = createPrivatEndpoints(http);
     const controller = new AbortController();
 
-    await privat.balanceFinal(creds, { signal: controller.signal });
+    await privat.balanceFinal({ signal: controller.signal });
 
     const [, init] = firstCall(fetchMock);
     expect((init as RequestInit).signal).toBe(controller.signal);

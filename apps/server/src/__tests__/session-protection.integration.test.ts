@@ -215,7 +215,6 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // Public web-vitals beacon from anonymous browsers.
   "/api/metrics/web-vitals",
   // Anonymous / public endpoints, gated by anonymous-quota or rate-limit.
-  "/api/privat", // bank lookup proxy
   "/api/barcode", // anonymous nutrition scan
   "/api/chat", // anonymous chat with quota
   "/api/food-search", // anonymous food search

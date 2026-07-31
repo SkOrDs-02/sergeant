@@ -7,7 +7,15 @@ vi.mock("@shared/api", async () => {
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
   return {
     ...actual,
-    privatApi: { request: vi.fn() },
+    privatApi: {
+      request: vi.fn(),
+      connect: vi.fn(async () => ({
+        connected: true,
+        merchantId: "merchant-1",
+      })),
+      disconnect: vi.fn(async () => ({ connected: false })),
+      status: vi.fn(async () => ({ connected: false, merchantId: null })),
+    },
   };
 });
 
@@ -23,6 +31,8 @@ const PRIVAT_KEYS = [
 ];
 
 const mockedRequest = privatApi.request as unknown as ReturnType<typeof vi.fn>;
+const mockedConnect = privatApi.connect as unknown as ReturnType<typeof vi.fn>;
+const mockedStatus = privatApi.status as unknown as ReturnType<typeof vi.fn>;
 
 const BALANCE_RESPONSE = {
   StatementsResponse: {
@@ -56,13 +66,11 @@ const TX_RESPONSE = {
 // (which fires unawaited after `setCredentials`) can never consume a
 // `...Once` queue out of order and bleed into the next test.
 function installDefaultRequest() {
-  mockedRequest.mockImplementation(
-    async (_creds: unknown, path: string): Promise<unknown> => {
-      if (path.includes("/balance/final")) return BALANCE_RESPONSE;
-      if (path.includes("/transactions")) return TX_RESPONSE;
-      return { data: [] };
-    },
-  );
+  mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+    if (path.includes("/balance/final")) return BALANCE_RESPONSE;
+    if (path.includes("/transactions")) return TX_RESPONSE;
+    return { data: [] };
+  });
 }
 
 beforeEach(() => {
@@ -73,6 +81,11 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   installDefaultRequest();
+  mockedConnect.mockResolvedValue({
+    connected: true,
+    merchantId: "merchant-1",
+  });
+  mockedStatus.mockResolvedValue({ connected: false, merchantId: null });
 });
 
 afterEach(() => {
@@ -100,7 +113,7 @@ describe("usePrivatbank", () => {
   it("connects: fetches balance + transactions and normalizes them", async () => {
     const { result } = renderHook(() => usePrivatbank());
     await act(async () => {
-      await result.current.connect("merchant-1", "token-1", true);
+      await result.current.connect("merchant-1", "token-1");
     });
 
     expect(result.current.connected).toBe(true);
@@ -115,17 +128,22 @@ describe("usePrivatbank", () => {
     expect(result.current.merchantId).toBe("merchant-1");
   });
 
-  it("remember=true persists creds so a fresh mount auto-connects", async () => {
-    const first = renderHook(() => usePrivatbank());
+  it("never leaves the merchant token in browser storage (F1 regression)", async () => {
+    const { result } = renderHook(() => usePrivatbank());
     await act(async () => {
-      await first.result.current.connect("merchant-1", "token-1", true);
+      await result.current.connect("merchant-1", "token-1");
     });
 
-    // A brand-new hook instance loads the remembered creds and reconnects.
-    const second = renderHook(() => usePrivatbank());
-    await waitFor(() => {
-      expect(second.result.current.merchantId).toBe("merchant-1");
+    // Це і є суть F1: після успішного підключення банківський креденшел
+    // не має лежати там, де його видно з DevTools.
+    expect(mockedConnect).toHaveBeenCalledWith({
+      merchantId: "merchant-1",
+      token: "token-1",
     });
+    for (const store of [localStorage, sessionStorage]) {
+      expect(store.getItem("finyk_privat_token")).toBeNull();
+      expect(store.getItem("finyk_privat_id")).toBeNull();
+    }
   });
 
   it("surfaces an auth error on 401 and does not connect", async () => {
@@ -135,10 +153,8 @@ describe("usePrivatbank", () => {
       message: "Unauthorized",
       url: "/api/privat/statements/balance/final",
     });
-    // Throw only on the balance call (the first request `connect` makes).
-    mockedRequest.mockImplementationOnce(async () => {
-      throw authErr;
-    });
+    // Сервер тепер сам валідує креденшели у `connect`.
+    mockedConnect.mockRejectedValueOnce(authErr);
 
     const { result } = renderHook(() => usePrivatbank());
     await act(async () => {
@@ -152,12 +168,12 @@ describe("usePrivatbank", () => {
   it("disconnect clears creds, state and caches", async () => {
     const { result } = renderHook(() => usePrivatbank());
     await act(async () => {
-      await result.current.connect("merchant-1", "token-1", true);
+      await result.current.connect("merchant-1", "token-1");
     });
     expect(result.current.connected).toBe(true);
 
-    act(() => {
-      result.current.disconnect();
+    await act(async () => {
+      await result.current.disconnect();
     });
 
     expect(result.current.connected).toBe(false);
@@ -169,7 +185,7 @@ describe("usePrivatbank", () => {
   it("clearCache wipes cached tx/balance and resets lists", async () => {
     const { result } = renderHook(() => usePrivatbank());
     await act(async () => {
-      await result.current.connect("merchant-1", "token-1", true);
+      await result.current.connect("merchant-1", "token-1");
     });
 
     act(() => {
@@ -181,9 +197,11 @@ describe("usePrivatbank", () => {
     expect(localStorage.getItem("finyk_privat_tx_cache")).toBeNull();
   });
 
-  it("auto-connects on mount when credentials are already stored", async () => {
-    writeRaw("finyk_privat_id", "stored-id");
-    writeRaw("finyk_privat_token", "stored-token");
+  it("auto-connects on mount when the server reports a connection", async () => {
+    mockedStatus.mockResolvedValue({
+      connected: true,
+      merchantId: "stored-id",
+    });
 
     const { result } = renderHook(() => usePrivatbank());
     await waitFor(() => {
@@ -194,9 +212,35 @@ describe("usePrivatbank", () => {
   });
 
   it("does nothing on mount when disabled", () => {
-    writeRaw("finyk_privat_id", "stored-id");
-    writeRaw("finyk_privat_token", "stored-token");
+    mockedStatus.mockResolvedValue({
+      connected: true,
+      merchantId: "stored-id",
+    });
     renderHook(() => usePrivatbank(false));
     expect(mockedRequest).not.toHaveBeenCalled();
+    expect(mockedStatus).not.toHaveBeenCalled();
+  });
+
+  it("migrates legacy browser creds to the server, then wipes them", async () => {
+    writeRaw("finyk_privat_id", "legacy-id");
+    writeRaw("finyk_privat_token", "legacy-token");
+    mockedStatus.mockResolvedValue({
+      connected: true,
+      merchantId: "legacy-id",
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+
+    await waitFor(() => {
+      expect(mockedConnect).toHaveBeenCalledWith({
+        merchantId: "legacy-id",
+        token: "legacy-token",
+      });
+    });
+    await waitFor(() => {
+      expect(result.current.connected).toBe(true);
+    });
+    // Ключі мають зникнути незалежно від результату переносу.
+    expect(localStorage.getItem("finyk_privat_token")).toBeNull();
   });
 });
