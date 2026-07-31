@@ -1144,7 +1144,26 @@ events:
 
   # ─────────────────────────────────────────────────────────────────────
   # AI (HubChat) — counts only, no PII bodies
+  #
+  # Воронка: opened ≥ message_sent ≥ response_received + error.
+  # Різниця message_sent − (response_received + error) — це відповіді, яких
+  # користувач не дочекався (ручний cancel події не має: це вибір людини,
+  # а не збій).
   # ─────────────────────────────────────────────────────────────────────
+  - {
+      name: hubchat_opened,
+      category: ai,
+      source: frontend,
+      properties:
+        [
+          {
+            name: source,
+            type: string_enum,
+            required: true,
+            values: [overlay, route],
+          },
+        ],
+    }
   - {
       name: hubchat_message_sent,
       category: ai,
@@ -1155,6 +1174,17 @@ events:
           { name: fromVoice, type: boolean, required: true },
           { name: hasQuickAction, type: boolean, required: false },
           { name: module, type: string, required: false },
+        ],
+    }
+  - {
+      name: hubchat_response_received,
+      category: ai,
+      source: frontend,
+      properties:
+        [
+          { name: latency_ms, type: integer, required: true },
+          { name: length, type: integer, required: true },
+          { name: had_tools, type: boolean, required: true },
         ],
     }
   - {
