@@ -602,9 +602,14 @@ export const paths: ZodOpenApiPathsObject = {
   // `/api/mono/connect`, `/api/mono/transactions` etc. live in their own
   // OpenAPI section below. The legacy `/api/mono` token-passthrough proxy was
   // removed when the polling pipeline was retired.
+  // Креденшели ПриватБанку живуть зашифрованими в `privat_connection` і
+  // резолвляться за сесією. Раніше вони приходили в заголовках
+  // `X-Privat-Id`/`X-Privat-Token`, через що клієнт мусив тримати
+  // merchant-токен у браузері, а проксі був анонімним — спека
+  // `docs/90-work/planning/specs/beta-security-readiness.md` (F1/F3).
   "/api/privat": {
     get: {
-      summary: "PrivatBank API proxy",
+      summary: "PrivatBank API proxy (credentials resolved from session)",
       tags: ["banks"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.PrivatQuery },
@@ -613,6 +618,48 @@ export const paths: ZodOpenApiPathsObject = {
         "400": validationError,
         "401": unauthorized,
       },
+    },
+  },
+  "/api/privat/connect": {
+    post: {
+      summary: "Store PrivatBank merchant credentials (validated upstream)",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              merchantId: z.string().describe("Merchant ID з Приват24 Бізнес."),
+              token: z
+                .string()
+                .describe(
+                  "Merchant-токен. Передається рівно один раз; на сервері зберігається під AES-256-GCM і клієнту вже не повертається.",
+                ),
+            }),
+          },
+        },
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/privat/disconnect": {
+    post: {
+      summary: "Delete stored PrivatBank credentials",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      responses: { "200": okEmpty, "401": unauthorized },
+    },
+  },
+  "/api/privat/status": {
+    get: {
+      summary: "PrivatBank connection status (never returns the token)",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      responses: { "200": okEmpty, "401": unauthorized },
     },
   },
 
