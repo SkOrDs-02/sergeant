@@ -51,6 +51,7 @@ export const foodSearchApi = apiClient.foodSearch;
 export const monoWebhookApi = apiClient.monoWebhook;
 export const privatApi = apiClient.privat;
 export const waitlistApi = apiClient.waitlist;
+export const feedbackApi = apiClient.feedback;
 export const billingApi = apiClient.billing;
 export const meApi = apiClient.me;
 export const weeklyDigestApi = apiClient.weeklyDigest;

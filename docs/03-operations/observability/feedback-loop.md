@@ -1,13 +1,13 @@
 # Feedback loop — in-app widget + NPS через PostHog Surveys
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
 > **Status:** Active
 
 Операційна довідка feedback-loop-у з GTM § 3.2
 ([`02-go-to-market.md`](../../01-product/launch/business/02-go-to-market.md)):
 in-app feedback widget («Є ідея / Знайшов баг») і NPS-опитування після
-7 днів використання. Обидва закриті через уже підключений PostHog —
-без нового вендора і без нового бекенда.
+7 днів використання. NPS закритий через уже підключений PostHog; у
+віджета фідбеку з 2026-07-31 є **власний серверний sink** — причина в § 2a.
 
 ## 1. In-app feedback widget
 
@@ -16,21 +16,41 @@ in-app feedback widget («Є ідея / Знайшов баг») і NPS-опит
 Діалог — категорія (Ідея / Баг / Інше) + free-text + опціональний
 контекст сторінки.
 
-**Транспорт:** стандартний `trackEvent` sink → PostHog. Події (канонічні
-імена й payload-контракти — у
+**Транспорт — два різні синки з різними ролями:**
+
+1. **`POST /api/v1/feedback` — джерело істини для тексту.** Пише в
+   `feedback_entries` (міграція 093). Клієнт **дочікується 200** і лише тоді
+   показує «надіслано». Роут:
+   [`apps/server/src/routes/feedback.ts`](../../../apps/server/src/routes/feedback.ts),
+   сервіс: [`feedbackService.ts`](../../../apps/server/src/modules/feedback/feedbackService.ts),
+   клієнт: [`packages/api-client/src/endpoints/feedback.ts`](../../../packages/api-client/src/endpoints/feedback.ts).
+   Анонімний (сесія опційна, підвʼязується якщо є), rate-limit 20/IP/год.
+2. **PostHog через `trackEvent` — аналітика воронки.** Стріляє **після**
+   успішного POST, тож `feedback_submitted` тепер означає «відгук
+   доставлено», а не «кнопку натиснуто».
+
+Події (канонічні імена й payload-контракти — у
 [`packages/shared/src/lib/analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts)):
 
-| Подія                    | Коли                       | Ключові поля payload                                                               |
-| ------------------------ | -------------------------- | ---------------------------------------------------------------------------------- |
-| `feedback_widget_opened` | відкриття діалогу          | `source: "settings"`                                                               |
-| `feedback_submitted`     | сабміт непорожнього тексту | `category`, `message` (≤ 2000), `length`, `has_page_context`, `page?`, `viewport?` |
+| Подія                    | Коли                    | Ключові поля payload                                                               |
+| ------------------------ | ----------------------- | ---------------------------------------------------------------------------------- |
+| `feedback_widget_opened` | відкриття діалогу       | `source: "settings"`                                                               |
+| `feedback_submitted`     | **успішний** POST (200) | `category`, `message` (≤ 2000), `length`, `has_page_context`, `page?`, `viewport?` |
+
+> **Наслідок для читання дашборда:** розрив `opened − submitted` тепер
+> включає не лише «передумав», а й «спробував, але не долетіло». Реальний
+> обсяг зібраного фідбеку рахуй по `SELECT count(*) FROM feedback_entries`,
+> а не по PostHog — БД бачить те, чого PostHog під блокувальником не бачить.
 
 **«Скріншот-контекст»** — свідомо НЕ реальний скріншот (pixel-и тягнуть
 PII: баланси, назви транзакцій), а мінімальний відтворюваний опис:
 `page` (href через `sanitizeUrl()` — той самий санітайзер, що
 `$current_url` у `PageviewTracker`; auth-токени/OAuth-коди ніколи не
-долітають) + `viewport` (`WxH`). Тумблер у діалозі default-on, юзер
-може вимкнути.
+долітають) + `viewport` (`WxH`). Контекст додається **завжди й без
+тумблера**: діалог відкривається лише з Settings, тож просити юзера
+підтвердити «це сторінка налаштувань» не мало сенсу. `has_page_context`
+відображає те, що РЕАЛЬНО приземлилось — `buildPageContext()` повертає
+`null` поза DOM, і тоді прапорець `false`, а `page`/`viewport` відсутні.
 
 **`message` — єдиний event з навмисним user-generated free-text.**
 Виняток із «minimal, non-sensitive metadata» контракту `trackEvent`
@@ -88,6 +108,57 @@ surveys у конфігу НЕ вимкнені — popover-опитування
 5. Launch. Результати — вкладка survey → NPS score breakdown
    (promoters / passives / detractors); PostHog рахує score сам.
 
+## 2a. Статус у проді (2026-07-31)
+
+Прямий запит до `sergeant-prod` (id `167740`) за 180 днів:
+
+| Подія                    | Подій | Людей |
+| ------------------------ | ----- | ----- |
+| `feedback_widget_opened` | 7     | 1     |
+| `feedback_submitted`     | **0** | 0     |
+
+`feedback_submitted` немає навіть у переліку event definitions проєкту —
+тобто PostHog не приймав його ЖОДНОГО разу.
+
+**Це не баг коду.** Шлях сабміту перевірений end-to-end:
+
+- імʼя події збігається в `analyticsEvents.ts`, у таблиці §1 вище і в
+  специфікації інсайту «Feedback inbox» — розходження немає;
+- `trackEvent(FEEDBACK_SUBMITTED, …)` викликається безумовно на кожен
+  непорожній сабміт ([`FeedbackDialog.tsx`](../../../apps/web/src/core/feedback/FeedbackDialog.tsx)),
+  без гейтів на consent / sampling;
+- транспорт **той самий**, яким `feedback_widget_opened` успішно долітає
+  в прод — тобто sink живий, і це доводять реальні прод-дані, а не тест;
+- `message` не входить у `REDACT_KEY_NAMES`, тож `scrubPII` його не ріже;
+- футер із кнопкою рендериться в обох розкладках діалогу (`Modal` на
+  desktop, `Sheet` на touch), а swipe-to-dismiss у `Sheet` привʼязаний
+  лише до ручки й хедера — кнопку сабміту він не перехоплює;
+- юніт-тести на call-site зелені (`FeedbackDialog.test.tsx`).
+
+Реальна причина нуля: **7 відкриттів однією людиною й жодного
+надсилання** — віджет відкривали, але фідбек не писали. Порожня панель
+тут означає «ніхто ще не скористався», а не «пайплайн зламаний».
+
+> ✅ **Ризик тихої втрати — закрито 2026-07-31.** Раніше сабміт був
+> fire-and-forget: тост «дякуємо» показувався ще до будь-якого підтвердження
+> від PostHog, і власного бекенда у віджета не було. Тестер із блокувальником
+> реклами (`eu.i.posthog.com` є у типових блоклистах) або без мережі втрачав
+> повідомлення назавжди, будучи впевненим, що надіслав.
+>
+> Полагоджено власним endpoint-ом (§ 1): текст іде в `feedback_entries`,
+> «надіслано» кажемо лише після 200, а на збої діалог **не закривається** —
+> показує причину (окремо офлайн, окремо решта) і дає кнопку «скопіювати
+> текст», щоб праця людини не пропала навіть коли мережа проти нас.
+> Регресію стереже тест «на збої НЕ каже "надіслано"» у
+> [`FeedbackDialog.test.tsx`](../../../apps/web/src/core/feedback/FeedbackDialog.test.tsx).
+>
+> **Лишається відкритим (окреме рішення):** reverse-proxy для PostHog на
+> власному домені. Він полагодив би блокувальники для **всієї** телеметрії, а
+> не лише для фідбеку — зараз у заблокованого тестера фідбек долітає, але
+> решта подій (воронка HubChat, FTUX) усе одно ні. Варіанти й ціна —
+> [`posthog-founder-pulse.md` § 10](./posthog-founder-pulse.md) сусідить із
+> таким же інфраструктурним рішенням про часовий пояс.
+
 ## 3. Верифікація без PostHog key
 
 Без `VITE_POSTHOG_KEY` транспорт — no-op, але події детерміновано
@@ -95,6 +166,19 @@ surveys у конфігу НЕ вимкнені — popover-опитування
 [`analytics.ts`](../../../apps/web/src/core/observability/analytics.ts))
 — так їх читають smoke-тести. Unit-покриття:
 `apps/web/src/core/feedback/*.test.{ts,tsx}`.
+
+**Чи дійшов текст — питання до БД, не до PostHog:**
+
+```sql
+SELECT id, created_at, category, left(message, 80) AS preview, user_id
+  FROM feedback_entries
+ ORDER BY created_at DESC
+ LIMIT 20;
+```
+
+Це і є інбокс бети. PostHog-інсайт нижче лишається зручним переглядом, але
+при розбіжності **правий той, що в БД**: подія в PostHog могла не долетіти,
+рядок у таблиці — вже ні.
 
 ## See also
 
