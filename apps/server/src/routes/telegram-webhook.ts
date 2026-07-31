@@ -4,7 +4,10 @@ import type { Pool } from "pg";
 import { rateLimitExpress, setModule } from "../http/index.js";
 import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
-import { createTelegramApiClient } from "../modules/alerts/telegramShipper.js";
+import {
+  createTelegramApiClient,
+  type TelegramApiClient,
+} from "../modules/alerts/telegramShipper.js";
 import {
   countWaitlistStats,
   formatStatsReply,
@@ -12,12 +15,26 @@ import {
   parseCommand,
   recordStart,
   recordStop,
-  START_REPLY_AGAIN,
-  START_REPLY_NEW,
-  startReplyQueued,
-  STOP_REPLY,
+  recordStopReason,
+  recordSurveyAnswer,
+  resolveUpdateOrigin,
+  type ParsedCommand,
   type TelegramUpdate,
 } from "../modules/telegram/waitlistBot.js";
+import {
+  appReply,
+  helpReply,
+  installReply,
+  startReplyQueued,
+  surveyAnsweredText,
+  START_REPLY_AGAIN,
+  START_REPLY_NEW,
+  STOP_REASON_ACK,
+  STOP_REPLY,
+  SURVEY_ACCEPTED_TOAST,
+  SURVEY_ALREADY_ANSWERED_TOAST,
+  type BetaLinks,
+} from "../modules/telegram/betaTexts.js";
 
 /**
  * `POST /api/telegram/webhook` — апдейти бота вейтліста бети.
@@ -75,20 +92,20 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
     }
 
     const update = req.body as TelegramUpdate;
-    const message = update?.message;
-    const chatId = message?.chat?.id;
+    const origin = resolveUpdateOrigin(update);
 
     // Приватний діалог від живої людини — єдине, що обробляємо. Апдейти з
     // груп і від інших ботів ігноруємо: підписник вейтліста це той, з ким
     // ми можемо говорити віч-на-віч.
     if (
-      typeof chatId !== "number" ||
-      message?.chat?.type !== "private" ||
-      message?.from?.is_bot === true
+      typeof origin.chatId !== "number" ||
+      origin.chatType !== "private" ||
+      origin.fromBot
     ) {
       res.json({ ok: true });
       return;
     }
+    const chatId = origin.chatId;
 
     const command = parseCommand(update);
     if (command.kind === "ignore") {
@@ -107,29 +124,18 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
       }
     }
 
-    let reply: string;
+    const client = createTelegramApiClient(token);
+
+    // Натискання кнопки живе за окремим протоколом: там не `sendMessage`, а
+    // квитанція на callback плюс редагування вже надісланого повідомлення.
+    if (command.kind === "survey") {
+      await handleSurvey(pool, client, chatId, command, res);
+      return;
+    }
+
+    let reply: string | null;
     try {
-      if (command.kind === "stats") {
-        reply = formatStatsReply(await countWaitlistStats(pool));
-      } else if (command.kind === "stop") {
-        await recordStop(pool, chatId);
-        reply = STOP_REPLY;
-      } else {
-        const { created, position } = await recordStart(pool, {
-          chatId,
-          username: message.from?.username ?? null,
-          firstName: message.from?.first_name ?? null,
-          languageCode: message.from?.language_code ?? null,
-          startPayload: command.payload,
-        });
-        // Позиція стабільна, тож повторний /start за межами хвилі покаже той
-        // самий номер — гілка навмисно перевіряється ДО `created`.
-        if (position > env.TELEGRAM_BETA_WAVE_SIZE) {
-          reply = startReplyQueued(position);
-        } else {
-          reply = created ? START_REPLY_NEW : START_REPLY_AGAIN;
-        }
-      }
+      reply = await composeReply(pool, chatId, command, update);
     } catch (err) {
       // Єдиний випадок, де ретрай справді потрібен: апдейт не втрачається.
       logger.error({
@@ -143,16 +149,15 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
     // Відповідь боту — поза транзакцією успіху. Людина вже в списку; якщо
     // Telegram не прийме повідомлення, повторний ретрай апдейта лише
     // задублював би відповідь, а запис і так ідемпотентний.
-    try {
-      await createTelegramApiClient(token).sendMessage({
-        chatId: String(chatId),
-        text: reply,
-      });
-    } catch (err) {
-      logger.warn({
-        msg: "telegram_waitlist_reply_failed",
-        err: { message: err instanceof Error ? err.message : String(err) },
-      });
+    if (reply !== null) {
+      try {
+        await client.sendMessage({ chatId: String(chatId), text: reply });
+      } catch (err) {
+        logger.warn({
+          msg: "telegram_waitlist_reply_failed",
+          err: { message: err instanceof Error ? err.message : String(err) },
+        });
+      }
     }
 
     res.json({ ok: true });
@@ -171,4 +176,138 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
   );
 
   return r;
+}
+
+/**
+ * Посилання бети з оточення. Порожні значення — легальні: тексти вміють
+ * пропускати ненастроєний канал замість того, щоб лишати діру в інструкції.
+ */
+function betaLinks(): BetaLinks {
+  return {
+    appUrl: env.TELEGRAM_BETA_APP_URL,
+    groupLink: env.TELEGRAM_BETA_INVITE_LINK,
+    feedbackFormUrl: env.TELEGRAM_BETA_FEEDBACK_FORM_URL,
+    founderUsername: env.TELEGRAM_BETA_FOUNDER_USERNAME,
+  };
+}
+
+/**
+ * Текст відповіді на текстову команду. `null` — свідома тиша.
+ *
+ * Кидає далі будь-яку помилку БД: рішення «ретраїти чи ні» ухвалює handler,
+ * бо тільки він володіє відповіддю Express.
+ */
+async function composeReply(
+  pool: Pool,
+  chatId: number,
+  command: Exclude<ParsedCommand, { kind: "ignore" } | { kind: "survey" }>,
+  update: TelegramUpdate,
+): Promise<string | null> {
+  const links = betaLinks();
+
+  switch (command.kind) {
+    case "stats":
+      return formatStatsReply(await countWaitlistStats(pool));
+
+    case "app":
+      return appReply(links);
+
+    case "install":
+      return installReply(links);
+
+    case "help":
+      return helpReply(links);
+
+    case "stop":
+      await recordStop(pool, chatId);
+      return STOP_REPLY;
+
+    case "text": {
+      // Довільний текст має сенс рівно в одному стані — коли після `/stop`
+      // ми питали «чому». В усіх інших випадках бот мовчить, як мовчав
+      // завжди: він не співрозмовник, а канал розсилки.
+      const recorded = await recordStopReason(pool, chatId, command.text);
+      return recorded ? STOP_REASON_ACK : null;
+    }
+
+    case "start": {
+      const { created, position } = await recordStart(pool, {
+        chatId,
+        username: update.message?.from?.username ?? null,
+        firstName: update.message?.from?.first_name ?? null,
+        languageCode: update.message?.from?.language_code ?? null,
+        startPayload: command.payload,
+      });
+      // Позиція стабільна, тож повторний /start за межами хвилі покаже той
+      // самий номер — гілка навмисно перевіряється ДО `created`.
+      if (position > env.TELEGRAM_BETA_WAVE_SIZE)
+        return startReplyQueued(position);
+      return created ? START_REPLY_NEW : START_REPLY_AGAIN;
+    }
+  }
+}
+
+/**
+ * Обробка натискання кнопки опитування.
+ *
+ * Порядок кроків не довільний. Спершу запис у БД — єдине, що не можна
+ * втратити. Далі квитанція на callback: без неї клієнт крутить годинник
+ * близько 30 секунд, і людина тисне ще раз. І лише потім редагування
+ * повідомлення — воно косметичне, і його провал нікого не блокує.
+ *
+ * Редагуємо тільки на ПЕРШУ зараховану відповідь. Повторне натискання
+ * лишає текст як є і показує спливашку: перемальовувати повідомлення тим
+ * самим змістом Telegram усе одно відкине з `message is not modified`.
+ */
+async function handleSurvey(
+  pool: Pool,
+  client: TelegramApiClient,
+  chatId: number,
+  command: Extract<ParsedCommand, { kind: "survey" }>,
+  res: Response,
+): Promise<void> {
+  let accepted: boolean;
+  try {
+    const result = await recordSurveyAnswer(pool, {
+      chatId,
+      surveyId: command.survey.id,
+      answer: command.answer,
+    });
+    accepted = result.accepted;
+  } catch (err) {
+    logger.error({
+      msg: "telegram_waitlist_survey_persist_failed",
+      surveyId: command.survey.id,
+      err: { message: err instanceof Error ? err.message : String(err) },
+    });
+    res.status(500).json({ ok: false });
+    return;
+  }
+
+  try {
+    await client.answerCallbackQuery({
+      callbackQueryId: command.callbackQueryId,
+      text: accepted ? SURVEY_ACCEPTED_TOAST : SURVEY_ALREADY_ANSWERED_TOAST,
+    });
+
+    if (accepted && command.messageId !== null) {
+      const label =
+        command.survey.options.find((o) => o.value === command.answer)?.label ??
+        command.answer;
+      await client.editMessageText({
+        chatId: String(chatId),
+        messageId: command.messageId,
+        text: surveyAnsweredText(command.survey, label),
+      });
+    }
+  } catch (err) {
+    // Відповідь уже в базі — це головне. Мережеві дрібниці лише логуємо,
+    // інакше ретрай Telegram спробував би записати голос удруге.
+    logger.warn({
+      msg: "telegram_waitlist_survey_ack_failed",
+      err: { message: err instanceof Error ? err.message : String(err) },
+    });
+  }
+
+  res.json({ ok: true });
 }

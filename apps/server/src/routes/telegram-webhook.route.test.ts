@@ -14,8 +14,15 @@ import request from "supertest";
 const ADMIN_CHAT_ID = "555000111";
 const SECRET = "webhook-secret-stub";
 
-const { sendMessageMock, envStub } = vi.hoisted(() => ({
+const {
+  sendMessageMock,
+  editMessageTextMock,
+  answerCallbackQueryMock,
+  envStub,
+} = vi.hoisted(() => ({
   sendMessageMock: vi.fn().mockResolvedValue({ ok: true }),
+  editMessageTextMock: vi.fn().mockResolvedValue({ ok: true }),
+  answerCallbackQueryMock: vi.fn().mockResolvedValue({ ok: true }),
   envStub: {
     TELEGRAM_WAITLIST_BOT_TOKEN: "token-stub",
     TELEGRAM_WAITLIST_WEBHOOK_SECRET: "webhook-secret-stub",
@@ -25,12 +32,20 @@ const { sendMessageMock, envStub } = vi.hoisted(() => ({
     // `position > undefined` дало б `false` — тобто ліміт мовчки зник би,
     // і тест на 36-го проходив би як «всі в хвилі».
     TELEGRAM_BETA_WAVE_SIZE: 35,
+    TELEGRAM_BETA_APP_URL: "https://beta.sergeant.app",
+    TELEGRAM_BETA_INVITE_LINK: "https://t.me/+abc123",
+    TELEGRAM_BETA_FEEDBACK_FORM_URL: "https://forms.gle/xyz",
+    TELEGRAM_BETA_FOUNDER_USERNAME: "@skords",
   } as Record<string, string | number>,
 }));
 
 vi.mock("../env/env.js", () => ({ env: envStub }));
 vi.mock("../modules/alerts/telegramShipper.js", () => ({
-  createTelegramApiClient: () => ({ sendMessage: sendMessageMock }),
+  createTelegramApiClient: () => ({
+    sendMessage: sendMessageMock,
+    editMessageText: editMessageTextMock,
+    answerCallbackQuery: answerCallbackQueryMock,
+  }),
 }));
 vi.mock("../http/index.js", async () => {
   const actual =
@@ -74,8 +89,39 @@ function statsUpdate(chatId: number) {
   };
 }
 
+function textUpdate(chatId: number, text: string) {
+  return {
+    message: {
+      chat: { id: chatId, type: "private" },
+      from: { id: chatId, is_bot: false, username: "u", first_name: "F" },
+      text,
+    },
+  };
+}
+
+function callbackUpdate(chatId: number, data: string) {
+  return {
+    callback_query: {
+      id: "cbq-77",
+      from: { id: chatId, is_bot: false },
+      message: { message_id: 4242, chat: { id: chatId, type: "private" } },
+      data,
+    },
+  };
+}
+
+/** Коротка обгортка: усі тести шлють той самий POST з валідним секретом. */
+function post(query: ReturnType<typeof vi.fn>, body: unknown) {
+  return request(makeApp(query))
+    .post("/api/telegram/webhook")
+    .set("X-Telegram-Bot-Api-Secret-Token", SECRET)
+    .send(body as object);
+}
+
 beforeEach(() => {
   sendMessageMock.mockClear();
+  editMessageTextMock.mockClear();
+  answerCallbackQueryMock.mockClear();
   envStub["TELEGRAM_WAITLIST_ADMIN_CHAT_ID"] = ADMIN_CHAT_ID;
 });
 
@@ -179,5 +225,122 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
 
     expect(res.status).toBe(401);
     expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/telegram/webhook — довідкові команди", () => {
+  it("/app і /install відповідають без жодного походу в базу", async () => {
+    const query = vi.fn();
+
+    await post(query, textUpdate(777001, "/app"));
+    expect(String(sendMessageMock.mock.calls[0]?.[0]?.text)).toContain(
+      "https://beta.sergeant.app",
+    );
+
+    await post(query, textUpdate(777001, "/install"));
+    const install = String(sendMessageMock.mock.calls[1]?.[0]?.text);
+    expect(install).toContain("Safari");
+    expect(install).toMatch(/лише у встановленому застосунку/i);
+
+    // Довідка — це статичні тексти; звертатись по них у Postgres нема за чим.
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("/help віддає всі налаштовані канали", async () => {
+    const query = vi.fn();
+    await post(query, textUpdate(777002, "/help"));
+
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).toContain("https://t.me/+abc123");
+    expect(text).toContain("https://forms.gle/xyz");
+    expect(text).toContain("@skords");
+  });
+});
+
+describe("POST /api/telegram/webhook — причина відписки", () => {
+  it("/stop підтверджує відписку і питає чому", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 1 });
+    await post(query, textUpdate(777003, "/stop"));
+
+    const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
+    expect(text).toContain("Прибрав");
+    expect(text).toMatch(/чому/i);
+  });
+
+  it("наступний текст зараховується як причина й отримує підтвердження", async () => {
+    // rowCount=1 — база каже «так, ми чекали на причину саме від цього чату».
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 1 });
+    await post(query, textUpdate(777003, "дорого і не вистачає часу"));
+
+    expect(query).toHaveBeenCalledTimes(1);
+    expect(String(sendMessageMock.mock.calls[0]?.[0]?.text)).toContain("Почув");
+  });
+
+  it("текст поза очікуванням причини лишається без відповіді", async () => {
+    // rowCount=0 — ми нічого не чекали. Бот не співрозмовник: відповідь на
+    // випадкове «привіт» перетворила б розсилку на чат.
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = await post(query, textUpdate(777004, "привіт"));
+
+    expect(res.status).toBe(200);
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/telegram/webhook — опитування", () => {
+  it("зараховує відповідь, гасить годинник на кнопці й переписує повідомлення", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValue({ rows: [{ id: "1" }], rowCount: 1 });
+    const res = await post(query, callbackUpdate(777005, "s:week1:4"));
+
+    expect(res.status).toBe(200);
+    expect(query.mock.calls[0]?.[1]).toEqual([777005, "week1", "4"]);
+
+    // Без answerCallbackQuery клієнт крутить годинник близько 30 секунд —
+    // людина встигає натиснути ще раз, вирішивши, що не спрацювало.
+    expect(answerCallbackQueryMock).toHaveBeenCalledTimes(1);
+    expect(answerCallbackQueryMock.mock.calls[0]?.[0]?.callbackQueryId).toBe(
+      "cbq-77",
+    );
+
+    const edit = editMessageTextMock.mock.calls[0]?.[0];
+    expect(edit?.messageId).toBe(4242);
+    expect(String(edit?.text)).toContain("Твоя відповідь: 4");
+    // Відповідь редагує наявне повідомлення, а не додає нове в стрічку.
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("повторне натискання не переписує повідомлення, але дає спливашку", async () => {
+    // rowCount=0 — ON CONFLICT DO NOTHING відсік дубль.
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    await post(query, callbackUpdate(777005, "s:week1:2"));
+
+    expect(answerCallbackQueryMock).toHaveBeenCalledTimes(1);
+    expect(String(answerCallbackQueryMock.mock.calls[0]?.[0]?.text)).toMatch(
+      /уже зарахована/i,
+    );
+    // Telegram усе одно відкинув би edit тим самим текстом
+    // (`message is not modified`) — не робимо зайвого виклику.
+    expect(editMessageTextMock).not.toHaveBeenCalled();
+  });
+
+  it("збій запису голосу → 500, щоб Telegram повторив апдейт", async () => {
+    const query = vi.fn().mockRejectedValue(new Error("db down"));
+    const res = await post(query, callbackUpdate(777005, "s:week1:1"));
+
+    expect(res.status).toBe(500);
+    // Квитанцію не шлемо: інакше кнопка згасне, і людина вирішить, що голос
+    // зараховано, хоч ретрай Telegram ще попереду.
+    expect(answerCallbackQueryMock).not.toHaveBeenCalled();
+  });
+
+  it("кнопка невідомого опитування ігнорується мовчки", async () => {
+    const query = vi.fn();
+    const res = await post(query, callbackUpdate(777005, "s:week99:4"));
+
+    expect(res.status).toBe(200);
+    expect(query).not.toHaveBeenCalled();
+    expect(answerCallbackQueryMock).not.toHaveBeenCalled();
   });
 });

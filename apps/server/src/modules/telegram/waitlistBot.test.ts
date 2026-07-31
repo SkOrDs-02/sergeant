@@ -1,13 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildSurveyKeyboard,
+  CALLBACK_DATA_MAX_BYTES,
   countWaitlistStats,
+  encodeSurveyCallback,
   formatStatsReply,
   isValidWebhookSecret,
   parseCommand,
   recordStart,
   recordStop,
-  startReplyQueued,
+  recordStopReason,
+  recordSurveyAnswer,
+  resolveUpdateOrigin,
+  STOP_REASON_MAX_LEN,
 } from "./waitlistBot.js";
+import { startReplyQueued, SURVEYS, WEEKLY_PULSE_SURVEY } from "./betaTexts.js";
 
 describe("parseCommand", () => {
   const msg = (text: string) => ({ message: { text } });
@@ -55,10 +62,150 @@ describe("parseCommand", () => {
     expect(parseCommand(msg("/stats@serg_qa_bot"))).toEqual({ kind: "stats" });
   });
 
-  it("ігнорує звичайний текст, порожнечу і апдейт без повідомлення", () => {
-    expect(parseCommand(msg("привіт"))).toEqual({ kind: "ignore" });
+  it("читає довідкові команди бети", () => {
+    expect(parseCommand(msg("/app"))).toEqual({ kind: "app" });
+    expect(parseCommand(msg("/install"))).toEqual({ kind: "install" });
+    expect(parseCommand(msg("/help"))).toEqual({ kind: "help" });
+    // Суфікс бота знімається так само, як для /start.
+    expect(parseCommand(msg("/help@serg_qa_bot"))).toEqual({ kind: "help" });
+    // Аргументи довідковим командам не потрібні й не ламають розбір.
+    expect(parseCommand(msg("/install зараз"))).toEqual({ kind: "install" });
+  });
+
+  it("ігнорує порожнечу і апдейт без повідомлення", () => {
     expect(parseCommand(msg("   "))).toEqual({ kind: "ignore" });
     expect(parseCommand({})).toEqual({ kind: "ignore" });
+  });
+
+  it("віддає звичайний текст окремою гілкою — це може бути причина виходу", () => {
+    // Раніше тут був `ignore`. Тепер текст доїжджає до роутера, а рішення
+    // «чекаємо ми причину чи ні» ухвалює база — парсер стану не знає.
+    expect(parseCommand(msg("дорого"))).toEqual({
+      kind: "text",
+      text: "дорого",
+    });
+  });
+
+  it("невідома команда лишається тишею, а не причиною виходу", () => {
+    // Людина явно зверталась до бота, а не пояснювала, чому йде. Записати
+    // «/menu» як причину відвалу означало б зіпсувати єдину якісну метрику.
+    expect(parseCommand(msg("/menu"))).toEqual({ kind: "ignore" });
+    expect(parseCommand(msg("/start_over now"))).toEqual({ kind: "ignore" });
+  });
+});
+
+describe("parseCommand — натискання inline-кнопки", () => {
+  const cb = (data: string, extra: Record<string, unknown> = {}) => ({
+    callback_query: {
+      id: "cbq-1",
+      from: { id: 7, is_bot: false },
+      message: { message_id: 99, chat: { id: 7, type: "private" } },
+      data,
+      ...extra,
+    },
+  });
+
+  it("читає відповідь на опитування", () => {
+    expect(parseCommand(cb("s:week1:4"))).toEqual({
+      kind: "survey",
+      survey: WEEKLY_PULSE_SURVEY,
+      answer: "4",
+      callbackQueryId: "cbq-1",
+      messageId: 99,
+    });
+  });
+
+  it("відкидає опитування, якого немає в каталозі", () => {
+    // Повідомлення з кнопками живе в чаті вічно. Через місяць хтось натисне
+    // кнопку питання, вилученого з коду — і без звірки цей рядок осів би в
+    // БД, зіпсувавши агрегат (FK його не спіймає: survey_id не має таблиці).
+    expect(parseCommand(cb("s:week99:4"))).toEqual({ kind: "ignore" });
+  });
+
+  it("відкидає варіант, якого немає в питанні", () => {
+    expect(parseCommand(cb("s:week1:9"))).toEqual({ kind: "ignore" });
+    expect(parseCommand(cb("s:week1:"))).toEqual({ kind: "ignore" });
+  });
+
+  it("відкидає чужий префікс і зіпсований формат", () => {
+    expect(parseCommand(cb("x:week1:4"))).toEqual({ kind: "ignore" });
+    expect(parseCommand(cb("week1"))).toEqual({ kind: "ignore" });
+  });
+
+  it("без callback_query.id відповісти нікуди — ігноруємо", () => {
+    // Без id не можна викликати answerCallbackQuery, тож кнопка все одно
+    // крутила б годинник. Обробляти такий апдейт немає сенсу.
+    const update = cb("s:week1:4");
+    update.callback_query.id = "";
+    expect(parseCommand(update)).toEqual({ kind: "ignore" });
+  });
+
+  it("переживає callback без прикріпленого повідомлення", () => {
+    // Telegram не гарантує `message`: для старих повідомлень воно відсутнє.
+    // Відповідь має зарахуватись — просто без редагування тексту.
+    const parsed = parseCommand(cb("s:week1:2", { message: undefined }));
+    expect(parsed).toMatchObject({ kind: "survey", messageId: null });
+  });
+});
+
+describe("buildSurveyKeyboard", () => {
+  it("кладе всі варіанти в один ряд", () => {
+    const kb = buildSurveyKeyboard(WEEKLY_PULSE_SURVEY);
+    expect(kb.inline_keyboard).toHaveLength(1);
+    expect(kb.inline_keyboard[0]).toHaveLength(
+      WEEKLY_PULSE_SURVEY.options.length,
+    );
+    expect(kb.inline_keyboard[0]?.[3]).toEqual({
+      text: "4",
+      callback_data: "s:week1:4",
+    });
+  });
+
+  it("callback_data кожного оголошеного опитування влазить у 64 байти", () => {
+    // Telegram мовчки відкидає кнопку, що не влізла: у проді це виглядає як
+    // «опитування без кнопок», і причина не видна ні з логів, ні з відповіді.
+    for (const survey of Object.values(SURVEYS)) {
+      for (const option of survey.options) {
+        const data = encodeSurveyCallback(survey.id, option.value);
+        expect(Buffer.byteLength(data, "utf8")).toBeLessThanOrEqual(
+          CALLBACK_DATA_MAX_BYTES,
+        );
+      }
+    }
+  });
+});
+
+describe("resolveUpdateOrigin", () => {
+  it("бере чат із повідомлення", () => {
+    expect(
+      resolveUpdateOrigin({
+        message: { chat: { id: 5, type: "private" }, from: { is_bot: false } },
+      }),
+    ).toEqual({ chatId: 5, chatType: "private", fromBot: false });
+  });
+
+  it("бере чат із повідомлення, до якого причеплена кнопка", () => {
+    // Найдорожча помилка цього роутера: читати `update.message.chat.id` для
+    // обох випадків. Тоді всі натискання мовчки ігноруються, і збоку це
+    // виглядає як «кнопки не працюють».
+    expect(
+      resolveUpdateOrigin({
+        callback_query: {
+          id: "q",
+          from: { is_bot: false },
+          message: { message_id: 1, chat: { id: 5, type: "private" } },
+          data: "s:week1:1",
+        },
+      }),
+    ).toEqual({ chatId: 5, chatType: "private", fromBot: false });
+  });
+
+  it("порожній апдейт не видає себе за приватний чат", () => {
+    expect(resolveUpdateOrigin({})).toEqual({
+      chatId: null,
+      chatType: null,
+      fromBot: false,
+    });
   });
 });
 
@@ -117,6 +264,23 @@ describe("recordStart", () => {
     expect(sql).toMatch(/opted_out_at\s*=\s*NULL/);
     // Перший канал атрибуції не перетирається наступним /start.
     expect(sql).toContain("COALESCE(telegram_waitlist.start_payload");
+  });
+
+  it("повернення через /start скасовує очікування причини виходу", async () => {
+    const { pool, query } = fakePool();
+    await recordStart(pool, {
+      chatId: 42,
+      username: null,
+      firstName: null,
+      languageCode: null,
+      startPayload: null,
+    });
+
+    // Без цього рядка перше ж повідомлення того, хто передумав і повернувся,
+    // осіло б у stop_reason як «причина, чому пішов».
+    expect(String(query.mock.calls[0]?.[0])).toMatch(
+      /stop_reason_awaited_at\s*=\s*NULL/,
+    );
   });
 
   it("розрізняє вставку й оновлення через xmax", async () => {
@@ -185,8 +349,99 @@ describe("recordStop", () => {
     // DELETE зробив би людину, яка відписалась, «новим» контактом при
     // наступному /start — і вона отримала б інвайт попри своє рішення.
     expect(sql).not.toContain("DELETE");
-    expect(sql).toContain("opted_out_at = NOW()");
     expect(query.mock.calls[0]?.[1]).toEqual([7]);
+  });
+
+  it("тримає ПЕРШУ дату відписки, але щоразу готовий почути причину", async () => {
+    const { pool, query } = fakePool([]);
+    await recordStop(pool, 7);
+    const sql = String(query.mock.calls[0]?.[0]);
+    // COALESCE: повторний /stop не вдає, ніби людина щойно передумала.
+    expect(sql).toMatch(
+      /opted_out_at\s*=\s*COALESCE\(opted_out_at,\s*NOW\(\)\)/,
+    );
+    // А от питання ставиться заново — і відповідь на нього приймається.
+    expect(sql).toMatch(/stop_reason_awaited_at\s*=\s*NOW\(\)/);
+  });
+});
+
+describe("recordStopReason", () => {
+  /** Тут важливий саме `rowCount`: він і є відповіддю «чекали ми чи ні». */
+  function poolWithRowCount(rowCount: number) {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount });
+    return { pool: { query } as never, query };
+  }
+
+  it("записує причину одним запитом — без читання стану окремо", async () => {
+    const { pool, query } = poolWithRowCount(1);
+    await expect(recordStopReason(pool, 7, "  дорого  ")).resolves.toBe(true);
+
+    expect(query).toHaveBeenCalledTimes(1);
+    const sql = String(query.mock.calls[0]?.[0]);
+    // Пара «прочитати стан → записати» лишила б вікно, у якому два
+    // повідомлення поспіль обидва пройшли б перевірку, і друге перетерло б
+    // перше. Умова живе всередині UPDATE саме тому.
+    expect(sql).toContain("stop_reason_awaited_at IS NOT NULL");
+    expect(sql).toMatch(/stop_reason_awaited_at\s*=\s*NULL/);
+    // Текст обрізається по краях, а не зберігається з пробілами.
+    expect(query.mock.calls[0]?.[1]).toEqual([7, "дорого"]);
+  });
+
+  it("не приймає причину поза вікном очікування", async () => {
+    const { pool, query } = poolWithRowCount(1);
+    await recordStopReason(pool, 7, "щось");
+    // Без вікна випадкове повідомлення через два тижні після /stop осіло б
+    // як «причина виходу» і спотворило б єдину якісну метрику відвалу.
+    expect(String(query.mock.calls[0]?.[0])).toContain("INTERVAL '1 day'");
+  });
+
+  it("не чекали причину → false і жодного запису", async () => {
+    const { pool } = poolWithRowCount(0);
+    await expect(recordStopReason(pool, 7, "привіт")).resolves.toBe(false);
+  });
+
+  it("порожній текст не доходить до бази", async () => {
+    const { pool, query } = poolWithRowCount(1);
+    await expect(recordStopReason(pool, 7, "   \n ")).resolves.toBe(false);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("обрізає простирадло до межі колонки", async () => {
+    const { pool, query } = poolWithRowCount(1);
+    await recordStopReason(pool, 7, "я".repeat(STOP_REASON_MAX_LEN + 500));
+    expect(String(query.mock.calls[0]?.[1]?.[1])).toHaveLength(
+      STOP_REASON_MAX_LEN,
+    );
+  });
+});
+
+describe("recordSurveyAnswer", () => {
+  function poolWithRowCount(rowCount: number) {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount });
+    return { pool: { query } as never, query };
+  }
+
+  it("зараховує першу відповідь", async () => {
+    const { pool, query } = poolWithRowCount(1);
+    await expect(
+      recordSurveyAnswer(pool, { chatId: 7, surveyId: "week1", answer: "4" }),
+    ).resolves.toEqual({ accepted: true });
+    expect(query.mock.calls[0]?.[1]).toEqual([7, "week1", "4"]);
+  });
+
+  it("повторне голосування відсікає БАЗА, а не окремий SELECT", async () => {
+    const { pool, query } = poolWithRowCount(0);
+    await expect(
+      recordSurveyAnswer(pool, { chatId: 7, surveyId: "week1", answer: "1" }),
+    ).resolves.toEqual({ accepted: false });
+
+    // Telegram ретраїть callback-апдейт, поки не побачить 200, тож два
+    // однакові апдейти в польоті — штатний режим. Перевірка «чи вже
+    // голосував» окремим запитом мала б вікно гонки рівно тут.
+    expect(query).toHaveBeenCalledTimes(1);
+    const sql = String(query.mock.calls[0]?.[0]);
+    expect(sql).toContain("ON CONFLICT (chat_id, survey_id) DO NOTHING");
+    expect(sql).toContain("RETURNING id");
   });
 });
 
