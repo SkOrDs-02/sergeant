@@ -36,13 +36,19 @@ interface UseNutritionFirstRunResult {
  *
  * On the user's very first Nutrition entry it routes them to
  * «Меню → План на день» so the canonical macro editor (DailyPlanCard)
- * is what they see. The routing is one-shot (ref guard) and is skipped
- * when a `pwaAction` is already controlling navigation (e.g. `add_meal`,
- * `add_meal_photo`) so the shortcut target always wins (audit F19).
+ * is what they see. The routing is one-shot (ref guard) and yields to
+ * anything that expresses an explicit destination:
+ *
+ * - a `pwaAction` already controlling navigation (`add_meal`,
+ *   `add_meal_photo`) — the shortcut target wins (audit F19);
+ * - an explicit deep link (`activePage !== "start"`) — e.g. the
+ *   low-protein insight CTA pointing at `/nutrition/log`, which used to
+ *   land on «Меню» instead on a first run.
  *
  * AI-CONTEXT: extracted from NutritionApp.tsx (card A4, PR-plan-web-2026-05)
- * to satisfy Hard Rule #18 max-lines: 600. All behaviour is preserved
- * verbatim — do not alter semantics without updating NutritionApp.tsx tests.
+ * to satisfy Hard Rule #18 max-lines: 600. Semantics changed once since the
+ * extraction (deep-link precedence above) — keep NutritionApp.tsx tests in
+ * sync when touching this.
  */
 export function useNutritionFirstRun({
   activePage,
@@ -87,8 +93,21 @@ export function useNutritionFirstRun({
     if (firstRunJumpDoneRef.current) return;
     if (!firstRunNutrition) return;
     if (pwaAction === "add_meal" || pwaAction === "add_meal_photo") return;
+    // An explicit deep link outranks the first-run jump, for the same
+    // reason the `pwaAction` guard above exists: whatever the user
+    // actually asked for wins over the default onboarding surface.
+    // `/nutrition` (and any unknown tail) parses to `start`, so a page
+    // other than `start` means the URL named it — e.g. the low-protein
+    // insight CTA pointing at `/nutrition/log`. Latch the ref either way
+    // so a later in-session move to `start` is not yanked to the menu.
+    if (activePage !== "start") {
+      firstRunJumpDoneRef.current = true;
+      return;
+    }
     firstRunJumpDoneRef.current = true;
-    if (activePage !== "menu") setActivePageAndHash("menu");
+    // `activePage` is narrowed to `"start"` by the guard above, so the
+    // page always needs the jump; only the sub-tab can already be right.
+    setActivePageAndHash("menu");
     if (menuSubTab !== "plan") setMenuSubTab("plan");
   }, [
     firstRunNutrition,
