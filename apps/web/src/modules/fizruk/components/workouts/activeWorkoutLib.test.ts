@@ -14,10 +14,15 @@ describe("activeWorkoutLib", () => {
 
   it("generates stable prefixed ids from time and random suffixes", () => {
     vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
-    vi.spyOn(Math, "random").mockReturnValue(0.123456789);
 
-    expect(uid("set")).toBe("set_loyw3v28_4fzzzx");
-    expect(uid()).toBe("id_loyw3v28_4fzzzx");
+    // Хвіст — `crypto.randomUUID()`, тож мокати `Math.random` більше нічого
+    // не дає: детермінованим лишається лише base36-штамп часу.
+    const a = uid("set");
+    const b = uid();
+
+    expect(a).toMatch(/^set_loyw3v28_[0-9a-f-]{36}$/i);
+    expect(b).toMatch(/^id_loyw3v28_[0-9a-f-]{36}$/i);
+    expect(uid("set")).not.toBe(a);
   });
 
   it("converts ISO timestamps to datetime-local values", () => {
