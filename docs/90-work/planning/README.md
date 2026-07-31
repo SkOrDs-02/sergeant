@@ -15,7 +15,7 @@
 
 Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; закриті snapshot-и доступні у Git history.
 
-> Станом на 2026-07-29 у `specs/` дві відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual) і `telegram-waitlist.md` (потрібне founder-рішення). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` мають статус `Implemented` і чекають лише ручного founder-QA; `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
+> Станом на 2026-07-31 у `specs/` три відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual), `telegram-waitlist.md` (потрібне founder-рішення) і `silpo-mcp-integration.md` (брейншторм + спека інтеграції Silpo MCP; Phase 0-спайк agent-ready, треки G/H чекають founder-гейтів). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` мають статус `Implemented` і чекають лише ручного founder-QA; `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
 
 ### Зведені роадмапи
 
