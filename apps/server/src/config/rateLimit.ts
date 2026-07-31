@@ -81,6 +81,31 @@ export const RATE_LIMIT_POLICIES = {
     description:
       "Better-Auth POST /sign-in|/sign-up|/forget-password|/reset-password — fail-closed щоб N×limit-амплификація при degraded limiter не прискорювала credential-stuffing. Default 5/60s з `AUTH_RATE_LIMIT_MAX` + `AUTH_RATE_LIMIT_WINDOW_SEC` (PR-48 round-2, `docs/security/better-auth-audit-2026-05.md`).",
   },
+
+  /**
+   * Per-account credential bucket (F2 у
+   * `docs/90-work/planning/specs/beta-security-readiness.md`).
+   *
+   * `api:auth:sensitive` вище обмежує **джерело** запиту, а до автентифікації
+   * джерело — це IP. Ботнет зі 100 IP обходить його лінійно: кожен бакет
+   * лишається зеленим, а конкретний акаунт отримує 100× спроб. Ця policy
+   * ключується на **цільовому акаунті** (SHA-256 email-а), тож стеля стає
+   * властивістю жертви, а не мережі атакера — єдине, що не купується
+   * орендою проксі.
+   *
+   * Обидві policy працюють разом: спершу IP-бакет, потім account-бакет.
+   * Ліміт свідомо м'якший (10/15хв проти 5/60с), бо він б'є по акаунту, а не
+   * по атакеру: він не має спрацьовувати, коли людина чотири рази помилилась
+   * у власному паролі. Вікно, а не постійний lockout — постійний дозволив би
+   * замкнути будь-який чужий акаунт кількома невдалими спробами.
+   */
+  "api:auth:account": {
+    limit: env.AUTH_ACCOUNT_RATE_LIMIT_MAX,
+    windowMs: env.AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC * 1000,
+    failMode: "closed",
+    description:
+      "Per-account (email-keyed) бакет для sign-in / forget-password / reset-password. Обмежує розподілену атаку на один акаунт, яку per-IP `api:auth:sensitive` не бачить. Default 10/15хв з `AUTH_ACCOUNT_RATE_LIMIT_MAX` + `AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC`.",
+  },
 } satisfies Record<string, RateLimitPolicy>;
 
 /**

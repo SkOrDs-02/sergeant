@@ -45,6 +45,61 @@ export function authSensitiveRateLimit(
 }
 
 /**
+ * Другий, per-account бакет поверх `authSensitiveRateLimit` (F2).
+ *
+ * `authSensitiveRateLimit` ключується на IP (сесії до автентифікації ще
+ * немає), тому розподілена атака масштабується лінійно з кількістю
+ * орендованих адрес: 100 IP = 100× спроб по одному акаунту, і кожен
+ * окремий бакет при цьому зелений. Цей middleware ключує бакет на
+ * **цільовому email-і**, тож стеля перестає залежати від мережі атакера.
+ *
+ * Свідомі обмеження:
+ *   - Тільки sign-in і password-reset. Sign-up сюди НЕ входить: там email
+ *     ще нікому не належить, і бакет по ньому не захищає акаунт, зате дає
+ *     стороннім спосіб зайняти адресу.
+ *   - Немає email у тілі (напр. `reset-password` з токеном) — пропускаємо:
+ *     ключувати нічим, а мовчазний відкат на IP злив би два різні ліміти
+ *     в один бакет.
+ *   - Вікно, а не постійний lockout — інакше будь-хто замикав би чужий
+ *     акаунт кількома невдалими спробами.
+ */
+export function authAccountRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const url = req.originalUrl || "";
+  const targeted =
+    req.method === "POST" &&
+    (url.includes("/sign-in") ||
+      url.includes("forget-password") ||
+      url.includes("request-password-reset") ||
+      url.includes("reset-password"));
+  if (!targeted) {
+    next();
+    return;
+  }
+
+  const body = (req.body ?? {}) as { email?: unknown };
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  if (!email) {
+    next();
+    return;
+  }
+
+  rateLimitExpress(
+    policyOptions("api:auth:account", {
+      failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+      // Повний SHA-256, не 12-символьний лог-фінгерпринт: той призначений
+      // для кореляції в логах, де колізія лише зашумить тріаж, а тут вона
+      // склеїла б ліміти двох різних акаунтів.
+      subject: () =>
+        `a:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`,
+    }),
+  )(req, res, next);
+}
+
+/**
  * Лишаємо тільки перші 12 hex-символів SHA-256(lower(email)) — достатньо
  * щоб корелювати спроби за одним юзером (brute-force / credential-stuffing)
  * і **не є PII**: не reversible без offline brute-force по словнику.

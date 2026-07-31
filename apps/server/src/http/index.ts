@@ -15,6 +15,7 @@ export {
 } from "./buildIdHeader.js";
 
 export {
+  authAccountRateLimit,
   authSensitiveRateLimit,
   authMetricsMiddleware,
 } from "./authMiddleware.js";
