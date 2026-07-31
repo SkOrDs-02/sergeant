@@ -25,6 +25,8 @@ import {
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
+import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
 import {
   useDestructiveConfirm,
@@ -309,6 +311,17 @@ export function useChatSend({
       setLoading(true);
       setHubStreaming(true);
 
+      // Чисельник воронки. Стоїть ПІСЛЯ всіх гейтів (help / offline /
+      // пейвол), бо ті гілки не витрачають AI-запит і не мають рахуватися
+      // як «звернувся до коуча». `length`, не текст: контракт події
+      // (`analyticsEvents.ts`) навмисно не несе body повідомлення.
+      const sentAt = Date.now();
+      trackEvent(ANALYTICS_EVENTS.HUBCHAT_MESSAGE_SENT, {
+        length: msg.length,
+        fromVoice,
+        ...(activeModule ? { module: activeModule } : {}),
+      });
+
       const history = next
         .filter((m) => m.role === "user" || m.role === "assistant")
         .slice(-10)
@@ -369,6 +382,9 @@ export function useChatSend({
           throw err;
         }
 
+        let replyLength = 0;
+        const hadTools = Boolean(data.tool_calls && data.tool_calls.length > 0);
+
         if (data.tool_calls && data.tool_calls.length > 0) {
           // Audit 03 F3 (critical/security): every entry must clear the
           // structural firewall — `{id: string, name: string, input: object}`
@@ -381,6 +397,11 @@ export function useChatSend({
             logger.warn("[hub-chat] tool_calls schema mismatch", {
               issues: parsed.issues,
             });
+            // Модель повернула структурно биті tool_calls. Для користувача
+            // це збій («Не вдалося виконати дію»), тож і в телеметрії це
+            // помилка, а не тиха деградація до тексту — інакше зламаний
+            // інструмент виглядав би як звичайна текстова відповідь.
+            trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "parse" });
             toast.error("Не вдалося виконати дію", undefined, {
               label: "Спробувати знову",
               onClick: () => void sendRef.current?.(msg),
@@ -555,11 +576,24 @@ export function useChatSend({
             queryKey: hubKeys.preview("finyk"),
           });
           scheduleContextBuild("after-tools", true);
+          replyLength = actionsText.length + followUpText.length;
         } else {
           const reply = data.text || "Немає відповіді.";
           setMessages((m) => [...m, makeAssistantMsg(reply)]);
           if (shouldSpeak) maybeSpeak(reply);
+          replyLength = reply.length;
         }
+
+        // Знаменник «коуч відповів». Один call-site на обидві гілки: сюди
+        // доходить і текстова відповідь, і tool-call-ланцюг (його
+        // внутрішній catch деградує follow-up до тексту, не кидаючи далі).
+        // Ранні `return` вище — биті tool_calls і відмова від деструктивної
+        // дії — сюди навмисно НЕ доходять: там відповіді не було.
+        trackEvent(ANALYTICS_EVENTS.HUBCHAT_RESPONSE_RECEIVED, {
+          latency_ms: Date.now() - sentAt,
+          length: replyLength,
+          had_tools: hadTools,
+        });
       } catch (e) {
         const isAbort =
           (isApiError(e) && e.kind === "aborted") ||
@@ -569,11 +603,21 @@ export function useChatSend({
             ...m,
             makeAssistantMsg("⏱ Час очікування вичерпано. Спробуй ще раз."),
           ]);
+          trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "aborted" });
         } else if (isAbort) {
-          // Explicit cancel (cancel button or chat close).
+          // Explicit cancel (cancel button or chat close). Події НЕ шлемо:
+          // користувач передумав — це не збій асистента. Такі спроби видно
+          // як розрив `message_sent − (response_received + error)`.
           setMessages((m) => [...m, makeAssistantMsg("⏹ Запит скасовано.")]);
         } else {
           setMessages((m) => [...m, makeAssistantMsg(friendlyChatError(e))]);
+          const kind = isApiError(e) ? e.kind : "unknown";
+          trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, {
+            kind,
+            ...(isApiError(e) && e.kind === "http" && e.status
+              ? { status: e.status }
+              : {}),
+          });
         }
       } finally {
         clearTimeout(timeoutId);
@@ -583,6 +627,7 @@ export function useChatSend({
       }
     },
     [
+      activeModule,
       input,
       isPro,
       loading,

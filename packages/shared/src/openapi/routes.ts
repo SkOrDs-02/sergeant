@@ -873,6 +873,63 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── In-app feedback ───────────────────────────────────
+  // Головний багрепорт-канал закритої бети. Анонімний, як і waitlist: вимагати
+  // акаунт саме від людини, яка прийшла поскаржитись, — найгірший момент для
+  // бар'єра. Обидва префікси документуємо однаково (сервер монтує обидва).
+  "/api/feedback": {
+    post: {
+      summary: "Надіслати in-app фідбек (анонімний)",
+      tags: ["feedback"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.FeedbackSubmit },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Збережено — `id` рядка у `feedback_entries`.",
+          content: {
+            "application/json": { schema: namedSchemas.FeedbackSubmitResponse },
+          },
+        },
+        "400": validationError,
+        "429": {
+          description: "Too many requests — rate-limit перевищено.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/v1/feedback": {
+    post: {
+      summary: "Надіслати in-app фідбек (v1 alias для /api/feedback)",
+      tags: ["feedback"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.FeedbackSubmit },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Збережено — `id` рядка у `feedback_entries`.",
+          content: {
+            "application/json": { schema: namedSchemas.FeedbackSubmitResponse },
+          },
+        },
+        "400": validationError,
+        "429": {
+          description: "Too many requests — rate-limit перевищено.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+
   // ────────────────────── Billing (Stripe checkout MVP) ─────────────────────
   "/api/billing/checkout": {
     post: {

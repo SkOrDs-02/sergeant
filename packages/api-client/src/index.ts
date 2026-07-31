@@ -226,6 +226,15 @@ export {
 } from "./endpoints/waitlist";
 
 export {
+  createFeedbackEndpoints,
+  FeedbackSubmitRequestSchema,
+  FeedbackSubmitResponseSchema,
+  type FeedbackEndpoints,
+  type FeedbackSubmitRequest,
+  type FeedbackSubmitResponse,
+} from "./endpoints/feedback";
+
+export {
   createBillingEndpoints,
   BillingCheckoutRequestBodySchema,
   BillingCheckoutResponseBodySchema,

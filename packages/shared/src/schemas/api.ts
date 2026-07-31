@@ -1204,6 +1204,49 @@ export type WaitlistSubmitResponse = z.infer<
   typeof WaitlistSubmitResponseSchema
 >;
 
+// ────────────────────── In-app feedback ─────────────────────────────────────
+// Головний багрепорт-канал закритої бети. Одне джерело правди для клієнта
+// (`@sergeant/api-client`) і сервера (`parseBody`).
+//
+// Чому взагалі є серверний endpoint, якщо подія вже летить у PostHog:
+// PostHog — аналітика (воронка opened → submitted), і її домен блокують
+// розширення. Текст фідбеку мусить пережити блокувальник, офлайн і будь-який
+// збій транспорту, тому джерело істини для нього — власна БД, а клієнт
+// показує «надіслано» лише після 200. Розбір — feedback-loop.md § 2a.
+
+export const FeedbackCategorySchema = z.enum(["idea", "bug", "other"]);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/** Дзеркалить `MAX_MESSAGE_LENGTH` у `FeedbackDialog.tsx` і CHECK у міграції 093. */
+export const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
+export const FeedbackSubmitSchema = z.object({
+  category: FeedbackCategorySchema,
+  message: z.string().trim().min(1).max(FEEDBACK_MESSAGE_MAX_LENGTH),
+  // Контекст сторінки — опційний: `buildPageContext()` повертає null поза DOM.
+  // `page` уже пройшов `sanitizeUrl()` на клієнті, але сервер не довіряє
+  // цьому й ріже довжину сам (trust boundary).
+  page: z.string().trim().max(2048).optional(),
+  viewport: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}x\d{1,5}$/, "viewport має бути у форматі WxH")
+    .optional(),
+});
+export type FeedbackSubmitPayload = z.infer<typeof FeedbackSubmitSchema>;
+
+export const FeedbackSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `id` рядка у `feedback_entries`. BIGSERIAL у pg приїжджає рядком —
+  // серіалізатор коерсить у number (Hard Rule #1). Віддаємо, щоб людина
+  // могла назвати номер у Telegram, і щоб підтвердження було доказовим,
+  // а не просто «ok: true».
+  id: z.number().int().positive(),
+});
+export type FeedbackSubmitResponse = z.infer<
+  typeof FeedbackSubmitResponseSchema
+>;
+
 // ────────────────────── Billing (Stripe checkout MVP) ──────────────────────
 // SSOT for authenticated billing endpoints. The server validates request
 // bodies with these schemas, and api-client parses responses from the same

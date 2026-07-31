@@ -135,8 +135,11 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //
   // Трекаємо факт взаємодії, НЕ текст повідомлень. Payload-контракти:
   //
+  //   HUBCHAT_OPENED         { source: "overlay" | "route" }
   //   HUBCHAT_MESSAGE_SENT   { length: number, fromVoice: boolean,
   //                            hasQuickAction?: boolean, module?: string }
+  //   HUBCHAT_RESPONSE_RECEIVED { latency_ms: number, length: number,
+  //                               had_tools: boolean }
   //   HUBCHAT_TOOL_INVOKED   { tool: string, module: string,
   //                            success: boolean, latency_ms: number }
   //   HUBCHAT_ERROR          { kind: "http" | "parse" | "aborted" | "network"
@@ -146,7 +149,17 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `tool` — канонічне ім'я ChatAction (напр. `add_expense`, `log_workout`).
   // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts
   // + latency + провайдер/модуль, щоб дашборди працювали без експорту PII.
+  //
+  // Воронка бети: OPENED ≥ MESSAGE_SENT ≥ RESPONSE_RECEIVED + ERROR.
+  // Різниця `MESSAGE_SENT − (RESPONSE_RECEIVED + ERROR)` — це відповіді,
+  // яких користувач НЕ дочекався (скасував кнопкою або пішов зі сторінки);
+  // явну подію на скасування не заводимо, бо це не збій, а вибір людини.
+  // `HUBCHAT_ERROR{kind:"aborted"}` означає САМЕ 90-секундний таймаут, не
+  // ручний cancel — інакше «модель зависла» й «юзер передумав» злиплися б
+  // в одне число, а під час бети це два різні висновки.
+  HUBCHAT_OPENED: "hubchat_opened",
   HUBCHAT_MESSAGE_SENT: "hubchat_message_sent",
+  HUBCHAT_RESPONSE_RECEIVED: "hubchat_response_received",
   HUBCHAT_TOOL_INVOKED: "hubchat_tool_invoked",
   HUBCHAT_ERROR: "hubchat_error",
 
