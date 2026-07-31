@@ -1,13 +1,41 @@
 # Sergeant — Pre-launch Marketing Execution Plan
 
-> **Last validated:** 2026-05-16 by @Skords-01 (2-round marketing council audit).
-> **Next review:** 2026-08-14.
-> **Status:** Reference — pre-implementation marketing plan; поточне виконання спершу звіряється з shipped `/` landing у `apps/web/src/core/LandingPage.tsx`.
+> **Last validated:** 2026-07-31 by @claude (звірка з кодом).
+> **Next review:** 2026-10-29.
+> **Status:** Reference — **voice- і channel-канон, не execution plan**. Технічна частина (стек вейтліста, форма, referral) розійшлася з реалізацією; актуальний стан — у розділі «Що з цього реалізовано» нижче.
 > **Companion docs:** [`../design/brandbook.md`](../../05-design/design/brandbook.md) (voice + palette) · [`../design/redesign-v2/execution-plan.md`](../../05-design/design/redesign-v2/execution-plan.md) (parallel product polish plan).
 
 ## How to use this document
 
-Цей файл — **pre-implementation план** для побудови маркетингу Sergeant з нуля. Після появи shipped `/` landing + `WaitlistForm` у web-app він більше не є прямим execution owner для landing/waitlist техніки; використовуй його як voice/channel/source-evidence і звіряй конкретну реалізацію з `apps/web/src/core/LandingPage.tsx`, `apps/web/src/core/WaitlistForm.tsx`, server `/api/waitlist`, та [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-revenue-2026-05.md).
+Цей файл писався як **pre-implementation план** для побудови маркетингу з нуля. Лендінг і вейтліст відтоді реалізовані — **іншим стеком, ніж описано нижче**. Тому:
+
+- **Бери звідси:** persona archetype, voice playbook per channel, UA lexicon, tagline lineup, content pillars, SEO-кластери, email-копію, prepublish-чеклист. Це все лишається канонічним.
+- **Не бери звідси:** Airtable, n8n-флоу, Astro-стек, `nanoid(8)` ref-коди, Google Sheet як лічильник. Нічого з цього в репо немає.
+
+**Реальні поверхні для звірки:** `apps/landing/src/pages/HomePage.tsx`, `apps/landing/src/components/` (`TelegramCta`, `HomeSections`, `DashboardPreview`), `apps/landing/src/lib/links.ts`, `apps/web/src/core/pricing/WaitlistForm.tsx`, server `/api/v1/waitlist` і `/api/v1/telegram/webhook`, [`telegram-waitlist.md`](../../90-work/planning/specs/telegram-waitlist.md).
+
+> ⚠️ Шляхи `apps/web/src/core/LandingPage.tsx` і `apps/web/src/core/WaitlistForm.tsx`, які раніше стояли в цьому абзаці, **не існують**. Кореневий `/` у `apps/web` — це `RootRoute` (хаб для залогіненого юзера), а не маркетингова сторінка; маркетинговий лендінг живе в окремому воркспейсі `apps/landing`.
+
+## Що з цього реалізовано (станом на 2026-07-31)
+
+| Блок плану                  | Стан        | Фактично                                                                                                               |
+| --------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Лендінг                     | ✅ інакше   | `apps/landing` — Vite + React 18 + Tailwind 4, **не Astro**                                                            |
+| Головний CTA                | ✅ інакше   | Telegram deep link (`TelegramCta`), **не email-форма**                                                                 |
+| Збір вейтліста              | ✅ інакше   | `telegram_waitlist` (Postgres, міграція 089) + `waitlist_entries`, **не Airtable**                                     |
+| Атрибуція каналів           | ✅ інакше   | `start_payload` у deep link (`?start=dou`), **не UTM у localStorage**                                                  |
+| Email drip (4 листи)        | ⚠️ частково | FTUX-drip у коді (`ftuxDripMail.ts` + BullMQ + `ftuxUnsubscribeToken.ts`); **блокер — домен у Resend не верифіковано** |
+| Referral / `ref_code`       | ❌ немає    | Ні таблиці, ні ендпоінтів, ні `nanoid(8)`-кодів                                                                        |
+| Live counter «847 чекають»  | ❌ немає    | Google Sheet + n8n cron не існують                                                                                     |
+| n8n флоу (10 штук)          | ❌ немає    | n8n у контурі маркетингу не піднятий                                                                                   |
+| `/llms.txt`, JSON-LD schema | ❌ немає    | —                                                                                                                      |
+| Блог `/blog`                | ❌ немає    | Ні маршруту, ні контенту                                                                                               |
+| Соцмережі                   | ❌ немає    | Акаунти не заведені                                                                                                    |
+| OG-картка                   | ✅ є        | `apps/landing/scripts/generate-og.mjs` → `public/og.png`                                                               |
+
+**Головна архітектурна розбіжність:** план будувався навколо «без backend, без JWT — тільки Airtable + n8n + URL params». Реалізація пішла протилежним шляхом: вейтліст живе у власній Postgres-таблиці, розсилка — CLI-скрипт у репо. Це вийшло дешевше, бо backend і Postgres уже були; зовнішній CRM додав би інтеграцію там, де вистачило однієї таблиці. Секції нижче з Airtable/n8n читай як **опис намірів**, не як інструкцію.
+
+Історичний контекст revenue-планування — [`pr-plan-revenue-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-revenue-2026-05.md) (архів).
 
 **Перед першим PR / publish з цього плану — обов'язково:**
 
@@ -26,12 +54,14 @@
 
 Sergeant — це багатомодульний застосунок life management (Finyk фінанси / Fizruk фітнес / Routine звички / Nutrition харчування). Tagline working: "Твій персональний хаб життя". Voice: "дружній, мотивуючий, як корисний друг, не drill-сержант" (з [`brandbook.md`](../../05-design/design/brandbook.md)).
 
-**Стан на момент створення плану:**
+**Стан на момент створення плану (травень 2026):**
 
 - Продукт ще в активній розробці (parallel UI polish описаний у [`redesign-v2-execution-plan.md`](../../05-design/design/redesign-v2/execution-plan.md)).
-- Landing — shipped in-app surface на `/` у `apps/web/src/core/LandingPage.tsx`; standalone Astro/marketing workspace лишається окремою public-launch опцією, не поточним default.
+- Landing — ще не існував.
 - Соцмережі — нуль активних.
 - Брендбук + design system — повні.
+
+**Що змінилось до 2026-07-31:** standalone marketing-workspace `apps/landing` перестав бути «опцією» і став default-ом — саме він задеплоюється на apex-домен. Соцмережі досі нуль активних. Актуальна дельта — у таблиці вище.
 
 ## Persona archetype (canonical)
 
@@ -90,14 +120,18 @@ Sergeant — це багатомодульний застосунок life manag
 
 ## 4 architectural synergies (multiplier wins)
 
-| Synergy                                                                   | Components closed                                                                                                  | Effort |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------ |
-| **Standalone Astro/static + external form automation**                    | Історична опція для окремого marketing-domain build; current default — in-app `/` landing + server `/api/waitlist` | M      |
-| **`nanoid(8)` ref-code у Airtable**                                       | Referral attribution без backend, без JWT. K-факт track. Соц-amplify leaderboard.                                  | S      |
-| **Voice-injected AI generation prompt + automation prepublish checklist** | Programmatic SEO scale + brand consistency without per-page heavy human review                                     | M      |
-| **`localStorage` UTM capture + передача на submit**                       | Attribution survives тиждень+ delayed signup без cookies/auth                                                      | XS     |
+> **Не реалізовано в цьому вигляді.** Таблиця лишається як запис початкового задуму; фактичні рішення — у колонці «Фактично».
+
+| Synergy                                                                   | Задум                                                                          | Фактично                                                                                   |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **Standalone static + external form automation**                          | Окремий marketing-домен зі сторонньою формою                                   | ✅ окремий воркспейс `apps/landing`, але форма власна → `/api/v1/waitlist`                 |
+| **`nanoid(8)` ref-code у Airtable**                                       | Referral attribution без backend, без JWT                                      | ❌ referral не реалізований узагалі                                                        |
+| **Voice-injected AI generation prompt + automation prepublish checklist** | Programmatic SEO scale + brand consistency without per-page heavy human review | ❌ не запущено (немає блогу)                                                               |
+| **`localStorage` UTM capture + передача на submit**                       | Attribution survives delayed signup без cookies/auth                           | ✅ інакше: `start_payload` у Telegram deep link — атрибуція без localStorage і без трекера |
 
 ## Page architecture (canonical IA)
+
+**Задум (травень 2026):**
 
 ```
 / (main landing — awareness + waitlist)
@@ -116,17 +150,41 @@ Sergeant — це багатомодульний застосунок life manag
 /compare/ (comparison hub — Phase 4, post-launch або 500+ waitlist)
 ```
 
-**Sticky footer CTA**: Intersection Observer після hero → scroll до `#waitlist` anchor (не друга форма).
+**Реалізовано** (`apps/landing/src/pages/HomePage.tsx`, після редизайну `b0286bc81`):
+
+```
+/ (single page)
+  ├─ SiteHeader
+  ├─ Hero — «Бачить звʼязки між усім, що важливо»
+  │    + TelegramCta (placement="hero") + DashboardPreview
+  ├─ HowItWorks
+  ├─ ModulesSection
+  ├─ ConnectionsSection    ← крос-модульні звʼязки (немає в задумі)
+  ├─ HonestSection         ← чесні обмеження (немає в задумі)
+  ├─ BetaCta               ← TelegramCta (placement="footer")
+  └─ SiteFooter
+/* → NotFoundPage
+```
+
+**Дельта і чому вона така:**
+
+- **Немає** social proof з live-лічильником, FAQ-блоку, `/blog`, `/llms.txt`, `/compare/`. Лічильник свідомо не робимо: fake або псевдодинамічні числа шкодять довірі (див. § Urgency mechanic), а реального числа, яким варто хвалитись, поки немає.
+- **Зʼявились** `ConnectionsSection` і `HonestSection` — обидві відповідають зміщенню позиціювання з «4 застосунки в одному» на «бачить звʼязки». Це той самий редизайн, що дав нинішній H1.
+- **Sticky footer CTA** не реалізований; замість якоря `#waitlist` — друга Telegram-кнопка в `BetaCta` з окремим `start_payload` (`landing_footer`), що заодно дає атрибуцію «згори чи знизу натиснули».
 
 ## Form anatomy (canonical — 1 field MVP)
 
-**Submit flow: 1 поле (email) → success card з optional module-interest poll.**
+> **Форми на лендінгу немає взагалі.** Єдина дія на `apps/landing` — Telegram-кнопка. Спека допускала email-форму як другорядну («або лишай пошту, якщо Telegram не для тебе»), але реалізація звузилась до однієї conversion action; `WaitlistForm` лишився в `apps/web` (`/pricing`). Причина не в конверсії форми, а в тому, що email-канал **мертвий**: домен у Resend не верифіковано, тож зібрані адреси нікуди не написати. Принцип «1 поле» лишається чинним, якщо форму колись повернуть; success-card з module-interest poll і referral-CTA — **не реалізовані**.
+
+**Submit flow (задум): 1 поле (email) → success card з optional module-interest poll.**
 
 ```
 [ Email                                     ]
 [ Отримати early access →                  ]
    "Без спаму · 847 людей вже чекають"
 ```
+
+> Рядок «847 людей вже чекають» — макет, не жива функція: лічильника немає (§ Urgency mechanic).
 
 Submit → inline success card на тій самій сторінці (no redirect):
 
@@ -153,11 +211,13 @@ Submit → inline success card на тій самій сторінці (no redir
 
 ## Post-signup flow
 
-**Inline reveal на тій самій сторінці (no redirect — зберігає UTM у URL).** Success card містить:
+> **Не реалізовано.** Ні success-card із timeline, ні module-interest poll, ні referral-CTA. Для Telegram-шляху цей екран узагалі не потрібен: підтвердження дає сам бот у відповідь на `/start`, і воно приходить у місце, де людина вже є, а не на сторінку, яку вона зараз закриє. Тексти відповідей — `START_REPLY_NEW`, `START_REPLY_AGAIN`, `STOP_REPLY` у `apps/server/src/modules/telegram/waitlistBot.ts`.
+
+**Задум (для email-шляху): inline reveal на тій самій сторінці (no redirect).** Success card містить:
 
 1. Confirmation message + email timeline expectation
 2. 3-step visual timeline (запрошення → онбординг → повний доступ)
-3. Optional module-interest pill chips quick-poll (writes to Airtable async)
+3. Optional module-interest pill chips quick-poll
 4. Secondary referral CTA з ref-link одразу
 
 **Окрема `/thank-you` сторінка не потрібна.**
@@ -173,14 +233,18 @@ Submit → inline success card на тій самій сторінці (no redir
 
 **Табу:** "нарешті", "вже давно час", "ексклюзивно для вас", "скільки можна".
 
-**Unsubscribe footer**: обов'язково з Email 1, не пізніше.
+**Unsubscribe footer**: обов'язково з Email 1, не пізніше. У коді це вже вирішено — `apps/server/src/email/ftuxUnsubscribeToken.ts` генерує підписаний токен відписки.
 
-| #   | День | Мета                                   | Opener                                                                                                                  | CTA                                  |
-| --- | ---- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| 1   | 0    | Welcome                                | «Твоє місце в Sergeant заброньовано — ти дізнаєшся про запуск першим.»                                                  | Розкажи другу (м'який seed)          |
-| 2   | 5    | Value hit (per module, branched в n8n) | Finyk: «Фінансова картина за тиждень — одна хвилина на день.» / Fizruk / Routine / Nutrition — окремі opener per module | Слідкуй у Telegram                   |
-| 3   | 14   | Referral                               | «Маєш когось, хто теж хоче навести лад у витратах або тренуваннях?»                                                     | Надішли [ref_link]                   |
-| 4   | 21   | Pre-launch teaser                      | «Перші 500 отримують доступ — ти вже серед них. Залишилось небагато.»                                                   | Підтверди email (відповісти на лист) |
+> **Стан цієї послідовності.** Копія нижче лишається канонічною, але **pre-launch drip не запущений**. У коді є інша, вже реалізована послідовність — FTUX-drip для зареєстрованих юзерів (`ftuxDripCopy.ts`, черга через BullMQ, диспетчер у `ftuxDripMail.ts`). Тобто інфраструктура розсилок існує; бракує двох речей: верифікованого домену в Resend і власне pre-launch-кампанії поверх наявного механізму. Гілкування per-module передбачалось «в n8n» — n8n немає, тож розгалуження треба робити в тому ж диспетчері.
+>
+> Лист №3 (Referral) **не відправиться** без referral-механіки, якої в коді немає. Лист №4 обіцяє «перші 500» — звіряти з реальним розміром вейтліста перед відправкою, інакше це порожня обіцянка.
+
+| #   | День | Мета                   | Opener                                                                                                                  | CTA                                  |
+| --- | ---- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| 1   | 0    | Welcome                | «Твоє місце в Sergeant заброньовано — ти дізнаєшся про запуск першим.»                                                  | Розкажи другу (м'який seed)          |
+| 2   | 5    | Value hit (per module) | Finyk: «Фінансова картина за тиждень — одна хвилина на день.» / Fizruk / Routine / Nutrition — окремі opener per module | Слідкуй у Telegram                   |
+| 3   | 14   | Referral ⚠️ блоковано  | «Маєш когось, хто теж хоче навести лад у витратах або тренуваннях?»                                                     | Надішли [ref_link]                   |
+| 4   | 21   | Pre-launch teaser      | «Перші 500 отримують доступ — ти вже серед них. Залишилось небагато.»                                                   | Підтверди email (відповісти на лист) |
 
 **Чому Day 5, не Day 2** (Round 2 decision): Day 2 — занадто щільно після welcome, ризик spam fatigue. Day 5 = "встиг забути, нагадай чим це корисно".
 
@@ -200,8 +264,8 @@ Submit → inline success card на тій самій сторінці (no redir
 1. **Build-in-public** — прогрес розробки, що зламалось, як AI допоміг. Унікальний leverage solo dev.
 2. **Module spotlight** — глибокий deep-dive по одному модулю на тиждень.
 3. **UA life-hacks** — практичні поради у контексті модулів (як відстежити витрати у ₴, як побудувати звичку).
-4. **Behind-the-scenes AI + n8n** — як automation допомагає solo. Демістифікація AI-assisted dev.
-5. **Community moments** — milestone-пости (100/500/1000 waitlist), public visibility top referrers ("Топ запрошувачів тижня"), без накрутки.
+4. **Behind-the-scenes automation** — як AI-assisted dev і скрипти допомагають solo. Демістифікація процесу. (Спочатку формулювалось як «AI + n8n»; n8n у контурі немає — реальний матеріал це монорепо-тулінг, агентні скіли й CI-гейти.)
+5. **Community moments** — milestone-пости (100/500/1000 waitlist), без накрутки. «Топ запрошувачів тижня» **потребує referral-механіки**, якої немає — до її появи цей формат недоступний.
 
 Founder voice (BIP) і brand voice (продукт) — **різні рівні, не конкурують**. Telegram природно тримає обидва. BIP-пости мають landing для широкої аудиторії у першому реченні (навіть якщо суть технічна), щоб не відштовхнути non-tech audience Routine/Nutrition.
 
@@ -278,44 +342,57 @@ Top targets per module:
 
 ## Waitlist + referral architecture
 
-### Stack
+> ⚠️ **Найбільша розбіжність документа з кодом.** Уся секція описує no-backend-архітектуру (Airtable + n8n + URL params). Реалізація пішла протилежним шляхом. Нижче — фактичний стек, потім початковий задум для довідки.
 
-**Astro (static) + native React island form (~2KB gzip) + fetch() → n8n webhook + Airtable (CRM) + Google Sheet (live counter).**
+### Stack — фактичний
 
-**Чому native form, не Tally** (Round 2 decision): Tally iframe додає ~40KB JS зайвого bundle + меншe контролю над UX (особливо success card з pill chips quick-poll). Native island дає (1) повний контроль над поведінкою, (2) нуль зайвого JS, (3) inline error handling. **Tally — Plan B** якщо solo dev wants ship за день без коду форми.
+**Лендінг:** `apps/landing` — Vite + React 18 + Tailwind 4 (SPA, не static-site-generator). Ділить `@sergeant/design-tokens` і `@sergeant/shared` з монорепо; дрейф токенів ловить `tokens.drift.test.ts`.
 
-### UTM tracking
+**Два незалежні канали збору:**
 
-Зберігати у `localStorage` при першому візиті → передавати при signup до n8n webhook → Airtable column. Так attribution не втрачається при delayed conversion.
+| Канал        | Точка входу                              | Сховище                            | Розсилка                                           |
+| ------------ | ---------------------------------------- | ---------------------------------- | -------------------------------------------------- |
+| **Telegram** | `TelegramCta` → `t.me/<bot>?start=...`   | `telegram_waitlist` (міграція 089) | `scripts/telegram/broadcast-waitlist.mjs` (вручну) |
+| **Email**    | `WaitlistForm` → `POST /api/v1/waitlist` | `waitlist_entries`                 | ⚠️ заблоковано неверифікованим доменом Resend      |
 
-Параметри: `utm_source` (telegram/instagram/x/blog) + `utm_medium` (social/inline-cta) + `utm_campaign` (pre-launch-waitlist / [blog-slug]) + `utm_content` ([post-id]/cta-top/cta-mid/cta-exit).
+Записи **не дедуплікуються** між каналами: якщо людина лишила і те, й те — це два рядки у двох таблицях. Свідоме рішення, дедуплікація не варта складності на цьому обсязі.
+
+**Чому Telegram головний:** бот не може написати першим (обмеження Bot API), тому збирати `@ніки` у форму безглуздо. Єдиний робочий патерн — інверсія: людина сама тисне Start, ми отримуємо `chat_id` і **право писати**. Email при цьому лишається як портативний запасний канал — Telegram може заблокувати бота.
+
+### Атрибуція — фактична
+
+**`start_payload` у deep link**, не UTM у localStorage: `?start=landing`, `?start=landing_footer`, `?start=dou`, `?start=twitter`. Значення падає в колонку `start_payload` — атрибуція каналу без жодного трекера, cookies чи localStorage. Ліміт Telegram: 64 символи, `A-Za-z0-9_-`.
+
+Клієнтська телеметрія бачить лише клік (`/start` відбувається на боці Telegram), тому конверсія «клік → Start» рахується як `COUNT(telegram_waitlist)` проти кліків у PostHog.
 
 ### Urgency mechanic
 
-- **Live counter** (Google Sheet): n8n пише `waitlist_count` кожні 30 хв → лендинг читає через Sheets JSON API → "847 людей вже чекають".
-- **Early-bird badge** (статичний): "Перші 500 отримують early access".
-- **НЕ робити**: fake countdown, псевдо-динамічний лічильник. Шкодить довірі UA-аудиторії.
+- **Live counter — не реалізований.** Google Sheet + n8n cron не існують; «847 людей вже чекають» у макетах вище — плейсхолдер.
+- **Early-bird badge** (статичний): "Перші 500 отримують early access" — можна ставити, це не залежить від інфраструктури.
+- **НЕ робити**: fake countdown, псевдо-динамічний лічильник. Шкодить довірі UA-аудиторії. Це правило — причина, чому лічильник краще не показувати взагалі, ніж показувати вигаданий.
 
-### Referral mechanic
+### Referral mechanic — не реалізовано
 
-1. Signup → n8n генерує `nanoid(8)` як `ref_code` → Airtable (email + ref_code + invited_by + invite_count=0).
-2. Юзер ділиться: `sergeant.app/?ref=ABCD1234`.
-3. Новий signup з `?ref=` → n8n webhook → Airtable lookup інвайтера → `invite_count++`.
-4. `invite_count === 3` → email інвайтеру: "Ти запросив 3 друзів — ти серед першої черги."
+Ні `ref_code`, ні таблиці `referrals`, ні ендпоінтів. Дизайн нижче лишається чинним як ТЗ; тарифну сітку винагород див. [`launch/business/02-go-to-market.md §5.2`](../launch/business/02-go-to-market.md#52-реферальна-програма).
 
-Стек: тільки Airtable + n8n + URL params. Без backend, без JWT.
+1. Signup → генерується `nanoid(8)` як `ref_code`.
+2. Юзер ділиться: `sergeant.com.ua/?ref=ABCD1234`.
+3. Новий signup з `?ref=` → lookup інвайтера → `invite_count++`.
+4. `invite_count === 3` → лист інвайтеру: "Ти запросив 3 друзів — ти серед першої черги."
 
-Social amplification: раз на 2 тижні Telegram-пост "Топ запрошувачів тижня" з @username (з їх згоди). Інтегровано в **Community moments** content pillar, не окремий 6-й pillar.
+> Початковий задум — «тільки Airtable + n8n + URL params, без backend, без JWT». Оскільки backend і Postgres уже є, реалізовувати це через зовнішній CRM немає сенсу: дешевше додати таблицю поруч із `telegram_waitlist`. Social amplification («Топ запрошувачів тижня») стає можливим лише після цього кроку.
 
 ### North-star metrics + benchmarks
 
-| Метрика                        | OK threshold | Rationale                                        |
-| ------------------------------ | ------------ | ------------------------------------------------ |
-| Signup rate (landing → submit) | ≥ 8%         | UA SaaS норма 5-12% для нішевих продуктів        |
-| Email open rate (drip)         | ≥ 40%        | Pre-launch warm list; <30% — red flag            |
-| Referral K-factor              | ≥ 0.25       | Кожен 4-й запрошує 1 друга → organic growth loop |
-| Blog → signup CR               | ≥ 3%         | З organic traffic; нижче — CTA слабкий           |
-| Social → landing CR            | ≥ 2%         | Instagram/TikTok cold 1-3%; Telegram до 5%       |
+| Метрика                          | OK threshold | Rationale                                        | Чи можна виміряти зараз                             |
+| -------------------------------- | ------------ | ------------------------------------------------ | --------------------------------------------------- |
+| Signup rate (landing → Telegram) | ≥ 8%         | UA SaaS норма 5-12% для нішевих продуктів        | ✅ кліки в PostHog vs `COUNT(telegram_waitlist)`    |
+| Email open rate (drip)           | ≥ 40%        | Pre-launch warm list; <30% — red flag            | ❌ drip не запущений                                |
+| Referral K-factor                | ≥ 0.25       | Кожен 4-й запрошує 1 друга → organic growth loop | ❌ referral не реалізований                         |
+| Blog → signup CR                 | ≥ 3%         | З organic traffic; нижче — CTA слабкий           | ❌ блогу немає                                      |
+| Social → landing CR              | ≥ 2%         | Instagram/TikTok cold 1-3%; Telegram до 5%       | ⚠️ соцмереж немає; `start_payload` готовий приймати |
+
+> З пʼяти north-star метрик сьогодні вимірюється одна. Це прямий наслідок того, що email, referral, блог і соцмережі не запущені — не проблема інструментування.
 
 ### Blog CTA placement
 
@@ -324,6 +401,8 @@ Social amplification: раз на 2 тижні Telegram-пост "Топ зап�
 CTA copy: «Увійди в перших 500» / «Спробуй першим — early access» (scarcity + конкретна вигода). **Не**: «Приєднайся до waitlist» (слабко, пасивно).
 
 ## N8n flow inventory (10 flows total)
+
+> ⚠️ **n8n у контурі маркетингу не піднятий — жоден із 10 флоу не існує.** Секція лишається як каталог намірів. Перед реалізацією врахуй: сховище — Postgres, не Airtable, тож «Airtable create / lookup / aggregate» скрізь читай як SQL. Флоу #1 (signup → CRM) уже покритий кодом: `POST /api/v1/waitlist` і `POST /api/v1/telegram/webhook` пишуть напряму в таблиці, зовнішній webhook-посередник не потрібен.
 
 ### Waitlist + funnel (4)
 
@@ -346,42 +425,45 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 
 ## Execution phases
 
+> **Phase 0 і Phase 1 частково виконані іншим шляхом.** Таблиці нижче лишаються як запис задуму; колонка «Стан» показує фактичне.
+
 ### Phase 0 — Foundation (Week 0-1, no public output)
 
-Підготовка stack + governance assets перед першим публічним постом.
+| #   | Task                                                             | Effort | Стан                                                                      |
+| --- | ---------------------------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| 0.1 | Сховище вейтліста                                                | XS     | ✅ інакше: Postgres `telegram_waitlist` + `waitlist_entries`, не Airtable |
+| 0.2 | Лічильник вейтліста                                              | XS     | ❌ не робимо (§ Urgency mechanic)                                         |
+| 0.3 | Флоу signup → CRM / drip / referral                              | S      | ✅/❌ signup покритий кодом; drip і referral — ні                         |
+| 0.4 | Email templates для drip                                         | S      | ⚠️ FTUX-drip є (`ftuxDripCopy.ts`); pre-launch-кампанії немає             |
+| 0.5 | Voice playbook як constant prompt для AI-генерації               | S      | ❌                                                                        |
+| 0.6 | Bootstrap marketing-проєкту з Tailwind preset з `design-tokens/` | M      | ✅ інакше: `apps/landing` на Vite+React, не Astro; токени підключені      |
+| 0.7 | Setup Telegram-каналу + X + Instagram з consistent handles       | XS     | ⚠️ бот вейтліста `@serg_qa_bot` є; каналу і соцмереж немає                |
 
-| #   | Task                                                                                                                                                        | Effort |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 0.1 | Створити Airtable бази: `waitlist` (схема: email, module*interest, utm*\*, ref_code, invited_by, invite_count, signup_date, status)                         | XS     |
-| 0.2 | Створити Google Sheet `waitlist_counter` + n8n cron 30-хв sync з Airtable                                                                                   | XS     |
-| 0.3 | Скласти n8n flows #1 (signup → CRM) + #2 (drip scheduler) + #3 (referral attribution) — test з 3 fake signup                                                | S      |
-| 0.4 | Скласти email templates × 5 для drip (per-module branch для Day 2) у Resend/SendGrid                                                                        | S      |
-| 0.5 | Закласти voice playbook як constant prompt у Claude/n8n templates (automation prepublish checklist active)                                                  | S      |
-| 0.6 | Bootstrap Astro project (separate repo або subfolder), Tailwind preset з `packages/design-tokens/`                                                          | M      |
-| 0.7 | Setup Telegram-каналу + X account + Instagram account з consistent handles (`@sergeant_app` або similar) + bios з social tagline «Маленькі кроки. Щоденно.» | XS     |
+> **Юзернейм бота — відкрите питання.** `serg_qa_bot` читається як внутрішній тестовий, а не як обличчя продукту. BotFather дозволяє перейменувати, але **вже роздані deep link-и після цього помруть** — отже, робити це треба до першої публічної роздачі посилання. Це прямо конфліктує з пунктом 0.7 про «consistent handles».
 
 ### Phase 1 — Ship landing + waitlist (Week 1-2)
 
-| #    | Task                                                                                                                                 | Effort |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| 1.1  | Landing IA build: hero + problem bar + module showcase (tabbed/carousel) + how-it-works + value props + waitlist form + FAQ + footer | M      |
-| 1.2  | Waitlist form: email only → n8n webhook (single field MVP)                                                                           | S      |
-| 1.2a | Post-submit success card з optional module-interest pill chips (async secondary webhook)                                             | S      |
-| 1.3  | Sticky footer CTA (Intersection Observer → scroll to `#waitlist`)                                                                    | XS     |
-| 1.4  | Inline success state (no redirect, 3-step timeline + referral CTA)                                                                   | S      |
-| 1.5  | UTM `localStorage` capture                                                                                                           | XS     |
-| 1.6  | Live counter widget (read Google Sheet JSON API)                                                                                     | XS     |
-| 1.7  | `/llms.txt` у корені (~500 слів, нейтральний tone)                                                                                   | XS     |
-| 1.8  | `SoftwareApplication` + `Organization` JSON-LD schema на main landing                                                                | XS     |
-| 1.9  | Deploy до Vercel + custom domain                                                                                                     | S      |
-| 1.10 | Mobile QA на real iPhone + Android budget (Moto G class)                                                                             | S      |
+| #    | Task                                                  | Effort | Стан                                                 |
+| ---- | ----------------------------------------------------- | ------ | ---------------------------------------------------- |
+| 1.1  | Landing IA build                                      | M      | ✅ інакший склад секцій — див. § Page architecture   |
+| 1.2  | Waitlist form: email only                             | S      | ✅ `WaitlistForm` → `POST /api/v1/waitlist`          |
+| 1.2a | Post-submit success card з module-interest pill chips | S      | ❌                                                   |
+| 1.3  | Sticky footer CTA                                     | XS     | ❌ замість нього — друга Telegram-кнопка в `BetaCta` |
+| 1.4  | Inline success state (timeline + referral CTA)        | S      | ❌                                                   |
+| 1.5  | UTM `localStorage` capture                            | XS     | ✅ інакше: `start_payload` у deep link               |
+| 1.6  | Live counter widget                                   | XS     | ❌ не робимо                                         |
+| 1.7  | `/llms.txt` у корені                                  | XS     | ❌                                                   |
+| 1.8  | `SoftwareApplication` + `Organization` JSON-LD schema | XS     | ❌                                                   |
+| 1.9  | Deploy до Vercel + custom domain                      | S      | ❌ домен не зареєстрований, deploy-конфіг не в репо  |
+| 1.10 | Mobile QA на real iPhone + Android budget             | S      | ❓ не задокументовано                                |
 
-**Verification:**
+**Verification (актуалізовано під фактичний стек):**
 
 - Lighthouse mobile ≥ 90 на всіх 4 axes
-- Form submit → Airtable entry within 5 sec → confirmation email within 5 min
-- 3 test signups з different `?ref=` URLs → invite_count increments correctly
-- Live counter показує real number
+- Клік на Telegram-CTA → `/start` → рядок у `telegram_waitlist` зі `start_payload='landing'`
+- Email-форма в `apps/web` (`/pricing`) → рядок у `waitlist_entries` протягом 5 сек (на лендінгу форми немає)
+- `broadcast-waitlist.mjs --dry-run` друкує коректну вибірку й текст
+- Повторний `/start` не створює другий рядок і не зсуває `created_at` (ідемпотентність webhook-а)
 
 ### Phase 2 — Content engine ignition (Week 2-4)
 
@@ -397,9 +479,11 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 
 ### Phase 3 — Social channel activation (Week 1-4, parallel to Phase 2)
 
+> **Не розпочато** — акаунтів немає. Два зауваження перед стартом: (1) `referral CTA` у Week 1 і `referral leaderboard` у Week 2 неможливі без referral-механіки; (2) кожен канал має отримати власний `?start=` payload, інакше атрибуція злипнеться в одне «landing».
+
 **Week 1 — "Ми існуємо"**
 
-- Day 1: Announce-пост everywhere (tagline + 4 модулі + waitlist link + referral CTA одразу).
+- Day 1: Announce-пост everywhere (tagline + 4 модулі + waitlist link).
 - Telegram: "Чому я будую Sergeant" — особиста story 300 слів.
 - X: Thread "4 речі яких мені не вистачало як продакту в UA" → перехід до продукту.
 - Instagram: Carousel "Що таке Sergeant" (5 слайдів, 1 модуль = 1 slide).
@@ -410,12 +494,12 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 - X: BIP thread "Чому копійки а не гривні всередині" (технічна деталь).
 - Instagram: Carousel "5 категорій витрат UA-розробника".
 - Stories poll: "Ти ведеш бюджет?" (data collection для контенту).
-- **First "referral leaderboard" пост** як proof of social momentum.
+- ~~**First "referral leaderboard" пост**~~ — потребує referral-механіки, якої немає.
 
 **Week 3 — Module deep-dive: Routine + BIP**
 
 - Telegram: "Що зламалось цього тижня і як AI допоміг".
-- X: BIP thread з реальним прикладом n8n flow або typecheck регресії.
+- X: BIP thread з реальним прикладом — напр. типова регресія на typecheck або як влаштований monorepo-гейт.
 - Instagram: Carousel "Як побудувати звичку за допомогою Routine".
 - Milestone post: якщо 100+ waitlist — celebrate публічно.
 
@@ -444,9 +528,9 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 | --- | ----------------------------------------------------------------------------------------- |
 | 5.1 | Замінити waitlist форму на "Завантажити" CTA з прямими store-links                        |
 | 5.2 | Масовий email всьому waitlist: "Sergeant вже в App Store — ти серед перших"               |
-| 5.3 | Деактивувати drip-scheduler у n8n                                                         |
-| 5.4 | Airtable status="launched" для аналітики                                                  |
-| 5.5 | Ref-коди лишити активними +30 днів для word-of-mouth metrics                              |
+| 5.3 | Деактивувати drip-scheduler                                                               |
+| 5.4 | Позначити записи вейтліста як «launched» для аналітики (колонка в Postgres)               |
+| 5.5 | Ref-коди лишити активними +30 днів для word-of-mouth metrics (якщо referral реалізують)   |
 | 5.6 | Launch Phase 6: `/compare/` сторінки (потрібна domain authority вже накопичена)           |
 | 5.7 | Розглянути TikTok activation (post-launch, не раніше)                                     |
 | 5.8 | Розглянути open Telegram-group або enable channel comments (якщо 500+ waitlist / 50+ DAU) |
@@ -455,12 +539,13 @@ CTA copy: «Увійди в перших 500» / «Спробуй першим �
 
 ```
 Phase 0 — Foundation
-    ├── 0.1-0.5 (Airtable + n8n core) — блокує всі signup flows
-    ├── 0.6 (Astro bootstrap) — блокує Phase 1
-    └── 0.7 (Social accounts) — блокує Phase 3 Day 1
+    ├── 0.1-0.5 (сховище + флоу) — блокує всі signup flows   [частково ✅ у Postgres]
+    ├── 0.6 (bootstrap лендінга) — блокує Phase 1            [✅ apps/landing]
+    └── 0.7 (Social accounts) — блокує Phase 3 Day 1         [❌]
 
-Phase 1 — Landing ship (depends on 0.1-0.6)
-    └── Live waitlist + drip + counter + llms.txt + schema
+Phase 1 — Landing ship (depends on 0.1-0.6)                  [частково ✅]
+    └── Live waitlist ✅ + drip ❌ + counter ❌ + llms.txt ❌ + schema ❌
+    └── БЛОКЕР, не в початковому плані: домен + deploy-конфіг
 
 Phase 2 — Content engine (depends on Phase 1)
     └── Blog + pillar content + n8n syndication
@@ -487,10 +572,17 @@ Phase 5 — Launch transition (depends on App Store approval — exogenous)
 
 ## Open questions / decisions deferred
 
-- **Hero H1 final**: «Усе про себе — в одному місці» (intrigue) vs «Один застосунок. Чотири модулі. Уся картина.» (proof). **Рекомендація: ship intrigue, A/B test після 200 signups.**
-- **Tally.so vs custom Astro form**: **Round 2 decision: native Astro form island.** ~40KB Tally bundle penalty не варто заради 1-day ship convenience. Tally — Plan B only якщо solo dev hits unblocked-by-code wall.
-- **Invite-only з position number** vs simple waitlist email: складніша реферальна mechanics. **Рекомендація: simple waitlist MVP; pivot на position-bump якщо K-factor < 0.3 за 30 днів.**
-- **Telegram-канал vs group**: канал до launch. **Decision threshold: 500+ waitlist OR 50+ DAU**.
+**Закриті фактом реалізації:**
+
+- ~~**Hero H1 final**: «Усе про себе — в одному місці» vs «Один застосунок. Чотири модулі. Уся картина.»~~ — **обрано третій варіант**: «Бачить звʼязки між усім, що важливо» (редизайн `b0286bc81`). Позиціювання зсунулось з «усе в одному місці» на «бачить звʼязки»; таблиця tagline lineup вище цього зсуву ще не відображає — звіряти перед використанням.
+- ~~**Tally.so vs custom form**~~ — власна форма, як і рекомендувалось (`WaitlistForm` → `/api/v1/waitlist`). Tally в стеці немає.
+- ~~**Invite-only з position number vs simple waitlist**~~ — simple waitlist, без позицій і без інвайт-кодів. Гейт бети — список адресатів Telegram-розсилки.
+
+**Досі відкриті:**
+
+- **A/B тест H1** — інфраструктури A/B на лендінгу немає; після 200 signups робити нічим. Або ставити її, або визнати, що H1 фіксований.
+- **Telegram-канал vs group**: канал до launch. **Decision threshold: 500+ waitlist OR 50+ DAU**. Наразі існує лише бот вейтліста — ні каналу, ні групи.
+- **Юзернейм бота** `serg_qa_bot` — перейменувати до першої публічної роздачі посилань, інакше видані deep link-и помруть.
 - **Discord**: skip permanently (over-engineered для UA productivity).
 - **Threads**: defer до Q4 2026 (emerging, 0 ROI зараз).
 - **LinkedIn**: skip permanently (B2C, не наш ICP).

@@ -1,9 +1,11 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
+
+> **Update 2026-07-31:** звірка з кодом. Три зміни фактів: (1) **юридичний пак закрито** — 4 документи чинні з 12.07.2026, §1.1 більше не блокер запуску; (2) **хостинг** — Railway виведено з експлуатації, бекенд на Hetzner CX23 під Coolify (ADR-0074), усі згадки Railway у §3 і §4.3 замінено; (3) **платіжний провайдер** — у продакшн-документах і в юридичному паку фігурує **LiqPay**, тоді як §2 описує Stripe-механіку; пояснення — §2 преамбула.
 
 > Pre-MVP draft. Покриває все, що треба перевірити перед запуском платного продукту.
 > Джерело: `sergeant-launch-checklist.md` (§1, §2, §5, §6, §10),
@@ -21,27 +23,40 @@
 
 ### 1.1 Обов'язкові документи
 
-| Документ                                       | Навіщо                                                                | Пріоритет         | Template / закон                                                                                                                                                                                                                      | Owner           |
-| ---------------------------------------------- | --------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| **Privacy Policy (Політика конфіденційності)** | Google Play, Stripe, GDPR, Apple — всі вимагають. Health + financial. | 🔴 Блокер запуску | [Termly Privacy Generator](https://termly.io/products/privacy-policy-generator/); GDPR [Art. 13–14](https://gdpr-info.eu/art-13-gdpr/); ЗУ «Про захист персональних даних» [ст. 12](https://zakon.rada.gov.ua/laws/show/2297-17#n155) | Founder         |
-| **Terms of Service**                           | Юридичний захист для платних підписок. Refund policy.                 | 🔴 Блокер запуску | [Termly T&C Generator](https://termly.io/products/terms-and-conditions-generator/); ЗУ «Про електронну комерцію» [ст. 8–11](https://zakon.rada.gov.ua/laws/show/675-19#n74)                                                           | Founder         |
-| **Cookie Policy**                              | Better Auth використовує cookies. Для EU — обов'язково.               | 🟡 До запуску     | [Iubenda Cookie Solution](https://www.iubenda.com/en/cookie-solution); Директива ePrivacy [2009/136/EC](https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32009L0136)                                                         | Founder         |
-| **Публічна оферта**                            | Для UA-ринку. ФОП може оформити сам.                                  | 🟡 До запуску     | Шаблон від [Дія.Бізнес](https://business.diia.gov.ua/); ЦКУ [ст. 633–641](https://zakon.rada.gov.ua/laws/show/435-15#n3529)                                                                                                           | Founder + юрист |
+**Статус на 2026-07-31: усі чотири документи написані й опубліковані.** Джерело — `apps/web/src/core/legal/LegalPage.tsx`, рендер через `LegalDocumentView`; дата набрання чинності — **12 липня 2026**. Раніше в цій таблиці Privacy Policy і ToS стояли як «🔴 Блокер запуску» з посиланням на Termly-генератори; тексти написані власноруч, генератори не використовувались.
 
-**Мінімальний чеклист для Privacy Policy (health + financial app, UA + EU):**
+| Документ                                  | Навіщо                                                             | Статус                     | Маршрут          | Owner   |
+| ----------------------------------------- | ------------------------------------------------------------------ | -------------------------- | ---------------- | ------- |
+| **Privacy Policy (Політика приватності)** | Google Play, платіжний провайдер, GDPR, Apple. Health + financial. | ✅ Опубліковано 12.07.2026 | `/legal/privacy` | Founder |
+| **Terms of Service (Умови користування)** | Юридичний захист для платних підписок. Refund policy.              | ✅ Опубліковано 12.07.2026 | `/legal/terms`   | Founder |
+| **Cookie Policy (Політика cookies)**      | Better Auth використовує cookies. Для EU — обов'язково.            | ✅ Опубліковано 12.07.2026 | `/legal/cookies` | Founder |
+| **Публічна оферта**                       | Для UA-ринку, ст. 633/641 ЦКУ. ФОП оформлює сам.                   | ✅ Опубліковано 12.07.2026 | `/legal/offer`   | Founder |
 
-- [ ] **Перелік категорій даних:** PII, фінансові, здоров'я, поведінкові, AI-контекст. — _Ref:_ GDPR [Art. 13(1)(d)](https://gdpr-info.eu/art-13-gdpr/). _Owner:_ Founder.
-- [ ] **Правова підстава обробки:** consent для health-даних, legitimate interest для аналітики. — _Ref:_ GDPR [Art. 6](https://gdpr-info.eu/art-6-gdpr/). _Owner:_ Founder + юрист.
-- [ ] **Спеціальні категорії даних:** health data потребує explicit consent. — _Ref:_ GDPR [Art. 9](https://gdpr-info.eu/art-9-gdpr/). _Owner:_ Founder + юрист.
-- [ ] **Треті сторони та sub-processors:** LiqPay/Plata/legacy Stripe, Anthropic, Sentry, PostHog, Resend, Monobank, Hetzner/Coolify, Vercel, Firebase/APNs. — _Ref:_ GDPR [Art. 28](https://gdpr-info.eu/art-28-gdpr/). _Owner:_ Founder.
-- [ ] **Права суб'єкта даних:** access, rectification, erasure, portability, restriction, objection. — _Ref:_ GDPR [Art. 15–22](https://gdpr-info.eu/art-15-gdpr/). _Owner:_ Dev.
-- [ ] **Міжнародні трансфери:** дані йдуть до US-серверів (Anthropic, Stripe, Sentry) — потрібен механізм (SCCs або рішення про адекватність). — _Ref:_ GDPR [Art. 46](https://gdpr-info.eu/art-46-gdpr/). _Owner:_ Founder + юрист.
-- [ ] **Data retention periods:** скільки зберігаються дані після видалення акаунту. — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/). _Owner:_ Founder.
-- [ ] **Контактні дані DPO** або відповідальної особи. — _Ref:_ GDPR [Art. 37–39](https://gdpr-info.eu/art-37-gdpr/). _Owner:_ Founder.
-- [ ] **Cookie disclosure:** перелік cookies, їх призначення, тривалість. — _Ref:_ Директива ePrivacy [2009/136/EC](https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32009L0136). _Owner:_ Dev.
-- [ ] **Вік користувачів:** заборона < 16 років (GDPR) або < 18 (ЗУ «Про захист персональних даних»). — _Ref:_ GDPR [Art. 8](https://gdpr-info.eu/art-8-gdpr/); ЗУ [ст. 8](https://zakon.rada.gov.ua/laws/show/2297-17#n101). _Owner:_ Founder + Dev.
-- [ ] **Процедура повідомлення про breach** (72 години). — _Ref:_ GDPR [Art. 33](https://gdpr-info.eu/art-33-gdpr/). _Owner:_ Founder.
-- [ ] **Посилання на Cookie Policy та Terms of Service.** — _Owner:_ Dev.
+**Що реально лишилось — 🔴 блокер public launch:**
+
+- [ ] **Реквізити ФОП.** У коді стоїть `CONTROLLER_PLACEHOLDER` = «ФОП [ПІБ], РНОКПП [xxxxxxxxxx, буде внесено перед public launch], адреса реєстрації [буде внесена перед public launch]». У розділі «Реквізити Виконавця» оферти також плейсхолдери IBAN і назви банку. Без них оферта юридично неповна. _Owner:_ Founder.
+- [ ] **Представник у ЄС.** Privacy Policy прямо каже: «наш представник буде зазначений у цьому розділі перед public launch». _Owner:_ Founder + юрист.
+
+**Що вже покрито в текстах** (перевірено проти чекліста нижче): категорії даних, правові підстави, спеціальні категорії (health), перелік субпроцесорів із регіонами, права суб'єкта даних, міжнародні трансфери через SCC, retention-періоди (30 днів grace → hard-delete, бекапи 90 днів, білінг 5 років, логи 12 міс), breach-повідомлення за 72 години, вікове обмеження 18+, посилання між документами.
+
+> **Розбіжність, яку варто знати.** Юридичний пак називає платіжним провайдером **LiqPay (АТ КБ «ПриватБанк»)** і хостинг-провайдером **Hetzner (ЄС, Німеччина)**. Решта цього документа (§2, §4.3) писалась під Stripe і Railway. У коді реалізовані **три** білінг-провайдери — `stripe.ts`, `liqpay.ts`, `plata.ts` (`apps/server/src/modules/billing/`). Перед public launch треба зафіксувати, який із них є користувацьким за замовчуванням, і привести §2 у відповідність — зараз джерелом істини для юзера є текст оферти, тобто LiqPay.
+
+**Мінімальний чеклист для Privacy Policy (health + financial app, UA + EU)** — звірено з текстом на 2026-07-31:
+
+- [x] **Перелік категорій даних:** акаунт, фінанси, здоров'я/харчування/рутини, AI-контент, OpenClaw-агенти, технічні дані. — _Ref:_ GDPR [Art. 13(1)(d)](https://gdpr-info.eu/art-13-gdpr/).
+- [x] **Правова підстава обробки:** виконання договору, легітимний інтерес (діагностика, антифрод), згода (аналітика, маркетинг), юридичний обов'язок. — _Ref:_ GDPR [Art. 6](https://gdpr-info.eu/art-6-gdpr/).
+- [x] **Спеціальні категорії даних:** health-дані описані окремо; аналітика вимикається без втрати функціональності. — _Ref:_ GDPR [Art. 9](https://gdpr-info.eu/art-9-gdpr/).
+- [x] **Треті сторони та sub-processors:** у тексті — **LiqPay** (платежі, UA), Anthropic (US), Sentry (US), PostHog (ЄС), Resend (US), Monobank (UA), **Hetzner** (ЄС/Німеччина), Vercel (global edge), Firebase/APNs. Обіцянка повідомити email-ом за 30 днів до додавання нового субпроцесора. — _Ref:_ GDPR [Art. 28](https://gdpr-info.eu/art-28-gdpr/).
+- [x] **Права суб'єкта даних:** access, rectification, erasure, portability, restriction, objection + право скарги до Уповноваженого ВРУ або наглядового органу ЄС. — _Ref:_ GDPR [Art. 15–22](https://gdpr-info.eu/art-15-gdpr/).
+- [x] **Міжнародні трансфери:** SCC Єврокомісії + шифрування й мінімізація; дані Monobank лишаються в Україні. — _Ref:_ GDPR [Art. 46](https://gdpr-info.eu/art-46-gdpr/).
+- [x] **Data retention periods:** 30 днів grace → hard-delete; бекапи до 90 днів; білінг ~5 років; логи безпеки до 12 місяців; анонімізовані агрегати безстроково. — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/).
+- [~] **Контактні дані відповідальної особи:** `privacy@sergeant.app` вказано, 30-денний строк відповіді теж. **Представник у ЄС — плейсхолдер.** — _Ref:_ GDPR [Art. 37–39](https://gdpr-info.eu/art-37-gdpr/). _Owner:_ Founder + юрист.
+- [x] **Cookie disclosure:** поіменний перелік із термінами (`better-auth.session_token` 30 днів, `better-auth.csrf` сесійний, `sergeant.consent.v1` 12 міс, `sergeant.analytics.opt-in` 12 міс, `ph_<posthog>` 12 міс, `sergeant.theme`/`sergeant.locale`, SW-кеш, push-токени) + чотири категорії. — _Ref:_ Директива ePrivacy [2009/136/EC](https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32009L0136).
+- [x] **Вік користувачів:** 18+ в усіх чотирьох документах. — _Ref:_ GDPR [Art. 8](https://gdpr-info.eu/art-8-gdpr/); ЗУ [ст. 8](https://zakon.rada.gov.ua/laws/show/2297-17#n101).
+- [x] **Процедура повідомлення про breach** (72 години від підтвердження інциденту). — _Ref:_ GDPR [Art. 33](https://gdpr-info.eu/art-33-gdpr/).
+- [x] **Посилання на Cookie Policy та Terms of Service** — перехресні посилання є в усіх документах.
+
+> Обіцянка «повідомимо за 30 днів до додавання нового субпроцесора» — це операційне зобов'язання, не разова галочка: додавання будь-якого нового зовнішнього сервісу, що бачить персональні дані, тепер вимагає розсилки. Це ще одна причина, чому верифікація домену в Resend — не косметична задача.
 
 ### 1.2 Data classification
 
@@ -168,6 +183,10 @@ PATCH /api/me/preferences
 Зведена таблиця всіх виявлених edge cases із зазначенням поточного стану,
 очікуваної поведінки та способу тестування.
 Деталі (flow-діаграми, sequence-діаграми) — у підрозділах нижче.
+
+> **Читати з поправкою на провайдера.** Таблиця нижче описує **Stripe**-механіку (webhook-події, `stripe trigger` як спосіб тестування) — вона реальна: `apps/server/src/modules/billing/stripeWebhook.ts`, `stripeLifecycle.ts` і тести існують. Але в коді живуть **три** провайдери — `stripe.ts`, `liqpay.ts`, `plata.ts` (+ `plataScheduler.ts`), а юридичний пак називає користувацьким провайдером **LiqPay**. Тому: сценарії EC-01…EC-16 валідні як опис Stripe-гілки, але **не покривають** LiqPay/Plata. Перед увімкненням платежів кожен EC треба або продублювати для фактичного провайдера, або зафіксувати Stripe як єдиний user-facing і привести оферту у відповідність. Це відкрите питання, не описка.
+>
+> Оскільки paywall відкладений до post-Phase 2 ([`01-web-launch-with-users.md` §1.1](../phases/01-web-launch-with-users.md#11-tldr)), жоден з EC не є блокером web-запуску.
 
 | #     | Сценарій                                | Поточна поведінка                                              | Очікувана поведінка                                                                          | Trigger тесту                                                        |
 | ----- | --------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -329,7 +348,7 @@ Web Browser              Server                    Mobile App
 - [ ] Telegram alert channel моніториться в реальному часі. _Owner:_ Founder.
 - [ ] Свіжий DB backup створено перед деплоєм. _Owner:_ Dev.
 - [ ] Coolify/Vercel rollback протестовано на staging ще раз. _Owner:_ Dev.
-- [ ] Stripe production webhooks активні та verified. _Owner:_ Dev.
+- [ ] Production webhooks платіжного провайдера активні та verified. _Owner:_ Dev.
 - [ ] Error rate baseline зафіксовано (Grafana / Sentry). _Owner:_ Dev.
 - [ ] PostHog dashboards для funnel та NSM відкриті. _Owner:_ Dev.
 
@@ -368,7 +387,7 @@ Sentry + Prometheus вже є. Потрібно додати **бізнес-ал
 
 - [ ] **Status page** — uptimerobot.com або Instatus. _Owner:_ Dev.
 - [ ] **On-call** — solo-founder, але потрібен Telegram alert channel. _Owner:_ Founder.
-- [ ] **Rollback plan** — previous API image у Coolify + previous web deployment у Vercel. Тестувати заздалегідь. _Owner:_ Dev.
+- [ ] **Rollback plan** — previous API image у Coolify + previous web deployment у Vercel. Тестувати заздалегідь; **міграції не відкочуються автоматично** — для кожної є `.down.sql`, але застосовується вручну. _Owner:_ Dev.
 - [ ] **DB backup verification** — раз на місяць перевіряти що backup відновлюється. _Owner:_ Dev.
 
 **Runbook template (1 інцидент = 1 заповнений runbook):**
@@ -489,17 +508,19 @@ What was lucky:
 | CAC (blended)               | total_marketing_spend / new_subscribers | ₴20–40              | Ads dashboard + SQL (manual)          | Indie B2C CAC: $5–30  |
 | LTV:CAC ratio               | LTV / CAC                               | 20:1 → 40:1         | Розрахунок (manual)                   | Здорово: > 3:1        |
 | Gross margin                | (revenue - COGS) / revenue × 100 %      | > 80 %              | Stripe revenue − infra costs (manual) | SaaS: 70–85 %         |
-| Breakeven point             | fixed_costs / ARPU = ₴2,800 / ₴199      | ~15 Pro subscribers | Розрахунок (manual)                   | —                     |
+| Breakeven point             | fixed_costs / ARPU = ₴2,300 / ₴199      | ~12 Pro subscribers | Розрахунок (manual)                   | —                     |
 | ARPU (avg revenue per user) | MRR / total_active_subscribers          | ₴199                | Stripe MRR / subscribers count        | —                     |
 
 ```
 Breakeven деталізація:
-  - Stripe fees:           ~3 % від revenue
+  - Комісія платіжного провайдера: ~3 % від revenue
   - Server (Hetzner):      ~$7/міс = ~₴300/міс
   - AI API (Anthropic):    ~$50/міс = ~₴2,000/міс при 500 active AI users
-  - Total fixed:           ~$70/міс = ~₴2,800/міс
-  - Breakeven:             ~15 Pro subscribers (₴199 × 15 = ₴2,985)
+  - Total fixed:           ~$57/міс = ~₴2,300/міс
+  - Breakeven:             ~12 Pro subscribers (₴199 × 12 = ₴2,388)
 ```
+
+> **Чому breakeven посунувся з ~15 на ~12.** Це не перегляд монетизації, а наслідок зміни хостингу: Railway-оцінка ₴800/міс замінена фактичним Hetzner (~₴300/міс). Ціни, тіри й ARPU не змінювались. Якщо оцінка інстанса зміниться — перерахувати обидва місця: тут і в таблиці §4.3.
 
 > Деталі витрат → [03 § Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
 
@@ -543,19 +564,19 @@ Low Likelihood      │                │ [R4] Конкурент   │        
 ## 6. Roadmap монетизації
 
 ```
-Місяць 1:   ┌─ MVP paywall (Stripe)
+Місяць 1:   ┌─ MVP paywall
             ├─ Free + Pro тіри
-            ├─ Landing page + waitlist
+            ├─ Landing page + waitlist ✅ (apps/landing + Telegram-бот)
             ├─ Telegram channel
-            ├─ Privacy Policy + ToS сторінки (§1.1) ← блокер
-            └─ ФОП реєстрація (§1.3) ← блокер
+            ├─ Privacy Policy + ToS + Cookies + Оферта ✅ (12.07.2026)
+            └─ ФОП реєстрація (§1.3) ← блокер (реквізити в оферті — плейсхолдери)
 
-Місяць 2:   ┌─ Closed beta (100–200 юзерів)
+Місяць 2:   ┌─ Closed beta (30 тестерів, 2 тижні)
             ├─ Referral system
             ├─ Onboarding optimization
-            ├─ GDPR endpoints (§1.4): export, delete, preferences
-            ├─ Збір фідбеку + NPS
-            └─ Stripe webhook handlers (§2)
+            ├─ GDPR endpoints (§1.4): export ✅, preferences ✅, delete ⚠️ частково
+            ├─ Збір фідбеку + NPS ✅ (PostHog Surveys)
+            └─ Webhook handlers платіжного провайдера (§2)
 
 Місяць 3:   ┌─ Public launch (Product Hunt + DOU + AIN)
             ├─ Founder's Lifetime Deal
@@ -589,44 +610,48 @@ Low Likelihood      │                │ [R4] Конкурент   │        
 
 ## 7. Pre-launch чеклист
 
-| #   | Категорія  | Задача                                                      | Owner   | Deadline    | Статус                                                    |
-| --- | ---------- | ----------------------------------------------------------- | ------- | ----------- | --------------------------------------------------------- |
-| 1   | Юридичне   | Privacy Policy сторінка (§1.1)                              | Founder | Місяць 1 W1 | [~] UI shipped (`/legal/privacy`); publish/review pending |
-| 2   | Юридичне   | Terms of Service сторінка (§1.1)                            | Founder | Місяць 1 W1 | [~] UI shipped (`/legal/terms`); publish/review pending   |
-| 3   | Юридичне   | Cookie consent banner (EU) (§1.1)                           | Dev     | Місяць 1 W2 | [ ]                                                       |
-| 4   | Юридичне   | ФОП реєстрація + банківський рахунок (§1.3)                 | Founder | Місяць 1 W2 | [ ]                                                       |
-| 5   | Юридичне   | Data classification audit (§1.2)                            | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 6   | Продукт    | Paywall UI (не дратує, soft + metered)                      | Dev     | Місяць 1 W2 | [x] `PaywallModal` shipped; placement polish ongoing      |
-| 7   | Продукт    | Pricing page / модалка                                      | Dev     | Місяць 1 W2 | [x] `PricingPage` shipped (₴199/₴1490, ADR-0068)          |
-| 8   | Продукт    | Billing Settings секція                                     | Dev     | Місяць 1 W3 | [x] `PlanSection` shipped; portal env pending             |
-| 9   | Продукт    | `GET /api/me/export` — Data export (GDPR) (§1.4)            | Dev     | Місяць 2 W1 | [ ]                                                       |
-| 10  | Продукт    | `DELETE /api/me` — повний cascade + external cleanup (§1.4) | Dev     | Місяць 2 W1 | [ ]                                                       |
-| 11  | Продукт    | `GET/PATCH /api/me/preferences` (§1.4)                      | Dev     | Місяць 2 W2 | [ ]                                                       |
-| 12  | Продукт    | FAQ / Help page                                             | Founder | Місяць 1 W4 | [ ]                                                       |
-| 13  | Маркетинг  | Landing page                                                | Dev     | Місяць 1 W1 | [~] in-app `/` shipped; standalone `sergeant.com.ua` open |
-| 14  | Маркетинг  | Store screenshots (якщо Play Store)                         | Founder | Місяць 4    | [ ]                                                       |
-| 15  | Маркетинг  | Demo video (30–60 с)                                        | Founder | Місяць 1 W3 | [ ]                                                       |
-| 16  | Маркетинг  | Telegram канал                                              | Founder | Місяць 1 W1 | [ ]                                                       |
-| 17  | Маркетинг  | Product Hunt page drafted                                   | Founder | Місяць 2 W4 | [ ]                                                       |
-| 18  | Маркетинг  | DOU стаття drafted                                          | Founder | Місяць 2 W4 | [ ]                                                       |
-| 19  | Маркетинг  | OG meta tags для social sharing                             | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 20  | Технічне   | DB backups verified                                         | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 21  | Технічне   | Stripe production keys + webhook endpoint (§2)              | Dev     | Місяць 1 W2 | [~] handlers shipped; prod keys pending                   |
-| 22  | Технічне   | Staging environment                                         | Dev     | Місяць 1 W1 | [ ]                                                       |
-| 23  | Технічне   | Rate limiting через Redis (не in-memory)                    | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 24  | Технічне   | Sentry alerts configured                                    | Dev     | Місяць 1 W2 | [ ]                                                       |
-| 25  | Технічне   | Status page — uptimerobot.com (§3.3)                        | Dev     | Місяць 1 W4 | [ ]                                                       |
-| 26  | Технічне   | Error rate monitoring (Prometheus + Grafana) (§3.2)         | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 27  | Технічне   | Stripe webhook handlers: all events (§2)                    | Dev     | Місяць 2 W2 | [~] core events shipped; dispute/offline grace open       |
-| 28  | Технічне   | Offline grace period flow (§2.1)                            | Dev     | Місяць 2 W3 | [ ]                                                       |
-| 29  | Технічне   | Multi-device plan sync + push (§2.2)                        | Dev     | Місяць 2 W3 | [ ]                                                       |
-| 30  | Операційне | Support email або Telegram                                  | Founder | Місяць 1 W1 | [ ]                                                       |
-| 31  | Операційне | Incident rollback tested (Coolify + Vercel) (§3.3)          | Dev     | Місяць 1 W4 | [ ]                                                       |
-| 32  | Операційне | Billing email templates (Resend)                            | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 33  | Операційне | Push notification strategy (не спамити)                     | Founder | Місяць 1 W4 | [ ]                                                       |
-| 34  | Операційне | Analytics (PostHog) working + dashboards (§4)               | Dev     | Місяць 1 W3 | [ ]                                                       |
-| 35  | Операційне | Метрики: NSM + funnel + unit economics dashboards (§4)      | Dev     | Місяць 2 W4 | [ ]                                                       |
-| 36  | Операційне | Incident runbook template ready (§3.3)                      | Dev     | Місяць 1 W4 | [ ]                                                       |
+| #   | Категорія  | Задача                                                        | Owner   | Deadline    | Статус                                                                                 |
+| --- | ---------- | ------------------------------------------------------------- | ------- | ----------- | -------------------------------------------------------------------------------------- |
+| 1   | Юридичне   | Privacy Policy сторінка (§1.1)                                | Founder | Місяць 1 W1 | [x] Опубліковано, чинна з 12.07.2026                                                   |
+| 2   | Юридичне   | Terms of Service сторінка (§1.1)                              | Founder | Місяць 1 W1 | [x] Опубліковано, чинні з 12.07.2026                                                   |
+| 2a  | Юридичне   | Cookie Policy + Публічна оферта (§1.1)                        | Founder | Місяць 1 W1 | [x] Опубліковано, чинні з 12.07.2026                                                   |
+| 2b  | Юридичне   | Реквізити ФОП у оферту й Privacy Policy (§1.1)                | Founder | до launch   | [ ] 🔴 плейсхолдери в коді                                                             |
+| 2c  | Юридичне   | Представник у ЄС у Privacy Policy (§1.1)                      | Founder | до launch   | [ ]                                                                                    |
+| 3   | Юридичне   | Cookie consent banner (EU) (§1.1)                             | Dev     | Місяць 1 W2 | [ ] звірити зі списком cookies у політиці                                              |
+| 4   | Юридичне   | ФОП реєстрація + банківський рахунок (§1.3)                   | Founder | Місяць 1 W2 | [ ]                                                                                    |
+| 5   | Юридичне   | Data classification audit (§1.2)                              | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 6   | Продукт    | Paywall UI (не дратує, soft + metered)                        | Dev     | Місяць 1 W2 | [x] `PaywallModal` shipped; placement polish ongoing                                   |
+| 7   | Продукт    | Pricing page / модалка                                        | Dev     | Місяць 1 W2 | [x] `PricingPage` shipped (₴199/₴1490, ADR-0068)                                       |
+| 8   | Продукт    | Billing Settings секція                                       | Dev     | Місяць 1 W3 | [x] `PlanSection` shipped; portal env pending                                          |
+| 9   | Продукт    | `GET /api/me/export` — Data export (GDPR) (§1.4)              | Dev     | Місяць 2 W1 | [x] `dataRights.ts`, shipped 2026-06-06                                                |
+| 10  | Продукт    | `DELETE /api/me` — повний cascade + external cleanup (§1.4)   | Dev     | Місяць 2 W1 | [~] БД-каскад працює; cleanup у Sentry/PostHog/Resend ні                               |
+| 11  | Продукт    | `GET/PATCH /api/me/preferences` (§1.4)                        | Dev     | Місяць 2 W2 | [x] migration 076 + dataRights, shipped 2026-06-06                                     |
+| 12  | Продукт    | FAQ / Help page                                               | Founder | Місяць 1 W4 | [ ]                                                                                    |
+| 13  | Маркетинг  | Landing page                                                  | Dev     | Місяць 1 W1 | [~] `apps/landing` написаний; домен + деплой відкриті                                  |
+| 13a | Маркетинг  | Telegram-вейтліст (бот + broadcast)                           | Dev     | Місяць 1 W1 | [x] міграція 089, `waitlistBot.ts`, broadcast-скрипт                                   |
+| 14  | Маркетинг  | Store screenshots (якщо Play Store)                           | Founder | Місяць 4    | [ ]                                                                                    |
+| 15  | Маркетинг  | Demo video (30–60 с)                                          | Founder | Місяць 1 W3 | [ ]                                                                                    |
+| 16  | Маркетинг  | Telegram канал                                                | Founder | Місяць 1 W1 | [ ]                                                                                    |
+| 17  | Маркетинг  | Product Hunt page drafted                                     | Founder | Місяць 2 W4 | [ ]                                                                                    |
+| 18  | Маркетинг  | DOU стаття drafted                                            | Founder | Місяць 2 W4 | [ ]                                                                                    |
+| 19  | Маркетинг  | OG meta tags для social sharing                               | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 20  | Технічне   | DB backups verified                                           | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 21  | Технічне   | Production keys + webhook endpoint платіжного провайдера (§2) | Dev     | Місяць 1 W2 | [~] handlers shipped; prod keys pending; провайдер за замовчуванням не зафіксований    |
+| 22  | Технічне   | Staging environment                                           | Dev     | Місяць 1 W1 | [ ]                                                                                    |
+| 23  | Технічне   | Rate limiting через Redis (не in-memory)                      | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 24  | Технічне   | Sentry alerts configured                                      | Dev     | Місяць 1 W2 | [x] error-rate + unhandled exceptions активні                                          |
+| 25  | Технічне   | Status page — uptimerobot.com (§3.3)                          | Dev     | Місяць 1 W4 | [ ]                                                                                    |
+| 26  | Технічне   | Error rate monitoring (Prometheus + Grafana) (§3.2)           | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 27  | Технічне   | Webhook handlers: all events (§2)                             | Dev     | Місяць 2 W2 | [~] Stripe core events shipped; dispute/offline grace open; LiqPay/Plata EC не покриті |
+| 28  | Технічне   | Offline grace period flow (§2.1)                              | Dev     | Місяць 2 W3 | [ ]                                                                                    |
+| 29  | Технічне   | Multi-device plan sync + push (§2.2)                          | Dev     | Місяць 2 W3 | [ ]                                                                                    |
+| 30  | Операційне | Support email або Telegram                                    | Founder | Місяць 1 W1 | [ ]                                                                                    |
+| 31  | Операційне | Incident rollback tested (Coolify + Vercel) (§3.3)            | Dev     | Місяць 1 W4 | [ ]                                                                                    |
+| 32  | Операційне | Billing email templates (Resend)                              | Dev     | Місяць 1 W3 | [ ] 🔴 блоковано: домен у Resend не верифіковано                                       |
+| 33  | Операційне | Push notification strategy (не спамити)                       | Founder | Місяць 1 W4 | [ ]                                                                                    |
+| 34  | Операційне | Analytics (PostHog) working + dashboards (§4)                 | Dev     | Місяць 1 W3 | [ ]                                                                                    |
+| 35  | Операційне | Метрики: NSM + funnel + unit economics dashboards (§4)        | Dev     | Місяць 2 W4 | [ ]                                                                                    |
+| 36  | Операційне | Incident runbook template ready (§3.3)                        | Dev     | Місяць 1 W4 | [ ]                                                                                    |
 
 ---
 
