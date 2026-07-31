@@ -1,17 +1,12 @@
 /**
- * Востаннє перевірено: 2026-07-16
+ * Востаннє перевірено: 2026-07-31
  * Статус: Активний
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { isApiError, privatApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import {
-  safeReadStringLS,
-  safeRemoveLS,
-  safeWriteLS,
-} from "@shared/lib/storage/storage";
 import { ConfirmModal, SettingsSubGroup } from "./SettingsPrimitives";
 
 interface FinykPrivatBankSectionProps {
@@ -22,50 +17,62 @@ const COPY = {
   title: "ПриватБанк (Приват24 для підприємців)",
   disconnectTitle: "Від'єднати ПриватБанк?",
   disconnectBody:
-    "Облікові дані та кеш транзакцій ПриватБанку буде видалено з цього браузера.",
+    "Збережені облікові дані ПриватБанку буде видалено з твого акаунта.",
   disconnectLabel: "Від'єднати",
   connected: "ПриватБанк підключено",
   disconnect: "Від'єднати ПриватБанк",
   help: "API Приват24 для підприємців. Merchant ID та токен знаходяться у Приват24 Бізнес → Налаштування → API.",
+  storageNote:
+    "Токен зберігається зашифрованим на сервері й привʼязаний до твого акаунта — у браузері він не лишається.",
   merchantId: "Merchant ID",
   merchantIdPlaceholder: "Ваш Merchant ID",
   tokenLabel: "Токен / пароль",
   tokenPlaceholder: "Токен продавця",
   hide: "Приховати",
   show: "Показати",
-  remember: "Запам'ятати на цьому пристрої",
   connect: "Підключити ПриватБанк",
 } as const;
 
+/**
+ * Креденшели ПриватБанку більше не осідають у браузері: форма віддає їх
+ * один раз у `POST /api/privat/connect`, далі вони живуть зашифровані на
+ * сервері. До цієї зміни merchant-токен лежав у `localStorage` і був видимий
+ * будь-кому, хто відкриє DevTools — спека
+ * `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
+ *
+ * Чекбокса «Запам'ятати на цьому пристрої» більше немає: підключення тепер
+ * властивість акаунта, а не пристрою, тож вибір нічого не означав би.
+ */
 export function FinykPrivatBankSection({
   enabled,
 }: FinykPrivatBankSectionProps) {
-  const [privatIdInput, setPrivatIdInput] = useState<string>(
-    () =>
-      safeReadStringLS("finyk_privat_id", null) ??
-      sessionStorage.getItem("finyk_privat_id") ??
-      "",
-  );
-  const [privatTokenInput, setPrivatTokenInput] = useState<string>(
-    () =>
-      safeReadStringLS("finyk_privat_token", null) ??
-      sessionStorage.getItem("finyk_privat_token") ??
-      "",
-  );
+  const [privatIdInput, setPrivatIdInput] = useState("");
+  const [privatTokenInput, setPrivatTokenInput] = useState("");
   const [showPrivatToken, setShowPrivatToken] = useState(false);
-  const [rememberPrivat, setRememberPrivat] = useState<boolean>(
-    () => !!safeReadStringLS("finyk_privat_id", null),
-  );
   const [privatError, setPrivatError] = useState("");
   const [privatConnecting, setPrivatConnecting] = useState(false);
-  const [privatConnected, setPrivatConnected] = useState<boolean>(
-    () =>
-      !!(
-        safeReadStringLS("finyk_privat_id", null) ||
-        sessionStorage.getItem("finyk_privat_id")
-      ),
-  );
+  const [privatConnected, setPrivatConnected] = useState(false);
+  const [connectedMerchantId, setConnectedMerchantId] = useState("");
   const [confirmDisconnectPrivat, setConfirmDisconnectPrivat] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const status = await privatApi.status();
+        if (cancelled) return;
+        setPrivatConnected(status.connected);
+        setConnectedMerchantId(status.merchantId ?? "");
+      } catch {
+        // Офлайн або 401 — показуємо форму підключення, а не помилку:
+        // користувач усе одно нічого не може з цим зробити.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
 
   const connectPrivat = async () => {
     const cleanId = privatIdInput.trim();
@@ -77,32 +84,18 @@ export function FinykPrivatBankSection({
     setPrivatConnecting(true);
     setPrivatError("");
     try {
-      try {
-        await privatApi.balanceFinal({
-          merchantId: cleanId,
-          merchantToken: cleanToken,
-        });
-      } catch (error) {
-        if (isApiError(error) && error.kind === "http") {
-          setPrivatError(error.serverMessage || `Помилка ${error.status}`);
-          return;
-        }
-        throw error;
-      }
-      if (rememberPrivat) {
-        safeWriteLS("finyk_privat_id", cleanId);
-        safeWriteLS("finyk_privat_token", cleanToken);
-        sessionStorage.removeItem("finyk_privat_id");
-        sessionStorage.removeItem("finyk_privat_token");
-      } else {
-        sessionStorage.setItem("finyk_privat_id", cleanId);
-        sessionStorage.setItem("finyk_privat_token", cleanToken);
-        safeRemoveLS("finyk_privat_id");
-        safeRemoveLS("finyk_privat_token");
-      }
+      // Сервер сам перевіряє креденшели проти ПриватБанку перед збереженням,
+      // тож окремий пробний запит із фронта більше не потрібен.
+      await privatApi.connect({ merchantId: cleanId, token: cleanToken });
       setPrivatConnected(true);
+      setConnectedMerchantId(cleanId);
+      setPrivatTokenInput("");
       window.location.reload();
     } catch (error) {
+      if (isApiError(error) && error.kind === "http") {
+        setPrivatError(error.serverMessage || `Помилка ${error.status}`);
+        return;
+      }
       setPrivatError(
         error instanceof Error && error.message
           ? error.message
@@ -113,14 +106,15 @@ export function FinykPrivatBankSection({
     }
   };
 
-  const disconnectPrivat = () => {
-    safeRemoveLS("finyk_privat_id");
-    safeRemoveLS("finyk_privat_token");
-    sessionStorage.removeItem("finyk_privat_id");
-    sessionStorage.removeItem("finyk_privat_token");
-    safeRemoveLS("finyk_privat_tx_cache");
-    safeRemoveLS("finyk_privat_balance_cache");
+  const disconnectPrivat = async () => {
+    try {
+      await privatApi.disconnect();
+    } catch {
+      // Навіть якщо запит не пройшов, лишати UI у стані «підключено» гірше:
+      // користувач щойно попросив відключити банк.
+    }
     setPrivatConnected(false);
+    setConnectedMerchantId("");
     setPrivatIdInput("");
     setPrivatTokenInput("");
     setConfirmDisconnectPrivat(false);
@@ -152,7 +146,7 @@ export function FinykPrivatBankSection({
             <div>
               <div className="text-style-label text-text">{COPY.connected}</div>
               <div className="text-style-code text-subtle mt-0.5 truncate">
-                ID: {(privatIdInput || "").slice(0, 6)}••••
+                ID: {connectedMerchantId.slice(0, 6)}••••
               </div>
             </div>
           </div>
@@ -218,15 +212,9 @@ export function FinykPrivatBankSection({
               </button>
             </div>
           </div>
-          <label className="flex items-center gap-2.5 cursor-pointer select-none touch-target">
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded accent-teal-600 cursor-pointer"
-              checked={rememberPrivat}
-              onChange={(event) => setRememberPrivat(event.target.checked)}
-            />
-            <span className="text-style-label text-muted">{COPY.remember}</span>
-          </label>
+          <p className="text-style-caption text-subtle leading-snug">
+            {COPY.storageNote}
+          </p>
           {privatError && (
             <p className="text-style-body text-danger bg-danger/10 rounded-xl px-3 py-2">
               {privatError}
