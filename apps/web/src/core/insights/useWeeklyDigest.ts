@@ -291,6 +291,17 @@ export interface NutritionAggregate {
   avgCarbs: number;
   targetKcal: number;
   daysLogged: number;
+  /**
+   * Скільки днів у періоді всього (для тижня — 7).
+   *
+   * AI-CONTEXT: знаменник coverage. Середні свідомо рахуються лише по
+   * залогованих днях (канон nutrition §5.2 — «неповний день це неповні
+   * дані, а не дефіцит»), але без цього числа поруч «середнє 1950, 95%
+   * цілі» за ДВА залоговані дні читається як чудовий тиждень. Аудит
+   * nutrition § E-4 називає це success theater: інструмент ховає власний
+   * провал від єдиної людини, яка його оцінює.
+   */
+  daysInPeriod: number;
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
@@ -324,6 +335,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     avgCarbs: period.avgCarbs,
     targetKcal,
     daysLogged: period.daysLogged,
+    daysInPeriod: period.daysInPeriod,
   };
 }
 
