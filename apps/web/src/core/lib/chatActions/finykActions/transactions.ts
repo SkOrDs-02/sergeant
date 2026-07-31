@@ -3,6 +3,13 @@
    directly here. Same pattern as queryFinykActions.ts. */
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import {
+  finykCategoryExists,
+  finykTransactionExists,
+  normalizeFinykId,
+  unknownCategoryMessage,
+  unknownTransactionMessage,
+} from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
   triggerHiddenTransactionSqliteMirror,
@@ -86,16 +93,17 @@ export function createTransaction(
 export function hideTransaction(
   action: HideTransactionAction,
 ): ChatActionResult {
-  const { tx_id } = action.input;
+  const txId = normalizeFinykId(action.input.tx_id);
+  if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
   const hidden = ls<string[]>("finyk_hidden_txs", []);
-  if (!hidden.includes(tx_id)) {
-    hidden.push(tx_id);
+  if (!hidden.includes(txId)) {
+    hidden.push(txId);
     finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
-  triggerHiddenTransactionSqliteMirror(tx_id);
-  return `Транзакцію ${tx_id} приховано зі статистики`;
+  triggerHiddenTransactionSqliteMirror(txId);
+  return `Транзакцію ${txId} приховано зі статистики`;
 }
 
 export function deleteTransaction(
@@ -121,8 +129,9 @@ export function splitTransaction(
   action: SplitTransactionAction,
 ): ChatActionResult {
   const { tx_id, parts: splitParts } = action.input;
-  const id = String(tx_id || "").trim();
+  const id = normalizeFinykId(tx_id);
   if (!id) return "Потрібен tx_id.";
+  if (!finykTransactionExists(id)) return unknownTransactionMessage(id);
   if (!Array.isArray(splitParts) || splitParts.length < 2)
     return "Потрібно мінімум 2 частини для розділення.";
   const splits = ls<
@@ -130,9 +139,11 @@ export function splitTransaction(
   >("finyk_tx_splits", {});
   const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
   const newSplits = splitParts.map((p) => ({
-    categoryId: String(p.category_id || "").trim(),
+    categoryId: normalizeFinykId(p.category_id),
     amount: Math.abs(Number(p.amount) || 0),
   }));
+  const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
+  if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   splits[id] = newSplits;
   finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
