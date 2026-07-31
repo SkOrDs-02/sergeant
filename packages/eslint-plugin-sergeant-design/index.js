@@ -1061,8 +1061,22 @@ const noStrictBypass = {
 const FINYK_TOKEN_KEY_VALUES = new Set([
   "finyk_token",
   "finyk_token_remembered",
+  // PrivatBank merchant credentials. Added after the beta-readiness audit
+  // (`docs/90-work/planning/specs/beta-security-readiness.md`, F1) found the
+  // merchant token sitting in cleartext `localStorage`: the Monobank fix had
+  // been locked down by this very rule, but the rule was written narrowly
+  // around Monobank's key names, so PrivatBank walked straight past it.
+  // The merchant id is guarded alongside the token because the pair is the
+  // credential — and because writing the id back is exactly the signal that
+  // the old client-side flow has returned.
+  "finyk_privat_token",
+  "finyk_privat_id",
 ]);
-const FINYK_TOKEN_KEY_NAMES = new Set(["FINYK_TOKEN"]);
+const FINYK_TOKEN_KEY_NAMES = new Set([
+  "FINYK_TOKEN",
+  "FINYK_PRIVAT_TOKEN",
+  "FINYK_PRIVAT_ID",
+]);
 
 const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "setItem",
@@ -1075,10 +1089,14 @@ const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "createModuleStorage",
   "lsSet",
   "writeLS",
+  // `finykStorage.writeRaw` — the wrapper the PrivatBank flow used to persist
+  // its merchant token. Non-credential keys pass through untouched; the rule
+  // only fires when the key argument itself is a guarded one.
+  "writeRaw",
 ]);
 
 const FINYK_TOKEN_MESSAGE =
-  "Monobank PAT (`finyk_token`) must not be persisted client-side. The token lives in `mono_connection.token_ciphertext` server-side; legacy LS/sessionStorage values are migrated by `useMonoTokenMigration` and then removed. Only reads (for migration) and removals are allowed.";
+  "Bank credentials (`finyk_token`, `finyk_privat_token`, `finyk_privat_id`) must not be persisted client-side. They live encrypted server-side (`mono_connection` / `privat_connection` `token_ciphertext`); legacy LS/sessionStorage values are migrated once on cold-boot and then removed. Only reads (for migration) and removals are allowed.";
 
 function isFinykTokenKeyArgument(arg) {
   if (!arg) return false;
