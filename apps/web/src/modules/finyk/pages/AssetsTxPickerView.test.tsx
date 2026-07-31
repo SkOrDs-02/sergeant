@@ -124,6 +124,37 @@ describe("AssetsTxPickerView", () => {
 
       expect(screen.getByText("Стара транзакція")).toBeInTheDocument();
     });
+
+    it("sorts available transactions newest first", () => {
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          transactions={[
+            mkTx({
+              id: "older",
+              description: "Старіша операція",
+              time: Math.floor(
+                new Date("2026-06-10T12:00:00Z").getTime() / 1000,
+              ),
+            }),
+            mkTx({
+              id: "newer",
+              description: "Новіша операція",
+              time: Math.floor(
+                new Date("2026-06-14T12:00:00Z").getTime() / 1000,
+              ),
+            }),
+          ]}
+          txPicker={{ type: "monoDebt", id: "acc-1" }}
+        />,
+      );
+
+      const newer = screen.getByText("Новіша операція");
+      const older = screen.getByText("Старіша операція");
+      expect(newer.compareDocumentPosition(older)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
   });
 
   describe("sub mode", () => {

@@ -80,7 +80,10 @@ export function useBudgetOverrunInsight({
     if (!worst) return null;
 
     const { budget, categoryId, ratio, spent, limit } = worst;
-    const pct = Math.round((ratio - 1) * 100);
+    // Same base as the Overview budget plashka (`BudgetAlertsList`): percent
+    // of the limit used, not percent above it. The two surfaces render side by
+    // side, so a shared base is what keeps them from reading as a data bug.
+    const pct = Math.round(ratio * 100);
     const overage = Math.round(spent - limit);
     const catMeta = resolveExpenseCategoryMeta(categoryId, customCategories);
     const catLabel = catMeta?.label ?? categoryId;
@@ -88,7 +91,7 @@ export function useBudgetOverrunInsight({
     return {
       id: `finyk-budget-overrun-${budget.categoryId}`,
       module: "finyk",
-      title: `${catLabel} перевищена на ${pct}%`,
+      title: `${catLabel}: використано ${pct}% ліміту`,
       subtitle: `+${overage.toLocaleString("uk-UA")} грн. Залишилось ${daysLeft} дн. Подивитись?`,
       action: {
         type: "navigate",

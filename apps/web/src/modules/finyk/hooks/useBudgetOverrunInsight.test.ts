@@ -96,7 +96,8 @@ describe("useBudgetOverrunInsight", () => {
     expect(result.current).not.toBeNull();
     expect(result.current!.id).toBe("finyk-budget-overrun-food");
     expect(result.current!.module).toBe("finyk");
-    expect(result.current!.title).toContain("20%");
+    // Percent-of-limit, the same base the Overview plashka renders.
+    expect(result.current!.title).toContain("використано 120% ліміту");
     expect(result.current!.action).toMatchObject({
       type: "navigate",
       path: expect.stringContaining("food"),

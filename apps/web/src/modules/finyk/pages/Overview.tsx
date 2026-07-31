@@ -185,8 +185,6 @@ export function Overview({
                   hasExpensePlan={d.hasExpensePlan}
                   spendPlanRatio={d.spendPlanRatio}
                   planExpense={d.planExpense}
-                  forecastTrendPct={d.forecastTrendPct}
-                  forecastBarClass={d.forecastBarClass}
                   recurringOutThisMonth={d.recurringOutThisMonth}
                   recurringInThisMonth={d.recurringInThisMonth}
                   unknownOutCount={d.unknownOutCount}

@@ -105,8 +105,17 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
+        // A repayment is either money arriving on the card itself, or an
+        // outgoing payment from some other account. Spending *on this card* is
+        // the one thing that is never a repayment — it grows the debt. Plain
+        // `Math.abs` counted it as repayment too, so linking a purchase
+        // inflated both "сплачено" and the total below.
         const paidFromLinked = transactions
-          .filter((t) => linkedIds.includes(t.id))
+          .filter(
+            (t) =>
+              linkedIds.includes(t.id) &&
+              !(t._accountId === a.id && t.amount < 0),
+          )
           .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
         const remaining = getMonoDebt(a);
         const volatileTotal = paidFromLinked + remaining;
