@@ -15,6 +15,7 @@ import { createFinykRouter } from "./finyk.js";
 import { createFoodSearchRouter } from "./food-search.js";
 import { createHealthRouter } from "./health.js";
 import { createMeRouter } from "./me.js";
+import { createFeedbackRouter } from "./feedback.js";
 import { createNutritionRouter } from "./nutrition.js";
 import { createPushRouter } from "./push.js";
 import { createStatusRouter } from "./status.js";
@@ -60,6 +61,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createPushRouter());
   app.use(createTranscribeRouter());
   app.use(createWaitlistRouter());
+  app.use(createFeedbackRouter());
   app.use(createTelegramWebhookRouter({ pool }));
   app.use(createAiMemoryRouter({ pool }));
 }

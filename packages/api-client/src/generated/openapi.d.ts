@@ -2308,6 +2308,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Надіслати in-app фідбек (анонімний) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["FeedbackSubmit"];
+                };
+            };
+            responses: {
+                /** @description Збережено — `id` рядка у `feedback_entries`. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FeedbackSubmitResponse"];
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Too many requests — rate-limit перевищено. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Надіслати in-app фідбек (v1 alias для /api/feedback) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["FeedbackSubmit"];
+                };
+            };
+            responses: {
+                /** @description Збережено — `id` рядка у `feedback_entries`. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FeedbackSubmitResponse"];
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Too many requests — rate-limit перевищено. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/billing/checkout": {
         parameters: {
             query?: never;
@@ -3446,6 +3562,14 @@ export interface components {
             source: "pricing_page" | "landing" | "paywall" | "settings" | "onboarding";
             locale?: string;
         };
+        /** @description POST /api/v1/feedback — in-app віджет фідбеку (головний багрепорт-канал бети). */
+        FeedbackSubmit: {
+            /** @enum {string} */
+            category: "idea" | "bug" | "other";
+            message: string;
+            page?: string;
+            viewport?: string;
+        };
         /** @description POST /api/billing/checkout — Stripe Checkout session request. */
         BillingCheckoutRequest: {
             /** @enum {string} */
@@ -3653,6 +3777,12 @@ export interface components {
             /** @constant */
             ok: true;
             created: boolean;
+        };
+        /** @description Відповідь на POST /api/v1/feedback — `id` рядка у feedback_entries (bigint скоерсено в number). */
+        FeedbackSubmitResponse: {
+            /** @constant */
+            ok: true;
+            id: number;
         };
         /** @description Відповідь Stripe Checkout MVP: session id, redirect URL, test/live mode. */
         BillingCheckoutResponse: {
