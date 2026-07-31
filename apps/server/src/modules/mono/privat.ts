@@ -3,12 +3,20 @@ import { bankProxyFetch } from "../../lib/bankProxy.js";
 import { parseQuery } from "../../http/validate.js";
 import { PrivatQuerySchema } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
+import { loadPrivatCredentials } from "./privatStore.js";
 
 /**
- * `/api/privat` — проксі до PrivatBank merchant API. CORS/rate-limit/tag
- * зроблені middleware-ами роутера; тут — лише upstream credentials,
- * path-валідація, CRLF-фільтр заголовків і делегація transport-шару в
- * `bankProxy.js` (timeout/retry/breaker/TTL-cache).
+ * `/api/privat` — проксі до PrivatBank merchant API. CORS/rate-limit/tag/
+ * сесія зроблені middleware-ами роутера; тут — path-валідація і делегація
+ * transport-шару в `bankProxy.js` (timeout/retry/breaker/TTL-cache).
+ *
+ * Креденшели БІЛЬШЕ НЕ приходять із заголовків запиту: вони лежать
+ * зашифровані в `privat_connection` і резолвляться за сесійним user id
+ * (спека `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+ * Раніше клієнт мусив тримати merchant-токен у себе, щоб надіслати його в
+ * `X-Privat-Token` — тобто банківський креденшел лежав у `localStorage` і
+ * був видимий у DevTools. Плюс проксі був неавтентифікований: будь-хто міг
+ * ганяти власні креденшели через нашу інфраструктуру.
  *
  * Upstream error bodies (HTML/JSON blobs) ніколи не ехояться клієнту —
  * лише стабільний `{ error, code?, requestId? }`. Truncated `upstreamBody`
@@ -33,11 +41,30 @@ export default async function handler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const merchantId = req.headers["x-privat-id"];
-  const merchantToken = req.headers["x-privat-token"];
+  const userId = (req as Request & { user?: { id?: string } }).user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Потрібна автентифікація" });
+    return;
+  }
 
-  if (!merchantId || !merchantToken) {
-    res.status(401).json({ error: "Credentials відсутні" });
+  let creds: Awaited<ReturnType<typeof loadPrivatCredentials>>;
+  try {
+    creds = await loadPrivatCredentials(userId);
+  } catch (err) {
+    // Рядок є, але не розшифровується (знятий key version / пошкоджений
+    // ciphertext). Fail closed: краще 500, ніж піти в банк з чужим токеном.
+    logger.error({
+      msg: "privat_credentials_decrypt_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+    res.status(500).json({ error: "Не вдалося прочитати credentials" });
+    return;
+  }
+  if (!creds) {
+    res.status(409).json({
+      error: "ПриватБанк не підключено",
+      code: "PRIVAT_NOT_CONNECTED",
+    });
     return;
   }
 
@@ -58,10 +85,13 @@ export default async function handler(
     if (/[\r\n]/.test(s)) return null;
     return s;
   };
-  const safeId = safeHeader(merchantId);
-  const safeToken = safeHeader(merchantToken);
+  // Креденшели тепер із БД, але CRLF-фільтр лишається: це все ще межа
+  // довіри в бік upstream-HTTP, а значення колись прийшло від користувача
+  // через `/api/privat/connect`.
+  const safeId = safeHeader(creds.merchantId);
+  const safeToken = safeHeader(creds.token);
   if (!safeId || !safeToken) {
-    res.status(400).json({ error: "Недозволений заголовок" });
+    res.status(400).json({ error: "Недозволені credentials" });
     return;
   }
 

@@ -1,7 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
+// Креденшели ПриватБанку резолвляться із сесії, а не із заголовків запиту
+// (спека `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+vi.mock("./privatStore.js", () => ({
+  loadPrivatCredentials: vi.fn(),
+}));
+
 import privatHandler from "./privat.js";
+import { loadPrivatCredentials as _loadPrivatCredentials } from "./privatStore.js";
 import { bankProxyFetch, __bankProxyTestHooks } from "../../lib/bankProxy.js";
+
+const loadPrivatCredentials = _loadPrivatCredentials as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 interface TestRes {
   statusCode: number;
@@ -86,6 +97,10 @@ describe("privat proxy path validation", () => {
   beforeEach(() => {
     __bankProxyTestHooks().reset();
     global.fetch = vi.fn();
+    loadPrivatCredentials.mockResolvedValue({
+      merchantId: "id",
+      token: "tok",
+    });
   });
 
   afterEach(() => {
@@ -96,11 +111,8 @@ describe("privat proxy path validation", () => {
   it("rejects prefix-bypass like /statements/balance/final-evil", async () => {
     const req = {
       method: "GET",
-      headers: {
-        "x-privat-id": "id",
-        "x-privat-token": "tok",
-        origin: "http://localhost:5173",
-      },
+      headers: { origin: "http://localhost:5173" },
+      user: { id: "user-1" },
       query: { path: "/statements/balance/final-evil" },
     };
     const res = mockRes();
@@ -109,14 +121,17 @@ describe("privat proxy path validation", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it("rejects CRLF in merchant headers", async () => {
+  it("rejects CRLF in stored merchant credentials", async () => {
+    // Значення потрапило в БД через `/api/privat/connect`, тож CRLF-фільтр
+    // перед upstream лишається межею довіри й після переїзду на сервер.
+    loadPrivatCredentials.mockResolvedValue({
+      merchantId: "id\r\nX-Evil: yes",
+      token: "tok",
+    });
     const req = {
       method: "GET",
-      headers: {
-        "x-privat-id": "id\r\nX-Evil: yes",
-        "x-privat-token": "tok",
-        origin: "http://localhost:5173",
-      },
+      headers: { origin: "http://localhost:5173" },
+      user: { id: "user-1" },
       query: { path: "/statements/balance/final" },
     };
     const res = mockRes();
@@ -131,11 +146,8 @@ describe("privat proxy path validation", () => {
       .mockResolvedValue(mockFetchResponse({ body: { ok: true } }));
     const req = {
       method: "GET",
-      headers: {
-        "x-privat-id": "id",
-        "x-privat-token": "tok",
-        origin: "http://localhost:5173",
-      },
+      headers: { origin: "http://localhost:5173" },
+      user: { id: "user-1" },
       query: { path: "/statements/transactions/UA11" },
     };
     const res = mockRes();
