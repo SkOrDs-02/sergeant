@@ -21,6 +21,7 @@
   "apps/web/src/core/DesignShowcase/sections/Spacing.tsx",
   "apps/web/src/core/DesignShowcase/sections/Theming.tsx",
   "apps/web/src/core/DesignShowcase/sections/Typography.tsx",
+  "apps/web/src/core/DesignShowcase/sections/proposals/ChipsFilterRowDemo.tsx",
   "apps/web/src/core/ErrorBoundary.tsx",
   "apps/web/src/core/LandingPage.tsx",
   "apps/web/src/core/PricingPage.tsx",
