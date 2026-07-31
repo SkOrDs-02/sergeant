@@ -52,11 +52,15 @@ vi.mock("@finyk/lib/lsStats", () => ({
   }),
 }));
 
+// `txCount: 1` — не косметика. Цей файл перевіряє МЕРЕЖЕВИЙ шар (retry,
+// 429, кеш), і йому потрібен снапшот, що проходить поріг публікації
+// (канон hub-coach §6.2, аудит § G2): з нульовим сигналом хук навмисно
+// не робить жодного запиту, і всі ці тестиміряли б тишу.
 vi.mock("@sergeant/finyk-domain", () => ({
   calcFinykPeriodAggregate: () => ({
     totalSpent: 0,
     totalIncome: 0,
-    txCount: 0,
+    txCount: 1,
     byCategory: {},
   }),
 }));
