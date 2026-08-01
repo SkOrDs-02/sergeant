@@ -92,7 +92,12 @@ function shareImport<T>(fn: () => Promise<T>): () => Promise<T> {
   let inFlight: Promise<T> | undefined;
   return () => {
     if (!inFlight) {
-      inFlight = fn();
+      // `Promise.resolve().then(fn)` rather than a bare `fn()`: a loader that
+      // throws *synchronously* would otherwise escape before any promise
+      // exists, and `preload()` — documented as never throwing — would blow up
+      // inside a pointer-down handler. Routing both failure modes through the
+      // same rejection keeps the cache-reset below authoritative.
+      inFlight = Promise.resolve().then(fn);
       inFlight.catch(() => {
         inFlight = undefined;
       });

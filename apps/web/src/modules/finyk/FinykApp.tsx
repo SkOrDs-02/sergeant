@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { lazyImport } from "../../core/lib/lazyImport";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -31,38 +30,14 @@ import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 
-// Lazy pages. Import the concrete page modules, not the folders: the
-// `pages/{transactions,budgets}/index.ts` barrels were removed as dead
-// code in #3504 (Knip can't see dynamic directory imports), which left
-// these two imports unresolved and broke the Vercel production build.
-const Transactions = lazyImport(
-  () => import("./pages/transactions/Transactions"),
-  "Transactions",
-);
-const Budgets = lazyImport(() => import("./pages/budgets/Budgets"), "Budgets");
-const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
-const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
-
-/**
- * Page-id → chunk warmer. `overview` is eagerly imported, so it has no entry.
- *
- * AI-CONTEXT: react-router v7 navigates inside `React.startTransition`, and a
- * transition keeps the current screen mounted rather than revealing a new
- * Suspense fallback. A tab whose chunk is still cold therefore looks like a
- * dead button until the download finishes (founder report 2026-07-31). Warming
- * on pointer-down + at idle after mount removes the wait in practice; the
- * optimistic highlight in `ModuleBottomNav` covers whatever is left.
- */
-const PAGE_PRELOADERS: Record<string, () => void> = {
-  transactions: () => Transactions.preload(),
-  budgets: () => Budgets.preload(),
-  analytics: () => Analytics.preload(),
-  assets: () => Assets.preload(),
-};
-
-function preloadFinykPage(id: string): void {
-  PAGE_PRELOADERS[id]?.();
-}
+import {
+  Analytics,
+  Assets,
+  Budgets,
+  Transactions,
+  preloadFinykPage,
+  useWarmFinykPages,
+} from "./pages/lazyPages";
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
@@ -197,22 +172,8 @@ export default function App({
     onPwaActionConsumed,
   ]);
 
-  // Warm the sibling page chunks once the module is idle so the first tap on
-  // any tab commits instantly (see `PAGE_PRELOADERS` for the why). Runs off
-  // the critical path — `requestIdleCallback` where available, a short timeout
-  // on Safari, which lacks it.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const warm = () => {
-      for (const id of NAV_IDS) preloadFinykPage(id);
-    };
-    if (typeof window.requestIdleCallback === "function") {
-      const handle = window.requestIdleCallback(warm, { timeout: 3000 });
-      return () => window.cancelIdleCallback?.(handle);
-    }
-    const timer = window.setTimeout(warm, 1500);
-    return () => window.clearTimeout(timer);
-  }, []);
+  // Warm sibling page chunks at idle (see `pages/lazyPages`).
+  useWarmFinykPages(NAV_IDS);
 
   const { mergedMono } = useUnifiedFinanceData({
     mono,

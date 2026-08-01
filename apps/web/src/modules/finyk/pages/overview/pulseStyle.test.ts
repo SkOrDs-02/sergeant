@@ -121,6 +121,19 @@ describe("computePulseStyle — no monthly plan (dayBudget = null)", () => {
     expect(s.color).toBe("text-muted");
   });
 
+  it("paints no verdict-coloured wash or accent", () => {
+    // Every `bg-pulse-*` gradient encodes a judgement (ok / warn / over).
+    // Without a plan there is nothing to judge, so the neutral branch must
+    // carry no wash at all and a plain line-coloured accent.
+    const s = computePulseStyle({
+      hasExpensePlan: false,
+      spendPlanRatio: 0,
+      dayBudget: null,
+    });
+    expect(s.bg).toBe("");
+    expect(s.accentLeft).toBe("border-l-line");
+  });
+
   it("never claims a healthy 'В нормі' status without a plan", () => {
     const s = computePulseStyle({
       hasExpensePlan: false,

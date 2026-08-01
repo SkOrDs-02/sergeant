@@ -164,12 +164,34 @@ export function Budgets({
   // `../../lib/monthWindow.ts`.
   const kyivMonthPrefix = useMemo(() => currentKyivMonthPrefix(now), [now]);
 
-  const txForStats = useMemo(() => {
-    const merged =
-      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx;
-    return filterToKyivMonth(merged, kyivMonthPrefix);
-  }, [realTx, manualExpenseTxs, kyivMonthPrefix]);
+  const allTx = useMemo(
+    () =>
+      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
+    [realTx, manualExpenseTxs],
+  );
 
+  const txForStats = useMemo(
+    () => filterToKyivMonth(allTx, kyivMonthPrefix),
+    [allTx, kyivMonthPrefix],
+  );
+
+  /**
+   * Exclusion-filtered but NOT month-clamped.
+   *
+   * AI-DANGER: limit budgets must be scored against this list, not the
+   * month-clamped one. `LimitBudget.period` is `month | week | one_time`, and
+   * `filterTransactionsForLimitPeriod` applies its own window — a `week`
+   * budget looked at on a Wednesday 2-го числа starts on Monday of the
+   * previous month, and `one_time` starts at `budget.createdAt`, arbitrarily
+   * far back. Pre-clamping to the current month silently drops those rows and
+   * understates spend against the limit.
+   */
+  const allStatTx = useMemo(
+    () => filterStatTransactions(allTx, excludedTxIds),
+    [allTx, excludedTxIds],
+  );
+
+  /** Month-clamped counterpart — for the monthly plan-vs-fact card only. */
   const statTx = useMemo(
     () => filterStatTransactions(txForStats, excludedTxIds),
     [txForStats, excludedTxIds],
@@ -185,18 +207,21 @@ export function Budgets({
     () => buildExpenseCategoryList(customCategories, { excludeIncome: false }),
     [customCategories],
   );
+  // Both branches read the unclamped list on purpose: limit budgets carry
+  // their own period window (see `allStatTx`), and goal budgets accumulate
+  // across the whole history — neither is a "цього місяця" number.
   const calcSpent = useCallback(
     (budget: Budget) =>
       calcCategorySpent(
         budget.type === "limit"
-          ? filterTransactionsForLimitPeriod(statTx, budget, now)
-          : statTx,
+          ? filterTransactionsForLimitPeriod(allStatTx, budget, now)
+          : allStatTx,
         budget.type === "limit" ? budget.categoryId : "",
         txCategories,
         txSplits,
         customCategories,
       ),
-    [customCategories, now, statTx, txCategories, txSplits],
+    [customCategories, now, allStatTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
   const goalBudgets = useMemo(() => getGoalBudgets(budgets), [budgets]);

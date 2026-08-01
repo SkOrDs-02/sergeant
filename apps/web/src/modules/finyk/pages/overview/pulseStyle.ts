@@ -53,9 +53,12 @@ export function computePulseStyle({
   }
 
   if (dayBudget == null) {
+    // Жодного кольорового wash-у: усі три `bg-pulse-*` — це вердикт
+    // (зелений / бурштиновий / червоний), а без плану вердикту не існує.
+    // `bg: ""` означає «без підкладки» і безпечно згортається в `cn()`.
     return {
       accentLeft: "border-l-line",
-      bg: "bg-pulse-w",
+      bg: "",
       color: "text-muted",
       statusText: "План не заданий",
     };

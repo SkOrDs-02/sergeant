@@ -166,7 +166,11 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const shownActiveId = pendingId ?? activeId;
 
   const handleSelect = (id: string) => {
-    if (id !== activeId) setPendingId(id);
+    // Tapping the tab we are already on cancels any in-flight optimistic
+    // highlight. Without the `else` branch a user who taps "Операції" and then
+    // changes their mind back to "Огляд" would keep watching "Операції" stay
+    // lit for the full 4 s ceiling while the route never moved.
+    setPendingId(id === activeId ? null : id);
     onChange(id);
   };
 
