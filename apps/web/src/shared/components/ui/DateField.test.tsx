@@ -55,3 +55,63 @@ describe("DateField", () => {
     expect(screen.queryByText("ДД.ММ.РРРР")).not.toBeInTheDocument();
   });
 });
+
+describe("DateField — межі календаря (beta-input-boundaries)", () => {
+  it("клемпить нативний пікер жорстким вікном", () => {
+    const { container } = render(<DateField value="2026-08-01" readOnly />);
+    const input = container.querySelector("input")!;
+    expect(input.getAttribute("min")).toBe("1970-01-01");
+    expect(input.getAttribute("max")).toBe("2100-01-01");
+  });
+
+  it("попереджає про дату поза мʼяким вікном, не позначаючи полем з помилкою", () => {
+    const { getByText, container } = render(
+      <DateField value="2019-01-01" readOnly />,
+    );
+    expect(
+      getByText("Незвична дата — перевір, чи не помилка в році"),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector("input")!.getAttribute("aria-invalid"),
+    ).toBeNull();
+  });
+
+  it("позначає помилкою дату поза жорстким вікном", () => {
+    const { getByRole, container } = render(
+      <DateField value="3025-01-01" readOnly />,
+    );
+    expect(getByRole("alert")).toHaveTextContent(
+      "Дата поза допустимим діапазоном",
+    );
+    expect(container.querySelector("input")!.getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+  });
+
+  it("власний helperText виклику перекриває похідний", () => {
+    const { getByText, queryByText } = render(
+      <DateField
+        value="2019-01-01"
+        helperText="Дата початку підписки"
+        readOnly
+      />,
+    );
+    expect(getByText("Дата початку підписки")).toBeInTheDocument();
+    expect(
+      queryByText("Незвична дата — перевір, чи не помилка в році"),
+    ).toBeNull();
+  });
+
+  it("bounded={false} повністю вимикає перевірку", () => {
+    const { queryByText, container } = render(
+      <DateField value="3025-01-01" bounded={false} readOnly />,
+    );
+    expect(queryByText("Дата поза допустимим діапазоном")).toBeNull();
+    expect(container.querySelector("input")!.getAttribute("min")).toBeNull();
+  });
+
+  it("порожнє поле не попереджає", () => {
+    const { queryByRole } = render(<DateField value="" readOnly />);
+    expect(queryByRole("alert")).toBeNull();
+  });
+});
