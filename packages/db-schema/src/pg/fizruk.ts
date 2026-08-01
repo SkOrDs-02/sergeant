@@ -7,7 +7,6 @@ import {
   real,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -22,7 +21,9 @@ import { sql } from "drizzle-orm";
 export const fizrukWorkouts = pgTable(
   "fizruk_workouts",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
@@ -60,8 +61,10 @@ export const fizrukWorkouts = pgTable(
 export const fizrukWorkoutItems = pgTable(
   "fizruk_workout_items",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    workoutId: uuid("workout_id").notNull(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    workoutId: text("workout_id").notNull(),
     userId: text("user_id").notNull(),
     exerciseId: text("exercise_id").notNull(),
     nameUk: text("name_uk").notNull(),
@@ -98,8 +101,10 @@ export const fizrukWorkoutItems = pgTable(
 export const fizrukWorkoutSets = pgTable(
   "fizruk_workout_sets",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    workoutItemId: uuid("workout_item_id").notNull(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    workoutItemId: text("workout_item_id").notNull(),
     userId: text("user_id").notNull(),
     weightKg: real("weight_kg").notNull().default(0),
     reps: integer().notNull().default(0),
@@ -130,7 +135,9 @@ export const fizrukWorkoutSets = pgTable(
 export const fizrukCustomExercises = pgTable(
   "fizruk_custom_exercises",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -157,7 +164,9 @@ export const fizrukCustomExercises = pgTable(
 export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
     weightKg: real("weight_kg"),
@@ -198,7 +207,9 @@ export const fizrukMeasurements = pgTable(
 export const fizrukDailyLog = pgTable(
   "fizruk_daily_log",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     entryAt: timestamp("entry_at", { withTimezone: true }).notNull(),
     weightKg: real("weight_kg"),
@@ -316,7 +327,9 @@ export const fizrukWellbeing = pgTable(
 export const fizrukWorkoutTemplates = pgTable(
   "fizruk_workout_templates",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     exerciseIds: jsonb("exercise_ids").notNull().default([]),
