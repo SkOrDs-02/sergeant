@@ -8,6 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseMealSpeech } from "@sergeant/shared";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { currentTime, type MealFormState } from "./mealFormUtils";
 
 interface NameTimeRowProps {
@@ -73,6 +74,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
             value={form.name}
             onChange={(e) => field("name")(e.target.value)}
             placeholder="Вівсянка з бананом"
+            maxLength={NAME_MAX_LEN}
             aria-label="Назва страви"
           />
         </div>

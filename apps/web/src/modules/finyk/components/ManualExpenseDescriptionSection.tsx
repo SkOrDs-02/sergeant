@@ -10,6 +10,7 @@ import type { UseFormRegister, UseFormSetValue } from "react-hook-form";
 import type { FrequentMerchant } from "@sergeant/finyk-domain/domain/personalization";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { formatMoney, pluralTimes } from "@sergeant/shared";
 import { CATEGORY_SLUGS, upgradeCategory } from "./manualExpenseCategories";
 import type { ExpenseFormValues } from "./manualExpenseForm";
@@ -53,6 +54,7 @@ export function ManualExpenseDescriptionSection({
             : "Кава, продукти, таксі…"
         }
         disabled={isSubmitting}
+        maxLength={NAME_MAX_LEN}
         aria-controls={showMerchantHints ? `${formId}-merchants` : undefined}
         aria-autocomplete="list"
         {...register("description", {

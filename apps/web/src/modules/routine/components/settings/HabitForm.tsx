@@ -15,6 +15,13 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import {
+  classifyDateBound,
+  DATE_WARN_MESSAGE,
+  HARD_MAX_DAY_KEY,
+  HARD_MIN_DAY_KEY,
+} from "@shared/lib/time/dateBounds";
 import {
   ROUTINE_THEME as C,
   RECURRENCE_OPTIONS,
@@ -26,6 +33,8 @@ import type { HabitDraft, RoutineState } from "../../lib/types";
 export interface HabitFormErrors {
   name?: string | undefined;
   weekdays?: string | undefined;
+  startDate?: string | undefined;
+  endDate?: string | undefined;
 }
 
 export interface HabitFormProps {
@@ -143,6 +152,14 @@ export function HabitForm({
   // "Більше опцій" disclosure. When editing an existing habit we open
   // the advanced block so the user doesn't lose track of values they
   // already set.
+  // М'яке вікно дат — попередження, не блокування (жорстке вікно ловить
+  // `HabitQuickCreateDialog.handleSave` як помилку валідації).
+  const dateWarning = [habitDraft.startDate, habitDraft.endDate].some(
+    (d) => d && classifyDateBound(d) === "warn",
+  )
+    ? DATE_WARN_MESSAGE
+    : null;
+
   const [showAdvanced, setShowAdvanced] = useState(() => Boolean(editingId));
   const [prevEditingId, setPrevEditingId] = useState(editingId);
   if (editingId !== prevEditingId) {
@@ -245,6 +262,7 @@ export function HabitForm({
               errors?.name && "border-danger",
             )}
             placeholder="Напр. Пити воду, медитувати, ранкова пробіжка"
+            maxLength={NAME_MAX_LEN}
             aria-invalid={errors?.name ? true : undefined}
             aria-describedby={errors?.name ? nameErrId : undefined}
             value={habitDraft.name}
@@ -375,6 +393,10 @@ export function HabitForm({
                 id={startId}
                 type="date"
                 className="routine-touch-field mt-1 w-full"
+                min={HARD_MIN_DAY_KEY}
+                max={HARD_MAX_DAY_KEY}
+                error={Boolean(errors?.startDate)}
+                helperText={errors?.startDate}
                 value={habitDraft.startDate || ""}
                 onChange={(e) =>
                   setHabitDraft((d) => ({ ...d, startDate: e.target.value }))
@@ -387,6 +409,10 @@ export function HabitForm({
                 id={endId}
                 type="date"
                 className="routine-touch-field mt-1 w-full"
+                min={HARD_MIN_DAY_KEY}
+                max={HARD_MAX_DAY_KEY}
+                error={Boolean(errors?.endDate)}
+                helperText={errors?.endDate}
                 value={habitDraft.endDate || ""}
                 onChange={(e) =>
                   setHabitDraft((d) => ({ ...d, endDate: e.target.value }))
@@ -394,6 +420,12 @@ export function HabitForm({
               />
             </label>
           </div>
+          {/* М'яке вікно: зберігати дозволено, попереджаємо про рік. */}
+          {dateWarning ? (
+            <p className="text-xs text-warning-strong dark:text-warning">
+              {dateWarning}
+            </p>
+          ) : null}
 
           {(habitDraft.recurrence === "once" ||
             habitDraft.recurrence === "monthly") && (

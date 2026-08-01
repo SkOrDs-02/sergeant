@@ -19,6 +19,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
+import { clampText } from "@shared/lib/text/limits";
 import type {
   Meal,
   MealTemplate,
@@ -49,6 +50,15 @@ import { SaveAsFood } from "./meal-sheet/SaveAsFood";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
+
+/**
+ * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
+ * норми — межі проти друкарської помилки й свідомо абсурдного вводу
+ * (кома замість крапки, зайвий нуль), які інакше зламали б денні
+ * агрегації та графіки.
+ */
+export const MAX_KCAL_PER_MEAL = 10_000;
+export const MAX_MACRO_GRAMS = 2_000;
 
 interface AddMealSheetProps {
   open: boolean;
@@ -113,9 +123,15 @@ export function AddMealSheet({
     setForm,
   });
 
+  // Ідемпотентність: id генерується один раз на відкриття аркуша, а не на
+  // кожен клік «Зберегти». Подвійний тап тоді приходить у шар запису
+  // (`addLogEntry`) з тим самим id і відкидається як дубль.
+  const [draftId, setDraftId] = useState("");
+
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setPrevOpen(true);
+    setDraftId(newMealId());
     if (initialMeal?.id) {
       const mac = initialMeal.macros ?? {
         kcal: null,
@@ -179,11 +195,12 @@ export function AddMealSheet({
     const pickedFoodName = pickedFood
       ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
       : "";
-    const name =
+    const name = clampText(
       form.name.trim() ||
-      pickedFoodName ||
-      (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
-      (photoResult?.dishName || "").trim();
+        pickedFoodName ||
+        (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
+        (photoResult?.dishName || "").trim(),
+    );
     if (!name) {
       setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
@@ -198,6 +215,22 @@ export function AddMealSheet({
       )
     ) {
       setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
+      return;
+    }
+    if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
+      setForm((s) => ({
+        ...s,
+        err: `Забагато калорій — максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+      }));
+      return;
+    }
+    if (
+      [protein_g, fat_g, carbs_g].some((n) => n != null && n > MAX_MACRO_GRAMS)
+    ) {
+      setForm((s) => ({
+        ...s,
+        err: `Забагато БЖВ — максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+      }));
       return;
     }
     if (fromPantryItem && onConsumePantryItem) {
@@ -221,7 +254,7 @@ export function AddMealSheet({
           ? "productDb"
           : "manual";
     onSave({
-      id: initialMeal?.id || newMealId(),
+      id: initialMeal?.id || draftId || newMealId(),
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,

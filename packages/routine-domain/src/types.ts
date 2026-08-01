@@ -166,6 +166,12 @@ export interface PendingCategoryDeletion {
 
 export interface CreateHabitOptions extends HabitDraftPatch {
   name: string;
+  /**
+   * Client-generated id. When supplied, `applyCreateHabit` is idempotent:
+   * a repeat call with the same id (double-tapped save, replayed offline
+   * write) returns the state unchanged instead of creating a duplicate.
+   */
+  id?: string;
 }
 
 export interface CalendarRange {

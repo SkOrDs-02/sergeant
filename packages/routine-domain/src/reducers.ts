@@ -92,14 +92,18 @@ export function applyCreateHabit(
     timeOfDay = "",
     reminderTimes = [],
     weekdays = [0, 1, 2, 3, 4, 5, 6],
+    id,
   }: Partial<CreateHabitOptions> = {},
 ): RoutineState {
   const n = (name || "").trim();
   if (!n) return state;
+  // Idempotency by client-generated id — a double-tapped save button and a
+  // replayed offline write both land here with the same id.
+  if (id && state.habits.some((h) => h.id === id)) return state;
   const sd =
     (startDate && String(startDate).trim()) || dateKeyFromDate(new Date());
   const h = normalizeHabit({
-    id: routineUid("hab"),
+    id: id || routineUid("hab"),
     name: n,
     emoji: emoji || "✓",
     tagIds: Array.isArray(tagIds) ? tagIds : [],
