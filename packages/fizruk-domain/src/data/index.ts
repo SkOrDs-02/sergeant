@@ -19,6 +19,8 @@ import { mapDomainMuscleToAtlas } from "./bodyAtlas.js";
 
 export * from "./bodyAtlas.js";
 export * from "./bodyAtlasGeometry.js";
+export * from "./injurySites.js";
+export * from "./exerciseInjuryZones.js";
 
 /** JSON-каталог «як є» (з `labels` + `exercises`). */
 export interface ExerciseCatalog {

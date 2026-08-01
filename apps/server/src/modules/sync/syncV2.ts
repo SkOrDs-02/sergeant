@@ -52,6 +52,7 @@ import {
   applyFizrukWellbeing,
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
+import { applyFizrukInjuries } from "./fizruk/applyInjuries.js";
 import {
   applyNutritionMeals,
   applyNutritionPantries,
@@ -169,6 +170,11 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_programs: applyFizrukPrograms,
   fizruk_wellbeing: applyFizrukWellbeing,
   fizruk_workout_templates: applyFizrukWorkoutTemplates,
+  // Модель «не можна» (ADR-0083). `site` навмисно не валідується проти
+  // серверного enum — словник зон живе в домені й росте, а нерозпізнане
+  // значення клієнт відкидає в `activeInjurySites`, тобто воно деградує в
+  // «нічого не блокує», а не в помилку.
+  fizruk_injuries: applyFizrukInjuries,
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,
