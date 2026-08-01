@@ -5,6 +5,7 @@ import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import {
   ASSISTANT_PATH,
+  CAPABILITIES_PATH,
   CHAT_PATH,
   DESIGN_PATH,
   LEGAL_COOKIES_PATH,
@@ -34,6 +35,10 @@ const WelcomeScreen = lazyImport(
   "WelcomeScreen",
 );
 const AuthPage = lazyImport(() => import("../auth/AuthPage"), "AuthPage");
+const CapabilitiesPage = lazyImport(
+  () => import("../capabilities/CapabilitiesPage"),
+  "CapabilitiesPage",
+);
 const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
   "ResetPasswordPage",
@@ -286,6 +291,19 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <AssistantCataloguePage onClose={onAssistantClose} />
+        </div>
+      </Suspense>
+    ),
+  }),
+
+  // Каталог можливостей додатка. Замінив колишню «вступну екскурсію», що
+  // лише переграла вітальний екран у read-only.
+  defineStandaloneRoute({
+    paths: [CAPABILITIES_PATH],
+    render: ({ onAssistantClose }) => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <CapabilitiesPage onClose={onAssistantClose} />
         </div>
       </Suspense>
     ),

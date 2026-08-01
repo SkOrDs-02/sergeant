@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -10,7 +11,7 @@ import {
   webKVStore,
 } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
-import { OnboardingWizard } from "../onboarding/OnboardingWizard";
+import { CAPABILITIES_PATH } from "../app/appPaths";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 export interface GeneralSectionProps {
@@ -21,12 +22,14 @@ const HINT_SHOWN_THIS_SESSION_KEY = "sergeant:hints:shown-this-session";
 
 export function GeneralSection({ user: _user }: GeneralSectionProps) {
   const toast = useToast();
-  const [tourOpen, setTourOpen] = useState(false);
+  const navigate = useNavigate();
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
-  // PR-18 / §C12 — два чітко розділені affordance-и в Settings → Онбординг:
-  //   1. Екскурсія (read-only replay) — нічого не зачіпає, просто перепоказ
-  //      welcome-екрана.
+  // Два чітко розділені affordance-и в Settings → Онбординг:
+  //   1. Огляд можливостей — читальний каталог `/capabilities`, нічого не
+  //      зачіпає. До 2026-08-01 тут був `OnboardingWizard mode="tour"`, який
+  //      просто переграв вітальний екран: користувач очікував розповіді про
+  //      функціонал, а отримував повтор привітання.
   //   2. Скидання FTUX-підказок — повертає user-а до vibe-picks/first-action
   //      flags, модульні дані залишаються. Завжди через confirm-modal.
   const handleResetConfirm = () => {
@@ -54,7 +57,7 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
           variant="ghost"
           size="sm"
           className="h-10 w-full justify-center gap-2"
-          onClick={() => setTourOpen(true)}
+          onClick={() => navigate(CAPABILITIES_PATH)}
         >
           <Icon name="compass" size={16} />
           {messages.onboarding.tourLaunchLabel}
@@ -70,9 +73,6 @@ export function GeneralSection({ user: _user }: GeneralSectionProps) {
           {messages.onboarding.tourResetLabel}
         </Button>
       </SettingsSubGroup>
-      {tourOpen && (
-        <OnboardingWizard mode="tour" onDone={() => setTourOpen(false)} />
-      )}
       <ConfirmDialog
         open={resetConfirmOpen}
         title={messages.onboarding.tourResetConfirmTitle}
