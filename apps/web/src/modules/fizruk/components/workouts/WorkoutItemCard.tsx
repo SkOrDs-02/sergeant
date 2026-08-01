@@ -6,8 +6,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon } from "@shared/components/ui/Icon";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
 import {
-  clampNumericInput,
   MAX_DISTANCE_M,
   MAX_DURATION_SEC,
   MAX_REPS,

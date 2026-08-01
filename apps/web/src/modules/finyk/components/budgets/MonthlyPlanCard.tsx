@@ -9,6 +9,8 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { formatMoney } from "@sergeant/shared";
+import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
@@ -16,6 +18,16 @@ import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBann
 // editing, number once committed). Defined inline here so the card
 // stays free of a hook import; if a third file ever needs the type,
 // hoist it to a shared module.
+/**
+ * Поле лишається рядком, поки користувач друкує, тож порожнє значення не
+ * можна перетворювати на «0» — інакше поле не очистити. Клемпимо лише
+ * реальний ввід.
+ */
+function clampPlanAmount(raw: string): string {
+  if (raw === "") return "";
+  return String(clampNumericInput(raw, MAX_AMOUNT_HRYVNIA));
+}
+
 export type MonthlyPlan = {
   income: number | string;
   expense: number | string;
@@ -300,10 +312,12 @@ function MonthlyPlanCardComponent({
                   inputMode="decimal"
                   placeholder="Напр. 40000 ₴"
                   value={monthlyPlan?.income ?? ""}
+                  min={0}
+                  max={MAX_AMOUNT_HRYVNIA}
                   onChange={(e) =>
                     onChangeMonthlyPlan((p) => ({
                       ...p,
-                      income: e.target.value,
+                      income: clampPlanAmount(e.target.value),
                     }))
                   }
                 />
@@ -316,10 +330,12 @@ function MonthlyPlanCardComponent({
                   inputMode="decimal"
                   placeholder="Напр. 25000 ₴"
                   value={monthlyPlan?.expense ?? ""}
+                  min={0}
+                  max={MAX_AMOUNT_HRYVNIA}
                   onChange={(e) =>
                     onChangeMonthlyPlan((p) => ({
                       ...p,
-                      expense: e.target.value,
+                      expense: clampPlanAmount(e.target.value),
                     }))
                   }
                 />
@@ -332,10 +348,12 @@ function MonthlyPlanCardComponent({
                   inputMode="decimal"
                   placeholder="Напр. 10000 ₴"
                   value={monthlyPlan?.savings ?? ""}
+                  min={0}
+                  max={MAX_AMOUNT_HRYVNIA}
                   onChange={(e) =>
                     onChangeMonthlyPlan((p) => ({
                       ...p,
-                      savings: e.target.value,
+                      savings: clampPlanAmount(e.target.value),
                     }))
                   }
                 />

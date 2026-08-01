@@ -8,9 +8,9 @@
  */
 import { z } from "zod";
 import {
-  AMOUNT_ERROR_MESSAGE,
-  parseAmountToMinor,
-} from "@shared/lib/format/amount";
+  amountStringSchema,
+  amountStringToHryvnia,
+} from "@shared/lib/format/amountSchema";
 import {
   classifyDateBound,
   DATE_INVALID_MESSAGE,
@@ -68,15 +68,9 @@ export function buildAmountSuggestions(
 // жорстке вікно — м'яке вікно рендериться як попередження в аркуші.
 export const expenseFormSchema = z.object({
   description: z.string().max(NAME_MAX_LEN),
-  amount: z.string().superRefine((v, ctx) => {
-    const parsed = parseAmountToMinor(v);
-    if (!parsed.ok) {
-      ctx.addIssue({
-        code: "custom",
-        message: AMOUNT_ERROR_MESSAGE[parsed.error],
-      });
-    }
-  }),
+  // Без власного повідомлення — канонічні тексти парсера вже точні
+  // («Вкажи суму» для порожнього, «Сума має бути більше 0» для нуля).
+  amount: amountStringSchema(),
   category: z.string().min(1, "Оберіть категорію"),
   date: z
     .string()
@@ -90,10 +84,7 @@ export const expenseFormSchema = z.object({
  * Гривні для write-path. Схема вже гарантує валідність, тож нуль тут —
  * недосяжна гілка, а не тиха втрата даних.
  */
-export function expenseAmountHryvnia(amount: string): number {
-  const parsed = parseAmountToMinor(amount);
-  return parsed.ok ? parsed.minor / 100 : 0;
-}
+export const expenseAmountHryvnia = amountStringToHryvnia;
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
