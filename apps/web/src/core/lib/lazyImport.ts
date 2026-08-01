@@ -65,23 +65,80 @@ import { reloadOnceForChunkError } from "./chunkReload";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyComponent = ComponentType<any>;
 
+/**
+ * A lazy component that can be warmed ahead of render.
+ *
+ * AI-CONTEXT: react-router v7 wraps navigation state updates in
+ * `React.startTransition`. During a transition React deliberately keeps the
+ * *previous* screen on-screen instead of revealing a Suspense fallback, so
+ * tapping a tab whose chunk is still cold produces **no visible change at all**
+ * until the chunk lands — the reported "кнопки в навбарі клікаються, але
+ * сторінка не перемикається" (founder, 2026-07-31; intermittent because a warm
+ * chunk switches instantly). `preload()` lets a host warm the chunk on intent
+ * (pointerdown, or at idle after mount) so the click commits against an
+ * already-resolved module.
+ */
+export type PreloadableLazy<T extends AnyComponent> = LazyExoticComponent<T> & {
+  /** Start (or reuse) the dynamic import. Never throws; failures are silent. */
+  preload: () => void;
+};
+
+/**
+ * Share one in-flight import between `React.lazy` and `preload()`. A rejected
+ * import clears the cache so the ErrorBoundary retry path can try again
+ * instead of replaying the same failure forever.
+ */
+function shareImport<T>(fn: () => Promise<T>): () => Promise<T> {
+  let inFlight: Promise<T> | undefined;
+  return () => {
+    if (!inFlight) {
+      inFlight = fn();
+      inFlight.catch(() => {
+        inFlight = undefined;
+      });
+    }
+    return inFlight;
+  };
+}
+
+function withPreload<T extends AnyComponent>(
+  component: LazyExoticComponent<T>,
+  load: () => Promise<unknown>,
+): PreloadableLazy<T> {
+  return Object.assign(component, {
+    preload: () => {
+      void load().catch(() => {
+        /* warming is best-effort — the real render surfaces the error */
+      });
+    },
+  });
+}
+
 export function lazyImport<
   M extends Record<K, AnyComponent>,
   K extends keyof M & string,
->(loader: () => Promise<M>, key: K): LazyExoticComponent<M[K]> {
-  return lazy(() =>
-    loader().then((m) =>
-      m ? { default: m[key] } : recoverFromStaleChunk<{ default: M[K] }>(),
+>(loader: () => Promise<M>, key: K): PreloadableLazy<M[K]> {
+  const load = shareImport(loader);
+  return withPreload(
+    lazy(() =>
+      load().then((m) =>
+        m ? { default: m[key] } : recoverFromStaleChunk<{ default: M[K] }>(),
+      ),
     ),
+    load,
   );
 }
 
 /** Same idea as {@link lazyImport} but for modules with a `default` export. */
 export function lazyDefault<T extends AnyComponent>(
   loader: () => Promise<{ default: T }>,
-): LazyExoticComponent<T> {
-  return lazy(() =>
-    loader().then((m) => (m ? m : recoverFromStaleChunk<{ default: T }>())),
+): PreloadableLazy<T> {
+  const load = shareImport(loader);
+  return withPreload(
+    lazy(() =>
+      load().then((m) => (m ? m : recoverFromStaleChunk<{ default: T }>())),
+    ),
+    load,
   );
 }
 

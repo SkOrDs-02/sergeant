@@ -14,7 +14,12 @@
 interface ComputePulseStyleArgs {
   hasExpensePlan: boolean;
   spendPlanRatio: number;
-  dayBudget: number;
+  /**
+   * Денний бюджет, або `null` коли місячний план не заданий (див. AI-CONTEXT
+   * у `useOverviewData` — без плану чесного числа не існує). При `null`
+   * повертаємо нейтральний тон і статус-текст «План не заданий».
+   */
+  dayBudget: number | null;
 }
 
 export function computePulseStyle({
@@ -44,6 +49,15 @@ export function computePulseStyle({
       bg: "bg-pulse-ok",
       color: "text-success",
       statusText: "В межах плану",
+    };
+  }
+
+  if (dayBudget == null) {
+    return {
+      accentLeft: "border-l-line",
+      bg: "bg-pulse-w",
+      color: "text-muted",
+      statusText: "План не заданий",
     };
   }
 

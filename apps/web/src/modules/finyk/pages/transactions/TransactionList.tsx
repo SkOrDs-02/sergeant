@@ -7,6 +7,7 @@ import { VirtualList } from "@shared/components/ui/VirtualList";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
+import { Button } from "@shared/components/ui/Button";
 import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
@@ -107,6 +108,16 @@ export interface TransactionListProps {
   /** All-month list (incl. hidden) — used to decide whether to render the
    * skeleton block or the empty state. */
   activeTx: Transaction[];
+  /**
+   * Selected month has no rows, but the user does have transactions in other
+   * months. Switches the empty slot from the first-run onboarding hero to a
+   * month-scoped "цього місяця ще порожньо" state.
+   */
+  hasTransactionsOutsideMonth?: boolean;
+  /** Human month label ("серпень 2026") for the month-scoped empty state. */
+  monthLabel?: string;
+  /** Jump one month back from the month-scoped empty state. */
+  onGoPreviousMonth?: (() => void) | undefined;
   /** Filtered + sorted list of transactions to render in the virtual list. */
   filtered: Transaction[];
   /** Virtual list group spec — one entry per visible day. */
@@ -162,6 +173,9 @@ export interface TransactionListProps {
 export function TransactionList({
   loading,
   activeTx,
+  hasTransactionsOutsideMonth = false,
+  monthLabel,
+  onGoPreviousMonth,
   filtered,
   groupedByDate,
   groupCounts,
@@ -264,18 +278,47 @@ export function TransactionList({
     </div>
   );
 
-  // Two empty surfaces share the same DataState slot:
-  //   • month-empty (`activeTx` itself has no rows) → tier-1 hero with the
-  //     module-tuned copy/illustration via `ModuleEmptyState`. No inline
-  //     action — the global "+ Додати витрату" FAB on `FinykApp` is the
-  //     primary CTA and duplicating it inside the empty-state would be
-  //     the anti-pattern called out in `docs/design/empty-states.md`.
+  // Three empty surfaces share the same DataState slot:
+  //   • no-data-at-all (`activeTx` empty AND nothing in any other month) →
+  //     tier-1 hero with the module-tuned copy/illustration via
+  //     `ModuleEmptyState`. No inline action — the global "+ Додати витрату"
+  //     FAB on `FinykApp` is the primary CTA and duplicating it inside the
+  //     empty-state would be the anti-pattern called out in
+  //     `docs/design/empty-states.md`.
+  //   • month-empty (`activeTx` empty but the user HAS transactions in other
+  //     months) → month-scoped state. The first-run hero here read as data
+  //     loss: on 1 серпня, with Monobank connected and a full July history,
+  //     the tab greeted the user with «Куди йдуть твої гроші? Додай першу
+  //     витрату… Підключи Monobank» (founder report 2026-07-31).
   //   • filter-empty (`activeTx` has rows but the user's filter zeroed
   //     `filtered`) → keep the descriptive "Немає транзакцій" state and
   //     just tint the leading icon container with the finyk accent so
   //     the surface still feels owned by the module.
   const emptyFallback =
-    activeTx.length === 0 ? (
+    activeTx.length === 0 && hasTransactionsOutsideMonth ? (
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Цей місяць ще порожній"
+          description={
+            // `monthLabel` is nominative ("серпень 2026 р.") — keep it after
+            // "За", where Ukrainian accusative matches the nominative form for
+            // masculine inanimate nouns, so no declension juggling is needed.
+            monthLabel
+              ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці — гортай назад або додай запис вручну.`
+              : "Операцій за цей місяць поки немає. Попередні місяці на місці — гортай назад або додай запис вручну."
+          }
+          module="finyk"
+          action={
+            onGoPreviousMonth ? (
+              <Button variant="secondary" onClick={onGoPreviousMonth}>
+                Попередній місяць
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+    ) : activeTx.length === 0 ? (
       <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">

@@ -106,3 +106,27 @@ describe("computePulseStyle — without expense plan (dayBudget mode)", () => {
     expect(s.color).toBe("text-success");
   });
 });
+
+// Regression: founder report 2026-07-31 — the hero claimed «124 686 ₴/день ·
+// В нормі» with «Денний план: не задано» right below it. Without a plan there
+// is no honest day budget, so `useOverviewData` now passes `null`.
+describe("computePulseStyle — no monthly plan (dayBudget = null)", () => {
+  it("returns a neutral tone and the 'План не заданий' status", () => {
+    const s = computePulseStyle({
+      hasExpensePlan: false,
+      spendPlanRatio: 0,
+      dayBudget: null,
+    });
+    expect(s.statusText).toBe("План не заданий");
+    expect(s.color).toBe("text-muted");
+  });
+
+  it("never claims a healthy 'В нормі' status without a plan", () => {
+    const s = computePulseStyle({
+      hasExpensePlan: false,
+      spendPlanRatio: 0,
+      dayBudget: null,
+    });
+    expect(s.statusText).not.toBe("В нормі");
+  });
+});

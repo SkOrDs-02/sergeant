@@ -43,6 +43,27 @@ const Budgets = lazyImport(() => import("./pages/budgets/Budgets"), "Budgets");
 const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
 const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 
+/**
+ * Page-id → chunk warmer. `overview` is eagerly imported, so it has no entry.
+ *
+ * AI-CONTEXT: react-router v7 navigates inside `React.startTransition`, and a
+ * transition keeps the current screen mounted rather than revealing a new
+ * Suspense fallback. A tab whose chunk is still cold therefore looks like a
+ * dead button until the download finishes (founder report 2026-07-31). Warming
+ * on pointer-down + at idle after mount removes the wait in practice; the
+ * optimistic highlight in `ModuleBottomNav` covers whatever is left.
+ */
+const PAGE_PRELOADERS: Record<string, () => void> = {
+  transactions: () => Transactions.preload(),
+  budgets: () => Budgets.preload(),
+  analytics: () => Analytics.preload(),
+  assets: () => Assets.preload(),
+};
+
+function preloadFinykPage(id: string): void {
+  PAGE_PRELOADERS[id]?.();
+}
+
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
@@ -176,6 +197,23 @@ export default function App({
     onPwaActionConsumed,
   ]);
 
+  // Warm the sibling page chunks once the module is idle so the first tap on
+  // any tab commits instantly (see `PAGE_PRELOADERS` for the why). Runs off
+  // the critical path — `requestIdleCallback` where available, a short timeout
+  // on Safari, which lacks it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const warm = () => {
+      for (const id of NAV_IDS) preloadFinykPage(id);
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const handle = window.requestIdleCallback(warm, { timeout: 3000 });
+      return () => window.cancelIdleCallback?.(handle);
+    }
+    const timer = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const { mergedMono } = useUnifiedFinanceData({
     mono,
     privat,
@@ -201,11 +239,15 @@ export default function App({
   const swipe = useSwipeNavigation({
     onSwipeLeft: () => {
       const next = NAV_IDS[curPageIdx + 1];
-      if (next !== undefined) navigate(next);
+      if (next === undefined) return;
+      preloadFinykPage(next);
+      navigate(next);
     },
     onSwipeRight: () => {
       const next = NAV_IDS[curPageIdx - 1];
-      if (next !== undefined) navigate(next);
+      if (next === undefined) return;
+      preloadFinykPage(next);
+      navigate(next);
     },
     threshold: SWIPE_THRESHOLD_PX,
     atStart: curPageIdx === 0,
@@ -491,6 +533,7 @@ export default function App({
           }))}
           activeId={page}
           onChange={navigate}
+          onPrefetch={preloadFinykPage}
           module="finyk"
           ariaLabel={messages.nav.finykSections}
         />
@@ -556,7 +599,13 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 select-none shrink-0",
+        // На вузьких екранах здоровий «ок»-стан ховаємо повністю: header-рядок
+        // фіксованої ширини (Назад + Хаб + око + асистент + налаштування) не
+        // лишає місця, і pill виштовхував/перекривав заголовок модуля. Стани,
+        // що вимагають уваги, лишаються видимими скрізь — див. `needsAttention`
+        // у `SyncIndicator.getSyncTone`.
+        syncTone.needsAttention ? "flex" : "hidden sm:flex",
+        "items-center gap-1.5 select-none shrink-0",
         "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
         "transition-colors duration-200",
         syncTone.pill,

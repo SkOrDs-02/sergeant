@@ -153,6 +153,9 @@ export function Overview({
                   hasExpensePlan={d.hasExpensePlan}
                   spendPlanRatio={d.spendPlanRatio}
                   showBalance={showBalance}
+                  onSetPlan={
+                    onNavigate ? () => onNavigate("budgets") : undefined
+                  }
                 />
 
                 <TodaySummaryCard
