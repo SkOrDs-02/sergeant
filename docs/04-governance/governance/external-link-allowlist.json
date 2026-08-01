@@ -236,7 +236,7 @@
     },
     {
       "pattern": "^https?://(www\\.)?barcodelookup\\.com/api$",
-      "reason": "Прайсинг Barcode Lookup API цитовано в docs/90-work/planning/barcode-database-research.md (§2, комерційні API). Хост віддає 403 і на HEAD, і на GET-фолбек небраузерному CI User-Agent; pattern обмежено конкретною сторінкою прайсингу."
+      "reason": "Сторінка з прайсингом Barcode Lookup API цитована в docs/90-work/planning/barcode-database-research.md як одне з джерел порівняння цін. Хост віддає 403 небраузерному User-Agent (і локальному прогону, і GitHub-раннеру) — сторінка рендериться в браузері. Pattern звужено рівно до цього одного URL, решта домену лишається під перевіркою."
     }
   ]
 }
