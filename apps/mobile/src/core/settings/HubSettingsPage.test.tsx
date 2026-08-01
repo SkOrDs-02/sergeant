@@ -139,9 +139,7 @@ describe("HubSettingsPage", () => {
     expect(getAllByText("Фінік").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("Фізрук").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("AI Звіт тижня").length).toBeGreaterThanOrEqual(1);
-    expect(getAllByText("Можливості асистента").length).toBeGreaterThanOrEqual(
-      1,
-    );
+    expect(getAllByText("Що вміє Сержант").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("Експериментальне").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("Акаунт").length).toBeGreaterThanOrEqual(1);
   });
