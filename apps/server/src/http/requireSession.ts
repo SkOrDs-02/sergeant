@@ -1,5 +1,6 @@
 import type { Request, RequestHandler, Response } from "express";
 import { getSessionUser } from "../auth.js";
+import { touchLastSeen } from "../lib/lastSeen.js";
 import { logger } from "../obs/logger.js";
 import { authSessionLookupFailureTotal } from "../obs/metrics.js";
 
@@ -80,6 +81,9 @@ export function requireSession(): RequestHandler {
         return;
       }
       (req as AuthedRequest).user = user;
+      // Throttled fire-and-forget — див. `lib/lastSeen.ts`. Стоїть тут, а не
+      // в кожному хендлері, бо «візит» = будь-який автентифікований запит.
+      touchLastSeen(user.id);
       next();
     } catch (err) {
       // M13 — distinguish "no session" (which is `user === null` above and
@@ -121,6 +125,7 @@ export function requireSessionSoft(): RequestHandler {
     if (user) {
       consecutiveSoftFailures = 0;
       (req as AuthedRequest).user = user;
+      touchLastSeen(user.id);
       next();
       return;
     }

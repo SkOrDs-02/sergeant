@@ -501,10 +501,14 @@ export async function sendToUser(
     }
     return url ? { url } : (payload.data ?? null);
   })();
+  // `tag` прокидаємо, лише коли він заданий: інакше service-worker сам
+  // підставить `push_${Date.now()}` і збереже історичну поведінку
+  // «кожне сповіщення окреме» для каналів, що групування не просили.
   const webPayloadJson = JSON.stringify({
     title: payload.title,
     body: payload.body ?? "",
     data: webData,
+    ...(payload.tag ? { tag: payload.tag } : {}),
   });
 
   // Per-device Promise.all. Одна впала не рве fan-out: кожен sender-ок
