@@ -138,6 +138,7 @@ export function ManualExpenseAmountSection({
           autoComplete="off"
           placeholder="0"
           maxLength={20}
+          showCharCount={false}
           error={!!amountError}
           disabled={isSubmitting}
           helperText={amountError ?? undefined}

@@ -75,6 +75,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
             onChange={(e) => field("name")(e.target.value)}
             placeholder="Вівсянка з бананом"
             maxLength={NAME_MAX_LEN}
+            showCharCount={false}
             aria-label="Назва страви"
           />
         </div>

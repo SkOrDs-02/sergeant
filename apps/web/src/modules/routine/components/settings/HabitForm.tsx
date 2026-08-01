@@ -263,6 +263,7 @@ export function HabitForm({
             )}
             placeholder="Напр. Пити воду, медитувати, ранкова пробіжка"
             maxLength={NAME_MAX_LEN}
+            showCharCount={false}
             aria-invalid={errors?.name ? true : undefined}
             aria-describedby={errors?.name ? nameErrId : undefined}
             value={habitDraft.name}

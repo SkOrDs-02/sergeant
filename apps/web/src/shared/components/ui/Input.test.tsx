@@ -57,3 +57,19 @@ describe("Input type-aware defaults", () => {
     expect(input.getAttribute("inputmode")).toBe("numeric");
   });
 });
+
+describe("Input — лічильник символів", () => {
+  it("зʼявляється автоматично при maxLength", () => {
+    const { getByText } = render(
+      <Input maxLength={200} value="кава" readOnly />,
+    );
+    expect(getByText("4/200")).toBeInTheDocument();
+  });
+
+  it("showCharCount={false} перекриває авто-опт-ін", () => {
+    const { queryByText } = render(
+      <Input maxLength={200} value="кава" readOnly showCharCount={false} />,
+    );
+    expect(queryByText("4/200")).toBeNull();
+  });
+});

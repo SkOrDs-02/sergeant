@@ -123,8 +123,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const maxLen = props.maxLength;
   const currentLen =
     maxLen !== undefined ? String(props.value ?? "").length : 0;
+  // Explicit `showCharCount={false}` wins over the maxLength auto-opt-in.
+  // Without this escape hatch, adding `maxLength` purely as a storage guard
+  // (see the beta-input-boundaries spec, which rejected counters as UI noise)
+  // silently ships a counter — and on an uncontrolled RHF field, where
+  // `props.value` is undefined, it is stuck reading "0/200".
   const renderCounter =
-    (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+    showCharCount !== false &&
+    (showCharCount || maxLen !== undefined) &&
+    maxLen !== undefined;
   const maxLenSafe = maxLen ?? 0;
   const counterColor =
     currentLen >= maxLenSafe

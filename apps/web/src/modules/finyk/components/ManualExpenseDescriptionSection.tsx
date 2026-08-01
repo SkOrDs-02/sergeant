@@ -55,6 +55,7 @@ export function ManualExpenseDescriptionSection({
         }
         disabled={isSubmitting}
         maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         aria-controls={showMerchantHints ? `${formId}-merchants` : undefined}
         aria-autocomplete="list"
         {...register("description", {
