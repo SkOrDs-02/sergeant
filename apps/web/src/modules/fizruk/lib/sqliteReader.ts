@@ -60,6 +60,15 @@ export interface CachedWorkoutTemplate {
   lastUsedAt?: string | null;
 }
 
+/** Injury mark as stored locally. `clearedAt === null` = still active. */
+export interface CachedInjury {
+  id: string;
+  site: string;
+  startedAt: string;
+  clearedAt: string | null;
+  note: string;
+}
+
 export interface SqliteFizrukCache {
   /** Workouts ordered newest-first by `startedAt`. */
   workouts: Workout[];
@@ -83,6 +92,13 @@ export interface SqliteFizrukCache {
    * PR #070f-dualwrite. Empty array means «no template rows yet».
    */
   workoutTemplates: CachedWorkoutTemplate[];
+  /**
+   * Injury marks ordered newest-first by `startedAt`. Includes CLEARED
+   * marks — the history screen shows them, and `activeInjurySites` is what
+   * filters down to the blocking set (ADR-0083). Filtering here instead
+   * would make "зняти позначку" indistinguishable from "видалити".
+   */
+  injuries: CachedInjury[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -94,6 +110,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
   refreshedAt: null,
 };
 
@@ -290,6 +307,27 @@ function rowToWorkoutTemplate(row: WorkoutTemplateRow): CachedWorkoutTemplate {
   };
 }
 
+interface InjuryRow {
+  id: string;
+  site: string;
+  started_at: string | null;
+  cleared_at: string | null;
+  note: string | null;
+  [key: string]: unknown;
+}
+
+function rowToInjury(row: InjuryRow): CachedInjury {
+  return {
+    id: row.id,
+    site: row.site,
+    startedAt: row.started_at ?? "",
+    // Normalized to `null` so the dual-write diff never sees `undefined`
+    // and emits a phantom op.
+    clearedAt: row.cleared_at ?? null,
+    note: row.note ?? "",
+  };
+}
+
 function rowToMonthlyPlan(
   row: MonthlyPlanRow | undefined,
 ): CachedMonthlyPlanState | null {
@@ -333,6 +371,7 @@ export async function refreshFizrukSqliteState(
     dailyLogRows,
     monthlyPlanRows,
     workoutTemplateRows,
+    injuryRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
@@ -391,6 +430,13 @@ export async function refreshFizrukSqliteState(
         ORDER BY updated_at DESC, id ASC`,
       [userId],
     ),
+    client.all<InjuryRow>(
+      `SELECT id, site, started_at, cleared_at, note
+         FROM fizruk_injuries
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY started_at DESC, id ASC`,
+      [userId],
+    ),
   ]);
 
   // Build sets-by-item map first.
@@ -421,6 +467,7 @@ export async function refreshFizrukSqliteState(
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
+  const injuries = injuryRows.map(rowToInjury);
 
   cache = {
     workouts,
@@ -429,6 +476,7 @@ export async function refreshFizrukSqliteState(
     dailyLog,
     monthlyPlan,
     workoutTemplates,
+    injuries,
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };
