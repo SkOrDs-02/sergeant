@@ -131,14 +131,6 @@ export function NutritionSection() {
 
   const navigate = useNavigate();
 
-  // Канонічний редактор КБЖУ — `DailyPlanCard` на «Меню → План на день»
-  // (так його називає й `useNutritionFirstRun`). Тут раніше стояла друга
-  // копія тих самих чотирьох полів, що писала в те саме сховище, але без
-  // розрахунку з біометрії і без пресетів.
-  const openDailyTargets = useCallback(() => {
-    navigate("/nutrition/menu");
-  }, [navigate]);
-
   const openPantryManager = useCallback(() => {
     // Hub routes the Nutrition module via the module picker; the pantry
     // manager itself is a sheet that opens from within the module. From
@@ -158,23 +150,6 @@ export function NutritionSection() {
           {storageErr}
         </div>
       )}
-
-      <SettingsSubGroup title="Денні цілі (КБЖУ)" defaultOpen>
-        <p className="text-style-caption text-subtle leading-snug">
-          Цілі живуть у самому модулі Їжі — там їх можна не лише ввести вручну,
-          а й розрахувати з твоєї біометрії або взяти готовий пресет. Тут була
-          друга, збіднена копія тих самих полів.
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="border border-line"
-          onClick={openDailyTargets}
-        >
-          Відкрити цілі в модулі Їжі →
-        </Button>
-      </SettingsSubGroup>
 
       <SettingsSubGroup title="Вода">
         <p className="text-style-caption text-subtle leading-snug">

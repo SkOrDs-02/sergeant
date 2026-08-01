@@ -37,7 +37,13 @@ describe("WaterTrackerCard", () => {
     todayMl = 500;
     render(<WaterTrackerCard goalMl={2000} />);
     expect(screen.getByText(/500 мл/)).toBeInTheDocument();
-    expect(screen.getByText(/2\.0 л/)).toBeInTheDocument();
+    expect(screen.getByText(/2 л/)).toBeInTheDocument();
+  });
+
+  it("keeps millilitre precision when the goal is not a round litre", () => {
+    todayMl = 1250;
+    render(<WaterTrackerCard goalMl={2350} />);
+    expect(screen.getByText(/1,25 л \/ 2,35 л/)).toBeInTheDocument();
   });
 
   it("adds water on a quick-add tap", () => {
@@ -131,11 +137,11 @@ describe("WaterTrackerCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens the history sheet on header tap", () => {
+  it("opens the history sheet from the named history button", () => {
     todayMl = 500;
     render(<WaterTrackerCard goalMl={2000} />);
     expect(screen.queryByText("Історія води")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText(/Історія води/));
+    fireEvent.click(screen.getByRole("button", { name: /Історія води/ }));
     expect(screen.getByText("Історія води")).toBeInTheDocument();
   });
 });

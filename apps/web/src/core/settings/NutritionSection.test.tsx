@@ -93,20 +93,15 @@ describe("NutritionSection", () => {
     });
   });
 
-  // Редактор КБЖУ живе тільки в модулі Їжі (`DailyPlanCard`); тут лишилось
-  // посилання. Дубль полів у налаштуваннях прибрано 2026-08-01.
-  it("sends the user to the canonical macro editor in the module", () => {
-    renderSection();
-    fireEvent.click(
-      screen.getByRole("button", { name: /Відкрити цілі в модулі Їжі/i }),
-    );
-    expect(navigate).toHaveBeenCalledWith("/nutrition/menu");
-  });
-
-  it("no longer renders a second copy of the macro inputs", () => {
+  // Редактор КБЖУ живе тільки в модулі Їжі (`DailyPlanCard`). Ні полів, ні
+  // посилання на них у налаштуваннях більше немає.
+  it("does not surface the macro editor at all", () => {
     renderSection();
     expect(screen.queryByText("Калорії")).not.toBeInTheDocument();
     expect(screen.queryByText("Білки")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /цілі в модулі Їжі/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the pantry picker with options and switches active pantry", () => {
