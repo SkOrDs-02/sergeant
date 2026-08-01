@@ -34,7 +34,6 @@ export function WelcomeOneScreen({
   expanded,
   onToggleExpanded,
   copy,
-  ctaLabelOverride,
   ctaDisabled,
   emptyPicksHint,
   onSecondaryAction,
@@ -49,11 +48,6 @@ export function WelcomeOneScreen({
   /** Resolved A/B copy for the splash hero (S1.1 + S1.2). */
   copy: OnboardingHeroCopy;
   /**
-   * Override label for the primary CTA. Used by tour replay to swap
-   * `copy.primaryCta` for "Закрити". Real wizard always renders
-   * `copy.primaryCta` so the experiment arm controls the text.
-   */
-  ctaLabelOverride?: string | undefined;
   /**
    * S6.1: disable the primary CTA when the user is in the `none` arm
    * of `onboarding_default_picks_v1` and has no module selected.
@@ -170,7 +164,7 @@ export function WelcomeOneScreen({
         disabled={ctaDisabled || ctaBusy}
         loading={ctaBusy}
       >
-        {ctaLabelOverride ?? copy.primaryCta}
+        {copy.primaryCta}
         <Icon name="chevron-right" size={16} />
       </Button>
 
