@@ -5,13 +5,40 @@ interface PushNotificationToggleProps {
   className?: string;
 }
 
+/**
+ * iPadOS 13+ рапортує UA як десктопний Mac, тому окремо перевіряємо
+ * дотиковий Mac. Точність тут не критична — від неї залежить лише текст
+ * підказки, а не поведінка.
+ */
+function isIosLike(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  return /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+}
+
 export function PushNotificationToggle({
   className,
 }: PushNotificationToggleProps) {
   const { supported, permission, subscribed, loading, subscribe, unsubscribe } =
     usePushNotifications();
 
-  if (!supported) return null;
+  // Мовчазне зникнення тоглу читається як «фічі не існує». На iOS
+  // Web Push живе ЛИШЕ у PWA з початкового екрана (16.4+) — у вкладці
+  // Safari `PushManager` відсутній, тож саме тут користувачу треба
+  // сказати, що робити, а не ховати рядок.
+  if (!supported) {
+    return (
+      <div className={cn("min-w-0", className)}>
+        <div className="text-style-label text-text">Push-сповіщення</div>
+        <p className="text-style-caption text-subtle mt-0.5">
+          {isIosLike()
+            ? "На iPhone та iPad сповіщення працюють лише у застосунку з початкового екрана: «Поділитися» → «На початковий екран», потім відкрий Sergeant звідти."
+            : "Цей браузер не підтримує push-сповіщення. Спробуй Chrome, Edge або Firefox — нагадування всередині застосунку працюють і без них."}
+        </p>
+      </div>
+    );
+  }
 
   const blocked = permission === "denied";
 

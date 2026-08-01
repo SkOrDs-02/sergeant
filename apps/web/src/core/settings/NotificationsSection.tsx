@@ -131,7 +131,11 @@ export function NotificationsSection() {
             {permLabel}
           </p>
         </div>
-        {permStatus !== "granted" && permStatus !== "unsupported" && (
+        {/* `denied` — це кінцевий стан: `Notification.requestPermission()`
+            резолвиться миттєво тим самим `denied`, не показуючи промпт.
+            Кнопка тут була б обіцянкою, яку браузер не виконає, тож на
+            цьому шляху лишається лише інструкція. */}
+        {permStatus === "default" && (
           <Button
             type="button"
             size="sm"
@@ -142,8 +146,9 @@ export function NotificationsSection() {
           </Button>
         )}
         {permStatus === "denied" && (
-          <p className="text-style-caption text-subtle">
-            Відкрий налаштування браузера, щоб дозволити
+          <p className="text-style-caption text-subtle max-w-[14rem] text-right">
+            Відкрий налаштування сайту в браузері (значок біля адреси) і дозволь
+            сповіщення
           </p>
         )}
       </div>
