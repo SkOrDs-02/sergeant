@@ -452,6 +452,80 @@ describe("useOverviewData", () => {
     });
   });
 
+  // Regression: founder report 2026-07-31 — «Статистику на серпень вже велику
+  // пише, хоча він тільки почався» + «124 686 ₴/день можна сьогодні».
+  describe("current-month clamp and day budget (regression 2026-07-31)", () => {
+    /**
+     * `realTx` is NOT guaranteed to be current-month-only: the read overlay in
+     * `useMonobankWebhook` substitutes the full SQLite mirror whenever the
+     * current-month network slice comes back empty — which is exactly the
+     * state on day 1 of a new month.
+     */
+    function monthMixMono() {
+      const kyiv = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+      return buildMono({
+        realTx: [
+          // Previous month (липень) — must NOT count toward "цього місяця".
+          mkTx("prev-1", -1_000_00, { time: kyiv("2026-07-15T09:00:00Z") }),
+          mkTx("prev-2", 5_000_00, { time: kyiv("2026-07-20T09:00:00Z") }),
+          // Current month (серпень).
+          mkTx("cur-1", -250_00, { time: kyiv("2026-08-01T09:00:00Z") }),
+          mkTx("cur-2", 700_00, { time: kyiv("2026-08-01T10:00:00Z") }),
+        ],
+      } as Partial<UseOverviewDataParams["mono"]>);
+    }
+
+    beforeEach(() => {
+      // 2026-08-01 01:47 Kyiv (EEST, UTC+3) → 2026-07-31T22:47Z. The Kyiv day
+      // boundary must win over the host/UTC one: this instant is 1 серпня.
+      vi.setSystemTime(new Date("2026-07-31T22:47:00Z"));
+    });
+
+    it("counts only current-Kyiv-month transactions in spent/income", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      // 250 ₴ spent and 700 ₴ received in серпень; липень's 1 000 / 5 000 are
+      // outside the window and must not leak into the "Місяць" card.
+      expect(result.current.spent).toBe(250);
+      expect(result.current.income).toBe(700);
+    });
+
+    it("keeps the mirror's older months out of the month aggregates entirely", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      expect(result.current.statTx.map((t) => t.id)).toEqual([
+        "cur-1",
+        "cur-2",
+      ]);
+    });
+
+    it("returns dayBudget = null when no monthly plan is set", () => {
+      // Previously this fell back to `projectedSpend`, which is itself derived
+      // from `spent` — the number collapsed to ≈ spent · 30/31, i.e. "ти можеш
+      // витратити сьогодні стільки, скільки вже витратив".
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      expect(result.current.hasExpensePlan).toBe(false);
+      expect(result.current.dayBudget).toBeNull();
+    });
+
+    it("computes dayBudget from the user's plan when one is set", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: monthMixMono(),
+          storage: buildStorage({
+            monthlyPlan: { income: 0, expense: 31_000, savings: 0 },
+          } as Partial<UseOverviewDataParams["storage"]>),
+        }),
+      );
+      // План 31 000 − витрачено 250, поділити на 31 день, що лишився.
+      expect(result.current.dayBudget).toBeCloseTo((31_000 - 250) / 31, 5);
+    });
+  });
+
   describe("projection and plan", () => {
     it("hasExpensePlan is false when no monthlyPlan is set", () => {
       const { result } = renderHook(() =>

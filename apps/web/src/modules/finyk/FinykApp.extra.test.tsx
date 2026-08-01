@@ -173,7 +173,9 @@ vi.mock("../../core/lib/lazyImport", () => ({
   lazyImport: (_factory: unknown, name: string) => {
     const Stub = () => <div data-testid={`lazy-${name}`} />;
     Stub.displayName = name;
-    return Stub;
+    // Mirror the real helper's `PreloadableLazy` shape — FinykApp warms page
+    // chunks on pointer-down / swipe / idle (see `PAGE_PRELOADERS`).
+    return Object.assign(Stub, { preload: () => {} });
   },
 }));
 
