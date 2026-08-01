@@ -18,6 +18,8 @@
 export const MIN_AMOUNT_MINOR = 1;
 /** Maximum accepted amount — 10 000 000.00 ₴. */
 export const MAX_AMOUNT_MINOR = 1_000_000_000;
+/** Та сама стеля в гривнях — для полів, що зберігають major units. */
+export const MAX_AMOUNT_HRYVNIA = MAX_AMOUNT_MINOR / 100;
 
 export type AmountParseError =
   "empty" | "not-a-number" | "too-small" | "too-large";

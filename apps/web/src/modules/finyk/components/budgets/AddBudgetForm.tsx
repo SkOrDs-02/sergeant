@@ -1,5 +1,10 @@
 import { memo, useId, useMemo, useState } from "react";
 import { z } from "zod";
+import {
+  amountStringSchema,
+  amountStringToHryvnia,
+} from "@shared/lib/format/amountSchema";
+import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -75,18 +80,18 @@ const GOAL_EMOJI_OPTIONS: readonly { emoji: string; label: string }[] = [
 // Goal/limit мають різні набори полів, тож тримаємо два окремі
 // `useApiForm`-інстанси замість discriminated union на одній схемі —
 // uniform pattern, ще й RHF-state не зміщується між type-toggle-ами.
-const isPositiveNumberString = (value: string) => {
-  const parsed = Number(value);
-  return (
-    value.trim() !== "" &&
-    Number.isFinite(parsed) &&
-    Number.isInteger(parsed) &&
-    parsed > 0
-  );
-};
-
+// Межі й нормалізація сум — спільні (спека beta-input-boundaries), тож
+// «1e9» і 20-значний ліміт відсікаються так само, як у формі витрати.
+// `integerOnly` зберігає наявну продуктову вимогу бюджетів: дробовий
+// ліміт читається як помилка вводу, а не як намір.
 const positiveNumberString = (message: string) =>
-  z.string().refine(isPositiveNumberString, message);
+  amountStringSchema(message, { integerOnly: true });
+
+/** Той самий парсер, що й у схемі — для enable/disable кнопки. */
+const isValidAmountString = (value: string) => {
+  const parsed = parseAmountToMinor(value);
+  return parsed.ok && parsed.minor % 100 === 0;
+};
 
 type LimitFormValues = {
   type: "limit";
@@ -177,7 +182,7 @@ function AddBudgetFormComponent({
       onSubmit({
         type: "limit",
         categoryId: values.categoryId,
-        limit: Number(values.limit),
+        limit: amountStringToHryvnia(values.limit),
         period: values.period,
         // eslint-disable-next-line no-restricted-syntax -- UTC creation instant for one-time limit anchoring, not a Kyiv day key
         createdAt: new Date().toISOString(),
@@ -193,7 +198,7 @@ function AddBudgetFormComponent({
         type: "goal",
         name: values.name.trim(),
         emoji: values.emoji,
-        targetAmount: Number(values.targetAmount),
+        targetAmount: amountStringToHryvnia(values.targetAmount),
         targetDate: values.targetDate,
         linkedJarId: values.linkedJarId || undefined,
       });
@@ -237,9 +242,9 @@ function AddBudgetFormComponent({
   };
 
   const limitDraftValid =
-    Boolean(limitCategoryId) && isPositiveNumberString(limitAmount);
+    Boolean(limitCategoryId) && isValidAmountString(limitAmount);
   const goalDraftValid =
-    goalName.trim() !== "" && isPositiveNumberString(goalTargetAmount);
+    goalName.trim() !== "" && isValidAmountString(goalTargetAmount);
 
   const isSubmitting =
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;

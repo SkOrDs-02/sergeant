@@ -14,6 +14,11 @@ import { FoodHitRow } from "./FoodHitRow";
 import { MacroChip } from "./MacroChip";
 import { macrosForGrams, type FoodProduct } from "../../lib/foodDb/foodDb";
 import type { MealFormState } from "./mealFormUtils";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+
+/** 10 кг однієї порції — межа проти зайвого нуля, не дієтологія. */
+const MAX_PORTION_GRAMS = 10_000;
 
 export interface PickedFood {
   id?: string | number;
@@ -126,6 +131,8 @@ export function FoodPickerSection({
             value={foodQuery}
             onChange={(e) => setFoodQuery(e.target.value)}
             placeholder="Курка, Activia, вівсянка, Lays…"
+            maxLength={NAME_MAX_LEN}
+            showCharCount={false}
             aria-label="Пошук продукту"
           />
           {foodErr && <div className="text-xs text-muted">{foodErr}</div>}
@@ -242,7 +249,19 @@ export function FoodPickerSection({
                     inputMode="decimal"
                     value={pickedGrams}
                     min={1}
-                    onChange={(e) => setPickedGrams(e.target.value)}
+                    max={MAX_PORTION_GRAMS}
+                    onChange={(e) =>
+                      setPickedGrams(
+                        e.target.value === ""
+                          ? ""
+                          : String(
+                              clampNumericInput(
+                                e.target.value,
+                                MAX_PORTION_GRAMS,
+                              ),
+                            ),
+                      )
+                    }
                     aria-label="Грами"
                     className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />

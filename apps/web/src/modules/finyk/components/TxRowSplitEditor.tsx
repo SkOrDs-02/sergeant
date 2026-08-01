@@ -9,6 +9,8 @@ import type { Dispatch, SetStateAction } from "react";
 import { formatMoney } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
+import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import {
@@ -127,12 +129,20 @@ export function TxRowSplitEditor({
           )}
           <input
             type="number"
+            min={0}
+            max={MAX_AMOUNT_HRYVNIA}
             value={sp.amount || ""}
             onChange={(e) =>
               setDraftSplits((prev) =>
                 prev.map((p, j) =>
                   j === i
-                    ? { ...p, amount: parseFloat(e.target.value) || 0 }
+                    ? {
+                        ...p,
+                        amount: clampNumericInput(
+                          e.target.value,
+                          MAX_AMOUNT_HRYVNIA,
+                        ),
+                      }
                     : p,
                 ),
               )

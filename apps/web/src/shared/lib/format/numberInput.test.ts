@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { clampNumericInput, MAX_WEIGHT_KG } from "./numericBounds";
+import { clampNumericInput } from "./numberInput";
+
+const MAX_WEIGHT_KG = 1000;
 
 describe("clampNumericInput", () => {
   it("reads an empty field as zero", () => {
