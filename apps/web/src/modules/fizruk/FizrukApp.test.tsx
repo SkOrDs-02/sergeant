@@ -133,7 +133,10 @@ describe("FizrukApp smoke tests", () => {
   it("renders the FizrukHeader title text for the dashboard page", () => {
     render(<FizrukApp />);
     // FizrukHeader renders "Фізрук" as the module heading on the dashboard page
-    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
   });
 
   it("renders with optional props left undefined without crashing", () => {

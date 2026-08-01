@@ -8,7 +8,11 @@ describe("RoutineHeader", () => {
 
   it("renders module title and subtitle", () => {
     render(<RoutineHeader />);
-    expect(screen.getByRole("heading", { name: "Рутина" })).toBeInTheDocument();
+    // Не `getByRole("heading")`: назва модуля — хром оболонки, свідомо не
+    // заголовок (#527), інакше вона стає перед сторінковим `<h1>`.
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Рутина",
+    );
     expect(screen.getByText("Звички й події")).toBeInTheDocument();
   });
 

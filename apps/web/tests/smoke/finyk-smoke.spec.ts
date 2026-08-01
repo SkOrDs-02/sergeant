@@ -16,7 +16,9 @@ test("@critical finyk: cold-load mounts module shell", async ({ page }) => {
 
   await page.goto("/?module=finyk", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "Фінік" })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фінік" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(
