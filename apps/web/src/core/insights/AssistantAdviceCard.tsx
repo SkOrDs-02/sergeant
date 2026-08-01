@@ -4,6 +4,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Badge } from "@shared/components/ui/Badge";
+import { messages } from "@shared/i18n/uk";
 import { useAiTier } from "@shared/api/useAiTier";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
@@ -135,7 +136,7 @@ export function AssistantAdviceCard({
               S
             </span>
             <SectionHeading as="span" size="xs" variant="muted">
-              Порада асистента
+              {messages.sergeant.adviceCardTitle}
             </SectionHeading>
             {degradedLabel && (
               <Badge variant="neutral" size="xs">
@@ -163,7 +164,7 @@ export function AssistantAdviceCard({
               <div
                 role="status"
                 aria-live="polite"
-                aria-label="Готую пораду асистента"
+                aria-label={messages.sergeant.adviceLoadingAria}
                 className="space-y-2 py-0.5"
               >
                 <span className="sr-only">Готую пораду…</span>
