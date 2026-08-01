@@ -122,6 +122,14 @@ export function normalizeNutritionLog(raw: unknown): NutritionLog {
   return out;
 }
 
+/**
+ * Append a meal to a day. Idempotent by meal id: re-inserting an id that is
+ * already on that day returns the log unchanged.
+ *
+ * This is the dedup point for a double-tapped save button and for an
+ * offline write replayed after reconnect — an `isSubmitting` flag in the
+ * form catches only the first of those.
+ */
 export function addLogEntry(
   log: NutritionLog,
   date: string,
@@ -129,11 +137,13 @@ export function addLogEntry(
 ): NutritionLog {
   const normalized = normalizeMeal(meal, 0);
   const day: NutritionDay = log[date] || { meals: [] };
+  const meals = Array.isArray(day.meals) ? day.meals : [];
+  if (normalized.id && meals.some((m) => m.id === normalized.id)) return log;
   return {
     ...log,
     [date]: {
       ...day,
-      meals: [...(Array.isArray(day.meals) ? day.meals : []), normalized],
+      meals: [...meals, normalized],
     },
   };
 }

@@ -547,3 +547,22 @@ describe("trimLogOldestDays", () => {
     expect(trimLogOldestDays(null, 5)).toEqual({});
   });
 });
+
+describe("addLogEntry — ідемпотентність за id", () => {
+  it("другий запис з тим самим id не створює дубль", () => {
+    const meal = { id: "m1", name: "Кава", macros: { kcal: 5 } };
+    const once = addLogEntry({}, "2026-08-01", meal);
+    const twice = addLogEntry(once, "2026-08-01", meal);
+    expect(twice).toBe(once);
+    expect(twice["2026-08-01"]?.meals).toHaveLength(1);
+  });
+
+  it("різні id додаються обидва", () => {
+    const log = addLogEntry(
+      addLogEntry({}, "2026-08-01", { id: "m1", name: "Кава" }),
+      "2026-08-01",
+      { id: "m2", name: "Чай" },
+    );
+    expect(log["2026-08-01"]?.meals).toHaveLength(2);
+  });
+});

@@ -79,7 +79,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const group = screen.getByRole("group", { name: "Швидкі суми" });
     // default chips are 50/100/200/500
     fireEvent.click(within(group).getByText("100 ₴"));
-    expect(screen.getByLabelText("Сума ₴")).toHaveValue(100);
+    expect(screen.getByLabelText("Сума ₴")).toHaveValue("100");
   });
 
   it("merges personal amount suggestions from frequent merchants", () => {
@@ -208,7 +208,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         />,
       );
       await act(async () => {});
-      expect(screen.getByLabelText("Сума ₴")).toHaveValue(175);
+      expect(screen.getByLabelText("Сума ₴")).toHaveValue("175");
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();

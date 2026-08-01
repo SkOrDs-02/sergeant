@@ -81,7 +81,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     await waitFor(() => {
       expect(amountInput).toHaveAttribute("aria-invalid", "true");
     });
-    expect(screen.getByText("Вкажи суму більше 0")).toBeInTheDocument();
+    expect(screen.getByText("Сума має бути більше 0")).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -408,4 +408,89 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       }
     },
   );
+});
+
+describe("ManualExpenseSheet — межові значення (beta-input-boundaries)", () => {
+  //  — reset-ефект аркуша відкладений у мікротаску; без нього
+  // він змив би все, що тест встиг ввести синхронно.
+  const openSheet = async (onSave = vi.fn()) => {
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={onSave} />);
+    await act(async () => {});
+    return { onSave, amount: screen.getByLabelText("Сума ₴") };
+  };
+
+  it("канонізує « 12,50 » на blur", async () => {
+    const { amount } = await openSheet();
+    fireEvent.change(amount, { target: { value: " 12,50 " } });
+    fireEvent.blur(amount);
+    await waitFor(() => expect(amount).toHaveValue("12.50"));
+  });
+
+  it("блокує суму понад верхню межу", async () => {
+    const { onSave, amount } = await openSheet();
+    fireEvent.change(amount, { target: { value: "99999999" } });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Максимальна сума — 10 000 000 ₴"),
+      ).toBeInTheDocument();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("блокує експоненційний запис замість тихого мільярда", async () => {
+    const { onSave, amount } = await openSheet();
+    fireEvent.change(amount, { target: { value: "1e9" } });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Сума має бути числом")).toBeInTheDocument();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("обрізає довгий опис до 200 символів", async () => {
+    await openSheet();
+    const desc = screen.getByLabelText(/Назва/);
+    expect(desc).toHaveAttribute("maxlength", "200");
+  });
+
+  it("попереджає про дату поза м'яким вікном, але дозволяє зберегти", async () => {
+    const { onSave, amount } = await openSheet();
+    fireEvent.change(amount, { target: { value: "50" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Не сьогодні? Змінити дату" }),
+    );
+    fireEvent.change(screen.getByLabelText("Дата"), {
+      target: { value: "2019-01-01" },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Незвична дата — перевір, чи не помилка в році"),
+      ).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  });
+
+  it("відкидає дату поза жорстким вікном", async () => {
+    const { onSave, amount } = await openSheet();
+    fireEvent.change(amount, { target: { value: "50" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Не сьогодні? Змінити дату" }),
+    );
+    fireEvent.change(screen.getByLabelText("Дата"), {
+      target: { value: "3025-01-01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Дата поза допустимим діапазоном"),
+      ).toBeInTheDocument();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

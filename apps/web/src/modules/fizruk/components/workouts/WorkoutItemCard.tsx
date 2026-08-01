@@ -7,6 +7,13 @@ import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon } from "@shared/components/ui/Icon";
 import {
+  clampNumericInput,
+  MAX_DISTANCE_M,
+  MAX_DURATION_SEC,
+  MAX_REPS,
+  MAX_WEIGHT_KG,
+} from "../../lib/numericBounds";
+import {
   recoveryConflictsForWorkoutItem,
   type Workout,
   type WorkoutGroup,
@@ -279,6 +286,8 @@ export function WorkoutItemCard({
                 type="number"
                 inputMode="decimal"
                 placeholder="кг"
+                min={0}
+                max={MAX_WEIGHT_KG}
                 aria-label="Вага в кілограмах"
                 value={s.weightKg || ""}
                 readOnly={isReadOnly}
@@ -289,8 +298,7 @@ export function WorkoutItemCard({
                   if (!current) return;
                   next[idx] = {
                     ...current,
-                    weightKg:
-                      e.target.value === "" ? 0 : Number(e.target.value),
+                    weightKg: clampNumericInput(e.target.value, MAX_WEIGHT_KG),
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });
                 }}
@@ -300,6 +308,8 @@ export function WorkoutItemCard({
                 type="number"
                 inputMode="numeric"
                 placeholder="повт."
+                min={0}
+                max={MAX_REPS}
                 aria-label="Кількість повторень"
                 value={s.reps || ""}
                 readOnly={isReadOnly}
@@ -320,7 +330,7 @@ export function WorkoutItemCard({
                   if (!current) return;
                   next[idx] = {
                     ...current,
-                    reps: e.target.value === "" ? 0 : Number(e.target.value),
+                    reps: clampNumericInput(e.target.value, MAX_REPS),
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });
                 }}
@@ -449,7 +459,10 @@ export function WorkoutItemCard({
             onFocus={(e) => e.target.select()}
             onChange={(e) =>
               updateItem(activeWorkout.id, it.id, {
-                durationSec: e.target.value === "" ? 0 : Number(e.target.value),
+                durationSec: clampNumericInput(
+                  e.target.value,
+                  MAX_DURATION_SEC,
+                ),
               })
             }
           />
@@ -467,13 +480,15 @@ export function WorkoutItemCard({
               type="number"
               inputMode="numeric"
               placeholder="метри"
+              min={0}
+              max={MAX_DISTANCE_M}
               aria-label="Дистанція в метрах"
               value={it.distanceM || ""}
               readOnly={isReadOnly}
               onFocus={(e) => e.target.select()}
               onChange={(e) =>
                 updateItem(activeWorkout.id, it.id, {
-                  distanceM: e.target.value === "" ? 0 : Number(e.target.value),
+                  distanceM: clampNumericInput(e.target.value, MAX_DISTANCE_M),
                 })
               }
             />
@@ -488,8 +503,10 @@ export function WorkoutItemCard({
               onFocus={(e) => e.target.select()}
               onChange={(e) =>
                 updateItem(activeWorkout.id, it.id, {
-                  durationSec:
-                    e.target.value === "" ? 0 : Number(e.target.value),
+                  durationSec: clampNumericInput(
+                    e.target.value,
+                    MAX_DURATION_SEC,
+                  ),
                 })
               }
             />

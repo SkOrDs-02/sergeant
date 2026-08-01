@@ -1,7 +1,7 @@
 # SPEC: межові значення форм вводу — підготовка apps/web до бети
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
-> **Status:** Scaffolded
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-29.
+> **Status:** Active — Фаза 1 і Фаза 3 реалізовані; Фаза 2 (решта форм) відкрита. Стан по пунктах — у § «Стан виконання» в кінці.
 
 ## Проблема
 
@@ -314,3 +314,70 @@ ring-buffer `window.__hubAnalytics`.
 - **Верхня межа макросів у Харчуванні** не визначена інтерв'ю — обрати за
   фізіологічною правдоподібністю (напр. 10 000 ккал на прийом) і зафіксувати
   в коді константою з коментарем.
+
+## Стан виконання
+
+Оновлено 2026-08-01.
+
+### Зроблено
+
+**Спільні модулі.**
+
+- `apps/web/src/shared/lib/format/amount.ts` — `parseAmountToMinor()`,
+  `formatMinorAsInput()`, `canonicalizeAmountInput()`, межі. Тест поруч
+  покриває всю таблицю вводів зі спеки.
+- `apps/web/src/shared/lib/time/dateBounds.ts` — `classifyDateBound()`
+  (`ok` / `warn` / `invalid`) + повідомлення. Тест поруч.
+- `apps/web/src/shared/lib/text/limits.ts` — `NAME_MAX_LEN = 200`,
+  `NOTE_MAX_LEN`, `clampText()`. Тест поруч.
+- `apps/web/src/shared/hooks/useHistoryDismiss.ts` — history-інтеграція
+  «назад закриває аркуш», підключена в `Sheet` і в центровану гілку `Modal`
+  (coarse-pointer гілка делегує в `Sheet`, щоб не пушити два записи).
+
+**Фаза 1.**
+
+- Фінік: `expenseFormSchema` перейшла на спільний парсер (верхня межа,
+  точність, відсікання `1e9`/`NaN`/нуля/відʼємних) і на жорстке вікно дат;
+  поле суми стало `type="text"` + `inputMode="decimal"` (у `type="number"`
+  браузер віддає порожній `value` для «12,50», тож нормалізація коми була б
+  неможлива) з канонізацією на `blur`; `maxLength` на описі; попередження
+  про дату поза мʼяким вікном.
+- Харчування: верхні межі КБЖВ (`MAX_KCAL_PER_MEAL = 10 000`,
+  `MAX_MACRO_GRAMS = 2 000`), `clampText` на назві, `maxLength` на полі
+  назви, ідемпотентний id на відкриття аркуша.
+- Рутина: жорстке вікно + `endDate >= startDate` як помилки валідації,
+  мʼяке вікно як попередження, `maxLength` на назві, ідемпотентний
+  client-generated id.
+- Фізрук: `clampNumericInput()` + стелі для ваги / повторів / тривалості /
+  дистанції у `WorkoutItemCard` (раніше `Number(e.target.value)` пускав
+  `Infinity` і 20-значні числа прямо в стор).
+
+**Ідемпотентність (шар запису, не прапорець у формі).**
+
+- `packages/nutrition-domain` → `addLogEntry` відкидає повторний id.
+- `packages/routine-domain` → `applyCreateHabit` приймає client-generated
+  `id` і відкидає повторний.
+
+**Фаза 3 — сервер.**
+
+- `packages/shared/src/schemas/bounds.ts` — спільні zod-примітиви
+  (`amountMinorSchema`, `boundedDayKeySchema`, `nameTextSchema`), числа
+  збігаються з клієнтськими.
+- `ManualExpenseCreateSchema` перейшла на них: верхня межа суми і жорстке
+  вікно дати тепер відсікаються і через `curl`.
+
+### Відкрито
+
+- **Фаза 2** — решта форм зі списку вище (бюджети, split-редактор, активи,
+  `ItemEditSheet`, `MacrosEditor`, `FoodPickerSection`, `BodyEntryForm`,
+  `Measurements`, `BiometricsSection`, `DateField`).
+- **Офлайн-статус «чекає синхронізації»** — окремий індикатор поверх
+  наявного `OfflineBanner` не додано.
+- **Дедуплікація в `enqueueOutboxUpsert`** — свідомо не чіпали (ризик для
+  наявних даних тестерів, спека дозволяє відкотитись до дедуплікації лише в
+  модульних шарах запису; так і зроблено).
+- **Playwright `@extended`** — нові офлайн/«назад» сценарії не дописані.
+- **Серверні межі в `nutrition` / `sync`** — примітиви є, endpoint-и ще не
+  переведені.
+- **Click-through у браузері** — не проводився; верифікація поки лише
+  автотестами.

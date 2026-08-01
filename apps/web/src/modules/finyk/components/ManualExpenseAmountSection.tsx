@@ -19,6 +19,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech, formatMoney } from "@sergeant/shared";
+import { canonicalizeAmountInput } from "@shared/lib/format/amount";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
 interface AmountSuggestion {
@@ -125,11 +126,15 @@ export function ManualExpenseAmountSection({
         ) : null}
         <Input
           id={amountId}
-          type="number"
+          // `type="text"` навмисно: `type="number"` віддає порожній
+          // `value` для «12,50», тож нормалізація коми стала б неможливою.
+          // `inputMode="decimal"` усе одно піднімає цифрову клавіатуру.
+          type="text"
           inputMode="decimal"
+          autoComplete="off"
           placeholder="0"
-          min="0"
-          step="0.01"
+          maxLength={20}
+          showCharCount={false}
           error={!!amountError}
           disabled={isSubmitting}
           helperText={amountError ?? undefined}
@@ -137,6 +142,20 @@ export function ManualExpenseAmountSection({
           ref={(el) => {
             amountReg.ref(el);
             inputRef.current = el;
+          }}
+          onBlur={(e) => {
+            // «Виправити й показати результат»: « 12,50 » → 12.50. На
+            // UA-клавіатурі кома — норма, тож показуємо, як зрозуміли,
+            // замість inline-помилки. Невалідний ввід лишаємо як є —
+            // помилка валідації має пояснювати саме те, що набрали.
+            const canonical = canonicalizeAmountInput(e.target.value);
+            if (canonical !== e.target.value) {
+              setValue("amount", canonical, {
+                shouldDirty: true,
+                shouldValidate: Boolean(amountError),
+              });
+            }
+            void amountReg.onBlur(e);
           }}
         />
       </div>

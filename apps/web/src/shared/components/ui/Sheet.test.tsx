@@ -137,6 +137,32 @@ describe("Sheet", () => {
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
   });
 
+  it("closes on browser Back without changing the route", () => {
+    const onClose = vi.fn();
+    const pathBefore = window.location.pathname;
+    render(
+      <Sheet open onClose={onClose} title="T">
+        body
+      </Sheet>,
+    );
+    // Opening pushes an entry that belongs to the sheet; popping it must
+    // dismiss the sheet, not navigate the user out of the module.
+    fireEvent.popState(window);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(window.location.pathname).toBe(pathBefore);
+  });
+
+  it("does not push a history entry while closed", () => {
+    const onClose = vi.fn();
+    render(
+      <Sheet open={false} onClose={onClose} title="T">
+        body
+      </Sheet>,
+    );
+    fireEvent.popState(window);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("detects the software-keyboard inset without caller wiring", () => {
     setVisualKeyboardInsetAdapter((active) => (active ? 280 : 0));
 

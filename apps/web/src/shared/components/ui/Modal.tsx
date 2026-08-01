@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
@@ -99,6 +100,9 @@ export function Modal({
   const useSheet = coarse && !hideClose && Boolean(title);
 
   useBodyScrollLock(open && !useSheet);
+  // Only the centered branch needs its own history entry — the coarse-pointer
+  // branch delegates to <Sheet>, which owns one already.
+  useHistoryDismiss(open && !useSheet, onClose);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;

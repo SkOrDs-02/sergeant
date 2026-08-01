@@ -1,8 +1,13 @@
 import { useState } from "react";
+import { routineUid } from "@sergeant/routine-domain";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import { Sheet } from "@shared/components/ui/Sheet";
+import {
+  classifyDateBound,
+  DATE_INVALID_MESSAGE,
+} from "@shared/lib/time/dateBounds";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
@@ -87,10 +92,13 @@ export function HabitQuickCreateDialog({
   const [internalFocusTick, setInternalFocusTick] = useState(0);
   const [errors, setErrors] = useState<HabitFormErrors>({});
 
+  const [draftId, setDraftId] = useState("");
+
   const [prevOpenKey, setPrevOpenKey] = useState("");
   const openKey = `${open}:${editingId ?? ""}:${focusTick ?? 0}`;
   if (open && openKey !== prevOpenKey) {
     setPrevOpenKey(openKey);
+    setDraftId(routineUid("hab"));
     if (editingId) {
       const habit = routine.habits.find((h) => h.id === editingId);
       setDraft(habit ? habitToDraft(habit) : emptyHabitDraft());
@@ -126,7 +134,21 @@ export function HabitQuickCreateDialog({
     ) {
       nextErrors.weekdays = "Обери хоча б один день тижня.";
     }
-    if (nextErrors.name || nextErrors.weekdays) {
+    if (draft.startDate && classifyDateBound(draft.startDate) === "invalid") {
+      nextErrors.startDate = DATE_INVALID_MESSAGE;
+    }
+    if (draft.endDate && classifyDateBound(draft.endDate) === "invalid") {
+      nextErrors.endDate = DATE_INVALID_MESSAGE;
+    }
+    if (
+      draft.startDate &&
+      draft.endDate &&
+      draft.endDate < draft.startDate &&
+      !nextErrors.endDate
+    ) {
+      nextErrors.endDate = "Кінець не може бути раніше за початок.";
+    }
+    if (Object.values(nextErrors).some(Boolean)) {
       setErrors(nextErrors);
       return;
     }
@@ -136,7 +158,9 @@ export function HabitQuickCreateDialog({
       hapticSuccess();
       toast.success("Звичку оновлено.");
     } else {
-      setRoutine((s) => createHabit(s, patch));
+      // id фіксується на відкриття аркуша — подвійний тап приходить у
+      // `applyCreateHabit` з тим самим id і відкидається як дубль.
+      setRoutine((s) => createHabit(s, { ...patch, id: draftId }));
       hapticSuccess();
       toast.success("Звичку створено.");
     }

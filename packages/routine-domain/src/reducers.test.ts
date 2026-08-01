@@ -788,3 +788,26 @@ describe("routine-domain/reducers — порядок і pref-и", () => {
     });
   });
 });
+
+describe("applyCreateHabit — ідемпотентність за client-generated id", () => {
+  it("другий виклик з тим самим id не створює другу звичку", () => {
+    const base = defaultRoutineState();
+    const once = applyCreateHabit(base, { name: "Пити воду", id: "hab-fixed" });
+    const twice = applyCreateHabit(once, {
+      name: "Пити воду",
+      id: "hab-fixed",
+    });
+    expect(twice).toBe(once);
+    expect(twice.habits).toHaveLength(1);
+    expect(twice.habits[0]?.id).toBe("hab-fixed");
+  });
+
+  it("без id поведінка не змінюється — кожен виклик створює звичку", () => {
+    const base = defaultRoutineState();
+    const twice = applyCreateHabit(
+      applyCreateHabit(base, { name: "Пити воду" }),
+      { name: "Пити воду" },
+    );
+    expect(twice.habits).toHaveLength(2);
+  });
+});

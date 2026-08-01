@@ -8,6 +8,15 @@
  */
 import { z } from "zod";
 import {
+  AMOUNT_ERROR_MESSAGE,
+  parseAmountToMinor,
+} from "@shared/lib/format/amount";
+import {
+  classifyDateBound,
+  DATE_INVALID_MESSAGE,
+} from "@shared/lib/time/dateBounds";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
   type FrequentMerchant,
@@ -53,19 +62,38 @@ export function buildAmountSuggestions(
 }
 
 // `amount` зберігається як string (бо Input value="" легше описується як
-// string); refine перевіряє parse + > 0. description / category / date —
-// string-поля; category стає порожньою після зміни типу й вимагає нового вибору.
+// string); межі й нормалізація — у спільному `parseAmountToMinor`.
+// description / category / date — string-поля; category стає порожньою
+// після зміни типу й вимагає нового вибору. `date` перевіряється лише на
+// жорстке вікно — м'яке вікно рендериться як попередження в аркуші.
 export const expenseFormSchema = z.object({
-  description: z.string(),
-  amount: z
+  description: z.string().max(NAME_MAX_LEN),
+  amount: z.string().superRefine((v, ctx) => {
+    const parsed = parseAmountToMinor(v);
+    if (!parsed.ok) {
+      ctx.addIssue({
+        code: "custom",
+        message: AMOUNT_ERROR_MESSAGE[parsed.error],
+      });
+    }
+  }),
+  category: z.string().min(1, "Оберіть категорію"),
+  date: z
     .string()
     .refine(
-      (v) => Boolean(v) && !Number.isNaN(parseFloat(v)) && parseFloat(v) > 0,
-      "Вкажи суму більше 0",
+      (v) => v === "" || classifyDateBound(v) !== "invalid",
+      DATE_INVALID_MESSAGE,
     ),
-  category: z.string().min(1, "Оберіть категорію"),
-  date: z.string(),
 });
+
+/**
+ * Гривні для write-path. Схема вже гарантує валідність, тож нуль тут —
+ * недосяжна гілка, а не тиха втрата даних.
+ */
+export function expenseAmountHryvnia(amount: string): number {
+  const parsed = parseAmountToMinor(amount);
+  return parsed.ok ? parsed.minor / 100 : 0;
+}
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
