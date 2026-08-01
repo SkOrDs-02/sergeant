@@ -32,6 +32,10 @@ import {
   startFtuxDripWorker,
   type StartedFtuxDripWorker,
 } from "./lib/jobs/ftuxDrip.js";
+import {
+  startSergeantNudgeWorker,
+  type StartedSergeantNudgeWorker,
+} from "./lib/jobs/sergeantNudge.js";
 import { endPoolWithAbortTimeout } from "./lib/poolShutdown.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
@@ -170,6 +174,13 @@ const authMailWorker: StartedAuthMailWorker | null = startAuthMailWorker();
 // у `email_campaigns_log` через той самий pg-pool, що й решта server-у.
 configureFtuxDripDispatcher({ pool });
 const ftuxDripWorker: StartedFtuxDripWorker | null = startFtuxDripWorker();
+
+// Проактивні пуші Сержанта: repeatable-джоба о 09:00 Europe/Kyiv, яка будить
+// лише тих, хто не заходив 2/4/7 діб. Як і решта BullMQ-воркерів, повертає
+// null без `REDIS_URL` — тоді канал просто не працює. Свідомо: черга, що
+// губить джоби на рестарті, тут гірша за відсутність каналу.
+const sergeantNudgeWorker: StartedSergeantNudgeWorker | null =
+  startSergeantNudgeWorker();
 
 // AI memory ingestion BullMQ worker. Так само як `authMailWorker`, повертає
 // null коли `REDIS_URL` не задано (CI / local dev) — у такому разі
@@ -313,6 +324,18 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
       } catch (err) {
         logger.warn({
           msg: "ftux_drip_worker_close_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
+    }
+
+    if (sergeantNudgeWorker) {
+      try {
+        await sergeantNudgeWorker.close();
+        logger.info({ msg: "sergeant_nudge_worker_closed" });
+      } catch (err) {
+        logger.warn({
+          msg: "sergeant_nudge_worker_close_error",
           err: serializeError(err, { includeStack: false }),
         });
       }
