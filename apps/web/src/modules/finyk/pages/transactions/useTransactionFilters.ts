@@ -158,6 +158,20 @@ export function useTransactionFilters({
   );
   const activeLoading = isCurrentMonth ? loadingTx : loadingHistory;
 
+  // "Місяць порожній, але дані взагалі є" — окремий стан від "даних немає".
+  // Без нього перший день нового місяця виглядав як повний втрата даних:
+  // список чистий, а зверху висить first-run-хіро «Куди йдуть твої гроші?
+  // Додай першу витрату… Підключи Monobank» — при підключеному банку і
+  // повній історії за попередні місяці (звіт founder-а 2026-07-31,
+  // 1 серпня 01:47). Джерела беремо ДО клампу по місяцю: `realTx` через
+  // mirror-overlay тримає всю історію, `historyTx` — останній підвантажений
+  // місяць, `manualExpenses` — усі ручні записи.
+  const hasTransactionsOutsideMonth =
+    activeTx.length === 0 &&
+    (realTx.length > 0 ||
+      historyTx.length > 0 ||
+      (manualExpenses?.length ?? 0) > 0);
+
   // useCallback — `goMonth` підв'язаний до двох кнопок навігації місяцями;
   // стабільний handler уникає створення нових замикань на кожен рендер.
   const goMonth = useCallback(
@@ -424,6 +438,7 @@ export function useTransactionFilters({
     // derived
     activeTx,
     activeLoading,
+    hasTransactionsOutsideMonth,
     creditAccIds,
     hiddenTxIdSet,
     catSpends,

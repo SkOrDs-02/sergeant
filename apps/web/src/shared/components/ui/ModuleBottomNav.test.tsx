@@ -239,3 +239,107 @@ describe("ModuleBottomNav", () => {
     expect(nav.className).not.toContain("translate-y-full");
   });
 });
+
+// Regression: founder report 2026-07-31 — «в модулях іноді не спрацьовують
+// кнопки в навбарі: клікаються, але не перемикається сторінка». react-router
+// v7 navigates inside `React.startTransition`, which deliberately keeps the
+// current screen mounted instead of revealing a new Suspense fallback — so a
+// tab whose lazy chunk is still cold produced zero feedback for the whole
+// download. The nav now paints the tap immediately and warms the chunk on
+// pointer-down.
+describe("ModuleBottomNav — tap feedback while the route is still committing", () => {
+  afterEach(() => {
+    cleanup();
+    resetVisualKeyboardInsetAdapter();
+  });
+
+  it("highlights the tapped tab before the host commits activeId", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const stats = screen.getByRole("button", { name: "Stats" });
+    expect(stats).not.toHaveAttribute("aria-current", "page");
+
+    // `activeId` intentionally stays "overview" — the host has not committed.
+    fireEvent.click(stats);
+
+    expect(stats).toHaveAttribute("aria-current", "page");
+    expect(stats).toHaveAttribute("data-pending", "true");
+    expect(
+      screen.getByRole("button", { name: "Overview" }),
+    ).not.toHaveAttribute("aria-current", "page");
+  });
+
+  it("drops the optimistic highlight once the route commits", () => {
+    const { rerender } = render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Stats" }));
+    rerender(
+      <ModuleBottomNav
+        items={items}
+        activeId="stats"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const stats = screen.getByRole("button", { name: "Stats" });
+    expect(stats).toHaveAttribute("aria-current", "page");
+    expect(stats).not.toHaveAttribute("data-pending");
+  });
+
+  it("does not mark the already-active tab as pending", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const overview = screen.getByRole("button", { name: "Overview" });
+    fireEvent.click(overview);
+    expect(overview).not.toHaveAttribute("data-pending");
+  });
+
+  it("warms the target page on pointer-down, ahead of the click", () => {
+    const onPrefetch = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={onChange}
+        onPrefetch={onPrefetch}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const stats = screen.getByRole("button", { name: "Stats" });
+    fireEvent.pointerDown(stats);
+    expect(onPrefetch).toHaveBeenCalledWith("stats");
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(stats);
+    expect(onChange).toHaveBeenCalledWith("stats");
+  });
+});

@@ -141,8 +141,8 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
     const optionLabels = Array.from(select.options).map((o) => o.textContent);
     expect(optionLabels).toEqual([
-      // Disabled placeholder: без нього порожній select мовчки означав би
-      // «Їжа», і людина зберігала б категорію, якої не обирала.
+      // Disabled placeholder — required so switching Витрата ↔ Надходження can
+      // blank the field and force an explicit pick from the new taxonomy.
       "Оберіть категорію",
       "Їжа",
       "Продукти",
@@ -182,10 +182,10 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first *selectable* <option>.
-    // `options[0]` is the disabled «Оберіть категорію» placeholder.
+    // Транспорт has the highest frequency rank → first real <option> in the
+    // dropdown, right after the disabled "Оберіть категорію" placeholder.
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.disabled).toBe(true);
+    expect(select.options[0]?.textContent).toBe("Оберіть категорію");
     expect(select.options[1]?.textContent).toBe("Транспорт");
   });
 

@@ -15,6 +15,18 @@ export interface SyncTone {
   // Другий канал стану поряд із кольором крапки — важливо на вузьких
   // екранах, де текстовий лейбл ховається (`hidden sm:inline`).
   icon: IconName;
+  /**
+   * `true` для станів, які вимагають уваги (не підключено / помилка /
+   * частково / оновлення). Здоровий «ок» — `false`.
+   *
+   * AI-CONTEXT: хедер модуля має фіксовану ширину і на телефоні всі
+   * `shrink-0` кнопки (Назад + Хаб + око + асистент + налаштування) уже
+   * з'їдають рядок — pill зверху виштовхував заголовок «Фінік» і візуально
+   * перекривав його (звіт founder-а 2026-07-31). Тому на вузьких екранах
+   * pill показуємо лише коли він щось повідомляє; «ок» там і так без
+   * тексту (`hidden sm:inline`), тобто нульова інформативність.
+   */
+  needsAttention: boolean;
 }
 
 /**
@@ -33,6 +45,7 @@ export function getSyncTone(
       text: "не підключено",
       pill: "bg-panelHi     text-muted   border-line",
       icon: "wifi-off",
+      needsAttention: true,
     };
   }
   if (syncState?.status === "error") {
@@ -41,6 +54,7 @@ export function getSyncTone(
       text: "помилка",
       pill: "bg-danger-soft  text-danger-strong dark:text-danger  border-danger/20",
       icon: "alert-circle",
+      needsAttention: true,
     };
   }
   if (syncState?.status === "partial") {
@@ -49,6 +63,7 @@ export function getSyncTone(
       text: "частково",
       pill: "bg-warning/10   text-warning-strong dark:text-warning border-warning/20",
       icon: "alert-triangle",
+      needsAttention: true,
     };
   }
   if (syncState?.status === "loading") {
@@ -57,6 +72,7 @@ export function getSyncTone(
       text: "оновлення",
       pill: "bg-panelHi     text-muted   border-line",
       icon: "refresh-cw",
+      needsAttention: true,
     };
   }
   return {
@@ -64,6 +80,7 @@ export function getSyncTone(
     text: "ок",
     pill: "bg-success/10  text-success-strong dark:text-success border-success/20",
     icon: "check-circle",
+    needsAttention: false,
   };
 }
 

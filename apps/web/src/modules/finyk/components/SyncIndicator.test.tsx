@@ -47,6 +47,24 @@ describe("getSyncTone", () => {
   it("exposes the canonical swipe threshold", () => {
     expect(SWIPE_THRESHOLD_PX).toBe(60);
   });
+
+  // Regression: founder report 2026-07-31 — «Бейдж ок перекриває хедер
+  // модуля». The header row is fixed-width on a phone; the healthy pill costs
+  // ~54px there while carrying no text (`hidden sm:inline`), which squeezed
+  // the module title out. `needsAttention` is the flag `SyncPill` uses to hide
+  // only the uninformative "ок" state on narrow viewports.
+  it("marks only the healthy tone as not needing attention", () => {
+    expect(getSyncTone({ status: "success" }).needsAttention).toBe(false);
+    expect(getSyncTone(undefined).needsAttention).toBe(false);
+    expect(getSyncTone({ status: "whatever" }).needsAttention).toBe(false);
+  });
+
+  it("marks every actionable tone as needing attention", () => {
+    expect(getSyncTone({ status: "success" }, false).needsAttention).toBe(true);
+    expect(getSyncTone({ status: "error" }).needsAttention).toBe(true);
+    expect(getSyncTone({ status: "partial" }).needsAttention).toBe(true);
+    expect(getSyncTone({ status: "loading" }).needsAttention).toBe(true);
+  });
 });
 
 describe("SwipeProgressBar", () => {

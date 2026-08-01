@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { lazyImport } from "../../core/lib/lazyImport";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -31,17 +30,14 @@ import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 
-// Lazy pages. Import the concrete page modules, not the folders: the
-// `pages/{transactions,budgets}/index.ts` barrels were removed as dead
-// code in #3504 (Knip can't see dynamic directory imports), which left
-// these two imports unresolved and broke the Vercel production build.
-const Transactions = lazyImport(
-  () => import("./pages/transactions/Transactions"),
-  "Transactions",
-);
-const Budgets = lazyImport(() => import("./pages/budgets/Budgets"), "Budgets");
-const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
-const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
+import {
+  Analytics,
+  Assets,
+  Budgets,
+  Transactions,
+  preloadFinykPage,
+  useWarmFinykPages,
+} from "./pages/lazyPages";
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
@@ -176,6 +172,9 @@ export default function App({
     onPwaActionConsumed,
   ]);
 
+  // Warm sibling page chunks at idle (see `pages/lazyPages`).
+  useWarmFinykPages(NAV_IDS);
+
   const { mergedMono } = useUnifiedFinanceData({
     mono,
     privat,
@@ -201,11 +200,15 @@ export default function App({
   const swipe = useSwipeNavigation({
     onSwipeLeft: () => {
       const next = NAV_IDS[curPageIdx + 1];
-      if (next !== undefined) navigate(next);
+      if (next === undefined) return;
+      preloadFinykPage(next);
+      navigate(next);
     },
     onSwipeRight: () => {
       const next = NAV_IDS[curPageIdx - 1];
-      if (next !== undefined) navigate(next);
+      if (next === undefined) return;
+      preloadFinykPage(next);
+      navigate(next);
     },
     threshold: SWIPE_THRESHOLD_PX,
     atStart: curPageIdx === 0,
@@ -491,6 +494,7 @@ export default function App({
           }))}
           activeId={page}
           onChange={navigate}
+          onPrefetch={preloadFinykPage}
           module="finyk"
           ariaLabel={messages.nav.finykSections}
         />
@@ -556,7 +560,13 @@ function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 select-none shrink-0",
+        // На вузьких екранах здоровий «ок»-стан ховаємо повністю: header-рядок
+        // фіксованої ширини (Назад + Хаб + око + асистент + налаштування) не
+        // лишає місця, і pill виштовхував/перекривав заголовок модуля. Стани,
+        // що вимагають уваги, лишаються видимими скрізь — див. `needsAttention`
+        // у `SyncIndicator.getSyncTone`.
+        syncTone.needsAttention ? "flex" : "hidden sm:flex",
+        "items-center gap-1.5 select-none shrink-0",
         "text-style-caption px-1.5 sm:px-2 py-0.5 rounded-full border",
         "transition-colors duration-200",
         syncTone.pill,

@@ -51,9 +51,6 @@ export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 export { DateScrubber } from "./DateScrubber";
 export type { DateScrubberProps } from "./DateScrubber";
 
-export { NumericAccessoryBar } from "./NumericAccessoryBar";
-export type { NumericAccessoryBarProps } from "./NumericAccessoryBar";
-
 export { MorphChevron } from "./MorphChevron";
 export type { MorphChevronProps } from "./MorphChevron";
 
