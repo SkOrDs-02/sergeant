@@ -11,6 +11,10 @@ import {
 } from "@shared/components/ui/DataState";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { Badge } from "@shared/components/ui/Badge";
+import { messages } from "@shared/i18n/uk";
+import { STORAGE_KEYS } from "@sergeant/shared";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   useWeeklyDigest,
   useDigestHistory,
@@ -127,6 +131,8 @@ interface DigestContentProps {
   sectionOpen: boolean;
   /** Скільки днів тижня залоговано в харчуванні — знаменник coverage. */
   nutritionCoverage?: { logged: number; total: number } | null;
+  /** Юзер розгорнув тіло звіту — знімає бейдж «новий звіт». */
+  onOpened?: (() => void) | undefined;
 }
 
 function DigestContent({
@@ -141,6 +147,7 @@ function DigestContent({
   surface,
   sectionOpen,
   nutritionCoverage,
+  onOpened,
 }: DigestContentProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -163,6 +170,7 @@ function DigestContent({
   // «Згорнути». Нових кнопок не додаємо.
   const setExpandedTracked = (next: boolean) => {
     setExpanded(next);
+    if (next) onOpened?.();
     trackAdviceReaction(adviceId, next ? "expand" : "collapse");
   };
 
@@ -381,6 +389,21 @@ export function WeeklyDigestCard({
     useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
 
+  // Автогенерація по понеділках працює у фоні: звіт з'являвся мовчки, і
+  // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
+  // тримається, поки він не розгорнув саме цей тиждень.
+  const [lastSeenWeekKey, setLastSeenWeekKey] = useState<string>(() =>
+    safeReadStringLS(STORAGE_KEYS.WEEKLY_DIGEST_LAST_SEEN),
+  );
+  const hasUnreadDigest =
+    !loading && !!digest && lastSeenWeekKey !== selectedWeekKey;
+
+  const markDigestSeen = () => {
+    if (lastSeenWeekKey === selectedWeekKey) return;
+    setLastSeenWeekKey(selectedWeekKey);
+    safeWriteLS(STORAGE_KEYS.WEEKLY_DIGEST_LAST_SEEN, selectedWeekKey);
+  };
+
   const handleGenerate = () => generate();
 
   // Дайджест — теж AI-порада, тож іде тією самою парою подій із
@@ -442,9 +465,18 @@ export function WeeklyDigestCard({
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-style-title font-bold text-text">Звіт тижня</div>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-style-title font-bold text-text truncate">
+              Звіт тижня
+            </span>
+            {hasUnreadDigest && (
+              <Badge variant="brand" size="xs">
+                {messages.sergeant.weeklyDigestUnread}
+              </Badge>
+            )}
+          </div>
           <div className="text-style-caption text-muted mt-0.5">
-            {weekRange}
+            {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -558,6 +590,7 @@ export function WeeklyDigestCard({
         surface={surface}
         sectionOpen={sectionOpen}
         nutritionCoverage={nutritionCoverage}
+        onOpened={markDigestSeen}
       />
 
       {storiesOpen && digest && (

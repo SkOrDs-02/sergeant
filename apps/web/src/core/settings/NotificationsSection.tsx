@@ -11,12 +11,16 @@ import {
   NUTRITION_PREFS_KEY,
   type NutritionPrefs,
 } from "../../modules/nutrition/lib/nutritionStorage";
+import { messages } from "@shared/i18n/uk";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
 import {
   SettingsGroup,
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
+import { useServerPreference } from "./useServerPreference";
+
+const sergeantCopy = messages.sergeant;
 
 type PermStatus = NotificationPermission | "unsupported";
 
@@ -29,6 +33,13 @@ export function NotificationsSection() {
   const { warning: toastWarning } = useToast();
 
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
+
+  // Живе на сервері, а не в localStorage: цей прапорець читає серверний
+  // шедулер тоді, коли жодного клієнта не запущено.
+  const sergeantNudges = useServerPreference("sergeantNudges", {
+    saveError: sergeantCopy.nudgesSaveError,
+    authRequired: sergeantCopy.nudgesAuthRequired,
+  });
 
   const monthlyPlan = useMonthlyPlan();
 
@@ -149,6 +160,27 @@ export function NotificationsSection() {
       </div>
 
       <PushNotificationToggle className="p-3 rounded-xl bg-bg border border-line" />
+
+      <SettingsSubGroup title={sergeantCopy.name} defaultOpen>
+        <ToggleRow
+          label={sergeantCopy.nudgesToggleLabel}
+          description={sergeantCopy.nudgesToggleDescription}
+          checked={sergeantNudges.value}
+          onChange={(checked) => {
+            // Дозвіл питаємо ДО запису: увімкнений на сервері канал без
+            // дозволу браузера — це тиха підписка на нічого.
+            if (checked && permStatus !== "granted") {
+              void requestPermission();
+            }
+            void sergeantNudges.set(checked);
+          }}
+        />
+        {sergeantNudges.error && (
+          <p className="text-style-caption text-danger-strong dark:text-danger">
+            {sergeantNudges.error}
+          </p>
+        )}
+      </SettingsSubGroup>
 
       <SettingsSubGroup title="Рутина (звички)" defaultOpen>
         <ToggleRow

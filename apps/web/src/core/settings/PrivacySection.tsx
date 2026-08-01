@@ -15,6 +15,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   analytics: true,
   aiMemory: true,
   pushNotifications: false,
+  sergeantNudges: false,
   updatedAt: null,
 };
 

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { SettingsGroup } from "./SettingsPrimitives";
 
 /**
@@ -12,11 +13,12 @@ import { SettingsGroup } from "./SettingsPrimitives";
 export function AssistantCatalogueSection() {
   const navigate = useNavigate();
   return (
-    <SettingsGroup title="Можливості асистента" icon="sparkles">
+    <SettingsGroup
+      title={messages.sergeant.capabilitiesSectionTitle}
+      icon="sparkles"
+    >
       <p className="text-style-body text-subtle leading-relaxed">
-        ~60 інструментів, які може запустити AI-асистент: фінанси, тренування,
-        звички, харчування, аналітика, утиліти, пам&apos;ять. Тапни картку — і
-        одразу побачиш приклади команд.
+        {messages.sergeant.capabilitiesSectionBody}
       </p>
       <Button
         variant="secondary"
@@ -26,7 +28,7 @@ export function AssistantCatalogueSection() {
         data-testid="open-assistant-catalogue"
       >
         <Icon name="sparkles" size={16} className="mr-2" />
-        Відкрити каталог
+        {messages.sergeant.capabilitiesOpenLabel}
       </Button>
     </SettingsGroup>
   );
