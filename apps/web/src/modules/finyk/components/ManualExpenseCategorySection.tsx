@@ -18,7 +18,7 @@
  * (see `sortCategoriesByFrequency` / `categorySlugs` in the parent).
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { UseFormRegister } from "react-hook-form";
+import type { UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Icon } from "@shared/components/ui/Icon";
 import { Badge } from "@shared/components/ui/Badge";
 import { Label } from "@shared/components/ui/FormField";
@@ -36,6 +36,7 @@ interface ManualExpenseCategorySectionProps {
   /** Ordered slugs for the active kind — frequency-sorted for expense, fixed for income. */
   categorySlugs: string[];
   register: UseFormRegister<ExpenseFormValues>;
+  setValue: UseFormSetValue<ExpenseFormValues>;
   setAiAppliedCategory: Dispatch<SetStateAction<string | null>>;
 }
 
@@ -47,6 +48,7 @@ export function ManualExpenseCategorySection({
   categorySlug,
   categorySlugs,
   register,
+  setValue,
   setAiAppliedCategory,
 }: ManualExpenseCategorySectionProps) {
   const categoryRegistration = register("category");
@@ -93,6 +95,22 @@ export function ManualExpenseCategorySection({
         onChange={(e) => {
           const slug = e.target.value;
           void categoryRegistration.onChange(e);
+          // `useApiForm` runs RHF in its default `mode: "onSubmit"`, so a
+          // plain field change never re-runs the resolver before the first
+          // submit. Switching Витрата ↔ Надходження blanks the category with
+          // `shouldValidate: true` (the taxonomies don't overlap), which
+          // paints "Оберіть категорію" immediately — and without an explicit
+          // re-validation here that warning stayed on screen even after the
+          // user picked a category. Mirrors the amount field's
+          // `shouldValidate: Boolean(amountError)` idiom: only re-validate
+          // while an error is actually displayed, so an untouched field never
+          // starts erroring on its own.
+          if (categoryError) {
+            setValue("category", slug, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }
           // Manual category pick supersedes any AI suggestion; clear the
           // badge so it doesn't linger after an explicit user choice.
           if (slug !== aiAppliedCategory) {

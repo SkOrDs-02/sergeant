@@ -37,6 +37,7 @@ import {
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
+import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -136,30 +137,29 @@ export function useOverviewData({
   const kyivDay = kyivToday.day;
   const { daysInMonth, daysPassed } = getCurrentMonthContext(new Date(nowMs));
 
+  // `YYYY-MM` prefix of the current Kyiv month — the single window every
+  // "цього місяця" aggregate below is clamped to.
+  const kyivMonthPrefix = `${kyivYear}-${String(kyivMonth + 1).padStart(2, "0")}`;
+
   // Manual expenses live in storage (LS + React state), not in the bank tx
   // stream, so the spend/summary selectors must merge them in explicitly —
   // otherwise the Overview totals ignore a manually added expense entirely
   // and the page looks frozen after the add/edit sheet closes. Mirrors the
-  // merge pattern Transactions/Analytics already use; scoped to the current
-  // calendar month to match `getMonthlySummary`'s implicit window.
-  const manualExpenseTxs = useMemo(() => {
-    const monthStart = new Date(kyivYear, kyivMonth, 1).getTime();
-    const monthEnd = new Date(kyivYear, kyivMonth + 1, 1).getTime();
-    return manualExpenses
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStart && ts < monthEnd;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-    // Depend on the Kyiv month primitives (stable within a render pass) so the
-    // memo doesn't thrash on `now` being recreated each render.
-  }, [manualExpenses, kyivYear, kyivMonth]);
-
-  const txForStats = useMemo(
-    () =>
-      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
-    [realTx, manualExpenseTxs],
+  // merge pattern Transactions/Analytics already use.
+  const manualExpenseTxs = useMemo(
+    () => manualExpenses.map((e) => manualExpenseToTransaction(e)),
+    [manualExpenses],
   );
+
+  // AI-DANGER: this clamp is what makes every "цього місяця" number on Огляд
+  // actually mean the current month. Do not drop it — the Finyk selectors
+  // carry no implicit window and `realTx` is not month-scoped. Full rationale
+  // and the founder report it came from: `../../lib/monthWindow.ts`.
+  const txForStats = useMemo(() => {
+    const merged =
+      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx;
+    return filterToKyivMonth(merged, kyivMonthPrefix);
+  }, [realTx, manualExpenseTxs, kyivMonthPrefix]);
 
   const statTx = useMemo(
     () => filterStatTransactions(txForStats, excludedTxIds),
@@ -177,10 +177,8 @@ export function useOverviewData({
   const todaySummary = useMemo(() => {
     const todayKey = getKyivDayKey(nowMs);
     const todayTransactions = txForStats.filter((tx) => {
-      const time = Number(tx.time);
-      if (!Number.isFinite(time) || time <= 0) return false;
-      const timeMs = time > 10_000_000_000 ? time : time * 1000;
-      return getKyivDayKey(timeMs) === todayKey;
+      const ms = txEpochMs(tx);
+      return ms != null && getKyivDayKey(ms) === todayKey;
     });
     return getMonthlySummary(todayTransactions, {
       excludedTxIds,
@@ -400,9 +398,11 @@ export function useOverviewData({
   );
 
   const planExpense = Number(monthlyPlan?.expense || 0);
-  const dailyPlan = planExpense > 0 ? planExpense / daysInMonth : null;
+  // "Has a plan" must reflect a real user-set monthly plan. It gates both the
+  // plan progress bar and the day-budget number below.
+  const hasExpensePlan = planExpense > 0;
+  const dailyPlan = hasExpensePlan ? planExpense / daysInMonth : null;
   const remainingDays = Math.max(1, daysInMonth - daysPassed + 1);
-  const expenseTarget = planExpense > 0 ? planExpense : projectedSpend;
   const currentYear = kyivYear;
   const currentMonth = kyivMonth;
   const monthFlows = useMemo(
@@ -431,9 +431,30 @@ export function useOverviewData({
   const unknownOutCount = monthFlows.filter(
     (f) => f.sign === "-" && f.amount === null,
   ).length;
-  const expenseLeft =
-    expenseTarget - spent - recurringOutThisMonth + recurringInThisMonth;
-  const dayBudget = expenseLeft / remainingDays;
+  // AI-DANGER: `dayBudget` is `null` — not a fallback number — when the user
+  // has не задав місячний план. Do not resurrect a projected-spend fallback.
+  //
+  // AI-CONTEXT: it used to be `expenseTarget = planExpense > 0 ? planExpense
+  // : projectedSpend`, and `projectedSpend` is itself
+  // `spent / daysPassed * daysInMonth`. Substituting it makes `spent` the only
+  // real input, and the whole expression collapses to
+  //
+  //     dayBudget ≈ spent · (daysInMonth − daysPassed)
+  //                 ─────────────────────────────────────────
+  //                 daysPassed · (daysInMonth − daysPassed + 1)
+  //
+  // i.e. on day 1 of a 31-day month `dayBudget ≈ spent · 30/31` — the card
+  // literally told the user "ти можеш витратити сьогодні приблизно стільки,
+  // скільки вже витратив". Founder saw «124 686 ₴/день · В нормі» over a
+  // 128 842 ₴ month total on 1 серпня 2026 with «Денний план: не задано»
+  // right below it. Same self-cancelling defect already documented for
+  // `forecastTrendPct` below: a budget needs an independent reference
+  // (a user plan), and without one there is no honest number to show — the
+  // hero renders a "постав план" CTA instead.
+  const dayBudget = hasExpensePlan
+    ? (planExpense - spent - recurringOutThisMonth + recurringInThisMonth) /
+      remainingDays
+    : null;
 
   const showMonthForecast = daysPassed > 0 && projectedSpend > 0;
   // No `forecastTrendPct` here on purpose. It used to be
@@ -443,12 +464,10 @@ export function useOverviewData({
   // calendar while claiming to track spending. A forecast bar needs an
   // independent reference (a plan, or available funds) to mean anything.
 
-  // "Has a plan" must reflect a real user-set monthly plan, not the
-  // forecast fallback baked into `expenseTarget` (which is only for the
-  // day-budget math). Otherwise the plan progress bar renders "N% з плану
-  // 0 ₴" — a percentage against a zero plan — and the Hero status claims
-  // "Понад 50% запланованого" with nothing planned.
-  const hasExpensePlan = planExpense > 0;
+  // `hasExpensePlan` (declared next to `planExpense` above) must reflect a
+  // real user-set monthly plan. Otherwise the plan progress bar renders
+  // "N% з плану 0 ₴" — a percentage against a zero plan — and the Hero status
+  // claims "Понад 50% запланованого" with nothing planned.
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
   const dateLabel = new Date(nowMs).toLocaleDateString("uk-UA", {

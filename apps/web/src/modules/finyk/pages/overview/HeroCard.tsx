@@ -16,10 +16,18 @@ interface HeroCardProps {
   totalDebt: number;
   daysInMonth: number;
   daysPassed: number;
-  dayBudget?: number;
+  /**
+   * `null` коли місячний план витрат не заданий — тоді замість числа
+   * рендериться CTA «Постав план». Див. AI-CONTEXT у `useOverviewData`:
+   * без плану будь-яке «можна сьогодні» — це похідна від уже витраченого,
+   * а не бюджет.
+   */
+  dayBudget?: number | null;
   hasExpensePlan?: boolean;
   spendPlanRatio?: number;
   showBalance?: boolean;
+  /** Відкриває Планування, щоб задати місячний план. */
+  onSetPlan?: (() => void) | undefined;
 }
 
 /**
@@ -42,10 +50,11 @@ const HeroCardImpl = function HeroCard({
   totalDebt,
   daysInMonth,
   daysPassed,
-  dayBudget = 0,
+  dayBudget = null,
   hasExpensePlan = false,
   spendPlanRatio = 0,
   showBalance = true,
+  onSetPlan,
 }: HeroCardProps) {
   const { statusText } = computePulseStyle({
     hasExpensePlan,
@@ -146,34 +155,60 @@ const HeroCardImpl = function HeroCard({
       </div>
 
       <div className="relative border-t border-hero-ink/15 px-5 py-4">
-        <div
-          className={cn(
-            "text-style-display text-hero-ink",
-            !showBalance && "tracking-widest",
-          )}
-        >
-          {showBalance ? (
-            <>
-              {dayBudget < 0 ? "−" : ""}
-              {/* CounterReveal handles prefers-reduced-motion internally */}
-              <CounterReveal
-                value={Math.round(Math.abs(dayBudget))}
-                entranceFrom={0}
-                duration={800}
-              />
-              <span className="text-style-headline ml-1 text-hero-ink/85">
-                ₴/день
-              </span>
-            </>
-          ) : (
-            "••••"
-          )}
-        </div>
-        <p className="text-sm text-hero-ink mt-1">
-          <span>Можна сьогодні</span>
-          <span className="text-hero-ink"> · </span>
-          <span className="text-hero-ink font-semibold">{statusText}</span>
-        </p>
+        {dayBudget == null ? (
+          /* Без місячного плану «можна сьогодні» неможливо порахувати чесно
+             (див. AI-CONTEXT у `useOverviewData`), тому замість вигаданого
+             числа — прямий шлях задати план. */
+          <div>
+            <p className="text-style-headline text-hero-ink leading-tight">
+              Скільки можна витрачати на день?
+            </p>
+            <p className="text-sm text-hero-ink/85 mt-1 leading-snug">
+              Задай місячний план витрат — і я рахуватиму денний бюджет із
+              урахуванням підписок і боргів.
+            </p>
+            {onSetPlan ? (
+              <button
+                type="button"
+                onClick={onSetPlan}
+                className="mt-3 touch-target inline-flex items-center rounded-xl border border-hero-ink/25 bg-hero-ink/10 px-4 text-style-label font-semibold text-hero-ink transition-colors hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+              >
+                Задати план
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <div
+              className={cn(
+                "text-style-display text-hero-ink",
+                !showBalance && "tracking-widest",
+              )}
+            >
+              {showBalance ? (
+                <>
+                  {dayBudget < 0 ? "−" : ""}
+                  {/* CounterReveal handles prefers-reduced-motion internally */}
+                  <CounterReveal
+                    value={Math.round(Math.abs(dayBudget))}
+                    entranceFrom={0}
+                    duration={800}
+                  />
+                  <span className="text-style-headline ml-1 text-hero-ink/85">
+                    ₴/день
+                  </span>
+                </>
+              ) : (
+                "••••"
+              )}
+            </div>
+            <p className="text-sm text-hero-ink mt-1">
+              <span>Можна сьогодні</span>
+              <span className="text-hero-ink"> · </span>
+              <span className="text-hero-ink font-semibold">{statusText}</span>
+            </p>
+          </>
+        )}
 
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs text-hero-ink mb-1">
