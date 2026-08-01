@@ -40,6 +40,12 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  // Модель «не можна» (ADR-0083). Тримати тут ОБОВʼЯЗКОВО: підтягнута з
+  // сервера позначка травми має негайно перерахувати список вправ, інакше
+  // юзер бачить як дозволену вправу, яку модель уже блокує. Рівно цього
+  // рядка бракує `routine_completion_events` — див. пастку 3 у
+  // `docs/90-work/planning/product-knowledge-backlog.md`.
+  "fizruk_injuries",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

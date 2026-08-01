@@ -65,8 +65,8 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers (45 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(45);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries (46 total)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(46);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",

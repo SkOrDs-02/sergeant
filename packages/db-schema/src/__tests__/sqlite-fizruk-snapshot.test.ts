@@ -575,8 +575,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(2);
+  it("exports the 001 baseline + 002 full-state + 003 injuries migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -612,6 +612,20 @@ describe("sqlite/fizruk migrations exports", () => {
     );
     expect(FIZRUK_CLIENT_MIGRATIONS[1]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workout_templates/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.name).toBe("003_fizruk_injuries.sql");
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_injuries/,
+    );
+    // `id TEXT`, never uuid — the client mints `inj_<uuid>`, and a uuid
+    // column is what made every routine/nutrition push fail with 22P02
+    // before migrations 094/095.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(/id\s+TEXT PRIMARY KEY/);
+    // `cleared_at IS NULL` is what "active mark" means — the partial index
+    // encodes it, so a rename would silently change the hot query.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /fizruk_injuries_user_active_idx_lite[\s\S]*cleared_at IS NULL/,
     );
   });
 

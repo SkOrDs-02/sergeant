@@ -18,11 +18,19 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const noInjury = {
+  blocked: false,
+  viaMuscles: [],
+  viaZones: [],
+  coverage: "muscle-and-zone" as const,
+};
+
 const noWarning = {
   hasWarning: false,
   hasHardBlock: false,
   red: [],
   yellow: [],
+  injury: noInjury,
 };
 
 function makeEx(id: string, nameUk: string): FizrukData.RawExerciseDef {
@@ -247,6 +255,7 @@ describe("WorkoutCatalogSection — recovery warning", () => {
             hasHardBlock: false,
             red: [],
             yellow: [],
+            injury: noInjury,
           })),
         })}
       />,

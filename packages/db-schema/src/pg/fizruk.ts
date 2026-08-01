@@ -336,3 +336,46 @@ export const fizrukWorkoutTemplates = pgTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+/**
+ * Postgres schema for `fizruk_injuries`.
+ *
+ * Mirrors migration `096_fizruk_injuries.sql`. Backs the "не можна" model —
+ * a user-placed mark on an injured body zone that removes matching exercises
+ * from recovery advice until the mark is cleared (ADR-0083, канон fizruk §5).
+ *
+ * `site` spans a keyspace WIDER than the 18 atlas muscle groups: it also
+ * carries joints and spinal segments (`knee`, `elbow`, `shoulder`, …), because
+ * a muscle-only model cannot name the injuries lifters actually get and would
+ * report "враховано" while still recommending the movement (audit E-4).
+ * Canonical list: `packages/fizruk-domain/src/data/injurySites.ts`.
+ */
+export const fizrukInjuries = pgTable(
+  "fizruk_injuries",
+  {
+    // TEXT, not uuid — the client mints `inj_<uuid>`. A uuid column would
+    // fail every push with 22P02, the exact bug migrations 094/095 fixed.
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    site: text().notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    // NULL = the mark is still active. Clearing is a manual user action only.
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    note: text().notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_injuries_user_active_idx")
+      .on(table.userId, table.site)
+      .where(sql`${table.deletedAt} IS NULL AND ${table.clearedAt} IS NULL`),
+    index("fizruk_injuries_user_started_at_idx")
+      .on(table.userId, sql`${table.startedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
