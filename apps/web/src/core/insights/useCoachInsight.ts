@@ -5,6 +5,10 @@ import { coachKeys } from "@shared/lib/api/queryKeys";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import {
+  INCOME_CATEGORIES,
+  MCC_CATEGORIES,
+} from "@sergeant/finyk-domain/constants";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
   loadNutritionLog,
@@ -31,6 +35,41 @@ function localDateKey(d = new Date()): string {
 interface CategoryAmount {
   name: string;
   amount: number;
+}
+
+/**
+ * Ключ бакета категорії → людська назва для коуча.
+ *
+ * Бакетимо транзакції за `txCategories[id] || String(mcc)`, тобто ключем може
+ * бути domain-slug (`food`), сирий MCC (`5411`) або `other`. Сервер
+ * (`modules/chat/coach.ts`) друкує `name` у промпт ЯК Є і назв не розкриває,
+ * тож без цієї мапи коуч писав користувачу «5411 — 800 грн» замість
+ * «Продукти — 800 грн» (user report). Емодзі з лейбла зрізаємо: він іде в
+ * прозовий текст поради, а не в чип UI.
+ */
+const CATEGORY_LABEL_BY_KEY: ReadonlyMap<string, string> = (() => {
+  const map = new Map<string, string>();
+  const clean = (label: string): string =>
+    label.replace(/^[^\p{L}\p{N}]+/u, "").trim() || label;
+  for (const cat of [...MCC_CATEGORIES, ...INCOME_CATEGORIES]) {
+    const label = clean(cat.label);
+    map.set(cat.id, label);
+    for (const mcc of ("mccs" in cat ? cat.mccs : []) as readonly number[]) {
+      map.set(String(mcc), label);
+    }
+  }
+  return map;
+})();
+
+function resolveCategoryLabel(key: string): string {
+  const known = CATEGORY_LABEL_BY_KEY.get(key);
+  if (known) return known;
+  // Невідомий MCC (їх ~50 покритих зі значно більшого ISO-18245 списку) —
+  // цифри користувачу нічого не кажуть, тож зводимо до «Інше». Нечислові
+  // ключі — це користувацькі категорії: їхня назва нам тут недоступна, але
+  // сам slug принаймні писав користувач.
+  if (key === "other" || /^\d+$/.test(key)) return "Інше";
+  return key;
 }
 
 interface FinykSnapshot {
@@ -123,7 +162,8 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   // замість власного парсингу `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats`. Excluded-set єдиний з Overview/Reports
   // (`getFinykExcludedTxIdsFromStorage`). Категорії бакетимо за raw
-  // `txCategories[id] || mcc` — coach API сам розкриває назви.
+  // `txCategories[id] || mcc`, а назви розкриваємо тут-таки нижче —
+  // coach API їх НЕ розкриває, друкує `name` у промпт як є.
   const aggregate = calcFinykPeriodAggregate(txs, {
     start: weekStart.getTime(),
     excludedTxIds,
@@ -131,7 +171,14 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
     categoryKey: (tx) => txCategories[tx.id] || String(tx.mcc ?? "other"),
   });
 
-  const topCategories = Object.entries(aggregate.byCategory)
+  // Спершу розкриваємо назви, ПОТІМ додаємо: різні невідомі MCC схлопуються
+  // в один «Інше», і без цього злиття коуч бачив би кілька однойменних рядків.
+  const byLabel = new Map<string, number>();
+  for (const [key, amount] of Object.entries(aggregate.byCategory)) {
+    const label = resolveCategoryLabel(key);
+    byLabel.set(label, (byLabel.get(label) ?? 0) + amount);
+  }
+  const topCategories = [...byLabel]
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([name, amount]) => ({ name, amount }));
