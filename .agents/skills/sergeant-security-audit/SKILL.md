@@ -72,7 +72,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 
 | Level | Action |
 |---|---|
-| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/00-start/playbooks/respond-to-suspected-account-compromise.md` |
+| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/00-start/playbooks/access-governance.md` § Suspected account compromise |
 | High — injection vector / missing auth check | Must-fix before merge |
 | Medium — logging exposure / outdated dep with known exploit | Fix in this PR or create tracked issue |
 | Low — best-practice gap / minor config drift | PR comment; not a blocker |
@@ -87,7 +87,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 ## Playbooks
 
 - `docs/00-start/playbooks/security-pen-test-checklist.md` — full pentest workflow before launch.
-- `docs/00-start/playbooks/respond-to-suspected-account-compromise.md` — escalation when credential found in code or logs.
+- `docs/00-start/playbooks/access-governance.md` § Suspected account compromise — escalation when credential found in code or logs.
 - `docs/00-start/playbooks/rotate-secrets.md` — rotate when a credential is exposed.
 - `docs/00-start/playbooks/bump-dep-safely.md` — safe dependency updates after audit findings.
 - Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.

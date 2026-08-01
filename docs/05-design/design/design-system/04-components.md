@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-06-14 by @claude. **Next review:** 2026-09-12.
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -336,7 +336,7 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 
 - `illustration` — куратований SVG із `apps/web/src/assets/illustrations/`
   (всі використовують `currentColor` + design-token utilities; жодного
-  inline hex — Hard Rule #11). Якщо `illustration` не задано — fallback
+  inline hex — дизайн-конвенція). Якщо `illustration` не задано — fallback
   на `icon` у бордерованому box-і з tone-фоном.
 - `eyebrow` — короткий caps-чип над title-ом ("404", "OFFLINE", "ERROR").
 - `title` — короткий заголовок (масштабується розміром).
@@ -359,7 +359,7 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 | `lg` | Повноекранні error-сторінки (404 / 500 / offline), top-level empty states.                                         |
 
 **Варіанти** використовують tone-палітру з §3 — `-soft` фон + `-strong`
-текст (Hard Rule #9 для контрасту ≥ 4.5 : 1). Module-accent (якщо
+текст (дизайн-конвенція для контрасту ≥ 4.5 : 1). Module-accent (якщо
 заданий) **перекриває** variant — модульна семантика сильніша за
 загальну (порожній стан у `/finyk` завжди має finyk-tint, навіть якщо
 лежить у error-state).
@@ -452,7 +452,7 @@ motion-budget і SR-announce ідентичні. Жодного inline-стил�
 Token-styled iOS-style pill-тогл. `<button role="switch">` з повним
 WAI-ARIA-контрактом: `aria-checked` відбиває стан, `aria-labelledby` /
 `aria-describedby` відсилають на видиму мітку та опис,
-`focus-visible:ring-2 ring-brand-500/45` (Hard Rule #14).
+`focus-visible:ring-2 ring-brand-500/45` (дизайн-конвенція).
 
 - **Sizes**: `sm` 36×20 · `md` 44×26 (дефолт — мінімум-touch-target).
 - **States**: `disabled`, `error` (додає `aria-invalid` + danger ring).
@@ -506,7 +506,7 @@ single-значення та range (дві тумби), тіки, валю-toolt
 ### ProgressBar
 
 Лінійний індикатор прогресу. Determinate та indeterminate. Цвітові
-філли — `*-strong` компаньйони (Hard Rule #9) для білого внутрішнього
+філли — `*-strong` компаньйони (дизайн-конвенція) для білого внутрішнього
 тексту.
 
 - **Sizes**: `xs` 2 px · `sm` 6 px · `md` 8 px · `lg` 12 px (h-1/1.5/2/3).
@@ -598,7 +598,7 @@ high-traffic shell (Hub headers, search, onboarding, auth) від raw
 #### Canonical focus pattern
 
 ```tsx
-// Стандартна кнопка / link / iconbutton (Hard Rule #14)
+// Стандартна кнопка / link / iconbutton (дизайн-конвенція)
 className =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
@@ -610,7 +610,7 @@ className =
   "focus-visible:ring-2 focus-visible:ring-focus-strong focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 ```
 
-#### Module-accent focus exceptions (Hard Rule #12)
+#### Module-accent focus exceptions (дизайн-конвенція)
 
 Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 зберігають модульний ring (`ring-finyk/45` і т.д.), щоб focus
@@ -632,7 +632,7 @@ Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 // ❌ Кольоровий ринг на своєму colour-family без module-context
 <button className="focus-visible:ring-violet-500">
 
-// ❌ Hex в className (Hard Rule #11)
+// ❌ Hex в className (дизайн-конвенція)
 <hr className="border-[#ebe4da]" />
 
 // ✅ Семантичний divider

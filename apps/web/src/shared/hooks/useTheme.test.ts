@@ -14,11 +14,15 @@ import {
   THEME_CHOICES,
 } from "./useTheme";
 
-function setSystemDark(dark: boolean): void {
+function setSystemMedia(dark: boolean, contrast = false): void {
   vi.stubGlobal(
     "matchMedia",
     vi.fn().mockImplementation((query: string) => ({
-      matches: query.includes("dark") ? dark : false,
+      matches: query.includes("prefers-contrast")
+        ? contrast
+        : query.includes("dark")
+          ? dark
+          : false,
       media: query,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -39,7 +43,7 @@ describe("useTheme", () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = "";
-    setSystemDark(false);
+    setSystemMedia(false);
   });
 
   afterEach(() => {
@@ -69,7 +73,7 @@ describe("useTheme", () => {
   });
 
   it("layers the hc class additively over the system dark preference", () => {
-    setSystemDark(true);
+    setSystemMedia(true);
     const { result } = renderHook(() => useTheme());
     act(() => result.current.setChoice("hc"));
     expect(result.current.isHighContrast).toBe(true);
@@ -79,12 +83,28 @@ describe("useTheme", () => {
   });
 
   it("system mode follows the prefers-color-scheme media query", () => {
-    setSystemDark(true);
+    setSystemMedia(true);
     const { result } = renderHook(() => useTheme());
     // initial readInitialChoice → system; resolved dark from media query
     expect(result.current.choice).toBe("system");
     expect(result.current.systemPrefersDark).toBe(true);
     expect(result.current.isDark).toBe(true);
+  });
+
+  it("system mode turns on hc when the OS asks for more contrast", () => {
+    setSystemMedia(false, true);
+    const { result } = renderHook(() => useTheme());
+    expect(result.current.choice).toBe("system");
+    expect(result.current.isHighContrast).toBe(true);
+    expect(document.documentElement.classList.contains("hc")).toBe(true);
+  });
+
+  it("does not force hc over an explicit light choice", () => {
+    setSystemMedia(false, true);
+    const { result } = renderHook(() => useTheme());
+    act(() => result.current.setChoice("light"));
+    expect(result.current.isHighContrast).toBe(false);
+    expect(document.documentElement.classList.contains("hc")).toBe(false);
   });
 
   it("persists the choice so a fresh mount reads it back", () => {
