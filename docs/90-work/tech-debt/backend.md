@@ -344,7 +344,49 @@ Webhook-based server-side integration added in PR2. Key components:
 - ✅ Inline EXPLAIN ANALYZE-нотатки на гарячих міграціях (016 — 4 патерни синку/push, 024 — partial для `mono_transaction` listу, 032 — підсумкові COMMENT ON для `psql \d+`).
 - `idx_module_data_server_updated_at` — досі **не створено**, нема feature-у "recent changes across all modules". Залишається у tech-debt-seed-секції (P2).
 
-### Routine: PK-тип `routine_*` розходиться з клієнтським id (відкрито, `критично`)
+### Routine: PK-тип `routine_*` розходиться з клієнтським id (ЗАКРИТО 2026-08-01)
+
+**Закрито 2026-08-01** міграцією
+[`094_routine_pk_text.sql`](../../../apps/server/src/migrations/094_routine_pk_text.sql):
+`id` у `routine_habits` / `routine_tags` / `routine_categories` /
+`routine_entries` переведено з `uuid` у `text`, drizzle-модель і снапшот-тест
+підтягнуто слідом.
+
+Гіпотеза 2026-07-24 підтвердилась повністю — і виявилась ширшою, ніж
+описано нижче. Живий прогін (`docs/90-work/audits/web-qa-pre-beta.md`) показав,
+що падав не лише `routine_entries`, а **всі чотири таблиці**: `routineUid`
+додає префікс `hab_`/`tag_`/`cat_` до кожного id. Тобто Рутина не мала на
+сервері жодного рядка, а помилка осідала в клієнтському `sync_op_outbox` і
+нікуди не спливала.
+
+Доказ до/після — той самий `POST /api/v2/sync/push` із реальними клієнтськими
+id: до міграції всі чотири `apply_failed` (контрольний op із голим UUID —
+`applied`), після — всі чотири `applied`, і `pull` віддає id незмінними.
+
+Обрано послаблення типу колонки, а не переписування id на клієнті: у
+`routine_entries` id навмисно детермінований (ключ дедуплікації чекінів), тож
+випадковий UUID зламав би саме цю властивість. Двофазність не знадобилась —
+`uuid → text` лише розширює домен значень, FK на ці id немає.
+
+**Чому баг прожив 12 днів.** Не через відсутність інструментації: сервер увесь
+час писав `logger.warn({ msg: "sync_v2_apply_failed" })` з текстом помилки
+Postgres і крутив `sync_op_log_apply_total{status="rejected"}`. Німим був
+**клієнт** — `markRejected` ставив рядку `status='rejected'` у локальному
+SQLite і мовчав, а SLO рахував запити, а не операції, тож батч із суцільними
+реджектами повертав HTTP 200 і виглядав як успіх.
+
+Закрито разом із міграцією:
+
+- `markRejected` в `apps/web/src/core/syncEngine/singleton.ts` тепер шле
+  термінальні реджекти (крім штатного `lww_conflict`) у logger і Sentry;
+- у [SLO.md § 3.1](../../03-operations/observability/SLO.md) описано правило
+  `SyncApplyFailedSpike` поверх уже наявної метрики — design-only, як і решта
+  алертів у цьому репо.
+
+Nutrition-частина того ж класу закрита міграцією 095 (див. наступний запис).
+
+<details>
+<summary>Історія запису (до закриття)</summary>
 
 **Знайдено 2026-07-24** під час фіксу tombstone-resurrection (audit routine
 E-1). `routine_entries.id` у Postgres — `UUID`
@@ -378,7 +420,38 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 (припинення запису в `routine_entries` + двофазний DROP) — до того моменту
 твердження «чекін доїжджає до сервера» так само непідтверджене.
 
-### Nutrition: PK-тип `nutrition_pantries` / `nutrition_pantry_items` розходиться з клієнтським id (відкрито, `критично`)
+</details>
+
+### Nutrition: PK-тип `nutrition_*` розходиться з клієнтським id (ЗАКРИТО 2026-08-01)
+
+**Закрито 2026-08-01** міграцією
+[`095_nutrition_pk_text.sql`](../../../apps/server/src/migrations/095_nutrition_pk_text.sql)
+слідом за 094 (routine).
+
+Гіпотеза 2026-07-25 підтвердилась, і знову виявилась ширшою: уражені не дві
+таблиці, а **чотири** — клієнт не шле UUID у жодній з них.
+
+| таблиця                  | форма клієнтського id        |
+| ------------------------ | ---------------------------- |
+| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`     |
+| `nutrition_pantry_items` | `<pantryId>::<idx>::<name>`  |
+| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>` |
+| `nutrition_recipes`      | `rcp_ai_<hash>`              |
+
+Прогін `POST /api/v2/sync/push` із цими id: до міграції всі чотири
+`apply_failed` (контроль із голим UUID — `applied`), після — всі чотири
+`applied`. Разом із PK переведено `nutrition_pantry_items.pantry_id` і
+`nutrition_prefs.active_pantry_id`; FK `pantry_id → nutrition_pantries(id)`
+знято й повернуто в тій самій транзакції.
+
+**Що НЕ полагоджено (і типом не лікується):** id позиції комори містить
+`index` і `name`, тож перейменування продукту чи зсув у масиві породжує новий
+id — LWW-upsert по такому ключу лишається нестабільним. Канонічний шлях —
+append-only `nutrition_pantry_events` із ключем `item_key` (ADR-0077 §3.2).
+Міграція 095 прибрала лише `22P02`.
+
+<details>
+<summary>Історія запису (до закриття)</summary>
 
 **Знайдено 2026-07-25** під час W1-PANTRY-APPEND стадії 1. Той самий клас
 багу, що описаний вище для routine, але в коморі — і досі не помічений.
@@ -417,6 +490,8 @@ Rule #4 (двофазність) і рішення власника поверх
 **Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжня
 комора) → окремий PR із двофазною міграцією типу. До того моменту твердження
 «комора синхронізується між пристроями» — непідтверджене.
+
+</details>
 
 ### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
 
