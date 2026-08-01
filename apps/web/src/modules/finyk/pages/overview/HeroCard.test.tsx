@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, it, expect } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { HeroCard } from "./HeroCard";
 
 // CounterReveal reads window.matchMedia for prefers-reduced-motion; stub it to
@@ -119,5 +119,43 @@ describe("HeroCard", () => {
     expect(networthEl.className).toMatch(/text-danger/);
     // sanity: the negative networth lives inside the card root
     expect(container.firstChild).toContainElement(networthEl);
+  });
+  // Regression: founder report 2026-07-31 — with no monthly plan the hero
+  // showed «124 686 ₴/день · В нормі», a number derived from the very spend
+  // it claimed to budget. `dayBudget` is now `null` in that state.
+  describe("no monthly plan (dayBudget = null)", () => {
+    const noPlanProps = {
+      ...baseProps,
+      dayBudget: null,
+      hasExpensePlan: false,
+    };
+
+    it("renders the set-a-plan CTA instead of a fabricated ₴/день number", () => {
+      render(<HeroCard {...noPlanProps} onSetPlan={() => {}} />);
+      expect(
+        screen.getByText("Скільки можна витрачати на день?"),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("₴/день")).not.toBeInTheDocument();
+      expect(screen.queryByText("Можна сьогодні")).not.toBeInTheDocument();
+      expect(screen.queryByText("В нормі")).not.toBeInTheDocument();
+    });
+
+    it("calls onSetPlan when the CTA is pressed", () => {
+      const onSetPlan = vi.fn();
+      render(<HeroCard {...noPlanProps} onSetPlan={onSetPlan} />);
+      fireEvent.click(screen.getByRole("button", { name: "Задати план" }));
+      expect(onSetPlan).toHaveBeenCalledTimes(1);
+    });
+
+    it("omits the CTA button when no handler is wired", () => {
+      render(<HeroCard {...noPlanProps} />);
+      expect(
+        screen.queryByRole("button", { name: "Задати план" }),
+      ).not.toBeInTheDocument();
+      // The explanatory copy still stands in for the missing number.
+      expect(
+        screen.getByText("Скільки можна витрачати на день?"),
+      ).toBeInTheDocument();
+    });
   });
 });
