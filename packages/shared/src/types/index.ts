@@ -49,6 +49,18 @@ export interface PushPayload {
   /** APNs `thread-id` — групує нотифікації у одному threadі на iOS. */
   threadId?: string | undefined;
   /**
+   * Web `Notification.tag` — колапс однакових сповіщень у одне.
+   *
+   * Без нього service-worker підставляє `push_${Date.now()}`, тобто кожне
+   * сповіщення унікальне і повторна відправка тієї самої новини лягає в
+   * шторку другим рядком. Проактивні канали зобов'язані задавати стабільний
+   * tag (наприклад `sergeant-nudge-<YYYY-MM-DD>`), щоб дубль на рівні
+   * доставки лишався невидимим для юзера.
+   *
+   * Web-only: на APNs групування робить `threadId`, на FCM — свої ключі.
+   */
+  tag?: string | undefined;
+  /**
    * Deep-link, на який клієнт перейде при тапі. Сервер прокидає у
    * `data.url` без інтерпретації; сам роутинг — на стороні mobile/web
    * handler-а. Top-level `url` має пріоритет над `data.url`.
