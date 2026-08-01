@@ -47,7 +47,7 @@ describe("pg/fizrukWorkouts schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029 + 096", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -56,7 +56,7 @@ describe("pg/fizrukWorkouts schema snapshot", () => {
     //
     // Migration 029 declared UUID, but client-side workout ids use the
     // `w_${Date.now().toString(36)}_${crypto.randomUUID()}` shape, which
-    // isn't a UUID. 096 widened the column the same way 094 did for
+    // isn't a UUID. 097 widened the column the same way 094 did for
     // routine and 095 did for nutrition.
     expect(columnMap["id"]!.dataType).toBe("string");
     expect(columnMap["id"]!.columnType).toBe("PgText");
@@ -114,12 +114,12 @@ describe("pg/fizrukWorkoutItems schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029 + 096", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    // id / workout_id TEXT — 096 widened both sides of the FK together
+    // id / workout_id TEXT — 097 widened both sides of the FK together
     // (client item ids use `i_${Date.now().toString(36)}_...`).
     expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["workout_id"]!.columnType).toBe("PgText");
@@ -151,12 +151,12 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029 + 096", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    // id / workout_item_id TEXT — 096 widened both sides of this FK too
+    // id / workout_item_id TEXT — 097 widened both sides of this FK too
     // (set ids are built as `${item.id}:s${n}`, never a bare UUID).
     expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["workout_item_id"]!.columnType).toBe("PgText");
@@ -185,7 +185,7 @@ describe("pg/fizrukCustomExercises schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029 + 096", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -223,7 +223,7 @@ describe("pg/fizrukMeasurements schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029 + 096", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -264,12 +264,12 @@ describe("pg/fizrukDailyLog schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 052 + 096", () => {
+  it("declares column types matching migration 052 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text — 096. Client
+    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text — 097. Client
     // daily-log ids use `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`
     // (see AI-DANGER comment on useDailyLog.ts's uid()), never a bare UUID.
     expect(columnMap["id"]!.columnType).toBe("PgText");
@@ -453,7 +453,7 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 052 + 096", () => {
+  it("declares column types matching migration 052 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );

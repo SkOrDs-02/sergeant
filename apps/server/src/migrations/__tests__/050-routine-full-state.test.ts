@@ -218,7 +218,10 @@ describe("050_routine_full_state migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // 094_routine_pk_text.sql widened id uuid -> text: the client's
+      // `routineUid("hab")` generator produces `hab_<uuid>`, not a bare
+      // UUID, so the original `uuid` column type 22P02'd every push.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["user_id"]!.nullable).toBe("NO");
@@ -411,8 +414,15 @@ describe("050_routine_full_state migration", () => {
         completionNotes: await listColumns(pool, "routine_completion_notes"),
       };
 
+      // 094_routine_pk_text.sql widens routine_habits/tags/categories.id
+      // uuid -> text on top of these tables. It must be unwound before
+      // 050's down.sql drops them and re-applied after 050's up.sql
+      // recreates them fresh as uuid — else `after` would still be uuid
+      // while `before` (captured post-094) is text.
+      await execSqlFile(pool, "094_routine_pk_text.down.sql");
       await execSqlFile(pool, "050_routine_full_state.down.sql");
       await execSqlFile(pool, "050_routine_full_state.sql");
+      await execSqlFile(pool, "094_routine_pk_text.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

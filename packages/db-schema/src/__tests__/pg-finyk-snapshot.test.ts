@@ -136,7 +136,7 @@ describe.each(PER_ROW_JSONB_TABLES)(
       ]);
     });
 
-    it("uses text() PK with default (096: was uuid until finyk's client-side ids — b_/sub_/a_/cus_/bare Date.now() — started 22P02-ing every push)", () => {
+    it("uses text() PK with default (097: was uuid until finyk's client-side ids — b_/sub_/a_/cus_/bare Date.now() — started 22P02-ing every push)", () => {
       const cols = Object.fromEntries(table.columns.map((c) => [c.name, c]));
       expect(cols["id"]!.columnType).toBe("PgText");
       expect(cols["id"]!.primary).toBe(true);
