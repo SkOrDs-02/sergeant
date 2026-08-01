@@ -37,6 +37,30 @@ let SECRET = process.env.TELEGRAM_WAITLIST_WEBHOOK_SECRET;
 /** Показує лише хвіст значення — достатньо для звірки, безпечно для логів. */
 const tail = (v) => (v ? `…${v.slice(-6)}` : "(не задано)");
 
+/**
+ * Меню команд бота.
+ *
+ * Без `setMyCommands` у Telegram НЕМАЄ ні синьої кнопки «Menu» біля поля
+ * вводу, ні підказки при наборі «/». Бот при цьому команди обробляє —
+ * просто ніхто про них не дізнається, бо єдина згадка живе в тексті
+ * `/help`, який теж треба спершу набрати наосліп.
+ *
+ * `/start` тут навмисно немає: Telegram сам показує його кнопкою в
+ * порожньому чаті, і в меню він лише займав би рядок. `/stats` теж —
+ * це власницька команда, і в публічному меню вона видавала б своє
+ * існування (гейт за chat_id у `telegram-webhook.ts` лишається, але
+ * не варто на нього вказувати пальцем).
+ *
+ * Список має збігатися з блоком «Команди бота» в `helpReply`
+ * (`apps/server/src/modules/telegram/betaTexts.ts`).
+ */
+const BOT_COMMANDS = [
+  { command: "app", description: "Адреса застосунку" },
+  { command: "install", description: "Як поставити на головний екран" },
+  { command: "help", description: "Правила бети й куди писати" },
+  { command: "stop", description: "Відписатись від розсилки" },
+];
+
 async function api(method, body) {
   const res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
     method: "POST",
@@ -107,7 +131,17 @@ async function main() {
 
   if (has("--check")) {
     console.log("\nПоточний стан вебхука:");
-    reportInfo(await api("getWebhookInfo"));
+    const info = await api("getWebhookInfo");
+    reportInfo(info);
+    // Порожній allowed_updates означає дефолт Telegram, у якому
+    // callback_query НЕМАЄ — тобто кнопки опитувань мертві.
+    console.log(
+      `  Типи апдейтів:       ${(info.allowed_updates ?? []).join(", ") || "(дефолт — без callback_query!)"}`,
+    );
+    const registered = await api("getMyCommands");
+    console.log(
+      `\nМеню команд: ${registered.map((c) => `/${c.command}`).join(" ") || "(порожнє — кнопки «Menu» в чаті не буде)"}`,
+    );
     return;
   }
 
@@ -139,13 +173,21 @@ async function main() {
   await api("setWebhook", {
     url,
     secret_token: SECRET,
-    // Нам потрібні лише повідомлення: бот обробляє /start і /stop.
+    // Рівно два типи, і обидва обовʼязкові. `message` — команди й вільний
+    // текст. `callback_query` — натискання кнопок мікро-опитувань: цей тип
+    // НЕ входить у дефолт Telegram, і поки його тут не було, кнопки
+    // «Пульс тижня» мовчали, а клієнт крутив годинник до таймауту.
     // Звужений список економить трафік і не тягне зайвих даних користувачів.
-    allowed_updates: ["message"],
+    allowed_updates: ["message", "callback_query"],
   });
+
+  await api("setMyCommands", { commands: BOT_COMMANDS });
 
   console.log(`\nВебхук встановлено: ${url}`);
   console.log(`Секрет: ${tail(SECRET)}`);
+  console.log(
+    `Меню команд: ${BOT_COMMANDS.map((c) => `/${c.command}`).join(" ")}`,
+  );
 
   if (generated) {
     console.log(
