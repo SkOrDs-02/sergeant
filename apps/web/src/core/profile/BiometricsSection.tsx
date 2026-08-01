@@ -21,6 +21,8 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { DateField } from "@shared/components/ui/DateField";
+import { normalizeAmountInput } from "@shared/lib/format/amount";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { Select } from "@shared/components/ui/Select";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -89,11 +91,33 @@ function biometricsToForm(b: Biometrics): FormState {
   };
 }
 
+/**
+ * Діапазони дублюють `min`/`max` інпутів: браузерні атрибути — лише
+ * підказка, а paste чи програмний сабміт їх обходить (той самий гейт, що
+ * у `Measurements`). Це PII в профілі, тож за межі не пускаємо взагалі,
+ * а не клемпимо — вигадане за користувача зростання гірше за помилку.
+ */
+const HEIGHT_CM_RANGE = { min: 80, max: 260 } as const;
+const WEIGHT_KG_RANGE = { min: 20, max: 400 } as const;
+
+/** Дата народження має власне вікно — жорстке вікно календаря (з 1970-го)
+ *  відрізало б усіх, хто народився раніше. */
+const BIRTH_DATE_MIN = "1900-01-01";
+
 function parseNumberOrNull(raw: string): number | null {
   const trimmed = raw.trim();
   if (trimmed === "") return null;
-  const value = Number(trimmed.replace(",", "."));
+  const value = Number(normalizeAmountInput(trimmed));
   return Number.isFinite(value) ? value : null;
+}
+
+function parseInRangeOrNull(
+  raw: string,
+  { min, max }: { min: number; max: number },
+): number | null {
+  const value = parseNumberOrNull(raw);
+  if (value == null) return null;
+  return value >= min && value <= max ? value : null;
 }
 
 /**
@@ -114,7 +138,7 @@ function diffFormAgainst(
   const patch: Partial<Omit<Biometrics, "updatedAt" | "weightUpdatedAt">> = {};
   let changed = false;
 
-  const formHeight = parseNumberOrNull(form.heightCm);
+  const formHeight = parseInRangeOrNull(form.heightCm, HEIGHT_CM_RANGE);
   if (formHeight !== source.heightCm) {
     patch.heightCm = formHeight;
     changed = true;
@@ -139,7 +163,7 @@ function diffFormAgainst(
     changed = true;
   }
 
-  const formWeight = parseNumberOrNull(form.weightKg);
+  const formWeight = parseInRangeOrNull(form.weightKg, WEIGHT_KG_RANGE);
   if (formWeight !== source.weightKg) {
     patch.weightKg = formWeight;
     changed = true;
@@ -276,6 +300,11 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
           <DateField
             id="biometrics-birth-date"
             emptyLabel={COPY.birthDateLabel}
+            // Власне вікно замість спільного календарного: народитись до
+            // 1970-го — норма, а от у майбутньому — ні.
+            bounded={false}
+            min={BIRTH_DATE_MIN}
+            max={getKyivDayKey()}
             value={form.birthDate}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, birthDate: e.target.value }))

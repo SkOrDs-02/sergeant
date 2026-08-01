@@ -1,7 +1,7 @@
 # SPEC: межові значення форм вводу — підготовка apps/web до бети
 
 > **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-29.
-> **Status:** Active — Фаза 1 і Фаза 3 реалізовані; Фаза 2 (решта форм) відкрита. Стан по пунктах — у § «Стан виконання» в кінці.
+> **Status:** Active — фази 1–3 реалізовані; лишились click-through, офлайн-індикатор і Playwright `@extended`. Стан по пунктах — у § «Стан виконання» в кінці.
 
 ## Проблема
 
@@ -366,11 +366,30 @@ ring-buffer `window.__hubAnalytics`.
 - `ManualExpenseCreateSchema` перейшла на них: верхня межа суми і жорстке
   вікно дати тепер відсікаються і через `curl`.
 
+**Фаза 2** (окремими PR, щоб ревʼю не тонуло в 33 полях).
+
+- `DateField` сам застосовує межі календаря — клемпить нативний пікер і
+  рендерить попередження / помилку. Накрив усіх споживачів одним рухом;
+  власний `helperText` / `error` виклику й `bounded={false}` лишились як
+  escape hatch.
+- Спільні примітиви замість локальних перевірок:
+  `shared/lib/format/amountSchema.ts` (zod для грошових полів-рядків,
+  двійник серверного `amountMinorSchema`) і
+  `shared/lib/format/numberInput.ts` (`clampNumericInput`, переїхав із
+  `modules/fizruk/lib` — стелі лишились у fizruk як доменні числа).
+- Фінік: `AddBudgetForm`, `MonthlyPlanCard`, `TxRowSplitEditor`,
+  `AssetsForm`. Вимога «тільки цілі суми» в бюджетах збережена свідомо
+  (`integerOnly`) — її фіксують наявні тести.
+- Харчування: `ItemEditSheet`, `MacrosEditor`, `FoodPickerSection`.
+- Профіль: `BiometricsSection` — діапазони зросту й ваги тепер гейтяться
+  в рантаймі, а не лише атрибутами інпута. Дата народження отримала
+  **власне** вікно (`1900-01-01` … сьогодні): спільне календарне
+  починається з 1970-го і відрізало б усіх, хто народився раніше.
+- `BodyEntryForm` і `Measurements` правок не потребували — там уже були
+  zod-гейти діапазонів, що дублюють атрибути інпутів.
+
 ### Відкрито
 
-- **Фаза 2** — решта форм зі списку вище (бюджети, split-редактор, активи,
-  `ItemEditSheet`, `MacrosEditor`, `FoodPickerSection`, `BodyEntryForm`,
-  `Measurements`, `BiometricsSection`, `DateField`).
 - **Офлайн-статус «чекає синхронізації»** — окремий індикатор поверх
   наявного `OfflineBanner` не додано.
 - **Дедуплікація в `enqueueOutboxUpsert`** — свідомо не чіпали (ризик для

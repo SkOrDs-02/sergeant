@@ -196,3 +196,32 @@ describe("BiometricsSection", () => {
     expect(screen.getByRole("button", { name: "Зберегти" })).toBeDisabled();
   });
 });
+
+describe("BiometricsSection — межі (beta-input-boundaries)", () => {
+  it("дата народження має власне вікно, а не спільне календарне", () => {
+    render(<BiometricsSection online />);
+    const birthDate = screen.getByLabelText("Дата народження");
+    // Спільне вікно календаря починається з 1970-го — для дати народження
+    // це відрізало б усіх, хто народився раніше.
+    expect(birthDate.getAttribute("min")).toBe("1900-01-01");
+    expect(birthDate.getAttribute("max")).not.toBe("2100-01-01");
+  });
+
+  it("не зберігає зріст поза діапазоном інпута", () => {
+    render(<BiometricsSection online />);
+    fireEvent.change(screen.getByLabelText("Зріст (см)"), {
+      target: { value: "99999" },
+    });
+    // Значення поза [80; 260] читається як «не задано», тож форма не стає
+    // брудною і кнопка лишається вимкненою.
+    expect(screen.getByRole("button", { name: "Зберегти" })).toBeDisabled();
+  });
+
+  it("зберігає зріст усередині діапазону", () => {
+    render(<BiometricsSection online />);
+    fireEvent.change(screen.getByLabelText("Зріст (см)"), {
+      target: { value: "180" },
+    });
+    expect(screen.getByRole("button", { name: "Зберегти" })).toBeEnabled();
+  });
+});

@@ -8,6 +8,10 @@ import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeUnit } from "../lib/pantryTextParser";
+import { normalizeAmountInput } from "@shared/lib/format/amount";
+
+/** Абсурдна кількість позиції — межа проти зайвого нуля, не дієтологія. */
+const MAX_ITEM_QTY = 100_000;
 
 export interface ItemEditState {
   open: boolean;
@@ -57,6 +61,8 @@ export function ItemEditSheet({
             }
             inputMode="decimal"
             placeholder="напр. 2.5"
+            maxLength={12}
+            showCharCount={false}
             aria-label="Кількість"
           />
         </div>
@@ -75,6 +81,8 @@ export function ItemEditSheet({
               setItemEdit((s) => ({ ...s, unit: e.target.value, err: "" }))
             }
             placeholder="г / кг / мл / л / шт"
+            maxLength={16}
+            showCharCount={false}
             aria-label="Одиниця"
           />
         </div>
@@ -93,8 +101,17 @@ export function ItemEditSheet({
           onClick={() => {
             const qtyStr = String(itemEdit.qty || "").trim();
             const unitStr = String(itemEdit.unit || "").trim();
-            const qty = qtyStr === "" ? null : Number(qtyStr.replace(",", "."));
-            if (qtyStr !== "" && !Number.isFinite(qty)) {
+            // Кома — норма на UA-клавіатурі, тож нормалізуємо так само,
+            // як усюди; вручну відсікаємо Infinity, відʼємне й абсурдну
+            // кількість (спека beta-input-boundaries).
+            const qty =
+              qtyStr === "" ? null : Number(normalizeAmountInput(qtyStr));
+            if (
+              qtyStr !== "" &&
+              (!Number.isFinite(qty) ||
+                (qty as number) < 0 ||
+                (qty as number) > MAX_ITEM_QTY)
+            ) {
               setItemEdit((s) => ({ ...s, err: "Некоректна кількість." }));
               return;
             }
