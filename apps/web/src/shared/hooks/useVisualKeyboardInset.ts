@@ -38,6 +38,14 @@ import {
 function readVisualKeyboardInsetPx(): number {
   const vv = window.visualViewport;
   if (!vv) return 0;
+  // Гепу самого по собі мало. Браузерний chrome (URL-бар + нижній тулбар),
+  // який з'являється при холодному відкритті з пуш-сповіщення, дає таку саму
+  // різницю layout↔visual viewport — і `HubBottomNav` ховався
+  // (`translate-y-full` + `aria-hidden`) без жодної клавіатури на екрані
+  // (user report: «при переході в апку через пуш зникає навбар у хабі»).
+  // Клавіатури не буває без сфокусованого поля вводу, тож це і є
+  // відсутній предикат.
+  if (!isTextEntryElement(document.activeElement)) return 0;
   const gap = window.innerHeight - vv.height;
   return gap > 56 ? Math.round(gap) : 0;
 }
@@ -46,8 +54,16 @@ function subscribeVisualViewport(onStoreChange: () => void): () => void {
   const vv = window.visualViewport;
   if (!vv) return () => {};
   vv.addEventListener("resize", onStoreChange);
+  // Знімок тепер залежить і від `document.activeElement` (див.
+  // `readVisualKeyboardInsetPx`), тож фокус має бути таким самим джерелом
+  // нотифікації, як і resize — інакше значення оновлювалось би лише тоді,
+  // коли viewport випадково змінить розмір.
+  document.addEventListener("focusin", onStoreChange);
+  document.addEventListener("focusout", onStoreChange);
   return () => {
     vv.removeEventListener("resize", onStoreChange);
+    document.removeEventListener("focusin", onStoreChange);
+    document.removeEventListener("focusout", onStoreChange);
   };
 }
 
