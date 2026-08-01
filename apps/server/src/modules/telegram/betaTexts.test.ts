@@ -52,6 +52,13 @@ describe("installReply", () => {
     expect(out).toContain("Встановити застосунок");
   });
 
+  it("не звужує встановлення на iPhone до Safari", () => {
+    // З iOS 16.4 «На початковий екран» є в Chrome, Edge і Firefox, і
+    // встановлений звідти застосунок отримує ті самі права, включно з push.
+    // «Тільки Safari» коштувало б тестера, який Safari не тримає.
+    expect(installReply(FULL)).not.toMatch(/тільки через Safari/i);
+  });
+
   it("наголошує, що на iPhone нагадування живуть лише у встановленому застосунку", () => {
     // Найдорожчий розрив очікувань бети: людина вмикає нагадування, бачить,
     // що налаштування збереглось, і робить висновок, що продукт їх не шле.
@@ -66,7 +73,7 @@ describe("installReply", () => {
     expect(out).toContain("/app");
     expect(out).toContain("Safari");
     // Ані порожнього рядка замість URL, ані підвішеного контакту founder-а.
-    expect(out).not.toMatch(/Відкрий\s+у Safari/);
+    expect(out).not.toMatch(/Відкрий\s*$/m);
     expect(out).not.toMatch(/напиши\s*,/);
   });
 });

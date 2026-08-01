@@ -60,7 +60,10 @@ test("@critical module headers keep their canonical names after onboarding", asy
   for (const module of modules) {
     await page.goto(module.path, { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: module.heading }).first(),
+      page
+        .getByTestId("module-header-title")
+        .filter({ hasText: module.heading })
+        .first(),
     ).toBeVisible();
     await page.getByRole("button", { name: "На хаб" }).first().click();
     await expect(

@@ -109,7 +109,10 @@ for (const mod of MODULES) {
 
     // Module shell mounted: header title visible AND hub `<nav>` is gone.
     await expect(
-      page.getByRole("heading", { name: mod.title }).first(),
+      page
+        .getByTestId("module-header-title")
+        .filter({ hasText: mod.title })
+        .first(),
     ).toBeVisible({
       timeout: 10_000,
     });

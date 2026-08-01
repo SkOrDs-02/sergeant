@@ -229,6 +229,10 @@
     {
       "pattern": "^https?://zenfinanceai\\.com/ynab-vs-copilot-ai/?$",
       "reason": "Порівняння YNAB і Copilot цитовано в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретною статтею."
+    },
+    {
+      "pattern": "^https?://sergeant\\.2dmanager\\.com\\.ua/\\.well-known/security\\.txt$",
+      "reason": "Власний прод-хост, посилання з docs/04-governance/security/beta-tester-brief.md. GitHub-раннери не встановлюють зʼєднання взагалі — `fetch failed`, а не HTTP-код, тобто це мережева недосяжність, а не 404. Pattern звужено рівно до цього одного URL, щоб решта прод-домену лишалась під перевіркою. УВАГА: недосяжність із CI не доводить, що файл віддається — це треба підтвердити з браузера, і доки не підтверджено, вважати відкритим питанням бета-готовності."
     }
   ]
 }

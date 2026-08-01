@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
+> **Last touched:** 2026-08-01 by @claude. **Next review:** 2026-10-30.
 > **Status:** Active — roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
@@ -552,7 +552,7 @@ flowchart LR
   HOTFIX --> RELEASE[playbooks/release.md §1]
   ISSUE --> PR[Standard PR flow]
   ISSUE2 --> PR
-  PR --> CLOSE[Close + reply у Telegram\n«Fixed in #1234»]
+  PR --> CLOSE[Close + reply у Telegram\n«Fixed in #NNN»]
 ```
 
 **GitHub Issue templates:**
