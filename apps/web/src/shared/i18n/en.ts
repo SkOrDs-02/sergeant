@@ -361,6 +361,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     monoConnectErrors: {
       tokenRejected:
         "Mono rejected the token. Check that you copied it correctly.",
+      accountRequired:
+        "Sign in first — the Mono token is stored on the server, so connecting a bank needs an account. Nothing is wrong with your token.",
       networkUnavailable: "Could not reach Mono. Check your connection.",
     },
   },
