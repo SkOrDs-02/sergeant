@@ -112,3 +112,14 @@ atlas не покриває: `shoulder`, `elbow`, `wrist`, `hip`, `knee`, `ankle
 
 Не закриває: E-5 (випуск із циклу травми через режим повернення), C6/G1
 (заборона мед-порад у промптах AI) — обидва трекаються окремо.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                            | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------- | ---------- |
+| [#572](https://github.com/Skords-01/Sergeant/pull/572) | feat(fizruk-domain): травма-модель «не можна» — словник зон, блокування, сховище | 2026-08-01 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
