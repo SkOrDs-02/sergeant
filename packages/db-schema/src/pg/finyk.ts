@@ -7,7 +7,6 @@ import {
   real,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -97,7 +96,9 @@ export const finykHiddenTransactions = pgTable(
 export const finykBudgets = pgTable(
   "finyk_budgets",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -119,7 +120,9 @@ export const finykBudgets = pgTable(
 export const finykSubscriptions = pgTable(
   "finyk_subscriptions",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -141,7 +144,9 @@ export const finykSubscriptions = pgTable(
 export const finykAssets = pgTable(
   "finyk_assets",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -163,7 +168,9 @@ export const finykAssets = pgTable(
 export const finykDebts = pgTable(
   "finyk_debts",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -185,7 +192,9 @@ export const finykDebts = pgTable(
 export const finykReceivables = pgTable(
   "finyk_receivables",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -207,7 +216,9 @@ export const finykReceivables = pgTable(
 export const finykCustomCategories = pgTable(
   "finyk_custom_categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -229,7 +240,9 @@ export const finykCustomCategories = pgTable(
 export const finykManualExpenses = pgTable(
   "finyk_manual_expenses",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -251,7 +264,9 @@ export const finykManualExpenses = pgTable(
 export const finykTxFilters = pgTable(
   "finyk_tx_filters",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })

@@ -1,5 +1,7 @@
 # Backend Tech Debt Inventory
 
+> **Оновлено 2026-08-01.** § «Tests coverage map» нижче звірено з живим прогоном — застарілі цифри з 2026-05-05 (60.51% lines, три «0-15%» surface-и) замінені актуальними (93.02% lines; nutrition tool handlers / `syncV2.ts` / `weekly-digest.ts` тепер 95-100%). Заразом знайдено й полагоджено міграцією `096_finyk_fizruk_pk_text.sql`: **8 finyk + 7 fizruk таблиць** мали PK `uuid`, а клієнт шле доменно-префіксовані id (`b_…`, `w_…`, `dl_…`, тощо) — той самий клас бага, що й `094`/`095` того ж дня для routine/nutrition. Живий доказ — `invalid input syntax for type uuid` у CI на `finyk_manual_expenses` і `fizruk_daily_log`; повний розбір, включно з тим, чому «а де ще» знайшло ще 13 таблиць, — у коментарі міграції `096`.
+>
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). **Post-waves:** Privat/Mono upstream body scrub — **Closed** [#347](https://github.com/SkOrDs-02/sergeant/pull/347). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
 > **Оновлено 2026-06-01.** PR E/F закрито (див. Status log).
@@ -556,24 +558,28 @@ two-phase DROP цього класу змін не покриває.
 
 ## Tests coverage map
 
+> **Звірено 2026-08-01 з живим `pnpm --filter @sergeant/server test:coverage`.** Таблиця нижче — знімок з часів PR F (травень 2026) і не оновлювалась відтоді; рядки, позначені ❌/частково, могли отримати тести пізніше без синхронного апдейту цього файлу. Джерело правди по агрегатних % — `coverage-ratchet.json` (repo root) і `docs/02-engineering/testing/README.md` § «Coverage ratchet», не ця таблиця.
+
 Шляхи відносно **`apps/server/src/`**.
 
-| Файл / зона                          | Тест є?                                    | Залишок (PR F / інкремент)                                                               |
-| ------------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `aiQuota.ts`                         | ✅ `aiQuota.test.ts`                       | Симуляція гонок під навантаженням — опційно.                                             |
-| `auth.ts`                            | частково `auth.test.ts`                    | trustedOrigins / edge cases — розширити.                                                 |
-| `db.ts`                              | ❌                                         | pg mock — низький пріоритет.                                                             |
-| `modules/chat/chat.ts`               | ✅ `modules/chat/chat.test.ts`             | **Повний SSE + tool_use** end-to-end — середній пріоритет.                               |
-| `modules/chat/coach.ts`              | ✅ `modules/chat/coach.test.ts`            | `coachInsight`, route-level AI — додати.                                                 |
-| `modules/sync/sync.ts`               | ✅ `modules/sync/sync.test.ts`             | Розширені контракти push/pull/pushAll — за бажанням.                                     |
-| `modules/mono/mono.ts` / `privat.ts` | через `modules/mono/bankProxy.test.ts`     | Інтеграційні сценарії cache/breaker — опційно.                                           |
-| `modules/push/push.ts`               | ✅ `modules/push/push.test.ts`             | Edge cases stale endpoint / dual-write метрик — опційно.                                 |
-| `push/send.ts`                       | ✅ `push/send.test.ts`                     | Native APNs/FCM mocks — за потреби.                                                      |
-| `lib/webpushSend.ts`                 | ✅ `lib/webpushSend.test.ts`               | —                                                                                        |
-| `modules/nutrition/barcode.ts`       | ✅ `modules/nutrition/barcode.test.ts`     | Каскад OFF→USDA→UPC, cache hit/miss, invalid input, transient upstream failures покриті. |
-| `modules/nutrition/food-search.ts`   | ✅ `modules/nutrition/food-search.test.ts` | Розширити UK_TO_EN / merge edge cases.                                                   |
-| `modules/digest/weekly-digest.ts`    | ❌                                         | AI JSON parse / prompt fixture — **середній**.                                           |
-| `modules/nutrition/*`                | частково (`nutritionResponse.test.ts`)     | Контракт-тести per handler (happy + invalid body) — PR F.                                |
+| Файл / зона                                                                                  | Тест є?                                        | Залишок (PR F / інкремент)                                                                     |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `aiQuota.ts`                                                                                 | ✅ `aiQuota.test.ts`                           | Симуляція гонок під навантаженням — опційно.                                                   |
+| `auth.ts`                                                                                    | частково `auth.test.ts`                        | trustedOrigins / edge cases — розширити.                                                       |
+| `db.ts`                                                                                      | ❌                                             | pg mock — низький пріоритет.                                                                   |
+| `modules/chat/chat.ts`                                                                       | ✅ `modules/chat/chat.test.ts`                 | **Повний SSE + tool_use** end-to-end — середній пріоритет.                                     |
+| `modules/chat/coach.ts`                                                                      | ✅ `modules/chat/coach.test.ts`                | `coachInsight`, route-level AI — додати.                                                       |
+| `modules/sync/sync.ts`                                                                       | ✅ `modules/sync/sync.test.ts`                 | Розширені контракти push/pull/pushAll — за бажанням.                                           |
+| `modules/sync/syncV2.ts`                                                                     | ✅ `modules/sync/syncV2.test.ts` + integration | 95.34% lines (2026-08-01) — рядок вище позначав «~0-1%», застаріло.                            |
+| `modules/mono/mono.ts` / `privat.ts`                                                         | через `modules/mono/bankProxy.test.ts`         | Інтеграційні сценарії cache/breaker — опційно.                                                 |
+| `modules/push/push.ts`                                                                       | ✅ `modules/push/push.test.ts`                 | Edge cases stale endpoint / dual-write метрик — опційно.                                       |
+| `push/send.ts`                                                                               | ✅ `push/send.test.ts`                         | Native APNs/FCM mocks — за потреби.                                                            |
+| `lib/webpushSend.ts`                                                                         | ✅ `lib/webpushSend.test.ts`                   | —                                                                                              |
+| `modules/nutrition/barcode.ts`                                                               | ✅ `modules/nutrition/barcode.test.ts`         | Каскад OFF→USDA→UPC, cache hit/miss, invalid input, transient upstream failures покриті.       |
+| `modules/nutrition/food-search.ts`                                                           | ✅ `modules/nutrition/food-search.test.ts`     | 97.22% lines (2026-08-01). Розширити UK_TO_EN / merge edge cases.                              |
+| `modules/nutrition/{day-hint,day-plan,parse-pantry,find-recipes,shopping-list,week-plan}.ts` | ✅ per-file `*.test.ts`                        | 95-100% lines (2026-08-01) — рядок нижче позначав «Anthropic tool handlers ~0-15%», застаріло. |
+| `modules/digest/weekly-digest.ts`                                                            | ✅ `modules/digest/weekly-digest.test.ts`      | 99.17% lines (2026-08-01) — рядок вище позначав «❌», застаріло.                               |
+| `modules/nutrition/*`                                                                        | частково (`nutritionResponse.test.ts`)         | Контракт-тести per handler (happy + invalid body) — PR F.                                      |
 
 Цільове покриття (без зміни цілей):
 
