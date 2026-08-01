@@ -7,7 +7,6 @@ import {
   primaryKey,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -22,7 +21,9 @@ import { sql } from "drizzle-orm";
 export const routineEntries = pgTable(
   "routine_entries",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -60,10 +61,10 @@ export const routineEntries = pgTable(
  * причиною `append_only_violation`. Виправлення історії — це нова подія,
  * а не редагування старої.
  *
- * `id` — TEXT, НЕ UUID (свідомо). `routineEntries.id` оголошений як `uuid()`,
- * тоді як клієнт шле `habitId:dateKey` → `22P02` → `apply_failed`
- * (`docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»). Новий журнал
- * цю пастку обходить.
+ * `id` — TEXT, НЕ UUID (свідомо): клієнт шле `habitId:dateKey`, що не є UUID.
+ * Ця таблиця обходила пастку з самого початку; решту `routine_*` довела до
+ * того ж типу міграція 094 (`docs/90-work/tech-debt/backend.md` §
+ * «Routine: PK-тип»).
  */
 export const routineCompletionEvents = pgTable(
   "routine_completion_events",
@@ -140,7 +141,9 @@ export const routineStreaks = pgTable("routine_streaks", {
 export const routineHabits = pgTable(
   "routine_habits",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     emoji: text().notNull().default(""),
@@ -175,7 +178,9 @@ export const routineHabits = pgTable(
 export const routineTags = pgTable(
   "routine_tags",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     scope: text().notNull().default(""),
@@ -200,7 +205,9 @@ export const routineTags = pgTable(
 export const routineCategories = pgTable(
   "routine_categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     emoji: text().notNull().default(""),

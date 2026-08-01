@@ -44,14 +44,18 @@ describe("pg/routineEntries schema snapshot", () => {
     ]);
   });
 
-  it("should have correct column types matching migration 026", () => {
+  it("should have correct column types matching migrations 026 + 094", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    // id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text
+    //
+    // Міграція 026 оголошувала UUID, але клієнт шле детермінований
+    // `<habitId>|<дата>|<стан>`, який UUID-ом не є. Це давало 22P02 →
+    // `apply_failed` на КОЖНОМУ push-і Рутини, тож 094 послабила тип до TEXT.
     expect(columnMap["id"]!.dataType).toBe("string");
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.notNull).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);

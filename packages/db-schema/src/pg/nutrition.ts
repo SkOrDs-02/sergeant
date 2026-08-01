@@ -8,7 +8,6 @@ import {
   real,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -25,7 +24,9 @@ import { sql } from "drizzle-orm";
 export const nutritionMeals = pgTable(
   "nutrition_meals",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     eatenAt: timestamp("eaten_at", { withTimezone: true }).notNull(),
     mealType: text("meal_type").notNull().default("snack"),
@@ -70,7 +71,9 @@ export const nutritionMeals = pgTable(
 export const nutritionPantries = pgTable(
   "nutrition_pantries",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
     text: text().notNull().default(""),
@@ -100,8 +103,10 @@ export const nutritionPantries = pgTable(
 export const nutritionPantryItems = pgTable(
   "nutrition_pantry_items",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    pantryId: uuid("pantry_id").notNull(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    pantryId: text("pantry_id").notNull(),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
     qty: real(),
@@ -196,7 +201,7 @@ export const nutritionPantryEvents = pgTable(
 export const nutritionPrefs = pgTable("nutrition_prefs", {
   userId: text("user_id").primaryKey(),
   prefsJson: jsonb("prefs_json").notNull().default({}),
-  activePantryId: uuid("active_pantry_id"),
+  activePantryId: text("active_pantry_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -279,7 +284,9 @@ export const nutritionGoalPeriods = pgTable(
 export const nutritionRecipes = pgTable(
   "nutrition_recipes",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull().default(""),
     dataJson: jsonb("data_json").notNull().default({}),
