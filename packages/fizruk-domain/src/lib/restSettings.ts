@@ -20,8 +20,8 @@ export const REST_DEFAULTS = {
 
 export const REST_CATEGORY_LABELS: Record<keyof typeof REST_DEFAULTS, string> =
   {
-    compound: "Базові (compound)",
-    isolation: "Ізолюючі",
+    compound: "Базові",
+    isolation: "Ізоляція",
     cardio: "Кардіо",
   };
 

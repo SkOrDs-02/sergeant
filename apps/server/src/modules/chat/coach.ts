@@ -3,7 +3,6 @@ import pool from "../../db.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { env } from "../../env/env.js";
 import { resolveProTier } from "./aiQuota.js";
-import { sendToUserQuietly } from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import {
   CoachInsightSchema,
@@ -484,19 +483,15 @@ ${snapshotText}
 
   const text = aiResult.text;
 
-  // Fire-and-forget push з AI-«нудж»-повідомленням дня. Якщо `text` порожній
-  // (Anthropic повернула структуру без текстових блоків) — нічого не шлемо,
-  // щоб не спамити юзеру порожній пуш. Side-effect non-fatal: `sendToUserQuietly`
-  // ковтає будь-яку помилку всередині і лише логує, тож response юзеру ми
-  // вже відправили і чекати на нього не треба.
-  const userId = (req as WithSessionUser).user?.id;
-  if (userId && text && text.trim()) {
-    void sendToUserQuietly(
-      userId,
-      { title: "Коуч", body: text.trim().slice(0, 200) },
-      { module: "coach" },
-    );
-  }
-
+  // AI-CONTEXT: тут раніше стояв fire-and-forget push з тим самим текстом,
+  // який ми віддаємо у відповіді. Цей endpoint викликає ТІЛЬКИ клієнт на
+  // передньому плані (`useCoachInsight`), тож юзер отримував сповіщення про
+  // текст, який у цю ж секунду читає на екрані — і по одному з кожної
+  // поверхні (веб + мобілка), без `tag`, без дедупу.
+  //
+  // Рішення власника (2026-08-01): пуш іде лише тоді, коли апка ЗАКРИТА.
+  // Оскільки цей шлях за визначенням foreground, push тут не місце — його
+  // має слати окремий серверний шедулер, який знає, хто сьогодні не заходив.
+  // До появи того шедулера денна порада живе на дашборді.
   res.json({ ok: true, insight: text });
 }

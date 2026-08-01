@@ -62,27 +62,25 @@ describe("NutritionSection", () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("renders the daily target fields and persists prefs on mount", () => {
+  it("renders the section and persists prefs on mount", () => {
     renderSection();
     expect(screen.getByText("Їжа")).toBeInTheDocument();
-    expect(screen.getByText("Калорії")).toBeInTheDocument();
+    expect(screen.getByText("Денна норма")).toBeInTheDocument();
     // persistNutritionPrefs is invoked by the mount effect
     expect(persistNutritionPrefs).toHaveBeenCalled();
   });
 
   it("commits an edited number field on blur", () => {
     renderSection();
-    // "Калорії" and "Вода" both use placeholder 2000; scope to the
-    // Калорії <label> row to grab the right input.
-    const kcalLabel = screen.getByText("Калорії").closest("label")!;
-    const kcalInput = within(kcalLabel).getByRole("spinbutton");
-    fireEvent.change(kcalInput, { target: { value: "2500" } });
-    fireEvent.blur(kcalInput);
+    const waterLabel = screen.getByText("Денна норма").closest("label")!;
+    const waterInput = within(waterLabel).getByRole("spinbutton");
+    fireEvent.change(waterInput, { target: { value: "2500" } });
+    fireEvent.blur(waterInput);
     // The effect re-persists with the patched value
     const lastCall = persistNutritionPrefs.mock.calls.at(-1)?.[0] as {
-      dailyTargetKcal: number;
+      waterGoalMl: number;
     };
-    expect(lastCall.dailyTargetKcal).toBe(2500);
+    expect(lastCall.waterGoalMl).toBe(2500);
   });
 
   it("shows a storage error banner when persisting fails", async () => {
@@ -95,13 +93,20 @@ describe("NutritionSection", () => {
     });
   });
 
-  it("resets daily targets to defaults", () => {
+  // Редактор КБЖУ живе тільки в модулі Їжі (`DailyPlanCard`); тут лишилось
+  // посилання. Дубль полів у налаштуваннях прибрано 2026-08-01.
+  it("sends the user to the canonical macro editor in the module", () => {
     renderSection();
-    fireEvent.click(screen.getByRole("button", { name: /Скинути цілі/i }));
-    const lastCall = persistNutritionPrefs.mock.calls.at(-1)?.[0] as {
-      dailyTargetKcal: number;
-    };
-    expect(lastCall.dailyTargetKcal).toBe(DEFAULT_PREFS.dailyTargetKcal);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Відкрити цілі в модулі Їжі/i }),
+    );
+    expect(navigate).toHaveBeenCalledWith("/nutrition/menu");
+  });
+
+  it("no longer renders a second copy of the macro inputs", () => {
+    renderSection();
+    expect(screen.queryByText("Калорії")).not.toBeInTheDocument();
+    expect(screen.queryByText("Білки")).not.toBeInTheDocument();
   });
 
   it("renders the pantry picker with options and switches active pantry", () => {
