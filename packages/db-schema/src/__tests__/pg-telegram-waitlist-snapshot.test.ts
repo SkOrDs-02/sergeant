@@ -17,7 +17,7 @@ describe("pg/telegramWaitlist schema snapshot", () => {
     expect(config.name).toBe("telegram_waitlist");
   });
 
-  it("оголошує рівно ті колонки, що й міграція 089", () => {
+  it("оголошує рівно ті колонки, що й міграції 089 + 092", () => {
     expect(config.columns.map((c) => c.name)).toEqual([
       "id",
       "chat_id",
@@ -28,6 +28,9 @@ describe("pg/telegramWaitlist schema snapshot", () => {
       "created_at",
       "notified_at",
       "opted_out_at",
+      // Міграція 092 — стан «чекаю причину /stop» + сама причина.
+      "stop_reason_awaited_at",
+      "stop_reason",
     ]);
   });
 
@@ -63,6 +66,13 @@ describe("pg/telegramWaitlist schema snapshot", () => {
     // Саме на цьому тримається вибірка розсилки.
     expect(col["notified_at"]!.notNull).toBe(false);
     expect(col["opted_out_at"]!.notNull).toBe(false);
+
+    // Міграція 092 додала обидві колонки additive і NULLable — двофазність
+    // не потрібна саме тому, що старий код їх не бачить. NOT NULL тут став
+    // би поламкою: рядки, створені до 092, причини не мають.
+    expect(col["stop_reason_awaited_at"]!.notNull).toBe(false);
+    expect(col["stop_reason"]!.dataType).toBe("string");
+    expect(col["stop_reason"]!.notNull).toBe(false);
   });
 
   it("має частковий індекс під вибірку розсилки", () => {

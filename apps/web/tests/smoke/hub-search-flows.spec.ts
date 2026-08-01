@@ -23,7 +23,9 @@ test("@critical hub-search: quick-add expense action opens Finyk sheet", async (
 
   await dialog.getByRole("option", { name: /Додати витрату/ }).click();
 
-  await expect(page.getByRole("heading", { name: "Фінік" })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фінік" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(
@@ -49,7 +51,9 @@ test("@critical hub-search: Fizruk catalogue hit opens module shell", async ({
   await expect(dialog.getByText("Фізрук")).toBeVisible();
   await dialog.getByRole("option", { name: /Жим/ }).first().click();
 
-  await expect(page.getByRole("heading", { name: "Фізрук" })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фізрук" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(

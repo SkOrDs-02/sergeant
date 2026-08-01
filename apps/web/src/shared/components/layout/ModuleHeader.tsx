@@ -139,7 +139,15 @@ export function ModuleHeader({
                 </span>
               ) : null}
               {title ? (
-                <p className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2">
+                // AI-CONTEXT: навмисно `<p>`, не заголовок — назва модуля це
+                // хром оболонки, який у DOM-порядку йде ПЕРЕД сторінковим
+                // `<h1>` і інвертував би структуру заголовків (#527). Тому
+                // тести адресують його через `data-testid`, а не
+                // `getByRole("heading")` — роль тут не повинна зʼявитись.
+                <p
+                  data-testid="module-header-title"
+                  className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
+                >
                   {mt ? (
                     <span
                       aria-hidden

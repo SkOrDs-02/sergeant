@@ -141,6 +141,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
     const optionLabels = Array.from(select.options).map((o) => o.textContent);
     expect(optionLabels).toEqual([
+      // Disabled placeholder: без нього порожній select мовчки означав би
+      // «Їжа», і людина зберігала б категорію, якої не обирала.
+      "Оберіть категорію",
       "Їжа",
       "Продукти",
       "Кафе та ресторани",
@@ -179,9 +182,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first <option> in the dropdown.
+    // Транспорт has the highest frequency rank → first *selectable* <option>.
+    // `options[0]` is the disabled «Оберіть категорію» placeholder.
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.textContent).toBe("Транспорт");
+    expect(select.options[0]?.disabled).toBe(true);
+    expect(select.options[1]?.textContent).toBe("Транспорт");
   });
 
   describe("edit mode", () => {

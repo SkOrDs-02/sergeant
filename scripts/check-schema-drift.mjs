@@ -764,6 +764,12 @@ const SQL_ONLY_TABLES = [
   "rate_limit_buckets",
   // User preferences — server-managed key-value налаштування (не Drizzle-read).
   "user_preferences",
+  // Продуктовий фідбек (міграція 093). Пишеться одним сирим
+  // `INSERT INTO feedback_entries` у `feedbackService.ts`; читається руками
+  // через psql (див. docs/03-operations/observability/feedback-loop.md).
+  // Клієнт отримує з API лише `id` вставленого рядка, тож Drizzle-модель
+  // не потрібна.
+  "feedback_entries",
 ];
 
 function isSqlOnlyAllowlisted(table) {
