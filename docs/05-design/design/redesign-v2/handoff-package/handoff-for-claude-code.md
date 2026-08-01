@@ -1,6 +1,6 @@
 # Sergeant v2 redesign — canvas handoff
 
-> **Last touched:** 2026-06-26 by @dimastahov16012003. **Next review:** 2026-09-24.
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
 > **Status:** Reference
 
 > **Призначення:** короткий бриф для Claude Code / агента що буде закривати наступні PR-и
@@ -90,7 +90,7 @@ module-accent halo на hero», але **конкретне місце wiring н
 
 ```markdown
 - W6 **StreakFlame wiring** — Routine hero card. Coral radial-glow в правому верхньому куті
-  hero card + streak day counter. Motion-safe (Hard Rule #17 — займає AMBIENT slot замість mesh
+  hero card + streak day counter. Motion-safe (дизайн-конвенція — займає AMBIENT slot замість mesh
   усередині hero card). Hook: `useStreakFlame(streakDays)` повертає `{intensity, shouldAnimate}`.
 ```
 

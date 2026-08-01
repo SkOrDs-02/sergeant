@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`
@@ -70,8 +70,8 @@ Surface-і та їх deploy targets:
 - `apps/web` → Vercel — [`docs/03-operations/deploy/vercel.md`](../deploy/vercel.md)
 - `apps/server` → Coolify Docker app (image from `deploy-api.yml`) — [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)
 - ~~`tools/openclaw`~~ → removed (ADR-0075)
-- `apps/mobile` → Expo / TestFlight — [`docs/00-start/playbooks/release-expo-mobile.md`](../../00-start/playbooks/release-expo-mobile.md)
-- `apps/mobile-shell` → App Store / Play Store wrap — [`docs/00-start/playbooks/release-mobile-shell.md`](../../00-start/playbooks/release-mobile-shell.md)
+- `apps/mobile` → Expo / TestFlight — [`release.md` § Expo](../../00-start/playbooks/release.md#3-expo)
+- `apps/mobile-shell` → App Store / Play Store wrap — [`release.md` § Mobile shell](../../00-start/playbooks/release.md#2-mobile-shell-capacitor)
 - n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../../ops/n8n-workflows)
 
 Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md).
@@ -200,7 +200,7 @@ Decision-tree коли щось «не працює»:
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                                                                         |
 | Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                                                                              |
 | DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                                                                             |
-| Access review (хто має які доступи)            | Квартальна            | [`docs/00-start/playbooks/run-access-review.md`](../../00-start/playbooks/run-access-review.md)                                     |
+| Access review (хто має які доступи)            | Квартальна            | [`access-governance.md` § Periodic access review](../../00-start/playbooks/access-governance.md#3-periodic-access-review)           |
 
 ### 8.1. Migration `down.sql` drill
 

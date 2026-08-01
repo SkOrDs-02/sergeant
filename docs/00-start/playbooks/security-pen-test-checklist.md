@@ -1,6 +1,6 @@
 # Playbook: Security pen-test checklist for closed hardening cards
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
 > **Status:** Active
 
 **Trigger:** треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у.
@@ -72,5 +72,5 @@
 - [`docs/04-governance/security/pen-tests/2026-05-hardening-sweep.md`](../../04-governance/security/pen-tests/2026-05-hardening-sweep.md) — приклад transcript-у (H5/H6/H8/H9)
 - [`declare-incident.md`](./declare-incident.md) — escalation-path коли атака проходить
 - [`hotfix-prod-regression.md`](./hotfix-prod-regression.md) — швидке закриття регресії
-- [`run-access-review.md`](./run-access-review.md) — перевірка privileged access перед sweep-ом
+- [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review) — перевірка privileged access перед sweep-ом
 - Skill: `sergeant-deploy-and-observability`
