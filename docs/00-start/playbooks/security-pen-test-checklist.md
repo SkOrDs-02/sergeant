@@ -1,6 +1,6 @@
 # Playbook: Security pen-test checklist for closed hardening cards
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-01 by @github-actions[bot]. **Next review:** 2026-10-30.
 > **Status:** Active
 
 **Trigger:** треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у.
@@ -74,3 +74,14 @@
 - [`hotfix-prod-regression.md`](./hotfix-prod-regression.md) — швидке закриття регресії
 - [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review) — перевірка privileged access перед sweep-ом
 - Skill: `sergeant-deploy-and-observability`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                        | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------- | ---------- |
+| [#562](https://github.com/Skords-01/Sergeant/pull/562) | feat(web): auto-enable high contrast and close a11y gaps for low-vision beta | 2026-08-01 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
