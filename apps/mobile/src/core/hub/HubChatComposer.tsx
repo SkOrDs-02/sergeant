@@ -62,7 +62,7 @@ export const HubChatComposer = forwardRef<RNTextInput, HubChatComposerProps>(
         {!online && (
           <View className="mb-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2">
             <Text className="text-xs text-warning-strong">
-              Асистент недоступний без інтернету. Дані модулів видно офлайн, але
+              Сержант недоступний без інтернету. Дані модулів видно офлайн, але
               AI-відповіді потребують підключення.
             </Text>
           </View>
@@ -72,7 +72,7 @@ export const HubChatComposer = forwardRef<RNTextInput, HubChatComposerProps>(
             <TextInput
               ref={ref}
               testID="hub-chat-input"
-              accessibilityLabel="Повідомлення для асистента"
+              accessibilityLabel="Повідомлення для Сержанта"
               placeholder="Запитай Sergeant…"
               placeholderTextColor="#a8a29e"
               multiline
