@@ -281,7 +281,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 </span>
                 <span
                   className={cn(
-                    "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+                    "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap",
                     "transition-[max-width,opacity] duration-200 motion-reduce:transition-none",
                     active
                       ? "max-w-[88px] opacity-100"

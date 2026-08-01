@@ -175,7 +175,7 @@ function HubBottomNavTab({
         {/* Label: visible only for active tab, slides in/out */}
         <span
           className={cn(
-            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+            "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap",
             transition,
             "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
             active
