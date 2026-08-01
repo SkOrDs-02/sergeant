@@ -260,6 +260,9 @@ export function Transactions({
       <TransactionList
         loading={filters.activeLoading}
         activeTx={filters.activeTx}
+        hasTransactionsOutsideMonth={filters.hasTransactionsOutsideMonth}
+        monthLabel={filters.monthLabel}
+        onGoPreviousMonth={() => filters.goMonth(-1)}
         filtered={filters.filtered}
         groupedByDate={filters.groupedByDate}
         groupCounts={filters.groupCounts}

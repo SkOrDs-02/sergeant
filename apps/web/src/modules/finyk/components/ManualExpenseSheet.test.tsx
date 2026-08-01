@@ -362,6 +362,52 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     });
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  // Regression: founder report 2026-07-31 — «При відкритті форми додати
+  // надходження при виборі категорії не зникає варнінг про необхідність
+  // вибору категорії». Switching to Надходження blanks the category with
+  // `shouldValidate: true`, but `useApiForm` runs RHF in `mode: "onSubmit"`,
+  // so a plain <select> change never re-ran the resolver and the alert stuck.
+  it("clears the category warning as soon as a category is picked", async () => {
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={vi.fn()} />);
+    await act(async () => {});
+
+    // Switching kind blanks the category → warning paints immediately.
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Оберіть категорію");
+    });
+
+    // Picking one must retire it without needing another submit.
+    fireEvent.change(screen.getByLabelText("Категорія"), {
+      target: { value: "salary" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
+
+  // Regression: founder report 2026-07-31 — «Ота опція яка вискакує під полем
+  // суми з +10, +100, .00 прибери її що з витрат, що з надходжень».
+  it.each(["Витрата", "Надходження"])(
+    "shows no quick-increment accessory bar under the amount field (%s)",
+    async (tab) => {
+      render(<ManualExpenseSheet open onClose={() => {}} onSave={vi.fn()} />);
+      await act(async () => {});
+      fireEvent.click(screen.getByRole("tab", { name: tab }));
+
+      const amount = screen.getByLabelText("Сума ₴");
+      fireEvent.focus(amount);
+      fireEvent.change(amount, { target: { value: "120" } });
+
+      expect(screen.queryByRole("toolbar")).not.toBeInTheDocument();
+      for (const label of ["+10", "+100", "+500", ".00"]) {
+        expect(
+          screen.queryByRole("button", { name: label }),
+        ).not.toBeInTheDocument();
+      }
+    },
+  );
 });
 
 describe("ManualExpenseSheet — межові значення (beta-input-boundaries)", () => {

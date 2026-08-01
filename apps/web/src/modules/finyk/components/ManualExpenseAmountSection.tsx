@@ -1,20 +1,25 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-07-31
  * Status: Active
  *
  * Amount block for ManualExpenseSheet — quick chips, hero preview,
  * numeric input, and voice dictation. Extracted for Hard Rule #18.
+ *
+ * AI-CONTEXT: the `NumericAccessoryBar` (+10 / +100 / +500 / `.00` strip
+ * that used to float under the focused amount field) was removed on
+ * founder request 2026-07-31 — it covered the field on both the витрата
+ * and надходження tabs and duplicated the numeric keypad. Merchant-driven
+ * `amountSuggestions` above the input stay: they are real per-user amounts,
+ * not blind increments.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 import type { UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
-import { NumericAccessoryBar } from "@shared/components/ui/NumericAccessoryBar";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech, formatMoney } from "@sergeant/shared";
 import { canonicalizeAmountInput } from "@shared/lib/format/amount";
-import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import type { ExpenseFormValues } from "./manualExpenseForm";
 
 interface AmountSuggestion {
@@ -50,8 +55,6 @@ export function ManualExpenseAmountSection({
   setValue,
   focusRef,
 }: ManualExpenseAmountSectionProps) {
-  const isCoarse = useCoarsePointer();
-  const [amountFocused, setAmountFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // Publish a focus callback to the parent (batch entry re-focus).
@@ -62,16 +65,9 @@ export function ManualExpenseAmountSection({
       focusRef.current = null;
     };
   }, [focusRef]);
-  // RHF owns the field ref; keep a local handle too so the accessory bar can
-  // read the live value and re-focus the input after a chip tap.
+  // RHF owns the field ref; keep a local handle too so the batch-entry
+  // re-focus callback above can drive the input directly.
   const amountReg = register("amount");
-
-  const commitAmount = (next: string) => {
-    setValue("amount", next, {
-      shouldDirty: true,
-      shouldValidate: Boolean(amountError),
-    });
-  };
 
   return (
     <div className="flex gap-2 items-end">
@@ -147,11 +143,7 @@ export function ManualExpenseAmountSection({
             amountReg.ref(el);
             inputRef.current = el;
           }}
-          onFocus={() => setAmountFocused(true)}
           onBlur={(e) => {
-            // Delay so a tap on an accessory chip (which blurs the input)
-            // doesn't tear the bar down before its click handler fires.
-            window.setTimeout(() => setAmountFocused(false), 120);
             // «Виправити й показати результат»: « 12,50 » → 12.50. На
             // UA-клавіатурі кома — норма, тож показуємо, як зрозуміли,
             // замість inline-помилки. Невалідний ввід лишаємо як є —
@@ -166,20 +158,6 @@ export function ManualExpenseAmountSection({
             void amountReg.onBlur(e);
           }}
         />
-        {/* UI-15: keyboard accessory bar — only on touch devices, only while
-            the amount field is focused. Sits directly above the numeric
-            keypad so round-number entry and confirm are one tap each. */}
-        {isCoarse && amountFocused && (
-          <NumericAccessoryBar
-            className="mt-2 rounded-xl border"
-            value={amountNumeric ? String(amountNumeric) : ""}
-            onValueChange={(next) => {
-              commitAmount(next);
-              inputRef.current?.focus();
-            }}
-            onDone={() => inputRef.current?.blur()}
-          />
-        )}
       </div>
       {/* Mic-only icon was indistinguishable from the rest of the form
           chrome — users didn't realise they could dictate the whole
