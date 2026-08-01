@@ -11,7 +11,7 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **38** — Ініціативи: **3** · Планування: **17** · Launch / запуск: **12** · Аудити й прожарки: **1** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **39** — Ініціативи: **3** · Планування: **17** · Launch / запуск: **12** · Аудити й прожарки: **2** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
 ## Ініціативи (3)
 
@@ -66,13 +66,14 @@
 | [`product-os/paywall-ux-placement.md`](./01-product/launch/product-os/paywall-ux-placement.md)             | Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./01-product/launch/product-os/ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr). | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | [`tech/ai-memory-activation.md`](./01-product/launch/tech/ai-memory-activation.md)                         | Active (operational activation runbook; behavior SSOT is architecture doc)                                                                                                       | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
-## Аудити й прожарки (1)
+## Аудити й прожарки (2)
 
 > Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).
 
 | Документ                                                                                              | Статус | PR-згадки |
 | ----------------------------------------------------------------------------------------------------- | ------ | --------- |
 | [`2026-07-31-legal-docs-beta-readiness.md`](./90-work/audits/2026-07-31-legal-docs-beta-readiness.md) | Active | —         |
+| [`web-qa-pre-beta.md`](./90-work/audits/web-qa-pre-beta.md)                                           | Active | —         |
 
 ## Security hardening (1)
 
