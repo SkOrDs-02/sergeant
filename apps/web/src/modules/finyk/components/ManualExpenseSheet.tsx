@@ -594,6 +594,7 @@ export function ManualExpenseSheet({
           categorySlug={categorySlug}
           categorySlugs={categorySlugs}
           register={register}
+          setValue={setValue}
           setAiAppliedCategory={setAiAppliedCategory}
         />
       </div>

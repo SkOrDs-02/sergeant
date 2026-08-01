@@ -8,6 +8,13 @@
  * its limit by more than OVERRUN_THRESHOLD (default 10%). Returns a single
  * Insight with concrete UAH overage and days-remaining copy. When multiple
  * categories are overrun, the most-overrun one wins (highest ratio).
+ *
+ * AI-DANGER: budget limits are **monthly**, so spend must be measured over the
+ * current Kyiv month only. Callers pass the full transaction history (the
+ * sibling insight hooks need several months for their MoM / recurring
+ * detection), and this hook used to compare that whole history against a
+ * one-month limit — producing «Продукти: використано 521% ліміту» on the
+ * second day of a month (founder report 2026-07-31). Keep the clamp below.
  */
 
 import { useMemo } from "react";
@@ -16,6 +23,7 @@ import {
   getLimitBudgets,
   getCurrentMonthContext,
 } from "@sergeant/finyk-domain/domain/budget";
+import { currentKyivMonthPrefix, filterToKyivMonth } from "../lib/monthWindow";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
 import type {
@@ -50,6 +58,12 @@ export function useBudgetOverrunInsight({
 
     const { daysLeft } = getCurrentMonthContext();
 
+    // Clamp to the current Kyiv month — the limit being compared against is a
+    // monthly one, while callers pass the full history (their other insight
+    // hooks need it). See `../lib/monthWindow`.
+    const monthTx = filterToKyivMonth(transactions, currentKyivMonthPrefix());
+    if (!monthTx.length) return null;
+
     // Score each limit budget and pick the worst offender.
     let worst: {
       budget: (typeof limitBudgets)[number];
@@ -64,7 +78,7 @@ export function useBudgetOverrunInsight({
       if (!categoryId || !(Number(b.limit) > 0)) continue;
       const limit = Number(b.limit);
       const spent = calcCategorySpent(
-        transactions,
+        monthTx,
         b.categoryId,
         txCategories,
         txSplits,

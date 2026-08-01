@@ -163,6 +163,47 @@ describe("Budgets page", () => {
     expect(setBudgets).toHaveBeenCalled();
   });
 
+  // Regression (CodeRabbit review on #551): the Kyiv-month clamp added for the
+  // plan-vs-fact card must NOT reach limit budgets. `LimitBudget.period` is
+  // `month | week | one_time`, and `filterTransactionsForLimitPeriod` applies
+  // its own window — a `week` budget viewed early in a month starts on a Monday
+  // that belongs to the previous month, so pre-clamping silently understated
+  // spend against the limit.
+  it("counts previous-month spend inside a week-period limit window", () => {
+    // 2026-07-01 is a Wednesday → the Kyiv week started Monday 2026-06-29.
+    vi.setSystemTime(new Date("2026-07-01T09:00:00Z"));
+    const tx: Transaction = {
+      id: "t1",
+      // 2026-06-30 — previous calendar month, but inside the current week.
+      time: Math.floor(Date.UTC(2026, 5, 30, 9, 0, 0) / 1000),
+      amount: -50_000,
+      description: "Сільпо",
+      mcc: 0,
+    } as unknown as Transaction;
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 1000,
+        period: "week",
+      } as unknown as Budget,
+    ];
+
+    act(() => {
+      renderBudgets({
+        mono: buildMono({ realTx: [tx] }),
+        storage: buildStorage({ budgets, txCategories: { t1: "food" } }),
+        // The limits section is collapsed by default; the deep-link focus
+        // effect expands it so the card actually renders.
+        focusLimitCategoryId: "food",
+      });
+    });
+
+    // 500 ₴ from 30 червня counts against the current week's 1000 ₴ limit.
+    expect(screen.getByText(/500\s*\/\s*1000/)).toBeInTheDocument();
+  });
+
   it("auto-opens the limits section for a deep-linked focus category", () => {
     const budgets: Budget[] = [
       {

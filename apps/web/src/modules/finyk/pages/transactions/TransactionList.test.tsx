@@ -126,6 +126,70 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
+  // Regression: founder report 2026-07-31 — «Зникли транзакції, хоч пише що
+  // токен підключений». On 1 серпня the month genuinely had no rows yet, but
+  // the tab greeted a bank-connected user with a full history by showing the
+  // first-run hero («Додай першу витрату… Підключи Monobank»), which reads as
+  // data loss rather than "цей місяць ще порожній".
+  describe("month-empty vs first-run empty", () => {
+    it("shows the month-scoped state when other months still have data", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Цей місяць ще порожній")).toBeInTheDocument();
+      expect(
+        screen.getByText(/За серпень 2026 операцій поки немає/),
+      ).toBeInTheDocument();
+      // The first-run onboarding hero must NOT claim this user has no data.
+      expect(
+        screen.queryByText("Куди йдуть твої гроші?"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers a jump back to the previous month", () => {
+      const onGoPreviousMonth = vi.fn();
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+          onGoPreviousMonth={onGoPreviousMonth}
+        />,
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Попередній місяць" }),
+      );
+      expect(onGoPreviousMonth).toHaveBeenCalledTimes(1);
+    });
+
+    it("still shows the first-run hero when there is no data anywhere", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth={false}
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    });
+  });
+
   it("renders the virtualized list when filtered has rows", () => {
     render(
       <TransactionList

@@ -141,6 +141,8 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
     const optionLabels = Array.from(select.options).map((o) => o.textContent);
     expect(optionLabels).toEqual([
+      // Disabled placeholder — required so switching Витрата ↔ Надходження can
+      // blank the field and force an explicit pick from the new taxonomy.
       "Оберіть категорію",
       "Їжа",
       "Продукти",
@@ -180,9 +182,10 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first <option> in the dropdown.
+    // Транспорт has the highest frequency rank → first real <option> in the
+    // dropdown, right after the disabled "Оберіть категорію" placeholder.
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    // options[0] — незмінний disabled-плейсхолдер; рангування починається з [1].
+    expect(select.options[0]?.textContent).toBe("Оберіть категорію");
     expect(select.options[1]?.textContent).toBe("Транспорт");
   });
 
