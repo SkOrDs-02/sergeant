@@ -58,25 +58,35 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 # `patches/` обов'язково ДО `pnpm install`: `pnpm.patchedDependencies` у
 # package.json (наразі `@expo/cli@0.22.28`) застосовується завжди — навіть з
 # `--ignore-scripts` — і відсутність патч-файлу валить frozen-install.
+# AI-DANGER: список workspace-пакетів нижче — РУЧНИЙ, і його треба розширювати
+# щоразу, коли `apps/server` починає імпортувати новий `@sergeant/*`. Пропуск не
+# ловиться ні тестами, ні typecheck-ом (там пакет резолвиться через
+# node_modules монорепо) — падає ЛИШЕ збірка образу, на `pnpm build` усередині
+# Docker, з «Could not resolve». Саме так `@sergeant/routine-domain` (серверні
+# нагадування) зробив образ незбираним. Перевірка на майбутнє:
+#   grep -rho "@sergeant/[a-z-]*" apps/server/src --include=*.ts | sort -u
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server... \
       --filter @sergeant/shared... \
       --filter @sergeant/db-schema... \
-      --filter @sergeant/finyk-domain...
+      --filter @sergeant/finyk-domain... \
+      --filter @sergeant/routine-domain...
 
 # --- Джерела ---
 COPY packages/shared ./packages/shared
 COPY packages/config ./packages/config
 COPY packages/db-schema ./packages/db-schema
 COPY packages/finyk-domain ./packages/finyk-domain
+COPY packages/routine-domain ./packages/routine-domain
 COPY apps/server ./apps/server
 
 # `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
@@ -102,6 +112,7 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 # `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
