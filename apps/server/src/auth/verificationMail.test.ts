@@ -200,6 +200,54 @@ describe("шаблони листів", () => {
     expect(mail.html).not.toContain("<script>");
     expect(mail.html).toContain("&lt;script&gt;");
   });
+});
+
+/**
+ * Екранування винесене в окремий describe після того, як CodeQL позначив
+ * попередню пару `escapeHtmlAttr`/`escapeHtmlText` як неповну санітизацію
+ * (CWE-79). Тепер це одна функція на повний клас символів, і сюїт фіксує
+ * саме повноту — щоб «оптимізація» назад до контекстно-звужених варіантів
+ * не пройшла мовчки.
+ */
+describe("escapeHtml", () => {
+  it("покриває всі пʼять небезпечних символів", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    expect(m.escapeHtml(`&<>"'`)).toBe("&amp;&lt;&gt;&quot;&#39;");
+  });
+
+  it("екранує КОЖНЕ входження, не лише перше", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    expect(m.escapeHtml("a<b<c")).toBe("a&lt;b&lt;c");
+  });
+
+  /**
+   * Класична пастка ланцюжка `.replace()`: якщо `&` екранується не першим,
+   * власні `&` попередніх замін проходять другий раунд і дають `&amp;lt;`.
+   * Один прохід по character-class-у це виключає структурно — тест
+   * стереже саме цю властивість.
+   */
+  it("не екранує двічі власний вивід", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    expect(m.escapeHtml("<")).toBe("&lt;");
+    expect(m.escapeHtml("&amp;")).toBe("&amp;amp;");
+    expect(m.escapeHtml(m.escapeHtml("<"))).toBe("&amp;lt;");
+  });
+
+  it("лишає безпечний текст недоторканим", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    const plain = "user.name+tag@example.com — звичайний текст";
+    expect(m.escapeHtml(plain)).toBe(plain);
+  });
+
+  /**
+   * Одинарна лапка раніше не екранувалась (в атрибуті у подвійних лапках
+   * вона нешкідлива). Тримаємо явний кейс: якщо хтось колись перепише
+   * шаблон на одинарні лапки, атака не відкриється разом із ним.
+   */
+  it("закриває вихід із атрибута в одинарних лапках", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    expect(m.escapeHtml("' onmouseover='alert(1)")).not.toContain("'");
+  });
 
   /**
    * Reset-пароля має власний лендинг (`/reset-password`) і власний

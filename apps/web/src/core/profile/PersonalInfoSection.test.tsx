@@ -192,7 +192,7 @@ describe("PersonalInfoSection — email change", () => {
    */
   it("unverified account gets the immediate-swap copy instead", async () => {
     changeEmailMock.mockResolvedValue({ data: { ok: true }, error: null });
-    renderSection({ emailVerified: false });
+    const { onRefresh } = renderSection({ emailVerified: false });
 
     fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -205,6 +205,12 @@ describe("PersonalInfoSection — email change", () => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
         "Адресу змінено — перевір нову скриньку",
       );
+    });
+    // This branch is the only one where the address really changed on the
+    // server, so the refetch is load-bearing: without it the field keeps
+    // rendering the old address and the toast reads as a lie.
+    await waitFor(() => {
+      expect(onRefresh).toHaveBeenCalled();
     });
   });
 
