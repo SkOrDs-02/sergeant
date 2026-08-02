@@ -318,12 +318,33 @@ export function WorkoutJournalSection({
                 // Confirm the action visually + with haptic so the user does
                 // not have to read the modal to know the session was saved.
                 hapticSuccess();
-                if (isWorkoutWin) {
-                  // W2: Replace silent toast with a celebration overlay for
-                  // real workouts. Fires optimistically after save — does NOT
-                  // block the endWorkout call above. "achievement" fits better
-                  // than "goalCompleted" here: it's a qualitative milestone
-                  // (finished a session) rather than a numeric target hit.
+                if (sum) {
+                  // Є що підсумувати → веде аркуш `WorkoutFinishSheets`:
+                  // «Самопочуття» → «Щось болить?» → підсумок із плитками
+                  // часу / вправ / обʼєму і кнопкою «Готово». Це і є
+                  // святкування — окремий трофей поверх нього зайвий.
+                  //
+                  // AI-DANGER: НЕ піднімай тут `celebration.achievement`.
+                  // `CelebrationModal` — це `fixed inset-0 z-9999` із
+                  // backdrop-ом, а аркуш живе на `z-100`, тож трофей накривав
+                  // крок «Самопочуття»: кнопка «Пропустити» лишалась видимою,
+                  // але кліки з'їдав backdrop. І сам собою він не зникав —
+                  // focus-trap модала переводить фокус усередину, `focusin`
+                  // ставить `autoCloseMs` на паузу, і той уже не стартує.
+                  // Ловилось `fizruk-active-workout.spec.ts`.
+                  setFinishFlash({
+                    step: "wellbeing",
+                    collapsed: false,
+                    ...sum,
+                    workoutId: wid,
+                    energy: null,
+                    mood: null,
+                    injurySites: [],
+                  });
+                } else if (isWorkoutWin) {
+                  // Підсумку немає (порожня чи шаблонна сесія), але робота
+                  // була — тоді трофей нікого не перекриває й лишається
+                  // єдиним визнанням. W2: краще за мовчазний тост.
                   celebration.achievement(
                     "Тренування завершено!",
                     "Відмінна робота — сесія збережена.",
@@ -348,17 +369,6 @@ export function WorkoutJournalSection({
                 // after finish — otherwise it eventually beeps/vibrates long
                 // after the session is over.
                 setRestTimer?.(null);
-                if (sum) {
-                  setFinishFlash({
-                    step: "wellbeing",
-                    collapsed: false,
-                    ...sum,
-                    workoutId: wid,
-                    energy: null,
-                    mood: null,
-                    injurySites: [],
-                  });
-                }
                 // Release the guard on the next tick — by then React has
                 // already committed `activeWorkoutId = null` and the button
                 // is unmounted, so any further clicks are impossible anyway.
