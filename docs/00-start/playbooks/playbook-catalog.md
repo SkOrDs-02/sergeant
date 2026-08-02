@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-02 by @github-actions[bot]. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -82,3 +82,14 @@ Curated table вище лишається швидким роутером для
 
 - If no row fits cleanly, start with `sergeant-start-here` and choose one primary skill before opening a playbook.
 - If a change touches multiple surfaces, pick the playbook for the highest-risk part of the work.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                       | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- | ---------- |
+| [#589](https://github.com/Skords-01/Sergeant/pull/589) | feat(web): fizruk — active workout route, honest 1RM, injury UI on ADR-0083 | 2026-08-02 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
