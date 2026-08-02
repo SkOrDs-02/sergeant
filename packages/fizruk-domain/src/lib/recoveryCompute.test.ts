@@ -2,9 +2,18 @@ import { describe, it, expect } from "vitest";
 import {
   loadPointsForItem,
   computeWellbeingMultiplier,
+  computeWellbeingSignal,
   computeRecoveryBy,
   isFullyRecovered,
+  WELLBEING_FRESH_WINDOW_HOURS,
 } from "./recoveryCompute";
+
+/**
+ * Фікстури журналу самопочуття мають фіксовані дати, тож із появою вікна
+ * свіжості (E-3) кожен виклик мусить передавати «зараз» поруч із ними —
+ * інакше запис із 2026-01-01 просто випадає з вікна і множник = 1.0.
+ */
+const WB_NOW = Date.parse("2026-01-01T12:00:00Z");
 
 describe("fizruk/recoveryCompute", () => {
   it("loadPointsForItem supports strength/time/distance", () => {
@@ -27,9 +36,10 @@ describe("fizruk/recoveryCompute", () => {
   });
 
   it("computeWellbeingMultiplier clamps range", () => {
-    const bad = computeWellbeingMultiplier([
-      { at: "2026-01-01", sleepHours: 4, energyLevel: 1 },
-    ]);
+    const bad = computeWellbeingMultiplier(
+      [{ at: "2026-01-01T08:00:00Z", sleepHours: 4, energyLevel: 1 }],
+      WB_NOW,
+    );
     expect(bad).toBeLessThanOrEqual(1.4);
     expect(bad).toBeGreaterThanOrEqual(0.7);
   });
@@ -142,14 +152,19 @@ describe("fizruk/recoveryCompute", () => {
     });
 
     it("ignores entries with neither sleep nor energy data", () => {
-      expect(computeWellbeingMultiplier([{ at: "2026-01-01" }])).toBe(1.0);
+      expect(computeWellbeingMultiplier([{ at: "2026-01-01" }], WB_NOW)).toBe(
+        1.0,
+      );
     });
 
     it("picks the most recent entry with sleep data (sorted desc by `at`)", () => {
-      const m = computeWellbeingMultiplier([
-        { at: "2026-01-01", sleepHours: 4 }, // older, poor sleep
-        { at: "2026-01-05", sleepHours: 9 }, // newest, great sleep
-      ]);
+      const m = computeWellbeingMultiplier(
+        [
+          { at: "2026-01-04T08:00:00Z", sleepHours: 4 }, // older, poor sleep
+          { at: "2026-01-05T08:00:00Z", sleepHours: 9 }, // newest, great sleep
+        ],
+        Date.parse("2026-01-05T12:00:00Z"),
+      );
       // newest entry (9h, >=8) applies -0.1, no energy data -> 0.9
       expect(m).toBeCloseTo(0.9);
     });
@@ -162,7 +177,10 @@ describe("fizruk/recoveryCompute", () => {
       [8, 0.9], // >=8 -> -0.1
     ])("sleepHours=%s yields multiplier %s", (sleepHours, expected) => {
       expect(
-        computeWellbeingMultiplier([{ at: "2026-01-01", sleepHours }]),
+        computeWellbeingMultiplier(
+          [{ at: "2026-01-01T08:00:00Z", sleepHours }],
+          WB_NOW,
+        ),
       ).toBeCloseTo(expected);
     });
 
@@ -175,16 +193,103 @@ describe("fizruk/recoveryCompute", () => {
       [4.5, 0.85], // >=4.5 -> -0.15
     ])("energyLevel=%s yields multiplier %s", (energyLevel, expected) => {
       expect(
-        computeWellbeingMultiplier([{ at: "2026-01-01", energyLevel }]),
+        computeWellbeingMultiplier(
+          [{ at: "2026-01-01T08:00:00Z", energyLevel }],
+          WB_NOW,
+        ),
       ).toBeCloseTo(expected);
     });
 
     it("combines sleep and energy penalties, clamped to [0.7, 1.4]", () => {
-      const m = computeWellbeingMultiplier([
-        { at: "2026-01-01", sleepHours: 3, energyLevel: 1 },
-      ]);
+      const m = computeWellbeingMultiplier(
+        [{ at: "2026-01-01T08:00:00Z", sleepHours: 3, energyLevel: 1 }],
+        WB_NOW,
+      );
       // +0.3 (sleep) + 0.3 (energy) = 1.6, clamped to 1.4
       expect(m).toBe(1.4);
+    });
+  });
+  describe("вікно свіжості самопочуття (E-3)", () => {
+    const HOUR = 60 * 60 * 1000;
+    const now = Date.parse("2026-03-10T12:00:00Z");
+    const at = (hoursAgo: number) =>
+      new Date(now - hoursAgo * HOUR).toISOString();
+
+    it("запис поза вікном не прискорює відновлення", () => {
+      const entries = [{ at: at(24 * 30), sleepHours: 9 }];
+      // Місячної давності «чудовий сон» раніше НАЗАВЖДИ давав 0.9 —
+      // саме це і був розрив E-3.
+      expect(computeWellbeingMultiplier(entries, now)).toBe(1.0);
+      const signal = computeWellbeingSignal(entries, now);
+      expect(signal.usedSleep).toBe(false);
+      expect(signal.stale).toBe(true);
+      expect(signal.sleepAgeHours).toBeCloseTo(720, 0);
+    });
+
+    it("запис усередині вікна діє як раніше", () => {
+      const entries = [{ at: at(12), sleepHours: 9 }];
+      expect(computeWellbeingMultiplier(entries, now)).toBeCloseTo(0.9);
+      const signal = computeWellbeingSignal(entries, now);
+      expect(signal.usedSleep).toBe(true);
+      expect(signal.stale).toBe(false);
+    });
+
+    it("рівно на межі вікна запис ще діє", () => {
+      const entries = [{ at: at(WELLBEING_FRESH_WINDOW_HOURS), sleepHours: 4 }];
+      expect(computeWellbeingMultiplier(entries, now)).toBeCloseTo(1.3);
+    });
+
+    it("сон і енергія старіють НЕЗАЛЕЖНО", () => {
+      const signal = computeWellbeingSignal(
+        [
+          { at: at(24 * 10), sleepHours: 4 }, // поза вікном
+          { at: at(6), energyLevel: 1 }, // у вікні
+        ],
+        now,
+      );
+      expect(signal.usedSleep).toBe(false);
+      expect(signal.usedEnergy).toBe(true);
+      // Лише енергія: 1.0 + 0.3.
+      expect(signal.multiplier).toBeCloseTo(1.3);
+      // Один із двох входів живий — це не «журнал застарів».
+      expect(signal.stale).toBe(false);
+    });
+
+    it("запис без придатної дати множник не рухає", () => {
+      const signal = computeWellbeingSignal(
+        [{ at: "не-дата", sleepHours: 4 }],
+        now,
+      );
+      expect(signal.multiplier).toBe(1.0);
+      expect(signal.sleepAgeHours).toBeNull();
+      expect(signal.stale).toBe(true);
+    });
+
+    it("порожній журнал — це не «застарів»", () => {
+      expect(computeWellbeingSignal([], now).stale).toBe(false);
+    });
+
+    it("computeRecoveryBy передає своє `now` у вікно свіжості", () => {
+      const workouts = [
+        {
+          startedAt: new Date(now - 2 * 24 * HOUR).toISOString(),
+          items: [
+            {
+              type: "strength" as const,
+              sets: [{ weightKg: 100, reps: 10 }],
+              musclesPrimary: ["chest"],
+            },
+          ],
+        },
+      ];
+      const fresh = computeRecoveryBy(workouts as never, {}, now, [
+        { at: at(12), sleepHours: 9 },
+      ]);
+      const stale = computeRecoveryBy(workouts as never, {}, now, [
+        { at: at(24 * 30), sleepHours: 9 },
+      ]);
+      // Свіжий «чудовий сон» знижує втому; протухлий — уже ні.
+      expect(fresh["chest"]!.fatigue).toBeLessThan(stale["chest"]!.fatigue);
     });
   });
 });

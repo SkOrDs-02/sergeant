@@ -29,6 +29,7 @@ const EMPTY: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
 };
 
 beforeEach(async () => {
@@ -71,6 +72,7 @@ describe("dualWriteFizrukState integration", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     };
     const result = await dualWriteFizrukState(state, state);
     expect(result).toEqual({ status: "skipped", reason: "no-ops" });
@@ -149,6 +151,7 @@ describe("dualWriteFizrukState integration", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     };
 
     const result = await dualWriteFizrukState(EMPTY, next);

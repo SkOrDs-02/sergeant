@@ -17,6 +17,7 @@ import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
+import type { HabitSkip } from "@sergeant/routine-domain";
 import { RoutineCalendarHero } from "./RoutineCalendarHero";
 import { RoutineCalendarMonthGrid } from "./RoutineCalendarMonthGrid";
 import {
@@ -92,6 +93,8 @@ export function RoutineCalendarPanel({
     onOpenModule,
     onBulkMarkDay,
     onOpenQuickAddHabit,
+    onSetHabitSkip,
+    onClearHabitSkip,
   } = useRoutineCalendarActions();
 
   const streakInsight = useStreakRecordPendingInsight(routine);
@@ -140,6 +143,16 @@ export function RoutineCalendarPanel({
       ...h,
       completed: (routine.completions[h.id] || []).includes(todayKey),
     }));
+
+  // Позначки «не зміг» саме за цей день, зведені в `habitId → HabitSkip`.
+  const skipsForToday = useMemo(() => {
+    const out: Record<string, HabitSkip> = {};
+    for (const [habitId, byDate] of Object.entries(routine.skips || {})) {
+      const s = byDate?.[todayKey];
+      if (s) out[habitId] = s;
+    }
+    return out;
+  }, [routine.skips, todayKey]);
 
   const dayLabel = parseDateKey(todayKey).toLocaleDateString("uk-UA", {
     weekday: "long",
@@ -197,6 +210,11 @@ export function RoutineCalendarPanel({
         scheduledHabits={scheduledHabitsForReport}
         onToggleHabit={onToggleHabit}
         dateKey={todayKey}
+        skipsForDay={skipsForToday}
+        onSetSkip={(habitId, reason) =>
+          onSetHabitSkip(habitId, todayKey, reason)
+        }
+        onClearSkip={(habitId) => onClearHabitSkip(habitId, todayKey)}
       />
 
       {canBulkMark && (

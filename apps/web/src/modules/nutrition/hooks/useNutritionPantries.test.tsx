@@ -85,7 +85,7 @@ describe("useNutritionPantries", () => {
   });
 
   describe("parsePantry happy path", () => {
-    it("posts text, merges parsed items into active pantry", async () => {
+    it("posts text, stages parsed items in preview until confirmed", async () => {
       seedPantries(
         [{ id: "home", name: "Дім", items: [], text: "молоко, яйця" }],
         "home",
@@ -102,6 +102,18 @@ describe("useNutritionPantries", () => {
         result.current.parsePantry();
       });
 
+      // Розібране НЕ потрапляє в комору одразу — спершу прев'ю.
+      await waitFor(() => {
+        expect(result.current.parsePreview?.items.length).toBe(2);
+      });
+      expect(result.current.parsePreview?.source).toBe("ai");
+      expect(result.current.pantryItems.length).toBe(0);
+      expect(result.current.pantryText).toBe("молоко, яйця");
+
+      act(() => {
+        result.current.confirmParsePreview(result.current.parsePreview!.items);
+      });
+
       await waitFor(() => {
         expect(result.current.pantryItems.length).toBe(2);
       });
@@ -109,7 +121,8 @@ describe("useNutritionPantries", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result.current.pantryItems.map((x: any) => x.name),
       ).toEqual(["молоко", "яйця"]);
-      // text cleared after successful parse
+      expect(result.current.parsePreview).toBeNull();
+      // text cleared after the user confirms
       expect(result.current.pantryText).toBe("");
       expect(apiParsePantry).toHaveBeenCalledWith({
         text: "молоко, яйця",
@@ -158,6 +171,11 @@ describe("useNutritionPantries", () => {
       // Now resolve — items must still go to "home", not "work".
       await act(async () => {
         resolveParse!({ items: [{ name: "молоко", qty: 1, unit: "л" }] });
+      });
+
+      await waitFor(() => expect(result.current.parsePreview).not.toBeNull());
+      act(() => {
+        result.current.confirmParsePreview(result.current.parsePreview!.items);
       });
 
       await waitFor(() => {

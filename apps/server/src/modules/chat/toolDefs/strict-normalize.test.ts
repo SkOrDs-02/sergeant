@@ -106,6 +106,16 @@ describe("TOOLS strict-mode Anthropic contract", () => {
     ).toBeLessThanOrEqual(20);
   });
 
+  // Бюджет піднято 24 → 25 разом із Хвилею 4 («гнучкий стрік», канон
+  // `routine.md` §4): `pause_habit` перейшов із недатованого прапора на
+  // ДАТОВАНИЙ інтервал і отримав другий optional-параметр (`to` — межа
+  // «по», відсутність якої означає паузу без заявленого кінця). `from`
+  // зроблено обовʼязковим саме заради цього бюджету — інакше було б 26.
+  //
+  // Правило те саме, що для bundle-бюджетів: підняти можна, але лише в тому
+  // ж PR, що додає параметр, і з поясненням. Кожен optional-параметр — це
+  // додаткова гілка в граматиці strict-режиму, тож бюджет має рости
+  // штучно-повільно, а не «про запас».
   it("keeps strict optional parameters within Anthropic's grammar budget", () => {
     const strictTools = TOOLS.filter((tool) => tool.strict === true);
     const total = strictTools.reduce(
@@ -120,7 +130,7 @@ describe("TOOLS strict-mode Anthropic contract", () => {
           (tool) => `${tool.name}:${optionalParameterCount(tool.input_schema)}`,
         )
         .join(", "),
-    ).toBeLessThanOrEqual(24);
+    ).toBeLessThanOrEqual(25);
   });
 
   it("sets additionalProperties=false on every strict object schema", () => {

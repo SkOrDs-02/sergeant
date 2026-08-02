@@ -116,3 +116,100 @@ describe("createPrivatEndpoints.balanceFinal", () => {
     expect((init as RequestInit).signal).toBe(controller.signal);
   });
 });
+
+describe("createPrivatEndpoints.connect", () => {
+  it("POSTs the merchant credentials to /api/privat/connect exactly once (F1)", async () => {
+    const fetchMock = mockFetchOnce({ connected: true, merchantId: "m1" });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+
+    const res = await privat.connect({
+      merchantId: "m1",
+      token: "secret-token",
+    });
+
+    expect(res).toEqual({ connected: true, merchantId: "m1" });
+    const [url, init] = firstCall(fetchMock);
+    const parsed = new URL(String(url));
+    expect(parsed.pathname).toBe("/api/v1/privat/connect");
+    const reqInit = init as RequestInit;
+    expect(reqInit.method).toBe("POST");
+    expect(JSON.parse(String(reqInit.body))).toEqual({
+      merchantId: "m1",
+      token: "secret-token",
+    });
+  });
+
+  it("passes through an AbortSignal", async () => {
+    const fetchMock = mockFetchOnce({ connected: true, merchantId: "m1" });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+    const controller = new AbortController();
+
+    await privat.connect(
+      { merchantId: "m1", token: "t" },
+      { signal: controller.signal },
+    );
+
+    const [, init] = firstCall(fetchMock);
+    expect((init as RequestInit).signal).toBe(controller.signal);
+  });
+});
+
+describe("createPrivatEndpoints.disconnect", () => {
+  it("POSTs to /api/privat/disconnect with no body", async () => {
+    const fetchMock = mockFetchOnce({ connected: false });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+
+    const res = await privat.disconnect();
+
+    expect(res).toEqual({ connected: false });
+    const [url, init] = firstCall(fetchMock);
+    const parsed = new URL(String(url));
+    expect(parsed.pathname).toBe("/api/v1/privat/disconnect");
+    const reqInit = init as RequestInit;
+    expect(reqInit.method).toBe("POST");
+    expect(reqInit.body).toBeUndefined();
+  });
+
+  it("passes through an AbortSignal", async () => {
+    const fetchMock = mockFetchOnce({ connected: false });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+    const controller = new AbortController();
+
+    await privat.disconnect({ signal: controller.signal });
+
+    const [, init] = firstCall(fetchMock);
+    expect((init as RequestInit).signal).toBe(controller.signal);
+  });
+});
+
+describe("createPrivatEndpoints.status", () => {
+  it("GETs /api/privat/status and returns the connection status", async () => {
+    const fetchMock = mockFetchOnce({ connected: true, merchantId: "m1" });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+
+    const res = await privat.status();
+
+    expect(res).toEqual({ connected: true, merchantId: "m1" });
+    const [url, init] = firstCall(fetchMock);
+    const parsed = new URL(String(url));
+    expect(parsed.pathname).toBe("/api/v1/privat/status");
+    expect((init as RequestInit).method ?? "GET").toBe("GET");
+  });
+
+  it("passes through an AbortSignal", async () => {
+    const fetchMock = mockFetchOnce({ connected: false, merchantId: null });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const privat = createPrivatEndpoints(http);
+    const controller = new AbortController();
+
+    await privat.status({ signal: controller.signal });
+
+    const [, init] = firstCall(fetchMock);
+    expect((init as RequestInit).signal).toBe(controller.signal);
+  });
+});

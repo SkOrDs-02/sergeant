@@ -4,6 +4,7 @@ import {
   activeInjurySites,
   hasUncheckableZoneMarks,
   injuryBlockForExercise,
+  latestClearedInjuryAtForExercise,
   type InjuryMark,
 } from "./injuryBlock.js";
 import { findExerciseById } from "../data/index.js";
@@ -178,5 +179,50 @@ describe("coverage honesty", () => {
     );
     expect(block.coverage).toBe("muscle-and-zone");
     expect(hasUncheckableZoneMarks(block, sites)).toBe(false);
+  });
+});
+
+describe("latestClearedInjuryAtForExercise — вхід протоколу повернення (E-5)", () => {
+  const bench = findExerciseById("bench_press_barbell");
+
+  it("віддає зняття позначки, що накривала саме цю вправу", () => {
+    const at = latestClearedInjuryAtForExercise(bench, [
+      mark("shoulder", { clearedAt: "2026-08-01T10:00:00.000Z" }),
+    ]);
+    expect(at).toBe("2026-08-01T10:00:00.000Z");
+  });
+
+  it("бере НАЙПІЗНІШЕ зняття, коли позначок було кілька", () => {
+    const at = latestClearedInjuryAtForExercise(bench, [
+      mark("shoulder", { clearedAt: "2026-07-01T10:00:00.000Z" }),
+      mark("chest", {
+        id: "inj_chest_2",
+        clearedAt: "2026-07-20T10:00:00.000Z",
+      }),
+    ]);
+    expect(at).toBe("2026-07-20T10:00:00.000Z");
+  });
+
+  it("ще ВІДКРИТА позначка не є поверненням — вправа просто заблокована", () => {
+    expect(
+      latestClearedInjuryAtForExercise(bench, [mark("shoulder")]),
+    ).toBeNull();
+  });
+
+  it("видалена позначка («не ту зону позначив») у мʼякий режим не вводить", () => {
+    const at = latestClearedInjuryAtForExercise(bench, [
+      mark("shoulder", {
+        clearedAt: "2026-08-01T10:00:00.000Z",
+        deletedAt: "2026-08-01T11:00:00.000Z",
+      }),
+    ]);
+    expect(at).toBeNull();
+  });
+
+  it("чужа зона вправу не зачіпає", () => {
+    const at = latestClearedInjuryAtForExercise(bench, [
+      mark("knee", { clearedAt: "2026-08-01T10:00:00.000Z" }),
+    ]);
+    expect(at).toBeNull();
   });
 });

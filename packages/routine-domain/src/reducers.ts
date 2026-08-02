@@ -11,13 +11,15 @@
  * persists the returned state.
  */
 
-import { dateKeyFromDate } from "./dateKeys.js";
+import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
 import { completionNoteKey } from "./completionNoteKey.js";
 import { reconcileHabitOrder } from "./habitOrder.js";
 import {
+  SKIP_NOTE_MAX_LENGTH,
   normalizeCompletionList,
   normalizeHabit,
+  normalizePauseIntervals,
   normalizeReminderTimesStorage,
   routineUid,
 } from "./storage.js";
@@ -25,7 +27,10 @@ import type {
   Category,
   CreateHabitOptions,
   Habit,
+  HabitSkip,
+  PauseInterval,
   RoutineState,
+  SkipReason,
   Tag,
 } from "./types.js";
 
@@ -171,16 +176,172 @@ export function applyToggleHabitCompletion(
   const habit = state.habits.find((h) => h.id === habitId);
   if (!habit) return state;
   const curSet = new Set(normalizeCompletionList(state.completions[habitId]));
+  let markedDone = false;
   if (curSet.has(dateKey)) {
     curSet.delete(dateKey);
   } else {
     if (!habitScheduledOnDate(habit, dateKey)) return state;
     curSet.add(dateKey);
+    markedDone = true;
   }
   const cur = [...curSet].sort();
-  return {
+  const next: RoutineState = {
     ...state,
     completions: { ...state.completions, [habitId]: cur },
+  };
+  // Три стани дня взаємно виключні: відмітка «зробив» знімає «не зміг».
+  return markedDone ? clearSkip(next, habitId, dateKey) : next;
+}
+
+/** Внутрішній хелпер: прибрати позначку пропуску, зберігши незмінність. */
+function clearSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const forHabit = state.skips?.[habitId];
+  if (!forHabit || !forHabit[dateKey]) return state;
+  const rest = { ...forHabit };
+  delete rest[dateKey];
+  const skips = { ...(state.skips || {}) };
+  if (Object.keys(rest).length === 0) delete skips[habitId];
+  else skips[habitId] = rest;
+  return { ...state, skips };
+}
+
+/**
+ * Позначити день як «не зміг з причиною» (канон §5, третій стан).
+ *
+ * Взаємно виключно з відміткою виконання: ставлячи пропуск, знімаємо
+ * `completions`-ключ. No-op для дня, який звичці не запланований — інакше
+ * можна було б «не змогти» у вихідний, і знаменник поїхав би вниз на
+ * днях, яких у ньому й не було.
+ */
+export function applySetHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+  reason: SkipReason,
+  note?: string,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  if (!habitScheduledOnDate(habit, dateKey)) return state;
+
+  const trimmed = (note || "").trim();
+  const skip: HabitSkip = {
+    reason,
+    at: new Date().toISOString(),
+    ...(trimmed ? { note: trimmed.slice(0, SKIP_NOTE_MAX_LENGTH) } : {}),
+  };
+  const forHabit = { ...(state.skips?.[habitId] || {}), [dateKey]: skip };
+  const completions = normalizeCompletionList(state.completions[habitId]);
+  const withoutDone = completions.filter((k) => k !== dateKey);
+  return {
+    ...state,
+    completions:
+      withoutDone.length === completions.length
+        ? state.completions
+        : { ...state.completions, [habitId]: withoutDone },
+    skips: { ...(state.skips || {}), [habitId]: forHabit },
+  };
+}
+
+/** Зняти позначку «не зміг» — день повертається у стан «не зробив». */
+export function applyClearHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  return clearSkip(state, habitId, dateKey);
+}
+
+/**
+ * Заявити плановану паузу датованим інтервалом (канон §4).
+ *
+ * `to === null` — пауза без дати кінця. Інтервали нормалізуються й
+ * зливаються, тож повторний виклик на той самий діапазон ідемпотентний.
+ * Легасі-прапор `paused` при цьому НЕ вмикається: він недатований і, на
+ * відміну від інтервалу, ретроактивний — саме та вада, яку рядок
+ * закриває.
+ */
+export function applyPauseHabitBetween(
+  state: RoutineState,
+  habitId: string,
+  fromKey: string,
+  toKey: string | null,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  if (toKey !== null && toKey < fromKey) return state;
+  const intervals = normalizePauseIntervals([
+    ...(habit.pauseIntervals || []),
+    { from: fromKey, to: toKey },
+  ]);
+  // Ідентичність, а не лише рівність значень: повторний виклик на той самий
+  // діапазон має віддати ТОЙ САМИЙ `state`. Інакше кожен повтор народжував
+  // би `habit-upsert` у дуал-райті (`habitChanged` порівнює масиви за
+  // посиланням) і чат-тул рапортував би «поставлено» замість «уже на паузі».
+  const prevIntervals = habit.pauseIntervals || [];
+  if (
+    prevIntervals.length === intervals.length &&
+    prevIntervals.every(
+      (iv, i) => iv.from === intervals[i]?.from && iv.to === intervals[i]?.to,
+    )
+  ) {
+    return state;
+  }
+  const updated: Habit = { ...habit, pauseIntervals: intervals };
+  return {
+    ...state,
+    habits: state.habits.map((h) => (h.id === habitId ? updated : h)),
+  };
+}
+
+/**
+ * Достроково завершити паузу, що накриває `dateKey`.
+ *
+ * Інтервал не видаляється — він **закривається** днем перед `dateKey`,
+ * бо дні, що вже минули на паузі, минули на паузі. Стирання інтервалу
+ * заднім числом перетворило б відпустку на серію пропусків, тобто
+ * повторило б рівно баг недатованого `paused`.
+ */
+export function applyResumeHabitFrom(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  const intervals = habit.pauseIntervals || [];
+  if (intervals.length === 0 && !habit.paused) return state;
+
+  const dayBefore = (() => {
+    const d = parseDateKey(dateKey);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - 1);
+    return dateKeyFromDate(d);
+  })();
+
+  const next: PauseInterval[] = [];
+  for (const iv of intervals) {
+    const covers = dateKey >= iv.from && (iv.to === null || dateKey <= iv.to);
+    if (!covers) {
+      next.push(iv);
+      continue;
+    }
+    // Пауза починалась сьогодні чи пізніше — вона ще не діяла, прибираємо.
+    if (dayBefore < iv.from) continue;
+    next.push({ from: iv.from, to: dayBefore });
+  }
+  const updated: Habit = {
+    ...habit,
+    pauseIntervals: normalizePauseIntervals(next),
+    paused: false,
+  };
+  return {
+    ...state,
+    habits: state.habits.map((h) => (h.id === habitId ? updated : h)),
   };
 }
 

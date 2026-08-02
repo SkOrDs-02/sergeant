@@ -252,6 +252,13 @@ jobs:
       - name: Bundle size guard (size-limit)
         run: pnpm --filter @sergeant/web exec size-limit
 
+      # Критичний шлях, а не сума всіх чанків: `size-limit` рахує 300+ файлів,
+      # включно з тими, які більшість людей ніколи не завантажить. Цей гейт
+      # міряє рівно те, що тягнеться до першого екрана — і його треба рухати
+      # вниз. Деталі й число — у самому скрипті.
+      - name: Eager bundle guard (критичний шлях)
+        run: node scripts/ci/check-eager-bundle.mjs
+
       - name: Bundle size PR comment
         if: >-
           github.event_name == 'pull_request' &&

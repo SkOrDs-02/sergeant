@@ -1,84 +1,143 @@
 import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { activeInjurySites, type InjuryMark } from "@sergeant/fizruk-domain";
-import { getSqliteDb } from "../../../core/db/sqlite.js";
-import { useLocalUserId } from "../../../core/auth/useLocalUserId.js";
+import {
+  isInjurySiteId,
+  type InjurySiteId,
+} from "@sergeant/fizruk-domain/data";
+
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractInjurySnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
 import {
   getCachedFizrukSqliteState,
-  refreshFizrukSqliteState,
-} from "../lib/sqliteReader.js";
-import {
-  notifyFizrukSqliteCacheRefresh,
-  useFizrukSqliteReadTick,
-} from "../lib/sqliteReadGate.js";
-import { clearInjuryMark, markInjurySites } from "../lib/injuryRepository.js";
+  type CachedInjury,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
 
 /**
- * AI-CONTEXT: read-only view of the injury marks, deliberately auth-free.
- * The warm cache already holds the rows, so resolving a user id here would buy
- * nothing — and `useLocalUserId` throws outside `AuthProvider`. `useRecovery`
- * consumes this, and recovery is mounted by the workouts orchestrator, so
- * pulling auth in would make every consumer of that orchestrator unrenderable
- * without a provider. Mutations need the id; reads do not — keep the split.
+ * Injury marks — the "не можна" model (ADR-0083, канон fizruk §5).
+ *
+ * AI-CONTEXT: Marking is deliberately NOT deletion. `clear()` sets
+ * `clearedAt` and keeps the row, because the history of what hurt and when is
+ * the user's data. `remove()` exists only for "I marked the wrong zone".
+ *
+ * AI-DANGER: `activeSites` is what actually blocks exercises. Anything that
+ * widens it (e.g. treating cleared marks as active) silently removes
+ * exercises from advice; anything that narrows it silently recommends a
+ * movement onto an injury. Change it only alongside `injuryBlock.test.ts`.
  */
-export function useActiveInjuries() {
-  useFizrukSqliteReadTick();
-  const injuries = getCachedFizrukSqliteState().injuries;
-  const openMarks = useMemo(
-    () => injuries.filter((mark) => !mark.clearedAt && !mark.deletedAt),
-    [injuries],
-  );
-  // Sites, not marks: the domain resolver keys blocks off the site id.
-  const activeSites = useMemo(() => activeInjurySites(injuries), [injuries]);
-  return { injuries, openMarks, activeSites };
+
+function injuryUid(): string {
+  return `inj_${crypto.randomUUID()}`;
 }
 
-export function useInjuries() {
-  const userId = useLocalUserId();
-  const { injuries, openMarks, activeSites } = useActiveInjuries();
+export interface UseInjuriesResult {
+  /** All marks, newest first — including cleared ones (history). */
+  all: InjuryMark[];
+  /** Marks with no `clearedAt` — the ones that block. */
+  active: InjuryMark[];
+  /** Site ids that block, ready for `injuryBlockForExercise`. */
+  activeSites: ReadonlySet<InjurySiteId>;
+  /** Mark a zone as injured. No-op when the zone is already marked. */
+  mark: (site: InjurySiteId, note?: string) => void;
+  /** Lift a mark, keeping it in history. */
+  clear: (id: string) => void;
+  /** Delete a mark outright — for "wrong zone", not for recovery. */
+  remove: (id: string) => void;
+}
+
+function toMark(row: CachedInjury): InjuryMark {
+  return {
+    id: row.id,
+    site: row.site,
+    startedAt: row.startedAt,
+    clearedAt: row.clearedAt,
+    note: row.note,
+  };
+}
+
+export function useInjuries(): UseInjuriesResult {
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [rows, setRows] = useSqliteTickOverlay<CachedInjury[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.injuries;
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? [] : cache.injuries;
+    },
+  );
+
+  const persist = useCallback(
+    (next: CachedInjury[]) => {
+      setRows(next);
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        injuries: extractInjurySnapshots(next),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [setRows],
+  );
+
+  const all = useMemo(() => rows.map(toMark), [rows]);
+  const active = useMemo(() => all.filter((m) => !m.clearedAt), [all]);
+  const activeSites = useMemo(() => activeInjurySites(all), [all]);
 
   const mark = useCallback(
-    async (sites: Iterable<string>): Promise<InjuryMark[]> => {
-      if (!userId) return [];
-      const db = await getSqliteDb();
-      const client = db.migrationClient();
-      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для started_at: це sync/LWW-контракт, а не Kyiv-межа доби
-      const now = new Date().toISOString();
-      const created = await markInjurySites(client, userId, sites, now);
-      await refreshFizrukSqliteState(client, userId);
-      notifyFizrukSqliteCacheRefresh();
-      if (created.length > 0) {
-        trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED, {
-          count: created.length,
-        });
-      }
-      return created;
+    (site: InjurySiteId, note = "") => {
+      if (!isInjurySiteId(site)) return;
+      // Re-marking an already-active zone would create a second row that
+      // blocks the same thing — clearing one would then look like a no-op.
+      if (rows.some((r) => r.site === site && r.clearedAt === null)) return;
+      persist([
+        {
+          id: injuryUid(),
+          site,
+          // eslint-disable-next-line no-restricted-syntax -- instant, not a day key: «коли почалось» is a point in time the LWW sync compares directly; a Kyiv day boundary would lose the ordering between two marks made the same day
+          startedAt: new Date().toISOString(),
+          clearedAt: null,
+          note,
+        },
+        ...rows,
+      ]);
+      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED, { count: 1 });
     },
-    [userId],
+    [rows, persist],
   );
 
   const clear = useCallback(
-    async (injuryId: string): Promise<boolean> => {
-      if (!userId) return false;
-      const db = await getSqliteDb();
-      const client = db.migrationClient();
-      const cleared = await clearInjuryMark(
-        client,
-        userId,
-        injuryId,
-        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для cleared_at: це sync/LWW-контракт, а не Kyiv-межа доби
-        new Date().toISOString(),
-      );
-      await refreshFizrukSqliteState(client, userId);
-      notifyFizrukSqliteCacheRefresh();
-      if (cleared) trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED);
-      return cleared;
+    (id: string) => {
+      // eslint-disable-next-line no-restricted-syntax -- instant, not a day key: `clearedAt` only ever gets compared to `startedAt` and to sync timestamps
+      const at = new Date().toISOString();
+      persist(rows.map((r) => (r.id === id ? { ...r, clearedAt: at } : r)));
+      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED);
     },
-    [userId],
+    [rows, persist],
   );
 
-  return { injuries, openMarks, activeSites, mark, clear };
+  const remove = useCallback(
+    (id: string) => {
+      persist(rows.filter((r) => r.id !== id));
+    },
+    [rows, persist],
+  );
+
+  return { all, active, activeSites, mark, clear, remove };
 }

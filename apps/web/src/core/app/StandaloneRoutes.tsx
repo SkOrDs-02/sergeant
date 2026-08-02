@@ -17,6 +17,7 @@ import {
   RESET_PASSWORD_PATH,
   SIGN_IN_ALIAS_PATHS,
   SIGN_IN_PATH,
+  VERIFY_EMAIL_PATH,
   WELCOME_PATH,
   isPathBasedModulePath,
 } from "./appPaths";
@@ -37,6 +38,10 @@ const AuthPage = lazyImport(() => import("../auth/AuthPage"), "AuthPage");
 const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
   "ResetPasswordPage",
+);
+const VerifyEmailPage = lazyImport(
+  () => import("../auth/VerifyEmailPage"),
+  "VerifyEmailPage",
 );
 // Internal styleguide — dev-only. The `import.meta.env.DEV` guard lets Vite
 // statically drop the `import()` (and the whole DesignShowcase chunk) from
@@ -187,6 +192,22 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <ResetPasswordPage />
+        </div>
+      </Suspense>
+    ),
+  }),
+
+  // `/verify-email` — лендинг Better Auth після `GET /api/auth/verify-email`.
+  // Рендеримо безумовно: на цю адресу приходять із поштового клієнта, і сесії
+  // в цьому браузері може не бути взагалі (лист відкрили на іншому пристрої).
+  // Гейт на `user` тут відрізав би саме той сценарій, заради якого сторінка
+  // існує.
+  defineStandaloneRoute({
+    paths: [VERIFY_EMAIL_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <VerifyEmailPage />
         </div>
       </Suspense>
     ),

@@ -10,13 +10,20 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
-import { suggestNextSet } from "@sergeant/fizruk-domain";
+import { useInjuries } from "../hooks/useInjuries";
+import {
+  latestClearedInjuryAtForExercise,
+  suggestNextSet,
+} from "@sergeant/fizruk-domain";
 import {
   collectExerciseHistory,
   computeExerciseBest,
+  computeOneRmAgingForSummary,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { LoadCalculator } from "../components/LoadCalculator";
+import { ReturnProtocolNotice } from "../components/exercise/ReturnProtocolNotice";
 import {
   ExerciseProgressChart,
   type ProgressPoint,
@@ -40,18 +47,33 @@ interface ExerciseProps {
 export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const { exercises, musclesUk } = useExerciseCatalog();
   const { workouts } = useWorkouts();
+  const { all: injuryMarks } = useInjuries();
 
   const ex = useMemo(
     () => (exercises || []).find((x) => x?.id === exerciseId) || null,
     [exercises, exerciseId],
   );
 
+  // Один агрегат на веб і мобілку: сторінка колись мала власну копію цього
+  // фолду, і саме тому старіння 1RM (канон §6) було нікуди додати.
   const history = useMemo(
     () => collectExerciseHistory(workouts, exerciseId),
     [workouts, exerciseId],
   );
 
   const best = useMemo(() => computeExerciseBest(history), [history]);
+
+  /**
+   * Старіння 1RM + протокол повернення (канон §6). Зняття позначки травми
+   * теж вводить у мʼякий режим — це закриття розриву E-5 з ADR-0083.
+   */
+  const aging = useMemo(
+    () =>
+      computeOneRmAgingForSummary(best, {
+        injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
+      }),
+    [best, ex, injuryMarks],
+  );
 
   const suggestedNext = useMemo(
     () => suggestNextSet(best.lastTop),
@@ -166,7 +188,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           )}
         </div>
 
-        {best.isNewPR && (
+        {/*
+          Канон §6: у режимі повернення порівняння з піком ховаємо — і
+          святкування, і констатацію регресу. Людина щойно повернулась;
+          мірятись із власним рекордом тут не час.
+        */}
+        {best.isNewPR && !aging.returnMode && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
             <Icon name="award" size={20} aria-hidden />
             <div>
@@ -177,6 +204,19 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 Найкращий результат за всю історію
               </p>
             </div>
+          </div>
+        )}
+
+        <ReturnProtocolNotice aging={aging} />
+
+        {best.isRegression && !aging.returnMode && (
+          <div className="rounded-2xl border border-line bg-panel px-4 py-3">
+            <p className="text-style-label text-text">
+              {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
+            </p>
+            <p className="text-xs text-subtle">
+              {messages.fizruk.oneRmAging.regressionNote}
+            </p>
           </div>
         )}
 
@@ -200,6 +240,11 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   month: "short",
                   year: "2-digit",
                 })}
+              </div>
+            )}
+            {aging.isStale && (
+              <div className="text-style-caption text-subtle mt-1">
+                {messages.fizruk.prBoard.staleBadge}
               </div>
             )}
           </Card>
@@ -287,11 +332,15 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           </Card>
         )}
 
-        {best.best1rm > 0 && (
+        {/*
+          AI-DANGER: сюди йде `reference1rm`, а НЕ пік. Це число людина кладе
+          на штангу; повернення його до `best.best1rm` знімає рівно той
+          захист, заради якого існує §6 канону.
+        */}
+        {aging.reference1rm > 0 && (
           <LoadCalculator
-            oneRM={best.best1rm}
-            isStale={best.isStale}
-            isReturning={best.isReturning}
+            oneRM={aging.reference1rm}
+            reduced={aging.reductionPct > 0}
           />
         )}
 

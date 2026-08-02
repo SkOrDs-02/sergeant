@@ -16,6 +16,12 @@ import { db } from "./drizzle.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
+import {
+  changeEmailConfirmationMail,
+  getWebAppOrigin,
+  passwordResetMail,
+  verificationMail,
+} from "./auth/verificationMail.js";
 import { queueFtuxDripForNewUser } from "./email/ftuxDripMail.js";
 import { logger } from "./obs/logger.js";
 import {
@@ -45,10 +51,6 @@ interface AdvancedCookieOptions {
     sameSite: "none";
     secure: true;
   };
-}
-
-function escapeHtmlAttr(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
 function getBaseURL(): string {
@@ -282,6 +284,40 @@ export const auth = betterAuth({
     deleteUser: {
       enabled: true,
     },
+    /**
+     * Зміна email із профілю. До цього блоку `POST /api/auth/change-email`
+     * безумовно падав у `400 CHANGE_EMAIL_DISABLED` — Better Auth першим
+     * рядком хендлера перевіряє саме `user.changeEmail.enabled`, а веб
+     * викликав ендпоінт із `PersonalInfoSection`. Кнопка «Змінити» у
+     * профілі не працювала жодного разу з моменту появи.
+     *
+     * Дві гілки (обидві всередині Better Auth, `update-user.ts`):
+     *
+     *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
+     *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
+     *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
+     *     сенсу: власність над ним ніколи не була доведена.
+     *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
+     *     адресу; лише після кліку летить верифікація на нову. Це захист
+     *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
+     *     який описує H6 (`docs/04-governance/security/hardening/archive/
+     *     H6-email-verification.md`).
+     *
+     * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
+     * verify/reset (Resend + 5 ретраїв).
+     */
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: true,
+      sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
+        const mail = changeEmailConfirmationMail(newEmail, url);
+        queueAuthTransactionalEmail({
+          kind: "email_change_confirmation",
+          to: user.email,
+          ...mail,
+        });
+      },
+    },
   },
   ...(socialProviders ? { socialProviders } : {}),
   emailAndPassword: {
@@ -313,9 +349,7 @@ export const auth = betterAuth({
       queueAuthTransactionalEmail({
         kind: "password_reset",
         to: user.email,
-        subject: "Скидання пароля — Sergeant",
-        text: `Перейдіть за посиланням, щоб задати новий пароль (діє обмежений час):\n\n${url}\n\nЯкщо ви не запитували скидання — проігноруйте цей лист.`,
-        html: `<p>Перейдіть за посиланням, щоб задати новий пароль:</p><p><a href="${escapeHtmlAttr(url)}">Скинути пароль</a></p><p>Якщо ви не запитували скидання — проігноруйте цей лист.</p>`,
+        ...passwordResetMail(url),
       });
     },
   },
@@ -329,13 +363,19 @@ export const auth = betterAuth({
      * (dev) — лог-warn без падіння flow-у sign-up.
      */
     sendOnSignUp: true,
+    /**
+     * `url` від Better Auth має вигляд
+     * `{baseURL}/api/auth/verify-email?token=…&callbackURL=/`, тобто після
+     * підтвердження редиректить у корінь **API**-домену. API не роздає SPA
+     * (`config.servesFrontend === false`), тож користувач бачив 404 JSON
+     * замість застосунку. `verificationMail()` перезаписує `callbackURL`
+     * на `{WEB_APP_URL}/verify-email` — деталі у `auth/verificationMail.ts`.
+     */
     sendVerificationEmail: async ({ user, url }) => {
       queueAuthTransactionalEmail({
         kind: "email_verification",
         to: user.email,
-        subject: "Підтвердження email — Sergeant",
-        text: `Підтвердіть адресу електронної пошти:\n\n${url}\n\nЯкщо ви не реєструвались — проігноруйте цей лист.`,
-        html: `<p>Підтвердіть email:</p><p><a href="${escapeHtmlAttr(url)}">Підтвердити</a></p><p>Якщо ви не реєструвались — проігноруйте цей лист.</p>`,
+        ...verificationMail(url),
       });
     },
   },
@@ -592,6 +632,18 @@ function getTrustedOrigins(): string[] {
       const trimmed = o.trim();
       if (trimmed) origins.push(trimmed);
     }
+  }
+  // Origin, на який ми самі шлемо `callbackURL` у верифікаційних листах.
+  // Better Auth ганяє цей параметр через `originCheck` і 403-ить усе, чого
+  // немає у списку — без цього рядка явно заданий `WEB_APP_URL` (той, що не
+  // збігається з жодним `ALLOWED_ORIGINS`) ламав би кожен клік у листі.
+  // Похідні з `ALLOWED_ORIGINS` / `BETTER_AUTH_URL` значення вже у списку,
+  // дублікати Better Auth ігнорує.
+  // Порожньо = origin не сконфігурований (див. `getWebAppOrigin`); тоді ми й
+  // посилання не переписуємо, тож додавати в allowlist нічого.
+  const webAppOrigin = getWebAppOrigin();
+  if (webAppOrigin && !origins.includes(webAppOrigin)) {
+    origins.push(webAppOrigin);
   }
   return origins;
 }

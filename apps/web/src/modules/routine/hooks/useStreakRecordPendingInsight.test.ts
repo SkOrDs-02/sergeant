@@ -8,15 +8,16 @@ vi.mock("@shared/lib/time/kyivTime", () => ({
   getKyivDayKey: vi.fn(),
 }));
 vi.mock("../lib/streaks", () => ({
-  maxActiveStreak: vi.fn(),
+  // Хук перейшов на гнучкий стрік (Хвиля 4) — мок іде за ним.
+  flexibleMaxActiveStreak: vi.fn(),
   maxStreakAllTime: vi.fn(),
 }));
 
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { maxActiveStreak, maxStreakAllTime } from "../lib/streaks";
+import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 
 const mockDayKey = vi.mocked(getKyivDayKey);
-const mockActive = vi.mocked(maxActiveStreak);
+const mockActive = vi.mocked(flexibleMaxActiveStreak);
 const mockAllTime = vi.mocked(maxStreakAllTime);
 
 function makeHabit(overrides: Partial<Habit> = {}): Habit {

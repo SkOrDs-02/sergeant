@@ -20,7 +20,7 @@ import {
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
 import { completionNoteKey } from "../lib/completionNoteKey";
-import { streakForHabit, maxStreakAllTime } from "../lib/streaks";
+import { flexibleStreakBreakdown, maxStreakAllTime } from "../lib/streaks";
 import {
   deleteHabit,
   restoreHabit,
@@ -32,6 +32,7 @@ import {
   WEEKDAY_LABELS,
 } from "../lib/routineConstants";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
+import { HabitPauseSection } from "./HabitPauseSection";
 import type { Habit, RoutineState } from "../lib/types";
 
 function todayKey(): string {
@@ -147,10 +148,27 @@ export function HabitDetailSheet({
         ?.label || ""
     : "";
 
-  const currentStreak = useMemo(
-    () => (habit ? streakForHabit(habit, completions, tk) : 0),
-    [habit, completions, tk],
+  // Гнучкий стрік (канон §4): показуємо не лише число, а й з чого воно
+  // склалось — інакше «серія 12» при двох днях відпустки всередині
+  // виглядає як помилка підрахунку.
+  const streak = useMemo(
+    () =>
+      habit
+        ? flexibleStreakBreakdown(habit, completions, tk, {
+            skipsForHabit: routine.skips?.[habitId],
+          })
+        : null,
+    [habit, completions, tk, routine.skips, habitId],
   );
+  const currentStreak = streak?.days ?? 0;
+  const streakHint = useMemo(() => {
+    if (!streak) return null;
+    const parts: string[] = [];
+    if (streak.pauseDays > 0) parts.push(`пауза: ${streak.pauseDays} дн.`);
+    if (streak.skipDays > 0) parts.push(`не зміг: ${streak.skipDays} дн.`);
+    if (streak.graceUsed > 0) parts.push(`заморозки: ${streak.graceUsed}`);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }, [streak]);
   const bestStreak = useMemo(
     () => (habit ? maxStreakAllTime(habit, completions) : 0),
     [habit, completions],
@@ -320,6 +338,11 @@ export function HabitDetailSheet({
               <p className="text-style-caption text-subtle mt-0.5">
                 Поточна серія
               </p>
+              {streakHint && (
+                <p className="text-style-caption text-subtle mt-0.5">
+                  {streakHint}
+                </p>
+              )}
             </div>
             <div className={C.statCard}>
               <p className="text-style-headline text-text tabular-nums">
@@ -364,6 +387,14 @@ export function HabitDetailSheet({
             </div>
           </div>
         </section>
+
+        {setRoutine && (
+          <HabitPauseSection
+            habit={habit}
+            todayKey={tk}
+            setRoutine={setRoutine}
+          />
+        )}
 
         <section className="mb-5" aria-label="Календар виконань">
           <div className="flex items-center justify-between mb-2">

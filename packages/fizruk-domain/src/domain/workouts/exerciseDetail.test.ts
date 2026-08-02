@@ -137,9 +137,10 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
-      isStale: false,
-      isReturning: false,
-      lastPerformedAt: null,
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
   });
 
@@ -199,45 +200,11 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
-      isStale: false,
-      isReturning: false,
-      lastPerformedAt: "2026-04-20T10:00:00Z",
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
-  });
-
-  it("marks a four-week-old peak stale", () => {
-    const history = [
-      {
-        workout: w("w_old", "2026-04-01T10:00:00Z", []),
-        item: strength("it_old", "squat", [{ weightKg: 100, reps: 5 }]),
-      },
-    ];
-
-    const best = computeExerciseBest(
-      history,
-      Date.parse("2026-05-01T10:00:01Z"),
-    );
-    expect(best.isStale).toBe(true);
-  });
-
-  it("enters return mode after a three-week gap and mutes PR", () => {
-    const history = [
-      {
-        workout: w("w_return", "2026-05-01T10:00:00Z", []),
-        item: strength("it_return", "squat", [{ weightKg: 110, reps: 5 }]),
-      },
-      {
-        workout: w("w_old", "2026-04-01T10:00:00Z", []),
-        item: strength("it_old", "squat", [{ weightKg: 100, reps: 5 }]),
-      },
-    ];
-
-    const best = computeExerciseBest(
-      history,
-      Date.parse("2026-05-02T10:00:00Z"),
-    );
-    expect(best.isReturning).toBe(true);
-    expect(best.isNewPR).toBe(false);
   });
 });
 

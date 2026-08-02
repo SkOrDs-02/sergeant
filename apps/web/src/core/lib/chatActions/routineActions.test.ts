@@ -505,7 +505,32 @@ describe("pause_habit", () => {
       input: { habit_id: "h1", paused: false },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("знято з паузи");
+    expect(out).toContain("повернуто з паузи");
+  });
+
+  it("пише датований інтервал, а не недатований прапор", () => {
+    seedHabit("h1", "Вода");
+    const out = call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+    });
+    expect(out).toContain("2026-08-10 — 2026-08-17");
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1");
+    expect(habit?.pauseIntervals).toEqual([
+      { from: "2026-08-10", to: "2026-08-17" },
+    ]);
+    // Головне: легасі-прапор НЕ вмикається — саме він ретроактивно
+    // вимивав звичку з історії (E-3).
+    expect(habit?.paused).not.toBe(true);
+  });
+
+  it("перевернутий діапазон відхиляється", () => {
+    seedHabit("h1", "Вода");
+    const out = call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-17", to: "2026-08-10" },
+    });
+    expect(out).toContain("не може бути раніше");
   });
 
   it("error: habit not found returns error", () => {
@@ -517,14 +542,18 @@ describe("pause_habit", () => {
     expect(out).toContain("не знайдено");
   });
 
-  it("shape: already paused returns idempotent message", () => {
-    seedHabit("h1", "X", { paused: true });
+  it("shape: повтор того самого діапазону — ідемпотентне повідомлення", () => {
+    seedHabit("h1", "X");
+    call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+    });
     const out = call({
       name: "pause_habit",
-      input: { habit_id: "h1", paused: true },
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("вже");
+    expect(out).toContain("уже");
   });
 });
 

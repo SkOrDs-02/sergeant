@@ -1,6 +1,32 @@
 -- Migration: fizruk_injuries
 -- Created: 2026-08-01
 --
+-- НОМЕРНА ІСТОРІЯ (три перейменування того самого файлу за добу — читай
+-- уважно, перш ніж чіпати вчетверте).
+--
+-- Ця міграція і `finyk_fizruk_pk_text` (#573) отримали номер 096 паралельно:
+-- обидва PR-и готувались від бази без сусіда й змерджились один за одним без
+-- ребейзу. Далі два незалежні виправлення розійшлись:
+--
+--   1. PR #575 переніс fizruk_injuries 096 → 097;
+--   2. комміт 5e979d2 переніс finyk_fizruk_pk_text 097 → 096.
+--      Разом це дало коректний стан 094/095/**096**=finyk_fizruk/**097**=injuries.
+--   3. PR #578 (гілка від бази ДО кроку 2) повернув injuries на 096, не
+--      знаючи, що 096 уже зайнято — і `main` став червоним на
+--      `lint:migrations`: дубль 096 + діра на 097.
+--
+-- Цей файл — відкат кроку 3. Фінальний стан: 096 = finyk_fizruk_pk_text,
+-- 097 = fizruk_injuries. Обране саме воно, а не дзеркальний варіант, бо
+-- чіпає ЛИШЕ цей файл: `096_finyk_fizruk_pk_text.sql` лишається на місці й
+-- прод його вже застосував під цим імʼям.
+--
+-- Раннер (`packages/db-schema/src/migrate/runner.ts`) веде леджер ЗА ІМЕНЕМ
+-- ФАЙЛУ і пропускає вже застосовані. Для цієї міграції в проді вже
+-- відмічені ОБИДВА імені — `096_fizruk_injuries.sql` (деплой ac2cdb6) і
+-- `097_fizruk_injuries.sql` (деплой 94cbb3b), — тож повернення на 097 влучає
+-- у вже застосоване імʼя й буде пропущене (skip), без повторного виконання.
+-- `IF NOT EXISTS` на кожному DDL нижче лишається як дешевий захист про запас.
+--
 -- Модель «не можна» (ADR-0083): користувач позначає травмовану зону, і recovery
 -- перестає рекомендувати вправи, що її навантажують. До цієї міграції поняття
 -- травми в домені не існувало взагалі — `computeRecoveryBy` знижував статус за
@@ -20,7 +46,7 @@
 -- `activeInjurySites`), тож невідоме значення деградує в «не блокує», а не в
 -- помилку.
 
-CREATE TABLE fizruk_injuries (
+CREATE TABLE IF NOT EXISTS fizruk_injuries (
   -- TEXT, а НЕ uuid. Клієнт генерує id з доменним префіксом (`inj_<uuid>`),
   -- як і решта fizruk-сутностей. Оголошення колонки як `uuid` дало б 22P02 на
   -- кожному push і `apply_failed`, що осідає в клієнтському sync_op_outbox і
@@ -51,11 +77,11 @@ CREATE TABLE fizruk_injuries (
 
 -- Гаряча вибірка одна: «всі активні позначки цього користувача» — її робить
 -- кожен рендер списку вправ, тож індекс частковий і покриває обидві умови.
-CREATE INDEX fizruk_injuries_user_active_idx
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx
   ON fizruk_injuries (user_id, site)
   WHERE deleted_at IS NULL AND cleared_at IS NULL;
 
 -- Історія позначок по зоні (екран «що болить» + майбутній ревізит забутих).
-CREATE INDEX fizruk_injuries_user_started_at_idx
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx
   ON fizruk_injuries (user_id, started_at DESC)
   WHERE deleted_at IS NULL;

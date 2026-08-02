@@ -45,6 +45,40 @@ interface ParsePantryVariables {
   text: string;
 }
 
+/** Звідки взялись позиції у прев'ю — впливає лише на копірайт підказки. */
+export type PantryParseSource = "ai" | "local";
+
+export interface PantryParsePreview {
+  items: PantryItem[];
+  source: PantryParseSource;
+  /**
+   * Комора, для якої запускався розбір. Тримаємо її тут, бо між запитом
+   * і підтвердженням користувач може перемкнути активну комору —
+   * позиції все одно мають лягти туди, звідки їх диктували (issue #189).
+   */
+  pantryId: string;
+}
+
+/**
+ * Єдина нормалізація для всіх шляхів наповнення комори: ручний ввід,
+ * сканер, відповідь AI. Раніше AI-шлях клав `items` у стан як є, тому
+ * модель, що повернула «гр» замість «г», плодила окрему позицію поруч
+ * із уже наявною.
+ */
+function normalizeIncomingItems(raw: PantryItem | PantryItem[]): PantryItem[] {
+  return (Array.isArray(raw) ? raw : [raw])
+    .map((item) => ({
+      name: normalizeFoodName(item?.name),
+      qty:
+        item?.qty == null || !Number.isFinite(Number(item.qty))
+          ? null
+          : Number(item.qty),
+      unit: item?.unit != null ? normalizeUnit(item.unit) : null,
+      notes: item?.notes ?? null,
+    }))
+    .filter((item) => item.name);
+}
+
 export function useNutritionPantries({
   setBusy,
   setErr,
@@ -114,6 +148,10 @@ export function useNutritionPantries({
 
   const [pantryStorageErr, setPantryStorageErr] = useState("");
 
+  const [parsePreview, setParsePreview] = useState<PantryParsePreview | null>(
+    null,
+  );
+
   // DCRUD-007: skip the mount run — it would persist the UNHYDRATED
   // initial state (LS is tombstoned after the first boot, so that state
   // is an empty default) while the SQLite cache may already be warm;
@@ -158,17 +196,7 @@ export function useNutritionPantries({
     const parsed =
       typeof raw === "string"
         ? parseLoosePantryText(raw)
-        : (Array.isArray(raw) ? raw : [raw])
-            .map((item) => ({
-              name: normalizeFoodName(item?.name),
-              qty:
-                item?.qty == null || !Number.isFinite(Number(item.qty))
-                  ? null
-                  : Number(item.qty),
-              unit: item?.unit != null ? normalizeUnit(item.unit) : null,
-              notes: item?.notes ?? null,
-            }))
-            .filter((item) => item.name);
+        : normalizeIncomingItems(raw);
     if (!parsed.length) return;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => ({
@@ -339,6 +367,31 @@ export function useNutritionPantries({
     );
   };
 
+  // AI-CONTEXT: розбір списку ніколи не має лишати користувача з нулем
+  // позицій. Сервер віддає 200 з порожнім `items`, коли модель обірвала
+  // JSON (`extractJsonFromText` повертає null), тому фолбек на локальний
+  // regex-парсер висить і на `onSuccess`, і на `onError`. Результат не
+  // мерджиться одразу — лягає у прев'ю, яке підтверджує користувач.
+  const applyParseResult = (
+    pantryId: string,
+    text: string,
+    aiItems: unknown,
+  ) => {
+    const fromAi = Array.isArray(aiItems)
+      ? normalizeIncomingItems(aiItems as PantryItem[])
+      : [];
+    if (fromAi.length > 0) {
+      setParsePreview({ items: fromAi, source: "ai", pantryId });
+      return true;
+    }
+    const local = parseLoosePantryText(text);
+    if (local.length > 0) {
+      setParsePreview({ items: local, source: "local", pantryId });
+      return true;
+    }
+    return false;
+  };
+
   const parsePantryMutation = useMutation({
     mutationFn: ({ pantryId, text }: ParsePantryVariables) => {
       if (!text) throw new Error("Надиктуй/впиши список продуктів.");
@@ -347,31 +400,44 @@ export function useNutritionPantries({
         .then((data) => ({
           data,
           pantryId,
+          text,
         }));
     },
     onMutate: () => {
       setBusy(true);
       setErr("");
+      setParsePreview(null);
       setStatusText("Розбираю список…");
     },
-    onSuccess: ({ data, pantryId }) => {
-      const next = Array.isArray(data?.items) ? data.items : [];
-      setPantries((cur) =>
-        updatePantry(cur, pantryId, (p) => ({
-          ...p,
-          items: mergeItems(p.items, next),
-          text: "",
-        })),
-      );
+    onSuccess: ({ data, pantryId, text }) => {
+      if (!applyParseResult(pantryId, text, data?.items)) {
+        setErr("Не вдалось розібрати список. Спробуй перефразувати.");
+      }
     },
-    onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка розбору списку"));
+    onError: (err, { pantryId, text }) => {
+      if (!applyParseResult(pantryId, text, null)) {
+        setErr(formatNutritionError(err, "Помилка розбору списку"));
+      }
     },
     onSettled: () => {
       setStatusText("");
       setBusy(false);
     },
   });
+
+  const confirmParsePreview = (items: PantryItem[]) => {
+    if (!items.length || !parsePreview) return;
+    setPantries((cur) =>
+      updatePantry(cur, parsePreview.pantryId, (p) => ({
+        ...p,
+        items: mergeItems(p.items, items),
+        text: "",
+      })),
+    );
+    setParsePreview(null);
+  };
+
+  const dismissParsePreview = () => setParsePreview(null);
 
   const parsePantry = useCallback(
     () =>
@@ -413,6 +479,9 @@ export function useNutritionPantries({
     effectiveItems,
     pantrySummary,
     parsePantry,
+    parsePreview,
+    confirmParsePreview,
+    dismissParsePreview,
     pantryStorageErr,
     consumePantryItem,
   };

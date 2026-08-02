@@ -504,6 +504,21 @@ export const messages = {
     openSettings: "Налаштування модуля",
   },
 
+  // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).
+  routinePause: {
+    heading: "Пауза",
+    hint: "Заяви паузу наперед — відпустку чи хворобу. Дні паузи випадають із розкладу і серію не ламають.",
+    activeHint: "Ці дні не рахуються — серія їх не помітить.",
+    fromLabel: "З",
+    toLabel: "По (необовʼязково)",
+    declare: "Поставити паузу",
+    resumeToday: "Повернутись сьогодні",
+    activePrefix: "На паузі",
+    activeOpenPrefix: "На паузі з",
+    plannedPrefix: "Заплановано:",
+    fromShort: "з",
+  },
+
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",
@@ -519,6 +534,9 @@ export const messages = {
       emptyDescription:
         "Заверши сети з вагою — рекорди зʼявляться тут автоматично.",
       emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+      /** Канон §6: борд бачить не лише рух угору. */
+      staleBadge: "давно не робив",
+      belowPeakPrefix: "зараз",
     },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
     hoursUnit: "год",
@@ -549,6 +567,36 @@ export const messages = {
       goalPctSuffix: "% від цілі",
       emptyTitle: "Поки немає історії",
       emptyDescription: "Додай воду за сьогодні — і тут зʼявиться графік.",
+    },
+    // Комора: згортка-гайд режиму «Списком» + прев'ю розібраних позицій.
+    pantryGuide: {
+      summary: "Як писати список?",
+      separators: "Розділяй продукти комою або новим рядком:",
+      separatorsExample: "курка, рис, огірки",
+      qtyPlacement: "Кількість можна ставити спереду або ззаду:",
+      qtyExampleLeading: "2 яйця",
+      qtyExampleTrailing: "курка 500 г",
+      unitsLabel: "Одиниці:",
+      unitsList: "г, кг, мл, л, шт, уп",
+      unitsFallback: "Без одиниці кількість читається як «шт».",
+      aiNote:
+        "Можна диктувати як завгодно — список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
+      confirmNote:
+        "Розібране покажемо списком — додасться лише те, що ти підтвердиш.",
+    },
+    pantryPreview: {
+      parsedCount: "Розібрано",
+      localFallback: "AI недоступний — розібрано на пристрої",
+      confirm: "Додати",
+      dismiss: "Скасувати",
+    },
+    pantryEmpty: {
+      // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
+      // над карткою, і дослівний повтор читався як збій рендеру.
+      title: "Тут поки порожньо",
+      description:
+        "Тут зʼявляться продукти, які є вдома — і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
+      hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
     },
   },
 

@@ -68,6 +68,14 @@ const CODE_TO_UA_COPY: Readonly<Record<string, string>> = {
   EMAIL_ALREADY_VERIFIED: "Email уже підтверджено.",
   EMAIL_NOT_VERIFIED: "Email ще не підтверджено.",
   EMAIL_CAN_NOT_BE_UPDATED: "Email не можна оновити для цього акаунту.",
+  // Better Auth віддає цей код, коли `user.changeEmail.enabled` вимкнений на
+  // сервері. Історично це був постійний стан (конфіг ніколи не існував), і
+  // юзер бачив generic-фолбек «Не вдалося змінити email». Тримаємо явний
+  // рядок, щоб регресія конфігу читалась із тосту, а не з DevTools.
+  CHANGE_EMAIL_DISABLED: "Зміна email тимчасово недоступна.",
+  EMAIL_MISMATCH: "Адреса не збігається з адресою акаунта.",
+  VERIFICATION_EMAIL_NOT_ENABLED:
+    "Надсилання листів підтвердження тимчасово недоступне.",
   CREDENTIAL_ACCOUNT_NOT_FOUND:
     "Для цього акаунту немає пароля — увійди через соцмережу.",
   SESSION_EXPIRED: "Сесія завершилась. Увійди ще раз.",

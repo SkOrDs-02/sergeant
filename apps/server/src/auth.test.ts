@@ -593,6 +593,88 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(options.advanced).toBeUndefined();
   });
 
+  /**
+   * Регресійний якір. `user.changeEmail` не існував у конфізі взагалі, а
+   * `PersonalInfoSection` уже викликав `POST /api/auth/change-email` — Better
+   * Auth першим рядком хендлера (`update-user.ts`) перевіряє саме цей прапорець
+   * і повертав `400 CHANGE_EMAIL_DISABLED`. Кнопка «Змінити» у профілі не
+   * працювала жодного разу. Юніт-тести профілю це не ловили, бо `changeEmail`
+   * там замоканий — тому контракт стережеться саме тут, на боці сервера.
+   */
+  it("user.changeEmail увімкнений — інакше зміна email у профілі 400-ить", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          user?: {
+            changeEmail?: {
+              enabled?: boolean;
+              updateEmailWithoutVerification?: boolean;
+              sendChangeEmailConfirmation?: unknown;
+            };
+          };
+        };
+      }
+    ).options;
+    expect(options.user?.changeEmail?.enabled).toBe(true);
+    // Без цього прапорця непідтверджений юзер (переважна більшість бази до
+    // H6-sweep) не може змінити адресу взагалі: гілка `canSendConfirmation`
+    // вимагає `emailVerified === true`, і Better Auth падає у
+    // "Verification email isn't enabled".
+    expect(options.user?.changeEmail?.updateEmailWithoutVerification).toBe(
+      true,
+    );
+    // Підтверджений юзер отримує лист на СТАРУ адресу — без цього колбека
+    // Better Auth мовчки пропускає крок підтвердження власника.
+    expect(typeof options.user?.changeEmail?.sendChangeEmailConfirmation).toBe(
+      "function",
+    );
+  });
+
+  /**
+   * `emailVerification.sendVerificationEmail` — єдиний канал, через який
+   * користувач взагалі може підтвердити пошту (H6). Якщо колбек зникне,
+   * `POST /api/auth/send-verification-email` почне віддавати
+   * `VERIFICATION_EMAIL_NOT_ENABLED`, а кнопка «Надіслати» у профілі — тост
+   * помилки.
+   */
+  it("emailVerification: sendOnSignUp + колбек надсилання на місці", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          emailVerification?: {
+            sendOnSignUp?: boolean;
+            sendVerificationEmail?: unknown;
+          };
+        };
+      }
+    ).options;
+    expect(options.emailVerification?.sendOnSignUp).toBe(true);
+    expect(typeof options.emailVerification?.sendVerificationEmail).toBe(
+      "function",
+    );
+  });
+
+  /**
+   * Web-origin, на який ми самі шлемо `callbackURL` у листах, мусить бути у
+   * `trustedOrigins`: Better Auth проганяє цей параметр через `originCheck` і
+   * 403-ить усе, чого немає у списку. Розʼїзд означав би, що кожен клік у
+   * листі впирається у 403 замість підтвердження.
+   */
+  it("trustedOrigins містять web-origin із WEB_APP_URL", async () => {
+    vi.resetModules();
+    vi.stubEnv("WEB_APP_URL", "https://app.example.com");
+    try {
+      const { auth: scopedAuth } = await import("./auth.js");
+      const options = (
+        scopedAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      expect(options.trustedOrigins ?? []).toContain("https://app.example.com");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("PR-48: session.expiresIn = 7 діб", () => {
     const options = (
       auth as unknown as {

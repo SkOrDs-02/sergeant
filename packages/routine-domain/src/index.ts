@@ -23,6 +23,10 @@ export * from "./completionNoteKey.js";
 export * from "./habitOrder.js";
 export * from "./schedule.js";
 export * from "./streaks.js";
+// Хвиля 4 — гнучкий стрік: датовані паузи, пропуск із причиною,
+// grace-бюджет. Старий `streakForHabit` лишається поруч, доки всі
+// споживачі не перемкнені.
+export * from "./flexStreak.js";
 export * from "./quickStats.js";
 export * from "./periodCompletion.js";
 export * from "./drafts.js";

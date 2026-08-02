@@ -12,6 +12,7 @@ export {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineHabitSkips,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
