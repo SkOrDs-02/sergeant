@@ -28,3 +28,12 @@ fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/03-operations/deploy/monorepo-depl
 # (The literal value is intentionally not repeated here so this ignore comment
 # does not itself trip the generic-api-key heuristic.)
 18a6dcab46540257ecbeb9fa623aca520203b29f:apps/mobile/e2e/auth-flows.e2e.ts:generic-api-key:53
+
+# docs/90-work/audits/web-qa-pre-beta.md (commit 0d0a8cd0) наводить фрагмент
+# відповіді `POST /api/v2/sync/push` із живого QA-прогону 2026-08-01. Два
+# `idempotency_key` — це клієнтські ключі дедуплікації того прогону
+# (`qa_`-префікс + випадковий суфікс), які згенерував сам тест; вони не дають
+# доступу ні до чого й не є креденшелом. `generic-api-key` спрацював на
+# зв'язці «ключ у snake_case + високоентропійне значення».
+0d0a8cd00fbb4a9eddba12c7ccb38fde6600b53a:docs/90-work/audits/web-qa-pre-beta.md:generic-api-key:67
+0d0a8cd00fbb4a9eddba12c7ccb38fde6600b53a:docs/90-work/audits/web-qa-pre-beta.md:generic-api-key:71
