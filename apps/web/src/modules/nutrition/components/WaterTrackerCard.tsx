@@ -13,8 +13,16 @@ import { messages } from "@shared/i18n/uk";
 
 const QUICK_ML = [200, 300, 500, 750];
 
+// Ціль задається з точністю до мілілітра, а поточний обʼєм складається з
+// довільних доливів — фіксований один знак після коми брехав на обох
+// (2350 мл читалось як «2.4 л»). Тримаємо до двох знаків і зрізаємо зайві
+// нулі, щоб рівні значення лишались короткими: 2000 → «2 л», 2350 → «2,35 л».
 export function fmt(ml: number) {
-  return ml >= 1000 ? `${(ml / 1000).toFixed(1)} л` : `${ml} мл`;
+  if (ml < 1000) return `${ml} мл`;
+  const litres = (ml / 1000).toLocaleString("uk-UA", {
+    maximumFractionDigits: 2,
+  });
+  return `${litres} л`;
 }
 
 // Round-3 UI audit T4: undo has to invert whatever the last mutation was —
@@ -73,22 +81,14 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   return (
     <Card radius="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <button
-          type="button"
-          onClick={() => setHistoryOpen(true)}
-          className={cn(
-            "flex items-center gap-2 -m-1 p-1 rounded-xl text-left",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-          aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
-        >
+        <div className="flex items-center gap-2 min-w-0">
           <Icon
             name="droplet"
             size="lg"
             className="text-nutrition"
             aria-hidden
           />
-          <div>
+          <div className="min-w-0">
             <div className="text-style-label text-text leading-none">Вода</div>
             <div className="text-xs text-subtle mt-0.5">
               {fmt(todayMl)}
@@ -96,6 +96,21 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
               {done && <span aria-hidden="true"> ✓</span>}
             </div>
           </div>
+        </div>
+        {/* Вхід у журнал раніше був самим хедером-кнопкою без жодного
+            візуального афордансу — його не знаходили. Тепер це названа
+            кнопка. */}
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          className={cn(
+            "shrink-0 min-h-[44px] px-3 rounded-xl text-style-caption",
+            "text-subtle hover:text-text border border-line transition-colors",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+          )}
+          aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
+        >
+          Історія
         </button>
       </div>
 
