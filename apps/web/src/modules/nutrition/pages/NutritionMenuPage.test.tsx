@@ -127,6 +127,9 @@ function makePantry(): ReturnType<typeof useNutritionPantries> {
     effectiveItems: [],
     pantrySummary: "—",
     parsePantry: vi.fn(),
+    parsePreview: null,
+    confirmParsePreview: vi.fn(),
+    dismissParsePreview: vi.fn(),
     pantryStorageErr: "",
     consumePantryItem: vi.fn(),
   } as ReturnType<typeof useNutritionPantries>;

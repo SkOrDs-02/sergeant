@@ -79,11 +79,24 @@ describe("useNutritionPantries — parsePantry lifecycle branches", () => {
     expect(setStatusText).toHaveBeenCalledWith("Розбираю список…");
     await waitFor(() => expect(setBusy).toHaveBeenCalledWith(false));
     expect(setStatusText).toHaveBeenCalledWith("");
-    expect(result.current.pantryText).toBe("");
+    // Текст лишається, доки користувач не підтвердить прев'ю.
+    expect(result.current.pantryText).toBe("молоко");
   });
 
-  it("surfaces thrown error messages through nutrition error helper", async () => {
+  it("falls back to the local parser when the AI call fails", async () => {
     seed([{ id: "home", name: "Дім", items: [], text: "молоко" }], "home");
+    apiParsePantry.mockRejectedValueOnce(new Error("network down"));
+    const { result, setErr } = renderHarness();
+
+    act(() => result.current.parsePantry());
+    await waitFor(() => expect(result.current.parsePreview).not.toBeNull());
+    expect(result.current.parsePreview?.source).toBe("local");
+    expect(result.current.parsePreview?.items[0]?.name).toBe("молоко");
+    expect(setErr).not.toHaveBeenCalledWith("network down");
+  });
+
+  it("surfaces thrown error messages when even the local parser finds nothing", async () => {
+    seed([{ id: "home", name: "Дім", items: [], text: ",,," }], "home");
     apiParsePantry.mockRejectedValueOnce(new Error("network down"));
     const { result, setErr } = renderHarness();
 
@@ -91,6 +104,7 @@ describe("useNutritionPantries — parsePantry lifecycle branches", () => {
     await waitFor(() =>
       expect(setErr).toHaveBeenLastCalledWith("network down"),
     );
+    expect(result.current.parsePreview).toBeNull();
   });
 });
 
