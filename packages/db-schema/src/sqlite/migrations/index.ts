@@ -469,6 +469,40 @@ CREATE INDEX IF NOT EXISTS routine_completion_notes_user_active_idx_lite
 `;
 
 /**
+ * Client migration 009 — гнучкий стрік (Хвиля 4).
+ *
+ * Дзеркалить серверну `098_routine_habit_skips.sql`:
+ *   - `routine_habit_skips` — третій стан дня «не зміг з причиною»
+ *     (канон `routine.md` §5), форма один-в-один як
+ *     `routine_completion_notes`;
+ *   - `routine_habits.pause_intervals_json` — датовані інтервали
+ *     планованої паузи (канон §4).
+ *
+ * `ALTER TABLE ... ADD COLUMN` у SQLite не має `IF NOT EXISTS`, але
+ * міграції append-only і ведуться леджером `__migrations`, тож повторного
+ * застосування не буде. Колонка `paused` лишається — старі клієнти все ще
+ * пишуть недатований прапор.
+ */
+const ROUTINE_009_HABIT_SKIPS_SQL = `
+ALTER TABLE routine_habits ADD COLUMN pause_intervals_json TEXT NOT NULL DEFAULT '[]';
+
+CREATE TABLE IF NOT EXISTS routine_habit_skips (
+  user_id     TEXT NOT NULL,
+  skip_key    TEXT NOT NULL,
+  reason      TEXT NOT NULL DEFAULT 'other',
+  note        TEXT NOT NULL DEFAULT '',
+  at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, skip_key)
+);
+
+CREATE INDEX IF NOT EXISTS routine_habit_skips_user_active_idx_lite
+  ON routine_habit_skips (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -637,6 +671,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "008_anonymous_profile_migration.sql",
     sql: ROUTINE_008_ANONYMOUS_PROFILE_MIGRATION_SQL,
+  },
+  {
+    name: "009_routine_habit_skips.sql",
+    sql: ROUTINE_009_HABIT_SKIPS_SQL,
   },
 ] as const;
 

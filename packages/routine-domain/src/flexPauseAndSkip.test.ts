@@ -174,7 +174,10 @@ describe("applyPauseHabitBetween / applyResumeHabitFrom", () => {
     let s = stateWith();
     s = applyPauseHabitBetween(s, "h1", "2026-07-10", "2026-07-20");
     const once = s.habits[0]?.pauseIntervals;
-    s = applyPauseHabitBetween(s, "h1", "2026-07-10", "2026-07-20");
+    const same = applyPauseHabitBetween(s, "h1", "2026-07-10", "2026-07-20");
+    // Ідентичність, не лише рівність: інакше повтор народжував би зайвий
+    // `habit-upsert` у дуал-райті.
+    expect(same).toBe(s);
     expect(s.habits[0]?.pauseIntervals).toEqual(once);
     expect(once).toEqual([{ from: "2026-07-10", to: "2026-07-20" }]);
   });

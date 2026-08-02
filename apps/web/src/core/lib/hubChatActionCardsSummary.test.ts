@@ -104,15 +104,26 @@ describe("summaryFor", () => {
     expect(summaryFor("set_habit_schedule", { days: [] }, "fb")).toBe("fb");
   });
 
-  it("pause_habit: paused state variants", () => {
+  it("pause_habit: діапазон і повернення з паузи", () => {
+    // Хвиля 4: пауза датована, тож summary показує межі, а не лише стан.
     expect(summaryFor("pause_habit", { habit_id: "h1" }, "r")).toBe(
-      "h1 · на паузі",
+      "h1 · пауза",
     );
     expect(
+      summaryFor(
+        "pause_habit",
+        { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+        "r",
+      ),
+    ).toBe("h1 · 2026-08-10 — 2026-08-17");
+    expect(
+      summaryFor("pause_habit", { habit_id: "h1", from: "2026-08-10" }, "r"),
+    ).toBe("h1 · з 2026-08-10");
+    expect(
       summaryFor("pause_habit", { habit_id: "h1", paused: false }, "r"),
-    ).toBe("h1 · знято з паузи");
+    ).toBe("h1 · повернення з паузи");
     expect(summaryFor("pause_habit", { paused: false }, "r")).toBe(
-      "знято з паузи",
+      "повернення з паузи",
     );
   });
 

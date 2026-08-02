@@ -15,6 +15,7 @@ export {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineHabitSkips,
 } from "./routine.js";
 export {
   fizrukWorkouts,
