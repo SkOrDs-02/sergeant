@@ -10,7 +10,7 @@
 онови, коли шипиш. Зведений дашборд усього відкритого — [`open-work.md`](../open-work.md).
 
 Починай оцінку обсягу й готовності з
-[`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md). Він відділяє
+[`product-readiness.md`](./product-readiness.md). Він відділяє
 ready-now роботу від зовнішніх блокерів, owner-рішень і reference-матеріалів.
 
 | Розділ                                    | Що тут                                                                        |
