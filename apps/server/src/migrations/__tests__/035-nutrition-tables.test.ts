@@ -226,7 +226,9 @@ describe("035_nutrition_tables migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // `text`, не `uuid`: міграція 095 послабила тип, бо клієнт генерує
+      // `meal_mig_<ts>_<idx>_<uuid>` і кожен sync-push падав із 22P02.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["user_id"]!.nullable).toBe("NO");
@@ -320,7 +322,14 @@ describe("035_nutrition_tables migration", () => {
         ctx.skip();
         return;
       }
-      const ups = await readMigrationFiles();
+      // Замір навмисно робиться на схемі станом на саму 035, а не на
+      // повністю змігрованій. Відкат 035 не знає про пізніші ALTER-и цих
+      // же таблиць (095 перевів `id` у `text`), тож порівняння з фінальною
+      // схемою міряло б не round-trip 035, а факт, що 095 не переграли.
+      // Наскрізний down-all → up-all живе в `rollback-sanity.test.ts`.
+      const ups = (await readMigrationFiles()).filter(
+        (f) => Number(f.slice(0, 3)) <= 35,
+      );
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
 

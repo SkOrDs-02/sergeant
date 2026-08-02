@@ -218,7 +218,9 @@ describe("050_routine_full_state migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // `text`, не `uuid`: міграція 094 послабила тип, бо клієнт генерує
+      // `hab_<uuid>` (routineUid) і кожен sync-push падав із 22P02.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["user_id"]!.nullable).toBe("NO");
@@ -399,7 +401,14 @@ describe("050_routine_full_state migration", () => {
         ctx.skip();
         return;
       }
-      const ups = await readMigrationFiles();
+      // Замір навмисно робиться на схемі станом на саму 050, а не на
+      // повністю змігрованій. Відкат 050 не знає про пізніші ALTER-и цих
+      // же таблиць (094 перевів `id` у `text`), тож порівняння з фінальною
+      // схемою міряло б не round-trip 050, а факт, що 094 не переграли.
+      // Наскрізний down-all → up-all живе в `rollback-sanity.test.ts`.
+      const ups = (await readMigrationFiles()).filter(
+        (f) => Number(f.slice(0, 3)) <= 50,
+      );
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
 
