@@ -14,6 +14,7 @@ import { formatDurShort } from "@sergeant/fizruk-domain";
 import {
   INJURY_SITE_IDS,
   INJURY_SITE_LABELS_UK,
+  isInjurySiteId,
 } from "@sergeant/fizruk-domain/data";
 import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
@@ -263,10 +264,12 @@ export function WorkoutFinishSheets({
                 disabled={
                   savingInjuries || finishFlash.injurySites.length === 0
                 }
-                onClick={async () => {
+                onClick={() => {
                   setSavingInjuries(true);
                   try {
-                    await mark(finishFlash.injurySites);
+                    for (const site of finishFlash.injurySites) {
+                      if (isInjurySiteId(site)) mark(site);
+                    }
                     setFinishFlash(
                       (current) => current && { ...current, step: "summary" },
                     );

@@ -24,7 +24,7 @@ import { useInjuries } from "../hooks/useInjuries";
  */
 export function InjuryManager() {
   const t = messages.fizruk.injuries;
-  const { openMarks, activeSites, mark, clear } = useInjuries();
+  const { active, activeSites, mark, clear } = useInjuries();
   const toast = useToast();
   const [selected, setSelected] = useState<InjurySiteId[]>([]);
   const [busy, setBusy] = useState(false);
@@ -75,9 +75,9 @@ export function InjuryManager() {
         <p className="text-style-caption text-subtle mt-1">{t.description}</p>
       </div>
 
-      {openMarks.length > 0 && (
+      {active.length > 0 && (
         <div className="space-y-2" aria-label={t.activeListLabel}>
-          {openMarks.map((injury) => (
+          {active.map((injury) => (
             <div
               key={injury.id}
               className="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2"
@@ -89,36 +89,33 @@ export function InjuryManager() {
                 size="sm"
                 variant="secondary"
                 disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
+                onClick={() => {
                   try {
-                    await clear(injury.id);
+                    clear(injury.id);
                     toast.success(t.clearedToast);
                   } catch {
                     toast.error(t.clearFailedToast);
-                  } finally {
-                    setBusy(false);
                   }
                 }}
               >
-                {t.clear}
+                {t.clearCta}
               </Button>
             </div>
           ))}
         </div>
       )}
 
-      {renderGroup(t.muscleGroupsLabel, BODY_ATLAS_MUSCLE_IDS)}
-      {renderGroup(t.zonesLabel, INJURY_ZONE_IDS)}
+      {renderGroup(t.groupMuscles, BODY_ATLAS_MUSCLE_IDS)}
+      {renderGroup(t.groupZones, INJURY_ZONE_IDS)}
 
       <Button
         module="fizruk"
         className="w-full h-12"
         disabled={busy || selected.length === 0}
-        onClick={async () => {
+        onClick={() => {
           setBusy(true);
           try {
-            await mark(selected);
+            for (const site of selected) mark(site);
             setSelected([]);
             toast.success(t.savedToast);
           } catch {

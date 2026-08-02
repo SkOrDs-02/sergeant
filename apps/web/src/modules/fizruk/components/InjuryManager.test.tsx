@@ -8,24 +8,32 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mark = vi.fn(async () => []);
-const clear = vi.fn(async () => true);
+const mark = vi.fn();
+const clear = vi.fn();
 vi.mock("../hooks/useInjuries", () => ({
   useInjuries: () => ({
-    injuries: [],
-    openMarks: [
+    all: [
       {
         id: "inj-1",
         site: "chest",
         startedAt: "2026-08-01T10:00:00.000Z",
         clearedAt: null,
         note: "",
-        deletedAt: null,
+      },
+    ],
+    active: [
+      {
+        id: "inj-1",
+        site: "chest",
+        startedAt: "2026-08-01T10:00:00.000Z",
+        clearedAt: null,
+        note: "",
       },
     ],
     activeSites: new Set(["chest"]),
     mark,
     clear,
+    remove: vi.fn(),
   }),
 }));
 vi.mock("@shared/hooks/useToast", () => ({
@@ -52,9 +60,9 @@ describe("InjuryManager", () => {
     fireEvent.click(screen.getByRole("button", { name: "Трицепс" }));
     fireEvent.click(screen.getByRole("button", { name: "Литки" }));
     fireEvent.click(screen.getByRole("button", { name: "Позначити біль" }));
-    await waitFor(() =>
-      expect(mark).toHaveBeenCalledWith(["triceps", "calves"]),
-    );
+    await waitFor(() => expect(mark).toHaveBeenCalledTimes(2));
+    expect(mark).toHaveBeenCalledWith("triceps");
+    expect(mark).toHaveBeenCalledWith("calves");
   });
 
   it("offers joints and spinal segments, not only atlas muscles", async () => {
@@ -65,9 +73,9 @@ describe("InjuryManager", () => {
     fireEvent.click(screen.getByRole("button", { name: "Коліно" }));
     fireEvent.click(screen.getByRole("button", { name: "Поперек" }));
     fireEvent.click(screen.getByRole("button", { name: "Позначити біль" }));
-    await waitFor(() =>
-      expect(mark).toHaveBeenCalledWith(["knee", "spine-lumbar"]),
-    );
+    await waitFor(() => expect(mark).toHaveBeenCalledTimes(2));
+    expect(mark).toHaveBeenCalledWith("knee");
+    expect(mark).toHaveBeenCalledWith("spine-lumbar");
   });
 
   it("does not offer a site that already carries an open mark", () => {

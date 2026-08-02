@@ -160,10 +160,7 @@ describe("computeExerciseBest", () => {
         item: strength("it_old", "squat", [{ weightKg: 100, reps: 5 }]),
       },
     ];
-    const best = computeExerciseBest(
-      history,
-      Date.parse("2026-04-21T10:00:00Z"),
-    );
+    const best = computeExerciseBest(history);
     expect(best.isNewPR).toBe(true);
     expect(best.best1rm).toBeGreaterThan(0);
     expect(best.bestSet?.weightKg).toBe(110);
@@ -181,10 +178,7 @@ describe("computeExerciseBest", () => {
         item: strength("it_old", "squat", [{ weightKg: 100, reps: 5 }]),
       },
     ];
-    const best = computeExerciseBest(
-      history,
-      Date.parse("2026-04-21T10:00:00Z"),
-    );
+    const best = computeExerciseBest(history);
     expect(best.isNewPR).toBe(false);
   });
 

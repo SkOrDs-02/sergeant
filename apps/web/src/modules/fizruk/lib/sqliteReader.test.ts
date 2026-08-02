@@ -267,7 +267,6 @@ describe("refreshFizrukSqliteState", () => {
         startedAt: "2026-05-03T07:00:00.000Z",
         clearedAt: null,
         note: "",
-        deletedAt: null,
       },
       {
         id: "inj-old",
@@ -275,7 +274,6 @@ describe("refreshFizrukSqliteState", () => {
         startedAt: "2026-05-01T07:00:00.000Z",
         clearedAt: "2026-05-02T07:00:00.000Z",
         note: "",
-        deletedAt: null,
       },
     ]);
   });

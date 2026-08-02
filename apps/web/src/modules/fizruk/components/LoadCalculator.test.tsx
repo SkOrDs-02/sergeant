@@ -28,16 +28,12 @@ describe("LoadCalculator", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
-  it("hides percentage prescriptions when the estimate is stale", () => {
-    render(<LoadCalculator oneRM={100} isStale />);
-    expect(screen.getByText("оцінка застаріла")).toBeInTheDocument();
-    expect(screen.queryByText("Сила")).not.toBeInTheDocument();
+  it("labels the header as a reduced reference instead of 1RM when reduced", () => {
+    render(<LoadCalculator oneRM={90} reduced />);
+    expect(screen.getByText(/орієнтир = 90 кг/)).toBeInTheDocument();
     expect(screen.queryByText(/1RM =/)).not.toBeInTheDocument();
-  });
-
-  it("shows reduced guidance in return mode", () => {
-    render(<LoadCalculator oneRM={100} isReturning />);
-    expect(screen.getByText("режим повернення")).toBeInTheDocument();
-    expect(screen.getByText(/знижено на 20%/)).toBeInTheDocument();
+    // The zones still render — `reduced` only changes the caption, the
+    // calculator keeps working off the (already-reduced) `oneRM` it got.
+    expect(screen.getByText("Сила")).toBeInTheDocument();
   });
 });
