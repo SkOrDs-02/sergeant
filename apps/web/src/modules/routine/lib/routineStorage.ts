@@ -34,6 +34,10 @@ import {
   applyMoveHabitInOrder,
   applySetHabitOrder,
   applySetCompletionNote,
+  applySetHabitSkip,
+  applyClearHabitSkip,
+  applyPauseHabitBetween,
+  applyResumeHabitFrom,
   applyUpdateTag,
   applyUpdateCategory,
   applyDeleteCategory,
@@ -48,6 +52,7 @@ import {
   type RoutineState,
   type Habit,
   type HabitSnapshot,
+  type SkipReason,
 } from "@sergeant/routine-domain";
 import { triggerRoutineDualWrite } from "./sqliteWriter/index.js";
 import {
@@ -344,6 +349,57 @@ export function setHabitOrder(
   orderedActiveIds: string[],
 ): RoutineState {
   return persist(applySetHabitOrder(state, orderedActiveIds));
+}
+
+/**
+ * Позначити день як «не зміг з причиною» (канон §5, третій стан).
+ *
+ * Взаємно виключно з відміткою виконання — домен сам зніме `completions`-ключ.
+ */
+export function setHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+  reason: SkipReason,
+  note?: string,
+): RoutineState {
+  const next = applySetHabitSkip(state, habitId, dateKey, reason, note);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Зняти позначку «не зміг» — день повертається у стан «не зробив». */
+export function clearHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const next = applyClearHabitSkip(state, habitId, dateKey);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Заявити плановану паузу датованим інтервалом (канон §4). */
+export function pauseHabitBetween(
+  state: RoutineState,
+  habitId: string,
+  fromKey: string,
+  toKey: string | null,
+): RoutineState {
+  const next = applyPauseHabitBetween(state, habitId, fromKey, toKey);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Достроково завершити паузу, що накриває день. */
+export function resumeHabitFrom(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const next = applyResumeHabitFrom(state, habitId, dateKey);
+  if (next === state) return state;
+  return persist(next);
 }
 
 export function setCompletionNote(
