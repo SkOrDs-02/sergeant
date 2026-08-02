@@ -1,14 +1,23 @@
 -- Down migration: fizruk_injuries
 --
--- Номерна історія — див. коментар у up-файлі (096_fizruk_injuries.sql):
--- двоє незалежних renumbering-ів того самого дня, фінальний стан 096.
+-- Номерна історія — див. коментар у up-файлі (097_fizruk_injuries.sql):
+-- фінальний стан 096 = finyk_fizruk_pk_text, 097 = fizruk_injuries.
 --
 -- Additive-таблиця без FK і без залежних вʼю — відкат чистий. Індекси зникають
 -- разом із таблицею, тож окремих DROP INDEX не треба.
 --
 -- УВАГА: DROP знищує всі позначки травм. Це дані про здоровʼя, які користувач
 -- завів руками і які ніде більше не дублюються — на живому середовищі спершу
--- знімь дамп:
---   COPY fizruk_injuries TO '/tmp/fizruk_injuries.csv' CSV HEADER;
+-- зніми pre-migration snapshot за канонічною процедурою рунбука
+-- `docs/03-operations/runbooks/database-backup-restore.md` § «Pre-migration
+-- snapshot»:
+--   pg_dump --format=custom --no-owner --no-privileges ...
+-- Дамп кладеться у bucket із KMS-encrypted-at-rest, а НЕ в `/tmp` і не в
+-- локальний `~/Downloads` (§ 2 рунбука).
+--
+-- AI-DANGER: не спокушайся table-only `COPY ... TO ... CSV` для відновлення.
+-- `fizruk_*` — таблиці з per-row sync: §3 рунбука прямо позначає їх «❌ для
+-- row-level restore», бо це ламає LWW. Єдиний безпечний шлях назад —
+-- full-DB restore + переграш op-log клієнтами.
 
 DROP TABLE IF EXISTS fizruk_injuries;

@@ -207,7 +207,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         from: {
           type: "string",
           description:
-            "Перший день паузи, YYYY-MM-DD (Europe/Kyiv). Дефолт — сьогодні.",
+            "Перший день паузи, YYYY-MM-DD (Europe/Kyiv). Для паузи «з сьогодні» передай сьогоднішню дату явно.",
         },
         to: {
           type: "string",
@@ -215,7 +215,11 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
             "Останній день паузи включно, YYYY-MM-DD. Пропусти для паузи без заявленої дати кінця.",
         },
       },
-      required: ["habit_id"],
+      // `from` обовʼязковий навмисно: канон §4 говорить про ПЛАНОВАНУ паузу,
+      // і явна дата початку — це саме те, що робить її планованою. Заразом це
+      // тримає strict-grammar-бюджет: кожен optional-параметр коштує гілку в
+      // граматиці (`strict-normalize.test.ts`).
+      required: ["habit_id", "from"],
     },
   },
 ];
