@@ -534,6 +534,31 @@ export const messages = {
       emptyDescription:
         "Заверши сети з вагою — рекорди зʼявляться тут автоматично.",
       emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+      /** Канон §6: борд бачить не лише рух угору. */
+      staleBadge: "давно не робив",
+      belowPeakPrefix: "зараз",
+    },
+    /**
+     * Старіння 1RM і протокол повернення (канон `fizruk.md` §6).
+     *
+     * Тон — за `docs/01-product/copy/style-guide.uk.md`: констатація без
+     * докору. Перерва не провал, а регрес не привід соромитись, тож копія
+     * пояснює ЧОМУ число інше, а не оцінює людину.
+     */
+    oneRmAging: {
+      staleTitle: "Рекорд застарів",
+      staleNote: "Останній підхід був давно, тож рахую від обережнішого числа.",
+      injuryTitle: "Повернення після позначки",
+      injuryNote:
+        "Ти щойно зняв позначку. Перші тижні рахую від зниженого орієнтира.",
+      referenceLabel: "орієнтир",
+      peakLabel: "рекорд",
+      reducedSuffix: "від рекорду",
+      lastSessionPrefix: "останній підхід",
+      daysAgoSuffix: "дн. тому",
+      regressionTitle: "Зараз нижче за пік",
+      regressionNote:
+        "Це нормально після перерви — повертайся поступово, а не одразу до рекорду.",
     },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
     hoursUnit: "год",

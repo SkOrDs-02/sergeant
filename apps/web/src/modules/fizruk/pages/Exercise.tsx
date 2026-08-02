@@ -10,14 +10,20 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
-import { epley1rm, suggestNextSet } from "@sergeant/fizruk-domain";
-import type {
-  Workout,
-  WorkoutItem,
-  WorkoutSet,
+import { useInjuries } from "../hooks/useInjuries";
+import {
+  latestClearedInjuryAtForExercise,
+  suggestNextSet,
+} from "@sergeant/fizruk-domain";
+import {
+  collectExerciseHistory,
+  computeExerciseBest,
+  computeOneRmAgingForSummary,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { LoadCalculator } from "../components/LoadCalculator";
+import { ReturnProtocolNotice } from "../components/exercise/ReturnProtocolNotice";
 import {
   ExerciseProgressChart,
   type ProgressPoint,
@@ -25,15 +31,6 @@ import {
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { fmt } from "../lib/numberFmt";
 import { chartSeries, statusColors } from "@shared/charts";
-
-interface HistoryEntry {
-  workout: Workout;
-  item: WorkoutItem;
-}
-// Best/last sets carry an extra `_at` annotation that's not part of the
-// canonical `WorkoutSet`, so we extend the domain type instead of
-// shadowing the global `Set<T>` with `type Set = any`.
-type WorkoutSetWithMeta = WorkoutSet & { _at?: string };
 
 interface ExerciseProps {
   exerciseId: string;
@@ -50,61 +47,33 @@ interface ExerciseProps {
 export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const { exercises, musclesUk } = useExerciseCatalog();
   const { workouts } = useWorkouts();
+  const { all: injuryMarks } = useInjuries();
 
   const ex = useMemo(
     () => (exercises || []).find((x) => x?.id === exerciseId) || null,
     [exercises, exerciseId],
   );
 
-  const history = useMemo(() => {
-    const out: HistoryEntry[] = [];
-    for (const w of workouts || []) {
-      for (const it of w.items || []) {
-        if (it.exerciseId !== exerciseId) continue;
-        out.push({ workout: w, item: it });
-      }
-    }
-    return out.sort((a, b) =>
-      (b.workout?.startedAt || "").localeCompare(a.workout?.startedAt || ""),
-    );
-  }, [workouts, exerciseId]);
+  // Один агрегат на веб і мобілку: сторінка колись мала власну копію цього
+  // фолду, і саме тому старіння 1RM (канон §6) було нікуди додати.
+  const history = useMemo(
+    () => collectExerciseHistory(workouts, exerciseId),
+    [workouts, exerciseId],
+  );
 
-  const best = useMemo(() => {
-    let best1rm = 0;
-    let bestSet: WorkoutSetWithMeta | null = null;
-    let lastTopSet: WorkoutSetWithMeta | null = null;
-    let lastTopEst = 0;
-    let lastWorkoutId: string | null = null;
-    let lastWorkoutBest1rm = 0;
-    let priorBest1rm = 0;
+  const best = useMemo(() => computeExerciseBest(history), [history]);
 
-    if (history.length > 0) lastWorkoutId = history[0]?.workout?.id ?? null;
-
-    for (const { workout, item } of history) {
-      if (item?.type !== "strength") continue;
-      const isLatest = workout?.id === lastWorkoutId;
-      const sets = item.sets || [];
-      for (const s of sets) {
-        const est = epley1rm(s.weightKg, s.reps);
-        if (est > best1rm) {
-          best1rm = est;
-          bestSet = { ...s, _at: workout?.startedAt };
-        }
-        if (isLatest) {
-          if (est > lastWorkoutBest1rm) lastWorkoutBest1rm = est;
-          if (est > lastTopEst) {
-            lastTopEst = est;
-            lastTopSet = { ...s, _at: workout?.startedAt };
-          }
-        } else {
-          if (est > priorBest1rm) priorBest1rm = est;
-        }
-      }
-    }
-
-    const isNewPR = lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
-    return { best1rm, bestSet, lastTop: lastTopSet, isNewPR };
-  }, [history]);
+  /**
+   * Старіння 1RM + протокол повернення (канон §6). Зняття позначки травми
+   * теж вводить у мʼякий режим — це закриття розриву E-5 з ADR-0083.
+   */
+  const aging = useMemo(
+    () =>
+      computeOneRmAgingForSummary(best, {
+        injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
+      }),
+    [best, ex, injuryMarks],
+  );
 
   const suggestedNext = useMemo(
     () => suggestNextSet(best.lastTop),
@@ -219,7 +188,12 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           )}
         </div>
 
-        {best.isNewPR && (
+        {/*
+          Канон §6: у режимі повернення порівняння з піком ховаємо — і
+          святкування, і констатацію регресу. Людина щойно повернулась;
+          мірятись із власним рекордом тут не час.
+        */}
+        {best.isNewPR && !aging.returnMode && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
             <Icon name="award" size={20} aria-hidden />
             <div>
@@ -230,6 +204,19 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 Найкращий результат за всю історію
               </p>
             </div>
+          </div>
+        )}
+
+        <ReturnProtocolNotice aging={aging} />
+
+        {best.isRegression && !aging.returnMode && (
+          <div className="rounded-2xl border border-line bg-panel px-4 py-3">
+            <p className="text-style-label text-text">
+              {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
+            </p>
+            <p className="text-xs text-subtle">
+              {messages.fizruk.oneRmAging.regressionNote}
+            </p>
           </div>
         )}
 
@@ -246,13 +233,18 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                 ? `${best.bestSet.weightKg ?? 0} × ${best.bestSet.reps ?? 0} повт.`
                 : "Немає силових сетів"}
             </div>
-            {best.bestSet?._at && (
+            {best.bestSet?.at && (
               <div className="text-style-caption text-subtle/70 mt-1">
-                {new Date(best.bestSet._at).toLocaleDateString("uk-UA", {
+                {new Date(best.bestSet.at).toLocaleDateString("uk-UA", {
                   day: "numeric",
                   month: "short",
                   year: "2-digit",
                 })}
+              </div>
+            )}
+            {aging.isStale && (
+              <div className="text-style-caption text-subtle mt-1">
+                {messages.fizruk.prBoard.staleBadge}
               </div>
             )}
           </Card>
@@ -340,7 +332,17 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           </Card>
         )}
 
-        {best.best1rm > 0 && <LoadCalculator oneRM={best.best1rm} />}
+        {/*
+          AI-DANGER: сюди йде `reference1rm`, а НЕ пік. Це число людина кладе
+          на штангу; повернення його до `best.best1rm` знімає рівно той
+          захист, заради якого існує §6 канону.
+        */}
+        {aging.reference1rm > 0 && (
+          <LoadCalculator
+            oneRM={aging.reference1rm}
+            reduced={aging.reductionPct > 0}
+          />
+        )}
 
         <Card radius="lg" padding="lg">
           <SectionHeading as="div" size="sm" className="mb-3">

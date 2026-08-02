@@ -18,6 +18,15 @@ export interface PrEntry {
   weightKg: number;
   reps: number;
   at: string;
+  /**
+   * Рекорд застарів — від останньої силової сесії вправи минуло більше за
+   * поріг `ONE_RM_STALE_AFTER_DAYS` (канон `fizruk.md` §6).
+   */
+  isStale?: boolean;
+  /** Поточний рівень помітно нижчий за пік. Констатація, не докір. */
+  isRegression?: boolean;
+  /** Відхилення поточного рівня від піка у відсотках (≤ 0 — просів). */
+  deltaVsPeakPct?: number;
 }
 
 interface PrBoardProps {
@@ -150,6 +159,23 @@ export function PrBoard({
                         month: "short",
                         day: "numeric",
                       })}
+                    </span>
+                  )}
+                  {/*
+                    Борд раніше реагував лише на рух УГОРУ (`isNewPR`), тож
+                    регрес і застарілий рекорд були невидимі — канон §6
+                    вимагає протилежного. Тон нейтральний: жодного
+                    попереджувального кольору, це факт, а не осуд.
+                  */}
+                  {p.isStale && (
+                    <span className="text-xs text-muted">
+                      · {messages.fizruk.prBoard.staleBadge}
+                    </span>
+                  )}
+                  {p.isRegression && (
+                    <span className="text-xs text-subtle tabular-nums">
+                      · {messages.fizruk.prBoard.belowPeakPrefix}{" "}
+                      {p.deltaVsPeakPct}%
                     </span>
                   )}
                   {p.muscleGroupLabel && (

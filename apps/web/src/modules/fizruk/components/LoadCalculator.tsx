@@ -38,7 +38,19 @@ const CALC_ZONES = [
   },
 ];
 
-export function LoadCalculator({ oneRM }: { oneRM: number }) {
+/**
+ * `reduced` — калькулятор рахує від ЗНИЖЕНОГО орієнтира, а не від піка
+ * (канон `fizruk.md` §6, `oneRmAging.ts`). Підпис має це визнавати вголос:
+ * інакше користувач бачить менше число під тим самим словом «1RM» і читає
+ * це як баг, а не як навмисну обережність.
+ */
+export function LoadCalculator({
+  oneRM,
+  reduced = false,
+}: {
+  oneRM: number;
+  reduced?: boolean;
+}) {
   return (
     <Card radius="lg">
       <div className="flex items-baseline justify-between gap-2 mb-3">
@@ -46,7 +58,7 @@ export function LoadCalculator({ oneRM }: { oneRM: number }) {
           Калькулятор навантаження
         </SectionHeading>
         <div className="text-style-caption text-subtle">
-          1RM = {fmt(oneRM, 0)} кг
+          {reduced ? "орієнтир" : "1RM"} = {fmt(oneRM, 0)} кг
         </div>
       </div>
       <div className="space-y-3">

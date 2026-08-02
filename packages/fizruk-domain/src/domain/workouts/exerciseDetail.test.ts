@@ -137,6 +137,10 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
   });
 
@@ -190,6 +194,10 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
   });
 });

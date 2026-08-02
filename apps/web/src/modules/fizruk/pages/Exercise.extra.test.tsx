@@ -60,6 +60,18 @@ const CATALOG = {
   musclesUk: { chest: "Груди", triceps: "Трицепс", legs: "Ноги" },
 };
 
+/**
+ * Дата «N днів тому» від реального «зараз».
+ *
+ * Фіксована дата тут більше не годиться: після Хвилі 4 сторінка знає про
+ * старіння 1RM (канон `fizruk.md` §6), тож фікстура з жорстко вбитим
+ * 2026-06-22 з часом сама б переїхала в режим повернення і зламала тест не
+ * через регресію коду, а через календар.
+ */
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
 function strengthWorkout(id: string, startedAt: string, sets: unknown[]) {
   return {
     id,
@@ -123,12 +135,8 @@ describe("Exercise page — strength history", () => {
     useWorkouts.mockReturnValue({
       workouts: [
         // Latest workout has the highest 1RM → new PR.
-        strengthWorkout("w2", "2026-06-22T08:00:00Z", [
-          { weightKg: 120, reps: 5 },
-        ]),
-        strengthWorkout("w1", "2026-06-10T08:00:00Z", [
-          { weightKg: 80, reps: 8 },
-        ]),
+        strengthWorkout("w2", daysAgoIso(2), [{ weightKg: 120, reps: 5 }]),
+        strengthWorkout("w1", daysAgoIso(12), [{ weightKg: 80, reps: 8 }]),
       ],
     });
     render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
@@ -159,6 +167,52 @@ describe("Exercise page — strength history", () => {
     });
     render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
     expect(screen.getByText("Наступного разу")).toBeInTheDocument();
+  });
+});
+
+describe("Exercise page — старіння 1RM і повернення (канон §6)", () => {
+  it("після довгої перерви калькулятор рахує від зниженого орієнтира, не від піка", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      // Epley(100×1) = 103.33; 28 днів порогу + 14 понад = −5% від піка.
+      workouts: [
+        strengthWorkout("w1", daysAgoIso(42), [{ weightKg: 100, reps: 1 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    const oneRm = Number(
+      screen.getByTestId("load-calculator").getAttribute("data-one-rm"),
+    );
+    expect(oneRm).toBeCloseTo(100 * (1 + 1 / 30) * 0.95, 3);
+    expect(screen.getByText("Рекорд застарів")).toBeInTheDocument();
+  });
+
+  it("у режимі повернення банер рекорду не показується", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      workouts: [
+        // Останнє тренування — найкраще, але воно було півтора місяця тому.
+        strengthWorkout("w2", daysAgoIso(45), [{ weightKg: 120, reps: 5 }]),
+        strengthWorkout("w1", daysAgoIso(80), [{ weightKg: 80, reps: 8 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    expect(screen.queryByText("Новий особистий рекорд!")).toBeNull();
+    expect(screen.getByText("Рекорд застарів")).toBeInTheDocument();
+  });
+
+  it("свіжа вправа режим повернення не вмикає", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      workouts: [
+        strengthWorkout("w1", daysAgoIso(3), [{ weightKg: 100, reps: 1 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    expect(screen.queryByText("Рекорд застарів")).toBeNull();
+    expect(
+      Number(screen.getByTestId("load-calculator").getAttribute("data-one-rm")),
+    ).toBeCloseTo(100 * (1 + 1 / 30), 3);
   });
 });
 
