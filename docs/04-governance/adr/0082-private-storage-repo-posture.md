@@ -38,3 +38,20 @@
 - ADR-0034 (visual regression) і ADR-0069 (AI-PR checklist) стають superseded: механізми прибрано.
 - Ліцензійна відповідність більше не перевіряється механічно. Це прийнятно, доки код не розповсюджується; при поверненні до дистрибуції гейт треба відновити разом з `THIRD_PARTY_LICENSES.md`.
 - Якщо репо перемкнуть у private, окремо доведеться переглянути `codeql.yml` (потребує GitHub Advanced Security) і `storybook-deploy.yml` (Pages з private repo потребує платного плану).
+
+## Amendment (2026-08-02) — `mutation-testing` відновлено
+
+Пункт 4 рішення згрупував `mutation-testing` разом із `harness-a-b`, `rag-quality-gate`,
+`visual-regression` під одним ярликом «мертві та самоперевірні крони», але на відміну
+від тих трьох (конкретно підтверджена непрацездатність — неіснуюча гілка, mock-режим,
+відсутній базлайн) для `mutation-testing` жодної окремої непрацездатності не було
+знайдено: `packages/shared/stryker.utils.conf.json` і
+`apps/server/stryker.normalizers.conf.json` (+ `mutation:utils` / `mutation:normalizers`
+у відповідних `package.json`) лишились робочими — прибрали лише
+`.github/workflows/mutation-testing.yml`, тобто планувальник, а не інструмент.
+
+На прямий запит founder-а 2026-08-02 workflow відновлено 1:1 з видаленої версії
+(той самий weekly cron `0 6 * * 1` + `workflow_dispatch`, ті самі SHA-pinned actions).
+Рішення №4 лишається чинним для решти шести (`harness-a-b`, `rag-quality-gate`,
+`visual-regression`, `typescript-next`, `shell-tax-report`, `flaky-tests-dashboard`) —
+вони не відновлюються цим amendment-ом.
