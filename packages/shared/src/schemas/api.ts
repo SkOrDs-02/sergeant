@@ -42,6 +42,20 @@ export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
   pushNotifications: z.boolean(),
+  /**
+   * Opt-in на проактивні повідомлення Сержанта (денний нудж від серверного
+   * шедулера). Свідомо окремо від `pushNotifications`: той прапорець — згода
+   * на пуші взагалі, цей — на конкретний канал. Дефолт `false` для всіх,
+   * включно з новими акаунтами, тож деплой нікого не будить.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб їде на Vercel, а сервер
+   * на Coolify — окремими деплоями. У вікні між ними новий клієнт розмовляє зі
+   * старим сервером, який поля ще не віддає; без дефолту `getPreferences()`
+   * кидав би ZodError і клав усю сторінку налаштувань заради тумблера, який
+   * усе одно вимкнений. Дефолт збігається з `DEFAULT` колонки в міграції 100,
+   * тож «поля нема» і «поле false» означають рівно те саме.
+   */
+  sergeantNudges: z.boolean().default(false),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -51,6 +65,7 @@ export const UserPreferencesPatchSchema = z
     analytics: z.boolean().optional(),
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
+    sergeantNudges: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;

@@ -73,6 +73,11 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+# `@sergeant/routine-domain` — серверна залежність від #592: прохід нагадувань
+# бере звідти канонічний предикат розкладу звички замість власної копії
+# (`apps/server/src/lib/reminders/due.ts`). Без цього рядка frozen-install
+# усередині образу падає на відсутньому workspace-пакеті, і образ не
+# збирається взагалі.
 COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 

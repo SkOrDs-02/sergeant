@@ -42,8 +42,11 @@ test("@critical assistant catalogue: search filters and recovers", async ({
 
   await page.goto("/assistant", { waitUntil: "domcontentloaded" });
 
+  // Персона зведена в одну — заголовок їде з `messages.sergeant
+  // .capabilitiesSectionTitle`. Слово «асистент» із користувацьких рядків
+  // прибрано, тож стара назва тут більше не зʼявиться.
   await expect(
-    page.getByRole("heading", { name: "Можливості асистента" }),
+    page.getByRole("heading", { name: "Що вміє Сержант" }),
   ).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("catalogue-toggle-all")).toBeVisible();
 

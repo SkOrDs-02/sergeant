@@ -43,7 +43,7 @@ export interface InlineAiRailProps {
 const STATUS_LABEL: Record<InlineAiState["status"], string> = {
   idle: "",
   loading: "AI шукає відповідь",
-  success: "Відповідь асистента",
+  success: "Відповідь Сержанта",
   aborted: "Запит скасовано",
   error: "Помилка асистента",
 };

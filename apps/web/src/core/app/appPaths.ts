@@ -22,7 +22,8 @@ export const APP_TITLE = "Sergeant — Твій персональний хаб 
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant — Статус системи",
   "/chat": "Sergeant — Асистент",
-  "/assistant": "Sergeant — Можливості асистента",
+  "/assistant": "Sergeant — Що вміє Сержант",
+  "/capabilities": "Sergeant — Що вміє додаток",
   "/pricing": "Sergeant — Тарифи",
   "/sign-in": "Sergeant — Вхід",
   "/reset-password": "Sergeant — Скидання пароля",
@@ -87,6 +88,13 @@ export const SIGN_IN_ALIAS_PATHS: ReadonlyArray<string> = [
 // chat input all converge here). URL-addressable so it survives reload
 // and can be deep-linked from notifications / docs.
 export const ASSISTANT_PATH = "/assistant";
+
+/**
+ * Каталог можливостей САМОГО ДОДАТКА. Окремо від ASSISTANT_PATH, який
+ * перелічує інструменти чату: це два різні питання, і зведення їх на один
+ * екран топило б новачка у 60 сценаріях.
+ */
+export const CAPABILITIES_PATH = "/capabilities";
 
 // Dedicated AI chat route. Replaces the fullscreen modal that used to
 // slam over the dashboard. Reads `?q=` and `?autoSend=1` so launcher

@@ -47,6 +47,9 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       analytics: true,
       aiMemory: true,
       pushNotifications: false,
+      // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів
+      // (міграція 100). Дефолт тут — частина контракту, не деталь реалізації.
+      sergeantNudges: false,
       updatedAt: null,
     });
   });
@@ -57,6 +60,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         analytics: false,
         ai_memory: true,
         push_notifications: true,
+        sergeant_nudges: true,
         updated_at: new Date("2026-06-06T10:00:00.000Z"),
       },
     ]);
@@ -65,6 +69,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: true,
+      sergeantNudges: true,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
   });

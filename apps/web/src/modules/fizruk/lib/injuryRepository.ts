@@ -1,5 +1,15 @@
 /**
  * @scaffolded
+ * @status Scaffolded
+ * @owner @SkOrDs-02
+ * @nextStep Wire `markInjurySites` / `clearInjuryMark` до UI травм
+ *           (`apps/web/src/modules/fizruk/`), тоді прибрати цей тег.
+ *           See AGENTS.md → Hard Rule #10.
+ *
+ * Write-half моделі «не можна» (ADR-0083) приїхала разом з UI у #589, але
+ * жоден компонент її ще не викликає — тому Knip бачить файл як осиротілий.
+ * Це не мертвий код: серверна половина (`applyInjuries.ts`) і pull-шлях уже
+ * чекають саме на ці outbox-рядки.
  *
  * Local writes for injury marks — the client-authored half of the "не можна"
  * model (ADR-0083).

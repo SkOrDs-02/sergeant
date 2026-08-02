@@ -241,6 +241,8 @@ describe("/api/v1/me data rights", () => {
       analytics: true,
       aiMemory: true,
       pushNotifications: false,
+      // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів.
+      sergeantNudges: false,
       updatedAt: null,
     });
   });
@@ -253,6 +255,7 @@ describe("/api/v1/me data rights", () => {
           analytics: false,
           ai_memory: true,
           push_notifications: false,
+          sergeant_nudges: false,
           updated_at: new Date("2026-06-06T10:05:00.000Z"),
         },
       ],
@@ -269,11 +272,12 @@ describe("/api/v1/me data rights", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      sergeantNudges: false,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    expect(params).toEqual([user.id, false, true, false]);
+    expect(params).toEqual([user.id, false, true, false, false]);
   });
 
   it("PATCH /api/v1/me/preferences відхиляє невідомий shape", async () => {

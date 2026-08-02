@@ -280,6 +280,11 @@ export const STORAGE_KEYS = {
   // Monday visit never triggers an unexpected AI call; the setting lives in
   // Hub → Settings → AI Звіт тижня.
   WEEKLY_DIGEST_MONDAY_AUTO: "hub_weekly_digest_monday_auto_v1",
+  // weekKey останнього звіту, який користувач РОЗГОРНУВ. Автогенерація по
+  // понеділках працює у фоні й донедавна не лишала жодного сліду в UI —
+  // юзер дізнавався про новий звіт, тільки якщо сам відкривав блок. Тепер
+  // картка носить бейдж, поки цей ключ не збігається з поточним тижнем.
+  WEEKLY_DIGEST_LAST_SEEN: "hub_weekly_digest_last_seen_v1",
 
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
   // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.

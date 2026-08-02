@@ -114,7 +114,7 @@ export function DashboardSection() {
         />
         <ToggleRow
           label="Інсайти та AI-поради"
-          description="Згорнутий блок з інсайтами, порадою коуча та звітом тижня внизу головної."
+          description="Згорнутий блок з інсайтами, порадою Сержанта та звітом тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />

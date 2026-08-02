@@ -27,7 +27,8 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
     // body copy must no longer leak as a visible <p>; only the sr-only
     // mirror inside the status region stays for AT users.
     const status = screen.getByRole("status", {
-      name: /готую пораду асистента/i,
+      // `messages.sergeant.adviceLoadingAria` — «Сержант готує пораду».
+      name: /сержант готує пораду/i,
     });
     expect(status).toBeInTheDocument();
     expect(screen.queryByText(/^Готую пораду…$/, { selector: "p" })).toBeNull();

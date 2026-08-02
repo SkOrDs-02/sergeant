@@ -114,6 +114,7 @@ describe("createMeEndpoints", () => {
       analytics: true,
       aiMemory: false,
       pushNotifications: true,
+      sergeantNudges: true,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const me = createMeEndpoints(createHttpClient());
@@ -122,10 +123,27 @@ describe("createMeEndpoints", () => {
       analytics: true,
       aiMemory: false,
       pushNotifications: true,
+      sergeantNudges: true,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const url = firstCall(fetchMock)[0] as string;
     expect(url).toContain("/api/v1/me/preferences");
+  });
+
+  it("GET /api/me/preferences переживає старий сервер без sergeantNudges", async () => {
+    // Вікно між деплоями веба (Vercel) і сервера (Coolify): поля ще нема.
+    // Без дефолту тут падала б уся сторінка налаштувань.
+    mockFetchOnce({
+      analytics: true,
+      aiMemory: false,
+      pushNotifications: true,
+      updatedAt: null,
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getPreferences()).resolves.toMatchObject({
+      sergeantNudges: false,
+    });
   });
 
   it("PATCH /api/me/preferences валідовує partial patch", async () => {
@@ -133,6 +151,7 @@ describe("createMeEndpoints", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      sergeantNudges: false,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const me = createMeEndpoints(createHttpClient());
@@ -159,6 +178,7 @@ describe("createMeEndpoints", () => {
         analytics: true,
         aiMemory: true,
         pushNotifications: false,
+        sergeantNudges: false,
         updatedAt: null,
       },
       data: {
