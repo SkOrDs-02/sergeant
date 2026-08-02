@@ -39,7 +39,14 @@ import {
  */
 
 export interface AuthMailJobData {
-  kind: "password_reset" | "email_verification";
+  /**
+   * `email_change_confirmation` — лист на СТАРУ адресу при зміні email
+   * підтвердженим користувачем (Better Auth `user.changeEmail`). Окремий
+   * kind, а не `email_verification`, бо це різні кроки флоу і в метриках
+   * (`authMailJobsProcessedTotal{kind}`) їх треба розрізняти: падіння саме
+   * confirmation-листа означає, що юзер не може змінити пошту взагалі.
+   */
+  kind: "password_reset" | "email_verification" | "email_change_confirmation";
   to: string;
   subject: string;
   text: string;
