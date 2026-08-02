@@ -179,6 +179,16 @@ const WHITELIST = [
     column: "client_updated_at",
     reason: "CloudSync column; not in Drizzle model for this path",
   },
+  // "user".last_seen_at (міграція 100) — телеметрія візитів для добового
+  // проходу підштовхувань. Пишеться throttled із `requireSession`, читається
+  // тим же проходом; жоден клієнтський запит її не бачить, тож у Drizzle-моделі
+  // `user` вона зайва.
+  {
+    table: "user",
+    column: "last_seen_at",
+    reason:
+      "server-only visit telemetry; read by the nudge sweep, never by the client",
+  },
   // push_subscriptions: soft-delete column not in Drizzle model
   {
     table: "push_subscriptions",
@@ -780,6 +790,15 @@ const SQL_ONLY_TABLES = [
   // Клієнт отримує з API лише `id` вставленого рядка, тож Drizzle-модель
   // не потрібна.
   "feedback_entries",
+  // Журнал надісланих нагадувань і проактивних пушів (міграція 099). Читає й
+  // пише лише серверний прохід (`apps/server/src/lib/reminders/`) сирим
+  // `INSERT ... ON CONFLICT DO NOTHING` як claim-before-send. Клієнт про цю
+  // таблицю не знає взагалі — він бачить лише сам пуш.
+  "push_reminder_log",
+  // Консерва денної поради Сержанта (міграція 100). Пишеться обробником
+  // `/api/coach/insight`, читається добовим проходом підштовхувань. Обидва —
+  // серверні; клієнту віддається текст поради у відповіді, не рядок таблиці.
+  "sergeant_nudge_cache",
 ];
 
 function isSqlOnlyAllowlisted(table) {

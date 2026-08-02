@@ -43,7 +43,14 @@
       "project": ["src/**/*.{js,jsx,ts,tsx}"],
       // Scaffolded module barrels — all carry @scaffolded + @nextStep markers per AGENTS.md
       // Hard Rule #10. Do NOT delete; wire the barrel consumers in follow-up PRs.
+      //
+      // `scripts/knip-respects-scaffolded.mjs` читає ці маркери сам, але CI
+      // ганяє сирий `pnpm knip`, який про них не знає — тож файл має бути
+      // і тут, і з маркером у шапці.
       "ignore": [
+        // Write-половина моделі травм (ADR-0083, #589): серверний бік і
+        // pull-шлях уже чекають на ці outbox-рядки, споживача ще нема.
+        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/core/errors/index.ts",
         "src/core/profile/index.ts",
         "src/modules/finyk/index.ts",
