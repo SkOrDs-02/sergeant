@@ -23,6 +23,7 @@ import {
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   FizrukDailyLogSnapshot,
+  FizrukInjurySnapshot,
   FizrukMonthlyPlanSnapshot,
   FizrukWorkoutTemplateSnapshot,
 } from "./diff/index.js";
@@ -209,6 +210,30 @@ export const WORKOUT_SET_UPSERT_SQL = buildLwwUpsert(WORKOUT_SET_UPSERT_SPEC);
 export const CUSTOM_EXERCISE_UPSERT_SQL = buildLwwUpsert(
   CUSTOM_EXERCISE_UPSERT_SPEC,
 );
+const INJURY_UPSERT_SPEC: TableSpec = {
+  table: "fizruk_injuries",
+  insertClause: `INSERT INTO fizruk_injuries
+       (id, user_id, site, started_at, cleared_at, note,
+        created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["id"],
+  updateColumns: [
+    { column: "site" },
+    { column: "started_at" },
+    // `cleared_at` MUST stay in the update set: clearing an injury is an
+    // update of this single column, and dropping it would make "зняти
+    // позначку" a silent no-op (ADR-0083).
+    { column: "cleared_at" },
+    { column: "note" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+  alignWidth: 13,
+};
+
 export const MEASUREMENT_UPSERT_SQL = buildLwwUpsert(MEASUREMENT_UPSERT_SPEC);
 export const DAILY_LOG_UPSERT_SQL = buildLwwUpsert(DAILY_LOG_UPSERT_SPEC);
 export const MONTHLY_PLAN_UPSERT_SQL = buildLwwUpsert(MONTHLY_PLAN_UPSERT_SPEC);
@@ -238,6 +263,12 @@ export const DAILY_LOG_DELETE_SQL = buildDelete({
 });
 export const WORKOUT_TEMPLATE_DELETE_SQL = buildDelete({
   table: "fizruk_workout_templates",
+  deletePolicy: "soft",
+  matchColumns: ["id", "user_id"],
+});
+export const INJURY_UPSERT_SQL = buildLwwUpsert(INJURY_UPSERT_SPEC);
+export const INJURY_DELETE_SQL = buildDelete({
+  table: "fizruk_injuries",
   deletePolicy: "soft",
   matchColumns: ["id", "user_id"],
 });
@@ -354,6 +385,37 @@ export async function softDeleteWorkoutTemplate(
     clientTs,
     clientTs,
     templateId,
+    userId,
+    clientTs,
+  ]);
+}
+
+export async function upsertInjury(
+  client: SqliteMigrationClient,
+  e: FizrukInjurySnapshot,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(INJURY_UPSERT_SQL, [
+    e.id,
+    userId,
+    e.site,
+    e.startedAt,
+    e.clearedAt ?? null,
+    e.note ?? "",
+    clientTs,
+    clientTs,
+  ]);
+}
+
+export async function softDeleteInjury(
+  client: SqliteMigrationClient,
+  injuryId: string,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(INJURY_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    injuryId,
     userId,
     clientTs,
   ]);

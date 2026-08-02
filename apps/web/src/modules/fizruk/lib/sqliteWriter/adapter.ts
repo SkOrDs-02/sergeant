@@ -27,8 +27,10 @@ import {
   setMonthlyPlan,
   softDeleteDailyLog,
   softDeleteRemovedChildren,
+  softDeleteInjury,
   softDeleteWorkoutTemplate,
   upsertDailyLog,
+  upsertInjury,
   upsertWorkoutTemplate,
   WORKOUT_DELETE_SQL,
   WORKOUT_ITEMS_CASCADE_SQL,
@@ -174,6 +176,39 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
         op: "delete",
         clientTs: rt.clientTs,
         row: { id: op.templateId, user_id: rt.userId },
+      });
+      return "applied";
+    },
+    "injury-upsert": async (client, op, rt) => {
+      await upsertInjury(client, op.injury, rt);
+      const i = op.injury;
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_injuries",
+        op: "insert",
+        clientTs: rt.clientTs,
+        row: {
+          id: i.id,
+          user_id: rt.userId,
+          site: i.site,
+          started_at: i.startedAt,
+          // `null` here is the whole meaning of "mark is active" — never
+          // default it to a timestamp (ADR-0083).
+          cleared_at: i.clearedAt ?? null,
+          note: i.note ?? "",
+          created_at: rt.clientTs,
+        },
+      });
+      return "applied";
+    },
+    "injury-delete": async (client, op, rt) => {
+      await softDeleteInjury(client, op.injuryId, rt);
+      fireSyncOutboxUpsert(client, {
+        userId: rt.userId,
+        table: "fizruk_injuries",
+        op: "delete",
+        clientTs: rt.clientTs,
+        row: { id: op.injuryId, user_id: rt.userId },
       });
       return "applied";
     },

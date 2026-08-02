@@ -1,5 +1,23 @@
 -- Migration: fizruk_injuries
 -- Created: 2026-08-01
+-- Renumbered 096 → 097 on 2026-08-02.
+--
+-- ЧОМУ ПЕРЕНОМЕРОВАНО І ЧОМУ IF NOT EXISTS. Ця міграція і
+-- `096_finyk_fizruk_pk_text.sql` (#573) отримали номер 096 паралельно: обидва
+-- PR-и готувались від бази без сусіда й змерджились один за одним без ребейзу.
+-- На момент виявлення ОБИДВІ вже успішно застосовані в проді (deploy-api
+-- прогони ac2cdb6 і 913dbad), тобто стан БД коректний — зламаний лише
+-- процесний інваріант Hard Rule #4.
+--
+-- Раннер (`packages/db-schema/src/migrate/runner.ts`) веде леджер ЗА ІМЕНЕМ
+-- ФАЙЛУ і пропускає вже застосовані. Тому перейменування робить `097_` новим
+-- іменем, якого в леджері немає, і прод виконає цей файл ПОВТОРНО поверх уже
+-- створеної таблиці. Саме тому кожен DDL нижче має `IF NOT EXISTS`: повторний
+-- прогон мусить бути чесним no-op, а не падінням pre-deploy.
+--
+-- `096_fizruk_injuries.sql` лишиться в леджері прода як осиротіле ім'я — це
+-- нешкідливо: раннер читає леджер лише щоб пропускати, і зайвий рядок ніколи
+-- ні з чим не зіставиться.
 --
 -- Модель «не можна» (ADR-0083): користувач позначає травмовану зону, і recovery
 -- перестає рекомендувати вправи, що її навантажують. До цієї міграції поняття
@@ -20,7 +38,7 @@
 -- `activeInjurySites`), тож невідоме значення деградує в «не блокує», а не в
 -- помилку.
 
-CREATE TABLE fizruk_injuries (
+CREATE TABLE IF NOT EXISTS fizruk_injuries (
   -- TEXT, а НЕ uuid. Клієнт генерує id з доменним префіксом (`inj_<uuid>`),
   -- як і решта fizruk-сутностей. Оголошення колонки як `uuid` дало б 22P02 на
   -- кожному push і `apply_failed`, що осідає в клієнтському sync_op_outbox і
@@ -51,11 +69,11 @@ CREATE TABLE fizruk_injuries (
 
 -- Гаряча вибірка одна: «всі активні позначки цього користувача» — її робить
 -- кожен рендер списку вправ, тож індекс частковий і покриває обидві умови.
-CREATE INDEX fizruk_injuries_user_active_idx
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx
   ON fizruk_injuries (user_id, site)
   WHERE deleted_at IS NULL AND cleared_at IS NULL;
 
 -- Історія позначок по зоні (екран «що болить» + майбутній ревізит забутих).
-CREATE INDEX fizruk_injuries_user_started_at_idx
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx
   ON fizruk_injuries (user_id, started_at DESC)
   WHERE deleted_at IS NULL;
