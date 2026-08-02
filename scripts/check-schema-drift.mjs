@@ -735,6 +735,11 @@ const SQL_ONLY_TABLES = [
   "openclaw_write_audit",
   // Push delivery — реєстр девайсів і аудит відправок; пише лише сервер.
   "push_devices",
+  // Ідемпотентний журнал нагадувань: рядок вставляється ДО відправки, тому
+  // дублікат ловиться унікальним ключем, а не станом у памʼяті. Читає й пише
+  // виключно серверний sweep (`apps/server/src/lib/reminders/sweep.ts`) —
+  // клієнту ця таблиця не видна ні через Drizzle, ні через API.
+  "push_reminder_log",
   "push_send_audit",
   // Telegram alerting — ack-и алертів та архів топіків; server-only.
   "tg_alert_acks",

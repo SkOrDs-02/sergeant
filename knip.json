@@ -48,6 +48,12 @@
         "src/core/profile/index.ts",
         "src/modules/finyk/index.ts",
         "src/modules/fizruk/index.ts",
+        // Не барель, а @scaffolded-модуль: локальний запис позначок травм
+        // (ADR-0083), який поки не підключений — робочий шлях іде через
+        // `useInjuries` → `triggerFizrukDualWrite`. Маркер у файлі поважає
+        // `pnpm dead-code:files`, але CI-джоба «Dead Code (Knip)» запускає
+        // сирий `knip`, тож потрібен ще й цей запис. TODO(0589-injury-repo).
+        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/modules/nutrition/index.ts",
         "src/modules/routine/index.ts",
         "src/shared/lib/insights/index.ts"
