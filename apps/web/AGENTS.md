@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -44,7 +44,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard` + `seedDemoData/*`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 
-**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це ~365 kB. Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
+**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це було ~365 kB, на 2026-08-02 — 430 kB, і з того дня воно **гейтиться окремо** (`pnpm --filter @sergeant/web size:eager`). Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
 
 **Якщо потрібно підняти ліміт:** у тому ж PR, що додає dep / feature; explicit обґрунтування у PR-description. Bypass: label `audit-exception` (як для всіх optional CI checks).
 
