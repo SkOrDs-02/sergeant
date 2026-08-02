@@ -9,18 +9,21 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mark = vi.fn(async () => []);
-const clear = vi.fn(async () => null);
+const clear = vi.fn(async () => true);
 vi.mock("../hooks/useInjuries", () => ({
   useInjuries: () => ({
-    activeInjuries: [
+    injuries: [],
+    openMarks: [
       {
         id: "inj-1",
-        userId: "u1",
-        muscleGroup: "chest",
-        notedAt: "2026-08-01T10:00:00.000Z",
+        site: "chest",
+        startedAt: "2026-08-01T10:00:00.000Z",
         clearedAt: null,
+        note: "",
+        deletedAt: null,
       },
     ],
+    activeSites: new Set(["chest"]),
     mark,
     clear,
   }),
@@ -37,14 +40,14 @@ afterEach(() => {
 });
 
 describe("InjuryManager", () => {
-  it("shows active marks and clears them explicitly", async () => {
+  it("shows open marks and clears them explicitly", async () => {
     render(<InjuryManager />);
     expect(screen.getAllByText("Груди").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Зняти" }));
     await waitFor(() => expect(clear).toHaveBeenCalledWith("inj-1"));
   });
 
-  it("allows selecting multiple canonical groups", async () => {
+  it("allows selecting several muscle groups", async () => {
     render(<InjuryManager />);
     fireEvent.click(screen.getByRole("button", { name: "Трицепс" }));
     fireEvent.click(screen.getByRole("button", { name: "Литки" }));
@@ -52,5 +55,26 @@ describe("InjuryManager", () => {
     await waitFor(() =>
       expect(mark).toHaveBeenCalledWith(["triceps", "calves"]),
     );
+  });
+
+  it("offers joints and spinal segments, not only atlas muscles", async () => {
+    // The whole point of ADR-0083: a muscle-only keyspace cannot name knee or
+    // shoulder pain. If these disappear, the model silently reverts to the
+    // broken pre-0083 behaviour with no test failure elsewhere.
+    render(<InjuryManager />);
+    fireEvent.click(screen.getByRole("button", { name: "Коліно" }));
+    fireEvent.click(screen.getByRole("button", { name: "Поперек" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позначити біль" }));
+    await waitFor(() =>
+      expect(mark).toHaveBeenCalledWith(["knee", "spine-lumbar"]),
+    );
+  });
+
+  it("does not offer a site that already carries an open mark", () => {
+    render(<InjuryManager />);
+    const chestChip = screen
+      .getAllByRole("button", { name: "Груди" })
+      .find((el) => el.hasAttribute("disabled"));
+    expect(chestChip).toBeDefined();
   });
 });

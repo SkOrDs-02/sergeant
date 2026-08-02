@@ -92,8 +92,8 @@ export function NutritionSection() {
     loadNutritionPrefs(),
   );
   // Persist initial prefs at mount and capture any storage error synchronously.
-  // Subsequent persists happen in patchPrefs / resetDailyTargets event handlers
-  // to avoid calling setState in a useEffect body (react-hooks/set-state-in-effect).
+  // Subsequent persists happen in the `patchPrefs` event handler to avoid
+  // calling setState in a useEffect body (react-hooks/set-state-in-effect).
   const [storageErr, setStorageErr] = useState<string>(() =>
     persistAndCaptureErr(loadNutritionPrefs()),
   );
@@ -129,17 +129,6 @@ export function NutritionSection() {
     [pantries],
   );
 
-  const resetDailyTargets = useCallback(() => {
-    const d = defaultNutritionPrefs();
-    patchPrefs({
-      dailyTargetKcal: d.dailyTargetKcal,
-      dailyTargetProtein_g: d.dailyTargetProtein_g,
-      dailyTargetFat_g: d.dailyTargetFat_g,
-      dailyTargetCarbs_g: d.dailyTargetCarbs_g,
-    });
-    // patchPrefs already persists and updates storageErr
-  }, [patchPrefs]);
-
   const navigate = useNavigate();
 
   const openPantryManager = useCallback(() => {
@@ -161,52 +150,6 @@ export function NutritionSection() {
           {storageErr}
         </div>
       )}
-
-      <SettingsSubGroup title="Денні цілі (KБЖУ)" defaultOpen>
-        <p className="text-style-caption text-subtle leading-snug">
-          Значення показуються у прогрес-кільці на головному екрані Їжі і в
-          денних підсумках. Залиш порожнім, щоб ціль не враховувалась.
-        </p>
-        <div className="space-y-1">
-          <NumberField
-            label="Калорії"
-            suffix="ккал"
-            value={prefs.dailyTargetKcal}
-            placeholder="2000"
-            onCommit={(v) => patchPrefs({ dailyTargetKcal: v })}
-          />
-          <NumberField
-            label="Білки"
-            suffix="г"
-            value={prefs.dailyTargetProtein_g}
-            placeholder="120"
-            onCommit={(v) => patchPrefs({ dailyTargetProtein_g: v })}
-          />
-          <NumberField
-            label="Жири"
-            suffix="г"
-            value={prefs.dailyTargetFat_g}
-            placeholder="70"
-            onCommit={(v) => patchPrefs({ dailyTargetFat_g: v })}
-          />
-          <NumberField
-            label="Вуглеводи"
-            suffix="г"
-            value={prefs.dailyTargetCarbs_g}
-            placeholder="230"
-            onCommit={(v) => patchPrefs({ dailyTargetCarbs_g: v })}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="border border-line"
-          onClick={resetDailyTargets}
-        >
-          Скинути цілі
-        </Button>
-      </SettingsSubGroup>
 
       <SettingsSubGroup title="Вода">
         <p className="text-style-caption text-subtle leading-snug">
@@ -266,23 +209,6 @@ export function NutritionSection() {
         >
           Відкрити менеджер комори →
         </Button>
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title="Сканування продуктів">
-        <p className="text-style-caption text-subtle leading-snug">
-          Це довідка про сканування, а не окремий перемикач. Основна дія живе в
-          Їжа → Комора та у діалозі «Додати прийом їжі»: натисни іконку
-          штрихкоду, наведи камеру або введи код вручну.
-        </p>
-        <p className="text-style-caption text-subtle leading-snug">
-          Камері потрібен дозвіл у браузері або системі. Знайдений продукт
-          підставляється у форму прийому їжі; якщо збігу немає, можна привʼязати
-          штрихкод до існуючої страви. У вебі сканер працює через
-          <code className="mx-1 px-1 py-0.5 rounded bg-panelHi text-text">
-            BarcodeDetector
-          </code>
-          API або відкриту камеру з розпізнаванням.
-        </p>
       </SettingsSubGroup>
     </SettingsGroup>
   );

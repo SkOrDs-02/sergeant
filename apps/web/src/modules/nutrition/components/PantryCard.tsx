@@ -23,9 +23,11 @@ import type { PantryItem } from "../lib/pantryTextParser";
  */
 type PantryItemView = Partial<PantryItem> & { name?: string };
 
+// Назви описують спосіб вводу, а не те, що вводиться: «Продукт»/«Список»
+// читалось як два різні типи запису, ще й плуталось із вкладкою «Покупки».
 const INPUT_MODES = [
-  { id: "single", label: "Продукт" },
-  { id: "list", label: "Список" },
+  { id: "single", label: "По одному" },
+  { id: "list", label: "Списком" },
 ];
 
 function ChevronIcon({ open }: { open: boolean }) {

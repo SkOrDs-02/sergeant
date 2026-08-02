@@ -263,7 +263,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
               <div
                 key={i}
                 style={{ height: 12, fontSize: 10, lineHeight: "12px" }}
-                className="text-subtle/70 text-right pr-1 select-none"
+                className="text-subtle text-right pr-1 select-none"
               >
                 {lbl}
               </div>
@@ -288,7 +288,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                     lineHeight: "14px",
                     whiteSpace: "nowrap",
                   }}
-                  className="text-subtle/80 select-none"
+                  className="text-subtle select-none"
                 >
                   {monthMarkers.find((m) => m.weekIdx === w)?.label ?? ""}
                 </div>

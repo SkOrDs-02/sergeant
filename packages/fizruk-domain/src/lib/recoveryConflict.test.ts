@@ -49,43 +49,59 @@ describe("recoveryConflictsForExercise", () => {
   });
 
   it("defaults muscles and the recovery map when omitted", () => {
-    expect(recoveryConflictsForExercise(null)).toEqual({
+    const clear = {
       red: [],
       yellow: [],
-      hasWarning: false,
-      hasHardBlock: false,
-      hasInjuryBlock: false,
-    });
-    expect(recoveryConflictsForExercise(undefined, {})).toEqual({
-      red: [],
-      yellow: [],
-      hasWarning: false,
-      hasHardBlock: false,
-      hasInjuryBlock: false,
-    });
-  });
-
-  it("exposes an injury-specific hard block", () => {
-    const ex = { muscles: { primary: ["chest"], secondary: [] } };
-    const by = {
-      chest: {
-        label: "Груди",
-        status: "red" as const,
-        injured: true,
+      injury: {
+        blocked: false,
+        viaMuscles: [],
+        viaZones: [],
+        coverage: "muscle-and-zone",
       },
+      hasWarning: false,
+      hasHardBlock: false,
     };
-    const cf = recoveryConflictsForExercise(ex, by);
-    expect(cf.hasHardBlock).toBe(true);
-    expect(cf.hasInjuryBlock).toBe(true);
-    expect(cf.red[0]?.injured).toBe(true);
+    expect(recoveryConflictsForExercise(null)).toEqual(clear);
+    expect(recoveryConflictsForExercise(undefined, {})).toEqual(clear);
   });
 
-  it("hasHardBlock is true only when there is at least one red muscle", () => {
+  it("hasHardBlock stays false for a yellow muscle with no injury mark", () => {
     const ex = { muscles: { primary: [], secondary: ["back"] } };
     const by = { back: { label: "Спина", status: "yellow" as const } };
     const cf = recoveryConflictsForExercise(ex, by);
     expect(cf.hasWarning).toBe(true);
     expect(cf.hasHardBlock).toBe(false);
+  });
+
+  it("an injury mark hard-blocks a fully recovered exercise", () => {
+    // Nothing is fatigued — the block comes purely from the "не можна" model,
+    // and through the ZONE half that muscle data cannot express (ADR-0083).
+    const ex = {
+      exerciseId: "bench_press_barbell",
+      muscles: { primary: ["pectoralis_major"], secondary: [] },
+    };
+    const cf = recoveryConflictsForExercise(
+      ex,
+      {},
+      new Set(["shoulder"] as const),
+    );
+    expect(cf.red).toEqual([]);
+    expect(cf.hasHardBlock).toBe(true);
+    expect(cf.injury.viaZones).toEqual(["shoulder"]);
+  });
+
+  it("keeps exerciseId when reshaping a workout item, so zones still resolve", () => {
+    const cf = recoveryConflictsForWorkoutItem(
+      {
+        exerciseId: "squat_barbell",
+        musclesPrimary: ["quadriceps"],
+        musclesSecondary: [],
+      },
+      {},
+      new Set(["knee"] as const),
+    );
+    expect(cf.injury.viaZones).toEqual(["knee"]);
+    expect(cf.injury.coverage).toBe("muscle-and-zone");
   });
 });
 

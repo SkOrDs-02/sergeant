@@ -1,6 +1,6 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
 >
 > **Update 2026-07-29:** in-app landing і standalone `apps/landing` shipped у коді; marketing landing має Telegram-конверсію, OG, cookieless PostHog і окремий Vercel config. Зовнішні `sergeant.com.ua` DNS/production-deploy треба підтвердити в Vercel. Public launch далі блокується legal/live payment env/cookie consent/store readiness.
@@ -89,13 +89,13 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 **Source of truth:** [00 — Readiness audit](./00-readiness-audit.md). Тут — короткий зріз.
 
-| Поверхня                        | Deploy?                                                           | Auth?                                                       | Observability?                        | Release playbook?                                                                                                                      | Real-user tested?          | Найбільший блокер                                                                         |
-| ------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
-| `apps/web`                      | ✅ prod Vercel                                                    | 🟡 email+password live; Apple/Google UI shipped (env-gated) | ✅ Sentry+PostHog+CSP-RO              | ✅ [release.md](../../../00-start/playbooks/release.md) + [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md) | 🟡 internal+demo only      | Legal publish; live Stripe env; cookie banner                                             |
-| `apps/server`                   | ✅ prod Hetzner/Coolify (`Dockerfile.api`)                        | ✅ Better Auth bearer/cookie                                | ✅ Pino+Prom+Sentry+alert-bot         | ✅ [release-web-and-api.md](../../../00-start/playbooks/release-web-and-api.md)                                                        | 🟡 internal only           | Live payment prod keys + webhook endpoint verification                                    |
-| `apps/mobile-shell` (Capacitor) | 🟡 Android AAB/APK CI ready, iOS CI scaffold (no Apple secrets)   | ✅ bearer reuses web                                        | ✅ Sentry WebView                     | ✅ [release-mobile-shell.md](../../../00-start/playbooks/release-mobile-shell.md)                                                      | ❌ no external testers yet | Apple Developer enrollment ($99 + D-U-N-S); store metadata + assets                       |
-| `apps/mobile` (Expo)            | ❌ internal dev-client only                                       | ✅ bearer                                                   | 🟡 Sentry+PostHog wired, no prod DSN  | ✅ [release-expo-mobile.md](../../../00-start/playbooks/release-expo-mobile.md)                                                        | ❌ no external testers     | EAS prod profile lock; Apple/Google accounts; Nutrition Phase 7 (recipes AI, photo-AI) 🟥 |
-| `apps/landing`                  | 🟡 build/config shipped; external Vercel prod + domain unverified | n/a                                                         | 🟡 cookieless PostHog when configured | ✅ [`apps/landing/README.md`](../../../../apps/landing/README.md)                                                                      | ❌ unverified externally   | Confirm Vercel project/root, `sergeant.com.ua`, Telegram CTA/OG                           |
+| Поверхня                        | Deploy?                                                           | Auth?                                                       | Observability?                        | Release playbook?                                                                               | Real-user tested?          | Найбільший блокер                                                                         |
+| ------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------- |
+| `apps/web`                      | ✅ prod Vercel                                                    | 🟡 email+password live; Apple/Google UI shipped (env-gated) | ✅ Sentry+PostHog+CSP-RO              | ✅ [release.md § Web + API](../../../00-start/playbooks/release.md#1-web--api)                  | 🟡 internal+demo only      | Legal publish; live Stripe env; cookie banner                                             |
+| `apps/server`                   | ✅ prod Hetzner/Coolify (`Dockerfile.api`)                        | ✅ Better Auth bearer/cookie                                | ✅ Pino+Prom+Sentry+alert-bot         | ✅ [release.md § Web + API](../../../00-start/playbooks/release.md#1-web--api)                  | 🟡 internal only           | Live payment prod keys + webhook endpoint verification                                    |
+| `apps/mobile-shell` (Capacitor) | 🟡 Android AAB/APK CI ready, iOS CI scaffold (no Apple secrets)   | ✅ bearer reuses web                                        | ✅ Sentry WebView                     | ✅ [release.md § Mobile shell](../../../00-start/playbooks/release.md#2-mobile-shell-capacitor) | ❌ no external testers yet | Apple Developer enrollment ($99 + D-U-N-S); store metadata + assets                       |
+| `apps/mobile` (Expo)            | ❌ internal dev-client only                                       | ✅ bearer                                                   | 🟡 Sentry+PostHog wired, no prod DSN  | ✅ [release.md § Expo](../../../00-start/playbooks/release.md#3-expo)                           | ❌ no external testers     | EAS prod profile lock; Apple/Google accounts; Nutrition Phase 7 (recipes AI, photo-AI) 🟥 |
+| `apps/landing`                  | 🟡 build/config shipped; external Vercel prod + domain unverified | n/a                                                         | 🟡 cookieless PostHog when configured | ✅ [`apps/landing/README.md`](../../../../apps/landing/README.md)                               | ❌ unverified externally   | Confirm Vercel project/root, `sergeant.com.ua`, Telegram CTA/OG                           |
 
 **Ключові ADRs / initiatives:**
 
@@ -335,9 +335,7 @@ Vite/React лендінгом. До public launch лишається підтв�
 ### Release playbooks
 
 - [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — canonical release flow
-- [`docs/00-start/playbooks/release-web-and-api.md`](../../../00-start/playbooks/release-web-and-api.md)
-- [`docs/00-start/playbooks/release-mobile-shell.md`](../../../00-start/playbooks/release-mobile-shell.md)
-- [`docs/00-start/playbooks/release-expo-mobile.md`](../../../00-start/playbooks/release-expo-mobile.md)
+- [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) — web + API, Capacitor shell, Expo
 - [`docs/00-start/playbooks/test-backup-restore.md`](../../../00-start/playbooks/test-backup-restore.md)
 - [`docs/00-start/playbooks/hotfix-prod-regression.md`](../../../00-start/playbooks/hotfix-prod-regression.md)
 

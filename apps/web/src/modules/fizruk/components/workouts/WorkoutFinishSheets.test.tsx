@@ -45,7 +45,7 @@ function makeFlash(over: Partial<FinishFlashState> = {}): FinishFlashState {
     workoutId: "w-1",
     energy: null,
     mood: null,
-    injuryMuscles: [],
+    injurySites: [],
     durationSec: 3600,
     items: 5,
     tonnageKg: 1000,

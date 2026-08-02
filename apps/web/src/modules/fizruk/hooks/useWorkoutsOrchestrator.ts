@@ -252,7 +252,7 @@ export function useWorkoutsOrchestrator(
         return;
       }
       const conflicts = recoveryConflictsForExercise(ex, rec.by);
-      if (conflicts.hasInjuryBlock) {
+      if (conflicts.injury.blocked) {
         toast.warning(
           "Ти позначив біль у цій групі. Ми не радимо її навантажувати.",
         );

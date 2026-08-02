@@ -12,9 +12,10 @@ import {
 } from "@shared/lib/modules/crossModulePrompt";
 import { formatDurShort } from "@sergeant/fizruk-domain";
 import {
-  BODY_ATLAS_MUSCLE_IDS,
-  BODY_ATLAS_MUSCLE_LABELS_UK,
+  INJURY_SITE_IDS,
+  INJURY_SITE_LABELS_UK,
 } from "@sergeant/fizruk-domain/data";
+import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 // `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
@@ -43,6 +44,7 @@ export function WorkoutFinishSheets({
   onDone,
 }: WorkoutFinishSheetsProps) {
   const { mark } = useInjuries();
+  const injuryCopy = messages.fizruk.injuries;
   const [savingInjuries, setSavingInjuries] = useState(false);
   const trapRef = useRef<HTMLDivElement | null>(null);
   const closeFinish = () => {
@@ -202,16 +204,15 @@ export function WorkoutFinishSheets({
                 id="fizruk-injury-title"
                 className="text-style-label text-text"
               >
-                Щось болить?
+                {injuryCopy.finishTitle}
               </div>
               <p className="text-style-caption text-subtle mt-1">
-                Опційно познач одну або кілька груп. Медичних порад тут немає:
-                позначка лише прибере ці м&apos;язи з recovery-порад.
+                {injuryCopy.finishDescription}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {BODY_ATLAS_MUSCLE_IDS.map((group) => {
-                const selected = finishFlash.injuryMuscles.includes(group);
+              {INJURY_SITE_IDS.map((group) => {
+                const selected = finishFlash.injurySites.includes(group);
                 return (
                   <button
                     key={group}
@@ -228,17 +229,17 @@ export function WorkoutFinishSheets({
                         current
                           ? {
                               ...current,
-                              injuryMuscles: selected
-                                ? current.injuryMuscles.filter(
+                              injurySites: selected
+                                ? current.injurySites.filter(
                                     (item) => item !== group,
                                   )
-                                : [...current.injuryMuscles, group],
+                                : [...current.injurySites, group],
                             }
                           : current,
                       )
                     }
                   >
-                    {BODY_ATLAS_MUSCLE_LABELS_UK[group]}
+                    {INJURY_SITE_LABELS_UK[group]}
                   </button>
                 );
               })}
@@ -254,18 +255,18 @@ export function WorkoutFinishSheets({
                   )
                 }
               >
-                Нічого не позначати
+                {injuryCopy.skip}
               </Button>
               <Button
                 module="fizruk"
                 className="flex-1 h-12"
                 disabled={
-                  savingInjuries || finishFlash.injuryMuscles.length === 0
+                  savingInjuries || finishFlash.injurySites.length === 0
                 }
                 onClick={async () => {
                   setSavingInjuries(true);
                   try {
-                    await mark(finishFlash.injuryMuscles);
+                    await mark(finishFlash.injurySites);
                     setFinishFlash(
                       (current) => current && { ...current, step: "summary" },
                     );

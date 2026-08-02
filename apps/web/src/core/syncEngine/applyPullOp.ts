@@ -29,6 +29,9 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  // Модель «не можна» (ADR-0083). Без цього рядка позначки травм із іншого
+  // пристрою мовчки відкидаються на pull — тобто травма, позначена на
+  // телефоні, не блокує вправи у вебі.
   "fizruk_injuries",
   "nutrition_meals",
   "nutrition_pantries",

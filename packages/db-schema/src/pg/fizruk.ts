@@ -7,7 +7,6 @@ import {
   real,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -22,7 +21,9 @@ import { sql } from "drizzle-orm";
 export const fizrukWorkouts = pgTable(
   "fizruk_workouts",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
@@ -60,8 +61,10 @@ export const fizrukWorkouts = pgTable(
 export const fizrukWorkoutItems = pgTable(
   "fizruk_workout_items",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    workoutId: uuid("workout_id").notNull(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    workoutId: text("workout_id").notNull(),
     userId: text("user_id").notNull(),
     exerciseId: text("exercise_id").notNull(),
     nameUk: text("name_uk").notNull(),
@@ -98,8 +101,10 @@ export const fizrukWorkoutItems = pgTable(
 export const fizrukWorkoutSets = pgTable(
   "fizruk_workout_sets",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    workoutItemId: uuid("workout_item_id").notNull(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    workoutItemId: text("workout_item_id").notNull(),
     userId: text("user_id").notNull(),
     weightKg: real("weight_kg").notNull().default(0),
     reps: integer().notNull().default(0),
@@ -130,7 +135,9 @@ export const fizrukWorkoutSets = pgTable(
 export const fizrukCustomExercises = pgTable(
   "fizruk_custom_exercises",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -157,7 +164,9 @@ export const fizrukCustomExercises = pgTable(
 export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
     weightKg: real("weight_kg"),
@@ -198,7 +207,9 @@ export const fizrukMeasurements = pgTable(
 export const fizrukDailyLog = pgTable(
   "fizruk_daily_log",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     entryAt: timestamp("entry_at", { withTimezone: true }).notNull(),
     weightKg: real("weight_kg"),
@@ -316,7 +327,9 @@ export const fizrukWellbeing = pgTable(
 export const fizrukWorkoutTemplates = pgTable(
   "fizruk_workout_templates",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     exerciseIds: jsonb("exercise_ids").notNull().default([]),
@@ -340,26 +353,42 @@ export const fizrukWorkoutTemplates = pgTable(
 /**
  * Postgres schema for `fizruk_injuries`.
  *
- * Mirrors migration `094_fizruk_injuries.sql`. Rows are append-only injury
- * observations; setting `cleared_at` ends the active restriction without
- * deleting its history.
+ * Mirrors migration `096_fizruk_injuries.sql`. Backs the "не можна" model —
+ * a user-placed mark on an injured body zone that removes matching exercises
+ * from recovery advice until the mark is cleared (ADR-0083, канон fizruk §5).
+ *
+ * `site` spans a keyspace WIDER than the 18 atlas muscle groups: it also
+ * carries joints and spinal segments (`knee`, `elbow`, `shoulder`, …), because
+ * a muscle-only model cannot name the injuries lifters actually get and would
+ * report "враховано" while still recommending the movement (audit E-4).
+ * Canonical list: `packages/fizruk-domain/src/data/injurySites.ts`.
  */
 export const fizrukInjuries = pgTable(
   "fizruk_injuries",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    // TEXT, not uuid — the client mints `inj_<uuid>`. A uuid column would
+    // fail every push with 22P02, the exact bug migrations 094/095 fixed.
+    id: text().primaryKey(),
     userId: text("user_id").notNull(),
-    muscleGroup: text("muscle_group").notNull(),
-    notedAt: timestamp("noted_at", { withTimezone: true }).notNull(),
+    site: text().notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    // NULL = the mark is still active. Clearing is a manual user action only.
     clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    note: text().notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    index("fizruk_injuries_user_noted_idx").on(
-      table.userId,
-      sql`${table.notedAt} DESC`,
-    ),
     index("fizruk_injuries_user_active_idx")
-      .on(table.userId, table.muscleGroup)
-      .where(sql`${table.clearedAt} IS NULL`),
+      .on(table.userId, table.site)
+      .where(sql`${table.deletedAt} IS NULL AND ${table.clearedAt} IS NULL`),
+    index("fizruk_injuries_user_started_at_idx")
+      .on(table.userId, sql`${table.startedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
   ],
 );

@@ -115,11 +115,11 @@ If a phase requires Chrome MCP smoke verification (Phase 1, 2, 4 visual changes)
 - ❌ Didn't load specialist skill for the touched surface.
 - ❌ Didn't use Chrome MCP after visual change when preview was available.
 - ❌ Changed v1 token without `@deprecated` marker (T4 pattern).
-- ❌ Raw hex in `className` (Hard Rule #11).
-- ❌ `bg-white dark:bg-stone-800` instead of `bg-surface-glass` (Hard Rule #13).
-- ❌ `focus:` instead of `focus-visible:` (Hard Rule #14).
-- ❌ Text smaller than 12px floor (Hard Rule #16).
-- ❌ Two ambient animations concurrent (Hard Rule #17).
+- ❌ Raw hex in `className` (дизайн-конвенція).
+- ❌ `bg-white dark:bg-stone-800` instead of `bg-surface-glass` (дизайн-конвенція).
+- ❌ `focus:` instead of `focus-visible:` (дизайн-конвенція).
+- ❌ Text smaller than 12px floor (дизайн-конвенція).
+- ❌ Two ambient animations concurrent (дизайн-конвенція).
 - ❌ Codemod swap without verifying hero gradient visible through glass alpha (Phase 2 C3, C4, finyk overview, fizruk dashboard).
 - ❌ `git push` without explicit per-push user authorization.
 - ❌ Skipped `pnpm lint:skills && pnpm skills:lock` after SKILL.md changes.

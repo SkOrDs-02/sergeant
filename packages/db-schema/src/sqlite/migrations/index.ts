@@ -861,24 +861,33 @@ CREATE INDEX IF NOT EXISTS fizruk_workout_templates_user_idx_lite
 `;
 
 /**
- * Additive Fizruk injury history for client-side safety filtering.
- * Mirrors Postgres migration `094_fizruk_injuries.sql`.
+ * Injury marks — the client half of the "не можна" model (ADR-0083).
+ *
+ * Mirrors `apps/server/src/migrations/096_fizruk_injuries.sql`. `site` spans
+ * atlas muscle groups AND joints / spinal segments; the canonical keyspace is
+ * `packages/fizruk-domain/src/data/injurySites.ts`. `cleared_at IS NULL`
+ * means the mark is still active — there is no time-based expiry.
  */
 const FIZRUK_003_INJURIES_SQL = `
 CREATE TABLE IF NOT EXISTS fizruk_injuries (
-  id            TEXT PRIMARY KEY,
-  user_id       TEXT NOT NULL,
-  muscle_group  TEXT NOT NULL,
-  noted_at      TEXT NOT NULL,
-  cleared_at    TEXT
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  site        TEXT NOT NULL,
+  started_at  TEXT NOT NULL,
+  cleared_at  TEXT,
+  note        TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
 );
 
-CREATE INDEX IF NOT EXISTS fizruk_injuries_user_noted_idx_lite
-  ON fizruk_injuries (user_id, noted_at DESC);
-
 CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx_lite
-  ON fizruk_injuries (user_id, muscle_group)
-  WHERE cleared_at IS NULL;
+  ON fizruk_injuries (user_id, site)
+  WHERE deleted_at IS NULL AND cleared_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx_lite
+  ON fizruk_injuries (user_id, started_at DESC)
+  WHERE deleted_at IS NULL;
 `;
 
 /**
@@ -893,6 +902,9 @@ CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx_lite
  *
  * `002_fizruk_full_state.sql` extends the schema to full LS-state
  * coverage (Stage 12 / PR #070f-schema).
+ *
+ * `003_fizruk_injuries.sql` adds the injury-mark table behind the "не можна"
+ * model (ADR-0083); it mirrors server migration `096_fizruk_injuries.sql`.
  */
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },

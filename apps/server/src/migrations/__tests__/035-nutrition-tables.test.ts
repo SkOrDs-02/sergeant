@@ -226,7 +226,10 @@ describe("035_nutrition_tables migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // 095_nutrition_pk_text.sql widened id uuid -> text: the client
+      // sends legacy-fallback ids like `meal_mig_<ts>_<idx>_<uuid>`, not
+      // bare UUIDs, so the original `uuid` column type 22P02'd every push.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["user_id"]!.nullable).toBe("NO");
@@ -331,8 +334,16 @@ describe("035_nutrition_tables migration", () => {
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
 
+      // 095_nutrition_pk_text.sql widens id/pantry_id/active_pantry_id
+      // uuid -> text on top of these tables. It must be unwound before
+      // 035's down.sql drops them (its ALTER TABLE targets wouldn't
+      // exist otherwise) and re-applied after 035's up.sql recreates
+      // them fresh as uuid — else `after` would still be uuid while
+      // `before` (captured post-095) is text.
+      await execSqlFile(pool, "095_nutrition_pk_text.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.sql");
+      await execSqlFile(pool, "095_nutrition_pk_text.sql");
 
       const after = {
         tables: await listOwnTables(pool),

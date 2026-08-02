@@ -236,46 +236,49 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.dailyLog[0]!.weightKg).toBe(81.2);
   });
 
-  it("hydrates active and cleared injury history newest-first", async () => {
+  it("hydrates open and cleared injury marks newest-first", async () => {
     await handle.client.run(
       `INSERT INTO fizruk_injuries
-         (id, user_id, muscle_group, noted_at, cleared_at)
-       VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
+         (id, user_id, site, started_at, cleared_at, note)
+       VALUES (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)`,
       [
         "inj-old",
         UID,
         "chest",
         "2026-05-01T07:00:00.000Z",
         "2026-05-02T07:00:00.000Z",
+        "",
         "inj-new",
         UID,
-        "lower-back",
+        "knee",
         "2026-05-03T07:00:00.000Z",
         null,
+        "",
       ],
     );
 
     const cache = await refreshFizrukSqliteState(handle.client, UID);
+    // `knee` is a joint, not an atlas muscle — the reader must carry the
+    // wider ADR-0083 keyspace through untouched.
     expect(cache.injuries).toEqual([
       {
         id: "inj-new",
-        userId: UID,
-        muscleGroup: "lower-back",
-        notedAt: "2026-05-03T07:00:00.000Z",
+        site: "knee",
+        startedAt: "2026-05-03T07:00:00.000Z",
         clearedAt: null,
+        note: "",
+        deletedAt: null,
       },
       {
         id: "inj-old",
-        userId: UID,
-        muscleGroup: "chest",
-        notedAt: "2026-05-01T07:00:00.000Z",
+        site: "chest",
+        startedAt: "2026-05-01T07:00:00.000Z",
         clearedAt: "2026-05-02T07:00:00.000Z",
+        note: "",
+        deletedAt: null,
       },
     ]);
   });
-});
-
-describe("getCachedFizrukSqliteState", () => {
   it("returns the empty cache before any refresh", () => {
     const cache = getCachedFizrukSqliteState();
     expect(cache.refreshedAt).toBeNull();

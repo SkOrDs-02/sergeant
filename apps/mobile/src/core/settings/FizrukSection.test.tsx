@@ -36,8 +36,8 @@ describe("FizrukSection", () => {
     fireEvent.press(getByText("Фізрук"));
 
     expect(getByText("Таймер відпочинку")).toBeTruthy();
-    expect(getByText("Базові (compound)")).toBeTruthy();
-    expect(getByText("Ізолюючі")).toBeTruthy();
+    expect(getByText("Базові")).toBeTruthy();
+    expect(getByText("Ізоляція")).toBeTruthy();
     expect(getByText("Кардіо")).toBeTruthy();
 
     expect(getByText("Резервні копії та дані")).toBeTruthy();

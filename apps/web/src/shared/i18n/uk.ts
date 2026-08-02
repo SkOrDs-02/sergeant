@@ -63,6 +63,12 @@ export const messages = {
     anonymousMigrationFailure:
       "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
     anonymousMigrationRetry: "Повторити",
+    anonymousMigrationDefer: "Продовжити, перенесу пізніше",
+    anonymousMigrationDeferredToast:
+      "Гаразд. Дані лишаються на цьому пристрої — спробуємо перенести їх при наступному запуску.",
+    anonymousMigrationDeferredNotice:
+      "Дані ще не перенесено в профіль — вони лише на цьому пристрої.",
+    anonymousMigrationDeferredRetry: "Спробувати зараз",
     anonymousMigrationSuccess:
       "Дані перенесено й безпечно збережено у профілі.",
     // Reserved legacy sync error copy. Historical retry cycle:

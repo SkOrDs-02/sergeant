@@ -103,6 +103,15 @@ export const APPLY_REJECT_REASONS = [
   // `invalid_event_kind`: там валідується `kind` події комори, і злиття
   // двох різних колонок в один лейбл зробило б метрику нечитаною.
   "invalid_goal_origin",
+  // Позначка травми (ADR-0083) без зони — рядок, який нічого не блокує.
+  // Окремий reason, а не `missing_name`: `site` — це ключ у keyspace
+  // `InjurySiteId`, і сплутати його з людською назвою в метриці означало б
+  // не побачити, що клієнт шле позначки без зони взагалі.
+  "missing_site",
+  // `cleared_at` — саме та колонка, NULL у якій означає «травма активна».
+  // Нерозбірна дата тут не може тихо стати `clientTs`: це зняло б позначку
+  // й повернуло травмовану зону в поради. Краще відхилити операцію.
+  "invalid_cleared_at",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

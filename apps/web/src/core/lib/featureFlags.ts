@@ -42,14 +42,9 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у розділі «Конфіденційність → Блокування».",
     defaultValue: false,
   },
-  {
-    id: "finyk_subscriptions_category",
-    label: "Категорія «Підписки» у швидкому додаванні",
-    description:
-      "Додає окрему кнопку для підписок під час швидкого додавання витрати (раніше вони потрапляли в «інше»).",
-    defaultValue: false,
-    experimental: true,
-  },
+  // `finyk_subscriptions_category` прибрано: флаг рендерився тумблером у
+  // Settings → Експериментальні, зберігався у сховище — і не мав жодного
+  // читача в коді. Юзер вмикав опцію, яка нічого не робить.
   {
     id: "hub_command_palette",
     label: "Швидкі команди (Ctrl / ⌘ + K)",

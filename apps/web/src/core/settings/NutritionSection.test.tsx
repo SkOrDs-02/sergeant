@@ -62,27 +62,25 @@ describe("NutritionSection", () => {
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("renders the daily target fields and persists prefs on mount", () => {
+  it("renders the section and persists prefs on mount", () => {
     renderSection();
     expect(screen.getByText("Їжа")).toBeInTheDocument();
-    expect(screen.getByText("Калорії")).toBeInTheDocument();
+    expect(screen.getByText("Денна норма")).toBeInTheDocument();
     // persistNutritionPrefs is invoked by the mount effect
     expect(persistNutritionPrefs).toHaveBeenCalled();
   });
 
   it("commits an edited number field on blur", () => {
     renderSection();
-    // "Калорії" and "Вода" both use placeholder 2000; scope to the
-    // Калорії <label> row to grab the right input.
-    const kcalLabel = screen.getByText("Калорії").closest("label")!;
-    const kcalInput = within(kcalLabel).getByRole("spinbutton");
-    fireEvent.change(kcalInput, { target: { value: "2500" } });
-    fireEvent.blur(kcalInput);
+    const waterLabel = screen.getByText("Денна норма").closest("label")!;
+    const waterInput = within(waterLabel).getByRole("spinbutton");
+    fireEvent.change(waterInput, { target: { value: "2500" } });
+    fireEvent.blur(waterInput);
     // The effect re-persists with the patched value
     const lastCall = persistNutritionPrefs.mock.calls.at(-1)?.[0] as {
-      dailyTargetKcal: number;
+      waterGoalMl: number;
     };
-    expect(lastCall.dailyTargetKcal).toBe(2500);
+    expect(lastCall.waterGoalMl).toBe(2500);
   });
 
   it("shows a storage error banner when persisting fails", async () => {
@@ -95,13 +93,15 @@ describe("NutritionSection", () => {
     });
   });
 
-  it("resets daily targets to defaults", () => {
+  // Редактор КБЖУ живе тільки в модулі Їжі (`DailyPlanCard`). Ні полів, ні
+  // посилання на них у налаштуваннях більше немає.
+  it("does not surface the macro editor at all", () => {
     renderSection();
-    fireEvent.click(screen.getByRole("button", { name: /Скинути цілі/i }));
-    const lastCall = persistNutritionPrefs.mock.calls.at(-1)?.[0] as {
-      dailyTargetKcal: number;
-    };
-    expect(lastCall.dailyTargetKcal).toBe(DEFAULT_PREFS.dailyTargetKcal);
+    expect(screen.queryByText("Калорії")).not.toBeInTheDocument();
+    expect(screen.queryByText("Білки")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /цілі в модулі Їжі/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the pantry picker with options and switches active pantry", () => {

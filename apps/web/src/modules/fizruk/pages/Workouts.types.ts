@@ -20,7 +20,7 @@ export interface FinishFlashState extends WorkoutFinishSummary {
   workoutId: string;
   energy: number | null;
   mood: number | null;
-  injuryMuscles: string[];
+  injurySites: string[];
   savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
 }
 

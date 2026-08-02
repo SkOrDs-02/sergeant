@@ -1,108 +1,115 @@
+/**
+ * Local writes for injury marks — the client-authored half of the "не можна"
+ * model (ADR-0083).
+ *
+ * AI-CONTEXT: marks bypass the Fizruk dual-write diff pipeline on purpose.
+ * That pipeline diffs whole-state snapshots, which fits entities the UI edits
+ * as a tree (workouts and their items/sets). A mark is a single flat row the
+ * user creates or clears outright, so it writes straight to SQLite and
+ * enqueues its own outbox row — the same contract the pull path already
+ * expects (`applyPullOp` lists `fizruk_injuries`) and the server applies in
+ * `apps/server/src/modules/sync/fizruk/applyInjuries.ts`.
+ *
+ * Row keys handed to the outbox MUST match local SQLite column names so the
+ * generic pull-apply on other devices needs no mapper.
+ */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
-import { isBodyAtlasMuscleId } from "@sergeant/fizruk-domain/data";
-import type { FizrukInjury } from "@sergeant/fizruk-domain";
-import { enqueueOutboxUpsert } from "../../../core/syncEngine/enqueueOutboxUpsert.js";
+import type { InjuryMark } from "@sergeant/fizruk-domain";
 
-function injuryWireRow(injury: FizrukInjury) {
-  return {
-    id: injury.id,
-    user_id: injury.userId,
-    muscle_group: injury.muscleGroup,
-    noted_at: injury.notedAt,
-    cleared_at: injury.clearedAt,
-  };
-}
+import { fireSyncOutboxUpsert } from "../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
-export async function markFizrukInjuries(
+/**
+ * Mark one or more sites as injured. Sites already carrying an open mark are
+ * skipped rather than duplicated — clearing is per-mark, so a second row for
+ * the same site would leave a mark the user cannot see or remove.
+ */
+export async function markInjurySites(
   client: SqliteMigrationClient,
   userId: string,
-  muscleGroups: Iterable<string>,
-  notedAt: string,
-): Promise<FizrukInjury[]> {
-  const unique = [...new Set(muscleGroups)].filter(isBodyAtlasMuscleId);
-  const created: FizrukInjury[] = [];
+  sites: Iterable<string>,
+  nowIso: string,
+): Promise<InjuryMark[]> {
+  const open = await client.all<{ site: string }>(
+    `SELECT site FROM fizruk_injuries
+      WHERE user_id = ? AND cleared_at IS NULL AND deleted_at IS NULL`,
+    [userId],
+  );
+  const alreadyOpen = new Set(open.map((row) => row.site));
 
-  for (const muscleGroup of unique) {
-    const existing = await client.all<{ id: string }>(
-      `SELECT id FROM fizruk_injuries
-        WHERE user_id = ? AND muscle_group = ? AND cleared_at IS NULL
-        LIMIT 1`,
-      [userId, muscleGroup],
-    );
-    if (existing.length > 0) continue;
+  const created: InjuryMark[] = [];
+  for (const site of sites) {
+    if (alreadyOpen.has(site)) continue;
+    alreadyOpen.add(site);
 
-    const injury: FizrukInjury = {
-      id: crypto.randomUUID(),
-      userId,
-      muscleGroup,
-      notedAt,
-      clearedAt: null,
-    };
+    const id = crypto.randomUUID();
     await client.run(
       `INSERT INTO fizruk_injuries
-         (id, user_id, muscle_group, noted_at, cleared_at)
-       VALUES (?, ?, ?, ?, NULL)`,
-      [injury.id, userId, muscleGroup, notedAt],
+         (id, user_id, site, started_at, cleared_at, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, NULL, '', ?, ?)`,
+      [id, userId, site, nowIso, nowIso, nowIso],
     );
-    await enqueueOutboxUpsert(client, {
+    fireSyncOutboxUpsert(client, {
       userId,
       table: "fizruk_injuries",
       op: "insert",
-      row: injuryWireRow(injury),
-      clientTs: notedAt,
-      idempotencyKey: crypto.randomUUID(),
+      clientTs: nowIso,
+      row: {
+        id,
+        user_id: userId,
+        site,
+        started_at: nowIso,
+        cleared_at: null,
+        note: "",
+        created_at: nowIso,
+        updated_at: nowIso,
+      },
     });
-    created.push(injury);
+    created.push({
+      id,
+      site,
+      startedAt: nowIso,
+      clearedAt: null,
+      note: "",
+      deletedAt: null,
+    });
   }
   return created;
 }
 
-export async function clearFizrukInjury(
+/**
+ * Clear an open mark. Sets `cleared_at` instead of deleting so the original
+ * observation survives — a site injured twice keeps both episodes.
+ */
+export async function clearInjuryMark(
   client: SqliteMigrationClient,
   userId: string,
   injuryId: string,
-  clearedAt: string,
-): Promise<FizrukInjury | null> {
-  const rows = await client.all<{
-    id: string;
-    user_id: string;
-    muscle_group: string;
-    noted_at: string;
-    cleared_at: string | null;
-  }>(
-    `SELECT id, user_id, muscle_group, noted_at, cleared_at
-       FROM fizruk_injuries
-      WHERE id = ? AND user_id = ?`,
+  nowIso: string,
+): Promise<boolean> {
+  const rows = await client.all<{ id: string }>(
+    `SELECT id FROM fizruk_injuries
+      WHERE id = ? AND user_id = ? AND cleared_at IS NULL AND deleted_at IS NULL`,
     [injuryId, userId],
   );
-  const row = rows[0];
-  if (
-    !row ||
-    row.cleared_at !== null ||
-    !isBodyAtlasMuscleId(row.muscle_group)
-  ) {
-    return null;
-  }
+  if (rows.length === 0) return false;
 
-  const injury: FizrukInjury = {
-    id: row.id,
-    userId: row.user_id,
-    muscleGroup: row.muscle_group,
-    notedAt: row.noted_at,
-    clearedAt,
-  };
   await client.run(
-    `UPDATE fizruk_injuries SET cleared_at = ?
-      WHERE id = ? AND user_id = ? AND cleared_at IS NULL`,
-    [clearedAt, injuryId, userId],
+    `UPDATE fizruk_injuries
+        SET cleared_at = ?, updated_at = ?
+      WHERE id = ? AND user_id = ?`,
+    [nowIso, nowIso, injuryId, userId],
   );
-  await enqueueOutboxUpsert(client, {
+  fireSyncOutboxUpsert(client, {
     userId,
     table: "fizruk_injuries",
     op: "update",
-    row: injuryWireRow(injury),
-    clientTs: clearedAt,
-    idempotencyKey: crypto.randomUUID(),
+    clientTs: nowIso,
+    row: {
+      id: injuryId,
+      user_id: userId,
+      cleared_at: nowIso,
+      updated_at: nowIso,
+    },
   });
-  return injury;
+  return true;
 }

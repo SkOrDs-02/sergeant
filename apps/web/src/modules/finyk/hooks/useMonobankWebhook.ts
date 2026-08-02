@@ -424,8 +424,21 @@ export function useMonobankWebhook({
         // failure mode (offline, timeout, 403/5xx, DNS, etc.). The first
         // case is a copy-paste / expiry mistake the user can fix locally;
         // the second is connectivity that no token edit will repair.
+        //
+        // Два РІЗНИХ 401 приходять на цей шлях: наш власний session-gate
+        // (анонім не має сесії) і `MONO_TOKEN_INVALID` від Mono. Без
+        // розрізнення анонім із бездоганним токеном читав «Mono відхилив
+        // токен» і йшов перегенеровувати справний токен.
         if (isApiError(e) && e.kind === "http" && e.status === 401) {
-          setAuthError(messages.finyk.monoConnectErrors.tokenRejected);
+          const code =
+            e.body && typeof e.body === "object"
+              ? (e.body as { code?: unknown }).code
+              : undefined;
+          setAuthError(
+            code === "MONO_TOKEN_INVALID"
+              ? messages.finyk.monoConnectErrors.tokenRejected
+              : messages.finyk.monoConnectErrors.accountRequired,
+          );
         } else {
           setError(messages.finyk.monoConnectErrors.networkUnavailable);
         }

@@ -16,7 +16,6 @@ import {
 } from "./nutrition/applySyncFullState.js";
 import {
   applyFizrukPrograms,
-  applyFizrukInjuries,
   applyFizrukDailyLog,
   applyFizrukMonthlyPlan,
   applyFizrukPlanTemplates,
@@ -66,7 +65,7 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes the injury history table (46 total)", () => {
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries (46 total)", () => {
     expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(46);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
@@ -74,7 +73,6 @@ describe("Phase 2 registry expansion", () => {
         "nutrition_water_log",
         "fizruk_daily_log",
         "fizruk_programs",
-        "fizruk_injuries",
         // Append-only журнали стадії 1: routine (W1-ROUTINE-APPEND),
         // комора (W1-PANTRY-APPEND) і цілі КБЖВ (W1-KBJU-APPEND).
         "routine_completion_events",
@@ -769,107 +767,6 @@ describe("fizruk full-state appliers", () => {
       CLIENT_TS,
     );
     expect(result).toEqual({ status: "rejected", reason: "not_found" });
-  });
-
-  it("applyFizrukInjuries inserts an active injury", async () => {
-    const client = makeClient([]);
-    const result = await applyFizrukInjuries(
-      client,
-      op("fizruk_injuries", {
-        id: "00000005-0009-4000-8001-000000000001",
-        user_id: USER_ID,
-        muscle_group: "lower_back",
-        noted_at: "2026-07-10T09:00:00.000Z",
-        cleared_at: null,
-      }),
-      USER_ID,
-      CLIENT_TS,
-    );
-
-    expect(result).toEqual({ status: "applied" });
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining("INSERT INTO fizruk_injuries"),
-      [
-        "00000005-0009-4000-8001-000000000001",
-        USER_ID,
-        "lower_back",
-        new Date("2026-07-10T09:00:00.000Z"),
-        null,
-      ],
-    );
-  });
-
-  it("applyFizrukInjuries clears an existing injury without deleting history", async () => {
-    const notedAt = new Date("2026-07-01T09:00:00.000Z");
-    const clearedAt = new Date("2026-07-10T11:00:00.000Z");
-    const client = makeClient([
-      {
-        user_id: USER_ID,
-        muscle_group: "lower_back",
-        noted_at: notedAt,
-        cleared_at: null,
-      },
-    ]);
-    const id = "00000005-0009-4000-8001-000000000001";
-    const result = await applyFizrukInjuries(
-      client,
-      op(
-        "fizruk_injuries",
-        {
-          id,
-          user_id: USER_ID,
-          muscle_group: "lower_back",
-          noted_at: notedAt.toISOString(),
-          cleared_at: clearedAt.toISOString(),
-        },
-        "update",
-      ),
-      USER_ID,
-      CLIENT_TS,
-    );
-
-    expect(result).toEqual({ status: "applied" });
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining("UPDATE fizruk_injuries"),
-      [clearedAt, id, USER_ID],
-    );
-  });
-
-  it("applyFizrukInjuries enforces ownership and preserves cleared rows", async () => {
-    const row = {
-      id: "00000005-0009-4000-8001-000000000001",
-      user_id: USER_ID,
-      muscle_group: "lower_back",
-      noted_at: "2026-07-01T09:00:00.000Z",
-      cleared_at: null,
-    };
-    const foreign = makeClient([
-      {
-        user_id: "another-user",
-        muscle_group: "lower_back",
-        noted_at: new Date(row.noted_at),
-        cleared_at: null,
-      },
-    ]);
-    await expect(
-      applyFizrukInjuries(
-        foreign,
-        op("fizruk_injuries", row, "update"),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
-    const deletion = await applyFizrukInjuries(
-      makeClient([]),
-      op("fizruk_injuries", row, "delete"),
-      USER_ID,
-      CLIENT_TS,
-    );
-    expect(deletion).toEqual({
-      status: "rejected",
-      reason: "delete_not_supported",
-    });
   });
 
   it("applyFizrukWorkoutTemplates rejects when id is missing", async () => {

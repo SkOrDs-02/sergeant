@@ -1,6 +1,6 @@
 # Design System — Motion, Animation та Offline/Error стани
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює motion tokens, choreography rules, reduced-motion стратегію та патерни для offline/empty/error станів.
@@ -11,8 +11,8 @@
 
 ## 14. Motion & Animation (2026-05-13)
 
-> Канонічна специфікація — [Hard Rule #17 (Animation
-> budget)](../../../04-governance/governance/rules/17-animation-budget.md). Цей розділ описує
+> Канонічна специфікація — цей розділ ([ADR-0081](../../../04-governance/adr/0081-repository-simplification.md)
+> зняв animation budget зі списку Hard Rules). Тут описані
 > токени та choreography, на які лінт-плагін + ESLint посилаються; код
 > живе в `apps/web/src/styles/animations.css` +
 > `packages/design-tokens/tailwind-preset.js`.
@@ -21,7 +21,7 @@
 
 Single source of truth — `apps/web/src/styles/theme.css → :root`. Tailwind
 пропускає їх через preset як `duration-*` і `ease-*`. **Рваних значень у
-`className` не існує** — `duration-[230ms]` ловить ESLint (Hard Rule #17).
+`className` не існує** — `duration-[230ms]` ловить ESLint (дизайн-конвенція).
 
 #### Duration scale
 
@@ -56,7 +56,7 @@ Legacy aliases (`ease-smooth`, `ease-bounce`, `ease-spring`) залишають�
 
 ### 14.2 Choreography rules
 
-#### Animation budget (Hard Rule #17)
+#### Animation budget (дизайн-конвенція)
 
 - **3 tiers** з різною семантикою — див. таблицю нижче.
 - **Max 1 AMBIENT + 1 RESPONSE simultaneously** на екрані. Stagger-група

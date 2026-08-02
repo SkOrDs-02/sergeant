@@ -66,6 +66,8 @@ export const finykPageMessages = {
   },
   monoConnectErrors: {
     tokenRejected: "Mono відхилив токен. Перевір, чи скопіював правильний.",
+    accountRequired:
+      "Спершу увійди в акаунт — токен Mono зберігається на сервері, тож без входу підключити банк не вийде. Твій токен із цим не пов'язаний.",
     networkUnavailable: "Не вдалось зв'язатись з Mono. Перевір з'єднання.",
   },
   jarSelector: {

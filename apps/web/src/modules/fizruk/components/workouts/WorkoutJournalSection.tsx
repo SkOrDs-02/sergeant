@@ -40,7 +40,7 @@ interface FinishFlashState extends WorkoutFinishSummary {
   workoutId: string;
   energy: number | null;
   mood: number | null;
-  injuryMuscles: string[];
+  injurySites: string[];
   savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
 }
 
@@ -356,7 +356,7 @@ export function WorkoutJournalSection({
                     workoutId: wid,
                     energy: null,
                     mood: null,
-                    injuryMuscles: [],
+                    injurySites: [],
                   });
                 }
                 // Release the guard on the next tick — by then React has

@@ -22,7 +22,7 @@ import type {
   WorkoutGroup,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
-import type { FizrukInjury } from "@sergeant/fizruk-domain";
+import type { InjuryMark } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -85,7 +85,7 @@ export interface SqliteFizrukCache {
    */
   workoutTemplates: CachedWorkoutTemplate[];
   /** Injury history ordered newest-first; active rows have `clearedAt=null`. */
-  injuries: FizrukInjury[];
+  injuries: InjuryMark[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -273,10 +273,11 @@ interface WorkoutTemplateRow {
 
 interface InjuryRow {
   id: string;
-  user_id: string;
-  muscle_group: FizrukInjury["muscleGroup"];
-  noted_at: string;
+  site: string;
+  started_at: string;
   cleared_at: string | null;
+  note: string | null;
+  deleted_at: string | null;
   [key: string]: unknown;
 }
 
@@ -406,10 +407,10 @@ export async function refreshFizrukSqliteState(
       [userId],
     ),
     client.all<InjuryRow>(
-      `SELECT id, user_id, muscle_group, noted_at, cleared_at
+      `SELECT id, site, started_at, cleared_at, note, deleted_at
          FROM fizruk_injuries
-        WHERE user_id = ?
-        ORDER BY noted_at DESC, id ASC`,
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY started_at DESC, id ASC`,
       [userId],
     ),
   ]);
@@ -442,12 +443,13 @@ export async function refreshFizrukSqliteState(
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
-  const injuries: FizrukInjury[] = injuryRows.map((row) => ({
+  const injuries: InjuryMark[] = injuryRows.map((row) => ({
     id: row.id,
-    userId: row.user_id,
-    muscleGroup: row.muscle_group,
-    notedAt: row.noted_at,
+    site: row.site,
+    startedAt: row.started_at,
     clearedAt: row.cleared_at,
+    note: row.note ?? "",
+    deletedAt: row.deleted_at,
   }));
 
   cache = {

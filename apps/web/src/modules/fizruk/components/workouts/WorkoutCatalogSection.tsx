@@ -187,7 +187,7 @@ export function WorkoutCatalogSection({
                                       size={15}
                                       className="text-warning shrink-0"
                                       title={
-                                        catCf.hasInjuryBlock
+                                        catCf.injury.blocked
                                           ? "Позначено біль: не радимо навантажувати"
                                           : "Мʼязи ще відновлюються"
                                       }

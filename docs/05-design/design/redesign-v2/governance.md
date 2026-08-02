@@ -113,7 +113,7 @@ Sergeant має AAA-leaning HC mode (`html.hc { … }`). Для v2 tokens:
 2. **Bundle size near 900kB JS / 28kB CSS budget**. Manrope (≈40kB) + JetBrains Mono (≈25kB) + нові SVG paths. Subset Manrope до Latin + Cyrillic Extended. Drop unused weights. Measure pre/post кожного PR.
 3. **`InsightCard` localStorage key collision** — централізувати через `useInsightDismissal` hook + namespace `sergeant.v2.insights.dismissed`.
 4. **AIPill nested-button a11y bug у handoff JSX** — refactor у `<div role="group">` parent + два sibling `<button>` (placeholder tap + mic).
-5. **Module-accent containment** (Hard Rule #12) — MeshBackground НЕ публікує `--module-accent-rgb`. Хелпер монтується всередині `ModuleAccentProvider`, не зовні.
+5. **Module-accent containment** (дизайн-конвенція) — MeshBackground НЕ публікує `--module-accent-rgb`. Хелпер монтується всередині `ModuleAccentProvider`, не зовні.
 
 ## Verification
 

@@ -1,5 +1,7 @@
 # Backend Tech Debt Inventory
 
+> **Оновлено 2026-08-01.** § «Tests coverage map» нижче звірено з живим прогоном — застарілі цифри з 2026-05-05 (60.51% lines, три «0-15%» surface-и) замінені актуальними (93.02% lines; nutrition tool handlers / `syncV2.ts` / `weekly-digest.ts` тепер 95-100%). Заразом знайдено й полагоджено міграцією `097_finyk_fizruk_pk_text.sql`: **8 finyk + 7 fizruk таблиць** мали PK `uuid`, а клієнт шле доменно-префіксовані id (`b_…`, `w_…`, `dl_…`, тощо) — той самий клас бага, що й `094`/`095` того ж дня для routine/nutrition. Живий доказ — `invalid input syntax for type uuid` у CI на `finyk_manual_expenses` і `fizruk_daily_log`; повний розбір, включно з тим, чому «а де ще» знайшло ще 13 таблиць, — у коментарі міграції `097`. **Побічний хвіст того самого класу бага:** `apps/server/src/migrations/__tests__/{035-nutrition-tables,039-finyk-tables,050-routine-full-state,052-fizruk-full-state}.test.ts` (Testcontainers, `information_schema.columns` snapshot) досі очікували буквальний `uuid`-тип для тих самих колонок — `094`/`095` зламали два з них ще 2026-08-01 і ніхто не помітив (Docker-залежні, soft-skip локально), `097` зламала решту два. Виправлено: очікування → `text`, а «down → re-up restores the same schema fingerprint» тести обгорнуто down/up відповідної PK-міграції (`094`/`095`/`097`) навколо власного down/up тестованого файлу — інакше re-up без PK-міграції повертав колонку назад до `uuid`.
+>
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). **Post-waves:** Privat/Mono upstream body scrub — **Closed** [#347](https://github.com/SkOrDs-02/sergeant/pull/347). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
 > **Оновлено 2026-06-01.** PR E/F закрито (див. Status log).
@@ -344,7 +346,49 @@ Webhook-based server-side integration added in PR2. Key components:
 - ✅ Inline EXPLAIN ANALYZE-нотатки на гарячих міграціях (016 — 4 патерни синку/push, 024 — partial для `mono_transaction` listу, 032 — підсумкові COMMENT ON для `psql \d+`).
 - `idx_module_data_server_updated_at` — досі **не створено**, нема feature-у "recent changes across all modules". Залишається у tech-debt-seed-секції (P2).
 
-### Routine: PK-тип `routine_*` розходиться з клієнтським id (відкрито, `критично`)
+### Routine: PK-тип `routine_*` розходиться з клієнтським id (ЗАКРИТО 2026-08-01)
+
+**Закрито 2026-08-01** міграцією
+[`094_routine_pk_text.sql`](../../../apps/server/src/migrations/094_routine_pk_text.sql):
+`id` у `routine_habits` / `routine_tags` / `routine_categories` /
+`routine_entries` переведено з `uuid` у `text`, drizzle-модель і снапшот-тест
+підтягнуто слідом.
+
+Гіпотеза 2026-07-24 підтвердилась повністю — і виявилась ширшою, ніж
+описано нижче. Живий прогін (`docs/90-work/audits/web-qa-pre-beta.md`) показав,
+що падав не лише `routine_entries`, а **всі чотири таблиці**: `routineUid`
+додає префікс `hab_`/`tag_`/`cat_` до кожного id. Тобто Рутина не мала на
+сервері жодного рядка, а помилка осідала в клієнтському `sync_op_outbox` і
+нікуди не спливала.
+
+Доказ до/після — той самий `POST /api/v2/sync/push` із реальними клієнтськими
+id: до міграції всі чотири `apply_failed` (контрольний op із голим UUID —
+`applied`), після — всі чотири `applied`, і `pull` віддає id незмінними.
+
+Обрано послаблення типу колонки, а не переписування id на клієнті: у
+`routine_entries` id навмисно детермінований (ключ дедуплікації чекінів), тож
+випадковий UUID зламав би саме цю властивість. Двофазність не знадобилась —
+`uuid → text` лише розширює домен значень, FK на ці id немає.
+
+**Чому баг прожив 12 днів.** Не через відсутність інструментації: сервер увесь
+час писав `logger.warn({ msg: "sync_v2_apply_failed" })` з текстом помилки
+Postgres і крутив `sync_op_log_apply_total{status="rejected"}`. Німим був
+**клієнт** — `markRejected` ставив рядку `status='rejected'` у локальному
+SQLite і мовчав, а SLO рахував запити, а не операції, тож батч із суцільними
+реджектами повертав HTTP 200 і виглядав як успіх.
+
+Закрито разом із міграцією:
+
+- `markRejected` в `apps/web/src/core/syncEngine/singleton.ts` тепер шле
+  термінальні реджекти (крім штатного `lww_conflict`) у logger і Sentry;
+- у [SLO.md § 3.1](../../03-operations/observability/SLO.md) описано правило
+  `SyncApplyFailedSpike` поверх уже наявної метрики — design-only, як і решта
+  алертів у цьому репо.
+
+Nutrition-частина того ж класу закрита міграцією 095 (див. наступний запис).
+
+<details>
+<summary>Історія запису (до закриття)</summary>
 
 **Знайдено 2026-07-24** під час фіксу tombstone-resurrection (audit routine
 E-1). `routine_entries.id` у Postgres — `UUID`
@@ -378,7 +422,38 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 (припинення запису в `routine_entries` + двофазний DROP) — до того моменту
 твердження «чекін доїжджає до сервера» так само непідтверджене.
 
-### Nutrition: PK-тип `nutrition_pantries` / `nutrition_pantry_items` розходиться з клієнтським id (відкрито, `критично`)
+</details>
+
+### Nutrition: PK-тип `nutrition_*` розходиться з клієнтським id (ЗАКРИТО 2026-08-01)
+
+**Закрито 2026-08-01** міграцією
+[`095_nutrition_pk_text.sql`](../../../apps/server/src/migrations/095_nutrition_pk_text.sql)
+слідом за 094 (routine).
+
+Гіпотеза 2026-07-25 підтвердилась, і знову виявилась ширшою: уражені не дві
+таблиці, а **чотири** — клієнт не шле UUID у жодній з них.
+
+| таблиця                  | форма клієнтського id        |
+| ------------------------ | ---------------------------- |
+| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`     |
+| `nutrition_pantry_items` | `<pantryId>::<idx>::<name>`  |
+| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>` |
+| `nutrition_recipes`      | `rcp_ai_<hash>`              |
+
+Прогін `POST /api/v2/sync/push` із цими id: до міграції всі чотири
+`apply_failed` (контроль із голим UUID — `applied`), після — всі чотири
+`applied`. Разом із PK переведено `nutrition_pantry_items.pantry_id` і
+`nutrition_prefs.active_pantry_id`; FK `pantry_id → nutrition_pantries(id)`
+знято й повернуто в тій самій транзакції.
+
+**Що НЕ полагоджено (і типом не лікується):** id позиції комори містить
+`index` і `name`, тож перейменування продукту чи зсув у масиві породжує новий
+id — LWW-upsert по такому ключу лишається нестабільним. Канонічний шлях —
+append-only `nutrition_pantry_events` із ключем `item_key` (ADR-0077 §3.2).
+Міграція 095 прибрала лише `22P02`.
+
+<details>
+<summary>Історія запису (до закриття)</summary>
 
 **Знайдено 2026-07-25** під час W1-PANTRY-APPEND стадії 1. Той самий клас
 багу, що описаний вище для routine, але в коморі — і досі не помічений.
@@ -417,6 +492,8 @@ Rule #4 (двофазність) і рішення власника поверх
 **Наступний крок:** live-перевірка (dev-сервер + справжня БД + справжня
 комора) → окремий PR із двофазною міграцією типу. До того моменту твердження
 «комора синхронізується між пристроями» — непідтверджене.
+
+</details>
 
 ### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
 
@@ -481,24 +558,28 @@ two-phase DROP цього класу змін не покриває.
 
 ## Tests coverage map
 
+> **Звірено 2026-08-01 з живим `pnpm --filter @sergeant/server test:coverage`.** Таблиця нижче — знімок з часів PR F (травень 2026) і не оновлювалась відтоді; рядки, позначені ❌/частково, могли отримати тести пізніше без синхронного апдейту цього файлу. Джерело правди по агрегатних % — `coverage-ratchet.json` (repo root) і `docs/02-engineering/testing/README.md` § «Coverage ratchet», не ця таблиця.
+
 Шляхи відносно **`apps/server/src/`**.
 
-| Файл / зона                          | Тест є?                                    | Залишок (PR F / інкремент)                                                               |
-| ------------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `aiQuota.ts`                         | ✅ `aiQuota.test.ts`                       | Симуляція гонок під навантаженням — опційно.                                             |
-| `auth.ts`                            | частково `auth.test.ts`                    | trustedOrigins / edge cases — розширити.                                                 |
-| `db.ts`                              | ❌                                         | pg mock — низький пріоритет.                                                             |
-| `modules/chat/chat.ts`               | ✅ `modules/chat/chat.test.ts`             | **Повний SSE + tool_use** end-to-end — середній пріоритет.                               |
-| `modules/chat/coach.ts`              | ✅ `modules/chat/coach.test.ts`            | `coachInsight`, route-level AI — додати.                                                 |
-| `modules/sync/sync.ts`               | ✅ `modules/sync/sync.test.ts`             | Розширені контракти push/pull/pushAll — за бажанням.                                     |
-| `modules/mono/mono.ts` / `privat.ts` | через `modules/mono/bankProxy.test.ts`     | Інтеграційні сценарії cache/breaker — опційно.                                           |
-| `modules/push/push.ts`               | ✅ `modules/push/push.test.ts`             | Edge cases stale endpoint / dual-write метрик — опційно.                                 |
-| `push/send.ts`                       | ✅ `push/send.test.ts`                     | Native APNs/FCM mocks — за потреби.                                                      |
-| `lib/webpushSend.ts`                 | ✅ `lib/webpushSend.test.ts`               | —                                                                                        |
-| `modules/nutrition/barcode.ts`       | ✅ `modules/nutrition/barcode.test.ts`     | Каскад OFF→USDA→UPC, cache hit/miss, invalid input, transient upstream failures покриті. |
-| `modules/nutrition/food-search.ts`   | ✅ `modules/nutrition/food-search.test.ts` | Розширити UK_TO_EN / merge edge cases.                                                   |
-| `modules/digest/weekly-digest.ts`    | ❌                                         | AI JSON parse / prompt fixture — **середній**.                                           |
-| `modules/nutrition/*`                | частково (`nutritionResponse.test.ts`)     | Контракт-тести per handler (happy + invalid body) — PR F.                                |
+| Файл / зона                                                                                  | Тест є?                                                                   | Залишок (PR F / інкремент)                                                                     |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `aiQuota.ts`                                                                                 | ✅ `aiQuota.test.ts`                                                      | Симуляція гонок під навантаженням — опційно.                                                   |
+| `auth.ts`                                                                                    | частково `auth.test.ts`                                                   | trustedOrigins / edge cases — розширити.                                                       |
+| `db.ts`                                                                                      | ✅ `db.test.ts` + `db.poolSlowConnect.test.ts` + `db.poolMetrics.test.ts` | 88% lines (2026-08-01) — рядок вище позначав «❌», застаріло.                                  |
+| `modules/chat/chat.ts`                                                                       | ✅ `modules/chat/chat.test.ts`                                            | **Повний SSE + tool_use** end-to-end — середній пріоритет.                                     |
+| `modules/chat/coach.ts`                                                                      | ✅ `modules/chat/coach.test.ts`                                           | `coachInsight`, route-level AI — додати.                                                       |
+| `modules/sync/sync.ts`                                                                       | ✅ `modules/sync/sync.test.ts`                                            | Розширені контракти push/pull/pushAll — за бажанням.                                           |
+| `modules/sync/syncV2.ts`                                                                     | ✅ `modules/sync/syncV2.test.ts` + integration                            | 95.34% lines (2026-08-01) — рядок вище позначав «~0-1%», застаріло.                            |
+| `modules/mono/mono.ts` / `privat.ts`                                                         | через `modules/mono/bankProxy.test.ts`                                    | Інтеграційні сценарії cache/breaker — опційно.                                                 |
+| `modules/push/push.ts`                                                                       | ✅ `modules/push/push.test.ts`                                            | Edge cases stale endpoint / dual-write метрик — опційно.                                       |
+| `push/send.ts`                                                                               | ✅ `push/send.test.ts`                                                    | Native APNs/FCM mocks — за потреби.                                                            |
+| `lib/webpushSend.ts`                                                                         | ✅ `lib/webpushSend.test.ts`                                              | —                                                                                              |
+| `modules/nutrition/barcode.ts`                                                               | ✅ `modules/nutrition/barcode.test.ts`                                    | Каскад OFF→USDA→UPC, cache hit/miss, invalid input, transient upstream failures покриті.       |
+| `modules/nutrition/food-search.ts`                                                           | ✅ `modules/nutrition/food-search.test.ts`                                | 97.22% lines (2026-08-01). Розширити UK_TO_EN / merge edge cases.                              |
+| `modules/nutrition/{day-hint,day-plan,parse-pantry,find-recipes,shopping-list,week-plan}.ts` | ✅ per-file `*.test.ts`                                                   | 95-100% lines (2026-08-01) — рядок нижче позначав «Anthropic tool handlers ~0-15%», застаріло. |
+| `modules/digest/weekly-digest.ts`                                                            | ✅ `modules/digest/weekly-digest.test.ts`                                 | 99.17% lines (2026-08-01) — рядок вище позначав «❌», застаріло.                               |
+| `modules/nutrition/*`                                                                        | частково (`nutritionResponse.test.ts`)                                    | Контракт-тести per handler (happy + invalid body) — PR F.                                      |
 
 Цільове покриття (без зміни цілей):
 

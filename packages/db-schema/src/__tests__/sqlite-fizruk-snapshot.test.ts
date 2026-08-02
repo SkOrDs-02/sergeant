@@ -12,7 +12,6 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
-  fizrukInjuries,
 } from "../sqlite/fizruk.js";
 import {
   FIZRUK_CLIENT_MIGRATIONS,
@@ -576,7 +575,7 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries migrations", () => {
+  it("exports the 001 baseline + 002 full-state + 003 injuries migration", () => {
     expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
@@ -619,45 +618,18 @@ describe("sqlite/fizruk migrations exports", () => {
     expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_injuries/,
     );
+    // `id TEXT`, never uuid — the client mints `inj_<uuid>`, and a uuid
+    // column is what made every routine/nutrition push fail with 22P02
+    // before migrations 094/095.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(/id\s+TEXT PRIMARY KEY/);
+    // `cleared_at IS NULL` is what "active mark" means — the partial index
+    // encodes it, so a rename would silently change the hot query.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /fizruk_injuries_user_active_idx_lite[\s\S]*cleared_at IS NULL/,
+    );
   });
 
   it("uses a separate `__fizruk_migrations` ledger table", () => {
     expect(FIZRUK_MIGRATIONS_TABLE).toBe("__fizruk_migrations");
-  });
-});
-
-describe("sqlite/fizrukInjuries schema snapshot", () => {
-  const config = getTableConfig(fizrukInjuries);
-
-  it("mirrors the Postgres injury contract", () => {
-    expect(config.name).toBe("fizruk_injuries");
-    expect(config.columns.map((column) => column.name)).toEqual([
-      "id",
-      "user_id",
-      "muscle_group",
-      "noted_at",
-      "cleared_at",
-    ]);
-
-    const columnMap = Object.fromEntries(
-      config.columns.map((column) => [column.name, column]),
-    );
-    expect(columnMap["id"]!.dataType).toBe("string");
-    expect(columnMap["id"]!.primary).toBe(true);
-    expect(columnMap["user_id"]!.notNull).toBe(true);
-    expect(columnMap["muscle_group"]!.notNull).toBe(true);
-    expect(columnMap["noted_at"]!.notNull).toBe(true);
-    expect(columnMap["cleared_at"]!.notNull).toBe(false);
-  });
-
-  it("indexes injury history and the active subset", () => {
-    const indexNames = config.indexes.map((index) => index.config.name);
-    expect(indexNames).toContain("fizruk_injuries_user_noted_idx_lite");
-    expect(indexNames).toContain("fizruk_injuries_user_active_idx_lite");
-
-    const activeIndex = config.indexes.find(
-      (index) => index.config.name === "fizruk_injuries_user_active_idx_lite",
-    );
-    expect(activeIndex!.config.where).toBeDefined();
   });
 });
