@@ -215,6 +215,33 @@ let _getSessionInflight: Promise<unknown> | null = null;
 
 const _rawGetSession = getSession;
 
+/**
+ * Примусово перечитує сесію з БД і переписує cookie-кеш.
+ *
+ * AI-CONTEXT: `session.cookieCache` на сервері живе 5 хвилин
+ * (`apps/server/src/auth.ts` → `session.cookieCache.maxAge`), а
+ * `GET /api/auth/verify-email` оновлює лише рядок у БД — cookie лишається
+ * зі старим `emailVerified: false`. Оскільки `/api/v1/me` резолвить юзера
+ * через `auth.api.getSession`, після успішного підтвердження профіль ще до
+ * 5 хвилин показував би «Не підтверджено». `disableCookieCache=true`
+ * змушує Better Auth піти в БД і — важливо — перезаписати кеш свіжими
+ * даними (`setCookieCache` наприкінці хендлера `get-session`).
+ *
+ * Свідомо НЕ проходить через `deduplicatedGetSession`: там кешується
+ * in-flight проміс звичайного (cache-friendly) запиту, і переюз того
+ * промісу повернув би саме те протухле значення, від якого ми тікаємо.
+ *
+ * Best-effort: помилку глушимо — верифікація вже відбулась на сервері,
+ * а протухлий бейдж сам розсмокчеться за TTL кеша.
+ */
+export async function refreshSessionCookieCache(): Promise<void> {
+  try {
+    await _rawGetSession({ query: { disableCookieCache: true } });
+  } catch {
+    // no-op — див. JSDoc.
+  }
+}
+
 function deduplicatedGetSession(): ReturnType<typeof getSession> {
   if (_getSessionInflight) {
     return _getSessionInflight as ReturnType<typeof getSession>;

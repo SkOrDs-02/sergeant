@@ -172,12 +172,71 @@ describe("PersonalInfoSection — email change", () => {
         newEmail: "new@example.com",
       });
     });
+    // Verified account → Better Auth sends a confirmation to the CURRENT
+    // address first; the address does not change until that link is clicked.
+    // The copy has to say so, otherwise the user watches the old email sit in
+    // the field and assumes the save silently failed.
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Лист підтвердження нового email надіслано",
+        "Лист підтвердження надіслано на поточну адресу",
       );
       expect(onRefresh).toHaveBeenCalled();
     });
+  });
+
+  /**
+   * The other Better Auth branch: with an unverified current address,
+   * `updateEmailWithoutVerification` swaps it immediately and mails the
+   * verification to the NEW inbox. Same `{ status: true }` on the wire, so the
+   * component branches on `emailVerified` — pin both arms.
+   */
+  it("unverified account gets the immediate-swap copy instead", async () => {
+    changeEmailMock.mockResolvedValue({ data: { ok: true }, error: null });
+    renderSection({ emailVerified: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    const saves = screen.getAllByRole("button", { name: "Зберегти" });
+    fireEvent.click(saves[saves.length - 1]!);
+
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        "Адресу змінено — перевір нову скриньку",
+      );
+    });
+  });
+
+  /**
+   * Regression anchor for the shipped bug: `user.changeEmail` was never
+   * configured on the server, so this endpoint answered `400
+   * CHANGE_EMAIL_DISABLED` every single time. The server-side guard lives in
+   * `apps/server/src/auth.test.ts`; here we only pin that the code reaches the
+   * user as Ukrainian copy rather than the generic fallback.
+   */
+  it("CHANGE_EMAIL_DISABLED surfaces its own Ukrainian copy", async () => {
+    changeEmailMock.mockResolvedValue({
+      error: {
+        code: "CHANGE_EMAIL_DISABLED",
+        message: "Change email is disabled",
+      },
+    });
+    renderSection();
+
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    const saves = screen.getAllByRole("button", { name: "Зберегти" });
+    fireEvent.click(saves[saves.length - 1]!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Зміна email тимчасово недоступна."),
+      ).toBeTruthy();
+    });
+    expect(toastSuccessMock).not.toHaveBeenCalled();
   });
 
   it("email save stays disabled when the value equals the current email", () => {
