@@ -16,8 +16,14 @@ import { useWaterTracker } from "../hooks/useWaterTracker";
 
 const QUICK_ML = [200, 300, 500, 750] as const;
 
+// Дзеркалить web: один знак після коми округлював цілі, задані з точністю
+// до мілілітра (2350 мл → «2.4 л»).
 function fmt(ml: number): string {
-  return ml >= 1000 ? `${(ml / 1000).toFixed(1)} л` : `${ml} мл`;
+  if (ml < 1000) return `${ml} мл`;
+  const litres = (ml / 1000).toLocaleString("uk-UA", {
+    maximumFractionDigits: 2,
+  });
+  return `${litres} л`;
 }
 
 export interface WaterTrackerCardProps {
