@@ -284,6 +284,38 @@ export async function getCoachCorrelationsBlock(
 }
 
 /**
+ * Максимальна довжина тіла пуша, яку приймає SW (`sanitize(payload.body, 200)`
+ * у `apps/web/src/sw/pushPayload.ts`). Ріжемо на запису, а не на відправці:
+ * інакше в БД лежав би текст, довший за все, що взагалі може долетіти до юзера.
+ */
+const NUDGE_BODY_MAX = 200;
+
+/**
+ * Кладе останній згенерований текст поради у `sergeant_nudge_cache` для
+ * серверного проходу підштовхувань (міграція 100).
+ *
+ * Fire-and-forget за задумом: юзер уже отримав пораду у відповіді, і збій
+ * запису кешу не має перетворюватись на помилку запиту. Один рядок на юзера —
+ * прохід читає лише найсвіжіший, історія не потрібна.
+ */
+async function saveNudgeCache(userId: string, body: string): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO sergeant_nudge_cache (user_id, body, generated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE
+           SET body = EXCLUDED.body, generated_at = NOW()`,
+      [userId, body.slice(0, NUDGE_BODY_MAX)],
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "sergeant_nudge_cache_write_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * GET /api/coach/memory — віддати поточну coach-пам'ять користувача.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
@@ -490,8 +522,15 @@ ${snapshotText}
   // поверхні (веб + мобілка), без `tag`, без дедупу.
   //
   // Рішення власника (2026-08-01): пуш іде лише тоді, коли апка ЗАКРИТА.
-  // Оскільки цей шлях за визначенням foreground, push тут не місце — його
-  // має слати окремий серверний шедулер, який знає, хто сьогодні не заходив.
-  // До появи того шедулера денна порада живе на дашборді.
+  // Оскільки цей шлях за визначенням foreground, надсилати звідси нічого не
+  // можна — але саме тут народжується єдиний текст, який прохід потім зможе
+  // переслати. Сервер не вміє згенерувати пораду сам: снапшот приходить із
+  // клієнтського SQLite. Тому кладемо «консерву» — прохід її переюзає, якщо
+  // юзер завтра не зайде.
+  const insightUserId = (req as WithSessionUser).user?.id;
+  if (insightUserId && text && text.trim()) {
+    void saveNudgeCache(insightUserId, text.trim());
+  }
+
   res.json({ ok: true, insight: text });
 }

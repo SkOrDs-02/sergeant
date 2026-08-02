@@ -42,6 +42,13 @@ export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
   pushNotifications: z.boolean(),
+  /**
+   * Opt-in на проактивні повідомлення Сержанта (денний нудж від серверного
+   * шедулера). Свідомо окремо від `pushNotifications`: той прапорець — згода
+   * на пуші взагалі, цей — на конкретний канал. Дефолт `false` для всіх,
+   * включно з новими акаунтами, тож деплой нікого не будить.
+   */
+  sergeantNudges: z.boolean(),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -51,6 +58,7 @@ export const UserPreferencesPatchSchema = z
     analytics: z.boolean().optional(),
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
+    sergeantNudges: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
