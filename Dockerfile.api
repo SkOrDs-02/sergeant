@@ -64,19 +64,27 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+# `@sergeant/routine-domain` — серверна залежність від #592: прохід нагадувань
+# бере звідти канонічний предикат розкладу звички замість власної копії
+# (`apps/server/src/lib/reminders/due.ts`). Без цього рядка frozen-install
+# усередині образу падає на відсутньому workspace-пакеті, і образ не
+# збирається взагалі.
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server... \
       --filter @sergeant/shared... \
       --filter @sergeant/db-schema... \
-      --filter @sergeant/finyk-domain...
+      --filter @sergeant/finyk-domain... \
+      --filter @sergeant/routine-domain...
 
 # --- Джерела ---
 COPY packages/shared ./packages/shared
 COPY packages/config ./packages/config
 COPY packages/db-schema ./packages/db-schema
 COPY packages/finyk-domain ./packages/finyk-domain
+COPY packages/routine-domain ./packages/routine-domain
 COPY apps/server ./apps/server
 
 # `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
@@ -102,6 +110,7 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 # `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
