@@ -28,7 +28,10 @@ describe("computeFizrukQuickStats", () => {
     expect(weekWorkouts).toBe(2);
   });
 
-  it("counts a consecutive-day workout streak ending today", () => {
+  it("рахує ТИЖНЕВИЙ стрік, а не щоденний (канон §7)", () => {
+    // Четвер 2026-07-23; три тренування цього тижня — поріг (2) узято, тож
+    // серія = 1 тиждень. Стара щоденна логіка віддавала б 3 і рвалась би на
+    // першому ж дні відпочинку.
     const now = new Date("2026-07-23T12:00:00Z");
     const day = 24 * 60 * 60 * 1000;
     const { streak } = computeFizrukQuickStats(
@@ -39,7 +42,20 @@ describe("computeFizrukQuickStats", () => {
       ],
       now,
     );
-    expect(streak).toBe(3);
+    expect(streak).toBe(1);
+  });
+
+  it("день відпочинку тижневу серію не рве", () => {
+    // Пʼятниця 2026-07-24, тренування були в понеділок і вівторок.
+    const now = new Date("2026-07-24T12:00:00Z");
+    const { streak } = computeFizrukQuickStats(
+      [
+        done("mon", "2026-07-20T09:00:00Z"),
+        done("tue", "2026-07-21T09:00:00Z"),
+      ],
+      now,
+    );
+    expect(streak).toBe(1);
   });
 
   it("returns zeroes for an empty stream", () => {
