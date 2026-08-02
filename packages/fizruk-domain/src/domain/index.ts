@@ -1,4 +1,5 @@
 export * from "./types.js";
+export * from "./injuries.js";
 export * from "./progress/index.js";
 export * from "./measurements/index.js";
 export * from "./body/index.js";

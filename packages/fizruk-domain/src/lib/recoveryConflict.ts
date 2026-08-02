@@ -2,6 +2,7 @@ interface RecoveryEntry {
   label?: string;
   status: "red" | "yellow" | "green";
   lastAt?: number | null;
+  injured?: boolean;
 }
 
 type RecoveryMap = Record<string, RecoveryEntry>;
@@ -11,6 +12,16 @@ interface ConflictRow {
   label: string;
   role: "primary" | "secondary";
   status: "red" | "yellow";
+  injured?: boolean;
+}
+
+export interface RecoveryConflicts {
+  red: ConflictRow[];
+  yellow: ConflictRow[];
+  hasWarning: boolean;
+  hasHardBlock: boolean;
+  /** Optional for backward-compatible test doubles; production always sets it. */
+  hasInjuryBlock?: boolean;
 }
 
 interface ExerciseMuscles {
@@ -29,7 +40,7 @@ interface WorkoutItemMuscles {
 export function recoveryConflictsForExercise(
   ex: ExerciseMuscles | null | undefined,
   by: RecoveryMap = {},
-) {
+): RecoveryConflicts {
   const primary = ex?.muscles?.primary || [];
   const secondary = ex?.muscles?.secondary || [];
   const red: ConflictRow[] = [];
@@ -42,6 +53,7 @@ export function recoveryConflictsForExercise(
       label: m.label || id,
       role,
       status: m.status as "red" | "yellow",
+      injured: m.injured === true,
     };
     if (m.status === "red") red.push(row);
     else if (m.status === "yellow") yellow.push(row);
@@ -53,6 +65,7 @@ export function recoveryConflictsForExercise(
     yellow,
     hasWarning: red.length > 0 || yellow.length > 0,
     hasHardBlock: red.length > 0,
+    hasInjuryBlock: red.some((row) => row.injured),
   };
 }
 

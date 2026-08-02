@@ -54,13 +54,30 @@ describe("recoveryConflictsForExercise", () => {
       yellow: [],
       hasWarning: false,
       hasHardBlock: false,
+      hasInjuryBlock: false,
     });
     expect(recoveryConflictsForExercise(undefined, {})).toEqual({
       red: [],
       yellow: [],
       hasWarning: false,
       hasHardBlock: false,
+      hasInjuryBlock: false,
     });
+  });
+
+  it("exposes an injury-specific hard block", () => {
+    const ex = { muscles: { primary: ["chest"], secondary: [] } };
+    const by = {
+      chest: {
+        label: "Груди",
+        status: "red" as const,
+        injured: true,
+      },
+    };
+    const cf = recoveryConflictsForExercise(ex, by);
+    expect(cf.hasHardBlock).toBe(true);
+    expect(cf.hasInjuryBlock).toBe(true);
+    expect(cf.red[0]?.injured).toBe(true);
   });
 
   it("hasHardBlock is true only when there is at least one red muscle", () => {

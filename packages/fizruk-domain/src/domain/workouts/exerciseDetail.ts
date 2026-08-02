@@ -96,6 +96,22 @@ export interface ExerciseBestSummary {
    * every prior workout's best 1RM. Used to surface the "new PR" banner.
    */
   isNewPR: boolean;
+  /** The peak estimate is older than four weeks. */
+  isStale: boolean;
+  /** Latest session followed a 3+ week gap, or the exercise is inactive now. */
+  isReturning: boolean;
+  /** ISO timestamp of the newest recorded session for this exercise. */
+  lastPerformedAt: string | null;
+}
+
+export const E1RM_STALE_AFTER_DAYS = 28;
+export const EXERCISE_RETURN_AFTER_DAYS = 21;
+const DAY_MS = 86_400_000;
+
+function parseIsoMs(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const value = Date.parse(iso);
+  return Number.isFinite(value) ? value : null;
 }
 
 /** Bucketed point on a weekly chart. */
@@ -184,6 +200,7 @@ export function collectExerciseHistory(
  */
 export function computeExerciseBest(
   history: readonly ExerciseHistoryEntry[],
+  nowMs = Date.now(),
 ): ExerciseBestSummary {
   let best1rm = 0;
   let bestSet: ExerciseBestSet | null = null;
@@ -191,6 +208,19 @@ export function computeExerciseBest(
   let lastTopEst = 0;
   let lastWorkoutBest1rm = 0;
   let priorBest1rm = 0;
+  const sessionTimes = history
+    .map(({ workout }) => parseIsoMs(workout?.startedAt))
+    .filter((value): value is number => value !== null);
+  const latestAtMs = sessionTimes[0] ?? null;
+  const previousAtMs = sessionTimes[1] ?? null;
+  const inactiveNow =
+    latestAtMs !== null &&
+    nowMs - latestAtMs >= EXERCISE_RETURN_AFTER_DAYS * DAY_MS;
+  const returnedAfterGap =
+    latestAtMs !== null &&
+    previousAtMs !== null &&
+    latestAtMs - previousAtMs >= EXERCISE_RETURN_AFTER_DAYS * DAY_MS;
+  const hasReturnGap = inactiveNow || returnedAfterGap;
 
   // Під strict-index `history[0]` має тип `T | undefined`, тому
   // явно проводимо через optional-chain — зберігаємо стару семантику
@@ -228,8 +258,22 @@ export function computeExerciseBest(
     }
   }
 
-  const isNewPR = lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
-  return { best1rm, bestSet, lastTop: lastTopSet, isNewPR };
+  const bestAtMs = parseIsoMs(bestSet?.at);
+  const isReturning = best1rm > 0 && hasReturnGap;
+  const isStale =
+    bestAtMs !== null && nowMs - bestAtMs > E1RM_STALE_AFTER_DAYS * DAY_MS;
+  const isNewPR =
+    !isReturning && lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
+  return {
+    best1rm,
+    bestSet,
+    lastTop: lastTopSet,
+    isNewPR,
+    isStale,
+    isReturning,
+    lastPerformedAt:
+      latestAtMs === null ? null : (history[0]?.workout?.startedAt ?? null),
+  };
 }
 
 /**

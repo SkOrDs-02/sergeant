@@ -17,6 +17,8 @@ export interface MuscleState {
   load7d: number;
   fatigue: number;
   status: RecoveryStatus;
+  /** Active user-marked pain/injury hard-blocks this muscle from advice. */
+  injured?: boolean;
 }
 
 /** Checklist item (warm-up / cool-down step). */
