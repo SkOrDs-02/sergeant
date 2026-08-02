@@ -156,4 +156,48 @@ describe("useToast", () => {
 
     unmount();
   });
+
+  it("keeps the exit timer alive when the leaving toast is hovered", () => {
+    // Аркуш, що зникає, ще 200 мс на екрані — навести на нього мишу цілком
+    // реально. `pause()` гасить auto-dismiss-таймери; якби exit-таймер лежав
+    // у тому ж реєстрі, наведення вбило б його, `remove()` не викликався б, і
+    // тост залишився б у списку привидом.
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    let id = 0;
+    act(() => {
+      id = result.current.info("hover me while leaving", 10_000);
+    });
+    act(() => result.current.dismiss(id));
+    expect(result.current.toasts).toMatchObject([{ leaving: true }]);
+
+    act(() => result.current.pause(id));
+    act(() => result.current.resume(id));
+
+    act(() => vi.advanceTimersByTime(200));
+    expect(result.current.toasts).toHaveLength(0);
+
+    unmount();
+  });
+
+  it("does not fire the exit timer after the provider unmounts", () => {
+    // Регресія: «голий» `setTimeout` в `dismiss()` не потрапляв у реєстр, тож
+    // cleanup його не гасив — через 200 мс він кликав `setToasts` на
+    // розмонтованому дереві. У Vitest це валило весь прогін уже після
+    // teardown-у jsdom («window is not defined»).
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    let id = 0;
+    act(() => {
+      id = result.current.info("unmount before exit", 10_000);
+    });
+    act(() => result.current.dismiss(id));
+
+    unmount();
+
+    expect(() => vi.advanceTimersByTime(1000)).not.toThrow();
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });

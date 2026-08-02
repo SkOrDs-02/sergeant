@@ -64,7 +64,9 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 # node_modules монорепо) — падає ЛИШЕ збірка образу, на `pnpm build` усередині
 # Docker, з «Could not resolve». Саме так `@sergeant/routine-domain` (серверні
 # нагадування) зробив образ незбираним. Перевірка на майбутнє:
-#   grep -rho "@sergeant/[a-z-]*" apps/server/src --include=*.ts | sort -u
+#   grep -rhoE "@sergeant/[A-Za-z0-9_-]+" apps/server/src \
+#     --include=*.ts --include=*.tsx --include=*.js --include=*.jsx \
+#     --include=*.mjs --include=*.cjs | sort -u
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
