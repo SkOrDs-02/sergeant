@@ -92,6 +92,47 @@ export function activeInjurySites(
   return out;
 }
 
+/**
+ * Найпізніше ЗНЯТТЯ позначки, що накривала цю вправу (ISO), або `null`.
+ *
+ * AI-CONTEXT: це вхід протоколу повернення (канон `fizruk.md` §6,
+ * `domain/workouts/oneRmAging.ts`) і закриття розриву E-5 з ADR-0083.
+ * Позначка блокувала вправу, а її зняття повертало користувача одразу до
+ * повних орієнтирів від піка — найнебезпечніший момент циклу був єдиним,
+ * який продукт ніяк не позначав.
+ *
+ * Симетрично до {@link activeInjurySites}: тут беруться РІВНО протилежні
+ * марки — зняті й не видалені. Видалена («не ту зону позначив») не є
+ * поверненням після травми, тож у м'який режим не вводить.
+ */
+export function latestClearedInjuryAtForExercise(
+  ex: InjuryCheckableExercise | null | undefined,
+  marks: readonly InjuryMark[] | null | undefined,
+): string | null {
+  if (!ex) return null;
+  const clearedAtBySite = new Map<InjurySiteId, string>();
+  for (const mark of marks || []) {
+    if (!mark || mark.deletedAt) continue;
+    const clearedAt = mark.clearedAt;
+    if (typeof clearedAt !== "string" || clearedAt.length === 0) continue;
+    if (!isInjurySiteId(mark.site)) continue;
+    const prev = clearedAtBySite.get(mark.site);
+    if (prev === undefined || clearedAt > prev) {
+      clearedAtBySite.set(mark.site, clearedAt);
+    }
+  }
+  if (clearedAtBySite.size === 0) return null;
+
+  const sites = new Set<InjurySiteId>(clearedAtBySite.keys());
+  const block = injuryBlockForExercise(ex, sites);
+  let latest: string | null = null;
+  for (const site of [...block.viaMuscles, ...block.viaZones]) {
+    const at = clearedAtBySite.get(site);
+    if (at !== undefined && (latest === null || at > latest)) latest = at;
+  }
+  return latest;
+}
+
 function atlasMusclesOf(ex: InjuryCheckableExercise): Set<InjurySiteId> {
   const raw = [
     ...(ex.muscles?.primary || []),
