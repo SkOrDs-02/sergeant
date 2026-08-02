@@ -152,9 +152,7 @@ export function AssistantCataloguePage({
           autoNavigate={false}
           testID="assistant-catalogue-back"
         />
-        <Text className="text-[20px] font-bold text-fg">
-          Можливості асистента
-        </Text>
+        <Text className="text-[20px] font-bold text-fg">Що вміє Сержант</Text>
       </View>
 
       <ScrollView
@@ -163,7 +161,7 @@ export function AssistantCataloguePage({
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-sm text-fg-muted mb-3 leading-snug">
-          Усе, що вміє асистент. Тапни картку — побачиш приклади команд та опис.
+          Усе, що вміє Сержант. Тапни картку — побачиш приклади команд та опис.
           Запуск сценаріїв — у HubChat (наразі веб-версія).
         </Text>
 

@@ -54,7 +54,7 @@ export function HubChatHeader({
             className="text-base font-bold leading-snug text-fg"
             numberOfLines={1}
           >
-            Асистент
+            Сержант
           </Text>
           <Text className="text-2xs text-fg-muted" numberOfLines={1}>
             {online ? "Готовий" : "Офлайн"} · {sessionsCount}{" "}
@@ -84,7 +84,7 @@ export function HubChatHeader({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Закрити асистента"
+          accessibilityLabel="Закрити Сержанта"
           onPress={onClose}
           testID="hub-chat-close"
           className="h-9 w-9 items-center justify-center rounded-xl active:bg-panel-hi"

@@ -50,7 +50,7 @@ afterEach(() => {
 describe("AssistantCataloguePage", () => {
   it("renders the screen title and the search input", () => {
     const { getByText, getByTestId } = render(<AssistantCataloguePage />);
-    expect(getByText("Можливості асистента")).toBeTruthy();
+    expect(getByText("Що вміє Сержант")).toBeTruthy();
     expect(getByTestId("assistant-catalogue-search")).toBeTruthy();
   });
 

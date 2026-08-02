@@ -50,6 +50,7 @@ vi.mock("@shared/api", () => {
     analytics: true,
     aiMemory: true,
     pushNotifications: false,
+    sergeantNudges: false,
     updatedAt: null,
   };
   return {
@@ -149,6 +150,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     analytics: true,
     aiMemory: true,
     pushNotifications: false,
+    sergeantNudges: false,
     updatedAt: null,
   };
 

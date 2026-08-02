@@ -13,6 +13,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
+import { messages } from "@shared/i18n/uk";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { SectionSkeleton } from "../settings/SettingsPrimitives";
@@ -251,7 +252,7 @@ export function HubSettingsPage({
       },
       {
         id: "assistant",
-        title: "Можливості асистента",
+        title: messages.sergeant.capabilitiesSectionTitle,
         keywords:
           "асистент команди chat help допомога інструменти каталог можливості tools",
         render: () => <AssistantCatalogueSection />,

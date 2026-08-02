@@ -1,6 +1,18 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+} from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+
+// Кнопка «Що вміє додаток» більше не рендерить візард inline — вона веде на
+// окремий маршрут `/capabilities`, тож компоненту потрібен Router-контекст.
+function render(ui: React.ReactElement) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 // ─── Collaborator mocks ───────────────────────────────────────────────────────
 
@@ -83,10 +95,10 @@ describe("GeneralSection", () => {
 
   afterEach(() => cleanup());
 
-  it("renders the tour launch button", () => {
+  it("renders the capabilities link", () => {
     render(<GeneralSection user={null} />);
     expect(
-      screen.getByRole("button", { name: /Переглянути вступну екскурсію/i }),
+      screen.getByRole("button", { name: /Що вміє додаток/i }),
     ).toBeInTheDocument();
   });
 
@@ -97,21 +109,12 @@ describe("GeneralSection", () => {
     ).toBeInTheDocument();
   });
 
-  it("opens the OnboardingWizard when launch button is clicked", () => {
+  // Регресія: кнопка відкривала `OnboardingWizard mode="tour"`, тобто той
+  // самий вітальний екран у read-only. Це був повтор привітання, а не
+  // розповідь про можливості — тепер веде на окремий каталог.
+  it("не рендерить візард — веде на каталог можливостей", () => {
     render(<GeneralSection user={null} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: /Переглянути вступну екскурсію/i }),
-    );
-    expect(screen.getByTestId("onboarding-wizard")).toBeInTheDocument();
-  });
-
-  it("closes the OnboardingWizard when onDone fires", () => {
-    render(<GeneralSection user={null} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: /Переглянути вступну екскурсію/i }),
-    );
-    expect(screen.getByTestId("onboarding-wizard")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    fireEvent.click(screen.getByRole("button", { name: /Що вміє додаток/i }));
     expect(screen.queryByTestId("onboarding-wizard")).not.toBeInTheDocument();
   });
 
