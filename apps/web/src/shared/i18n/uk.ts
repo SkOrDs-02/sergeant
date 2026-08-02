@@ -504,6 +504,21 @@ export const messages = {
     openSettings: "Налаштування модуля",
   },
 
+  // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).
+  routinePause: {
+    heading: "Пауза",
+    hint: "Заяви паузу наперед — відпустку чи хворобу. Дні паузи випадають із розкладу і серію не ламають.",
+    activeHint: "Ці дні не рахуються — серія їх не помітить.",
+    fromLabel: "З",
+    toLabel: "По (необовʼязково)",
+    declare: "Поставити паузу",
+    resumeToday: "Повернутись сьогодні",
+    activePrefix: "На паузі",
+    activeOpenPrefix: "На паузі з",
+    plannedPrefix: "Заплановано:",
+    fromShort: "з",
+  },
+
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",

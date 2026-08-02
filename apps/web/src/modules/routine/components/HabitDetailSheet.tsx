@@ -32,6 +32,7 @@ import {
   WEEKDAY_LABELS,
 } from "../lib/routineConstants";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
+import { HabitPauseSection } from "./HabitPauseSection";
 import type { Habit, RoutineState } from "../lib/types";
 
 function todayKey(): string {
@@ -386,6 +387,14 @@ export function HabitDetailSheet({
             </div>
           </div>
         </section>
+
+        {setRoutine && (
+          <HabitPauseSection
+            habit={habit}
+            todayKey={tk}
+            setRoutine={setRoutine}
+          />
+        )}
 
         <section className="mb-5" aria-label="Календар виконань">
           <div className="flex items-center justify-between mb-2">
