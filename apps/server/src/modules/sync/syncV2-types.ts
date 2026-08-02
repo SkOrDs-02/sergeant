@@ -34,7 +34,6 @@ export const APPLY_REJECT_REASONS = [
   "missing_exercise_id",
   "missing_workout_id",
   "missing_workout_item_id",
-  "missing_muscle_group",
   "missing_pantry_id",
   "missing_date_key",
   "missing_note_key",
@@ -48,8 +47,6 @@ export const APPLY_REJECT_REASONS = [
   "invalid_last_used_at",
   "invalid_entry_at",
   "invalid_measured_at",
-  "invalid_noted_at",
-  "invalid_cleared_at",
   "invalid_eaten_at",
   // Field validation — anthropometry
   "invalid_weight_kg",

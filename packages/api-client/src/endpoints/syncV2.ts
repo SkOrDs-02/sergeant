@@ -26,14 +26,10 @@ export type SyncV2OpKind = "insert" | "update" | "delete" | "increment";
  * унікальний у межах `(user_id, idempotency_key)`. Реплеї з тим самим
  * ключем повертають кешований результат, не виконуючи DML повторно.
  */
-export interface SyncV2PushOp<
-  TRow extends Record<string, unknown> = Record<string, unknown>,
-  TTable extends string = string,
-  TOp extends SyncV2OpKind = SyncV2OpKind,
-> {
-  table: TTable;
-  op: TOp;
-  row: TRow;
+export interface SyncV2PushOp {
+  table: string;
+  op: SyncV2OpKind;
+  row: Record<string, unknown>;
   client_ts: string;
   idempotency_key: string;
 }
@@ -44,28 +40,6 @@ export interface SyncV2OpResult {
   idempotency_key: string;
   status: SyncV2OpResultStatus;
   reason?: string;
-}
-
-/** Wire row accepted by the `fizruk_injuries` sync-v2 apply handler. */
-export interface FizrukInjurySyncRow extends Record<string, unknown> {
-  id: string;
-  user_id: string;
-  muscle_group: string;
-  noted_at: string;
-  cleared_at: string | null;
-}
-
-/** Injury mutations supported by the server. Deletion is intentionally rejected. */
-export type SyncV2FizrukInjuryPushOp = SyncV2PushOp<
-  FizrukInjurySyncRow,
-  "fizruk_injuries",
-  "insert" | "update"
->;
-
-/** Exact result returned when a client attempts to delete an injury row. */
-export interface SyncV2FizrukInjuryDeleteResult extends SyncV2OpResult {
-  status: "rejected";
-  reason: "delete_not_supported";
 }
 
 /**
@@ -85,26 +59,15 @@ export interface SyncV2PushResponse {
  * Один запис у відповіді pull-у. `id` — BIGSERIAL → number (Hard Rule
  * #1 — coerce у серіалайзері).
  */
-export interface SyncV2PullOp<
-  TRow extends Record<string, unknown> = Record<string, unknown>,
-  TTable extends string = string,
-  TOp extends SyncV2OpKind = SyncV2OpKind,
-> {
+export interface SyncV2PullOp {
   id: number;
-  table: TTable;
-  op: TOp;
-  row: TRow;
+  table: string;
+  op: SyncV2OpKind;
+  row: Record<string, unknown>;
   client_ts: string;
   server_ts: string;
   origin_device_id: string | null;
 }
-
-/** Exact pull envelope emitted for an injury insert or clearing update. */
-export type SyncV2FizrukInjuryPullOp = SyncV2PullOp<
-  FizrukInjurySyncRow,
-  "fizruk_injuries",
-  "insert" | "update"
->;
 
 export interface SyncV2PullResponse {
   ops: SyncV2PullOp[];

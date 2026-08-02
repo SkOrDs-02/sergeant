@@ -41,11 +41,7 @@ export {
 
 export {
   createSyncV2Endpoints,
-  type FizrukInjurySyncRow,
   type SyncV2Endpoints,
-  type SyncV2FizrukInjuryDeleteResult,
-  type SyncV2FizrukInjuryPullOp,
-  type SyncV2FizrukInjuryPushOp,
   type SyncV2OpKind,
   type SyncV2OpResult,
   type SyncV2OpResultStatus,

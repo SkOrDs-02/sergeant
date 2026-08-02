@@ -158,7 +158,6 @@ describe("INCREMENT_OP_SUPPORTED_TABLES / SYNC_V2_SUPPORTED_TABLES", () => {
         "routine_entries",
         "routine_streaks",
         "fizruk_workouts",
-        "fizruk_injuries",
         "nutrition_meals",
         "finyk_budgets",
       ]),
@@ -597,52 +596,6 @@ describe("syncV2Pull · happy-path", () => {
     expect(args[1]).toBe(10);
     expect(args[2]).toBe("device-A");
     expect(args[3]).toBe(50);
-  });
-
-  it("serializes the exact fizruk_injuries pull row contract", async () => {
-    const clientTs = new Date("2026-08-01T10:00:00.000Z");
-    const serverTs = new Date("2026-08-01T10:00:01.000Z");
-    const injury = {
-      id: "00000005-0009-4000-8001-000000000001",
-      user_id: "u_1",
-      muscle_group: "lower_back",
-      noted_at: "2026-08-01T10:00:00.000Z",
-      cleared_at: null,
-    };
-    pool.query.mockResolvedValueOnce({
-      rows: [
-        {
-          id: "46",
-          table_name: "fizruk_injuries",
-          op: "insert",
-          row: injury,
-          client_ts: clientTs,
-          server_ts: serverTs,
-          origin_device_id: "device-A",
-        },
-      ],
-    });
-
-    const res = makeRes();
-    await syncV2Pull(
-      makeReq({ headers: { "x-origin-device-id": "device-B" } }),
-      res,
-    );
-
-    expect(res.body).toEqual({
-      ops: [
-        {
-          id: 46,
-          table: "fizruk_injuries",
-          op: "insert",
-          row: injury,
-          client_ts: clientTs.toISOString(),
-          server_ts: serverTs.toISOString(),
-          origin_device_id: "device-A",
-        },
-      ],
-      next_cursor: null,
-    });
   });
 
   it("результат довжини limit → next_cursor = id останнього", async () => {

@@ -12,7 +12,6 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
-  fizrukInjuries,
 } from "../pg/fizruk.js";
 
 /**
@@ -480,43 +479,5 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
   it("declares the partial user index", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("fizruk_workout_templates_user_idx");
-  });
-});
-
-describe("pg/fizrukInjuries schema snapshot", () => {
-  const config = getTableConfig(fizrukInjuries);
-
-  it("matches migration 094", () => {
-    expect(config.name).toBe("fizruk_injuries");
-    expect(config.columns.map((column) => column.name)).toEqual([
-      "id",
-      "user_id",
-      "muscle_group",
-      "noted_at",
-      "cleared_at",
-    ]);
-
-    const columnMap = Object.fromEntries(
-      config.columns.map((column) => [column.name, column]),
-    );
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
-    expect(columnMap["id"]!.primary).toBe(true);
-    expect(columnMap["id"]!.hasDefault).toBe(true);
-    expect(columnMap["user_id"]!.notNull).toBe(true);
-    expect(columnMap["muscle_group"]!.notNull).toBe(true);
-    expect(columnMap["noted_at"]!.columnType).toBe("PgTimestamp");
-    expect(columnMap["noted_at"]!.notNull).toBe(true);
-    expect(columnMap["cleared_at"]!.notNull).toBe(false);
-  });
-
-  it("indexes injury history and the active subset", () => {
-    const indexNames = config.indexes.map((index) => index.config.name);
-    expect(indexNames).toContain("fizruk_injuries_user_noted_idx");
-    expect(indexNames).toContain("fizruk_injuries_user_active_idx");
-
-    const activeIndex = config.indexes.find(
-      (index) => index.config.name === "fizruk_injuries_user_active_idx",
-    );
-    expect(activeIndex!.config.where).toBeDefined();
   });
 });

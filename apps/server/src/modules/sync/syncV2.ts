@@ -49,7 +49,6 @@ import {
   applyFizrukMonthlyPlan,
   applyFizrukPlanTemplates,
   applyFizrukPrograms,
-  applyFizrukInjuries,
   applyFizrukWellbeing,
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
@@ -169,7 +168,6 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   fizruk_monthly_plan: applyFizrukMonthlyPlan,
   fizruk_plan_templates: applyFizrukPlanTemplates,
   fizruk_programs: applyFizrukPrograms,
-  fizruk_injuries: applyFizrukInjuries,
   fizruk_wellbeing: applyFizrukWellbeing,
   fizruk_workout_templates: applyFizrukWorkoutTemplates,
   // Модель «не можна» (ADR-0083). `site` навмисно не валідується проти
