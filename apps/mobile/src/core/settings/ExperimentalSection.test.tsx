@@ -21,7 +21,11 @@ describe("ExperimentalSection", () => {
   it("renders the collapsed group header", () => {
     const { getByText, queryByText } = render(<ExperimentalSection />);
     expect(getByText("Експериментальне")).toBeTruthy();
-    expect(queryByText("Категорія «Підписки» у швидкому додаванні")).toBeNull();
+    // Рядки прапорців зʼявляються лише після розгортання. Перевіряємо на
+    // `hub_command_palette` — єдиному, що лишився в `EXPERIMENTAL_FLAGS`:
+    // `finyk_subscriptions_category` прибрано разом із web, бо тумблер не мав
+    // жодного читача (людина вмикала опцію, яка нічого не робить).
+    expect(queryByText("Command Palette (Ctrl/⌘+K)")).toBeNull();
   });
 
   it("expands to show the experimental flag rows", () => {
@@ -29,7 +33,6 @@ describe("ExperimentalSection", () => {
 
     fireEvent.press(getByText("Експериментальне"));
 
-    expect(getByText("Категорія «Підписки» у швидкому додаванні")).toBeTruthy();
     expect(getByText("Command Palette (Ctrl/⌘+K)")).toBeTruthy();
   });
 });

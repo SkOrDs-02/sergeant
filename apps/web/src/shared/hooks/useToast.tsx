@@ -110,7 +110,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)),
       );
-      setTimeout(() => remove(id), 200);
+      // AI-DANGER: exit-таймер МУСИТЬ лежати в `timersRef`. Cleanup провайдера
+      // гасить рівно те, що там зареєстровано, тож «голий» `setTimeout` тут
+      // переживав unmount і через 200 мс кликав `setToasts` на розмонтованому
+      // дереві. У застосунку це setState-after-unmount, у Vitest — падіння
+      // всього прогону: таймер спрацьовував уже після teardown-у jsdom і
+      // React звертався до неіснуючого `window` («ReferenceError: window is
+      // not defined» у `getCurrentEventPriority`). 9178 тестів зелені, job
+      // червоний через один осиротілий таймер.
+      timersRef.current[id] = setTimeout(() => {
+        delete timersRef.current[id];
+        remove(id);
+      }, 200);
     },
     [remove],
   );
