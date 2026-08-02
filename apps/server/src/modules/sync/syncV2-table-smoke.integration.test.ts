@@ -270,13 +270,13 @@ describe("syncV2 table-coverage smoke (PR-5)", () => {
       await smokePushPull(ctx, {
         table: "fizruk_injuries",
         userId: "u-smoke-fi",
-        // Колонки — `site` / `started_at`, як у міграції 097 і в
-        // `applyInjuries.ts`. Тест був написаний під ранній чернетковий
-        // нейминг (`muscle_group` / `noted_at`), тож applier відхиляв op
-        // із `missing_site`, і `accepted` дорівнював 0.
+        // Форма рядка — рівно та, що в міграції 097 і в `applyInjuries.ts`:
+        // `site` + `started_at`, а НЕ `muscle_group`/`noted_at`. І id з
+        // доменним префіксом `inj_`, бо колонка TEXT саме заради нього
+        // (uuid-колонка давала б 22P02 на кожному push).
         row: {
-          id: "00000005-0009-4000-8001-000000000001",
-          site: "lower_back",
+          id: "inj_00000005-0009-4000-8001-000000000001",
+          site: "spine-lumbar",
           started_at: isoNow(),
           cleared_at: null,
         },

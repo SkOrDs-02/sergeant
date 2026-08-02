@@ -84,11 +84,33 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // running, this matches the duration passed to `setTimeout`; on pause we
   // overwrite it with `remaining - (now - startedAt)`.
   const remainingRef = useRef<Record<number, number>>({});
+  /**
+   * Таймери exit-анімації — ОКРЕМО від auto-dismiss.
+   *
+   * AI-DANGER: не зливай ці два реєстри в один. `pause()` гасить усе, що
+   * лежить у `timersRef`, а на аркуші, що вже їде геть, hover цілком можливий
+   * (200 мс він ще на екрані). Спільний реєстр означав би: навів мишу під час
+   * зникнення → exit-таймер убито → `remove(id)` не викликається → тост
+   * назавжди лишається у `toasts` привидом.
+   */
+  const exitTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>(
+    {},
+  );
 
   useEffect(() => {
     return () => {
       Object.values(timersRef.current).forEach(clearTimeout);
+      // Cleanup гасить рівно те, що зареєстровано, тож exit-таймери мусять
+      // бути тут. «Голий» `setTimeout` переживав unmount і через 200 мс кликав
+      // `setToasts` на розмонтованому дереві: у застосунку —
+      // setState-after-unmount, у Vitest — падіння всього прогону (таймер
+      // спрацьовував після teardown-у jsdom, і React звертався до неіснуючого
+      // `window`: «ReferenceError: window is not defined» у
+      // `getCurrentEventPriority`). 9178 тестів зелені, job червоний через
+      // один осиротілий таймер.
+      Object.values(exitTimersRef.current).forEach(clearTimeout);
       timersRef.current = {};
+      exitTimersRef.current = {};
       startedAtRef.current = {};
       remainingRef.current = {};
     };
@@ -105,12 +127,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       const timer = timersRef.current[id];
       if (timer) clearTimeout(timer);
       delete timersRef.current[id];
+      // Auto-dismiss для цього тоста вже не відновиться — прибираємо його
+      // бухгалтерію, щоб `resume()` не спробував перезапустити відлік по
+      // застарілому `remaining`, поки аркуш їде геть.
+      delete startedAtRef.current[id];
+      delete remainingRef.current[id];
       // Mark as leaving → triggers exit animation in <ToastContainer>.
       // After 200ms (matches the CSS exit transition), actually remove.
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)),
       );
-      setTimeout(() => remove(id), 200);
+      exitTimersRef.current[id] = setTimeout(() => {
+        delete exitTimersRef.current[id];
+        remove(id);
+      }, 200);
     },
     [remove],
   );

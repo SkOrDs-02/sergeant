@@ -270,7 +270,9 @@ reload`, один раз упав на `mobile-safari` і двічі пройш�
 > прибрано разом із його файлом у `apps/web/src/sw/`; нагадування тепер
 > шле сервер (`apps/server/src/lib/reminders/`), тож вони таки залежать від
 > нього — і саме тому працюють при закритому застосунку. Деталі:
-> [`notifications.md`](../../02-engineering/architecture/notifications.md).
+> [`notifications.md`](../../02-engineering/architecture/notifications.md),
+> commit `347dcf0` _«нагадування шле сервер, а не таймер у сервіс-воркері»_.
+> Абзац вище лишається як опис стану на дату аудиту.
 
 ## Не перевірено
 

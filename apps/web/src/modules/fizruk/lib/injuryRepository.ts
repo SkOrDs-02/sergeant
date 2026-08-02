@@ -14,6 +14,18 @@
  * Local writes for injury marks — the client-authored half of the "не можна"
  * model (ADR-0083).
  *
+ * ⚠️ **Не підключено, і це не описка в маркері.** Жоден модуль не імпортує
+ * ці функції (`markInjurySites` / `clearInjuryMark`) — `pnpm dead-code:files`
+ * ловить файл як мертвий. Робочий шлях сьогодні інший: `useInjuries` пише
+ * позначки через `triggerFizrukDualWrite`, тобто рівно через diff-конвеєр,
+ * який коментар нижче називає навмисно обійденим. Тобто модуль і шапка
+ * описують намір, а не поточну поведінку.
+ *
+ * Рішення, що з ним робити, — за власником: або довести до використання
+ * (тоді `useInjuries` переходить сюди), або видалити як залишок підходу, що
+ * програв. Маркер лише знімає блокування CI й не легалізує розбіжність.
+ * TODO(0589-injury-repo): 2026-09-15.
+ *
  * AI-CONTEXT: marks bypass the Fizruk dual-write diff pipeline on purpose.
  * That pipeline diffs whole-state snapshots, which fits entities the UI edits
  * as a tree (workouts and their items/sets). A mark is a single flat row the
