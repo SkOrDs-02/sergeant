@@ -5,7 +5,7 @@ import { useDailyLog } from "./useDailyLog";
 import { useInjuries } from "./useInjuries";
 import {
   computeRecoveryBy,
-  computeWellbeingMultiplier,
+  computeWellbeingSignal,
   type MuscleState,
 } from "@sergeant/fizruk-domain";
 import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
@@ -32,7 +32,11 @@ export function useRecovery() {
   const [nowMs] = useState(() => Date.now());
 
   const stats = useMemo(() => {
-    const wellbeingMult = computeWellbeingMultiplier(dailyLogEntries);
+    // `wellbeingSignal` знає не лише множник, а й ЧОМУ він такий: запис поза
+    // вікном свіжості більше не рухає відновлення (E-3), і UI мусить це
+    // сказати вголос — «журнал заповнено» і «журнал впливає» тепер різні речі.
+    const wellbeingSignal = computeWellbeingSignal(dailyLogEntries, nowMs);
+    const wellbeingMult = wellbeingSignal.multiplier;
     const by = computeRecoveryBy(workouts, musclesUk, nowMs, dailyLogEntries);
 
     const list = Object.values(by)
@@ -68,7 +72,15 @@ export function useRecovery() {
       ...list.filter((x) => x.status === "red" && !injuredIds.has(x.id)),
     ].slice(0, 4);
 
-    return { by, list, ready, avoid, wellbeingMult, injurySites };
+    return {
+      by,
+      list,
+      ready,
+      avoid,
+      wellbeingMult,
+      wellbeingSignal,
+      injurySites,
+    };
   }, [workouts, musclesUk, dailyLogEntries, nowMs, injurySites]);
 
   return stats;
