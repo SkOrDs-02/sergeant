@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -42,6 +42,7 @@ System architecture and runtime surface inventory for Sergeant.
 | [`repo-map.md`](./repo-map.md)                                       | Повна матриця apps + packages: стек, призначення, деплой-вихід; compact summary — в AGENTS.md      | 2026-06-02   |
 | [`domain-invariants.md`](./domain-invariants.md)                     | Глибокий розбір інваріантів (час/гроші/ID); compact pointer — в AGENTS.md                          | 2026-06-02   |
 | [`state-write-paths.md`](./state-write-paths.md)                     | Дві writer-доріжки web-стану (`useMutation` vs HubChat tool-call) і де живуть інваріанти           | 2026-06-02   |
+| [`notifications.md`](./notifications.md)                             | Канали пушів, серверний прохід нагадувань, дедуп через спільний `Notification.tag`, форма payload  | 2026-08-02   |
 | [`metric-registry.md`](./metric-registry.md)                         | Реєстр «метрика → канонічна функція → де рахується сьогодні → чи збігається» + план переведення    | 2026-07-25   |
 | [`ai-memory.md`](./ai-memory.md)                                     | Серверний episodic-memory store (`ai_memories`, migration 025): ingestion, recall, backfill        | 2026-06-02   |
 | [`rag-eval.md`](./rag-eval.md)                                       | RAG eval pipeline: golden-set, P@1/MRR, weekly quality gate та auto-disable (PR-20/PR-22)          | 2026-06-02   |

@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
+import { usePushNotifications } from "@shared/hooks/usePushNotifications";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import {
@@ -27,6 +28,17 @@ export function NotificationsSection() {
       : "unsupported",
   );
   const { warning: toastWarning } = useToast();
+
+  // Три перемикачі нижче обіцяли «навіть коли застосунок закрито» —
+  // і це була неправда: нагадування вів локальний таймер, який помирав
+  // разом із вкладкою. Тепер їх шле сервер, але лише тим, у кого є жива
+  // push-підписка. Тож обіцянку віддаємо умовно, за фактичним станом:
+  // мовчазний перемикач, що нічого не робить, — гірший за чесний рядок.
+  const { subscribed: pushSubscribed } = usePushNotifications();
+  const backgroundHint = (base: string): string =>
+    pushSubscribed
+      ? `${base} Приходить навіть коли застосунок закрито.`
+      : `${base} Щоб приходило при закритому застосунку, увімкни push-сповіщення вище.`;
 
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
 
@@ -158,7 +170,9 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Рутина (звички)" defaultOpen>
         <ToggleRow
           label="Нагадування про звички"
-          description="Спрацьовує у встановлений в кожній звичці час, навіть коли застосунок закрито."
+          description={backgroundHint(
+            "Спрацьовує у час, вказаний у кожній звичці.",
+          )}
           checked={routine.prefs?.routineRemindersEnabled === true}
           onChange={handleRoutineToggle}
         />
@@ -167,7 +181,9 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Фізрук (тренування)" defaultOpen>
         <ToggleRow
           label="Нагадування про тренування"
-          description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування."
+          description={backgroundHint(
+            "Надсилається о вказаній годині, якщо на сьогодні призначено тренування.",
+          )}
           checked={monthlyPlan.reminderEnabled}
           onChange={handleFizrukToggle}
         />
@@ -190,7 +206,9 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Їжа" defaultOpen>
         <ToggleRow
           label="Нагадування про їжу"
-          description="Щоденне нагадування записати прийоми їжі, навіть коли застосунок закрито."
+          description={backgroundHint(
+            "Щоденне нагадування записати прийоми їжі.",
+          )}
           checked={Boolean(nutritionPrefs.reminderEnabled)}
           onChange={handleNutritionToggle}
         />

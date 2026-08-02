@@ -84,7 +84,6 @@ export default function FizrukApp({
     reminderEnabled: monthlyPlan.reminderEnabled,
     reminderHour: monthlyPlan.reminderHour,
     reminderMinute: monthlyPlan.reminderMinute,
-    days: monthlyPlan.days,
   });
 
   const conflictCopy = messages.fizruk.activeWorkoutConflict;

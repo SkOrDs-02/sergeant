@@ -466,6 +466,9 @@ importers:
       '@sergeant/finyk-domain':
         specifier: workspace:*
         version: link:../../packages/finyk-domain
+      '@sergeant/routine-domain':
+        specifier: workspace:*
+        version: link:../../packages/routine-domain
       '@sergeant/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -6563,6 +6566,7 @@ packages:
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
+    deprecated: v4 is no longer maintained, upgrade to v5
 
   cross-env@10.1.0:
     resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}

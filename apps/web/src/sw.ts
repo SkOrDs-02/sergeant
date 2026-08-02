@@ -20,6 +20,12 @@ import { setupCacheRoutes, listStaleCaches } from "./sw/cache";
 import { CACHE_NAMES } from "./sw/version";
 import { handleSwMessage } from "./sw/messages";
 import { recordNotified } from "./sw/notifiedKeys";
+import {
+  ALLOWED_NOTIFICATION_MODULES,
+  normalizePushPayload,
+  safeNotificationPath,
+  type SwPushPayload,
+} from "./sw/pushPayload";
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -39,25 +45,27 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("message", handleSwMessage);
 
-// Audit 2026-05-13 §F8: push payload приходить підписаним VAPID, але
-// VAPID-key compromise або mis-routed subscription може підкинути
-// довільний `module`. Без allow-list рядок одразу йде у URL і у postMessage.
-const ALLOWED_NOTIFICATION_MODULES = new Set([
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-]);
-
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const rawModule = (event.notification.data as { module?: string } | null)
-    ?.module;
+  const data = event.notification.data as {
+    module?: string;
+    url?: string;
+  } | null;
+  // `module` уже звужений allow-list-ом у `normalizePushPayload` перед
+  // записом у `data`, але локальні нагадування (`sw/reminders.ts`) кладуть
+  // його напряму, тож перевіряємо ще раз тут.
+  const rawModule = data?.module;
   const module =
     rawModule && ALLOWED_NOTIFICATION_MODULES.has(rawModule)
       ? rawModule
       : undefined;
-  const url = module ? `/?module=${module}` : "/";
+  // Явний deep-link перемагає модульний fallback: `data.url` вказує на
+  // конкретний екран (`/finyk/budgets`), тоді як `?module=` доводить лише
+  // до кореня модуля. Сервер шле `url` у кожному payload-і з `PushPayload.url`
+  // (`push/send.ts` кладе його саме в `data.url`), і до цієї правки SW його
+  // ігнорував — deep-link не працював у жодному пуші.
+  const deepLink = safeNotificationPath(data?.url);
+  const url = deepLink ?? (module ? `/?module=${module}` : "/");
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
@@ -65,6 +73,15 @@ self.addEventListener("notificationclick", (event) => {
         for (const client of clientList) {
           if (client.url.includes(self.registration.scope)) {
             client.focus();
+            if (deepLink && "navigate" in client) {
+              // Вкладка вже відкрита — ведемо її на цільовий екран. `navigate`
+              // може відхилитись (крос-origin, вкладка втратила контроль);
+              // тоді лишається сфокусована вкладка + postMessage нижче.
+              void client.navigate(deepLink).catch(() => {
+                if (module) client.postMessage({ type: "OPEN_MODULE", module });
+              });
+              return;
+            }
             if (module) {
               client.postMessage({ type: "OPEN_MODULE", module });
             }
@@ -95,35 +112,30 @@ self.addEventListener("activate", (event) => {
 });
 
 // ── Web Push ─────────────────────────────────────────────────────
-// Audit 2026-05-13 §F9: defensive clamps on adversary-controlled payloads.
-// VAPID-signed, але якщо backend скомпрометовано — SW виконає довільний
-// `title`/`body`. Обрізаємо довжину і вирізаємо BiDi-overrides
-// (U+202A..U+202E, U+2066..U+2069) і zero-width joiners (U+200B..U+200D,
-// U+FEFF), які зловмисник може використати для візуального спуфінгу.
-const sanitize = (input: unknown, max: number): string =>
-  String(input ?? "")
-    .replace(/[\u202A-\u202E\u2066-\u2069\u200B-\u200D\uFEFF]/g, "")
-    .slice(0, max);
-
+// Розбір і захисні обрізки payload-у живуть у `./sw/pushPayload` — там же
+// зафіксована історія розбіжності контракту між сервером і цим handler-ом
+// (плаский `module`/`tag` проти вкладеного `data`), і там її покривають
+// тести, яких сам сервіс-воркер мати не може.
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-  let payload: { title?: string; body?: string; tag?: string; module?: string };
+  let raw: SwPushPayload;
   try {
-    payload = event.data.json();
+    raw = event.data.json();
   } catch {
-    payload = { title: event.data.text() };
+    raw = { title: event.data.text() };
   }
 
-  const title = sanitize(payload.title, 80) || "Мій простір";
-  const tag = sanitize(payload.tag, 120) || `push_${Date.now()}`;
+  const push = normalizePushPayload(raw, `push_${Date.now()}`);
   const options = {
-    body: sanitize(payload.body, 200),
+    body: push.body,
     icon: "/icon-192.png",
     badge: "/icon-192.png",
-    tag,
+    tag: push.tag,
     requireInteraction: false,
-    data: { module: payload.module || null },
+    // `url` доїжджає до `notificationclick` тільки через `data` — інших
+    // каналів між двома подіями немає.
+    data: { module: push.module, url: push.url },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(self.registration.showNotification(push.title, options));
 });

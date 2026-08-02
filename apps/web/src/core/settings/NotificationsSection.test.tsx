@@ -10,6 +10,7 @@ const {
   monthlyPlanState,
   loadNutritionPrefsMock,
   persistNutritionPrefsMock,
+  pushState,
 } = vi.hoisted(() => ({
   toastWarningMock: vi.fn(),
   requestPermMock: vi.fn(),
@@ -30,6 +31,7 @@ const {
     }),
   ),
   persistNutritionPrefsMock: vi.fn(),
+  pushState: { subscribed: false },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -54,6 +56,11 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
 }));
 vi.mock("../components/PushNotificationToggle", () => ({
   PushNotificationToggle: () => <div data-testid="push-toggle" />,
+}));
+// Секція читає стан підписки, щоб не обіцяти доставку при закритому
+// застосунку тим, у кого пуш не увімкнено.
+vi.mock("@shared/hooks/usePushNotifications", () => ({
+  usePushNotifications: () => pushState,
 }));
 
 import { NotificationsSection } from "./NotificationsSection";
@@ -80,6 +87,7 @@ describe("NotificationsSection", () => {
     routineState.routine = { prefs: { routineRemindersEnabled: false } };
     monthlyPlanState.reminderEnabled = false;
     loadNutritionPrefsMock.mockReturnValue({ reminderEnabled: false });
+    pushState.subscribed = false;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -229,5 +237,25 @@ describe("NotificationsSection", () => {
     vi.stubGlobal("Notification", undefined);
     render(<NotificationsSection />);
     expect(screen.getByText("Не підтримується")).toBeInTheDocument();
+  });
+
+  // Регресія: три перемикачі обіцяли «навіть коли застосунок закрито» —
+  // і це була неправда, бо нагадування вів локальний таймер, який помирав
+  // разом із вкладкою. Тепер їх шле сервер, але тільки за наявності живої
+  // push-підписки, тож обіцянка стала умовною.
+  it("не обіцяє фонову доставку без push-підписки", () => {
+    render(<NotificationsSection />);
+    expect(
+      screen.getAllByText(/увімкни push-сповіщення вище/).length,
+    ).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText(/навіть коли застосунок закрито/)).toBeNull();
+  });
+
+  it("обіцяє фонову доставку, коли підписка є", () => {
+    pushState.subscribed = true;
+    render(<NotificationsSection />);
+    expect(
+      screen.getAllByText(/навіть коли застосунок закрито/).length,
+    ).toBeGreaterThanOrEqual(3);
   });
 });
