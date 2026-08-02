@@ -500,6 +500,99 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
    * (старе значення) — тест відстрелить.
    * Audit-док: `docs/security/better-auth-audit-2026-05.md`. ADR-0017.
    */
+  /**
+   * `ALLOWED_ORIGINS` — comma-separated ops-override для `trustedOrigins`,
+   * додається поверх дефолтного списку (не замінює його, на відміну від
+   * `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES`). Порожні записи між комами
+   * відкидаються, пробіли навколо значення обрізаються.
+   */
+  it("ALLOWED_ORIGINS додає власні origin-и до trustedOrigins, тримуючи пробіли/порожні записи", async () => {
+    vi.resetModules();
+    vi.stubEnv(
+      "ALLOWED_ORIGINS",
+      "https://custom.example.com, https://second.example.com,,",
+    );
+    try {
+      const { auth: authWithAllowed } = await import("./auth.js");
+      const options = (
+        authWithAllowed as unknown as {
+          options: { trustedOrigins?: string[] };
+        }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("https://custom.example.com");
+      expect(origins).toContain("https://second.example.com");
+      // Apple callback-origin і нативні схеми лишаються — ALLOWED_ORIGINS
+      // тільки додає, не замінює.
+      expect(origins).toContain("https://appleid.apple.com");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("без ALLOWED_ORIGINS trustedOrigins не містить сторонніх origin-ів", () => {
+    const options = (
+      auth as unknown as { options: { trustedOrigins?: string[] } }
+    ).options;
+    const origins = options.trustedOrigins ?? [];
+    expect(origins).not.toContain("https://custom.example.com");
+  });
+
+  /**
+   * `getAdvancedCookieOptions()` — SameSite=None/Secure вмикається лише коли
+   * base URL API — HTTPS (типово прод) і `BETTER_AUTH_CROSS_SITE_COOKIES`
+   * не виставлений у `"0"`. Без цього крос-сайтовий фронт (Vercel) не зміг
+   * би тримати сесію: браузер відкидає SameSite=Lax cookie з іншого origin-у.
+   */
+  it("advanced.useSecureCookies вмикається, коли BETTER_AUTH_URL — https", async () => {
+    vi.resetModules();
+    vi.stubEnv("BETTER_AUTH_URL", "https://api.example.com");
+    try {
+      const { auth: authHttps } = await import("./auth.js");
+      const options = (
+        authHttps as unknown as {
+          options: {
+            advanced?: {
+              useSecureCookies?: boolean;
+              defaultCookieAttributes?: { sameSite?: string; secure?: boolean };
+            };
+          };
+        }
+      ).options;
+      expect(options.advanced?.useSecureCookies).toBe(true);
+      expect(options.advanced?.defaultCookieAttributes?.sameSite).toBe("none");
+      expect(options.advanced?.defaultCookieAttributes?.secure).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("advanced відсутній, коли BETTER_AUTH_CROSS_SITE_COOKIES=0 навіть на https base URL", async () => {
+    vi.resetModules();
+    vi.stubEnv("BETTER_AUTH_URL", "https://api.example.com");
+    vi.stubEnv("BETTER_AUTH_CROSS_SITE_COOKIES", "0");
+    try {
+      const { auth: authOptOut } = await import("./auth.js");
+      const options = (
+        authOptOut as unknown as { options: { advanced?: unknown } }
+      ).options;
+      expect(options.advanced).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("advanced відсутній для http (локальний dev) base URL", () => {
+    // Default test env (no BETTER_AUTH_URL стаб) резолвиться у
+    // `http://localhost:${PORT}` через getBaseURL() — не https.
+    const options = (auth as unknown as { options: { advanced?: unknown } })
+      .options;
+    expect(options.advanced).toBeUndefined();
+  });
+
   it("PR-48: session.expiresIn = 7 діб", () => {
     const options = (
       auth as unknown as {
