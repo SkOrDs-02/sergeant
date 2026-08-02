@@ -25,7 +25,11 @@ describe("WaterTrackerCard", () => {
       <WaterTrackerCard goalMl={2000} testID="water-card" />,
     );
 
-    expect(getByText("500 мл / 2.0 л")).toBeTruthy();
+    // `fmt` у картці — `toLocaleString("uk-UA", { maximumFractionDigits: 2 })`,
+    // тож рівні літри йдуть без хвостового нуля: 2000 мл → «2 л», а не «2.0 л».
+    // Так задумано в #576 (до нього один знак після коми округлював цілі,
+    // задані з точністю до мілілітра: 2350 мл показувалось як «2.4 л»).
+    expect(getByText("500 мл / 2 л")).toBeTruthy();
     fireEvent.press(getByTestId("water-card-add-300"));
     expect(add).toHaveBeenCalledWith(300);
   });
@@ -38,7 +42,7 @@ describe("WaterTrackerCard", () => {
       <WaterTrackerCard goalMl={2000} testID="water-card" />,
     );
 
-    expect(getByText("2.1 л / 2.0 л ✓")).toBeTruthy();
+    expect(getByText("2,1 л / 2 л ✓")).toBeTruthy();
     const resetButton = getByTestId("water-card-reset");
     fireEvent.press(resetButton);
     expect(reset).not.toHaveBeenCalled();
