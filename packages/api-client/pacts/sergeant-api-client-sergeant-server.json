@@ -253,6 +253,57 @@
       }
     },
     {
+      "description": "a GET /api/v1/coach/memory request",
+      "providerStates": [
+        {
+          "name": "an authenticated session for user-pact-001 with one weekly-digest entry in coach_memory"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/coach/memory"
+      },
+      "response": {
+        "body": {
+          "memory": {
+            "lastInsightDate": "2026-05-12",
+            "lastInsightText": "Steady week — keep the momentum.",
+            "weeklyDigests": [
+              {
+                "finyk": {
+                  "summary": "Spending under budget by 8%."
+                },
+                "fizruk": {
+                  "summary": "3 workouts done."
+                },
+                "generatedAt": "2026-05-11T08:00:00.000Z",
+                "nutrition": {
+                  "summary": "Protein on target."
+                },
+                "overallRecommendations": [
+                  "Keep weekly cardio under 4 sessions."
+                ],
+                "routine": {
+                  "summary": "Sleep 7h average."
+                },
+                "weekKey": "2026-W19",
+                "weekRange": "2026-05-04..2026-05-10"
+              }
+            ]
+          },
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/me request",
       "providerStates": [
         {
@@ -313,6 +364,41 @@
             "monoAccountId": "acct-pact-001",
             "sendId": "abc123",
             "type": "black",
+            "userId": "user-pact-001"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/mono/jars request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 connected mono jar with balance 50000 and goal 200000 (in minor units)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/mono/jars"
+      },
+      "response": {
+        "body": [
+          {
+            "balance": 50000,
+            "currencyCode": 980,
+            "description": "Мрія",
+            "goal": 200000,
+            "lastSeenAt": "2026-05-13T08:30:00.000Z",
+            "monoJarId": "jar-pact-001",
+            "sendId": "abc123",
+            "title": "На відпустку",
             "userId": "user-pact-001"
           }
         ],
@@ -1141,6 +1227,122 @@
             {
               "idempotency_key": "01HZ000000000000000000000B",
               "status": "applied"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a fizruk_injuries insert followed by an unsupported delete",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 without a matching injury"
+        }
+      ],
+      "request": {
+        "body": {
+          "ops": [
+            {
+              "client_ts": "2026-08-01T10:00:00.000Z",
+              "idempotency_key": "01K1K000000000000000000001",
+              "op": "insert",
+              "row": {
+                "cleared_at": null,
+                "id": "00000005-0009-4000-8001-000000000001",
+                "muscle_group": "lower_back",
+                "noted_at": "2026-08-01T10:00:00.000Z",
+                "user_id": "user-pact-001"
+              },
+              "table": "fizruk_injuries"
+            },
+            {
+              "client_ts": "2026-08-01T10:01:00.000Z",
+              "idempotency_key": "01K1K000000000000000000002",
+              "op": "delete",
+              "row": {
+                "cleared_at": null,
+                "id": "00000005-0009-4000-8001-000000000001",
+                "muscle_group": "lower_back",
+                "noted_at": "2026-08-01T10:00:00.000Z",
+                "user_id": "user-pact-001"
+              },
+              "table": "fizruk_injuries"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v2/sync/push"
+      },
+      "response": {
+        "body": {
+          "accepted": 1,
+          "last_op_id": 2047,
+          "results": [
+            {
+              "idempotency_key": "01K1K000000000000000000001",
+              "status": "applied"
+            },
+            {
+              "idempotency_key": "01K1K000000000000000000002",
+              "reason": "delete_not_supported",
+              "status": "rejected"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a pull for a fizruk_injuries op",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with one injury op after id=2045"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v2/sync/pull",
+        "query": {
+          "since": [
+            "2045"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "next_cursor": null,
+          "ops": [
+            {
+              "client_ts": "2026-08-01T10:00:00.000Z",
+              "id": 2046,
+              "op": "insert",
+              "origin_device_id": "device-pact-001",
+              "row": {
+                "cleared_at": null,
+                "id": "00000005-0009-4000-8001-000000000001",
+                "muscle_group": "lower_back",
+                "noted_at": "2026-08-01T10:00:00.000Z",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-08-01T10:00:01.000Z",
+              "table": "fizruk_injuries"
             }
           ]
         },
