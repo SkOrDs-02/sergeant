@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-01.
+> **Last touched:** 2026-08-02 by @github-actions[bot]. **Next review:** 2026-11-01.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -184,3 +184,14 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 - `apps/web/src/sw.ts` — `push` / `notificationclick` listeners; розбір payload-у у `apps/web/src/sw/pushPayload.ts`
 - `apps/server/src/lib/reminders/` — хвилинний прохід нагадувань (`due.ts` — чисті предикати, `sweep.ts` — БД і відправка, `scheduler.ts` — таймер)
 - `packages/shared/src/types/index.ts` — `PushPayload` контракт
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                              | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ---------- |
+| [#592](https://github.com/Skords-01/Sergeant/pull/592) | feat(server): нагадування шле сервер, а не таймер у сервіс-воркері | 2026-08-02 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
