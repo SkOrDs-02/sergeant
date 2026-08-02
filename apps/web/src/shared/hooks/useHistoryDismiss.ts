@@ -20,6 +20,12 @@ import { useEffect, useRef } from "react";
 
 const MARKER = "sergeantDialog";
 
+/**
+ * Лічильник екземплярів: кожен діалог позначає свій запис історії власним id
+ * і на закритті відкочує його ЛИШЕ якщо той і досі верхній.
+ */
+let instanceCounter = 0;
+
 export function useHistoryDismiss(open: boolean, onClose: () => void): void {
   // Keep the latest callback without re-running the effect — a caller
   // passing an inline arrow would otherwise push a new entry every render.
@@ -33,7 +39,9 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
     if (typeof window === "undefined" || !window.history) return;
 
     let ownsEntry = true;
-    window.history.pushState({ [MARKER]: true }, "");
+    instanceCounter += 1;
+    const entryId = instanceCounter;
+    window.history.pushState({ [MARKER]: entryId }, "");
 
     const handlePopState = () => {
       // The entry is already gone — don't try to pop it on cleanup.
@@ -46,7 +54,25 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
       window.removeEventListener("popstate", handlePopState);
       // Closed via the close button / overlay / Escape — our entry is
       // still on the stack and would make Back a no-op for the user.
-      if (ownsEntry) window.history.back();
+      //
+      // AI-DANGER: відкат МАЄ бути і відкладеним, і перевіреним на власність.
+      // Раніше він робився синхронно й наосліп, і це ламало реальну
+      // поверхню: діалог, що відкриває інший діалог у тому ж такті
+      // (детальний аркуш звички → «Редагувати»). Аркуш закривався, його
+      // `back()` з'їдав щойно запушений запис НОВОГО діалога, і той
+      // закривався сам собою — користувач бачив порожню сторінку замість
+      // форми редагування. Ловилось `deep-module-crud.spec.ts`, полагоджено
+      // й перевірено локальним прогоном smoke-стека 2026-08-02.
+      //
+      // Відкладання окремо важливе через React Router 7: він навігує через
+      // `startTransition`, тож синхронне втручання в історію може перервати
+      // транзицію ще до коміту маршруту (те саме явище описане в
+      // `useBrowserLocation`).
+      if (!ownsEntry) return;
+      setTimeout(() => {
+        const state = window.history.state as Record<string, unknown> | null;
+        if (state && state[MARKER] === entryId) window.history.back();
+      }, 0);
     };
   }, [open]);
 }
