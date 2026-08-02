@@ -22,6 +22,7 @@ import type {
   WorkoutGroup,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
+import type { FizrukInjury } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -83,6 +84,8 @@ export interface SqliteFizrukCache {
    * PR #070f-dualwrite. Empty array means «no template rows yet».
    */
   workoutTemplates: CachedWorkoutTemplate[];
+  /** Injury history ordered newest-first; active rows have `clearedAt=null`. */
+  injuries: FizrukInjury[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -94,6 +97,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
   refreshedAt: null,
 };
 
@@ -267,6 +271,15 @@ interface WorkoutTemplateRow {
   [key: string]: unknown;
 }
 
+interface InjuryRow {
+  id: string;
+  user_id: string;
+  muscle_group: FizrukInjury["muscleGroup"];
+  noted_at: string;
+  cleared_at: string | null;
+  [key: string]: unknown;
+}
+
 function rowToDailyLog(row: DailyLogRow): CachedDailyLogEntry {
   return {
     id: row.id,
@@ -333,6 +346,7 @@ export async function refreshFizrukSqliteState(
     dailyLogRows,
     monthlyPlanRows,
     workoutTemplateRows,
+    injuryRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
@@ -391,6 +405,13 @@ export async function refreshFizrukSqliteState(
         ORDER BY updated_at DESC, id ASC`,
       [userId],
     ),
+    client.all<InjuryRow>(
+      `SELECT id, user_id, muscle_group, noted_at, cleared_at
+         FROM fizruk_injuries
+        WHERE user_id = ?
+        ORDER BY noted_at DESC, id ASC`,
+      [userId],
+    ),
   ]);
 
   // Build sets-by-item map first.
@@ -421,6 +442,13 @@ export async function refreshFizrukSqliteState(
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
+  const injuries: FizrukInjury[] = injuryRows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    muscleGroup: row.muscle_group,
+    notedAt: row.noted_at,
+    clearedAt: row.cleared_at,
+  }));
 
   cache = {
     workouts,
@@ -429,6 +457,7 @@ export async function refreshFizrukSqliteState(
     dailyLog,
     monthlyPlan,
     workoutTemplates,
+    injuries,
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };

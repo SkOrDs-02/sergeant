@@ -50,6 +50,14 @@ describe("useFizrukRoute", () => {
     expect(result.current.segments).toEqual(["abc-123"]);
   });
 
+  it("parses an active workout tail segment", () => {
+    const { result } = renderHook(() => useFizrukRoute(), {
+      wrapper: wrapper("/fizruk/workout/w-123"),
+    });
+    expect(result.current.page).toBe("workout");
+    expect(result.current.segments).toEqual(["w-123"]);
+  });
+
   it("falls back to the default page outside /fizruk", () => {
     const { result } = renderHook(() => useFizrukRoute("progress"), {
       wrapper: wrapper("/elsewhere"),

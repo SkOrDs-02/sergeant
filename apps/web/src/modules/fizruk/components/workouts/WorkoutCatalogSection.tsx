@@ -186,7 +186,11 @@ export function WorkoutCatalogSection({
                                       name="alert-triangle"
                                       size={15}
                                       className="text-warning shrink-0"
-                                      title="Мʼязи ще відновлюються"
+                                      title={
+                                        catCf.hasInjuryBlock
+                                          ? "Позначено біль: не радимо навантажувати"
+                                          : "Мʼязи ще відновлюються"
+                                      }
                                     />
                                   ) : null}
                                 </div>

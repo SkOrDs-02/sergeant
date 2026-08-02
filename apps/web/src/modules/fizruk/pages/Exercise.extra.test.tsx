@@ -120,15 +120,16 @@ describe("Exercise page — strength history", () => {
 
   it("shows the new-PR banner when the latest workout beats the prior best", () => {
     useExerciseCatalog.mockReturnValue(CATALOG);
+    // Dates are relative: a PR is suppressed once the exercise has been
+    // idle for EXERCISE_RETURN_AFTER_DAYS (return mode), so fixed past
+    // dates would age out of the celebrating window.
+    const daysAgo = (n: number) =>
+      new Date(Date.now() - n * 86_400_000).toISOString();
     useWorkouts.mockReturnValue({
       workouts: [
         // Latest workout has the highest 1RM → new PR.
-        strengthWorkout("w2", "2026-06-22T08:00:00Z", [
-          { weightKg: 120, reps: 5 },
-        ]),
-        strengthWorkout("w1", "2026-06-10T08:00:00Z", [
-          { weightKg: 80, reps: 8 },
-        ]),
+        strengthWorkout("w2", daysAgo(1), [{ weightKg: 120, reps: 5 }]),
+        strengthWorkout("w1", daysAgo(13), [{ weightKg: 80, reps: 8 }]),
       ],
     });
     render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);

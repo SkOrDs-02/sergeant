@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { messages } from "@shared/i18n/uk";
+import { InjuryManager } from "../components/InjuryManager";
 import {
   buildBodyWeightSeries,
   selectLatestBodyWeight,
@@ -174,6 +175,8 @@ export function Body({ onOpenAtlas }: BodyProps) {
         </div>
 
         <BodyEntryForm onSubmitEntry={handleSubmitEntry} />
+
+        <InjuryManager />
 
         {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
 

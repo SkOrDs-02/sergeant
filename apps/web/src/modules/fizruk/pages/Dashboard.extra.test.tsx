@@ -519,7 +519,7 @@ describe("Dashboard — navigation callbacks", () => {
     expect(mockNavigate).toHaveBeenCalledWith("body");
   });
 
-  it("calls onNavigate('workouts') via HeroCard resume button", () => {
+  it("deep-links to the active workout route via HeroCard resume button", () => {
     vi.mocked(useActiveFizrukWorkout).mockReturnValueOnce("w-active");
     vi.mocked(useWorkouts).mockReturnValueOnce({
       workouts: [
@@ -541,7 +541,7 @@ describe("Dashboard — navigation callbacks", () => {
 
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByTestId("hero-resume"));
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+    expect(mockNavigate).toHaveBeenCalledWith("workout/w-active");
   });
 
   it("calls onNavigate('workouts') via HeroCard open-plan button", () => {
@@ -670,7 +670,7 @@ describe("Dashboard — Продовжити confirm flow", () => {
     } as ReturnType<typeof useRecovery>);
   }
 
-  it("clicking Продовжити in confirm sheet navigates to workouts and closes sheet", () => {
+  it("clicking Продовжити in confirm sheet opens the new workout route and closes sheet", () => {
     const createWorkout = vi.fn(() => ({ id: "w-new", items: [] }));
     const addItem = vi.fn();
     // Use mockReturnValue (not Once) so re-renders after state changes also get the right createWorkout
@@ -692,8 +692,8 @@ describe("Dashboard — Продовжити confirm flow", () => {
 
     // Sheet closes
     expect(screen.queryByText("Увага")).not.toBeInTheDocument();
-    // Navigates to workouts
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+    // Lands straight in the freshly created session
+    expect(mockNavigate).toHaveBeenCalledWith("workout/w-new");
   });
 });
 

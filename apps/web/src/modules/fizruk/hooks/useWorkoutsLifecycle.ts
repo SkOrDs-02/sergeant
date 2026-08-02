@@ -36,8 +36,14 @@ export function useStaleActiveWorkoutCleanup(
   setActiveWorkoutId: Dispatch<SetStateAction<string | null>>,
 ): void {
   useEffect(() => {
-    if (!workoutsLoaded || !activeWorkoutId) return;
-    if (!workouts.some((w) => w.id === activeWorkoutId)) {
+    if (!workoutsLoaded) return;
+    if (!activeWorkoutId) {
+      const unfinished = workouts.find((workout) => !workout.endedAt);
+      if (unfinished) setActiveWorkoutId(unfinished.id);
+      return;
+    }
+    const selected = workouts.find((workout) => workout.id === activeWorkoutId);
+    if (!selected || selected.endedAt) {
       setActiveWorkoutId(null);
     }
   }, [workoutsLoaded, activeWorkoutId, workouts, setActiveWorkoutId]);
@@ -50,16 +56,18 @@ export function useStaleActiveWorkoutCleanup(
  */
 export function useWorkoutsViewFromSession(
   setView: (v: WorkoutsView) => void,
+  enabled = true,
 ): void {
   useEffect(() => {
+    if (!enabled) return;
     // `safeReadStringSS`/`safeRemoveSS` centralise the private-mode-Safari /
     // disabled-storage guard that used to live as an inline try/catch here.
     const m = safeReadStringSS(VIEW_FROM_SESSION_KEY);
-    if (m === "templates" || m === "log") {
+    if (m === "templates") {
       setView(m);
       safeRemoveSS(VIEW_FROM_SESSION_KEY);
     }
-  }, [setView]);
+  }, [enabled, setView]);
 }
 
 /**

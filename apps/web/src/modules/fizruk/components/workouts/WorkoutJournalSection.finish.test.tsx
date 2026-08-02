@@ -116,6 +116,7 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
       workoutId: "w-active",
       energy: null,
       mood: null,
+      injuryMuscles: [],
     });
   });
 

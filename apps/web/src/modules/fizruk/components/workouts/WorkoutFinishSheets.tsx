@@ -1,4 +1,4 @@
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -11,6 +11,11 @@ import {
   recordCrossModulePromptAccepted,
 } from "@shared/lib/modules/crossModulePrompt";
 import { formatDurShort } from "@sergeant/fizruk-domain";
+import {
+  BODY_ATLAS_MUSCLE_IDS,
+  BODY_ATLAS_MUSCLE_LABELS_UK,
+} from "@sergeant/fizruk-domain/data";
+import { useInjuries } from "../../hooks/useInjuries";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 // `FinishFlashState` живе у `../../pages/Workouts.types` (там `useState`
 // setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
@@ -28,17 +33,23 @@ interface WorkoutFinishSheetsProps {
     id: string,
     patch: { wellbeing?: { energy?: number; mood?: number } },
   ) => void;
+  onDone?: (() => void) | undefined;
 }
 
 export function WorkoutFinishSheets({
   finishFlash,
   setFinishFlash,
   updateWorkout,
+  onDone,
 }: WorkoutFinishSheetsProps) {
+  const { mark } = useInjuries();
+  const [savingInjuries, setSavingInjuries] = useState(false);
   const trapRef = useRef<HTMLDivElement | null>(null);
-  useDialogFocusTrap(!!finishFlash, trapRef, {
-    onEscape: () => setFinishFlash(null),
-  });
+  const closeFinish = () => {
+    setFinishFlash(null);
+    onDone?.();
+  };
+  useDialogFocusTrap(!!finishFlash, trapRef, { onEscape: closeFinish });
 
   if (!finishFlash) return null;
   return (
@@ -135,7 +146,7 @@ export function WorkoutFinishSheets({
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
                 onClick={() =>
-                  setFinishFlash((f) => f && { ...f, step: "summary" })
+                  setFinishFlash((f) => f && { ...f, step: "injury" })
                 }
               >
                 Пропустити
@@ -162,7 +173,7 @@ export function WorkoutFinishSheets({
                     (f) =>
                       f && {
                         ...f,
-                        step: "summary",
+                        step: "injury",
                         savedWellbeing:
                           f.energy || f.mood
                             ? { energy: f.energy, mood: f.mood }
@@ -172,6 +183,98 @@ export function WorkoutFinishSheets({
                 }}
               >
                 Зберегти
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {finishFlash.step === "injury" && (
+          <Card
+            prominence="elevated"
+            radius="lg"
+            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fizruk-injury-title"
+          >
+            <div>
+              <div
+                id="fizruk-injury-title"
+                className="text-style-label text-text"
+              >
+                Щось болить?
+              </div>
+              <p className="text-style-caption text-subtle mt-1">
+                Опційно познач одну або кілька груп. Медичних порад тут немає:
+                позначка лише прибере ці м&apos;язи з recovery-порад.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {BODY_ATLAS_MUSCLE_IDS.map((group) => {
+                const selected = finishFlash.injuryMuscles.includes(group);
+                return (
+                  <button
+                    key={group}
+                    type="button"
+                    aria-pressed={selected}
+                    className={cn(
+                      "min-h-[44px] rounded-full border px-3 py-2 text-style-caption transition-colors",
+                      selected
+                        ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
+                        : "border-line bg-bg text-muted hover:border-muted hover:text-text",
+                    )}
+                    onClick={() =>
+                      setFinishFlash((current) =>
+                        current
+                          ? {
+                              ...current,
+                              injuryMuscles: selected
+                                ? current.injuryMuscles.filter(
+                                    (item) => item !== group,
+                                  )
+                                : [...current.injuryMuscles, group],
+                            }
+                          : current,
+                      )
+                    }
+                  >
+                    {BODY_ATLAS_MUSCLE_LABELS_UK[group]}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                className="flex-1 h-12"
+                disabled={savingInjuries}
+                onClick={() =>
+                  setFinishFlash(
+                    (current) => current && { ...current, step: "summary" },
+                  )
+                }
+              >
+                Нічого не позначати
+              </Button>
+              <Button
+                module="fizruk"
+                className="flex-1 h-12"
+                disabled={
+                  savingInjuries || finishFlash.injuryMuscles.length === 0
+                }
+                onClick={async () => {
+                  setSavingInjuries(true);
+                  try {
+                    await mark(finishFlash.injuryMuscles);
+                    setFinishFlash(
+                      (current) => current && { ...current, step: "summary" },
+                    );
+                  } finally {
+                    setSavingInjuries(false);
+                  }
+                }}
+              >
+                Зберегти позначки
               </Button>
             </div>
           </Card>
@@ -210,7 +313,7 @@ export function WorkoutFinishSheets({
                   type="button"
                   className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-fizruk-soft-fg hover:opacity-70 text-lg"
                   aria-label="Закрити"
-                  onClick={() => setFinishFlash(null)}
+                  onClick={closeFinish}
                 >
                   <Icon name="close" size={16} aria-hidden />
                 </button>
@@ -283,7 +386,7 @@ export function WorkoutFinishSheets({
                 <button
                   type="button"
                   className="fizruk-cta-accent flex-1 py-3 rounded-full text-base"
-                  onClick={() => setFinishFlash(null)}
+                  onClick={closeFinish}
                 >
                   Готово
                 </button>

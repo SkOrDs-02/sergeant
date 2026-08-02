@@ -27,7 +27,7 @@ test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
   expect(errors, "Uncaught page errors on fizruk cold load").toEqual([]);
 });
 
-test("@critical fizruk: workouts empty state → start CTA opens sheet", async ({
+test("@critical fizruk: workouts empty state → Quick Start opens route", async ({
   page,
 }) => {
   await seedFTUX(page, "post-ftux");
@@ -39,10 +39,8 @@ test("@critical fizruk: workouts empty state → start CTA opens sheet", async (
     timeout: 10_000,
   });
 
-  await page.getByRole("button", { name: /Почати тренування/ }).click();
-  await expect(
-    page.getByRole("dialog", { name: "Почати тренування" }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Quick Start" }).click();
+  await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   expect(errors, "Uncaught page errors on fizruk CTA happy path").toEqual([]);
 });

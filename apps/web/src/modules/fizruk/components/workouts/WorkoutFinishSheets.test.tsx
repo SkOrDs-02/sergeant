@@ -23,6 +23,11 @@ vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: vi.fn(),
 }));
 
+const markInjuries = vi.fn(async () => []);
+vi.mock("../../hooks/useInjuries", () => ({
+  useInjuries: () => ({ mark: markInjuries }),
+}));
+
 // useDialogFocusTrap — no-op in jsdom.
 vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
   useDialogFocusTrap: vi.fn(),
@@ -40,6 +45,7 @@ function makeFlash(over: Partial<FinishFlashState> = {}): FinishFlashState {
     workoutId: "w-1",
     energy: null,
     mood: null,
+    injuryMuscles: [],
     durationSec: 3600,
     items: 5,
     tonnageKg: 1000,
@@ -92,7 +98,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     expect(setFinishFlash).toHaveBeenCalledWith(null);
   });
 
-  it("clicking 'Пропустити' advances step to summary", () => {
+  it("clicking 'Пропустити' advances step to injury capture", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
     fireEvent.click(screen.getByRole("button", { name: "Пропустити" }));
@@ -102,7 +108,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
       f: FinishFlashState,
     ) => FinishFlashState;
     const result = updater(makeFlash({ step: "wellbeing" }));
-    expect(result.step).toBe("summary");
+    expect(result.step).toBe("injury");
   });
 
   it("clicking an energy button calls setFinishFlash with energy value", () => {
@@ -170,9 +176,25 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
       f: FinishFlashState,
     ) => FinishFlashState;
     expect(updater(flash)).toMatchObject({
-      step: "summary",
+      step: "injury",
       savedWellbeing: { energy: 4, mood: 5 },
     });
+  });
+});
+
+describe("WorkoutFinishSheets — injury step", () => {
+  it("offers all 18 canonical groups and can skip", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "injury" }), setFinishFlash);
+    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Нічого не позначати" }),
+    );
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(makeFlash({ step: "injury" })).step).toBe("summary");
   });
 });
 

@@ -13,6 +13,34 @@ export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
+  // Only one unfinished workout may exist, so every start path funnels
+  // through this prompt. Shared by the Workouts dialogs and the program
+  // start flow in the module shell — same wording in both, one source.
+  activeWorkoutConflict: {
+    title: "Уже є активне тренування",
+    description: "Перш ніж почати нове, заверши поточне або викинь його.",
+    finish: "Завершити старе й почати нове",
+    discard: "Викинути старе й почати нове",
+  },
+  restTimer: {
+    add: "Додати",
+    subtract: "Відняти",
+    secondsSuffix: "секунд",
+    skip: "Пропустити",
+  },
+  injuries: {
+    title: "Позначки болю",
+    description:
+      "Позначені групи не потрапляють у recovery-поради, доки ти вручну не знімеш позначку.",
+    activeListLabel: "Активні позначки болю",
+    muscleGroupsLabel: "Групи м'язів",
+    clear: "Зняти",
+    submit: "Позначити біль",
+    clearedToast: "Позначку болю знято.",
+    clearFailedToast: "Не вдалося зняти позначку. Спробуй ще раз.",
+    savedToast: "Позначку болю збережено.",
+    saveFailedToast: "Не вдалося зберегти позначку. Спробуй ще раз.",
+  },
   dayPlan: {
     assignedTemplate: "Призначений шаблон",
     removeTemplate: "Зняти",

@@ -29,6 +29,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  "fizruk_injuries",
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",

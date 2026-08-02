@@ -82,6 +82,10 @@ vi.mock("./Body/CollapsibleTrendCard", () => ({
   ),
 }));
 
+vi.mock("../components/InjuryManager", () => ({
+  InjuryManager: () => <div data-testid="injury-manager" />,
+}));
+
 vi.mock("../components/RecoveryFocusCard", () => ({
   RecoveryFocusCard: ({ onOpenAtlas }: { onOpenAtlas: () => void }) => (
     <button type="button" onClick={onOpenAtlas}>

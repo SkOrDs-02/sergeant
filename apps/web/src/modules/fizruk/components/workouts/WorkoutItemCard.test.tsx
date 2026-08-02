@@ -72,6 +72,8 @@ function renderCard(
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={getDefaultForGroup}
+        getDefaultForExercise={props.getDefaultForExercise}
+        setDefaultForExercise={props.setDefaultForExercise}
         onDeleteSet={onDeleteSet}
       />
     </MemoryRouter>,
@@ -126,22 +128,24 @@ describe("WorkoutItemCard — strength", () => {
     ]);
   });
 
-  it("Enter on the reps field starts the rest timer", () => {
-    renderCard();
-    fireEvent.keyDown(screen.getByLabelText("Кількість повторень"), {
-      key: "Enter",
+  it("logging reps for an empty set starts the rest timer automatically", () => {
+    renderCard({ it: makeItem({ sets: [{ weightKg: 50, reps: 0 }] }) });
+    fireEvent.change(screen.getByLabelText("Кількість повторень"), {
+      target: { value: "8" },
     });
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 90, total: 90 });
   });
 
   it("renders the recommended rest-timer preset and quick options", () => {
-    renderCard();
+    const setDefaultForExercise = vi.fn();
+    renderCard({ setDefaultForExercise });
     // Default 90 → "90 с ★" recommended button.
     expect(screen.getByText("90 с ★")).toBeInTheDocument();
     // Quick options exclude the default (90).
     expect(screen.getByRole("button", { name: "60 с" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "60 с" }));
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 60, total: 60 });
+    expect(setDefaultForExercise).toHaveBeenCalledWith("bench", 60);
   });
 
   it("removing the whole item calls removeItem", () => {

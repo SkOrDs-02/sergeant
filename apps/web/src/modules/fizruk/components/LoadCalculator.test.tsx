@@ -27,4 +27,17 @@ describe("LoadCalculator", () => {
     render(<LoadCalculator oneRM={0} />);
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
+
+  it("hides percentage prescriptions when the estimate is stale", () => {
+    render(<LoadCalculator oneRM={100} isStale />);
+    expect(screen.getByText("оцінка застаріла")).toBeInTheDocument();
+    expect(screen.queryByText("Сила")).not.toBeInTheDocument();
+    expect(screen.queryByText(/1RM =/)).not.toBeInTheDocument();
+  });
+
+  it("shows reduced guidance in return mode", () => {
+    render(<LoadCalculator oneRM={100} isReturning />);
+    expect(screen.getByText("режим повернення")).toBeInTheDocument();
+    expect(screen.getByText(/знижено на 20%/)).toBeInTheDocument();
+  });
 });

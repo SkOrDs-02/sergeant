@@ -11,6 +11,7 @@ export const FIZRUK_PAGES = [
   "programs",
   "body",
   "exercise",
+  "workout",
 ] as const;
 
 export type FizrukPage = (typeof FIZRUK_PAGES)[number];

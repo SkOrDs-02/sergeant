@@ -14,6 +14,10 @@ function baseProps(
     riskyTemplate: null,
     onRiskyTemplateConfirm: vi.fn(),
     onRiskyTemplateCancel: vi.fn(),
+    activeWorkoutConflictOpen: false,
+    onFinishActiveAndContinue: vi.fn(),
+    onDiscardActiveAndContinue: vi.fn(),
+    onCancelActiveConflict: vi.fn(),
     ...overrides,
   };
 }
@@ -25,7 +29,7 @@ describe("WorkoutsConfirmDialogs", () => {
     render(<WorkoutsConfirmDialogs {...baseProps()} />);
     expect(screen.queryByText("Видалити вправу?")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("М'язи ще відновлюються"),
+      screen.queryByText("Є жорстке застереження"),
     ).not.toBeInTheDocument();
   });
 
@@ -68,12 +72,36 @@ describe("WorkoutsConfirmDialogs", () => {
         })}
       />,
     );
-    expect(screen.getByText("М'язи ще відновлюються")).toBeInTheDocument();
+    expect(screen.getByText("Є жорстке застереження")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Так, почати"));
     expect(onRiskyTemplateConfirm).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByText("Скасувати"));
     expect(onRiskyTemplateCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers all three resolutions when another workout is active", () => {
+    const onFinishActiveAndContinue = vi.fn();
+    const onDiscardActiveAndContinue = vi.fn();
+    const onCancelActiveConflict = vi.fn();
+    render(
+      <WorkoutsConfirmDialogs
+        {...baseProps({
+          activeWorkoutConflictOpen: true,
+          onFinishActiveAndContinue,
+          onDiscardActiveAndContinue,
+          onCancelActiveConflict,
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Завершити старе й почати нове"));
+    fireEvent.click(screen.getByText("Викинути старе й почати нове"));
+    fireEvent.click(screen.getByText("Скасувати"));
+
+    expect(onFinishActiveAndContinue).toHaveBeenCalledTimes(1);
+    expect(onDiscardActiveAndContinue).toHaveBeenCalledTimes(1);
+    expect(onCancelActiveConflict).toHaveBeenCalledTimes(1);
   });
 });

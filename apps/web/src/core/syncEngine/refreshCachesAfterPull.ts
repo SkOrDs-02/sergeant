@@ -40,6 +40,7 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  "fizruk_injuries",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

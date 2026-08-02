@@ -1,4 +1,7 @@
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { Modal } from "@shared/components/ui/Modal";
+import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import type { WorkoutTemplate } from "../../hooks/useWorkoutTemplates";
 
 export interface WorkoutsConfirmDialogsProps {
@@ -15,6 +18,10 @@ export interface WorkoutsConfirmDialogsProps {
   riskyTemplate: WorkoutTemplate | null;
   onRiskyTemplateConfirm: () => void;
   onRiskyTemplateCancel: () => void;
+  activeWorkoutConflictOpen: boolean;
+  onFinishActiveAndContinue: () => void;
+  onDiscardActiveAndContinue: () => void;
+  onCancelActiveConflict: () => void;
 }
 
 /**
@@ -34,7 +41,12 @@ export function WorkoutsConfirmDialogs({
   riskyTemplate,
   onRiskyTemplateConfirm,
   onRiskyTemplateCancel,
+  activeWorkoutConflictOpen,
+  onFinishActiveAndContinue,
+  onDiscardActiveAndContinue,
+  onCancelActiveConflict,
 }: WorkoutsConfirmDialogsProps) {
+  const conflictCopy = messages.fizruk.activeWorkoutConflict;
   return (
     <>
       <ConfirmDialog
@@ -48,13 +60,46 @@ export function WorkoutsConfirmDialogs({
 
       <ConfirmDialog
         open={!!riskyTemplate}
-        title="М'язи ще відновлюються"
-        description="У шаблоні є вправи на групи м'язів, які ще не відновились. Почати тренування все одно?"
+        title="Є жорстке застереження"
+        description="Ти позначив біль або ця група ще має червоний recovery-статус. Ми не радимо її навантажувати. Почати все одно?"
         confirmLabel="Так, почати"
         cancelLabel="Скасувати"
         danger={false}
         onConfirm={onRiskyTemplateConfirm}
         onCancel={onRiskyTemplateCancel}
+      />
+
+      <Modal
+        open={activeWorkoutConflictOpen}
+        onClose={onCancelActiveConflict}
+        title={conflictCopy.title}
+        description={conflictCopy.description}
+        size="sm"
+        footer={
+          <div className="flex flex-col gap-2">
+            <Button
+              module="fizruk"
+              className="w-full h-12"
+              onClick={onFinishActiveAndContinue}
+            >
+              {conflictCopy.finish}
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full h-12"
+              onClick={onDiscardActiveAndContinue}
+            >
+              {conflictCopy.discard}
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full h-12"
+              onClick={onCancelActiveConflict}
+            >
+              {messages.actions.cancel}
+            </Button>
+          </div>
+        }
       />
     </>
   );

@@ -27,6 +27,7 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   programs: "Не вдалось показати «Програми»",
   body: "Не вдалось показати «Склад тіла»",
   exercise: "Не вдалось показати вправу",
+  workout: "Не вдалось показати активне тренування",
 };
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -41,6 +42,10 @@ const Dashboard = lazyImport(() => import("../pages/Dashboard"), "Dashboard");
 const Atlas = lazyImport(() => import("../pages/Atlas"), "Atlas");
 const Exercise = lazyImport(() => import("../pages/Exercise"), "Exercise");
 const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
+const ActiveWorkout = lazyImport(
+  () => import("../pages/ActiveWorkout"),
+  "ActiveWorkout",
+);
 const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
 const Measurements = lazyImport(
   () => import("../pages/Measurements"),
@@ -52,6 +57,7 @@ const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
 export interface FizrukRouterProps {
   page: FizrukPage;
   exerciseId?: string | undefined;
+  workoutId?: string | undefined;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
   activateProgram: (id: string) => void;
@@ -77,6 +83,7 @@ function renderPage(props: FizrukRouterProps) {
   const {
     page,
     exerciseId,
+    workoutId,
     activeProgramId,
     activeProgram,
     activateProgram,
@@ -107,8 +114,12 @@ function renderPage(props: FizrukRouterProps) {
               ? () => onOpenModule("routine", { hash: "calendar" })
               : undefined
           }
-          onOpenPrograms={() => onNavigate("programs")}
+          onNavigate={onNavigate}
         />
+      );
+    case "workout":
+      return (
+        <ActiveWorkout workoutId={workoutId ?? ""} onNavigate={onNavigate} />
       );
     case "progress":
       return <Progress onNavigate={onNavigate} />;
