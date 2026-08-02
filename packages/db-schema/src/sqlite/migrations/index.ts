@@ -901,7 +901,7 @@ CREATE INDEX IF NOT EXISTS fizruk_workout_templates_user_idx_lite
 /**
  * Injury marks — the client half of the "не можна" model (ADR-0083).
  *
- * Mirrors `apps/server/src/migrations/096_fizruk_injuries.sql`. `site` spans
+ * Mirrors `apps/server/src/migrations/097_fizruk_injuries.sql`. `site` spans
  * atlas muscle groups AND joints / spinal segments; the canonical keyspace is
  * `packages/fizruk-domain/src/data/injurySites.ts`. `cleared_at IS NULL`
  * means the mark is still active — there is no time-based expiry.
@@ -942,7 +942,7 @@ CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx_lite
  * coverage (Stage 12 / PR #070f-schema).
  *
  * `003_fizruk_injuries.sql` adds the injury-mark table behind the "не можна"
- * model (ADR-0083); it mirrors server migration `096_fizruk_injuries.sql`.
+ * model (ADR-0083); it mirrors server migration `097_fizruk_injuries.sql`.
  */
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
