@@ -1,4 +1,5 @@
 import pool from "../db.js";
+import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 
 /**
@@ -40,6 +41,7 @@ const MAX_TRACKED_USERS = 50_000;
  * резолву сесії.
  */
 export function touchLastSeen(userId: string): void {
+  if (!env.LAST_SEEN_TRACKING_ENABLED) return;
   const now = Date.now();
   const previous = lastTouchedAt.get(userId);
   if (previous !== undefined && now - previous < TOUCH_THROTTLE_MS) return;
@@ -49,17 +51,25 @@ export function touchLastSeen(userId: string): void {
   // юзера проскочить перевірку разом і зробить десяток однакових UPDATE.
   lastTouchedAt.set(userId, now);
 
-  void pool
-    .query(`UPDATE "user" SET last_seen_at = NOW() WHERE id = $1`, [userId])
-    .catch((err: unknown) => {
-      // Знімаємо мітку, щоб наступний запит спробував ще раз, а не чекав
-      // годину на повторну спробу після одноразового збою пулу.
-      lastTouchedAt.delete(userId);
-      logger.warn({
-        msg: "last_seen_touch_failed",
-        err: err instanceof Error ? err.message : String(err),
+  // `setImmediate`, а не прямий виклик: ця функція живе у middleware, тобто
+  // виконується ПЕРЕД хендлером. Без відкладення телеметрія забирала б
+  // зʼєднання з пулу поперед запитом, заради якого користувач узагалі
+  // прийшов, і додавала б свою латентність до кожного роуту. Відкладення на
+  // наступний тік event-loop-у пускає хендлер першим — а більше ця мітка
+  // нікому не потрібна, її читає добовий прохід.
+  setImmediate(() => {
+    void pool
+      .query(`UPDATE "user" SET last_seen_at = NOW() WHERE id = $1`, [userId])
+      .catch((err: unknown) => {
+        // Знімаємо мітку, щоб наступний запит спробував ще раз, а не чекав
+        // годину на повторну спробу після одноразового збою пулу.
+        lastTouchedAt.delete(userId);
+        logger.warn({
+          msg: "last_seen_touch_failed",
+          err: err instanceof Error ? err.message : String(err),
+        });
       });
-    });
+  });
 }
 
 /** Скидає throttle-кеш. Лише для тестів. */

@@ -4,6 +4,11 @@ import { baseCoverageConfig } from "@sergeant/config/vitest.base";
 export default defineConfig({
   test: {
     environment: "node",
+    // Фонова телеметрія `last_seen_at` вимкнена в unit-прогоні: маршрутні
+    // тести мокають пул чергою `mockResolvedValueOnce`, і позаплановий
+    // UPDATE зʼїдає чужу відповідь. Сама поведінка покрита в
+    // `src/lib/lastSeen.test.ts`, де прапорець вмикається явно.
+    env: { LAST_SEEN_TRACKING_ENABLED: "false" },
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
