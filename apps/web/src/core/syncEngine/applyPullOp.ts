@@ -16,6 +16,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  "routine_habit_skips",
   // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток.
   "routine_completion_events",
   "fizruk_workouts",

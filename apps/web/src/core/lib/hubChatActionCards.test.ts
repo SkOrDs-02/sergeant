@@ -230,17 +230,28 @@ describe("buildActionCard", () => {
     expect(card?.icon).toBe("pause-circle");
     expect(card?.title).toBe("Стан паузи звички оновлено");
     expect(card?.summary).toContain("h1");
-    expect(card?.summary).toContain("на паузі");
+    // Хвиля 4: картка показує ДІАПАЗОН, а не просто стан — без нього
+    // підтвердження не відповідає на єдине питання «на скільки?».
+    expect(card?.summary).toContain("пауза");
     expect(card?.risky).toBeUndefined();
   });
 
-  it("pause_habit з paused=false показує «знято з паузи» у summary", () => {
+  it("pause_habit з paused=false показує повернення з паузи у summary", () => {
     const card = buildActionCard({
       name: "pause_habit",
       input: { habit_id: "h1", paused: false },
-      result: 'Звичку "Біг" знято з паузи.',
+      result: 'Звичку "Біг" повернуто з паузи від сьогодні.',
     });
-    expect(card?.summary).toContain("знято з паузи");
+    expect(card?.summary).toContain("повернення з паузи");
+  });
+
+  it("pause_habit із діапазоном показує обидві межі", () => {
+    const card = buildActionCard({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+      result: "ok",
+    });
+    expect(card?.summary).toContain("2026-08-10 — 2026-08-17");
   });
 
   it("pause_habit failed — статус failed і суфікс у title", () => {

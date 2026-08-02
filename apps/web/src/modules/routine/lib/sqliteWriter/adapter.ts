@@ -20,6 +20,8 @@ import {
   CATEGORY_UPSERT_SQL,
   COMPLETION_NOTE_SOFT_DELETE_SQL,
   COMPLETION_NOTE_UPSERT_SQL,
+  HABIT_SKIP_SOFT_DELETE_SQL,
+  HABIT_SKIP_UPSERT_SQL,
   ENTRY_SOFT_DELETE_SQL,
   ENTRY_UPSERT_SQL,
   HABIT_ORDER_UPSERT_SQL,
@@ -71,6 +73,7 @@ import {
  *   - `habit-order-set` → `routine_habit_order`
  *   - `completion-note-upsert` / `completion-note-delete` →
  *     `routine_completion_notes`
+ *   - `habit-skip-upsert` / `habit-skip-delete` → `routine_habit_skips`
  *
  * Design notes:
  *
@@ -153,6 +156,14 @@ const applyOps = createApplyOps<RoutineDualWriteOp>({
     },
     "completion-note-delete": async (client, op, rt) => {
       await deleteCompletionNote(client, op.noteKey, rt);
+      return "applied";
+    },
+    "habit-skip-upsert": async (client, op, rt) => {
+      await upsertHabitSkip(client, op, rt);
+      return "applied";
+    },
+    "habit-skip-delete": async (client, op, rt) => {
+      await deleteHabitSkip(client, op.skipKey, rt);
       return "applied";
     },
   },
@@ -325,6 +336,7 @@ async function upsertHabit(
     h.timeOfDay ?? "",
     JSON.stringify(h.reminderTimes ?? []),
     JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+    JSON.stringify(h.pauseIntervals ?? []),
     h.createdAt ?? clientTs,
     clientTs,
   ]);
@@ -348,6 +360,7 @@ async function upsertHabit(
       time_of_day: h.timeOfDay ?? "",
       reminder_times_json: JSON.stringify(h.reminderTimes ?? []),
       weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
+      pause_intervals_json: JSON.stringify(h.pauseIntervals ?? []),
       created_at: h.createdAt ?? clientTs,
     },
   });
@@ -585,5 +598,58 @@ async function deleteCompletionNote(
     op: "delete",
     clientTs,
     row: { user_id: userId, note_key: noteKey },
+  });
+}
+
+// -----------------------------------------------------------------------
+// routine_habit_skips — третій стан дня (Хвиля 4, канон §5)
+// -----------------------------------------------------------------------
+
+async function upsertHabitSkip(
+  client: SqliteMigrationClient,
+  op: Extract<RoutineDualWriteOp, { kind: "habit-skip-upsert" }>,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(HABIT_SKIP_UPSERT_SQL, [
+    userId,
+    op.skipKey,
+    op.reason,
+    op.note,
+    op.at,
+    clientTs,
+  ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habit_skips",
+    op: "insert",
+    clientTs,
+    row: {
+      user_id: userId,
+      skip_key: op.skipKey,
+      reason: op.reason,
+      note: op.note,
+      at: op.at,
+    },
+  });
+}
+
+async function deleteHabitSkip(
+  client: SqliteMigrationClient,
+  skipKey: string,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(HABIT_SKIP_SOFT_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    skipKey,
+    clientTs,
+  ]);
+  fireSyncOutboxUpsert(client, {
+    userId,
+    table: "routine_habit_skips",
+    op: "delete",
+    clientTs,
+    row: { user_id: userId, skip_key: skipKey },
   });
 }

@@ -10,6 +10,7 @@ const ROUTINE_PULL_TABLES = new Set([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  "routine_habit_skips",
 ]);
 const FINYK_PULL_TABLES = new Set([
   "finyk_hidden_accounts",

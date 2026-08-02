@@ -180,6 +180,7 @@ describe("sqliteReader full-state cache", () => {
       tags: [],
       categories: [],
       prefs: { routineRemindersEnabled: true },
+      skips: {},
       pushupsByDate: { "2026-01-01": 5 },
       habitOrder: ["h1"],
       completionNotes: {},

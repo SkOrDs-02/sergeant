@@ -278,6 +278,19 @@ export function applyPauseHabitBetween(
     ...(habit.pauseIntervals || []),
     { from: fromKey, to: toKey },
   ]);
+  // Ідентичність, а не лише рівність значень: повторний виклик на той самий
+  // діапазон має віддати ТОЙ САМИЙ `state`. Інакше кожен повтор народжував
+  // би `habit-upsert` у дуал-райті (`habitChanged` порівнює масиви за
+  // посиланням) і чат-тул рапортував би «поставлено» замість «уже на паузі».
+  const prevIntervals = habit.pauseIntervals || [];
+  if (
+    prevIntervals.length === intervals.length &&
+    prevIntervals.every(
+      (iv, i) => iv.from === intervals[i]?.from && iv.to === intervals[i]?.to,
+    )
+  ) {
+    return state;
+  }
   const updated: Habit = { ...habit, pauseIntervals: intervals };
   return {
     ...state,

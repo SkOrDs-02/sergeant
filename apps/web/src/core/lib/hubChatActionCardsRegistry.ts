@@ -108,8 +108,15 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   pause_habit: (input) => {
     const habit = stringField(input, "habit_id");
-    const state = input["paused"] === false ? "знято з паузи" : "на паузі";
-    return habit ? `${habit} · ${state}` : state;
+    if (input["paused"] === false) {
+      return habit ? `${habit} · повернення з паузи` : "повернення з паузи";
+    }
+    // Показуємо саме діапазон: без нього картка підтвердження не давала б
+    // відповісти на єдине питання, яке тут важить, — «на скільки?».
+    const from = stringField(input, "from");
+    const to = stringField(input, "to");
+    const range = from && to ? `${from} — ${to}` : from ? `з ${from}` : "пауза";
+    return habit ? `${habit} · ${range}` : range;
   },
 
   start_workout: (input) =>

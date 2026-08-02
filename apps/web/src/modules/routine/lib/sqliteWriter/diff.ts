@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- keyed Map lookups; rename-only from dualWrite/ */
-import type {
-  Habit,
-  RoutinePrefs,
-  RoutineState,
+import {
+  habitSkipKey,
+  type Habit,
+  type RoutinePrefs,
+  type RoutineState,
 } from "@sergeant/routine-domain";
 
 /**
@@ -27,6 +28,7 @@ import type {
  *   - `routine_prefs` (prefs-set)
  *   - `routine_pushups` (pushup-upsert)
  *   - `routine_habit_order` (habit-order-set)
+ *   - `routine_habit_skips` (habit-skip-upsert / habit-skip-delete)
  *   - `routine_completion_notes` (completion-note-upsert /
  *     completion-note-delete)
  *
@@ -147,6 +149,26 @@ export interface CompletionNoteDeleteOp {
   readonly noteKey: string;
 }
 
+/**
+ * Третій стан дня — «не зміг з причиною» (Хвиля 4, канон §5).
+ *
+ * Форма навмисно дзеркалить `completion-note-*`: та сама пара
+ * `(habitId, dateKey)`, згорнута в композитний ключ, той самий LWW +
+ * soft-delete на боці таблиці.
+ */
+export interface HabitSkipUpsertOp {
+  readonly kind: "habit-skip-upsert";
+  readonly skipKey: string;
+  readonly reason: string;
+  readonly note: string;
+  readonly at: string;
+}
+
+export interface HabitSkipDeleteOp {
+  readonly kind: "habit-skip-delete";
+  readonly skipKey: string;
+}
+
 export type RoutineDualWriteOp =
   | CompletionAddOp
   | CompletionRemoveOp
@@ -162,7 +184,9 @@ export type RoutineDualWriteOp =
   | PushupUpsertOp
   | HabitOrderSetOp
   | CompletionNoteUpsertOp
-  | CompletionNoteDeleteOp;
+  | CompletionNoteDeleteOp
+  | HabitSkipUpsertOp
+  | HabitSkipDeleteOp;
 
 /**
  * Compute the dual-write operation list for the transition `prev → next`.
@@ -186,6 +210,7 @@ export type RoutineDualWriteOp =
  *   8. pushup-upsert (dateKey asc)
  *   9. habit-order-set (at most one)
  *  10. completion-note-upsert / completion-note-delete (noteKey asc)
+ *  11. habit-skip-upsert / habit-skip-delete (skipKey asc)
  *
  * — so adapter callers can rely on a deterministic apply order, which
  * matters when several SQLite writes target the same row id (e.g. a
@@ -212,6 +237,7 @@ export function diffRoutineDualWriteOps(
   diffPushupOps(prev, next, ops);
   diffHabitOrderOps(prev, next, ops);
   diffCompletionNoteOps(prev, next, ops);
+  diffHabitSkipOps(prev, next, ops);
 
   return ops;
 }
@@ -473,6 +499,66 @@ function diffCompletionNoteOps(
   ops.push(...upserts, ...deletes);
 }
 
+function diffHabitSkipOps(
+  prev: RoutineState,
+  next: RoutineState,
+  ops: RoutineDualWriteOp[],
+): void {
+  if (prev.skips === next.skips) return;
+  const prevSkips = prev.skips ?? {};
+  const nextSkips = next.skips ?? {};
+  const upserts: HabitSkipUpsertOp[] = [];
+  const deletes: HabitSkipDeleteOp[] = [];
+
+  const habitIds = new Set([
+    ...Object.keys(prevSkips),
+    ...Object.keys(nextSkips),
+  ]);
+  for (const habitId of habitIds) {
+    const prevForHabit = prevSkips[habitId] ?? {};
+    const nextForHabit = nextSkips[habitId] ?? {};
+    const dateKeys = new Set([
+      ...Object.keys(prevForHabit),
+      ...Object.keys(nextForHabit),
+    ]);
+    for (const dateKey of dateKeys) {
+      const before = prevForHabit[dateKey];
+      const after = nextForHabit[dateKey];
+      // Порівняння за ЗМІСТОМ, а не за посиланням: нормалізація на
+      // читанні створює нові обʼєкти щоразу, і референсна перевірка
+      // народжувала б op на кожен boot.
+      if (
+        before &&
+        after &&
+        before.reason === after.reason &&
+        (before.note ?? "") === (after.note ?? "") &&
+        before.at === after.at
+      ) {
+        continue;
+      }
+      const skipKey = habitSkipKey(habitId, dateKey);
+      if (!after) {
+        deletes.push({ kind: "habit-skip-delete", skipKey });
+      } else {
+        upserts.push({
+          kind: "habit-skip-upsert",
+          skipKey,
+          reason: after.reason,
+          note: after.note ?? "",
+          at: after.at,
+        });
+      }
+    }
+  }
+  upserts.sort((a, b) =>
+    a.skipKey < b.skipKey ? -1 : a.skipKey > b.skipKey ? 1 : 0,
+  );
+  deletes.sort((a, b) =>
+    a.skipKey < b.skipKey ? -1 : a.skipKey > b.skipKey ? 1 : 0,
+  );
+  ops.push(...upserts, ...deletes);
+}
+
 // -----------------------------------------------------------------------
 // Generic entity-array diff (mirrors Fizruk's `diffArray`)
 // -----------------------------------------------------------------------
@@ -523,6 +609,11 @@ function habitChanged(prev: Habit, next: Habit): boolean {
     prev.tagIds !== next.tagIds ||
     prev.reminderTimes !== next.reminderTimes ||
     prev.weekdays !== next.weekdays ||
+    // Хвиля 4 — датовані паузи. Порівняння за посиланням, як і в решти
+    // масивів вище: reducer-и завжди повертають новий масив, а без цього
+    // рядка заявлена пауза не породжувала б `habit-upsert` взагалі й
+    // лишалась би тільки в локальному стані.
+    prev.pauseIntervals !== next.pauseIntervals ||
     prev.createdAt !== next.createdAt
   );
 }

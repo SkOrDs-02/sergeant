@@ -84,7 +84,7 @@ export function emitRoutineStorage() {
  * `bootSqliteReadPath()` warm-up has populated
  * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
  * (habits / tags / categories / prefs / pushups / habitOrder /
- * completionNotes) onto a fresh `defaultRoutineState()`. The
+ * completionNotes / skips) onto a fresh `defaultRoutineState()`. The
  * legacy `getCachedSqliteCompletions()` cache wins for
  * `completions` (it stays as source-of-truth for the
  * `routine_entries` reader so the rest of the codebase keeps
@@ -111,6 +111,7 @@ export function loadRoutineState(): RoutineState {
       pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
+      skips: fullState.skips,
     };
   }
 
@@ -158,6 +159,7 @@ export function saveRoutineState(next: RoutineState): boolean {
       pushupsByDate: next.pushupsByDate,
       habitOrder: next.habitOrder,
       completionNotes: next.completionNotes,
+      skips: next.skips ?? {},
     });
     setCachedSqliteCompletions(next.completions);
 
@@ -203,6 +205,7 @@ function readCachedRoutineState(): RoutineState {
       pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
+      skips: fullState.skips,
     };
   }
   if (completionsCache.refreshedAt !== null) {
