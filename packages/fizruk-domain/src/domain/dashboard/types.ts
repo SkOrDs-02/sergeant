@@ -51,6 +51,21 @@ export interface DashboardKpis {
    * was no workout yesterday.
    */
   readonly streakDays: number;
+  /**
+   * Тижнів поспіль із ≥`streakTargetPerWeek` завершених тренувань, київські
+   * межі тижня (канон `fizruk.md` §7 — «стрік має бути тижневим/гнучким»).
+   *
+   * Це число показує веб. `streakDays` лишається у payload-і для мобілки,
+   * яка поза скоупом за рішенням власника 2026-07-30, — і саме воно карає
+   * за правильний день відпочинку.
+   */
+  readonly streakWeeks: number;
+  /** Поріг, за яким рахувався `streakWeeks`. */
+  readonly streakTargetPerWeek: number;
+  /** Завершених тренувань у поточному (незакритому) тижні. */
+  readonly currentWeekWorkouts: number;
+  /** Поточний тиждень ще не дотяг до порогу, але триває — це не обрив. */
+  readonly currentWeekPending: boolean;
   /** Number of completed workouts whose `endedAt` falls in the current Mon-first week. */
   readonly weeklyWorkoutsCount: number;
   /** Sum of `weightKg × reps` over every strength set in the current Mon-first week. */
