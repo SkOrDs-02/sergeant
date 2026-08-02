@@ -26,6 +26,37 @@ const MARKER = "sergeantDialog";
  */
 let instanceCounter = 0;
 
+/**
+ * Заплановані, але ще не виконані відкати.
+ *
+ * AI-DANGER: перевірки «мій запис і досі верхній» самої по собі НЕ досить —
+ * вона залежить від того, хто встиг перший. Коли аркуш закривається й тут же
+ * відкривається діалог, можливі два порядки: діалог пушить свій запис до того,
+ * як спрацює наш таймер (тоді перевірка рятує), або після (тоді перевірка
+ * бачить наш власний запис, робить `back()` і збиває щойно відкритий діалог).
+ * Локально випадав перший порядок, у CI — другий, і тест падав уже на кроці
+ * збереження. Тому будь-який НОВИЙ екземпляр гасить усі заплановані відкати:
+ * якщо зверху ліг чужий діалог, наш запис уже не наша справа.
+ */
+const pendingRollbacks = new Set<ReturnType<typeof setTimeout>>();
+
+/**
+ * Затримка перед відкатом.
+ *
+ * ⚠️ Інженерний дефолт. Це не косметика й не «на всяк випадок»: React Router 7
+ * комітить навігацію через `startTransition`, і на найближчих тактах вона ще
+ * НЕ застосована. На 0 мс відкат стабільно випереджав коміт і скасовував
+ * перехід («Перейти до Pro» лишав користувача на `/insights`); на 32 мс тест
+ * ставав flaky — проходив лише з ретраю. 150 мс дає транзиції завершитись із
+ * запасом і лишається невідчутним: натиснути Back швидше людина не встигає.
+ */
+const ROLLBACK_DEFER_MS = 150;
+
+function cancelPendingRollbacks(): void {
+  for (const timer of pendingRollbacks) clearTimeout(timer);
+  pendingRollbacks.clear();
+}
+
 export function useHistoryDismiss(open: boolean, onClose: () => void): void {
   // Keep the latest callback without re-running the effect — a caller
   // passing an inline arrow would otherwise push a new entry every render.
@@ -38,9 +69,16 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
     if (!open) return;
     if (typeof window === "undefined" || !window.history) return;
 
+    // Новий діалог перебирає верхній запис на себе — усе, що хтось запланував
+    // відкотити, більше не актуальне.
+    cancelPendingRollbacks();
+
     let ownsEntry = true;
     instanceCounter += 1;
     const entryId = instanceCounter;
+    // Адреса на момент push-у: якщо до відкату вона змінилась, застосунок
+    // кудись перейшов, і чіпати історію вже не можна.
+    const hrefAtPush = window.location.href;
     window.history.pushState({ [MARKER]: entryId }, "");
 
     const handlePopState = () => {
@@ -69,10 +107,20 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
       // транзицію ще до коміту маршруту (те саме явище описане в
       // `useBrowserLocation`).
       if (!ownsEntry) return;
-      setTimeout(() => {
+      // Межа кадру, а не `setTimeout(0)`: React Router 7 комітить навігацію
+      // через `startTransition`, і на наступному ж такті вона ЩЕ не
+      // застосована — `setTimeout(0)` встигав відкотити її до коміту, і
+      // «Перейти до Pro» лишав користувача на тій самій сторінці
+      // (`paywall-locale-journeys.spec.ts`). Кадр дає транзиції завершитись.
+      const timer = setTimeout(() => {
+        pendingRollbacks.delete(timer);
+        // Адреса змінилась — діалог закрився ЧЕРЕЗ навігацію, і його запис
+        // уже не верхній у жодному корисному сенсі.
+        if (window.location.href !== hrefAtPush) return;
         const state = window.history.state as Record<string, unknown> | null;
         if (state && state[MARKER] === entryId) window.history.back();
-      }, 0);
+      }, ROLLBACK_DEFER_MS);
+      pendingRollbacks.add(timer);
     };
   }, [open]);
 }
