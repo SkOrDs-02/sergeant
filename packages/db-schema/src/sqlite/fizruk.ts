@@ -379,7 +379,7 @@ export const fizrukWorkoutTemplates = sqliteTable(
 /**
  * SQLite schema for `fizruk_injuries`.
  *
- * Mirrors `apps/server/src/migrations/097_fizruk_injuries.sql` and
+ * Mirrors `apps/server/src/migrations/096_fizruk_injuries.sql` and
  * `packages/db-schema/src/pg/fizruk.ts`. Injury marks are the client-authored
  * half of the "не можна" model (ADR-0083) — they must survive a device change,
  * which is why they live in a synced table rather than local-only state.
