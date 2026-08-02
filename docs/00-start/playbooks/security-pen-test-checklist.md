@@ -1,6 +1,6 @@
 # Playbook: Security pen-test checklist for closed hardening cards
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 **Trigger:** треба підтвердити, що hardening-карта зі статусом `Closed` дійсно закриває описану атаку — наприклад, перед launch readiness gate, перед external pen-test engagement, або як квартальна репетиція pen-test reproduction-у.

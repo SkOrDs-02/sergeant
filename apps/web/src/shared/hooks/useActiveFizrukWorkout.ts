@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
+import { useFizrukSqliteReadTick } from "@fizruk/lib/sqliteReadGate";
+import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 
 /**
  * Shared read-only pointer to the in-progress Fizruk workout.
@@ -20,66 +23,35 @@ import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
  *   - the referenced workout was deleted.
  * In all of those the banner would keep blinking "Тренування триває" even
  * though there is nothing to return to — this hook therefore validates the
- * pointer against `fizruk_workouts_v1` and treats it as `null` (and clears
- * the stale key) if the workout is missing or already has `endedAt`.
+ * pointer against the canonical Fizruk SQLite warm-cache and treats it as
+ * `null` (and clears the stale key) if the workout is missing or already has
+ * `endedAt`. Before the warm-cache has loaded the hook fails open and keeps
+ * the pointer; clearing it while `refreshedAt === null` would recreate the
+ * Stage 8 tombstone bug where `fizruk_workouts_v1` no longer exists.
  *
  * Listens to `storage` events so that when the user ends a workout in
  * another tab the banner disappears immediately, not on next navigation.
  *
- * Also dispatches a synthetic `local-storage` event on same-tab writes
- * if callers want cross-component reactivity (Fizruk's own
- * setActiveWorkoutId dispatches via the effect that writes the key).
+ * Same-tab workout writes are observed through the existing Fizruk SQLite
+ * read tick; cross-tab pointer changes still arrive through `storage`.
  */
-const ACTIVE_WORKOUT_KEY = "fizruk_active_workout_id_v1";
-const WORKOUTS_KEY = "fizruk_workouts_v1";
+interface ActiveIdReading {
+  id: string | null;
+  /** Pointer survives in storage but no longer names a live workout. */
+  stale: boolean;
+}
 
-/**
- * Accepts both the current `{ schemaVersion, workouts }` envelope and the
- * legacy plain-array shape — mirrors `parseWorkoutsFromStorage` in the
- * fizruk-domain package. Inlined here so the hook stays in `shared/` and
- * doesn't pull in the fizruk package.
- */
-function readActiveId(): string | null {
+/** Pure: reads external stores, never writes. Safe to call during render. */
+function readActiveId(): ActiveIdReading {
   const id = safeReadStringLS(ACTIVE_WORKOUT_KEY);
-  if (!id) return null;
+  if (!id) return { id: null, stale: false };
 
-  const raw = safeReadStringLS(WORKOUTS_KEY);
-  if (raw === null) {
-    // No workouts persisted (or storage threw). Either way the pointer
-    // cannot be validated against the list, so clear it as stale.
-    clearStaleActiveId();
-    return null;
-  }
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return { id, stale: false };
 
-  let list: unknown;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) list = parsed;
-    else if (
-      parsed &&
-      Array.isArray((parsed as { workouts?: unknown }).workouts)
-    )
-      list = (parsed as { workouts: unknown[] }).workouts;
-    else list = [];
-  } catch {
-    // Corrupt JSON — fail open: don't hide a potentially active session
-    // on parse error.
-    return id;
-  }
-
-  if (!Array.isArray(list)) return id;
-  const match = (list as Array<{ id?: unknown; endedAt?: unknown }>).find(
-    (w) => w && w.id === id,
-  );
-  if (!match) {
-    clearStaleActiveId();
-    return null;
-  }
-  if (match.endedAt) {
-    clearStaleActiveId();
-    return null;
-  }
-  return id;
+  const match = cache.workouts.find((workout) => workout.id === id);
+  if (!match || match.endedAt) return { id: null, stale: true };
+  return { id, stale: false };
 }
 
 function clearStaleActiveId(): void {
@@ -87,35 +59,39 @@ function clearStaleActiveId(): void {
 }
 
 export function useActiveFizrukWorkout(): string | null {
-  const [id, setId] = useState<string | null>(() => readActiveId());
+  const sqliteTick = useFizrukSqliteReadTick();
+  // Cross-tab pointer writes fire `storage`, which no render can observe on
+  // its own; bumping an epoch turns that into a dependency the read below
+  // can key off, without assigning derived state inside an effect.
+  const [storageEpoch, setStorageEpoch] = useState(0);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       // e.key === null means storage was cleared entirely (logout, sync).
-      // Also re-validate when the workouts list changes — a finish flow
-      // elsewhere may have flipped `endedAt` without touching the pointer.
-      if (
-        e.key === ACTIVE_WORKOUT_KEY ||
-        e.key === WORKOUTS_KEY ||
-        e.key === null
-      ) {
-        setId(readActiveId());
+      if (e.key === ACTIVE_WORKOUT_KEY || e.key === null) {
+        setStorageEpoch((epoch) => epoch + 1);
       }
     };
-    // Poll every 1.5s as a fallback — storage events don't fire in the
-    // same tab, and Fizruk writes via localStorage.setItem in an effect.
-    // The cost (1-2 localStorage.getItem + JSON.parse per 1.5s) is
-    // negligible compared to keeping a zombie "Тренування триває" pill.
-    const poll = setInterval(() => {
-      const next = readActiveId();
-      setId((prev) => (prev === next ? prev : next));
-    }, 1500);
     window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener("storage", onStorage);
-      clearInterval(poll);
     };
   }, []);
+
+  const { id, stale } = useMemo(
+    () => readActiveId(),
+    // Both entries are version tokens for the external stores the read
+    // touches — the SQLite warm cache and the localStorage pointer. The read
+    // takes no arguments, so the rule cannot see that they are the whole
+    // point of re-running it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sqliteTick, storageEpoch],
+  );
+
+  // Dropping the dead pointer is a write, so it stays out of render.
+  useEffect(() => {
+    if (stale) clearStaleActiveId();
+  }, [stale]);
 
   return id;
 }

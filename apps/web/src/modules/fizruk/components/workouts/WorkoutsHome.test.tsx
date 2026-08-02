@@ -12,7 +12,6 @@ function baseHandlers() {
     onOpenTemplates: vi.fn(),
     onOpenJournal: vi.fn(),
     onRequestStart: vi.fn(),
-    onOpenRetro: vi.fn(),
   };
 }
 
@@ -69,7 +68,7 @@ describe("WorkoutsHome", () => {
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
   });
 
-  it("shows the empty-active state with start / retro CTAs when there is no active workout", () => {
+  it("shows exactly Quick Start and template as workout start paths", () => {
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
@@ -81,16 +80,13 @@ describe("WorkoutsHome", () => {
     );
 
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
-    // No schedule CTA when onOpenSchedule isn't provided.
-    expect(
-      screen.queryByText("Запланувати тренування"),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Почати тренування"));
+    const startPaths = screen.getByLabelText("Способи почати тренування");
+    expect(startPaths.querySelectorAll("button")).toHaveLength(2);
+    fireEvent.click(screen.getByText("Quick Start"));
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByText(/Внести проведене/));
-    expect(handlers.onOpenRetro).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText("Із шаблону"));
+    expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
   });
 
   it("shows the schedule CTA when onOpenSchedule is provided and calls it on click", () => {
@@ -106,7 +102,7 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    const scheduleBtn = screen.getByText(/Запланувати тренування/);
+    const scheduleBtn = screen.getByText("Планування");
     fireEvent.click(scheduleBtn);
     expect(onOpenSchedule).toHaveBeenCalledTimes(1);
   });
@@ -152,28 +148,13 @@ describe("WorkoutsHome", () => {
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(2);
   });
 
-  it("hides the Програми tile when onOpenPrograms is not provided", () => {
+  it("keeps the exercise catalog as a reference without duplicating templates", () => {
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
         activeWorkout={null}
         activeDuration={null}
         recentWorkouts={[]}
-        {...handlers}
-      />,
-    );
-    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
-  });
-
-  it("shows the Програми tile and calls onOpenPrograms / onOpenCatalog / onOpenTemplates on click", () => {
-    const handlers = baseHandlers();
-    const onOpenPrograms = vi.fn();
-    render(
-      <WorkoutsHome
-        activeWorkout={null}
-        activeDuration={null}
-        recentWorkouts={[]}
-        onOpenPrograms={onOpenPrograms}
         {...handlers}
       />,
     );
@@ -181,11 +162,7 @@ describe("WorkoutsHome", () => {
     fireEvent.click(screen.getByText("Каталог вправ"));
     expect(handlers.onOpenCatalog).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByText("Шаблони"));
-    expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
-
-    fireEvent.click(screen.getByText("Програми"));
-    expect(onOpenPrograms).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Програми")).not.toBeInTheDocument();
   });
 });
 

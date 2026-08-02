@@ -38,11 +38,18 @@ describe("parseFizrukSegments", () => {
     });
   });
 
+  it("parses an active workout with a tail segment", () => {
+    expect(parseFizrukSegments(["workout", "w-123"])).toEqual({
+      page: "workout",
+      segment: "w-123",
+    });
+  });
+
   it("returns exercise without segment when tail is missing", () => {
     expect(parseFizrukSegments(["exercise"])).toEqual({ page: "exercise" });
   });
 
-  it("ignores tail for non-exercise pages", () => {
+  it("ignores tail for pages without a detail route", () => {
     expect(parseFizrukSegments(["workouts", "ignored"])).toEqual({
       page: "workouts",
     });
@@ -63,6 +70,7 @@ describe("buildFizrukPath", () => {
 
   it("joins page and segment for exercise", () => {
     expect(buildFizrukPath("exercise", "abc-123")).toBe("exercise/abc-123");
+    expect(buildFizrukPath("workout", "w-123")).toBe("workout/w-123");
   });
 });
 
@@ -75,6 +83,7 @@ describe("fizrukRoutePath", () => {
   it("prepends /fizruk/ for non-default pages", () => {
     expect(fizrukRoutePath("workouts")).toBe("/fizruk/workouts");
     expect(fizrukRoutePath("exercise", "x1")).toBe("/fizruk/exercise/x1");
+    expect(fizrukRoutePath("workout", "w1")).toBe("/fizruk/workout/w1");
   });
 });
 

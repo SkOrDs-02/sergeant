@@ -17,6 +17,10 @@ import {
   type CachedInjury,
 } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
 
 /**
  * Injury marks — the "не можна" model (ADR-0083, канон fizruk §5).
@@ -113,6 +117,7 @@ export function useInjuries(): UseInjuriesResult {
         },
         ...rows,
       ]);
+      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED, { count: 1 });
     },
     [rows, persist],
   );
@@ -122,6 +127,7 @@ export function useInjuries(): UseInjuriesResult {
       // eslint-disable-next-line no-restricted-syntax -- instant, not a day key: `clearedAt` only ever gets compared to `startedAt` and to sync timestamps
       const at = new Date().toISOString();
       persist(rows.map((r) => (r.id === id ? { ...r, clearedAt: at } : r)));
+      trackEvent(ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED);
     },
     [rows, persist],
   );

@@ -1,6 +1,6 @@
 # Тексти бети — пости й повідомлення за днями
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Усе, що поститься або надсилається протягом бети, у хронологічному порядку. Статичні тексти — піни й відповіді бота — живуть окремо у [`beta-texts-bot-pins.md`](./beta-texts-bot-pins.md). План бети: [`beta-testing-group.md`](./beta-testing-group.md). Форми: [`beta-forms.md`](./beta-forms.md).

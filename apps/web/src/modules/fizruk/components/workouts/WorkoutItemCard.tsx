@@ -53,6 +53,10 @@ export type WorkoutItemCardProps = {
   ) => void;
   setRestTimer: (state: RestTimerState | null) => void;
   getDefaultForGroup: (primaryGroup: string) => number;
+  getDefaultForExercise?:
+    ((exerciseId: string, primaryGroup: string) => number) | undefined;
+  setDefaultForExercise?:
+    ((exerciseId: string, sec: number) => void) | undefined;
   /**
    * Called after updateItem is invoked with the filtered sets array.
    * Receives the workout id, item id, and the snapshot of the sets array
@@ -94,6 +98,8 @@ export function WorkoutItemCard({
   updateItem,
   setRestTimer,
   getDefaultForGroup,
+  getDefaultForExercise,
+  setDefaultForExercise,
   onDeleteSet,
 }: WorkoutItemCardProps) {
   // Path-based deep-link into the Exercise detail page. The legacy
@@ -111,7 +117,10 @@ export function WorkoutItemCard({
       ? calcCardioMetrics(it.distanceM, it.durationSec)
       : null;
 
-  const defSec = getDefaultForGroup(it.primaryGroup);
+  const defSec = it.exerciseId
+    ? (getDefaultForExercise?.(it.exerciseId, it.primaryGroup) ??
+      getDefaultForGroup(it.primaryGroup))
+    : getDefaultForGroup(it.primaryGroup);
   const cat = getRestCategory(it.primaryGroup);
   const catLabel = REST_CATEGORY_LABELS[cat] || "";
   const quickOptions = [60, 90, 120, 180].filter((s) => s !== defSec);
@@ -314,25 +323,24 @@ export function WorkoutItemCard({
                 value={s.reps || ""}
                 readOnly={isReadOnly}
                 onFocus={(e) => e.target.select()}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter") return;
-                  // UX: як у більшості трекерів — Enter на повторах = "залоговано" → запускаємо таймер
-                  if (activeWorkout.endedAt) return;
-                  if (group) return;
-                  const reps = Number(s.reps) || 0;
-                  const w = Number(s.weightKg) || 0;
-                  if (reps <= 0 && w <= 0) return;
-                  setRestTimer({ remaining: defSec, total: defSec });
-                }}
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
                   const current = next[idx];
                   if (!current) return;
+                  const reps = clampNumericInput(e.target.value, MAX_REPS);
                   next[idx] = {
                     ...current,
-                    reps: clampNumericInput(e.target.value, MAX_REPS),
+                    reps,
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });
+                  if (
+                    !activeWorkout.endedAt &&
+                    !group &&
+                    (Number(current.reps) || 0) <= 0 &&
+                    reps > 0
+                  ) {
+                    setRestTimer({ remaining: defSec, total: defSec });
+                  }
                 }}
               />
               <button
@@ -436,7 +444,13 @@ export function WorkoutItemCard({
                   key={sec}
                   type="button"
                   className="min-h-[44px] px-4 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors"
-                  onClick={() => setRestTimer({ remaining: sec, total: sec })}
+                  onClick={() => {
+                    if (it.exerciseId) {
+                      setDefaultForExercise?.(it.exerciseId, sec);
+                    }
+                    setRestTimer({ remaining: sec, total: sec });
+                  }}
+                  title="Запустити й зберегти як типовий час для цієї вправи"
                 >
                   {sec} с
                 </button>

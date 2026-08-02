@@ -18,6 +18,7 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeWriteLS: vi.fn(),
   safeRemoveLS: vi.fn(),
   safeReadStringSS: vi.fn(() => null),
+  safeWriteSS: vi.fn(),
   safeRemoveSS: vi.fn(),
   safeReadLS: vi.fn(() => null),
   safeReadLSValidated: vi.fn(() => null),
@@ -453,30 +454,14 @@ describe("useWorkoutsOrchestrator – submitRetroWorkout", () => {
   });
 });
 
-describe("useWorkoutsOrchestrator – handleQuickStartConfirm", () => {
-  it("creates a workout and adds strength exercise", () => {
+describe("useWorkoutsOrchestrator – handleQuickStart", () => {
+  it("creates an empty workout and opens it", () => {
     const { result } = renderHook(() => useWorkoutsOrchestrator());
-    act(() =>
-      result.current.handleQuickStartConfirm([mockExercises[0] as never]),
-    );
+    act(() => result.current.handleQuickStart());
     expect(mockCreateWorkout).toHaveBeenCalled();
-    expect(mockAddItem).toHaveBeenCalledWith(
-      "w-new",
-      expect.objectContaining({ type: "strength" }),
-    );
-    expect(result.current.quickStartOpen).toBe(false);
+    expect(mockAddItem).not.toHaveBeenCalled();
+    expect(result.current.activeWorkoutId).toBe("w-new");
     expect(result.current.view).toBe("log");
-  });
-
-  it("adds distance type for cardio exercise", () => {
-    const { result } = renderHook(() => useWorkoutsOrchestrator());
-    act(() =>
-      result.current.handleQuickStartConfirm([mockExercises[1] as never]),
-    );
-    expect(mockAddItem).toHaveBeenCalledWith(
-      "w-new",
-      expect.objectContaining({ type: "distance" }),
-    );
   });
 });
 

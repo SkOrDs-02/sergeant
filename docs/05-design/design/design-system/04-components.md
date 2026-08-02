@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).

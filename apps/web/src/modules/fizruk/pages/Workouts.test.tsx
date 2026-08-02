@@ -63,18 +63,14 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenTemplates,
     onOpenJournal,
     onRequestStart,
-    onOpenRetro,
     onOpenSchedule,
-    onOpenPrograms,
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
     onOpenTemplates: () => void;
     onOpenJournal: () => void;
     onRequestStart: () => void;
-    onOpenRetro: () => void;
     onOpenSchedule?: () => void;
-    onOpenPrograms?: () => void;
   }) => (
     <div data-testid="workouts-home">
       <button type="button" onClick={onOpenSession} data-testid="open-session">
@@ -100,22 +96,12 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       >
         Почати
       </button>
-      <button type="button" onClick={onOpenRetro} data-testid="open-retro">
-        Внести проведене
-      </button>
       <button
         type="button"
         onClick={onOpenSchedule}
         data-testid="open-schedule"
       >
         Розклад
-      </button>
-      <button
-        type="button"
-        onClick={onOpenPrograms}
-        data-testid="open-programs"
-      >
-        Програми
       </button>
     </div>
   ),
@@ -339,7 +325,7 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     handlePullRefresh: vi.fn(),
     handleDeleteExerciseConfirm: vi.fn(),
     handleRiskyTemplateConfirm: vi.fn(),
-    handleQuickStartConfirm: vi.fn(),
+    handleQuickStart: vi.fn(),
     startWorkoutFromTemplate: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(),
     submitRetroWorkout: vi.fn(),
@@ -532,47 +518,32 @@ describe("Workouts page — home action wiring", () => {
     expect(setView).toHaveBeenCalledWith("templates");
   });
 
-  it("passes routine and programs deep-link callbacks through home tiles", () => {
+  it("passes the routine deep-link callback through the planning tile", () => {
     const onOpenRoutine = vi.fn();
-    const onOpenPrograms = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home") as unknown as ReturnType<
         typeof useWorkoutsOrchestrator
       >,
     );
 
-    render(
-      <Workouts
-        onOpenRoutine={onOpenRoutine}
-        onOpenPrograms={onOpenPrograms}
-      />,
-    );
+    render(<Workouts onOpenRoutine={onOpenRoutine} />);
     fireEvent.click(screen.getByTestId("open-schedule"));
-    fireEvent.click(screen.getByTestId("open-programs"));
 
     expect(onOpenRoutine).toHaveBeenCalledTimes(1);
-    expect(onOpenPrograms).toHaveBeenCalledTimes(1);
   });
 
-  it("opens quick start and retro logging from home actions", () => {
-    const setView = vi.fn();
-    const setQuickStartOpen = vi.fn();
-    const setRetroOpen = vi.fn();
+  it("starts an empty workout directly from Quick Start", () => {
+    const handleQuickStart = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", {
-        setView,
-        setQuickStartOpen,
-        setRetroOpen,
+        handleQuickStart,
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
     render(<Workouts />);
     fireEvent.click(screen.getByTestId("request-start"));
-    fireEvent.click(screen.getByTestId("open-retro"));
 
-    expect(setQuickStartOpen).toHaveBeenCalledWith(true);
-    expect(setRetroOpen).toHaveBeenCalledWith(true);
-    expect(setView).toHaveBeenCalledWith("log");
+    expect(handleQuickStart).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -580,16 +551,12 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
   it("wires close/delete callbacks for always-mounted sheets", () => {
     const setSelected = vi.fn();
     const setAddOpen = vi.fn();
-    const setQuickStartOpen = vi.fn();
     const setDeleteExerciseConfirm = vi.fn();
-    const setView = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", {
         setSelected,
         setAddOpen,
-        setQuickStartOpen,
         setDeleteExerciseConfirm,
-        setView,
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
@@ -597,14 +564,10 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
     fireEvent.click(screen.getByTestId("close-detail"));
     fireEvent.click(screen.getByTestId("delete-exercise"));
     fireEvent.click(screen.getByTestId("close-add-exercise"));
-    fireEvent.click(screen.getByTestId("close-quick-start"));
-    fireEvent.click(screen.getByTestId("pick-template"));
 
     expect(setSelected).toHaveBeenCalledWith(null);
     expect(setDeleteExerciseConfirm).toHaveBeenCalledWith(true);
     expect(setAddOpen).toHaveBeenCalledWith(false);
-    expect(setQuickStartOpen).toHaveBeenCalledWith(false);
-    expect(setView).toHaveBeenCalledWith("templates");
   });
 
   it("wires finish flash and confirmation dialog callbacks", () => {

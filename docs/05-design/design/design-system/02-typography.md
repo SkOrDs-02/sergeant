@@ -1,6 +1,6 @@
 # Design System — Типографічна шкала
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює типографічну шкалу, семантичні утиліти та правила ієрархії тексту.

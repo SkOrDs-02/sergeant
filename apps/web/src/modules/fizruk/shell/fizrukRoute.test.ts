@@ -12,6 +12,7 @@ describe("fizrukRoute", () => {
       "programs",
       "body",
       "exercise",
+      "workout",
     ]);
   });
 

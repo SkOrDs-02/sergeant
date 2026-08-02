@@ -13,6 +13,21 @@ export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
+  // Only one unfinished workout may exist, so every start path funnels
+  // through this prompt. Shared by the Workouts dialogs and the program
+  // start flow in the module shell — same wording in both, one source.
+  activeWorkoutConflict: {
+    title: "Уже є активне тренування",
+    description: "Перш ніж почати нове, заверши поточне або викинь його.",
+    finish: "Завершити старе й почати нове",
+    discard: "Викинути старе й почати нове",
+  },
+  restTimer: {
+    add: "Додати",
+    subtract: "Відняти",
+    secondsSuffix: "секунд",
+    skip: "Пропустити",
+  },
   dayPlan: {
     assignedTemplate: "Призначений шаблон",
     removeTemplate: "Зняти",
@@ -152,16 +167,28 @@ export const fizrukPageMessages = {
    */
   injuries: {
     title: "Що болить",
+    description:
+      "Позначене не потрапляє у recovery-поради, доки ти вручну не знімеш позначку. Крім м'язів можна позначити суглоб або відділ хребта.",
     empty:
       "Нічого не позначено. Познач зону — і я перестану радити вправи, які її навантажують.",
+    activeListLabel: "Активні позначки болю",
     markCta: "Позначити зону",
     collapseCta: "Згорнути",
     clearCta: "Зняти",
+    submit: "Позначити біль",
     groupZones: "Суглоби й хребет",
     groupMuscles: "Мʼязи",
     markedSuffix: "уже позначено",
     today: "сьогодні",
     yesterday: "вчора",
+    finishTitle: "Щось болить?",
+    finishDescription:
+      "Опційно познач одну або кілька зон — м'яз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з recovery-порад.",
+    skip: "Нічого не позначати",
+    clearedToast: "Позначку болю знято.",
+    clearFailedToast: "Не вдалося зняти позначку. Спробуй ще раз.",
+    savedToast: "Позначку болю збережено.",
+    saveFailedToast: "Не вдалося зберегти позначку. Спробуй ще раз.",
     disclaimer:
       "Це не медична порада — Sergeant не діагностує й не лікує. Позначка лише прибирає з порад вправи, що перетинаються з нею. Для власних вправ, яких немає в каталозі, перевірка за суглобом неможлива — там працює тільки збіг за мʼязом.",
   },

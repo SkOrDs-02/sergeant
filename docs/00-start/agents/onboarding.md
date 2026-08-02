@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.

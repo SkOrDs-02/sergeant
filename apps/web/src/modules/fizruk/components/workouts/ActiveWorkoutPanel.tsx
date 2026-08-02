@@ -89,7 +89,8 @@ export function ActiveWorkoutPanel({
   onDeleteWorkout,
   onCollapse,
 }: ActiveWorkoutPanelProps) {
-  const { getDefaultForGroup } = useRestSettings();
+  const { getDefaultForGroup, getDefaultForExercise, setDefaultForExercise } =
+    useRestSettings();
   const noteId = useId();
   const toast = useToast();
   const { CelebrationComponent } = useCelebration();
@@ -246,6 +247,8 @@ export function ActiveWorkoutPanel({
             updateWorkout={updateWorkout}
             setRestTimer={setRestTimer}
             getDefaultForGroup={getDefaultForGroup}
+            getDefaultForExercise={getDefaultForExercise}
+            setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={handleDeleteSet}
           />
         </div>

@@ -1,6 +1,6 @@
 # Браузерна QA `apps/web` перед закритою бетою
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-09-01.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Мета: пройти `apps/web` очима анонімного користувача й перевірити push-контур

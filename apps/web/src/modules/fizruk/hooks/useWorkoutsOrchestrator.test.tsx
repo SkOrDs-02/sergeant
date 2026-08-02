@@ -139,14 +139,12 @@ describe("useWorkoutsOrchestrator", () => {
     expect(result.current.activeWorkoutId).not.toBeNull();
   });
 
-  it("handleQuickStartConfirm builds a workout from picks", () => {
+  it("handleQuickStart builds an empty workout", () => {
     const { result } = setup();
-    const picks = result.current.exercises.slice(0, 2);
-    act(() => result.current.setQuickStartOpen(true));
-    act(() => result.current.handleQuickStartConfirm(picks));
-    expect(result.current.quickStartOpen).toBe(false);
+    act(() => result.current.handleQuickStart());
     expect(result.current.view).toBe("log");
     expect(result.current.activeWorkoutId).not.toBeNull();
+    expect(result.current.activeWorkout?.items ?? []).toHaveLength(0);
   });
 
   it("removeItemWithUndo removes an item and exposes an undo", () => {

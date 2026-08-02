@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.

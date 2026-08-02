@@ -25,6 +25,7 @@ import { readSignalContext } from "../../../../core/observability/valueSignalAtt
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -34,11 +35,12 @@ import type { RestTimerState } from "../../hooks/useFizrukRestSound";
  * `Workouts.tsx` and consumed by `WorkoutFinishSheets`.
  */
 interface FinishFlashState extends WorkoutFinishSummary {
-  step: "wellbeing" | "summary";
+  step: "wellbeing" | "injury" | "summary";
   collapsed: boolean;
   workoutId: string;
   energy: number | null;
   mood: number | null;
+  injurySites: string[];
   savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
 }
 
@@ -88,6 +90,8 @@ interface WorkoutJournalSectionProps {
   submitRetroWorkout: () => void;
   deleteWorkout: (id: string) => void;
   restoreWorkout: (workout: Workout) => void;
+  activeOnly?: boolean;
+  onSessionClosed?: (() => void) | undefined;
 }
 
 function WorkoutRow({
@@ -173,6 +177,8 @@ export function WorkoutJournalSection({
   submitRetroWorkout,
   deleteWorkout,
   restoreWorkout,
+  activeOnly = false,
+  onSessionClosed,
 }: WorkoutJournalSectionProps) {
   const toast = useToast();
   const { announce } = useAnnounce();
@@ -206,30 +212,45 @@ export function WorkoutJournalSection({
         {!activeWorkout && (
           <Card radius="lg" padding="lg" className="text-center">
             <div className="text-style-label text-text">
-              Немає активного тренування
+              {activeOnly
+                ? "Активне тренування не знайдено"
+                : "Немає активного тренування"}
             </div>
             <div className="text-xs text-subtle mt-1">
-              Створи «+ Нове» або відкрий «Шаблони». Вправи з каталогу нижче
-              додаються тапом по назві після цього.
+              {activeOnly
+                ? "Воно вже завершене, видалене або ще не завантажилось. Повернись до списку тренувань."
+                : "Створи «+ Нове» або відкрий «Шаблони». Вправи з каталогу нижче додаються тапом по назві після цього."}
             </div>
             <div className="mt-3 flex gap-2">
-              <Button
-                module="fizruk"
-                className="flex-1 h-11"
-                onClick={() => {
-                  const w = createWorkout();
-                  setActiveWorkoutId(w.id);
-                }}
-              >
-                + Нове
-              </Button>
-              <Button
-                variant="secondary"
-                className="flex-1 h-11"
-                onClick={() => setMode("templates")}
-              >
-                Шаблони
-              </Button>
+              {activeOnly ? (
+                <Button
+                  module="fizruk"
+                  className="w-full h-11"
+                  onClick={onSessionClosed}
+                >
+                  До тренувань
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    module="fizruk"
+                    className="flex-1 h-11"
+                    onClick={() => {
+                      const w = createWorkout();
+                      setActiveWorkoutId(w.id);
+                    }}
+                  >
+                    + Нове
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex-1 h-11"
+                    onClick={() => setMode("templates")}
+                  >
+                    Шаблони
+                  </Button>
+                </>
+              )}
             </div>
           </Card>
         )}
@@ -281,6 +302,10 @@ export function WorkoutJournalSection({
                 // тож назва вправи в події не була б вирізана).
                 trackEvent(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED, {
                   items: sum?.items ?? (activeWorkout.items || []).length,
+                  sets: (activeWorkout.items || []).reduce(
+                    (total, item) => total + (item.sets?.length ?? 0),
+                    0,
+                  ),
                   has_sets: (activeWorkout.items || []).some(
                     (item) =>
                       item.type === "strength" && (item.sets?.length ?? 0) > 0,
@@ -331,6 +356,7 @@ export function WorkoutJournalSection({
                     workoutId: wid,
                     energy: null,
                     mood: null,
+                    injurySites: [],
                   });
                 }
                 // Release the guard on the next tick — by then React has
@@ -350,140 +376,147 @@ export function WorkoutJournalSection({
                 if (!activeWorkout) return;
                 const snapshot = activeWorkout;
                 deleteWorkout(snapshot.id);
+                trackFizrukWorkoutDiscarded();
                 setActiveWorkoutId?.(null);
+                onSessionClosed?.();
                 showUndoToast(toast, {
                   msg: "Тренування видалено",
                   onUndo: () => restoreWorkout(snapshot),
                 });
               }}
-              onCollapse={() => setActiveWorkoutId(null)}
+              onCollapse={() => {
+                setActiveWorkoutId(null);
+                onSessionClosed?.();
+              }}
             />
           </SectionErrorBoundary>
         )}
 
-        <Card radius="lg" padding="none" className="overflow-hidden">
-          <div className="px-4 py-3 bg-panelHi/60 border-b border-line flex items-center justify-between gap-2">
-            <SectionHeading as="div" size="sm">
-              Останні тренування
-            </SectionHeading>
-          </div>
+        {!activeOnly && (
+          <Card radius="lg" padding="none" className="overflow-hidden">
+            <div className="px-4 py-3 bg-panelHi/60 border-b border-line flex items-center justify-between gap-2">
+              <SectionHeading as="div" size="sm">
+                Останні тренування
+              </SectionHeading>
+            </div>
 
-          {retroOpen && (
-            <div className="px-4 py-3 border-b border-line bg-bg space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-style-caption text-text">
-                  Записати тренування заднім числом
+            {retroOpen && (
+              <div className="px-4 py-3 border-b border-line bg-bg space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-style-caption text-text">
+                    Записати тренування заднім числом
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="xs"
+                    iconOnly
+                    onClick={() => setRetroOpen(false)}
+                    aria-label="Закрити"
+                    title="Закрити"
+                    className="h-8 w-8 rounded-xl text-xs text-subtle hover:text-text"
+                  >
+                    ×
+                  </Button>
+                </div>
+                <p className="text-xs text-subtle leading-relaxed">
+                  Вкажи, коли було тренування, потім додай вправи та заповни
+                  кг/повтори.
                 </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <SectionHeading
+                      as="div"
+                      size="xs"
+                      variant="fizruk"
+                      className="mb-1"
+                    >
+                      Дата
+                    </SectionHeading>
+                    <input
+                      type="date"
+                      className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+                      value={retroDate}
+                      onChange={(e) => setRetroDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <SectionHeading
+                      as="div"
+                      size="xs"
+                      variant="fizruk"
+                      className="mb-1"
+                    >
+                      Час початку
+                    </SectionHeading>
+                    <input
+                      type="time"
+                      className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
+                      value={retroTime}
+                      onChange={(e) => setRetroTime(e.target.value)}
+                    />
+                  </div>
+                </div>
                 <Button
-                  variant="secondary"
-                  size="xs"
-                  iconOnly
-                  onClick={() => setRetroOpen(false)}
-                  aria-label="Закрити"
-                  title="Закрити"
-                  className="h-8 w-8 rounded-xl text-xs text-subtle hover:text-text"
+                  module="fizruk"
+                  type="button"
+                  className="w-full h-11"
+                  onClick={submitRetroWorkout}
                 >
-                  ×
+                  Створити й заповнити
                 </Button>
               </div>
-              <p className="text-xs text-subtle leading-relaxed">
-                Вкажи, коли було тренування, потім додай вправи та заповни
-                кг/повтори.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <SectionHeading
-                    as="div"
-                    size="xs"
-                    variant="fizruk"
-                    className="mb-1"
+            )}
+
+            {workoutList.length === 0 && (
+              <EmptyState
+                compact
+                icon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    Дата
-                  </SectionHeading>
-                  <input
-                    type="date"
-                    className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                    value={retroDate}
-                    onChange={(e) => setRetroDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <SectionHeading
-                    as="div"
-                    size="xs"
-                    variant="fizruk"
-                    className="mb-1"
-                  >
-                    Час початку
-                  </SectionHeading>
-                  <input
-                    type="time"
-                    className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                    value={retroTime}
-                    onChange={(e) => setRetroTime(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button
-                module="fizruk"
-                type="button"
-                className="w-full h-11"
-                onClick={submitRetroWorkout}
+                    <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
+                  </svg>
+                }
+                title="Поки немає тренувань"
+                description="Натисни «+ Нове тренування» щоб почати"
+              />
+            )}
+
+            {workoutList.length > 0 && (
+              <VirtualList
+                items={workoutList}
+                height={listHeight}
+                estimateSize={JOURNAL_ITEM_HEIGHT}
+                getItemKey={(_, w) => w.id}
               >
-                Створити й заповнити
-              </Button>
-            </div>
-          )}
-
-          {workoutList.length === 0 && (
-            <EmptyState
-              compact
-              icon={
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M6 9l-3 3 3 3M18 9l3 3-3 3" />
-                </svg>
-              }
-              title="Поки немає тренувань"
-              description="Натисни «+ Нове тренування» щоб почати"
-            />
-          )}
-
-          {workoutList.length > 0 && (
-            <VirtualList
-              items={workoutList}
-              height={listHeight}
-              estimateSize={JOURNAL_ITEM_HEIGHT}
-              getItemKey={(_, w) => w.id}
-            >
-              {(w) => (
-                <SwipeToAction
-                  onSwipeLeft={
-                    w.id !== activeWorkoutId
-                      ? () => handleSwipeDelete(w.id)
-                      : undefined
-                  }
-                  rightLabel="Видалити"
-                  rightColor="bg-danger"
-                >
-                  <WorkoutRow
-                    w={w}
-                    activeWorkoutId={activeWorkoutId}
-                    setActiveWorkoutId={setActiveWorkoutId}
-                  />
-                </SwipeToAction>
-              )}
-            </VirtualList>
-          )}
-        </Card>
+                {(w) => (
+                  <SwipeToAction
+                    onSwipeLeft={
+                      w.id !== activeWorkoutId
+                        ? () => handleSwipeDelete(w.id)
+                        : undefined
+                    }
+                    rightLabel="Видалити"
+                    rightColor="bg-danger"
+                  >
+                    <WorkoutRow
+                      w={w}
+                      activeWorkoutId={activeWorkoutId}
+                      setActiveWorkoutId={setActiveWorkoutId}
+                    />
+                  </SwipeToAction>
+                )}
+              </VirtualList>
+            )}
+          </Card>
+        )}
       </div>
     </>
   );

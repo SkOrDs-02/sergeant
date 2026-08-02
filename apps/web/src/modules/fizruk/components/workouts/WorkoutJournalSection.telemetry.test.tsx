@@ -152,6 +152,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     expect(finishCalls()).toHaveLength(1);
     expect(finishPayload()).toEqual({
       items: 2,
+      sets: 5,
       has_sets: true,
       duration_min: 25,
       after_signal: false,

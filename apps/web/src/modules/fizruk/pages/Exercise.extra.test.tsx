@@ -132,6 +132,9 @@ describe("Exercise page — strength history", () => {
 
   it("shows the new-PR banner when the latest workout beats the prior best", () => {
     useExerciseCatalog.mockReturnValue(CATALOG);
+    // Dates are relative: a PR is suppressed once `aging.returnMode` kicks
+    // in (stale peak or long layoff), so fixed past dates would age out of
+    // the celebrating window.
     useWorkouts.mockReturnValue({
       workouts: [
         // Latest workout has the highest 1RM → new PR.

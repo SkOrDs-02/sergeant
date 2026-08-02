@@ -45,6 +45,10 @@ vi.mock("../components/MiniLineChart", () => ({
   MiniLineChart: () => <div data-testid="mini-line-chart" />,
 }));
 
+vi.mock("../components/InjuryManager", () => ({
+  InjuryManager: () => <div data-testid="injury-manager" />,
+}));
+
 import { Body } from "./Body";
 
 afterEach(() => {

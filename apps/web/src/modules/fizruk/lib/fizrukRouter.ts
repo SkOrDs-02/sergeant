@@ -10,7 +10,8 @@ export type FizrukPage =
   | "measurements"
   | "programs"
   | "body"
-  | "exercise";
+  | "exercise"
+  | "workout";
 
 const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "dashboard",
@@ -21,11 +22,12 @@ const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "programs",
   "body",
   "exercise",
+  "workout",
 ];
 
 export interface ParsedFizrukRoute {
   page: FizrukPage;
-  /** Tail segment after `<page>/` — used by `exercise/<id>`. */
+  /** Tail segment after `<page>/` — used by `exercise/<id>` and `workout/<id>`. */
   segment?: string;
   redirectFrom?: string;
 }
@@ -50,8 +52,8 @@ export function parseFizrukSegments(
     return { page: "dashboard" };
   }
   const tail = segments[1];
-  if (page === "exercise" && tail) {
-    return { page: "exercise", segment: tail };
+  if ((page === "exercise" || page === "workout") && tail) {
+    return { page: page as "exercise" | "workout", segment: tail };
   }
   return { page: page as FizrukPage };
 }

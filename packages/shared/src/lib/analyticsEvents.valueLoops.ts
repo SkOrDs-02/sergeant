@@ -76,7 +76,12 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   // `source: "bulk" | "chat"` НЕ є мотивованим чекіном — виключається зі
   // знаменника петлі на боці дашборда, а не на боці коду.
   ROUTINE_HABIT_CHECKED: "routine_habit_checked",
+  FIZRUK_WORKOUT_STARTED: "fizruk_workout_started",
   FIZRUK_WORKOUT_FINISHED: "fizruk_workout_finished",
+  FIZRUK_WORKOUT_DISCARDED: "fizruk_workout_discarded",
+  FIZRUK_REST_TIMER_DONE: "fizruk_rest_timer_done",
+  FIZRUK_INJURY_MARKED: "fizruk_injury_marked",
+  FIZRUK_INJURY_CLEARED: "fizruk_injury_cleared",
   NUTRITION_MEAL_LOGGED: "nutrition_meal_logged",
   FINYK_TX_CATEGORIZED: "finyk_tx_categorized",
 
