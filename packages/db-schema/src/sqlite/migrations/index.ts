@@ -861,6 +861,27 @@ CREATE INDEX IF NOT EXISTS fizruk_workout_templates_user_idx_lite
 `;
 
 /**
+ * Additive Fizruk injury history for client-side safety filtering.
+ * Mirrors Postgres migration `094_fizruk_injuries.sql`.
+ */
+const FIZRUK_003_INJURIES_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_injuries (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  muscle_group  TEXT NOT NULL,
+  noted_at      TEXT NOT NULL,
+  cleared_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_noted_idx_lite
+  ON fizruk_injuries (user_id, noted_at DESC);
+
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx_lite
+  ON fizruk_injuries (user_id, muscle_group)
+  WHERE cleared_at IS NULL;
+`;
+
+/**
  * Ordered list of bundled client migrations for the Fizruk module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -878,6 +899,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "002_fizruk_full_state.sql",
     sql: FIZRUK_002_FULL_STATE_SQL,
+  },
+  {
+    name: "003_fizruk_injuries.sql",
+    sql: FIZRUK_003_INJURIES_SQL,
   },
 ] as const;
 

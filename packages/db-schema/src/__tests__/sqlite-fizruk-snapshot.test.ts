@@ -12,6 +12,7 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukInjuries,
 } from "../sqlite/fizruk.js";
 import {
   FIZRUK_CLIENT_MIGRATIONS,
@@ -575,8 +576,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(2);
+  it("exports the 001 baseline + 002 full-state + 003 injuries migrations", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -613,9 +614,50 @@ describe("sqlite/fizruk migrations exports", () => {
     expect(FIZRUK_CLIENT_MIGRATIONS[1]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workout_templates/,
     );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.name).toBe("003_fizruk_injuries.sql");
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_injuries/,
+    );
   });
 
   it("uses a separate `__fizruk_migrations` ledger table", () => {
     expect(FIZRUK_MIGRATIONS_TABLE).toBe("__fizruk_migrations");
+  });
+});
+
+describe("sqlite/fizrukInjuries schema snapshot", () => {
+  const config = getTableConfig(fizrukInjuries);
+
+  it("mirrors the Postgres injury contract", () => {
+    expect(config.name).toBe("fizruk_injuries");
+    expect(config.columns.map((column) => column.name)).toEqual([
+      "id",
+      "user_id",
+      "muscle_group",
+      "noted_at",
+      "cleared_at",
+    ]);
+
+    const columnMap = Object.fromEntries(
+      config.columns.map((column) => [column.name, column]),
+    );
+    expect(columnMap["id"]!.dataType).toBe("string");
+    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["user_id"]!.notNull).toBe(true);
+    expect(columnMap["muscle_group"]!.notNull).toBe(true);
+    expect(columnMap["noted_at"]!.notNull).toBe(true);
+    expect(columnMap["cleared_at"]!.notNull).toBe(false);
+  });
+
+  it("indexes injury history and the active subset", () => {
+    const indexNames = config.indexes.map((index) => index.config.name);
+    expect(indexNames).toContain("fizruk_injuries_user_noted_idx_lite");
+    expect(indexNames).toContain("fizruk_injuries_user_active_idx_lite");
+
+    const activeIndex = config.indexes.find(
+      (index) => index.config.name === "fizruk_injuries_user_active_idx_lite",
+    );
+    expect(activeIndex!.config.where).toBeDefined();
   });
 });

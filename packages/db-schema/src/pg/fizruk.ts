@@ -336,3 +336,30 @@ export const fizrukWorkoutTemplates = pgTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+/**
+ * Postgres schema for `fizruk_injuries`.
+ *
+ * Mirrors migration `094_fizruk_injuries.sql`. Rows are append-only injury
+ * observations; setting `cleared_at` ends the active restriction without
+ * deleting its history.
+ */
+export const fizrukInjuries = pgTable(
+  "fizruk_injuries",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    muscleGroup: text("muscle_group").notNull(),
+    notedAt: timestamp("noted_at", { withTimezone: true }).notNull(),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("fizruk_injuries_user_noted_idx").on(
+      table.userId,
+      sql`${table.notedAt} DESC`,
+    ),
+    index("fizruk_injuries_user_active_idx")
+      .on(table.userId, table.muscleGroup)
+      .where(sql`${table.clearedAt} IS NULL`),
+  ],
+);
