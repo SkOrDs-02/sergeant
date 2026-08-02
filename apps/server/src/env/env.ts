@@ -462,6 +462,17 @@ const envSchema = z.object({
 
   MONO_ENRICHMENT_MAX_ATTEMPTS: intFromEnv(5),
 
+  /**
+   * Хвилинний прохід нагадувань (`lib/reminders/scheduler.ts`).
+   *
+   * Дефолт `true`: без нього нагадування про звички / їжу / тренування не
+   * доходять при закритому застосунку взагалі — локальні таймери у
+   * сервіс-воркері помирають разом із ним. Прапорець існує як аварійний
+   * рубильник (раптовий потік дублів, деградація БД) і щоб глушити
+   * планувальник у тестах та скриптах, які піднімають увесь app.
+   */
+  REMINDER_SWEEP_ENABLED: boolFromEnv(true),
+
   MCC_BATCH_HOURLY_ENABLED: boolFromEnv(false),
 
   MCC_BATCH_MAX_SIZE: intFromEnv(100),

@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-01.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -20,7 +20,8 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 - **Контракт payload** — `PushPayload` у `packages/shared/src/types/index.ts` (cross-package: web SW, mobile handler, server `sendToUser`).
 - **Server fan-out** — `sendToUser(userId, payload)` з `apps/server/src/push/send.ts`. Читає з `push_devices` + `push_subscriptions`, паралельно б'є APNs/FCM/web-push, повертає аґреговану статистику. Не throw-ає; помилки конкретного каналу повертає у `errors[]`.
 - **Quiet variant** — `sendToUserQuietly(userId, payload)` для fire-and-forget (наприклад, всередині handler-а, що не має валитись через push).
-- **Client SW** (web) — `apps/web/src/sw.ts` рядок ~627, `self.addEventListener("push", …)`. Розпаковує JSON payload, показує `Notification` з `payload.title`, `payload.body`, `data.module` (для click-routing у `notificationclick`).
+- **Client SW** (web) — `apps/web/src/sw.ts`, `self.addEventListener("push", …)`. Розбір payload-у живе в `apps/web/src/sw/pushPayload.ts` (`normalizePushPayload`) — там же захисні обрізки й allow-list модулів. SW читає `data.module`, `data.url` і `tag`; плоска форма `{module, tag}` без `data` лишається fallback-ом для внутрішнього `POST /api/push/send`.
+- **Нагадування за розкладом** — `apps/server/src/lib/reminders/`. Хвилинний прохід (`runReminderSweep`) читає вже синхронізовані `routine_habits` / `routine_prefs` / `fizruk_monthly_plan` / `nutrition_prefs`, звіряється з `routine_completion_events` і `routine_habit_skips`, стовпить рядок у `push_reminder_log` і лише потім шле. Не BullMQ: черга не стартує без `REDIS_URL`, якого у проді немає.
 - **VAPID** — `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` у `.env` (опціонально, без них web-push мовчки skip-ається).
 
 Додавання нового **типу** push-у — це не новий transport, а нова **точка тригера** + (опціонально) новий routing у SW.
@@ -33,12 +34,13 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 
 Запитай: коли саме push має полетіти?
 
-| Тип тригера                       | Куди вставити                                                                                                                              |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Реакція на user-action (POST/PUT) | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                             |
-| Mono webhook event                | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                               |
-| Періодичний (раз на день/тиждень) | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (GitHub Actions schedule / n8n). У репо немає вбудованого in-process scheduler-а. |
-| Side effect AI insight            | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                      |
+| Тип тригера                            | Куди вставити                                                                                                                                        |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Реакція на user-action (POST/PUT)      | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                                       |
+| Mono webhook event                     | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                                         |
+| За розкладом користувача (нагадування) | `apps/server/src/lib/reminders/due.ts` — додай предикат «що спрацьовує на цю хвилину» і завантажувач стану у `sweep.ts`. Планувальник уже крутиться. |
+| Періодичний (раз на день/тиждень)      | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (GitHub Actions schedule / n8n), або повісь на добову гілку reminder-sweep-у.               |
+| Side effect AI insight                 | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                                |
 
 **Не клади** push логіку в `chat.ts` (порушує тонко-passthrough архітектуру; див. `AGENTS.md`).
 
@@ -64,6 +66,7 @@ const payload: PushPayload = {
 - **`title` обов'язковий.** APNs / FCM / web-push всі вимагають.
 - **`body` коротко й конкретно.** Без «Привіт, ти ж знаєш, що…»; iOS обрізає на ~110 символів.
 - **`data.module`** використовується SW для click-routing (`apps/web/src/sw.ts` `notificationclick`). Якщо новий тип належить існуючому модулю — постав його значення (`finyk`/`fizruk`/`nutrition`/`routine`); якщо ні — вирішуй чи додавати новий case у SW (крок 4).
+- **`tag`** — web-`Notification.tag`. Задавай ЗАВЖДИ, коли ту саму подію може надіслати більш ніж один шлях. Без нього SW підставляє `push_${Date.now()}`, і повторна доставка лягає у шторку другим рядком замість замістити перший. Саме на спільному `tag` тримається дедуп між серверним нагадуванням і локальним таймером відкритої вкладки — обидва використовують один рядок (`routine_notify_<habitId>_<HH:MM>_<dayKey>`).
 - **`threadId`** групує нотифікації на iOS у єдиний thread (наприклад, всі бюджет-warning у одну групу). Без нього кожен push — окремий thread.
 - **`silent: true`** тільки якщо це реально data-only push без UI (background sync). За замовчуванням — visible.
 
@@ -165,6 +168,7 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 
 ## Notes
 
+- **Нагадування НЕ плануй на клієнті.** Локальні таймери (`setTimeout` у вкладці чи у service-worker-і) не переживають закриття застосунку: браузер вбиває неактивний SW за ~30 секунд, а його памʼять зникає разом із ним. Саме через це нагадування про звички роками не приходили, тоді як пуш про витрати працював. Єдине місце, яке працює при закритому застосунку, — сервер.
 - **Не шли push без user opt-in.** Web-push підписка вимагає явного `Notification.requestPermission`; без неї `push_subscriptions` буде порожнім і `sendToUser` мовчки skip-ає web-канал. Це норма.
 - **Не дублюй push.** Якщо вже існує тригер на ту ж подію — додай поле в `data` замість другого виклику `sendToUser`. Юзеру неприємно отримувати два банери на одну подію.
 - **Не клади приватні дані в `body`.** `body` рендериться lock-screen-ом; суми, баланси, медичні факти — в `data` (рендериться лише після відкриття).
@@ -177,5 +181,6 @@ pnpm --filter @sergeant/server exec vitest run src/modules/<your-domain>
 - [add-api-endpoint.md](./add-api-endpoint.md) — якщо тригер push-у — це новий endpoint
 - `apps/server/src/push/send.ts` — реалізація `sendToUser` / `sendToUserQuietly`
 - `apps/server/src/lib/webpushSend.ts` — web-push transport
-- `apps/web/src/sw.ts` рядок ~627 — `push` event listener
+- `apps/web/src/sw.ts` — `push` / `notificationclick` listeners; розбір payload-у у `apps/web/src/sw/pushPayload.ts`
+- `apps/server/src/lib/reminders/` — хвилинний прохід нагадувань (`due.ts` — чисті предикати, `sweep.ts` — БД і відправка, `scheduler.ts` — таймер)
 - `packages/shared/src/types/index.ts` — `PushPayload` контракт

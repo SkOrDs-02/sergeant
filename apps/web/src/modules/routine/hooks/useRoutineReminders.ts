@@ -40,23 +40,6 @@ export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
   }
 }
 
-function sendRoutineStateToSW(routine: RoutineState): void {
-  try {
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
-      return;
-    navigator.serviceWorker.controller.postMessage({
-      type: "ROUTINE_STATE_UPDATE",
-      data: {
-        habits: routine.habits,
-        completions: routine.completions,
-        prefs: routine.prefs,
-      },
-    });
-  } catch (err) {
-    logger.warn("[routine.reminders] sw-state-postmessage-failed", err);
-  }
-}
-
 export function useRoutineReminders(routine: RoutineState): void {
   const enabled = routine.prefs?.routineRemindersEnabled === true;
   const routineRef = useRef<RoutineState>(routine);
@@ -69,9 +52,15 @@ export function useRoutineReminders(routine: RoutineState): void {
     cleanupStaleRoutineNotifyKeys();
   }, []);
 
-  useEffect(() => {
-    sendRoutineStateToSW(routine);
-  }, [routine]);
+  // AI-CONTEXT: тут раніше стояв `postMessage("ROUTINE_STATE_UPDATE")`, що
+  // живив цикл нагадувань усередині сервіс-воркера. Цикл прибрано — він не
+  // міг спрацювати при закритому застосунку: браузер вбиває неактивний SW
+  // за ~30 секунд, а переданий стан жив у його памʼяті й після перезапуску
+  // був порожній. Нагадування тепер шле сервер
+  // (`apps/server/src/lib/reminders/`), читаючи ті самі `routine_habits` /
+  // `routine_prefs`, які вже синхронізуються. Цей хук лишається швидким
+  // foreground-шляхом для відкритої вкладки; дедуп між ним і сервером
+  // тримається на спільному `storageKey` = `Notification.tag`.
 
   // `onMinuteTick` receives Kyiv-local dayKey + hm from the shared hook —
   // that is the bug fix: fizruk/nutrition previously read host-local time here.
