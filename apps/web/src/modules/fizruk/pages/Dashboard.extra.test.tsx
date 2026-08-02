@@ -45,6 +45,15 @@ vi.mock("../hooks/useRecovery", () => ({
     ready: [],
     avoid: [],
     wellbeingMult: 1,
+    wellbeingSignal: {
+      multiplier: 1,
+      sleepAgeHours: null,
+      energyAgeHours: null,
+      usedSleep: false,
+      usedEnergy: false,
+      stale: false,
+      windowHours: 72,
+    },
     injurySites: new Set<never>(),
   })),
 }));
@@ -487,6 +496,15 @@ describe("Dashboard extended coverage", () => {
       ready: [],
       avoid: [],
       wellbeingMult: 1,
+      wellbeingSignal: {
+        multiplier: 1,
+        sleepAgeHours: null,
+        energyAgeHours: null,
+        usedSleep: false,
+        usedEnergy: false,
+        stale: false,
+        windowHours: 72,
+      },
       injurySites: new Set<never>(),
     } as ReturnType<typeof useRecovery>);
 
@@ -592,6 +610,15 @@ describe("Dashboard — navigation callbacks", () => {
       ready: [],
       avoid: [],
       wellbeingMult: 1,
+      wellbeingSignal: {
+        multiplier: 1,
+        sleepAgeHours: null,
+        energyAgeHours: null,
+        usedSleep: false,
+        usedEnergy: false,
+        stale: false,
+        windowHours: 72,
+      },
       injurySites: new Set<never>(),
     } as ReturnType<typeof useRecovery>);
 
@@ -670,6 +697,15 @@ describe("Dashboard — Продовжити confirm flow", () => {
       ready: [],
       avoid: [],
       wellbeingMult: 1,
+      wellbeingSignal: {
+        multiplier: 1,
+        sleepAgeHours: null,
+        energyAgeHours: null,
+        usedSleep: false,
+        usedEnergy: false,
+        stale: false,
+        windowHours: 72,
+      },
       injurySites: new Set<never>(),
     } as ReturnType<typeof useRecovery>);
   }
