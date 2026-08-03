@@ -17,6 +17,7 @@ vi.mock("./analytics", () => ({
   ANALYTICS_EVENTS: {
     AI_ADVICE_SHOWN: "ai_advice_shown",
     AI_ADVICE_REACTED: "ai_advice_reacted",
+    AI_ADVICE_FAILED: "ai_advice_failed",
   },
   trackEvent: (...args: unknown[]) => trackEventMock(...args),
 }));
@@ -26,6 +27,7 @@ import {
   adviceIdForScope,
   markAdviceShown,
   trackAdviceReaction,
+  trackAdviceFailed,
   __resetAdviceTelemetry,
 } from "./adviceTelemetry";
 
@@ -197,5 +199,60 @@ describe("adviceTelemetry — adviceIdForScope", () => {
     __resetAdviceTelemetry();
     const second = adviceIdForScope(`scope:${ADVICE_TEXT}`);
     expect(first).not.toBe(second);
+  });
+});
+
+describe("trackAdviceFailed", () => {
+  beforeEach(() => {
+    trackEventMock.mockClear();
+    __resetAdviceTelemetry();
+  });
+
+  it("несе source, kind і status — і жодного тексту помилки", () => {
+    trackAdviceFailed({
+      source: "coach_insight",
+      kind: "http",
+      status: 400,
+    });
+
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+    const [name, payload] = trackEventMock.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ];
+    expect(name).toBe("ai_advice_failed");
+    expect(payload).toEqual({
+      source: "coach_insight",
+      kind: "http",
+      status: 400,
+      instrumentation_version: ADVICE_INSTRUMENTATION_VERSION,
+    });
+  });
+
+  it("нормалізує невідомий status до null", () => {
+    // Мережевий збій не має HTTP-коду. `NaN` тут — не гіпотетика: він
+    // приїжджає з `Number(undefined)` на call-site-ах, які дістають статус
+    // з не-`ApiError` викиду.
+    trackAdviceFailed({
+      source: "weekly_digest",
+      kind: "network",
+      status: Number.NaN,
+    });
+
+    const [, payload] = trackEventMock.mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ];
+    expect(payload["status"]).toBeNull();
+  });
+
+  it("не дедуплікує: кожна невдала спроба це окремий факт", () => {
+    // На відміну від `markAdviceShown`, у провалу немає `advice_id`, за яким
+    // можна дедуплікувати, і дві поспіль невдалі генерації — це двоє даних,
+    // а не одне подвоєне.
+    trackAdviceFailed({ source: "coach_insight", kind: "http", status: 500 });
+    trackAdviceFailed({ source: "coach_insight", kind: "http", status: 500 });
+
+    expect(trackEventMock).toHaveBeenCalledTimes(2);
   });
 });
