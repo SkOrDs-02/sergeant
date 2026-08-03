@@ -240,11 +240,16 @@ export function AssetsTxPickerView({
       );
     }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
-    // Рахуємо по ПОВНОМУ набору, а не по `transactions`: той звужений
-    // пошуком і вибором періоду, тож сума погашеного стрибала б від того,
-    // який фільтр зараз відкритий. Правило погашення — канонічне в
-    // `@sergeant/finyk-domain` (дубль із `AssetsLiabilitiesSection` знято).
-    const paid = sumMonoCardPaid(sourceTransactions, linkedIds, txPicker.id);
+    // AI-CONTEXT: рахуємо по `allTransactions` — проп зі стану сторінки
+    // (поточний місяць + ручні записи), а НЕ по `transactions` і не по
+    // `sourceTransactions`. Перший звужений пошуком, другий — вибраним
+    // періодом, тож обидва змушували б суму стрибати від відкритого
+    // фільтра. `allTransactions` не залежить ні від того, ні від іншого,
+    // і рівно він відповідає підпису «Погашено цього місяця» — та сама
+    // множина, що живить `AssetsLiabilitiesSection`, тож два екрани
+    // показують одне число. Правило погашення — канонічне в
+    // `@sergeant/finyk-domain` (дубль із секцією пасивів знято).
+    const paid = sumMonoCardPaid(allTransactions, linkedIds, txPicker.id);
     const remaining = getMonoDebt(account);
     const total = paid + remaining;
     const label = getAccountLabel(account);

@@ -133,4 +133,18 @@ describe("classifyMonoCardLink", () => {
       ),
     ).toBe("repayment");
   });
+
+  it("ручний запис (без рахунку) не плутається з покупкою по картці", () => {
+    // `_accountId: null` — готівка. Додатна сума до картки не має
+    // стосунку, але це НЕ «покупка по картці»: рахунок інший (жодного).
+    expect(
+      classifyMonoCardLink({ id: "a", amount: 200_00, _accountId: null }, CARD),
+    ).toBe("other-income");
+    expect(
+      classifyMonoCardLink(
+        { id: "b", amount: -200_00, _accountId: null },
+        CARD,
+      ),
+    ).toBe("repayment");
+  });
 });

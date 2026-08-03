@@ -155,6 +155,35 @@ describe("AssetsTxPickerView", () => {
       expect(summary).not.toContain("31 100");
     });
 
+    it("«Погашено» не залежить від пошуку", () => {
+      // Регресія: сума рахувалась по відфільтрованому списку, тож будь-який
+      // ввід у пошук її змінював, хоча привʼязки ті самі.
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          transactions={[
+            mkTx({
+              id: "topup",
+              amount: 50_000,
+              _accountId: "acc-1",
+              description: "Поповнення",
+            }),
+          ]}
+          monoDebtLinkedTxIds={{ "acc-1": ["topup"] }}
+          txPicker={{ type: "monoDebt", id: "acc-1" }}
+        />,
+      );
+      const summaryText = () =>
+        screen.getByText(/Базовий борг/).textContent?.replace(/\s+/g, " ");
+      const before = summaryText();
+      expect(before).toContain("Погашено цього місяця: 500 ₴");
+
+      fireEvent.change(screen.getByLabelText("Пошук транзакцій"), {
+        target: { value: "нічого-не-знайдено" },
+      });
+      expect(summaryText()).toBe(before);
+    });
+
     it("привʼязаний рядок каже, що саме привʼязка зробила", () => {
       // Регресія: галочка `TxRow` означає лише «привʼязано». Покупка по
       // картці й рух на чужому рахунку в погашене не йдуть, тож мовчазна
