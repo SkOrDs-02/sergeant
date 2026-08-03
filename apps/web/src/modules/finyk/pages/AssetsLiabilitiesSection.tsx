@@ -5,6 +5,7 @@ import {
   calcDebtRemaining,
   getDebtEffectiveTotal,
 } from "../utils";
+import { sumMonoCardPaid } from "@sergeant/finyk-domain/domain/monoCardDebt";
 import { getAccountVisual } from "../lib/accountVisual";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -105,18 +106,13 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
-        // A repayment is either money arriving on the card itself, or an
-        // outgoing payment from some other account. Spending *on this card* is
-        // the one thing that is never a repayment — it grows the debt. Plain
-        // `Math.abs` counted it as repayment too, so linking a purchase
-        // inflated both "сплачено" and the total below.
-        const paidFromLinked = transactions
-          .filter(
-            (t) =>
-              linkedIds.includes(t.id) &&
-              !(t._accountId === a.id && t.amount < 0),
-          )
-          .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+        // Правило погашення — канонічне в `@sergeant/finyk-domain`; раніше
+        // воно жило двома копіями (тут і в пікері) й розійшлося.
+        const paidFromLinked = sumMonoCardPaid(
+          transactions,
+          linkedIds,
+          a.id ?? "",
+        );
         const remaining = getMonoDebt(a);
         const volatileTotal = paidFromLinked + remaining;
         const visual = getAccountVisual(a);

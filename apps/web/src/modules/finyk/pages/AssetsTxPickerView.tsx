@@ -12,6 +12,11 @@ import type {
   LinkedTxRole,
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  classifyMonoCardLink,
+  isSuggestedMonoCardRepayment,
+  sumMonoCardPaid,
+} from "@sergeant/finyk-domain/domain/monoCardDebt";
 import { AssetsDebtTxPicker } from "./AssetsDebtTxPicker";
 import {
   buildMonthOptions,
@@ -22,6 +27,8 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { messages } from "@shared/i18n/uk";
+import { cn } from "@shared/lib/ui/cn";
 
 type Subscription = {
   id: string;
@@ -233,21 +240,30 @@ export function AssetsTxPickerView({
       );
     }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
-    // Same rule as AssetsLiabilitiesSection: spending on the card itself is
-    // never a repayment, everything else linked here is.
-    const paid = transactions
-      .filter(
-        (t) =>
-          linkedIds.includes(t.id) &&
-          !(t._accountId === txPicker.id && t.amount < 0),
-      )
-      .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+    // AI-CONTEXT: рахуємо по `allTransactions` — проп зі стану сторінки
+    // (поточний місяць + ручні записи), а НЕ по `transactions` і не по
+    // `sourceTransactions`. Перший звужений пошуком, другий — вибраним
+    // періодом, тож обидва змушували б суму стрибати від відкритого
+    // фільтра. `allTransactions` не залежить ні від того, ні від іншого,
+    // і рівно він відповідає підпису «Погашено цього місяця» — та сама
+    // множина, що живить `AssetsLiabilitiesSection`, тож два екрани
+    // показують одне число. Правило погашення — канонічне в
+    // `@sergeant/finyk-domain` (дубль із секцією пасивів знято).
+    const paid = sumMonoCardPaid(allTransactions, linkedIds, txPicker.id);
     const remaining = getMonoDebt(account);
     const total = paid + remaining;
     const label = getAccountLabel(account);
 
     const isSuggested = (t: TxRowTx) =>
-      t._accountId === txPicker.id && t.amount > 0;
+      isSuggestedMonoCardRepayment(t, txPicker.id);
+
+    const monoLinkKind = (t: TxRowTx) => classifyMonoCardLink(t, txPicker.id);
+    const monoLinkLabel = (t: TxRowTx) => {
+      const copy = messages.finyk.monoCardLink;
+      const kind = monoLinkKind(t);
+      if (kind === "repayment") return copy.repayment;
+      return kind === "card-purchase" ? copy.cardPurchase : copy.otherIncome;
+    };
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -299,6 +315,22 @@ export function AssetsTxPickerView({
                   {suggested && !isLinked && (
                     <div className="text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
                       ↑ Поповнення картки
+                    </div>
+                  )}
+                  {isLinked && (
+                    // Галочка `TxRow` лише каже «привʼязано». Що саме
+                    // привʼязка зробила — тут: покупка по картці й рух на
+                    // чужому рахунку в суму погашеного не йдуть, і мовчати
+                    // про це означало б обіцяти неіснуючий внесок.
+                    <div
+                      className={cn(
+                        "text-style-caption font-semibold px-1 pt-1",
+                        monoLinkKind(t) === "repayment"
+                          ? "text-success-strong dark:text-success"
+                          : "text-warning-strong dark:text-warning",
+                      )}
+                    >
+                      {monoLinkLabel(t)}
                     </div>
                   )}
                   <TxRow
