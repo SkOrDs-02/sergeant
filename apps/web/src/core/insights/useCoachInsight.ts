@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/api/queryKeys";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import {
@@ -488,6 +489,26 @@ export function useCoachInsight(): UseCoachInsightResult {
     }
     setAdviceId((prev) => (prev === nextId ? prev : nextId));
   }, [query.data, query.isFetching, todayKey]);
+
+  // Провал генерації інсайту. Без цієї події «коуч мовчить, бо гейт
+  // достатності даних (`hub-coach.md` §6.2) навмисно тримає тишу» і «коуч
+  // мовчить, бо провайдер віддає 400» дають на дашборді той самий нуль
+  // `ai_advice_shown`.
+  //
+  // Guard за посиланням на помилку, а не за булеаном: React Query лишає той
+  // самий об'єкт живим між рендерами й на час ретраю, тож без ref подія
+  // летіла б щорендеру, поки картка на екрані.
+  const failedErrRef = useRef<unknown>(null);
+  useEffect(() => {
+    const err = query.error;
+    if (!err || failedErrRef.current === err) return;
+    failedErrRef.current = err;
+    trackAdviceFailed({
+      source: "coach_insight",
+      kind: isApiError(err) ? err.kind : "unknown",
+      status: isApiError(err) && err.kind === "http" ? err.status : null,
+    });
+  }, [query.error]);
 
   const { refetch } = query;
 

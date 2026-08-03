@@ -17,6 +17,8 @@ import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigest
 import { buildDigestCorrelations } from "./digestCorrelations";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
+import { isApiError } from "@shared/api";
+import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
@@ -519,6 +521,17 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       } catch {
         /* non-fatal */
       }
+    },
+    // Провал генерації інакше зникає безслідно: `generate` нижче ковтає
+    // помилку в `catch { return null }`, і зовні це не відрізнити від
+    // «звіту ще немає». Емітимо тут, а не в тому catch, щоб не рахувати
+    // двічі — mutateAsync прокидає ту саму помилку далі.
+    onError: (err: unknown) => {
+      trackAdviceFailed({
+        source: "weekly_digest",
+        kind: isApiError(err) ? err.kind : "unknown",
+        status: isApiError(err) && err.kind === "http" ? err.status : null,
+      });
     },
   });
 
