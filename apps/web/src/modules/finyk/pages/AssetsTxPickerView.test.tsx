@@ -9,10 +9,28 @@
  * Money is integer kopiykas (number); time pinned to Europe/Kyiv.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
 import { AssetsTxPickerView } from "./AssetsTxPickerView";
 import type { TxRowTx } from "../components/TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+
+// Пікер тягне власний, ширший діапазон транзакцій (див.
+// `useLinkableTransactions`) — у тестах мережу глушимо, а дані подаємо
+// пропом `transactions`, який хук зливає як базу.
+vi.mock("../hooks/monoTransactionsLoader", () => ({
+  fetchAllMonoTransactions: vi.fn(async () => []),
+}));
+
+function render(ui: ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return rtlRender(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
 
 const KYIV = new Date("2026-06-15T09:00:00Z");
 const NOW_S = Math.floor(KYIV.getTime() / 1000);
@@ -47,7 +65,7 @@ function baseProps() {
     updateSubscription: vi.fn(),
     manualDebts: [] as never[],
     receivables: [] as never[],
-    toggleLinkedTx: vi.fn(),
+    setLinkedTxRole: vi.fn(),
     showBalance: true,
     customCategories: [] as never[],
   };
@@ -246,8 +264,8 @@ describe("AssetsTxPickerView", () => {
       expect(screen.getByText("← Назад")).toBeInTheDocument();
     });
 
-    it("renders a debt header and toggles a linked transaction", () => {
-      const toggleLinkedTx = vi.fn();
+    it("renders a debt header and opens the role picker on tap", () => {
+      const setLinkedTxRole = vi.fn();
       const manualDebts = [
         {
           id: "d1",
@@ -262,14 +280,24 @@ describe("AssetsTxPickerView", () => {
           {...baseProps()}
           manualDebts={manualDebts as never}
           transactions={[mkTx({ id: "tx-1", amount: -2000 })]}
-          toggleLinkedTx={toggleLinkedTx}
+          setLinkedTxRole={setLinkedTxRole}
           txPicker={{ type: "debt", id: "d1" }}
         />,
       );
       expect(screen.getByText("Транзакції по пасиву")).toBeInTheDocument();
       expect(screen.getByText(/Борг другу/)).toBeInTheDocument();
       fireEvent.click(screen.getByText("Магазин"));
-      expect(toggleLinkedTx).toHaveBeenCalledWith("d1", "tx-1", "debt");
+      // Тап більше не привʼязує напряму — спершу питаємо роль.
+      expect(setLinkedTxRole).not.toHaveBeenCalled();
+      expect(screen.getByText("Чим є ця операція?")).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/Збільшення боргу/));
+      expect(setLinkedTxRole).toHaveBeenCalledWith(
+        "d1",
+        "tx-1",
+        "debt",
+        "increase",
+        20,
+      );
     });
 
     it("renders a receivable header with the active-asset wording", () => {

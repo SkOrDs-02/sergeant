@@ -1,6 +1,6 @@
 # Продуктовий канон: finyk
 
-> **Last validated:** 2026-07-29 by Codex (звірка Hub-preview, денного пульсу, бюджетних алертів і підказок внутрішніх переказів; базовий продуктовий аудит — 2026-07-22, spec `docs/90-work/planning/specs/product-knowledge-audit.md`)
+> **Last validated:** 2026-08-03 by Claude (ролі привʼязаних транзакцій, § 4a); 2026-07-29 by Codex (звірка Hub-preview, денного пульсу, бюджетних алертів і підказок внутрішніх переказів; базовий продуктовий аудит — 2026-07-22, spec `docs/90-work/planning/specs/product-knowledge-audit.md`)
 > **Next review:** 2026-10-20.
 > **Status:** Active
 
@@ -101,11 +101,43 @@ activation + week-2 return).
 | **Budget**               | `finyk_budgets`                                                         | `finyk_budgets`                                             | union `limit` (categoryId+limit+period) \| `goal` (target/`linkedJarId`/`contributions[]`, `savedAmount` deprecated — прогрес = баланс привʼязаної банки + сума `contributions`) |
 | **Subscription**         | `finyk_subs`, dismissed → `finyk_rec_dismissed`                         | `finyk_subscriptions`                                       | ручний ввід **+ автодетекція** `detectRecurring`                                                                                                                                 |
 | **Asset**                | `finyk_assets`                                                          | `finyk_assets`                                              | лише UAH враховується в networth; не-UAH виключені, користувач попереджений у формі й на Overview (веб) / Assets (мобайл)                                                        |
-| **Debt / Receivable**    | `finyk_debts`, `finyk_recv`, `finyk_mono_debt_linked`                   | `finyk_debts`, `finyk_receivables`, `finyk_mono_debt_links` | —                                                                                                                                                                                |
+| **Debt / Receivable**    | `finyk_debts`, `finyk_recv`, `finyk_mono_debt_linked`                   | `finyk_debts`, `finyk_receivables`, `finyk_mono_debt_links` | привʼязка транзакції має **явну роль** (`txLinks`) — див. § 4a                                                                                                                   |
 | **Hidden-оверлеї**       | `finyk_hidden` (рахунки), `finyk_hidden_txs`, `finyk_excluded_stat_txs` | `finyk_hidden_accounts`, `finyk_hidden_transactions`        | `excluded_stat` **не має** серверної таблиці                                                                                                                                     |
 | **MonthlyPlan**          | `finyk_monthly_plan`                                                    | окремої таблиці **немає**                                   | споживається weekly-digest на обох платформах                                                                                                                                    |
 | **Networth-history**     | `finyk_networth_history`, `finyk_networth_last_snap`                    | `finyk_networth_history`                                    | снапшот раз на день і лише при зміні > 1 %                                                                                                                                       |
 | **Prefs / фільтри**      | `finyk_show_balance_v1`, `finyk_manual_only_v1`                         | `finyk_prefs`, `finyk_tx_filters`                           | `tx_filters` свідомо не підключена до синку                                                                                                                                      |
+
+### 4a. Ролі привʼязаних транзакцій до боргу / дебіторки
+
+**[КОД]**
+
+Ручний пасив створюється з **уже введеною повною сумою** (`totalAmount`).
+Транзакція, яку користувач до нього привʼязує, може означати три різні речі,
+і до 2026-08 система вгадувала їх зі **знаку суми** — через що операція, якою
+борг виник, мовчки додавалася поверх уже введеної суми й роздувала пасив
+удвічі. Тепер роль зберігається явно на кожній привʼязці
+(`Debt.txLinks[txId] = { role, amount }`, `packages/finyk-domain/src/domain/debtEngine.ts`):
+
+| Роль       | Що означає                    | Вплив на суму                        |
+| ---------- | ----------------------------- | ------------------------------------ |
+| `source`   | операція, якою борг **виник** | **не змінює** суму — лише пояснює її |
+| `increase` | борг **виріс** на цю суму     | додається до `totalAmount`           |
+| `payment`  | погашення                     | віднімається від ефективної суми     |
+
+Ефективна сума = `totalAmount + Σ increase`; залишок = ефективна сума
+`− Σ payment`, клампиться в нуль.
+
+Два наслідки, які варто памʼятати:
+
+- **Знак — лише передвибір.** Пікер підсвічує ймовірну роль (надходження на
+  пасив → `source`, витрата → `payment`), але рішення завжди за користувачем.
+- **Сума фіксується знімком** у момент привʼязки. Це навмисно: пікер
+  завантажує обмежений діапазон транзакцій, і без знімка привʼязана операція
+  поза вікном мовчки випадала б із розрахунку.
+
+**Міграція.** Legacy-привʼязки без `txLinks` трактуються за знаком, але
+origin-знак дає `source`, а не `increase` — тобто старі привʼязки більше не
+роздувають пасив. Рішення власника від 2026-08-03.
 
 **Формула networth** (канонічна, у коді продубльована у двох місцях —
 `packages/finyk-domain/src/domain/assets/aggregates.ts:114-148` і

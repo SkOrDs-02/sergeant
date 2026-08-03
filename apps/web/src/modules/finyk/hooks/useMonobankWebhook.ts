@@ -14,8 +14,8 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
-import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { webhookTxToNormalized } from "./monoTxNormalize";
 import { CURRENCY } from "../constants";
 import {
   trackEvent,
@@ -43,32 +43,6 @@ import {
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
 const TX_STALE = 60_000;
-
-function webhookTxToNormalized(dto: MonoTransactionDto): Transaction {
-  return normalizeTransaction(
-    {
-      id: dto.monoTxId,
-      time: Math.floor(new Date(dto.time).getTime() / 1000),
-      amount: dto.amount,
-      description: dto.description ?? "",
-      mcc: dto.mcc ?? 0,
-      originalMcc: dto.originalMcc ?? undefined,
-      hold: dto.hold ?? undefined,
-      operationAmount: dto.operationAmount,
-      currencyCode: dto.currencyCode,
-      commissionRate: dto.commissionRate ?? undefined,
-      cashbackAmount: dto.cashbackAmount ?? undefined,
-      balance: dto.balance ?? undefined,
-      comment: dto.comment ?? undefined,
-      receiptId: dto.receiptId ?? undefined,
-      invoiceId: dto.invoiceId ?? undefined,
-      counterEdrpou: dto.counterEdrpou ?? undefined,
-      counterIban: dto.counterIban ?? undefined,
-      counterName: dto.counterName ?? undefined,
-    },
-    { source: "monobank", accountId: dto.monoAccountId },
-  );
-}
 
 /**
  * Webhook-backed Monobank hook (Track C).
