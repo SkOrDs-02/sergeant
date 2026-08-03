@@ -13,6 +13,11 @@ vi.mock("../../../core/profile/useBiometrics", () => ({
   useBiometrics: () => useBiometrics(),
 }));
 
+const toastSuccess = vi.fn();
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({ success: toastSuccess, error: vi.fn(), info: vi.fn() }),
+}));
+
 const computeTargets = vi.fn();
 vi.mock("../lib/tdee", async () => {
   const actual =
@@ -53,6 +58,7 @@ describe("DailyPlanGoalSelectors — presets", () => {
       dailyTargetKcal: PRESETS[1]!.kcal,
       dailyTargetProtein_g: PRESETS[1]!.protein_g,
     });
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
   });
 
   it("resets all targets via the reset menu item", () => {
@@ -115,5 +121,6 @@ describe("DailyPlanGoalSelectors — TDEE", () => {
 
     const updater = setPrefs.mock.calls.at(-1)?.[0];
     expect(updater({})).toMatchObject({ dailyTargetKcal: 2100 });
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
   });
 });

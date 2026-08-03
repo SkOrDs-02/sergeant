@@ -23,10 +23,13 @@ describe("nutritionErrors", () => {
       );
     });
 
+    it("maps 401 to a friendly sign-in prompt instead of the generic access-denied text", () => {
+      const msg = nutritionFriendlyApiError(401, "nope");
+      expect(msg).not.toBe(friendlyApiError(401, "nope"));
+      expect(msg).toMatch(/обліковим записом/);
+    });
+
     it("delegates other statuses to the shared friendly mapper", () => {
-      expect(nutritionFriendlyApiError(401, "nope")).toBe(
-        friendlyApiError(401, "nope"),
-      );
       expect(nutritionFriendlyApiError(429)).toBe(friendlyApiError(429));
     });
   });

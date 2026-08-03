@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
@@ -128,6 +129,7 @@ export function DailyPlanGoalSelectors({
   busy,
   dayPlanBusy,
 }: DailyPlanGoalSelectorsProps) {
+  const toast = useToast();
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
   const presetMenuLeft = useClampedMenuLeft(presetMenuOpen, presetMenuRef);
@@ -176,6 +178,7 @@ export function DailyPlanGoalSelectors({
       dailyTargetCarbs_g: preset.carbs_g,
     }));
     setPresetMenuOpen(false);
+    toast.success(`Пресет «${preset.label}» застосовано`);
   };
 
   const applyTdeeTargets = (targets: NutritionTargets) => {
@@ -187,6 +190,7 @@ export function DailyPlanGoalSelectors({
       dailyTargetCarbs_g: targets.carbs_g,
     }));
     setTdeeMenuOpen(false);
+    toast.success(TDEE_COPY.appliedToast);
   };
 
   useEffect(() => {
