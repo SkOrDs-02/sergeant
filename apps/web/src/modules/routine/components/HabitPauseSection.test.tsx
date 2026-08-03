@@ -78,6 +78,28 @@ describe("HabitPauseSection", () => {
     );
   });
 
+  it("складає дати у мобільну колонку без взаємного накладання", () => {
+    render(
+      <HabitPauseSection
+        habit={habit()}
+        todayKey={TODAY}
+        setRoutine={runUpdater as never}
+      />,
+    );
+
+    const dateGroup = screen.getByRole("group", { name: "Пауза" });
+    expect(dateGroup).toHaveClass("grid", "min-w-0", "grid-cols-1");
+    expect(dateGroup).toHaveClass("sm:grid-cols-2");
+
+    for (const input of [
+      screen.getByLabelText(/^З/),
+      screen.getByLabelText(/^По/),
+    ]) {
+      expect(input).toHaveClass("min-w-0", "max-w-full");
+      expect(input).toHaveClass("[min-inline-size:0]", "[inline-size:100%]");
+    }
+  });
+
   it("активна пауза показує межі й пропонує повернутись", () => {
     render(
       <HabitPauseSection

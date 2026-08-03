@@ -103,12 +103,12 @@ describe("HabitForm – editing mode", () => {
 
   it("shows 'Зберегти зміни' and 'Скасувати' buttons in editing mode", () => {
     render(<Harness editingId="h1" />);
-    expect(
-      screen.getByRole("button", { name: "Зберегти зміни" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Скасувати" }),
-    ).toBeInTheDocument();
+    const save = screen.getByRole("button", { name: "Зберегти зміни" });
+    const cancel = screen.getByRole("button", { name: "Скасувати" });
+    expect(save).toBeInTheDocument();
+    expect(cancel).toBeInTheDocument();
+    expect(save).toHaveClass("w-full", "min-w-0", "sm:flex-1");
+    expect(cancel).toHaveClass("w-full", "min-w-0", "sm:flex-1");
   });
 
   it("shows 'Додати звичку' button when creating a new habit", () => {
@@ -224,6 +224,18 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(end).toHaveValue("2026-06-30");
     expect(tag).toHaveValue("t1");
     expect(category).toHaveValue("c1");
+  });
+
+  it("contains native date controls to the same inline width as other fields", () => {
+    render(<Harness editingId="h1" />);
+
+    for (const input of [
+      screen.getByLabelText(/Початок/),
+      screen.getByLabelText(/Кінець/),
+    ]) {
+      expect(input).toHaveClass("min-w-0", "max-w-full");
+      expect(input).toHaveClass("[min-inline-size:0]", "[inline-size:100%]");
+    }
   });
 });
 

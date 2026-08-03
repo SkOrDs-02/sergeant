@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-02
+ * Last validated: 2026-08-03
  * Status: Active
  *
  * Планована пауза наперед (канон `routine.md` §4).
@@ -12,7 +12,7 @@
  */
 import { useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
 import type { Dispatch, SetStateAction } from "react";
@@ -94,39 +94,35 @@ export function HabitPauseSection({
       ) : (
         <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
           <p className="text-style-caption text-subtle mb-2">{t.hint}</p>
-          <div className="flex flex-wrap items-end gap-2">
-            <div>
-              <label
-                htmlFor={fromId}
-                className="text-style-caption text-subtle"
-              >
-                {t.fromLabel}
-              </label>
-              <Input
-                id={fromId}
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="mt-1 block"
-              />
-            </div>
-            <div>
-              <label htmlFor={toId} className="text-style-caption text-subtle">
-                {t.toLabel}
-              </label>
-              <Input
-                id={toId}
-                type="date"
-                value={to}
-                min={from}
-                onChange={(e) => setTo(e.target.value)}
-                className="mt-1 block"
-              />
-            </div>
-            <Button type="button" size="sm" onClick={declare}>
-              {t.declare}
-            </Button>
+          <div
+            role="group"
+            aria-label={t.heading}
+            className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2"
+          >
+            <DateField
+              id={fromId}
+              label={t.fromLabel}
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="routine-touch-field"
+            />
+            <DateField
+              id={toId}
+              label={t.toLabel}
+              value={to}
+              min={from}
+              onChange={(e) => setTo(e.target.value)}
+              className="routine-touch-field"
+            />
           </div>
+          <Button
+            type="button"
+            size="sm"
+            className="mt-2 w-full sm:w-auto"
+            onClick={declare}
+          >
+            {t.declare}
+          </Button>
         </div>
       )}
 
