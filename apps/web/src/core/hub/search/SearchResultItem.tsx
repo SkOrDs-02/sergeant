@@ -14,10 +14,10 @@ import type { Hit } from "./searchTypes";
 // attention with module-coloured data. Actions + AI inherit the brand
 // swatch (they are the launcher commands, not stored data).
 export const MODULE_COLORS: Record<string, string> = {
-  finyk: "bg-finyk-soft text-finyk-strong dark:text-finyk",
-  fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk-300",
-  routine: "bg-routine-soft text-routine-strong dark:text-routine",
-  nutrition: "bg-nutrition-soft text-nutrition-strong dark:text-nutrition",
+  finyk: "bg-finyk-soft text-finyk-soft-fg",
+  fizruk: "bg-fizruk-soft text-fizruk-soft-fg",
+  routine: "bg-routine-soft text-routine-soft-fg",
+  nutrition: "bg-nutrition-soft text-nutrition-soft-fg",
   settings: "bg-panelHi text-muted",
   assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
   actions: "bg-brand-500/10 text-brand-strong dark:text-brand",

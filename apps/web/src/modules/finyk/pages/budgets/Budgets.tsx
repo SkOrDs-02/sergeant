@@ -49,6 +49,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -470,13 +471,14 @@ export function Budgets({
                 onCancel={handleCancelForm}
               />
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="finyk-soft"
                 onClick={() => setShowForm(true)}
-                className="group w-full inline-flex items-center justify-center gap-2 py-3 text-style-label rounded-2xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft"
+                className="group w-full rounded-2xl shadow-soft"
               >
                 {messages.finyk.addLimitOrGoal}
-              </button>
+              </Button>
             )}
           </div>
         </div>

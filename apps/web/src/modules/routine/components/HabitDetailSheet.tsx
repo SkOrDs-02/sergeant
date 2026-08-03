@@ -281,7 +281,7 @@ export function HabitDetailSheet({
         {tag.map((t) => (
           <span
             key={t}
-            className="text-style-caption px-2 py-0.5 rounded-full bg-routine-surface dark:bg-routine-surface-dark/10 border border-routine-line/50 dark:border-routine-border-dark/25 text-routine-strong dark:text-routine font-medium"
+            className="text-style-caption px-2 py-0.5 rounded-full bg-routine-soft border border-routine-soft-border text-routine-soft-fg font-medium"
           >
             {t}
           </span>

@@ -611,7 +611,7 @@
     --c-brand-soft-fg: 214 211 209; /* stone-300 — neutral hub ink on dark brand-soft */
     --c-finyk-soft-fg: 94 234 212; /* teal-300 */
     --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
-    --c-routine-soft-fg: 255 180 165; /* coral-300 */
+    --c-routine-soft-fg: 255 212 203; /* coral-200 — AA on coral-900 */
     --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
 
     /* Status `-soft-fg` (dark) — bright `-300` ink on the deep `-800/-900`
@@ -619,7 +619,7 @@
        (`dark:text-amber-300` / `-red-300` / `-blue-300`). */
     --c-success-soft-fg: 110 231 183; /* emerald-300 */
     --c-warning-soft-fg: 252 211 77; /* amber-300 */
-    --c-danger-soft-fg: 252 165 165; /* red-300 */
+    --c-danger-soft-fg: 254 202 202; /* red-200 — AA on red-900 */
     --c-info-soft-fg: 125 211 252; /* sky-300 */
 
     /* Chart series — brighter -400 tier for visibility on dark warm bg.
@@ -841,20 +841,21 @@
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
 
-    /* Soft-fill foreground (HC dark) — brightest `-200` accent for ≥7:1
-       AAA on the `bg-<m>/15` fill over the dark panel (≈10–12:1). */
+    /* Soft-fill foreground (HC dark) — white ink for maximum contrast on
+       the bumped `-700/-800` module surfaces. The prior `-200` accents
+       measured only 4.24–4.34:1, below AA for normal text. */
     --c-brand-soft-fg: 231 229 228; /* stone-200 — neutral hub ink on brand-soft (AAA) */
-    --c-finyk-soft-fg: 153 246 228; /* teal-200 */
-    --c-fizruk-soft-fg: 165 243 252; /* cyan-200 */
-    --c-routine-soft-fg: 255 212 203; /* coral-200 */
-    --c-nutrition-soft-fg: 223 249 157; /* lime-200 */
+    --c-finyk-soft-fg: 255 255 255;
+    --c-fizruk-soft-fg: 255 255 255;
+    --c-routine-soft-fg: 255 255 255;
+    --c-nutrition-soft-fg: 255 255 255;
 
-    /* Status `-soft-fg` (HC dark) — brightest `-200` ink for ≥7:1 AAA on
-       the `-700` status surfaces. */
-    --c-success-soft-fg: 167 243 208; /* emerald-200 on emerald-700 */
-    --c-warning-soft-fg: 253 230 138; /* amber-200 on amber-700 */
-    --c-danger-soft-fg: 254 202 202; /* red-200 on red-700 */
-    --c-info-soft-fg: 186 230 253; /* sky-200 on sky-700 */
+    /* Status `-soft-fg` (HC dark) — white ink clears AA on every `-700`
+       status surface; the previous `-200` tiers measured 4.03–4.47:1. */
+    --c-success-soft-fg: 255 255 255;
+    --c-warning-soft-fg: 255 255 255;
+    --c-danger-soft-fg: 255 255 255;
+    --c-info-soft-fg: 255 255 255;
 
     /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
        distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */

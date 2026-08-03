@@ -152,6 +152,16 @@ describe("AssetsSubscriptionsSection", () => {
     expect(screen.getByText("1 250 ₴")).toBeInTheDocument();
   });
 
+  it("uses the theme-aware finyk foreground on the monthly total plaque", () => {
+    const { container } = render(
+      <AssetsSubscriptionsSection state={makeState()} />,
+    );
+    const plaque = container.querySelector(".bg-finyk-soft");
+    expect(plaque).not.toBeNull();
+    expect(plaque!.querySelectorAll(".text-finyk-soft-fg")).toHaveLength(2);
+    expect(plaque!.querySelector(".text-finyk-strong")).toBeNull();
+  });
+
   it("does NOT show the calendar link when there are no subscriptions", () => {
     render(<AssetsSubscriptionsSection state={makeState()} />);
     expect(screen.queryByText(/Побачити у календарі Рутини/)).toBeNull();

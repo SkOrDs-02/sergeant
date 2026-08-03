@@ -57,7 +57,7 @@ const PRESETS: PresetCatalog = {
   routine: {
     title: "Яку звичку почнемо?",
     desc: "Одне натискання — і вона у твоєму списку сьогодні.",
-    accent: "text-routine-strong dark:text-routine bg-routine-surface",
+    accent: "text-routine-soft-fg bg-routine-soft",
     moduleIcon: "check",
     fallback: { action: "add_habit", label: "Своя звичка", icon: "plus" },
     items: [
@@ -87,7 +87,7 @@ const PRESETS: PresetCatalog = {
   finyk: {
     title: "На що витратив?",
     desc: "Тицяй — відкриється форма з назвою. Суму введеш сам.",
-    accent: "text-finyk-strong dark:text-finyk bg-finyk-soft",
+    accent: "text-finyk-soft-fg bg-finyk-soft",
     moduleIcon: "credit-card",
     fallback: { action: "add_expense", label: "Своя витрата", icon: "plus" },
     // Presets тут — лише заготовки назви/категорії. Реальну суму
@@ -126,7 +126,7 @@ const PRESETS: PresetCatalog = {
   nutrition: {
     title: "Що з'їв зараз?",
     desc: "Відкрию форму добавляння страви — калорії підтвердиш у модулі.",
-    accent: "text-nutrition-strong dark:text-nutrition bg-nutrition-soft",
+    accent: "text-nutrition-soft-fg bg-nutrition-soft",
     moduleIcon: "utensils",
     fallback: { action: "add_meal", label: "Додати страву", icon: "plus" },
     // Три плитки (Омлет / Салат / Яблуко) свого часу давали
@@ -141,7 +141,7 @@ const PRESETS: PresetCatalog = {
   fizruk: {
     title: "Швидкий старт",
     desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
-    accent: "text-fizruk-strong dark:text-fizruk-300 bg-fizruk-soft",
+    accent: "text-fizruk-soft-fg bg-fizruk-soft",
     moduleIcon: "dumbbell",
     fallback: {
       action: "start_workout",
