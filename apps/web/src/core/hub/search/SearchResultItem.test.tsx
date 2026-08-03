@@ -61,6 +61,14 @@ describe("SearchResultItem", () => {
     expect(option).toHaveAttribute("aria-selected", "false");
   });
 
+  it("pairs module soft swatches with the theme-aware soft foreground", () => {
+    for (const module of ["finyk", "fizruk", "routine", "nutrition"] as const) {
+      expect(MODULE_COLORS[module]).toContain(`text-${module}-soft-fg`);
+      expect(MODULE_COLORS[module]).not.toContain(`text-${module}-strong`);
+      expect(MODULE_COLORS[module]).not.toContain(`dark:text-${module}`);
+    }
+  });
+
   it("keeps system pseudo-modules on the neutral swatch", () => {
     expect(MODULE_COLORS["settings"]).toBe("bg-panelHi text-muted");
 

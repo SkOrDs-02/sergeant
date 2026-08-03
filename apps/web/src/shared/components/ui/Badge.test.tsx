@@ -67,6 +67,17 @@ describe("Badge", () => {
     }
   });
 
+  it("soft module variants use the theme-aware -soft-fg ink", () => {
+    const cases = ["finyk", "fizruk", "routine", "nutrition"] as const;
+    for (const variant of cases) {
+      const { container } = render(<Badge variant={variant}>x</Badge>);
+      const el = container.querySelector("span")!;
+      expect(el.className).toContain(`text-${variant}-soft-fg`);
+      expect(el.className).not.toContain(`text-${variant}-strong`);
+      cleanup();
+    }
+  });
+
   it("renders an aria-hidden dot when dot=true", () => {
     const { container } = render(<Badge dot>Live</Badge>);
     const dot = container.querySelector("span > span[aria-hidden]");

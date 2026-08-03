@@ -63,14 +63,11 @@ const softVariants: Record<BadgeVariant, string> = {
   warning: "bg-warning-soft text-warning-soft-fg border-warning/30",
   danger: "bg-danger-soft text-danger-soft-fg border-danger/30",
   info: "bg-info-soft text-info-soft-fg border-info/30",
-  finyk:
-    "bg-finyk-soft text-finyk-strong border-finyk-ring/50 dark:bg-finyk-surface-dark/15 dark:text-finyk dark:border-finyk-border-dark/30",
-  fizruk:
-    "bg-fizruk-soft text-fizruk-strong border-fizruk-ring/50 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300 dark:border-fizruk-border-dark/30",
-  routine:
-    "bg-routine-surface text-routine-strong border-routine-ring/50 dark:bg-routine-surface-dark/15 dark:text-routine dark:border-routine-border-dark/30",
+  finyk: "bg-finyk-soft text-finyk-soft-fg border-finyk-soft-border",
+  fizruk: "bg-fizruk-soft text-fizruk-soft-fg border-fizruk-soft-border",
+  routine: "bg-routine-soft text-routine-soft-fg border-routine-soft-border",
   nutrition:
-    "bg-nutrition-soft text-nutrition-strong border-nutrition-ring/50 dark:bg-nutrition-surface-dark/15 dark:text-nutrition dark:border-nutrition-border-dark/30",
+    "bg-nutrition-soft text-nutrition-soft-fg border-nutrition-soft-border",
 };
 
 // Outline tones place coloured text directly on the page background.

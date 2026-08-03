@@ -69,19 +69,19 @@ export const Inline: Story = {
 export const OnBrandSurface: Story = {
   render: () => (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 rounded-2xl bg-finyk-soft px-3 py-2 text-finyk-strong">
+      <div className="flex items-center gap-2 rounded-2xl bg-finyk-soft px-3 py-2 text-finyk-soft-fg">
         <Spinner size="sm" />
         <span className="text-sm">Finyk: rebuilding cache…</span>
       </div>
-      <div className="flex items-center gap-2 rounded-2xl bg-fizruk-soft px-3 py-2 text-fizruk-strong">
+      <div className="flex items-center gap-2 rounded-2xl bg-fizruk-soft px-3 py-2 text-fizruk-soft-fg">
         <Spinner size="sm" />
         <span className="text-sm">Fizruk: уперте оновлення…</span>
       </div>
-      <div className="flex items-center gap-2 rounded-2xl bg-routine-surface px-3 py-2 text-routine-strong">
+      <div className="flex items-center gap-2 rounded-2xl bg-routine-soft px-3 py-2 text-routine-soft-fg">
         <Spinner size="sm" />
         <span className="text-sm">Routine: підраховуємо streak…</span>
       </div>
-      <div className="flex items-center gap-2 rounded-2xl bg-nutrition-soft px-3 py-2 text-nutrition-strong">
+      <div className="flex items-center gap-2 rounded-2xl bg-nutrition-soft px-3 py-2 text-nutrition-soft-fg">
         <Spinner size="sm" />
         <span className="text-sm">Nutrition: зчитуємо штрих-код…</span>
       </div>

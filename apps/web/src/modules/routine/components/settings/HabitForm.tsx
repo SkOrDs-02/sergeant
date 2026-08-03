@@ -12,6 +12,7 @@ import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -19,8 +20,6 @@ import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import {
   classifyDateBound,
   DATE_WARN_MESSAGE,
-  HARD_MAX_DAY_KEY,
-  HARD_MIN_DAY_KEY,
 } from "@shared/lib/time/dateBounds";
 import {
   ROUTINE_THEME as C,
@@ -387,39 +386,29 @@ export function HabitForm({
 
       {showAdvanced && (
         <div id={advancedId} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block text-xs text-subtle" htmlFor={startId}>
-              Початок (дата)
-              <Input
-                id={startId}
-                type="date"
-                className="routine-touch-field mt-1 w-full"
-                min={HARD_MIN_DAY_KEY}
-                max={HARD_MAX_DAY_KEY}
-                error={Boolean(errors?.startDate)}
-                helperText={errors?.startDate}
-                value={habitDraft.startDate || ""}
-                onChange={(e) =>
-                  setHabitDraft((d) => ({ ...d, startDate: e.target.value }))
-                }
-              />
-            </label>
-            <label className="block text-xs text-subtle" htmlFor={endId}>
-              Кінець (необовʼязково)
-              <Input
-                id={endId}
-                type="date"
-                className="routine-touch-field mt-1 w-full"
-                min={HARD_MIN_DAY_KEY}
-                max={HARD_MAX_DAY_KEY}
-                error={Boolean(errors?.endDate)}
-                helperText={errors?.endDate}
-                value={habitDraft.endDate || ""}
-                onChange={(e) =>
-                  setHabitDraft((d) => ({ ...d, endDate: e.target.value }))
-                }
-              />
-            </label>
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+            <DateField
+              id={startId}
+              label="Початок (дата)"
+              className="routine-touch-field"
+              error={errors?.startDate ? true : undefined}
+              helperText={errors?.startDate}
+              value={habitDraft.startDate || ""}
+              onChange={(e) =>
+                setHabitDraft((d) => ({ ...d, startDate: e.target.value }))
+              }
+            />
+            <DateField
+              id={endId}
+              label="Кінець (необовʼязково)"
+              className="routine-touch-field"
+              error={errors?.endDate ? true : undefined}
+              helperText={errors?.endDate}
+              value={habitDraft.endDate || ""}
+              onChange={(e) =>
+                setHabitDraft((d) => ({ ...d, endDate: e.target.value }))
+              }
+            />
           </div>
           {/* М'яке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
@@ -494,15 +483,16 @@ export function HabitForm({
             "flex gap-2",
             // Inside the quick-create dialog the sheet already has an "X"
             // close in the top-right, so the Cancel button would be
-            // redundant. Stretch the primary save button to fill the row.
-            editingId ? "flex-row" : "flex-col",
+            // redundant. Editing actions stack on narrow phones so neither
+            // label is squeezed beyond its button, then share the row at sm.
+            editingId ? "flex-col sm:flex-row" : "flex-col",
           )}
         >
           {editingId && (
             <Button
               type="button"
               variant="secondary"
-              className="flex-1"
+              className="w-full min-w-0 sm:flex-1"
               onClick={onCancel}
             >
               Скасувати
@@ -511,7 +501,7 @@ export function HabitForm({
           <Button
             type="button"
             variant="routine"
-            className="w-full"
+            className="w-full min-w-0 sm:flex-1"
             onClick={onSave}
           >
             {editingId ? "Зберегти зміни" : "Додати звичку"}

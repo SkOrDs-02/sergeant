@@ -116,31 +116,36 @@ export function Measurements() {
               <li>{messages.fizruk.measurements.guideStep3}</li>
               <li>{messages.fizruk.measurements.guideStep4}</li>
             </ol>
-            <DataTable
-              module="fizruk"
-              className="min-w-[560px] rounded-2xl border border-line"
-              caption={messages.fizruk.measurements.guideTitle}
-              getRowKey={(row) => row.metric}
-              columns={[
-                {
-                  id: "metric",
-                  header: messages.fizruk.measurements.guideMetricHeader,
-                  rowHeader: true,
-                  cell: (row) => row.metric,
-                },
-                {
-                  id: "place",
-                  header: messages.fizruk.measurements.guidePlaceHeader,
-                  cell: (row) => row.place,
-                },
-                {
-                  id: "technique",
-                  header: messages.fizruk.measurements.guideTechniqueHeader,
-                  cell: (row) => row.technique,
-                },
-              ]}
-              rows={measurementGuideRows}
-            />
+            <div
+              data-testid="measurement-guide-table-scroll"
+              className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain rounded-2xl border border-line"
+            >
+              <DataTable
+                module="fizruk"
+                className="min-w-[560px]"
+                caption={messages.fizruk.measurements.guideTitle}
+                getRowKey={(row) => row.metric}
+                columns={[
+                  {
+                    id: "metric",
+                    header: messages.fizruk.measurements.guideMetricHeader,
+                    rowHeader: true,
+                    cell: (row) => row.metric,
+                  },
+                  {
+                    id: "place",
+                    header: messages.fizruk.measurements.guidePlaceHeader,
+                    cell: (row) => row.place,
+                  },
+                  {
+                    id: "technique",
+                    header: messages.fizruk.measurements.guideTechniqueHeader,
+                    cell: (row) => row.technique,
+                  },
+                ]}
+                rows={measurementGuideRows}
+              />
+            </div>
             <p className="text-xs text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
             </p>
