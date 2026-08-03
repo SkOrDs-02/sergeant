@@ -337,6 +337,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     fromPantry: "From pantry",
     mealType: "Meal type",
     templates: "Templates",
+    deleteTemplateTitle: "Delete template?",
     reportHeading: "Nutrition (kcal/day)",
     kcalUnit: "kcal",
   },

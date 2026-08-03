@@ -128,6 +128,13 @@ export function AddMealSheet({
   // (`addLogEntry`) з тим самим id і відкидається як дубль.
   const [draftId, setDraftId] = useState("");
 
+  // Set when the user taps the edit affordance on a saved meal template
+  // (`MealTemplatesRow`), so `SaveAsTemplate` updates that template in
+  // place instead of appending a new one.
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null,
+  );
+
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setPrevOpen(true);
@@ -165,6 +172,7 @@ export function AddMealSheet({
     setBarcodeStatus("");
     setScannerOpen(false);
     setFromPantryItem(null);
+    setEditingTemplateId(null);
     const autoSkip =
       !initialMeal?.id && !photoResult && mealTemplates.length === 0;
     const initialStep =
@@ -366,7 +374,9 @@ export function AddMealSheet({
               <MealTemplatesRow
                 mealTemplates={mealTemplates}
                 setForm={setForm}
+                setPrefs={setPrefs}
                 onSelected={() => setStep("fill")}
+                onEditTemplate={(t) => setEditingTemplateId(t.id)}
               />
             )}
 
@@ -476,7 +486,13 @@ export function AddMealSheet({
               </div>
             )}
 
-            <SaveAsTemplate form={form} setForm={setForm} setPrefs={setPrefs} />
+            <SaveAsTemplate
+              form={form}
+              setForm={setForm}
+              setPrefs={setPrefs}
+              editingTemplateId={editingTemplateId}
+              onDoneEditing={() => setEditingTemplateId(null)}
+            />
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
