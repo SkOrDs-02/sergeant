@@ -81,8 +81,9 @@ function CapabilityCard({ item }: { item: Capability }) {
 
 export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
   return (
-    // `#root` — `100dvh; overflow:hidden` (base.css), тож скролу документа
-    // немає: повноекранний маршрут мусить володіти власним скрол-контейнером.
+    // AI-CONTEXT: `#root` — `100dvh; overflow:hidden` (base.css), тож скролу
+    // документа немає: повноекранний маршрут мусить володіти власним
+    // скрол-контейнером.
     // Без нього каталог просто обрізався на висоті вікна — рівно та сама
     // граблі, що вже наступив `/assistant`. `h-dvh` (самодостатні 100dvh), а
     // не `h-app-dvh` (=height:100%), бо обгортки цього маршруту не мають
