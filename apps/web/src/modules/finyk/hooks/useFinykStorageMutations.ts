@@ -21,6 +21,10 @@ import type {
   TxSplitsMap,
 } from "./useStorage.types";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
+import type {
+  LinkedTxMeta,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 
 /**
  * Усі мутаційні методи Finyk-storage. Чисті по відношенню до React-стану:
@@ -158,37 +162,51 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     });
   };
 
-  const toggleLinkedTx = (
+  /**
+   * Привʼязати транзакцію з **явною роллю** або зняти привʼязку
+   * (`role: null`).
+   *
+   * AI-CONTEXT: роль і сума зберігаються знімком у `txLinks`, бо (а) роль
+   * більше не виводиться зі знаку — це рішення користувача, і (б) сума не
+   * має залежати від того, чи потрапила транзакція у поточне вікно
+   * завантаження. Деталі семантики — `debtEngine.LinkedTxRole`.
+   */
+  const setLinkedTxRole = (
     id: string,
     txId: string,
     type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH = 0,
   ) => {
+    const apply = <T extends { id: string } & Record<string, unknown>>(
+      item: T,
+    ): T => {
+      if (item.id !== id) return item;
+      const linked = (item["linkedTxIds"] as string[] | undefined) || [];
+      const txLinks = {
+        ...((item["txLinks"] as Record<string, LinkedTxMeta> | undefined) ??
+          {}),
+      };
+      if (role === null) {
+        delete txLinks[txId];
+        return {
+          ...item,
+          linkedTxIds: linked.filter((x) => x !== txId),
+          txLinks,
+        };
+      }
+      txLinks[txId] = { role, amount: Math.abs(amountUAH) };
+      return {
+        ...item,
+        linkedTxIds: linked.includes(txId) ? linked : [...linked, txId],
+        txLinks,
+      };
+    };
+
     if (type === "debt") {
-      setManualDebts((items) =>
-        items.map((d) => {
-          if (d.id !== id) return d;
-          const linked = d.linkedTxIds || [];
-          return {
-            ...d,
-            linkedTxIds: linked.includes(txId)
-              ? linked.filter((x) => x !== txId)
-              : [...linked, txId],
-          };
-        }),
-      );
+      setManualDebts((items) => items.map(apply));
     } else {
-      setReceivables((items) =>
-        items.map((r) => {
-          if (r.id !== id) return r;
-          const linked = r.linkedTxIds || [];
-          return {
-            ...r,
-            linkedTxIds: linked.includes(txId)
-              ? linked.filter((x) => x !== txId)
-              : [...linked, txId],
-          };
-        }),
-      );
+      setReceivables((items) => items.map(apply));
     }
   };
 
@@ -379,7 +397,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     editManualExpense,
     toggleHideAccount,
     toggleMonoDebtTx,
-    toggleLinkedTx,
+    setLinkedTxRole,
     hideTx,
     toggleExcludeFromStats,
     setSplitTx,

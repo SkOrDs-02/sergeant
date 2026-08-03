@@ -33,7 +33,7 @@ export function Assets({
         updateSubscription={state.updateSubscription}
         manualDebts={state.manualDebts}
         receivables={state.receivables}
-        toggleLinkedTx={state.toggleLinkedTx}
+        setLinkedTxRole={state.setLinkedTxRole}
         showBalance={state.showBalance}
         customCategories={state.customCategories}
       />

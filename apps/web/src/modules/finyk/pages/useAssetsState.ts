@@ -28,7 +28,7 @@ type StorageSlice = Pick<
   | "setManualDebts"
   | "receivables"
   | "setReceivables"
-  | "toggleLinkedTx"
+  | "setLinkedTxRole"
   | "subscriptions"
   | "setSubscriptions"
   | "updateSubscription"
@@ -87,7 +87,7 @@ export function useAssetsState({
     setManualDebts,
     receivables,
     setReceivables,
-    toggleLinkedTx,
+    setLinkedTxRole,
     subscriptions,
     setSubscriptions,
     updateSubscription,
@@ -273,7 +273,7 @@ export function useAssetsState({
     setManualDebts,
     receivables,
     setReceivables,
-    toggleLinkedTx,
+    setLinkedTxRole,
     subscriptions,
     setSubscriptions,
     updateSubscription,

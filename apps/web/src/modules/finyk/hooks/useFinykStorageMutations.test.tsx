@@ -223,21 +223,61 @@ describe("toggle helpers", () => {
     expect(state["monoDebtLinkedTxIds"]).toEqual({ acc1: [] });
   });
 
-  it("toggleLinkedTx links a tx on a debt and a receivable", () => {
+  it("setLinkedTxRole links a tx with an explicit role and amount snapshot", () => {
     const { slots, state } = makeSlots({
       manualDebts: [{ id: "d1", linkedTxIds: [] }],
       receivables: [{ id: "r1", linkedTxIds: ["keep"] }],
     });
     const { result } = renderMutations(slots);
 
-    result.current.toggleLinkedTx("d1", "tx1", "debt");
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "increase", 250);
     expect((state["manualDebts"] as never[])[0]).toMatchObject({
       linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "increase", amount: 250 } },
     });
 
-    result.current.toggleLinkedTx("r1", "tx2", "receivable");
+    result.current.setLinkedTxRole("r1", "tx2", "receivable", "payment", 80);
     expect((state["receivables"] as never[])[0]).toMatchObject({
       linkedTxIds: ["keep", "tx2"],
+      txLinks: { tx2: { role: "payment", amount: 80 } },
+    });
+  });
+
+  it("setLinkedTxRole with role=null unlinks and drops the snapshot", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 10 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+    });
+  });
+
+  it("setLinkedTxRole змінює роль наявної привʼязки без дублювання id", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "source", amount: 100 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "payment", 100);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 100 } },
     });
   });
 });
