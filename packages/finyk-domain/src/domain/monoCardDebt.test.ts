@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  classifyMonoCardLink,
   isMonoCardRepayment,
   isSuggestedMonoCardRepayment,
   sumMonoCardPaid,
@@ -102,5 +103,34 @@ describe("isSuggestedMonoCardRepayment", () => {
         CARD,
       ),
     ).toBe(false);
+  });
+});
+
+describe("classifyMonoCardLink", () => {
+  it("розрізняє три випадки, а не два", () => {
+    expect(
+      classifyMonoCardLink({ id: "a", amount: 500_00, _accountId: CARD }, CARD),
+    ).toBe("repayment");
+    expect(
+      classifyMonoCardLink(
+        { id: "a", amount: -500_00, _accountId: CARD },
+        CARD,
+      ),
+    ).toBe("card-purchase");
+    expect(
+      classifyMonoCardLink(
+        { id: "a", amount: 30_000_00, _accountId: "debit" },
+        CARD,
+      ),
+    ).toBe("other-income");
+  });
+
+  it("витрата з іншого рахунку — теж погашення", () => {
+    expect(
+      classifyMonoCardLink(
+        { id: "a", amount: -600_00, _accountId: "debit" },
+        CARD,
+      ),
+    ).toBe("repayment");
   });
 });

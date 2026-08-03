@@ -155,6 +155,42 @@ describe("AssetsTxPickerView", () => {
       expect(summary).not.toContain("31 100");
     });
 
+    it("привʼязаний рядок каже, що саме привʼязка зробила", () => {
+      // Регресія: галочка `TxRow` означає лише «привʼязано». Покупка по
+      // картці й рух на чужому рахунку в погашене не йдуть, тож мовчазна
+      // галочка обіцяла внесок, якого немає.
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          transactions={[
+            mkTx({
+              id: "topup",
+              amount: 50_000,
+              _accountId: "acc-1",
+              description: "Поповнення",
+            }),
+            mkTx({
+              id: "buy",
+              amount: -20_000,
+              _accountId: "acc-1",
+              description: "Покупка",
+            }),
+            mkTx({
+              id: "salary",
+              amount: 3_000_000,
+              _accountId: "debit-1",
+              description: "Зарплата",
+            }),
+          ]}
+          monoDebtLinkedTxIds={{ "acc-1": ["topup", "buy", "salary"] }}
+          txPicker={{ type: "monoDebt", id: "acc-1" }}
+        />,
+      );
+      expect(screen.getByText(/✅ Погашення/)).toBeInTheDocument();
+      expect(screen.getByText(/Покупка по картці/)).toBeInTheDocument();
+      expect(screen.getByText(/Рух на іншому рахунку/)).toBeInTheDocument();
+    });
+
     it("shows available older transactions when the last 90 days are empty", () => {
       render(
         <AssetsTxPickerView

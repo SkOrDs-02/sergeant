@@ -13,6 +13,7 @@ import type {
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import {
+  classifyMonoCardLink,
   isSuggestedMonoCardRepayment,
   sumMonoCardPaid,
 } from "@sergeant/finyk-domain/domain/monoCardDebt";
@@ -26,6 +27,8 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { messages } from "@shared/i18n/uk";
+import { cn } from "@shared/lib/ui/cn";
 
 type Subscription = {
   id: string;
@@ -249,6 +252,14 @@ export function AssetsTxPickerView({
     const isSuggested = (t: TxRowTx) =>
       isSuggestedMonoCardRepayment(t, txPicker.id);
 
+    const monoLinkKind = (t: TxRowTx) => classifyMonoCardLink(t, txPicker.id);
+    const monoLinkLabel = (t: TxRowTx) => {
+      const copy = messages.finyk.monoCardLink;
+      const kind = monoLinkKind(t);
+      if (kind === "repayment") return copy.repayment;
+      return kind === "card-purchase" ? copy.cardPurchase : copy.otherIncome;
+    };
+
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
@@ -299,6 +310,22 @@ export function AssetsTxPickerView({
                   {suggested && !isLinked && (
                     <div className="text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
                       ↑ Поповнення картки
+                    </div>
+                  )}
+                  {isLinked && (
+                    // Галочка `TxRow` лише каже «привʼязано». Що саме
+                    // привʼязка зробила — тут: покупка по картці й рух на
+                    // чужому рахунку в суму погашеного не йдуть, і мовчати
+                    // про це означало б обіцяти неіснуючий внесок.
+                    <div
+                      className={cn(
+                        "text-style-caption font-semibold px-1 pt-1",
+                        monoLinkKind(t) === "repayment"
+                          ? "text-success-strong dark:text-success"
+                          : "text-warning-strong dark:text-warning",
+                      )}
+                    >
+                      {monoLinkLabel(t)}
                     </div>
                   )}
                   <TxRow
