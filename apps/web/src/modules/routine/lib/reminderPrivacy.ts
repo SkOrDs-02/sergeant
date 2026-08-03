@@ -43,12 +43,16 @@ export function getRoutineReminderPrivacy(
 
 /**
  * Build the `{ title, body }` for a habit reminder, honouring the
- * privacy mode. In `"minimal"` mode the habit name and emoji are
- * withheld; in `"full"` mode the title is `${emoji} ${name}` (with a `✓`
- * fallback emoji) as before.
+ * privacy mode. In `"minimal"` mode the habit name is withheld; in
+ * `"full"` mode the title is the habit name.
+ *
+ * До 2026-08-03 заголовок був `${emoji} ${name}`. Гліф звички більше не
+ * emoji, а icon-slug (`@sergeant/routine-domain` → `glyphs.ts`), тож
+ * префікс дав би `"droplet Пити воду"` на локскріні. Іконку малює UI —
+ * нотифікація несе саму назву.
  */
 export function reminderNotificationContent(
-  habit: Pick<Habit, "name" | "emoji">,
+  habit: Pick<Habit, "name">,
   privacy: RoutineReminderPrivacy,
 ): ReminderNotificationContent {
   if (privacy === "minimal") {
@@ -58,7 +62,7 @@ export function reminderNotificationContent(
     };
   }
   return {
-    title: `${habit.emoji || "✓"} ${habit.name}`,
+    title: habit.name,
     body: "Нагадування про звичку",
   };
 }

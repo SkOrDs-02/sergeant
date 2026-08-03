@@ -94,9 +94,9 @@ export function routineDueNow({
       userId,
       module: "routine",
       dedupKey: reminderNotifyKey(habit.id, hm, dayKey),
-      title: privacyMinimal
-        ? "Нагадування"
-        : `${habit.emoji || "✓"} ${habit.name}`,
+      // Гліф звички з 2026-08-03 — icon-slug (`@sergeant/routine-domain`
+      // → `glyphs.ts`), не emoji: префікс дав би «droplet Пити воду».
+      title: privacyMinimal ? "Нагадування" : habit.name,
       body: privacyMinimal
         ? "Час для запланованої звички"
         : "Нагадування про звичку",

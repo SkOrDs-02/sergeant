@@ -7,6 +7,7 @@ import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { SKIP_REASON_LABELS, SKIP_REASON_OPTIONS } from "../lib/skipReasons";
 import type { HabitSkip, SkipReason } from "@sergeant/routine-domain";
 import type { Habit } from "../lib/types";
+import { HabitGlyph } from "./HabitGlyph";
 
 export interface ScheduledHabitForReport extends Habit {
   completed: boolean;
@@ -87,8 +88,9 @@ export function DayReportSheet({
                 >
                   ✓
                 </IconButton>
-                <span className="text-style-label text-text truncate">
-                  {h.emoji} {h.name}
+                <span className="text-style-label text-text flex items-center gap-1.5 truncate">
+                  <HabitGlyph value={h.emoji} size="sm" />
+                  <span className="truncate">{h.name}</span>
                 </span>
               </li>
             ))}
@@ -116,8 +118,9 @@ export function DayReportSheet({
                 >
                   ○
                 </IconButton>
-                <span className="text-style-label text-muted truncate">
-                  {h.emoji} {h.name}
+                <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
+                  <HabitGlyph value={h.emoji} size="sm" />
+                  <span className="truncate">{h.name}</span>
                 </span>
                 {onSetSkip && (
                   <button
@@ -165,8 +168,9 @@ export function DayReportSheet({
                 key={h.id}
                 className="flex items-center gap-3 rounded-xl bg-panel border border-line border-dashed px-3 py-2.5"
               >
-                <span className="text-style-label text-muted truncate">
-                  {h.emoji} {h.name}
+                <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
+                  <HabitGlyph value={h.emoji} size="sm" />
+                  <span className="truncate">{h.name}</span>
                 </span>
                 <span className="text-style-caption text-subtle">
                   {SKIP_REASON_LABELS[skips[h.id]?.reason ?? "other"]}

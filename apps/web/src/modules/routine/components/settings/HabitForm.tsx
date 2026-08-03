@@ -8,7 +8,6 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -25,6 +24,7 @@ import {
   ROUTINE_THEME as C,
   RECURRENCE_OPTIONS,
 } from "../../lib/routineConstants";
+import { HabitGlyphPicker } from "../HabitGlyphPicker";
 import { ReminderPresets } from "./ReminderPresets";
 import { WeekdayPicker } from "./WeekdayPicker";
 import type { HabitDraft, RoutineState } from "../../lib/types";
@@ -73,25 +73,6 @@ export interface HabitFormProps {
   hideActions?: boolean;
 }
 
-const EMOJI_SUGGESTIONS: readonly string[] = [
-  "✓",
-  "💧",
-  "🚶",
-  "🏃",
-  "💪",
-  "🧘",
-  "📖",
-  "✍️",
-  "🧠",
-  "💊",
-  "🥗",
-  "😴",
-  "☕",
-  "🎯",
-  "⏰",
-  "🌙",
-];
-
 export function HabitForm({
   routine,
   habitDraft,
@@ -114,28 +95,6 @@ export function HabitForm({
   const sectionRef = useRef<HTMLElement | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const weekdaysRef = useRef<HTMLDivElement | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiWrapRef = useRef<HTMLDivElement | null>(null);
-  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
-  // role="dialog" popover: keyboard parity with the mousedown
-  // outside-click below — Escape closes, Tab cycles inside, and focus
-  // returns to the toggle on close. Non-modal, so no inertBackground.
-  useDialogFocusTrap(showEmojiPicker, emojiPickerRef, {
-    onEscape: () => setShowEmojiPicker(false),
-  });
-  useEffect(() => {
-    if (!showEmojiPicker) return;
-    const handleOutside = (e: MouseEvent) => {
-      if (
-        emojiWrapRef.current &&
-        !emojiWrapRef.current.contains(e.target as Node)
-      ) {
-        setShowEmojiPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [showEmojiPicker]);
   // Scroll the weekday picker into view when the parent surfaces a
   // weekdays error (e.g. user picked «По тижню» but no days). Without
   // this the inline error can sit off-screen on small viewports.
@@ -146,7 +105,7 @@ export function HabitForm({
       el.scrollIntoView({ behavior: motionScrollBehavior(), block: "center" });
     }
   }, [errors?.weekdays]);
-  // Minimal-first UX: emoji + name + regularity are visible on first
+  // Minimal-first UX: icon + name + regularity are visible on first
   // render. Dates, reminders, tags and categories live behind a
   // "Більше опцій" disclosure. When editing an existing habit we open
   // the advanced block so the user doesn't lose track of values they
@@ -205,54 +164,11 @@ export function HabitForm({
       <div>
         <Label htmlFor={nameId}>Назва звички</Label>
         <div className="flex gap-2 items-center">
-          <div className="relative shrink-0" ref={emojiWrapRef}>
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker((v) => !v)}
-              aria-label="Обрати емодзі"
-              aria-expanded={showEmojiPicker}
-              className={cn(
-                "routine-touch-field w-12 shrink-0 flex items-center justify-center",
-                "rounded-2xl border border-line bg-panelHi text-2xl leading-none font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
-                "hover:bg-panel transition-colors",
-              )}
-            >
-              <span aria-hidden>{habitDraft.emoji || "✓"}</span>
-            </button>
-            {showEmojiPicker && (
-              <div
-                ref={emojiPickerRef}
-                role="dialog"
-                aria-label="Обрати емодзі"
-                className={cn(
-                  "absolute z-30 mt-2 left-0 w-[17rem]",
-                  "rounded-2xl border border-line bg-panel shadow-float p-2",
-                  "grid grid-cols-6 gap-1",
-                )}
-              >
-                {EMOJI_SUGGESTIONS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => {
-                      setHabitDraft((d) => ({ ...d, emoji: e }));
-                      setShowEmojiPicker(false);
-                    }}
-                    aria-label={`Емодзі ${e}`}
-                    className={cn(
-                      "w-10 h-10 flex items-center justify-center rounded-xl",
-                      "leading-none text-2xl font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
-                      "transition-colors hover:bg-panelHi",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                      habitDraft.emoji === e && "bg-panelHi ring-1 ring-line",
-                    )}
-                  >
-                    <span aria-hidden>{e}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <HabitGlyphPicker
+            value={habitDraft.emoji}
+            onChange={(glyph) => setHabitDraft((d) => ({ ...d, emoji: glyph }))}
+            label="Обрати іконку звички"
+          />
           <Input
             id={nameId}
             ref={nameRef}
@@ -466,8 +382,10 @@ export function HabitForm({
               >
                 <option value="">— без категорії —</option>
                 {routine.categories.map((c) => (
+                  // Нативний `<option>` малює лише текст — SVG-іконка туди
+                  // не поміститься, тож у селекті лишається сама назва.
+                  // Гліф видно в списку категорій і на картці звички.
                   <option key={c.id} value={c.id}>
-                    {c.emoji ? `${c.emoji} ` : ""}
                     {c.name}
                   </option>
                 ))}

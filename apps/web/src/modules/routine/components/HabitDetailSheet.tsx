@@ -34,6 +34,7 @@ import {
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
 import { HabitPauseSection } from "./HabitPauseSection";
 import type { Habit, RoutineState } from "../lib/types";
+import { HabitGlyph } from "./HabitGlyph";
 
 function todayKey(): string {
   // Kyiv-anchored "today" so completion stats don't shift around the
@@ -300,8 +301,9 @@ export function HabitDetailSheet({
         open={!editOpen}
         onClose={onClose}
         title={
-          <span>
-            {habit.emoji} {habit.name}
+          <span className="flex items-center gap-2">
+            <HabitGlyph value={habit.emoji} size="lg" />
+            <span className="truncate">{habit.name}</span>
           </span>
         }
         description={chips}

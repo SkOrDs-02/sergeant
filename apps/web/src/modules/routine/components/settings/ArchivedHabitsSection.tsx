@@ -8,6 +8,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { setHabitArchived } from "../../lib/routineStorage";
 import type { PendingHabitDeletion, RoutineState } from "../../lib/types";
+import { HabitGlyph } from "../HabitGlyph";
 
 export interface ArchivedHabitsSectionProps {
   routine: RoutineState;
@@ -42,8 +43,9 @@ export function ArchivedHabitsSection({
             key={h.id}
             className="flex flex-col gap-2 border-b border-line/40 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
           >
-            <span className="text-sm text-muted">
-              {h.emoji} {h.name}
+            <span className="flex items-center gap-1.5 text-sm text-muted">
+              <HabitGlyph value={h.emoji} size="sm" />
+              <span className="truncate">{h.name}</span>
             </span>
             <div className="flex flex-wrap gap-1.5">
               <Button
