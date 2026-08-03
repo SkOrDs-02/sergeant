@@ -123,6 +123,38 @@ describe("AssetsTxPickerView", () => {
       expect(toggleMonoDebtTx).toHaveBeenCalledWith("acc-1", "ex-1");
     });
 
+    it("зарплата на інший рахунок не рахується погашенням картки", () => {
+      // Регресія: правило відсіювало лише покупку по самій картці, тож
+      // привʼязане надходження на дебетку мовчки рахувалось погашенням.
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          transactions={[
+            mkTx({
+              id: "salary",
+              amount: 3_000_000,
+              _accountId: "debit-1",
+              description: "Зарплата",
+            }),
+          ]}
+          monoDebtLinkedTxIds={{ "acc-1": ["salary"] }}
+          txPicker={{ type: "monoDebt", id: "acc-1" }}
+        />,
+      );
+      // Базовий борг = погашено + залишок. Якби зарплата зарахувалась,
+      // тут було б 30 100, а не самий лише банківський залишок.
+      // Текст розбитий на кілька вузлів (JSX-інтерполяція), тому
+      // порівнюємо нормалізований `textContent` рядка-підсумку.
+      const summary = screen
+        .getByText(/Базовий борг/)
+        .textContent?.replace(/\s+/g, " ");
+      // Залишок з банку = (creditLimit 100000 − balance −10000)/100 = 1100 ₴.
+      expect(summary).toContain("Погашено цього місяця: 0 ₴");
+      expect(summary).toContain("Базовий борг: 1 100 ₴");
+      // Якби зарплата (30 000 ₴) зарахувалась, було б 31 100.
+      expect(summary).not.toContain("31 100");
+    });
+
     it("shows available older transactions when the last 90 days are empty", () => {
       render(
         <AssetsTxPickerView

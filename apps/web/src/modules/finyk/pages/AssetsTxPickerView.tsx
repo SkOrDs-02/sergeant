@@ -12,6 +12,10 @@ import type {
   LinkedTxRole,
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  isSuggestedMonoCardRepayment,
+  sumMonoCardPaid,
+} from "@sergeant/finyk-domain/domain/monoCardDebt";
 import { AssetsDebtTxPicker } from "./AssetsDebtTxPicker";
 import {
   buildMonthOptions,
@@ -233,21 +237,17 @@ export function AssetsTxPickerView({
       );
     }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
-    // Same rule as AssetsLiabilitiesSection: spending on the card itself is
-    // never a repayment, everything else linked here is.
-    const paid = transactions
-      .filter(
-        (t) =>
-          linkedIds.includes(t.id) &&
-          !(t._accountId === txPicker.id && t.amount < 0),
-      )
-      .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+    // Рахуємо по ПОВНОМУ набору, а не по `transactions`: той звужений
+    // пошуком і вибором періоду, тож сума погашеного стрибала б від того,
+    // який фільтр зараз відкритий. Правило погашення — канонічне в
+    // `@sergeant/finyk-domain` (дубль із `AssetsLiabilitiesSection` знято).
+    const paid = sumMonoCardPaid(sourceTransactions, linkedIds, txPicker.id);
     const remaining = getMonoDebt(account);
     const total = paid + remaining;
     const label = getAccountLabel(account);
 
     const isSuggested = (t: TxRowTx) =>
-      t._accountId === txPicker.id && t.amount > 0;
+      isSuggestedMonoCardRepayment(t, txPicker.id);
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
