@@ -177,9 +177,10 @@ export const moduleColors = {
  *   className="bg-[rgb(var(--module-accent-rgb)/0.1)]"
  *   className="bg-[rgb(var(--module-accent-strong-rgb))] text-white"
  *
- * The `strong` triplet is the WCAG-AA companion shade (`-700` for most
- * modules; `-800` for nutrition/lime where `-700` still regresses on
- * white). It matches the `bg-{module}-strong` Tailwind utility.
+ * The `strong` triplet is the WCAG-AA companion shade — `-800` for
+ * finyk/fizruk/nutrition (teal, cyan, lime — their `-700` still regresses
+ * on white); routine is the one module where `-700` (coral) already
+ * clears AA. It matches the `bg-{module}-strong` Tailwind utility.
  */
 export const moduleAccentRgb = {
   finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
