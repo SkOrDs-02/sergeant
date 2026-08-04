@@ -1,10 +1,18 @@
 {
-  "$comment": "Single source of truth для per-workspace coverage line-floors. Читається CI-гейтом (.github/workflows/ci.yml :: 'Check coverage threshold') і конфігами workspace-ів: vitest (apps/web, packages/api-client, packages/routine-domain) та jest (apps/mobile). Піднімай floors тут у міру росту покриття. CI тимчасово пропускає apps/mobile (web-focus phase) — див. test:coverage:ci у package.json.",
+  "$comment": "Single source of truth для per-workspace coverage line-floors. Читається CI-гейтом (.github/workflows/ci.yml :: 'Check coverage threshold' → scripts/ci/coverage-ratchet.mjs --floors, fail-closed: відсутній coverage-summary.json для workspace-у зі списку нижче = червоний CI) і конфігами workspace-ів: vitest (apps/web, packages/api-client, packages/routine-domain, packages/dualwrite-core) та jest (apps/mobile). Піднімай floors тут у міру росту покриття. CI тимчасово пропускає apps/mobile (web-focus phase) — див. test:coverage:ci у package.json.",
+  "$ratchetLog": "2026-08-04: ратчет до факт−5пп за аудитом docs/90-work/audits/2026-08-04-test-coverage-depth-audit.md (факти переверифіковані свіжим прогоном vitest run --coverage) — api-client 73→94 (факт 99.42), routine-domain 74→94 (факт 98.93); додано packages, що вже емітили coverage у CI, але сиділи на default 75: shared 94 (факт 98.73), finyk-domain 92 (97.51), fizruk-domain 94 (99.51), nutrition-domain 92 (97.69), dualwrite-core 95 (100), insights 94 (98.95), db-schema 90 (факт 94.6 — нижче аудитового 98.95, бо доданий coverage.include src/**/*.ts рахує і неімпортовані src-файли; аудит міряв дефолтний include). apps/web (89) і apps/mobile (30 + skip) не чіпались.",
   "default": 75,
   "workspaces": {
     "apps/web": 89,
     "apps/mobile": 30,
-    "packages/api-client": 73,
-    "packages/routine-domain": 74
+    "packages/api-client": 94,
+    "packages/routine-domain": 94,
+    "packages/shared": 94,
+    "packages/finyk-domain": 92,
+    "packages/fizruk-domain": 94,
+    "packages/nutrition-domain": 92,
+    "packages/db-schema": 90,
+    "packages/dualwrite-core": 95,
+    "packages/insights": 94
   }
 }
