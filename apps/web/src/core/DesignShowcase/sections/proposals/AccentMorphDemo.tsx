@@ -39,7 +39,7 @@ const MODULES = [
 
 export function AccentMorphDemo() {
   const [active, setActive] = useState(0);
-  const mod = MODULES[active]!;
+  const mod = MODULES[active] ?? MODULES[0];
   const color = `rgb(var(${mod.token}))`;
 
   return (
@@ -48,13 +48,17 @@ export function AccentMorphDemo() {
         before={
           <CompareTile dim>
             <AccentCard mod={mod} color={color} morph={false} />
-            <p className="text-2xs text-muted">Акцент міняється миттєво</p>
+            <p className="text-style-caption text-muted">
+              Акцент міняється миттєво
+            </p>
           </CompareTile>
         }
         after={
           <CompareTile>
             <AccentCard mod={mod} color={color} morph />
-            <p className="text-2xs text-muted">Акцент плавно перетікає</p>
+            <p className="text-style-caption text-muted">
+              Акцент плавно перетікає
+            </p>
           </CompareTile>
         }
       />
@@ -65,7 +69,7 @@ export function AccentMorphDemo() {
             type="button"
             onClick={() => setActive(i)}
             className={cn(
-              "px-2.5 py-1 rounded-full text-2xs border transition-colors",
+              "px-2.5 py-1 rounded-full text-style-caption border transition-colors",
               i === active
                 ? "text-bg border-transparent"
                 : "bg-surface-muted text-muted border-line",

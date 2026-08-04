@@ -116,7 +116,27 @@ export function HabitDetailSheet({
   const toast = useToast();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const habit = routine.habits.find((h) => h.id === habitId);
+  const foundHabit = routine.habits.find((h) => h.id === habitId);
+  // Harness/product hardening (2026-08-04, CI critical-lane audit): the
+  // sync engine can refresh `routine` from a still-catching-up SQLite read
+  // (`refreshCachesAfterPull` → `refreshSqliteRoutineState`) while a
+  // just-created habit's own dual-write hasn't landed locally yet — for one
+  // or more renders `routine.habits` transiently omits it. Without a
+  // bridge, `!habit` below unmounts this whole sheet (footer buttons
+  // included), which is exactly the "resolved, then detached from the DOM,
+  // retrying" loop the routine critical-flow lane hit on the footer
+  // «Редагувати» button. Bridging to the last good value for the SAME
+  // habitId rides out the blip; a real removal (delete/archive) always
+  // pairs with an explicit `onClose()` from the caller, so this never
+  // keeps a genuinely-gone habit on screen.
+  const [lastGoodHabit, setLastGoodHabit] = useState<Habit | null>(
+    foundHabit ?? null,
+  );
+  if (foundHabit && foundHabit !== lastGoodHabit) {
+    setLastGoodHabit(foundHabit);
+  }
+  const habit =
+    foundHabit ?? (lastGoodHabit?.id === habitId ? lastGoodHabit : null);
   const completions = useMemo(
     () => routine.completions[habitId] || [],
     [routine.completions, habitId],

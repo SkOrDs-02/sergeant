@@ -86,4 +86,18 @@ describe("ProgressBar", () => {
     const fill = container.querySelector('[role="progressbar"] > div')!;
     expect(fill.className).toContain("bg-danger-strong");
   });
+
+  it("applies the neutral (ink) variant without a -strong companion", () => {
+    const { container } = render(<ProgressBar value={10} variant="neutral" />);
+    const fill = container.querySelector('[role="progressbar"] > div')!;
+    expect(fill.className).toContain("bg-primary");
+  });
+
+  it("spreads rest props (e.g. data-testid) onto the role=progressbar element", () => {
+    const { getByTestId } = render(
+      <ProgressBar value={10} data-testid="my-bar" />,
+    );
+    const bar = getByTestId("my-bar");
+    expect(bar.getAttribute("role")).toBe("progressbar");
+  });
 });

@@ -29,6 +29,8 @@ const TEXT_SIZES: readonly TextRow[] = [
   { cls: "text-base", size: "16 / 24" },
   { cls: "text-sm", size: "14 / 20", exempt: true },
   { cls: "text-xs", size: "12 / 16" },
+  // спадковий 10px — навмисний експонат токена (Tier-1 шкала все ще
+  // реєструє `text-2xs` для chart-тіків, тож рядок лишається в таблиці).
   { cls: "text-2xs", size: "10 / 14" },
 ];
 
@@ -141,6 +143,8 @@ export function TypographySection() {
             {
               label: "Eyebrow",
               good: <code>&lt;SectionHeading size=&quot;xs&quot; /&gt;</code>,
+              // спадковий 10px — навмисний BAD-експонат (демонструє
+              // анти-патерн, а не рендерить реальний UI-контент).
               bad: <code>uppercase tracking-wide text-2xs</code>,
             },
           ]}

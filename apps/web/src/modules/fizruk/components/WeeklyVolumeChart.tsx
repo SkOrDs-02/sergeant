@@ -12,13 +12,10 @@ import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
 
 // AI-CONTEXT: theme-reactive fizruk chart color — mirrors ProgressRing.tsx's
-// `chartVar` map. The chartTheme.ts `chartSeries.fizruk.primary` token this
-// replaced resolves to a static hex from `moduleColors`, which is
-// theme-blind in dark/HC. The `--c-chart-fizruk` CSS var flips per theme
-// (see theme.css); the gradient fill (`chartGradients.fizruk`, still
-// chartTheme.ts) keeps using the static hex — unifying it is a
-// chartTheme.ts-wide refactor across all four modules and out of scope
-// here (backlog).
+// `chartVar` map and `chartSeries.fizruk.primary` (chartTheme.ts, now
+// var-backed too — design-audit TH1/TH7). The `--c-chart-fizruk` CSS var
+// flips per theme (see theme.css); `chartGradients.fizruk` below derives
+// from the same var, so the area fill is theme-reactive as well.
 const FIZRUK_CHART_COLOR = "rgb(var(--c-chart-fizruk))";
 
 /** Легкий area-chart без залежностей; акцент — module accent (fizruk/cyan). */

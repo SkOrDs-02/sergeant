@@ -54,7 +54,7 @@ export function CarouselDotsDemo() {
               >
                 <span
                   className={cn(
-                    "self-start px-2 py-0.5 rounded-md text-2xs",
+                    "self-start px-2 py-0.5 rounded-md text-style-caption",
                     c.accent,
                   )}
                 >

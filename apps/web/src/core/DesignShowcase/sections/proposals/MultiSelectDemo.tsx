@@ -82,7 +82,7 @@ export function MultiSelectDemo() {
                     <p className="text-style-body text-text truncate">
                       {r.title}
                     </p>
-                    <p className="text-2xs text-subtle">{r.cat}</p>
+                    <p className="text-style-caption text-subtle">{r.cat}</p>
                   </div>
                   <span className="text-style-body text-text tabular-nums">
                     {r.amount}

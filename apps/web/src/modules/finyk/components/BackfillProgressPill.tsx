@@ -4,6 +4,7 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { ProgressBar } from "@shared/components/ui";
 
 import type { MonoBackfillProgress } from "@shared/api";
 
@@ -25,14 +26,11 @@ interface BackfillProgressPillProps {
  * Visible whenever the underlying query has a non-`idle` snapshot. Hidden
  * for the resting state so the settings panel doesn't grow a permanent pill.
  *
- * - `running`: progress bar (`accountsProcessed / accountsTotal`) +
+ * - `running`: shared `<ProgressBar variant="neutral">` (`accountsProcessed
+ *   / accountsTotal`, exact `%`, ink fill so it stays status-neutral) +
  *   transactions counter + currently-processing account hint.
  * - `completed`: green check + total transactions backfilled.
  * - `failed`: red ! + truncated error message.
- *
- * Per AGENTS.md hard rule #8 we stick to the registered Tailwind opacity
- * scale (10/20/30/…). The progress bar uses an inline `width: <pct>%` so
- * the value is always exact rather than discretised by Tailwind classes.
  */
 export const BackfillProgressPill = memo(function BackfillProgressPill({
   progress,
@@ -99,18 +97,7 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
         <span className="tabular-nums text-subtle">{detail}</span>
       </div>
       {isRunning && (
-        <div
-          className="h-1.5 rounded-full bg-line/60 overflow-hidden"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={pct}
-        >
-          <div
-            className="h-full bg-primary transition-[width] duration-300 ease-out"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        <ProgressBar value={pct} max={100} size="sm" variant="neutral" />
       )}
     </div>
   );

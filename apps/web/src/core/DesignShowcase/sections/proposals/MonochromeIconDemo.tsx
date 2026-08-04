@@ -22,7 +22,7 @@ export function MonochromeIconDemo() {
             <IconChip label="any" bg="bg-accent" fg="text-bg" />
             <IconChip label="maskable" bg="bg-accent" fg="text-bg" masked />
           </div>
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Немає monochrome — themed-icon режим показує стандартну плитку
           </p>
         </CompareTile>
@@ -36,12 +36,12 @@ export function MonochromeIconDemo() {
               <div className="h-14 w-14 rounded-2xl bg-surface-muted border border-dashed border-accent/50 flex items-center justify-center">
                 <Icon name="sparkles" size={26} className="text-accent" />
               </div>
-              <span className="text-2xs text-accent font-medium">
+              <span className="text-style-caption text-accent font-medium">
                 monochrome
               </span>
             </div>
           </div>
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Силует тінтиться під палітру системи / шпалери
           </p>
         </CompareTile>
@@ -68,7 +68,7 @@ function IconChip({
       >
         <Icon name="sparkles" size={26} className={fg} />
       </div>
-      <span className="text-2xs text-muted">{label}</span>
+      <span className="text-style-caption text-muted">{label}</span>
     </div>
   );
 }

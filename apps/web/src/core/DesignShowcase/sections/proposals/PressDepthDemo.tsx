@@ -26,7 +26,7 @@ export function PressDepthDemo() {
             </span>
             <span className="text-style-label text-text">Фінік</span>
           </button>
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Лише scale — «пласке» натискання
           </p>
         </CompareTile>
@@ -42,7 +42,7 @@ export function PressDepthDemo() {
             </span>
             <span className="text-style-label text-text">Фінік</span>
           </button>
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Scale + inset-тінь — картку «вдавлює»
           </p>
           <style>{`

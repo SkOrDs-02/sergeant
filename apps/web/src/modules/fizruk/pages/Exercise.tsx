@@ -30,7 +30,7 @@ import {
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { fmt } from "../lib/numberFmt";
-import { chartSeries, statusColors } from "@shared/charts";
+import { chartSeries, chartStatusSeries } from "@shared/charts";
 
 interface ExerciseProps {
   exerciseId: string;
@@ -282,7 +282,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={progressData.rmPoints}
               label="1RM"
               unit="кг"
-              color={statusColors.success}
+              color={chartStatusSeries.success}
             />
           </Card>
         )}
@@ -296,7 +296,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={progressData.volPoints}
               label="Обсяг"
               unit="кг"
-              color={chartSeries.fizruk.primary ?? "#0e7490"}
+              color={chartSeries.fizruk.primary}
             />
           </Card>
         )}
@@ -310,7 +310,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={cardioData.pacePoints}
               label="Темп"
               unit="хв/км"
-              color={statusColors.warning}
+              color={chartStatusSeries.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
               Менше — краще (швидший темп)
@@ -327,7 +327,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               points={cardioData.distPoints}
               label="Дистанція"
               unit="км"
-              color={statusColors.info}
+              color={chartStatusSeries.info}
             />
           </Card>
         )}
