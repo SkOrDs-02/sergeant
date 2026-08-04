@@ -16,21 +16,21 @@ Meta-документація на тестову стратегію Sergeant �
 | [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md) | Історичний план PR-серії з тестів (травень 2026).                  |
 | [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md)   | Ревʼю тестового покриття на ту саму дату.                          |
 
-> Stryker mutation testing meta-doc (`mutation.md`) було видалено разом з cloudSync v1 engine у PR #052b (commit `a97b8cc8` — `chore(web): retire cloudSync Stryker mutation infra`). CloudSync-v1 mutation scope більше не релевантний, але tier-1 mutation testing повернуто для shared utils: `packages/shared/stryker.utils.conf.json` мутує `src/utils/{macros,date}.ts`, weekly workflow `.github/workflows/mutation-testing.yml` публікує HTML + JSON artifact.
+> Stryker mutation testing meta-doc (`mutation.md`) було видалено разом з cloudSync v1 engine у PR #052b (commit `a97b8cc8` — `chore(web): retire cloudSync Stryker mutation infra`). CloudSync-v1 mutation scope більше не релевантний, але mutation testing повернуто поетапно: tier-1 — `packages/shared/stryker.utils.conf.json` (`src/utils/{macros,date}.ts`) і `apps/server/stryker.normalizers.conf.json` (нормалізатори food-провайдерів); tier-2 (2026-08) — `packages/finyk-domain/stryker.core.conf.json` (грошова доменна логіка: budget, debtEngine, balanceReconciliation, transferMatching, monoCardDebt) і `apps/web/stryker.time.conf.json` (Kyiv/DST time-утиліти). Weekly workflow `.github/workflows/mutation-testing.yml` (Пн 06:00 UTC + `workflow_dispatch`) публікує HTML + JSON artifact на кожну ціль; червоний cron-прогін створює/оновлює idempotent issue з label `mutation-testing` (той самий патерн, що `pact-drift.yml`).
 
 ## Тестові шари — як вони лежать
 
-| Шар               | Локація                                                              | Тулінг                                       |
-| ----------------- | -------------------------------------------------------------------- | -------------------------------------------- |
-| Unit              | `apps/{web,server,mobile}/src/**/*.test.ts(x)?`                      | Vitest                                       |
-| Integration       | `apps/server/src/**/*.integration.test.ts`                           | Vitest + testcontainers                      |
-| E2E (web)         | `apps/web/tests/{a11y,ledger,mobile,smoke}/`                         | Playwright (по конфігу на сюїту)             |
-| E2E (mobile)      | `apps/mobile/e2e/`                                                   | Detox                                        |
-| Critical-flow CI  | `apps/web/tests/smoke/` + `playwright.smoke.config.ts`               | Playwright (canary on every PR)              |
-| Visual regression | `apps/web/tests/a11y/` + `playwright.visual.config.ts`               | Playwright (лише локально — див. нижче)      |
-| Property-based    | `packages/shared/src/utils/*.property.test.ts`                       | Vitest (seeded PRNG; fast-check pending dep) |
-| Mutation          | `packages/shared/stryker.utils.conf.json`                            | Stryker + vitest-runner                      |
-| Performance       | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` | Lighthouse CI, web-vitals                    |
+| Шар               | Локація                                                                                                                                                           | Тулінг                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Unit              | `apps/{web,server,mobile}/src/**/*.test.ts(x)?`                                                                                                                   | Vitest                                       |
+| Integration       | `apps/server/src/**/*.integration.test.ts`                                                                                                                        | Vitest + testcontainers                      |
+| E2E (web)         | `apps/web/tests/{a11y,ledger,mobile,smoke}/`                                                                                                                      | Playwright (по конфігу на сюїту)             |
+| E2E (mobile)      | `apps/mobile/e2e/`                                                                                                                                                | Detox                                        |
+| Critical-flow CI  | `apps/web/tests/smoke/` + `playwright.smoke.config.ts`                                                                                                            | Playwright (canary on every PR)              |
+| Visual regression | `apps/web/tests/a11y/` + `playwright.visual.config.ts`                                                                                                            | Playwright (лише локально — див. нижче)      |
+| Property-based    | `packages/shared/src/utils/*.property.test.ts`                                                                                                                    | Vitest (seeded PRNG; fast-check pending dep) |
+| Mutation          | `stryker.*.conf.json`: `packages/shared` (tier-1 utils), `apps/server` (tier-1 normalizers), `packages/finyk-domain` (tier-2 core), `apps/web` (tier-2 kyiv time) | Stryker + vitest-runner                      |
+| Performance       | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml`                                                                                              | Lighthouse CI, web-vitals                    |
 
 > **Visual regression запускається лише локально** — `pnpm --filter @sergeant/web test:visual`.
 > Воркфлоу `.github/workflows/visual-regression.yml` (і Argos-інтеграцію) прибрано рішенням
@@ -98,6 +98,21 @@ vitest-конфігах) працює **ratchet-гейт «не гірше ні�
 
 Відмінність від floors: floors — ручна нижня межа (страхує інші workspaces),
 ratchet — автоматична «гребінка», що рухається тільки вгору.
+
+### Floor-гейт (fail-closed) — той самий скрипт, `--floors`
+
+Крок `Check coverage threshold` у job `coverage` запускає
+`node scripts/ci/coverage-ratchet.mjs --floors`: кожен workspace, перелічений
+у [`coverage-thresholds.json`](../../../coverage-thresholds.json) (крім
+`apps/mobile` — web-focus skip), **мусить** мати
+`coverage/coverage-summary.json`, інакше job червоний. До 2026-08-04 гейт був
+shell-циклом, що глобив лише наявні summary — workspace, який переставав
+емітити coverage (наприклад, після втрати `json-summary` репортера у
+vitest-конфігу), тихо випадав з гейта (fail-open діра, аудит
+[`2026-08-04-test-coverage-depth-audit.md`](../../90-work/audits/2026-08-04-test-coverage-depth-audit.md)).
+Workspace-и з summary, але без явного floor-а гейтяться за `default`. Тим же
+аудитом floors ратчетнуто до факт−5пп і додано всі domain-packages
+(до того вони сиділи на default 75 при факті 97–100%).
 
 ## Cross-links
 

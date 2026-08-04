@@ -8,6 +8,7 @@ import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
 } from "../../../../modules/finyk/lib/sqliteWriter";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -28,7 +29,7 @@ export function createTransaction(
   const nowIso = new Date().toISOString();
   const isoDate =
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
-      ? new Date(`${date}T12:00:00`).toISOString()
+      ? (parseKyivDate(date)?.toISOString() ?? nowIso)
       : nowIso;
   const customC = ls<Array<{ id: string; label?: string }>>(
     "finyk_custom_cats_v1",

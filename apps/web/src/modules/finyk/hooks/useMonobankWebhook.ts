@@ -110,7 +110,16 @@ export function useMonobankWebhook({
   const webhookAccounts = accountsQuery.data;
   const accounts = useMemo(
     () =>
-      (webhookAccounts ?? [])
+      // Shape-guard: `webhookAccounts` is typed `MonoAccountDto[]` (the
+      // contracted `/api/mono/accounts` response) but nothing here actually
+      // enforces that at runtime — `?? []` only rescues `null`/`undefined`.
+      // A misbehaving intermediary (dev proxy, stale SW cache, test mock)
+      // that hands back a truthy non-array (e.g. `{ ok: true }`) used to
+      // reach `.filter` directly and crash this whole render with
+      // `TypeError: ... .filter is not a function`, tripping the
+      // `SectionErrorBoundary` around the Assets page. Same defensive
+      // pattern as `usePrivatbank.ts`'s `Array.isArray(data) ? data : []`.
+      (Array.isArray(webhookAccounts) ? webhookAccounts : [])
         .filter((a) => a.currencyCode === CURRENCY.UAH)
         .map((a) => ({
           id: a.monoAccountId,

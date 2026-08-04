@@ -8,7 +8,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { evaluateRatchet, applyBumps } from "../coverage-ratchet.mjs";
+import {
+  evaluateRatchet,
+  applyBumps,
+  evaluateFloors,
+} from "../coverage-ratchet.mjs";
 
 const baseline = {
   epsilonPp: 0.5,
@@ -84,4 +88,80 @@ test("одночасно fail і bump у різних workspace-ах", () => {
   });
   assert.equal(failures.length, 1);
   assert.deepEqual(bumps, { "apps/server": 70 });
+});
+
+// ── evaluateFloors (статичний floor-гейт, --floors) ─────────────────────────
+
+const thresholds = {
+  default: 75,
+  workspaces: {
+    "apps/web": 89,
+    "apps/mobile": 30,
+    "packages/api-client": 94,
+  },
+};
+
+test("floors pass: усі workspace-и над своїми floor-ами", () => {
+  const { failures, report } = evaluateFloors(thresholds, {
+    "apps/web": 93.7,
+    "apps/mobile": null,
+    "packages/api-client": 99.4,
+  });
+  assert.deepEqual(failures, []);
+  assert.equal(report.filter((l) => l.startsWith("✅")).length, 2);
+});
+
+test("floors fail: workspace нижче floor-у", () => {
+  const { failures } = evaluateFloors(thresholds, {
+    "apps/web": 88.9,
+    "packages/api-client": 99.4,
+  });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /apps\/web/);
+  assert.match(failures[0], /89%/);
+});
+
+test("floors fail-closed: очікуваний workspace без summary — failure, не skip", () => {
+  // Раніше (shell-loop у ci.yml) відсутній coverage-summary.json означав
+  // `continue` — workspace тихо випадав з гейта. Тепер це червоний CI.
+  const { failures } = evaluateFloors(thresholds, {
+    "apps/web": 93.7,
+    "packages/api-client": null,
+  });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /packages\/api-client/);
+  assert.match(failures[0], /fail-closed/);
+});
+
+test("floors fail-closed: workspace зі списку, взагалі відсутній в actuals", () => {
+  // union(thresholds, actuals): navіть якщо discovery не знайшов директорію
+  // coverage — перелічений workspace усе одно потрапляє під fail-closed.
+  const { failures } = evaluateFloors(thresholds, {
+    "apps/web": 93.7,
+  });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /packages\/api-client/);
+});
+
+test("floors skip: apps/mobile поза CI-скоупом навіть без summary", () => {
+  const { failures, report } = evaluateFloors(thresholds, {
+    "apps/web": 93.7,
+    "apps/mobile": null,
+    "packages/api-client": 99.4,
+  });
+  assert.deepEqual(failures, []);
+  assert.equal(report.filter((l) => l.includes("skipped")).length, 1);
+});
+
+test("floors default: незалистований workspace із summary гейтиться за default", () => {
+  const { failures, report } = evaluateFloors(thresholds, {
+    "apps/web": 93.7,
+    "packages/api-client": 99.4,
+    "apps/mobile-shell": 74.2, // < default 75
+    "packages/insights": 98.9, // ≥ default 75
+  });
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /apps\/mobile-shell/);
+  assert.match(failures[0], /75%/);
+  assert.ok(report.some((l) => l.includes("packages/insights")));
 });

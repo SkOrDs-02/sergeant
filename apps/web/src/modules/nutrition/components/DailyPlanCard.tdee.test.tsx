@@ -18,6 +18,7 @@ import {
 } from "@sergeant/nutrition-domain";
 
 import type { Biometrics } from "../../../core/profile/biometrics";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { DailyPlanCard } from "./DailyPlanCard";
 import { NUTRITION_GOALS, computeNutritionTargets } from "../lib/tdee";
 
@@ -47,20 +48,22 @@ function renderCard(overrides: { biometrics?: Biometrics } = {}) {
   const prefs = defaultNutritionPrefs();
   render(
     <MemoryRouter>
-      <DailyPlanCard
-        prefs={prefs}
-        setPrefs={setPrefs}
-        pantryItems={[]}
-        busy={false}
-        dayPlan={null}
-        dayPlanBusy={false}
-        fetchDayPlan={() => {}}
-        regenMeal={() => {}}
-        addMealToLog={() => {}}
-        weekPlan={null}
-        weekPlanBusy={false}
-        fetchWeekPlan={() => {}}
-      />
+      <ToastProvider>
+        <DailyPlanCard
+          prefs={prefs}
+          setPrefs={setPrefs}
+          pantryItems={[]}
+          busy={false}
+          dayPlan={null}
+          dayPlanBusy={false}
+          fetchDayPlan={() => {}}
+          regenMeal={() => {}}
+          addMealToLog={() => {}}
+          weekPlan={null}
+          weekPlanBusy={false}
+          fetchWeekPlan={() => {}}
+        />
+      </ToastProvider>
     </MemoryRouter>,
   );
   return { setPrefs, prefs };
@@ -82,7 +85,7 @@ describe("DailyPlanCard «Розрахувати з профілю»", () => {
     renderCard();
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
 
     expect(
@@ -97,7 +100,7 @@ describe("DailyPlanCard «Розрахувати з профілю»", () => {
     renderCard({ biometrics: completeBiometrics });
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
 
     for (const goal of NUTRITION_GOALS) {
@@ -122,7 +125,7 @@ describe("DailyPlanCard «Розрахувати з профілю»", () => {
     const { setPrefs } = renderCard({ biometrics: completeBiometrics });
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Підтримка/u }));
 

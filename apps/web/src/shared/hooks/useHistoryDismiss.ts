@@ -114,6 +114,11 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
       // (`paywall-locale-journeys.spec.ts`). Кадр дає транзиції завершитись.
       const timer = setTimeout(() => {
         pendingRollbacks.delete(timer);
+        // Vitest/jsdom: таймер останнього закриття у тест-файлі може
+        // спрацювати вже після teardown середовища, коли глобального
+        // `window` не існує — тоді відкат безглуздий (у браузері window
+        // є завжди, прод-поведінка не змінюється).
+        if (typeof window === "undefined") return;
         // Адреса змінилась — діалог закрився ЧЕРЕЗ навігацію, і його запис
         // уже не верхній у жодному корисному сенсі.
         if (window.location.href !== hrefAtPush) return;

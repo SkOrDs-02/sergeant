@@ -172,7 +172,25 @@ export function parseKyivDate(key: string): Date | null {
   const localMillisSinceMidnight =
     (probeParts.hour * 60 * 60 + probeParts.minute * 60 + probeParts.second) *
     1000;
-  return new Date(middayUtc - localMillisSinceMidnight);
+  // AI-DANGER: у весняний DST-день локальна доба коротша на годину: проба
+  // опівдні вже в EEST (+3), а опівніч того ж дня ще в EET (+2), тож перше
+  // віднімання перескакує на 23:00 попереднього дня (регресія з CI:
+  // counterexample 3920565600000 → '2094-03-27' замість '2094-03-28').
+  // Другий прохід звіряє guess із фактичними Kyiv-частинами і докручує
+  // до справжньої локальної 00:00 (в Україні перехід о 03:00 local, тому
+  // 00:00 завжди існує).
+  let midnightUtc = middayUtc - localMillisSinceMidnight;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  for (let pass = 0; pass < 2; pass += 1) {
+    const guess = getKyivDateParts(new Date(midnightUtc));
+    const guessLocalMs =
+      (guess.hour * 60 * 60 + guess.minute * 60 + guess.second) * 1000;
+    const onTargetDay =
+      guess.year === year && guess.month === month && guess.day === day;
+    if (onTargetDay && guessLocalMs === 0) break;
+    midnightUtc += onTargetDay ? -guessLocalMs : DAY_MS - guessLocalMs;
+  }
+  return new Date(midnightUtc);
 }
 
 /**

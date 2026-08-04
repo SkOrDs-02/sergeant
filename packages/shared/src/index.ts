@@ -34,6 +34,11 @@ export * from "./lib/dashboard";
 export * from "./lib/assistantCatalogue";
 export * from "./lib/toolRisk";
 
+// Canonical HubChat tool-name registry — single source of truth for the
+// server toolDefs ↔ web executor contract. See `./hubchat/toolNames.ts`
+// docstring for rationale (audit gap #2, 2026-08).
+export * from "./hubchat/toolNames";
+
 // Провенанс метрик — версія методики підрахунку (ADR-0079 §3-§4).
 export * from "./lib/metricsVersion";
 export * from "./lib/exportCsv";
