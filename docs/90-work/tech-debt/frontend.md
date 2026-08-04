@@ -18,11 +18,16 @@
 >    hex (dark: ~3.3:1); BodyAtlas heat-ramp — статичні THEME_HEX + literal
 >    #fff/#000 gloss. Мігрувати на `rgb(var(--c-chart-*))`-патерн
 >    (ProgressRing — зразок); WeeklyVolumeChart вже мігрований.
-> 3. **Компоненти-сироти.** AccentColorPicker, MacroBarRow, Prose,
->    OptimizedImage, PageTransition, ProgressBar — нуль споживачів
->    (MacroBarRow/OptimizedImage навіть не в index.ts). Рішення founder-а:
->    адоптувати чи видалити (Knip-baseline). ProgressBar: 4 ad-hoc
->    `role="progressbar"` в core/modules — кандидати на міграцію.
+> 3. ~~**Компоненти-сироти.**~~ — **Done.** AccentColorPicker, MacroBarRow,
+>    Prose, PageTransition — видалено (0 споживачів, жодного активного
+>    plan-посилання; MacroBarRow фактично замінений на MacroRings ще в
+>    redesign-v2). Відновлення — з git-історії за потреби. OptimizedImage —
+>    **збережено**: файл несе `@scaffolded`-маркер (Hard Rule #10) з явним
+>    `Do NOT delete`, тож не кандидат на дедкод-прибирання. ProgressBar —
+>    **адоптовано**: 3 ad-hoc `role="progressbar"` (OnboardingProgress,
+>    ValueProgressBar, BackfillProgressPill) мігровано на shared
+>    `<ProgressBar>` (додано `variant="neutral"` для ink-філла); MacroRings
+>    (circular, `ProgressRing`) лишився bespoke — інша сімʼя компонента.
 > 4. **Shared OverlayShell/Drawer.** ~14 файлів hand-roll `role="dialog"`
 >    chrome; SettingsPrimitives.ConfirmModal без useBodyScrollLock;
 >    DeleteAccountDialog — клон Modal.
