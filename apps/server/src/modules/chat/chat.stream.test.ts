@@ -830,6 +830,42 @@ describe("chat handler — SSE prompt-cache metric", () => {
     });
   });
 
+  it("нульовий input_tokens із message_start добирається з message_delta (шлях OpenRouter)", async () => {
+    // OpenRouter віддає у `message_start.usage.input_tokens` НУЛЬ, а справжні
+    // вхідні токени і вже списану суму — лише у фінальному `message_delta`.
+    // Без добору в `ai_usage_daily` писались би нулі, і денна стеля вартості
+    // (`anthropicBudgetGuard`) перестала б бачити чат.
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "message_start",
+          message: { usage: { input_tokens: 0, output_tokens: 0 } },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "ok" },
+        },
+        {
+          type: "message_delta",
+          delta: { stop_reason: "end_turn" },
+          usage: { input_tokens: 18_400, output_tokens: 320, cost: 0.0319 },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
+    await handler(req, res);
+
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    expect(recordAnthropicUsageMock.mock.calls[0]![2]!).toMatchObject({
+      input_tokens: 18_400,
+      output_tokens: 320,
+      cost: 0.0319,
+    });
+  });
+
   it("без message_start usage → recordAnthropicUsage не викликається", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([

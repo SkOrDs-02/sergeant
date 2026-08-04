@@ -5,6 +5,11 @@ import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import {
+  finykCategoryExists,
+  normalizeFinykId,
+  unknownCategoryMessage,
+} from "./entityLookup";
 import { toLocalISODate } from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
@@ -37,10 +42,13 @@ function buildAiContribution(saved: number): GoalContribution[] {
 }
 
 export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
-  const { category_id, limit, period = "month" } = action.input;
+  const { limit, period = "month" } = action.input;
+  const categoryId = normalizeFinykId(action.input.category_id);
+  if (!finykCategoryExists(categoryId))
+    return unknownCategoryMessage(categoryId);
   const budgets = ls<Budget[]>("finyk_budgets", []);
   const idx = budgets.findIndex(
-    (b) => b.type === "limit" && b.categoryId === category_id,
+    (b) => b.type === "limit" && b.categoryId === categoryId,
   );
   if (idx >= 0) {
     (budgets[idx] as BudgetLimit).limit = Number(limit);
@@ -52,7 +60,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
     budgets.push({
       id: `b_${Date.now()}`,
       type: "limit",
-      categoryId: category_id,
+      categoryId,
       limit: Number(limit),
       period,
       createdAt: new Date().toISOString(),
@@ -60,14 +68,14 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
   }
   finykChatWrite("finyk_budgets", budgets);
   const customC = getCachedFinykSqliteState().customCategories;
-  const cat = resolveExpenseCategoryMeta(category_id, customC);
+  const cat = resolveExpenseCategoryMeta(categoryId, customC);
   const periodLabel =
     period === "week"
       ? "на тиждень"
       : period === "one_time"
         ? "одноразово"
         : "на місяць";
-  return `Ліміт ${cat?.label || category_id} встановлено: ${limit} грн ${periodLabel}`;
+  return `Ліміт ${cat?.label || categoryId} встановлено: ${limit} грн ${periodLabel}`;
 }
 
 export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
@@ -86,11 +94,13 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
   const scope = input.scope;
   const budgets = ls<Budget[]>("finyk_budgets", []);
   if (scope === "limit") {
-    const categoryId = String(input.category_id || "").trim();
+    const categoryId = normalizeFinykId(input.category_id);
     const limitN = Number(input.limit);
     if (!categoryId) return "Для scope='limit' потрібен category_id.";
     if (!Number.isFinite(limitN) || limitN <= 0)
       return "Для scope='limit' потрібен додатний limit.";
+    if (!finykCategoryExists(categoryId))
+      return unknownCategoryMessage(categoryId);
     const idx = budgets.findIndex(
       (b) => b.type === "limit" && b.categoryId === categoryId,
     );

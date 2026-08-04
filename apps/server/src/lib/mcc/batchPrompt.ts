@@ -26,7 +26,10 @@
  */
 
 import type { Category } from "../../routes/internal/categorize.js";
-import { CATEGORIES } from "../../routes/internal/categorize.js";
+import {
+  CATEGORIES,
+  CATEGORY_RULES,
+} from "../../routes/internal/categorize.js";
 import type { UnknownMccItem } from "./unknownQueue.js";
 
 export interface BatchPromptPayload {
@@ -46,14 +49,17 @@ export interface BatchParseResult {
   missing: UnknownMccItem[];
 }
 
-const BATCH_SYSTEM_PROMPT =
-  "You are a transaction categorizer for a Ukrainian personal finance app. " +
-  "You will receive a JSON array of transactions. For EACH transaction return " +
-  "one of: groceries, transport, dining, entertainment, utilities, health, " +
-  "shopping, education, subscriptions, income, transfer, other. " +
-  'Respond with JSON only — an array of {"i": <index>, "c": "<category>", ' +
-  '"conf": 0.0-1.0}. Include EVERY input index exactly once. No prose, ' +
-  "no markdown fencing.";
+/**
+ * Enum і правила класифікації беруться з `categorize.ts`, а не переписуються.
+ * Раніше цей промпт мав власну копію списку категорій без жодного правила
+ * розрізнення — тобто batch-шлях і per-row шлях могли покласти ту саму
+ * транзакцію в різні категорії, і ніщо цього не ловило.
+ */
+const BATCH_SYSTEM_PROMPT = `You are a transaction categorizer for a Ukrainian personal finance app.
+You will receive a JSON array of transactions. For EACH transaction return one of: ${CATEGORIES.join(", ")}.
+Respond with JSON only — an array of {"i": <index>, "c": "<category>", "conf": 0.0-1.0}. Include EVERY input index exactly once. No prose, no markdown fencing.
+
+${CATEGORY_RULES}`;
 
 /**
  * Build Anthropic system+user prompts для batch-категоризації. `items`

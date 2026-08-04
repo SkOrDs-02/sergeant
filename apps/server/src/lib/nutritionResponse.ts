@@ -175,7 +175,39 @@ export function normalizePantryItems(parsed: unknown): PantryItem[] {
           : safeString(rec["notes"], "").trim();
       return { name, qty, unit, notes };
     })
-    .filter((v): v is PantryItem => Boolean(v));
+    .filter((v): v is PantryItem => Boolean(v))
+    .reduce(mergeDuplicatePantryItem, []);
+}
+
+/**
+ * Об'єднання дублікатів комори — детермінованим кодом, не проханням до моделі.
+ *
+ * WHY. Промпт `parse-pantry` вимагає об'єднувати повтори з першого дня, і всі
+ * перевірені моделі (gemini-2.5-flash-lite, sonnet-4.6) однаково його ігнорують:
+ * вхід «молоко 1 л … молоко … йогурт … йогурт 2» переписується рядок у рядок,
+ * бо надиктований список читається як послідовність, а не як множина. Дублікат
+ * у коморі тихо ламає і список покупок, і план — рахує продукт двічі. Сусідній
+ * `shopping-list` уже має рівно такий Set-guard у хендлері; тут його бракувало.
+ *
+ * Пріоритет полів дзеркалить промпт: перемагає запис із `qty`, суми не
+ * додаються (надиктоване «молоко» після «молоко 1 л» — це та сама пляшка, а не
+ * друга). Позиція в списку — за першою згадкою.
+ */
+function mergeDuplicatePantryItem(
+  acc: PantryItem[],
+  item: PantryItem,
+): PantryItem[] {
+  const key = item.name.toLowerCase().replace(/\s+/g, " ").trim();
+  const seen = acc.find(
+    (p) => p.name.toLowerCase().replace(/\s+/g, " ").trim() === key,
+  );
+  if (!seen) return [...acc, item];
+  if (seen.qty == null && item.qty != null) {
+    seen.qty = item.qty;
+    seen.unit = item.unit;
+  }
+  seen.notes ??= item.notes;
+  return acc;
 }
 
 export function normalizeRecipes(parsed: unknown): NormalizedRecipe[] {

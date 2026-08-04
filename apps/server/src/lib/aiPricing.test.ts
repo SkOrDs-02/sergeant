@@ -172,4 +172,42 @@ describe("estimateAnthropicCostUsd — pricing math", () => {
     });
     expect(usd).toBeCloseTo(3.0, 6);
   });
+
+  it("фактичний `cost` від шлюзу має пріоритет над таблицею", () => {
+    // Таблиця дала б $3 за мільйон input-токенів Sonnet-а; шлюз каже, що
+    // реально списано $0.42 — рахуємо саме списане.
+    const usd = estimateAnthropicCostUsd("claude-3-5-sonnet", {
+      input_tokens: 1_000_000,
+      output_tokens: 0,
+      cost: 0.42,
+    });
+    expect(usd).toBe(0.42);
+  });
+
+  it("нульовий/битий `cost` не затирає розрахунок за таблицею", () => {
+    for (const cost of [0, -1, NaN, null, undefined]) {
+      expect(
+        estimateAnthropicCostUsd("claude-3-5-sonnet", {
+          input_tokens: 1_000_000,
+          output_tokens: 0,
+          cost,
+        }),
+      ).toBeCloseTo(3.0, 6);
+    }
+  });
+
+  it("моделі чату через OpenRouter мають ціну (інакше кост тихо = 0)", () => {
+    expect(
+      estimateAnthropicCostUsd("openai/gpt-5.1", {
+        input_tokens: 1_000_000,
+        output_tokens: 1_000_000,
+      }),
+    ).toBeCloseTo(11.25, 6);
+    expect(
+      estimateAnthropicCostUsd("google/gemini-2.5-flash-lite", {
+        input_tokens: 1_000_000,
+        output_tokens: 1_000_000,
+      }),
+    ).toBeCloseTo(0.5, 6);
+  });
 });

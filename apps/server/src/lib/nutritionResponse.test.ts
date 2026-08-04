@@ -61,6 +61,25 @@ describe("nutritionResponse normalizers", () => {
     expect(out).toEqual([{ name: "огірок", qty: 4, unit: "шт", notes: null }]);
   });
 
+  it("normalizePantryItems merges duplicates, qty-bearing row wins", () => {
+    // Рівно той вхід, на якому всі перевірені моделі 0/3: надиктований список
+    // із повторами, де кількість вказана то в першій, то в другій згадці.
+    const out = normalizePantryItems({
+      items: [
+        { name: "молоко", qty: 1, unit: "л", notes: null },
+        { name: "банан", qty: 2, unit: "шт", notes: null },
+        { name: " Молоко ", qty: null, unit: null, notes: "холодне" },
+        { name: "йогурт", qty: null, unit: null, notes: null },
+        { name: "йогурт", qty: 2, unit: null, notes: null },
+      ],
+    });
+    expect(out).toEqual([
+      { name: "молоко", qty: 1, unit: "л", notes: "холодне" },
+      { name: "банан", qty: 2, unit: "шт", notes: null },
+      { name: "йогурт", qty: 2, unit: "шт", notes: null },
+    ]);
+  });
+
   it("normalizeRecipes trims arrays and shapes macros", () => {
     const out = normalizeRecipes({
       recipes: [

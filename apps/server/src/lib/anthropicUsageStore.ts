@@ -82,6 +82,18 @@ export async function recordAnthropicUsageToDb(
   model: string,
   usage: AnthropicUsageTokens | null | undefined,
   userId?: string,
+  /**
+   * Тег кроку (`chat`, `chat-stream`, `internal/weekly-digest`…). Без нього
+   * рядки різних кроків зливаються, щойно вони поділять модель — і питання
+   * «скільки коштує вибір інструмента проти відповіді» лишається без відповіді.
+   */
+  endpoint?: string,
+  /**
+   * Реально списана сума, якщо шлюз її повернув (OpenRouter кладе її у
+   * `usage.cost`). Пишеться окремо від `est_cost_usd`, щоб виміряне не
+   * змішувалося з порахованим за локальною прайс-таблицею.
+   */
+  actualCostUsd?: number,
 ): Promise<void> {
   if (!usage) return;
   if (!model || model === "unknown") return;
@@ -124,16 +136,41 @@ export async function recordAnthropicUsageToDb(
            input_tokens,
            output_tokens,
            total_tokens,
-           est_cost_usd
+           est_cost_usd,
+           endpoint,
+           cache_read_tokens,
+           cache_creation_tokens,
+           actual_cost_usd
          )
-         VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7)
-         ON CONFLICT (subject_key, usage_day, bucket) DO UPDATE SET
+         VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
            request_count = ai_usage_daily.request_count + 1,
            input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
            output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
            total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens,
-           est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd`,
-        [subject, day, bucket, inputCol, outTok, totalTok, estCost],
+           est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd,
+           cache_read_tokens =
+             COALESCE(ai_usage_daily.cache_read_tokens, 0)
+             + COALESCE(EXCLUDED.cache_read_tokens, 0),
+           cache_creation_tokens =
+             COALESCE(ai_usage_daily.cache_creation_tokens, 0)
+             + COALESCE(EXCLUDED.cache_creation_tokens, 0),
+           actual_cost_usd =
+             COALESCE(ai_usage_daily.actual_cost_usd, 0)
+             + COALESCE(EXCLUDED.actual_cost_usd, 0)`,
+        [
+          subject,
+          day,
+          bucket,
+          inputCol,
+          outTok,
+          totalTok,
+          estCost,
+          endpoint ?? "unknown",
+          crTok,
+          cwTok,
+          actualCostUsd ?? null,
+        ],
       );
     }
   } catch (err) {

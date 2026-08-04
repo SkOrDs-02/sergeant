@@ -62,6 +62,59 @@ export function parseCategory(raw: string): CategorizeResult {
 }
 
 /**
+ * AI-CONTEXT: правила нижче — не косметика, кожне закриває виміряний режим
+ * відмови стенду (`pnpm eval:models --pipeline=classify`).
+ *
+ *  * «ветеринарія ≠ health» — всі п'ять перевірених моделей клали ветклініку
+ *    в `health` з упевненістю 0.9–1.0. Таксономія додатка розуміє health як
+ *    здоров'я ЛЮДИНИ, і жоден рядок промпта цього не казав.
+ *  * «опис важливіший за MCC» — українські термінали регулярно шлють код не
+ *    свого профілю (аптека під 5169 «оптова хімія»).
+ *  * калібрування впевненості — `parseCategory` фейл-софтить у `{other, 0}`,
+ *    тож упевнене вгадування на нерозбірливому дескрипторі ззовні не
+ *    відрізняється від чесної відмови, але мовчки псує статистику назавжди.
+ */
+export const CATEGORY_RULES = `Rules:
+- The merchant description outranks the MCC. Terminals are misconfigured often: a pharmacy stays health even when the MCC says wholesale chemicals.
+- health is HUMAN health only — pharmacies, clinics, labs, dentists, medical tests. Veterinary clinics, pet food and pet supplies are NOT health; use other.
+- A positive amount is income, never transfer. transfer means a move between the user's own accounts or a P2P card payment (the description carries a masked card number such as 44**7788).
+- confidence is not politeness, it is how much the description actually tells you. An opaque descriptor (PAYMENT*XJ4471, a bare code, a numeric string) tells you nothing: answer other with confidence 0.3 or below. A confident guess there silently corrupts the user's statistics and nothing downstream can undo it.`;
+
+export const CATEGORIZE_SYSTEM_PROMPT = `You are a transaction categorizer for a Ukrainian personal finance app.
+Categorize the transaction into exactly one of: ${CATEGORIES.join(", ")}.
+Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}
+
+${CATEGORY_RULES}`;
+
+/**
+ * Промпт per-row категоризації — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з `categorizeTransaction`, щоб стенд
+ * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не свою копію.
+ * Копія в стенді гарантовано розходиться — саме через це попередня ітерація
+ * бенчмарку міряла однорядкову вигадку замість справжнього промпта.
+ */
+export function buildCategorizePrompt(args: CategorizeArgs): {
+  system: string;
+  user: string;
+} {
+  const safeDescription = maskPii(args.description.trim());
+  const amountUah =
+    args.amount != null ? Math.abs(Number(args.amount) / 100) : null;
+
+  return {
+    system: CATEGORIZE_SYSTEM_PROMPT,
+    user: [
+      `Transaction: ${safeDescription}`,
+      amountUah != null ? `Amount: ${amountUah.toFixed(2)} UAH` : null,
+      args.mcc != null ? `MCC: ${args.mcc}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+/**
  * Pure helper — викликає Anthropic, повертає `CategorizeResult`. Винесено з
  * route-handler-а, щоб mono enrichment-worker (`modules/mono/enrichmentWorker.ts`)
  * міг переиспользувати ту саму prompt + parsing-логіку без round-trip через HTTP.
@@ -91,17 +144,7 @@ export async function categorizeTransaction(
   }
   monoMccMatchTotal.inc({ outcome: "unknown" });
 
-  const safeDescription = maskPii(description);
-  const amountUah =
-    args.amount != null ? Math.abs(Number(args.amount) / 100) : null;
-
-  const userContent = [
-    `Transaction: ${safeDescription}`,
-    amountUah != null ? `Amount: ${amountUah.toFixed(2)} UAH` : null,
-    args.mcc != null ? `MCC: ${args.mcc}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const prompt = buildCategorizePrompt({ ...args, description });
 
   const provider = getLLMProvider({
     provider: env.LLM_READONLY_PROVIDER,
@@ -111,12 +154,8 @@ export async function categorizeTransaction(
   const result = await invokeLLM(provider, {
     model: env.CLASSIFY_MODEL,
     maxTokens: 120,
-    system:
-      "You are a transaction categorizer for a Ukrainian personal finance app. " +
-      "Categorize the transaction into exactly one of: groceries, transport, dining, " +
-      "entertainment, utilities, health, shopping, education, subscriptions, income, " +
-      'transfer, other. Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}',
-    messages: [{ role: "user", content: userContent }],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     endpoint: "internal/categorize",
     timeoutMs: 15_000,
   });

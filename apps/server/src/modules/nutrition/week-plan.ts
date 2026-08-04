@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
@@ -9,6 +10,8 @@ import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
+export type WeekPlanInput = z.infer<typeof WeekPlanSchema>;
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -53,7 +56,7 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
   };
 }
 
-const SYSTEM = `Ти шеф-кухар і планувальник харчування. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти шеф-кухар і планувальник харчування. Відповідай ТІЛЬКИ українською.
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown.
@@ -67,22 +70,14 @@ ${ADVICE_BOUNDARY_RULE}
 Максимум 7 днів. Не вигадуй екзотичні інгредієнти поза списком — дозволено додати сіль, олію, базові спеції.`;
 
 /**
- * POST /api/nutrition/week-plan — згенерувати план харчування на тиждень.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт тижневого плану — рівно той, що йде в прод (винесено заради стенду
+ * `scripts/eval/pipelines.nutrition.ts`).
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
-  const {
-    pantry: pantryIn,
-    preferences,
-    locale,
-  } = parseBody(WeekPlanSchema, req);
-
+export function buildWeekPlanPrompt(input: WeekPlanInput): {
+  system: string;
+  user: string;
+} {
+  const { pantry: pantryIn, preferences, locale } = input;
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
@@ -99,6 +94,22 @@ ${pantrySec}
 Запропонуй приблизний план харчування на 7 днів (коротко, реалістично).
 Не створюй список покупок: користувач генерує його окремо у «Коморі».`;
 
+  return { system: SYSTEM, user: prompt };
+}
+
+/**
+ * POST /api/nutrition/week-plan — згенерувати план харчування на тиждень.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildWeekPlanPrompt(parseBody(WeekPlanSchema, req));
+
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
     anthropicApiKey: apiKey,
@@ -108,8 +119,8 @@ ${pantrySec}
     model: env.NUTRITION_MODEL,
     maxTokens: 2000,
     temperature: 0.25,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.weekPlan,
     endpoint: "week-plan",
     ...(userId ? { userId } : {}),

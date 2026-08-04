@@ -62,7 +62,8 @@ function buildDigestMemoryContent(
   return `${tag}. ${joined}`.slice(0, cap);
 }
 
-function extractJsonObject(raw: unknown): unknown {
+/** Експортовано для стенду моделей — суддя має парсити рівно як прод. */
+export function extractJsonObject(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
   let text = raw.trim();
   // Прибираємо markdown-обгортку ```json ... ``` або ``` ... ```
@@ -190,6 +191,139 @@ export function buildTemplateReport(
 }
 
 /**
+ * Промпт тижневого дайджесту — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з хендлера, щоб стенд (`scripts/eval/pipelines.finance.ts`)
+ * подавав моделі справжній промпт із реальним блоком ДАНІ, а не однорядкову
+ * заглушку. Промпт тут динамічний (збирається з тижневих даних), тому
+ * експортується білдер, а не константа — стенд подає йому фіксований зразок
+ * тижня.
+ *
+ * Кидає `ValidationError`, коли жодної секції немає — інваріант лишається на
+ * місці, лише переїхав разом зі своїм єдиним користувачем.
+ */
+export function buildWeeklyDigestPrompt(data: WeeklyDigestRequest): {
+  system: string;
+  user: string;
+} {
+  const { weekRange, finyk, fizruk, nutrition, routine } = data;
+  const sections: string[] = [];
+
+  if (finyk) {
+    const budgetLine = finyk.monthlyBudget
+      ? `Місячний бюджет: ${finyk.monthlyBudget} грн`
+      : "Місячний бюджет: не встановлено";
+    const topCats =
+      Array.isArray(finyk.topCategories) && finyk.topCategories.length
+        ? finyk.topCategories
+            .map((c) => `  - ${c.name}: ${c.amount} грн`)
+            .join("\n")
+        : "  Немає даних";
+    sections.push(`[ФІНАНСИ (${weekRange || "тиждень"})]
+Витрати: ${finyk.totalSpent ?? 0} грн | Надходження: ${finyk.totalIncome ?? 0} грн
+${budgetLine}
+Топ категорії витрат:
+${topCats}
+Транзакцій: ${finyk.txCount ?? 0}`);
+  }
+
+  if (fizruk) {
+    const exercises =
+      Array.isArray(fizruk.topExercises) && fizruk.topExercises.length
+        ? fizruk.topExercises
+            .map((e) => `  - ${e.name}: ${e.totalVolume} кг`)
+            .join("\n")
+        : "  Немає даних";
+    sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
+Тренувань завершено: ${fizruk.workoutsCount ?? 0}
+Загальний об'єм: ${fizruk.totalVolume ?? 0} кг
+Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
+Топ вправи:
+${exercises}`);
+  }
+
+  if (nutrition) {
+    const deficit = (nutrition.targetKcal ?? 0) - (nutrition.avgKcal ?? 0);
+    const balance =
+      deficit > 50
+        ? `дефіцит ${Math.round(deficit)} ккал`
+        : deficit < -50
+          ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
+          : "баланс";
+    sections.push(`[ХАРЧУВАННЯ (${weekRange || "тиждень"})]
+Середньодобово: ${nutrition.avgKcal ?? 0} ккал (ціль ${nutrition.targetKcal ?? 2000} ккал, ${balance})
+Середній БЖВ: Б ${nutrition.avgProtein ?? 0}г / Ж ${nutrition.avgFat ?? 0}г / В ${nutrition.avgCarbs ?? 0}г
+Днів із записами: ${nutrition.daysLogged ?? 0} з 7`);
+  }
+
+  if (routine) {
+    const habitsInfo =
+      Array.isArray(routine.habits) && routine.habits.length
+        ? routine.habits
+            .map(
+              (h) =>
+                `  - ${h.name}: ${h.completionRate}% (${h.done}/${h.total} днів)`,
+            )
+            .join("\n")
+        : "  Немає активних звичок";
+    sections.push(`[ЗВИЧКИ (${weekRange || "тиждень"})]
+Загальний відсоток: ${routine.overallRate ?? 0}%
+Активних звичок: ${routine.habitCount ?? 0}
+По звичках:
+${habitsInfo}`);
+  }
+
+  if (!sections.length) {
+    throw new ValidationError("Немає даних для генерації звіту");
+  }
+
+  const dataContext = sections.join("\n\n");
+  const userPrompt = `Проаналізуй тижневі дані юзера і поверни ТІЛЬКИ валідний JSON (без markdown-обгортки, без \`\`\`json) такого вигляду:
+{
+  "finyk": {
+    "summary": "1 речення: що відбулося з фінансами",
+    "comment": "2-3 речення: аналіз витрат, тенденції",
+    "recommendations": ["рекомендація 1", "рекомендація 2"]
+  },
+  "fizruk": {
+    "summary": "1 речення: підсумок тренувань",
+    "comment": "2-3 речення: аналіз об'єму, відновлення",
+    "recommendations": ["рекомендація 1", "рекомендація 2"]
+  },
+  "nutrition": {
+    "summary": "1 речення: підсумок харчування",
+    "comment": "2-3 речення: аналіз калоражу, макросів",
+    "recommendations": ["рекомендація 1", "рекомендація 2"]
+  },
+  "routine": {
+    "summary": "1 речення: підсумок звичок",
+    "comment": "2-3 речення: аналіз виконання",
+    "recommendations": ["рекомендація 1", "рекомендація 2"]
+  },
+  "overallRecommendations": ["загальна рекомендація 1", "загальна рекомендація 2"]
+}
+Якщо даних по модулю немає — поверни null для цього ключа. Відповідай ВИКЛЮЧНО валідним JSON.`;
+
+  const systemPrompt = `Ти аналітик персональних даних користувача додатку "Мій простір".
+
+${ADVICE_BOUNDARY_RULE}
+Відповідай ВИКЛЮЧНО валідним JSON — без markdown, без коментарів, без преамбули.
+Уся аналітика — українською. Числа бери з блоку даних.
+
+ПОКРИТТЯ ДАНИХ — ЧАСТИНА ВЕРДИКТУ, А НЕ ПРИМІТКА.
+Середні по харчуванню рахуються ЛИШЕ за днями із записами, тож два залоговані
+дні дають таку саму «гарну» середню, як і сім. Якщо днів із записами менше
+чотирьох із семи — це і є головний висновок блоку «Харчування»: скажи про
+пропуски прямо і не став тижню вищу оцінку, ніж дозволяють дані. Мало даних —
+це не дефіцит і не успіх, це мало даних.
+
+ДАНІ:
+${dataContext}`;
+
+  return { system: systemPrompt, user: userPrompt };
+}
+
+/**
  * Тонкий DI-shim — дозволяє тестам інжектити `LLMProvider` + `addBreadcrumb`
  * + перевизначати `fallbackOnError` без mock-у модулів. Production-route
  * `apps/server/src/routes/weekly-digest.ts` використовує default-export
@@ -230,114 +364,7 @@ export function createWeeklyDigestHandler(
       );
     }
 
-    const sections: string[] = [];
-
-    if (finyk) {
-      const budgetLine = finyk.monthlyBudget
-        ? `Місячний бюджет: ${finyk.monthlyBudget} грн`
-        : "Місячний бюджет: не встановлено";
-      const topCats =
-        Array.isArray(finyk.topCategories) && finyk.topCategories.length
-          ? finyk.topCategories
-              .map((c) => `  - ${c.name}: ${c.amount} грн`)
-              .join("\n")
-          : "  Немає даних";
-      sections.push(`[ФІНАНСИ (${weekRange || "тиждень"})]
-Витрати: ${finyk.totalSpent ?? 0} грн | Надходження: ${finyk.totalIncome ?? 0} грн
-${budgetLine}
-Топ категорії витрат:
-${topCats}
-Транзакцій: ${finyk.txCount ?? 0}`);
-    }
-
-    if (fizruk) {
-      const exercises =
-        Array.isArray(fizruk.topExercises) && fizruk.topExercises.length
-          ? fizruk.topExercises
-              .map((e) => `  - ${e.name}: ${e.totalVolume} кг`)
-              .join("\n")
-          : "  Немає даних";
-      sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
-Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний об'єм: ${fizruk.totalVolume ?? 0} кг
-Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
-Топ вправи:
-${exercises}`);
-    }
-
-    if (nutrition) {
-      const deficit = (nutrition.targetKcal ?? 0) - (nutrition.avgKcal ?? 0);
-      const balance =
-        deficit > 50
-          ? `дефіцит ${Math.round(deficit)} ккал`
-          : deficit < -50
-            ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
-            : "баланс";
-      sections.push(`[ХАРЧУВАННЯ (${weekRange || "тиждень"})]
-Середньодобово: ${nutrition.avgKcal ?? 0} ккал (ціль ${nutrition.targetKcal ?? 2000} ккал, ${balance})
-Середній БЖВ: Б ${nutrition.avgProtein ?? 0}г / Ж ${nutrition.avgFat ?? 0}г / В ${nutrition.avgCarbs ?? 0}г
-Днів із записами: ${nutrition.daysLogged ?? 0} з 7`);
-    }
-
-    if (routine) {
-      const habitsInfo =
-        Array.isArray(routine.habits) && routine.habits.length
-          ? routine.habits
-              .map(
-                (h) =>
-                  `  - ${h.name}: ${h.completionRate}% (${h.done}/${h.total} днів)`,
-              )
-              .join("\n")
-          : "  Немає активних звичок";
-      sections.push(`[ЗВИЧКИ (${weekRange || "тиждень"})]
-Загальний відсоток: ${routine.overallRate ?? 0}%
-Активних звичок: ${routine.habitCount ?? 0}
-По звичках:
-${habitsInfo}`);
-    }
-
-    const dataContext = sections.join("\n\n");
-    const userPrompt = `Проаналізуй тижневі дані юзера і поверни ТІЛЬКИ валідний JSON (без markdown-обгортки, без \`\`\`json) такого вигляду:
-{
-  "finyk": {
-    "summary": "1 речення: що відбулося з фінансами",
-    "comment": "2-3 речення: аналіз витрат, тенденції",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "fizruk": {
-    "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз об'єму, відновлення",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "nutrition": {
-    "summary": "1 речення: підсумок харчування",
-    "comment": "2-3 речення: аналіз калоражу, макросів",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "routine": {
-    "summary": "1 речення: підсумок звичок",
-    "comment": "2-3 речення: аналіз виконання",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "overallRecommendations": ["загальна рекомендація 1", "загальна рекомендація 2"]
-}
-Якщо даних по модулю немає — поверни null для цього ключа. Відповідай ВИКЛЮЧНО валідним JSON.`;
-
-    const systemPrompt = `Ти аналітик персональних даних користувача додатку "Мій простір".
-
-${ADVICE_BOUNDARY_RULE}
-Відповідай ВИКЛЮЧНО валідним JSON — без markdown, без коментарів, без преамбули.
-Уся аналітика — українською. Числа бери з блоку даних.
-
-ПОКРИТТЯ ДАНИХ — ЧАСТИНА ВЕРДИКТУ, А НЕ ПРИМІТКА.
-Середні по харчуванню рахуються ЛИШЕ за днями із записами, тож два залоговані
-дні дають таку саму «гарну» середню, як і сім. Якщо днів із записами менше
-чотирьох із семи — це і є головний висновок блоку «Харчування»: скажи про
-пропуски прямо і не став тижню вищу оцінку, ніж дозволяють дані. Мало даних —
-це не дефіцит і не успіх, це мало даних.
-
-ДАНІ:
-${dataContext}`;
+    const prompt = buildWeeklyDigestPrompt(parsed);
 
     // PR-25: template-report заздалегідь — як stubResponse для StubProvider,
     // так і як автоматичний fallback на Anthropic-помилку.
@@ -359,8 +386,8 @@ ${dataContext}`;
       {
         model: env.DIGEST_MODEL,
         maxTokens: 2500,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        system: prompt.system,
+        messages: [{ role: "user", content: prompt.user }],
         endpoint: "internal/weekly-digest",
         timeoutMs: 45_000,
         userId: (req as WithSessionUser).user?.id,

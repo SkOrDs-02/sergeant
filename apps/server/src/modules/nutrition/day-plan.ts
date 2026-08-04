@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
@@ -9,6 +10,8 @@ import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+
+export type DayPlanInput = z.infer<typeof DayPlanSchema>;
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -38,7 +41,7 @@ interface NormalizedDayPlan {
   note: string;
 }
 
-const SYSTEM = `Ти нутріціолог і шеф-кухар. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти нутріціолог і шеф-кухар. Відповідай ТІЛЬКИ українською.
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
@@ -125,22 +128,14 @@ function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
 }
 
 /**
- * POST /api/nutrition/day-plan — згенерувати план харчування на день.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт денного плану — рівно той, що йде в прод (винесено заради стенду
+ * `scripts/eval/pipelines.nutrition.ts`).
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
-  const {
-    pantry: pantryIn,
-    targets,
-    regenerateMealType,
-    locale,
-  } = parseBody(DayPlanSchema, req);
+export function buildDayPlanPrompt(input: DayPlanInput): {
+  system: string;
+  user: string;
+} {
+  const { pantry: pantryIn, targets, regenerateMealType, locale } = input;
   const loc = String(locale || "uk-UA");
 
   const tgt = targets || {};
@@ -171,6 +166,22 @@ ${pantrySec}
 
 ${regenStr}`;
 
+  return { system: SYSTEM, user: prompt };
+}
+
+/**
+ * POST /api/nutrition/day-plan — згенерувати план харчування на день.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildDayPlanPrompt(parseBody(DayPlanSchema, req));
+
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
     anthropicApiKey: apiKey,
@@ -180,8 +191,8 @@ ${regenStr}`;
     model: env.NUTRITION_MODEL,
     maxTokens: 1500,
     temperature: 0.3,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.dayPlan,
     endpoint: "day-plan",
     ...(userId ? { userId } : {}),

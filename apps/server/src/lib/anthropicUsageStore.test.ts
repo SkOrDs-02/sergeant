@@ -44,7 +44,11 @@ describe("recordAnthropicUsageToDb — UPSERT shape", () => {
     expect(queryMock).toHaveBeenCalledTimes(1);
     const [sql, params] = queryMock.mock.calls[0]!;
     expect(sql).toMatch(/INSERT INTO ai_usage_daily/);
-    expect(sql).toMatch(/ON CONFLICT \(subject_key, usage_day, bucket\)/);
+    // Грануляція включає `endpoint` з міграції 091: без нього рядки різних
+    // кроків (перший тур / синтез / digest) зливаються, щойно поділять модель.
+    expect(sql).toMatch(
+      /ON CONFLICT \(subject_key, usage_day, bucket, endpoint\)/,
+    );
     expect(sql).toMatch(/est_cost_usd\s*=\s*ai_usage_daily\.est_cost_usd/);
     expect(params).toEqual([
       ANTHROPIC_PROVIDER_SUBJECT,
@@ -55,6 +59,12 @@ describe("recordAnthropicUsageToDb — UPSERT shape", () => {
       1_500, // total
       // 1000 × $3/MTok + 500 × $15/MTok = $0.003 + $0.0075 = $0.0105
       expect.closeTo(0.0105, 6),
+      // Міграція 091: крок, кеш-токени і реально списана сума. Без ендпоінта
+      // рядки різних кроків зливаються, щойно поділять модель.
+      "unknown",
+      0, // cache_read
+      0, // cache_creation
+      null, // actual_cost_usd — шлюз ціни не повернув
     ]);
   });
 
