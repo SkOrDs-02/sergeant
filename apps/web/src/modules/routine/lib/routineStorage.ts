@@ -54,7 +54,10 @@ import {
   type HabitSnapshot,
   type SkipReason,
 } from "@sergeant/routine-domain";
-import { triggerRoutineDualWrite } from "./sqliteWriter/index.js";
+import {
+  dualWriteRoutineState,
+  triggerRoutineDualWrite,
+} from "./sqliteWriter/index.js";
 import {
   getCachedSqliteCompletions,
   getCachedSqliteRoutineState,
@@ -144,41 +147,89 @@ export function loadRoutineState(): RoutineState {
  */
 export function saveRoutineState(next: RoutineState): boolean {
   try {
-    const prev = readCachedRoutineState();
-
-    // Write-through: update the warm caches synchronously so the next
-    // `loadRoutineState()` reflects the change without waiting for
-    // the async dual-write → SQLite round trip. The dual-write is
-    // still authoritative on boot (`refreshSqliteRoutineState`
-    // overwrites these caches with the canonical SQLite read).
-    setCachedSqliteRoutineState({
-      habits: next.habits,
-      tags: next.tags,
-      categories: next.categories,
-      prefs: next.prefs,
-      pushupsByDate: next.pushupsByDate,
-      habitOrder: next.habitOrder,
-      completionNotes: next.completionNotes,
-      skips: next.skips ?? {},
-    });
-    setCachedSqliteCompletions(next.completions);
-
+    const prev = writeThroughRoutineCaches(next);
     triggerRoutineDualWrite(prev, next);
     emitRoutineStorage();
     return true;
   } catch (err) {
-    try {
-      window.dispatchEvent(
-        new CustomEvent(ROUTINE_STORAGE_ERROR, {
-          detail: {
-            message: err instanceof Error ? err.message : "save failed",
-          },
-        }),
-      );
-    } catch {
-      /* noop */
-    }
+    emitRoutineStorageError(err);
     return false;
+  }
+}
+
+/**
+ * Persist routine state and RESOLVE ONLY ONCE SQLite has confirmed it.
+ *
+ * `saveRoutineState` returns `true` as soon as the dual-write trigger is
+ * dispatched, and `triggerRoutineDualWrite` returns silently when no
+ * dual-write context is registered — so a `true` there means "handed off",
+ * never "stored". That is fine for a call site that only needs the warm
+ * cache updated, and wrong for one that spends a one-shot UI affordance on
+ * the strength of the answer.
+ *
+ * AI-CONTEXT: the FTUX preset tile is exactly such a call site. It burns the
+ * СТАРТ hero card, and the card never comes back — so if the write never
+ * reached SQLite, the visitor has traded their first action for nothing and
+ * finds an empty module after reload. The spec
+ * (`docs/90-work/planning/specs/anonymous-local-first-persistence.md`,
+ * «Похідне правило») requires a CONFIRMED durable write before the block is
+ * marked spent. This is that confirmation: `dualWriteRoutineState` resolves
+ * with `status: "applied"` only after the ops actually landed, and reports
+ * `"skipped"` when SQLite was unavailable or no context was registered.
+ *
+ * The warm-cache write-through still happens first and is deliberately NOT
+ * rolled back on failure — the visitor keeps seeing what they created in the
+ * current session, and the caller keeps the retry affordance on screen.
+ */
+export async function saveRoutineStateDurable(
+  next: RoutineState,
+): Promise<boolean> {
+  try {
+    const prev = writeThroughRoutineCaches(next);
+    const outcome = await dualWriteRoutineState(prev, next);
+    emitRoutineStorage();
+    return outcome.status === "applied";
+  } catch (err) {
+    emitRoutineStorageError(err);
+    return false;
+  }
+}
+
+/**
+ * Write-through: update the warm caches synchronously so the next
+ * `loadRoutineState()` reflects the change without waiting for the async
+ * dual-write → SQLite round trip. The dual-write is still authoritative on
+ * boot (`refreshSqliteRoutineState` overwrites these caches with the
+ * canonical SQLite read). Returns the pre-write snapshot, which
+ * `diffRoutineDualWriteOps` needs as its `prev`.
+ */
+function writeThroughRoutineCaches(next: RoutineState): RoutineState {
+  const prev = readCachedRoutineState();
+  setCachedSqliteRoutineState({
+    habits: next.habits,
+    tags: next.tags,
+    categories: next.categories,
+    prefs: next.prefs,
+    pushupsByDate: next.pushupsByDate,
+    habitOrder: next.habitOrder,
+    completionNotes: next.completionNotes,
+    skips: next.skips ?? {},
+  });
+  setCachedSqliteCompletions(next.completions);
+  return prev;
+}
+
+function emitRoutineStorageError(err: unknown): void {
+  try {
+    window.dispatchEvent(
+      new CustomEvent(ROUTINE_STORAGE_ERROR, {
+        detail: {
+          message: err instanceof Error ? err.message : "save failed",
+        },
+      }),
+    );
+  } catch {
+    /* noop */
   }
 }
 
