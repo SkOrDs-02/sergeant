@@ -68,6 +68,20 @@ export default defineConfig(({ mode }) => {
     (process.env.VERCEL === "1" ? "dist" : "../server/dist");
 
   return {
+    // Прод (Vercel) шле COOP/COEP (apps/web/vercel.json), що вмикає
+    // SharedArrayBuffer → sqlite-wasm працює на OPFS VFS. `vite preview`
+    // (smoke E2E lane + локальний Lighthouse) без цих заголовків падав на
+    // memory-only VFS: SQLite-читання відставали від оптимістичного
+    // state, і routine/nutrition CRUD-стан осцилював (CI critical-lane
+    // аудит 2026-08-04 — постійні detach-и в deep-module-crud). Паритет
+    // заголовків прибирає розбіжність smoke ↔ prod. API-фетчі на :3000
+    // під COEP легальні — вони йдуть через CORS (ALLOWED_ORIGINS).
+    preview: {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
+    },
     define: {
       // Пробрасуємо значення у клієнтський бандл як статичний літерал,
       // щоб `main.tsx` міг DCE-вирізати SW-гілку у capacitor-білді.
