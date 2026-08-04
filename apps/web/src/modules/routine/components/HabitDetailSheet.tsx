@@ -24,6 +24,7 @@ import { flexibleStreakBreakdown, maxStreakAllTime } from "../lib/streaks";
 import {
   deleteHabit,
   restoreHabit,
+  setHabitArchived,
   snapshotHabit,
 } from "../lib/routineStorage";
 import {
@@ -35,6 +36,7 @@ import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
 import { HabitPauseSection } from "./HabitPauseSection";
 import type { Habit, RoutineState } from "../lib/types";
 import { HabitGlyph } from "./HabitGlyph";
+import { fillName } from "../lib/fillName";
 
 function todayKey(): string {
   // Kyiv-anchored "today" so completion stats don't shift around the
@@ -255,8 +257,28 @@ export function HabitDetailSheet({
     onClose();
   };
 
+  // Архівування живе тут з 2026-08-03: раніше єдиним входом був список у
+  // Налаштуваннях, тож користувач, що відкрив звичку з календаря, мав
+  // вибір «видалити або нічого» — і видаляв разом з історією відміток.
+  const handleToggleArchived = () => {
+    if (!setRoutine) return;
+    const nextArchived = !habit.archived;
+    setRoutine((s) => setHabitArchived(s, habitId, nextArchived));
+    showUndoToast(toast, {
+      msg: fillName(
+        nextArchived
+          ? messages.routine.habitsTab.archived
+          : messages.routine.habitsTab.restored,
+        habitName,
+      ),
+      onUndo: () =>
+        setRoutine((s) => setHabitArchived(s, habitId, !nextArchived)),
+    });
+    if (nextArchived) onClose();
+  };
+
   const footer = canMutate ? (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row">
       <Button
         type="button"
         variant="secondary"
@@ -264,6 +286,16 @@ export function HabitDetailSheet({
         onClick={() => setEditOpen(true)}
       >
         {messages.actions.edit}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        className="flex-1"
+        onClick={handleToggleArchived}
+      >
+        {habit.archived
+          ? messages.routine.habitsTab.restoreAction
+          : messages.routine.habitsTab.archiveAction}
       </Button>
       <Button
         type="button"

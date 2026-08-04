@@ -292,21 +292,24 @@ describe("HabitForm – name input interaction", () => {
 });
 
 describe("HabitForm – emoji picker interaction", () => {
-  it("opens the emoji picker when the toggle button is clicked", () => {
+  it("opens the icon picker when the toggle button is clicked", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Обрати емодзі" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Обрати іконку звички" }),
+    );
     expect(
-      screen.getByRole("dialog", { name: "Обрати емодзі" }),
+      screen.getByRole("dialog", { name: "Обрати іконку звички" }),
     ).toBeInTheDocument();
   });
 
-  it("selects an emoji and closes the picker", () => {
+  it("selects an icon and closes the picker", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Обрати емодзі" }));
-    const waterDropBtn = screen.getByRole("button", { name: "Емодзі 💧" });
-    fireEvent.click(waterDropBtn);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Обрати іконку звички" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Вода" }));
     expect(
-      screen.queryByRole("dialog", { name: "Обрати емодзі" }),
+      screen.queryByRole("dialog", { name: "Обрати іконку звички" }),
     ).not.toBeInTheDocument();
   });
 });

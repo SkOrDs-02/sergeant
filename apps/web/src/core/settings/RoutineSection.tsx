@@ -1,23 +1,21 @@
+/**
+ * Last validated: 2026-08-03
+ * Status: Active
+ *
+ * Налаштування модуля «Рутина».
+ *
+ * AI-CONTEXT: 2026-08-03 звідси прибрано підгрупу «Звички» (активний
+ * список + архів). Вона дублювала модуль — редагувати / деталі / видалити
+ * там уже були, — а два унікальні для неї сценарії (порядок звичок і
+ * архів) переїхали у вкладку «Звички» самого модуля
+ * (`modules/routine/components/RoutineHabitsPanel.tsx`), а не зникли.
+ * Тут лишились справжні налаштування: календарні тумблери, теги, категорії.
+ */
 import { useState } from "react";
-import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
-import {
-  deleteHabit,
-  restoreHabit,
-  snapshotHabit,
-} from "../../modules/routine/lib/routineStorage";
-import { HabitDetailSheet } from "../../modules/routine/components/HabitDetailSheet";
-import { HabitQuickCreateDialog } from "../../modules/routine/components/HabitQuickCreateDialog";
 import { TagsSection } from "../../modules/routine/components/settings/TagsSection";
 import { CategoriesSection } from "../../modules/routine/components/settings/CategoriesSection";
-import { ActiveHabitsSection } from "../../modules/routine/components/settings/ActiveHabitsSection";
-import { ArchivedHabitsSection } from "../../modules/routine/components/settings/ArchivedHabitsSection";
-import type {
-  CategoryDraft,
-  PendingHabitDeletion,
-} from "../../modules/routine/lib/types";
+import type { CategoryDraft } from "../../modules/routine/lib/types";
 import {
   SettingsGroup,
   SettingsSubGroup,
@@ -25,7 +23,6 @@ import {
 } from "./SettingsPrimitives";
 
 export function RoutineSection() {
-  const toast = useToast();
   const { routine, setRoutine, updatePref } = useRoutineState();
 
   const [tagDraft, setTagDraft] = useState<string>("");
@@ -33,14 +30,6 @@ export function RoutineSection() {
     name: "",
     emoji: "",
   });
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDialogFocusTick, setEditDialogFocusTick] = useState(0);
-  const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
-  const [deleteHabitPending, setDeleteHabitPending] =
-    useState<PendingHabitDeletion | null>(null);
-
-  const closeEditDialog = () => setEditingId(null);
 
   return (
     <SettingsGroup title="Рутина" icon="check">
@@ -61,38 +50,13 @@ export function RoutineSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Звички">
-        <div className="space-y-4">
-          <p className="text-style-caption text-subtle leading-snug">
-            Нові звички додаються через кнопку «+» в центрі нижньої навігації
-            «Рутини». Тут можна редагувати, архівувати й видаляти наявні.
-          </p>
-
-          <ActiveHabitsSection
-            routine={routine}
-            setRoutine={setRoutine}
-            editingId={editingId}
-            onEdit={(h) => {
-              setEditingId(h.id);
-              setEditDialogFocusTick((t) => t + 1);
-            }}
-            onCancelEditIf={(id) => {
-              if (editingId === id) closeEditDialog();
-            }}
-            onOpenDetails={(id) => setDetailHabitId(id)}
-            onRequestDelete={(pending) => setDeleteHabitPending(pending)}
-          />
-
-          <ArchivedHabitsSection
-            routine={routine}
-            setRoutine={setRoutine}
-            onRequestDelete={(pending) => setDeleteHabitPending(pending)}
-          />
-        </div>
-      </SettingsSubGroup>
-
       <SettingsSubGroup title="Теги та категорії">
         <div className="space-y-4">
+          <p className="text-style-caption text-subtle leading-snug">
+            Тег — вільна мітка («ранок», «робота»), категорія — сфера життя з
+            власною іконкою. І те, і те призначається звичці у формі під «Більше
+            опцій», а фільтрувати за ними можна на вкладці «Огляд».
+          </p>
           <TagsSection
             routine={routine}
             setRoutine={setRoutine}
@@ -107,60 +71,6 @@ export function RoutineSection() {
           />
         </div>
       </SettingsSubGroup>
-
-      <HabitQuickCreateDialog
-        open={!!editingId}
-        routine={routine}
-        setRoutine={setRoutine}
-        onClose={closeEditDialog}
-        editingId={editingId}
-        focusTick={editDialogFocusTick}
-      />
-
-      <ConfirmDialog
-        open={!!deleteHabitPending}
-        title={
-          deleteHabitPending?.archived
-            ? `Видалити «${deleteHabitPending?.name}» назавжди?`
-            : `Видалити звичку «${deleteHabitPending?.name}»?`
-        }
-        description={
-          deleteHabitPending?.archived
-            ? "Звичку буде видалено повністю разом з усіма відмітками."
-            : "Відмітки по днях теж зникнуть. Замість видалення можна відправити звичку в архів."
-        }
-        confirmLabel="Видалити"
-        onConfirm={() => {
-          if (deleteHabitPending) {
-            const pending = deleteHabitPending;
-            let snapshot: ReturnType<typeof snapshotHabit> = null;
-            setRoutine((s) => {
-              snapshot = snapshotHabit(s, pending.id);
-              return deleteHabit(s, pending.id);
-            });
-            if (!pending.archived && editingId === pending.id) {
-              closeEditDialog();
-            }
-            if (snapshot) {
-              showUndoToast(toast, {
-                msg: `Видалено звичку «${pending.name}»`,
-                onUndo: () => setRoutine((s) => restoreHabit(s, snapshot)),
-              });
-            }
-          }
-          setDeleteHabitPending(null);
-        }}
-        onCancel={() => setDeleteHabitPending(null)}
-      />
-
-      {detailHabitId && (
-        <HabitDetailSheet
-          habitId={detailHabitId}
-          routine={routine}
-          setRoutine={setRoutine}
-          onClose={() => setDetailHabitId(null)}
-        />
-      )}
     </SettingsGroup>
   );
 }

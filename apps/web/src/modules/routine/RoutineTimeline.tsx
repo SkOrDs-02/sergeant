@@ -17,6 +17,7 @@ import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary
 import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { RoutineCalendarPanel } from "./components/RoutineCalendarPanel";
+import { RoutineHabitsPanel } from "./components/RoutineHabitsPanel";
 import { RoutineStatsPanel } from "./components/RoutineStatsPanel";
 import {
   RoutineCalendarProvider,
@@ -24,10 +25,13 @@ import {
   type RoutineCalendarData,
   type RoutineMainTab,
 } from "./context/RoutineCalendarContext";
+import type { Dispatch, SetStateAction } from "react";
 import type { RoutineState } from "./lib/types";
 
 export interface RoutineTimelineProps {
   storageErrorMsg: string | null;
+  setRoutine: Dispatch<SetStateAction<RoutineState>>;
+  onOpenCalendarTab: () => void;
   onDismissStorageError: () => void;
   calendarData: RoutineCalendarData;
   calendarActions: RoutineCalendarActions;
@@ -41,6 +45,8 @@ export interface RoutineTimelineProps {
 
 export function RoutineTimeline({
   storageErrorMsg,
+  setRoutine,
+  onOpenCalendarTab,
   onDismissStorageError,
   calendarData,
   calendarActions,
@@ -119,6 +125,15 @@ export function RoutineTimeline({
               </DataState>
             </SectionErrorBoundary>
           </RoutineCalendarProvider>
+
+          <SectionErrorBoundary title="Не вдалось показати «Звички»">
+            <RoutineHabitsPanel
+              routine={routine}
+              setRoutine={setRoutine}
+              hidden={mainTab !== "habits"}
+              onOpenCalendar={onOpenCalendarTab}
+            />
+          </SectionErrorBoundary>
 
           <SectionErrorBoundary title="Не вдалось показати «Статистика»">
             <RoutineStatsPanel

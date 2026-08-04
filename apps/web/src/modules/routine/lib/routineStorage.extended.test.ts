@@ -308,10 +308,11 @@ describe("tags and categories", () => {
     expect(s.tags).toHaveLength(0);
     expect(s.habits[0]!.tagIds).not.toContain(tid);
   });
-  it("створення й оновлення категорії з емодзі", () => {
+  it("створення й оновлення категорії з іконкою", () => {
+    // Легасі-emoji на вході апгрейдиться до icon-slug (`glyphs.ts`).
     let s = createCategory(fresh(), "Health", "💪");
     const c = s.categories[0];
-    expect(c!.emoji!).toBe("💪");
+    expect(c!.emoji!).toBe("dumbbell");
     s = updateCategory(s, c!.id!, { name: "Wellness" });
     expect(s.categories[0]!.name).toBe("Wellness");
   });
