@@ -48,7 +48,6 @@ import { ADVICE_BOUNDARY_RULE } from "../../../lib/adviceBoundary.js";
  *   Pearson/Spearman кореляції для «чи пов'язано X з Y» по будь-якій парі.
  *   Реджистр (`ASSISTANT_CAPABILITIES`) лишається джерелом істини; bullet
  *   регенерується автоматично. Чергова cache-prefix invalidation.
-<<<<<<< HEAD
  * v14 (2026-07-30): додано правила голосу (`VOICE_RULE`) і заборону вигаданих
  *   аргументів (`NO_INVENTED_ARGS_RULE`). До цього промпт не задавав форму
  *   звертання — Gemini відповідав на «Ви» у 6 з 6 кейсів голден-сету, Haiku
