@@ -217,7 +217,7 @@ describe("nutrition day-plan handler", () => {
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
-      status: 429,
+      status: 503,
       code: "ANTHROPIC_ERROR",
     });
   });

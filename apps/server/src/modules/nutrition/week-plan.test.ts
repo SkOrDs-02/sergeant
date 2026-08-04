@@ -170,7 +170,7 @@ describe("week-plan handler", () => {
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
-      status: 500,
+      status: 502,
       code: "ANTHROPIC_ERROR",
     });
   });
