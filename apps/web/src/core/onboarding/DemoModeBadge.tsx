@@ -64,18 +64,25 @@ export function DemoModeBadge() {
         "fixed left-1/2 -translate-x-1/2 z-300 select-none",
         "bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
         "sm:bottom-auto sm:top-2 sm:safe-area-pt",
-        "inline-flex items-center gap-1.5 h-8 pl-3 pr-2.5 rounded-full",
-        // Solid surface (not a 10% wash): the pill floats over arbitrary
-        // page content, so a near-opaque panel keeps it legible everywhere
-        // while the brand-tinted border + text retain the demo accent.
-        "bg-bg/95 border border-brand-500/40 text-brand-strong dark:text-brand",
-        "text-style-caption font-semibold shadow-card backdrop-blur-sm",
-        "hover:bg-bg transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+        "inline-flex items-center gap-2 h-11 pl-4 pr-3.5 rounded-full",
+        // Solid brand fill (not a translucent wash): the founder walked
+        // through a live build and never noticed the pill against busy
+        // page content. `bg-bg/95` + tinted text alone reads as chrome,
+        // not a control — a saturated fill is the only treatment that
+        // reads as "tap me" at a glance in both themes. `brand-strong`
+        // is the WCAG-AAA companion for `text-white` on a solid fill
+        // (design-system rule); dark inverts to the light-stone chip +
+        // dark ink, mirroring `Button`'s `primary` variant so the pill
+        // stays visually consistent with every other hub CTA.
+        "bg-brand-strong text-white dark:bg-brand-100 dark:text-brand-900",
+        "text-style-label font-semibold shadow-e3",
+        "hover:bg-brand-900 hover:shadow-e4 dark:hover:bg-brand-200",
+        "active:scale-[0.98] motion-safe:transition-all motion-safe:duration-200",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "motion-safe:animate-fade-in",
       )}
     >
-      <Icon name="sparkles" size="xs" strokeWidth={2} aria-hidden />
+      <Icon name="sparkles" size="sm" strokeWidth={2} aria-hidden />
       <span>{messages.onboarding.demoBadgeText}</span>
       <span aria-hidden className="opacity-70">
         ·

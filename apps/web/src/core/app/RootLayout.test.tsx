@@ -30,16 +30,18 @@
  * via the `ShellProbe` child below (mirrors `HubShellContext`'s real
  * value), not against captured mock refs.
  *
- * Remaining mocks (8) are all either a heavy browser API or UI already
+ * Remaining mocks are all either a heavy browser API or UI already
  * covered by dedicated tests elsewhere:
  *   - `useNutritionDualWriteBoot` / `useNutritionSqliteReadBoot` /
  *     `useFinykDualWriteBoot` / `useFinykSqliteReadBoot` /
- *     `useFinykMonoMirrorBoot` — real sqlite-wasm/IndexedDB boot paths.
- *     Each already has its own dedicated test (e.g.
+ *     `useFinykMonoMirrorBoot` / `useFizrukDualWriteBoot` /
+ *     `useFizrukSqliteReadBoot` / `useRoutineDualWriteBoot` /
+ *     `useSqliteReadBoot` (routine) — real sqlite-wasm/IndexedDB boot
+ *     paths. Each already has its own dedicated test (e.g.
  *     `useFinykMonoMirrorBoot.test.tsx`) that mocks the underlying boot
  *     *function* one level down instead of running real SQLite — this
  *     file does the same thing one level up, at the hook boundary, purely
- *     so the auth-gating assertions below stay fast and deterministic.
+ *     so the auth/demo-gating assertions below stay fast and deterministic.
  *     `useFinykQuickStatsBoot` is intentionally left real: it only reads
  *     in-memory pub-sub caches (no SQLite I/O of its own — see its
  *     source), and is a no-op here because the mocked boots above never
@@ -69,6 +71,7 @@ import { server } from "../../test/msw/server";
 import { AuthProvider } from "../auth/AuthContext";
 import { AppLockProvider } from "../security/AppLockContext";
 import * as featureFlags from "../lib/featureFlags";
+import { DEMO_FLAG_KEY } from "../onboarding/seedDemoData/keys";
 import { useHubShell } from "./HubShellContext";
 
 const {
@@ -77,12 +80,20 @@ const {
   useFinykDualWriteBootMock,
   useFinykSqliteReadBootMock,
   useFinykMonoMirrorBootMock,
+  useFizrukDualWriteBootMock,
+  useFizrukSqliteReadBootMock,
+  useRoutineDualWriteBootMock,
+  useRoutineSqliteReadBootMock,
 } = vi.hoisted(() => ({
   useNutritionDualWriteBootMock: vi.fn(),
   useNutritionSqliteReadBootMock: vi.fn(),
   useFinykDualWriteBootMock: vi.fn(),
   useFinykSqliteReadBootMock: vi.fn(),
   useFinykMonoMirrorBootMock: vi.fn(),
+  useFizrukDualWriteBootMock: vi.fn(),
+  useFizrukSqliteReadBootMock: vi.fn(),
+  useRoutineDualWriteBootMock: vi.fn(),
+  useRoutineSqliteReadBootMock: vi.fn(),
 }));
 
 // ── Heavy browser API (real sqlite-wasm/IndexedDB boot pipeline) — see
@@ -101,6 +112,18 @@ vi.mock("../../modules/finyk/hooks/useFinykSqliteReadBoot", () => ({
 }));
 vi.mock("../../modules/finyk/hooks/useFinykMonoMirrorBoot", () => ({
   useFinykMonoMirrorBoot: () => useFinykMonoMirrorBootMock(),
+}));
+vi.mock("../../modules/fizruk/hooks/useFizrukDualWriteBoot", () => ({
+  useFizrukDualWriteBoot: () => useFizrukDualWriteBootMock(),
+}));
+vi.mock("../../modules/fizruk/hooks/useFizrukSqliteReadBoot", () => ({
+  useFizrukSqliteReadBoot: () => useFizrukSqliteReadBootMock(),
+}));
+vi.mock("../../modules/routine/hooks/useRoutineDualWriteBoot", () => ({
+  useRoutineDualWriteBoot: () => useRoutineDualWriteBootMock(),
+}));
+vi.mock("../../modules/routine/hooks/useSqliteReadBoot", () => ({
+  useSqliteReadBoot: () => useRoutineSqliteReadBootMock(),
 }));
 
 // ── Heavy child UI with its own dedicated coverage — see file docstring.
@@ -205,7 +228,7 @@ describe("RootLayout", () => {
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
-  it("does not boot nutrition/finyk sqlite hooks for an anonymous visitor", async () => {
+  it("does not boot nutrition/finyk/fizruk/routine sqlite hooks for an anonymous, non-demo visitor", async () => {
     renderAt("/");
     await waitFor(() =>
       expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
@@ -216,9 +239,13 @@ describe("RootLayout", () => {
     expect(useFinykDualWriteBootMock).not.toHaveBeenCalled();
     expect(useFinykSqliteReadBootMock).not.toHaveBeenCalled();
     expect(useFinykMonoMirrorBootMock).not.toHaveBeenCalled();
+    expect(useFizrukDualWriteBootMock).not.toHaveBeenCalled();
+    expect(useFizrukSqliteReadBootMock).not.toHaveBeenCalled();
+    expect(useRoutineDualWriteBootMock).not.toHaveBeenCalled();
+    expect(useRoutineSqliteReadBootMock).not.toHaveBeenCalled();
   });
 
-  it("boots nutrition and finyk sqlite hooks once the /api/v1/me fetch resolves a user", async () => {
+  it("boots nutrition/finyk/fizruk/routine sqlite hooks once the /api/v1/me fetch resolves a user", async () => {
     server.use(meAuthenticatedHandler());
     renderAt("/");
     await waitFor(() =>
@@ -233,6 +260,39 @@ describe("RootLayout", () => {
     expect(useFinykDualWriteBootMock).toHaveBeenCalled();
     expect(useFinykSqliteReadBootMock).toHaveBeenCalled();
     expect(useFinykMonoMirrorBootMock).toHaveBeenCalled();
+    expect(useFizrukDualWriteBootMock).toHaveBeenCalled();
+    expect(useFizrukSqliteReadBootMock).toHaveBeenCalled();
+    expect(useRoutineDualWriteBootMock).toHaveBeenCalled();
+    expect(useRoutineSqliteReadBootMock).toHaveBeenCalled();
+  });
+
+  // Regression coverage for the demo-mode Hub Reports empty-cards bug: an
+  // unauthenticated `?demo=1` session (synthetic `demo-local` id) must warm
+  // the same per-module SQLite read caches Hub Reports reads directly, or
+  // the Fitness/Expenses/Habits/Nutrition cards stay empty even though the
+  // seeded demo payload exists in localStorage.
+  it("boots nutrition/finyk/fizruk/routine sqlite hooks for an unauthenticated demo session", async () => {
+    window.localStorage.setItem(DEMO_FLAG_KEY, "1");
+    renderAt("/");
+    await waitFor(() =>
+      expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
+    );
+    expect(screen.getByTestId("auth-user")).toHaveTextContent("anon");
+    expect(useNutritionDualWriteBootMock).toHaveBeenCalled();
+    expect(useNutritionSqliteReadBootMock).toHaveBeenCalled();
+    expect(useFinykDualWriteBootMock).toHaveBeenCalled();
+    expect(useFinykSqliteReadBootMock).toHaveBeenCalled();
+    // `useFinykMonoMirrorBoot` is mounted unconditionally alongside the
+    // other Finyk boots here — its own internal gate (real `user.id` via
+    // `useAuth`, not `useLocalUserId`) is what keeps it a no-op for demo
+    // sessions in production; that real gate lives one level below this
+    // mock, so it is covered by `useFinykMonoMirrorBoot`'s own test file,
+    // not asserted here.
+    expect(useFinykMonoMirrorBootMock).toHaveBeenCalled();
+    expect(useFizrukDualWriteBootMock).toHaveBeenCalled();
+    expect(useFizrukSqliteReadBootMock).toHaveBeenCalled();
+    expect(useRoutineDualWriteBootMock).toHaveBeenCalled();
+    expect(useRoutineSqliteReadBootMock).toHaveBeenCalled();
   });
 
   it("pins the document title for the active route", () => {

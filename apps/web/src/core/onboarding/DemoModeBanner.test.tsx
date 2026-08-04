@@ -16,7 +16,7 @@ vi.mock("../observability/analytics", async () => {
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
 const DEMO_FLAG_KEY = "hub_demo_seeded_social_v1";
-const SESSION_DISMISS_KEY = "hub_demo_banner_dismissed_session";
+const SESSION_COLLAPSED_KEY = "hub_demo_banner_dismissed_session";
 
 describe("DemoModeBanner (S4.1)", () => {
   // The repo's vitest setup does not auto-cleanup RTL renders.
@@ -39,7 +39,7 @@ describe("DemoModeBanner (S4.1)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders banner with CTA when demo flag is set", () => {
+  it("renders full banner with CTA when demo flag is set", () => {
     localStorage.setItem(DEMO_FLAG_KEY, "1");
     render(<DemoModeBanner />);
     expect(screen.getByText("Це приклад")).toBeInTheDocument();
@@ -48,23 +48,48 @@ describe("DemoModeBanner (S4.1)", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides banner for the rest of the session when X is clicked", () => {
+  it("collapses into a compact row (not fully removed) when X is clicked, keeping the CTA tappable", () => {
     localStorage.setItem(DEMO_FLAG_KEY, "1");
     render(<DemoModeBanner />);
-    fireEvent.click(screen.getByRole("button", { name: /Сховати/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Згорнути/i }));
 
-    expect(screen.queryByText("Це приклад")).not.toBeInTheDocument();
-    expect(sessionStorage.getItem(SESSION_DISMISS_KEY)).toBe("1");
+    // The region stays mounted — the full card's description copy is gone,
+    // but the "Це приклад" label and the "Створити свій" exit both remain.
+    expect(
+      screen.getByRole("region", { name: "Демо-режим" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Це приклад")).toBeInTheDocument();
+    expect(screen.queryByText(/Цифри й категорії/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Створити свій/i }),
+    ).toBeInTheDocument();
+    expect(sessionStorage.getItem(SESSION_COLLAPSED_KEY)).toBe("1");
     expect(vi.mocked(trackEvent)).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.DEMO_DISMISSED,
     );
   });
 
-  it("does not render when sessionStorage already has the dismiss flag", () => {
+  it("renders the collapsed compact row (with CTA) when sessionStorage already has the collapsed flag", () => {
     localStorage.setItem(DEMO_FLAG_KEY, "1");
-    sessionStorage.setItem(SESSION_DISMISS_KEY, "1");
-    const { container } = render(<DemoModeBanner />);
-    expect(container).toBeEmptyDOMElement();
+    sessionStorage.setItem(SESSION_COLLAPSED_KEY, "1");
+    render(<DemoModeBanner />);
+
+    expect(screen.getByText("Це приклад")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Створити свій/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Цифри й категорії/i)).not.toBeInTheDocument();
+  });
+
+  it("re-expands the full banner when the chevron is clicked", () => {
+    localStorage.setItem(DEMO_FLAG_KEY, "1");
+    sessionStorage.setItem(SESSION_COLLAPSED_KEY, "1");
+    render(<DemoModeBanner />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Розгорнути/i }));
+
+    expect(screen.getByText(/Цифри й категорії/i)).toBeInTheDocument();
+    expect(sessionStorage.getItem(SESSION_COLLAPSED_KEY)).toBeNull();
   });
 
   it("«Створити свій» wipes the demo payload, fires event, and navigates to /welcome", () => {
@@ -82,6 +107,19 @@ describe("DemoModeBanner (S4.1)", () => {
     // resetDemoData() removes every SEEDED_KEYS entry; spot-check two.
     expect(localStorage.getItem(DEMO_FLAG_KEY)).toBeNull();
     expect(localStorage.getItem("hub_onboarding_done_v1")).toBeNull();
+    expect(window.location.assign).toHaveBeenCalledWith("/welcome");
+  });
+
+  it("«Створити свій» from the collapsed row also navigates to /welcome", () => {
+    localStorage.setItem(DEMO_FLAG_KEY, "1");
+    sessionStorage.setItem(SESSION_COLLAPSED_KEY, "1");
+    render(<DemoModeBanner />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Створити свій/i }));
+
+    expect(vi.mocked(trackEvent)).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.DEMO_TO_WIZARD_CONFIRMED,
+    );
     expect(window.location.assign).toHaveBeenCalledWith("/welcome");
   });
 });

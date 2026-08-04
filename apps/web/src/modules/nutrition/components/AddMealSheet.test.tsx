@@ -6,7 +6,13 @@
  * backtrack link, and close callback.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { AddMealSheet } from "./AddMealSheet";
 
 // ─── Mock heavy sub-components ───────────────────────────────────────────────
@@ -404,6 +410,11 @@ describe("AddMealSheet — editing an existing meal", () => {
 
 describe("AddMealSheet — photoResult import", () => {
   it("opens at fill step and uses photo dish name on save", async () => {
+    // Note: `mealFormUtils` is mocked above so `emptyForm` always returns
+    // empty macro strings regardless of `photoResult.macros` — mirrors the
+    // "AI couldn't read macros from the photo" case, so saving routes
+    // through the empty-macro confirm step (see the dedicated describe
+    // block below for that flow's own coverage).
     const onSave = vi.fn();
     renderSheet({
       onSave,
@@ -415,6 +426,8 @@ describe("AddMealSheet — photoResult import", () => {
     expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
     expect(screen.queryByText("Обрати джерело ↑")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Зберегти"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       name: "Борщ",
@@ -425,11 +438,14 @@ describe("AddMealSheet — photoResult import", () => {
 });
 
 describe("AddMealSheet — save validation branches", () => {
-  it("saves successfully when name is entered", async () => {
+  it("saves directly (no confirm) when macros are entered", async () => {
     const onSave = vi.fn();
     renderSheet({ mealTemplates: [], onSave });
     fireEvent.change(screen.getByTestId("name-input"), {
       target: { value: "Суп" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "350" },
     });
     fireEvent.click(screen.getByText("Зберегти"));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -437,7 +453,9 @@ describe("AddMealSheet — save validation branches", () => {
       name: "Суп",
       source: "manual",
       macroSource: "manual",
+      macros: { kcal: 350 },
     });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("shows macro validation error for negative kcal", async () => {
@@ -452,6 +470,58 @@ describe("AddMealSheet — save validation branches", () => {
     await waitFor(() => {
       expect(screen.getByText("Некоректне значення КБЖВ.")).toBeInTheDocument();
     });
+  });
+});
+
+describe("AddMealSheet — empty-macro confirm step", () => {
+  it("shows a confirm dialog instead of saving when all macros are empty", async () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    await waitFor(() => {
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Зберегти без калорійності?")).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("proceeds with the save when the confirm dialog is confirmed", async () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      name: "Суп",
+      macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+    });
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps the sheet open and does not save when the confirm dialog is cancelled", async () => {
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Суп" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Повернутись" }),
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+    expect(onSave).not.toHaveBeenCalled();
+    // The sheet itself is still open — the name we typed is still there.
+    expect(screen.getByTestId("sheet")).toBeInTheDocument();
   });
 });
 
@@ -551,10 +621,44 @@ describe("AddMealSheet — pantry consume on save", () => {
       onSave,
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "120" },
+    });
     fireEvent.click(screen.getByText("Зберегти"));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
     expect(onSave.mock.calls[0]![0].name).toBe("Молоко");
+  });
+
+  it("defers pantry consumption until the empty-macro confirm is accepted", async () => {
+    const onConsumePantryItem = vi.fn();
+    const onSave = vi.fn();
+    const template = {
+      id: "t1",
+      name: "Вівсянка",
+      mealType: "breakfast" as const,
+      macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 50 },
+    };
+    renderSheet({
+      mealTemplates: [template],
+      pantryItems: [
+        {
+          name: "Молоко",
+          qty: 1,
+          unit: "л",
+          notes: null,
+        },
+      ],
+      onConsumePantryItem,
+      onSave,
+    });
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.click(screen.getByText("Зберегти"));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(onConsumePantryItem).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Зберегти" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
   });
 });
 

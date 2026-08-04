@@ -16,6 +16,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import type { Meal } from "@sergeant/nutrition-domain";
+import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 
 // ─── Storage chain ─────────────────────────────────────────────────────────
 vi.mock("@shared/lib/storage/storage", () => ({
@@ -715,5 +716,32 @@ describe("NutritionApp — statusText and err banners", () => {
       .getByText("Помилка мережі")
       .closest("[data-testid='banner']");
     expect(banner).toHaveAttribute("data-variant", "danger");
+  });
+
+  it("suppresses the top status banner while photo analysis is in flight — the in-card status line owns it instead", () => {
+    // `mockReturnValue` (not `...Once`) — `setStatusText` triggers a
+    // re-render, and `usePhotoAnalysis()` is called again on that pass;
+    // a one-shot override would only cover the initial render.
+    vi.mocked(usePhotoAnalysis).mockReturnValue({
+      fileRef: mockPhotoRef,
+      photoPreviewUrl: "",
+      photoResult: { meals: [] },
+      lastPhotoPayload: null,
+      answers: {},
+      setAnswers: vi.fn(),
+      portionGrams: "",
+      setPortionGrams: vi.fn(),
+      onPickPhoto: vi.fn(),
+      analyzePhoto: vi.fn(),
+      refinePhoto: vi.fn(),
+      isAnalyzing: true,
+      isRefining: false,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    render(<NutritionApp />);
+    act(() => {
+      capturedSetStatusText("Аналізую фото…");
+    });
+    expect(screen.queryByText("Аналізую фото…")).toBeNull();
   });
 });

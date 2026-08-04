@@ -102,6 +102,33 @@ describe("usePhotoAnalysis", () => {
       expect(setBusy).toHaveBeenCalledWith(true);
       expect(setBusy).toHaveBeenLastCalledWith(false);
       expect(setErr).toHaveBeenCalledWith("");
+      // `isAnalyzing` settles back to false once the mutation resolves —
+      // this is what `PhotoAnalyzeCard`'s inline status line reads.
+      expect(result.current.isAnalyzing).toBe(false);
+    });
+
+    it("flips isAnalyzing true while the mutation is in flight", async () => {
+      let resolveAnalyze!: (v: unknown) => void;
+      apiAnalyzePhoto.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveAnalyze = resolve;
+        }),
+      );
+      const { result } = renderUsePhotoAnalysis();
+      attachFile(result, fakeImageFile());
+
+      act(() => {
+        result.current.analyzePhoto();
+      });
+
+      await waitFor(() => expect(result.current.isAnalyzing).toBe(true));
+      expect(result.current.isRefining).toBe(false);
+
+      await act(async () => {
+        resolveAnalyze({ result: { name: "Борщ" } });
+      });
+
+      await waitFor(() => expect(result.current.isAnalyzing).toBe(false));
     });
 
     it("surfaces error when no file is selected", async () => {
