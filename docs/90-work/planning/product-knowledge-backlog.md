@@ -371,7 +371,7 @@ from the foreground request path`), а повний дизайн планува�
 | Цілі КБЖВ append-only + знімок ефективної цілі в денному записі              | nutrition | code         | крит  | nutrition E-1/H2  | стадії 1-2 · ADR-0079                   |
 | Одна часова доктрина (Kyiv vs device-local) + вирівняти mobile               | крос      | code+рішення | крит  | routine E-2       | ✅ ADR-0078                             |
 | Канонічна агрегація на метрику — крос-поверхнева звірка чисел                | hub-coach | code         | крит  | hub-coach E-2     | ✅ веб (стадії 1, 2, 4) · лишились 3, 5 |
-| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | стадії 1-2 · ADR-0080                   |
+| Один SoT ваги тіла (daily_log vs measurements); nutrition читає звідти       | fizruk    | code         | агент | fizruk C3/D-3     | ✅ стадії 1-4 · ADR-0080                |
 | Heatmap-знаменник = `habitScheduledOnDate` (уніфікація з rate)               | routine   | code         | агент | routine напруга6  | ✅ веб (mobile поза скоупом)            |
 
 > **SoT ваги тіла — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1 (read-union):
@@ -426,6 +426,26 @@ from the foreground request path`), а повний дизайн планува�
 > **Чого це не закриває:** parity-вимір між пристроями. Фікс прибирає причину
 > фліпінгу, але живого крос-девайсного прогону не було — тут діє та сама
 > відома межа, що й в усій Хвилі 1.
+
+> ✅ **Стадії 3-4 приземлені 2026-08-04 — рішення власника.** Профіль лишається
+> головним **входом** для ваги; fizruk-журнал — канон-**сховище** (ADR-0080).
+> `hub_biometrics.weightKg` офіційно демотовано до кешу — поле лишається (нема
+> серверної колонки, дропати нічого), докстрінг і код це фіксують.
+> Стадія 3 (перевірка funnel-а): `BiometricsSection` уже писала у fizruk через
+> `useDailyLog.addEntry`, а той сам, зі стадії 2, кличе `recordBodyWeight()` —
+> подвійного шляху не було, перевірено кодом і тестом
+> `BiometricsSection.test.tsx` («mirrors a Profile-side weight write…»).
+> Стадія 4-bootstrap: клієнтський (не SQL — серверної колонки нема) одноразовий
+> сід `bootstrapBodyWeightFromBiometrics()`
+> (`apps/web/src/modules/fizruk/lib/bodyWeightBootstrap.ts`), викликається з
+> `sqliteReadBoot.ts` після residual-import і першого `refreshFizrukSqliteState`.
+> Пише один рядок у `fizruk_measurements` із `weightUpdatedAt` як `at`, лише
+> коли `selectLatestBodyWeight` по свіжому кеші повертає `null` — тому кожен
+> наступний boot бачить непорожній журнал і мовчки no-op-ить (ідемпотентність
+> перевірена тестом `bodyWeightBootstrap.test.ts`, а не флагом чи try/catch).
+> `computeNutritionTargetsFromBiometrics` і далі бере fizruk-вагу з пріоритетом
+> над `biometrics.weightKg` — після bootstrap fizruk завжди щонайменше такий же
+> свіжий. ADR-0080 §3 оновлено: мітигацію закрито цим рішенням.
 
 > **Heatmap-знаменник — стадії 1-2 приземлені, ✅ ще нема.** Стадія 1:
 > `buildHeatmapGrid` отримав опційний `denominator: "active" | "scheduled"`
