@@ -11,6 +11,7 @@ import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import { Recommendations } from "@sergeant/insights";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -61,7 +62,7 @@ export function buildFinanceContext(): FinanceContext {
   const hiddenTxIds = new Set(safeLS<string[]>("finyk_hidden_txs", []));
   const transferIds = new Set(
     Object.entries(txCategories)
-      .filter(([, v]) => v === "internal_transfer")
+      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
   // `@sergeant/insights`' ManualExpense contract is expense-only (its rules
@@ -94,7 +95,7 @@ export function buildFinanceContext(): FinanceContext {
     const splits = readSplits(txSplits, tx.id);
     if (splits.length > 0) {
       for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
+        if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;
         const amt = Math.abs(Number(s.amount) || 0);
         if (amt <= 0) continue;
         categorySpend[s.categoryId] = (categorySpend[s.categoryId] || 0) + amt;
@@ -127,7 +128,7 @@ export function buildFinanceContext(): FinanceContext {
   for (const me of manualExpenses) {
     if (new Date(me.date).getTime() < monthStartMs) continue;
     const canonKey = manualCategoryToCanonicalId(me.category) || "other";
-    if (canonKey === "internal_transfer") continue;
+    if (canonKey === INTERNAL_TRANSFER_ID) continue;
     canonicalMonthSpend.set(
       canonKey,
       (canonicalMonthSpend.get(canonKey) || 0) +
@@ -144,7 +145,7 @@ export function buildFinanceContext(): FinanceContext {
     const splits = readSplits(txSplits, tx.id);
     if (splits.length > 0) {
       for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
+        if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;
         canonicalTotalCount.set(
           s.categoryId,
           (canonicalTotalCount.get(s.categoryId) || 0) + 1,
@@ -159,13 +160,13 @@ export function buildFinanceContext(): FinanceContext {
         customCategories,
       );
       const catId = cat?.id;
-      if (!catId || catId === "internal_transfer") continue;
+      if (!catId || catId === INTERNAL_TRANSFER_ID) continue;
       canonicalTotalCount.set(catId, (canonicalTotalCount.get(catId) || 0) + 1);
     }
   }
   for (const me of manualExpenses) {
     const key = manualCategoryToCanonicalId(me.category) || "other";
-    if (key === "internal_transfer") continue;
+    if (key === INTERNAL_TRANSFER_ID) continue;
     canonicalTotalCount.set(key, (canonicalTotalCount.get(key) || 0) + 1);
   }
 

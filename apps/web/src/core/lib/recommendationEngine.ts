@@ -16,6 +16,7 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { getVisibleFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
+import { INTERNAL_TRANSFER_ID } from "../../modules/finyk/constants";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
@@ -424,7 +425,7 @@ function buildWeeklyDigestRecs(): Rec[] {
   const hiddenTxIds = new Set<string>(safeLS<string[]>("finyk_hidden_txs", []));
   const transferIds = new Set<string>(
     Object.entries(txCategories)
-      .filter(([, v]) => v === "internal_transfer")
+      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
   let spendLastWeek = 0;

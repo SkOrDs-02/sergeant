@@ -13,6 +13,7 @@
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
+import { INTERNAL_TRANSFER_ID } from "../../modules/finyk/constants";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
@@ -141,7 +142,7 @@ function activeWeeksSpendingInsight(): Insight | null {
   );
   const transferIds = new Set<string>(
     Object.entries(txCategories)
-      .filter(([, v]) => v === "internal_transfer")
+      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
   const txSplits = safeLS<Record<string, unknown>>(
