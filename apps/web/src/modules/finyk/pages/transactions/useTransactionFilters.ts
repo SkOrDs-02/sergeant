@@ -12,7 +12,7 @@ import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
-import { getCategory, getIncomeCategory } from "../../utils";
+import { calcCategorySpent, getCategory, getIncomeCategory } from "../../utils";
 import {
   DAY_COLLAPSE_KEY,
   computeDaySummary,
@@ -244,27 +244,17 @@ export function useTransactionFilters({
         .filter((c) => c.id !== "income")
         .map((cat) => ({
           ...cat,
-          spent: Math.round(
-            statTx
-              .filter((t) => t.amount < 0)
-              .reduce((s, t) => {
-                const splits = txSplits?.[t.id];
-                if (splits && splits.length > 0)
-                  return (
-                    s +
-                    splits
-                      .filter((sp) => sp.categoryId === cat.id)
-                      .reduce((ss, sp) => ss + (sp.amount || 0), 0)
-                  );
-                return getEffectiveCat(t).id === cat.id
-                  ? s + Math.abs(t.amount / 100)
-                  : s;
-              }, 0),
+          spent: calcCategorySpent(
+            statTx,
+            cat.id,
+            txCategories,
+            txSplits,
+            customCategories,
           ),
         }))
         .filter((c) => c.spent > 0)
         .sort((a, b) => b.spent - a.spent),
-    [statTx, txSplits, getEffectiveCat, customCategories],
+    [statTx, txSplits, txCategories, customCategories],
   );
 
   const txsToShow = useMemo(

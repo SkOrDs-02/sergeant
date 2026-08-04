@@ -8,7 +8,10 @@
 
 import { getCategory } from "../../../modules/finyk/utils";
 import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
-import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
+import {
+  getTxStatAmount,
+  type TxSplitsLike,
+} from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
@@ -103,7 +106,7 @@ export function buildFinanceContext(): FinanceContext {
     } else {
       const catId = txCategories[tx.id] || "other";
       categorySpend[catId] =
-        (categorySpend[catId] || 0) + Math.abs(tx.amount / 100);
+        (categorySpend[catId] || 0) + getTxStatAmount(tx, txSplits);
     }
   }
   for (const me of manualExpenses) {

@@ -27,6 +27,7 @@
 - `prefer-parse-body-over-validate-body` — вимагає типізований parse contract.
 - `sri-on-third-party-script` — вимагає SRI для third-party scripts.
 - `no-raw-storage-key` — вимагає централізовані storage keys.
+- `no-adhoc-metric-aggregation` — не дозволяє рахувати витрати інлайном (акумульований `Math.abs(tx.amount / 100)`) поза `packages/*-domain/**`; метрика має йти через канонічну функцію з [реєстру метрик](../../docs/02-engineering/architecture/metric-registry.md).
 
 ## Перевірка
 

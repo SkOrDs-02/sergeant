@@ -17,6 +17,7 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { getVisibleFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
+import { getTxStatAmount } from "@sergeant/finyk-domain/lib/transactions";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
@@ -434,7 +435,11 @@ function buildWeeklyDigestRecs(): Rec[] {
     if ((tx.amount ?? 0) >= 0) continue;
     const ts = txTimestamp(tx);
     if (ts >= monPrev.getTime() && ts <= sunPrev.getTime()) {
-      spendLastWeek += Math.abs(tx.amount / 100);
+      // AI-NOTE: splits/`excluded_stat`/готівка сюди навмисно не подані —
+      // це зрушило б число, яке користувач уже бачить, а реєстр метрик
+      // вимагає окремого PR на кожен такий зсув. Виклик канону лишає
+      // розрив видимим у сигнатурі, а не схованим в арифметиці.
+      spendLastWeek += getTxStatAmount(tx);
     }
   }
 
