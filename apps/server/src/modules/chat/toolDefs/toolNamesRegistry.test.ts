@@ -155,8 +155,14 @@ describe("HubChat tool-name registry parity (@sergeant/shared/hubchat/toolNames)
   });
 
   it("the flattened registry exactly matches the live Anthropic TOOLS payload (set equality)", () => {
-    const liveNames = new Set(toNames(TOOLS));
+    const liveNameList = toNames(TOOLS);
+    const liveNames = new Set(liveNameList);
     const registryNames = new Set<string>(ALL_HUBCHAT_TOOL_NAMES);
+
+    // Set-рівність не ловить дублікати всередині TOOLS — Anthropic їх відхиляє.
+    expect(liveNames.size, "TOOLS оголошує дубльовані tool-імена").toBe(
+      liveNameList.length,
+    );
 
     for (const name of liveNames) {
       expect(
