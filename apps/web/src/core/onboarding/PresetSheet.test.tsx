@@ -72,7 +72,7 @@ describe("PresetSheet", () => {
     fireEvent.click(screen.getByText("Випити воду"));
     expect(applyPreset).toHaveBeenCalledWith("routine", {
       name: "Випити воду",
-      emoji: "💧",
+      emoji: "droplet",
     });
     expect(trackEvent).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.FTUX_PRESET_PICKED,

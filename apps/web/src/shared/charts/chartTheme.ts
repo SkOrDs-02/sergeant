@@ -17,6 +17,19 @@
  *   <text {...chartTick} x={..} y={..}>{label}</text>
  *   <line {...chartGrid.horizontal} x1={..} x2={..} />
  *   <path stroke={chartSeries.finyk.primary} ... />
+ *
+ * AI-CONTEXT: chart-line colour contract — `chartSeries.*.primary` and
+ * `chartGradients.*` are var-backed strings (`"rgb(var(--c-chart-…))"`),
+ * NOT static hex from `moduleColors`. That is deliberate: an SVG `fill`/
+ * `stroke` attribute takes an inline string, not a Tailwind class, so it
+ * can't pick up `.dark`/`html.hc` via className — a static hex freezes
+ * the stroke to whichever theme it was authored against (design-audit
+ * TH1/TH7). `--c-chart-{module}` (module accents) and `--c-chart-
+ * {success,warning,danger,info}` (status accents reused as chart lines,
+ * via `chartStatusSeries` below) both flip per theme in
+ * `apps/web/src/styles/theme.css`. Never reach for `moduleColors.*` or
+ * `statusColors.*` directly in an SVG stroke/fill/stopColor — always go
+ * through `chartSeries` / `chartStatusSeries`.
  */
 
 import {
@@ -35,28 +48,54 @@ export {
   statusColors,
 };
 
-/** Per-module accent tokens — prefer this over hardcoded hex in charts. */
+/**
+ * Per-module accent tokens — prefer this over hardcoded hex in charts.
+ *
+ * `primary` is var-backed (`rgb(var(--c-chart-{module}))`) so SVG line/
+ * area colours flip with `.dark`/`html.hc` (see the module doc above).
+ * `secondary`/`surface` stay static `moduleColors` hex — nothing currently
+ * consumes them as an SVG paint attribute (they back Tailwind-class
+ * surfaces, which already resolve through CSS), so they don't need the
+ * var-backed treatment yet. If a future chart paints an SVG element with
+ * `chartSeries.*.secondary`/`surface`, give it the same `--c-chart-*`
+ * treatment as `primary` first.
+ */
 export const chartSeries = {
   finyk: {
-    primary: moduleColors.finyk["primary"],
+    primary: "rgb(var(--c-chart-finyk))",
     secondary: moduleColors.finyk["secondary"],
     surface: moduleColors.finyk["surface"],
   },
   fizruk: {
-    primary: moduleColors.fizruk["primary"],
+    primary: "rgb(var(--c-chart-fizruk))",
     secondary: moduleColors.fizruk["secondary"],
     surface: moduleColors.fizruk["surface"],
   },
   routine: {
-    primary: moduleColors.routine["primary"],
+    primary: "rgb(var(--c-chart-routine))",
     secondary: moduleColors.routine["secondary"],
     surface: moduleColors.routine["surface"],
   },
   nutrition: {
-    primary: moduleColors.nutrition["primary"],
+    primary: "rgb(var(--c-chart-nutrition))",
     secondary: moduleColors.nutrition["secondary"],
     surface: moduleColors.nutrition["surface"],
   },
+} as const;
+
+/**
+ * Status colours reused as chart LINE colours (1RM lines, goal/threshold
+ * lines, cardio pace/distance series) — var-backed (`--c-chart-{status}`
+ * in `theme.css`), unlike the plain `statusColors` re-export above (static
+ * hex from `tokens.js`, theme-blind — fine for non-chart status UI, wrong
+ * for an SVG stroke/fill). Always prefer this over `statusColors.*` inside
+ * a chart component.
+ */
+export const chartStatusSeries = {
+  success: "rgb(var(--c-chart-success))",
+  warning: "rgb(var(--c-chart-warning))",
+  danger: "rgb(var(--c-chart-danger))",
+  info: "rgb(var(--c-chart-info))",
 } as const;
 
 /** Axis line & label defaults — apply via spread on `<text>` / `<line>`. */
@@ -125,6 +164,8 @@ export const chartHeatmap = {
 /**
  * Gradient stops used by area/fill series, keyed by module. Consumers can
  * embed these as `<linearGradient>` stops without re-picking hex codes.
+ * `stopColor` derives from `chartSeries.*.primary`, so it's var-backed too
+ * (theme-reactive area fills, not just line strokes).
  */
 export const chartGradients = {
   finyk: [

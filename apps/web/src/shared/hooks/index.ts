@@ -78,8 +78,6 @@ export type {
 
 export { useBodyScrollLock } from "./useBodyScrollLock";
 
-export { useFocusTrap } from "./useFocusTrap";
-
 export { useHaptic } from "./useHaptic";
 export type { UseHapticReturn } from "./useHaptic";
 

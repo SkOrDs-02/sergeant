@@ -1,4 +1,4 @@
--- Down для 101_routine_completion_events_dedup.sql
+-- Down для 103_routine_completion_events_dedup.sql
 --
 -- NO_ROLLBACK: цю міграцію не можна відкотити чесно. Крок 1 форварда
 -- (`DELETE ... WHERE ranked.rn > 1`) незворотно видаляє рядки-дублікати —

@@ -2,7 +2,7 @@
 // scripts/docs/check-freshness-single-marker.mjs
 //
 // Guards against doc freshness drift where a docs/*.md file accidentally
-// carries multiple canonical `Last validated` markers. Coverage is checked by
+// carries multiple canonical `Last touched` markers. Coverage is checked by
 // `check-freshness.mjs --check-coverage`; this script only enforces "at most
 // one" and ignores fenced code examples.
 
@@ -108,7 +108,7 @@ function main() {
     console.error(`  - ${failure.file}: ${failure.markers} markers`);
   }
   console.error(
-    "\nFix: keep exactly one canonical '> **Last validated:**' marker in each docs/*.md file. Historical dates should use another label or an HTML comment.",
+    "\nFix: keep exactly one canonical '> **Last touched:**' marker in each docs/*.md file. Historical dates should use another label or an HTML comment.",
   );
   process.exit(1);
 }

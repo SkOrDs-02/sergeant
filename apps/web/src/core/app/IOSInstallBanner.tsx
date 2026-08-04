@@ -38,8 +38,13 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
           <p className="text-style-caption text-muted mt-0.5 leading-snug">
             Щоб отримувати push-сповіщення на iOS, відкрий меню{" "}
             <span className="font-semibold">Поділитися</span>{" "}
-            <span aria-hidden>⬆️</span> і обери{" "}
-            <span className="font-semibold">На початковий екран</span>.
+            <Icon
+              name="upload"
+              size="xs"
+              className="inline-block align-baseline"
+              aria-hidden
+            />{" "}
+            і обери <span className="font-semibold">На початковий екран</span>.
           </p>
         </div>
         <Button

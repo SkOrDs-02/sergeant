@@ -1,6 +1,6 @@
 # Спека: Сержант як єдиний AI-персонаж + проактивні пуші
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-01.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active — реалізовано, окрім явно перелічених відхилень нижче.
 
 ## Що змінилось під час реалізації
@@ -26,7 +26,20 @@
    ж причини `mode="tour"` прибрано лише у веб-візарді — мобільна копія
    (`apps/mobile/src/core/OnboardingWizard.tsx`) досі має `isTour`.
 
-4. **Шедулер НЕ на BullMQ.** D8 вимагав повторити патерн `ftuxDrip` і сам же
+4. **Обидві секції злиті, «Почати з початку» прибрано (2026-08-03).** ¹
+   `GeneralSection.tsx` і `AssistantCatalogueSection.tsx` видалені, їхній
+   вміст живе в одному блоці
+   [`CapabilitiesSection.tsx`](../../../../apps/web/src/core/settings/CapabilitiesSection.tsx)
+   («Можливості») з двома опціями — «Що вміє додаток» → `/capabilities` і
+   «Що вміє Сержант» → `/assistant`. Дві сусідні секції відповідали на одне
+   питання «а що тут взагалі є», і користувач мусив здогадуватись, чим
+   «додаток» відрізняється від «Сержанта». Разом із цим прибрано кнопку
+   «Почати знайомство з початку» (і ключі `tourReset*` з каталогу): скидання
+   FTUX-прапорців із жорстким редіректом на `/welcome` не мало що робити в
+   блоці, який в іншому лише читає. Посилання нижче з поміткою ¹ вказують
+   на файли, яких більше немає.
+
+5. **Шедулер НЕ на BullMQ.** D8 вимагав повторити патерн `ftuxDrip` і сам же
    зазначав: «без `REDIS_URL` шедулер вимикається цілком». У проді
    `REDIS_URL` не заданий (див. коментар у `lib/jobs/connection.ts`), тобто
    той код задеплоївся б і мовчав — канал лишився б зламаним рівно так само,
@@ -38,7 +51,7 @@
    `selectNudgeCandidates`, `buildNudgeBody`, `isQuietHour`) лишилась як була
    — вона й у спеці була чиста від черги.
 
-5. **Окремої `sergeant_push_log` немає.** D6 просив третю таблицю під слід
+6. **Окремої `sergeant_push_log` немає.** D6 просив третю таблицю під слід
    надісланого, але `push_reminder_log` (міграція 099) має рівно ту саму
    семантику claim-before-send із `(user_id, dedup_key)` як PK. Проактивні
    пуші пишуться туди з `module = 'sergeant'` і
@@ -109,14 +122,14 @@
 Конкретні заміни (мінімальний перелік, не вичерпний — грепни `асистент`/`коуч`
 по користувацьких рядках):
 
-| Де                                                                                                         | Було                              | Стає                         |
-| ---------------------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
-| [`AssistantAdviceCard.tsx:138`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx)            | `Порада асистента`                | `Сержант`                    |
-| [`AssistantAdviceCard.tsx:166`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx)            | `Готую пораду асистента` (aria)   | `Сержант готує пораду`       |
-| [`AssistantAdviceCard.tsx:189`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx)            | `…відкриває асистента…`           | `…відкриває Сержанта…`       |
-| [`AssistantCatalogueSection.tsx:15`](../../../../apps/web/src/core/settings/AssistantCatalogueSection.tsx) | `Можливості асистента`            | `Що вміє Сержант`            |
-| [`appPaths.ts:25`](../../../../apps/web/src/core/app/appPaths.ts)                                          | `Sergeant — Можливості асистента` | `Sergeant — Що вміє Сержант` |
-| [`DashboardSection.tsx:117`](../../../../apps/web/src/core/settings/DashboardSection.tsx)                  | `…порадою коуча…`                 | `…порадою Сержанта…`         |
+| Де                                                                                              | Було                              | Стає                         |
+| ----------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------- |
+| [`AssistantAdviceCard.tsx:138`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Порада асистента`                | `Сержант`                    |
+| [`AssistantAdviceCard.tsx:166`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `Готую пораду асистента` (aria)   | `Сержант готує пораду`       |
+| [`AssistantAdviceCard.tsx:189`](../../../../apps/web/src/core/insights/AssistantAdviceCard.tsx) | `…відкриває асистента…`           | `…відкриває Сержанта…`       |
+| [`CapabilitiesSection.tsx`](../../../../apps/web/src/core/settings/CapabilitiesSection.tsx) ¹   | `Можливості асистента`            | `Що вміє Сержант`            |
+| [`appPaths.ts:25`](../../../../apps/web/src/core/app/appPaths.ts)                               | `Sergeant — Можливості асистента` | `Sergeant — Що вміє Сержант` |
+| [`DashboardSection.tsx:117`](../../../../apps/web/src/core/settings/DashboardSection.tsx)       | `…порадою коуча…`                 | `…порадою Сержанта…`         |
 
 Дзеркальні рядки в `apps/mobile` міняються так само.
 
@@ -301,7 +314,7 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 - Налаштування → Загальні: кнопка `tourLaunchLabel` міняє призначення на
   перехід у `/capabilities`, рядок стає **«Що вміє додаток»**.
 - Налаштування → «Що вміє Сержант» (колишня `AssistantCatalogueSection`)
-  лишається окремою кнопкою на `/assistant`.
+  лишається окремою кнопкою на `/assistant`. ¹
 
 **`OnboardingWizard mode="tour"` видаляється повністю**: проп `mode`, гілки
 `isTour` в
@@ -310,9 +323,9 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 [`useOnboardingWizardState.ts`](../../../../apps/web/src/core/onboarding/useOnboardingWizardState.ts),
 відповідні тести (`OnboardingWizard.tour.test.tsx` та tour-кейси в
 `.pr07`/`.ux`/`.goalFirst` тестах), і рендер `<OnboardingWizard mode="tour">` у
-[`GeneralSection.tsx`](../../../../apps/web/src/core/settings/GeneralSection.tsx).
+`GeneralSection.tsx`. ¹
 
-Кнопка **«Почати знайомство з початку»** (скидання FTUX) лишається без змін.
+Кнопка **«Почати знайомство з початку»** (скидання FTUX) лишається без змін. ¹
 
 ### D11. Видимість тижневого звіту
 
@@ -348,8 +361,8 @@ BullMQ + `createBullConnection` / `BULLMQ_QUEUE_PREFIX` з
 - `apps/web/src/core/insights/AssistantAdviceCard.tsx` — рядки
 - `apps/web/src/core/insights/WeeklyDigestCard.tsx` — стан генерації + бейдж
 - `apps/web/src/core/settings/NotificationsSection.tsx` — тумблер
-- `apps/web/src/core/settings/AssistantCatalogueSection.tsx` — заголовок
-- `apps/web/src/core/settings/GeneralSection.tsx` — перехід на `/capabilities`, зняття tour
+- `apps/web/src/core/settings/AssistantCatalogueSection.tsx` — заголовок ¹
+- `apps/web/src/core/settings/GeneralSection.tsx` — перехід на `/capabilities`, зняття tour ¹
 - `apps/web/src/core/settings/DashboardSection.tsx` — рядок
 - `apps/web/src/core/onboarding/OnboardingWizard.tsx`, `useOnboardingWizardState.ts` — видалення tour-режиму
 - `apps/web/src/core/capabilities/` — новий каталог: реєстр, сторінка, роут

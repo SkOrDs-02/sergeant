@@ -12,7 +12,7 @@ export const finykPageMessages = {
    * з банку), але привʼязка мусить чесно казати, що саме вона зробила.
    */
   monoCardLink: {
-    repayment: "✅ Погашення",
+    repayment: "Погашення",
     cardPurchase: "↑ Покупка по картці — борг не гасить",
     otherIncome: "↑ Рух на іншому рахунку — картки не торкався",
   },

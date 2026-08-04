@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # Web UI у Sergeant
 
-Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з ензорсеними репо-правилами дизайну. Дотримуйся локальної design-system і shell-конвенцій, а не generic React- або Tailwind-дефолтів.
+Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з репо-дизайн-конвенціями, які тримаються design tokens + review (ESLint-enforcement візуальних правил retired ADR-0081). Дотримуйся локальної design-system і shell-конвенцій, а не generic React- або Tailwind-дефолтів.
 
 ## Що покриває
 
@@ -23,7 +23,7 @@ Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з ензо
 - Не пиши raw `localStorage`-виклики там, де є проєктні врапери; використовуй `ls`, `lsSet`, `safeReadLS` або типовані storage-хелпери.
 - Не вигадуй inline React Query-ключі; використовуй центральні key-фабрики.
 - Тримай accessibility і responsive-поведінку як first-class, особливо в PWA-shell.
-- **Типографіка (дизайн-конвенція):** використовуй виключно семантичні утиліти `.text-style-caption`, `.text-style-body`, `.text-style-headline` (мінімум 12px). `text-2xs` — deprecated, замінюй на `text-style-caption`. Raw palette hex в `className` — заборонено (Hard Rules #11–13).
+- **Типографіка (дизайн-конвенція — tokens + review, ex-Hard Rules #11–13, retired ADR-0081):** використовуй виключно семантичні утиліти `.text-style-caption`, `.text-style-body`, `.text-style-headline` (мінімум 12px). `text-2xs` — deprecated у продуктовому UI (лишається для chart axis ticks), замінюй на `text-style-caption`. Raw palette hex в `className` — заборонено.
 
   BAD: `className="text-2xs text-gray-400"` → GOOD: `className="text-style-caption text-content-secondary"`
 
@@ -32,7 +32,7 @@ Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з ензо
 - Hub-shell і спільні flow-и живуть під `apps/web/src/core/**`.
 - Module-specific UI лишається всередині `apps/web/src/modules/<domain>/**`.
 - Спільні web-only утиліти живуть у `apps/web/src/shared/**`.
-- Реюзай `@sergeant/design-tokens` і кастомні eslint-правила замість raw color-рішень.
+- Реюзай `@sergeant/design-tokens` замість raw color-рішень — кольорові конвенції тримаються tokens + design-review, без ESLint-enforcement (ADR-0081).
 
 ## Верифікація
 

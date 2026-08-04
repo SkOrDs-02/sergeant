@@ -39,6 +39,33 @@ const NAV: readonly RoutineNavItem[] = [
     ),
   },
   {
+    // Керування звичками переїхало сюди з Налаштувань 2026-08-03 —
+    // див. `RoutineHabitsPanel.tsx`. Порядок у смузі навмисно
+    // «Огляд → Звички → Статистика»: спершу що робити сьогодні, потім
+    // із чого цей список складається, і аж тоді підсумки.
+    id: "habits",
+    label: messages.routine.habitsTab.label,
+    panelId: "routine-panel-habits",
+    icon: (
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="m3 7 2 2 3-3" />
+        <path d="m3 15 2 2 3-3" />
+        <line x1="12" y1="8" x2="21" y2="8" />
+        <line x1="12" y1="16" x2="21" y2="16" />
+      </svg>
+    ),
+  },
+  {
     id: "stats",
     label: "Статистика",
     panelId: "routine-panel-stats",

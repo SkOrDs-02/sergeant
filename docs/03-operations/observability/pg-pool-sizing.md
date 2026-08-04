@@ -1,14 +1,7 @@
----
-status: active
-owner: "@Skords-01"
-last_validated: 2026-05-06
-next_review: 2026-08-06
----
-
 # Postgres pool sizing — knobs, sizing rule, debugging
 
-> **Status:** active.
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Status:** Active
 > Виконує acceptance criteria stack-pulse PR-13
 > ([`docs/90-work/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-13-postgres-pool-sizing.md)).
 > Перетинається з [`docs/03-operations/runbooks/database-connection-pooling.md`](../runbooks/database-connection-pooling.md)

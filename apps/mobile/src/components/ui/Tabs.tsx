@@ -79,8 +79,12 @@ const indicatorColor: Record<TabsVariant, string> = {
   nutrition: "bg-nutrition",
 };
 
+// `sm` meets the 44px WCAG 2.5.5 touch-target minimum via `min-h-[44px]`
+// (same pattern as `Button.tsx` size presets) — the always-coarse-pointer
+// RN surface has no `pointer-coarse:` escape hatch, so the floor applies
+// unconditionally.
 const sizes: Record<TabsSize, string> = {
-  sm: "h-9 px-3",
+  sm: "min-h-[44px] h-9 px-3",
   md: "h-11 px-4",
 };
 

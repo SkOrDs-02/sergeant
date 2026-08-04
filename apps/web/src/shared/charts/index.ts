@@ -21,6 +21,7 @@ export {
   chartPalette,
   chartPaletteList,
   chartSeries,
+  chartStatusSeries,
   chartTick,
   moduleColors,
   statusColors,

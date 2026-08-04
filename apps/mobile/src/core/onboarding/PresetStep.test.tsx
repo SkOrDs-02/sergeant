@@ -63,7 +63,7 @@ describe("PresetStep", () => {
 
     expect(mockApplyPreset).toHaveBeenCalledWith("routine", {
       name: "Випити воду",
-      emoji: "💧",
+      emoji: "droplet",
     });
     expect(onNavigate).not.toHaveBeenCalled();
     expect(mockWritePresetPrefill).not.toHaveBeenCalled();

@@ -44,11 +44,13 @@ describe("createDebt", () => {
     );
   });
 
-  it("uses 💸 emoji by default", () => {
+  it("leaves the glyph empty by default", () => {
+    // 2026-08-03: дефолтне «💸» прибрано разом із рештою emoji в UI —
+    // борг без явного гліфа малюється нейтрально, а не грошовим смайлом.
     createDebt({ name: "create_debt", input: { name: "X", amount: 100 } });
     expect(mockWrite).toHaveBeenCalledWith(
       "finyk_debts",
-      expect.arrayContaining([expect.objectContaining({ emoji: "💸" })]),
+      expect.arrayContaining([expect.objectContaining({ emoji: "" })]),
     );
   });
 

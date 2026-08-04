@@ -13,6 +13,7 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { WorkoutTemplate } from "../hooks/useWorkoutTemplates";
+import { SupersetBadge } from "./workouts/SupersetBadge";
 
 type GroupType = "superset" | "circuit";
 
@@ -337,13 +338,7 @@ export function WorkoutTemplatesSection({
                       <span className="flex-1 text-sm truncate min-w-0">
                         {ex?.name?.uk || ex?.name?.en || id}
                       </span>
-                      {group && (
-                        <span
-                          className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success-strong dark:text-success border border-success/30"}`}
-                        >
-                          {group.type === "circuit" ? "Коло" : "СС"}
-                        </span>
-                      )}
+                      {group && <SupersetBadge type={group.type} compact />}
                       {group && !groupSelectMode && (
                         <Tooltip
                           content="Прибрати з групи"
@@ -351,7 +346,7 @@ export function WorkoutTemplatesSection({
                         >
                           <button
                             type="button"
-                            className="text-2xs text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
+                            className="text-style-caption text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
                             aria-label="Прибрати з групи"
                             onClick={() => handleRemoveGroup(group.id)}
                           >

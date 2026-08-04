@@ -1,7 +1,6 @@
 # ADR-0050: TypeScript major-version policy + `@types/node` pinning
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
-> **Status:** Accepted
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-05-06

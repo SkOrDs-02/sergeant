@@ -59,7 +59,7 @@
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0f2cdfc45cc6c50cf9844d0e5c22c4c854119150638a0f442a207cc15c273ab3"
+      "computedHash": "b00bbdea5f3d844a2d93f75df0012a8c3b35e02f10eda1dbc779a2de2609d80e"
     },
     "sergeant-writing-skills": {
       "source": "local",
@@ -84,7 +84,7 @@
     "sergeant-review-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "7c78c89264c6e5ddb508384f787ecbfe39ca0438a14bb6657c75c75be973e471"
+      "computedHash": "05896c492646a5e75c5489d3b4b70d3e822bfdc66dafecb37dc8d0369ad19074"
     },
     "sergeant-deliver-squad": {
       "source": "local",

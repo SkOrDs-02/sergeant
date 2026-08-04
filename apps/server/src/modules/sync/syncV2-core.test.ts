@@ -102,6 +102,18 @@ describe("syncV2-core helpers", () => {
     expect(toJsonbParam(circular)).toBeNull();
   });
 
+  it("passes through already-serialized JSON strings without double-wrapping", () => {
+    // Клієнтський sync-адаптер шле data_json рядком з локального SQLite —
+    // подвійний stringify давав jsonb-STRING і NULL на кожен ->>' ' запит
+    // (аудит 2026-08-04, знахідка 3).
+    expect(toJsonbParam('{"amount":347.5}')).toBe('{"amount":347.5}');
+    expect(toJsonbParam("  [1,2,3] ")).toBe("[1,2,3]");
+    // Схоже на JSON, але невалідне — звичайний stringify-шлях.
+    expect(toJsonbParam("{oops")).toBe(JSON.stringify("{oops"));
+    // Скалярний рядок серіалізується як раніше.
+    expect(toJsonbParam("hello")).toBe(JSON.stringify("hello"));
+  });
+
   it("records metrics, logs and audit rows for successful syncs", () => {
     recordSyncV2("v2_push", "ok", {
       ms: 12.8,

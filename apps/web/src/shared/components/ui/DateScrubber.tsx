@@ -122,7 +122,10 @@ export function DateScrubber({
             )}
           >
             <span
-              className={cn("text-2xs", selected ? "text-bg/80" : "text-muted")}
+              className={cn(
+                "text-style-caption",
+                selected ? "text-bg/80" : "text-muted",
+              )}
             >
               {isToday ? TODAY_SHORT : label}
             </span>

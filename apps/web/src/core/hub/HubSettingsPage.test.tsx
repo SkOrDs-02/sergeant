@@ -32,8 +32,8 @@ function renderWithBrowserToast(ui: ReactNode) {
 vi.mock("../settings/AIDigestSection", () => ({
   AIDigestSection: () => <section>AI digest section</section>,
 }));
-vi.mock("../settings/AssistantCatalogueSection", () => ({
-  AssistantCatalogueSection: () => <section>Assistant section</section>,
+vi.mock("../settings/CapabilitiesSection", () => ({
+  CapabilitiesSection: () => <section>Capabilities section</section>,
 }));
 vi.mock("../settings/ExperimentalSection", () => ({
   ExperimentalSection: () => <section>Experimental section</section>,
@@ -43,9 +43,6 @@ vi.mock("../settings/FinykSection", () => ({
 }));
 vi.mock("../settings/FizrukSection", () => ({
   FizrukSection: () => <section>Fizruk section</section>,
-}));
-vi.mock("../settings/GeneralSection", () => ({
-  GeneralSection: () => <section>General section</section>,
 }));
 vi.mock("../settings/NotificationsSection", () => ({
   NotificationsSection: () => <section>Notifications section</section>,
@@ -72,30 +69,18 @@ describe("HubSettingsPage", () => {
   });
 
   it("renders stable anchors and search keywords for settings sections", () => {
-    renderWithBrowserToast(
-      <HubSettingsPage
-        user={{
-          id: "u1",
-          email: null,
-          name: null,
-          image: null,
-          emailVerified: true,
-          createdAt: null,
-        }}
-      />,
-    );
+    renderWithBrowserToast(<HubSettingsPage />);
 
-    const general = document.getElementById("settings-general");
+    const capabilities = document.getElementById("settings-capabilities");
 
-    expect(general).toBeInTheDocument();
-    // "sync cloud" is the General section's stable findability marker.
-    // ("backup" used to live here but moved to the dedicated `dataExport`
-    // section in `ecbac8d8` — see HubSettingsPage.tsx for the keyword owner.
-    // `dataExport` lives under the «Додатково» tab so it isn't in the DOM
-    // for this default-tab render; assert against `general` only.)
-    expect(general).toHaveAttribute(
+    expect(capabilities).toBeInTheDocument();
+    // «онбординг» is the merged Можливості section's stable findability
+    // marker: the standalone «Загальні» section was folded into it on
+    // 2026-08-03, and its onboarding keywords have to survive the merge so
+    // an existing search for «онбординг» still lands somewhere.
+    expect(capabilities).toHaveAttribute(
       "data-search-keywords",
-      expect.stringContaining("sync cloud"),
+      expect.stringContaining("онбординг"),
     );
   });
 
@@ -106,17 +91,7 @@ describe("HubSettingsPage", () => {
     scrollContainer.scrollTo = scrollTo;
 
     renderWithBrowserToast(
-      <HubSettingsPage
-        scrollContainer={scrollContainer}
-        user={{
-          id: "u1",
-          email: null,
-          name: null,
-          image: null,
-          emailVerified: true,
-          createdAt: null,
-        }}
-      />,
+      <HubSettingsPage scrollContainer={scrollContainer} />,
     );
 
     const finyk = document.getElementById("settings-finyk");
@@ -137,42 +112,20 @@ describe("HubSettingsPage", () => {
   it("mirrors the inner group tab to ?group= so reload keeps the user on Розділи", async () => {
     window.history.replaceState(null, "", "/?tab=settings&group=modules");
 
-    renderWithToast(
-      <HubSettingsPage
-        user={{
-          id: "u1",
-          email: null,
-          name: null,
-          image: null,
-          emailVerified: true,
-          createdAt: null,
-        }}
-      />,
-    );
+    renderWithToast(<HubSettingsPage />);
 
     // The «Розділи» tab renders module-scoped sections only. They are
     // React.lazy() now (PR-1.2), so we await the Suspense resolution
     // before asserting the content swap.
     expect(await screen.findByText("Routine section")).toBeInTheDocument();
     expect(await screen.findByText("Finyk section")).toBeInTheDocument();
-    expect(screen.queryByText("General section")).not.toBeInTheDocument();
+    expect(screen.queryByText("Capabilities section")).not.toBeInTheDocument();
   });
 
   it("keeps ?tab=settings when switching inner groups", async () => {
     window.history.replaceState(null, "", "/?tab=settings");
 
-    renderWithBrowserToast(
-      <HubSettingsPage
-        user={{
-          id: "u1",
-          email: null,
-          name: null,
-          image: null,
-          emailVerified: true,
-          createdAt: null,
-        }}
-      />,
-    );
+    renderWithBrowserToast(<HubSettingsPage />);
 
     fireEvent.click(screen.getByRole("tab", { name: /Розділи/ }));
 
@@ -193,19 +146,7 @@ describe("HubSettingsPage", () => {
     const scrollTo = vi.fn();
     scrollContainer.scrollTo = scrollTo;
 
-    renderWithToast(
-      <HubSettingsPage
-        scrollContainer={scrollContainer}
-        user={{
-          id: "u1",
-          email: null,
-          name: null,
-          image: null,
-          emailVerified: true,
-          createdAt: null,
-        }}
-      />,
-    );
+    renderWithToast(<HubSettingsPage scrollContainer={scrollContainer} />);
 
     const dashboardToggle = screen.getByRole("button", { name: /Дашборд/ });
     expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");

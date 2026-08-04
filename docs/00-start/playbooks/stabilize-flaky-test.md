@@ -1,6 +1,6 @@
 # Playbook: Stabilize Flaky Test
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
@@ -8,7 +8,7 @@
 ## Owner surface
 
 - Primary surface: the failing test file (anywhere under `apps/` or `packages/`)
-- Coupled surface: AGENTS.md "Pre-existing flaky tests" list, `.github/workflows/flaky-tests-dashboard.yml`
+- Coupled surface: `.github/workflows/mobile-flaky-verify.yml` (20-run verification — єдиний наявний flaky-воркфлоу; `flaky-tests-dashboard.yml` прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4), список карантину — у секції § «Pre-existing flaky tests» цього ж playbook-а
 - Governing skill: `sergeant-bugfix-and-regression`
 
 ---

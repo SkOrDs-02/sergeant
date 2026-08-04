@@ -1,6 +1,6 @@
 # Runbooks
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Operational runbooks для on-call та incident-flow-ів — точне «як» для нашого
@@ -17,6 +17,8 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 | [`encryption-key-rotation.md`](./encryption-key-rotation.md)         | Key-ring rotation для Better Auth (`BETTER_AUTH_TOKEN_ENC_KEY*`) + legacy single-key path для Mono. Hardening H4. |
 | [`postgres-read-replica.md`](./postgres-read-replica.md)             | Streaming read-replica + `DATABASE_URL_REPLICA`, прозорий fallback на primary. Storage roadmap PR #047.           |
 | [`sync-client-e2e.md`](./sync-client-e2e.md)                         | Phase 1 sync wiring gate — web↔web / web→mobile manual E2E, failure triage, CI smoke commands.                    |
+| [`security-events.md`](./security-events.md)                         | Тріаж security-подій з `apps/server/src/obs/securityEvents.ts` (hardening I7).                                    |
+| [`db-index-audit-template.md`](./db-index-audit-template.md)         | Шаблон періодичного index-аудиту Postgres; викликається з `operations-runbook.md`.                                |
 
 ## Runbook vs playbook vs incident workflow
 

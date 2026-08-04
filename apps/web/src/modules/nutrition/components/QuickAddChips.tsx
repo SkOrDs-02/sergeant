@@ -49,8 +49,8 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
             // (translucent bg-nutrition/[.08] wash still shows the
             // saturated hero gradient through it), so text uses hero-ink
             // rather than the dark `nutrition-strong` tier.
-            "bg-nutrition/[.08] text-hero-ink",
-            "hover:bg-nutrition/[.15] active:scale-[0.97] transition-[background-color,transform]",
+            "bg-nutrition/8 text-hero-ink",
+            "hover:bg-nutrition/15 active:scale-[0.97] transition-[background-color,transform]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/40",
           )}
         >

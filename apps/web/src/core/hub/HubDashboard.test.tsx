@@ -469,6 +469,20 @@ describe("HubDashboard", () => {
     expect(mocks.dashboardFocus.dismiss).toHaveBeenCalledWith("hashed");
   });
 
+  it("keeps the post-FTUX focus card in normal flow instead of translating it over module cards", () => {
+    mocks.dashboardFocus.focus = rec({
+      id: "focus-no-overlap",
+      title: "Focus without overlap",
+      action: "nutrition",
+    });
+
+    renderDashboard();
+
+    expect(
+      screen.getByTestId("today-focus-card").closest('[style*="translateY"]'),
+    ).toBeNull();
+  });
+
   it("shows the weekly digest footer and expands the report summary inline", () => {
     // UX-feedback 2026-05-13: footer is always rendered (regardless of day
     // or `digestFresh`) so users always have a 1-tap entry into the

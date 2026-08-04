@@ -218,9 +218,9 @@ describe("issueBody", () => {
     assert.ok(body.includes("<!-- doc-freshness:README.md -->"));
   });
 
-  it("includes last validated date", () => {
+  it("includes last touched date", () => {
     const body = issueBody("README.md", "2026-04-27", "2026-07-26", 5);
-    assert.ok(body.includes("**Last validated:** 2026-04-27"));
+    assert.ok(body.includes("**Last touched:** 2026-04-27"));
   });
 
   it("includes days overdue", () => {
@@ -230,7 +230,7 @@ describe("issueBody", () => {
 
   it("handles unknown lastValidated gracefully", () => {
     const body = issueBody("README.md", null, "2026-07-26", 10);
-    assert.ok(body.includes("**Last validated:** unknown"));
+    assert.ok(body.includes("**Last touched:** unknown"));
   });
 });
 

@@ -8,10 +8,10 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -19,13 +19,12 @@ import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import {
   classifyDateBound,
   DATE_WARN_MESSAGE,
-  HARD_MAX_DAY_KEY,
-  HARD_MIN_DAY_KEY,
 } from "@shared/lib/time/dateBounds";
 import {
   ROUTINE_THEME as C,
   RECURRENCE_OPTIONS,
 } from "../../lib/routineConstants";
+import { HabitGlyphPicker } from "../HabitGlyphPicker";
 import { ReminderPresets } from "./ReminderPresets";
 import { WeekdayPicker } from "./WeekdayPicker";
 import type { HabitDraft, RoutineState } from "../../lib/types";
@@ -74,25 +73,6 @@ export interface HabitFormProps {
   hideActions?: boolean;
 }
 
-const EMOJI_SUGGESTIONS: readonly string[] = [
-  "✓",
-  "💧",
-  "🚶",
-  "🏃",
-  "💪",
-  "🧘",
-  "📖",
-  "✍️",
-  "🧠",
-  "💊",
-  "🥗",
-  "😴",
-  "☕",
-  "🎯",
-  "⏰",
-  "🌙",
-];
-
 export function HabitForm({
   routine,
   habitDraft,
@@ -112,31 +92,10 @@ export function HabitForm({
   const nameErrId = `${fieldIds}-name-err`;
   const nameId = `${fieldIds}-name`;
   const weekdaysErrId = `${fieldIds}-weekdays-err`;
+  const tagsLabelId = `${fieldIds}-tags`;
   const sectionRef = useRef<HTMLElement | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const weekdaysRef = useRef<HTMLDivElement | null>(null);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const emojiWrapRef = useRef<HTMLDivElement | null>(null);
-  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
-  // role="dialog" popover: keyboard parity with the mousedown
-  // outside-click below — Escape closes, Tab cycles inside, and focus
-  // returns to the toggle on close. Non-modal, so no inertBackground.
-  useDialogFocusTrap(showEmojiPicker, emojiPickerRef, {
-    onEscape: () => setShowEmojiPicker(false),
-  });
-  useEffect(() => {
-    if (!showEmojiPicker) return;
-    const handleOutside = (e: MouseEvent) => {
-      if (
-        emojiWrapRef.current &&
-        !emojiWrapRef.current.contains(e.target as Node)
-      ) {
-        setShowEmojiPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [showEmojiPicker]);
   // Scroll the weekday picker into view when the parent surfaces a
   // weekdays error (e.g. user picked «По тижню» but no days). Without
   // this the inline error can sit off-screen on small viewports.
@@ -147,7 +106,7 @@ export function HabitForm({
       el.scrollIntoView({ behavior: motionScrollBehavior(), block: "center" });
     }
   }, [errors?.weekdays]);
-  // Minimal-first UX: emoji + name + regularity are visible on first
+  // Minimal-first UX: icon + name + regularity are visible on first
   // render. Dates, reminders, tags and categories live behind a
   // "Більше опцій" disclosure. When editing an existing habit we open
   // the advanced block so the user doesn't lose track of values they
@@ -206,54 +165,11 @@ export function HabitForm({
       <div>
         <Label htmlFor={nameId}>Назва звички</Label>
         <div className="flex gap-2 items-center">
-          <div className="relative shrink-0" ref={emojiWrapRef}>
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker((v) => !v)}
-              aria-label="Обрати емодзі"
-              aria-expanded={showEmojiPicker}
-              className={cn(
-                "routine-touch-field w-12 shrink-0 flex items-center justify-center",
-                "rounded-2xl border border-line bg-panelHi text-2xl leading-none font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
-                "hover:bg-panel transition-colors",
-              )}
-            >
-              <span aria-hidden>{habitDraft.emoji || "✓"}</span>
-            </button>
-            {showEmojiPicker && (
-              <div
-                ref={emojiPickerRef}
-                role="dialog"
-                aria-label="Обрати емодзі"
-                className={cn(
-                  "absolute z-30 mt-2 left-0 w-[17rem]",
-                  "rounded-2xl border border-line bg-panel shadow-float p-2",
-                  "grid grid-cols-6 gap-1",
-                )}
-              >
-                {EMOJI_SUGGESTIONS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => {
-                      setHabitDraft((d) => ({ ...d, emoji: e }));
-                      setShowEmojiPicker(false);
-                    }}
-                    aria-label={`Емодзі ${e}`}
-                    className={cn(
-                      "w-10 h-10 flex items-center justify-center rounded-xl",
-                      "leading-none text-2xl font-['Apple_Color_Emoji','Segoe_UI_Emoji','Noto_Color_Emoji','Segoe_UI_Symbol',sans-serif]",
-                      "transition-colors hover:bg-panelHi",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                      habitDraft.emoji === e && "bg-panelHi ring-1 ring-line",
-                    )}
-                  >
-                    <span aria-hidden>{e}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <HabitGlyphPicker
+            value={habitDraft.emoji}
+            onChange={(glyph) => setHabitDraft((d) => ({ ...d, emoji: glyph }))}
+            label="Обрати іконку звички"
+          />
           <Input
             id={nameId}
             ref={nameRef}
@@ -380,46 +296,36 @@ export function HabitForm({
         className="flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
       >
         <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
-        <span aria-hidden className="text-2xs">
+        <span aria-hidden className="text-style-caption">
           {showAdvanced ? "▲" : "▼"}
         </span>
       </button>
 
       {showAdvanced && (
         <div id={advancedId} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block text-xs text-subtle" htmlFor={startId}>
-              Початок (дата)
-              <Input
-                id={startId}
-                type="date"
-                className="routine-touch-field mt-1 w-full"
-                min={HARD_MIN_DAY_KEY}
-                max={HARD_MAX_DAY_KEY}
-                error={Boolean(errors?.startDate)}
-                helperText={errors?.startDate}
-                value={habitDraft.startDate || ""}
-                onChange={(e) =>
-                  setHabitDraft((d) => ({ ...d, startDate: e.target.value }))
-                }
-              />
-            </label>
-            <label className="block text-xs text-subtle" htmlFor={endId}>
-              Кінець (необовʼязково)
-              <Input
-                id={endId}
-                type="date"
-                className="routine-touch-field mt-1 w-full"
-                min={HARD_MIN_DAY_KEY}
-                max={HARD_MAX_DAY_KEY}
-                error={Boolean(errors?.endDate)}
-                helperText={errors?.endDate}
-                value={habitDraft.endDate || ""}
-                onChange={(e) =>
-                  setHabitDraft((d) => ({ ...d, endDate: e.target.value }))
-                }
-              />
-            </label>
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+            <DateField
+              id={startId}
+              label="Початок (дата)"
+              className="routine-touch-field"
+              error={errors?.startDate ? true : undefined}
+              helperText={errors?.startDate}
+              value={habitDraft.startDate || ""}
+              onChange={(e) =>
+                setHabitDraft((d) => ({ ...d, startDate: e.target.value }))
+              }
+            />
+            <DateField
+              id={endId}
+              label="Кінець (необовʼязково)"
+              className="routine-touch-field"
+              error={errors?.endDate ? true : undefined}
+              helperText={errors?.endDate}
+              value={habitDraft.endDate || ""}
+              onChange={(e) =>
+                setHabitDraft((d) => ({ ...d, endDate: e.target.value }))
+              }
+            />
           </div>
           {/* М'яке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
@@ -437,31 +343,52 @@ export function HabitForm({
             </p>
           )}
 
+          {/*
+            Мультивибір тегів. До 2026-08-03 тут стояв `<select>`, який писав
+            рівно один id, хоча `tagIds` і в типі, і в SQLite, і в sync-контракті
+            завжди був масивом — підказка під полем прямо це визнавала
+            («масив для сумісності»). Через це «ранкова пробіжка» не могла бути
+            одночасно «ранок» і «спорт», а фільтр у календарі показував її лише
+            під одним чипом. Чипи-тумблери знімають обмеження, не чіпаючи схему.
+          */}
           {routine.tags.length > 0 && (
-            <label className="block text-xs text-subtle">
-              Тег
-              <select
-                className="routine-touch-select mt-1"
-                value={habitDraft.tagIds[0] || ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setHabitDraft((d) => ({
-                    ...d,
-                    tagIds: id ? [id] : [],
-                  }));
-                }}
+            <div className="block text-xs text-subtle">
+              <span id={tagsLabelId}>Теги</span>
+              <div
+                role="group"
+                aria-labelledby={tagsLabelId}
+                className="mt-1 flex flex-wrap gap-1.5"
               >
-                <option value="">— без тегу —</option>
-                {routine.tags.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <span className="block text-2xs text-subtle mt-1 leading-snug">
-                Один тег на звичку (поле tagIds у даних — масив для сумісності).
+                {routine.tags.map((t) => {
+                  const active = habitDraft.tagIds.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      aria-pressed={active}
+                      className={cn(
+                        "text-style-caption min-h-[44px] rounded-xl border px-2.5 py-1.5 transition-colors",
+                        active ? C.chipOn : C.chipOff,
+                      )}
+                      onClick={() =>
+                        setHabitDraft((d) => ({
+                          ...d,
+                          tagIds: d.tagIds.includes(t.id)
+                            ? d.tagIds.filter((id) => id !== t.id)
+                            : [...d.tagIds, t.id],
+                        }))
+                      }
+                    >
+                      {t.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="mt-1 block text-style-caption text-subtle leading-snug">
+                Можна обрати кілька. Теги створюються в Налаштуваннях →
+                «Рутина».
               </span>
-            </label>
+            </div>
           )}
 
           {routine.categories.length > 0 && (
@@ -477,8 +404,10 @@ export function HabitForm({
               >
                 <option value="">— без категорії —</option>
                 {routine.categories.map((c) => (
+                  // Нативний `<option>` малює лише текст — SVG-іконка туди
+                  // не поміститься, тож у селекті лишається сама назва.
+                  // Гліф видно в списку категорій і на картці звички.
                   <option key={c.id} value={c.id}>
-                    {c.emoji ? `${c.emoji} ` : ""}
                     {c.name}
                   </option>
                 ))}
@@ -494,15 +423,16 @@ export function HabitForm({
             "flex gap-2",
             // Inside the quick-create dialog the sheet already has an "X"
             // close in the top-right, so the Cancel button would be
-            // redundant. Stretch the primary save button to fill the row.
-            editingId ? "flex-row" : "flex-col",
+            // redundant. Editing actions stack on narrow phones so neither
+            // label is squeezed beyond its button, then share the row at sm.
+            editingId ? "flex-col sm:flex-row" : "flex-col",
           )}
         >
           {editingId && (
             <Button
               type="button"
               variant="secondary"
-              className="flex-1"
+              className="w-full min-w-0 sm:flex-1"
               onClick={onCancel}
             >
               Скасувати
@@ -511,7 +441,7 @@ export function HabitForm({
           <Button
             type="button"
             variant="routine"
-            className="w-full"
+            className="w-full min-w-0 sm:flex-1"
             onClick={onSave}
           >
             {editingId ? "Зберегти зміни" : "Додати звичку"}

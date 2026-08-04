@@ -45,7 +45,7 @@ export function MaturityBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-mono uppercase tracking-wide border",
+        "inline-flex items-center px-2 py-0.5 rounded-full text-style-caption font-mono uppercase tracking-wide border",
         m.tone,
       )}
     >
@@ -165,19 +165,19 @@ export function DoDont({ rows }: { rows: readonly DoDontRow[] }) {
           <tr>
             <th
               scope="col"
-              className="text-left text-2xs uppercase tracking-wide text-subtle px-3 py-2 w-32"
+              className="text-left text-style-caption uppercase tracking-wide text-subtle px-3 py-2 w-32"
             >
               Primitive
             </th>
             <th
               scope="col"
-              className="text-left text-2xs uppercase tracking-wide text-success-strong dark:text-success px-3 py-2"
+              className="text-left text-style-caption uppercase tracking-wide text-success-strong dark:text-success px-3 py-2"
             >
               Do
             </th>
             <th
               scope="col"
-              className="text-left text-2xs uppercase tracking-wide text-danger-strong dark:text-danger px-3 py-2"
+              className="text-left text-style-caption uppercase tracking-wide text-danger-strong dark:text-danger px-3 py-2"
             >
               Don&apos;t
             </th>
@@ -221,7 +221,7 @@ export function RuleBadges({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-2xs uppercase tracking-wide text-subtle w-20 shrink-0">
+        <span className="text-style-caption uppercase tracking-wide text-subtle w-20 shrink-0">
           Hard rules
         </span>
         {hardRules.length === 0 ? (
@@ -240,7 +240,7 @@ export function RuleBadges({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-2xs uppercase tracking-wide text-subtle w-20 shrink-0">
+        <span className="text-style-caption uppercase tracking-wide text-subtle w-20 shrink-0">
           ESLint
         </span>
         {lintRules.length === 0 ? (

@@ -121,12 +121,11 @@ describe("HubBackupPanel", () => {
       fireEvent.change(fileInput);
     });
 
-    // FileReader.onload is async; wait a tick.
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-
-    expect(applyPayloadMock).toHaveBeenCalledTimes(1);
+    // FileReader.onload — окрема jsdom-задача: фіксований тік setTimeout(0)
+    // під навантаженим CI-ранером її не гарантує (перша спроба бачила
+    // 0 викликів, а її запізнілий onload доливався у retry → «2 times»).
+    // waitFor чекає детерміновано.
+    await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
     expect(reloadMock).toHaveBeenCalledTimes(1);
 
     vi.unstubAllGlobals();

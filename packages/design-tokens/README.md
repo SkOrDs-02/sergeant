@@ -4,13 +4,13 @@
 
 ## Що всередині
 
-| Файл                 | Призначення                                                      |
-| -------------------- | ---------------------------------------------------------------- |
-| `tokens.js`          | Базові токени (кольори, шрифти, spacing)                         |
-| `tailwind-preset.js` | Tailwind preset з custom opacity scale (0–100 + спеціальний `8`) |
-| `mobile.js`          | Адаптовані токени для React Native (NativeWind)                  |
-| `index.d.ts`         | TypeScript-типи для токенів                                      |
-| `mobile.d.ts`        | TypeScript-типи для мобільних токенів                            |
+| Файл                 | Призначення                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| `tokens.js`          | Базові токени (кольори, chart-палітри, elevation, z-tier)                                           |
+| `tailwind-preset.js` | Tailwind preset: шрифти, spacing, custom opacity scale (0–100 + спеціальний `8`), typography plugin |
+| `mobile.js`          | Адаптовані токени для React Native (NativeWind)                                                     |
+| `index.d.ts`         | TypeScript-типи для токенів                                                                         |
+| `mobile.d.ts`        | TypeScript-типи для мобільних токенів                                                               |
 
 ## Використання
 
@@ -28,12 +28,14 @@ export default { presets: [preset] /* … */ };
 @config "../tailwind.config.js"; /* підвантажує JS preset як shared layer між web ↔ mobile */
 ```
 
-> **Чому JS preset, не CSS-first `@theme`?** Sergeant ділить токени між Vite-build (Tailwind v4) і NativeWind (досі на Tailwind v3 — див. `docs/90-work/planning/tailwind-v4-migration.md`). Один `tailwind-preset.js` працює в обох runtime-ах; `@theme`-блок було б потрібно дублювати у Metro-конфігу. Рішення зафіксоване Phase 3 міграційного плану.
+> **Чому JS preset, не CSS-first `@theme`?** Sergeant ділить токени між Vite-build (Tailwind v4) і NativeWind (досі на Tailwind v3 — див. [архівний план міграції](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/tailwind-v4-migration.md)). Один `tailwind-preset.js` працює в обох runtime-ах; `@theme`-блок було б потрібно дублювати у Metro-конфігу. Рішення зафіксоване Phase 3 міграційного плану.
 
-## Hard-rules
+## Дизайн-конвенції
 
-- **Opacity scale:** тільки зареєстровані кроки (0, 5, 8, 10, 15, …, 100). Інші — silently dropped Tailwind. Див. [AGENTS.md #8](../../AGENTS.md).
-- **`-strong` companion:** насичені brand fills під `text-white` мають використовувати `-strong` варіант. Див. [AGENTS.md #9](../../AGENTS.md).
+Обидві конвенції тримаються tokens + design-review (ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)) — ESLint їх більше не перевіряє.
+
+- **Opacity scale:** тільки зареєстровані кроки (0, 5, 8, 10, 15, …, 100). Увага: Tailwind v4 компілює й arbitrary alpha (`/12`, `/37`) — білд не відкине off-scale крок, тож порушення ловиться лише на review.
+- **`-strong` companion:** насичені brand fills під `text-white` мають використовувати `-strong` варіант.
 
 ## Тести
 

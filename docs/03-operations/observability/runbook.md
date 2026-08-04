@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -557,9 +557,12 @@ SBOM (Software Bill of Materials) — це machine-readable список **вс�
 
 ## RagQualityGateDegraded
 
-**Що горить**: weekly `.github/workflows/rag-quality-gate.yml` зафіксував
+**Що горить**: прогін `pnpm eval:rag:weekly` зафіксував
 mean `recall@4` < `warn_threshold` (default `0.5`), але ≥ `kill_threshold`
-(default `0.4`). Eval-harness — 50-query golden-set
+(default `0.4`). Крон `.github/workflows/rag-quality-gate.yml` прибрано рішенням
+[ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 (він ганявся
+в mock-режимі), тож цей стан наразі виявляється лише за ручного прогону — автоматичного
+issue чи Sentry-алерту немає. Eval-harness — 50-query golden-set
 [`apps/server/src/__fixtures__/rag-eval/golden.json`](../../../apps/server/src/__fixtures__/rag-eval/golden.json)
 (8 domains, `expected_memory_ids` рефи). PR-21 ввімкне `--mode=live`
 (real Voyage + pgvector retrieval); contract — `apps/server/src/lib/ragEval/

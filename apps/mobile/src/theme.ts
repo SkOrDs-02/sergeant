@@ -20,6 +20,7 @@ import {
   brandColors,
   moduleColors,
   statusColors,
+  chartHex,
   chartPalette,
   chartPaletteList,
 } from "@sergeant/design-tokens/tokens";
@@ -29,6 +30,7 @@ export {
   brandColors,
   moduleColors,
   statusColors,
+  chartHex,
   chartPalette,
   chartPaletteList,
 };
@@ -50,10 +52,12 @@ export const chartColors = {
   },
   /** Nutrition module macro rings */
   nutrition: {
+    // AI-NOTE: kcal has no canonical `chartHex` token — keeps the
+    // pre-existing orange until one is added.
     kcal: "#f97316", // orange-500 — calories
-    protein: brandColors.cyan[700]!, // #0e7490 — protein (matches chartHex.protein)
-    carbs: "#3b82f6", // blue-500 — carbohydrates
-    fat: "#eab308", // yellow-500 — fat
+    protein: chartHex.protein, // #0e7490 — cyan-700
+    carbs: chartHex.carbs, // #567c0f — lime-700 (was blue-500, off-brand)
+    fat: chartHex.fat, // #c23a3a — coral-700 (was yellow-500, off-brand)
     track: brandColors.cream[300]!, // #f5ead8 — background track
   },
   /** Fizruk module charts */

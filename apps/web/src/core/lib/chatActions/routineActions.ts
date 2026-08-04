@@ -7,6 +7,8 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   applyPauseHabitBetween,
   applyResumeHabitFrom,
+  resolveHabitGlyph,
+  upgradeHabitGlyph,
 } from "@sergeant/routine-domain";
 import type {
   MarkHabitDoneAction,
@@ -163,7 +165,9 @@ export function handleRoutineAction(
       const stateBefore = loadRoutineState();
       const nextState = routineCreateHabit(stateBefore, {
         name: trimmed,
-        emoji: emoji || "✓",
+        // `emoji` з tool-call може бути й emoji, і slug — reducer
+        // нормалізує обидва (`@sergeant/routine-domain` → `glyphs.ts`).
+        emoji: resolveHabitGlyph(emoji),
         recurrence: rec,
         weekdays: wdays && wdays.length ? wdays : undefined,
         timeOfDay: tod,
@@ -353,7 +357,7 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const nextState = routineCreateHabit(state, {
         name: evName,
-        emoji: emoji || "📅",
+        emoji: upgradeHabitGlyph(emoji) ?? "calendar-check",
         recurrence: "once",
         startDate: d,
         endDate: d,
@@ -380,9 +384,10 @@ export function handleRoutineAction(
         updated.name = name.trim();
         changes.push(`назва → "${name.trim()}"`);
       }
-      if (emoji) {
-        updated.emoji = emoji;
-        changes.push(`емодзі → ${emoji}`);
+      const nextGlyph = upgradeHabitGlyph(emoji);
+      if (nextGlyph) {
+        updated.emoji = nextGlyph;
+        changes.push(`іконка → ${nextGlyph}`);
       }
       if (recurrence) {
         const allowedRec = new Set(["daily", "weekdays", "weekly", "monthly"]);
@@ -527,7 +532,9 @@ export function handleRoutineAction(
       }
       const pct = days > 0 ? Math.round((doneCount / days) * 100) : 0;
       const parts: string[] = [
-        `Статистика "${habit.emoji || ""} ${habit.name || id}" за ${days} днів:`,
+        // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
+        // тексті чату виглядало б як помилка рендера.
+        `Статистика "${habit.name || id}" за ${days} днів:`,
         `Виконано: ${doneCount}/${days} (${pct}%)`,
         `Поточна серія: ${streak} днів`,
         `Макс. серія: ${maxStreak} днів`,

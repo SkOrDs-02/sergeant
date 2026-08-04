@@ -89,6 +89,19 @@ describe("Measurements page", () => {
     );
   });
 
+  it("contains the wide guide table inside a narrow-layout scroller", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+
+    const scroller = screen.getByTestId("measurement-guide-table-scroll");
+    expect(scroller.className).toContain("max-w-full");
+    expect(scroller.className).toContain("min-w-0");
+    expect(scroller.className).toContain("overflow-x-auto");
+    expect(scroller.firstElementChild?.className).toContain("min-w-[560px]");
+  });
+
   it("disables the submit button when the form is empty (F4)", () => {
     render(<Measurements />);
     expect(getSaveButton()).toBeDisabled();

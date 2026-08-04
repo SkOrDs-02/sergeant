@@ -94,7 +94,7 @@ export function WorkoutsHome({
               className="h-12 text-base"
               onClick={onRequestStart}
             >
-              <Icon name="play" size={16} aria-hidden /> Quick Start
+              <Icon name="play" size={16} aria-hidden /> Швидкий старт
             </Button>
             <Button
               variant="secondary"

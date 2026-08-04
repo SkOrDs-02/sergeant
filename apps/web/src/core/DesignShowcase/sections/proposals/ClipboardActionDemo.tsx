@@ -28,7 +28,7 @@ export function ClipboardActionDemo() {
               0 ₴
             </div>
             <div className="mt-3 rounded-xl border border-dashed border-line px-3 py-6 text-center">
-              <span className="text-2xs text-muted">
+              <span className="text-style-caption text-muted">
                 Порожня форма — вводь вручну
               </span>
             </div>
@@ -54,7 +54,7 @@ export function ClipboardActionDemo() {
                   <span className="block text-style-caption text-text">
                     У буфері: <span className="tabular-nums">250</span>
                   </span>
-                  <span className="block text-2xs text-accent">
+                  <span className="block text-style-caption text-accent">
                     Вставити як витрату?
                   </span>
                 </span>
@@ -76,7 +76,7 @@ export function ClipboardActionDemo() {
             {filled && (
               <div className="mt-2 flex items-center gap-1.5 text-success">
                 <Icon name="check-circle" size={13} />
-                <span className="text-2xs">Заповнено з буфера</span>
+                <span className="text-style-caption">Заповнено з буфера</span>
               </div>
             )}
           </div>

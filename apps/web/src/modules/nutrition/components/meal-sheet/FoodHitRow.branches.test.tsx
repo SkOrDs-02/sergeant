@@ -18,7 +18,7 @@ describe("FoodHitRow", () => {
             brand: "Бренд",
             per100: { kcal: 343, protein_g: 13, fat_g: 3, carbs_g: 72 },
           }}
-          badge="часто"
+          externalSource
           onPick={onPick}
         />
       </ul>,

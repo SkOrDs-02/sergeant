@@ -212,7 +212,7 @@ export function WorkoutItemsList({
                 })
               }
             >
-              {group.restSec || 60} с ★
+              {group.restSec || 60} с
             </button>
             {qOpts.map((sec) => (
               <button

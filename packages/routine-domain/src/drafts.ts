@@ -8,6 +8,7 @@
  */
 
 import { dateKeyFromDate } from "./dateKeys.js";
+import { DEFAULT_ROUTINE_GLYPH, resolveHabitGlyph } from "./glyphs.js";
 import type {
   Habit,
   HabitDraft,
@@ -64,7 +65,7 @@ export function emptyHabitDraft(): HabitDraft {
   const t = routineTodayDate();
   return {
     name: "",
-    emoji: "✓",
+    emoji: DEFAULT_ROUTINE_GLYPH,
     tagIds: [],
     categoryId: null,
     recurrence: "daily",
@@ -95,7 +96,7 @@ export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
 
   return {
     name: draft.name.trim(),
-    emoji: draft.emoji || "✓",
+    emoji: resolveHabitGlyph(draft.emoji),
     tagIds,
     categoryId: draft.categoryId || null,
     recurrence: draft.recurrence || "daily",
@@ -129,7 +130,7 @@ export function habitToDraft(h: Habit): HabitDraft {
       : [0, 1, 2, 3, 4, 5, 6];
   return {
     name: h.name || "",
-    emoji: h.emoji || "✓",
+    emoji: resolveHabitGlyph(h.emoji),
     tagIds: Array.isArray(h.tagIds) ? [...h.tagIds] : [],
     categoryId: h.categoryId || null,
     recurrence: h.recurrence || "daily",

@@ -264,7 +264,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     } = {
       id,
       name: candidate.displayName || candidate.key,
-      emoji: "🔄",
+      emoji: "",
       keyword: candidate.key,
       billingDay: candidate.billingDay || 1,
       currency: candidate.currency === "USD" ? "USD" : "UAH",

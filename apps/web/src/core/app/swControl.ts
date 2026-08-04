@@ -16,11 +16,70 @@ function makeRequestId(prefix: string) {
   return `${prefix}_${Date.now()}_${crypto.randomUUID()}`;
 }
 
+/**
+ * Ceiling on `navigator.serviceWorker.ready` (ms).
+ *
+ * `ready` is a promise that resolves only once a service worker is
+ * **active for this scope** — and it never rejects and never times out on
+ * its own. With no SW registered (dev server, private mode, a failed or
+ * unregistered registration) it simply never settles, so every `await`
+ * behind it wedges its whole call chain forever.
+ *
+ * That is how logout used to hang: `AuthContext.logout` awaited
+ * `swClearCaches()` → `serviceWorker.ready`, the server session was
+ * already destroyed, and the UI stayed rendered as the signed-in user
+ * with no redirect and a spinner that never stopped (аудит 2026-08-04,
+ * знахідка 4). The per-message timeout inside `requestSw` did not help —
+ * it only starts after `ready` resolves.
+ *
+ * 2 s is generous for an already-installed SW (`ready` resolves on the
+ * microtask queue) while keeping a no-SW environment snappy.
+ */
+const SW_READY_TIMEOUT_MS = 2000;
+
+/**
+ * `navigator.serviceWorker.ready` bounded by {@link SW_READY_TIMEOUT_MS}.
+ * Rejects instead of hanging when no service worker ever activates.
+ */
+async function swReady(): Promise<ServiceWorkerRegistration> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("serviceWorker.ready timeout")),
+          SW_READY_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
 async function postToSw(msg: SwRequest): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
-  const reg = await navigator.serviceWorker.ready;
-  const ctl = navigator.serviceWorker.controller || reg.active;
-  ctl?.postMessage?.(msg);
+  // Fire-and-forget, so this must satisfy BOTH halves of the contract:
+  //
+  //   * never block the caller — `ready` can hang forever (see
+  //     {@link SW_READY_TIMEOUT_MS}), and callers like
+  //     `AuthContext.logout` await this on a critical path;
+  //   * never DROP the message — a cold first load can take several
+  //     seconds to install and activate a worker, and the partition hint
+  //     (`SW_SET_USER`) must still land when it finally does, otherwise
+  //     the SW keeps keying cache entries as `anon` for the whole session.
+  //
+  // Hence: resolve immediately, post whenever `ready` settles. Bounding
+  // this one with a timeout would trade the hang for a silent drop.
+  void navigator.serviceWorker.ready
+    .then((reg) => {
+      const ctl = navigator.serviceWorker.controller || reg.active;
+      ctl?.postMessage?.(msg);
+    })
+    .catch(() => {
+      /* no worker ever activates — nothing to hint at */
+    });
 }
 
 async function requestSw<T extends SwResponse["type"]>(
@@ -32,7 +91,7 @@ async function requestSw<T extends SwResponse["type"]>(
   if (!("serviceWorker" in navigator)) {
     throw new Error("serviceWorker unsupported");
   }
-  await navigator.serviceWorker.ready;
+  await swReady();
 
   return await new Promise((resolve, reject) => {
     let done = false;

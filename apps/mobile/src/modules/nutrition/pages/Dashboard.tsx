@@ -18,6 +18,7 @@ import { router } from "expo-router";
 
 import { isApiError } from "@sergeant/api-client";
 import { useApiClient } from "@sergeant/api-client/react";
+import { chartHex } from "@sergeant/design-tokens/tokens";
 import {
   getDayMacros,
   getDaySummary,
@@ -53,6 +54,9 @@ const MACRO_DEFS: readonly MacroDef[] = [
   {
     key: "kcal",
     label: "Ккал",
+    // AI-NOTE: kcal has no canonical `chartHex` token (chartHex only
+    // covers protein/fat/carbs) — keeps the pre-existing orange until one
+    // is added.
     color: "#f97316",
     prefKey: "dailyTargetKcal",
     unit: "",
@@ -60,21 +64,21 @@ const MACRO_DEFS: readonly MacroDef[] = [
   {
     key: "protein_g",
     label: "Білки",
-    color: "#3b82f6",
+    color: chartHex.protein, // cyan-700 #0e7490
     prefKey: "dailyTargetProtein_g",
     unit: "г",
   },
   {
     key: "fat_g",
     label: "Жири",
-    color: "#eab308",
+    color: chartHex.fat, // coral-700 #c23a3a
     prefKey: "dailyTargetFat_g",
     unit: "г",
   },
   {
     key: "carbs_g",
     label: "Вуглев.",
-    color: "#22c55e",
+    color: chartHex.carbs, // lime-700 #567c0f
     prefKey: "dailyTargetCarbs_g",
     unit: "г",
   },

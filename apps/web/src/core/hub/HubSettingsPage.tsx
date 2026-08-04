@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tabs } from "@shared/components/ui/Tabs";
@@ -18,12 +17,11 @@ import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { SectionSkeleton } from "../settings/SettingsPrimitives";
 import { AIDigestSection } from "../settings/AIDigestSection";
-import { AssistantCatalogueSection } from "../settings/AssistantCatalogueSection";
+import { CapabilitiesSection } from "../settings/CapabilitiesSection";
 import { DashboardSection } from "../settings/DashboardSection";
 import { DataExportSection } from "../settings/DataExportSection";
 import { ExperimentalSection } from "../settings/ExperimentalSection";
 import { FeedbackSection } from "../feedback/FeedbackSection";
-import { GeneralSection } from "../settings/GeneralSection";
 import { NotificationsSection } from "../settings/NotificationsSection";
 import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
@@ -87,11 +85,10 @@ const GROUPS = [
     label: "Загальні",
     sections: [
       "dashboard",
-      "general",
       "plan",
       "notifications",
       "ai",
-      "assistant",
+      "capabilities",
       "feedback",
     ],
   },
@@ -139,15 +136,11 @@ function readSettingsGroupParam(search: string): string | null {
 }
 
 export interface HubSettingsPageProps {
-  user: User | null;
   /** The app-owned scroll host. Hash navigation must never scroll document. */
   scrollContainer?: HTMLElement | null;
 }
 
-export function HubSettingsPage({
-  user,
-  scrollContainer,
-}: HubSettingsPageProps) {
+export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
   // Mirror the active inner-tab to `?group=…` so a reload / share keeps the
   // user on the same group. Strip the param for the default group (`general`)
   // to keep the canonical URL clean. `replace: true` matches the prior
@@ -223,13 +216,6 @@ export function HubSettingsPage({
         render: () => <DashboardSection />,
       },
       {
-        id: "general",
-        title: "Загальні",
-        keywords:
-          "загальні онбординг onboarding welcome синхронізація акаунт sync cloud",
-        render: () => <GeneralSection user={user} />,
-      },
-      {
         id: "plan",
         title: "Підписка та план",
         keywords:
@@ -251,11 +237,11 @@ export function HubSettingsPage({
         render: () => <AIDigestSection />,
       },
       {
-        id: "assistant",
-        title: messages.sergeant.capabilitiesSectionTitle,
+        id: "capabilities",
+        title: messages.onboarding.capabilitiesGroupTitle,
         keywords:
-          "асистент команди chat help допомога інструменти каталог можливості tools",
-        render: () => <AssistantCatalogueSection />,
+          "можливості асистент сержант команди chat help допомога інструменти каталог tools знайомство онбординг onboarding що вміє додаток розділи",
+        render: () => <CapabilitiesSection />,
       },
       {
         id: "feedback",
@@ -322,7 +308,7 @@ export function HubSettingsPage({
         render: () => <ExperimentalSection />,
       },
     ],
-    [user],
+    [],
   );
 
   const q = query.trim().toLowerCase();

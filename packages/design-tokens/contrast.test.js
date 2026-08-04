@@ -54,6 +54,17 @@ const PAIRS = [
   ],
   ["finyk-strong on white", brandColors.teal[800], "#ffffff", true], // 2026-07: was emerald[700]
   ["fizruk-strong on white", brandColors.cyan[800], "#ffffff", true],
+  // Dark `--c-accent` — 2026-08 design-audit T1. `--c-accent` had no
+  // `.dark` override (unlike its sibling `--c-ring`), so `text-accent` /
+  // `bg-accent` rendered the light-tier teal-700 on the ink surface
+  // (~3.4:1, sub-AA). Locks the fixed dark tier (teal-400) against the
+  // ink page background.
+  [
+    "accent (dark, teal-400) on ink bg",
+    brandColors.teal[400],
+    inkTheme.surface.bg,
+    true,
+  ],
   // Routine hero (light) — реальні пари з рендера (design-audit F2):
   // світлий градієнт стиснуто до coral-800→700, текст hero-ink #fdf9f3.
   // Пари фіксують обидва стопи, щоб майбутнє «освітлення» героя знову
@@ -76,6 +87,48 @@ const PAIRS = [
     "#fdf9f3",
     brandColors.coral[400],
     false,
+  ],
+  // Fizruk + nutrition hero (light) — 2026-08 design-audit T2: same
+  // failure class as routine F2 above (light end measured ~1.7–2.2:1 for
+  // hero-ink text), fixed the same way — compress to `-800`/`-700`.
+  [
+    "fizruk hero-ink on cyan-700 (hero light end)",
+    "#fdf9f3",
+    brandColors.cyan[700],
+    true,
+  ],
+  [
+    "fizruk hero-ink on cyan-800 (hero dark end)",
+    "#fdf9f3",
+    brandColors.cyan[800],
+    true,
+  ],
+  [
+    "nutrition hero-ink on lime-700 (hero light end)",
+    "#fdf9f3",
+    brandColors.lime[700],
+    true,
+  ],
+  [
+    "nutrition hero-ink on lime-800 (hero dark end)",
+    "#fdf9f3",
+    brandColors.lime[800],
+    true,
+  ],
+  // Finyk hero (light) — 2026-08 design-audit T2 follow-up: compressed to
+  // teal-800 → teal-700 like the other three modules (the old teal-400
+  // light end measured ~1.77:1 for hero-ink text).
+  [
+    "finyk hero-ink on teal-700 (hero light end)",
+    "#fdf9f3",
+    brandColors.teal[700],
+    true,
+  ],
+  [
+    "finyk hero-ink on teal-800 (hero dark end)",
+    "#fdf9f3",
+    brandColors.teal[800],
+    true,
   ],
   // Макро-шкала (бриф «Папір» §3). Сегменти несуть `text-white`, тому
   // тир обирався за AA, а не за яскравістю: -600 із пропозиції аудиту

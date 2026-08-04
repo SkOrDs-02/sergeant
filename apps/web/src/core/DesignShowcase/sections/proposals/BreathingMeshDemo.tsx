@@ -25,9 +25,13 @@ export function BreathingMeshDemo() {
               style={{ background: mesh }}
             />
             <div className="relative flex h-full flex-col justify-end p-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">Hub</p>
+              <p className="text-style-caption uppercase tracking-wide text-muted">
+                Hub
+              </p>
               <p className="text-lg font-semibold text-text">Доброго ранку</p>
-              <p className="text-2xs text-muted mt-1">Статичний фон</p>
+              <p className="text-style-caption text-muted mt-1">
+                Статичний фон
+              </p>
             </div>
           </div>
         </MiniPhone>
@@ -46,9 +50,11 @@ export function BreathingMeshDemo() {
               }}
             />
             <div className="relative flex h-full flex-col justify-end p-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">Hub</p>
+              <p className="text-style-caption uppercase tracking-wide text-muted">
+                Hub
+              </p>
               <p className="text-lg font-semibold text-text">Доброго ранку</p>
-              <p className="text-2xs text-muted mt-1">
+              <p className="text-style-caption text-muted mt-1">
                 {reduced ? "Reduced motion — статично" : "Idle-дихання ~14s"}
               </p>
             </div>

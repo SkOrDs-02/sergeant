@@ -204,7 +204,7 @@ export function PersonalInfoSection({
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
             className={cn(
-              "relative w-20 h-20 rounded-[22px] overflow-hidden",
+              "relative w-20 h-20 rounded-3xl overflow-hidden",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
@@ -310,7 +310,7 @@ export function PersonalInfoSection({
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
             <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
-              Email не підтверджено — перевірте вашу поштову скриньку
+              Email не підтверджено — перевір свою поштову скриньку
             </p>
             <Button
               variant="ghost"

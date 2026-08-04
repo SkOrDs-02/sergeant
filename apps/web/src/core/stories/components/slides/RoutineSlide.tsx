@@ -44,7 +44,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
             <div className="text-3xl font-black leading-none tabular-nums">
               {agg?.overallRate ?? 0}%
             </div>
-            <div className="text-2xs uppercase tracking-wider font-bold text-white/75 mt-0.5">
+            <div className="text-style-overline text-white/75 mt-0.5">
               виконано
             </div>
           </div>

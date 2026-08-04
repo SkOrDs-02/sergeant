@@ -1,7 +1,22 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { baseCoverageConfig } from "@sergeant/config/vitest.base";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      // Build-order незалежність (аудит 2026-08-04): package exports map
+      // `@sergeant/db-schema/pg` резолвиться у dist/pg/index.js, тож на
+      // свіжому checkout без `pnpm --filter @sergeant/db-schema build`
+      // server-тести падали з ERR_MODULE_NOT_FOUND. Алісимо subpath прямо
+      // на src — vitest транспілює TS сам, dist не потрібен. Головний
+      // entry `@sergeant/db-schema` в apps/server/src не імпортується,
+      // тому аліас лише для `/pg` (єдиний вживаний subpath).
+      "@sergeant/db-schema/pg": fileURLToPath(
+        new URL("../../packages/db-schema/src/pg/index.ts", import.meta.url),
+      ),
+    },
+  },
   test: {
     environment: "node",
     // Фонова телеметрія `last_seen_at` вимкнена в unit-прогоні: маршрутні
@@ -42,16 +57,17 @@ export default defineConfig({
         //    modules/digest/weekly-digest.ts. Stale coverage claims in
         //    docs/90-work/tech-debt/backend.md § "Tests coverage map"
         //    reconciled the same day.
-        //
-        // Floors below are deliberately NOT raised to match — this is a
-        // generous static safety net, not the regression gate. The real
-        // gate is the repo-root ratchet (`coverage-ratchet.json` +
-        // docs/02-engineering/testing/README.md § "Coverage ratchet"),
-        // which tracks the 2026-08-01 baseline and fails on any drop.
-        lines: 60,
-        branches: 48,
-        functions: 63,
-        statements: 59,
+        //  - 2026-08-04 actual: lines 92.95 / branches 82.75 / fns 92.05
+        //    (coverage-depth audit, docs/90-work/audits/
+        //    2026-08-04-test-coverage-depth-audit.md). Floors ratcheted to
+        //    fact − 5пп: the old 60/48/63 safety net sat ~30пп below fact —
+        //    a legal degradation corridor no gate would flag. The repo-root
+        //    ratchet (`coverage-ratchet.json`) remains the tight
+        //    "no worse than now" gate; these floors are the hard backstop.
+        lines: 88,
+        branches: 77,
+        functions: 87,
+        statements: 87,
       },
     },
   },

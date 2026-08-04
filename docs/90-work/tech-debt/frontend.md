@@ -3,6 +3,57 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-10-18.
 > **Status:** Active
 
+> **Оновлено 2026-08-04 (design-system deep audit).** Перенесений бек-лог із
+> аудиту дизайн-системи (звіт `docs/90-work/audits/2026-08-04-design-system-deep-audit.md`
+> видалено після фікс-хвилі за рішенням founder-а; історія — у merged PR #607).
+> Автофіксабельне виправлено (dark/hc token-parity, a11y діалогів, text-2xs,
+> mobile re-sync, docs↔ADR-0081). Невиправлений залишок — потребує рішень:
+>
+> 1. **Enforcement-вакуум (high).** Після ADR-0081 opacity-шкала, `-strong`,
+>    hex-бан, module-accent, focus-visible, 12px floor — без жодної механічної
+>    перевірки (ADR-0082 видалив VRT, Storybook CI перевіряє лише білд).
+>    Рішення: дешевий grep/AST-скрипт у lint-ланцюг АБО чесний запис
+>    «review-only» в ADR-0081.
+> 2. **Тема-сліпі чарти (high).** fizruk chartSeries/statusColors — статичні
+>    hex (dark: ~3.3:1); BodyAtlas heat-ramp — статичні THEME_HEX + literal
+>    #fff/#000 gloss. Мігрувати на `rgb(var(--c-chart-*))`-патерн
+>    (ProgressRing — зразок); WeeklyVolumeChart вже мігрований.
+> 3. ~~**Компоненти-сироти.**~~ — **Done.** AccentColorPicker, MacroBarRow,
+>    Prose, PageTransition — видалено (0 споживачів, жодного активного
+>    plan-посилання; MacroBarRow фактично замінений на MacroRings ще в
+>    redesign-v2). Відновлення — з git-історії за потреби. OptimizedImage —
+>    **збережено**: файл несе `@scaffolded`-маркер (Hard Rule #10) з явним
+>    `Do NOT delete`, тож не кандидат на дедкод-прибирання. ProgressBar —
+>    **адоптовано**: 3 ad-hoc `role="progressbar"` (OnboardingProgress,
+>    ValueProgressBar, BackfillProgressPill) мігровано на shared
+>    `<ProgressBar>` (додано `variant="neutral"` для ink-філла); MacroRings
+>    (circular, `ProgressRing`) лишився bespoke — інша сімʼя компонента.
+> 4. **Shared OverlayShell/Drawer.** ~14 файлів hand-roll `role="dialog"`
+>    chrome; SettingsPrimitives.ConfirmModal без useBodyScrollLock;
+>    DeleteAccountDialog — клон Modal.
+> 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
+>    modules/nutrition, активний таб 40px).
+> 6. **DesignShowcase.** Покриває ~25/60 компонентів; proposal-демо — форки
+>    шипнутих компонентів; 132 `text-2xs` + text-[9-10px] у showcase;
+>    DynamicThemeColorDemo/ProposalsVisual — stale #fdf9f3.
+> 7. **44px-аудит у CI.** mobile-ui-audit.spec.ts (єдина автоматична 44px
+>    перевірка) не виконується жодним workflow — додати в critical-flow lane.
+> 8. **Mobile теми (high).** mobile.js — статична dark-only палітра при
+>    light+dark апці (23 споживачі); нема hc-режиму (web 4-mode, mobile
+>    3-mode); типографіка без семантичної шкали (140 sub-12px arbitrary,
+>    469 text-xs); mobile-shell: статус-бар темізується один раз на init,
+>    Android-сплеш без values-night; ProgressRing.tsx — третя off-brand
+>    макро-палітра; residual emerald у global.css (--c-ring/--c-selection-bg/
+>    --c-caret .dark, finyk/routine module-primary блок, hero-gradient-brand).
+> 9. **Сира типографіка ratchet.** 389 text-xs + 108 text-sm проти 1316
+>    text-style-* — правило «торкнувся файлу — мігруй», старт із 3
+>    nutrition-файлів (41 сайт).
+> 10. **Дрібне.** `no-legacy-telegram-parse-mode` — dead-weight правило
+>     плагіна; storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
+>     `title=` ×24 на interactive елементах (інертні на touch); finyk
+>     `--c-finyk-accent`-старт hero тепер на tier-800 — звірити з
+>     «start stop matches accent» коментарем при наступному ретюні.
+
 > **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 27 web / 10 mobile; production `any` **2** by-design; web exhaustive-deps **0**; mobile **9** — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories). §6 follow-up виконано: `HubReports` / `useCoachInsight` / `useWeeklyDigest` coverage.

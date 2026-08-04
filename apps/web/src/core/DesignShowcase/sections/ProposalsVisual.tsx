@@ -59,7 +59,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-3"
           title="Динамічний theme-color"
-          intent="Зараз манифест має один статичний theme_color (#fdf9f3). Пропозиція: колір системної панелі підлаштовується під акцент активного модуля з плавним переходом."
+          intent="Зараз манифест має статичний theme_color, що слідує лише за `--c-bg` (light #f2ecdf / dark #0d1512), але не за модулем. Пропозиція: колір системної панелі підлаштовується під акцент активного модуля з плавним переходом."
         >
           <DynamicThemeColorDemo />
         </ProposalCompareCard>
@@ -143,7 +143,7 @@ export function ProposalsVisualSection() {
           </span>
           <span className="h-px flex-1 bg-line" />
         </div>
-        <p className="text-2xs leading-relaxed text-muted">
+        <p className="text-style-caption leading-relaxed text-muted">
           Кожен мокап — пара «Зараз ↔ Може бути». R2-V-10/16/18 зі списку рев’ю
           прибрано як уже реалізовані вище (DynamicThemeColor · EmptyStateIdle ·
           BottomNavGlow). Анімовані демо поважають prefers-reduced-motion.

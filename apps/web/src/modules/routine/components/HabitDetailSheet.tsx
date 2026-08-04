@@ -24,6 +24,7 @@ import { flexibleStreakBreakdown, maxStreakAllTime } from "../lib/streaks";
 import {
   deleteHabit,
   restoreHabit,
+  setHabitArchived,
   snapshotHabit,
 } from "../lib/routineStorage";
 import {
@@ -34,6 +35,8 @@ import {
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
 import { HabitPauseSection } from "./HabitPauseSection";
 import type { Habit, RoutineState } from "../lib/types";
+import { HabitGlyph } from "./HabitGlyph";
+import { fillName } from "../lib/fillName";
 
 function todayKey(): string {
   // Kyiv-anchored "today" so completion stats don't shift around the
@@ -113,7 +116,27 @@ export function HabitDetailSheet({
   const toast = useToast();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const habit = routine.habits.find((h) => h.id === habitId);
+  const foundHabit = routine.habits.find((h) => h.id === habitId);
+  // Harness/product hardening (2026-08-04, CI critical-lane audit): the
+  // sync engine can refresh `routine` from a still-catching-up SQLite read
+  // (`refreshCachesAfterPull` → `refreshSqliteRoutineState`) while a
+  // just-created habit's own dual-write hasn't landed locally yet — for one
+  // or more renders `routine.habits` transiently omits it. Without a
+  // bridge, `!habit` below unmounts this whole sheet (footer buttons
+  // included), which is exactly the "resolved, then detached from the DOM,
+  // retrying" loop the routine critical-flow lane hit on the footer
+  // «Редагувати» button. Bridging to the last good value for the SAME
+  // habitId rides out the blip; a real removal (delete/archive) always
+  // pairs with an explicit `onClose()` from the caller, so this never
+  // keeps a genuinely-gone habit on screen.
+  const [lastGoodHabit, setLastGoodHabit] = useState<Habit | null>(
+    foundHabit ?? null,
+  );
+  if (foundHabit && foundHabit !== lastGoodHabit) {
+    setLastGoodHabit(foundHabit);
+  }
+  const habit =
+    foundHabit ?? (lastGoodHabit?.id === habitId ? lastGoodHabit : null);
   const completions = useMemo(
     () => routine.completions[habitId] || [],
     [routine.completions, habitId],
@@ -141,6 +164,11 @@ export function HabitDetailSheet({
     return (
       routine.categories.find((c) => c.id === habit.categoryId)?.name || null
     );
+  }, [habit, routine.categories]);
+
+  const categoryGlyph = useMemo(() => {
+    if (!habit?.categoryId) return undefined;
+    return routine.categories.find((c) => c.id === habit.categoryId)?.emoji;
   }, [habit, routine.categories]);
 
   const recLabel = habit
@@ -254,8 +282,28 @@ export function HabitDetailSheet({
     onClose();
   };
 
+  // Архівування живе тут з 2026-08-03: раніше єдиним входом був список у
+  // Налаштуваннях, тож користувач, що відкрив звичку з календаря, мав
+  // вибір «видалити або нічого» — і видаляв разом з історією відміток.
+  const handleToggleArchived = () => {
+    if (!setRoutine) return;
+    const nextArchived = !habit.archived;
+    setRoutine((s) => setHabitArchived(s, habitId, nextArchived));
+    showUndoToast(toast, {
+      msg: fillName(
+        nextArchived
+          ? messages.routine.habitsTab.archived
+          : messages.routine.habitsTab.restored,
+        habitName,
+      ),
+      onUndo: () =>
+        setRoutine((s) => setHabitArchived(s, habitId, !nextArchived)),
+    });
+    if (nextArchived) onClose();
+  };
+
   const footer = canMutate ? (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row">
       <Button
         type="button"
         variant="secondary"
@@ -263,6 +311,16 @@ export function HabitDetailSheet({
         onClick={() => setEditOpen(true)}
       >
         {messages.actions.edit}
+      </Button>
+      <Button
+        type="button"
+        variant="secondary"
+        className="flex-1"
+        onClick={handleToggleArchived}
+      >
+        {habit.archived
+          ? messages.routine.habitsTab.restoreAction
+          : messages.routine.habitsTab.archiveAction}
       </Button>
       <Button
         type="button"
@@ -281,13 +339,14 @@ export function HabitDetailSheet({
         {tag.map((t) => (
           <span
             key={t}
-            className="text-style-caption px-2 py-0.5 rounded-full bg-routine-surface dark:bg-routine-surface-dark/10 border border-routine-line/50 dark:border-routine-border-dark/25 text-routine-strong dark:text-routine font-medium"
+            className="text-style-caption px-2 py-0.5 rounded-full bg-routine-soft border border-routine-soft-border text-routine-soft-fg font-medium"
           >
             {t}
           </span>
         ))}
         {category && (
-          <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi border border-line text-muted font-medium">
+          <span className="text-style-caption inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-panelHi border border-line text-muted font-medium">
+            <HabitGlyph value={categoryGlyph} size="xs" optional />
             {category}
           </span>
         )}
@@ -300,8 +359,9 @@ export function HabitDetailSheet({
         open={!editOpen}
         onClose={onClose}
         title={
-          <span>
-            {habit.emoji} {habit.name}
+          <span className="flex items-center gap-2">
+            <HabitGlyph value={habit.emoji} size="lg" />
+            <span className="truncate">{habit.name}</span>
           </span>
         }
         description={chips}

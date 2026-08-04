@@ -41,7 +41,11 @@ vi.mock("./HubHomeView", () => ({
   HubHomeView: () => <div data-testid="hub-home">hub</div>,
 }));
 
-const mockShell: { activeModule: string | null } = { activeModule: null };
+const mockShell: {
+  activeModule: string | null;
+  user: { id: string } | null;
+  authLoading: boolean;
+} = { activeModule: null, user: null, authLoading: false };
 vi.mock("./HubShellContext", () => ({
   useHubShell: () => mockShell,
 }));
@@ -73,6 +77,8 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     mockRenderStandaloneRoute.mockClear();
     mockRenderStandaloneRoute.mockReturnValue(null);
     mockShell.activeModule = null;
+    mockShell.user = null;
+    mockShell.authLoading = false;
     __resetStorageReadyForTests();
   });
   afterEach(() => {
@@ -114,6 +120,36 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
       replace: true,
     });
+  });
+
+  it("never bounces an AUTHENTICATED user to /welcome, even with the gate open", () => {
+    // Аудит 2026-08-04, знахідка 5: `shouldShowOnboarding()` бачить лише
+    // локальний стан. Користувач, який щойно увійшов на чистому пристрої
+    // (дані на сервері, sync-pull ще не приїхав), отримував анонімний
+    // splash «Це приклад» із кнопкою «У мене вже є акаунт».
+    mockShouldShowOnboarding.mockReturnValue(true);
+    mockShell.user = { id: "u1" };
+
+    renderHubAtRoot();
+
+    expect(screen.getByTestId("hub-home")).toBeTruthy();
+    expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
+      replace: true,
+    });
+  });
+
+  it("defers the onboarding decision until the session settles", () => {
+    // Поки `authLoading` не осів, `user` порожній не тому що його немає, а
+    // тому що `me` ще в польоті — редиректити на цій підставі не можна.
+    mockShouldShowOnboarding.mockReturnValue(true);
+    mockShell.authLoading = true;
+
+    renderHubAtRoot();
+
+    expect(screen.queryByTestId("hub-home")).toBeNull();
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
   });
 
   it("redirects legacy ?module URLs to the active path while preserving hash", async () => {

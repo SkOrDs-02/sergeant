@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`
@@ -180,7 +180,7 @@ Decision-tree коли щось «не працює»:
 - **Sentry:** `https://sergeant-ops.sentry.io/issues/?project=<id>` — окремі projects per surface (web, server).
 - **PostHog:** `https://app.posthog.com/project/<id>/events` — funnel breakdown за подіями з `analyticsEvents.ts`.
 - **Coolify logs:** Coolify UI → app `sergeant-api` → Logs (або SSH на VPS → `docker logs`). Historical: `railway logs` більше не актуальний для API.
-- **Prometheus / Grafana:** немає — observability-стек це Sentry + PostHog + Coolify healthchecks + n8n executions. ADR-0034.
+- **Prometheus / Grafana:** **є.** Сервер експонує `GET /metrics` (bearer `METRICS_TOKEN`), `grafana-alloy` під Coolify скрейпить його і шле у **Grafana Cloud**; alert-rules з [`prometheus/alert_rules.yml`](../observability/prometheus/alert_rules.yml) залиті в Mimir і оцінюються в реальному часі, сигнал іде в Telegram. Дашборди й конфіг — у [`ops/`](../../../ops). Канон стека — [ADR-0015](../../04-governance/adr/0015-observability-stack.md); поточний зріз wiring-у — [`SLO.md § Статус wiring`](../observability/SLO.md#статус-wiring-чесний-зріз-2026-06-26), сценарії розслідування — [`observability/runbook.md`](../observability/runbook.md). Додаткові сигнали: Sentry + PostHog + Coolify healthchecks + n8n executions.
 - **Postgres shell:** Coolify → Postgres resource → connection string (internal). **НЕ** використовуй для writes без compensating migration.
 
 ## 8. Routine maintenance

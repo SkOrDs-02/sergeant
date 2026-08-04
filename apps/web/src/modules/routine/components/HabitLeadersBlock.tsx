@@ -4,6 +4,7 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import type { Habit, RoutineState } from "../lib/types";
+import { HabitGlyph } from "./HabitGlyph";
 
 export interface HabitLeadersBlockProps {
   habits: Habit[];
@@ -60,8 +61,9 @@ export function HabitLeadersBlock({
           <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
             Найстабільніша
           </SectionHeading>
-          <p className="text-style-label text-text truncate">
-            {best.habit.emoji} {best.habit.name}
+          <p className="text-style-label text-text flex items-center gap-1.5 truncate">
+            <HabitGlyph value={best.habit.emoji} size="sm" />
+            <span className="truncate">{best.habit.name}</span>
           </p>
           <p className="text-xs text-subtle mt-0.5 tabular-nums">
             {Math.round(best.rate * 100)}% · {best.completed}/{best.scheduled}
@@ -72,8 +74,9 @@ export function HabitLeadersBlock({
             <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
               Найслабша
             </SectionHeading>
-            <p className="text-style-label text-text truncate">
-              {worst.habit.emoji} {worst.habit.name}
+            <p className="text-style-label text-text flex items-center gap-1.5 truncate">
+              <HabitGlyph value={worst.habit.emoji} size="sm" />
+              <span className="truncate">{worst.habit.name}</span>
             </p>
             <p className="text-xs text-subtle mt-0.5 tabular-nums">
               {Math.round(worst.rate * 100)}% · {worst.completed}/

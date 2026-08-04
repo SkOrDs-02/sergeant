@@ -12,10 +12,27 @@
 
 Every auto-generated artifact in the repo. Currently:
 
-- `docs/open-work.md`
-- `docs/90-work/initiatives/follow-ups.md`
-- `docs/00-start/playbooks/INDEX.md`
-- `docs/04-governance/governance/hard-rules-matrix.md`
+**Повністю генеровані файли** (`pnpm docs:gen-daily` регенерує весь блок):
+
+| Артефакт                                                 | Генератор                            |
+| -------------------------------------------------------- | ------------------------------------ |
+| `docs/open-work.md`                                      | `pnpm docs:gen-open-work`            |
+| `docs/today.md`                                          | `pnpm docs:gen-today`                |
+| `docs/STATUS.md`                                         | `pnpm docs:gen-status`               |
+| `docs/90-work/initiatives/follow-ups.md`                 | `pnpm docs:gen-initiative-followups` |
+| `docs/00-start/playbooks/INDEX.md`                       | `pnpm docs:gen-playbook-index`       |
+| `docs/04-governance/governance/hard-rules-matrix.md`     | `pnpm hard-rules:generate`           |
+| `docs/04-governance/governance/freshness-dashboard.html` | `pnpm docs:freshness-dashboard`      |
+| `docs/04-governance/governance/repo-map.auto.json`       | `pnpm docs:gen-repo-map`             |
+| `docs/02-engineering/architecture/service-catalog.md`    | `pnpm docs:gen-service-catalog`      |
+
+**Частково генеровані** — редагується лише текст поза маркованим регіоном:
+
+| Артефакт                                  | Генерований регіон                                       | Генератор                    |
+| ----------------------------------------- | -------------------------------------------------------- | ---------------------------- |
+| `DESIGN.md`                               | `<!-- AUTOGEN:palette -->` … `<!-- /AUTOGEN:palette -->` | `pnpm design:check-md`       |
+| `README.md`                               | trust-badge блок                                         | `pnpm docs:gen-trust-badge`  |
+| `docs/04-governance/pr-ledger/index.json` | PR-backlink блоки                                        | `pnpm docs:gen-pr-backlinks` |
 
 Add new artifacts here when a new generator lands.
 
@@ -51,7 +68,7 @@ For JSON outputs (e.g. `repo-map.auto.json`), JSON has no comments — instead t
 
 | PR                                                       | Title                                                              | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
 | [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

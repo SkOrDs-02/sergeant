@@ -32,6 +32,7 @@ import type {
   RecallMemoryRequest,
   RecallMemoryResponse,
 } from "@sergeant/shared";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import type {
   ChatAction,
   ChatActionResult,
@@ -183,7 +184,8 @@ async function handleCreateTransaction(
     // `category` поруч із канонічним `categoryId`: blob історично тримає
     // shape із `finykActions/transactions.ts#createTransaction`, і його
     // читачі очікують саме його.
-    const isoDate = new Date(`${expense.date}T12:00:00`).toISOString();
+    const isoDate =
+      parseKyivDate(expense.date)?.toISOString() ?? new Date().toISOString();
     const entry: Transaction & { category: string } = {
       id: expense.id,
       amount: Math.abs(amt),

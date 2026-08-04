@@ -1,6 +1,6 @@
 # 02 · Engineering — архітектура й платформи
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Інженерна довідка: як влаштований моноре́по, API-контракти, платформні
@@ -16,5 +16,6 @@ deep-dive-и й тестова стратегія. Жанр — **informational*
 | [`notes/`](./notes/README.md)               | Design-spike-и й exploratory інженерні нотатки.                        |
 | [`testing/`](./testing/README.md)           | Testing-strategy meta (mutation testing, layer matrix, thresholds).    |
 | [`web/`](./web/README.md)                   | `apps/web` deep-dive (Service Worker update-стратегія).                |
+| [`loops/`](./loops/tech-debt-ratchet.md)    | Tech-debt ratchet: nested-loop runbook для зниження боргу по пакетах.  |
 
 Назад до кореня: [`docs/README.md`](../README.md).

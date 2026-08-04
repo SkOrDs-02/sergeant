@@ -9,7 +9,9 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
-import { useFocusTrap } from "@shared/hooks/useFocusTrap";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { hapticPattern } from "@shared/lib/adapters/haptic";
 import { messages } from "@shared/i18n/uk";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -165,8 +167,10 @@ export const CelebrationModal = memo(function CelebrationModal({
   // transition and fires haptics — matching the original useEffect pattern.
   const prevOpenForVibrateRef = useRef(false);
   useEffect(() => {
-    if (open && !prevOpenForVibrateRef.current && navigator.vibrate) {
-      navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
+    if (open && !prevOpenForVibrateRef.current) {
+      // `hapticPattern` (not raw `navigator.vibrate`) — respects
+      // `prefers-reduced-motion` internally (C6 web-audit).
+      hapticPattern(type === "confetti" ? [50, 30, 50] : [30]);
     }
     prevOpenForVibrateRef.current = open;
   }, [open, type]);
@@ -179,11 +183,15 @@ export const CelebrationModal = memo(function CelebrationModal({
     }, 200);
   }, [onClose]);
 
-  // Focus trap for accessibility — traps Tab within modal and handles Escape
-  const modalRef = useFocusTrap<HTMLDivElement>(
-    open && !isExiting,
-    handleClose,
-  );
+  // Focus trap for accessibility — traps Tab within modal, inerts the
+  // background for the screen-reader virtual cursor, and handles Escape.
+  const modalRef = useRef<HTMLDivElement>(null);
+  const trapOpen = open && !isExiting;
+  useDialogFocusTrap(trapOpen, modalRef, {
+    onEscape: handleClose,
+    inertBackground: true,
+  });
+  useBodyScrollLock(trapOpen);
 
   // Auto-close timer. Pauses while focus or hover lives inside the
   // modal — see F18 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`.
@@ -246,10 +254,30 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     /* icon-size, not type */
     const iconMap: Record<CelebrationType, ReactNode> = {
-      achievement: <span className="text-5xl animate-celebration-pop">🏆</span>,
-      goal: <span className="text-5xl animate-celebration-pop">🎯</span>,
-      levelUp: <span className="text-5xl animate-celebration-pop">⬆️</span>,
-      streak: <span className="text-5xl animate-streak-glow">🔥</span>,
+      // 2026-08-03: emoji-гліфи замінені на іконки дизайн-системи в тому
+      // самому кільці, що вже мав `success`. Emoji тут рендерився системним
+      // шрифтом — на Windows «🏆» приходив плоским, на Android іншого
+      // відтінку, і модалка святкування виглядала по-різному на кожній ОС.
+      achievement: (
+        <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="award" size={32} className="text-warning-strong" />
+        </div>
+      ),
+      goal: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="target" size={32} className="text-brand-strong" />
+        </div>
+      ),
+      levelUp: (
+        <div className="w-16 h-16 rounded-full bg-info/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="arrow-up" size={32} className="text-info" />
+        </div>
+      ),
+      streak: (
+        <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center animate-streak-glow">
+          <Icon name="flame" size={32} className="text-danger-strong" />
+        </div>
+      ),
       success: (
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center animate-success-ring">
           <Icon
@@ -261,7 +289,11 @@ export const CelebrationModal = memo(function CelebrationModal({
         </div>
       ),
       /* icon-size, not type */
-      confetti: <span className="text-6xl animate-celebration-pop">🎉</span>,
+      confetti: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="sparkles" size={32} className="text-brand-strong" />
+        </div>
+      ),
     };
     return iconMap[type];
   };

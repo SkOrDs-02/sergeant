@@ -182,6 +182,9 @@ export async function streamAnthropicToSse(
   }
 
   if (!firstResponse.ok) {
+    // Селтл першого стріму ДО ретрів/кидання: без цього телеметрійний
+    // recordStreamEnd не фіксує terminal-outcome і не чистить свій timeout.
+    firstRecordEnd("error");
     await refundQuotaOnUpstreamFailure(req);
     // Body — одноразовий стрім: `await response.json()` його консьюмить, тож
     // `response.text()` після failed-`.json()` нічого не поверне (тіло вже
@@ -302,10 +305,13 @@ export async function streamAnthropicToSse(
         currentResponse = nextResponse;
         currentRecordEnd = nextRecordEnd;
         continuationsLeft -= 1;
-      } catch (e: unknown) {
-        const message = e instanceof Error ? e.message : String(e);
+      } catch {
+        // Той самий принцип, що й у pre-SSE гілці: сирий провайдерний/мережевий
+        // текст не витікає клієнту — лише generic-повідомлення.
         if (!res.writableEnded) {
-          res.write(`data: ${JSON.stringify({ err: message })}\n\n`);
+          res.write(
+            `data: ${JSON.stringify({ err: "AI continuation failed" })}\n\n`,
+          );
         }
         break;
       }

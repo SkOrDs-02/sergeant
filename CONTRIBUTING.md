@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
@@ -9,13 +9,13 @@
 
 1. Прочитай [AGENTS.md](./AGENTS.md), якщо торкаєшся коду, infra або docs governance.
 2. Знайди playbook для свого сценарію в [docs/00-start/playbooks/playbook-catalog.md](./docs/00-start/playbooks/playbook-catalog.md).
-3. Якщо зміна торкає API, migrations, HubChat, mobile, console agent або deploy surface, працюй за відповідним playbook від початку, а не після факту.
+3. Якщо зміна торкає API, migrations, HubChat, mobile або deploy surface, працюй за відповідним playbook від початку, а не після факту.
 
 ## Setup
 
 Вимоги:
 
-- Node.js `20.x`
+- Node.js `22.x`
 - `pnpm 9.15.1` (закріплено через `package.json` → `engines.pnpm: "9.x"` + `packageManager: "pnpm@9.15.1"`; corepack/Volta вмикають саме цю версію)
 - Docker для локального Postgres
 
@@ -71,7 +71,6 @@ pnpm dev:web
 Опціонально:
 
 - `pnpm --filter @sergeant/mobile start`
-- `pnpm --filter @sergeant/openclaw dev`
 
 ### Локальний secret-scan (gitleaks)
 
@@ -103,7 +102,7 @@ pnpm lint:secrets
 
 ## Щоденний цикл
 
-1. Визнач surface: `web`, `server`, `mobile`, `console`, `ops`, `docs`, `packages/*`.
+1. Визнач surface: `web`, `server`, `mobile`, `ops`, `docs`, `packages/*`.
 2. Відкрий playbook або specialist doc для цього surface.
 3. Зроби найменший узгоджений change-set.
 4. Прожени verification для свого типу зміни.
@@ -124,12 +123,9 @@ pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 Далі додатково за surface:
 
 - `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR torkає `apps/server/src/modules/**/*.routes.ts`, `**/serializers/**` або `apps/server/src/migrations/**` — Detox iOS/Android запускаються автоматично (path-trigger у `.github/workflows/detox-{ios,android}.yml`, [PR-18](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-18-detox-server-shape-trigger.md)). Defence-in-depth перед production-deploy-ом: `api:check-openapi-types` ловить shape drift на рівні codegen-у, Detox — на рівні runtime behaviour (rename полів, response ordering, header changes).
-- `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`. Migration-only PR теж тригерить Detox через `apps/server/src/migrations/**` — schema-change майже завжди передує перейменуванню serializer-а.
-- `server/api`: `pnpm test`, `pnpm api:check-openapi`. Якщо PR торкає `apps/server/src/routes/**` або `apps/server/src/migrations/**`, Detox iOS + Android jobs запускаються автоматично (stack-pulse PR-18 / M2: response-shape change без зміни `apps/mobile/**` ламала mobile у prod). Якщо тести впадуть, перегенеруй `packages/api-client/**` типи у тому самому PR.
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`, `pnpm api:check-openapi-types`. **Detox більше НЕ тригериться на server-зміни**: з web-focus фази 2026-07 `detox-{ios,android}.yml` реагують лише на `apps/mobile/**` і `apps/mobile-shell/**`. Автоматичний захист від response-shape drift — `api:check-openapi-types`; mobile-регресію по серверній зміні ганяй вручну через `workflow_dispatch`. Якщо shape змінився — перегенеруй `packages/api-client/**` типи у тому самому PR.
 - `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
 - `mobile`: `pnpm --filter @sergeant/mobile test`
-- `console`: `pnpm --filter @sergeant/openclaw exec vitest run`
 - `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
 - `testing/devx`: звіряйся з [`docs/90-work/planning/pr-plan-testing-devx-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-testing-devx-2026-05.md) і починай із [`.agents/skills/sergeant-start-here/SKILL.md`](./.agents/skills/sergeant-start-here/SKILL.md). Базові verification-команди — `pnpm lint`, `pnpm typecheck`, `pnpm test` + relevant filter (`pnpm --filter @sergeant/<workspace> test`); E2E / Detox / VRT — лише якщо змінюються відповідні spec-файли.
 
@@ -152,13 +148,12 @@ Playbooks - це канонічні покрокові рецепти викон
 - Prod incident: `hotfix-prod-regression.md`
 - Alerts і деградація: `investigate-alert.md`
 - Web -> mobile porting: `port-web-screen-to-mobile.md`
-- Console agents: `modify-console-agent.md`
 - n8n workflows: `modify-n8n-workflow.md`
 
 ## Commit і PR дисципліна
 
 - Conventional Commits обов'язкові.
-- Scope має описувати touched surface: `web`, `server`, `mobile`, `console`, `docs`, `agents`, `ops`, `shared`, `api-client`.
+- Scope обовʼязковий і має бути зі scope-enum — канонічний список у [`commitlint.config.js`](./commitlint.config.js), дзеркало в [AGENTS.md § Commit and PR conventions](./AGENTS.md#commit-and-pr-conventions). Значення поза enum завалить Husky-хук `commit-msg`.
 - Не використовуй `--no-verify` (Hard Rule #7).
 - Не force-push у `main`/`master`.
 

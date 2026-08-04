@@ -42,7 +42,7 @@ export function PeekExpandableDemo() {
               <span className="text-style-label text-text">
                 Останні витрати
               </span>
-              <span className="ml-auto text-2xs text-subtle tabular-nums">
+              <span className="ml-auto text-style-caption text-subtle tabular-nums">
                 {ITEMS.length} шт
               </span>
             </div>
@@ -57,7 +57,7 @@ export function PeekExpandableDemo() {
                     <p className="text-style-body text-text truncate">
                       {it.title}
                     </p>
-                    <p className="text-2xs text-subtle">{it.meta}</p>
+                    <p className="text-style-caption text-subtle">{it.meta}</p>
                   </div>
                   <span className="text-style-caption text-text tabular-nums">
                     {it.amount}

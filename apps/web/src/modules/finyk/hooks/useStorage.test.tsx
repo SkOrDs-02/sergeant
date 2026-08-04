@@ -63,6 +63,19 @@ describe("useStorage composition root", () => {
     expect(result.current.excludedTxIds.has("transfer-1")).toBe(true);
   });
 
+  it("keeps debt-linked tx ids OUT of excludedTxIds (they stay visible in stats)", () => {
+    // debtLinkedTxIds tracks mono-debt-linked transactions so they can be
+    // surfaced under the "Борги та кредити" category — unlike
+    // internal-transfer / hidden tx ids, they must NOT be filtered out of
+    // the stats-facing excludedTxIds set.
+    const { result } = renderHook(() => useStorage(), { wrapper });
+    act(() => {
+      result.current.toggleMonoDebtTx("acc-1", "debt-tx-1");
+    });
+    expect(result.current.debtLinkedTxIds.has("debt-tx-1")).toBe(true);
+    expect(result.current.excludedTxIds.has("debt-tx-1")).toBe(false);
+  });
+
   it("saveNetworthSnapshot appends a month entry to networthHistory", () => {
     const { result } = renderHook(() => useStorage(), { wrapper });
     act(() => {

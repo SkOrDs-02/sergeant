@@ -215,7 +215,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
     <main className="mx-auto max-w-3xl p-6">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold">{messages.strategy.title}</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted">
           {messages.strategy.weekPrefix} <code>{weekStart}</code> &middot;{" "}
           {messages.strategy.placeholderTag}
         </p>
@@ -290,11 +290,9 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
           {messages.strategy.thisWeeksGoals}
         </h2>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">
-            {messages.strategy.loading}
-          </p>
+          <p className="text-sm text-muted">{messages.strategy.loading}</p>
         ) : goals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted">
             {messages.strategy.emptyStatePrefix} {weekStart}{" "}
             {messages.strategy.emptyStateSuffix}
           </p>
@@ -312,7 +310,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
                         key={g.id}
                         className="rounded-md border border-line px-3 py-2 text-sm"
                       >
-                        <span className="font-mono text-xs text-muted-foreground">
+                        <span className="font-mono text-xs text-muted">
                           #{g.id} · {g.status}
                         </span>
                         <div>{g.goalText}</div>

@@ -1,6 +1,6 @@
 # Playbook: Add React Query Hook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.
@@ -145,7 +145,7 @@ it("повертає прогноз для місяця", async () => {
 
 ### 6. Optional: prefetch у Server-Side або at-route-level
 
-Якщо хук критичний для first paint — додай prefetch у `apps/web/src/core/App.tsx` або у відповідному route-level loader-і:
+Якщо хук критичний для first paint — додай prefetch у route-level loader `apps/web/src/core/lib/useModuleRouteLoader.ts` (там уже живуть наявні `queryClient.prefetchQuery`-виклики) або у відповідному module-level loader-і:
 
 ```ts
 queryClient.prefetchQuery({

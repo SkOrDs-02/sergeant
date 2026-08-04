@@ -121,7 +121,7 @@ describe("runReminderSweep", () => {
     // банер там, де сервер уже вважає нагадування надісланим.
     expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
       tag: claims[0]?.dedupKey,
-      title: "🏃 Зарядка",
+      title: "Зарядка",
     });
   });
 

@@ -8,6 +8,7 @@ import { Button } from "@shared/components/ui/Button";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
+import { HabitGlyph } from "../HabitGlyph";
 
 export interface HabitListItemProps {
   habit: Habit;
@@ -66,8 +67,9 @@ export const HabitListItem = memo(function HabitListItem({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="text-style-label">
-            {h.emoji} {h.name}
+          <span className="text-style-label flex items-center gap-1.5">
+            <HabitGlyph value={h.emoji} size="sm" />
+            <span className="truncate">{h.name}</span>
           </span>
           <p className="text-style-caption text-subtle mt-0.5">
             {recLabel}
