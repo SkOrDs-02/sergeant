@@ -206,3 +206,54 @@ export function findInternalTransferSuggestions(
     })
     .map(({ markerCount: _markerCount, ...suggestion }) => suggestion);
 }
+
+/**
+ * Stable identity for a suggestion pair, shared by the detection engine,
+ * persistence layer (`storageKeys.ts`), and the `TransferSuggestionCard`
+ * call site — `${outgoing.id}:${incoming.id}`.
+ */
+export function transferSuggestionPairKey(
+  suggestion: Pick<InternalTransferSuggestion, "outgoing" | "incoming">,
+): string {
+  return `${suggestion.outgoing.id}:${suggestion.incoming.id}`;
+}
+
+export interface TransferSuggestionFilterOptions {
+  /**
+   * Pair keys permanently rejected via the "Не переказ" action — never
+   * re-shown, on this device, regardless of the underlying transactions
+   * still matching the detection heuristic.
+   */
+  rejectedPairKeys?: ReadonlySet<string> | readonly string[] | undefined;
+  /**
+   * Pair keys snoozed via the "Не зараз" action, mapped to the Kyiv day
+   * key (`YYYY-MM-DD`, see `getKyivDayKey()`) the snooze was set on. A
+   * pair stays hidden only while `todayKey` still equals its stored day
+   * key — once the Kyiv calendar day advances the suggestion is eligible
+   * again.
+   */
+  snoozedPairKeys?: Readonly<Record<string, string>> | undefined;
+  /** Current Kyiv day key (`YYYY-MM-DD`), e.g. from `getKyivDayKey()`. */
+  todayKey: string;
+}
+
+/**
+ * Removes permanently-rejected and still-snoozed pairs from a suggestion
+ * list. Pure filter — callers own reading/writing the reject/snooze state
+ * (see `Transactions.tsx` + `packages/finyk-domain/src/storageKeys.ts`).
+ */
+export function filterTransferSuggestions(
+  suggestions: readonly InternalTransferSuggestion[],
+  options: TransferSuggestionFilterOptions,
+): InternalTransferSuggestion[] {
+  const rejected =
+    options.rejectedPairKeys instanceof Set
+      ? options.rejectedPairKeys
+      : new Set(options.rejectedPairKeys ?? []);
+  const snoozed = options.snoozedPairKeys ?? {};
+  return suggestions.filter((suggestion) => {
+    const key = transferSuggestionPairKey(suggestion);
+    if (rejected.has(key)) return false;
+    return snoozed[key] !== options.todayKey;
+  });
+}
