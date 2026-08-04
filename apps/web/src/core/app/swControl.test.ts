@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { swClearCaches, swGetDebugSnapshot } from "./swControl";
+import {
+  swClearCaches,
+  swGetDebugSnapshot,
+  swSetActiveUser,
+} from "./swControl";
 
 function installServiceWorkerMock() {
   const et = new EventTarget();
@@ -84,6 +88,38 @@ describe("swControl", () => {
     );
 
     await expect(p).resolves.toEqual(result);
+  });
+
+  it("swSetActiveUser resolves immediately but still posts once a slow SW activates", async () => {
+    // Fire-and-forget мусить і не блокувати викликача, і не ГУБИТИ
+    // повідомлення: холодний перший візит активує воркер за кілька секунд, а
+    // partition-хінт має доїхати, інакше SW ключує кеш як `anon` усю сесію.
+    const controller = { postMessage: vi.fn() };
+    let activate: (reg: unknown) => void = () => {};
+    Object.defineProperty(globalThis.navigator, "serviceWorker", {
+      value: {
+        controller,
+        ready: new Promise((resolve) => {
+          activate = resolve;
+        }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      configurable: true,
+    });
+
+    // Не блокує викликача навіть до активації.
+    await swSetActiveUser("u1");
+    expect(controller.postMessage).not.toHaveBeenCalled();
+
+    activate({ active: controller });
+    await vi.waitFor(() =>
+      expect(controller.postMessage).toHaveBeenCalledTimes(1),
+    );
+    expect(controller.postMessage.mock.calls[0]![0]).toMatchObject({
+      type: "SW_SET_USER",
+      data: { userKey: "u1" },
+    });
   });
 
   it("swClearCaches rejects instead of hanging when serviceWorker.ready never settles", async () => {

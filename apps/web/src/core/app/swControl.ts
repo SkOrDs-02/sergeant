@@ -60,16 +60,26 @@ async function swReady(): Promise<ServiceWorkerRegistration> {
 
 async function postToSw(msg: SwRequest): Promise<void> {
   if (!("serviceWorker" in navigator)) return;
-  // No SW to talk to is not an error for a fire-and-forget post — the
-  // caller's intent (partition hint) is moot without a worker.
-  let reg: ServiceWorkerRegistration;
-  try {
-    reg = await swReady();
-  } catch {
-    return;
-  }
-  const ctl = navigator.serviceWorker.controller || reg.active;
-  ctl?.postMessage?.(msg);
+  // Fire-and-forget, so this must satisfy BOTH halves of the contract:
+  //
+  //   * never block the caller — `ready` can hang forever (see
+  //     {@link SW_READY_TIMEOUT_MS}), and callers like
+  //     `AuthContext.logout` await this on a critical path;
+  //   * never DROP the message — a cold first load can take several
+  //     seconds to install and activate a worker, and the partition hint
+  //     (`SW_SET_USER`) must still land when it finally does, otherwise
+  //     the SW keeps keying cache entries as `anon` for the whole session.
+  //
+  // Hence: resolve immediately, post whenever `ready` settles. Bounding
+  // this one with a timeout would trade the hang for a silent drop.
+  void navigator.serviceWorker.ready
+    .then((reg) => {
+      const ctl = navigator.serviceWorker.controller || reg.active;
+      ctl?.postMessage?.(msg);
+    })
+    .catch(() => {
+      /* no worker ever activates — nothing to hint at */
+    });
 }
 
 async function requestSw<T extends SwResponse["type"]>(
