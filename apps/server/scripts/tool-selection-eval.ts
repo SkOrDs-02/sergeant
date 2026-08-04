@@ -119,6 +119,7 @@ function scoreCase(toolCase: ToolCase, picked: string[]): boolean {
   const hit = (a: string) => picked.some((p) => p.startsWith(`${a}(`));
   if (toolCase.expectNoTool) return picked.length === 0;
   if (toolCase.requireAll) return toolCase.accept.every(hit);
+  if (toolCase.acceptRefusal && picked.length === 0) return true;
   return toolCase.accept.some(hit);
 }
 
@@ -158,6 +159,16 @@ interface ToolCase {
   expectNoTool?: boolean;
   /** Потрібні ВСІ інструменти зі списку, а не будь-який (складені прохання). */
   requireAll?: boolean;
+  /**
+   * Відмова словами теж зараховується.
+   *
+   * AI-CONTEXT: у кейсі «неіснуюча сутність» блок ДАНІ вже містить повний
+   * список звичок, тож `query_habits` — зайвий рід-виклик. `glm-5.2` відповів
+   * «у твоїй рутині немає медитації, створити?» і отримав MISS, хоча це краща
+   * поведінка за очікувану. Пастка цього кейса — вигаданий `hab_meditation`,
+   * і її ловить окремий лічильник `hallucinated`, а не цей предикат.
+   */
+  acceptRefusal?: boolean;
 }
 
 const CASES: ToolCase[] = [
@@ -240,6 +251,7 @@ const CASES: ToolCase[] = [
     name: "неіснуюча сутність",
     user: "Познач що я сьогодні медитував",
     accept: ["query_habits", "create_habit"],
+    acceptRefusal: true,
   },
 ];
 
