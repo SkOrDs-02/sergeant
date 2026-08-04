@@ -248,22 +248,18 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       </div>
 
       <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
-        <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
-          <div
-            aria-hidden="true"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              marginRight: 4,
-              paddingTop: 16,
-            }}
-          >
+        <div className="flex items-start">
+          <div aria-hidden="true" className="flex flex-col gap-0.5 mr-1 pt-4">
+            {/* AI-CONTEXT: визнаний виняток — chart axis tick. Row height
+                (12px) mirrors the 12×12 heatmap cell + 2px gap it labels;
+                the 12px typography floor (Hard Rule #16) doesn't apply to
+                axis ticks, and bumping this to text-style-caption's 1.4
+                line-height would overflow the fixed row and desync the
+                weekday labels from their cell rows. */}
             {DAY_LABELS.map((lbl, i) => (
               <div
                 key={i}
-                style={{ height: 12, fontSize: 10, lineHeight: "12px" }}
-                className="text-subtle text-right pr-1 select-none"
+                className="h-3 leading-3 text-2xs text-subtle text-right pr-1 select-none"
               >
                 {lbl}
               </div>
@@ -273,22 +269,14 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
           <div
             role="group"
             aria-label="Теплова карта активності за рік"
-            style={{ display: "flex", gap: 2 }}
+            className="flex gap-0.5"
           >
             {weeks.map((week, w) => (
-              <div
-                key={w}
-                style={{ display: "flex", flexDirection: "column", gap: 2 }}
-              >
+              <div key={w} className="flex flex-col gap-0.5">
+                {/* AI-CONTEXT: визнаний виняток — chart axis tick, see above. */}
                 <div
                   aria-hidden="true"
-                  style={{
-                    height: 14,
-                    fontSize: 10,
-                    lineHeight: "14px",
-                    whiteSpace: "nowrap",
-                  }}
-                  className="text-subtle select-none"
+                  className="h-3.5 leading-[14px] text-2xs text-subtle whitespace-nowrap select-none"
                 >
                   {monthMarkers.find((m) => m.weekIdx === w)?.label ?? ""}
                 </div>
@@ -319,13 +307,12 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                     aria-pressed={cell.key === selected}
                     data-today={cell.isToday ? "true" : undefined}
                     className={cn(
-                      "rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
+                      "w-3 h-3 shrink-0 rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
                       HEATMAP.outline,
                       cellBg(cell.ratio, cell.isFuture),
                       cell.isToday && cn("ring-1", HEATMAP.ring),
                       cell.key === selected && "opacity-60",
                     )}
-                    style={{ width: 12, height: 12, flexShrink: 0 }}
                   />
                 ))}
               </div>
@@ -370,8 +357,10 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                 key={i}
                 role="img"
                 aria-label={`Рівень ${i + 1}`}
-                className={cn("rounded-sm inline-block shrink-0", c)}
-                style={{ width: 10, height: 10 }}
+                className={cn(
+                  "w-2.5 h-2.5 rounded-sm inline-block shrink-0",
+                  c,
+                )}
               />
             ))}
             <span>більше</span>

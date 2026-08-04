@@ -25,7 +25,8 @@
  * У Sergeant це violation #11. Замість того використовуємо `bg-ink-strong`
  * — semantic token що мапиться на emerald-900 в light / white в dark /
  * pure #000 в HC (via PR-1). Контрастний text-bg-base inverts через
- * theme. Amber icon уживає `bg-celebration-soft` token (PR-1).
+ * theme. Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
+ * помилково називав неіснуючий `bg-celebration-soft` token).
  *
  * ## Module context
  *

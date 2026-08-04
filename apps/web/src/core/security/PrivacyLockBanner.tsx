@@ -21,8 +21,8 @@ export function PrivacyLockBanner() {
   return (
     <div className="mx-auto max-w-lg px-4 pb-3">
       <div className="relative rounded-2xl border border-dashed border-line bg-panel px-4 py-3.5 flex items-start gap-3">
-        <div className="shrink-0 mt-0.5 w-9 h-9 rounded-xl bg-finyk-soft flex items-center justify-center">
-          <Icon name="lock" size="sm" className="text-finyk" aria-hidden />
+        <div className="shrink-0 mt-0.5 w-9 h-9 rounded-xl bg-brand-soft flex items-center justify-center">
+          <Icon name="lock" size="sm" className="text-brand" aria-hidden />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">

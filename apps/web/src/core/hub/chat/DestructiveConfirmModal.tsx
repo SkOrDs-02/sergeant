@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-25
+ * Last validated: 2026-08-04
  * Status: Active
  *
  * Діалог згоди перед незворотними chat-діями (канон `hub-coach` §8).
@@ -8,10 +8,15 @@
  * абстрактне «Виконати дію?». Користувач тут погоджується на видалення або
  * перезапис, і згода без предмета — не згода. Мітки беремо з реєстру
  * здібностей, щоб діалог і каталог казали про одну дію тими самими словами.
+ *
+ * AI-NOTE: Раніше — bespoke overlay без focus trap / Escape / scroll lock.
+ * Тепер тонка обгортка над `<ConfirmDialog>` (shared, C1 web-audit) —
+ * canonical alertdialog з `useDialogFocusTrap` (inert background) +
+ * `useBodyScrollLock`, той самий shell, що й `ConfirmDialog` скрізь у web.
  */
 import { ASSISTANT_CAPABILITIES } from "@sergeant/shared";
 
-import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { messages } from "@shared/i18n/uk";
 
 const m = messages.hub.destructiveConfirm;
@@ -32,61 +37,38 @@ export function DestructiveConfirmModal({
   onConfirm,
   onCancel,
 }: DestructiveConfirmModalProps) {
-  if (!toolNames || toolNames.length === 0) return null;
+  const open = !!toolNames && toolNames.length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-120 flex items-center justify-center p-4"
-      role="presentation"
-    >
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onCancel}
-        role="presentation"
-      />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="destructive-confirm-title"
-        className="relative w-full max-w-sm rounded-2xl border border-line bg-panel p-4 shadow-xl"
-      >
-        <h2
-          id="destructive-confirm-title"
-          className="text-style-label-lg text-text"
-        >
-          {m.title}
-        </h2>
-        <p className="mt-1 text-style-caption text-subtle leading-relaxed">
-          {m.body}
-        </p>
-        <ul className="mt-3 space-y-1">
-          {toolNames.map((name, i) => (
-            <li
-              // Один і той самий інструмент може прийти в батчі двічі
-              // (наприклад, два видалення), тож ім'я не унікальне —
-              // ключ складений з індексом.
-              key={`${name}_${i}`}
-              className="text-style-body text-text"
-            >
-              • {LABEL_BY_ID.get(name) ?? name}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-            {m.cancel}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-danger-strong"
-            onClick={onConfirm}
-          >
-            {m.confirm}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      open={open}
+      title={m.title}
+      description={
+        toolNames &&
+        toolNames.length > 0 && (
+          <>
+            {m.body}
+            <ul className="mt-2 space-y-1">
+              {toolNames.map((name, i) => (
+                <li
+                  // Один і той самий інструмент може прийти в батчі двічі
+                  // (наприклад, два видалення), тож ім'я не унікальне —
+                  // ключ складений з індексом.
+                  key={`${name}_${i}`}
+                  className="text-style-body text-text"
+                >
+                  • {LABEL_BY_ID.get(name) ?? name}
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+      confirmLabel={m.confirm}
+      cancelLabel={m.cancel}
+      danger
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
   );
 }

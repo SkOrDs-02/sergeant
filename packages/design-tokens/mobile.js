@@ -28,24 +28,24 @@
  *   infoStrong: string;
  * }>}
  *
- * AI-NOTE: `accent` must match web `statusColors.success` / `--c-accent`
- * (#10b981, emerald-500) so that Sergeant's brand accent is identical
- * cross-platform. Keep `success` / `warning` / `danger` / `info` aligned
- * with `statusColors` in `./tokens.js`.
+ * AI-NOTE: `accent` must match web `--c-accent`
+ * (#0f766e, teal-700; 2026-07: was #10b981 emerald-500) so that Sergeant's
+ * brand accent is identical cross-platform. Keep `success` / `warning` /
+ * `danger` / `info` aligned with `statusColors` in `./tokens.js` (these
+ * stay emerald/amber/red/sky — the 2026-07 rebrand only moved the brand
+ * accent + finyk module hue to teal, not status semantics).
  *
  * AI-CONTEXT: `*Strong` companions mirror the web `*-strong` Tailwind
  * tokens introduced in PR #854 / docs/design/brand-palette-wcag-aa-proposal.md.
- * On the current *dark-only* mobile theme the saturated `*` shades already
- * clear WCAG AA against `bg` / `surface` (emerald-500 ≈ 5.4:1, amber-500
- * ≈ 8.3:1, etc.) — `*Strong` is **not** required there, and using it on
- * dark surfaces would actually regress contrast (emerald-700 ≈ 2.0:1 on
- * `#13161b`). The fields are exported now so RN primitives can adopt the
- * same naming the web uses, and so when mobile gains a *light* theme
- * (`darkMode: "class"` is already wired in `apps/mobile/tailwind.config.js`)
- * the strong shades become the correct on-cream choice without another
- * token migration. Components rendering on the current dark theme should
- * keep using the saturated `*` value; switch to `*Strong` only inside
- * code paths gated on the light scheme.
+ * The mobile theme is light+dark (via `ColorSchemeBridge`, wired through
+ * `darkMode: "class"` in `apps/mobile/tailwind.config.js`) — `apps/mobile/
+ * global.css` carries a full `:root` / `.dark` pair, same as web. These
+ * JS-exported `colors.*` fields stay static (a single light-tier hex per
+ * key) — StyleSheet-based consumers that need to react to the active
+ * scheme should prefer the NativeWind `bg-{c}` / `text-{c}` utilities
+ * (theme-aware via the CSS vars in `apps/mobile/global.css`) over
+ * `colors.*`. `*Strong` is the on-cream / on-white companion for fills
+ * under `text-white`.
  *
  * NativeWind utilities `bg-{c}-strong` / `text-{c}-strong` are already
  * available via `tailwind-preset.js` — these JS exports cover the
@@ -58,14 +58,14 @@ export const colors = Object.freeze({
   border: "#1f242c",
   text: "#f2f4f7",
   textMuted: "#8a94a6",
-  accent: "#10b981",
+  accent: "#0f766e", // teal-700 (2026-07: was #10b981 emerald-500)
   success: "#10b981",
   warning: "#f59e0b",
   danger: "#ef4444",
   info: "#0ea5e9",
   // WCAG-AA companions for light surfaces (see AI-CONTEXT above).
-  // emerald-700 / amber-700 / red-700 / sky-700.
-  accentStrong: "#047857",
+  // teal-800 / emerald-700 / amber-700 / red-700 / sky-700.
+  accentStrong: "#115e59", // teal-800 (2026-07: was #047857 emerald-700)
   successStrong: "#047857",
   warningStrong: "#b45309",
   dangerStrong: "#b91c1c",
