@@ -68,7 +68,7 @@ describe("WorkoutsHome", () => {
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
   });
 
-  it("shows exactly Quick Start and template as workout start paths", () => {
+  it("shows exactly «Швидкий старт» and template as workout start paths", () => {
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
@@ -82,7 +82,7 @@ describe("WorkoutsHome", () => {
     expect(screen.getByText("Немає активного тренування")).toBeInTheDocument();
     const startPaths = screen.getByLabelText("Способи почати тренування");
     expect(startPaths.querySelectorAll("button")).toHaveLength(2);
-    fireEvent.click(screen.getByText("Quick Start"));
+    fireEvent.click(screen.getByText("Швидкий старт"));
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Із шаблону"));
     expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);

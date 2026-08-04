@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// Render-test for the «Розрахувати з профілю» CTA on `DailyPlanCard`.
+// Render-test for the «Підказати з пресету» CTA on `DailyPlanCard`.
 // The button is the user-visible end of `lib/tdee.ts` — once we know
 // the maths is correct (`tdee.test.ts`), all that's left is to assert
 // the dropdown:
@@ -80,7 +80,10 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe("DailyPlanCard «Розрахувати з профілю»", () => {
+// Тригер називається «Підказати з пресету»: TDEE-калькулятор і статичний
+// пресет-набір злиті в один контрол (див. JSDoc у
+// `DailyPlanGoalSelectors.tsx`). Стара назва лишалась тільки в підписах.
+describe("DailyPlanCard «Підказати з пресету»", () => {
   it("shows the profile hint when biometrics is incomplete", () => {
     renderCard();
 

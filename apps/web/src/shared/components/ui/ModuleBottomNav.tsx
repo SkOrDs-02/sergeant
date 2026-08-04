@@ -279,7 +279,18 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                     />
                   )}
                 </span>
+                {/*
+                  `aria-hidden`: цей span — ВІЗУАЛЬНА половина лейбла, яка
+                  згортається анімацією (`max-w-0 opacity-0`) для неактивних
+                  вкладок. Нульова ширина й `opacity: 0` НЕ прибирають текст із
+                  дерева доступності, тож разом із `sr-only`-двійником нижче
+                  скрінрідер читав ім'я двічі — «ОпераціїОперації» (аудит
+                  2026-08-04, знахідка 15). Єдиним джерелом імені лишаємо
+                  `sr-only`-span: він не залежить від того, як саме візуальна
+                  половина ховається зараз чи ховатиметься після редизайну.
+                */}
                 <span
+                  aria-hidden
                   className={cn(
                     "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
                     "transition-[max-width,opacity] duration-200 motion-reduce:transition-none",
