@@ -6,10 +6,10 @@ const TIERS = [
   { min: 3, label: "Розгін", color: "251 191 36", glow: 0.25 }, // amber
   { min: 7, label: "Вогонь", color: "249 115 22", glow: 0.45 }, // orange
   { min: 30, label: "Легенда", color: "239 68 68", glow: 0.7 }, // red
-];
+] as const;
 
 function tierFor(days: number) {
-  return TIERS.reduce((acc, t) => (days >= t.min ? t : acc), TIERS[0]!);
+  return TIERS.reduce((acc, t) => (days >= t.min ? t : acc), TIERS[0]);
 }
 
 const FLAME_PATH =
@@ -25,7 +25,7 @@ const FLAME_PATH =
  * Тягни повзунок — ліворуч полумʼя незмінне, праворуч росте tier-ами.
  */
 function Flame({ days, tiered }: { days: number; tiered: boolean }) {
-  const t = tiered ? tierFor(days) : TIERS[2]!; // fixed "Вогонь" look when not tiered
+  const t = tiered ? tierFor(days) : TIERS[2]; // fixed "Вогонь" look when not tiered
   const size = tiered ? 1 + Math.min(days, 40) / 60 : 1.1;
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5">
@@ -47,7 +47,7 @@ function Flame({ days, tiered }: { days: number; tiered: boolean }) {
       <p className="text-3xl font-semibold text-text">
         {days} <span className="text-base font-normal text-muted">днів</span>
       </p>
-      <p className="text-2xs text-muted">
+      <p className="text-style-caption text-muted">
         {tiered ? t.label : "Завжди однаково"}
       </p>
     </div>
@@ -81,7 +81,7 @@ export function StreakTiersDemo() {
           className="w-full accent-[rgb(var(--c-accent-rgb))]"
           aria-label="Довжина серії"
         />
-        <div className="flex justify-between text-2xs text-muted mt-1">
+        <div className="flex justify-between text-style-caption text-muted mt-1">
           {TIERS.map((tier) => (
             <span
               key={tier.label}

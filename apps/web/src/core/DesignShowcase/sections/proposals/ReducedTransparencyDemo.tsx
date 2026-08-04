@@ -45,7 +45,7 @@ function Scene({ reduced }: { reduced: boolean }) {
             )}
           >
             <p className="text-style-caption text-text">Підсумок дня</p>
-            <p className="text-2xs text-muted mt-1">
+            <p className="text-style-caption text-muted mt-1">
               {reduced
                 ? "Суцільна панель, без blur"
                 : "Скляна панель поверх mesh"}
@@ -53,7 +53,7 @@ function Scene({ reduced }: { reduced: boolean }) {
           </div>
         </div>
       </div>
-      <p className="text-2xs text-muted p-2">
+      <p className="text-style-caption text-muted p-2">
         {reduced ? "prefers-reduced-transparency" : "Стандарт (glass + mesh)"}
       </p>
     </CompareTile>

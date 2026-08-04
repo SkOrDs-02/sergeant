@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   chartSeries,
+  chartStatusSeries,
   chartAxis,
   chartGrid,
   chartTick,
@@ -15,6 +16,18 @@ describe("chartTheme", () => {
       expect(chartSeries[mod]).toHaveProperty("secondary");
       expect(chartSeries[mod]).toHaveProperty("surface");
       expect(typeof chartSeries[mod].primary).toBe("string");
+    }
+  });
+
+  it("chartSeries[mod].primary is var-backed (theme-reactive), not a static hex", () => {
+    for (const mod of ["finyk", "fizruk", "routine", "nutrition"] as const) {
+      expect(chartSeries[mod].primary).toBe(`rgb(var(--c-chart-${mod}))`);
+    }
+  });
+
+  it("exposes var-backed chartStatusSeries for success/warning/danger/info", () => {
+    for (const status of ["success", "warning", "danger", "info"] as const) {
+      expect(chartStatusSeries[status]).toBe(`rgb(var(--c-chart-${status}))`);
     }
   });
 

@@ -57,7 +57,7 @@ function Card({ forced }: { forced: boolean }) {
           {["Вода", "Читання"].map((t) => (
             <div
               key={t}
-              className="h-8 rounded-lg flex items-center px-2 text-2xs border"
+              className="h-8 rounded-lg flex items-center px-2 text-style-caption border"
               style={
                 forced
                   ? { borderColor: "#fff", color: "#fff" }
@@ -73,7 +73,7 @@ function Card({ forced }: { forced: boolean }) {
         </div>
       </div>
       <p
-        className="text-2xs mt-2"
+        className="text-style-caption mt-2"
         style={forced ? { color: "#fff" } : { color: "rgb(var(--c-muted))" }}
       >
         {forced ? "forced-colors: борди зберігають межі" : "Стандарт"}

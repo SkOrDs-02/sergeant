@@ -26,7 +26,7 @@ export function MacroRingDemo() {
           <div className="w-full flex flex-col gap-3">
             {MACROS.map((m) => (
               <div key={m.key} className="flex flex-col gap-1">
-                <div className="flex justify-between text-2xs text-muted">
+                <div className="flex justify-between text-style-caption text-muted">
                   <span>{m.label}</span>
                   <span className="tabular-nums">
                     {Math.round(m.pct * 100)}%
@@ -44,7 +44,9 @@ export function MacroRingDemo() {
               </div>
             ))}
           </div>
-          <p className="text-2xs text-muted">Три-чотири смуги — вертикально</p>
+          <p className="text-style-caption text-muted">
+            Три-чотири смуги — вертикально
+          </p>
         </CompareTile>
       }
       after={
@@ -85,7 +87,7 @@ export function MacroRingDemo() {
             {MACROS.map((m) => (
               <span
                 key={m.key}
-                className="inline-flex items-center gap-1 text-2xs text-muted"
+                className="inline-flex items-center gap-1 text-style-caption text-muted"
               >
                 <span
                   className="h-2 w-2 rounded-full"

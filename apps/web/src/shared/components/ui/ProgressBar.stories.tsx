@@ -5,9 +5,11 @@ import { ProgressBar } from "./ProgressBar";
  * `ProgressBar` — лінійний індикатор прогресу.
  *
  * Determinate (`value` 0..`max`) і indeterminate (`indeterminate`).
- * Чотири розміри (`xs`/`sm`/`md`/`lg`) і чотири статус-варіанти
- * (`brand`/`success`/`warning`/`danger`). Філли — `*-strong`
- * companions (Hard Rule #9) для AA-контрасту з білим inner-label.
+ * Чотири розміри (`xs`/`sm`/`md`/`lg`) і п'ять статус-варіантів
+ * (`brand`/`success`/`warning`/`danger`/`neutral`). Насичені філли —
+ * `*-strong` companions (Hard Rule #9) для AA-контрасту з білим
+ * inner-label; `neutral` (ink `bg-primary`) не насичений, тож без
+ * `-strong` компаньйона.
  *
  * **A11y:** `role="progressbar"` + `aria-valuenow/min/max`,
  * `aria-busy` для indeterminate. `prefers-reduced-motion: reduce`
@@ -24,7 +26,7 @@ const meta: Meta<typeof ProgressBar> = {
     size: { control: "select", options: ["xs", "sm", "md", "lg"] },
     variant: {
       control: "select",
-      options: ["brand", "success", "warning", "danger"],
+      options: ["brand", "success", "warning", "danger", "neutral"],
     },
     indeterminate: { control: "boolean" },
   },
@@ -65,6 +67,7 @@ export const Variants: Story = {
       <ProgressBar value={100} variant="success" aria-label="Success" />
       <ProgressBar value={35} variant="warning" aria-label="Warning" />
       <ProgressBar value={15} variant="danger" aria-label="Danger" />
+      <ProgressBar value={40} variant="neutral" aria-label="Neutral" />
     </div>
   ),
 };

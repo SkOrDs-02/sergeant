@@ -34,7 +34,9 @@ export function IconMorphDemo() {
           >
             <Icon name={beforeDone ? "check" : "plus"} size={22} />
           </button>
-          <p className="text-2xs text-muted">Іконка міняється стрибком</p>
+          <p className="text-style-caption text-muted">
+            Іконка міняється стрибком
+          </p>
         </CompareTile>
       }
       after={
@@ -65,7 +67,9 @@ export function IconMorphDemo() {
               <Icon name="check" size={22} />
             </span>
           </button>
-          <p className="text-2xs text-muted">Plus плавно морфить у check</p>
+          <p className="text-style-caption text-muted">
+            Plus плавно морфить у check
+          </p>
         </CompareTile>
       }
     />

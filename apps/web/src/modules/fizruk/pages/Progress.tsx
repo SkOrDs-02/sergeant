@@ -28,7 +28,7 @@ import {
 } from "@sergeant/fizruk-domain/domain";
 import { kyivMondayStartMs } from "@sergeant/shared";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
-import { statusColors } from "@shared/charts";
+import { chartStatusSeries } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
@@ -477,7 +477,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             <MiniLineChart
               data={weightTrend}
               unit={messages.fizruk.kgUnit}
-              color={statusColors.success}
+              color={chartStatusSeries.success}
               metricLabel={messages.fizruk.progress.weightMetricLabel}
             />
           </Card>
@@ -492,7 +492,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             <MiniLineChart
               data={fatTrend}
               unit="%"
-              color={statusColors.warning}
+              color={chartStatusSeries.warning}
               metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
             />
           </Card>

@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import {
+  KeyboardAccessory,
+  type QuickFillChip,
+} from "@shared/components/ui/KeyboardAccessory";
 import { PhoneFrame, ProposalCard } from "./_PhoneFrame";
 
 /**
@@ -9,8 +13,20 @@ import { PhoneFrame, ProposalCard } from "./_PhoneFrame";
  * increments (+10 / +100 / +500), a «.00» helper and «Готово». Critical for
  * fast money entry on mobile. Here the keypad is mocked so the accessory row
  * is visible without a real OS keyboard.
+ *
+ * SHIPPED: `KeyboardAccessory` (@shared/components/ui/KeyboardAccessory)
+ * renders the +10/+100/+500 quick-fill chips below. AI-NOTE: the shipped
+ * component is chip-only (no trailing helper actions) — the «.00» і
+ * «Готово» buttons the original mock showcased have no shipped equivalent
+ * yet, so that fragment stays hand-rolled here rather than silently
+ * dropped.
  */
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"];
+const ADD_CHIPS: QuickFillChip[] = [
+  { label: "+10", value: 10 },
+  { label: "+100", value: 100 },
+  { label: "+500", value: 500 },
+];
 
 export function KeyboardAccessoryDemo() {
   const [value, setValue] = useState("120");
@@ -35,7 +51,7 @@ export function KeyboardAccessoryDemo() {
       <PhoneFrame>
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="px-4 pt-2 flex-1 flex flex-col items-center justify-center">
-            <span className="text-2xs uppercase tracking-wide text-subtle">
+            <span className="text-style-caption uppercase tracking-wide text-subtle">
               Сума витрати
             </span>
             <div className="mt-1 text-style-display text-text tabular-nums">
@@ -44,18 +60,15 @@ export function KeyboardAccessoryDemo() {
             </div>
           </div>
 
-          {/* accessory bar */}
+          {/* accessory bar — real KeyboardAccessory chips + demo-only helpers */}
           <div className="flex items-center gap-1.5 px-2 py-2 bg-panelHi border-t border-line overflow-x-auto no-scrollbar">
-            {[10, 100, 500].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => add(n)}
-                className="shrink-0 h-9 px-3 rounded-xl bg-panel border border-line text-style-caption text-text tabular-nums"
-              >
-                +{n}
-              </button>
-            ))}
+            <KeyboardAccessory
+              chips={ADD_CHIPS}
+              onChipPress={(chip) => add(Number(chip.value))}
+              variant="finyk"
+            />
+            {/* AI-NOTE: ".00" + "Готово" have no shipped KeyboardAccessory
+                equivalent — kept as a hand-rolled fragment, see file header. */}
             <button
               type="button"
               onClick={() => setValue((v) => (v.includes(".") ? v : v + ".00"))}

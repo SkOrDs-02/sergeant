@@ -49,21 +49,21 @@ export function OdometerRollupDemo() {
         before={
           <MiniPhone dim>
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">
+              <p className="text-style-caption uppercase tracking-wide text-muted">
                 Баланс місяця
               </p>
               <div className="flex items-baseline text-4xl font-semibold text-text tabular-nums">
                 <span className="mr-1 text-2xl text-muted">₴</span>
                 {String(value).padStart(5, "0")}
               </div>
-              <p className="text-2xs text-muted">Миттєва підміна</p>
+              <p className="text-style-caption text-muted">Миттєва підміна</p>
             </div>
           </MiniPhone>
         }
         after={
           <MiniPhone>
             <div className="flex h-full flex-col items-center justify-center gap-4">
-              <p className="text-2xs uppercase tracking-wide text-muted">
+              <p className="text-style-caption uppercase tracking-wide text-muted">
                 Баланс місяця
               </p>
               <div className="flex items-baseline text-4xl font-semibold text-text">
@@ -72,7 +72,7 @@ export function OdometerRollupDemo() {
                   <DigitReel key={i} digit={d} reduced={reduced} />
                 ))}
               </div>
-              <p className="text-2xs text-muted">Барабани котяться</p>
+              <p className="text-style-caption text-muted">Барабани котяться</p>
             </div>
           </MiniPhone>
         }

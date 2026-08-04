@@ -51,7 +51,7 @@ export function OfflineFeedbackDemo() {
                   <div className="text-style-body text-text truncate">
                     {r.name}
                   </div>
-                  <div className="text-2xs text-muted">{r.time}</div>
+                  <div className="text-style-caption text-muted">{r.time}</div>
                 </div>
                 <span className="text-style-body text-text tabular-nums">
                   {r.amount}
@@ -59,7 +59,7 @@ export function OfflineFeedbackDemo() {
               </div>
             ))}
           </ListChrome>
-          <p className="text-2xs text-muted text-center px-4 pb-2 pt-3">
+          <p className="text-style-caption text-muted text-center px-4 pb-2 pt-3">
             Не видно, які записи вже збережено
           </p>
         </MiniPhone>
@@ -81,7 +81,7 @@ export function OfflineFeedbackDemo() {
                 <div className="text-style-body text-text truncate">Кава</div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Icon name="cloud-off" size={11} className="text-accent" />
-                  <span className="text-2xs text-accent">
+                  <span className="text-style-caption text-accent">
                     Збережено · в черзі
                   </span>
                 </div>
@@ -98,7 +98,7 @@ export function OfflineFeedbackDemo() {
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Icon name="cloud-off" size={11} className="text-accent" />
-                  <span className="text-2xs text-accent">
+                  <span className="text-style-caption text-accent">
                     Збережено · в черзі
                   </span>
                 </div>
@@ -115,7 +115,9 @@ export function OfflineFeedbackDemo() {
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
                   <Icon name="cloud-check" size={11} className="text-success" />
-                  <span className="text-2xs text-muted">Синхронізовано</span>
+                  <span className="text-style-caption text-muted">
+                    Синхронізовано
+                  </span>
                 </div>
               </div>
               <span className="text-style-body text-text tabular-nums">
@@ -123,7 +125,7 @@ export function OfflineFeedbackDemo() {
               </span>
             </div>
           </ListChrome>
-          <p className="text-2xs text-muted text-center px-4 pb-2 pt-3">
+          <p className="text-style-caption text-muted text-center px-4 pb-2 pt-3">
             Кожен запис показує свій стан
           </p>
         </MiniPhone>

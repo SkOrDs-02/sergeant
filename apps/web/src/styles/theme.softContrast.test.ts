@@ -129,6 +129,24 @@ describe("celebration vs bg contrast is at least 3:1 (light + dark)", () => {
   }
 });
 
+describe("chart status colors (--c-chart-{success,warning,danger,info}) vs bg is at least 3:1", () => {
+  // Non-text graphics only need WCAG 1.4.11 (≥3:1), not the 4.5:1 text
+  // floor — these back SVG chart strokes/fills (fizruk 1RM/goal lines),
+  // reusing hexes already vetted elsewhere in theme.css (see the
+  // `--c-chart-success/-warning/-danger/-info` comment in `:root`/`.dark`).
+  for (const [theme, variables] of Object.entries(THEMES)) {
+    for (const status of ["success", "warning", "danger", "info"] as const) {
+      it(`${theme}: c-chart-${status} on c-bg is at least 3:1`, () => {
+        const foreground = variables[`c-chart-${status}`];
+        const background = variables["c-bg"];
+        expect(foreground).toBeDefined();
+        expect(background).toBeDefined();
+        expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(3);
+      });
+    }
+  }
+});
+
 describe("-soft-hover is distinct from resting -soft (all scopes)", () => {
   for (const [theme, variables] of Object.entries(THEMES)) {
     for (const family of MODULE_FAMILIES) {

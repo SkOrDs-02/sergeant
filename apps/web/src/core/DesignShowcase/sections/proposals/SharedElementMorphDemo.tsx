@@ -38,7 +38,7 @@ export function SharedElementMorphDemo() {
               </span>
               <span className="text-style-caption text-text">Їжа</span>
             </div>
-            <p className="text-2xs text-muted mt-3">
+            <p className="text-style-caption text-muted mt-3">
               Іконка просто зникає й зʼявляється зверху.
             </p>
           </div>
@@ -87,7 +87,7 @@ export function SharedElementMorphDemo() {
               <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="w-full h-9 rounded-xl bg-accent text-bg text-2xs font-medium"
+                className="w-full h-9 rounded-xl bg-accent text-bg text-style-caption font-medium"
               >
                 {open ? "Назад" : "Увійти"}
               </button>

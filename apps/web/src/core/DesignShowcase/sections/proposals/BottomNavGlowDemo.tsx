@@ -33,7 +33,7 @@ export function BottomNavGlowDemo() {
       before={
         <CompareTile dim className="dark justify-end bg-bg">
           <MockNav active={active} onSelect={setActive} glow={false} />
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Пласка тінь — активний таб рівний
           </p>
         </CompareTile>
@@ -41,7 +41,9 @@ export function BottomNavGlowDemo() {
       after={
         <CompareTile className="dark justify-end bg-bg">
           <MockNav active={active} onSelect={setActive} glow />
-          <p className="text-2xs text-muted">Акцент-glow під активним табом</p>
+          <p className="text-style-caption text-muted">
+            Акцент-glow під активним табом
+          </p>
         </CompareTile>
       }
     />
@@ -78,7 +80,7 @@ function MockNav({
               />
             )}
             <Icon name={t.icon} size={18} className="relative" />
-            <span className="relative text-2xs">{t.label}</span>
+            <span className="relative text-style-caption">{t.label}</span>
           </button>
         );
       })}

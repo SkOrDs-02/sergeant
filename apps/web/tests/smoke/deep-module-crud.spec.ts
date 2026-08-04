@@ -253,17 +253,33 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // Post-reload quantity may revert when SQLite overlay wins the smoke
     // WASM/memory-VFS race — edit proof is the pre-reload assert above.
 
+    // Harness correction (E3, CI critical-lane audit 2026-08-04): wait for
+    // the sync queue to go idle BEFORE delete — the preceding edit-save
+    // step can still be flushing in the background, and that concurrent
+    // refresh is the likely cause of the observed flake: the undo toast
+    // either renders late (competing with a SQLite-cache refresh) or its
+    // TTL (~5000ms, `UNDO_TOAST_DEFAULT_DURATION_MS`) races the default 5s
+    // `expect` timeout on a loaded CI runner with near-zero margin. The
+    // toast's actual lifetime lives app-side in
+    // `apps/web/src/modules/nutrition/pages/NutritionPantryPage.tsx`
+    // (outside this wave's ownership zone — flagged for a follow-up to
+    // widen the window for this specific destructive action).
+    await waitForSyncQueueIdle(page);
     await page.getByRole("button", { name: "Прибрати dcrud йогурт" }).click();
-    // Harness correction: ловимо undo-тост одразу після delete (дзеркало
-    // finyk) — його TTL інакше сплине, поки полінгується toHaveCount(0)
-    // на повільному CI.
+    // Ловимо undo-тост одразу після delete (дзеркало finyk) — його TTL
+    // інакше сплине, поки полінгується toHaveCount(0) на повільному CI.
+    // Timeout ширший за дефолтні 5с, щоб пережити «late-appear» race.
     const undoPantryBtn = page.getByRole("button", { name: "Повернути" });
-    await expect(undoPantryBtn).toBeVisible();
+    await expect(undoPantryBtn).toBeVisible({ timeout: 10_000 });
     await expect(
       page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
     ).toHaveCount(0);
 
-    await undoPantryBtn.dispatchEvent("click");
+    // Явний timeout: якщо тост усе ж розтанув (TTL wins), падаємо швидко
+    // з читаною помилкою замість того, щоб мовчки зʼїсти весь 90s
+    // test-budget на очікуванні detached-локатора (саме так CI-ретрай і
+    // вичерпав повний бюджет цього кроку).
+    await undoPantryBtn.dispatchEvent("click", {}, { timeout: 10_000 });
     // Harness correction: бере роль-локатор — plain getByText матчить і
     // undo-тост «Прибрано «dcrud йогурт» з комори» (strict mode violation).
     await expect(
@@ -299,15 +315,39 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(
       page.getByRole("dialog", { name: /DCRUD вода/ }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Редагувати" }).click();
+    // Harness correction (E1, CI critical-lane audit 2026-08-04): right
+    // after habit creation the sync engine can still be flushing a pull
+    // refresh that transiently drops the new habit from `routine.habits`
+    // (root-caused + hardened app-side in `HabitDetailSheet` — a transient
+    // miss now bridges to the last-known habit instead of unmounting the
+    // sheet). `waitForSyncQueueIdle` + an atomic toPass retry are
+    // defense-in-depth: CI saw the resolved «Редагувати» locator loop
+    // "element was detached from the DOM, retrying" for the full 90s
+    // while the footer kept remounting under that churn.
+    await waitForSyncQueueIdle(page);
     const editDialog = page.getByRole("dialog", {
       name: "Редагувати звичку",
     });
-    await expect(editDialog).toBeVisible();
+    await expect(async () => {
+      await page.getByRole("button", { name: "Редагувати" }).click({
+        timeout: 5000,
+      });
+      await expect(editDialog).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 45_000 });
     await editDialog.getByLabel("Назва звички").fill("DCRUD вода оновлено");
-    await editDialog
-      .getByRole("button", { name: "Зберегти зміни" })
-      .press("Enter");
+    // Harness correction (E2, CI critical-lane audit 2026-08-04): CI once
+    // logged `press("Enter")` on this button as "waiting for navigation to
+    // finish… navigated to /routine" — read as a native <form> submit
+    // reload. Verified this is not reachable from the current code: both
+    // `HabitForm`'s and `HabitQuickCreateDialog`'s save buttons render via
+    // `<Button type="button" .../>` (`Button.tsx` also defaults `type` to
+    // "button"), there is no `<form>` between them and `Sheet`'s
+    // `createPortal(..., document.body)`, and `onClick` is the only
+    // handler wired — so Enter here can only ever fire `handleSave`, same
+    // as `.click()`. `.click()` sidesteps `press()`'s two-step
+    // focus-then-keypress choreography, which is more exposed to the same
+    // sync-driven remount churn documented above.
+    await editDialog.getByRole("button", { name: "Зберегти зміни" }).click();
     await expect(
       routineDetailButton(page, "DCRUD вода оновлено"),
     ).toBeVisible();

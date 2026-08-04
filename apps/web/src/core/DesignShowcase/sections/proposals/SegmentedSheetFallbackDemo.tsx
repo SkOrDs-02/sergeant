@@ -25,11 +25,13 @@ const CATEGORIES = [
   "Одяг",
   "Підписки",
   "Інше",
-];
+] as const;
 
 export function SegmentedSheetFallbackDemo() {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(CATEGORIES[0]!);
+  const [value, setValue] = useState<(typeof CATEGORIES)[number]>(
+    CATEGORIES[0],
+  );
 
   return (
     <ProposalCard
@@ -53,14 +55,14 @@ export function SegmentedSheetFallbackDemo() {
                       i === 0 ? "bg-accent/15 text-accent" : "text-muted",
                     )}
                   >
-                    <span className="text-[9px] truncate">{c}</span>
+                    <span className="text-style-caption truncate">{c}</span>
                   </span>
                 ))}
-                <span className="h-8 px-1 flex items-center text-2xs text-muted">
+                <span className="h-8 px-1 flex items-center text-style-caption text-muted">
                   …
                 </span>
               </div>
-              <p className="text-2xs text-muted mt-3">
+              <p className="text-style-caption text-muted mt-3">
                 Мітки обрізані, дрібні цілі, ще 3 не влізли.
               </p>
             </div>
@@ -81,7 +83,7 @@ export function SegmentedSheetFallbackDemo() {
                   <span className="text-style-body text-text">{value}</span>
                   <Icon name="chevron-down" size={18} className="text-muted" />
                 </button>
-                <p className="text-2xs text-muted">
+                <p className="text-style-caption text-muted">
                   Один селектор → шторка з усіма 8.
                 </p>
               </div>

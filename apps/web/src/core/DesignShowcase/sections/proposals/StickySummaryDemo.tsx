@@ -43,7 +43,7 @@ function Hero() {
       <p className="text-4xl font-semibold tabular-nums text-text mt-1">
         ₴ 12 480
       </p>
-      <p className="text-2xs text-muted mt-1">з бюджету ₴ 18 000</p>
+      <p className="text-style-caption text-muted mt-1">з бюджету ₴ 18 000</p>
     </div>
   );
 }
@@ -70,7 +70,7 @@ export function StickySummaryDemo() {
                   beforeScrolled ? "opacity-100" : "opacity-0",
                 )}
               >
-                <span className="text-2xs text-muted">Огляд</span>
+                <span className="text-style-caption text-muted">Огляд</span>
               </div>
               <div
                 ref={beforeRef}
@@ -82,7 +82,7 @@ export function StickySummaryDemo() {
                 <Hero />
                 <ListRows />
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2">
+              <p className="text-style-caption text-muted text-center px-4 pb-2">
                 Тотал зникає під час скролу
               </p>
             </div>
@@ -115,7 +115,7 @@ export function StickySummaryDemo() {
                 <Hero />
                 <ListRows />
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2">
+              <p className="text-style-caption text-muted text-center px-4 pb-2">
                 Сума завжди під рукою
               </p>
             </div>

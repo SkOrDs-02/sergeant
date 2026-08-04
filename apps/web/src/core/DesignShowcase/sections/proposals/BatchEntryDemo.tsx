@@ -64,7 +64,7 @@ export function BatchEntryDemo() {
                 Зберегти
               </div>
             </div>
-            <p className="text-2xs text-muted text-center px-4 pt-2">
+            <p className="text-style-caption text-muted text-center px-4 pt-2">
               Шторка закриється — відкривай знову для наступної
             </p>
           </SheetShell>
@@ -76,7 +76,7 @@ export function BatchEntryDemo() {
             <div className="px-3 mb-2 flex items-center justify-between">
               <div className="text-style-label text-text">Нова витрата</div>
               {count > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/10 text-success text-2xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success/10 text-success text-style-caption font-medium">
                   <Icon name="check-circle" size={11} />
                   Додано {count}
                 </span>

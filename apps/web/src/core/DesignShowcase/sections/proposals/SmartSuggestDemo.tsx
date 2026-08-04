@@ -43,7 +43,9 @@ export function SmartSuggestDemo() {
                 ₴ 0
               </div>
               <div className="mt-2 h-9 rounded-xl border border-line bg-panel" />
-              <p className="text-2xs text-muted mt-3">Форма завжди порожня.</p>
+              <p className="text-style-caption text-muted mt-3">
+                Форма завжди порожня.
+              </p>
             </div>
           </MiniPhone>
         }
@@ -70,7 +72,7 @@ export function SmartSuggestDemo() {
                   </button>
                 ))}
               </div>
-              <p className="text-2xs text-muted mt-3">
+              <p className="text-style-caption text-muted mt-3">
                 Тап — і сума з категорією вже в формі.
               </p>
             </div>
@@ -84,7 +86,7 @@ export function SmartSuggestDemo() {
             type="button"
             onClick={() => setTime(t)}
             className={cn(
-              "px-2.5 py-1 rounded-full text-2xs border transition-colors",
+              "px-2.5 py-1 rounded-full text-style-caption border transition-colors",
               t === time
                 ? "bg-accent text-bg border-transparent"
                 : "bg-surface-muted text-muted border-line",

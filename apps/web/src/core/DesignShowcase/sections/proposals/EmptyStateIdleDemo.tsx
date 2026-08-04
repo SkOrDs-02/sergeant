@@ -21,7 +21,7 @@ export function EmptyStateIdleDemo() {
             <Icon name="wallet" size={26} className="text-muted" />
           </div>
           <p className="text-style-label text-text">Ще немає витрат</p>
-          <p className="text-2xs text-muted">Статична ілюстрація</p>
+          <p className="text-style-caption text-muted">Статична ілюстрація</p>
         </CompareTile>
       }
       after={
@@ -30,7 +30,9 @@ export function EmptyStateIdleDemo() {
             <Icon name="wallet" size={26} className="text-finyk" />
           </div>
           <p className="text-style-label text-text">Ще немає витрат</p>
-          <p className="text-2xs text-muted">Легкий idle-рух привертає увагу</p>
+          <p className="text-style-caption text-muted">
+            Легкий idle-рух привертає увагу
+          </p>
           <style>{`
             @keyframes esFloat {
               0%, 100% { transform: translateY(0); }

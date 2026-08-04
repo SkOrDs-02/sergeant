@@ -377,6 +377,23 @@
     --c-chart-routine: 194 58 58; /* coral-700 — 5.06:1 vs cream */
     --c-chart-nutrition: 70 98 18; /* lime-800 — 6.64:1 vs cream */
 
+    /* Chart STATUS colors — same contract as `--c-chart-{module}` above,
+       for `statusColors.*` reused as chart LINE strokes/gradients (1RM
+       lines, goal/threshold lines, cardio pace/distance series). The
+       plain `--c-success`/`--c-warning`/`--c-danger`/`--c-info` triplets
+       stay at the -500 tier (unchanged) for broad UI use; charts need
+       their own darker light-mode tier for the same reason
+       `--c-chart-{module}` isn't just `--c-{module}-accent`. Values reuse
+       hexes already vetted elsewhere in this file (`--c-success-soft-fg`,
+       `--c-celebration`, `--c-danger-soft-fg` light, `html.hc --c-info`)
+       so no new palette entry is introduced. Consume via
+       `chartStatusSeries` in `@shared/charts` — never `statusColors.*`
+       directly in an SVG stroke/fill. */
+    --c-chart-success: 4 120 87; /* emerald-700 — 4.66:1 vs cream */
+    --c-chart-warning: 180 83 9; /* amber-700 — 4.27:1 vs cream */
+    --c-chart-danger: 185 28 28; /* red-700 — 5.50:1 vs cream */
+    --c-chart-info: 3 105 161; /* sky-700 — 5.04:1 vs cream */
+
     /**
      * @deprecated v1 module hero card gradients — Sergeant v2 redesign
      * (introduced 2026-05) replaces these with `--hero-grad-{module}`
@@ -660,6 +677,16 @@
     --c-chart-routine: 255 140 120; /* coral-400 */
     --c-chart-nutrition: 176 230 54; /* lime-400 */
 
+    /* Chart STATUS colors (dark) — brighter -400 tier, mirrors the
+       `--c-chart-{module}` block above. Values reuse hexes already vetted
+       elsewhere in this file (`brandColors.emerald[400]`, `--c-celebration`
+       dark / `--c-streak-tier-100` dark, Tailwind red-400/sky-400 — same
+       family already used by `--c-danger`/`--c-info` at :root). */
+    --c-chart-success: 52 211 153; /* emerald-400 — 9.6:1 vs ink */
+    --c-chart-warning: 251 191 36; /* amber-400 — 11.1:1 vs ink */
+    --c-chart-danger: 248 113 113; /* red-400 — 6.7:1 vs ink */
+    --c-chart-info: 56 189 248; /* sky-400 — 8.65:1 vs ink */
+
     /* ───────────────────────────────────────────────────────────────────
        MODULE DARK SURFACES & BORDERS
        Premixed accents tuned for use over the dark `panel` background.
@@ -862,7 +889,11 @@
     --c-info-soft-fg: 12 74 110; /* sky-900 on sky-200 */
 
     /* Chart series — HC light keeps the AA-strong tier from `:root`
-       (already 5+ contrast on cream). 4 hues stay distinguishable. */
+       (already 5+ contrast on cream). 4 hues stay distinguishable.
+       `--c-chart-success/-warning/-danger/-info` are intentionally NOT
+       redeclared here — the `:root` -700 tier already clears the HC
+       contract, and HC cascades on top of the light scope, so those vars
+       inherit unchanged. */
     --c-chart-finyk: 17 94 89; /* teal-800 (2026-07: was emerald-700) */
     --c-chart-fizruk: 21 94 117; /* cyan-800 */
     --c-chart-routine: 194 58 58; /* coral-700 */
@@ -941,7 +972,11 @@
     --c-info-soft-fg: 255 255 255;
 
     /* Chart series — HC dark uses brighter -300 tier so 4 hues stay
-       distinguishable against high-contrast dark bg + meet ≥7:1 AAA. */
+       distinguishable against high-contrast dark bg + meet ≥7:1 AAA.
+       `--c-chart-success/-warning/-danger/-info` are intentionally NOT
+       redeclared here — the `.dark` -400 tier already clears ≥6.7:1
+       (non-text graphics only need ≥3:1, WCAG 1.4.11) and HC-dark
+       cascades on top of `.dark`, so those vars inherit unchanged. */
     --c-chart-finyk: 94 234 212; /* teal-300 (2026-07: was emerald-300) */
     --c-chart-fizruk: 103 232 249; /* cyan-300 */
     --c-chart-routine: 255 180 165; /* coral-300 */

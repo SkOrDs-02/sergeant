@@ -62,6 +62,16 @@ migration, execution-plan, live execution-status, backlog) плюс index,
 `beta` — API ще не зафіксовано (Theming поки що читає лише `useDarkMode`,
 шедулер у роботі); `experimental` — поки що порожньо.
 
+## Enforcement status
+
+Після ADR-0081 частина конвенцій знову має **механічний гейт** — grep-скрипт
+[`scripts/check-design-conventions.mjs`](../../../scripts/check-design-conventions.mjs)
+(`pnpm lint:design-conventions`, входить у `pnpm lint` і CI `check`): no raw hex
+у className, `focus-visible:` замість `focus:`, 12px floor (`text-2xs` і
+`text-[<12px]` лише з allowlist-винятками у самому скрипті). **Review-only**
+лишаються AST-рівневі конвенції: opacity scale, `-strong` companions,
+module-accent containment — свідомо не покриті grep-скриптом.
+
 ## Пріоритет документів
 
 1. [`design-system.md`](./design-system.md) — канонічний контракт для нового UI-коду.
