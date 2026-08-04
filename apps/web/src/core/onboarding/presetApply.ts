@@ -1,4 +1,5 @@
 import { toLocalISODate } from "@sergeant/shared";
+import { resolveHabitGlyph } from "@sergeant/routine-domain";
 import { routineStorage } from "@routine/lib/routineStorageInstance";
 import {
   loadRoutineState,
@@ -91,7 +92,7 @@ function applyRoutinePreset(preset: RoutinePreset) {
     // as real, but being explicit keeps `routineBackup` round-trips safe.
     demo: false,
     name: preset.name,
-    emoji: preset.emoji || "✓",
+    emoji: resolveHabitGlyph(preset.emoji),
     tagIds: [],
     categoryId: null,
     createdAt: new Date().toISOString(),

@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
@@ -154,14 +155,14 @@ export function FoodPickerSection({
                   <>
                     {foodHits.length > 0 && (
                       <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold uppercase tracking-widest">
-                        🌍 Open Food Facts
+                        Open Food Facts
                       </li>
                     )}
                     {offHits.map((p) => (
                       <FoodHitRow
                         key={p.id}
                         p={p}
-                        badge="🌍"
+                        externalSource
                         onPick={() => {
                           setPickedFood(p as PickedFood);
                           const grams = Number(p.defaultGrams) || 100;
@@ -187,9 +188,12 @@ export function FoodPickerSection({
                   .filter(Boolean)
                   .join(" · ")}
                 {pickedFood.source === "off" && (
-                  <span className="ml-1 text-style-caption text-subtle">
-                    🌍
-                  </span>
+                  <Icon
+                    name="link"
+                    size="xs"
+                    className="ml-1 inline-block align-baseline text-subtle"
+                    title="Open Food Facts"
+                  />
                 )}
               </div>
               <div className="text-xs text-subtle mt-0.5">
@@ -210,7 +214,7 @@ export function FoodPickerSection({
               className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors text-sm"
               aria-label="Скинути продукт"
             >
-              ✕
+              <Icon name="close" size={16} aria-hidden />
             </button>
           </div>
 

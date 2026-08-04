@@ -10,6 +10,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
+import { Icon } from "@shared/components/ui/Icon";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -228,7 +229,11 @@ export function RoutineCalendarMonthGrid({
                         e.completed ? "Скасувати виконання" : "Виконано"
                       }
                     >
-                      {e.completed ? "✓" : "○"}
+                      <Icon
+                        name={e.completed ? "check" : "circle-outline"}
+                        size={14}
+                        aria-hidden
+                      />
                     </IconButton>
                   )}
                 </div>

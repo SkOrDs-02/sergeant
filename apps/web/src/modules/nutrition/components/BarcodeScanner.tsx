@@ -10,6 +10,7 @@ import {
   useWebScanner,
   type BarcodeResult,
 } from "../hooks/useBarcodeScanner";
+import { Icon } from "@shared/components/ui/Icon";
 
 interface BarcodeScannerProps {
   /**
@@ -128,7 +129,7 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
             className="w-10 h-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text text-lg transition-colors"
             aria-label="Закрити сканер"
           >
-            ✕
+            <Icon name="close" size={18} aria-hidden />
           </button>
         </div>
         <div className="px-4 pb-8 space-y-3">

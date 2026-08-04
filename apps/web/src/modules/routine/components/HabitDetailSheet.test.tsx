@@ -120,11 +120,14 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Title renders "{emoji} {name}" inside a single <span>.
+    // Гліф тепер окремий <svg>, тож назва живе у власному <span>. Матчимо
+    // лише листовий вузол — обгортка з іконкою має той самий textContent.
     expect(
       screen.getByText(
         (_t, el) =>
-          el?.tagName === "SPAN" && el.textContent === "💧 Випити воду",
+          el?.tagName === "SPAN" &&
+          el.children.length === 0 &&
+          el.textContent === "Випити воду",
       ),
     ).toBeInTheDocument();
     // recurrence label "Щодня" + timeOfDay are concatenated

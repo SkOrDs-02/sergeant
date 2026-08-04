@@ -114,9 +114,9 @@ describe("routine-domain/reducers — теги і категорії", () => {
       expect(cat.id).toMatch(/^cat_/);
     });
 
-    it("додає категорію з emoji", () => {
+    it("додає категорію з гліфом (легасі-emoji → slug)", () => {
       const next = applyCreateCategory(baseState(), "Спорт", "🏋");
-      expect(next.categories[0]!.emoji).toBe("🏋");
+      expect(next.categories[0]!.emoji).toBe("dumbbell");
     });
 
     it("ігнорує порожній emoji (не додає поле)", () => {
@@ -177,12 +177,15 @@ describe("routine-domain/reducers — теги і категорії", () => {
   });
 
   describe("applyUpdateCategory", () => {
-    it("оновлює name і emoji", () => {
+    it("оновлює name і гліф", () => {
       const s = applyCreateCategory(baseState(), "Old", "🥦");
       const id = s.categories[0]!.id;
-      const next = applyUpdateCategory(s, id, { name: "New", emoji: "🍅" });
+      const next = applyUpdateCategory(s, id, {
+        name: "New",
+        emoji: "utensils",
+      });
       expect(next.categories[0]!.name).toBe("New");
-      expect(next.categories[0]!.emoji).toBe("🍅");
+      expect(next.categories[0]!.emoji).toBe("utensils");
     });
 
     it("порожнє name зберігає попереднє", () => {
@@ -196,7 +199,7 @@ describe("routine-domain/reducers — теги і категорії", () => {
       const s = applyCreateCategory(baseState(), "Old", "🥦");
       const id = s.categories[0]!.id;
       const next = applyUpdateCategory(s, id, { emoji: "" });
-      expect(next.categories[0]!.emoji).toBe("🥦");
+      expect(next.categories[0]!.emoji).toBe("leaf");
     });
 
     it("повертає неторкнуті категорії для невідомого id", () => {
@@ -217,7 +220,7 @@ describe("routine-domain/reducers — теги і категорії", () => {
       const s = applyCreateCategory(baseState(), "Спорт", "🏃");
       const id = s.categories[0]!.id;
       const next = applyUpdateCategory(s, id, { emoji: "🏋" });
-      expect(next.categories[0]!.emoji).toBe("🏋");
+      expect(next.categories[0]!.emoji).toBe("dumbbell");
     });
   });
 
@@ -287,7 +290,7 @@ describe("routine-domain/reducers — звички CRUD", () => {
       const h = next.habits[0]!;
       expect(h.id).toMatch(/^hab_/);
       expect(h.name).toBe("Йога");
-      expect(h.emoji).toBe("✓");
+      expect(h.emoji).toBe("check");
       expect(h.recurrence).toBe("daily");
       expect(h.endDate).toBeNull();
       expect(h.timeOfDay).toBe("");
@@ -382,9 +385,9 @@ describe("routine-domain/reducers — звички CRUD", () => {
         makeHabit({ id: "h1", name: "A" }),
         makeHabit({ id: "h2", name: "B" }),
       ]);
-      const next = applyUpdateHabit(s, "h1", { name: "A-new", emoji: "🔥" });
+      const next = applyUpdateHabit(s, "h1", { name: "A-new", emoji: "flame" });
       expect(next.habits[0]!.name).toBe("A-new");
-      expect(next.habits[0]!.emoji).toBe("🔥");
+      expect(next.habits[0]!.emoji).toBe("flame");
       expect(next.habits[1]!.name).toBe("B");
     });
   });

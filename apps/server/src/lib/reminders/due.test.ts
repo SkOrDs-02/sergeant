@@ -39,7 +39,8 @@ describe("routineDueNow", () => {
   it("шле нагадування у заявлену хвилину", () => {
     const due = routine([habitRow()]);
     expect(due).toHaveLength(1);
-    expect(due[0]?.title).toBe("🏃 Зарядка");
+    // Гліф звички — icon-slug, у заголовок пуша він не потрапляє.
+    expect(due[0]?.title).toBe("Зарядка");
     expect(due[0]?.module).toBe("routine");
   });
 

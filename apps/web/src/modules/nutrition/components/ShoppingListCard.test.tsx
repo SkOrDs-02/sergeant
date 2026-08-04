@@ -111,7 +111,7 @@ describe("ShoppingListCard", () => {
     );
     fireEvent.click(screen.getByText("+ До комори"));
     expect(onAddCheckedToPantry).toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Видалити ✓"));
+    fireEvent.click(screen.getByText("Видалити позначені"));
     expect(onClearChecked).toHaveBeenCalled();
     fireEvent.click(screen.getByText("Очистити"));
     expect(onClearAll).toHaveBeenCalled();

@@ -207,6 +207,7 @@ describe("makeMemoryId", () => {
 describe("CATEGORY_META", () => {
   it("has labels for known categories", () => {
     expect(CATEGORY_META["goal"]?.label).toBe("Цілі");
-    expect(CATEGORY_META["other"]?.emoji).toBe("📝");
+    // 2026-08-03: `emoji` → `icon` з іменем із атласу дизайн-системи.
+    expect(CATEGORY_META["other"]?.icon).toBe("pen");
   });
 });

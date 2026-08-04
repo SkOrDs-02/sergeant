@@ -409,7 +409,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             (isSubmitting || isEntryEmpty) && "opacity-60",
           )}
         >
-          {submitSuccess ? "Записано ✓" : "Записати"}
+          {submitSuccess ? "Записано" : "Записати"}
         </button>
         {isEntryEmpty && !submitSuccess && (
           <p id="body-entry-empty" className="text-xs text-subtle -mt-2">
