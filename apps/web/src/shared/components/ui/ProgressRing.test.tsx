@@ -72,4 +72,29 @@ describe("ProgressRing", () => {
     // 50% → offset is ≈ circumference/2
     expect(offset).toBeCloseTo(circumference / 2, 2);
   });
+
+  it("incomplete=true dashes the track ring and appends a text a11y suffix", () => {
+    const { getByRole } = render(
+      <ProgressRing
+        value={50}
+        max={100}
+        incomplete
+        aria-label="Калорії: 500 з 2000"
+      />,
+    );
+    const ring = getByRole("progressbar");
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBe("4 3");
+    expect(ring.getAttribute("aria-label")).toBe(
+      "Калорії: 500 з 2000 · неповні дані за день",
+    );
+  });
+
+  it("incomplete=false (default) keeps the track ring solid", () => {
+    const { getByRole } = render(
+      <ProgressRing value={50} max={100} aria-label="Калорії: 500 з 2000" />,
+    );
+    const track = getByRole("progressbar").querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBeNull();
+  });
 });

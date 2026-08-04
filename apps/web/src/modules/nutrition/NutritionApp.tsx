@@ -337,7 +337,12 @@ export default function NutritionApp({
     setPendingAction({ kind: "open-photo-picker" });
   };
 
-  const handlePantryBarcodeDetected = usePantryBarcodeScan({
+  const {
+    scan: handlePantryBarcodeDetected,
+    notice: pantryBarcodeNotice,
+    retry: retryPantryBarcodeLookup,
+    dismissNotice: dismissPantryBarcodeNotice,
+  } = usePantryBarcodeScan({
     pantry,
     setPantryScannerOpen,
     setPantryScanStatus,
@@ -621,6 +626,9 @@ export default function NutritionApp({
                   pantryScanStatus={pantryScanStatus}
                   setPantryScanStatus={setPantryScanStatus}
                   setPantryScannerOpen={setPantryScannerOpen}
+                  pantryBarcodeNotice={pantryBarcodeNotice}
+                  onRetryPantryBarcode={retryPantryBarcodeLookup}
+                  onDismissPantryBarcodeNotice={dismissPantryBarcodeNotice}
                   toast={toast}
                   generateShoppingList={generateShoppingList}
                   addCheckedItemsToPantry={addCheckedItemsToPantry}

@@ -4,6 +4,7 @@ const mockGetSqliteDb = vi.fn();
 const mockMigrate = vi.fn();
 const mockResidual = vi.fn();
 const mockRefresh = vi.fn();
+const mockBootstrapBodyWeight = vi.fn();
 const mockRecordFallback = vi.fn();
 const migrationClient = { __label: "mc" };
 
@@ -19,6 +20,10 @@ vi.mock("./residualImport.js", () => ({
 vi.mock("./sqliteReader.js", () => ({
   refreshFizrukSqliteState: (...a: unknown[]) => mockRefresh(...a),
 }));
+vi.mock("./bodyWeightBootstrap.js", () => ({
+  bootstrapBodyWeightFromBiometrics: (...a: unknown[]) =>
+    mockBootstrapBodyWeight(...a),
+}));
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => mockRecordFallback(...a),
 }));
@@ -33,6 +38,7 @@ beforeEach(() => {
   mockMigrate.mockReset();
   mockResidual.mockReset();
   mockRefresh.mockReset();
+  mockBootstrapBodyWeight.mockReset();
   mockRecordFallback.mockReset();
   __resetFizrukSqliteReadBootForTests();
   mockGetSqliteDb.mockResolvedValue({
@@ -41,6 +47,7 @@ beforeEach(() => {
   mockMigrate.mockResolvedValue(undefined);
   mockResidual.mockResolvedValue({ imported: false, cleaned: false });
   mockRefresh.mockResolvedValue(undefined);
+  mockBootstrapBodyWeight.mockResolvedValue(false);
 });
 
 describe("bootFizrukSqliteReadPath", () => {
@@ -55,6 +62,7 @@ describe("bootFizrukSqliteReadPath", () => {
     expect(mockMigrate).toHaveBeenCalledWith(migrationClient);
     expect(mockResidual).toHaveBeenCalledWith(migrationClient, "u1");
     expect(mockRefresh).toHaveBeenCalledWith(migrationClient, "u1");
+    expect(mockBootstrapBodyWeight).toHaveBeenCalledWith(migrationClient, "u1");
   });
 
   it("is idempotent — second call returns false", async () => {

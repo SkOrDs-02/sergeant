@@ -485,6 +485,31 @@ describe("useWeeklyDigest hook", () => {
     );
   });
 
+  it("insufficientData: сервер відповів code=INSUFFICIENT_DATA → чесний прапорець, а НЕ generic error", async () => {
+    // Дзеркалить форму ApiError, яку реально кидає httpClient (`kind`,
+    // `body`) — мокнутий `isApiError` вище перевіряє лише наявність `kind`.
+    mockGenerateDigest.mockRejectedValue({
+      kind: "http",
+      status: 400,
+      body: { error: "Замало даних", code: "INSUFFICIENT_DATA" },
+    });
+
+    const { useWeeklyDigest } = await import("./useWeeklyDigest");
+
+    const { result } = renderHook(() => useWeeklyDigest("2025-04-07"), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await result.current.generate();
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.insufficientData).toBe(true);
+    // §6.2: недостатність даних — чесна відповідь, не помилка. UI не має
+    // рендерити error-банер поряд із мережевими/5xx збоями.
+    expect(result.current.error).toBeNull();
+  });
+
   it("isCurrentWeek is true when weekKey matches getWeekKey()", async () => {
     const { useWeeklyDigest } = await import("./useWeeklyDigest");
 

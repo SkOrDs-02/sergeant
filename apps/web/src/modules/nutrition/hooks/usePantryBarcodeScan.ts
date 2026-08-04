@@ -1,8 +1,13 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-04
  * Status: Active
  */
-import { useCallback, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { isApiError } from "@shared/api";
 import { STATUS_AUTO_HIDE_MS } from "@shared/lib/ui/timeouts";
 import { useBarcodeProductLookup } from "./useBarcodeProduct";
@@ -17,17 +22,38 @@ export interface UsePantryBarcodeScanParams {
   setPantryScanStatus: Dispatch<SetStateAction<string>>;
 }
 
+/**
+ * Розрізняє "продукту немає" (404 → `null`) від "джерела не відповіли"
+ * (503) — той самий контракт, що й meal-sheet `useBarcodeLookup`
+ * (аудит nutrition E-6). Комора не має фото-розпізнавання, тож обидва
+ * стани пропонують лише ручне введення (вже видно нижче на сторінці) —
+ * "unavailable" додатково пропонує повтор без нового скану.
+ */
+export interface PantryBarcodeNotice {
+  kind: "not-found" | "unavailable";
+  code: string;
+}
+
+export interface UsePantryBarcodeScanResult {
+  scan: (raw: string) => Promise<void>;
+  notice: PantryBarcodeNotice | null;
+  retry: () => void;
+  dismissNotice: () => void;
+}
+
 export function usePantryBarcodeScan({
   pantry,
   setPantryScannerOpen,
   setPantryScanStatus,
-}: UsePantryBarcodeScanParams): (raw: string) => Promise<void> {
+}: UsePantryBarcodeScanParams): UsePantryBarcodeScanResult {
   const lookupProduct = useBarcodeProductLookup();
+  const [notice, setNotice] = useState<PantryBarcodeNotice | null>(null);
 
-  return useCallback(
+  const scan = useCallback(
     async (raw: string) => {
       setPantryScannerOpen(false);
-      setPantryScanStatus("Шукаю продукт\u2026");
+      setPantryScanStatus("Шукаю продукт…");
+      setNotice(null);
       const code = String(raw || "")
         .trim()
         .replace(/\D/g, "");
@@ -44,16 +70,25 @@ export function usePantryBarcodeScan({
           setPantryScanStatus("Немає підключення до інтернету.");
           return;
         }
+        // AI-DANGER: 503 = усі три upstream-и каскаду не відповіли (аудит
+        // nutrition G5/E-6), не "продукту немає". Тримай цю гілку ПЕРЕД
+        // загальним `kind === "http"`.
+        if (isApiError(err) && err.status === 503) {
+          setPantryScanStatus("");
+          setNotice({ kind: "unavailable", code });
+          return;
+        }
         if (isApiError(err) && err.kind === "http") {
           setPantryScanStatus(err.serverMessage || "Помилка пошуку.");
           return;
         }
-        setPantryScanStatus("Помилка пошуку. Перевір з\u2019єднання.");
+        setPantryScanStatus("Помилка пошуку. Перевір з’єднання.");
         return;
       }
 
       if (!p) {
-        setPantryScanStatus("Продукт не знайдено в базі. Додай вручну.");
+        setPantryScanStatus("");
+        setNotice({ kind: "not-found", code });
         return;
       }
       if (!p.name) {
@@ -67,13 +102,21 @@ export function usePantryBarcodeScan({
       pantry.upsertItem(label);
       if (p.partial) {
         setPantryScanStatus(
-          `Знайдено: ${label}. КБЖВ відсутнє в базі — за потреби додай вручну. \u2714`,
+          `Знайдено: ${label}. КБЖВ відсутнє в базі — за потреби додай вручну. ✔`,
         );
       } else {
-        setPantryScanStatus(`Додано: ${label} \u2714`);
+        setPantryScanStatus(`Додано: ${label} ✔`);
       }
       setTimeout(() => setPantryScanStatus(""), STATUS_AUTO_HIDE_MS);
     },
     [lookupProduct, pantry, setPantryScanStatus, setPantryScannerOpen],
   );
+
+  const retry = useCallback(() => {
+    if (notice) void scan(notice.code);
+  }, [notice, scan]);
+
+  const dismissNotice = useCallback(() => setNotice(null), []);
+
+  return { scan, notice, retry, dismissNotice };
 }

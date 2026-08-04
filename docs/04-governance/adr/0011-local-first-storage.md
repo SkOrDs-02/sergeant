@@ -1,6 +1,6 @@
 # ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Sub-decision status:** 11.1 / 11.2 / 11.5 — accepted; 11.3 / 11.4 — partially superseded (див. amendment нижче + [ADR-0047](./0047-cloudsync-v1-410-gone.md)).

@@ -1,6 +1,6 @@
 # Playbook: Bump Dependency Safely
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.

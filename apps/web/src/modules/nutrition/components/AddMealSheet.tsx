@@ -130,6 +130,8 @@ export function AddMealSheet({
     setBarcode,
     barcodeStatus,
     setBarcodeStatus,
+    barcodeNotice,
+    setBarcodeNotice,
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,
@@ -196,6 +198,7 @@ export function AddMealSheet({
     setFoodErr("");
     setBarcode("");
     setBarcodeStatus("");
+    setBarcodeNotice(null);
     setScannerOpen(false);
     setFromPantryItem(null);
     setEditingTemplateId(null);
@@ -461,6 +464,10 @@ export function AddMealSheet({
               setBarcode={setBarcode}
               barcodeStatus={barcodeStatus}
               setBarcodeStatus={setBarcodeStatus}
+              barcodeNotice={barcodeNotice}
+              onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+              onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+              onUsePhotoForBarcode={onRequestPhoto}
               handleBarcodeLookup={handleBarcodeLookup}
               handleBarcodeBind={handleBarcodeBind}
               setScannerOpen={setScannerOpen}

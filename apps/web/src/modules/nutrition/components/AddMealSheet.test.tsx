@@ -175,6 +175,8 @@ const { stableFoodSearch, stableBarcodeLookup } = vi.hoisted(() => ({
     setBarcode: vi.fn(),
     barcodeStatus: "",
     setBarcodeStatus: vi.fn(),
+    barcodeNotice: null,
+    setBarcodeNotice: vi.fn(),
     scannerOpen: false,
     setScannerOpen: vi.fn(),
     handleBarcodeLookup: vi.fn(),

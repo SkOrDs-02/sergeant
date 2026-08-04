@@ -31,11 +31,14 @@ export interface MacroRingDatum {
 
 export function MacroRings({
   macros,
+  incomplete = false,
   "aria-label": ariaLabel,
 }: {
   macros: MacroRingDatum[];
   /** Group label, sourced from the i18n catalog by the caller. */
   "aria-label": string;
+  /** Day-level "partial data" flag — see `ProgressRing`'s `incomplete` prop. */
+  incomplete?: boolean;
 }) {
   return (
     <ul className="grid grid-cols-3 gap-2" aria-label={ariaLabel}>
@@ -56,6 +59,7 @@ export function MacroRings({
               // shrinking the enum step is the only overflow-safe fix
               // that doesn't fight the shared component with `!important`.
               size="sm"
+              incomplete={incomplete}
               aria-label={
                 safeGoal > 0
                   ? `${label}: ${consumed} з ${safeGoal} ${unit}`
