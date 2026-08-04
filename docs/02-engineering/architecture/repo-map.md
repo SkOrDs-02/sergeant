@@ -42,12 +42,22 @@
 | `@sergeant/nutrition-domain`    | Nutrition module domain logic (meals, OFF lookups, kcal math).                                                                                                   |
 | `@sergeant/routine-domain`      | Routine module domain logic (habits, streaks, calendar).                                                                                                         |
 
-## Ops & tooling (`ops/`, `tools/`, `scripts/`)
+## Ops & tooling (`ops/`, `tools/`, `scripts/`) та інші теки кореня
 
 - `ops/n8n-workflows/` — n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validated by `pnpm ops:n8n:validate`.
 - `tools/tsconfig-guard/` — guards strict-family `tsconfig` flags (Hard Rule #19); allowlist with expiry/owner.
 - `tools/agent-snapshot/` — zero-dep динамічний snapshot контексту для агентів (`pnpm snapshot`, ADR-0071) → `.kilocode/snapshot.md`.
 - `scripts/` — governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md) for the full list.
+
+Теки кореня поза workspace-ами (не білдяться, але трекаються в git):
+
+- `mockups/` — статична HTML-галерея прототипів (вхід `mockups/index.html`); візуальна правда для дизайн-рев'ю, не виробничий код.
+- `.telemetry/` — tracking-plan і згенеровані identity-модулі; `tracking-plan.yaml` звіряється тестом `packages/shared/src/lib/analyticsEvents.test.ts`.
+- `plop-templates/` — шаблони скафолдингу для `plopfile.mjs` (`pnpm plop`).
+- `.tech-debt/` — JSON-бюджети burn-down, читаються `pnpm lint:localstorage-allowlist` і `pnpm lint:env-single-source`.
+- `patches/` — `pnpm patch` для upstream-багів; кожен запис описано в [`pnpm-overrides.md`](../../../pnpm-overrides.md), гейт `pnpm lint:patches`.
+- `.codex/` — репо-owned harness-шар Codex (`config.toml`, `hooks.json`, `agents/*.toml`); стан — `pnpm codex:status`.
+- `.agents/skills/` — harness-нейтральні SKILL.md; `.claude/` — worktree-конфіг Claude Code; `.kilo/harness-versions.json` — реєстр версій харнеса.
 
 ## Test stacks per surface
 
