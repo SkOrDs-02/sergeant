@@ -122,7 +122,11 @@ export function useInlineAiRail(): UseInlineAiRailResult {
 
       let msg: string;
       if (err instanceof ApiError && err.kind === "http") {
-        msg = friendlyApiError(err.status, err.serverMessage);
+        msg = friendlyApiError(
+          err.status,
+          err.serverMessage,
+          (err.body as { code?: string } | undefined)?.code,
+        );
       } else {
         msg = friendlyChatError(err);
       }

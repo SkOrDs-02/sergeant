@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { messages } from "@shared/i18n/uk";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
@@ -201,6 +202,7 @@ export function PresetSheet({
     () => (moduleId ? PRESETS[moduleId] : null),
     [moduleId],
   );
+  const [saveError, setSaveError] = useState(false);
 
   useEffect(() => {
     if (!open || !config || !moduleId) return;
@@ -212,7 +214,8 @@ export function PresetSheet({
 
   if (!config || !moduleId) return null;
 
-  const handlePick = (item: PresetItem) => {
+  const handlePick = async (item: PresetItem) => {
+    setSaveError(false);
     trackEvent(ANALYTICS_EVENTS.FTUX_PRESET_PICKED, {
       module: moduleId,
       presetId: item.id,
@@ -225,8 +228,21 @@ export function PresetSheet({
     // до трьох ідентичних порожніх форм.
     let persisted = false;
     if (moduleId === "routine") {
-      applyPreset(moduleId, item.data as ModulePreset);
-      persisted = true;
+      // Спека `anonymous-local-first-persistence.md` («Похідне правило»):
+      // СТАРТ-блок вважається витраченим лише після ПІДТВЕРДЖЕНОГО durable
+      // write. Раніше тут стояло `persisted = true` одразу після виклику —
+      // а `applyPreset` тоді був fire-and-forget і мовчки не писав нічого,
+      // якщо dual-write контекст не змонтований (типовий стан у FTUX: шит
+      // відкривається з хаба, шел `/routine` ще не бутнувся). Наслідок —
+      // hero-картка згасала назавжди, звичка жила до першого reload.
+      persisted = await applyPreset(moduleId, item.data as ModulePreset);
+      if (!persisted) {
+        // Шит лишається відкритим: єдина дія користувача не має зникати
+        // разом із незбереженим записом, а повторний тап тут-таки — це
+        // найкоротший шлях до retry.
+        setSaveError(true);
+        return;
+      }
     } else if (config.action) {
       writePresetPrefill(moduleId, item.data);
       openHubModuleWithAction(moduleId, config.action);
@@ -261,11 +277,19 @@ export function PresetSheet({
       description={config.desc}
     >
       <div className="px-5 pb-5 space-y-2">
+        {saveError && (
+          <p
+            role="alert"
+            className="rounded-2xl border border-danger bg-danger/10 px-3 py-2 text-style-caption text-text"
+          >
+            {messages.onboarding.presetSaveFailed}
+          </p>
+        )}
         {config.items.map((item: PresetItem) => (
           <button
             key={item.id}
             type="button"
-            onClick={() => handlePick(item)}
+            onClick={() => void handlePick(item)}
             className={cn(
               "w-full text-left px-3 py-3 rounded-2xl border border-line bg-panelHi",
               "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",

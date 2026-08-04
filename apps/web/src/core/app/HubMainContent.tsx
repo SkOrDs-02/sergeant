@@ -18,6 +18,7 @@ import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
+import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
 import { TrialBanner } from "../billing";
 
 /**
@@ -259,6 +260,16 @@ export const HubMainContent = memo(function HubMainContent({
               className={cn("flex flex-col gap-5 pt-2", slideClass)}
             >
               <h1 className="sr-only">{messages.nav.dashboard}</h1>
+              {/* Канон finyk §6.2 — durability. Банер жив лише всередині
+                  finyk/Overview, тож відвідувач, який працює в routine,
+                  nutrition чи fizruk, не дізнавався, що його дані існують
+                  в одному екземплярі на цьому пристрої. Хаб — спільний
+                  дах усіх модулів, тож попередження належить сюди.
+                  Показуватись чи ні, вирішує сам банер (той самий предикат
+                  `isSyncableUserId`, що вимикає запис в outbox), тому гейта
+                  на `user` тут немає. Під час FTUX мовчить: перша сесія
+                  тримає рівно один сигнал на екрані — CTA першої дії. */}
+              {!inFtuxSession && <LocalOnlyDataBanner onSignIn={onShowAuth} />}
               <HubDashboard
                 onOpenModule={onOpenModule}
                 user={user}

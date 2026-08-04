@@ -206,7 +206,7 @@ describe("assertAiQuota (default bucket)", () => {
     expect(res.headers["X-AI-Quota-Remaining"]).toBe("unknown");
   });
 
-  it("returns 429 when daily limit would be exceeded", async () => {
+  it("returns 429 with the sign-in code when an anonymous caller is capped", async () => {
     process.env["DATABASE_URL"] = "postgres://ignored";
     process.env["AI_QUOTA_DISABLED"] = "0";
     process.env["AI_DAILY_ANON_LIMIT"] = "2";
@@ -217,7 +217,25 @@ describe("assertAiQuota (default bucket)", () => {
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(false);
     expect(res.statusCode).toBe(429);
-    expect((res.body as { code?: string } | undefined)?.code).toBe("AI_QUOTA");
+    const body = res.body as { code?: string; error?: string } | undefined;
+    // Аноніму чекати доби нема сенсу — вхід піднімає ліміт негайно, і копія
+    // мусить вести саме туди. Клієнт розрізняє випадки за `code`.
+    expect(body?.code).toBe("AI_QUOTA_ANON");
+    expect(body?.error).toMatch(/Увійди/);
+  });
+
+  it("returns 429 with the plain quota code for a signed-in caller", async () => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    getSessionUser.mockResolvedValue({ id: "u-1" });
+    pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    const res = makeRes();
+    const ok = await assertAiQuota(makeReq(), res);
+    expect(ok).toBe(false);
+    expect(res.statusCode).toBe(429);
+    const body = res.body as { code?: string; error?: string } | undefined;
+    expect(body?.code).toBe("AI_QUOTA");
+    expect(body?.error).toMatch(/завтра/);
   });
 
   it("returns true and sets remaining header on success", async () => {
