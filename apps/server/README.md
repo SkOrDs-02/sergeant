@@ -1,12 +1,12 @@
 # @sergeant/server
 
-Backend API Sergeant — Node 20, Express, PostgreSQL (`pg`), Better Auth, Anthropic tool-use (HubChat) і Voyage embeddings (AI memory).
+Backend API Sergeant — Node 22, Express, PostgreSQL (`pg`), Better Auth, Anthropic tool-use (HubChat) і Voyage embeddings (AI memory).
 
 ## Стек
 
 | Шар     | Технологія                                                   |
 | ------- | ------------------------------------------------------------ |
-| Runtime | Node 20, TypeScript 6                                        |
+| Runtime | Node 22, TypeScript 6                                        |
 | HTTP    | Express, Helmet, CORS, rate limiting                         |
 | DB      | PostgreSQL 16, `pg` driver, SQL-міграції                     |
 | Auth    | Better Auth (cookie-сесії, bearer для mobile)                |

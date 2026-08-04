@@ -17,7 +17,7 @@
 
 ### Completed-prefix (`_NNNN-…`)
 
-Коли ініціатива переходить у `Done` або `Closed`, файл **перейменовується** з `NNNN-slug.md` у `_NNNN-slug.md` — `_` сортується після цифр у `ls`, тому активні ініціативи лежать згори, завершені — знизу, і `archive/` нижче. Slug (`NNNN-slug`) лишається стабільним як ідентифікатор ініціативи у TODO-маркерах (наприклад, `TODO(0001-module-decomposition): …`), у `docs/04-governance/governance/hard-rules.json` ref-ах і в історії — змінюється тільки фізичне ім'я файлу. CI-гейт `lint:initiative-status-sync` приймає обидві форми (`NNNN-…` і `_NNNN-…`); `pnpm docs:gen-initiative-followups` теж розуміє обидві.
+Коли ініціатива переходить у `Done` або `Closed`, файл **перейменовується** з `NNNN-slug.md` у `_NNNN-slug.md` — `_` сортується після цифр у `ls`, тому активні ініціативи лежать згори, а завершені — знизу. Slug (`NNNN-slug`) лишається стабільним як ідентифікатор ініціативи у TODO-маркерах (наприклад, `TODO(0001-module-decomposition): …`), у `docs/04-governance/governance/hard-rules.json` ref-ах і в історії — змінюється тільки фізичне ім'я файлу. CI-гейт `lint:initiative-status-sync` приймає обидві форми (`NNNN-…` і `_NNNN-…`); `pnpm docs:gen-initiative-followups` теж розуміє обидві.
 
 ```text
 docs/90-work/initiatives/
@@ -26,18 +26,10 @@ docs/90-work/initiatives/
 ├── 0022-import-from-external-trackers.md     # Proposed
 ├── hardening-matrix.md                       # Active
 ├── README.md
-├── archive/
-│   ├── _0001-… … _0016-…                     # earlier batches
-│   ├── _0003-sync-v2-rollout-and-v1-sunset.md  # Closed (archived 2026-07-20)
-│   ├── _0006-frontend-routing-…md              # Withdrawn (archived 2026-07-25)
-│   ├── _0017-hub-tabs-mount-perf.md            # Closed (archived 2026-07-20)
-│   ├── _0021-react-hooks-v7-cleanup.md         # Done (archived 2026-07-20)
-│   ├── stack-pulse-2026-05/                    # Closed (archived 2026-07-25)
-│   └── README.md
-└── follow-ups.md
+└── follow-ups.md                             # генерується docs:gen-initiative-followups
 ```
 
-Коли `Closed` файл переходить у `archive/`, префікс **залишається** — `archive/_NNNN-slug.md` (fast-forward дозволено без 90-day gate за рішенням founder-а).
+Закриті ініціативи більше **не** переїжджають у `archive/` — локальні archive-дерева retired за [ADR-0081](../../04-governance/adr/0081-repository-simplification.md). Файл видаляється cleanup-комітом, а запис із permalink-ом на останній коміт, де він існував, лишається у § «Архів» нижче.
 
 > **Що рухається разом із файлом при перейменуванні.** `git mv NNNN-… _NNNN-…` + одночасно у тому ж PR-і — оновити всі лінки на `.md` файл (markdown-посилання, comment-refs у коді / yml). Перевірка: `pnpm docs:check-links` + `pnpm lint:initiative-status-sync`. Slug-only mentions (без `.md` — TODO-маркери, governance refs) **не чіпаємо**.
 

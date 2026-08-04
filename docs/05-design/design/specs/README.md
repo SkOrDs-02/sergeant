@@ -24,6 +24,8 @@ Design-специ для нетривіальних product-side фіч (ран�
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | --------- |
 | 2026-04-25 | [`2026-04-25-assistant-capability-catalogue-design.md`](./archive/2026-04-25-assistant-capability-catalogue-design.md)                 | Shipped — archived 2026-07-19       | —         |
 | 2026-05-06 | [`2026-05-06-sync-engine-writer-wiring-design.md`](./archive/2026-05-06-sync-engine-writer-wiring-design.md)                           | Shipped — archived 2026-07-19       | —         |
+| 2026-07-13 | [`2026-07-13-hub-auth-nav-chat-regression.md`](./2026-07-13-hub-auth-nav-chat-regression.md)                                           | Active                              | —         |
+| 2026-07-13 | [`2026-07-13-routine-day-timeline-cross-module.md`](./2026-07-13-routine-day-timeline-cross-module.md)                                 | Active                              | —         |
 | 2026-07-13 | [`2026-07-13-pwa-usability-polish-design.md`](./2026-07-13-pwa-usability-polish-design.md)                                             | Draft                               | —         |
 | 2026-07-16 | [`2026-07-16-founder-feedback-remediation-design.md`](./2026-07-16-founder-feedback-remediation-design.md)                             | Active                              | —         |
 | 2026-07-28 | [`2026-07-28-anonymous-profile-data-migration-design.md`](./2026-07-28-anonymous-profile-data-migration-design.md)                     | Shipped — implementation pending PR | —         |

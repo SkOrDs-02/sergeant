@@ -76,6 +76,8 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`testing/`](./02-engineering/testing/README.md)            | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
 | [`ui/`](./05-design/ui/README.md)                           | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
 | [`web/`](./02-engineering/web/README.md)                    | `apps/web` platform deep-dives (Service Worker update strategy)                       |
+| [`model/`](./01-product/model/README.md)                    | Продуктові канони модулів: для кого, що обіцяємо, чого свідомо не робимо              |
+| [`pr-ledger/`](./04-governance/pr-ledger/README.md)         | Реєстр змерджених PR-ів по канонічних доках (Hard Rule #26)                           |
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
 
@@ -89,6 +91,7 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 | [`security/hardening/`](./04-governance/security/hardening/README.md) | Living security hardening backlog (жива картка: C2; решта в `archive/`)                         |
 | [`superpowers/`](./90-work/superpowers/README.md)                     | High-leverage guides; завершені плани під `plans/archive/`                                      |
 | [`tech-debt/`](./90-work/tech-debt/README.md)                         | Active debt registries (backend/frontend/mobile + assessment)                                   |
+| [`beta-launch/`](./90-work/beta-launch/README.md)                     | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання                                  |
 
 ### Збережені локальні архіви
 

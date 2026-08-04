@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -13,6 +13,7 @@
 - **Спеціалізовані UX-патерни** → таблиця нижче.
 - **Закриті аудити та реалізовані пропозиції (для governance-trace)** → [`archive/`](./archive/README.md).
 - **Product-side design specs** → [`specs/`](./specs/README.md).
+- **Портативний конфіг візуальної системи для AI-агентів** → [`DESIGN.md`](../../../DESIGN.md).
 
 ## v2 redesign (травень 2026)
 

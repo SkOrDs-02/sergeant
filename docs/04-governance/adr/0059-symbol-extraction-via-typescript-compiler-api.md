@@ -1,7 +1,6 @@
 # ADR-0059: Symbol extraction via TypeScript compiler API (no ts-morph)
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Deprecated
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 
 - **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-05-15
@@ -103,7 +102,7 @@ Hybrid не обираємо — entry-AST + cross-package regex вже є де-
 
 | PR                                                       | Title                                                            | Merged     |
 | -------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo            | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo            | 2026-07-29 |
 | [#2889](https://github.com/Skords-01/Sergeant/pull/2889) | feat(docs): per-package symbol catalog (Initiative 0014 Phase 2) | 2026-05-15 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

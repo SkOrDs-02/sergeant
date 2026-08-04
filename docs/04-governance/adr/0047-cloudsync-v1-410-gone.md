@@ -1,7 +1,6 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
 > **Last validated:** 2026-07-20 by @cursor (Phase 7 removal links → historical). **Next review:** 2026-10-18.
-> **Status:** Active
 >
 > **⚠️ Superseded Phase 7 (2026-07-20, commit `d5cc2648c`):** 410-Gone handler `sunsetGone.ts` (+ survey middleware) **видалено** після завершення 90-денного deprecation-вікна. v1 sync тепер віддає **голий `404`**, не `410 Gone`. Цей ADR лишається як історичний запис T₀-виконання; актуальний стан — коментар у [`apps/server/src/routes/sync.ts`](../../../apps/server/src/routes/sync.ts) і [`api-v1.md`](../../02-engineering/architecture/api-v1.md).
 
@@ -139,7 +138,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

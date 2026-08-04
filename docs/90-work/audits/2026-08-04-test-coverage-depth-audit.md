@@ -55,7 +55,7 @@
 ### Глибоке (підтверджено читанням файлів)
 
 - `apps/server/src/modules/sync/syncV2.integration.test.ts` — рівно 5497 рядків, 73 тести проти реального Postgres: LWW-конфлікти, idempotency replay, tombstone resurrection guards, cross-user isolation.
-- `packages/shared/src/utils/date.property.test.ts` + `apps/web/.../kyivTime.property.test.ts` — fast-check з незалежним оракулом, 1000 runs, природно ловлять 23/25-годинні DST-доби.
+- `packages/shared/src/utils/date.property.test.ts` + `apps/web/src/shared/lib/time/kyivTime.property.test.ts` — fast-check з незалежним оракулом, 1000 runs, природно ловлять 23/25-годинні DST-доби.
 - `apps/server/src/lib/pgInt8.property.test.ts` — bigint поза [MIN_SAFE, MAX_SAFE] аж до ±2^63 з вимогою throw замість тихої втрати копійок (Hard Rule #1 на трьох рівнях: драйвер, нормалізатори, Pact wire-level).
 - `apps/server/src/http/requireSession.test.ts` — stateful circuit-breaker M13 (4 fail → 401, 5-й → 503, reset), H8 CORP на всіх статусах.
 - `apps/web/src/core/hub/chat/useChatSend.test.tsx` — гейт деструктивних tool-calls (§8 канону), 256KB SSE cap, envelope firewall; прив'язано до аудит-фіндингів F15/F22.

@@ -1,6 +1,6 @@
 # ADR-0075: OpenClaw Gateway decommissioned
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Date:** 2026-07-20
 - **Reviewers:** @SkOrDs-02
 - **Supersedes:** [ADR-0027](./0027-openclaw-console-mcp-policy.md), [ADR-0032](./0032-console-consolidated-into-openclaw.md), [ADR-0033](./0033-openclaw-multi-personas-and-council.md), [ADR-0037](./0037-openclaw-write-audit-persistence.md), [ADR-0055](./0055-openclaw-external-gateway.md)

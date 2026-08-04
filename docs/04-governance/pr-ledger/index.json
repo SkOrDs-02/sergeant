@@ -6,7 +6,7 @@
     {
       "number": 508,
       "title": "fix(docs): reconcile canonical docs with current repo",
-      "merged_at": "PENDING",
+      "merged_at": "2026-07-29T18:25:31Z",
       "author": "@SkOrDs-02",
       "touchedDocs": [
         "AGENTS.md",

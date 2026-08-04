@@ -1,7 +1,6 @@
 # ADR-0066: Agent semantic retrieval over the knowledge graph
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Deprecated
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 
 - **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-06-08
@@ -97,7 +96,7 @@
 
 | PR                                                       | Title                                                             | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo             | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo             | 2026-07-29 |
 | [#3573](https://github.com/Skords-01/Sergeant/pull/3573) | docs(agents): archive initiative 0018 (agent:find, code-complete) | 2026-06-14 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
