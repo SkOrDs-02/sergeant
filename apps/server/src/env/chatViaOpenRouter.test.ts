@@ -31,6 +31,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
 
   it("без прапорця — Anthropic-моделі", () => {
     expect(chatViaOpenRouter()).toBe(false);
+    expect(defaultChatModel("firstTurn")).toBe("claude-haiku-4-5-20251001");
     expect(defaultChatModel("synthesis")).toBe("claude-sonnet-4-6");
     expect(defaultChatModel("standard")).toBe("claude-haiku-4-5-20251001");
   });
@@ -39,6 +40,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     process.env["CHAT_VIA_OPENROUTER"] = "true";
     process.env["OPENROUTER_API_KEY"] = "sk-or-test";
     expect(chatViaOpenRouter()).toBe(true);
+    expect(defaultChatModel("firstTurn")).toBe("deepseek/deepseek-v4-flash");
     expect(defaultChatModel("synthesis")).toBe("z-ai/glm-5.2");
     expect(defaultChatModel("standard")).toBe("deepseek/deepseek-v4-flash");
     expect(defaultChatModel("floor")).toBe("google/gemini-2.5-flash-lite");
@@ -49,6 +51,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     expect(chatViaOpenRouter()).toBe(false);
     // Ключова перевірка: model-id теж мають повернутися на Anthropic, інакше
     // транспорт піде в api.anthropic.com з `z-ai/glm-5.2` і отримає 404.
+    expect(defaultChatModel("firstTurn")).toBe("claude-haiku-4-5-20251001");
     expect(defaultChatModel("synthesis")).toBe("claude-sonnet-4-6");
     expect(defaultChatModel("standard")).toBe("claude-haiku-4-5-20251001");
   });
