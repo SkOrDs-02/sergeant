@@ -1,133 +1,45 @@
 // @vitest-environment jsdom
 /**
- * Smoke tests for the Dashboard page.
- * Mounts with mocked hooks; verifies key sections render and CTAs fire.
+ * Last validated: 2026-08-04
+ * Status: Active
+ *
+ * Integration tests for the Fizruk `Dashboard` page — over-mocking
+ * refactor.
+ *
+ * The previous version stubbed all 11 hooks `Dashboard` wires up
+ * (`useExerciseCatalog`, `useWorkouts`, `useRecovery`,
+ * `useWorkoutTemplates`, `useMonthlyPlan`, `useMeasurements`,
+ * `useRestDayOverdueInsight`, `usePrPendingInsight`, `usePrLatest`,
+ * `useActiveFizrukWorkout`, `useAuth`) plus its 4 real children
+ * (`HeroCard`, `StatusStrip`, `RecentWorkoutsSection`, `PrBadge`) to
+ * `data-testid` divs, and asserted only "mounts without crashing" /
+ * testid-presence — none of it protected the props contract between
+ * `Dashboard` and its children.
+ *
+ * All 11 hooks turn out to be pure — SQLite-warm-cache readers (never
+ * booted here; empty until `useFizrukSqliteReadBoot` runs from the
+ * `FizrukApp` shell, out of scope for a page-level test) or plain
+ * `localStorage`/pure-selector hooks — with **no network calls and no
+ * heavy browser API**, so none of them need mocking: this file renders
+ * them for real, plus the real `HeroCard`/`StatusStrip`/
+ * `RecentWorkoutsSection`/`PrBadge` children, wired to a real
+ * `AuthProvider`/`ApiClientProvider` and a real MSW `/api/v1/me`
+ * transport (the only network call in the render tree).
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http, HttpResponse } from "msw";
+import { meFixtures } from "@sergeant/shared";
+import { ApiClientProvider } from "@sergeant/api-client/react";
+import { apiClient } from "@shared/api";
+import { AuthProvider } from "../../../core/auth/AuthContext";
+import { server } from "../../../test/msw/server";
 
-// Stub kvStoreBoot (requires @sergeant/db-schema/sqlite WASM artefact)
-vi.mock("../../../core/db/kvStoreBoot", () => ({
-  getActiveSqliteKvStore: () => null,
-  bootstrapKvStore: () => Promise.resolve(),
-}));
-
-// Stub useAuth — the Dashboard reads `user?.id` to gate the hydration
-// skeleton (signed-in only). Guest (user: null) skips the skeleton and
-// renders the body, which is what these smoke tests assert.
-vi.mock("../../../core/auth/AuthContext", () => ({
-  useAuth: vi.fn(() => ({ user: null })),
-}));
-
-// Stub all the hooks the Dashboard wires up
-vi.mock("../hooks/useExerciseCatalog", () => ({
-  useExerciseCatalog: vi.fn(() => ({
-    exercises: [],
-    musclesUk: {},
-  })),
-}));
-
-vi.mock("../hooks/useWorkouts", () => ({
-  useWorkouts: vi.fn(() => ({
-    workouts: [],
-    loaded: true,
-    createWorkout: vi.fn(),
-    addItem: vi.fn(),
-  })),
-}));
-
-vi.mock("../hooks/useRecovery", () => ({
-  useRecovery: vi.fn(() => ({
-    by: {},
-    list: [],
-    ready: [],
-    avoid: [],
-    wellbeingMult: 1,
-    injurySites: new Set<never>(),
-  })),
-}));
-
-vi.mock("../hooks/useWorkoutTemplates", () => ({
-  useWorkoutTemplates: vi.fn(() => ({
-    templates: [],
-    loaded: true,
-    recentlyUsed: [],
-    markTemplateUsed: vi.fn(),
-  })),
-}));
-
-vi.mock("../hooks/useMonthlyPlan", () => ({
-  useMonthlyPlan: vi.fn(() => ({
-    days: [],
-    todayTemplateId: null,
-    reminderEnabled: false,
-    reminderHour: 8,
-    reminderMinute: 0,
-  })),
-}));
-
-vi.mock("../hooks/useMeasurements", () => ({
-  useMeasurements: vi.fn(() => ({
-    entries: [],
-  })),
-}));
-
-vi.mock("../hooks/useRestDayOverdueInsight", () => ({
-  useRestDayOverdueInsight: vi.fn(() => null),
-}));
-
-vi.mock("../hooks/usePrPendingInsight", () => ({
-  usePrPendingInsight: vi.fn(() => null),
-}));
-
-vi.mock("../hooks/usePrLatest", () => ({
-  usePrLatest: vi.fn(() => null),
-}));
-
-vi.mock("@shared/hooks/useActiveFizrukWorkout", () => ({
-  useActiveFizrukWorkout: vi.fn(() => null),
-}));
-
-// Stub HeroCard — isolate Dashboard layout from HeroCard details
-vi.mock("../components/dashboard/HeroCard", () => ({
-  HeroCard: ({
-    greeting,
-    today,
-  }: {
-    greeting: string;
-    today: string;
-    state: unknown;
-    onResume: () => void;
-    onStartToday: () => void;
-    onOpenPlan: () => void;
-    onOpenTemplates: () => void;
-    onOpenPrograms: () => void;
-    cornerSlot?: React.ReactNode;
-  }) => (
-    <div data-testid="hero-card">
-      <span data-testid="hero-greeting">{greeting}</span>
-      <span data-testid="hero-today">{today}</span>
-    </div>
-  ),
-}));
-
-vi.mock("../components/dashboard/StatusStrip", () => ({
-  StatusStrip: () => <div data-testid="status-strip" />,
-}));
-
-vi.mock("../components/dashboard/RecentWorkoutsSection", () => ({
-  RecentWorkoutsSection: () => <div data-testid="recent-workouts" />,
-}));
-
-vi.mock("../components/dashboard/PrBadge", () => ({
-  PrBadge: () => <div data-testid="pr-badge" />,
-}));
-
-import React from "react";
 import { Dashboard } from "./Dashboard";
 
 const mockNavigate = vi.fn();
-
 const defaultProps = {
   onOpenPrograms: vi.fn(),
   activeProgram: null,
@@ -136,52 +48,123 @@ const defaultProps = {
   onNavigate: mockNavigate,
 };
 
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
-});
+function meUnauthenticatedHandler() {
+  return http.get("*/api/v1/me", () =>
+    HttpResponse.json({ error: "Unauthorized" }, { status: 401 }),
+  );
+}
+
+function meAuthenticatedHandler() {
+  return http.get("*/api/v1/me", () => HttpResponse.json(meFixtures.minimal));
+}
 
 beforeEach(() => {
-  // Freeze time to a specific Kyiv morning for deterministic greeting
-  vi.useFakeTimers();
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+  server.use(meUnauthenticatedHandler());
+  // Only fake `Date` — faking timers wholesale stalls MSW/React Query's
+  // real `setTimeout`-based microtask scheduling and hangs every
+  // `findBy*`/`waitFor` in this file.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  // 09:00 Kyiv → morning greeting.
   vi.setSystemTime(new Date("2026-06-04T09:00:00+03:00"));
 });
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.clearAllMocks();
 });
 
-describe("Dashboard page smoke tests", () => {
-  it("mounts without crashing", () => {
-    expect(() => render(<Dashboard {...defaultProps} />)).not.toThrow();
+function renderDashboard(props: Partial<typeof defaultProps> = {}) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ApiClientProvider client={apiClient}>
+        <AuthProvider>
+          <Dashboard {...defaultProps} {...props} />
+        </AuthProvider>
+      </ApiClientProvider>
+    </QueryClientProvider>,
+  );
+}
+
+describe("Dashboard — guest, no data (real hooks + real children)", () => {
+  it("renders the real HeroCard empty state with a Kyiv-anchored greeting", async () => {
+    renderDashboard();
+
+    // Real sr-only page heading (not a stubbed testid).
+    expect(
+      await screen.findByRole("heading", { name: "Огляд", hidden: true }),
+    ).toBeInTheDocument();
+
+    // Real `HeroCard` in its "empty" state (no templates, no active
+    // workout, no plan session) renders the Kyiv-anchored greeting +
+    // date kicker and the "no templates yet" copy.
+    expect(screen.getByText(/Доброго ранку ·/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Створити шаблон" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "До програм" }),
+    ).toBeInTheDocument();
   });
 
-  it("renders the HeroCard", () => {
-    render(<Dashboard {...defaultProps} />);
-    expect(screen.getByTestId("hero-card")).toBeInTheDocument();
+  it("renders the real StatusStrip with zero-state KPI chips", async () => {
+    renderDashboard();
+    const strip = await screen.findByRole("region", {
+      name: "Статус: готовність, серія, тиждень",
+    });
+    expect(
+      screen.getByRole("button", { name: /Готовність: ОК/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Серія: 0 тижнів/ }),
+    ).toBeInTheDocument();
+    expect(strip).toBeInTheDocument();
   });
 
-  it("renders a greeting based on time of day", () => {
-    render(<Dashboard {...defaultProps} />);
-    const greeting = screen.getByTestId("hero-greeting");
-    // 09:00 Kyiv → morning greeting
-    expect(greeting.textContent).toBe("Доброго ранку");
+  it("does not render RecentWorkoutsSection when there are no completed workouts", async () => {
+    renderDashboard();
+    await screen.findByText(/Доброго ранку ·/);
+    expect(
+      screen.queryByRole("heading", { name: "Останні тренування" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("renders today's date string", () => {
-    render(<Dashboard {...defaultProps} />);
-    const today = screen.getByTestId("hero-today");
-    expect(today.textContent).not.toBe("");
+  it("clicking the hero's 'Створити шаблон' CTA navigates to Workouts in templates mode (real sessionStorage write)", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await user.click(
+      await screen.findByRole("button", { name: "Створити шаблон" }),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+    expect(window.sessionStorage.getItem("fizruk_workouts_mode")).toBe(
+      "templates",
+    );
   });
 
-  it("renders the StatusStrip", () => {
-    render(<Dashboard {...defaultProps} />);
-    expect(screen.getByTestId("status-strip")).toBeInTheDocument();
+  it("clicking the 'Готовність' status chip navigates to Тіло (real onNavigate wiring)", async () => {
+    const user = userEvent.setup();
+    renderDashboard();
+    await user.click(
+      await screen.findByRole("button", { name: /Готовність: ОК/ }),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith("body");
   });
+});
 
-  it("does not render RecentWorkoutsSection when no completed workouts", () => {
-    render(<Dashboard {...defaultProps} />);
-    // recentWorkouts is [] → section should be hidden
-    expect(screen.queryByTestId("recent-workouts")).not.toBeInTheDocument();
+describe("Dashboard — signed-in visitor before hydration", () => {
+  it("shows the loading skeleton instead of the hero until the SQLite warm cache boots", async () => {
+    server.use(meAuthenticatedHandler());
+    renderDashboard();
+
+    expect(
+      await screen.findByRole("status", { name: "Завантаження дашборду" }),
+    ).toBeInTheDocument();
+    // The hero never mounts while `workoutsLoaded`/`templatesLoaded` are
+    // false (no `useFizrukSqliteReadBoot` in this page-level tree).
+    expect(screen.queryByText(/Доброго ранку ·/)).not.toBeInTheDocument();
   });
 });

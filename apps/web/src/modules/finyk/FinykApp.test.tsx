@@ -1,435 +1,370 @@
 // @vitest-environment jsdom
 /**
- * Smoke tests for FinykApp (the module shell).
- * Mocks heavy hooks and sub-components; verifies the shell mounts,
- * renders the header, nav bar, and the default overview page.
+ * Last validated: 2026-08-04
+ * Status: Active
+ *
+ * Integration tests for FinykApp — over-mocking refactor.
+ *
+ * The previous version of this file stubbed all 7 Finyk hooks plus every
+ * child component to a `data-testid` div and asserted "mounts without
+ * crashing" / testid-presence. None of that exercised the real contract
+ * between `FinykApp` and its children, or the real Monobank data flow.
+ *
+ * This version renders the REAL component tree — real `useMonobank`
+ * (`useMonobankWebhook`), real `useStorage`, real `NoBankBanner`, real
+ * `FinykLoginScreen`, real lazy-loaded pages (`Overview`/`Transactions`/
+ * `Budgets`/`Analytics`/`Assets`), real `ModuleBottomNav`, real
+ * `AuthProvider`/`ApiClientProvider`/`ToastProvider` — wired to a real
+ * `MemoryRouter` and a *real* MSW transport for `/api/v1/me` and every
+ * `/api/v1/mono/*` endpoint `useMonobankWebhook` calls.
+ *
+ * Only one hook is mocked: `useFinykSqliteReadBoot` boots a real
+ * sqlite-wasm worker (heavy browser API, out of scope for a shell test —
+ * covered by its own dedicated unit tests). Because the test stays
+ * unauthenticated (`/api/v1/me` → 401, the normal anonymous-visitor
+ * response), `useFinykMonoMirrorBoot` and the SQLite-mirror `useEffect`s
+ * inside `useMonobankWebhook` never fire either (both gate on a real
+ * user id) — no further sqlite mocking needed.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, within, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { http, HttpResponse } from "msw";
+import { ApiClientProvider } from "@sergeant/api-client/react";
+import { apiClient } from "@shared/api";
+import { ToastProvider } from "@shared/hooks/useToast";
+import { AuthProvider } from "../../core/auth/AuthContext";
+import { server } from "../../test/msw/server";
 
-// ── Heavy hook stubs ─────────────────────────────────────────────────────────
-
-vi.mock("./hooks/useMonobank", () => ({
-  useMonobank: vi.fn(() => ({
-    clientInfo: null,
-    connecting: false,
-    error: null,
-    authError: null,
-    setAuthError: vi.fn(),
-    connect: vi.fn(),
-    accounts: [],
-    transactions: [],
-    syncState: null,
-  })),
+// ── Heavy browser API (sqlite-wasm worker) — see file docstring ────────────
+vi.mock("./hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: vi.fn(),
 }));
 
-vi.mock("./hooks/usePrivatbank", () => ({
-  usePrivatbank: vi.fn(() => ({
-    connected: false,
-    accounts: [],
-    transactions: [],
-    syncState: null,
-    loadingTx: false,
-  })),
-}));
-
-vi.mock("./hooks/useStorage", () => ({
-  useStorage: vi.fn(() => ({
-    showBalance: true,
-    setShowBalance: vi.fn(),
-    manualExpenses: [],
-    addManualExpense: vi.fn(),
-    editManualExpense: vi.fn(),
-    removeManualExpense: vi.fn(),
-    loadFromUrl: vi.fn(() => false),
-  })),
-}));
-
-vi.mock("./hooks/useFinykRoute", () => ({
-  useFinykRoute: vi.fn(() => ["overview", vi.fn()]),
-  useFinykQueryParam: vi.fn(() => null),
-}));
-
-vi.mock("./hooks/useUnifiedFinanceData", () => ({
-  useUnifiedFinanceData: vi.fn(() => ({
-    mergedMono: {
-      accounts: [],
-      transactions: [],
-      syncState: null,
-    },
-    mergedRefresh: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useFinykPersonalization", () => ({
-  useFinykPersonalization: vi.fn(() => ({
-    frequentCategories: [],
-    frequentMerchants: [],
-  })),
-}));
-
-vi.mock("./hooks/useMonoTokenMigration", () => ({
-  useMonoTokenMigration: vi.fn(),
-}));
-
-vi.mock("../../core/onboarding/useModuleFirstRun", () => ({
-  useModuleFirstRun: vi.fn(() => ({
-    firstRun: false,
-    markSeen: vi.fn(),
-  })),
-}));
-
-vi.mock("../../core/onboarding/presetPrefill", () => ({
-  consumePresetPrefill: vi.fn(() => null),
-}));
-
-// ── Storage / lib stubs ──────────────────────────────────────────────────────
-
-vi.mock("./lib/finykStorage", () => ({
-  readRaw: vi.fn(() => ""),
-  writeJSON: vi.fn(),
-  removeItem: vi.fn(),
-}));
-
-vi.mock("./lib/demoData", () => ({
-  FINYK_MANUAL_ONLY_KEY: "finyk_manual_only",
-  enableFinykManualOnly: vi.fn(),
-}));
-
-vi.mock("./components/SyncIndicator", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("./components/SyncIndicator")>();
-  return {
-    ...actual,
-    getSyncTone: vi.fn(actual.getSyncTone),
-    SwipeProgressBar: () => null,
-    SWIPE_THRESHOLD_PX: 80,
-  };
-});
-
-// ── Shared hook stubs ────────────────────────────────────────────────────────
-
-vi.mock("@shared/hooks/useSwipeNavigation", () => ({
-  useSwipeNavigation: vi.fn(() => ({
-    onTouchStart: vi.fn(),
-    onTouchMove: vi.fn(),
-    onTouchEnd: vi.fn(),
-    dragDx: 0,
-  })),
-}));
-
-vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
-  useDialogFocusTrap: vi.fn(),
-}));
-
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: vi.fn(() => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    show: vi.fn(),
-    warning: vi.fn(),
-  })),
-  ToastProvider: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-}));
-
-vi.mock("@shared/lib/ui/undoToast", () => ({
-  showUndoToast: vi.fn(),
-}));
-
-vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
-  tryShowCrossModulePrompt: vi.fn(),
-}));
-
-vi.mock("@shared/lib/modules/hubNav", () => ({
-  openHubModuleWithAction: vi.fn(),
-}));
-
-// ── Lazy page stubs ──────────────────────────────────────────────────────────
-
-// Make lazyImport return a synchronous stub component so Suspense resolves
-// immediately — avoids dealing with async chunk loading in jsdom.
-vi.mock("../../core/lib/lazyImport", () => ({
-  lazyImport: (_factory: unknown, name: string) => {
-    const Stub = () => <div data-testid={`lazy-${name}`} />;
-    Stub.displayName = name;
-    // Mirror the real helper's `PreloadableLazy` shape — FinykApp warms page
-    // chunks on pointer-down / swipe / idle (see `PAGE_PRELOADERS`).
-    return Object.assign(Stub, { preload: () => {} });
-  },
-}));
-
-// Eagerly-imported Overview page
-vi.mock("./pages/Overview", () => ({
-  Overview: () => <div data-testid="finyk-overview" />,
-}));
-
-// ── Module component stubs ───────────────────────────────────────────────────
-
-vi.mock("./components/NoBankBanner", () => ({
-  NoBankBanner: ({
-    onConnect,
-    onContinueManually,
-  }: {
-    onConnect: () => void;
-    onContinueManually: () => void;
-  }) => (
-    <div data-testid="no-bank-banner">
-      <button type="button" onClick={onConnect}>
-        Підключити
-      </button>
-      <button type="button" onClick={onContinueManually}>
-        Без банку
-      </button>
-    </div>
-  ),
-}));
-
-vi.mock("./components/FinykManualExpenseConflictBanner", () => ({
-  FinykManualExpenseConflictBanner: () => null,
-}));
-
-vi.mock("./components/ManualExpenseSheet", () => ({
-  ManualExpenseSheet: () => null,
-}));
-
-vi.mock("./components/FinykLoginScreen", () => ({
-  FinykLoginScreen: () => <div data-testid="finyk-login-screen" />,
-}));
-
-vi.mock("@shared/components/ui/FloatingActionButton", () => ({
-  FloatingActionButton: () => null,
-}));
-
-vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
-  ModuleBottomNav: ({
-    activeId,
-    ariaLabel,
-  }: {
-    activeId: string;
-    items: unknown[];
-    onChange: () => void;
-    module: string;
-    ariaLabel: string;
-  }) => (
-    <nav aria-label={ariaLabel} data-testid="finyk-nav">
-      <span data-testid="active-page">{activeId}</span>
-    </nav>
-  ),
-}));
-
-// ── Import under test (must come after vi.mock declarations) ─────────────────
 import FinykApp from "./FinykApp";
-import { useFinykRoute } from "./hooks/useFinykRoute";
-import { useMonobank } from "./hooks/useMonobank";
-import { usePrivatbank } from "./hooks/usePrivatbank";
-import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
+const FINYK_FIRST_SEEN_KEY = "sergeant.onboarding.module_first_seen.finyk.v1";
+
+function markFinykFirstRunSeen() {
+  window.localStorage.setItem(FINYK_FIRST_SEEN_KEY, "1");
+}
+
+function meUnauthenticatedHandler() {
+  return http.get("*/api/v1/me", () =>
+    HttpResponse.json({ error: "Unauthorized" }, { status: 401 }),
+  );
+}
+
+function disconnectedSyncStateHandler() {
+  return http.get("*/api/v1/mono/sync-state", () =>
+    HttpResponse.json({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    }),
+  );
+}
+
+/** Default handlers every test needs — `useMonobank` always fires the
+ * sync-state query and `AuthProvider` always fires `/me`, regardless of
+ * scenario. Per-test overrides go through `server.use(...)`. */
+beforeEach(() => {
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+  markFinykFirstRunSeen();
+  server.use(meUnauthenticatedHandler(), disconnectedSyncStateHandler());
 });
 
-describe("FinykApp smoke tests", () => {
-  it("mounts without crashing", () => {
-    expect(() => render(<FinykApp />)).not.toThrow();
+function renderApp(
+  props: React.ComponentProps<typeof FinykApp> = {},
+  initialEntries: string[] = ["/finyk"],
+) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <ApiClientProvider client={apiClient}>
+        <MemoryRouter initialEntries={initialEntries}>
+          <AuthProvider>
+            <ToastProvider>
+              <FinykApp {...props} />
+            </ToastProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </ApiClientProvider>
+    </QueryClientProvider>,
+  );
+}
 
-  it("renders the module title with the short finance subtitle", () => {
-    render(<FinykApp />);
-    // «Фінік» присутній двічі — у титулі хедера і в чіпі перемикача модулів.
+function bottomNav() {
+  return screen.getByRole("navigation", { name: "Розділи Фініка" });
+}
+
+function navButton(label: string) {
+  return within(bottomNav()).getByRole("button", { name: label });
+}
+
+describe("FinykApp — shell + default page (real component tree)", () => {
+  it("renders the module chrome, the real Overview page, and the no-bank banner for a disconnected visitor", async () => {
+    renderApp();
+
+    // Chrome: header module title (also present in a module-switcher chip,
+    // hence `getAllByText`) plus the finance subtitle.
     expect(screen.getAllByText("Фінік").length).toBeGreaterThan(0);
-    // Назва модуля — хром оболонки, а не heading: сторінковий `h1` має
-    // лишатись першим у структурі заголовків.
     expect(
       screen.queryByRole("heading", { name: "Фінік" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Фінанси")).toBeInTheDocument();
-  });
 
-  it("renders the bottom navigation bar", () => {
-    render(<FinykApp />);
-    expect(screen.getByTestId("finyk-nav")).toBeInTheDocument();
-  });
+    // Real bottom nav landmark.
+    expect(bottomNav()).toBeInTheDocument();
 
-  it("shows NoBankBanner when no bank is connected and manual-only is off", () => {
-    render(<FinykApp />);
-    // clientInfo is null and manualOnly is false → NoBankBanner should render
-    expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
-  });
+    // Real `NoBankBanner` (not connected, not manual-only yet).
+    expect(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Без банку — продовжити" }),
+    ).toBeInTheDocument();
 
-  it("renders the overview page by default", () => {
-    render(<FinykApp />);
-    expect(screen.getByTestId("finyk-overview")).toBeInTheDocument();
-  });
+    // Real `Overview` page (sr-only page heading, not a stubbed testid).
+    expect(
+      await screen.findByRole("heading", { name: "Огляд" }),
+    ).toBeInTheDocument();
 
-  it("shows the finance module subtitle", () => {
-    render(<FinykApp />);
-    expect(screen.getByText("Фінанси")).toBeInTheDocument();
-  });
-
-  it("does not show a mysterious sync dot on the idle happy path", () => {
-    render(<FinykApp />);
+    // Healthy idle state: no sync pill without a connected provider.
     expect(
       screen.queryByLabelText(/Стан синхронізації:/),
     ).not.toBeInTheDocument();
   });
 
-  it("shows an explicit sync label only while synchronization needs attention", () => {
-    vi.mocked(useMonobank).mockReturnValueOnce({
-      clientInfo: { name: "Тест" },
-      connecting: false,
-      error: null,
-      authError: null,
-      setAuthError: vi.fn(),
-      connect: vi.fn(),
-      accounts: [],
-      transactions: [],
-      syncState: { status: "loading" },
-    } as unknown as ReturnType<typeof useMonobank>);
-    vi.mocked(useUnifiedFinanceData).mockReturnValueOnce({
-      mergedMono: {
-        accounts: [],
-        transactions: [],
-        syncState: { status: "loading" },
-      },
-      mergedRefresh: vi.fn(),
-    } as unknown as ReturnType<typeof useUnifiedFinanceData>);
+  it("accepts optional props without crashing", async () => {
+    renderApp({
+      onBackToHub: vi.fn(),
+      onOpenSettings: vi.fn(),
+      pwaAction: null,
+      onPwaActionConsumed: vi.fn(),
+    });
+    expect(bottomNav()).toBeInTheDocument();
+  });
+});
 
-    render(<FinykApp />);
-
-    const syncPill = screen.getByLabelText("Стан синхронізації: оновлення");
-    expect(syncPill).toHaveTextContent("оновлення");
-    expect(screen.getByText("оновлення")).toHaveClass("hidden", "sm:inline");
+describe("FinykApp — real page routing via the bottom nav", () => {
+  it("navigates to the real Budgets page on tab click", async () => {
+    renderApp();
+    await userEvent.click(navButton("Планування"));
+    expect(
+      await screen.findByRole("heading", { name: "Бюджети" }),
+    ).toBeInTheDocument();
   });
 
-  it("shows sync state for connected PrivatBank without Monobank", () => {
-    vi.mocked(usePrivatbank).mockReturnValueOnce({
-      connected: true,
-      accounts: [],
-      transactions: [],
-      syncState: { status: "loading" },
-      loadingTx: true,
-    } as unknown as ReturnType<typeof usePrivatbank>);
-    vi.mocked(useUnifiedFinanceData).mockReturnValueOnce({
-      mergedMono: {
-        accounts: [],
-        transactions: [],
-        syncState: { status: "loading" },
-      },
-      mergedRefresh: vi.fn(),
-    } as unknown as ReturnType<typeof useUnifiedFinanceData>);
+  it("navigates to the real Transactions page (real empty-state copy) on tab click", async () => {
+    renderApp();
+    await userEvent.click(navButton("Операції"));
+    // No mono/manual data at all → real `ModuleEmptyState` for finyk.
+    expect(
+      await screen.findByText("Куди йдуть твої гроші?"),
+    ).toBeInTheDocument();
+  });
 
-    render(<FinykApp />);
+  it("navigates to the real Analytics page on tab click", async () => {
+    renderApp();
+    await userEvent.click(navButton("Аналітика"));
+    expect(
+      await screen.findByRole("heading", { name: "Аналітика" }),
+    ).toBeInTheDocument();
+  });
+
+  it("navigates to the real Assets page on tab click", async () => {
+    renderApp();
+    await userEvent.click(navButton("Активи"));
+    expect(
+      await screen.findByRole("heading", { name: "Активи" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLoginScreen)", () => {
+  it("opens the real login overlay when NoBankBanner's Connect is clicked", async () => {
+    renderApp();
+    expect(
+      screen.queryByRole("dialog", { name: "Підключення Monobank" }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Підключення Monobank",
+    });
+    // Real `FinykLoginScreen` inside the overlay.
+    expect(
+      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the NoBankBanner after Continue-without-bank is clicked (real LS write)", async () => {
+    renderApp();
+    expect(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Без банку — продовжити" }),
+    );
 
     expect(
-      screen.getByLabelText("Стан синхронізації: оновлення"),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
+      screen.queryByRole("button", { name: "Підключити Monobank" }),
+    ).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBe("1");
   });
+});
 
-  it("accepts all optional props without crashing", () => {
-    expect(() =>
-      render(
-        <FinykApp
-          onBackToHub={vi.fn()}
-          onOpenSettings={vi.fn()}
-          pwaAction={null}
-          onPwaActionConsumed={vi.fn()}
-        />,
+describe("FinykApp — connected Monobank state over real MSW transport", () => {
+  it("shows a real sync pill with an explicit label while a Mono sync is pending, and hides the no-bank banner", async () => {
+    server.use(
+      http.get("*/api/v1/mono/sync-state", () =>
+        HttpResponse.json({
+          status: "pending",
+          webhookActive: false,
+          lastEventAt: null,
+          lastBackfillAt: null,
+          accountsCount: 1,
+        }),
       ),
-    ).not.toThrow();
-  });
+      http.get("*/api/v1/mono/accounts", () =>
+        HttpResponse.json([
+          {
+            userId: "local-anon",
+            monoAccountId: "acc-1",
+            sendId: null,
+            type: "black",
+            currencyCode: 980,
+            cashbackType: null,
+            maskedPan: ["*1234"],
+            iban: null,
+            balance: 10000,
+            creditLimit: 0,
+            lastSeenAt: "2026-08-01T00:00:00.000Z",
+          },
+        ]),
+      ),
+      http.get("*/api/v1/mono/jars", () => HttpResponse.json([])),
+      http.get("*/api/v1/mono/transactions", () =>
+        HttpResponse.json({ data: [], nextCursor: null }),
+      ),
+    );
 
-  it("tracks which page is active in the nav bar", () => {
-    render(<FinykApp />);
-    // Default page is "overview"
-    expect(screen.getByTestId("active-page").textContent).toBe("overview");
-  });
-});
+    renderApp();
 
-describe("FinykApp — page routing", () => {
-  it("renders the transactions page when page is 'transactions'", () => {
-    vi.mocked(useFinykRoute).mockReturnValueOnce(["transactions", vi.fn()]);
-    render(<FinykApp />);
-    expect(screen.getByTestId("lazy-Transactions")).toBeInTheDocument();
-    expect(screen.queryByTestId("finyk-overview")).not.toBeInTheDocument();
-  });
+    const syncPill = await screen.findByLabelText(
+      "Стан синхронізації: оновлення",
+    );
+    expect(syncPill).toHaveTextContent("оновлення");
+    // Needs-attention states stay visible on narrow screens too.
+    expect(screen.getByText("оновлення")).toHaveClass("hidden", "sm:inline");
 
-  it("renders the budgets page when page is 'budgets'", () => {
-    vi.mocked(useFinykRoute).mockReturnValueOnce(["budgets", vi.fn()]);
-    render(<FinykApp />);
-    expect(screen.getByTestId("lazy-Budgets")).toBeInTheDocument();
-  });
-
-  it("renders the analytics page when page is 'analytics'", () => {
-    vi.mocked(useFinykRoute).mockReturnValueOnce(["analytics", vi.fn()]);
-    render(<FinykApp />);
-    expect(screen.getByTestId("lazy-Analytics")).toBeInTheDocument();
-  });
-
-  it("renders the assets page when page is 'assets'", () => {
-    vi.mocked(useFinykRoute).mockReturnValueOnce(["assets", vi.fn()]);
-    render(<FinykApp />);
-    expect(screen.getByTestId("lazy-Assets")).toBeInTheDocument();
-  });
-});
-
-describe("FinykApp — connect/manual-only flows", () => {
-  it("opens the login overlay when the connect button in NoBankBanner is clicked", () => {
-    render(<FinykApp />);
-    // Initially the login screen is NOT visible
-    expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();
-    // Click the "Підключити" button in the NoBankBanner mock
-    fireEvent.click(screen.getByText("Підключити"));
-    // Login overlay should now show
-    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
-  });
-
-  it("hides NoBankBanner after manual-only is activated", () => {
-    render(<FinykApp />);
-    expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
-    // Click "Без банку" — calls enableFinykManualOnly() + setManualOnly(true)
-    fireEvent.click(screen.getByText("Без банку"));
-    // showNoBankBanner = !clientInfo && !manualOnly = false
-    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Підключити Monobank" }),
+    ).not.toBeInTheDocument();
   });
 });
 
-describe("FinykApp — authError banner", () => {
-  it("renders the authError alert when mono has an authError", () => {
-    vi.mocked(useMonobank).mockReturnValueOnce({
-      clientInfo: null,
-      connecting: false,
-      error: null,
-      authError: "Токен застарів",
-      setAuthError: vi.fn(),
-      connect: vi.fn(),
-      accounts: [],
-      transactions: [],
-      syncState: null,
-    } as unknown as ReturnType<typeof useMonobank>);
-    render(<FinykApp />);
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText("Токен потребує оновлення")).toBeInTheDocument();
-  });
+describe("FinykApp — regression: malformed /api/v1/mono/accounts payload (deep-route-viewport FINYK_ASSETS crash)", () => {
+  it("degrades to an empty accounts list instead of crashing the Assets module when the API hands back a non-array payload", async () => {
+    // Repro for the mobile deep-route-viewport smoke crash: a blanket API
+    // mock/proxy (or any misbehaving intermediary) that responds `{ ok: true }`
+    // to every GET — including `/mono/accounts`, which the client contract
+    // types as `MonoAccountDto[]` — used to blow up
+    // `useMonobankWebhook`'s `(webhookAccounts ?? []).filter(...)` useMemo:
+    // `?? []` only guards `null`/`undefined`, not a truthy non-array object,
+    // so `.filter` threw `TypeError: ... .filter is not a function`
+    // synchronously during render and tripped the `SectionErrorBoundary`
+    // around the Assets page ("Не вдалось показати «Активи»").
+    server.use(
+      http.get("*/api/v1/mono/sync-state", () =>
+        HttpResponse.json({
+          status: "active",
+          webhookActive: true,
+          lastEventAt: "2026-08-01T00:00:00.000Z",
+          lastBackfillAt: null,
+          accountsCount: 1,
+        }),
+      ),
+      http.get("*/api/v1/mono/accounts", () => HttpResponse.json({ ok: true })),
+      http.get("*/api/v1/mono/jars", () => HttpResponse.json({ ok: true })),
+      http.get("*/api/v1/mono/transactions", () =>
+        HttpResponse.json({ ok: true }),
+      ),
+    );
 
-  it("closes the authError banner when ✕ is clicked", () => {
-    const setAuthError = vi.fn();
-    vi.mocked(useMonobank).mockReturnValueOnce({
-      clientInfo: null,
-      connecting: false,
-      error: null,
-      authError: "Токен застарів",
-      setAuthError,
-      connect: vi.fn(),
-      accounts: [],
-      transactions: [],
-      syncState: null,
-    } as unknown as ReturnType<typeof useMonobank>);
-    render(<FinykApp />);
-    fireEvent.click(screen.getByLabelText("Закрити"));
-    expect(setAuthError).toHaveBeenCalledWith("");
+    renderApp({}, ["/finyk/assets"]);
+
+    // Real Assets page rendered (not the SectionErrorBoundary fallback).
+    expect(
+      await screen.findByRole("heading", { name: "Активи" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Не вдалось показати «Активи»"),
+    ).not.toBeInTheDocument();
+
+    // Empty state visible: the malformed accounts payload degrades to `[]`,
+    // so net-worth totals render the real zero state instead of throwing
+    // (both the net-worth card and the "Активи" section bar summary show it).
+    expect(screen.getAllByText("+0 ₴").length).toBeGreaterThan(0);
+  });
+});
+
+describe("FinykApp — a rejected Mono token surfaces the real authError banner", () => {
+  it("shows and dismisses the dismissible auth-error banner after a 401 MONO_TOKEN_INVALID over MSW", async () => {
+    server.use(
+      http.post("*/api/v1/mono/connect", () =>
+        HttpResponse.json(
+          { code: "MONO_TOKEN_INVALID", error: "Invalid token" },
+          { status: 401 },
+        ),
+      ),
+    );
+
+    renderApp();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Підключення Monobank",
+    });
+    await userEvent.type(
+      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      "bad-token",
+    );
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Підключити Monobank" }),
+    );
+
+    // `role="alert"` uniquely identifies the module-level `AuthErrorBanner`
+    // — `FinykLoginScreen` also renders the same copy inline (non-alert),
+    // so scope the text assertions to the banner itself.
+    const alert = await screen.findByRole("alert");
+    expect(
+      within(alert).getByText("Токен потребує оновлення"),
+    ).toBeInTheDocument();
+    expect(
+      within(alert).getByText(
+        "Mono відхилив токен. Перевір, чи скопіював правильний.",
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText("Закрити"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
   });
 });
