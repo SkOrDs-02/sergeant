@@ -1,6 +1,6 @@
 # ADR-0078: Межа доби — за пристроєм користувача
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Last validated:** 2026-07-25 by @Skords-01. **Next review:** 2026-10-23.
 - **Date:** 2026-07-25
 - **Reviewers:** @SkOrDs-02

@@ -437,7 +437,7 @@ export function WorkoutItemCard({
                 }
                 title={`Рекомендований час для ${catLabel.toLowerCase()}`}
               >
-                {defSec} с ★
+                {defSec} с
               </button>
               {quickOptions.map((sec) => (
                 <button

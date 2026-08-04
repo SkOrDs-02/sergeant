@@ -254,10 +254,30 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     /* icon-size, not type */
     const iconMap: Record<CelebrationType, ReactNode> = {
-      achievement: <span className="text-5xl animate-celebration-pop">🏆</span>,
-      goal: <span className="text-5xl animate-celebration-pop">🎯</span>,
-      levelUp: <span className="text-5xl animate-celebration-pop">⬆️</span>,
-      streak: <span className="text-5xl animate-streak-glow">🔥</span>,
+      // 2026-08-03: emoji-гліфи замінені на іконки дизайн-системи в тому
+      // самому кільці, що вже мав `success`. Emoji тут рендерився системним
+      // шрифтом — на Windows «🏆» приходив плоским, на Android іншого
+      // відтінку, і модалка святкування виглядала по-різному на кожній ОС.
+      achievement: (
+        <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="award" size={32} className="text-warning-strong" />
+        </div>
+      ),
+      goal: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="target" size={32} className="text-brand-strong" />
+        </div>
+      ),
+      levelUp: (
+        <div className="w-16 h-16 rounded-full bg-info/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="arrow-up" size={32} className="text-info" />
+        </div>
+      ),
+      streak: (
+        <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center animate-streak-glow">
+          <Icon name="flame" size={32} className="text-danger-strong" />
+        </div>
+      ),
       success: (
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center animate-success-ring">
           <Icon
@@ -269,7 +289,11 @@ export const CelebrationModal = memo(function CelebrationModal({
         </div>
       ),
       /* icon-size, not type */
-      confetti: <span className="text-6xl animate-celebration-pop">🎉</span>,
+      confetti: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="sparkles" size={32} className="text-brand-strong" />
+        </div>
+      ),
     };
     return iconMap[type];
   };

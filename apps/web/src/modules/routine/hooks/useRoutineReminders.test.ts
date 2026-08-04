@@ -197,7 +197,7 @@ describe("useRoutineReminders — scheduler", () => {
 
     expect(showNotificationMock).toHaveBeenCalledTimes(1);
     const [title, options] = showNotificationMock.mock.calls[0]!;
-    expect(title).toBe("🏃 Біг");
+    expect(title).toBe("Біг");
     expect(options.body).toBe("Нагадування про звичку");
 
     const dedupKey = `${ROUTINE_NOTIFY_PREFIX}h1_${KYIV_HM}_${KYIV_TODAY}`;

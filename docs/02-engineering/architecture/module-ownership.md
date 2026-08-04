@@ -1,11 +1,11 @@
 # Module ownership map
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
-> Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map); deep per-path table is here so Stack-pulse PR-04 secondary-column gate (`pnpm lint:codeowners`) and the per-module CODEOWNERS coverage stay close to one another.
+> Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map); deep per-path table is here so the Stack-pulse PR-04 secondary-column contract and the per-module ownership map stay close to one another. Механічного гейта більше немає — CODEOWNERS + coverage-перевірку прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §3.
 
-¹ **Secondary** is the bus-factor backup reviewer. Real GitHub handles like `@alice` are preferred, but during the rollout we use placeholders such as `TBD (frontend-engineer)`. Empty cells are rejected by `pnpm lint:codeowners` (PR-04 contract).
+¹ **Secondary** is the bus-factor backup reviewer. Real GitHub handles like `@alice` are preferred, but during the rollout we use placeholders such as `TBD (frontend-engineer)`. Порожні клітинки — порушення контракту PR-04, але перевіряються тепер очима рев'юера, а не гейтом (див. [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §3).
 
 > **AI-CONTEXT:** All `Secondary` columns currently read `TBD (<role>`) — known bus-factor gap (Stack-pulse PR-04). Until real GitHub handles are assigned, every path has exactly one reviewer. Spawn a reconciliation task from the recurring docs-drift workflow to assign handles, starting with highest-velocity paths (`apps/web/src/core/**`, `apps/web/src/modules/finyk/**`, `apps/server/src/modules/**`).
 

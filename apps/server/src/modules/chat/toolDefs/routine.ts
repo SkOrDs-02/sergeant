@@ -32,7 +32,8 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         name: { type: "string", description: "Назва звички" },
         emoji: {
           type: "string",
-          description: "Емодзі (опційно, за замовчуванням ✓)",
+          description:
+            "Іконка звички (опційно, за замовчуванням 'check'). Одне зі значень: check, target, flame, award, sparkles, lightbulb, droplet, run, dumbbell, activity, heart, scale, utensils, egg, coffee, leaf, shopping-cart, package, brain, book-open, pen, monitor, camera, file-text, clock, bell, calendar-check, moon, sun, home, briefcase, truck, piggy-bank, shield, tool, message-circle. Емодзі теж приймається — клієнт сам підбере найближчу іконку.",
         },
         recurrence: {
           type: "string",
@@ -109,7 +110,11 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         name: { type: "string", description: "Назва події" },
         date: { type: "string", description: "Дата YYYY-MM-DD" },
         time: { type: "string", description: "Час HH:MM (опційно)" },
-        emoji: { type: "string", description: "Емодзі (опційно)" },
+        emoji: {
+          type: "string",
+          description:
+            "Іконка події (опційно, за замовчуванням 'calendar-check'). Той самий словник, що й у create_habit.",
+        },
       },
       required: ["name", "date"],
     },
@@ -117,13 +122,17 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "edit_habit",
     description:
-      "Редагувати існуючу звичку: змінити назву, емодзі, розклад. Передавати лише ті поля, які змінюються.",
+      "Редагувати існуючу звичку: змінити назву, іконку, розклад. Передавати лише ті поля, які змінюються.",
     input_schema: {
       type: "object",
       properties: {
         habit_id: { type: "string", description: "ID звички" },
         name: { type: "string", description: "Нова назва (опційно)" },
-        emoji: { type: "string", description: "Новий емодзі (опційно)" },
+        emoji: {
+          type: "string",
+          description:
+            "Нова іконка (опційно). Той самий словник, що й у create_habit.",
+        },
         recurrence: {
           type: "string",
           description:

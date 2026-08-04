@@ -249,7 +249,7 @@ export function PhotoAnalyzeCard({
                 "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
               )}
             >
-              📓 Зберегти в журнал
+              Зберегти в журнал
             </button>
           )}
 

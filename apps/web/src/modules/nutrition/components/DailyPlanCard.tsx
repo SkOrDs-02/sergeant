@@ -251,7 +251,7 @@ export function DailyPlanCard({
                   }))
                 }
               >
-                ✕ Скинути
+                Скинути
               </button>
             </div>
           )}

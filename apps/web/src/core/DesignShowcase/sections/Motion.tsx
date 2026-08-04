@@ -184,7 +184,7 @@ function CelebrateTier() {
             className="mt-3"
             onClick={() => setChecked((v) => !v)}
           >
-            Toggle ({checked ? "✓" : "○"})
+            Toggle ({checked ? "увімк." : "вимк."})
           </Button>
         </div>
 

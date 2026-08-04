@@ -23,8 +23,10 @@ embeddings + pgvector). Складається з трьох частин:
    (alias `pnpm eval:rag`). Виводить JSON summary + exit-code (0=pass, 1=warn,
    2=kill, 3=error).
 
-PR-22 cron (`.github/workflows/rag-quality-gate.yml`) запускає CLI weekly
-й opens issue + Sentry-alert при degradation. Day-60 decision-point: якщо
+Крон PR-22 (`.github/workflows/rag-quality-gate.yml`) прибрано рішенням
+[ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 — він ганявся
+в mock-режимі. CLI запускається вручну (`pnpm eval:rag:weekly`); автоматичного issue
+чи Sentry-alert-у при degradation немає. Day-60 decision-point: якщо
 recall@4 < 0.4 → kill module (set `AI_MEMORY_ENABLED=false` у Coolify app `sergeant-api` і redeploy).
 
 ## Golden-set — структура та curation

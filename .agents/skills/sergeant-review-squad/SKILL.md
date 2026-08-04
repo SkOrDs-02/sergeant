@@ -26,7 +26,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 Create an agent team to review this PR.
 Spawn 4 teammates using these subagent definitions:
 1. contract-reviewer — Hard Rules #1, #3, #4 (bigint coercion, API triplet, migrations)
-2. design-reviewer — Hard Rules #8, #9, #11-14, #16, #17 (Tailwind, a11y, typography)
+2. design-reviewer — design tokens, Tailwind, a11y, typography, touch targets (відповідні Hard Rules retired ADR-0081)
 3. security-reviewer — Hard Rules #20, #21, #22 (OpenClaw PATs, Pino redaction, SKILL injection)
 4. docs-reviewer — Hard Rules #10, #15, #25, #26 (lifecycle markers, Ukrainian, ledger)
 

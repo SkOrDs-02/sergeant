@@ -93,7 +93,9 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             <div className="text-xs text-subtle mt-0.5">
               {fmt(todayMl)}
               {goalMl > 0 && ` / ${fmt(goalMl)}`}
-              {done && <span aria-hidden="true"> ✓</span>}
+              {done && (
+                <Icon name="check" size="xs" className="ml-1" aria-hidden />
+              )}
             </div>
           </div>
         </div>

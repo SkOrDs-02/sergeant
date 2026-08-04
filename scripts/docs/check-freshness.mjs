@@ -2,7 +2,7 @@
 // scripts/docs/check-freshness.mjs
 //
 // Nightly CI script. For every tracked markdown file with a canonical
-// `> **Last validated:**` header, parses the "Last validated" / "Next review"
+// `> **Last touched:**` header, parses the "Last touched" / "Next review"
 // dates and opens a GitHub issue for every overdue document.
 //
 // Tracking is **auto-discovered** by `freshness-config.mjs`: any `*.md` under
@@ -15,7 +15,7 @@
 // already exists, the script skips that path.
 //
 // Supports two header formats:
-//   1. Canonical:  `> **Last validated:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.`
+//   1. Canonical:  `> **Last touched:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.`
 //   2. Legacy:     `> Last reviewed: YYYY-MM-DD. Reviewer: @user`
 //      (legacy has no explicit Next review — the script uses cadenceDays from
 //      the config / legacy allowlist)
@@ -57,7 +57,7 @@ const LABELS = ["documentation", "freshness-overdue"];
 // ── Header regexes ───────────────────────────────────────────────────────────
 //
 // Canonical format (preferred):
-//   > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+//   > **Last touched:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
 //
 // Legacy format (AGENTS.md-style, before PR-11.A):
 //   > Last reviewed: 2026-04-27. Reviewer: @Skords-01
@@ -151,13 +151,13 @@ export function issueBody(filePath, lastValidated, nextReview, daysOverdue) {
     marker,
     "",
     `**File:** [\`${filePath}\`](https://github.com/${repoSlug()}/blob/main/${filePath})`,
-    `**Last validated:** ${lastValidated || "unknown"}`,
+    `**Last touched:** ${lastValidated || "unknown"}`,
     `**Next review was:** ${nextReview}`,
     `**Days overdue:** ${daysOverdue}`,
     "",
     "Please review and update the freshness header:",
     "```",
-    `> **Last validated:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`,
+    `> **Last touched:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`,
     "```",
     "",
     "Then close this issue.",
@@ -425,7 +425,7 @@ if (isMain) {
       );
       for (const g of gaps) console.error(`  - ${g}`);
       console.error(
-        "\nAdd `> **Last validated:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`",
+        "\nAdd `> **Last touched:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`",
       );
       console.error(
         "or list the path in `scripts/docs/freshness-config.json` → `explicitExclude` if it should be opted out.",

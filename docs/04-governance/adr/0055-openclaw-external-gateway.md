@@ -1,7 +1,6 @@
 # ADR-0055: OpenClaw External Gateway — Phase 0 infra + Phase 7 cutover
 
 > **Last validated:** 2026-05-11 by claude/review-openclaw-migration-HSeEx. **Next review:** 2026-08-11.
-> **Status:** Superseded
 
 > **Superseded by [ADR-0075](./0075-openclaw-gateway-decommissioned.md) (2026-07-20)** — OpenClaw Gateway виведено з експлуатації разом із Railway (ADR-0074) і повністю прибрано з репо. Тіло цього ADR лишається історичним записом рішення на момент ухвалення.
 

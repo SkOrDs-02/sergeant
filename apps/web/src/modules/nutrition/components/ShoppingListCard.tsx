@@ -3,7 +3,6 @@
  * Status: Active
  */
 import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -17,24 +16,28 @@ import type {
   ShoppingList,
 } from "@sergeant/nutrition-domain";
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 
-const CATEGORY_ICONS: Record<string, string> = {
-  "М'ясо та риба": "🥩",
-  "Молочні продукти": "🥛",
-  Овочі: "🥦",
-  "Овочі та гриби": "🥦",
-  Фрукти: "🍎",
-  "Крупи та злаки": "🌾",
-  "Хлібобулочні вироби": "🍞",
-  Яйця: "🥚",
-  "Олії та жири": "🫒",
-  "Приправи та соуси": "🧂",
-  Напої: "🥤",
-  Інше: "🛒",
+// Іконка групи в списку покупок. До 2026-08-03 тут лежали emoji, які
+// малювалися системним шрифтом: «🫒» на Windows деградувало в порожній
+// прямокутник, а «🥦» на старому Android — у чорно-білий гліф.
+const CATEGORY_ICONS: Record<string, IconName> = {
+  "М'ясо та риба": "utensils",
+  "Молочні продукти": "droplet",
+  Овочі: "leaf",
+  "Овочі та гриби": "leaf",
+  Фрукти: "leaf",
+  "Крупи та злаки": "package",
+  "Хлібобулочні вироби": "package",
+  Яйця: "egg",
+  "Олії та жири": "droplet",
+  "Приправи та соуси": "utensils",
+  Напої: "coffee",
+  Інше: "shopping-cart",
 };
 
-function getCategoryIcon(name: string): string {
-  return CATEGORY_ICONS[name] || "🛒";
+function getCategoryIcon(name: string): IconName {
+  return CATEGORY_ICONS[name] || "shopping-cart";
 }
 
 interface ShoppingListCardProps {
@@ -150,7 +153,7 @@ export function ShoppingListCard({
           <>
             <div className="flex items-center justify-between gap-2">
               <div className="text-style-label text-text">
-                Список ({checked}/{total} ✓)
+                Список ({checked}/{total})
               </div>
               <div className="flex gap-2">
                 {checkedItems.length > 0 && (
@@ -170,7 +173,7 @@ export function ShoppingListCard({
                     size="sm"
                     onClick={onClearChecked}
                   >
-                    Видалити ✓
+                    Видалити позначені
                   </Button>
                 )}
                 <Button
@@ -201,9 +204,12 @@ export function ShoppingListCard({
                 >
                   <div className="px-3 py-2 border-b border-line/40 bg-panel/40">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-base leading-none" aria-hidden>
-                        {getCategoryIcon(cat.name)}
-                      </span>
+                      <Icon
+                        name={getCategoryIcon(cat.name)}
+                        size="md"
+                        className="text-nutrition shrink-0"
+                        aria-hidden
+                      />
                       <span className="text-style-caption text-text">
                         {cat.name}
                       </span>
