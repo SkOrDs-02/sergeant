@@ -190,3 +190,14 @@ accepted.
 - **PostHog інтеграція** (PR #13 з roadmap) додасть аналітику використання flag-ів автоматично (event `flag_enabled`/`flag_disabled` per user). Перепишемо ADR-8.3 з PostHog-метриками тоді.
 - **Mobile (`apps/mobile/**`).** MMKV-store-варіант реєстру на NativeWind-stack — порт `featureFlags.ts`на MMKV-backed`typedStore`. У черзі після стабілізації mobile тестового стеку (3 flaky tests залишилось — `apps/mobile/src/core/\*\*`).
 - **Server flags.** Якщо stand-up A/B test-у потребує сервер-keroоване rollout — окремий ADR (table `feature_flags`, GET `/api/flags?userId=…`, race-condition-safe write через GitOps або admin-endpoint).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

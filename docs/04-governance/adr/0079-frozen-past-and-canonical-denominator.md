@@ -106,3 +106,14 @@
   `W1-KBJU-APPEND` (стадія 3), `W1-CANON-AGG` (стадії 2-5) — усі чотири гейти
   знято.
 - Аудити: routine E-3/E-7 і напруга 6, nutrition E-1/H2, hub-coach E-2.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

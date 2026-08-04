@@ -147,3 +147,14 @@ jobs:
 ```
 
 Альтернатива: додати крок `pnpm api:check-openapi` у вже існуючий `ci.yml` (job `check` після `pnpm install`). Це не вимагає окремого workflow.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

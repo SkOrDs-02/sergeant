@@ -1,6 +1,6 @@
 # ADR-0011: Local-first storage — клієнт як джерело істини, сервер як LWW-реплікатор
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Sub-decision status:** 11.1 / 11.2 / 11.5 — accepted; 11.3 / 11.4 — partially superseded (див. amendment нижче + [ADR-0047](./0047-cloudsync-v1-410-gone.md)).
@@ -441,3 +441,14 @@ n/a (operational rule).
 | Module-level LWW conflict resolver                       | **retired** — замінено per-row LWW через op-log                                                                             |
 | CRDT для routine                                         | TBD                                                                                                                         |
 | E2E encryption (optional privacy mode)                   | TBD                                                                                                                         |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

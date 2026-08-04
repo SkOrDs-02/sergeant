@@ -78,3 +78,14 @@ choice.
   or advisory trigger opens a follow-up migration ADR/PR.
 - PR-09 from the stack-pulse plan is satisfied as an ADR-only review; no
   runtime code change is required.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

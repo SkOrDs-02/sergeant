@@ -237,3 +237,14 @@ Trade-off: модель може створити багато orphan-катег
 - **End-to-end encryption на server-side.** Зараз `module_data` зберігає JSON у plain (на Railway-side, з encrypt-at-rest на Postgres). Чи варто шифрувати самим клієнтом (E2E)? Trade-off: blocks server-side aggregations (наприклад, "10 % юзерів вказали алергію на молочне" для marketing-аналізу). Поки не шифруємо; revisit при GDPR-evolution.
 - **Memory Bank як source для outside-of-chat персоналізації.** Наприклад, Nutrition module міг би використовувати `category: "diet"` для рекомендацій рецептів. Architecturally — fact-ів читаються з `readMemoryEntries()` будь-яким модулем. Поки ніхто не читає — Memory Bank виключно AI-context.
 - **Conflict-resolution на same-fact-different-pristrii.** "Я тренуюсь 3 рази/тиждень" і "Я тренуюсь 4 рази/тиждень" — semantically conflict, текстуально not deduplicated. Поки немає семантичного match-у — приймаємо як два окремі fact-и; модель сама розплутає у наступному турні.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

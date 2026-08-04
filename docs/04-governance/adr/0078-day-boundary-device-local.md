@@ -88,3 +88,14 @@ mobile routine і спільний `routine-domain` — device-local. Blast radi
 - Розкол «канон vs код» у `dateKeys.ts` — код був правий, канон оновлено.
 - Гейт на cutover-стадії Хвилі 1: тепер відомо, як згортати журнали в дні.
 - Беклог, рядок `W1-TIME-DOCTRINE`.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

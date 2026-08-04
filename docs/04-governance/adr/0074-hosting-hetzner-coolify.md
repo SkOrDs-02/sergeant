@@ -182,3 +182,14 @@ policy переноситься, redirect chain оновлюється.
 | `TRUST_PROXY` калібрування під Traefik                                     | TBD    |
 | Видалення Railway-проєкту (repo-side: `railway*.toml` видалено 2026-07-19) | TBD    |
 | Local Loki/Grafana на VPS (опційно; поки Grafana Cloud)                    | TBD    |
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

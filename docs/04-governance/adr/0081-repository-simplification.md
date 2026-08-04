@@ -37,3 +37,14 @@
 - **Лишити всі committed індекси як fallback.** Відхилено: саме їхня регенерація й drift становили основну вартість.
 - **Лишити archive-дерева, але виключити з lint.** Відхилено: дублювання Git history та навігаційний шум залишилися б.
 - **Перенести всі visual rules у warning.** Відхилено: warning-и продовжили б підтримувати складний AST-код без надійного сигналу якості.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                             | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------- | ---------- |
+| [#606](https://github.com/Skords-01/Sergeant/pull/606) | docs(docs): звірка документації з репо — статуси, дрейф, каталогізація, дублікати | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
