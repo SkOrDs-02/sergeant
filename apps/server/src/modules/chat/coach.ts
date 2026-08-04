@@ -13,6 +13,7 @@ import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { VOICE_RULE } from "./toolDefs/systemPrompt.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -449,6 +450,8 @@ ${snapshotText}
 - Запропонувати одну конкретну дію на сьогодні
 - Бути особистим і мотивуючим, але без загальних фраз
 - Якщо згадуєш "сьогодні" чи прогрес тижня — спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
+- Порівнюючи з ПАМ'ЯТТЮ, називай напрям прямо. Цифри впали — це спад, і сказати треба про спад, а не привітати з прогресом.
+${VOICE_RULE}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 

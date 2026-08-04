@@ -157,8 +157,15 @@ describe("nutrition day-hint handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     const messages = opts["messages"] as Array<{ content: string }>;
-    expect(messages[0]?.content).toContain("без КБЖВ");
-    expect(messages[0]?.content).toContain('"ai":3');
+    const content = messages[0]?.content ?? "";
+    expect(content).toContain("КБЖВ не заповнені");
+    expect(content).toContain('"ai":3');
+    // Ключове для цієї гілки: цілей у промпті НЕМАЄ. Поки блок «Цілі» друкував
+    // `ккал 2200`, модель будувала пораду навколо числа, з яким нема чого
+    // порівнювати — sonnet-4-6 валив кейс 12/12.
+    expect(content).not.toContain("Цілі");
+    expect(content).not.toContain("порівняй з цілями");
+    expect(content).toContain("НЕ називай жодних чисел");
   });
 
   it("falls back to raw provider text when JSON extraction throws", async () => {
