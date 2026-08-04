@@ -85,7 +85,21 @@ export interface DaySummary extends Macros {
   mealCount: number;
   hasMeals: boolean;
   hasAnyMacros: boolean;
+  /**
+   * Share of the day's kcal (0..1) that came from `photoAI`-sourced meals —
+   * calorie-weighted, not meal-count-weighted (founder decision 2026-08-04,
+   * nutrition audit E-5: three 100-kcal manual meals + one 900-kcal photo
+   * guess is a 75%-guessed day, not 25%). `0` when the day has no kcal yet.
+   */
+  estimatedKcalShare: number;
 }
+
+/**
+ * Above this share, the day's kcal total is "mostly guessed" and callers
+ * should soften categorical copy/visuals (nutrition audit E-5). Exactly
+ * 50% does NOT count — the founder's threshold is strictly ">50%".
+ */
+export const ESTIMATED_KCAL_SHARE_THRESHOLD = 0.5;
 
 export interface MealSearchResult {
   date: string;

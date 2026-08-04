@@ -45,6 +45,21 @@ function logWith(kcal: number, protein = 0, fat = 0, carbs = 0) {
   } as never;
 }
 
+function logWithSources(entries: Array<{ kcal: number; macroSource: string }>) {
+  return {
+    [today]: {
+      meals: entries.map((e, i) => ({
+        id: `m${i + 1}`,
+        time: "12:00",
+        mealType: "lunch",
+        name: `Прийом ${i + 1}`,
+        macroSource: e.macroSource,
+        macros: { kcal: e.kcal, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      })),
+    },
+  } as never;
+}
+
 function logWithMealCount(count: number) {
   return {
     [today]: {
@@ -161,5 +176,41 @@ describe("NutritionDashboard", () => {
     );
     const track = ring.querySelectorAll("circle")[0];
     expect(track!.getAttribute("stroke-dasharray")).toBeNull();
+  });
+
+  it("shows the ≈ badge and caption when photoAI kcal share is above 50% (nutrition audit E-5)", () => {
+    render(
+      <NutritionDashboard
+        log={logWithSources([
+          { kcal: 490, macroSource: "manual" },
+          { kcal: 510, macroSource: "photoAI" },
+        ])}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
+    expect(ring.getAttribute("aria-label")).toContain(
+      "переважно оцінка з фото",
+    );
+    expect(screen.getByText(/Більшість ккал сьогодні/)).toBeInTheDocument();
+  });
+
+  it("hides the ≈ badge when photoAI kcal share is exactly 50% (threshold is strictly >50%)", () => {
+    render(
+      <NutritionDashboard
+        log={logWithSources([
+          { kcal: 500, macroSource: "manual" },
+          { kcal: 500, macroSource: "photoAI" },
+        ])}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
+    expect(ring.getAttribute("aria-label")).not.toContain(
+      "переважно оцінка з фото",
+    );
+    expect(
+      screen.queryByText(/Більшість ккал сьогодні/),
+    ).not.toBeInTheDocument();
   });
 });
