@@ -134,7 +134,13 @@ export function buildHubCalendarEvents(
         id: `habit_${h.id}_${date}`,
         source: "routine_habit",
         date,
-        title: `${h.emoji} ${h.name}`,
+        // Гліф звички НЕ префіксує заголовок — той самий фікс, що вже
+        // застосований до нагадувань (`reminders.ts`, 2026-08-03): у полі
+        // `emoji` з того дня лежить icon-slug із `glyphs.ts`, а не емодзі,
+        // тож склейка давала видимий «check Ранкова зарядка» у стрічці й у
+        // `aria-label` кнопки «Деталі» (аудит 2026-08-04, знахідка 12).
+        // Іконку малює UI (`HabitGlyph`), подія несе саму назву.
+        title: h.name,
         subtitle: completed ? `Зроблено${timePart}` : `Звичка${timePart}`,
         tagLabels,
         sortKey: `${date} 1 ${h.name}`,

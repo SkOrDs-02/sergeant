@@ -11,6 +11,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   defaultNutritionPrefs,
@@ -45,23 +46,28 @@ function renderCard(overrides: { biometrics?: Biometrics } = {}) {
       ) => void
     >();
   const prefs = defaultNutritionPrefs();
+  // `DailyPlanGoalSelectors` (рендериться всередині картки) читає `useToast`,
+  // а той кидає без провайдера — той самий патерн обгортки, що вже
+  // застосований у `RecipesCard.branches.test.tsx`.
   render(
-    <MemoryRouter>
-      <DailyPlanCard
-        prefs={prefs}
-        setPrefs={setPrefs}
-        pantryItems={[]}
-        busy={false}
-        dayPlan={null}
-        dayPlanBusy={false}
-        fetchDayPlan={() => {}}
-        regenMeal={() => {}}
-        addMealToLog={() => {}}
-        weekPlan={null}
-        weekPlanBusy={false}
-        fetchWeekPlan={() => {}}
-      />
-    </MemoryRouter>,
+    <ToastProvider>
+      <MemoryRouter>
+        <DailyPlanCard
+          prefs={prefs}
+          setPrefs={setPrefs}
+          pantryItems={[]}
+          busy={false}
+          dayPlan={null}
+          dayPlanBusy={false}
+          fetchDayPlan={() => {}}
+          regenMeal={() => {}}
+          addMealToLog={() => {}}
+          weekPlan={null}
+          weekPlanBusy={false}
+          fetchWeekPlan={() => {}}
+        />
+      </MemoryRouter>
+    </ToastProvider>,
   );
   return { setPrefs, prefs };
 }
@@ -77,12 +83,16 @@ afterEach(() => {
   localStorage.clear();
 });
 
-describe("DailyPlanCard «Розрахувати з профілю»", () => {
+// Тригер-кнопка називається «Підказати з пресету»: два випадні списки
+// («Розрахувати з профілю» + статичний пресет-набір) злиті в один
+// контрол — див. JSDoc у `DailyPlanGoalSelectors.tsx`. Тест шукав стару
+// назву й падав на main (аудит 2026-08-04, ремонт червоного сьюта).
+describe("DailyPlanCard «Підказати з пресету»", () => {
   it("shows the profile hint when biometrics is incomplete", () => {
     renderCard();
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
 
     expect(
@@ -97,7 +107,7 @@ describe("DailyPlanCard «Розрахувати з профілю»", () => {
     renderCard({ biometrics: completeBiometrics });
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
 
     for (const goal of NUTRITION_GOALS) {
@@ -122,7 +132,7 @@ describe("DailyPlanCard «Розрахувати з профілю»", () => {
     const { setPrefs } = renderCard({ biometrics: completeBiometrics });
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Розрахувати з профілю/u }),
+      screen.getByRole("button", { name: /Підказати з пресету/u }),
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Підтримка/u }));
 
