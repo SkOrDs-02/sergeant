@@ -62,3 +62,27 @@ describe("судді стенду пояснюють провал", () => {
     });
   }
 });
+
+/**
+ * Кандидати не діляться масивом між пайплайнами.
+ *
+ * `--extra` робить `pipeline.candidates.push(...)`. Один спільний інстанс
+ * означав, що шість прапорців `--extra` додають шість копій кожного кандидата
+ * в кожен пайплайн — прогін у 6 разів довший і дорожчий за задуманий.
+ */
+describe("кандидати пайплайнів не діляться масивом", () => {
+  it("кожен пайплайн має власний інстанс", () => {
+    const all = [
+      ...FINANCE_PIPELINES,
+      ...NUTRITION_PIPELINES,
+      ...VISION_PIPELINES,
+    ];
+    const seen = new Set<unknown>();
+    for (const p of all) {
+      expect(seen.has(p.candidates), `${p.key} ділить масив кандидатів`).toBe(
+        false,
+      );
+      seen.add(p.candidates);
+    }
+  });
+});

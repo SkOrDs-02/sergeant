@@ -159,6 +159,7 @@ const REFINE_CASES: GoldenCase[] = [
 
 // ── Кандидати ───────────────────────────────────────────────────────
 
+/** Копіюється в кожен пайплайн — див. AI-DANGER у `pipelines.nutrition.ts`. */
 const VISION_CANDIDATES: Candidate[] = [
   {
     provider: "anthropic",
@@ -191,7 +192,7 @@ export const VISION_PIPELINES: Pipeline[] = [
     maxTokens: 700,
     judge: (text) => photoResult(text) !== null,
     cases: ANALYZE_CASES,
-    candidates: VISION_CANDIDATES,
+    candidates: [...VISION_CANDIDATES],
   },
   {
     key: "refine-photo",
@@ -201,7 +202,7 @@ export const VISION_PIPELINES: Pipeline[] = [
     maxTokens: 650,
     judge: (text) => photoResult(text) !== null,
     cases: REFINE_CASES,
-    candidates: VISION_CANDIDATES,
+    candidates: [...VISION_CANDIDATES],
   },
 ];
 

@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { env } from "../../env.js";
+import { chatViaOpenRouter } from "../../env/chatModels.js";
 import { parseBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
 import {
@@ -157,9 +158,9 @@ async function callAnthropicWithContinuation(
     const { response, data } = await anthropicMessages(
       apiKey,
       { ...basePayload, messages: currentMessages },
-      // Чат — єдина поверхня, що мігрує на OpenRouter (CHAT_VIA_OPENROUTER);
-      // digest/nutrition/mono/classify лишаються на прямому шляху.
-      { ...options, allowOpenRouter: true },
+      // Умову приносить сам чат: `chatViaOpenRouter()` перевіряє і прапорець,
+      // і наявність ключа. Зорові шляхи мають власний прапорець.
+      { ...options, allowOpenRouter: chatViaOpenRouter() },
     );
     lastResponse = response;
     lastData = data as AnthropicMessagesResponseData;

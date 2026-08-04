@@ -9,7 +9,7 @@ import { chatViaOpenRouter, defaultChatModel } from "./chatModels.js";
 //
 // Чому це окремий тест: проміжний стан «нові model-id у старий шлюз» не дає
 // ані помилки типів, ані падіння тестів — сервер піднімається, а кожен
-// чат-запит отримує 404 на неіснуючий для Anthropic `openai/gpt-5.1`. Такий
+// чат-запит отримує 404 на неіснуючий для Anthropic `z-ai/glm-5.2`. Такий
 // збій видно лише в проді, тому інваріант закріплено тут.
 describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перемикаються разом", () => {
   const saved = {
@@ -39,8 +39,8 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     process.env["CHAT_VIA_OPENROUTER"] = "true";
     process.env["OPENROUTER_API_KEY"] = "sk-or-test";
     expect(chatViaOpenRouter()).toBe(true);
-    expect(defaultChatModel("synthesis")).toBe("openai/gpt-5.1");
-    expect(defaultChatModel("standard")).toBe("google/gemini-2.5-flash-lite");
+    expect(defaultChatModel("synthesis")).toBe("z-ai/glm-5.2");
+    expect(defaultChatModel("standard")).toBe("deepseek/deepseek-v4-flash");
     expect(defaultChatModel("floor")).toBe("google/gemini-2.5-flash-lite");
   });
 
@@ -48,7 +48,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     process.env["CHAT_VIA_OPENROUTER"] = "true";
     expect(chatViaOpenRouter()).toBe(false);
     // Ключова перевірка: model-id теж мають повернутися на Anthropic, інакше
-    // транспорт піде в api.anthropic.com з `openai/gpt-5.1` і отримає 404.
+    // транспорт піде в api.anthropic.com з `z-ai/glm-5.2` і отримає 404.
     expect(defaultChatModel("synthesis")).toBe("claude-sonnet-4-6");
     expect(defaultChatModel("standard")).toBe("claude-haiku-4-5-20251001");
   });

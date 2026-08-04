@@ -574,6 +574,25 @@ const envSchema = z.object({
 
   NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
 
+  /**
+   * Зорові шляхи (`analyze-photo`, `refine-photo`) через OpenRouter.
+   *
+   * WHY окремий прапорець від `CHAT_VIA_OPENROUTER`: ці два ендпоінти НЕ
+   * ходять через `getLLMProvider()` — їм потрібен `image`-блок у тілі, тож
+   * вони кличуть `anthropicMessages` напряму й `LLM_NUTRITION_PROVIDER` їх
+   * не стосується. Спільний із чатом прапорець зробив би відкат одного
+   * відкатом обох, а це різні за ризиком поверхні.
+   */
+  VISION_VIA_OPENROUTER: boolFromEnv(false),
+
+  /**
+   * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
+   * зорового стенду (розмите фото, порожній кадр, етикетка іноземною,
+   * перерахунок порції) за $0.13/1k і 1.3 с. Новіші `gemini-3.1/3.5-flash-lite`
+   * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
+   */
+  OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
   LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
 
   OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
@@ -658,6 +677,12 @@ export function assertStartupEnv(): void {
   if (env.CHAT_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
     warnings.push(
       "CHAT_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids; the flag has no effect.",
+    );
+  }
+
+  if (env.VISION_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "VISION_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — analyze-photo/refine-photo stay on direct Anthropic with NUTRITION_MODEL; the flag has no effect.",
     );
   }
 

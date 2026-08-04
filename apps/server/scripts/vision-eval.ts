@@ -70,6 +70,7 @@ async function main(): Promise<void> {
       "dry-run": { type: "boolean", default: false },
       pipeline: { type: "string" },
       out: { type: "string" },
+      extra: { type: "string", multiple: true, default: [] },
       repeat: { type: "string" },
     },
   });
@@ -84,6 +85,21 @@ async function main(): Promise<void> {
     console.error(`Unknown --pipeline="${values.pipeline ?? ""}"`);
     process.exitCode = 1;
     return;
+  }
+
+  // `--extra=pipeline:provider:model[:label]` — той самий контракт, що в
+  // `model-eval.ts`. Без нього зоровий стенд можна було перевірити лише на
+  // вшитій трійці кандидатів, і кожен новий кандидат вимагав правки коду.
+  for (const raw of values.extra ?? []) {
+    const [key, provider, model, label] = raw.split(":");
+    const pipeline = pipelines.find((p) => p.key === key);
+    if (!pipeline || provider !== "openrouter" || !model) {
+      console.error(
+        `Ignoring malformed --extra="${raw}" (expected pipeline:openrouter:model[:label])`,
+      );
+      continue;
+    }
+    pipeline.candidates.push({ provider, model, label: label ?? model });
   }
 
   const dryRun = values["dry-run"] === true;

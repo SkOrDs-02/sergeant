@@ -39,11 +39,15 @@ export interface AnthropicCallOptions {
    */
   userId?: string | undefined;
   /**
-   * Дозволяє цьому виклику піти через OpenRouter, коли ввімкнений
-   * `CHAT_VIA_OPENROUTER`. Opt-in навмисно per-callsite: `anthropic.ts`
-   * спільний для digest, nutrition, mono й classify, і їхній прямий шлях в
-   * `api.anthropic.com` має лишатись незмінним. Без цього поля транспорт не
-   * перемикається взагалі.
+   * Рішення виклику піти через OpenRouter — уже обчислене, не прапорець
+   * «можна». Opt-in навмисно per-callsite: `anthropic.ts` спільний для digest,
+   * nutrition, mono й classify, і їхній прямий шлях в `api.anthropic.com` має
+   * лишатись незмінним. Без цього поля транспорт не перемикається взагалі.
+   *
+   * WHY рішення, а не дозвіл: гейт колись жив усередині `pickTransport` і
+   * читав `CHAT_VIA_OPENROUTER`. Щойно на шлюз знадобилось перевести другий
+   * незалежний шлях (зір), спільний прапорець зробив би відкат одного
+   * відкатом обох. Тепер кожен шлях приносить власну умову.
    */
   allowOpenRouter?: boolean | undefined;
 }
@@ -63,7 +67,7 @@ function pickTransport(
   apiKey: string,
   allowOpenRouter: boolean | undefined,
 ): { url: string; headers: Record<string, string> } {
-  if (allowOpenRouter && env.CHAT_VIA_OPENROUTER && env.OPENROUTER_API_KEY) {
+  if (allowOpenRouter && env.OPENROUTER_API_KEY) {
     return {
       url: OPENROUTER_URL,
       headers: {

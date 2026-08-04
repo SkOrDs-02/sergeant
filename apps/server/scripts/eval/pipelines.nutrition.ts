@@ -36,6 +36,16 @@ import { buildParsePantryPrompt } from "../../src/modules/nutrition/parse-pantry
 import { asRecord, normalizeName, pantryItems, recipes } from "./judges.js";
 import type { JudgeVerdict, Pipeline } from "./types.js";
 
+/**
+ * Спільний СПИСОК, не спільний МАСИВ — кожен пайплайн бере копію
+ * (`candidates: [...nutritionCandidates]`).
+ *
+ * AI-DANGER: `--extra` робить `pipeline.candidates.push(...)`. Поки всі шість
+ * пайплайнів вказували на один інстанс масиву, шість прапорців `--extra`
+ * (по одному на пайплайн) додавали шість копій КОЖНОГО кандидата в КОЖЕН
+ * пайплайн — прогін вийшов у 6 разів довший і дорожчий, а таблиця показала
+ * 204 запуски там, де мало бути 34. Не згортай копію назад у посилання.
+ */
 const nutritionCandidates = [
   {
     provider: "anthropic" as const,
@@ -135,7 +145,7 @@ const dayHintPipeline: Pipeline = {
       hintNonEmpty,
     ),
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 // ── day-plan ────────────────────────────────────────────────────────
@@ -215,7 +225,7 @@ const dayPlanPipeline: Pipeline = {
       },
     ),
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 // ── week-plan ───────────────────────────────────────────────────────
@@ -262,7 +272,7 @@ const weekPlanPipeline: Pipeline = {
       },
     },
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 // ── shopping-list ───────────────────────────────────────────────────
@@ -355,7 +365,7 @@ const shoppingListPipeline: Pipeline = {
       },
     },
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 // ── recommend-recipes ───────────────────────────────────────────────
@@ -442,7 +452,7 @@ const recipesPipeline: Pipeline = {
       },
     },
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 // ── parse-pantry ────────────────────────────────────────────────────
@@ -513,7 +523,7 @@ const parsePantryPipeline: Pipeline = {
       },
     },
   ],
-  candidates: nutritionCandidates,
+  candidates: [...nutritionCandidates],
 };
 
 export const NUTRITION_PIPELINES: Pipeline[] = [

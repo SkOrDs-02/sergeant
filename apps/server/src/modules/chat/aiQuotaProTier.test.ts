@@ -216,18 +216,18 @@ describe("resolveProTier — chat-тиринг під CHAT_VIA_OPENROUTER", () =
     process.env["OPENROUTER_API_KEY"] = "sk-or-test";
   });
 
-  it("premium → openai/gpt-5.1", async () => {
+  it("premium → z-ai/glm-5.2", async () => {
     pool.query.mockResolvedValueOnce(ok(1));
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("premium");
-    expect(r.model).toBe("openai/gpt-5.1");
+    expect(r.model).toBe("z-ai/glm-5.2");
   });
 
-  it("standard → google/gemini-2.5-flash-lite", async () => {
+  it("standard → deepseek/deepseek-v4-flash", async () => {
     pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok(1));
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
     expect(r.tier).toBe("standard");
-    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+    expect(r.model).toBe("deepseek/deepseek-v4-flash");
   });
 
   it("floor → google/gemini-2.5-flash-lite", async () => {

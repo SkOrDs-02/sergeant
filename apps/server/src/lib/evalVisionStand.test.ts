@@ -108,10 +108,13 @@ describe("зоровий стенд", () => {
       macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
       questions: ["Що саме на фото?"],
     });
-    expect(judge?.(invented)).toBe(false);
+    // Провал — рядок із причиною, не голий `false` (див. `evalJudgeReason`).
+    expect(judge?.(invented)).toBe("вигадав 420 ккал з порожнього кадру");
     expect(judge?.(honest)).toBe(true);
     // Проза замість JSON — прод показав би порожній екран, це теж провал.
-    expect(judge?.("На фото нічого немає.")).toBe(false);
+    expect(judge?.("На фото нічого немає.")).toBe(
+      "не розібрався прод-парсером",
+    );
   });
 
   it("суддя етикетки вимагає прочитаних чисел", () => {
@@ -130,7 +133,7 @@ describe("зоровий стенд", () => {
       questions: [],
     });
     expect(judge?.(read)).toBe(true);
-    expect(judge?.(guessed)).toBe(false);
+    expect(judge?.(guessed)).toBe("не прочитано: об'єм 950, молоко");
   });
 
   it("фільтр модальностей fail-close: без каталогу openrouter-кандидати відсіюються", () => {

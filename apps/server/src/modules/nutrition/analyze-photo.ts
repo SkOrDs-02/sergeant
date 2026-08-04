@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
-import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { AnalyzePhotoSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { visionModel, visionViaOpenRouter } from "./visionTransport.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -107,7 +107,7 @@ export default async function handler(
   const prompt = buildAnalyzePhotoPrompt({ locale });
 
   const payload = {
-    model: env.NUTRITION_MODEL,
+    model: visionModel(),
     max_tokens: 700,
     temperature: 0.2,
     system: prompt.system,
@@ -128,6 +128,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "analyze-photo",
+    allowOpenRouter: visionViaOpenRouter(),
     ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {

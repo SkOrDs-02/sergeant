@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { env } from "../../env.js";
+import { chatViaOpenRouter } from "../../env/chatModels.js";
 import {
   anthropicMessagesStream,
   recordAnthropicUsage,
@@ -212,8 +213,7 @@ export async function streamAnthropicToSse(
         endpoint,
         timeoutMs: 60000,
         signal: abortSignal,
-        // Чат — єдина поверхня, що мігрує на OpenRouter (CHAT_VIA_OPENROUTER).
-        allowOpenRouter: true,
+        allowOpenRouter: chatViaOpenRouter(),
       }));
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -325,7 +325,7 @@ export async function streamAnthropicToSse(
               endpoint: `${endpoint}-cont`,
               timeoutMs: 60000,
               signal: abortSignal,
-              allowOpenRouter: true,
+              allowOpenRouter: chatViaOpenRouter(),
             },
           );
         if (!nextResponse.ok) {

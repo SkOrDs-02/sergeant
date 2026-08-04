@@ -146,8 +146,8 @@ function envStr(name: string, fallback: string): string {
  *
  * Chat-дефолти беруться з `defaultChatModel()` — того самого джерела, що й
  * zod-дефолти в `env/env.ts`. WHY не хардкод: під `CHAT_VIA_OPENROUTER=true`
- * чат ходить у шлюз і потребує OpenRouter-id (`openai/gpt-5.1`,
- * `google/gemini-2.5-flash-lite`), під `false` — Claude-id, бо
+ * чат ходить у шлюз і потребує OpenRouter-id (`z-ai/glm-5.2`,
+ * `deepseek/deepseek-v4-flash`), під `false` — Claude-id, бо
  * прямий Anthropic на перші відповість 404. Розійдуться два списки —
  * тиринг почне мовчки слати модель не в той шлюз.
  */

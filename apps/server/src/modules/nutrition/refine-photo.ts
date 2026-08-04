@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
-import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { RefinePhotoSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { visionModel, visionViaOpenRouter } from "./visionTransport.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -117,7 +117,7 @@ export default async function handler(
   const grams = prompt.grams;
 
   const payload = {
-    model: env.NUTRITION_MODEL,
+    model: visionModel(),
     max_tokens: 650,
     temperature: 0.2,
     system: prompt.system,
@@ -138,6 +138,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "refine-photo",
+    allowOpenRouter: visionViaOpenRouter(),
     ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {
