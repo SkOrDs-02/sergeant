@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -142,7 +142,7 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 
 ## Touch targets
 
-WCAG 2.5.5 / Apple HIG ≥44×44 на coarse pointers. Three layers: `Button` (auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` — на fine-pointer floor навмисно не діє), `touch-target` / `touch-target-48` Tailwind utilities, and a global safety-net in `apps/web/src/index.css` (opt out with `data-compact` for intentionally smaller cells like heatmaps). See [`packages/design-tokens/tailwind-preset.js`](./packages/design-tokens/tailwind-preset.js) and [`apps/web/src/shared/components/ui/Button.tsx`](./apps/web/src/shared/components/ui/Button.tsx).
+WCAG 2.5.5 / Apple HIG ≥44×44 на coarse pointers. Three layers: `Button` (auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` — на fine-pointer floor навмисно не діє), `touch-target` / `touch-target-48` Tailwind utilities, and a global safety-net in `apps/web/src/index.css` (opt out with `data-compact` for intentionally smaller cells like heatmaps). See [`packages/design-tokens/tailwind-preset.js`](./packages/design-tokens/tailwind-preset.js) and [`apps/web/src/shared/components/ui/Button.tsx`](./apps/web/src/shared/components/ui/Button.tsx). Playwright-аудит 44px touch-targets ([`apps/web/tests/mobile/mobile-ui-audit.spec.ts`](./apps/web/tests/mobile/mobile-ui-audit.spec.ts), скрипт `pnpm --filter @sergeant/web e2e:mobile`) запускається лише локально і НЕ wired у CI.
 
 ## AI markers
 
