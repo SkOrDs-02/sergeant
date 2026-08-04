@@ -560,6 +560,10 @@ export const messages = {
     reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
+    // Порожній стан сканера штрихкодів (аудит nutrition E-6).
+    barcodeNoticeRetry: "Спробувати ще раз",
+    barcodeNoticeUsePhoto: "Сфотографувати страву",
+    barcodeNoticeManual: "Ввести вручну",
     waterHistory: {
       openLabel: "Історія води",
       title: "Історія води",

@@ -6,12 +6,18 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
+import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
+import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
 
 interface BarcodeSectionProps {
   barcode: string;
   setBarcode: Dispatch<SetStateAction<string>>;
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
+  barcodeNotice?: BarcodeLookupNoticeState | null | undefined;
+  onDismissBarcodeNotice?: (() => void) | undefined;
+  onRetryBarcodeLookup?: (() => void) | undefined;
+  onUsePhotoForBarcode?: (() => void) | undefined;
   handleBarcodeLookup: (barcode: string) => void | Promise<void>;
   handleBarcodeBind: (barcode: string) => void | Promise<void>;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
@@ -22,6 +28,10 @@ export function BarcodeSection({
   setBarcode,
   barcodeStatus,
   setBarcodeStatus,
+  barcodeNotice,
+  onDismissBarcodeNotice,
+  onRetryBarcodeLookup,
+  onUsePhotoForBarcode,
   handleBarcodeLookup,
   handleBarcodeBind,
   setScannerOpen,
@@ -37,6 +47,7 @@ export function BarcodeSection({
           onChange={(e) => {
             setBarcode(e.target.value.replace(/\s+/g, ""));
             setBarcodeStatus("");
+            onDismissBarcodeNotice?.();
           }}
           inputMode="numeric"
           placeholder="EAN/UPC…"
@@ -71,8 +82,16 @@ export function BarcodeSection({
           📷 Сканувати
         </Button>
       </div>
-      {barcodeStatus && (
+      {barcodeStatus && !barcodeNotice && (
         <div className="text-xs text-subtle mt-1">{barcodeStatus}</div>
+      )}
+      {barcodeNotice && onDismissBarcodeNotice && (
+        <BarcodeLookupNotice
+          kind={barcodeNotice.kind}
+          onDismiss={onDismissBarcodeNotice}
+          onRetry={onRetryBarcodeLookup}
+          onUsePhoto={onUsePhotoForBarcode}
+        />
       )}
     </div>
   );

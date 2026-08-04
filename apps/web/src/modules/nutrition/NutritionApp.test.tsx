@@ -189,7 +189,12 @@ vi.mock("./hooks/useNutritionPrefsState", () => ({
 }));
 
 vi.mock("./hooks/usePantryBarcodeScan", () => ({
-  usePantryBarcodeScan: vi.fn(() => vi.fn()),
+  usePantryBarcodeScan: vi.fn(() => ({
+    scan: vi.fn(),
+    notice: null,
+    retry: vi.fn(),
+    dismissNotice: vi.fn(),
+  })),
 }));
 
 vi.mock("./hooks/useNutritionCloudBackup", () => ({
