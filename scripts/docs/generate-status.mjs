@@ -53,6 +53,12 @@ const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
 
 const TODAY = new Date().toISOString().slice(0, 10);
+// `STATUS.md` is regenerated on demand, but set Next review a week out so the
+// freshness dashboard does not flag it as "Overdue (1d)" the morning after
+// each run (Next review === Last touched would expire same-day).
+const NEXT_REVIEW = new Date(Date.now() + 7 * 86_400_000)
+  .toISOString()
+  .slice(0, 10);
 
 // How many shipped PRs / in-flight items to surface. Past ~10 the page stops
 // being a glance and becomes a report — that is what open-work.md is for.
@@ -177,7 +183,7 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("# Sergeant — Панель керування");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${TODAY} by docs:gen-status. **Next review:** ${TODAY}.`,
+    `> **Last touched:** ${TODAY} by docs:gen-status. **Next review:** ${NEXT_REVIEW}.`,
   );
   lines.push(`> **Status:** Reference`);
   lines.push("");

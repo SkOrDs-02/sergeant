@@ -65,9 +65,8 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
 | ADRs                          | 65 (0065 = last before) | 69 (0069–0072 = harness v1, перенумеровано 2026-07-01)                     | `docs/04-governance/adr/`                                                                |
 
 > Примітка: bundle numbers у ADR-0071 наводяться як pre-rollout baseline
-> з власних вимірювань автора. Точні CI-виміри з'являться після першого
-> тижня production runs у `docs/90-work/observability/harness-v1-baseline.md`
-> (follow-up).
+> з власних вимірювань автора. Окремих CI-вимірів не збирали — baseline
+> лишається авторським (ADR-0071 § Rationale).
 
 ## Follow-ups
 

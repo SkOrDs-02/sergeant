@@ -234,8 +234,9 @@ The agent harness (AGENTS.md, `.agents/skills/**`, Hard Rules registry, `eslint-
 
 ## Harness-engineering v1
 
-Rollout завершено 2026-06-29. Чотири компоненти:
+Rollout завершено 2026-06-29. Два активні компоненти — AI-PR Checklist і Entropy Janitors retired ([ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md), [ADR-0082](./docs/04-governance/adr/0082-private-storage-repo-posture.md)):
 
 - **Dynamic snapshot** — `tools/agent-snapshot/snapshot.mjs`, runs `pnpm snapshot`
-- **Harness versioning** — `.kilo/harness-versions.json`, A/B workflow
-  Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)
+- **Harness versioning** — `.kilo/harness-versions.json` + `scripts/ci-bump-harness-version.mjs` (A/B-воркфлоу прибрано ADR-0082 §4; `abExperiments` порожній, прогони ручні)
+
+Деталі: [harness-engineering-v1.md](./docs/90-work/planning/harness-engineering-v1.md)

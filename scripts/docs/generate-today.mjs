@@ -201,7 +201,7 @@ function render({ priority, overdue, wipRows }) {
   lines.push("# Сьогодні в роботі");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${TODAY} by docs:gen-today. **Next review:** ${NEXT_REVIEW}.`,
+    `> **Last touched:** ${TODAY} by docs:gen-today. **Next review:** ${NEXT_REVIEW}.`,
   );
   lines.push(`> **Status:** Reference`);
   lines.push("");
