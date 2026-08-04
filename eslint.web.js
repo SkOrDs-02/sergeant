@@ -214,6 +214,27 @@ export const webBlocks = [
       "sergeant-design/rq-keys-only-from-factory": "error",
     },
   },
+  // Реєстр метрик, стадія 5 — заборона ad-hoc агрегації витрат поза
+  // доменними пакетами. Аудит показав 4-6 незалежних реалізацій однієї
+  // метрики й доведені розбіжності в числах на різних екранах в одну
+  // хвилину; cutover звів їх на канонічні функції `@sergeant/*-domain`,
+  // а це правило не дає наступному інлайн-редьюсу знову розійтися.
+  // Вмикається одразу як `error` без baseline — на момент додавання в
+  // `apps/web/src` нуль порушень (три знайдені call-site-и переведені на
+  // `getTxStatAmount` / `calcCategorySpent` у тому ж PR, усі zero-delta).
+  // Тести звільнені: фікстури навмисно рахують очікування вручну, щоб
+  // parity-тест мав із чим порівнювати канон.
+  // Реєстр: docs/02-engineering/architecture/metric-registry.md.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-adhoc-metric-aggregation": "error",
+    },
+  },
   // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
   // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
   // a single TS/TSX file in the web bundle must not exceed 600 LOC

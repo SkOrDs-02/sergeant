@@ -2644,6 +2644,152 @@ const noRawStorageKey = {
   },
 };
 
+// ─── no-adhoc-metric-aggregation ────────────────────────────────────────
+//
+// Реєстр метрик (`docs/02-engineering/architecture/metric-registry.md`),
+// стадія 5. Аудит показав, що та сама метрика мала 4-6 незалежних
+// реалізацій і числа розходились у користувача на різних екранах в одну
+// хвилину. Cutover звів їх на канонічні функції доменних пакетів; це
+// правило не дає наступному інлайн-редьюсу знову розійтися.
+//
+// Ловить РІВНО одну форму: інлайн-перетворення копійок у гривні для
+// ВИТРАТИ (`Math.abs(<tx>.amount / 100)`) в **акумуляторі** — тобто
+// підрахунок суми витрат за набором транзакцій вручну. Це буквально тіло
+// `getTxStatAmount` з `@sergeant/finyk-domain`, тільки без сплітів, тому
+// кожне таке місце тихо втрачає спліти і розходиться з каноном.
+//
+// Навмисно НЕ ловить (інакше правило кричало б вовк):
+//   - показ однієї суми: `const total = Math.abs(tx.amount / 100)`,
+//     фільтр за діапазоном, рядок пошуку, підпис у JSX;
+//   - дохід (`t.amount / 100` без `Math.abs`) — додатні суми не потребують
+//     модуля, і канонічної функції для доходу реєстр не має;
+//   - будь-яку іншу арифметику з `/ 100` (відсотки, ккал на 100 г, кути).
+//
+// `Math.abs` — не косметика, а сам дискримінатор: витрати зберігаються
+// відʼємними, тож модуль бере рівно той код, що сумує витрати.
+//
+// Доменні пакети (`packages/*-domain/**`) звільнені — там канон і живе.
+
+const ADHOC_METRIC_MESSAGE =
+  "Інлайн-підрахунок витрат: `Math.abs(<tx>.amount / 100)` в акумуляторі. " +
+  "Це копія `getTxStatAmount` без сплітів — число розійдеться з рештою екранів. " +
+  "Використай канонічну функцію з `@sergeant/finyk-domain` " +
+  "(`getTxStatAmount`, `calcCategorySpent`, `calcFinykPeriodAggregate`). " +
+  "Реєстр метрик: docs/02-engineering/architecture/metric-registry.md.";
+
+/** `<expr>.amount / 100` — інлайн-перетворення копійок у гривні. */
+function isMinorAmountDivision(node) {
+  if (!node || node.type !== "BinaryExpression" || node.operator !== "/") {
+    return false;
+  }
+  const { left, right } = node;
+  if (right.type !== "Literal" || right.value !== 100) return false;
+  const target = left.type === "CallExpression" ? left.arguments[0] : left;
+  return (
+    !!target &&
+    target.type === "MemberExpression" &&
+    !target.computed &&
+    target.property.type === "Identifier" &&
+    target.property.name === "amount"
+  );
+}
+
+function isMathAbsCall(node) {
+  return (
+    node.type === "CallExpression" &&
+    node.callee.type === "MemberExpression" &&
+    !node.callee.computed &&
+    node.callee.object.type === "Identifier" &&
+    node.callee.object.name === "Math" &&
+    node.callee.property.type === "Identifier" &&
+    node.callee.property.name === "abs"
+  );
+}
+
+/** `Math.abs(x.amount / 100)` або `Math.abs(x.amount) / 100`. */
+function isAbsoluteSpendAmount(node) {
+  if (isMathAbsCall(node)) return isMinorAmountDivision(node.arguments[0]);
+  return (
+    isMinorAmountDivision(node) &&
+    node.left.type === "CallExpression" &&
+    isMathAbsCall(node.left)
+  );
+}
+
+function isReduceCallback(fn) {
+  const call = fn.parent;
+  return (
+    !!call &&
+    call.type === "CallExpression" &&
+    call.arguments[0] === fn &&
+    call.callee.type === "MemberExpression" &&
+    !call.callee.computed &&
+    call.callee.property.type === "Identifier" &&
+    call.callee.property.name === "reduce"
+  );
+}
+
+/**
+ * Сума накопичується? `acc += X`, `acc[k] = (acc[k] || 0) + X`,
+ * або `X` в `+`-ланцюжку, що повертається з `.reduce`-колбека.
+ */
+function isAccumulatedTerm(node) {
+  let cur = node;
+  let parent = cur.parent;
+  let sawPlus = false;
+  while (parent) {
+    if (parent.type === "BinaryExpression" && parent.operator === "+") {
+      sawPlus = true;
+    } else if (parent.type === "AssignmentExpression") {
+      return parent.operator === "+=" || sawPlus;
+    } else if (parent.type === "ReturnStatement") {
+      return sawPlus;
+    } else if (
+      parent.type === "ArrowFunctionExpression" ||
+      parent.type === "FunctionExpression"
+    ) {
+      return sawPlus && isReduceCallback(parent);
+    } else if (
+      parent.type !== "ConditionalExpression" &&
+      parent.type !== "LogicalExpression"
+    ) {
+      return false;
+    }
+    cur = parent;
+    parent = cur.parent;
+  }
+  return false;
+}
+
+const noAdhocMetricAggregation = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid ad-hoc spending aggregation (`Math.abs(tx.amount / 100)` accumulated by hand) outside the domain packages — metrics must go through the canonical functions listed in the metric registry.",
+    },
+    schema: [],
+    messages: { adhocAggregation: ADHOC_METRIC_MESSAGE },
+  },
+  create(context) {
+    const filename = (
+      context.filename ??
+      context.getFilename?.() ??
+      ""
+    ).replace(/\\/g, "/");
+    // Доменні пакети — місце, де канон і живе.
+    if (/packages\/[^/]*-domain\//.test(filename)) return {};
+
+    function check(node) {
+      if (!isAbsoluteSpendAmount(node)) return;
+      if (!isAccumulatedTerm(node)) return;
+      context.report({ node, messageId: "adhocAggregation" });
+    }
+
+    return { CallExpression: check, BinaryExpression: check };
+  },
+};
+
 const plugin = {
   rules: {
     "no-raw-tracked-storage": noRawTrackedStorage,
@@ -2666,6 +2812,7 @@ const plugin = {
     "prefer-parse-body-over-validate-body": preferParseBodyOverValidateBody,
     "sri-on-third-party-script": sriOnThirdPartyScript,
     "no-raw-storage-key": noRawStorageKey,
+    "no-adhoc-metric-aggregation": noAdhocMetricAggregation,
   },
 };
 

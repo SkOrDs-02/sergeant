@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "3.0.0",
+  "current": "3.0.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -150,6 +150,14 @@
         "AGENTS.md § Harness-engineering v1: два активні компоненти замість чотирьох (AI-PR Checklist і Entropy Janitors retired).",
         "AGENTS.md § Design conventions: доданий вказівник на DESIGN.md.",
         "sergeant-review-squad/SKILL.md: посилання на retired Hard Rules #8-#17 замінено на опис дименсії design-reviewer."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.0.1": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "bump from 3.0.0 -> 3.0.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
