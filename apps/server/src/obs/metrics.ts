@@ -548,6 +548,8 @@ export {
   aiMemoryIngestProcessedTotal,
   aiMemoryIngestDurationMs,
   aiMemoryIngestQueueDepth,
+  aiMemoryRecallTopScore,
+  aiMemoryRecallResultsTotal,
 } from "./metrics/jobs.js";
 
 export {

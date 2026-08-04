@@ -91,6 +91,7 @@ describe("recallMemoryHandler", () => {
       query: "coffee spend",
       topK: 5,
       sources: undefined,
+      caller: "explicit-recall",
     });
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
