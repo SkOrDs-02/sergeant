@@ -313,6 +313,13 @@ export const finykMonoDebtLinks = sqliteTable(
 // Time-series — networth_history
 // ---------------------------------------------------------------------
 
+// `networth` stays `real()` here on purpose — SQLite has no separate
+// float4/float8 storage class; every `REAL` column is already stored as
+// an 8-byte IEEE-754 double (SQLite "storage class" docs). The PG mirror
+// (`pg/finyk.ts`) moved `networth` from `REAL` (float4) to
+// `DOUBLE PRECISION` (float8) in migration 108 — pre-beta schema-debt
+// audit 2026-08-04 — to close a precision gap that only exists on the PG
+// side; the SQLite column never had that gap.
 export const finykNetworthHistory = sqliteTable(
   "finyk_networth_history",
   {
