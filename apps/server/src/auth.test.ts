@@ -480,6 +480,23 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(ctx.body["revokeOtherSessions"]).toBe(true);
   });
 
+  /**
+   * Другий бік тієї ж пари: `/change-password` покриває `hooks.before`
+   * вище, а `/reset-password` — тільки цей прапорець (Better Auth дефолтить
+   * його у `false`). Без нього вкрадена сесія переживає скидання пароля до
+   * кінця 7-денного TTL.
+   */
+  it("emailAndPassword.revokeSessionsOnPasswordReset увімкнений", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          emailAndPassword?: { revokeSessionsOnPasswordReset?: boolean };
+        };
+      }
+    ).options;
+    expect(options.emailAndPassword?.revokeSessionsOnPasswordReset).toBe(true);
+  });
+
   it("H3: hooks.before не чіпає інші endpoint-и", async () => {
     const before = (
       auth as unknown as {

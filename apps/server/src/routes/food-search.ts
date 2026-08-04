@@ -18,6 +18,15 @@ export function createFoodSearchRouter(): Router {
     setModule("nutrition"),
     cachingMiddleware({ policy: "stale-while-revalidate", maxAgeSeconds: 300 }),
     rateLimitExpress({ key: "api:food-search", limit: 40, windowMs: 60_000 }),
+    // Ендпоінт відкритий без сесії й витрачає USDA-ключ власника, у якого
+    // власна погодинна/добова стеля на весь проєкт. Хвилинний бакет її не
+    // бачить (40/хв = 57k/добу з однієї адреси), тому доповнюємо його добовим
+    // вікном — typeahead реальної людини в нього вкладається з запасом.
+    rateLimitExpress({
+      key: "api:food-search:daily",
+      limit: 600,
+      windowMs: 24 * 60 * 60_000,
+    }),
     foodSearchHandler,
   );
   return r;

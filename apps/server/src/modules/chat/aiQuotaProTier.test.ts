@@ -254,6 +254,17 @@ describe("resolveProTier — catastrophic-cost circuit-breaker (degrade-all)", (
     expect(r.tier).toBe("premium");
   });
 
+  it("flag on + hard breached → floor for an anonymous caller too", async () => {
+    process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
+    isHardExceeded.mockReturnValue(true);
+    getSessionUser.mockResolvedValue(null);
+    const res = makeRes();
+    const r = await resolveProTier(makeReq(), res, "chat");
+    expect(r.tier).toBe("floor");
+    expect(res.headers["X-AI-Tier"]).toBe("floor");
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
   it("founder is never degraded even when flag on + breached", async () => {
     process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"] = "true";
     process.env["AI_QUOTA_FOUNDER_IDS"] = "u1";

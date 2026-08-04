@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Breadcrumb, ErrorEvent } from "@sentry/node";
+import type { Breadcrumb, ErrorEvent, Event } from "@sentry/node";
 import {
   applyBeforeBreadcrumb,
   applyBeforeSend,
+  applyBeforeSendTransaction,
   resolveSentryRelease,
   scrubPII,
   SENTRY_DENY_URLS,
@@ -399,6 +400,54 @@ describe("applyBeforeSend (PII roast: string scrubbing)", () => {
     expect(out.exception?.values?.[0]?.value).toBe(
       "Access denied for key [aws-key redacted]",
     );
+  });
+});
+
+// F6 — transaction/span-події не проходять `beforeSend`, а Telegram тримає
+// bot-токен у path вихідного URL, тож без окремого хука він летів у Sentry
+// сирим у `request.url`, `transaction`, span-description і span-атрибутах.
+describe("applyBeforeSendTransaction", () => {
+  const botToken = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  it("маскує bot-токен у URL транзакції, span-description і span-атрибутах", () => {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const ev = {
+      type: "transaction",
+      transaction: url,
+      request: { url },
+      spans: [
+        {
+          span_id: "s1",
+          trace_id: "t1",
+          start_timestamp: 0,
+          description: `POST ${url}`,
+          data: { "http.url": url, apiKey: "leak" },
+        },
+      ],
+    } as unknown as Event;
+
+    const out = applyBeforeSendTransaction(ev);
+
+    expect(JSON.stringify(out)).not.toContain(botToken);
+    expect(out.request?.url).toBe(
+      "https://api.telegram.org/bot[redacted]/sendMessage",
+    );
+    expect(out.spans?.[0]?.data?.["apiKey"]).toBe("[redacted]");
+  });
+
+  it("скрабить extra/contexts і не падає на порожній транзакції", () => {
+    const ev = {
+      type: "transaction",
+      extra: { debug: { connectionString: "postgres://x", keep: "ok" } },
+    } as unknown as Event;
+
+    const out = applyBeforeSendTransaction(ev);
+    const debug = (out.extra as { debug: Record<string, unknown> }).debug;
+    expect(debug["connectionString"]).toBe("[redacted]");
+    expect(debug["keep"]).toBe("ok");
+    expect(() =>
+      applyBeforeSendTransaction({ type: "transaction" } as unknown as Event),
+    ).not.toThrow();
   });
 });
 

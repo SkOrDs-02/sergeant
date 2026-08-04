@@ -64,8 +64,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT COALESCE(SUM(ABS(amount) / 100.0), 0)::numeric AS monthly_spent FROM mono_transaction WHERE user_id = '{{ $('Mono Webhook').item.json.body.user_id }}' AND time >= date_trunc('month', NOW()) AND amount < 0;",
-        "options": {}
+        "query": "SELECT COALESCE(SUM(ABS(amount) / 100.0), 0)::numeric AS monthly_spent FROM mono_transaction WHERE user_id = $1 AND time >= date_trunc('month', NOW()) AND amount < 0;",
+        "options": {
+          "queryReplacement": "={{ $('Mono Webhook').item.json.body.user_id }}"
+        }
       },
       "id": "check-budget",
       "name": "Check monthly budget",

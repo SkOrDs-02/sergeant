@@ -56,7 +56,7 @@
       "title": "Coolify — бекенд/БД/деплой",
       "type": "link",
       "icon": "cloud",
-      "url": "http://167.233.98.92:8000",
+      "url": "${COOLIFY_URL}",
       "targetBlank": true,
       "tooltip": "API, Postgres, Redis, env, деплої (Hetzner + Coolify)"
     },
@@ -84,7 +84,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry · API ↗](https://dima-dk.sentry.io/issues/?project=4511311028879440)** · **[Web ↗](https://dima-dk.sentry.io/issues/?project=4511311094480976)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Coolify ↗](http://167.233.98.92:8000)** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
+        "content": "## 🧭 Куди йти за чим\n\n| Твоє питання | Сервіс (відкрий) |\n| --- | --- |\n| Метрики · логи · алерти (повільно? витрати? сигналки?) | **Grafana** — ти вже тут ↓ |\n| Що зламалось? (stack trace, краш у юзера) | **[Sentry · API ↗](https://dima-dk.sentry.io/issues/?project=4511311028879440)** · **[Web ↗](https://dima-dk.sentry.io/issues/?project=4511311094480976)** |\n| Скільки людей · де відвалюються (воронки) | **[PostHog ↗](https://eu.posthog.com/project/167740)** |\n| Деплой бекенду · Postgres · env-змінні | **[Coolify ↗](${COOLIFY_URL})** |\n| Деплой фронтенду · web build · preview | **[Vercel ↗](https://vercel.com/skords-01s-projects/sergeant)** |\n\n> Кнопки переходу також угорі дашборда (панель **Links** ☝️). Логи — у Grafana зліва: **Explore → Loki**."
       },
       "title": "Швидка навігація",
       "type": "text",
@@ -516,6 +516,20 @@
         "query": "prometheus",
         "refresh": 1,
         "type": "datasource"
+      },
+      {
+        "current": {
+          "text": "https://coolify.invalid.local",
+          "value": "https://coolify.invalid.local"
+        },
+        "description": "Базовий URL адмін-панелі Coolify. Репозиторій публічний, тож реальна адреса задається в самій Grafana (Dashboard settings → Variables), а не тут.",
+        "hide": 2,
+        "label": "Coolify base URL",
+        "name": "COOLIFY_URL",
+        "options": [],
+        "query": "https://coolify.invalid.local",
+        "skipUrlSync": true,
+        "type": "constant"
       }
     ]
   },

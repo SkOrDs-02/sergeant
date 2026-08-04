@@ -12,8 +12,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO n8n_failure_events\n  (workflow_id, workflow_name, execution_id, last_node, error_message, raw)\nVALUES (\n  '{{ $json.workflow.id || \"\" }}',\n  '{{ $json.workflow.name || \"unknown\" }}',\n  '{{ $json.execution.id || \"\" }}',\n  '{{ $json.execution.lastNodeExecuted || \"\" }}',\n  '{{ ($json.error.message || \"unknown error\").replace(/'/g, \"''\") }}',\n  '{{ JSON.stringify($json).replace(/'/g, \"''\") }}'::jsonb\n)\nRETURNING id, error_signature;",
-        "options": {}
+        "query": "INSERT INTO n8n_failure_events\n  (workflow_id, workflow_name, execution_id, last_node, error_message, raw)\nVALUES ($1, $2, $3, $4, $5, $6::jsonb)\nRETURNING id, error_signature;",
+        "options": {
+          "queryReplacement": "={{ $json.workflow.id || \"\" }}, {{ $json.workflow.name || \"unknown\" }}, {{ $json.execution.id || \"\" }}, {{ $json.execution.lastNodeExecuted || \"\" }}, {{ $json.error.message || \"unknown error\" }}, {{ JSON.stringify($json) }}"
+        }
       },
       "id": "insert-dead-letter",
       "name": "Insert n8n failure event",
@@ -31,8 +33,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT COUNT(*) AS prior_alerts\nFROM n8n_failure_events\nWHERE workflow_id = '{{ $('Error Trigger').first().json.workflow.id || \"\" }}'\n  AND error_signature = '{{ $json.error_signature }}'\n  AND created_at > NOW() - INTERVAL '30 minutes'\n  AND id <> {{ $json.id }};",
-        "options": {}
+        "query": "SELECT COUNT(*) AS prior_alerts\nFROM n8n_failure_events\nWHERE workflow_id = $1\n  AND error_signature = $2\n  AND created_at > NOW() - INTERVAL '30 minutes'\n  AND id <> $3;",
+        "options": {
+          "queryReplacement": "={{ $('Error Trigger').first().json.workflow.id || \"\" }}, {{ $json.error_signature }}, {{ $json.id }}"
+        }
       },
       "id": "check-cooldown",
       "name": "Check 30-min cooldown",

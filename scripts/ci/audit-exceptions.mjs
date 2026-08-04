@@ -128,9 +128,9 @@ export function parseAuditJson(json) {
   try {
     parsed = JSON.parse(json);
   } catch {
-    // pnpm prints a non-JSON banner when the registry is unreachable; treat
-    // an unparseable report as "no advisories" so a registry blip doesn't
-    // masquerade as a clean audit — the caller still sees the raw stderr.
+    // pnpm prints a non-JSON banner when the registry is unreachable. Pure
+    // parser stays lenient; the CLI gate treats unparseable output as a
+    // hard failure (see main) so a registry blip cannot pass as "clean".
     return [];
   }
   const advisories = parsed.advisories ?? {};
@@ -216,6 +216,18 @@ function main() {
       );
       process.exit(1);
     }
+  }
+
+  // Без розпарсеного звіту гейт нічого не перевірив — це «невідомо», а не
+  // «чисто», тож валимо збірку замість тихого зеленого.
+  try {
+    JSON.parse(json);
+  } catch {
+    console.error(
+      "audit-exceptions: pnpm audit produced non-JSON output — cannot verify advisories.\n",
+      json.slice(0, 2000),
+    );
+    process.exit(1);
   }
 
   const advisories = parseAuditJson(json);

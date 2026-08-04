@@ -46,8 +46,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE users SET plan = 'pro', plan_updated_at = NOW() WHERE stripe_customer_id = '{{ $json.body.data.object.customer }}' RETURNING id, email;",
-        "options": {}
+        "query": "UPDATE users SET plan = 'pro', plan_updated_at = NOW() WHERE stripe_customer_id = $1 RETURNING id, email;",
+        "options": {
+          "queryReplacement": "={{ $json.body.data.object.customer }}"
+        }
       },
       "id": "update-db",
       "name": "Update DB → Pro",

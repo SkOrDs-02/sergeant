@@ -171,8 +171,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE users SET plan = 'free', plan_updated_at = NOW() WHERE stripe_customer_id = '{{ $('Stripe Webhook').item.json.body.data.object.customer }}';",
-        "options": {}
+        "query": "UPDATE users SET plan = 'free', plan_updated_at = NOW() WHERE stripe_customer_id = $1;",
+        "options": {
+          "queryReplacement": "={{ $('Stripe Webhook').item.json.body.data.object.customer }}"
+        }
       },
       "id": "downgrade-to-free",
       "name": "Downgrade → Free",
