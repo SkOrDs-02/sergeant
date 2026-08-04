@@ -16,7 +16,7 @@ import {
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { getVisibleFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
-import { INTERNAL_TRANSFER_ID } from "../../modules/finyk/constants";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;

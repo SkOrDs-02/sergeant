@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { appendFinanceLines } from "./finance";
-import { INTERNAL_TRANSFER_ID } from "../../../modules/finyk/constants";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import type { AllData } from "./types";
 
 function joined(d: AllData, now: Date): string {

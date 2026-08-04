@@ -248,7 +248,7 @@ jobs:
               repo: context.repo.repo,
               state: 'open',
               labels: 'mutation-testing',
-              per_page: 5,
+              per_page: 100,
             });
             const existing = issues.find((i) =>
               i.title.startsWith('[Mutation]'),

@@ -11,7 +11,7 @@ import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
-import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { Recommendations } from "@sergeant/insights";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";

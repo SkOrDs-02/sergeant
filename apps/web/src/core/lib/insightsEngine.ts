@@ -13,7 +13,7 @@
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
-import { INTERNAL_TRANSFER_ID } from "../../modules/finyk/constants";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
