@@ -40,17 +40,17 @@ const VARIANT_CLASSES: Record<
 > = {
   nutrition: {
     wrap: "border-nutrition/30 bg-nutrition/10",
-    pill: "bg-nutrition-strong text-white dark:text-bg",
+    pill: "bg-nutrition-strong text-white",
     cta: "border-nutrition/40 text-nutrition-strong hover:bg-nutrition/15 dark:text-nutrition",
   },
   finyk: {
     wrap: "border-success/30 bg-success/10",
-    pill: "bg-success-strong text-white dark:text-bg",
+    pill: "bg-success-strong text-white",
     cta: "border-success/40 text-success-strong hover:bg-success/15 dark:text-success",
   },
   routine: {
     wrap: "border-routine/30 bg-routine/10",
-    pill: "bg-routine-strong text-white dark:text-bg",
+    pill: "bg-routine-strong text-white",
     cta: "border-routine/40 text-routine-strong hover:bg-routine/15 dark:text-routine",
   },
 };

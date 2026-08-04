@@ -136,7 +136,7 @@
     --shadow-finyk-nav: 0 0 8px rgba(15, 118, 110, 0.3); /* teal-700 (2026-07: was emerald-500) */
     --shadow-fizruk-nav: 0 0 8px rgba(14, 116, 144, 0.3);
     --shadow-routine-nav: 0 0 8px rgba(249, 112, 102, 0.3);
-    --shadow-nutrition-nav: 0 0 8px rgba(132, 204, 22, 0.3);
+    --shadow-nutrition-nav: 0 0 8px rgba(146, 204, 23, 0.3); /* brand lime-500 #92cc17 (2026-08: was stock Tailwind lime-500 #84cc16) */
 
     /* Destructive hover ring (Button variant="destructive"). */
     --shadow-danger-ring: 0 0 0 3px rgba(239, 68, 68, 0.15);
@@ -156,9 +156,10 @@
     );
     --gradient-card-fizruk-dark: linear-gradient(
       135deg,
-      rgba(20, 184, 166, 0.1) 0%,
+      rgba(14, 116, 144, 0.1) 0%,
       transparent 100%
-    );
+    ); /* cyan-700 — fizruk moved teal→cyan in the 2026-05 redesign; this
+          v1 orphan still tinted teal (2026-08 design-audit T5) */
     --gradient-card-routine-dark: linear-gradient(
       135deg,
       rgba(249, 112, 102, 0.1) 0%,
@@ -317,9 +318,16 @@
     --c-danger-soft-fg: 185 28 28; /* red-700 on red-100 */
     --c-info-soft-fg: 7 89 133; /* sky-800 on sky-100 */
 
-    /* Celebration / gamification tokens */
-    --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
-    --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
+    /* Celebration / gamification tokens. Light = amber-700 (matches
+       `celebrationColors.light` in tokens.js + the `--c-streak-tier-100`
+       precedent below) — amber-400 measured 1.66:1 on white/cream, sub-AA
+       for `text-celebration`. Dark override (amber-400, luminescent) lives
+       in `.dark` below (2026-08 design-audit T3). */
+    --c-celebration: 180 83 9; /* amber-700 — 4.27:1+ on cream */
+    /* `--c-streak-glow` (unused Tailwind `text-streak-glow`/`bg-streak-glow`
+       companion + the `boxShadow.streak-glow` recipe) removed 2026-08
+       design-audit T10 — zero consumers; the active streak-flame glow is
+       the `animate-streak-glow` keyframe in animations.css. */
 
     /* Драбина «жару» серії — тем-залежні щаблі (дизайн-аудит цикл 4).
        До цього кольори жили гілками всередині `StreakFlame.tsx` і були
@@ -496,6 +504,15 @@
     --c-routine-accent: 255 140 120; /* #ff8c78 — coral-400 */
     --c-nutrition-accent: 176 230 54; /* #b0e636 — lime-400 */
 
+    /* Bottom-nav glow — dark override. `:root` only defines the light-tier
+       (700/800) rgba; without an override the active-nav glow stayed at
+       the light tint on the ink surface. Derived straight from the
+       tier-400 accent vars above (2026-08 design-audit T5). */
+    --shadow-finyk-nav: 0 0 8px rgb(var(--c-finyk-accent) / 0.4);
+    --shadow-fizruk-nav: 0 0 8px rgb(var(--c-fizruk-accent) / 0.4);
+    --shadow-routine-nav: 0 0 8px rgb(var(--c-routine-accent) / 0.4);
+    --shadow-nutrition-nav: 0 0 8px rgb(var(--c-nutrition-accent) / 0.4);
+
     /* Драбина «жару» серії — темна тема. Тут працює світло, а не тінь,
        тож щаблі йдуть від блідого до насиченого й усі шість видимі. */
     --c-streak-tier-3: 255 180 166; /* coral-300 */
@@ -504,6 +521,11 @@
     --c-streak-tier-30: 230 77 77; /* coral-600 */
     --c-streak-tier-60: 194 58 58; /* coral-700 */
     --c-streak-tier-100: 251 191 36; /* amber-400 — святкування */
+
+    /* `--c-celebration` dark override — matches `celebrationColors.dark`
+       in tokens.js and the `--c-streak-tier-100` luminescent tier above
+       (2026-08 design-audit T3). */
+    --c-celebration: 251 191 36; /* amber-400 */
 
     /* Dark counterparts of the elevation scale. In dark mode the
        surface itself can't get darker than the bg, so we lean on a
@@ -542,6 +564,15 @@
     --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
     --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
     --c-ring-offset: 18 28 23; /* panel — matches `--c-panel` */
+    /* `--c-accent` mirrors `--c-ring` — same reason: the light-tier teal-700
+       (`:root` value) reads ~3.4:1 on the ink surface, sub-AA for
+       `text-accent`/`bg-accent` (107 call sites). Dark flips to the
+       luminescent tier-400, same as every other accent token in this
+       block (2026-08 design-audit T1). */
+    --c-accent: 45 212 191; /* teal-400 */
+    --focus-ring-color: rgb(
+      var(--c-ring) / 0.45
+    ); /* dark override — was falling back to the light teal-700@40% value on ink (2026-08 design-audit T4) */
     --c-selection-bg: 17 94 89; /* teal-800 */
     --c-selection-fg: 204 251 241; /* teal-100 */
     --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
@@ -755,11 +786,32 @@
     --c-text: 0 0 0; /* #000000 — max contrast vs cream bg */
     --c-muted: 31 28 25; /* #1f1c19 — near-black tertiary copy */
     --c-subtle: 51 46 41; /* #332e29 — meets ≥7:1 on bg */
+    /* v2 ink aliases — mirror the legacy pair above. Without these,
+       `--c-muted-v2`/`--c-subtle-v2` fell through to the `:root` light
+       tier (~2.9:1), well under this scope's own ≥7:1 AAA contract
+       (2026-08 design-audit T6). */
+    --c-muted-v2: 31 28 25;
+    --c-subtle-v2: 51 46 41;
     --c-line: 87 75 60; /* #574b3c — visible warm border (≥4.5:1) */
     --c-border: var(--c-line);
     --c-border-strong: 28 25 23; /* #1c1917 — near-black divider */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
+
+    /* Accent + status base tokens — per this file's own HC contract
+       ("any new semantic token MUST get an HC override before shipping"),
+       bumped to the `-strong`/-700 tier so `text-accent`/`bg-accent` and
+       the (currently unwired) `--c-{status}` triplets clear HC contrast
+       instead of sitting at the `:root` -500/-700 default
+       (2026-08 design-audit T7). `-strong` values reused from the
+       existing `-soft-fg` / Tailwind `{status}-strong` companions below —
+       tokens.js has no dedicated red/amber/sky ramp to pull a fresh tier
+       from. */
+    --c-accent: 17 94 89; /* teal-800 — matches `chart-finyk` HC tier */
+    --c-success: 4 120 87; /* emerald-700 */
+    --c-warning: 180 83 9; /* amber-700 */
+    --c-danger: 185 28 28; /* red-700 */
+    --c-info: 3 105 161; /* sky-700 */
 
     /* Status soft surfaces flip to full-strength fills so banners /
        badges keep WCAG AAA contrast for their text inside HC. */
@@ -780,6 +832,15 @@
     --c-routine-soft-border: 159 36 30;
     --c-nutrition-soft: 217 249 157; /* lime-200 */
     --c-nutrition-soft-border: 63 98 18;
+    /* `-soft-hover` — one tier deeper than `-soft` above (the light-theme
+       hover direction: darker, not lighter). Previously unset here, so
+       hover fell through to the plain `.dark`/`:root` value — a no-op or
+       even a LIGHTER hover in this scope (2026-08 design-audit T6). */
+    --c-brand-soft-hover: 214 211 209; /* stone-300 */
+    --c-finyk-soft-hover: 94 234 212; /* teal-300 */
+    --c-fizruk-soft-hover: 103 232 249; /* cyan-300 */
+    --c-routine-soft-hover: 255 180 166; /* coral-300 */
+    --c-nutrition-soft-hover: 200 242 100; /* lime-300 */
 
     /* Soft-fill foreground (HC light) — deepest `-900` ink for ≥7:1 AAA on
        the bumped `-200` soft surface. Coral is hue-capped at ≈6.4:1 (still
@@ -817,11 +878,24 @@
     --c-text: 255 255 255; /* #ffffff — max contrast vs dark bg */
     --c-muted: 230 224 218; /* #e6e0da — bright warm gray */
     --c-subtle: 207 199 191; /* #cfc7bf — readable tertiary at AAA */
+    /* v2 ink aliases — mirror the legacy pair above (2026-08 design-audit
+       T6; see the html.hc note). */
+    --c-muted-v2: 230 224 218;
+    --c-subtle-v2: 207 199 191;
     --c-line: 168 156 142; /* #a89c8e — luminous warm border (≥4.5:1) */
     --c-border: var(--c-line);
     --c-border-strong: 234 226 215; /* near-white divider */
     --c-fg: var(--c-text);
     --c-fg-muted: var(--c-muted);
+
+    /* Accent + status base tokens — HC-dark tier (2026-08 design-audit
+       T7; see the html.hc note above for rationale). `-300` bright tier
+       so text/icons clear AAA on the dark charcoal bg. */
+    --c-accent: 94 234 212; /* teal-300 — matches `chart-finyk` HC-dark tier */
+    --c-success: 110 231 183; /* emerald-300 */
+    --c-warning: 252 211 77; /* amber-300 */
+    --c-danger: 254 202 202; /* red-200 — closest registered tier; tokens.js has no red-300/-400 */
+    --c-info: 125 211 252; /* sky-300 */
 
     /* Soft status surfaces flip to deeper, less-translucent dark fills
        so the soft-banner contract still reads against the dark bg. */
@@ -840,6 +914,15 @@
     --c-routine-soft-border: 255 140 120;
     --c-nutrition-soft: 86 124 15; /* lime-700 */
     --c-nutrition-soft-border: 176 230 54;
+    /* `-soft-hover` — one tier LIGHTER than `-soft` above (the dark-theme
+       hover direction). Previously unset here, so hover fell through to
+       the plain `.dark` value (-800/-900 tier) — darker than resting
+       `-soft`, backwards for a dark-mode hover (2026-08 design-audit T6). */
+    --c-brand-soft-hover: 87 83 78; /* stone-600 */
+    --c-finyk-soft-hover: 13 148 136; /* teal-600 */
+    --c-fizruk-soft-hover: 8 145 178; /* cyan-600 */
+    --c-routine-soft-hover: 194 58 58; /* coral-700 */
+    --c-nutrition-soft-hover: 113 163 13; /* lime-600 */
 
     /* Soft-fill foreground (HC dark) — white ink for maximum contrast on
        the bumped `-700/-800` module surfaces. The prior `-200` accents
@@ -979,14 +1062,19 @@
        above so the two token families stay visually locked. */
     --hero-grad-finyk: linear-gradient(
       135deg,
-      #0f766e,
-      #2dd4bf
-    ); /* teal-700 → teal-400 (2026-07: was emerald-700 → -500) */
+      #115e59,
+      #0f766e
+    ); /* teal-800 → teal-700 — 2026-08 design-audit T2 follow-up: same fix
+          as routine F2 / fizruk / nutrition; the old →teal-400 light end
+          measured ~1.77:1 for text-hero-ink. (2026-07: was emerald-700 →
+          -500.) */
     --hero-grad-fizruk: linear-gradient(
       135deg,
-      #0e7490,
-      #22d3ee
-    ); /* cyan-700 → cyan-400 */
+      #155e75,
+      #0e7490
+    ); /* cyan-800 → cyan-700 — 2026-08 design-audit T2: same fix as routine
+          F2 below; the old →cyan-400 light end measured ~1.7–2.2:1 for
+          text-hero-ink, mirrored here one tier deeper. */
     --hero-grad-routine: linear-gradient(
       135deg,
       #a13333,
@@ -998,9 +1086,11 @@
           `-strong` companion for routine (Hard Rule #9). */
     --hero-grad-nutrition: linear-gradient(
       135deg,
-      #567c0f,
-      #b0e636
-    ); /* lime-ink → lime-400 */
+      #466212,
+      #567c0f
+    ); /* lime-800 → lime-700 (was lime-ink → lime-400) — 2026-08
+          design-audit T2: same fix as routine F2; old →lime-400 light end
+          failed the hero-ink text pair. */
   }
 
   .dark {
@@ -1040,7 +1130,7 @@
       0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 26px rgba(0, 0, 0, 0.4);
     --shadow-nav:
       0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 12px 32px rgba(0, 0, 0, 0.4);
-    --shadow-fab: 0 8px 24px rgba(52, 211, 153, 0.4);
+    --shadow-fab: 0 8px 24px rgba(45, 212, 191, 0.4); /* teal-400 — unified with light/hc teal (was orphan emerald-400, 2026-08 design-audit T5) */
 
     /* Hero gradients unchanged — same hex pairs read fine on dark. */
   }
@@ -1111,7 +1201,7 @@
     --shadow-card-v2: 0 0 0 2px rgba(255, 255, 255, 0.7);
     --shadow-pill: 0 0 0 2px rgba(255, 255, 255, 0.8);
     --shadow-nav: 0 0 0 2px rgba(255, 255, 255, 0.8);
-    --shadow-fab: 0 0 0 3px rgba(52, 211, 153, 1);
+    --shadow-fab: 0 0 0 3px rgba(45, 212, 191, 1); /* teal-400 — unified with light/hc teal (was orphan emerald-400, 2026-08 design-audit T5) */
 
     /* Card's dark variant consumes `--hero-ink-*`, not `--hero-grad-*`.
        Override both families so HC keeps strong module identity instead of

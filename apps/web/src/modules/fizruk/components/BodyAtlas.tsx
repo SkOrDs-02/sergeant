@@ -236,7 +236,7 @@ export function BodyAtlas({
             compact ? "mx-auto flex-[0_0_200px]" : "flex-[0_0_300px]",
           )}
         >
-          <div className="mb-1.5 flex items-center justify-center gap-2 text-2xs text-subtle">
+          <div className="mb-1.5 flex items-center justify-center gap-2 text-style-caption text-subtle">
             <span>{LEGEND_COPY[mode].left}</span>
             <div className="flex h-1.5 w-28 overflow-hidden rounded-full">
               {Array.from({ length: 24 }, (_, i) => (
@@ -536,7 +536,7 @@ function SelectedCard({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-surface p-2.5">
-      <p className="text-2xs text-subtle">{label}</p>
+      <p className="text-style-caption text-subtle">{label}</p>
       <p className="mt-0.5 text-lg font-medium text-text">{value}</p>
     </div>
   );

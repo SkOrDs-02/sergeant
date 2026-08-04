@@ -30,15 +30,24 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <!--
+      Values must track `--c-bg` in `src/styles/theme.css` (`:root` /
+      `.dark`) — #f2ecdf light / #0d1512 dark. These media-query metas are
+      only the pre-JS default (first paint before `useTheme()` mounts);
+      once the app boots, `useTheme.ts` `applyResolvedTheme()` overwrites
+      both with the actually-resolved theme so an in-app light/dark/hc
+      pick (which can diverge from the OS `prefers-color-scheme`) is
+      reflected in the browser chrome too.
+    -->
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
-      content="#fdf9f3"
+      content="#f2ecdf"
     />
     <meta
       name="theme-color"
       media="(prefers-color-scheme: dark)"
-      content="#171412"
+      content="#0d1512"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />

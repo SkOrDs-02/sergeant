@@ -68,6 +68,26 @@ describe("KeyboardShortcutsModal (UI)", () => {
     );
     expect(screen.getByText("Інше")).toBeInTheDocument();
   });
+
+  // C2/C3 web-audit: migrated from the legacy `useFocusTrap` (no
+  // background inert, no scroll lock) to the canonical
+  // `useDialogFocusTrap` + `useBodyScrollLock` pair shared with
+  // ConfirmDialog/Modal/CommandPaletteUI.
+  it("Escape closes the dialog via the shared focus trap", () => {
+    const onClose = vi.fn();
+    render(<KeyboardShortcutsModal open onClose={onClose} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks body scroll while open and restores it on close", () => {
+    const { rerender } = render(
+      <KeyboardShortcutsModal open onClose={() => {}} />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    rerender(<KeyboardShortcutsModal open={false} onClose={() => {}} />);
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
 });
 
 describe("useKeyboardShortcutsModal", () => {

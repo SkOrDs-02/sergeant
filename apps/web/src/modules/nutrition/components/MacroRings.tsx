@@ -59,7 +59,7 @@ export function MacroRings({
                     {consumed}
                   </span>
                   {safeGoal > 0 && (
-                    <span className="text-2xs text-muted tabular-nums">
+                    <span className="text-style-caption text-muted tabular-nums">
                       / {safeGoal}
                     </span>
                   )}
@@ -69,7 +69,7 @@ export function MacroRings({
             <div className="text-center">
               <div className="text-style-caption text-text">{label}</div>
               {outcome && (
-                <div className="text-2xs text-subtle text-pretty">
+                <div className="text-style-caption text-subtle text-pretty">
                   {outcome}
                 </div>
               )}

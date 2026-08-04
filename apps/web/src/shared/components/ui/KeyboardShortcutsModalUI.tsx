@@ -9,11 +9,12 @@
  * modal `open` state, keeping it out of the entry bundle (initiative 0017).
  */
 
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import {
   ShortcutRegistryContext,
   type KeyboardShortcut,
@@ -88,7 +89,12 @@ export function KeyboardShortcutsModal({
   onClose,
   shortcuts = DEFAULT_SHORTCUTS,
 }: KeyboardShortcutsModalProps) {
-  const modalRef = useFocusTrap<HTMLDivElement>(open, onClose);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useDialogFocusTrap(open, modalRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
+  useBodyScrollLock(open);
   const registry = useContext(ShortcutRegistryContext);
 
   // Merge base shortcuts with any registered by modules
