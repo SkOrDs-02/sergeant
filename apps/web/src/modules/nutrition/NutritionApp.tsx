@@ -549,10 +549,22 @@ export default function NutritionApp({
           variant="nutrition"
           enabled={!cloudPullPending}
         >
-          <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
+          <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
             <NutritionPantrySelector pantry={pantry} busy={busy} />
 
-            {statusText && <Banner className="mb-4">{statusText}</Banner>}
+            {/* Photo analyze/refine status now renders inline inside
+                `PhotoAnalyzeCard` (near the button it describes — see
+                `photo.isAnalyzing` / `photo.isRefining` below) because the
+                card lives inside a collapsed `<details>` at the bottom of
+                the Start page, far from this top banner; users reported the
+                banner as "silent failure" since they never scrolled up to
+                see it. Suppress the duplicate top banner for exactly those
+                two flows; every other `setStatusText` caller (pantry list
+                parsing, recipe/day-plan fetches, …) has no in-card anchor
+                yet, so it keeps using this banner. */}
+            {statusText && !(photo.isAnalyzing || photo.isRefining) && (
+              <Banner className="mb-4">{statusText}</Banner>
+            )}
             {err && (
               <Banner
                 variant="danger"
@@ -576,7 +588,7 @@ export default function NutritionApp({
               </Banner>
             )}
 
-            <div className="grid gap-4">
+            <div className="grid gap-4 min-w-0">
               {activePage === "start" && (
                 <NutritionStartPage
                   log={log}

@@ -32,7 +32,13 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
   if (!Array.isArray(chips) || chips.length === 0) return null;
   return (
     <div
-      className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+      // No negative-margin "bleed" — `-mx-1` used to pull this row 4px past
+      // the parent card's own padding on each side (a wider edge-to-edge
+      // scroll look), but the card itself doesn't clip overflow, so the row
+      // genuinely widened past the card's rounded border at narrow
+      // viewports (page-audit nutrition-overview-01). Plain padding keeps
+      // the row inside the card's existing horizontal padding.
+      className="flex gap-2 overflow-x-auto pb-1 min-w-0"
       role="group"
       aria-label={LABELS.group}
     >

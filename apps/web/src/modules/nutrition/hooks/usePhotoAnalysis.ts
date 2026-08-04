@@ -39,6 +39,10 @@ export interface UsePhotoAnalysisResult {
   onPickPhoto: (file: File | null | undefined) => Promise<void>;
   analyzePhoto: () => void;
   refinePhoto: () => void;
+  /** Mirrors `analyzeMutation.isPending` — drives the in-card status line. */
+  isAnalyzing: boolean;
+  /** Mirrors `refineMutation.isPending` — drives the in-card status line. */
+  isRefining: boolean;
 }
 
 export function usePhotoAnalysis({
@@ -220,5 +224,14 @@ export function usePhotoAnalysis({
     onPickPhoto,
     analyzePhoto,
     refinePhoto,
+    // `NutritionApp`'s shared `busy`/`statusText` flip for every nutrition
+    // mutation (pantry writes, recipe/day-plan fetches, …), not just this
+    // one — that's why they only drive the top-of-page Banner. These two
+    // are scoped to `usePhotoAnalysis`'s own mutations so `PhotoAnalyzeCard`
+    // can render an inline "Аналізую фото…" status that is never
+    // wrong-attributed to an unrelated busy flow (page-audit
+    // nutrition-overview-01, issue 3).
+    isAnalyzing: analyzeMutation.isPending,
+    isRefining: refineMutation.isPending,
   };
 }
