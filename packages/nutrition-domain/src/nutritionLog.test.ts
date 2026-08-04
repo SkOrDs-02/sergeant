@@ -328,6 +328,46 @@ describe("getDayMacros / getDaySummary", () => {
     expect(s.mealCount).toBe(0);
     expect(s.hasMeals).toBe(false);
   });
+
+  it("getDaySummary: estimatedKcalShare=0 коли немає photoAI-прийомів", () => {
+    expect(getDaySummary(log, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare=0 для дня без ккал", () => {
+    expect(getDaySummary({}, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare рахується за ккал, не за кількістю прийомів (founder-сценарій)", () => {
+    // 3 ручні прийоми по 100 ккал + 1 фото-прийом на 900 ккал →
+    // 75% дня вгадано за ккал, а не 25% за кількістю прийомів.
+    const day: NutritionLog = {
+      "2026-06-01": {
+        meals: [
+          makeMeal({
+            id: "m1",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m2",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m3",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m4",
+            macroSource: "photoAI",
+            macros: { kcal: 900, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+        ],
+      },
+    };
+    expect(getDaySummary(day, "2026-06-01").estimatedKcalShare).toBe(0.75);
+  });
 });
 
 describe("addDaysISODate", () => {

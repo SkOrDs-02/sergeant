@@ -8,7 +8,7 @@ import {
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { fmt } from "../hubChatUtils";
 import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
 import {
@@ -21,18 +21,20 @@ import { CATEGORY_META, readMemoryEntries } from "../../profile/memoryBank";
 import type { NutritionMeal } from "./types";
 
 /**
- * Kyiv day-key (`YYYY-MM-DD`) for `offsetDays` relative to the Europe/Kyiv
- * civil date of `from`. Anchoring to the Kyiv civil date and then stepping in
- * UTC space keeps the key correct regardless of the host clock — the previous
- * host-local `getFullYear/getMonth/getDate` build silently used the server's
- * UTC midnight as the day boundary instead of Kyiv (prefer-kyiv-time /
- * domain-invariants).
+ * День-ключ (`YYYY-MM-DD`) для `offsetDays` відносно ЛОКАЛЬНОЇ дати пристрою.
+ *
+ * AI-CONTEXT: ключі звідси звіряються зі сховищами Рутини й Харчування, а ті
+ * пишуться device-local (`dateKeyFromDate` у `@sergeant/routine-domain`).
+ * Раніше секція рахувала київський день, тож поза Києвом контекст асистента
+ * шукав відмітки за ЧУЖИМ ключем: людина у Варшаві о 23:30 бачила «виконано
+ * 0 з 5», хоча відмітила все — її запис ліг під завтрашню київську дату.
+ * Межа особистої доби належить пристрою ([ADR-0078](../../../../../../docs/04-governance/adr/0078-day-boundary-device-local.md)).
+ *
+ * Київ лишається правильним для ФІНАНСОВОГО періоду — див. `finance.ts`, там
+ * межа доби навмисно київська (ADR-0078 §3). Не зводь ці два місця до одного.
  */
-function kyivDayKeyOffset(from: Date, offsetDays: number): string {
-  const { year, month, day } = getKyivDateParts(from);
-  const anchor = new Date(Date.UTC(year, month - 1, day));
-  anchor.setUTCDate(anchor.getUTCDate() + offsetDays);
-  return getKyivDayKey(anchor);
+function deviceDayKeyOffset(from: Date, offsetDays: number): string {
+  return dateKeyFromDate(addDays(from, offsetDays));
 }
 
 export function appendWorkoutLines(lines: string[]): void {
@@ -104,7 +106,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     const completions = routineState.completions || {};
     if (habits.length === 0) return;
 
-    const todayKey = getKyivDayKey(now);
+    const todayKey = dateKeyFromDate(now);
     const todayDone = habits.filter((h) =>
       (completions[h.id] ?? []).includes(todayKey),
     );
@@ -120,11 +122,12 @@ export function appendRoutineLines(lines: string[], now: Date): void {
       .join(", ");
     lines.push(`[Рутина сьогодні] ${habitDetails}`);
 
-    const dow = (getKyivDateParts(now).weekday + 6) % 7;
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тиждень рахується від дня пристрою, бо самі відмітки лежать під device-local ключами; київський weekday зсунув би вікно на добу для всіх поза Києвом.
+    const dow = (now.getDay() + 6) % 7;
     let weekDone = 0;
     let weekTotal = 0;
     for (let i = 0; i <= dow; i++) {
-      const dk = kyivDayKeyOffset(now, -dow + i);
+      const dk = deviceDayKeyOffset(now, -dow + i);
       weekTotal += habits.length;
       for (const h of habits) {
         if ((completions[h.id] ?? []).includes(dk)) weekDone++;
@@ -138,7 +141,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
 
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      const dk = kyivDayKeyOffset(now, -1 - i);
+      const dk = deviceDayKeyOffset(now, -1 - i);
       if (habits.every((h) => (completions[h.id] ?? []).includes(dk))) {
         streak++;
       } else {
@@ -156,7 +159,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
     // today's meals + targets, not an empty LS shim.
     const nutritionLog = loadNutritionLog();
     const nutritionPrefs = loadNutritionPrefs();
-    const todayKey = getKyivDayKey(now);
+    const todayKey = dateKeyFromDate(now);
     const todayData = nutritionLog[todayKey];
 
     if (todayData) {
@@ -195,7 +198,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
 
     const weekKcalArr: number[] = [];
     for (let i = 6; i >= 0; i--) {
-      const dk = kyivDayKeyOffset(now, -i);
+      const dk = deviceDayKeyOffset(now, -i);
       const dayMeals: NutritionMeal[] = Array.isArray(nutritionLog[dk]?.meals)
         ? (nutritionLog[dk].meals as NutritionMeal[])
         : [];

@@ -12,8 +12,9 @@
 export * from "./mealTypes.js";
 export * from "./pantryTextParser.js";
 export * from "./pantryConsume.js";
-// W1-PANTRY-APPEND стадія 1: типи журналу + чиста згортка залишку.
-// Споживачів поки немає за задумом — див. AI-CONTEXT у pantryLedger.ts.
+// W1-PANTRY-APPEND стадія 2: типи журналу + чиста згортка залишку +
+// детермінований id backfill-чекпойнта. `apps/web` тепер ПИШЕ сюди
+// (readers — стадія 3+) — див. AI-CONTEXT у pantryLedger.ts.
 export * from "./pantryLedger.js";
 // W1-KBJU-APPEND стадія 2: типи журналу цілей + резолвер ефективної цілі
 // дня. Споживачів поки немає за задумом (cutover — стадія 3, гейт

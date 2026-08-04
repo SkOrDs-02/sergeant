@@ -27,6 +27,7 @@ import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
+import { nutritionPageMessages } from "./uk.nutrition";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
 
@@ -600,6 +601,9 @@ export const messages = {
         "Тут зʼявляться продукти, які є вдома — і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
       hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
     },
+    // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
+    // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
+    ...nutritionPageMessages,
   },
 
   routine: routinePageMessages,

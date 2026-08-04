@@ -17,7 +17,6 @@ import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigest
 import { buildDigestCorrelations } from "./digestCorrelations";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
-import { isApiError } from "@shared/api";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";

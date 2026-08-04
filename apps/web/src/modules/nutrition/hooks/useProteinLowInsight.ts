@@ -15,9 +15,13 @@
 
 import { useMemo } from "react";
 import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
-import { getDayMacros } from "../lib/nutritionStorage";
+import {
+  ESTIMATED_KCAL_SHARE_THRESHOLD,
+  getDaySummary,
+} from "../lib/nutritionStorage";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { Insight } from "@shared/lib/insights/types";
+import { messages } from "@shared/i18n/uk";
 
 export function useProteinLowInsight(
   log: NutritionLog,
@@ -31,16 +35,24 @@ export function useProteinLowInsight(
     if (hour < 18) return null;
 
     const today = getKyivDayKey();
-    const macros = getDayMacros(log, today);
-    const consumed = Math.round(macros.protein_g ?? 0);
+    const summary = getDaySummary(log, today);
+    const consumed = Math.round(summary.protein_g ?? 0);
 
     if (consumed >= goal * 0.6) return null;
+
+    // Nutrition audit E-5 / founder decision 2026-08-04: a mostly-guessed
+    // day (>50% of kcal from photoAI) must not read as a categorical
+    // verdict — soften the wording instead of silencing the nudge.
+    const isMostlyEstimated =
+      summary.estimatedKcalShare > ESTIMATED_KCAL_SHARE_THRESHOLD;
 
     return {
       id: "nutrition-protein-low",
       module: "nutrition",
       title: `Білку: ${consumed} з ${goal}г`,
-      subtitle: `Час додати джерело білка?`,
+      subtitle: isMostlyEstimated
+        ? messages.nutrition.proteinLowEstimated.subtitle
+        : `Час додати джерело білка?`,
       action: { type: "navigate", path: "/nutrition/log" },
       // Hub surface promoted post-Phase 5e: end-of-day protein gap is an
       // actionable nudge that doesn't require in-Nutrition context — single
