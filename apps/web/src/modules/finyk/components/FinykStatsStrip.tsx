@@ -111,8 +111,9 @@ export function FinykStatsStrip({
   const hideNumbers = !showBalance;
   return (
     <div
+      data-no-swipe
       className={cn(
-        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden",
+        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden touch-pan-x",
         className,
       )}
       role="list"

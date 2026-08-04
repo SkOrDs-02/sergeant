@@ -79,7 +79,10 @@ export function TransactionFilters({
   };
 
   return (
-    <div data-no-swipe className="-mx-3 px-3 overflow-x-auto no-scrollbar">
+    <div
+      data-no-swipe
+      className="-mx-3 px-3 overflow-x-auto no-scrollbar touch-pan-x"
+    >
       <div
         ref={toolbarRef}
         role="toolbar"

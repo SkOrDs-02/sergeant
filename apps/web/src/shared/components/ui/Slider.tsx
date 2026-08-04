@@ -261,6 +261,11 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       const raw = positionToValue(e.clientX, e.clientY);
       updateThumb(activeThumb, raw, true);
       setActiveThumb(null);
+      // Bug fix: the drag-tooltip must not outlive the drag. Clear it here
+      // (not just on thumb `onBlur`, which never fires on touch because
+      // pointer capture lives on the track, not the thumb). The keyboard
+      // focus path still re-shows the tooltip via the thumb's `onFocus`.
+      setTooltipThumb(null);
       try {
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
       } catch {

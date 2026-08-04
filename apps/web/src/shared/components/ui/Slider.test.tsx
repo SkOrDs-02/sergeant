@@ -236,4 +236,41 @@ describe("Slider pointer interaction", () => {
     fireEvent.pointerUp(track, { clientX: 100, clientY: 5, pointerId: 1 });
     expect(onChangeEnd).toHaveBeenCalled();
   });
+
+  it("shows the value tooltip while dragging and clears it once the drag ends (bug fix)", () => {
+    const { container } = render(
+      <Slider
+        aria-label="Vol"
+        min={0}
+        max={100}
+        defaultValue={0}
+        showTooltip
+        formatValue={(n) => `${n} грн`}
+      />,
+    );
+    const track = container.querySelector("[data-slider-id] > div")!;
+    fireEvent.pointerDown(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    expect(screen.getByText("50 грн")).toBeInTheDocument();
+    fireEvent.pointerUp(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    // Tooltip must not survive the interaction end (was previously stuck
+    // forever — the only clear path was thumb `onBlur`, which never fires
+    // on touch since pointer capture lives on the track).
+    expect(screen.queryByText("50 грн")).not.toBeInTheDocument();
+  });
+
+  it("still shows the tooltip on genuine keyboard focus (unaffected by the drag-end fix)", () => {
+    render(
+      <Slider
+        aria-label="Vol"
+        defaultValue={40}
+        showTooltip
+        formatValue={(n) => `${n}%`}
+      />,
+    );
+    const thumb = screen.getByRole("slider");
+    fireEvent.focus(thumb);
+    expect(screen.getByText("40%")).toBeInTheDocument();
+    fireEvent.blur(thumb);
+    expect(screen.queryByText("40%")).not.toBeInTheDocument();
+  });
 });

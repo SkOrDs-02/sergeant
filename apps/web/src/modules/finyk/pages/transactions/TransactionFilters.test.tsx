@@ -106,4 +106,22 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
     expect(onChange).toHaveBeenCalledWith("income");
   });
+
+  it("allows horizontal touch-panning inside the strip even under an ancestor touch-pan-y (bug fix)", () => {
+    const { container } = render(
+      <TransactionFilters
+        filter="all"
+        onChangeFilter={vi.fn()}
+        hasCreditAccounts={false}
+        catSpends={CATS}
+      />,
+    );
+    const scroller = container.querySelector("[data-no-swipe]");
+    expect(scroller).not.toBeNull();
+    // `touch-pan-y` on FinykApp's swipe wrapper intersects with descendant
+    // touch-action, silently blocking horizontal panning unless the
+    // scroller itself declares `touch-pan-x` (data-no-swipe alone only
+    // opts out of the JS swipe gesture, not the CSS touch-action).
+    expect(scroller).toHaveClass("touch-pan-x");
+  });
 });
