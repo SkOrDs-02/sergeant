@@ -127,6 +127,34 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
     expect(prefRows).toHaveLength(0);
   });
 
+  it("enqueues one gdpr_cleanup_queue row per external service (ADR-0016 § ADR-6.3)", async (ctx) => {
+    if (!dockerAvailable || !app || !pool) return ctx.skip();
+
+    await pool.query(`DELETE FROM gdpr_cleanup_queue WHERE user_id = $1`, [
+      TEST_USER_ID,
+    ]);
+
+    const res = await request(app)
+      .delete("/api/me")
+      .set(CSRF_HEADERS)
+      .set("Authorization", "Bearer test-bearer");
+    expect(res.status).toBe(200);
+
+    const { rows } = await pool.query<{ service: string; email: string }>(
+      `SELECT service, email FROM gdpr_cleanup_queue WHERE user_id = $1 ORDER BY service`,
+      [TEST_USER_ID],
+    );
+    expect(rows.map((r) => r.service)).toEqual([
+      "posthog",
+      "resend",
+      "sentry",
+      "stripe",
+    ]);
+    for (const row of rows) {
+      expect(row.email).toBe(TEST_USER_EMAIL);
+    }
+  });
+
   it("second delete is a safe no-op — returns ok:true when user already gone", async (ctx) => {
     if (!dockerAvailable || !app || !pool) return ctx.skip();
 
@@ -160,10 +188,12 @@ describe("GET /api/me/export — GDPR data export", () => {
     if (!dockerAvailable || !app || !pool) return ctx.skip();
 
     // Seed an ai_usage_daily row (no FK to user — uses subject_key = 'u:<id>').
+    // `endpoint` (міграції 104/106) NOT NULL / частина PK — 'legacy' канон
+    // для рядків без конкретного endpoint-тегу.
     await pool.query(
-      `INSERT INTO ai_usage_daily (subject_key, usage_day, bucket, request_count, usd_micros)
-       VALUES ($1, CURRENT_DATE, 'anthropic:claude-3-5-haiku', 3, 900)
-       ON CONFLICT (subject_key, usage_day, bucket) DO NOTHING`,
+      `INSERT INTO ai_usage_daily (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+       VALUES ($1, CURRENT_DATE, 'anthropic:claude-3-5-haiku', 'legacy', 3, 900)
+       ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO NOTHING`,
       [`u:${TEST_USER_ID}`],
     );
 
@@ -175,11 +205,14 @@ describe("GET /api/me/export — GDPR data export", () => {
     expect(res.body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(res.body.user.id).toBe(TEST_USER_ID);
 
-    // Preferences always present (defaults when no row exists).
+    // Preferences always present (defaults when no row exists). Migration
+    // 111 flipped the `analytics` DB DEFAULT TRUE → FALSE (opt-in, not
+    // opt-out); the app-level fallback in `dataRights.ts` moved in lockstep.
     expect(res.body.preferences).toMatchObject({
-      analytics: true,
+      analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      healthDataConsent: false,
     });
 
     // module_data is always [] after migration 046 dropped the table.
