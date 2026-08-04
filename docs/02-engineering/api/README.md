@@ -5,6 +5,8 @@
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Типізований TS-клієнт — [`packages/api-client/src/generated/openapi.d.ts`](../../../packages/api-client/src/generated/openapi.d.ts) (автогенерований через [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)).
 
+Cost-model rate-limiter-а (чому per-route cost-multiplier, а не 1 токен на запит) — [`rate-limiting.md`](./rate-limiting.md); правила поведінки при відмові — [`rate-limit-failure-mode.md`](../../04-governance/security/rate-limit-failure-mode.md).
+
 ## Чому коммітимо JSON
 
 - **Diff-friendly review**: PR показує semantic API change в одному файлі.

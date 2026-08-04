@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -139,6 +139,8 @@ Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-0
 ## Design conventions
 
 Візуальні конвенції живуть у design tokens, Storybook і design-review. `eslint-plugin-sergeant-design` перевіряє лише runtime-, security-, storage-, API- та domain-інваріанти; естетичні AST-правила retired рішенням [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md).
+
+Портативний конфіг візуальної системи для агентів — [`DESIGN.md`](./DESIGN.md): палітрові таблиці генеруються `node scripts/gen-design-md.mjs` з `packages/design-tokens/tokens.js`, гейт — `pnpm design:check-md`.
 
 ## Touch targets
 
