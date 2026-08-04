@@ -1,11 +1,13 @@
 /**
  * Append-only журнал руху продуктів у коморі і згортка залишку з нього.
  *
- * W1-PANTRY-APPEND, СТАДІЯ 1. Тут ЛИШЕ типи і чиста функція — споживачів
- * поки НЕМАЄ за задумом: `nutrition_pantry_items.qty` лишається єдиним
- * джерелом залишку, а UI, hook-и, HubChat і mobile нічого звідси не читають.
- * Емісія подій (стадія 2), shadow-read/parity (стадія 3) і cutover UI на
- * derived (стадія 4) — окремі задачі.
+ * W1-PANTRY-APPEND, СТАДІЯ 2 (web): `apps/web` тепер ПИШЕ у цей журнал —
+ * п'ять мутаторів `useNutritionPantries.ts` + HubChat-екзекутор
+ * `consume_from_pantry` емітують події паралельно до старого запису
+ * `qty`, і клієнт бекфілить чекпойнти `'initial'` для наявних позицій
+ * (`buildPantryInitialCheckpointId` нижче). `nutrition_pantry_items.qty`
+ * лишається ЄДИНИМ джерелом залишку для UI — читачів журналу й досі
+ * немає (shadow-read/parity — стадія 3, cutover UI на derived — стадія 4).
  *
  * DOM-free: жодного `window`/`localStorage`/React — споживають і `apps/web`,
  * і `apps/mobile`.
@@ -205,4 +207,26 @@ export function derivePantryQty(events: readonly PantryEvent[]): number | null {
   }
 
   return roundQty(total);
+}
+
+/**
+ * Детермінований `id` для backfill-чекпойнта `'initial'` однієї позиції.
+ *
+ * ADR-0077 §5: клієнт (боот-тайм backfill у `nutritionStorage.ts`) і
+ * сервер (майбутній незалежний backfill, якщо колись знадобиться) мають
+ * дійти до ОДНОГО й того самого `id` для тієї самої позиції — інакше
+ * `INSERT OR IGNORE` / `ON CONFLICT DO NOTHING` не схлопне повтор, і
+ * `derivePantryQty` порахує ДВА чекпойнти замість одного, подвоївши
+ * залишок. Тому ключ намірено складається лише з ідентичності ПОЗИЦІЇ
+ * (`pantryId` + `itemKey`) — БЕЗ `qty`/`unit`/часу: ці значення можуть
+ * легально відрізнятись між двома backfill-спробами (юзер відредагував
+ * позицію між двома холодними стартами) без права на другий чекпойнт.
+ * Мета — «щонайбільше один `'initial'`-рядок на позицію», а не «один
+ * рядок на спостережене значення».
+ */
+export function buildPantryInitialCheckpointId(
+  pantryId: string,
+  itemKey: string,
+): string {
+  return `pe::initial::${pantryId}::${itemKey}`;
 }

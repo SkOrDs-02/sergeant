@@ -22,6 +22,8 @@ import {
   NUTRITION_LOG_KEY,
   NUTRITION_PANTRIES_KEY,
   NUTRITION_PREFS_KEY,
+  buildPantryInitialCheckpointId,
+  canonicalFoodKey,
   defaultNutritionPrefs,
   makeDefaultPantry,
   normalizeNutritionLog,
@@ -41,12 +43,14 @@ import {
 } from "./sqliteWriter/index.js";
 import type {
   NutritionMealSnapshot,
+  NutritionPantryEventSnapshot,
   NutritionPantrySnapshot,
 } from "./sqliteWriter/diff.js";
 import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 export {
+  ESTIMATED_KCAL_SHARE_THRESHOLD,
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_LOG_KEY,
   NUTRITION_PANTRIES_KEY,
@@ -86,6 +90,10 @@ export type {
   NutritionPrefs,
   Pantry,
 } from "@sergeant/nutrition-domain";
+// W1-PANTRY-APPEND стадія 2 — re-export так, щоб callers (useNutritionPantries,
+// chat-action executors, тести) не мусили знати, що тип фізично живе в
+// `sqliteWriter/diff.ts`.
+export type { NutritionPantryEventSnapshot };
 
 // ─────────────────────────────────────────────
 // Reads — backed by the SQLite warm cache (Stage 8 PR #057n-tombstone).
@@ -274,10 +282,94 @@ function peekNutritionDualWriteState(): NutritionDualWriteState | null {
       shoppingList: cache.shoppingList
         ? { dataJson: JSON.stringify(cache.shoppingList) }
         : null,
+      // W1-PANTRY-APPEND стадія 2 — завжди `[]`: журнал не читається назад
+      // із кешу (readers — стадія 3+). Викликач, що хоче емітити подію,
+      // будує `next.pantryEvents` сам — див. `appendNutritionPantryEvent`.
+      pantryEvents: [],
     };
   } catch {
     return null;
   }
+}
+
+// ─────────────────────────────────────────────
+// W1-PANTRY-APPEND стадія 2 — append-only журнал руху комори.
+//
+// Окремий тригер від `persistPantries`: той продовжує писати
+// `nutrition_pantry_items.qty` через `pantry-upsert` (незмінно), а ці
+// функції ПАРАЛЕЛЬНО дописують у `nutrition_pantry_events` через
+// `pantry-event-append` (`diff.pantryEvents.ts`). Викликаються з мутаторів
+// `useNutritionPantries.ts` і з HubChat-екзекутора `consume_from_pantry`
+// одразу після (або замість, для backfill) звичайного `setPantries`.
+// ─────────────────────────────────────────────
+
+/**
+ * Дописати ОДНУ подію в журнал руху комори. No-op до автентифікації/бута
+ * (`peekNutritionDualWriteState()` поверне `null`) — той самий fast-path
+ * gate, що й у решти `persist*`-хелперів цього файлу.
+ */
+export function appendNutritionPantryEvent(
+  event: NutritionPantryEventSnapshot,
+): void {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantryEvents: [...(prev.pantryEvents ?? []), event],
+  };
+  triggerNutritionDualWrite(prev, next);
+}
+
+// Once-per-session guard: backfill-чекпойнти ідемпотентні (детермінований
+// `id` + `INSERT OR IGNORE` і локально, і на сервері), тож повтор нешкідливий
+// — але й немає сенсу штовхати N мережевих push-ів на кожен mount хука.
+// ponytail: модульний прапор, не персистований — переживає одну вкладку,
+// не переживає перезавантаження; підняти до `@shared/storage`, якщо
+// повторний виклик між сесіями стане виміряною проблемою.
+let pantryBackfillDone = false;
+
+/**
+ * Один чекпойнт `'initial'` на кожну живу позицію комори з відомою `qty`
+ * (ADR-0077 §5). Детермінований `id` (`buildPantryInitialCheckpointId`)
+ * робить повторний виклик безпечним: `INSERT OR IGNORE` схлопує дублі
+ * замість подвоєння залишку.
+ */
+export function backfillNutritionPantryCheckpoints(): void {
+  if (pantryBackfillDone) return;
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return;
+  pantryBackfillDone = true;
+
+  const events: NutritionPantryEventSnapshot[] = [];
+  for (const pantry of prev.pantries) {
+    for (const item of pantry.items) {
+      if (item.qty == null) continue;
+      const itemKey = canonicalFoodKey(item.name);
+      events.push({
+        id: buildPantryInitialCheckpointId(pantry.id, itemKey),
+        pantryId: pantry.id,
+        itemId: item.id,
+        itemKey,
+        kind: "initial",
+        deltaQty: null,
+        absQty: item.qty,
+        unit: item.unit,
+        source: "backfill",
+        mealId: null,
+      });
+    }
+  }
+  if (events.length === 0) return;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantryEvents: [...(prev.pantryEvents ?? []), ...events],
+  };
+  triggerNutritionDualWrite(prev, next);
+}
+
+/** Test-only: reset the once-per-session backfill guard. */
+export function __resetNutritionPantryBackfillForTests(): void {
+  pantryBackfillDone = false;
 }
 
 function extractMealSnapshots(log: NutritionLog): NutritionMealSnapshot[] {
