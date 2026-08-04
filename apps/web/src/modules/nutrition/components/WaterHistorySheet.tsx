@@ -97,7 +97,7 @@ export function WaterHistorySheet({
                     key={d.dayKey}
                     className="flex-1 flex flex-col items-center gap-1"
                   >
-                    <div className="w-full h-24 flex items-end" data-compact>
+                    <div className="w-full h-24 flex items-end">
                       <div
                         className={cn(
                           "w-full rounded-t-md transition-[height]",

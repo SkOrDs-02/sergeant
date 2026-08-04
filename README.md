@@ -1,12 +1,12 @@
 # Sergeant
 
 [![CI](https://github.com/SkOrDs-02/sergeant/actions/workflows/ci.yml/badge.svg)](https://github.com/SkOrDs-02/sergeant/actions/workflows/ci.yml)
-![Node 20](https://img.shields.io/badge/node-20.x-brightgreen)
+![Node 22](https://img.shields.io/badge/node-22.x-brightgreen)
 ![pnpm 9](https://img.shields.io/badge/pnpm-9.15.1-orange)
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -133,7 +133,7 @@ Fizruk and Routine modules follow a **local-first** approach: data is stored loc
 
 ## Prerequisites
 
-- **Node.js 20.x** (recommended via [Volta](https://volta.sh/))
+- **Node.js 22.x** (recommended via [Volta](https://volta.sh/))
 - **pnpm 9.15.1** (`npm install -g pnpm@9.15.1`)
 - **Docker** (for local PostgreSQL)
 
@@ -150,7 +150,7 @@ pnpm bootstrap
 
 `pnpm bootstrap` робить:
 
-1. Перевіряє Node 20.x + pnpm 9.15.1 + Docker daemon (з підказкою як виправити, якщо щось не так).
+1. Перевіряє Node 22.x + pnpm 9.15.1 + Docker daemon (з підказкою як виправити, якщо щось не так).
 2. `pnpm install --frozen-lockfile` (skip-неться, якщо `node_modules` свіжий).
 3. `cp .env.example .env`, якщо `.env` ще нема (existing `.env` не чіпається).
 4. `pnpm dev:db` — піднімає Postgres у Docker і прокачує всі міграції.

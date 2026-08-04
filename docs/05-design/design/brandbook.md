@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last validated:** 2026-08-04 by @claude. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** з Emerald-акцентом (Fizruk-модуль
@@ -99,8 +99,9 @@ Bar-чарти у `HubReports` та майбутніх дашбордах вик
 | `chart-nutrition` | `bg-chart-nutrition` | `#466212` | 6.64 : 1            |
 
 Raw `bg-sky-500`, `bg-orange-500`, `bg-emerald-500`, `bg-lime-500` тощо у
-`core/hub/Hub*.tsx` заборонені lint rule `no-foreign-module-accent`
-(G2, 2026-05-14). Додавай лише `bg-chart-*` токени.
+`core/hub/Hub*.tsx` заборонені дизайн-конвенцією module-accent containment
+(tokens + review, ex-Hard Rule #12, retired ADR-0081; G2, 2026-05-14).
+Додавай лише `bg-chart-*` токени.
 
 ### Семантичні кольори
 
@@ -200,10 +201,11 @@ font-family:
 
 ### Type-scale
 
-Мінімум для будь-якого user-facing-тексту — **12px (`text-xs`)** (AGENTS.md
-Hard-rule #16). `text-2xs` (10px) зарезервований під chart axis ticks і
-декоративні meta-badge-counts; **ніколи не використовувати для primary content**.
-Повний контракт + ESLint-rule `sergeant-design/no-sub-12px-utility` —
+Мінімум для будь-якого user-facing-тексту — **12px (`text-xs`)** (дизайн-конвенція —
+tokens + review, ex-Hard Rule #16, retired [ADR-0081](../../04-governance/adr/0081-repository-simplification.md)).
+`text-2xs` (10px) зареєстрований у preset-і, але зарезервований виключно під chart axis ticks;
+у будь-якому іншому продуктовому UI — deprecated, **ніколи не використовувати для primary content**.
+Повний контракт —
 у [`design-system/02-typography.md` § 3](./design-system/02-typography.md#3-типографічна-шкала).
 Для семантичних use-case-ів використовуй утиліти `.text-style-*`
 (`.text-style-meta`, `.text-style-caption`, `.text-style-body-sm`, …) — вони
@@ -267,8 +269,8 @@ full: 9999px (Pills, avatars)
 > продакшн-коді використовуй size-driven semantic-утиліти
 > (`rounded-swatch` / `rounded-marker` / `rounded-control` / `rounded-card` /
 > `rounded-hero` / `rounded-pill`) з [`radius-rhythm.md`](./radius-rhythm.md);
-> ESLint-rule `sergeant-design/no-raw-rounded-utility` забороняє сирі
-> `rounded-2xl` в `apps/web` (`error`).
+> сирі `rounded-2xl` в `apps/web` — порушення дизайн-конвенції
+> (tokens + review; колишнє ESLint-правило `no-raw-rounded-utility` retired ADR-0081).
 
 ---
 
@@ -486,9 +488,9 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
   `danger` / `info` / `finyk` / `fizruk` / `routine` / `nutrition`)
   мають `-strong`-companion-а, який проходить 4.5 : 1 на body-розмірах.
   Використовуй його, коли колір виступає як текст або як fill під `text-white`.
-  Повне мапування — у _Кольорова система → WCAG-AA `-strong`-тір_. Супровідне ESLint-правило
-  (`sergeant-design/no-low-contrast-text-on-fill`) додається разом із цим гайдом,
-  щоб ловити saturated-tier-помилки статично.
+  Повне мапування — у _Кольорова система → WCAG-AA `-strong`-тір_. Це дизайн-конвенція —
+  tokens + review (колишнє ESLint-правило `no-low-contrast-text-on-fill`
+  retired ADR-0081); saturated-tier-помилки ловляться на design-review.
 - Showcase-роут `/design` гейтиться axe-core у CI (див.
   `apps/web/tests/a11y/axe.spec.ts`), тож будь-який примітив, що дрейфує
   назад до насиченого `-500`-fill під `text-white`, падає в pipeline
@@ -522,9 +524,10 @@ Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіан
 
 Канонічний type-scale живе в `design-system.md` § Typography. Семантичні
 утиліти `.text-style-{hero,title,body,label,caption,overline}` — обов'язкові
-для нового UI-коду. Голий `text-2xl font-extrabold` ловить ESLint
-`prefer-text-style` як warning, eyebrow combo (`uppercase + tracking-* + text-*`)
-— `no-eyebrow-drift` як error.
+для нового UI-коду. Голий `text-2xl font-extrabold` і eyebrow combo
+(`uppercase + tracking-* + text-*`) — порушення дизайн-конвенції (tokens +
+review; колишні lint-правила `prefer-text-style` / `no-eyebrow-drift`
+retired ADR-0081).
 
 ---
 

@@ -9,7 +9,9 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
-import { useFocusTrap } from "@shared/hooks/useFocusTrap";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { hapticPattern } from "@shared/lib/adapters/haptic";
 import { messages } from "@shared/i18n/uk";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -165,8 +167,10 @@ export const CelebrationModal = memo(function CelebrationModal({
   // transition and fires haptics — matching the original useEffect pattern.
   const prevOpenForVibrateRef = useRef(false);
   useEffect(() => {
-    if (open && !prevOpenForVibrateRef.current && navigator.vibrate) {
-      navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
+    if (open && !prevOpenForVibrateRef.current) {
+      // `hapticPattern` (not raw `navigator.vibrate`) — respects
+      // `prefers-reduced-motion` internally (C6 web-audit).
+      hapticPattern(type === "confetti" ? [50, 30, 50] : [30]);
     }
     prevOpenForVibrateRef.current = open;
   }, [open, type]);
@@ -179,11 +183,15 @@ export const CelebrationModal = memo(function CelebrationModal({
     }, 200);
   }, [onClose]);
 
-  // Focus trap for accessibility — traps Tab within modal and handles Escape
-  const modalRef = useFocusTrap<HTMLDivElement>(
-    open && !isExiting,
-    handleClose,
-  );
+  // Focus trap for accessibility — traps Tab within modal, inerts the
+  // background for the screen-reader virtual cursor, and handles Escape.
+  const modalRef = useRef<HTMLDivElement>(null);
+  const trapOpen = open && !isExiting;
+  useDialogFocusTrap(trapOpen, modalRef, {
+    onEscape: handleClose,
+    inertBackground: true,
+  });
+  useBodyScrollLock(trapOpen);
 
   // Auto-close timer. Pauses while focus or hover lives inside the
   // modal — see F18 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`.

@@ -5,16 +5,21 @@
 import { useRef, useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import {
-  chartGradients,
-  chartGrid,
-  chartSeries,
-  chartTick,
-} from "@shared/charts";
+import { chartGradients, chartGrid, chartTick } from "@shared/charts";
 import { useChartScrub } from "@shared/hooks";
 import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
 
 const LABELS_UK = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+
+// AI-CONTEXT: theme-reactive fizruk chart color — mirrors ProgressRing.tsx's
+// `chartVar` map. The chartTheme.ts `chartSeries.fizruk.primary` token this
+// replaced resolves to a static hex from `moduleColors`, which is
+// theme-blind in dark/HC. The `--c-chart-fizruk` CSS var flips per theme
+// (see theme.css); the gradient fill (`chartGradients.fizruk`, still
+// chartTheme.ts) keeps using the static hex — unifying it is a
+// chartTheme.ts-wide refactor across all four modules and out of scope
+// here (backlog).
+const FIZRUK_CHART_COLOR = "rgb(var(--c-chart-fizruk))";
 
 /** Легкий area-chart без залежностей; акцент — module accent (fizruk/cyan). */
 interface WeeklyVolumeChartProps {
@@ -32,10 +37,13 @@ export function WeeklyVolumeChart({
   className,
   weeklyGoal,
 }: WeeklyVolumeChartProps) {
-  const vals =
-    Array.isArray(volumeKg) && volumeKg.length === 7
-      ? volumeKg
-      : [0, 0, 0, 0, 0, 0, 0];
+  const vals = useMemo(
+    () =>
+      Array.isArray(volumeKg) && volumeKg.length === 7
+        ? volumeKg
+        : [0, 0, 0, 0, 0, 0, 0],
+    [volumeKg],
+  );
   const totalVol = vals.reduce((a, v) => a + (Number(v) || 0), 0);
   const w = 320;
   const h = 120;
@@ -70,7 +78,7 @@ export function WeeklyVolumeChart({
           >
             <span
               className="inline-block w-2 h-2 rounded-full"
-              style={{ backgroundColor: chartSeries.fizruk.primary }}
+              style={{ backgroundColor: FIZRUK_CHART_COLOR }}
             />
             кг×повт
           </span>
@@ -132,7 +140,7 @@ export function WeeklyVolumeChart({
           {activeDay !== null && activeVol !== undefined ? (
             <span
               className="tabular-nums font-semibold"
-              style={{ color: chartSeries.fizruk.primary }}
+              style={{ color: FIZRUK_CHART_COLOR }}
             >
               {activeDay} · {formatYAxis(activeVol)} кг×повт
             </span>
@@ -140,7 +148,7 @@ export function WeeklyVolumeChart({
             <>
               <span
                 className="inline-block w-2 h-2 rounded-full"
-                style={{ backgroundColor: chartSeries.fizruk.primary }}
+                style={{ backgroundColor: FIZRUK_CHART_COLOR }}
               />
               кг×повт
             </>
@@ -191,7 +199,7 @@ export function WeeklyVolumeChart({
             x1={padL}
             x2={w - padR}
             label="Ціль"
-            color={chartSeries.fizruk.primary}
+            color={FIZRUK_CHART_COLOR}
             zone="above"
             zoneBottom={padT + innerH}
             gradId="wv"
@@ -202,7 +210,7 @@ export function WeeklyVolumeChart({
         <path
           d={lineD}
           fill="none"
-          stroke={chartSeries.fizruk.primary}
+          stroke={FIZRUK_CHART_COLOR}
           strokeWidth="2.25"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -213,7 +221,7 @@ export function WeeklyVolumeChart({
             cx={p.x}
             cy={p.y}
             r="3.5"
-            fill={chartSeries.fizruk.primary}
+            fill={FIZRUK_CHART_COLOR}
             stroke="white"
             strokeWidth="2"
           />
@@ -243,7 +251,7 @@ export function WeeklyVolumeChart({
               top={padT}
               bottom={padT + innerH}
               dotY={activeDotY}
-              dotColor={chartSeries.fizruk.primary}
+              dotColor={FIZRUK_CHART_COLOR}
               label={`${formatYAxis(activeVol)}`}
               subLabel={activeDay}
               viewBoxWidth={w}

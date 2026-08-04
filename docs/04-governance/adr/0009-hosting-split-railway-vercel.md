@@ -2,7 +2,7 @@
 
 > **Superseded by [ADR-0074](./0074-hosting-hetzner-coolify.md) (backend, 2026-07-11)** — API + Postgres + Redis переїхали з Railway на Hetzner/Coolify. Vercel + edge-proxy топологія збережена. Тіло нижче — історичний запис на момент ухвалення.
 
-- **Status:** superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)
+- **Status:** Superseded by ADR-0074 (backend-частина; Vercel + edge-proxy топологія збережена)
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01

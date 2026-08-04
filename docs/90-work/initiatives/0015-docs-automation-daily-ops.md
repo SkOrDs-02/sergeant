@@ -34,7 +34,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 ## План змін
 
-### Phase 1 — Bundle Alpha (committed) — ETA 2026-05-31
+### Phase 1 — Bundle Alpha — shipped (плановий ETA був 2026-05-31)
 
 **Acceptance:** maintainer відкриває `docs/today.md` вранці і отримує 3-5 actionable items без чтення інших файлів.
 
@@ -67,7 +67,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 **Priority rule для today.md:** items з `Phase X next` маркером у Status header — top 3 за recency mention.
 
-### Phase 2 — Bundle Beta (committed) — ETA 2026-06-30
+### Phase 2 — Bundle Beta — shipped (плановий ETA був 2026-06-30)
 
 **Acceptance:** maintainer вибирає item з `today.md`, копіює одним блоком "load skill `<X>`, playbook `<Y>`, prompt: `<Z>`" — agent починає виконання без додаткових питань.
 
@@ -160,7 +160,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 | PR                                                       | Title                                                                               | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                               | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                               | 2026-07-29 |
 | [#3551](https://github.com/Skords-01/Sergeant/pull/3551) | fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp | 2026-06-13 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

@@ -58,16 +58,20 @@ Knip respects `@scaffolded` and `@deprecated` files via `knip.json` `ignore` glo
 
 #### Docs: status badge under the freshness marker
 
-Right after the existing `> **Last validated:** YYYY-MM-DD …` line, add:
+Right after the existing `> **Last touched:** YYYY-MM-DD …` line, add:
 
 ```md
-> **Status:** Active | Scaffolded | Deprecated | Archived
+> **Status:** Active | Scaffolded | Deprecated | Archived | Reference | Draft
 ```
 
 - `Active` — current source of truth. Default.
 - `Scaffolded` — describes a feature/component that exists in code but isn't wired yet. Do NOT cite it as live behaviour. Pair with the matching `@scaffolded` JSDoc tag in code.
 - `Deprecated` — describes a behaviour we're replacing; reference the replacement.
 - `Archived` — historical artefact, lives in `docs/<area>/archive/`. CI freshness checks ignore.
+- `Reference` — знімок стану або довідковий зріз, а не джерело істини: читають, але не супроводжують як канон. Емітять генератори (`scripts/docs/generate-status.mjs`, `generate-today.mjs`) для `docs/STATUS.md` і `docs/today.md`; вручну ставлять на plan/audit-зрізи.
+- `Draft` — незавершений чернетковий матеріал (spike-walkthrough, чернетка плану). Не цитувати як рішення; або дописати до `Active`, або перевести в `Archived`.
+
+> Окремі піддерева мають **власний** доменний lifecycle поверх цього словника і НЕ порушують правило: ADR-и у `docs/04-governance/adr/**` живуть за MADR (`Proposed | Accepted | Deprecated | Superseded by ADR-NNNN`, гейт — `pnpm docs:check-adr-graph`), а ініціативи у `docs/90-work/initiatives/**` — за `In progress | Done` (гейт — `pnpm lint:initiative-status-sync`).
 
 `scripts/check-tech-debt-freshness.mjs` accepts the new `Status:` line and refuses to run on `Archived` docs (so we don't churn timestamps on archives).
 

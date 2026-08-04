@@ -110,7 +110,7 @@ function compareSemver(a, b) {
 }
 
 function checkNode() {
-  const expected = readNvmrc(); // e.g. "20.20.2"
+  const expected = readNvmrc(); // e.g. "22.19.0"
   const actual = process.versions.node;
   if (!expected) {
     warn(`Node ${actual} (no .nvmrc — пропускаю version-check)`);

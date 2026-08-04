@@ -22,7 +22,7 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { hapticTap } from "@shared/lib/adapters/haptic";
+import { hapticPattern, hapticTap } from "@shared/lib/adapters/haptic";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 interface ConfettiParticle {
@@ -105,9 +105,9 @@ export function FirstEntryCelebrationModal({
 
   useEffect(() => {
     if (!open) return;
-    if (navigator.vibrate) {
-      navigator.vibrate([50, 30, 50]);
-    }
+    // `hapticPattern` (not raw `navigator.vibrate`) — respects
+    // `prefers-reduced-motion` internally (C6 web-audit).
+    hapticPattern([50, 30, 50]);
     const { nextStepTip, primaryCtaLabel } =
       getFirstEntryCelebrationCopy(moduleId);
     trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {

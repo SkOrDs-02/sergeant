@@ -113,8 +113,12 @@ export default defineConfig(({ mode }) => {
             start_url: "/",
             display: "standalone",
             orientation: "portrait",
-            background_color: "#fdf9f3",
-            theme_color: "#fdf9f3",
+            // Static manifest colors can't follow the in-app theme choice
+            // (that's `useTheme.ts` applyResolvedTheme's job at runtime) —
+            // these are the splash/OS-chrome default and must track the
+            // light `--c-bg` in `src/styles/theme.css` (`:root`), #f2ecdf.
+            background_color: "#f2ecdf",
+            theme_color: "#f2ecdf",
             lang: "uk",
             // UX-7: tapping an icon/shortcut while the PWA is already open
             // focuses the running window instead of spawning a duplicate

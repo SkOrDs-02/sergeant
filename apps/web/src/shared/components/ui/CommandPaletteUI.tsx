@@ -28,6 +28,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { Icon } from "./Icon";
 import {
   CommandPaletteContext,
@@ -77,15 +78,10 @@ export function CommandPaletteUI() {
     return () => window.clearTimeout(t);
   }, [rawQuery]);
 
-  // Lock body scroll while open.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Lock body scroll while open. `useBodyScrollLock` (not a bare
+  // `overflow: hidden` toggle) — the toggle alone doesn't stop rubber-band
+  // scrolling on iOS (C3 web-audit).
+  useBodyScrollLock(open);
 
   const allCommands = getAll();
 

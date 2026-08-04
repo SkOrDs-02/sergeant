@@ -237,7 +237,7 @@ const preset = {
         "danger-soft-fg": "rgb(var(--c-danger-soft-fg) / <alpha-value>)",
         "info-soft-fg": "rgb(var(--c-info-soft-fg) / <alpha-value>)",
         // Brand soft tint trio (Wave 1b). Theme-adaptive via `--c-brand-soft*`
-        // in `apps/web/src/index.css`. Call-sites that previously wrote
+        // in `apps/web/src/styles/theme.css`. Call-sites that previously wrote
         // `bg-brand-50 dark:bg-brand-500/15` collapse to a single
         // `bg-brand-soft` (see docs/design/dark-mode-audit.md).
         "brand-soft": "rgb(var(--c-brand-soft) / <alpha-value>)",
@@ -260,13 +260,21 @@ const preset = {
         // ═══════════════════════════════════════════════════════════════════
         chart: chartPalette,
 
-        // Chart-series tokens — semantic per-module tokens for bar charts.
-        // Each maps to its module's -strong tier so bars read ≥ 5:1 against
-        // cream bg-bg. No new hex: reuses the -strong values declared above.
-        "chart-finyk": "rgb(17 94 89 / <alpha-value>)", // teal-800 — 5.12:1 (2026-07: was emerald-700)
-        "chart-fizruk": "rgb(21 94 117 / <alpha-value>)", // cyan-800     — 7.5:1 (v2 redesign: was teal-700 5.22:1)
-        "chart-routine": "rgb(194 58 58 / <alpha-value>)", // coral-700   — 5.06:1
-        "chart-nutrition": "rgb(70 98 18 / <alpha-value>)", // lime-800    — 6.64:1
+        // Chart-series tokens — semantic per-module tokens for bar charts
+        // AND heatmap/progress fills (`bg-chart-{module}`). Backed by the
+        // `--c-chart-{module}` CSS vars in `apps/web/src/styles/theme.css`,
+        // which flip per theme (light -800 tier ≥5:1 on cream; dark -400
+        // tier; HC -800/-300) — see the theme.css comment above those vars.
+        // The static fallback (light-tier hex, same values as before
+        // 2026-08 design-audit T8) keeps consumers that don't define the
+        // vars (e.g. a future bare-preset usage) rendering the light tier
+        // as before, instead of silently going transparent.
+        "chart-finyk": "rgb(var(--c-chart-finyk, 17 94 89) / <alpha-value>)", // teal-800 — 5.12:1 (2026-07: was emerald-700)
+        "chart-fizruk": "rgb(var(--c-chart-fizruk, 21 94 117) / <alpha-value>)", // cyan-800 — 7.5:1 (v2 redesign: was teal-700 5.22:1)
+        "chart-routine":
+          "rgb(var(--c-chart-routine, 194 58 58) / <alpha-value>)", // coral-700 — 5.06:1
+        "chart-nutrition":
+          "rgb(var(--c-chart-nutrition, 70 98 18) / <alpha-value>)", // lime-800 — 6.64:1
 
         // ═══════════════════════════════════════════════════════════════════
         // MODULE-SPECIFIC COLORS — Each module has its own personality
@@ -402,7 +410,7 @@ const preset = {
         // ═══════════════════════════════════════════════════════════════════
         // MODULE DARK-MODE TOKENS — semantic surfaces & borders for dark
         // theme. Each is a standalone CSS variable (see `.dark` block in
-        // `apps/web/src/index.css`) decoupled from the live module accent
+        // `apps/web/src/styles/theme.css`) decoupled from the live module accent
         // (`finyk`, `routine`, …) so that opacity tints applied in dark
         // mode don't silently drift if the primary accent is retuned.
         //
@@ -436,7 +444,6 @@ const preset = {
 
         // ─── Celebration / Gamification ──────────────────────────────────
         celebration: "rgb(var(--c-celebration) / <alpha-value>)",
-        "streak-glow": "rgb(var(--c-streak-glow) / <alpha-value>)",
         // Драбина «жару» серії — тем-залежні щаблі (див. theme.css).
         // Компонент мапить серію на щабель, тему вирішує CSS.
         "streak-3": "rgb(var(--c-streak-tier-3) / <alpha-value>)",
@@ -584,7 +591,8 @@ const preset = {
         // accent controls (module Buttons, spec § 4: glow 24px/35%),
         // replacing the drop shadow under the dark ink direction. Applied
         // `dark:`-only so the light default keeps its shadow.
-        "glow-accent-emerald": "0 0 24px rgba(52, 211, 153, 0.35)",
+        // `glow-accent-emerald` (the pre-teal-migration orphan) removed
+        // 2026-08 design-audit T10 — zero consumers.
         "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
         "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
         "glow-accent-coral": "0 0 24px rgba(255, 140, 120, 0.35)",
@@ -594,7 +602,8 @@ const preset = {
         // blur / 8% alpha; theme-invariant (the halo colour is the module
         // accent, it does not flip with the surface). Applied `dark:`-only
         // by Card hero surfaces so the light default is untouched.
-        "glow-inset-emerald": "inset 0 0 40px rgba(52, 211, 153, 0.08)",
+        // `glow-inset-emerald` (the pre-teal-migration orphan) removed
+        // 2026-08 design-audit T10 — zero consumers.
         "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
         "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
         "glow-inset-coral": "inset 0 0 40px rgba(255, 140, 120, 0.08)",
@@ -608,24 +617,18 @@ const preset = {
         "hero-fizruk": "0 8px 20px rgba(14, 116, 144, 0.22)",
         "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",
         "hero-nutrition": "0 8px 20px rgba(86, 124, 15, 0.22)",
-        // «Чорнило» FAB glow — a luminescent module-accent halo (spec § 4:
-        // FAB = module accent + glow 24px/40%), replacing the drop shadow
-        // under the dark ink direction. Routine is the only module with a
-        // center FAB today.
-        "glow-fab-coral": "0 0 24px rgba(255, 140, 120, 0.4)", // coral-400 / 40%
+        // «Чорнило» FAB glow (spec § 4: FAB = module accent + glow
+        // 24px/40%) — `glow-fab-coral` removed 2026-08 design-audit T10
+        // (zero consumers; `FloatingActionButton` uses the theme-aware
+        // `shadow-fab` token instead).
         // Destructive hover ring (Button variant="destructive").
         "danger-ring": "var(--shadow-danger-ring)",
-        // Elevated cards (hover state)
-        cardHover:
-          "0 2px 4px rgba(13, 23, 38, 0.06), 0 12px 32px rgba(13, 23, 38, 0.12)",
         // Inner shadows for depth
         inner: "inset 0 2px 4px rgba(0, 0, 0, 0.05)",
-        // Celebration glow — warm amber for achievement moments
-        "celebration-glow":
-          "0 0 24px rgba(251, 191, 36, 0.3), 0 0 8px rgba(251, 191, 36, 0.2)",
-        // Streak glow — pulsing coral for active streaks
-        "streak-glow":
-          "0 0 16px rgba(249, 112, 102, 0.25), 0 0 4px rgba(249, 112, 102, 0.15)",
+        // `cardHover` / `celebration-glow` / `streak-glow` removed 2026-08
+        // design-audit T10 — zero consumers (hover-lift uses `shadow-float`;
+        // celebration/streak visuals use the `animate-celebration-pop` /
+        // `animate-streak-glow` keyframes in animations.css instead).
         // Enhanced focus ring. The var is set per-theme in theme.css; the
         // fallback is only a last resort. 2026-07 design-audit: fallback
         // aligned to teal (the shell's live accent) — was an orphan emerald.
@@ -669,13 +672,9 @@ const preset = {
       // GRADIENTS — Warm, organic, inviting
       // ═══════════════════════════════════════════════════════════════════
       backgroundImage: {
-        // Page backgrounds — warm cream instead of cold blue
-        "page-warm":
-          "linear-gradient(180deg, rgb(var(--c-bg)) 0%, rgb(253, 249, 243) 100%)",
-
+        // `page-warm` / `hero-emerald` (pre-teal-migration orphans) removed
+        // 2026-08 design-audit T10 — zero consumers.
         // Hero gradients for each module
-        "hero-emerald":
-          "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%)",
         "hero-teal":
           "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%)",
         // Fizruk pastel hero header (F5 teal→cyan sweep) — same 3-stop
@@ -691,8 +690,8 @@ const preset = {
         "hub-hero":
           "linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%)",
 
-        // Card gradients (subtle)
-        "card-emerald": "linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%)",
+        // Card gradients (subtle). `card-emerald` (pre-teal-migration
+        // orphan) removed 2026-08 design-audit T10 — zero consumers.
         "card-teal": "linear-gradient(135deg, #f0fdfa 0%, #ffffff 100%)",
         "card-coral": "linear-gradient(135deg, #fff5f3 0%, #ffffff 100%)",
         "card-lime": "linear-gradient(135deg, #f8fee7 0%, #ffffff 100%)",
@@ -721,7 +720,8 @@ const preset = {
         "hero-grad-nutrition": "var(--hero-grad-nutrition)",
 
         hero: "linear-gradient(150deg, #fdf9f3 0%, #fefdfb 100%)",
-        "hero-g": "linear-gradient(150deg, #f0fdfa 0%, #ffffff 100%)",
+        // `hero-g` (pre-teal-migration orphan) removed 2026-08
+        // design-audit T10 — zero consumers.
         "routine-hero":
           "linear-gradient(135deg, #fff5f3 0%, #ffe8e3 45%, rgba(255, 212, 203, 0.65) 100%)",
 
@@ -969,7 +969,7 @@ const preset = {
       //
       // `min-h-touch-target` (44px) is the universal floor for any
       // interactive element on coarse pointers. Pair with the
-      // `[data-touch-target]` attribute in `apps/web/src/index.css` if you
+      // `[data-touch-target]` attribute in `apps/web/src/styles/mobile.css` if you
       // want the floor applied conditionally (only on `(pointer: coarse)`).
       // The Tailwind utility version (this key) always applies the floor,
       // regardless of pointer.
@@ -1174,7 +1174,7 @@ const preset = {
     //
     // To intentionally render a smaller target (e.g. heatmap cells, dense
     // data grids), opt out by setting `data-compact` on the element —
-    // see the safety-net rule in `apps/web/src/index.css`.
+    // see the safety-net rule in `apps/web/src/styles/mobile.css`.
     // ═══════════════════════════════════════════════════════════════════════
     function touchTargets({ addUtilities }) {
       addUtilities({

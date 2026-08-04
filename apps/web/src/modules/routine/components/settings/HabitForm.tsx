@@ -296,7 +296,7 @@ export function HabitForm({
         className="flex items-center gap-1 text-xs text-muted hover:text-text transition-colors"
       >
         <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
-        <span aria-hidden className="text-2xs">
+        <span aria-hidden className="text-style-caption">
           {showAdvanced ? "▲" : "▼"}
         </span>
       </button>
@@ -384,7 +384,7 @@ export function HabitForm({
                   );
                 })}
               </div>
-              <span className="mt-1 block text-2xs text-subtle leading-snug">
+              <span className="mt-1 block text-style-caption text-subtle leading-snug">
                 Можна обрати кілька. Теги створюються в Налаштуваннях →
                 «Рутина».
               </span>
