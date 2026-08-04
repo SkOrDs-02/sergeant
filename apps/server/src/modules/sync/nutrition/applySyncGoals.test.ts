@@ -160,6 +160,7 @@ describe("applyNutritionGoalPeriods — insert", () => {
       180,
       2500,
       "manual",
+      null, // tz_offset_min (міграція 109) — не прийшов у validRow()
       new Date("2026-07-25T07:00:00.000Z"),
       CLIENT_TS,
       null,
@@ -187,6 +188,30 @@ describe("applyNutritionGoalPeriods — insert", () => {
     delete (row as Record<string, unknown>)["origin"];
     await applyNutritionGoalPeriods(asClient(fake), op(row), USER, CLIENT_TS);
     expect(fake.queries[0]!.params[8]).toBe("manual");
+  });
+});
+
+describe("applyNutritionGoalPeriods — tz_offset_min (міграція 109)", () => {
+  it("пише tz_offset_min з рядка клієнта, коли він є", async () => {
+    const fake = new FakeClient();
+    await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -120 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(fake.queries[0]!.params[9]).toBe(-120);
+  });
+
+  it("лишає NULL, коли клієнт ще не шле tz_offset_min (старий клієнт)", async () => {
+    const fake = new FakeClient();
+    await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+    expect(fake.queries[0]!.params[9]).toBeNull();
   });
 });
 
@@ -258,6 +283,80 @@ describe("applyNutritionGoalPeriods — append-only інваріант", () => {
       CLIENT_TS,
     );
     expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+  });
+});
+
+describe("applyNutritionGoalPeriods — числові межі (pre-beta input-boundaries audit)", () => {
+  it("відхиляє kcal понад стелю (curl обходить клієнтську межу)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow({ kcal: 20_001 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "rejected", reason: "invalid_kcal" });
+  });
+
+  it("приймає kcal рівно на стелі (20000)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow({ kcal: 20_000 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "applied" });
+  });
+
+  it("відхиляє protein_g/fat_g/carbs_g понад стелю 1000", async () => {
+    const fake = new FakeClient();
+    expect(
+      await applyNutritionGoalPeriods(
+        asClient(fake),
+        op(validRow({ protein_g: 1001 })),
+        USER,
+        CLIENT_TS,
+      ),
+    ).toEqual({ status: "rejected", reason: "invalid_protein_g" });
+    expect(
+      await applyNutritionGoalPeriods(
+        asClient(fake),
+        op(validRow({ fat_g: 1001 })),
+        USER,
+        CLIENT_TS,
+      ),
+    ).toEqual({ status: "rejected", reason: "invalid_fat_g" });
+    expect(
+      await applyNutritionGoalPeriods(
+        asClient(fake),
+        op(validRow({ carbs_g: 1001 })),
+        USER,
+        CLIENT_TS,
+      ),
+    ).toEqual({ status: "rejected", reason: "invalid_carbs_g" });
+  });
+
+  it("відхиляє water_ml понад стелю 10000 з reason invalid_qty", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow({ water_ml: 10_001 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "rejected", reason: "invalid_qty" });
+  });
+
+  it("відхиляє від'ємний kcal (нижче min=0)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionGoalPeriods(
+      asClient(fake),
+      op(validRow({ kcal: -1 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "rejected", reason: "invalid_kcal" });
   });
 });
 

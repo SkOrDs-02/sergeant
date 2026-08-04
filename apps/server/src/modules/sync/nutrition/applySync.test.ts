@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { describe, expect, it } from "vitest";
+import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@sergeant/shared";
 
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
@@ -116,6 +117,46 @@ describe("applyNutritionMeals", () => {
       null,
     ]);
   });
+
+  // Pre-beta input-boundaries audit: `curl` bypasses the client-side
+  // NAME_MAX_LEN guard — the server must reject before any DML.
+  it("rejects a name longer than NAME_MAX_LEN before DML", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyNutritionMeals(
+        asClient(fake),
+        syncOp("nutrition_meals", "insert", {
+          id: "meal-1",
+          user_id: "user-1",
+          eaten_at: "2026-07-21T08:00:00.000Z",
+          name: "a".repeat(NAME_MAX_LEN + 1),
+        }),
+        "user-1",
+        new Date("2026-07-21T08:05:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+    expect(fake.queries).toHaveLength(1);
+  });
+
+  it("accepts a name at exactly NAME_MAX_LEN", async () => {
+    const fake = new FakeClient();
+    const name = "a".repeat(NAME_MAX_LEN);
+
+    await expect(
+      applyNutritionMeals(
+        asClient(fake),
+        syncOp("nutrition_meals", "insert", {
+          id: "meal-1",
+          user_id: "user-1",
+          eaten_at: "2026-07-21T08:00:00.000Z",
+          name,
+        }),
+        "user-1",
+        new Date("2026-07-21T08:05:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "applied" });
+  });
 });
 
 describe("applyNutritionPantryItems", () => {
@@ -135,6 +176,43 @@ describe("applyNutritionPantryItems", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "missing_pantry_id" });
     expect(fake.queries).toHaveLength(1);
+  });
+
+  it("rejects a name longer than NAME_MAX_LEN", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyNutritionPantryItems(
+        asClient(fake),
+        syncOp("nutrition_pantry_items", "insert", {
+          id: "item-1",
+          user_id: "user-1",
+          pantry_id: "home",
+          name: "a".repeat(NAME_MAX_LEN + 1),
+        }),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
+  });
+
+  it("rejects notes longer than NOTE_MAX_LEN even when name is fine", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyNutritionPantryItems(
+        asClient(fake),
+        syncOp("nutrition_pantry_items", "insert", {
+          id: "item-1",
+          user_id: "user-1",
+          pantry_id: "home",
+          name: "oats",
+          notes: "a".repeat(NOTE_MAX_LEN + 1),
+        }),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "text_too_long" });
   });
 });
 

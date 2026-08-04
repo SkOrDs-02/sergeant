@@ -8,6 +8,10 @@ import {
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 import type { SyncV2Outcome } from "./syncV2-types.js";
+import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@sergeant/shared";
+
+/** Re-exported so per-table `applySync*.ts` files import bounds from one place. */
+export { NAME_MAX_LEN, NOTE_MAX_LEN };
 
 /**
  * syncV2-core — спільні хелпери, які викликаються з per-module
@@ -219,6 +223,26 @@ export function parseOptionalInt(value: unknown): number | null | "invalid" {
 }
 
 /**
+ * Same as `parseOptionalNumber`, but out-of-`[min, max]` also counts as
+ * `"invalid"` — so callers can swap in this helper without changing their
+ * existing `=== "invalid"` reject branch (pre-beta input-boundaries audit:
+ * `curl` bypasses client-side ceilings on macro/goal fields, e.g.
+ * `nutrition_goal_periods.kcal`, which previously had no upper bound at
+ * all). `min` defaults to `0` — every field this is used for is a
+ * non-negative physical quantity (kcal, grams, ml).
+ */
+export function parseOptionalBoundedNumber(
+  value: unknown,
+  bounds: { min?: number; max: number },
+): number | null | "invalid" {
+  const n = parseOptionalNumber(value);
+  if (n === "invalid" || n === null) return n;
+  const min = bounds.min ?? 0;
+  if (n < min || n > bounds.max) return "invalid";
+  return n;
+}
+
+/**
  * Serialize a JSONB-bound value before binding to a `pg` parameter.
  *
  * Why an explicit helper: `pg` will silently coerce a JS object to its
@@ -256,6 +280,29 @@ export function toJsonbParam(value: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Bound check for user-supplied name/label/note/text fields (pre-beta
+ * input-boundaries audit, `docs/90-work/planning/specs/beta-input-
+ * boundaries.md` Фаза 3 — сервер). Client-side bounds
+ * (`apps/web/src/shared/lib/text/limits.ts`) are trivially bypassed via
+ * `curl`, so every per-table applier must re-check server-side. Callers
+ * keep their existing `typeof row["x"] === "string" ? row["x"] : fallback`
+ * line and pass the RESOLVED value through this guard — a non-string input
+ * already fell back to `""`/`null` upstream and passes this check
+ * trivially (empty string is always within bound).
+ *
+ * `maxLen` defaults to `NAME_MAX_LEN` (200) — the shorter bound for
+ * name/label-shaped fields; pass `NOTE_MAX_LEN` (1000) explicitly for
+ * longer free-text fields (notes, pantry `text`).
+ */
+export function isWithinTextBound(
+  value: string | null | undefined,
+  maxLen: number = NAME_MAX_LEN,
+): boolean {
+  if (value == null) return true;
+  return value.length <= maxLen;
 }
 
 export type { PoolClient };

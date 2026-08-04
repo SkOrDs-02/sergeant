@@ -112,6 +112,15 @@ export const APPLY_REJECT_REASONS = [
   // Нерозбірна дата тут не може тихо стати `clientTs`: це зняло б позначку
   // й повернуло травмовану зону в поради. Краще відхилити операцію.
   "invalid_cleared_at",
+  // Pre-beta input-boundaries audit (beta-input-boundaries.md, Фаза 3 —
+  // сервер): user-supplied name/label/note/text fields in sync payloads had
+  // NO length bound at all — a `curl` could push a multi-MB string into
+  // `nutrition_meals.name`. One shared reason across every bounded text
+  // field (see `isWithinTextBound()` in `syncV2-core.ts`), rather than a
+  // per-field `invalid_name`/`invalid_label`/`invalid_notes` fan-out — the
+  // metric doesn't need per-column granularity for "this string is too
+  // long", only per-table (already carried by the `table` label).
+  "text_too_long",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

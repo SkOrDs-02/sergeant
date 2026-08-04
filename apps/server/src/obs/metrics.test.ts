@@ -151,7 +151,10 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // invalid_goal_origin (журнал цілей КБЖВ). Реєстр таблиць виріс до 45.
     // Хвиля 4: +2 (`missing_skip_key`, `invalid_at`) для `routine_habit_skips`
     // — третій стан дня «не зміг з причиною» (канон `routine.md` §5).
-    expect(APPLY_REJECT_REASONS.length).toBe(62);
+    // Pre-beta input-boundaries audit (2026-08-04): +1 `text_too_long`
+    // (shared reason for unbounded name/label/note/text fields across
+    // nutrition sync appliers — `beta-input-boundaries.md` Фаза 3).
+    expect(APPLY_REJECT_REASONS.length).toBe(63);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,

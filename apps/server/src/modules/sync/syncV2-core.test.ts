@@ -38,6 +38,10 @@ vi.mock("../../obs/metrics.js", () => ({
 }));
 
 import {
+  isWithinTextBound,
+  NAME_MAX_LEN,
+  NOTE_MAX_LEN,
+  parseOptionalBoundedNumber,
   parseOptionalDate,
   parseOptionalInt,
   parseOptionalNumber,
@@ -201,5 +205,65 @@ describe("syncV2-core helpers", () => {
       throw new Error("sync audit unavailable");
     });
     expect(() => recordSyncV2("v2_push", "ok", { userId: "u1" })).not.toThrow();
+  });
+});
+
+describe("isWithinTextBound (pre-beta input-boundaries audit)", () => {
+  it("accepts null/undefined — a non-string field already fell back upstream", () => {
+    expect(isWithinTextBound(null)).toBe(true);
+    expect(isWithinTextBound(undefined)).toBe(true);
+  });
+
+  it("accepts a string at exactly the default bound (NAME_MAX_LEN)", () => {
+    expect(isWithinTextBound("a".repeat(NAME_MAX_LEN))).toBe(true);
+  });
+
+  it("rejects a string one char over the default bound", () => {
+    expect(isWithinTextBound("a".repeat(NAME_MAX_LEN + 1))).toBe(false);
+  });
+
+  it("respects an explicit maxLen (NOTE_MAX_LEN) for longer free-text fields", () => {
+    expect(isWithinTextBound("a".repeat(NOTE_MAX_LEN), NOTE_MAX_LEN)).toBe(
+      true,
+    );
+    expect(isWithinTextBound("a".repeat(NOTE_MAX_LEN + 1), NOTE_MAX_LEN)).toBe(
+      false,
+    );
+  });
+
+  it("accepts an empty string", () => {
+    expect(isWithinTextBound("")).toBe(true);
+  });
+});
+
+describe("parseOptionalBoundedNumber (pre-beta input-boundaries audit)", () => {
+  it("passes through null/undefined as null (goal not set)", () => {
+    expect(parseOptionalBoundedNumber(null, { max: 100 })).toBeNull();
+    expect(parseOptionalBoundedNumber(undefined, { max: 100 })).toBeNull();
+  });
+
+  it("accepts a value within [0, max] by default", () => {
+    expect(parseOptionalBoundedNumber(50, { max: 100 })).toBe(50);
+    expect(parseOptionalBoundedNumber(0, { max: 100 })).toBe(0);
+    expect(parseOptionalBoundedNumber(100, { max: 100 })).toBe(100);
+  });
+
+  it("rejects a value above max as invalid (curl bypassing client ceiling)", () => {
+    expect(parseOptionalBoundedNumber(101, { max: 100 })).toBe("invalid");
+    expect(
+      parseOptionalBoundedNumber(Number.MAX_SAFE_INTEGER, { max: 20_000 }),
+    ).toBe("invalid");
+  });
+
+  it("rejects a value below an explicit min", () => {
+    expect(parseOptionalBoundedNumber(-1, { min: 0, max: 100 })).toBe(
+      "invalid",
+    );
+  });
+
+  it("propagates parseOptionalNumber's own 'invalid' for non-numeric input", () => {
+    expect(parseOptionalBoundedNumber("not a number", { max: 100 })).toBe(
+      "invalid",
+    );
   });
 });
