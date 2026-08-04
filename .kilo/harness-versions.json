@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "2.0.4",
+  "current": "3.0.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -128,6 +128,20 @@
       "releasedAt": "2026-08-02",
       "changes": [
         "bump from 2.0.3 -> 2.0.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.0.0": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "Rule #10: словник lifecycle-статусів розширено — додано Reference і Draft; явно зафіксовано, що ADR (MADR) та ініціативи (In progress/Done) мають власний доменний lifecycle і не є порушенням.",
+        "Rule #25: Scope переписано з 4-пунктового списку на таблицю артефакт→генератор (9 повністю + 3 частково генеровані).",
+        "Канонічний freshness-лейбл — Last touched:, не Last validated:. Legacy-лейбл читається, але мігрується pre-commit-хуком.",
+        "AGENTS.md: .codex/ і .mcp.json визнані винятками з правила «конфіг харнеса поза чекаутом»; Codex доданий у таблицю харнесів.",
+        "AGENTS.md § Harness-engineering v1: два активні компоненти замість чотирьох (AI-PR Checklist і Entropy Janitors retired).",
+        "AGENTS.md § Design conventions: доданий вказівник на DESIGN.md.",
+        "sergeant-review-squad/SKILL.md: посилання на retired Hard Rules #8-#17 замінено на опис дименсії design-reviewer."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
