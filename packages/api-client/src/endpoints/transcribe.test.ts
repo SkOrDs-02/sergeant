@@ -135,6 +135,22 @@ describe("createTranscribeEndpoints.send", () => {
   });
 
   it.each([
+    [{ text: "x", durationSec: -1, model: "m" }],
+    [{ text: "x", model: "m" }],
+  ])(
+    "реджектить malformed 200 через сам send (валідація на boundary, не лише схема)",
+    async (body) => {
+      mockFetchOnce(body);
+      const http = createHttpClient({ baseUrl: "https://api.example.com" });
+      const transcribe = createTranscribeEndpoints(http);
+      const audio = new Blob([new Uint8Array([1])], { type: "audio/webm" });
+
+      const out = transcribe.send({ audio, mimeType: "audio/webm" });
+      await expect(out).rejects.toThrow();
+    },
+  );
+
+  it.each([
     [
       503,
       "provider_unavailable",

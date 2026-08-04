@@ -39,11 +39,13 @@
  * *what each handler does* with them.
  */
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { ALL_HUBCHAT_TOOL_NAMES, isHubChatToolName } from "@sergeant/shared";
 
-const CHAT_ACTIONS_DIR = join(process.cwd(), "src/core/lib/chatActions");
+// Від локації самого тесту, не від cwd — прогін з кореня репо теж працює.
+const CHAT_ACTIONS_DIR = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Every `ChatAction.name` dispatcher that `hubChatActions.ts` actually

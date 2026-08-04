@@ -191,6 +191,7 @@ describe("RootLayout", () => {
   });
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     document.documentElement.className = "";
   });
 

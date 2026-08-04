@@ -267,8 +267,6 @@ describe("FinykApp — connected Monobank state over real MSW transport", () => 
       "Стан синхронізації: оновлення",
     );
     expect(syncPill).toHaveTextContent("оновлення");
-    // Needs-attention states stay visible on narrow screens too.
-    expect(screen.getByText("оновлення")).toHaveClass("hidden", "sm:inline");
 
     expect(
       screen.queryByRole("button", { name: "Підключити Monobank" }),

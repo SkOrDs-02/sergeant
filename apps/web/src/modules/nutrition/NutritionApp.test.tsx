@@ -80,6 +80,7 @@ function markNutritionFirstRunSeen() {
 
 beforeEach(() => {
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 describe("NutritionApp — shell + routing (real component tree)", () => {
@@ -87,7 +88,7 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
     markNutritionFirstRunSeen();
     renderApp();
     // Real header title + bottom nav (not mock testids).
-    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    expect(bottomNav()).toBeInTheDocument();
     // Start page renders the photo-analysis entry card. The label appears
     // twice by design — once in the always-visible `<summary>` header and
     // once inside the collapsed `<details>` body (`PhotoAnalyzeCard`).
@@ -147,7 +148,7 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
       pwaAction: null,
       onPwaActionConsumed: vi.fn(),
     });
-    expect(screen.getByRole("navigation")).toBeInTheDocument();
+    expect(bottomNav()).toBeInTheDocument();
   });
 });
 
