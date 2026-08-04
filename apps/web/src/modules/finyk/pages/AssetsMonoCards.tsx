@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
+import { Badge } from "@shared/components/ui/Badge";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { cn } from "@shared/lib/ui/cn";
 import { getAccountVisual } from "../lib/accountVisual";
+import { getMonoOwnFunds } from "@sergeant/finyk-domain/lib/accounts";
 import { messages } from "@shared/i18n/uk";
 
 const t = messages.finyk.monoCards;
@@ -22,6 +24,7 @@ const t = messages.finyk.monoCards;
 interface CardAccount {
   id?: string | undefined;
   balance?: number | undefined;
+  creditLimit?: number | undefined;
   currencyCode?: number | undefined;
   type?: string | undefined;
   maskedPan?: unknown;
@@ -69,6 +72,11 @@ export function AssetsMonoCards({
         const visual = getAccountVisual(a);
         const id = a.id ?? "";
         const included = !hiddenAccounts.includes(id);
+        const isCredit = (a.creditLimit ?? 0) > 0;
+        // Кредитка: «Активи» показує лише власні кошти понад ліміт
+        // (getMonoOwnFunds), не сирий balance — інакше сума виглядає
+        // задвоєною з боргом кредитки у «Пасивах» (F-decision 1).
+        const displayBalance = isCredit ? getMonoOwnFunds(a) : (a.balance ?? 0);
         return (
           <button
             key={id || i}
@@ -94,15 +102,22 @@ export function AssetsMonoCards({
               </span>
               <div className="min-w-0">
                 <div className="text-style-label truncate">{visual.name}</div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {included ? t.bankLabel : t.excluded}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-style-caption text-subtle">
+                    {included ? t.bankLabel : t.excluded}
+                  </span>
+                  {isCredit && (
+                    <Badge variant="warning" size="xs">
+                      {t.creditLabel}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
             <div className="text-right shrink-0">
               <div className="text-style-label tabular-nums text-text">
                 {showBalance
-                  ? `${((a.balance ?? 0) / 100).toLocaleString("uk-UA", {
+                  ? `${(displayBalance / 100).toLocaleString("uk-UA", {
                       minimumFractionDigits: 2,
                     })} ${currencySymbol(a.currencyCode)}`
                   : "••••"}

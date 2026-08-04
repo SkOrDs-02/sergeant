@@ -2,11 +2,17 @@ import { FIZRUK_MEASUREMENTS_KEY, FIZRUK_WORKOUTS_KEY } from "./keys";
 import { daysAgo, shortId, toISO, writeJSON } from "./utils";
 
 export function seedFizruk(): void {
-  // A single finished workout 2 days ago — enough for the calendar
+  // A single finished workout 1 day ago — enough for the calendar
   // streak, the recovery map, and "останнє тренування" card to light
   // up. Shape mirrors what `FinishWorkoutSheet` persists: a workout
   // item per exercise with `type: "strength"` and populated `sets`.
-  const startedAt = daysAgo(2, 18, 30);
+  //
+  // Kept inside `daysAgo(1)` (not `daysAgo(2)`) so the Hub Reports
+  // "week" window (Mon–Sun, see `hubReports.aggregation.ts`) always
+  // contains at least one seeded workout: early in the week, anything
+  // ≥2 days ago can fall into the *previous* ISO week and leave the
+  // Fitness card empty even though the demo payload has data.
+  const startedAt = daysAgo(1, 18, 30);
   const endedAt = new Date(startedAt.getTime() + 55 * 60 * 1000);
 
   const workouts = [

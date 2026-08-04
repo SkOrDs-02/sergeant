@@ -115,3 +115,42 @@ describe("useNutritionRoute navigation", () => {
     });
   });
 });
+
+describe("useNutritionRoute same-path guard vs. a stale useBrowserLocation snapshot", () => {
+  // `useBrowserLocation`'s frozen native-event snapshot can briefly disagree
+  // with the just-committed React Router location (e.g. right after a real
+  // browser-back, before RR7's startTransition-wrapped update lands). Before
+  // this fix the same-path guard compared against that resolved-but-stale
+  // value: if the stale snapshot happened to already equal the tap's target
+  // path, the guard would no-op even though the live router was still on a
+  // *different* page — the tap silently did nothing
+  // ("сторінка не відкривається одразу" — page-audit nutrition-overview-01).
+  it("still navigates when a stale resolved location coincidentally equals the tap target", async () => {
+    vi.resetModules();
+    vi.doMock("react-router-dom", () => ({
+      useNavigate: () => navigateMock,
+      // Live router: still on the start page.
+      useLocation: () => ({ pathname: "/nutrition", search: "", hash: "" }),
+    }));
+    vi.doMock("../../../core/hooks/useBrowserLocation", () => ({
+      // Stale snapshot claims we're already on the tap's target
+      // ("/nutrition/log") — exactly the coincidence that swallowed the
+      // real navigation under the old `location.pathname` guard.
+      useBrowserLocation: () => ({
+        pathname: "/nutrition/log",
+        search: "",
+        hash: "",
+      }),
+    }));
+    const { useNutritionRoute: freshUseNutritionRoute } =
+      await import("./useNutritionRoute");
+    navigateMock.mockClear();
+    const { result } = renderHook(() => freshUseNutritionRoute());
+    result.current.setActivePageAndHash("log");
+    expect(navigateMock).toHaveBeenCalledWith("/nutrition/log", {
+      replace: false,
+    });
+    vi.doUnmock("react-router-dom");
+    vi.doUnmock("../../../core/hooks/useBrowserLocation");
+  });
+});

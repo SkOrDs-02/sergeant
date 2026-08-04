@@ -47,7 +47,15 @@ export function MacroRings({
               variant={variant}
               value={consumed}
               max={safeGoal || 1}
-              size="md"
+              // `sm` (48px) rather than `md` (72px): three fixed-diameter
+              // rings at 72px leave <8px of horizontal slack at a 320px
+              // viewport once the hero card's own padding is subtracted —
+              // any longer caption word or a slightly narrower device
+              // tips it into overflow (page-audit nutrition-overview-01).
+              // `ProgressRing`'s `size` is a fixed-px enum, not fluid, so
+              // shrinking the enum step is the only overflow-safe fix
+              // that doesn't fight the shared component with `!important`.
+              size="sm"
               aria-label={
                 safeGoal > 0
                   ? `${label}: ${consumed} з ${safeGoal} ${unit}`

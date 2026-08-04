@@ -35,6 +35,18 @@ export function setModulePrefetcher(fn: Prefetcher): void {
 export interface ModuleIntentProps {
   onMouseEnter: () => void;
   onFocus: () => void;
+  /**
+   * Touch entry point. `onMouseEnter`/`onFocus` never fire on a coarse
+   * (touch) pointer, so without this a hub tile tapped on mobile — the
+   * majority of module entries — got zero prefetch head start: the tap
+   * goes straight to `onClick`/navigate against a cold module chunk,
+   * and since react-router v7 wraps the update in `startTransition`,
+   * the screen shows no visible change until the chunk lands ("кнопки
+   * клікаються, але сторінка не перемикається" — see the AI-CONTEXT
+   * note on `lazyImport.ts`). `pointerdown` fires ~100 ms before
+   * `click`, same mitigation `getPagePrefetchProps` already uses.
+   */
+  onPointerDown: () => void;
 }
 
 export function getModulePrefetchProps(
@@ -43,5 +55,6 @@ export function getModulePrefetchProps(
   return {
     onMouseEnter: () => registered?.(id),
     onFocus: () => registered?.(id),
+    onPointerDown: () => registered?.(id),
   };
 }

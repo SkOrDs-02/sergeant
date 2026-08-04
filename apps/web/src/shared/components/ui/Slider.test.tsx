@@ -236,4 +236,71 @@ describe("Slider pointer interaction", () => {
     fireEvent.pointerUp(track, { clientX: 100, clientY: 5, pointerId: 1 });
     expect(onChangeEnd).toHaveBeenCalled();
   });
+
+  it("shows the value tooltip while dragging and clears it once the drag ends (bug fix)", () => {
+    const { container } = render(
+      <Slider
+        aria-label="Vol"
+        min={0}
+        max={100}
+        defaultValue={0}
+        showTooltip
+        formatValue={(n) => `${n} грн`}
+      />,
+    );
+    const track = container.querySelector("[data-slider-id] > div")!;
+    fireEvent.pointerDown(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    expect(screen.getByText("50 грн")).toBeInTheDocument();
+    fireEvent.pointerUp(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    // Tooltip must not survive the interaction end (was previously stuck
+    // forever — the only clear path was thumb `onBlur`, which never fires
+    // on touch since pointer capture lives on the track).
+    expect(screen.queryByText("50 грн")).not.toBeInTheDocument();
+  });
+
+  it("keeps the focused thumb's tooltip through focus → drag → release, clearing only on blur (review fix)", () => {
+    const { container } = render(
+      <Slider
+        aria-label="Vol"
+        min={0}
+        max={100}
+        defaultValue={0}
+        showTooltip
+        formatValue={(n) => `${n} грн`}
+      />,
+    );
+    const thumb = screen.getByRole("slider");
+    // Real DOM focus so document.activeElement points at the thumb — that's
+    // what the pointer-up handler checks. jsdom does not reliably deliver
+    // the native focus event through React's root listener, so fire the
+    // synthetic event too (the component reacts to onFocus).
+    (thumb as HTMLElement).focus();
+    fireEvent.focus(thumb);
+    expect(document.activeElement).toBe(thumb);
+    expect(screen.getByText("0 грн")).toBeInTheDocument();
+    const track = container.querySelector("[data-slider-id] > div")!;
+    fireEvent.pointerDown(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    fireEvent.pointerUp(track, { clientX: 100, clientY: 5, pointerId: 1 });
+    // The thumb still holds focus, so its tooltip must survive drag-end...
+    expect(screen.getByText("50 грн")).toBeInTheDocument();
+    // ...and clear once focus actually leaves the thumb.
+    fireEvent.blur(thumb);
+    expect(screen.queryByText("50 грн")).not.toBeInTheDocument();
+  });
+
+  it("still shows the tooltip on genuine keyboard focus (unaffected by the drag-end fix)", () => {
+    render(
+      <Slider
+        aria-label="Vol"
+        defaultValue={40}
+        showTooltip
+        formatValue={(n) => `${n}%`}
+      />,
+    );
+    const thumb = screen.getByRole("slider");
+    fireEvent.focus(thumb);
+    expect(screen.getByText("40%")).toBeInTheDocument();
+    fireEvent.blur(thumb);
+    expect(screen.queryByText("40%")).not.toBeInTheDocument();
+  });
 });

@@ -162,6 +162,8 @@ function makePhoto(
     onPickPhoto: vi.fn(),
     analyzePhoto: vi.fn(),
     refinePhoto: vi.fn(),
+    isAnalyzing: false,
+    isRefining: false,
     ...override,
   } as ReturnType<typeof usePhotoAnalysis>;
 }
