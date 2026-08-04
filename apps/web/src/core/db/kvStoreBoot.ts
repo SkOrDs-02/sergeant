@@ -174,21 +174,52 @@ export function getActiveSqliteKvStore(): KVStore | null {
 }
 
 /**
- * Build the {@link SqliteKVStoreClient} bound to the live SQLite
- * handle. Drizzle's `.onConflictDoUpdate` resolves the upsert in one
+ * Build the {@link SqliteKVStoreClient} over the live SQLite handle.
+ * Drizzle's `.onConflictDoUpdate` resolves the upsert in one
  * round-trip; a sync-throw or rejected promise routes through
  * `createSqliteKVStore`'s `onWriteError` hook.
+ *
+ * The handle is re-resolved through `getDb` on EVERY write, not
+ * captured once. `AuthContext` перемикає SQLite-партицію на кожен
+ * sign-in/sign-up (`setSqliteUser` → закриває старий handle), а цей
+ * клієнт живе довше за партицію: клієнт, привʼязаний до знімка handle,
+ * після логіну сипав «DB has been closed» на КОЖЕН upsert аж до hard
+ * reload — губились analytics ring-buffer, quick-stats і диміси
+ * банерів (аудит 2026-08-04, знахідка 2). Свіжий handle нової партиції
+ * ще не бачив kv-міграцій (їх ганяє лише bootstrap), тож перед першим
+ * записом у новий handle вони проганяються тут — idempotent, один раз
+ * на handle.
  *
  * Exported so PR #063 can pass this into
  * `createSqliteKVStore({ sqlite })` at adapter-construction time.
  */
 export function makeSqliteKvStoreClient(
   handle: SqliteDbHandle,
+  getDb: () => Promise<SqliteDbHandle> = getSqliteDb,
 ): SqliteKVStoreClient {
+  let current = handle;
+  // The boot-time handle already ran KV migrations inside bootstrapKvStore.
+  const migrated = new WeakSet<SqliteDbHandle>([handle]);
+  const resolveHandle = async (): Promise<SqliteDbHandle> => {
+    const live = await getDb();
+    if (live !== current) {
+      if (!migrated.has(live)) {
+        await runMigrations({
+          adapter: createSqliteAdapter(live.migrationClient()),
+          files: KV_STORE_CLIENT_MIGRATIONS,
+          tableName: KV_STORE_MIGRATIONS_TABLE,
+        });
+        migrated.add(live);
+      }
+      current = live;
+    }
+    return current;
+  };
   return {
     async upsert(row) {
+      const db = await resolveHandle();
       const updatedAt = new Date(row.updatedAt);
-      await handle.drizzle
+      await db.drizzle
         .insert(kvStore)
         .values({
           key: row.key,
@@ -201,7 +232,8 @@ export function makeSqliteKvStoreClient(
         });
     },
     async remove(key) {
-      await handle.drizzle.delete(kvStore).where(eq(kvStore.key, key));
+      const db = await resolveHandle();
+      await db.drizzle.delete(kvStore).where(eq(kvStore.key, key));
     },
   };
 }
@@ -377,7 +409,7 @@ export async function bootstrapKvStore(
     }
   }
 
-  const sqliteClient = makeSqliteKvStoreClient(handle);
+  const sqliteClient = makeSqliteKvStoreClient(handle, getDb);
 
   kvStoreBoot.loaded = true;
   activeSqliteClient = sqliteClient;
