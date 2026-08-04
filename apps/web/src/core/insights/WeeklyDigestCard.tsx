@@ -119,6 +119,13 @@ interface DigestContentProps {
   digest: DigestPayload | null | undefined;
   loading: boolean;
   error: string | null | undefined;
+  /**
+   * Поріг публікації (hub-coach §6.2 / Хвиля 4 § G2) відмовив ЧЕСНО: даних
+   * за тиждень замало для звіту. Це НЕ помилка (мережа/5xx/парсинг) і НЕ
+   * звичайний порожній стан — окрема гілка, щоб не показати ані
+   * error-банер, ані порожню картку без пояснення.
+   */
+  insufficientData: boolean;
   isCurrentWeek: boolean;
   onGenerate: () => void;
   onUpdate: () => void;
@@ -139,6 +146,7 @@ function DigestContent({
   digest,
   loading,
   error,
+  insufficientData,
   isCurrentWeek,
   onGenerate,
   onUpdate,
@@ -178,6 +186,31 @@ function DigestContent({
     trackAdviceReaction(adviceId, "refresh");
     fn();
   };
+
+  // Поріг публікації відмовив (§6.2) — окрема гілка ПЕРЕД `DataState`:
+  // ні error-банер (це не збій), ні generic порожній стан (не пояснював би
+  // ЧОМУ звіту немає). Рендериться лише коли нема тіла звіту — стейл-кеш
+  // минулого разу лишається видимим, якщо він є (`hasDigestBody(digest)`).
+  if (!loading && insufficientData && !hasDigestBody(digest)) {
+    return (
+      <div className="px-4 pb-4">
+        <p className="text-style-body text-muted mb-3 leading-relaxed">
+          Замало даних за цей тиждень — AI-звіт вийшов би занадто загальним.
+          Запиши хоча б одну транзакцію, тренування, прийом їжі чи звичку і
+          спробуй ще раз.
+        </p>
+        {isCurrentWeek && (
+          <button
+            type="button"
+            onClick={handleRegenerate(onGenerate)}
+            className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+          >
+            Спробувати знову
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // DataState contract: `data === undefined` → render skeleton slot,
   // otherwise content/empty/error are evaluated. We force `data` to
@@ -385,8 +418,15 @@ export function WeeklyDigestCard({
   const [showHistory, setShowHistory] = useState(false);
   const [storiesOpen, setStoriesOpen] = useState(false);
 
-  const { digest, loading, error, weekRange, generate, isCurrentWeek } =
-    useWeeklyDigest(selectedWeekKey);
+  const {
+    digest,
+    loading,
+    error,
+    insufficientData,
+    weekRange,
+    generate,
+    isCurrentWeek,
+  } = useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
 
   // Автогенерація по понеділках працює у фоні: звіт з'являвся мовчки, і
@@ -472,6 +512,15 @@ export function WeeklyDigestCard({
             {hasUnreadDigest && (
               <Badge variant="accent" size="xs">
                 {messages.sergeant.weeklyDigestUnread}
+              </Badge>
+            )}
+            {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
+                comment/recommendations — суцільний вільний текст моделі,
+                тож рівень «припущення» проставляється детерміновано на
+                рівні картки (не потребує розбору речень). */}
+            {!loading && hasDigestBody(digest) && (
+              <Badge variant="neutral" size="xs">
+                {messages.sergeant.insightAssumptionBadge}
               </Badge>
             )}
           </div>
@@ -582,6 +631,7 @@ export function WeeklyDigestCard({
         digest={digest}
         loading={loading}
         error={error}
+        insufficientData={insufficientData}
         isCurrentWeek={isCurrentWeek}
         onGenerate={handleGenerate}
         onUpdate={handleGenerate}

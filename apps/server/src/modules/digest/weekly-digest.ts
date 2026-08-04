@@ -110,6 +110,33 @@ function extractJsonObject(raw: unknown): unknown {
 }
 
 /**
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — серверне дзеркало
+ * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`).
+ *
+ * AI-CONTEXT (Хвиля 4, hub-coach § G2): `finyk` приїжджає з клієнта
+ * ЗАВЖДИ truthy (`aggregateFinyk` повертає нулі навіть без транзакцій), тож
+ * стара перевірка «є хоч одна секція» (`!sections.length`) фактично ніколи
+ * не спрацьовувала — порожній тиждень завжди мав хоча б finyk-секцію з
+ * нулями, і дайджест генерувався з нічого. Рахуємо не «поле присутнє», а
+ * факт даних — той самий принцип, що й у коуча.
+ */
+export function countDigestSignalModules(data: WeeklyDigestRequest): number {
+  let signals = 0;
+  if ((data.finyk?.txCount ?? 0) > 0) signals++;
+  if ((data.fizruk?.workoutsCount ?? 0) > 0) signals++;
+  if ((data.nutrition?.daysLogged ?? 0) > 0) signals++;
+  if ((data.routine?.habitCount ?? 0) > 0) signals++;
+  return signals;
+}
+
+/**
+ * Поріг публікації — канон hub-coach §6.2 «краще мовчати, ніж шуміти».
+ * Навмисно мінімальний і безспірний, як і в коуча: нуль сигналів — тиждень
+ * чесно «без даних», а не заповнений шаблонним аналізом нулів.
+ */
+const MIN_SIGNAL_MODULES = 1;
+
+/**
  * PR-25: build template-based digest report з raw метрик (без LLM).
  * Використовується (а) як stub-response для `StubProvider`, і (б) як
  * автоматичний fallback коли Anthropic !ok і `LLM_DIGEST_FALLBACK_ON_ERROR=true`.
@@ -192,6 +219,17 @@ export function createWeeklyDigestHandler(
     const parsed = parseBody(WeeklyDigestSchema, req);
     const { weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
+    // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
+    // без жодного змістовного сигналу не має ані отримувати шаблонний AI-аналіз
+    // нулів, ані палити виклик LLM. Заміняє стару структурну перевірку
+    // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
+    if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
+      throw new ValidationError(
+        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку — і спробуй ще раз.",
+        { code: "INSUFFICIENT_DATA" },
+      );
+    }
+
     const sections: string[] = [];
 
     if (finyk) {
@@ -256,10 +294,6 @@ ${exercises}`);
 Активних звичок: ${routine.habitCount ?? 0}
 По звичках:
 ${habitsInfo}`);
-    }
-
-    if (!sections.length) {
-      throw new ValidationError("Немає даних для генерації звіту");
     }
 
     const dataContext = sections.join("\n\n");

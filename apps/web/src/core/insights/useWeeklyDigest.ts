@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "@shared/lib";
-import { coachApi, weeklyDigestApi } from "@shared/api";
+import { coachApi, isApiError, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
 import {
   METRICS_VERSION,
@@ -454,6 +454,20 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
 const weeklyDigestQueryKey = (weekKey: string) => digestKeys.byWeek(weekKey);
 const weeklyDigestHistoryQueryKey = digestKeys.history;
 
+/**
+ * Поріг публікації для тижневого дайджесту (Хвиля 4, hub-coach § G2 / §6.2)
+ * повернув сервер саме цим кодом — `apps/server/src/modules/digest/weekly-digest.ts`
+ * → `countDigestSignalModules`. Розрізняємо цю відповідь від справжніх
+ * помилок (мережа, 5xx, парсинг Anthropic), щоб UI показав чесне «замало
+ * даних», а не порожню картку чи generic error-банер (обидва варіанти
+ * канон § G2 явно забороняє для цього шляху).
+ */
+function isInsufficientDataError(err: unknown): boolean {
+  if (!isApiError(err)) return false;
+  const code = (err.body as { code?: unknown } | undefined)?.code;
+  return code === "INSUFFICIENT_DATA";
+}
+
 export function useDigestHistory() {
   return useQuery({
     queryKey: weeklyDigestHistoryQueryKey,
@@ -539,12 +553,21 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     }
   }, [weekKey, isCurrentWeek, mutateAsync]);
 
+  const insufficientData = isInsufficientDataError(mutation.error);
+
   return {
     digest: query.data ?? null,
     loading: mutation.isPending,
-    error: mutation.error
-      ? formatApiError(mutation.error, { fallback: "Помилка генерації звіту" })
-      : null,
+    // `insufficientData` — окрема, чесна відповідь («замало даних»), не
+    // помилка: суперечило б §6.2, якби вона рендерилась як generic
+    // error-банер разом із мережевими/5xx збоями.
+    error:
+      mutation.error && !insufficientData
+        ? formatApiError(mutation.error, {
+            fallback: "Помилка генерації звіту",
+          })
+        : null,
+    insufficientData,
     weekKey,
     weekRange,
     generate,
