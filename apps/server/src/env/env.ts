@@ -173,7 +173,7 @@ const envSchema = z.object({
 
   ANTHROPIC_API_KEY: stringWithDefault(""),
 
-  CHAT_MODEL_FIRST_TURN: stringWithDefault("claude-haiku-4-5-20251001"),
+  CHAT_MODEL_FIRST_TURN: stringWithDefault(defaultChatModel("firstTurn")),
 
   CHAT_MODEL_SYNTHESIS: stringWithDefault(defaultChatModel("synthesis")),
 
