@@ -5,10 +5,13 @@
  *
  * Телеметрія AI-поради (Хвиля 2, картка W2-AI-ADVICE-EVENTS, стадія 1).
  *
- * Один писар на дві події — `ai_advice_shown` і `ai_advice_reacted`
- * (контракт: `packages/shared/src/lib/analyticsEvents.valueLoops.ts` §3).
- * Двоє клієнтів: `AssistantAdviceCard` (`source: "coach_insight"`) і
- * `WeeklyDigestCard` (`source: "weekly_digest"`).
+ * Один писар на три події — `ai_advice_shown`, `ai_advice_reacted` і
+ * `ai_advice_failed` (контракт:
+ * `packages/shared/src/lib/analyticsEvents.valueLoops.ts` §3).
+ * Клієнти показу й реакції: `AssistantAdviceCard` (`source: "coach_insight"`)
+ * і `WeeklyDigestCard` (`source: "weekly_digest"`). Провал емітять самі хуки
+ * (`useCoachInsight`, `useWeeklyDigest`) — картка про нього не знає, бо при
+ * помилці вона просто не рендериться.
  *
  * ## Чому саме так
  *
@@ -199,6 +202,46 @@ export function trackAdviceReaction(
       Number.isFinite(delta) && delta > 0 ? Math.round(delta / 1000) : 0,
   });
   return true;
+}
+
+/**
+ * Тип збою генерації — дискримінатор контракту `ai_advice_failed`.
+ *
+ * Перші чотири значення дзеркалять `ApiErrorKind` (`packages/api-client`) і
+ * `HUBCHAT_ERROR.kind` — один словник збоїв на весь AI-шар, інакше зріз
+ * «чому AI не спрацював» довелося б збирати з двох несумісних enum-ів.
+ * `unknown` — для не-`ApiError` викидів (баг у нашому коді, не в мережі).
+ */
+export type AdviceFailureKind =
+  "http" | "network" | "parse" | "aborted" | "unknown";
+
+export interface AdviceFailedInput {
+  source: AdviceSource;
+  kind: AdviceFailureKind;
+  /** HTTP-статус, коли він відомий. `null` для мережевих збоїв. */
+  status: number | null;
+}
+
+/**
+ * Зафіксувати ПРОВАЛ генерації поради.
+ *
+ * Дедуплікації тут навмисно немає, на відміну від `markAdviceShown`: показ
+ * ідемпотентний за `advice_id`, а провал власного id не має — і кожна невдала
+ * спроба це окремий факт. React Query ретраїть максимум раз (див.
+ * `useCoachInsight`), тож сплеск подій обмежений зверху самим викликом.
+ *
+ * Текст помилки в payload не потрапляє: повідомлення провайдера може містити
+ * фрагмент промпту, тобто дані користувача.
+ */
+export function trackAdviceFailed(input: AdviceFailedInput): void {
+  const { source, kind, status } = input;
+  trackEvent(ANALYTICS_EVENTS.AI_ADVICE_FAILED, {
+    source,
+    kind,
+    status:
+      typeof status === "number" && Number.isFinite(status) ? status : null,
+    instrumentation_version: ADVICE_INSTRUMENTATION_VERSION,
+  });
 }
 
 /** Скидання guard-ів між тестами. Не для продакшн-шляхів. */

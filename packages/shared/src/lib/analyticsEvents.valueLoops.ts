@@ -106,8 +106,32 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   //
   // `instrumentation_version` дозволяє відрізати когорту «ще не розкатано»
   // (PWA service-worker тримає старий бандл), а не гадати про знаменник.
+  //   AI_ADVICE_FAILED  { source: "coach_insight" | "weekly_digest",
+  //                       kind: "http" | "network" | "parse" | "aborted"
+  //                             | "unknown",
+  //                       status: number | null,
+  //                       instrumentation_version: number }
+  //
+  // `kind` дзеркалить `ApiErrorKind` і `HUBCHAT_ERROR.kind` — один словник
+  // збоїв на весь AI-шар. `unknown` покриває не-`ApiError` викиди.
+  //
+  // Дзеркало `HUBCHAT_ERROR` для двох НЕчатових поверхонь AI-шару. Без неї
+  // провал генерації невидимий: `useCoachInsight` тримає помилку всередині
+  // React Query, `useWeeklyDigest.generate` ковтає її в `catch { return null }`,
+  // і назовні обидва випадки виглядають однаково — просто відсутність
+  // `AI_ADVICE_SHOWN`.
+  //
+  // Чому це критично саме для коуча: у нього Є легітимна тиша — гейт
+  // достатності даних (`hub-coach.md` §6.2) навмисно мовчить, поки жоден
+  // модуль не дав сигналу. Без цієї події «коуч мовчить, бо нема даних» і
+  // «коуч мовчить, бо провайдер віддає 400» — один і той самий нуль на
+  // дашборді. Саме цей нуль треба вміти розрізняти під час бети.
+  //
+  // Тіла помилки тут немає — лише `kind` + `status`. Текст провайдера може
+  // містити фрагмент промпту, тобто дані користувача (Hard Rule #21).
   AI_ADVICE_SHOWN: "ai_advice_shown",
   AI_ADVICE_REACTED: "ai_advice_reacted",
+  AI_ADVICE_FAILED: "ai_advice_failed",
 
   // ── 4) Експозиція стріку ПОЗА InsightCard ──────────────────────────
   //
