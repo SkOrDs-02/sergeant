@@ -367,6 +367,11 @@ jobs:
         # floor fails this job. Domain packages are already near 100%, so
         # they don't carry explicit floors yet.
         # `test:coverage:ci` skips @sergeant/mobile jest — web-focus phase.
+        # `--concurrency=2` у скрипті: без ліміту turbo фанаутить до 10
+        # coverage-pipeline-ів на 4-vCPU ранері (import-фаза vitest сягала
+        # 193s), server-тести ловили 30s testTimeout посеред хендлера, а
+        # покинутий хендлер-зомбі зʼїдав mock-чергу сусіднього тесту —
+        # звідси флейкові ExternalServiceError зі «зсунутим» статусом.
         run: pnpm test:coverage:ci
 
       - name: Check coverage threshold

@@ -67,7 +67,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "test:ci": "turbo run test --filter=!@sergeant/mobile",
-    "test:coverage:ci": "turbo run test:coverage --filter=!@sergeant/mobile",
+    "test:coverage:ci": "turbo run test:coverage --filter=!@sergeant/mobile --concurrency=2",
     "test:a11y": "pnpm --filter @sergeant/web test:a11y",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
