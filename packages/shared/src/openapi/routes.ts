@@ -70,6 +70,46 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── /api/me/profile ──────────────────────
+  // Write-through сховище профілю/біометрії (migration 115) — НЕ oplog-sync.
+  "/api/me/profile": {
+    get: {
+      summary: "Профіль/біометрія користувача (write-through блоб)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Profile blob; { profile: {}, updatedAt: null } коли рядка ще немає.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+    put: {
+      summary: "Перезаписати профіль/біометрію (upsert по user_id)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.UserProfilePutBody },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Оновлений profile blob.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
   // ────────────────────── /api/chat ──────────────────────
   "/api/chat": {
     post: {

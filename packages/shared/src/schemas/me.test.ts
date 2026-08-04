@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { MeResponseSchema, UserSchema } from "./api";
+import {
+  MeResponseSchema,
+  UserSchema,
+  UserProfilePayloadSchema,
+  UserProfilePutBodySchema,
+  UserProfileResponseSchema,
+  USER_PROFILE_MAX_BYTES,
+  USER_PROFILE_MAX_DEPTH,
+} from "./api";
 
 describe("UserSchema", () => {
   it("парсить мінімально валідного користувача", () => {
@@ -93,5 +101,60 @@ describe("MeResponseSchema", () => {
     });
     expect(parsed.user.id).toBe("u-4");
     expect(parsed.user.createdAt).toBe("2026-01-15T08:30:00.000Z");
+  });
+});
+
+describe("UserProfilePayloadSchema — write-through profile blob", () => {
+  it("приймає порожній об'єкт", () => {
+    expect(UserProfilePayloadSchema.parse({})).toEqual({});
+  });
+
+  it("приймає плаский об'єкт (глибина 1)", () => {
+    const value = { name: "Ada", heightCm: 170 };
+    expect(UserProfilePayloadSchema.parse(value)).toEqual(value);
+  });
+
+  it("приймає вкладеність рівно 3 рівні", () => {
+    const value = { biometrics: { history: [{ weightKg: 70 }] } };
+    expect(UserProfilePayloadSchema.parse(value)).toEqual(value);
+  });
+
+  it("відхиляє вкладеність понад 3 рівні", () => {
+    const tooDeep = { a: { b: { c: { d: 1 } } } };
+    expect(UserProfilePayloadSchema.safeParse(tooDeep).success).toBe(false);
+  });
+
+  it(`відхиляє payload понад ${USER_PROFILE_MAX_BYTES} байт`, () => {
+    const huge = { blob: "x".repeat(USER_PROFILE_MAX_BYTES) };
+    expect(UserProfilePayloadSchema.safeParse(huge).success).toBe(false);
+  });
+
+  it("відхиляє масив на верхньому рівні (мусить бути об'єктом)", () => {
+    expect(UserProfilePayloadSchema.safeParse([1, 2, 3]).success).toBe(false);
+  });
+
+  it(`USER_PROFILE_MAX_DEPTH дорівнює 3`, () => {
+    expect(USER_PROFILE_MAX_DEPTH).toBe(3);
+  });
+});
+
+describe("UserProfilePutBodySchema / UserProfileResponseSchema", () => {
+  it("вимагає поле profile у PUT body", () => {
+    expect(() => UserProfilePutBodySchema.parse({})).toThrow();
+  });
+
+  it("парсить валідний PUT body", () => {
+    const parsed = UserProfilePutBodySchema.parse({
+      profile: { name: "Ada" },
+    });
+    expect(parsed.profile).toEqual({ name: "Ada" });
+  });
+
+  it("response дефолтить updatedAt у null", () => {
+    const parsed = UserProfileResponseSchema.parse({
+      profile: {},
+      updatedAt: null,
+    });
+    expect(parsed).toEqual({ profile: {}, updatedAt: null });
   });
 });
