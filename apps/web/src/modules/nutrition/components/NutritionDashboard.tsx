@@ -192,6 +192,13 @@ export function NutritionDashboard({
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
+  // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
+  // partial log must not read as a deficit). The canon's own example is
+  // "1 of 4 meals", so <3 logged meals covers both an empty day and a
+  // one-meal day without inventing a per-user "expected meal count"
+  // setting; 3+ meals reads as a deliberately completed log.
+  const isIncompleteDay = summary.mealCount < 3;
+
   const kcalConsumed = Math.round(macros.kcal || 0);
   const kcalGoal = prefs.dailyTargetKcal || 0;
 
@@ -291,6 +298,7 @@ export function NutritionDashboard({
                   value={kcalConsumed}
                   max={kcalGoal}
                   size="lg"
+                  incomplete={isIncompleteDay}
                   aria-label={`Калорії: ${kcalConsumed} з ${kcalGoal}`}
                   label={
                     <span className="flex flex-col items-center leading-none gap-0.5">
@@ -306,6 +314,7 @@ export function NutritionDashboard({
               </div>
               <MacroRings
                 aria-label={messages.nutrition.macrosToday}
+                incomplete={isIncompleteDay}
                 macros={[
                   {
                     label: "Білки",

@@ -45,6 +45,20 @@ function logWith(kcal: number, protein = 0, fat = 0, carbs = 0) {
   } as never;
 }
 
+function logWithMealCount(count: number) {
+  return {
+    [today]: {
+      meals: Array.from({ length: count }, (_, i) => ({
+        id: `m${i + 1}`,
+        time: "12:00",
+        mealType: "lunch",
+        name: `Прийом ${i + 1}`,
+        macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
+      })),
+    },
+  } as never;
+}
+
 const GOAL_PREFS = {
   dailyTargetKcal: 2000,
   dailyTargetProtein_g: 120,
@@ -129,5 +143,23 @@ describe("NutritionDashboard", () => {
     expect(screen.getByText("Додай більше білка")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Отримати"));
     expect(onFetchDayHint).toHaveBeenCalled();
+  });
+
+  it("dashes the kcal ring on an incomplete day (fewer than 3 meals)", () => {
+    render(<NutritionDashboard log={logWithMealCount(1)} prefs={GOAL_PREFS} />);
+    const ring = screen.getByLabelText(/Калорії: 300 з 2000/);
+    expect(ring.getAttribute("aria-label")).toContain("неповні дані за день");
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBe("4 3");
+  });
+
+  it("renders a solid kcal ring once 3+ meals are logged", () => {
+    render(<NutritionDashboard log={logWithMealCount(3)} prefs={GOAL_PREFS} />);
+    const ring = screen.getByLabelText(/Калорії: 900 з 2000/);
+    expect(ring.getAttribute("aria-label")).not.toContain(
+      "неповні дані за день",
+    );
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBeNull();
   });
 });
