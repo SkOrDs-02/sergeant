@@ -45,7 +45,7 @@ export function NutritionPantrySelector({
           value={pantry.activePantry?.id || pantry.activePantryId || ""}
           onChange={(e) => pantry.setActivePantryId(e.target.value)}
           disabled={busy}
-          className="input-focus-nutrition min-h-[44px] rounded-xl bg-panel/60 border border-nutrition/30 px-3 text-sm text-text max-w-[40%]"
+          className="input-focus-nutrition min-h-[44px] min-w-0 max-w-[40%] rounded-xl bg-panel/60 border border-nutrition/30 px-3 text-sm text-text truncate"
           aria-label="Обрати комору"
         >
           {pantries.map((p) => (

@@ -1,476 +1,179 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-07-09
+ * Last validated: 2026-08-04
  * Status: Active
- * Smoke tests for NutritionApp — verifies the orchestration shell renders
- * without throwing and shows the expected page based on the active route.
- * All heavy hooks and child components are mocked; this test covers wiring
- * logic (page routing, PTR invalidation, pending-action state machine).
+ *
+ * Integration tests for NutritionApp — over-mocking refactor.
+ *
+ * NutritionApp orchestrates ~15 hooks and its real page/component tree.
+ * Almost all of them are ordinary React state + `@shared/lib/storage`
+ * (localStorage-backed, jsdom-safe) or in-process pub-sub — no reason to
+ * stub them individually. We render the REAL component tree (real page
+ * components, real bottom nav, real routing via `MemoryRouter`, real
+ * `QueryClientProvider`/`ToastProvider`) and assert on rendered DOM text
+ * and real user interactions (bottom-nav clicks change the visible page).
+ *
+ * The only two hooks mocked are the SQLite dual-write / read-path boot
+ * hooks (`useNutritionDualWriteBoot`, `useNutritionSqliteReadBoot`) —
+ * both open a real sqlite-wasm handle (worker + IndexedDB persistence),
+ * which is out of scope for this shell-level test and covered by their
+ * own dedicated unit tests (`useNutritionDualWriteBoot.test.tsx`,
+ * `useNutritionSqliteReadBoot.test.tsx`). Mocking them also means the
+ * component tree never resolves a real `userId` via `useAuth()`, so no
+ * `AuthProvider` is needed either.
  */
+import "fake-indexeddb/auto";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "@shared/hooks/useToast";
 
-// ─── Storage chain — prevents db-schema import failure ────────────────────
-vi.mock("@shared/lib/storage/storage", () => ({
-  safeReadLS: vi.fn(() => null),
-  safeWriteLS: vi.fn(() => true),
-  safeReadStringLS: vi.fn(() => null),
-  safeReadLSValidated: vi.fn(() => null),
-  safeRemoveLS: vi.fn(() => true),
-  safeListLSKeys: vi.fn(() => []),
-  webKVStore: { get: vi.fn(() => null), set: vi.fn(), remove: vi.fn() },
-}));
-
-// ─── Hook mocks ────────────────────────────────────────────────────────────
-
+// ─── Heavy browser API (sqlite-wasm + worker) — see file docstring ────────
 vi.mock("./hooks/useNutritionDualWriteBoot", () => ({
   useNutritionDualWriteBoot: vi.fn(),
 }));
-
 vi.mock("./hooks/useNutritionSqliteReadBoot", () => ({
   useNutritionSqliteReadBoot: vi.fn(),
 }));
 
-vi.mock("./lib/sqliteReadGate", () => ({
-  useNutritionSqliteReadTick: vi.fn(() => 0),
-}));
-
-vi.mock("./hooks/useNutritionRoute", () => ({
-  useNutritionRoute: vi.fn(() => ({
-    activePage: "start" as const,
-    setActivePage: vi.fn(),
-    setActivePageAndHash: vi.fn(),
-    pantrySubTab: "items" as const,
-    menuSubTab: "plan" as const,
-    setPantrySubTab: vi.fn(),
-    setMenuSubTab: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionFirstRun", () => ({
-  useNutritionFirstRun: vi.fn(() => ({
-    firstRunNutritionActive: false,
-    markNutritionSeen: vi.fn(),
-    setFirstRunNutritionSurface: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionPantries", () => ({
-  useNutritionPantries: vi.fn(() => ({
-    pantries: [],
-    activePantryId: "default",
-    effectiveItems: [],
-    pantryStorageErr: "",
-    upsertItem: vi.fn(),
-    removeItem: vi.fn(),
-    consumeItem: vi.fn(),
-    addPantry: vi.fn(),
-    removePantry: vi.fn(),
-    setActivePantryId: vi.fn(),
-    editPantry: vi.fn(),
-    clearPantry: vi.fn(),
-    replaceFromJsonText: vi.fn(),
-    importText: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionLog", () => ({
-  useNutritionLog: vi.fn(() => ({
-    nutritionLog: {},
-    setNutritionLog: vi.fn(),
-    selectedDate: "2026-01-01",
-    setSelectedDate: vi.fn(),
-    addMealSheetOpen: false,
-    setAddMealSheetOpen: vi.fn(),
-    addMealPhotoResult: null,
-    setAddMealPhotoResult: vi.fn(),
-    handleAddMeal: vi.fn(),
-    handleEditMeal: vi.fn(),
-    handleRemoveMeal: vi.fn(),
-    handleRestoreMeal: vi.fn(),
-    storageErr: "",
-    duplicateYesterday: vi.fn(),
-    replaceLogFromJsonText: vi.fn(),
-    mergeLogFromJsonText: vi.fn(),
-    trimLogToLastDays: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionUiState", () => ({
-  useNutritionUiState: vi.fn(() => ({
-    editingMeal: null,
-    setEditingMeal: vi.fn(),
-    recipes: [],
-    setRecipes: vi.fn(),
-    recipesTried: false,
-    setRecipesTried: vi.fn(),
-    recipesRaw: "",
-    setRecipesRaw: vi.fn(),
-    weekPlan: null,
-    setWeekPlan: vi.fn(),
-    weekPlanRaw: "",
-    setWeekPlanRaw: vi.fn(),
-    weekPlanBusy: false,
-    setWeekPlanBusy: vi.fn(),
-    dayPlan: null,
-    setDayPlan: vi.fn(),
-    dayPlanBusy: false,
-    setDayPlanBusy: vi.fn(),
-    shoppingBusy: false,
-    setShoppingBusy: vi.fn(),
-    dayHintText: "",
-    setDayHintText: vi.fn(),
-    dayHintBusy: false,
-    setDayHintBusy: vi.fn(),
-    cloudBackupBusy: false,
-    setCloudBackupBusy: vi.fn(),
-    backupPasswordDialog: null,
-    setBackupPasswordDialog: vi.fn(),
-    restoreConfirm: null,
-    setRestoreConfirm: vi.fn(),
-    pantryScannerOpen: false,
-    setPantryScannerOpen: vi.fn(),
-    pantryScanStatus: "",
-    setPantryScanStatus: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/usePhotoAnalysis", () => ({
-  usePhotoAnalysis: vi.fn(() => ({
-    fileRef: { current: null },
-    photoPreviewUrl: "",
-    photoResult: null,
-    lastPhotoPayload: null,
-    answers: {},
-    setAnswers: vi.fn(),
-    portionGrams: "",
-    setPortionGrams: vi.fn(),
-    onPickPhoto: vi.fn(),
-    analyzePhoto: vi.fn(),
-    refinePhoto: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useShoppingList", () => ({
-  useShoppingList: vi.fn(() => ({
-    shoppingList: [],
-    checkedItems: [],
-    addItems: vi.fn(),
-    toggleItem: vi.fn(),
-    clearChecked: vi.fn(),
-    removeItem: vi.fn(),
-    replaceFromJsonText: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionReminders", () => ({
-  useNutritionReminders: vi.fn(),
-}));
-
-vi.mock("./hooks/useNutritionPwaAction", () => ({
-  useNutritionPwaAction: vi.fn(),
-}));
-
-vi.mock("./hooks/useNutritionRecipeCache", () => ({
-  useNutritionRecipeCache: vi.fn(),
-}));
-
-vi.mock("./hooks/useNutritionPrefsState", () => ({
-  useNutritionPrefsState: vi.fn(() => ({
-    prefs: {
-      goal: "balanced",
-      servings: 2,
-      timeMinutes: 30,
-      exclude: [],
-    },
-    setPrefs: vi.fn(),
-    prefsStorageErr: "",
-  })),
-}));
-
-vi.mock("./hooks/usePantryBarcodeScan", () => ({
-  usePantryBarcodeScan: vi.fn(() => vi.fn()),
-}));
-
-vi.mock("./hooks/useNutritionCloudBackup", () => ({
-  useNutritionCloudBackup: vi.fn(() => ({
-    handleBackupPasswordConfirm: vi.fn(),
-    applyRestorePayload: vi.fn(),
-  })),
-}));
-
-vi.mock("./hooks/useNutritionRemoteActions", () => ({
-  useNutritionRemoteActions: vi.fn(() => ({
-    recommendRecipes: vi.fn(),
-    fetchWeekPlan: vi.fn(),
-    fetchDayHint: vi.fn(),
-    fetchDayPlan: vi.fn(),
-    addMealFromPlan: vi.fn(),
-    generateShoppingList: vi.fn(),
-  })),
-}));
-
-vi.mock("./lib/recipeCache", () => ({
-  buildRecipeCacheKey: vi.fn(() => "cache-key-test"),
-  readRecipeCache: vi.fn(() => null),
-}));
-
-vi.mock("./lib/mealPhotoStorage", () => ({
-  fileToThumbnailBlob: vi.fn(() => Promise.resolve(null)),
-  saveMealThumbnail: vi.fn(() => Promise.resolve()),
-}));
-
-vi.mock("./lib/mealId", () => ({
-  newMealId: vi.fn(() => "meal-test-id"),
-}));
-
-vi.mock("./lib/nutritionFormat", () => ({
-  todayISODate: vi.fn(() => "2026-01-01"),
-}));
-
-vi.mock("@shared/lib/modules/cloudPullRequest", () => ({
-  requestCloudPull: vi.fn(() => Promise.resolve()),
-}));
-
-vi.mock("@shared/hooks/useCloudPullPending", () => ({
-  useCloudPullPending: vi.fn(() => false),
-}));
-
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: vi.fn(() => ({
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-  })),
-}));
-
-vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
-  return {
-    ...actual,
-    useQueryClient: vi.fn(() => ({
-      invalidateQueries: vi.fn(() => Promise.resolve()),
-    })),
-  };
-});
-
-// ─── Child component mocks ─────────────────────────────────────────────────
-
-vi.mock("./components/NutritionHeader", () => ({
-  NutritionHeader: () => <div data-testid="nutrition-header" />,
-}));
-
-vi.mock("./components/NutritionBottomNav", () => ({
-  NutritionBottomNav: ({ activePage }: { activePage: string }) => (
-    <nav data-testid="nutrition-bottom-nav" data-page={activePage} />
-  ),
-}));
-
-vi.mock("./components/NutritionPantrySelector", () => ({
-  NutritionPantrySelector: () => (
-    <div data-testid="nutrition-pantry-selector" />
-  ),
-}));
-
-vi.mock("./components/NutritionOverlays", () => ({
-  NutritionOverlays: () => <div data-testid="nutrition-overlays" />,
-}));
-
-vi.mock("./pages/NutritionStartPage", () => ({
-  NutritionStartPage: () => <div data-testid="nutrition-start-page" />,
-}));
-
-vi.mock("./pages/NutritionPantryPage", () => ({
-  NutritionPantryPage: () => <div data-testid="nutrition-pantry-page" />,
-}));
-
-vi.mock("./pages/NutritionLogPage", () => ({
-  NutritionLogPage: () => <div data-testid="nutrition-log-page" />,
-}));
-
-vi.mock("./pages/NutritionMenuPage", () => ({
-  NutritionMenuPage: () => <div data-testid="nutrition-menu-page" />,
-}));
-
-vi.mock("@shared/components/ui/Banner", () => ({
-  Banner: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="banner">{children}</div>
-  ),
-}));
-
-vi.mock("@shared/components/layout", () => ({
-  MeshBackground: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="mesh-background">{children}</div>
-  ),
-  ModuleAccentProvider: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="module-accent-provider">{children}</div>
-  ),
-}));
-
-vi.mock("@shared/components/ui/PullToRefresh", () => ({
-  PullToRefresh: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="pull-to-refresh">{children}</div>
-  ),
-}));
-
-// ─── Imports (after mocks) ─────────────────────────────────────────────────
-
 import NutritionApp from "./NutritionApp";
-import { useNutritionRoute } from "./hooks/useNutritionRoute";
-import type { UseNutritionRouteResult } from "./hooks/useNutritionRoute";
-import type { NutritionPage } from "./lib/nutritionRouter";
-import { useNutritionLog } from "./hooks/useNutritionLog";
-import { useNutritionPantries } from "./hooks/useNutritionPantries";
 
-function mockRoute(activePage: NutritionPage): UseNutritionRouteResult {
-  return {
-    activePage,
-    setActivePage: vi.fn(),
-    setActivePageAndHash: vi.fn(),
-    pantrySubTab: "items",
-    menuSubTab: "plan",
-    setPantrySubTab: vi.fn(),
-    setMenuSubTab: vi.fn(),
-  };
+function renderApp(
+  props: React.ComponentProps<typeof NutritionApp> = {},
+  initialEntries: string[] = ["/nutrition"],
+) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <ToastProvider>
+          <NutritionApp {...props} />
+        </ToastProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function bottomNav() {
+  return screen.getByRole("navigation", { name: "Розділи Їжі" });
+}
+
+function navButton(label: string) {
+  return within(bottomNav()).getByRole("button", { name: label });
+}
+
+// Real first-run flag `useModuleFirstRun("nutrition")` reads
+// (`core/onboarding/useModuleFirstRun.ts`). On a genuinely first visit the
+// module auto-routes to Menu→Plan (see the dedicated first-run test below);
+// most routing tests here care about deliberate navigation instead, so they
+// seed this flag as already-seen.
+const NUTRITION_FIRST_SEEN_KEY =
+  "sergeant.onboarding.module_first_seen.nutrition.v1";
+
+function markNutritionFirstRunSeen() {
+  window.localStorage.setItem(NUTRITION_FIRST_SEEN_KEY, "1");
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
+  window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
-describe("NutritionApp — smoke tests", () => {
-  it("renders without crashing and shows the shell structure", () => {
-    render(<NutritionApp />);
-    expect(screen.getByTestId("nutrition-header")).toBeInTheDocument();
-    expect(screen.getByTestId("nutrition-bottom-nav")).toBeInTheDocument();
-    expect(screen.getByTestId("nutrition-overlays")).toBeInTheDocument();
+describe("NutritionApp — shell + routing (real component tree)", () => {
+  it("renders the shell chrome and the start page by default (returning user)", () => {
+    markNutritionFirstRunSeen();
+    renderApp();
+    // Real header title + bottom nav (not mock testids).
+    expect(bottomNav()).toBeInTheDocument();
+    // Start page renders the photo-analysis entry card. The label appears
+    // twice by design — once in the always-visible `<summary>` header and
+    // once inside the collapsed `<details>` body (`PhotoAnalyzeCard`).
+    expect(screen.getAllByText("Аналіз фото страви").length).toBeGreaterThan(0);
   });
 
-  it("renders the start page when activePage is 'start'", () => {
-    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
-    render(<NutritionApp />);
-    expect(screen.getByTestId("nutrition-start-page")).toBeInTheDocument();
-    expect(screen.queryByTestId("nutrition-log-page")).not.toBeInTheDocument();
+  it("a genuinely first Nutrition visit auto-routes to Меню → План на день with the first-run hint", async () => {
+    // No seeded seen-flag — exercises the real `useNutritionFirstRun` jump.
+    renderApp();
     expect(
-      screen.queryByTestId("nutrition-pantry-page"),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByTestId("nutrition-menu-page")).not.toBeInTheDocument();
+      await screen.findByRole("tab", { name: "План на день" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("first-run-hint-banner")).toBeInTheDocument();
   });
 
-  it("renders the log page when activePage is 'log'", () => {
-    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("log"));
-    render(<NutritionApp />);
-    expect(screen.getByTestId("nutrition-log-page")).toBeInTheDocument();
+  it("clicking the 'Журнал' bottom-nav tab navigates to the real log page", async () => {
+    markNutritionFirstRunSeen();
+    renderApp();
+    await userEvent.click(navButton("Журнал"));
+    // Real NutritionLogPage renders its own <h1> — sr-only but queryable.
     expect(
-      screen.queryByTestId("nutrition-start-page"),
-    ).not.toBeInTheDocument();
+      await screen.findByRole("heading", { name: "Журнал" }),
+    ).toBeInTheDocument();
   });
 
-  it("renders the pantry page when activePage is 'pantry'", () => {
-    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("pantry"));
-    render(<NutritionApp />);
-    expect(screen.getByTestId("nutrition-pantry-page")).toBeInTheDocument();
+  it("clicking the 'Комора' bottom-nav tab navigates to the real pantry page", async () => {
+    markNutritionFirstRunSeen();
+    renderApp();
+    await userEvent.click(navButton("Комора"));
+    expect(
+      await screen.findByRole("heading", { name: "Комора" }),
+    ).toBeInTheDocument();
   });
 
-  it("renders the menu page when activePage is 'menu'", () => {
-    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("menu"));
-    render(<NutritionApp />);
-    expect(screen.getByTestId("nutrition-menu-page")).toBeInTheDocument();
+  it("clicking the 'Меню' bottom-nav tab navigates to the real menu page (SubTabs)", async () => {
+    markNutritionFirstRunSeen();
+    renderApp();
+    await userEvent.click(navButton("Меню"));
+    expect(
+      await screen.findByRole("tab", { name: "План на день" }),
+    ).toBeInTheDocument();
+  });
+
+  it("starting on /nutrition/log deep-links straight to the log page", async () => {
+    markNutritionFirstRunSeen();
+    renderApp({}, ["/nutrition/log"]);
+    expect(
+      await screen.findByRole("heading", { name: "Журнал" }),
+    ).toBeInTheDocument();
   });
 
   it("accepts optional props without crashing", () => {
-    render(
-      <NutritionApp
-        onBackToHub={vi.fn()}
-        onOpenSettings={vi.fn()}
-        pwaAction={null}
-        onPwaActionConsumed={vi.fn()}
-      />,
-    );
-    expect(screen.getByTestId("nutrition-header")).toBeInTheDocument();
+    markNutritionFirstRunSeen();
+    renderApp({
+      onBackToHub: vi.fn(),
+      onOpenSettings: vi.fn(),
+      pwaAction: null,
+      onPwaActionConsumed: vi.fn(),
+    });
+    expect(bottomNav()).toBeInTheDocument();
   });
 });
 
-// ─── Log / pantry error state → storage warning banner ─────────────────────
+describe("NutritionApp — real network error surfaces the err banner", () => {
+  it("a failed day-plan request (MSW 500 fallback) renders the dismissible error banner", async () => {
+    // No `server.use(...)` override — the default MSW handler
+    // (`test/msw/handlers.ts`) 500s every unhandled `/api/v1/*` call, so
+    // `nutritionApi.dayPlan()` really goes over the mocked transport and
+    // really rejects. `useNutritionRemoteActions.fetchDayPlan` catches it
+    // and calls the real `setErr(...)`, which NutritionApp renders as the
+    // `role="alert"` banner with a close button — this exercises the real
+    // busy → error wiring instead of asserting on a stubbed setter.
+    markNutritionFirstRunSeen();
+    renderApp();
+    await userEvent.click(navButton("Меню"));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Згенерувати денний план" }),
+    );
 
-const DEFAULT_LOG_RETURN = {
-  nutritionLog: {},
-  setNutritionLog: vi.fn(),
-  selectedDate: "2026-01-01",
-  setSelectedDate: vi.fn(),
-  addMealSheetOpen: false,
-  setAddMealSheetOpen: vi.fn(),
-  addMealPhotoResult: null,
-  setAddMealPhotoResult: vi.fn(),
-  handleAddMeal: vi.fn(),
-  handleEditMeal: vi.fn(),
-  handleRemoveMeal: vi.fn(),
-  handleRestoreMeal: vi.fn(),
-  storageErr: "",
-  duplicateYesterday: vi.fn(),
-  replaceLogFromJsonText: vi.fn(),
-  mergeLogFromJsonText: vi.fn(),
-  trimLogToLastDays: vi.fn(),
-} as unknown as ReturnType<typeof useNutritionLog>;
+    const alert = await screen.findByRole("alert");
+    expect(alert).toBeInTheDocument();
 
-const DEFAULT_PANTRY_RETURN = {
-  pantries: [],
-  activePantryId: "default",
-  effectiveItems: [],
-  pantryStorageErr: "",
-  upsertItem: vi.fn(),
-  removeItem: vi.fn(),
-  consumeItem: vi.fn(),
-  addPantry: vi.fn(),
-  removePantry: vi.fn(),
-  setActivePantryId: vi.fn(),
-  editPantry: vi.fn(),
-  clearPantry: vi.fn(),
-  replaceFromJsonText: vi.fn(),
-  importText: vi.fn(),
-} as unknown as ReturnType<typeof useNutritionPantries>;
-
-describe("NutritionApp — storage error banners", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
-  });
-
-  it("renders a warning banner when useNutritionLog has a storageErr", () => {
-    vi.mocked(useNutritionLog).mockReturnValueOnce({
-      ...DEFAULT_LOG_RETURN,
-      storageErr: "Помилка сховища журналу",
-    });
-    render(<NutritionApp />);
-    // Banner component is mocked as <div data-testid="banner">{children}</div>
-    expect(screen.getByText("Помилка сховища журналу")).toBeInTheDocument();
-  });
-
-  it("renders a warning banner when useNutritionPantries has a pantryStorageErr", () => {
-    vi.mocked(useNutritionPantries).mockReturnValueOnce({
-      ...DEFAULT_PANTRY_RETURN,
-      pantryStorageErr: "Помилка сховища комори",
-    });
-    render(<NutritionApp />);
-    expect(screen.getByText("Помилка сховища комори")).toBeInTheDocument();
-  });
-
-  it("concatenates multiple storage errors into one banner", () => {
-    vi.mocked(useNutritionLog).mockReturnValueOnce({
-      ...DEFAULT_LOG_RETURN,
-      storageErr: "Журнал: помилка",
-    });
-    vi.mocked(useNutritionPantries).mockReturnValueOnce({
-      ...DEFAULT_PANTRY_RETURN,
-      pantryStorageErr: "Комора: помилка",
-    });
-    render(<NutritionApp />);
-    // storageBanner = errors joined by " "
-    expect(
-      screen.getByText("Журнал: помилка Комора: помилка"),
-    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Закрити повідомлення про помилку" }),
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

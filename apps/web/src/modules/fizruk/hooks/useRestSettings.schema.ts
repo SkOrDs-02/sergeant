@@ -15,14 +15,15 @@ import { REST_DEFAULTS } from "@sergeant/fizruk-domain";
  * stale key.
  */
 export const RestSettingsSchema = z
-  .object(
-    Object.fromEntries(
+  .object({
+    ...(Object.fromEntries(
       Object.keys(REST_DEFAULTS).map((k) => [
         k,
         z.number().positive().optional(),
       ]),
-    ) as { [K in keyof typeof REST_DEFAULTS]: z.ZodOptional<z.ZodNumber> },
-  )
+    ) as { [K in keyof typeof REST_DEFAULTS]: z.ZodOptional<z.ZodNumber> }),
+    byExercise: z.record(z.string(), z.number().positive()).optional(),
+  })
   .passthrough();
 
 export type RestSettings = z.infer<typeof RestSettingsSchema>;

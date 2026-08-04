@@ -5,6 +5,7 @@ import {
   calcDebtRemaining,
   getDebtEffectiveTotal,
 } from "../utils";
+import { sumMonoCardPaid } from "@sergeant/finyk-domain/domain/monoCardDebt";
 import { getAccountVisual } from "../lib/accountVisual";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -105,9 +106,13 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
-        const paidFromLinked = transactions
-          .filter((t) => linkedIds.includes(t.id))
-          .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+        // Правило погашення — канонічне в `@sergeant/finyk-domain`; раніше
+        // воно жило двома копіями (тут і в пікері) й розійшлося.
+        const paidFromLinked = sumMonoCardPaid(
+          transactions,
+          linkedIds,
+          a.id ?? "",
+        );
         const remaining = getMonoDebt(a);
         const volatileTotal = paidFromLinked + remaining;
         const visual = getAccountVisual(a);

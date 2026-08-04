@@ -76,7 +76,12 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   // `source: "bulk" | "chat"` НЕ є мотивованим чекіном — виключається зі
   // знаменника петлі на боці дашборда, а не на боці коду.
   ROUTINE_HABIT_CHECKED: "routine_habit_checked",
+  FIZRUK_WORKOUT_STARTED: "fizruk_workout_started",
   FIZRUK_WORKOUT_FINISHED: "fizruk_workout_finished",
+  FIZRUK_WORKOUT_DISCARDED: "fizruk_workout_discarded",
+  FIZRUK_REST_TIMER_DONE: "fizruk_rest_timer_done",
+  FIZRUK_INJURY_MARKED: "fizruk_injury_marked",
+  FIZRUK_INJURY_CLEARED: "fizruk_injury_cleared",
   NUTRITION_MEAL_LOGGED: "nutrition_meal_logged",
   FINYK_TX_CATEGORIZED: "finyk_tx_categorized",
 
@@ -101,8 +106,32 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   //
   // `instrumentation_version` дозволяє відрізати когорту «ще не розкатано»
   // (PWA service-worker тримає старий бандл), а не гадати про знаменник.
+  //   AI_ADVICE_FAILED  { source: "coach_insight" | "weekly_digest",
+  //                       kind: "http" | "network" | "parse" | "aborted"
+  //                             | "unknown",
+  //                       status: number | null,
+  //                       instrumentation_version: number }
+  //
+  // `kind` дзеркалить `ApiErrorKind` і `HUBCHAT_ERROR.kind` — один словник
+  // збоїв на весь AI-шар. `unknown` покриває не-`ApiError` викиди.
+  //
+  // Дзеркало `HUBCHAT_ERROR` для двох НЕчатових поверхонь AI-шару. Без неї
+  // провал генерації невидимий: `useCoachInsight` тримає помилку всередині
+  // React Query, `useWeeklyDigest.generate` ковтає її в `catch { return null }`,
+  // і назовні обидва випадки виглядають однаково — просто відсутність
+  // `AI_ADVICE_SHOWN`.
+  //
+  // Чому це критично саме для коуча: у нього Є легітимна тиша — гейт
+  // достатності даних (`hub-coach.md` §6.2) навмисно мовчить, поки жоден
+  // модуль не дав сигналу. Без цієї події «коуч мовчить, бо нема даних» і
+  // «коуч мовчить, бо провайдер віддає 400» — один і той самий нуль на
+  // дашборді. Саме цей нуль треба вміти розрізняти під час бети.
+  //
+  // Тіла помилки тут немає — лише `kind` + `status`. Текст провайдера може
+  // містити фрагмент промпту, тобто дані користувача (Hard Rule #21).
   AI_ADVICE_SHOWN: "ai_advice_shown",
   AI_ADVICE_REACTED: "ai_advice_reacted",
+  AI_ADVICE_FAILED: "ai_advice_failed",
 
   // ── 4) Експозиція стріку ПОЗА InsightCard ──────────────────────────
   //

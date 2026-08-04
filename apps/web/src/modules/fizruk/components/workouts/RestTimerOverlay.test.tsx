@@ -26,8 +26,24 @@ describe("RestTimerOverlay", () => {
       "aria-label",
       "Відпочинок, залишилось 45 секунд",
     );
-    fireEvent.click(screen.getByRole("button", { name: /Скасувати/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Пропустити/i }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers ±15/30 second adjustments", () => {
+    const onAdjust = vi.fn();
+    render(
+      <RestTimerOverlay
+        restTimer={{ remaining: 45, total: 90 }}
+        onCancel={vi.fn()}
+        onAdjust={onAdjust}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Додати 15 секунд" }));
+    fireEvent.click(screen.getByRole("button", { name: "Відняти 30 секунд" }));
+    expect(onAdjust).toHaveBeenNthCalledWith(1, 15);
+    expect(onAdjust).toHaveBeenNthCalledWith(2, -30);
   });
 
   it("applies urgent styling when remaining is 10 seconds or less", () => {

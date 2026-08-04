@@ -44,7 +44,18 @@ import { ExerciseDetailSheet } from "./ExerciseDetailSheet";
 afterEach(cleanup);
 
 function noConflicts() {
-  return { hasWarning: false, hasHardBlock: false, red: [], yellow: [] };
+  return {
+    hasWarning: false,
+    hasHardBlock: false,
+    red: [],
+    yellow: [],
+    injury: {
+      blocked: false,
+      viaMuscles: [],
+      viaZones: [],
+      coverage: "muscle-and-zone" as const,
+    },
+  };
 }
 
 function makeExercise(
@@ -171,6 +182,12 @@ describe("ExerciseDetailSheet – recovery conflicts", () => {
         recoveryConflictsForExercise={() => ({
           hasWarning: true,
           hasHardBlock: false,
+          injury: {
+            blocked: false,
+            viaMuscles: [],
+            viaZones: [],
+            coverage: "muscle-and-zone" as const,
+          },
           red: [
             { id: "quad", label: "Квадрицепс", role: "primary", status: "red" },
           ],
@@ -197,6 +214,12 @@ describe("ExerciseDetailSheet – recovery conflicts", () => {
         recoveryConflictsForExercise={() => ({
           hasWarning: true,
           hasHardBlock: false,
+          injury: {
+            blocked: false,
+            viaMuscles: [],
+            viaZones: [],
+            coverage: "muscle-and-zone" as const,
+          },
           red: [],
           yellow: [
             { id: "bicep", label: "Біцепс", role: "primary", status: "yellow" },

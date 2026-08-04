@@ -54,6 +54,10 @@ function makeClient(): MockClient {
     sendMessage: sendMessage as unknown as TelegramApiClient["sendMessage"],
     editMessageText:
       editMessageText as unknown as TelegramApiClient["editMessageText"],
+    // Шипер алертів inline-кнопок не шле, тож цей метод тут не викликається
+    // ніколи. Заглушка стоїть лише щоб задовольнити порт, спільний із ботом
+    // вейтліста.
+    answerCallbackQuery: vi.fn().mockResolvedValue({ ok: true }),
   };
   return {
     sendMessage,

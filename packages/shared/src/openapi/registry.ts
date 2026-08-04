@@ -235,6 +235,16 @@ const WaitlistSubmitResponse = schemas.WaitlistSubmitResponseSchema.meta({
   description:
     "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate.",
 });
+const FeedbackSubmit = schemas.FeedbackSubmitSchema.meta({
+  id: "FeedbackSubmit",
+  description:
+    "POST /api/v1/feedback — in-app віджет фідбеку (головний багрепорт-канал бети).",
+});
+const FeedbackSubmitResponse = schemas.FeedbackSubmitResponseSchema.meta({
+  id: "FeedbackSubmitResponse",
+  description:
+    "Відповідь на POST /api/v1/feedback — `id` рядка у feedback_entries (bigint скоерсено в number).",
+});
 const BillingCheckoutRequest = schemas.BillingCheckoutRequestSchema.meta({
   id: "BillingCheckoutRequest",
   description: "POST /api/billing/checkout — Stripe Checkout session request.",
@@ -368,6 +378,8 @@ export const namedSchemas = {
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,
+  FeedbackSubmit,
+  FeedbackSubmitResponse,
   BillingCheckoutRequest,
   BillingCheckoutResponse,
   BillingStatusResponse,

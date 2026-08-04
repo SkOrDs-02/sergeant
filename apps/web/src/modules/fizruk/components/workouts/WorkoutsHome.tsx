@@ -26,14 +26,8 @@ export interface WorkoutsHomeProps {
   onOpenCatalog: () => void;
   onOpenTemplates: () => void;
   onOpenJournal: () => void;
-  /**
-   * Opens the start chooser (`QuickStartSheet`) instead of immediately
-   * spinning up an empty session — the chooser itself is responsible
-   * for creating the workout once the user picked a template or a set
-   * of exercises.
-   */
+  /** Starts an empty workout immediately. */
   onRequestStart: () => void;
-  onOpenRetro: () => void;
   /**
    * Deep-link into the Routine module's calendar so the user can
    * schedule a future training session. Surfaced as a third stacked
@@ -43,15 +37,6 @@ export interface WorkoutsHomeProps {
    * dead control on hosts where deep-linking isn't available.
    */
   onOpenSchedule?: (() => void) | undefined;
-  /**
-   * Deep-link into the Fizruk «Програми» page (the catalogue of
-   * built-in training programs — PPL, Upper/Lower, Full-body, etc.).
-   * Previously the only entry was the dashboard hero «До програм»
-   * button, so users browsing the Workouts tab had no idea programs
-   * existed. Surfaced here as a third tile in «Довідники» beside
-   * «Каталог вправ» / «Шаблони».
-   */
-  onOpenPrograms?: (() => void) | undefined;
 }
 
 export function WorkoutsHome({
@@ -63,9 +48,7 @@ export function WorkoutsHome({
   onOpenTemplates,
   onOpenJournal,
   onRequestStart,
-  onOpenRetro,
   onOpenSchedule,
-  onOpenPrograms,
 }: WorkoutsHomeProps) {
   const hasActive = !!activeWorkout && !activeWorkout.endedAt;
 
@@ -100,34 +83,26 @@ export function WorkoutsHome({
             Немає активного тренування
           </div>
           <div className="text-xs text-subtle mt-1">
-            Почни нове — обереш шаблон або підбереш вправи перед стартом.
+            Почни порожнє тренування або обери готовий шаблон.
           </div>
-          <div className="mt-3 grid grid-cols-1 gap-2">
+          <div
+            className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+            aria-label="Способи почати тренування"
+          >
             <Button
               module="fizruk"
               className="h-12 text-base"
               onClick={onRequestStart}
             >
-              <Icon name="play" size={16} aria-hidden /> Почати тренування
+              <Icon name="play" size={16} aria-hidden /> Швидкий старт
             </Button>
             <Button
               variant="secondary"
               className="h-12 text-base"
-              onClick={onOpenRetro}
+              onClick={onOpenTemplates}
             >
-              <Icon name="edit" size={16} aria-hidden /> Внести проведене
-              заняття
+              <Icon name="clipboard" size={16} aria-hidden /> Із шаблону
             </Button>
-            {onOpenSchedule && (
-              <Button
-                variant="secondary"
-                className="h-12 text-base"
-                onClick={onOpenSchedule}
-              >
-                <Icon name="calendar" size={16} aria-hidden /> Запланувати
-                тренування
-              </Button>
-            )}
           </div>
         </div>
       )}
@@ -191,36 +166,18 @@ export function WorkoutsHome({
               </span>
             </div>
           </button>
-          <button
-            type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors"
-            onClick={onOpenTemplates}
-          >
-            <div className="flex items-center gap-3">
-              <Icon name="clipboard" size={22} className="text-muted" />
-              <div className="flex-1 min-w-0">
-                <div className="text-style-label text-text">Шаблони</div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Збережені набори вправ на швидкий старт
-                </div>
-              </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
-            </div>
-          </button>
-          {onOpenPrograms && (
+          {onOpenSchedule && (
             <button
               type="button"
-              className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors sm:col-span-2"
-              onClick={onOpenPrograms}
+              className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors"
+              onClick={onOpenSchedule}
             >
               <div className="flex items-center gap-3">
                 <Icon name="calendar" size={22} className="text-muted" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-style-label text-text">Програми</div>
+                  <div className="text-style-label text-text">Планування</div>
                   <div className="text-xs text-subtle mt-0.5">
-                    Готові плани на тиждень — PPL, Upper/Lower, Full-body
+                    Відкрити календар тренувань у Routine
                   </div>
                 </div>
                 <span className="text-subtle" aria-hidden>

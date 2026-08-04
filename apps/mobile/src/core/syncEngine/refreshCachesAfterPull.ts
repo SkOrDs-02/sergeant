@@ -19,6 +19,10 @@ const ROUTINE_PULL_TABLES = new Set([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  // W1-ROUTINE-APPEND стадія 1. Писар уже є (append-only journal), читачів
+  // ще немає — але без цього рядка перший же pull чужого запису не
+  // інвалідує routine-кеш, коли (у стадії 3) журнал стане джерелом правди.
+  "routine_completion_events",
 ]);
 const FINYK_PULL_TABLES = new Set([
   "finyk_hidden_accounts",

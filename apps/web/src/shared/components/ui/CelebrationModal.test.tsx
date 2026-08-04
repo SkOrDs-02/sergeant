@@ -17,6 +17,28 @@ import {
   useCelebration,
 } from "./CelebrationModal";
 
+function setMatchMediaReduced(reduced: boolean): void {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("reduce") ? reduced : false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      onchange: null,
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  // also expose on window for code that reads window.matchMedia
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: globalThis.matchMedia,
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   Object.defineProperty(navigator, "vibrate", {
@@ -24,6 +46,7 @@ beforeEach(() => {
     writable: true,
     value: vi.fn(),
   });
+  setMatchMediaReduced(false);
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback): number => {
     cb(0);
     return 0;
@@ -176,6 +199,49 @@ describe("CelebrationModal", () => {
       />,
     );
     expect(screen.getByTestId("custom-icon")).toBeInTheDocument();
+  });
+
+  // C2/C3/C6 web-audit: migrated from the legacy `useFocusTrap` (no
+  // background inert, no scroll lock) to `useDialogFocusTrap` +
+  // `useBodyScrollLock`, and the raw `navigator.vibrate` call now routes
+  // through the shared haptic layer so it respects reduced-motion.
+  it("Escape closes the dialog via the shared focus trap", () => {
+    const onClose = vi.fn();
+    render(
+      <CelebrationModal type="success" open onClose={onClose} title="x" />,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => vi.advanceTimersByTime(250)); // close animation delay
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks body scroll while open and restores it on close", () => {
+    const { rerender } = render(
+      <CelebrationModal type="success" open onClose={vi.fn()} title="x" />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    rerender(
+      <CelebrationModal
+        type="success"
+        open={false}
+        onClose={vi.fn()}
+        title="x"
+      />,
+    );
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("does not vibrate when the user prefers reduced motion", () => {
+    setMatchMediaReduced(true);
+    render(
+      <CelebrationModal
+        type="confetti"
+        open
+        onClose={vi.fn()}
+        title="Перемога"
+      />,
+    );
+    expect(navigator.vibrate).not.toHaveBeenCalled();
   });
 });
 

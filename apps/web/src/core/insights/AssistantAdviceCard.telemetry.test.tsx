@@ -236,7 +236,8 @@ describe("AssistantAdviceCard — реакції на наявних афорд�
 
   it("згортання/розгортання картки → collapse / expand (нових кнопок не додано)", () => {
     renderCard();
-    const header = screen.getByRole("button", { name: /порада асистента/i });
+    // Персона зведена в одну — «Сержант» (`messages.sergeant.adviceCardTitle`).
+    const header = screen.getByRole("button", { name: /сержант/i });
 
     fireEvent.click(header); // → collapse
     fireEvent.click(header); // → expand

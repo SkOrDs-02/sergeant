@@ -2,12 +2,13 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { Modal } from "@shared/components/ui/Modal";
+import { Button } from "@shared/components/ui/Button";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
-import { safeWriteSS } from "@shared/lib/storage/storage";
 import { messages } from "@shared/i18n/uk";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { useFizrukRoute } from "./hooks/useFizrukRoute";
@@ -51,6 +52,7 @@ export default function FizrukApp({
   const { page, segments, navigate } = useFizrukRoute("dashboard");
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
+  const workoutId = page === "workout" && segments[0] ? segments[0] : undefined;
 
   // Stage 4 PR #028 follow-up: install the dual-write context once the
   // user is known and the flag is on. Without this the `triggerFizrukDualWrite`
@@ -70,7 +72,8 @@ export default function FizrukApp({
     activateProgram,
     deactivateProgram,
   } = useTrainingProgram();
-  const { workouts, createWorkout, addItem } = useWorkouts();
+  const { workouts, createWorkout, addItem, endWorkout, deleteWorkout } =
+    useWorkouts();
   const { exercises } = useExerciseCatalog();
   // Keep the Hub fizruk bento card's quick-stats snapshot in sync with real
   // workouts, not just the onboarding demo seed.
@@ -81,16 +84,30 @@ export default function FizrukApp({
     reminderEnabled: monthlyPlan.reminderEnabled,
     reminderHour: monthlyPlan.reminderHour,
     reminderMinute: monthlyPlan.reminderMinute,
-    days: monthlyPlan.days,
   });
 
+  const conflictCopy = messages.fizruk.activeWorkoutConflict;
+  const [pendingProgramStart, setPendingProgramStart] = useState<
+    (() => void) | null
+  >(null);
   const handleStartProgramWorkout = useFizrukProgramStart({
     workouts,
     createWorkout,
     addItem,
     exercises,
     navigate,
+    onConflict: (start) => setPendingProgramStart(() => start),
   });
+
+  const resolveProgramStartConflict = (resolution: "finish" | "discard") => {
+    const current = workouts.find((workout) => !workout.endedAt);
+    const start = pendingProgramStart;
+    if (!current || !start) return;
+    if (resolution === "finish") endWorkout(current.id);
+    else deleteWorkout(current.id);
+    setPendingProgramStart(null);
+    start();
+  };
 
   usePwaAction(pwaAction, onPwaActionConsumed, {
     start_workout: () => navigate("workouts"),
@@ -116,10 +133,9 @@ export default function FizrukApp({
   // canonical selector, той самий, що й Dashboard hero-картка.
   const activeWorkoutId = useActiveFizrukWorkout();
   const handleFabClick = () => {
-    if (activeWorkoutId) safeWriteSS("fizruk_workouts_mode", "log");
-    navigate("workouts");
+    navigate(activeWorkoutId ? `workout/${activeWorkoutId}` : "workouts");
   };
-  const showFab = showBottomNav && page !== "workouts";
+  const showFab = showBottomNav && page !== "workouts" && page !== "workout";
 
   // Contextual back-button targets for the three sub-pages that show
   // a `← <label>` arrow instead of the module's "back to hub" arrow.
@@ -134,6 +150,8 @@ export default function FizrukApp({
       case "atlas":
         return "body";
       case "exercise":
+        return "workouts";
+      case "workout":
         return "workouts";
       case "measurements":
         return "progress";
@@ -184,6 +202,7 @@ export default function FizrukApp({
         <FizrukRouter
           page={page}
           exerciseId={exerciseId}
+          workoutId={workoutId}
           activeProgramId={activeProgramId}
           activeProgram={activeProgram}
           activateProgram={activateProgram}
@@ -194,6 +213,38 @@ export default function FizrukApp({
             handleStartProgramWorkout(session)
           }
           onOpenModule={onOpenModule}
+        />
+        <Modal
+          open={pendingProgramStart !== null}
+          onClose={() => setPendingProgramStart(null)}
+          title={conflictCopy.title}
+          description={conflictCopy.description}
+          size="sm"
+          footer={
+            <div className="flex flex-col gap-2">
+              <Button
+                module="fizruk"
+                className="w-full h-12"
+                onClick={() => resolveProgramStartConflict("finish")}
+              >
+                {conflictCopy.finish}
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full h-12"
+                onClick={() => resolveProgramStartConflict("discard")}
+              >
+                {conflictCopy.discard}
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full h-12"
+                onClick={() => setPendingProgramStart(null)}
+              >
+                {messages.actions.cancel}
+              </Button>
+            </div>
+          }
         />
         {showFab && (
           <FloatingActionButton

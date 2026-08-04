@@ -18,10 +18,7 @@ import type {
 } from "../endpoints/push";
 import type { BarcodeLookupResponse } from "../endpoints/barcode";
 import type { FoodSearchResponse } from "../endpoints/foodSearch";
-import type {
-  PrivatBalanceFinalResponse,
-  PrivatCredentials,
-} from "../endpoints/privat";
+import type { PrivatBalanceFinalResponse } from "../endpoints/privat";
 import type {
   WeeklyDigestPayload,
   WeeklyDigestResponse,
@@ -208,15 +205,21 @@ export function useBarcodeLookup(
 // the legacy `useMonoClientInfo` / `useMonoStatement` hooks were removed when
 // the polling proxy was deleted in roadmap A.
 
+/**
+ * `merchantId` більше не передається як креденшел — лише як ключ кешу й
+ * ознака «підключення існує». Сам токен живе зашифрованим на сервері й
+ * резолвиться за сесією (спека beta-security-readiness, F1), тож клієнту
+ * нема чого надсилати.
+ */
 export function usePrivatBalanceFinal(
-  creds: PrivatCredentials | null,
+  merchantId: string | null,
   opts?: QueryOpts<PrivatBalanceFinalResponse>,
 ) {
   const api = useApiClient();
   return useQuery({
-    queryKey: apiQueryKeys.privat.balanceFinal(creds?.merchantId ?? ""),
-    queryFn: ({ signal }) => api.privat.balanceFinal(creds!, { signal }),
-    enabled: !!creds?.merchantId && !!creds?.merchantToken,
+    queryKey: apiQueryKeys.privat.balanceFinal(merchantId ?? ""),
+    queryFn: ({ signal }) => api.privat.balanceFinal({ signal }),
+    enabled: !!merchantId,
     ...opts,
   });
 }

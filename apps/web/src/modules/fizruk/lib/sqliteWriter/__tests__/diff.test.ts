@@ -18,6 +18,7 @@ const EMPTY: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
 };
 
 function makeWorkout(
@@ -57,6 +58,7 @@ describe("diffFizrukDualWriteOps", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     };
     expect(diffFizrukDualWriteOps(state, state)).toEqual([]);
   });
@@ -149,6 +151,7 @@ describe("diffFizrukDualWriteOps", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     };
     const next: FizrukDualWriteState = {
       workouts: [],
@@ -157,6 +160,7 @@ describe("diffFizrukDualWriteOps", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     };
     const ops = diffFizrukDualWriteOps(prev, next);
     // workout-delete + measurement-upsert (exercise is same ref → no op)

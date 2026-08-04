@@ -121,6 +121,22 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
 
+  /**
+   * Origin веб-застосунку (Vercel у проді, Vite локально). Використовується
+   * як `callbackURL` у транзакційних листах Better Auth — куди повертається
+   * користувач після кліку «Підтвердити email».
+   *
+   * Окремий від `BETTER_AUTH_URL`: фронт і API живуть на різних хостах
+   * (Vercel ↔ Coolify), а API не роздає SPA (`config.servesFrontend === false`),
+   * тож редирект на API-домен дає 404.
+   *
+   * Необовʼязковий: без нього `getWebAppOrigin()` бере перший http(s)-запис
+   * із `ALLOWED_ORIGINS` — у проді там уже стоїть домен Vercel. Задавай явно
+   * лише тоді, коли перший allowed-origin не є основним доменом застосунку.
+   * Значення автоматично потрапляє у `trustedOrigins` (див. `auth.ts`).
+   */
+  WEB_APP_URL: z.string().url().optional(),
+
   BETTER_AUTH_CROSS_SITE_COOKIES: z.string().optional(),
 
   BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
@@ -431,6 +447,16 @@ const envSchema = z.object({
 
   AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
 
+  // Per-account credential bucket (F2). Keyed on the targeted email, not the
+  // caller's IP, so renting more IPs does not buy more guesses. 10 per 15 min
+  // is deliberately looser than the per-IP 5/60s: it must not fire during
+  // ordinary "I mistyped my password four times" use, only against sustained
+  // guessing. Window, not permanent lockout — a permanent one would let an
+  // attacker lock any account out of its own login.
+  AUTH_ACCOUNT_RATE_LIMIT_MAX: intFromEnv(10),
+
+  AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+
   RATE_LIMIT_IP_MAX: intFromEnv(200),
 
   SYNC_AUDIT_ADMIN_USER_IDS: stringWithDefault(""),
@@ -442,6 +468,28 @@ const envSchema = z.object({
   MONO_ENRICHMENT_INTERVAL_MS: intFromEnv(5_000),
 
   MONO_ENRICHMENT_MAX_ATTEMPTS: intFromEnv(5),
+
+  /**
+   * Трекінг останнього візиту (`lib/lastSeen.ts`).
+   *
+   * Дефолт `true`: без нього прохід підштовхувань не має за чим відрізнити
+   * відсутнього юзера від присутнього і мовчить. Прапорець існує як
+   * рубильник (зайвий UPDATE на юзера щогодини) і щоб глушити фонову
+   * телеметрію у тестах: маршрутні тести мокають пул чергою одноразових
+   * відповідей, і будь-який позаплановий запит її зʼїдає.
+   */
+  LAST_SEEN_TRACKING_ENABLED: boolFromEnv(true),
+
+  /**
+   * Хвилинний прохід нагадувань (`lib/reminders/scheduler.ts`).
+   *
+   * Дефолт `true`: без нього нагадування про звички / їжу / тренування не
+   * доходять при закритому застосунку взагалі — локальні таймери у
+   * сервіс-воркері помирають разом із ним. Прапорець існує як аварійний
+   * рубильник (раптовий потік дублів, деградація БД) і щоб глушити
+   * планувальник у тестах та скриптах, які піднімають увесь app.
+   */
+  REMINDER_SWEEP_ENABLED: boolFromEnv(true),
 
   MCC_BATCH_HOURLY_ENABLED: boolFromEnv(false),
 
@@ -498,6 +546,34 @@ const envSchema = z.object({
   TELEGRAM_WAITLIST_WEBHOOK_SECRET: stringWithDefault(""),
 
   TELEGRAM_BETA_INVITE_LINK: stringWithDefault(""),
+  /**
+   * Адреса застосунку бети. Окремий Vercel-проєкт із власним доменом
+   * (`docs/90-work/beta-launch/run-beta-wave.md` § Фаза 0.3), тому НЕ
+   * виводиться з `BETTER_AUTH_URL` — це різні хости.
+   *
+   * Порожній рядок легальний: бот скаже, що адреси ще немає, замість того
+   * щоб надіслати `/install` із діркою посеред інструкції.
+   */
+  TELEGRAM_BETA_APP_URL: stringWithDefault(""),
+  /**
+   * Анонімна форма зворотного звʼязку бети (Google Form / Tally). Окремий
+   * канал від групи саме тому, що анонімний: частина відгуків не звучить,
+   * поки під ними стоїть імʼя.
+   */
+  TELEGRAM_BETA_FEEDBACK_FORM_URL: stringWithDefault(""),
+  /**
+   * Контакт founder-а разом із `@` (наприклад `@skords`). Останній канал у
+   * `/help` — для особистого й термінового.
+   */
+  TELEGRAM_BETA_FOUNDER_USERNAME: stringWithDefault(""),
+  /**
+   * Розмір першої хвилі бети. Хто прийшов пізніше — отримує від бота номер у
+   * черзі замість «ти в списку». Це лише ТЕКСТ відповіді: кого реально
+   * запрошувати, вирішує `--limit` у `broadcast-waitlist.mjs`, і ці два числа
+   * навмисно не зв'язані — розсилати можна меншими партіями, ніж оголошена
+   * хвиля, не переписуючи те, що бачать нові підписники.
+   */
+  TELEGRAM_BETA_WAVE_SIZE: coerceInt.positive().default(35),
   /**
    * `chat_id` власника — єдиний, кому бот відповідає на `/stats`. Порожній →
    * команда інертна для всіх, включно з власником: сліпий режим безпечніший,
@@ -712,6 +788,12 @@ export function assertStartupEnv(): void {
       !env.PUBLIC_API_BASE_URL.startsWith("https://")
     ) {
       insecureUrls.push(`PUBLIC_API_BASE_URL=${env.PUBLIC_API_BASE_URL}`);
+    }
+    // `WEB_APP_URL` їде у листи як `callbackURL` і додається у
+    // `trustedOrigins`. http-значення у проді означало б, що ми самі
+    // надсилаємо користувачам посилання на незахищений origin.
+    if (env.WEB_APP_URL && !env.WEB_APP_URL.startsWith("https://")) {
+      insecureUrls.push(`WEB_APP_URL=${env.WEB_APP_URL}`);
     }
     if (insecureUrls.length > 0) {
       throw new Error(

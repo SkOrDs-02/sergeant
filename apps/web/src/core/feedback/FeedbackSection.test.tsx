@@ -1,13 +1,23 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { FeedbackSection } from "./FeedbackSection";
 
-const trackEvent = vi.fn();
+const { trackEvent, submitMock } = vi.hoisted(() => ({
+  trackEvent: vi.fn(),
+  submitMock: vi.fn(),
+}));
+
 vi.mock("../observability/analytics", () => ({
   trackEvent: (...args: unknown[]) => trackEvent(...args),
+}));
+
+// Сабміт більше не fire-and-forget: діалог чекає на 200 від
+// `POST /api/v1/feedback` і лише тоді фаїть подію (див. FeedbackDialog.tsx).
+vi.mock("@shared/api", () => ({
+  feedbackApi: { submit: (...args: unknown[]) => submitMock(...args) },
 }));
 
 function renderSection() {
@@ -31,6 +41,8 @@ function openDialog() {
 describe("FeedbackSection", () => {
   beforeEach(() => {
     trackEvent.mockClear();
+    submitMock.mockReset();
+    submitMock.mockResolvedValue({ ok: true, id: 1 });
   });
 
   it("fires feedback_widget_opened when the dialog is opened", () => {
@@ -44,7 +56,7 @@ describe("FeedbackSection", () => {
     ).toBeInTheDocument();
   });
 
-  it("submits feedback_submitted with category, message and page context", () => {
+  it("submits feedback_submitted with category, message and page context", async () => {
     renderSection();
     openDialog();
 
@@ -58,6 +70,18 @@ describe("FeedbackSection", () => {
       screen.getByRole("button", { name: messages.feedback.submit }),
     );
 
+    // Спершу мусить піти реальний POST — подія в PostHog лише після нього.
+    await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+    expect(submitMock.mock.calls[0]?.[0]).toMatchObject({
+      category: "bug",
+      message: "Кнопка не працює на екрані бюджету",
+    });
+
+    await waitFor(() =>
+      expect(
+        trackEvent.mock.calls.some(([name]) => name === "feedback_submitted"),
+      ).toBe(true),
+    );
     const call = trackEvent.mock.calls.find(
       ([name]) => name === "feedback_submitted",
     );
@@ -71,9 +95,11 @@ describe("FeedbackSection", () => {
     expect(payload["viewport"]).toMatch(/^\d+x\d+$/);
 
     // Діалог закривається після сабміту.
-    expect(
-      screen.queryByRole("dialog", { name: messages.feedback.dialogTitle }),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: messages.feedback.dialogTitle }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("blocks empty submissions with an inline error instead of firing the event", () => {

@@ -260,6 +260,13 @@ function diffCompletionOps(
  *
  * Порядок детермінований (habitId, dateKey, state), щоб батч ops не
  * «плив» між прогонами і snapshot-тести write-path-у лишались стабільними.
+ *
+ * AI-CONTEXT: дзеркало `apps/web/src/modules/routine/lib/sqliteWriter/diff.ts`
+ * — події виводяться зі ЗНІМКОВОГО diff-у `prevSet` → `nextSet`, а не з
+ * наміру користувача, тож toggle → untoggle → toggle усередині ОДНОГО
+ * збереження згортається в кінцевий стан. Прийнята межа (рішення власника,
+ * W1-ROUTINE-APPEND); другий write-path на кожен клік свідомо не
+ * будується — для стріків/відсотків/хітмапу важливий лише кінцевий стан дня.
  */
 function buildCompletionEventOps(
   prevSet: Set<string>,

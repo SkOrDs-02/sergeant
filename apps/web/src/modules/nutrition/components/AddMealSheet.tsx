@@ -17,8 +17,10 @@ import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
+import { clampText } from "@shared/lib/text/limits";
 import type {
   Meal,
   MealTemplate,
@@ -49,6 +51,32 @@ import { SaveAsFood } from "./meal-sheet/SaveAsFood";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
+
+/**
+ * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
+ * норми — межі проти друкарської помилки й свідомо абсурдного вводу
+ * (кома замість крапки, зайвий нуль), які інакше зламали б денні
+ * агрегації та графіки.
+ */
+export const MAX_KCAL_PER_MEAL = 10_000;
+export const MAX_MACRO_GRAMS = 2_000;
+
+/**
+ * True when every macro field is null or 0 — mirrors the `hasPhotoMacros`
+ * predicate below (photo AI returns all-null macros when it can't
+ * identify the food). A meal saved with all-empty macros won't move the
+ * daily stats at all, so `handleSave` routes through a confirm step
+ * instead of blocking the save outright (founder decision: warn, don't
+ * block).
+ */
+function macrosAreAllEmpty(macros: {
+  kcal: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+}): boolean {
+  return !Object.values(macros).some((v) => v != null && v !== 0);
+}
 
 interface AddMealSheetProps {
   open: boolean;
@@ -102,6 +130,8 @@ export function AddMealSheet({
     setBarcode,
     barcodeStatus,
     setBarcodeStatus,
+    barcodeNotice,
+    setBarcodeNotice,
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,
@@ -113,9 +143,30 @@ export function AddMealSheet({
     setForm,
   });
 
+  // Ідемпотентність: id генерується один раз на відкриття аркуша, а не на
+  // кожен клік «Зберегти». Подвійний тап тоді приходить у шар запису
+  // (`addLogEntry`) з тим самим id і відкидається як дубль.
+  const [draftId, setDraftId] = useState("");
+
+  // Set when the user taps the edit affordance on a saved meal template
+  // (`MealTemplatesRow`), so `SaveAsTemplate` updates that template in
+  // place instead of appending a new one.
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null,
+  );
+
+  // Founder decision: don't block saving a meal whose macros are all
+  // empty/zero (photo AI couldn't identify the food, or the user just
+  // hasn't filled them in yet) — warn instead. `pendingMeal` holds the
+  // fully-built, already-validated payload while the confirm dialog is up;
+  // it's cleared on confirm (→ finalizeSave) or cancel (sheet stays open,
+  // untouched).
+  const [pendingMeal, setPendingMeal] = useState<Meal | null>(null);
+
   const [prevOpen, setPrevOpen] = useState(false);
   if (open && !prevOpen) {
     setPrevOpen(true);
+    setDraftId(newMealId());
     if (initialMeal?.id) {
       const mac = initialMeal.macros ?? {
         kcal: null,
@@ -147,8 +198,11 @@ export function AddMealSheet({
     setFoodErr("");
     setBarcode("");
     setBarcodeStatus("");
+    setBarcodeNotice(null);
     setScannerOpen(false);
     setFromPantryItem(null);
+    setEditingTemplateId(null);
+    setPendingMeal(null);
     const autoSkip =
       !initialMeal?.id && !photoResult && mealTemplates.length === 0;
     const initialStep =
@@ -179,11 +233,12 @@ export function AddMealSheet({
     const pickedFoodName = pickedFood
       ? [pickedFood.name, pickedFood.brand].filter(Boolean).join(" ").trim()
       : "";
-    const name =
+    const name = clampText(
       form.name.trim() ||
-      pickedFoodName ||
-      (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
-      (photoResult?.dishName || "").trim();
+        pickedFoodName ||
+        (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
+        (photoResult?.dishName || "").trim(),
+    );
     if (!name) {
       setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
@@ -200,9 +255,21 @@ export function AddMealSheet({
       setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
       return;
     }
-    if (fromPantryItem && onConsumePantryItem) {
-      const grams = Number(pickedGrams) || 100;
-      onConsumePantryItem(fromPantryItem, grams);
+    if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
+      setForm((s) => ({
+        ...s,
+        err: `Забагато калорій — максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+      }));
+      return;
+    }
+    if (
+      [protein_g, fat_g, carbs_g].some((n) => n != null && n > MAX_MACRO_GRAMS)
+    ) {
+      setForm((s) => ({
+        ...s,
+        err: `Забагато БЖВ — максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+      }));
+      return;
     }
     const mealLabel =
       MEAL_TYPES.find((m) => m.id === form.mealType)?.label || "Прийом їжі";
@@ -212,7 +279,6 @@ export function AddMealSheet({
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
     const hasAmount = pickedFood || initialMeal?.amount_g != null;
-    hapticSuccess();
     const macroSource = photoResult
       ? "photoAI"
       : pickedFood
@@ -220,18 +286,46 @@ export function AddMealSheet({
         : initialMeal?.foodId
           ? "productDb"
           : "manual";
-    onSave({
-      id: initialMeal?.id || newMealId(),
+    const macros = { kcal, protein_g, fat_g, carbs_g };
+    const meal: Meal = {
+      id: initialMeal?.id || draftId || newMealId(),
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
       name,
-      macros: { kcal, protein_g, fat_g, carbs_g },
+      macros,
       source,
       macroSource,
       foodId: effectiveFoodId ? String(effectiveFoodId) : null,
       amount_g: hasAmount ? Number(pickedGrams) || 100 : null,
-    });
+    };
+    // Founder decision: warn, don't block. A meal with all-empty/zero
+    // macros (photo AI couldn't identify the food, or a manual entry with
+    // nothing typed in) won't move the daily stats at all — surface a
+    // confirm step instead of silently saving a meaningless entry.
+    if (macrosAreAllEmpty(macros)) {
+      setPendingMeal(meal);
+      return;
+    }
+    finalizeSave(meal);
+  }
+
+  function finalizeSave(meal: Meal) {
+    if (fromPantryItem && onConsumePantryItem) {
+      const grams = Number(pickedGrams) || 100;
+      onConsumePantryItem(fromPantryItem, grams);
+    }
+    hapticSuccess();
+    onSave(meal);
+  }
+
+  function handleConfirmEmptyMacrosSave() {
+    if (pendingMeal) finalizeSave(pendingMeal);
+    setPendingMeal(null);
+  }
+
+  function handleCancelEmptyMacrosSave() {
+    setPendingMeal(null);
   }
 
   const hasPhotoMacros = Boolean(
@@ -333,7 +427,9 @@ export function AddMealSheet({
               <MealTemplatesRow
                 mealTemplates={mealTemplates}
                 setForm={setForm}
+                setPrefs={setPrefs}
                 onSelected={() => setStep("fill")}
+                onEditTemplate={(t) => setEditingTemplateId(t.id)}
               />
             )}
 
@@ -368,6 +464,10 @@ export function AddMealSheet({
               setBarcode={setBarcode}
               barcodeStatus={barcodeStatus}
               setBarcodeStatus={setBarcodeStatus}
+              barcodeNotice={barcodeNotice}
+              onDismissBarcodeNotice={() => setBarcodeNotice(null)}
+              onRetryBarcodeLookup={() => void handleBarcodeLookup(barcode)}
+              onUsePhotoForBarcode={onRequestPhoto}
               handleBarcodeLookup={handleBarcodeLookup}
               handleBarcodeBind={handleBarcodeBind}
               setScannerOpen={setScannerOpen}
@@ -443,7 +543,13 @@ export function AddMealSheet({
               </div>
             )}
 
-            <SaveAsTemplate form={form} setForm={setForm} setPrefs={setPrefs} />
+            <SaveAsTemplate
+              form={form}
+              setForm={setForm}
+              setPrefs={setPrefs}
+              editingTemplateId={editingTemplateId}
+              onDoneEditing={() => setEditingTemplateId(null)}
+            />
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
@@ -465,6 +571,16 @@ export function AddMealSheet({
           </>
         )}
       </Sheet>
+      <ConfirmDialog
+        open={pendingMeal != null}
+        title="Зберегти без калорійності?"
+        description="КБЖВ порожні — запис не вплине на денну статистику. Зберегти як є?"
+        confirmLabel="Зберегти"
+        cancelLabel="Повернутись"
+        danger={false}
+        onConfirm={handleConfirmEmptyMacrosSave}
+        onCancel={handleCancelEmptyMacrosSave}
+      />
     </>
   );
 }

@@ -7,7 +7,7 @@ const STEPS = [
   { label: "M", scale: 1 },
   { label: "L", scale: 1.15 },
   { label: "XL", scale: 1.3 },
-];
+] as const;
 
 /**
  * R2-V-6 — Dynamic Type / масштаб шрифту.
@@ -21,7 +21,7 @@ const STEPS = [
  */
 export function DynamicTypeDemo() {
   const [step, setStep] = useState(2);
-  const scale = (STEPS[step] ?? STEPS[1]!).scale;
+  const scale = (STEPS[step] ?? STEPS[1]).scale;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -30,9 +30,9 @@ export function DynamicTypeDemo() {
           <MiniPhone dim>
             {/* Fixed sizes: ignore the requested scale; clip at large steps. */}
             <div className="flex flex-1 min-h-0 flex-col gap-3 p-4 overflow-hidden">
-              <p className="text-2xs text-muted">Сьогодні</p>
+              <p className="text-style-caption text-muted">Сьогодні</p>
               <div className="rounded-2xl bg-panel border border-line p-4">
-                <p className="text-2xs text-muted">Витрачено</p>
+                <p className="text-style-caption text-muted">Витрачено</p>
                 <p className="text-2xl font-semibold text-text leading-tight">
                   ₴ 1 240
                 </p>
@@ -52,7 +52,7 @@ export function DynamicTypeDemo() {
               >
                 Додати витрату
               </button>
-              <p className="text-2xs text-muted">
+              <p className="text-style-caption text-muted">
                 Фіксований 16px — за XL текст обрізається.
               </p>
             </div>

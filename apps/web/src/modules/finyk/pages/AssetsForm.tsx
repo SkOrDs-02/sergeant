@@ -13,11 +13,13 @@ import type {
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import type { TxRowTx } from "../components/TxRow";
+import { parseAmountToMinor } from "@shared/lib/format/amount";
+import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 
-const isPositiveFinite = (value: string) => {
-  const parsed = Number(value);
-  return value.trim() !== "" && Number.isFinite(parsed) && parsed > 0;
-};
+// Спільні межі сум (спека beta-input-boundaries): додає верхню стелю й
+// відсікання «1e9» до наявної вимоги «строго додатне».
+const isPositiveFinite = (value: string) => parseAmountToMinor(value).ok;
 
 const isValidBillingDay = (value: string | number) => {
   const parsed = Number(value);
@@ -54,6 +56,8 @@ export function SubscriptionForm({
       <Input
         aria-label="Назва підписки"
         placeholder="Назва"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newSub.name}
         onChange={(e) => setNewSub((a) => ({ ...a, name: e.target.value }))}
       />
@@ -65,6 +69,8 @@ export function SubscriptionForm({
           id="subscription-transaction-keyword"
           aria-label="Пошук транзакції за описом"
           placeholder="Наприклад, netflix"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
           value={newSub.keyword}
           onChange={(e) =>
             setNewSub((a) => ({ ...a, keyword: e.target.value }))
@@ -188,6 +194,8 @@ export function ReceivableForm({
       <Input
         aria-label="Ім'я або назва боржника"
         placeholder="Ім'я або назва"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newRecv.name}
         onChange={(e) => setNewRecv((a) => ({ ...a, name: e.target.value }))}
       />
@@ -201,6 +209,8 @@ export function ReceivableForm({
       <Input
         aria-label="Нотатка (необов'язково)"
         placeholder="Нотатка (необов'язково)"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newRecv.note}
         onChange={(e) => setNewRecv((a) => ({ ...a, note: e.target.value }))}
       />
@@ -235,8 +245,8 @@ export function ReceivableForm({
             // a Receivable («мені винні») must be strictly positive — a
             // negative receivable corrupts net-worth aggregation and renders
             // as "−1 000 ₴" on a row that is supposed to be an asset.
-            const parsedAmount = Number(newRecv.amount);
-            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+            const parsedAmount = amountStringToHryvnia(String(newRecv.amount));
+            if (parsedAmount <= 0) return;
             const next = {
               ...newRecv,
               id: crypto.randomUUID(),
@@ -316,6 +326,8 @@ export function AssetForm({
           ref={assetNameInputRef as React.Ref<HTMLInputElement>}
           aria-label="Назва активу"
           placeholder="Назва"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
           value={newAsset.name}
           onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
         />
@@ -363,8 +375,10 @@ export function AssetForm({
               // section header to "Активи +−1 000 ₴" (because the formatter
               // unconditionally prepends `+`), and pulls Загальний капітал
               // negative.
-              const parsedAmount = Number(newAsset.amount);
-              if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+              const parsedAmount = amountStringToHryvnia(
+                String(newAsset.amount),
+              );
+              if (parsedAmount <= 0) return;
               const next = {
                 ...newAsset,
                 id: crypto.randomUUID(),
@@ -448,6 +462,8 @@ export function DebtForm({
           aria-label="Назва пасиву (кредит, борг…)"
           className="flex-1"
           placeholder="Назва пасиву (кредит, борг…)"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
           value={newDebt.name}
           onChange={(e) => setNewDebt((a) => ({ ...a, name: e.target.value }))}
         />
@@ -510,8 +526,8 @@ export function DebtForm({
               const next = {
                 ...newDebt,
                 id: crypto.randomUUID(),
-                amount: Number(newDebt.totalAmount),
-                totalAmount: Number(newDebt.totalAmount),
+                amount: amountStringToHryvnia(String(newDebt.totalAmount)),
+                totalAmount: amountStringToHryvnia(String(newDebt.totalAmount)),
                 linkedTxIds: [],
               } satisfies Debt;
               if (editingId && onUpdate) {

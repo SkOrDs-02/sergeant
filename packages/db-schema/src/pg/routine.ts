@@ -7,7 +7,6 @@ import {
   primaryKey,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -22,7 +21,9 @@ import { sql } from "drizzle-orm";
 export const routineEntries = pgTable(
   "routine_entries",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -60,10 +61,10 @@ export const routineEntries = pgTable(
  * причиною `append_only_violation`. Виправлення історії — це нова подія,
  * а не редагування старої.
  *
- * `id` — TEXT, НЕ UUID (свідомо). `routineEntries.id` оголошений як `uuid()`,
- * тоді як клієнт шле `habitId:dateKey` → `22P02` → `apply_failed`
- * (`docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»). Новий журнал
- * цю пастку обходить.
+ * `id` — TEXT, НЕ UUID (свідомо): клієнт шле `habitId:dateKey`, що не є UUID.
+ * Ця таблиця обходила пастку з самого початку; решту `routine_*` довела до
+ * того ж типу міграція 094 (`docs/90-work/tech-debt/backend.md` §
+ * «Routine: PK-тип»).
  */
 export const routineCompletionEvents = pgTable(
   "routine_completion_events",
@@ -140,7 +141,9 @@ export const routineStreaks = pgTable("routine_streaks", {
 export const routineHabits = pgTable(
   "routine_habits",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     emoji: text().notNull().default(""),
@@ -154,6 +157,12 @@ export const routineHabits = pgTable(
     timeOfDay: text("time_of_day").notNull().default(""),
     reminderTimes: jsonb("reminder_times").notNull().default([]),
     weekdays: jsonb().notNull().default([0, 1, 2, 3, 4, 5, 6]),
+    /**
+     * Датовані інтервали планованої паузи (Хвиля 4, канон `routine.md` §4).
+     * Форма: `[{ "from": "YYYY-MM-DD", "to": "YYYY-MM-DD" | null }]`.
+     * Колонка `paused` лишається поруч як легасі-прапор для старих клієнтів.
+     */
+    pauseIntervals: jsonb("pause_intervals").notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -175,7 +184,9 @@ export const routineHabits = pgTable(
 export const routineTags = pgTable(
   "routine_tags",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     scope: text().notNull().default(""),
@@ -200,7 +211,9 @@ export const routineTags = pgTable(
 export const routineCategories = pgTable(
   "routine_categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
     emoji: text().notNull().default(""),
@@ -268,6 +281,42 @@ export const routineHabitOrder = pgTable("routine_habit_order", {
  *
  * Один рядок на (user, noteKey) — короткий текст нотатки.
  */
+/**
+ * Postgres schema for `routine_habit_skips`.
+ * Mirrors migration `098_routine_habit_skips.sql`.
+ *
+ * Третій стан дня — «не зміг з причиною» (Хвиля 4, канон `routine.md` §5).
+ * Форма один-в-один як у `routine_completion_notes`: композитний PK
+ * `(user_id, skip_key)`, LWW по `updated_at`, soft-delete. `skip_key` —
+ * `habitId__dateKey` (`habitSkipKey` у `@sergeant/routine-domain`).
+ *
+ * AI-NOTE: взаємна виключність із відміткою виконання тримається на
+ * КЛІЄНТІ (`applySetHabitSkip` / `applyToggleHabitCompletion`), а не тут.
+ * Сервер приймає ops незалежно, бо два девайси можуть надіслати «зробив» і
+ * «не зміг» на той самий день — і LWW має розсудити їх за часом, а не
+ * відхилити обидва.
+ */
+export const routineHabitSkips = pgTable(
+  "routine_habit_skips",
+  {
+    userId: text("user_id").notNull(),
+    skipKey: text("skip_key").notNull(),
+    reason: text().notNull().default("other"),
+    note: text().notNull().default(""),
+    at: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.skipKey] }),
+    index("routine_habit_skips_user_active_idx")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 export const routineCompletionNotes = pgTable(
   "routine_completion_notes",
   {

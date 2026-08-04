@@ -4,7 +4,7 @@ import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { messages } from "@shared/i18n/uk";
 
-function ActiveWorkoutBannerTimer() {
+function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
   const [startMs] = useState(() => Date.now());
   const [elapsedMin, setElapsedMin] = useState(0);
 
@@ -28,7 +28,7 @@ function ActiveWorkoutBannerTimer() {
     >
       <button
         type="button"
-        onClick={() => openHubModule("fizruk", "#workouts")}
+        onClick={() => openHubModule("fizruk", `#workout/${activeId}`)}
         className="pointer-events-auto flex items-center gap-2.5 h-12 pl-3 pr-4 rounded-full bg-fizruk-strong text-white shadow-float hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         aria-label={messages.fizruk.returnToActiveWorkout}
       >
@@ -68,5 +68,5 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
   if (hidden) return null;
   if (!activeId) return null;
 
-  return <ActiveWorkoutBannerTimer key={activeId} />;
+  return <ActiveWorkoutBannerTimer key={activeId} activeId={activeId} />;
 }

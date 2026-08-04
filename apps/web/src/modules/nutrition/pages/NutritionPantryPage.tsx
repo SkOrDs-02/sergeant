@@ -9,12 +9,14 @@ import type { useToast } from "@shared/hooks/useToast";
 import { PantryCard } from "../components/PantryCard";
 import { ShoppingListCard } from "../components/ShoppingListCard";
 import { SubTabs } from "../components/SubTabs";
+import { BarcodeLookupNotice } from "../components/BarcodeLookupNotice";
 import type {
   NutritionRecipe,
   NutritionWeekPlan,
 } from "../hooks/useNutritionUiState";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type { useShoppingList } from "../hooks/useShoppingList";
+import type { PantryBarcodeNotice } from "../hooks/usePantryBarcodeScan";
 import type { PantrySubTab } from "../lib/nutritionRouter";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
@@ -33,6 +35,9 @@ interface NutritionPantryPageProps {
   pantryScanStatus: string;
   setPantryScanStatus: Dispatch<SetStateAction<string>>;
   setPantryScannerOpen: Dispatch<SetStateAction<boolean>>;
+  pantryBarcodeNotice?: PantryBarcodeNotice | null | undefined;
+  onRetryPantryBarcode?: (() => void) | undefined;
+  onDismissPantryBarcodeNotice?: (() => void) | undefined;
   toast: Toast;
   generateShoppingList: (source: string) => void | Promise<void>;
   addCheckedItemsToPantry: () => void;
@@ -50,6 +55,9 @@ export function NutritionPantryPage({
   pantryScanStatus,
   setPantryScanStatus,
   setPantryScannerOpen,
+  pantryBarcodeNotice,
+  onRetryPantryBarcode,
+  onDismissPantryBarcodeNotice,
   toast,
   generateShoppingList,
   addCheckedItemsToPantry,
@@ -98,13 +106,23 @@ export function NutritionPantryPage({
               }}
               pantryItemsLength={pantry.pantryItems.length}
               pantrySummary={pantry.pantrySummary}
+              parsePreview={pantry.parsePreview}
+              confirmParsePreview={pantry.confirmParsePreview}
+              dismissParsePreview={pantry.dismissParsePreview}
               onScanBarcode={() => {
                 setPantryScanStatus("");
                 setPantryScannerOpen(true);
               }}
             />
-            {pantryScanStatus && (
+            {pantryScanStatus && !pantryBarcodeNotice && (
               <div className="text-xs text-subtle px-1">{pantryScanStatus}</div>
+            )}
+            {pantryBarcodeNotice && onDismissPantryBarcodeNotice && (
+              <BarcodeLookupNotice
+                kind={pantryBarcodeNotice.kind}
+                onDismiss={onDismissPantryBarcodeNotice}
+                onRetry={onRetryPantryBarcode}
+              />
             )}
           </>
         ) : (

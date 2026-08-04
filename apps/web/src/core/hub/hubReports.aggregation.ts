@@ -199,9 +199,21 @@ export interface RoutineState {
  * Інваріант: `state == null` → `pct: 0, daily: {}` (HubReports повертав той же
  * shape; знаменник 0 теж дає 0 без NaN).
  */
+export interface HabitsAggregateOptions {
+  /**
+   * День «сьогодні» (`YYYY-MM-DD`), від якого пауза починає діяти —
+   * заморозка минулого (ADR-0079 §2). Без нього пауза, поставлена сьогодні,
+   * ретроактивно вимиває звичку з усіх минулих періодів, які показує ця
+   * картка. Параметр, а не виклик годинника всередині: модуль навмисно
+   * чистий, і на цьому тримаються його snapshot-тести.
+   */
+  pausedFrom?: string | undefined;
+}
+
 export function aggregateHabits(
   state: RoutineState | null,
   dates: string[],
+  opts: HabitsAggregateOptions = {},
 ): HabitsAggregate {
   if (!state) return { pct: 0, daily: {} };
   // `archived` фільтруємо і тут, і в каноні. Дублювання навмисне: канон
@@ -217,6 +229,7 @@ export function aggregateHabits(
     habits,
     state.completions ?? {},
     dates,
+    opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom },
   );
   return { pct, daily };
 }

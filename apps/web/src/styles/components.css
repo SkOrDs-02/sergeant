@@ -95,7 +95,7 @@
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.15);
 }
 
 .hover-glow-coral:hover {
@@ -168,25 +168,12 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   FLOATING ACTION BUTTON — Quick actions
+   FLOATING ACTION BUTTON — `.fab` removed 2026-08 design-audit T11 (zero
+   consumers; also stale — `bg-brand-500` resolved to the neutral hub
+   stone after the 2026-07 design-audit M1 rebrand, not an accent). The
+   live FAB is `FloatingActionButton.tsx`, styled via the `shadow-fab` /
+   `bg-gradient-to-br from-{module}-400 to-{module}-700` utilities.
    ═══════════════════════════════════════════════════════════════════════ */
-.fab {
-  @apply fixed z-50 flex items-center justify-center
-         w-14 h-14 rounded-full
-         bg-brand-500 text-white
-         shadow-float
-         transition-interactive;
-  right: max(1rem, env(safe-area-inset-right, 0px));
-}
-
-.fab:hover {
-  @apply bg-brand-600 shadow-glow;
-  transform: scale(1.05);
-}
-
-.fab:active {
-  transform: scale(0.95);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    PROGRESS RING ENHANCEMENTS — Duolingo-style

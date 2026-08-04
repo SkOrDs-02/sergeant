@@ -99,7 +99,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -118,7 +117,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 8,
         reminderMinute: 0,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -137,7 +135,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -160,7 +157,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 0,
         reminderMinute: 5,
         reminderEnabled: true,
-        days: { [KYIV_MIDNIGHT_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -178,7 +174,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: false,
-        days: {},
       }),
     );
     await flushMicrotasks();
@@ -194,7 +189,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: {},
       }),
     );
     await flushMicrotasks();

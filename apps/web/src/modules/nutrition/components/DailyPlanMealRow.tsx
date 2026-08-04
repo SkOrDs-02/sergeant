@@ -3,6 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
 import { MacroBadge } from "./DailyPlanMacros";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 
 export interface PlanMeal {
   type?: MealTypeId | string;
@@ -29,11 +30,11 @@ export const MEAL_TYPE_LABELS: Record<string, string> = {
   dinner: "Вечеря",
   snack: "Перекус",
 };
-export const MEAL_TYPE_ICONS: Record<string, string> = {
-  breakfast: "☀️",
-  lunch: "🥗",
-  dinner: "🍽️",
-  snack: "🍎",
+export const MEAL_TYPE_ICONS: Record<string, IconName> = {
+  breakfast: "sun",
+  lunch: "utensils",
+  dinner: "moon",
+  snack: "leaf",
 };
 
 interface DailyPlanMealRowProps {
@@ -56,9 +57,12 @@ export function DailyPlanMealRow({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-base leading-none" aria-hidden>
-              {MEAL_TYPE_ICONS[String(meal.type ?? "")] || "🍴"}
-            </span>
+            <Icon
+              name={MEAL_TYPE_ICONS[String(meal.type ?? "")] || "utensils"}
+              size="md"
+              className="text-nutrition shrink-0"
+              aria-hidden
+            />
             <SectionHeading as="span" size="sm" variant="nutrition">
               {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
             </SectionHeading>

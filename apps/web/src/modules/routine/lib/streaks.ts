@@ -11,4 +11,10 @@ export {
   maxActiveStreak,
   maxStreakAllTime,
   streakForHabit,
+  // Хвиля 4 — гнучкий стрік (канон §4/§5). Жорсткі `streakForHabit` /
+  // `maxActiveStreak` лишаються експортованими для тестів і порівнянь,
+  // але продуктові поверхні читають гнучкі.
+  flexibleMaxActiveStreak,
+  flexibleStreakBreakdown,
+  flexibleStreakForHabit,
 } from "@sergeant/routine-domain";

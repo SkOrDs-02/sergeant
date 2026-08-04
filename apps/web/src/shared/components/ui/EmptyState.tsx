@@ -69,6 +69,14 @@ export interface EmptyStateProps {
   /** Short caps tag above the title (e.g. "404", "ERROR"). */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
+  /**
+   * Element used for `title`. Defaults to `p`, because an empty state is
+   * normally nested inside a page that already owns the heading — emitting
+   * a heading there would inject an arbitrary level into the outline.
+   * Pass a heading level when the empty state *is* the whole page (the 404
+   * surface), otherwise that page ships with no heading at all.
+   */
+  titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
@@ -234,6 +242,7 @@ export function EmptyState({
   illustration,
   eyebrow,
   title,
+  titleAs: TitleTag = "p",
   description,
   action,
   primaryAction,
@@ -308,7 +317,9 @@ export function EmptyState({
           {eyebrow}
         </span>
       )}
-      <p className={cn("text-text text-balance", tokens.title)}>{title}</p>
+      <TitleTag className={cn("text-text text-balance", tokens.title)}>
+        {title}
+      </TitleTag>
       {description && (
         <p
           className={cn(
@@ -362,7 +373,10 @@ export function EmptyState({
       {hint && (
         <p
           className={cn(
-            "flex items-center gap-1.5 text-style-caption text-subtle mt-2",
+            // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
+            // text"), тож потрібен контраст 4.5:1; dark --c-subtle #5f6b64 дає
+            // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
+            "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
           )}

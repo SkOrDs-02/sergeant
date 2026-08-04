@@ -21,8 +21,11 @@ type TestRec = Rec & { actionHash?: string };
 // space before the symbol. testing-library normalises NBSP/space to a
 // single space, so plain spaces are fine in the expectation strings.
 const EXPECTED_FINYK_MAIN = "1 250 \u20b4";
+// The copy lives in `packages/shared/src/lib/quickStats.ts` (the
+// "plan remainder" sub-label). This constant must mirror that wording
+// verbatim; `moduleConfigs.test.tsx` already asserts against the same one.
 const EXPECTED_FINYK_SUB =
-  "\u0417\u0430\u043b\u0438\u0448\u043e\u043a: 7 300 \u20b4";
+  "\u0417\u0430\u043b\u0438\u0448\u043e\u043a \u043f\u043b\u0430\u043d\u0443: 7 300 \u20b4";
 const EXPECTED_ROUTINE_SUB =
   "\u0421\u0435\u0440\u0456\u044f: 5 \u0434\u043d\u0456\u0432";
 const INACTIVE_TOGGLE_NEEDLE =
@@ -464,6 +467,20 @@ describe("HubDashboard", () => {
     expect(mocks.openHubModule).toHaveBeenCalledWith("finyk", "#budgets");
     expect(onOpenModule).toHaveBeenCalledWith("fizruk");
     expect(mocks.dashboardFocus.dismiss).toHaveBeenCalledWith("hashed");
+  });
+
+  it("keeps the post-FTUX focus card in normal flow instead of translating it over module cards", () => {
+    mocks.dashboardFocus.focus = rec({
+      id: "focus-no-overlap",
+      title: "Focus without overlap",
+      action: "nutrition",
+    });
+
+    renderDashboard();
+
+    expect(
+      screen.getByTestId("today-focus-card").closest('[style*="translateY"]'),
+    ).toBeNull();
   });
 
   it("shows the weekly digest footer and expands the report summary inline", () => {

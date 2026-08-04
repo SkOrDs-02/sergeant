@@ -18,8 +18,7 @@
 //      not reachable within the allowed hop budget.
 //
 // Adding/changing rows is a deliberate governance act — pair the diff
-// with the doc edits that close the gap, like `MUST_BE_OWNED` in
-// `check-codeowners-coverage.mjs`.
+// with the doc edits that close the gap.
 //
 // CLI:
 //   node scripts/check-discoverability.mjs            # report + exit code

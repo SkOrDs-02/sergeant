@@ -169,14 +169,28 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED).toBe(
       "fizruk_workout_finished",
     );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_STARTED).toBe(
+      "fizruk_workout_started",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_DISCARDED).toBe(
+      "fizruk_workout_discarded",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_REST_TIMER_DONE).toBe(
+      "fizruk_rest_timer_done",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED).toBe("fizruk_injury_marked");
+    expect(ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED).toBe(
+      "fizruk_injury_cleared",
+    );
     expect(ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED).toBe(
       "nutrition_meal_logged",
     );
     expect(ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED).toBe("finyk_tx_categorized");
 
-    // AI-порада: показ + реакція (тіло поради в payload не існує).
+    // AI-порада: показ + реакція + провал (тіло поради в payload не існує).
     expect(ANALYTICS_EVENTS.AI_ADVICE_SHOWN).toBe("ai_advice_shown");
     expect(ANALYTICS_EVENTS.AI_ADVICE_REACTED).toBe("ai_advice_reacted");
+    expect(ANALYTICS_EVENTS.AI_ADVICE_FAILED).toBe("ai_advice_failed");
 
     // Експозиція стріку поза InsightCard.
     expect(ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN).toBe("routine_streak_shown");
@@ -193,11 +207,17 @@ describe("ANALYTICS_EVENTS registry", () => {
       ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED,
       ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED,
       ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_STARTED,
       ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_DISCARDED,
+      ANALYTICS_EVENTS.FIZRUK_REST_TIMER_DONE,
+      ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED,
+      ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED,
       ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED,
       ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED,
       ANALYTICS_EVENTS.AI_ADVICE_SHOWN,
       ANALYTICS_EVENTS.AI_ADVICE_REACTED,
+      ANALYTICS_EVENTS.AI_ADVICE_FAILED,
       ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
     ];
 

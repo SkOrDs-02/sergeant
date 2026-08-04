@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -10,6 +16,7 @@ const {
   monthlyPlanState,
   loadNutritionPrefsMock,
   persistNutritionPrefsMock,
+  pushState,
 } = vi.hoisted(() => ({
   toastWarningMock: vi.fn(),
   requestPermMock: vi.fn(),
@@ -30,6 +37,7 @@ const {
     }),
   ),
   persistNutritionPrefsMock: vi.fn(),
+  pushState: { subscribed: false },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -55,14 +63,30 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
 vi.mock("../components/PushNotificationToggle", () => ({
   PushNotificationToggle: () => <div data-testid="push-toggle" />,
 }));
+// Секція читає стан підписки, щоб не обіцяти доставку при закритому
+// застосунку тим, у кого пуш не увімкнено.
+vi.mock("@shared/hooks/usePushNotifications", () => ({
+  usePushNotifications: () => pushState,
+}));
 
 import { NotificationsSection } from "./NotificationsSection";
 
-// Toggle order in the rendered tree: routine, fizruk, nutrition.
-const SWITCH = { routine: 0, fizruk: 1, nutrition: 2 } as const;
-function clickSwitch(which: keyof typeof SWITCH) {
-  const switches = screen.getAllByRole("switch");
-  fireEvent.click(switches[SWITCH[which]]!);
+// Шукаємо перемикач за підписом рядка, а не за позицією у дереві. Раніше
+// тут стояли індекси (routine: 0, fizruk: 1, …), і додавання четвертого
+// тумблера вгорі секції зсунуло всі три — тести падали не тому, що щось
+// зламалось, а тому, що поруч зʼявився сусід.
+const SWITCH_LABEL = {
+  sergeant: "Повідомлення від Сержанта",
+  routine: "Нагадування про звички",
+  fizruk: "Нагадування про тренування",
+  nutrition: "Нагадування про їжу",
+} as const;
+
+function clickSwitch(which: keyof typeof SWITCH_LABEL) {
+  const row = screen.getByText(SWITCH_LABEL[which]).closest("label");
+  if (!row) throw new Error(`row not found: ${SWITCH_LABEL[which]}`);
+  const toggle = within(row).getByRole("switch");
+  fireEvent.click(toggle);
 }
 
 function stubNotification(permission: NotificationPermission) {
@@ -80,6 +104,7 @@ describe("NotificationsSection", () => {
     routineState.routine = { prefs: { routineRemindersEnabled: false } };
     monthlyPlanState.reminderEnabled = false;
     loadNutritionPrefsMock.mockReturnValue({ reminderEnabled: false });
+    pushState.subscribed = false;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -229,5 +254,25 @@ describe("NotificationsSection", () => {
     vi.stubGlobal("Notification", undefined);
     render(<NotificationsSection />);
     expect(screen.getByText("Не підтримується")).toBeInTheDocument();
+  });
+
+  // Регресія: три перемикачі обіцяли «навіть коли застосунок закрито» —
+  // і це була неправда, бо нагадування вів локальний таймер, який помирав
+  // разом із вкладкою. Тепер їх шле сервер, але тільки за наявності живої
+  // push-підписки, тож обіцянка стала умовною.
+  it("не обіцяє фонову доставку без push-підписки", () => {
+    render(<NotificationsSection />);
+    expect(
+      screen.getAllByText(/увімкни push-сповіщення вище/).length,
+    ).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText(/навіть коли застосунок закрито/)).toBeNull();
+  });
+
+  it("обіцяє фонову доставку, коли підписка є", () => {
+    pushState.subscribed = true;
+    render(<NotificationsSection />);
+    expect(
+      screen.getAllByText(/навіть коли застосунок закрито/).length,
+    ).toBeGreaterThanOrEqual(3);
   });
 });

@@ -227,9 +227,30 @@ export function parseOptionalInt(value: unknown): number | null | "invalid" {
  * `JSON.stringify(value)` forces the string path, which Postgres parses
  * as `JSONB`. `null`/`undefined` short-circuit so the column gets a
  * proper SQL NULL.
+ *
+ * Already-serialized payloads: клієнтський sync-адаптер тримає ці blob-и
+ * у локальному SQLite як TEXT і шле їх рядком. Безумовний
+ * `JSON.stringify` загортав такий рядок ще раз, і в `jsonb`-колонку
+ * потрапляв jsonb-STRING замість обʼєкта — усі серверні
+ * `data_json->>'...'` читали NULL (аудит 2026-08-04, знахідка 3;
+ * backfill існуючих рядків — міграція 102). Тому рядок, який сам є
+ * валідним JSON-обʼєктом/масивом, пропускаємо як є. Скалярні рядки
+ * ("hello") далі серіалізуються звичайним шляхом — для них подвійного
+ * загортання ніколи не існувало.
  */
 export function toJsonbParam(value: unknown): string | null {
   if (value == null) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        JSON.parse(trimmed);
+        return trimmed;
+      } catch {
+        /* not valid JSON — fall through to plain stringify */
+      }
+    }
+  }
   try {
     return JSON.stringify(value);
   } catch {

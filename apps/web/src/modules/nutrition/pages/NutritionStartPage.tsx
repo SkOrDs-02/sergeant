@@ -144,6 +144,8 @@ export function NutritionStartPage({
               answers={photo.answers}
               setAnswers={photo.setAnswers}
               onSaveToLog={photo.photoResult ? onSaveToLog : undefined}
+              analyzing={photo.isAnalyzing}
+              refining={photo.isRefining}
             />
           </div>
         </details>

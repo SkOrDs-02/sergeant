@@ -1,6 +1,6 @@
 ﻿# ADR-0064: syncV2.ts модульний рефакторинг
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Date:** 2026-06-05
 - **Supersedes:** —
 

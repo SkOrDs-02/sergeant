@@ -7,8 +7,12 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
+import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -23,9 +27,11 @@ import type { PantryItem } from "../lib/pantryTextParser";
  */
 type PantryItemView = Partial<PantryItem> & { name?: string };
 
+// Назви описують спосіб вводу, а не те, що вводиться: «Продукт»/«Список»
+// читалось як два різні типи запису, ще й плуталось із вкладкою «Покупки».
 const INPUT_MODES = [
-  { id: "single", label: "Продукт" },
-  { id: "list", label: "Список" },
+  { id: "single", label: "По одному" },
+  { id: "list", label: "Списком" },
 ];
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -176,7 +182,27 @@ function InventoryCard({
     setMainOpen(true);
   }, [effectiveItems.length]);
 
-  if (effectiveItems.length === 0) return null;
+  if (effectiveItems.length === 0) {
+    return (
+      <Card className="p-4">
+        <EmptyState
+          size="sm"
+          module="nutrition"
+          icon={<Icon name="package" size={20} />}
+          title={messages.nutrition.pantryEmpty.title}
+          description={messages.nutrition.pantryEmpty.description}
+          examplePreview={
+            <div className="grid gap-1 text-style-caption text-subtle">
+              <span>курка — 500 г</span>
+              <span>яйце — 10 шт</span>
+              <span>огірок — 4 шт</span>
+            </div>
+          }
+          hint={messages.nutrition.pantryEmpty.hint}
+        />
+      </Card>
+    );
+  }
 
   // Якщо позицій небагато — одразу розкриваємо категорії всередині.
   const openByDefault = effectiveItems.length <= 12;
@@ -238,6 +264,9 @@ interface PantryCardProps {
    */
   pantrySummary?: unknown;
   onScanBarcode?: () => void;
+  parsePreview?: PantryParsePreviewData | null;
+  confirmParsePreview?: (items: PantryItem[]) => void;
+  dismissParsePreview?: () => void;
 }
 
 export function PantryCard({
@@ -253,6 +282,9 @@ export function PantryCard({
   removeItemAtOrByName,
   pantryItemsLength,
   onScanBarcode,
+  parsePreview,
+  confirmParsePreview,
+  dismissParsePreview,
 }: PantryCardProps) {
   const [mode, setMode] = useState("single");
 
@@ -273,7 +305,7 @@ export function PantryCard({
                   className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center text-base"
                   aria-label="Сканувати штрих-код"
                 >
-                  📷
+                  <Icon name="scanner" size={18} aria-hidden />
                 </button>
               </Tooltip>
             )}
@@ -347,6 +379,17 @@ export function PantryCard({
               Розібрати
             </button>
           </div>
+        )}
+
+        {mode === "list" && <PantryListGuide />}
+
+        {parsePreview && confirmParsePreview && dismissParsePreview && (
+          <PantryParsePreview
+            preview={parsePreview}
+            onConfirm={confirmParsePreview}
+            onDismiss={dismissParsePreview}
+            busy={busy}
+          />
         )}
       </Card>
 

@@ -85,7 +85,7 @@ Primitives існують. Wire layer відсутній.
 | W4  | Nutrition daily-close (95–105% kcal)                   | Нічого                                  | `MiniSuccess` toast "Денну норму виконано" + theme="nutrition".                                                                              |
 | W5  | Routine non-milestone check                            | Beztichi flip                           | Мікро-частки (2-3 крапки), НЕ confetti. Confetti — лише на milestone (7/30/100/365).                                                         |
 
-### Motion budget reconciliation (Hard Rule #17: max 1 AMBIENT + 1 RESPONSE concurrent)
+### Motion budget reconciliation (дизайн-конвенція: max 1 AMBIENT + 1 RESPONSE concurrent)
 
 - `MeshBackground.bg-mesh` — наразі static (без keyframes), займає AMBIENT slot декоративно. Перевір чи `motion-safe:` обгортка коректно strip'ить на `prefers-reduced-motion`.
 - `motion-safe:backdrop-blur-md/xl` — додати на HubBottomNav + ModuleBottomNav (зараз blur активний завжди, не respect-ить reduced-motion).

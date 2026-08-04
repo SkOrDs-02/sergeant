@@ -68,6 +68,20 @@ export default defineConfig(({ mode }) => {
     (process.env.VERCEL === "1" ? "dist" : "../server/dist");
 
   return {
+    // Прод (Vercel) шле COOP/COEP (apps/web/vercel.json), що вмикає
+    // SharedArrayBuffer → sqlite-wasm працює на OPFS VFS. `vite preview`
+    // (smoke E2E lane + локальний Lighthouse) без цих заголовків падав на
+    // memory-only VFS: SQLite-читання відставали від оптимістичного
+    // state, і routine/nutrition CRUD-стан осцилював (CI critical-lane
+    // аудит 2026-08-04 — постійні detach-и в deep-module-crud). Паритет
+    // заголовків прибирає розбіжність smoke ↔ prod. API-фетчі на :3000
+    // під COEP легальні — вони йдуть через CORS (ALLOWED_ORIGINS).
+    preview: {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
+    },
     define: {
       // Пробрасуємо значення у клієнтський бандл як статичний літерал,
       // щоб `main.tsx` міг DCE-вирізати SW-гілку у capacitor-білді.
@@ -113,8 +127,12 @@ export default defineConfig(({ mode }) => {
             start_url: "/",
             display: "standalone",
             orientation: "portrait",
-            background_color: "#fdf9f3",
-            theme_color: "#fdf9f3",
+            // Static manifest colors can't follow the in-app theme choice
+            // (that's `useTheme.ts` applyResolvedTheme's job at runtime) —
+            // these are the splash/OS-chrome default and must track the
+            // light `--c-bg` in `src/styles/theme.css` (`:root`), #f2ecdf.
+            background_color: "#f2ecdf",
+            theme_color: "#f2ecdf",
             lang: "uk",
             // UX-7: tapping an icon/shortcut while the PWA is already open
             // focuses the running window instead of spawning a duplicate

@@ -107,7 +107,10 @@ export function KpiCarouselDemo() {
                     <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">
                       ₴ 640
                     </p>
-                    <p className="text-2xs mt-1" style={{ color: finyk }}>
+                    <p
+                      className="text-style-caption mt-1"
+                      style={{ color: finyk }}
+                    >
                       −12% до вчора
                     </p>
                   </div>
@@ -117,7 +120,7 @@ export function KpiCarouselDemo() {
                   <div className="h-10 rounded-xl bg-panel border border-line" />
                 </div>
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2 pt-4">
+              <p className="text-style-caption text-muted text-center px-4 pb-2 pt-4">
                 Лише одна метрика зверху
               </p>
             </div>
@@ -128,7 +131,7 @@ export function KpiCarouselDemo() {
             <div className="flex-1 min-h-0 flex flex-col">
               <div className="px-4 pt-1 pb-2 flex items-center justify-between">
                 <span className="text-style-label text-text">Огляд</span>
-                <span className="text-2xs text-muted">свайп →</span>
+                <span className="text-style-caption text-muted">свайп →</span>
               </div>
 
               <div
@@ -166,7 +169,10 @@ export function KpiCarouselDemo() {
                           <p className="text-2xl font-semibold tabular-nums text-text mt-0.5">
                             {k.value}
                           </p>
-                          <p className="text-2xs mt-1" style={{ color }}>
+                          <p
+                            className="text-style-caption mt-1"
+                            style={{ color }}
+                          >
                             {k.hint}
                           </p>
                         </div>
@@ -190,7 +196,7 @@ export function KpiCarouselDemo() {
                   />
                 ))}
               </div>
-              <p className="text-2xs text-muted text-center px-4 pb-2 pt-3">
+              <p className="text-style-caption text-muted text-center px-4 pb-2 pt-3">
                 4 метрики — один флик пальцем
               </p>
             </div>

@@ -1,5 +1,6 @@
 import { SubCard } from "../components/SubCard";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -27,10 +28,10 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
   return (
     <div className="mb-3 space-y-0">
       <div className="mb-2 rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 py-3 flex items-center justify-between gap-3">
-        <span className="text-style-caption text-finyk-strong">
+        <span className="text-style-caption text-finyk-soft-fg">
           Витрати на підписки за місяць
         </span>
-        <strong className="text-style-label tabular-nums text-finyk-strong">
+        <strong className="text-style-label tabular-nums text-finyk-soft-fg">
           {showBalance
             ? `${subsMonthly.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
             : "••••"}
@@ -88,13 +89,14 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           transactions={transactions}
         />
       ) : (
-        <button
+        <Button
           type="button"
+          variant="finyk-soft"
           onClick={() => setShowSubForm(true)}
-          className="w-full py-2.5 text-style-label rounded-xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft mt-2"
+          className="w-full rounded-xl shadow-soft mt-2"
         >
           + Додати підписку
-        </button>
+        </Button>
       )}
     </div>
   );

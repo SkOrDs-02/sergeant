@@ -8,6 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
@@ -174,10 +175,10 @@ export function AssistantCataloguePage({
             </span>
             <div className="flex-1 min-w-0">
               <h1 className="text-style-title text-text leading-tight">
-                Можливості асистента
+                {messages.sergeant.capabilitiesSectionTitle}
               </h1>
               <p className="text-style-body text-subtle mt-1 leading-relaxed">
-                Усе, що вміє робити асистент ({totalCount} сценаріїв). Натисни
+                Усе, що вміє робити Сержант ({totalCount} сценаріїв). Натисни
                 картку щоб запустити або побачити приклади.
               </p>
             </div>
@@ -479,7 +480,7 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
       title={title}
       className={cn(
         "inline-flex items-center gap-1 text-style-caption font-medium leading-none",
-        "border rounded-full px-1.5 py-[3px]",
+        "border rounded-full px-1.5 py-1",
         cls,
       )}
     >

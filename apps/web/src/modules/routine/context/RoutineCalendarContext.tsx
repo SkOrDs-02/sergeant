@@ -5,6 +5,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import type { SkipReason } from "@sergeant/routine-domain";
 import type { HubCalendarEvent, RoutineState } from "../lib/types";
 
 export interface RoutineCompletionRate {
@@ -25,7 +26,9 @@ export interface RoutineMonthCursor {
 
 export type RoutineTimeMode = "today" | "tomorrow" | "day" | "week" | "month";
 
-export type RoutineMainTab = "calendar" | "stats";
+// «habits» додано 2026-08-03 разом із переїздом керування звичками з
+// Налаштувань у модуль — див. `components/RoutineHabitsPanel.tsx`.
+export type RoutineMainTab = "calendar" | "habits" | "stats";
 
 export interface RoutineCalendarData {
   rangeLabel: string;
@@ -69,6 +72,14 @@ export interface RoutineCalendarActions {
     | undefined;
   onBulkMarkDay: () => void;
   onOpenQuickAddHabit: () => void;
+  /** Позначити день як «не зміг з причиною» (канон §5). */
+  onSetHabitSkip: (
+    habitId: string,
+    dateKey: string,
+    reason: SkipReason,
+  ) => void;
+  /** Зняти позначку «не зміг» — день повертається у «не зробив». */
+  onClearHabitSkip: (habitId: string, dateKey: string) => void;
 }
 
 const RoutineCalendarDataContext = createContext<RoutineCalendarData | null>(

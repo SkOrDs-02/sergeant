@@ -34,6 +34,10 @@ export interface WorkoutItemsListProps {
   updateWorkout: (id: string, patch: Partial<Workout>) => void;
   setRestTimer: (state: RestTimerState | null) => void;
   getDefaultForGroup: (id: string) => number;
+  getDefaultForExercise?:
+    ((exerciseId: string, primaryGroup: string) => number) | undefined;
+  setDefaultForExercise?:
+    ((exerciseId: string, sec: number) => void) | undefined;
   onDeleteSet: (
     workoutId: string,
     itemId: string,
@@ -66,6 +70,8 @@ export function WorkoutItemsList({
   updateWorkout,
   setRestTimer,
   getDefaultForGroup,
+  getDefaultForExercise,
+  setDefaultForExercise,
   onDeleteSet,
 }: WorkoutItemsListProps) {
   const itemIdToGroup = useMemo(() => {
@@ -114,12 +120,15 @@ export function WorkoutItemsList({
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={getDefaultForGroup}
+        getDefaultForExercise={getDefaultForExercise}
+        setDefaultForExercise={setDefaultForExercise}
         onDeleteSet={onDeleteSet}
       />
     ),
     [
       activeWorkout,
       getDefaultForGroup,
+      getDefaultForExercise,
       groupSelectMode,
       groupSelected,
       isReadOnly,
@@ -131,6 +140,7 @@ export function WorkoutItemsList({
       recBy,
       removeItem,
       setRestTimer,
+      setDefaultForExercise,
       updateItem,
     ],
   );
@@ -202,7 +212,7 @@ export function WorkoutItemsList({
                 })
               }
             >
-              {group.restSec || 60} с ★
+              {group.restSec || 60} с
             </button>
             {qOpts.map((sec) => (
               <button

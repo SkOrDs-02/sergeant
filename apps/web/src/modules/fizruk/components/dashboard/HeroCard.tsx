@@ -349,9 +349,9 @@ function TodayState({
     <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Сьогоднішнє тренування</HeroStateLabel>
-      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
+      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
-      </h1>
+      </h2>
       <p className="mt-2 text-sm text-hero-ink/75 truncate">
         {metaParts.join(" · ")}
       </p>
@@ -408,9 +408,9 @@ function UpcomingState({
     <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>Наступне тренування</HeroStateLabel>
-      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
+      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
         {state.label}
-      </h1>
+      </h2>
       <p className="mt-2 text-sm text-hero-ink/75 truncate">
         {metaParts.join(" · ")}
       </p>
@@ -448,10 +448,9 @@ function EmptyState({
     <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker greeting={greeting} today={today} />
       <HeroStateLabel>План порожній</HeroStateLabel>
-      <h1 className="text-hero font-black text-hero-ink mt-1 leading-tight">
-        Обери шаблон або <br />
-        заплануй день
-      </h1>
+      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight text-balance">
+        Обери шаблон або заплануй день
+      </h2>
       <p className="mt-2 text-sm text-hero-ink/75">
         {state.hasTemplates
           ? "Нічого не заплановано — запусти готовий шаблон або відкрий програми."

@@ -138,6 +138,7 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
       timeOfDay: "morning",
       reminderTimes: ["08:00"],
       weekdays: [1, 2, 3, 4, 5],
+      pauseIntervals: [{ from: "2026-06-10", to: "2026-06-14" }],
     },
   },
   // Гілка `h.createdAt ?? clientTs`: habit БЕЗ createdAt (і без решти
@@ -163,6 +164,16 @@ const CANONICAL_OPS: RoutineDualWriteOp[] = [
     note: "вдалося",
   },
   { kind: "completion-note-delete", noteKey: "h1__2026-06-19" },
+  // Хвиля 4 — третій стан дня. `at` пінимо явно: він їде в рядок як є, а
+  // не через `clientTs`, і snapshot має це зафіксувати.
+  {
+    kind: "habit-skip-upsert",
+    skipKey: "h1__2026-06-18",
+    reason: "sick",
+    note: "температура",
+    at: "2026-06-18T07:30:00.000Z",
+  },
+  { kind: "habit-skip-delete", skipKey: "h1__2026-06-17" },
 ];
 
 describe("routine dual-write SQL snapshot (ADR-0073 Крок 0)", () => {

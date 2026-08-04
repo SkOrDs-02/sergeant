@@ -97,7 +97,7 @@ describe("HabitForm", () => {
     // `habitDraftToPatch` is exercised here; the normalisation is
     // covered in full by the domain tests.
     expect(patch.name).toBe("Пити воду");
-    expect(patch.emoji).toBe("✓");
+    expect(patch.emoji).toBe("check");
     expect(patch.recurrence).toBe("daily");
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -162,7 +162,8 @@ describe("HabitForm", () => {
     expect(onSubmit).toHaveBeenCalledTimes(1);
     const patch = onSubmit.mock.calls[0][0];
     expect(patch.name).toBe("Ранкова зарядка");
-    expect(patch.emoji).toBe("🏃");
+    // Легасі-emoji звички апгрейдиться до slug (`glyphs.ts`).
+    expect(patch.emoji).toBe("run");
     expect(patch.reminderTimes).toEqual(["08:00"]);
   });
 });

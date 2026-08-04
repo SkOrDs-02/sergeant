@@ -141,3 +141,40 @@ describe("PrBoard", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("PrBoard — регрес і застарілий рекорд (канон fizruk §6)", () => {
+  it("показує застарілість і просідання проти піка", () => {
+    render(
+      <PrBoard
+        prs={[
+          {
+            ...PRS[0]!,
+            isStale: true,
+            isRegression: true,
+            deltaVsPeakPct: -12,
+          },
+        ]}
+        prFilter="all"
+        onPrFilterChange={vi.fn()}
+        musclesUk={{}}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/давно не робив/)).toBeTruthy();
+    expect(screen.getByText(/-12%/)).toBeTruthy();
+  });
+
+  it("свіжий рекорд без просідання жодних позначок не отримує", () => {
+    render(
+      <PrBoard
+        prs={[PRS[0]!]}
+        prFilter="all"
+        onPrFilterChange={vi.fn()}
+        musclesUk={{}}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/давно не робив/)).toBeNull();
+    expect(screen.queryByText(/зараз/)).toBeNull();
+  });
+});

@@ -16,6 +16,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { insertGoalPeriod } from "./adapter.goalPeriods.js";
+import { appendPantryEvent } from "./adapter.pantryEvents.js";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
@@ -100,6 +101,12 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
     // із LWW-upsert-ами).
     "goal-period-insert": async (client, op, rt) => {
       await insertGoalPeriod(client, op, rt);
+      return "applied";
+    },
+    // W1-PANTRY-APPEND стадія 2 — сходинка в append-only журналі комори.
+    // Тіло — в `adapter.pantryEvents.ts` (той самий подряд, що вище).
+    "pantry-event-append": async (client, op, rt) => {
+      await appendPantryEvent(client, op, rt);
       return "applied";
     },
   },

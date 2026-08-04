@@ -72,6 +72,8 @@ function makeActions(
     onOpenModule: undefined,
     onBulkMarkDay: vi.fn(),
     onOpenQuickAddHabit: vi.fn(),
+    onSetHabitSkip: vi.fn(),
+    onClearHabitSkip: vi.fn(),
     ...overrides,
   };
 }

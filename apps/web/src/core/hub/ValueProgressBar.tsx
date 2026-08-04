@@ -29,6 +29,7 @@ import {
   type ValueProgressBarsInput,
 } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
+import { ProgressBar } from "@shared/components/ui";
 
 interface ValueProgressBarProps {
   /**
@@ -55,22 +56,15 @@ export function ValueProgressBar({
       aria-label={messages.hub.valueProgressAria}
     >
       {bars.map((bar) => (
-        <div
-          key={bar.testId}
-          data-testid={bar.testId}
-          className="flex items-center gap-3 px-1"
-          role="progressbar"
-          aria-valuenow={bar.percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${bar.label} — ${bar.current}`}
-        >
-          <div className="flex-1 h-1.5 rounded-full bg-line/60 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-brand transition-[width] duration-500"
-              style={{ width: `${bar.percent}%` }}
-            />
-          </div>
+        <div key={bar.testId} className="flex items-center gap-3 px-1">
+          <ProgressBar
+            data-testid={bar.testId}
+            value={bar.percent}
+            max={100}
+            size="sm"
+            className="flex-1"
+            aria-label={`${bar.label} — ${bar.current}`}
+          />
           <span className="text-style-caption text-muted whitespace-nowrap">
             <span className="font-medium text-text">{bar.label}</span>
             <span className="mx-1.5 text-line">·</span>

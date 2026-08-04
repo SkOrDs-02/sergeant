@@ -117,25 +117,25 @@ export function A11ySection() {
               <tr>
                 <th
                   scope="col"
-                  className="text-left text-2xs uppercase tracking-wide text-subtle px-3 py-2"
+                  className="text-left text-style-caption uppercase tracking-wide text-subtle px-3 py-2"
                 >
                   Пара
                 </th>
                 <th
                   scope="col"
-                  className="text-left text-2xs uppercase tracking-wide text-subtle px-3 py-2"
+                  className="text-left text-style-caption uppercase tracking-wide text-subtle px-3 py-2"
                 >
                   Preview
                 </th>
                 <th
                   scope="col"
-                  className="text-left text-2xs uppercase tracking-wide text-subtle px-3 py-2"
+                  className="text-left text-style-caption uppercase tracking-wide text-subtle px-3 py-2"
                 >
                   Ratio
                 </th>
                 <th
                   scope="col"
-                  className="text-left text-2xs uppercase tracking-wide text-subtle px-3 py-2"
+                  className="text-left text-style-caption uppercase tracking-wide text-subtle px-3 py-2"
                 >
                   WCAG
                 </th>

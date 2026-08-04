@@ -8,6 +8,10 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
+import {
+  currentKyivMonthPrefix,
+  filterToKyivMonth,
+} from "../../lib/monthWindow";
 import { buildExpenseCategoryList } from "@sergeant/finyk-domain/domain/categories";
 import {
   getLimitBudgets,
@@ -22,7 +26,6 @@ import {
   manualExpenseToTransaction,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
 import { AddBudgetForm } from "../../components/budgets/AddBudgetForm";
@@ -46,6 +49,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -147,30 +151,48 @@ export function Budgets({
   // Manual expenses/income live in storage (LS + React state), not in the
   // bank tx stream — the fact-vs-plan selectors below must merge them in
   // explicitly, or a manually-added salary/expense never moves the Plan
-  // card's progress. Mirrors the merge pattern `useOverviewData` already
-  // uses for Overview's own income/spent totals; scoped to the current
-  // calendar month to match `getMonthlySummary`'s implicit window.
-  const manualExpenseTxs = useMemo(() => {
-    // `getKyivDateParts` (not `monthStart.getFullYear()/getMonth()`) so the
-    // upper bound stays anchored to Europe/Kyiv per the domain invariant —
-    // `month` is 1-based, so `new Date(year, month, 1)` is next month's start.
-    const kyivToday = getKyivDateParts(now);
-    const monthStartMs = monthStart.getTime();
-    const monthEndMs = new Date(kyivToday.year, kyivToday.month, 1).getTime();
-    return manualExpenses
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStartMs && ts < monthEndMs;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-  }, [manualExpenses, monthStart, now]);
+  // card's progress. Mirrors the merge pattern `useOverviewData` uses for
+  // Overview's own income/spent totals.
+  const manualExpenseTxs = useMemo(
+    () => manualExpenses.map((e) => manualExpenseToTransaction(e)),
+    [manualExpenses],
+  );
 
-  const txForStats = useMemo(
+  // AI-DANGER: план і ліміти — місячні, тож факт мусить рахуватись рівно за
+  // поточний київський місяць. `realTx` не є month-scoped (mirror-overlay), а
+  // `getMonthlySummary` / `calcCategorySpent` не мають вбудованого вікна —
+  // без цього клампу картка Плану показувала all-time суми. Повний контекст:
+  // `../../lib/monthWindow.ts`.
+  const kyivMonthPrefix = useMemo(() => currentKyivMonthPrefix(now), [now]);
+
+  const allTx = useMemo(
     () =>
       manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
     [realTx, manualExpenseTxs],
   );
 
+  const txForStats = useMemo(
+    () => filterToKyivMonth(allTx, kyivMonthPrefix),
+    [allTx, kyivMonthPrefix],
+  );
+
+  /**
+   * Exclusion-filtered but NOT month-clamped.
+   *
+   * AI-DANGER: limit budgets must be scored against this list, not the
+   * month-clamped one. `LimitBudget.period` is `month | week | one_time`, and
+   * `filterTransactionsForLimitPeriod` applies its own window — a `week`
+   * budget looked at on a Wednesday 2-го числа starts on Monday of the
+   * previous month, and `one_time` starts at `budget.createdAt`, arbitrarily
+   * far back. Pre-clamping to the current month silently drops those rows and
+   * understates spend against the limit.
+   */
+  const allStatTx = useMemo(
+    () => filterStatTransactions(allTx, excludedTxIds),
+    [allTx, excludedTxIds],
+  );
+
+  /** Month-clamped counterpart — for the monthly plan-vs-fact card only. */
   const statTx = useMemo(
     () => filterStatTransactions(txForStats, excludedTxIds),
     [txForStats, excludedTxIds],
@@ -186,18 +208,21 @@ export function Budgets({
     () => buildExpenseCategoryList(customCategories, { excludeIncome: false }),
     [customCategories],
   );
+  // Both branches read the unclamped list on purpose: limit budgets carry
+  // their own period window (see `allStatTx`), and goal budgets accumulate
+  // across the whole history — neither is a "цього місяця" number.
   const calcSpent = useCallback(
     (budget: Budget) =>
       calcCategorySpent(
         budget.type === "limit"
-          ? filterTransactionsForLimitPeriod(statTx, budget, now)
-          : statTx,
+          ? filterTransactionsForLimitPeriod(allStatTx, budget, now)
+          : allStatTx,
         budget.type === "limit" ? budget.categoryId : "",
         txCategories,
         txSplits,
         customCategories,
       ),
-    [customCategories, now, statTx, txCategories, txSplits],
+    [customCategories, now, allStatTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
   const goalBudgets = useMemo(() => getGoalBudgets(budgets), [budgets]);
@@ -446,13 +471,14 @@ export function Budgets({
                 onCancel={handleCancelForm}
               />
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="finyk-soft"
                 onClick={() => setShowForm(true)}
-                className="group w-full inline-flex items-center justify-center gap-2 py-3 text-style-label rounded-2xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft"
+                className="group w-full rounded-2xl shadow-soft"
               >
                 {messages.finyk.addLimitOrGoal}
-              </button>
+              </Button>
             )}
           </div>
         </div>

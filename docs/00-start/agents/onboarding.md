@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -32,15 +32,16 @@
 
 CI hard-rules ловляться різними механізмами. Стартова навігація:
 
-| Симптом                                                    | Куди дивитися                                                                                                                                                                                                                     |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../04-governance/governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                               |
-| `sergeant-design/no-hex-in-classname` (Hard Rule #11)      | `AGENTS.md` § [Lint-enforced design conventions](../../../AGENTS.md#lint-enforced-design-conventions) → правило #11. ESLint plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design). |
-| `sergeant-design/no-foreign-module-accent` (Hard Rule #12) | Те саме, правило #12. Cross-module surface (`core/`, `shared/`) — exempt.                                                                                                                                                         |
-| `sergeant-design/no-raw-palette-dark-pair` (Hard Rule #13) | Те саме, правило #13. Lift у design-tokens layer (`bg-success-soft`, `text-brand-strong`).                                                                                                                                        |
-| `sergeant-design/prefer-focus-visible` (Hard Rule #14)     | Те саме, правило #14. `focus:` → `focus-visible:` всюди, крім `focus:outline-none`.                                                                                                                                               |
-| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                                       |
-| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                                    |
+| Симптом                                                    | Куди дивитися                                                                                                                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint:hard-rules-registry` падає                           | Drift `AGENTS.md` ↔ [`hard-rules.json`](../../04-governance/governance/hard-rules.json) ↔ `CONTRIBUTING.md`. Прогнати `pnpm hard-rules:list` побачиш точне правило.                                                 |
+| `sergeant-design/no-raw-local-storage`                     | Використовуй storage-wrapper з `@shared/storage` (`ls`, `lsSet`, `safeReadLS`) замість сирого `localStorage`. Plugin: [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design). |
+| `sergeant-design/rq-keys-only-from-factory` (Hard Rule #2) | RQ-ключі лише з центральних фабрик `apps/web/src/shared/lib/api/queryKeys.ts` — не inline `queryKey: [...]`.                                                                                                        |
+| `sergeant-design/no-cyrillic-jsx-literal`                  | Кириличний literal у JSX поза allowlist — див. [`docs/05-design/i18n/readiness.md`](../../05-design/i18n/readiness.md).                                                                                             |
+| `sergeant-design/no-flat-shared-lib`                       | Новий файл у flat `shared/lib/` заборонено — клади у тематичну підпапку (`shared/lib/<topic>/`).                                                                                                                    |
+| `sergeant-design/no-hash-router-in-modules`                | Hash-навігація всередині module-коду заборонена — роутінг лише через canonical router (`apps/web/src/core/app/router.tsx`).                                                                                         |
+| `commitlint` (Hard Rule #5)                                | Дозволені scope-и в `AGENTS.md` § Hard rules → правило #5. Не вигадуй нові.                                                                                                                                         |
+| `docs:check-playbook-schema`                               | Trigger ≤ 240 chars, Status enum {Active, Scaffolded, Deprecated, Archived}, Verification ≥ 1 checkbox. Дивись `add-playbook.md` playbook (якщо є) або інший working playbook.                                      |
 
 Повна enforcement-матриця — у [`hard-rules-matrix.md`](../../04-governance/governance/hard-rules-matrix.md). Категорійна семантика (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) описана в `AGENTS.md` § Hard rules intro.
 

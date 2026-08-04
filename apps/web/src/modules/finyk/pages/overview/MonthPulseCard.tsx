@@ -16,17 +16,19 @@ interface MonthPulseCardProps {
   hasExpensePlan: boolean;
   spendPlanRatio: number;
   planExpense: number;
-  forecastTrendPct: number;
-  forecastBarClass: string;
   recurringOutThisMonth: number;
   recurringInThisMonth: number;
   unknownOutCount: number;
 }
 
 /**
- * Картка «Місяць» — пара Витрати/Дохід + опційно один progress-bar
- * (плану або прогнозу) + примітка про планові потоки. Денний бюджет і
- * статус виконання плану живуть у HeroCard, тут не дублюються.
+ * Картка «Місяць» — пара Витрати/Дохід + progress-bar плану (лише коли план
+ * заданий) + примітка про планові потоки. Денний бюджет і статус виконання
+ * плану живуть у HeroCard, тут не дублюються.
+ *
+ * Без плану показуємо тільки текстовий прогноз, без бару: прогноз — лінійна
+ * екстраполяція факту, тож будь-яке його відношення до факту згортається в
+ * «скільки днів минуло» і нічого не повідомляє про витрати.
  */
 const MonthPulseCardImpl = function MonthPulseCard({
   dateLabel,
@@ -39,8 +41,6 @@ const MonthPulseCardImpl = function MonthPulseCard({
   hasExpensePlan,
   spendPlanRatio,
   planExpense,
-  forecastTrendPct,
-  forecastBarClass,
   recurringOutThisMonth,
   recurringInThisMonth,
   unknownOutCount,
@@ -149,7 +149,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
       )}
 
       {showForecastBlock && (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4">
           <p className="text-xs text-muted leading-snug">
             За {daysPassed} {pluralDays(daysPassed)} · факт{" "}
             <span className="font-semibold text-text tabular-nums">
@@ -163,15 +163,6 @@ const MonthPulseCardImpl = function MonthPulseCard({
               ₴
             </span>
           </p>
-          <div className="h-1.5 bg-bg rounded-full overflow-hidden">
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-500",
-                forecastBarClass,
-              )}
-              style={{ width: `${forecastTrendPct}%` }}
-            />
-          </div>
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Цей runbook — bus-factor мітигація: коли єдиний оператор `@Skords-01`
@@ -70,8 +70,8 @@ Surface-і та їх deploy targets:
 - `apps/web` → Vercel — [`docs/03-operations/deploy/vercel.md`](../deploy/vercel.md)
 - `apps/server` → Coolify Docker app (image from `deploy-api.yml`) — [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)
 - ~~`tools/openclaw`~~ → removed (ADR-0075)
-- `apps/mobile` → Expo / TestFlight — [`docs/00-start/playbooks/release-expo-mobile.md`](../../00-start/playbooks/release-expo-mobile.md)
-- `apps/mobile-shell` → App Store / Play Store wrap — [`docs/00-start/playbooks/release-mobile-shell.md`](../../00-start/playbooks/release-mobile-shell.md)
+- `apps/mobile` → Expo / TestFlight — [`release.md` § Expo](../../00-start/playbooks/release.md#3-expo)
+- `apps/mobile-shell` → App Store / Play Store wrap — [`release.md` § Mobile shell](../../00-start/playbooks/release.md#2-mobile-shell-capacitor)
 - n8n workflows → self-hosted у Railway (project `grateful-nurturing`) — git source-of-truth у [`ops/n8n-workflows/`](../../../ops/n8n-workflows)
 
 Канонічна service-таблиця з alerts/runbook/rollback per surface — [`docs/02-engineering/architecture/service-catalog.md`](../../02-engineering/architecture/service-catalog.md).
@@ -180,7 +180,7 @@ Decision-tree коли щось «не працює»:
 - **Sentry:** `https://sergeant-ops.sentry.io/issues/?project=<id>` — окремі projects per surface (web, server).
 - **PostHog:** `https://app.posthog.com/project/<id>/events` — funnel breakdown за подіями з `analyticsEvents.ts`.
 - **Coolify logs:** Coolify UI → app `sergeant-api` → Logs (або SSH на VPS → `docker logs`). Historical: `railway logs` більше не актуальний для API.
-- **Prometheus / Grafana:** немає — observability-стек це Sentry + PostHog + Coolify healthchecks + n8n executions. ADR-0034.
+- **Prometheus / Grafana:** **є.** Сервер експонує `GET /metrics` (bearer `METRICS_TOKEN`), `grafana-alloy` під Coolify скрейпить його і шле у **Grafana Cloud**; alert-rules з [`prometheus/alert_rules.yml`](../observability/prometheus/alert_rules.yml) залиті в Mimir і оцінюються в реальному часі, сигнал іде в Telegram. Дашборди й конфіг — у [`ops/`](../../../ops). Канон стека — [ADR-0015](../../04-governance/adr/0015-observability-stack.md); поточний зріз wiring-у — [`SLO.md § Статус wiring`](../observability/SLO.md#статус-wiring-чесний-зріз-2026-06-26), сценарії розслідування — [`observability/runbook.md`](../observability/runbook.md). Додаткові сигнали: Sentry + PostHog + Coolify healthchecks + n8n executions.
 - **Postgres shell:** Coolify → Postgres resource → connection string (internal). **НЕ** використовуй для writes без compensating migration.
 
 ## 8. Routine maintenance
@@ -200,7 +200,7 @@ Decision-tree коли щось «не працює»:
 | Migration `down.sql` drill                     | Per-PR (CI)           | [§ 8.1 «Migration down drill»](#81-migration-downsql-drill)                                                                         |
 | Two-phase DROP authoring                       | Per-PR (CI)           | [§ 8.2 «Two-phase DROP»](#82-two-phase-drop-authoring)                                                                              |
 | DB index audit (prod-replica snapshot)         | Раз на квартал        | [§ 9 «Index hygiene»](#9-index-hygiene)                                                                                             |
-| Access review (хто має які доступи)            | Квартальна            | [`docs/00-start/playbooks/run-access-review.md`](../../00-start/playbooks/run-access-review.md)                                     |
+| Access review (хто має які доступи)            | Квартальна            | [`access-governance.md` § Periodic access review](../../00-start/playbooks/access-governance.md#3-periodic-access-review)           |
 
 ### 8.1. Migration `down.sql` drill
 

@@ -79,7 +79,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const group = screen.getByRole("group", { name: "Швидкі суми" });
     // default chips are 50/100/200/500
     fireEvent.click(within(group).getByText("100 ₴"));
-    expect(screen.getByLabelText("Сума ₴")).toHaveValue(100);
+    expect(screen.getByLabelText("Сума ₴")).toHaveValue("100");
   });
 
   it("merges personal amount suggestions from frequent merchants", () => {
@@ -141,6 +141,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
     const optionLabels = Array.from(select.options).map((o) => o.textContent);
     expect(optionLabels).toEqual([
+      // Disabled placeholder — required so switching Витрата ↔ Надходження can
+      // blank the field and force an explicit pick from the new taxonomy.
+      "Оберіть категорію",
       "Їжа",
       "Продукти",
       "Кафе та ресторани",
@@ -179,9 +182,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first <option> in the dropdown.
+    // Транспорт has the highest frequency rank → first real <option> in the
+    // dropdown, right after the disabled "Оберіть категорію" placeholder.
     const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.textContent).toBe("Транспорт");
+    expect(select.options[0]?.textContent).toBe("Оберіть категорію");
+    expect(select.options[1]?.textContent).toBe("Транспорт");
   });
 
   describe("edit mode", () => {
@@ -203,7 +208,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         />,
       );
       await act(async () => {});
-      expect(screen.getByLabelText("Сума ₴")).toHaveValue(175);
+      expect(screen.getByLabelText("Сума ₴")).toHaveValue("175");
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();

@@ -78,7 +78,9 @@ export default function RoutineApp({
     // asShellRoot so MeshBackground owns h-dvh + bg-mesh; Provider stays
     // as transparent accent context (Hard Rule #12).
     <ModuleAccentProvider module="routine" className="contents">
-      <MeshBackground>
+      {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
+          тож і змінну висоти для `Sheet` виставляє він. */}
+      <MeshBackground className="bottom-nav-height-var">
         <RoutineHeader
           onBackToHub={onBackToHub}
           onGoToHub={onGoToHub}
@@ -87,6 +89,8 @@ export default function RoutineApp({
 
         <RoutineTimeline
           storageErrorMsg={storageErrorMsg}
+          setRoutine={setRoutine}
+          onOpenCalendarTab={() => setMainTab("calendar")}
           onDismissStorageError={() => setStorageErrorMsg(null)}
           calendarData={calendarData}
           calendarActions={calendarActions}

@@ -14,6 +14,10 @@ afterEach(() => {
 function makeKpis(overrides: Partial<DashboardKpis> = {}): DashboardKpis {
   return {
     streakDays: 0,
+    streakWeeks: 0,
+    streakTargetPerWeek: 2,
+    currentWeekWorkouts: 0,
+    currentWeekPending: false,
     weeklyWorkoutsCount: 0,
     weeklyVolumeKg: 0,
     totalCompletedCount: 0,
@@ -84,37 +88,70 @@ describe("StatusStrip", () => {
     expect(screen.getByText("3 групи втомлені")).toBeDefined();
   });
 
-  it("formats the streak with Ukrainian pluralisation", () => {
+  it("формує ТИЖНЕВИЙ стрік з українською плюралізацією", () => {
     const { rerender } = render(
       <StatusStrip
-        kpis={makeKpis({ streakDays: 1 })}
+        kpis={makeKpis({ streakWeeks: 1 })}
         recovery={{ avoid: [] }}
         onOpenBody={() => {}}
         onOpenProgress={() => {}}
         onOpenWorkouts={() => {}}
       />,
     );
-    expect(screen.getByText("1 день")).toBeDefined();
+    expect(screen.getByText("1 тиждень")).toBeDefined();
     rerender(
       <StatusStrip
-        kpis={makeKpis({ streakDays: 3 })}
+        kpis={makeKpis({ streakWeeks: 3 })}
         recovery={{ avoid: [] }}
         onOpenBody={() => {}}
         onOpenProgress={() => {}}
         onOpenWorkouts={() => {}}
       />,
     );
-    expect(screen.getByText("3 дні")).toBeDefined();
+    expect(screen.getByText("3 тижні")).toBeDefined();
     rerender(
       <StatusStrip
-        kpis={makeKpis({ streakDays: 11 })}
+        kpis={makeKpis({ streakWeeks: 11 })}
         recovery={{ avoid: [] }}
         onOpenBody={() => {}}
         onOpenProgress={() => {}}
         onOpenWorkouts={() => {}}
       />,
     );
-    expect(screen.getByText("11 днів")).toBeDefined();
+    expect(screen.getByText("11 тижнів")).toBeDefined();
+  });
+
+  it("незакритий тиждень показує прогрес до порогу, а не нуль", () => {
+    // Головна відмінність від щоденної логіки: людина, що тренувалась раз
+    // цього тижня, бачить «1 з 2 цього тижня», а не «0» через відпочинок.
+    render(
+      <StatusStrip
+        kpis={makeKpis({
+          streakWeeks: 0,
+          currentWeekWorkouts: 1,
+          currentWeekPending: true,
+        })}
+        recovery={{ avoid: [] }}
+        onOpenBody={() => {}}
+        onOpenProgress={() => {}}
+        onOpenWorkouts={() => {}}
+      />,
+    );
+    expect(screen.getByText("1 з 2 цього тижня")).toBeDefined();
+  });
+
+  it("щоденний `streakDays` на веб-поверхню більше не потрапляє", () => {
+    render(
+      <StatusStrip
+        kpis={makeKpis({ streakDays: 7, streakWeeks: 0 })}
+        recovery={{ avoid: [] }}
+        onOpenBody={() => {}}
+        onOpenProgress={() => {}}
+        onOpenWorkouts={() => {}}
+      />,
+    );
+    expect(screen.queryByText("7 днів")).toBeNull();
+    expect(screen.getByText("0 тижнів")).toBeDefined();
   });
 
   it("formats the weekly workouts count with Ukrainian pluralisation", () => {

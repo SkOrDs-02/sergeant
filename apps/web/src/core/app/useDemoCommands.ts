@@ -1,11 +1,10 @@
 // AI-CONTEXT: Seeds the global Command Palette with a baseline set of
-// demo commands (navigation + theme + settings + sign-out). These are
-// intentionally stubbed with `console.log` + a WIP toast where the real
-// handler isn't trivial — Track 5 of the Design System polish initiative
-// ships only the primitive; per-module commands land in follow-up PRs
-// behind the same `hub_command_palette` flag.
+// demo commands (navigation + theme + settings + sign-out). `settings.open`
+// remains a WIP stub (settings UI lives behind the user menu — wiring is
+// module-side); `session.sign-out` is wired to the real `useAuth().logout()`
+// flow (see `ProfilePage.handleLogout` for the reference implementation).
 //
-// Status: Active (Track 5 seed). Last validated: 2026-05-13 by @Skords-01 / Devin.
+// Status: Active (Track 5 seed). Last validated: 2026-08-04 by @claude.
 
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,10 +15,13 @@ import {
   useRegisterCommand,
   type PaletteCommand,
 } from "@shared/components/ui/CommandPalette";
+import { SIGN_IN_PATH } from "./appPaths";
+import { useAuth } from "../auth/AuthContext";
 
 export function useDemoCommands(): void {
   const navigate = useNavigate();
   const toast = useToast();
+  const { logout } = useAuth();
   // `useDarkMode` was retired in PR #2660 in favour of the 4-mode
   // `useTheme` (`light` / `dark` / `system` / `hc`). The Command
   // Palette's binary toggle keeps its old UX semantics by flipping
@@ -30,6 +32,20 @@ export function useDemoCommands(): void {
     () => setChoice(isDark ? "light" : "dark"),
     [isDark, setChoice],
   );
+
+  // Mirrors `ProfilePage.handleLogout`: `logout()` already clears the query
+  // cache and purges SW/SQLite/local-first state, so `user` is `null` by the
+  // time we navigate — sending the signed-out user to `/sign-in` instead of
+  // the hub root avoids a momentary guest-hub flash.
+  const signOutFromPalette = useCallback(async () => {
+    try {
+      await logout();
+      toast.success("Ви вийшли з акаунта");
+      navigate(SIGN_IN_PATH, { replace: true });
+    } catch {
+      toast.error("Не вдалося вийти, спробуйте ще раз");
+    }
+  }, [logout, navigate, toast]);
 
   const commands = useMemo<PaletteCommand[]>(
     () => [
@@ -85,15 +101,13 @@ export function useDemoCommands(): void {
         description: "Завершити сесію та повернутися на екран входу",
         group: "Сесія",
         keywords: ["logout", "sign out", "вийти"],
-        // Real sign-out goes through AuthContext + Better Auth — wiring
-        // happens in the auth track. Stub for now.
         run: () => {
-          logger.debug("[command-palette] session.sign-out (WIP)");
-          toast.info("Вихід — у розробці (WIP)");
+          logger.debug("[command-palette] session.sign-out");
+          void signOutFromPalette();
         },
       },
     ],
-    [isDark, navigate, toast, toggleDark],
+    [isDark, navigate, signOutFromPalette, toast, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);

@@ -46,11 +46,11 @@ describe("ActiveWorkoutBanner", () => {
     expect(screen.getByText("Тренування триває")).toBeInTheDocument();
   });
 
-  it("deep-links into the Fizruk workouts page on click", () => {
+  it("deep-links into the active Fizruk workout on click", () => {
     mockUseActive.mockReturnValue("w-1");
     render(<ActiveWorkoutBanner />);
     fireEvent.click(screen.getByRole("button"));
-    expect(openHubModule).toHaveBeenCalledWith("fizruk", "#workouts");
+    expect(openHubModule).toHaveBeenCalledWith("fizruk", "#workout/w-1");
   });
 
   it("shows the elapsed-minutes label as the timer advances", () => {

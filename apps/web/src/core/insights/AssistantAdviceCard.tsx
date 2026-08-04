@@ -4,6 +4,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Badge } from "@shared/components/ui/Badge";
+import { messages } from "@shared/i18n/uk";
 import { useAiTier } from "@shared/api/useAiTier";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
@@ -121,7 +122,7 @@ export function AssistantAdviceCard({
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
-      <div className="rounded-[15px] bg-surface-glass backdrop-blur-md overflow-hidden">
+      <div className="rounded-2xl bg-surface-glass backdrop-blur-md overflow-hidden">
         <button
           type="button"
           onClick={toggle}
@@ -135,8 +136,17 @@ export function AssistantAdviceCard({
               S
             </span>
             <SectionHeading as="span" size="xs" variant="muted">
-              Порада асистента
+              {messages.sergeant.adviceCardTitle}
             </SectionHeading>
+            {/* Градація впевненості (Хвиля 4, hub-coach § G2): порада дня —
+                суцільний вільний текст моделі, тож рівень «припущення»
+                проставляється детерміновано на рівні картки, а не promt-ом.
+                Показуємо лише коли текст реально є (не на скелетоні). */}
+            {insight && (
+              <Badge variant="neutral" size="xs">
+                {messages.sergeant.insightAssumptionBadge}
+              </Badge>
+            )}
             {degradedLabel && (
               <Badge variant="neutral" size="xs">
                 {degradedLabel}
@@ -163,7 +173,7 @@ export function AssistantAdviceCard({
               <div
                 role="status"
                 aria-live="polite"
-                aria-label="Готую пораду асистента"
+                aria-label={messages.sergeant.adviceLoadingAria}
                 className="space-y-2 py-0.5"
               >
                 <span className="sr-only">Готую пораду…</span>

@@ -1,6 +1,6 @@
 # ADR-0042: Password hashing strategy — scrypt (Better Auth default), `MAX_PASSWORD_LENGTH=256`
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Date:** 2026-05-03 (initial), 2026-05-04 (revised — scrypt correction)
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Reviewers:** @Skords-01

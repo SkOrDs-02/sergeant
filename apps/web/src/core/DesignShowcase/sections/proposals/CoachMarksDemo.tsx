@@ -18,11 +18,11 @@ const STEPS = [
   { top: "18%", left: "8%", text: "Тут додаєш новий запис одним тапом." },
   { top: "44%", left: "42%", text: "Свайп по картках — швидкий огляд метрик." },
   { top: "70%", left: "20%", text: "А тут — звіти й тренди за період." },
-];
+] as const;
 
 export function CoachMarksDemo() {
   const [step, setStep] = useState(0);
-  const active = STEPS[step]!;
+  const active = STEPS[step] ?? STEPS[0];
   const last = step === STEPS.length - 1;
 
   return (
@@ -39,7 +39,7 @@ export function CoachMarksDemo() {
               </div>
               <div className="h-16 rounded-xl bg-panel border border-line" />
             </div>
-            <p className="text-2xs text-muted mt-3">
+            <p className="text-style-caption text-muted mt-3">
               Модуль відкривається «наосліп».
             </p>
           </div>
@@ -64,7 +64,7 @@ export function CoachMarksDemo() {
               className="absolute z-10 w-40 rounded-xl bg-panelHi border border-accent/40 shadow-card p-2.5"
               style={{ top: active.top, left: active.left }}
             >
-              <p className="text-2xs text-text leading-relaxed">
+              <p className="text-style-caption text-text leading-relaxed">
                 {active.text}
               </p>
               <div className="flex items-center justify-between mt-2">
@@ -82,7 +82,7 @@ export function CoachMarksDemo() {
                 <button
                   type="button"
                   onClick={() => setStep(last ? 0 : step + 1)}
-                  className="text-2xs font-medium text-accent"
+                  className="text-style-caption font-medium text-accent"
                 >
                   {last ? "Готово" : "Далі"}
                 </button>

@@ -26,13 +26,15 @@ interface StatsWorkout {
  * Формула Еплі для оцінки 1ПМ (1 повторний максимум).
  * Виноситься як публічна функція, щоб не дублюватись в Exercise.jsx і Progress.jsx.
  */
+export const E1RM_REP_CAP = 10;
+
 export function epley1rm(
   weightKg: number | null | undefined,
   reps: number | null | undefined,
 ): number {
   const wg = Number(weightKg) || 0;
   const r = Number(reps) || 0;
-  if (wg <= 0 || r <= 0) return 0;
+  if (wg <= 0 || r <= 0 || r > E1RM_REP_CAP) return 0;
   return wg * (1 + r / 30);
 }
 

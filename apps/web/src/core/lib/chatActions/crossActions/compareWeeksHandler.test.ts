@@ -68,6 +68,7 @@ function defaultMocks() {
     avgFat: 0,
     avgCarbs: 0,
     targetKcal: 0,
+    daysInPeriod: 7,
     daysLogged: 7,
   });
 }

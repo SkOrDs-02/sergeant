@@ -8,6 +8,7 @@
  *   routine-tracking  → routine_pushups
  *   fizruk-planning   → fizruk_monthly_plan
  *   fizruk-templates  → fizruk_wellbeing
+ *   fizruk-safety     → fizruk_injuries
  *   nutrition-logs    → nutrition_water_log
  *   finyk-money       → finyk_assets
  *   finyk-tx          → finyk_tx_splits
@@ -257,6 +258,29 @@ describe("syncV2 table-coverage smoke (PR-5)", () => {
           energy: 3,
         },
         key: "smoke-fizruk-wellbeing",
+      });
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
+  // Group: fizruk-safety — append-preserving injury observations
+  it(
+    "fizruk-safety: fizruk_injuries insert → pull",
+    async (ctx) => {
+      await smokePushPull(ctx, {
+        table: "fizruk_injuries",
+        userId: "u-smoke-fi",
+        // Форма рядка — рівно та, що в міграції 097 і в `applyInjuries.ts`:
+        // `site` + `started_at`, а НЕ `muscle_group`/`noted_at`. І id з
+        // доменним префіксом `inj_`, бо колонка TEXT саме заради нього
+        // (uuid-колонка давала б 22P02 на кожному push).
+        row: {
+          id: "inj_00000005-0009-4000-8001-000000000001",
+          site: "spine-lumbar",
+          started_at: isoNow(),
+          cleared_at: null,
+        },
+        key: "smoke-fizruk-injuries",
       });
     },
     INTEGRATION_TIMEOUT_MS,

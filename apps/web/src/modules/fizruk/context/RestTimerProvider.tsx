@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useFizrukRestSound } from "../hooks/useFizrukRestSound";
 import { useRestTimerCountdown } from "../hooks/useWorkoutsLifecycle";
 import type { RestTimerState } from "../hooks/useFizrukRestSound";
 import { RestTimerContext } from "./RestTimerContext";
+import { trackFizrukRestTimerDone } from "../lib/workoutTelemetry";
 
 interface RestTimerProviderProps {
   children: ReactNode;
@@ -24,7 +25,11 @@ export function RestTimerProvider({ children }: RestTimerProviderProps) {
   const [restTimer, setRestTimer] = useState<RestTimerState | null>(null);
 
   const { markCompletedNaturally } = useFizrukRestSound(restTimer);
-  useRestTimerCountdown(restTimer, setRestTimer, markCompletedNaturally);
+  const handleCompletedNaturally = useCallback(() => {
+    markCompletedNaturally();
+    trackFizrukRestTimerDone("completed");
+  }, [markCompletedNaturally]);
+  useRestTimerCountdown(restTimer, setRestTimer, handleCompletedNaturally);
 
   return (
     <RestTimerContext.Provider value={{ restTimer, setRestTimer }}>

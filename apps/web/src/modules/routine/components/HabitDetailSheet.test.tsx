@@ -112,6 +112,39 @@ describe("HabitDetailSheet", () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
+  it("bridges a transient miss of the same habit id instead of unmounting (sync-race hardening)", () => {
+    // Regression for the routine critical-flow flake (2026-08-04): a
+    // mid-flight sync refresh can momentarily drop the just-opened habit
+    // from `routine.habits` before its own write has landed. The sheet
+    // must keep rendering the last-known habit (footer actions included)
+    // rather than unmount, or a stable click target never settles.
+    const { rerender } = render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine()}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /редагувати/i }),
+    ).toBeInTheDocument();
+
+    // Simulate the transient sync-refresh blip: `h1` momentarily absent.
+    rerender(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({ habits: [] })}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /редагувати/i }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the habit name, recurrence + time and the tag/category chips", () => {
     render(
       <HabitDetailSheet
@@ -120,11 +153,14 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Title renders "{emoji} {name}" inside a single <span>.
+    // Гліф тепер окремий <svg>, тож назва живе у власному <span>. Матчимо
+    // лише листовий вузол — обгортка з іконкою має той самий textContent.
     expect(
       screen.getByText(
         (_t, el) =>
-          el?.tagName === "SPAN" && el.textContent === "💧 Випити воду",
+          el?.tagName === "SPAN" &&
+          el.children.length === 0 &&
+          el.textContent === "Випити воду",
       ),
     ).toBeInTheDocument();
     // recurrence label "Щодня" + timeOfDay are concatenated

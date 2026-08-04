@@ -33,11 +33,18 @@ import { cn } from "../../lib/ui/cn";
  *   we render `Math.round((value/max)*100)%`.
  * - `showPercent` — force the default percent label even when `label`
  *   is `undefined` (default `true`; pass `false` to hide text entirely).
+ * - `incomplete` — dashes the background track to signal "partial data",
+ *   not "deficit" (nutrition daily ring — canon §5.2). Purely visual on
+ *   the track circle; the filled arc keeps its normal solid stroke so the
+ *   logged progress still reads clearly.
  *
  * A11y:
  * - `role="progressbar"` + `aria-valuenow` / `aria-valuemin` /
  *   `aria-valuemax`. Pass `aria-label` or `aria-labelledby` via spread
  *   props when the visual label is not descriptive.
+ * - The dashed track is not the only signal: `incomplete` appends a
+ *   Ukrainian text equivalent to the accessible name so screen-reader
+ *   users get the same "partial data" meaning as the dashed visual.
  * - `motion-safe:transition-all` on the filled arc — respects
  *   `prefers-reduced-motion: reduce`.
  */
@@ -113,6 +120,8 @@ export interface ProgressRingProps extends Omit<
   showPercent?: boolean;
   /** Alias for `showPercent` (kept for parity with showcase callers). */
   showValue?: boolean;
+  /** Dashes the track ring + appends a text a11y suffix — see file header. */
+  incomplete?: boolean;
 }
 
 export function ProgressRing({
@@ -124,6 +133,7 @@ export function ProgressRing({
   label,
   showPercent = true,
   showValue,
+  incomplete = false,
   className,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
@@ -154,13 +164,20 @@ export function ProgressRing({
   // ARIA progressbar requires an accessible name. The visible centre label
   // is `aria-hidden`, so derive a default `aria-label` ("65%" / "65 / 100")
   // when the caller did not pass one explicitly.
-  const accessibleLabel =
+  const baseAccessibleLabel =
     ariaLabel ??
     (ariaLabelledBy
       ? undefined
       : max === 100
         ? `${percentText}%`
         : `${clamped} / ${safeMax}`);
+  // Text equivalent for the dashed track (Rule: visual style alone can't
+  // carry meaning) — appended regardless of whether the caller passed an
+  // explicit `aria-label`, so every incomplete ring reads the same way.
+  const accessibleLabel =
+    incomplete && baseAccessibleLabel
+      ? `${baseAccessibleLabel} · неповні дані за день`
+      : baseAccessibleLabel;
 
   return (
     <div
@@ -193,6 +210,7 @@ export function ProgressRing({
           stroke={arcStroke?.stroke ?? "currentColor"}
           strokeOpacity={0.15}
           strokeWidth={stroke}
+          strokeDasharray={incomplete ? "4 3" : undefined}
         />
         <circle
           cx={diameter / 2}

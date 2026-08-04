@@ -75,7 +75,7 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
   return (
     <div className="px-1 py-6 text-center">
       <p className="text-style-body text-muted mb-3">
-        Щось пішло не так у цій секції.
+        Не вдалося показати цю секцію. Натисни «Спробувати ще раз».
       </p>
       <button
         type="button"
@@ -310,7 +310,7 @@ export const HubMainContent = memo(function HubMainContent({
               className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <HubSettingsPage user={user} scrollContainer={scrollElement} />
+                <HubSettingsPage scrollContainer={scrollElement} />
                 <TabReadyProbe tab="settings" />
               </SuspenseWithMinDelay>
             </div>

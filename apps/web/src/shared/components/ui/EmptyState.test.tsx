@@ -118,7 +118,7 @@ describe("EmptyState — a11y", () => {
     expect(status!.getAttribute("aria-live")).toBe("polite");
   });
 
-  it("hint живе у `text-subtle`-токені (не raw text-gray-*)", () => {
+  it("hint живе у `text-muted`-токені (не raw text-gray-*)", () => {
     const { getByText } = render(
       <EmptyState
         title="Готовий до першої цілі?"
@@ -126,7 +126,8 @@ describe("EmptyState — a11y", () => {
       />,
     );
     const hint = getByText("Порада: підключи Monobank — імпорт автоматично.");
-    expect(hint.className).toContain("text-subtle");
+    // muted, не subtle: 12px normal-weight потребує 4.5:1, dark subtle дає 3.33:1
+    expect(hint.className).toContain("text-muted");
     expect(hint.className).not.toMatch(/text-gray-/);
   });
 });

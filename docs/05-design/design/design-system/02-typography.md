@@ -1,6 +1,6 @@
 # Design System — Типографічна шкала
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює типографічну шкалу, семантичні утиліти та правила ієрархії тексту.
@@ -19,15 +19,18 @@
 як один атомарний контракт. Розміри плавно зростають від 320 px до
 1280 px вьюпорту — без media-query-стрибків, без drift-у між кейсами.
 
-**Hard Rule #16 — 12px floor.** Жоден семантичний слот не опускається
-нижче 12px (caption / overline). `text-2xs` (10px) лишається для
-chart axis-ticks і декоративних бейджів — це не `text-style-*` слот.
+**Дизайн-конвенція — 12px floor.** Жоден семантичний слот не опускається
+нижче 12px (caption / overline). `text-2xs` (10px) зареєстрований у preset-і,
+але зарезервований виключно для chart axis-ticks; у будь-якому іншому
+продуктовому UI — deprecated, замінюй на `.text-style-caption`. Це не
+`text-style-*` слот.
 
 Реєстр живе у [`packages/design-tokens/tailwind-preset.js`](../../../../packages/design-tokens/tailwind-preset.js)
-→ `plugins.semanticTypography`. Lint `sergeant-design/prefer-text-style`
-заохочує семантичні утиліти замість ручних `text-* font-* tracking-*`
-комбо; `sergeant-design/no-arbitrary-text-size` забороняє
-`text-[Npx]` / `text-[Nrem]`.
+→ `plugins.semanticTypography`. Семантичні утиліти замість ручних
+`text-* font-* tracking-*` комбо і заборона `text-[Npx]` / `text-[Nrem]` —
+дизайн-конвенція, що тримається tokens + review (колишні lint-правила
+`prefer-text-style` / `no-arbitrary-text-size` retired
+[ADR-0081](../../../04-governance/adr/0081-repository-simplification.md)).
 
 | Утиліта                | Розмір (clamp)    | Lh   | Weight | Tracking | Роль                                   |
 | ---------------------- | ----------------- | ---- | ------ | -------- | -------------------------------------- |
@@ -133,13 +136,13 @@ text-rendering: optimizeLegibility;
 Ad-hoc `text-[12px]` / `text-[40px]` / `text-[2.5rem]` обходять і tier-1
 (`text-style-*`), і tier-2 (`text-display`/`text-h*`/`text-meta`/...) —
 це призводить до vertical-rhythm-дрифту і регресій типу 8 px підпису
-поверх coral-фону (нижче WCAG-комфорту). Лінт правило
-[`sergeant-design/no-arbitrary-text-size`](../../../../packages/eslint-plugin-sergeant-design/README.md#sergeant-designno-arbitrary-text-size)
-ловить будь-яке `text-[N(px|rem|em)]` як `error`.
+поверх coral-фону (нижче WCAG-комфорту). Дизайн-конвенція — tokens +
+review (колишнє lint-правило `no-arbitrary-text-size` retired ADR-0081):
+будь-яке `text-[N(px|rem|em)]` — знахідка для design-review.
 
 DS-примітиви, які власне визначають raw-px-токени (`Button`, `Input`,
 `Badge`, `Stat`, `SectionHeading`, `Label`, `Toast`, `Skeleton`, `Tabs`,
-`Segmented`, `Card`), звільнено від правила, бо вони — джерело істини
+`Segmented`, `Card`), звільнено від конвенції, бо вони — джерело істини
 для самих утиліт.
 
 ### Prose — `@shared/components/ui/Prose`

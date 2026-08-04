@@ -96,9 +96,10 @@ describe("HabitsPage", () => {
     });
 
     // Form has closed (headline is gone) and the new habit appears in
-    // the active list. The emoji defaults to "✓".
+    // the active list. The glyph defaults to "check" and renders as an SVG
+    // sibling, so the row text is just the habit name.
     expect(screen.queryByText("Нова звичка")).toBeNull();
-    expect(screen.getByText("✓ Пити воду")).toBeTruthy();
+    expect(screen.getByText("Пити воду")).toBeTruthy();
     // Empty state is no longer rendered.
     expect(screen.queryByText("Поки порожньо")).toBeNull();
   });

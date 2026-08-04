@@ -328,6 +328,46 @@ describe("getDayMacros / getDaySummary", () => {
     expect(s.mealCount).toBe(0);
     expect(s.hasMeals).toBe(false);
   });
+
+  it("getDaySummary: estimatedKcalShare=0 коли немає photoAI-прийомів", () => {
+    expect(getDaySummary(log, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare=0 для дня без ккал", () => {
+    expect(getDaySummary({}, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare рахується за ккал, не за кількістю прийомів (founder-сценарій)", () => {
+    // 3 ручні прийоми по 100 ккал + 1 фото-прийом на 900 ккал →
+    // 75% дня вгадано за ккал, а не 25% за кількістю прийомів.
+    const day: NutritionLog = {
+      "2026-06-01": {
+        meals: [
+          makeMeal({
+            id: "m1",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m2",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m3",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m4",
+            macroSource: "photoAI",
+            macros: { kcal: 900, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+        ],
+      },
+    };
+    expect(getDaySummary(day, "2026-06-01").estimatedKcalShare).toBe(0.75);
+  });
 });
 
 describe("addDaysISODate", () => {
@@ -545,5 +585,24 @@ describe("trimLogOldestDays", () => {
 
   it("обробляє непридатний вхід (null) → {}", () => {
     expect(trimLogOldestDays(null, 5)).toEqual({});
+  });
+});
+
+describe("addLogEntry — ідемпотентність за id", () => {
+  it("другий запис з тим самим id не створює дубль", () => {
+    const meal = { id: "m1", name: "Кава", macros: { kcal: 5 } };
+    const once = addLogEntry({}, "2026-08-01", meal);
+    const twice = addLogEntry(once, "2026-08-01", meal);
+    expect(twice).toBe(once);
+    expect(twice["2026-08-01"]?.meals).toHaveLength(1);
+  });
+
+  it("різні id додаються обидва", () => {
+    const log = addLogEntry(
+      addLogEntry({}, "2026-08-01", { id: "m1", name: "Кава" }),
+      "2026-08-01",
+      { id: "m2", name: "Чай" },
+    );
+    expect(log["2026-08-01"]?.meals).toHaveLength(2);
   });
 });

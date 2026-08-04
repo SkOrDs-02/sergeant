@@ -269,16 +269,10 @@ export const messagesEn: Partial<MessageCatalog> = {
     pickerAllOnHint: "Everything is on — switch off what you will not use.",
     hideChecklist: "Hide checklist",
 
-    tourSettingsTitle: "App introduction",
-    tourLaunchLabel: "View the intro tour",
-    tourResetLabel: "Start the introduction over",
-    tourCopyExplanation:
-      "The tour shows the welcome screen again — your data won't change. Starting over lets you re-select modules and see the first tips again. Your module records stay as they are.",
-    tourResetConfirmTitle: "Start the introduction over?",
-    tourResetConfirmDescription:
-      "You'll see the welcome screen and first tips again. Module data (transactions, workouts, meals) will remain unchanged.",
-    tourResetConfirmAction: "Start over",
-    tourResetSuccess: "Introduction restarted",
+    capabilitiesGroupTitle: "Capabilities",
+    tourLaunchLabel: "What the app can do",
+    appCapabilitiesHint:
+      "What each section does and how they work together. Nothing changes in your data.",
 
     goalFirstHeading: "What matters most to you right now?",
     goalFirstSubtitle:
@@ -337,6 +331,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     fromPantry: "From pantry",
     mealType: "Meal type",
     templates: "Templates",
+    deleteTemplateTitle: "Delete template?",
     reportHeading: "Nutrition (kcal/day)",
     kcalUnit: "kcal",
   },
@@ -361,6 +356,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     monoConnectErrors: {
       tokenRejected:
         "Mono rejected the token. Check that you copied it correctly.",
+      accountRequired:
+        "Sign in first — the Mono token is stored on the server, so connecting a bank needs an account. Nothing is wrong with your token.",
       networkUnavailable: "Could not reach Mono. Check your connection.",
     },
   },

@@ -32,10 +32,23 @@ describe("PushNotificationToggle", () => {
     vi.clearAllMocks();
   });
 
-  it("renders nothing when push is unsupported", () => {
+  it("explains why push is missing instead of hiding the row", () => {
     pushState.supported = false;
-    const { container } = render(<PushNotificationToggle />);
-    expect(container.firstChild).toBeNull();
+    render(<PushNotificationToggle />);
+
+    expect(screen.getByText("Push-сповіщення")).toBeTruthy();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText(/не підтримує push-сповіщення/i)).toBeTruthy();
+  });
+
+  it("tells iOS users to install the app to the home screen", () => {
+    pushState.supported = false;
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+    );
+    render(<PushNotificationToggle />);
+
+    expect(screen.getByText(/на початковий екран/i)).toBeTruthy();
   });
 
   it("shows blocked copy and disables the switch when permission is denied", () => {
@@ -46,7 +59,7 @@ describe("PushNotificationToggle", () => {
       screen.getByText("Заблоковано в налаштуваннях браузера"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     ).toBeDisabled();
   });
 
@@ -55,7 +68,7 @@ describe("PushNotificationToggle", () => {
     render(<PushNotificationToggle />);
 
     await user.click(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     );
     expect(pushState.subscribe).toHaveBeenCalledTimes(1);
     expect(pushState.unsubscribe).not.toHaveBeenCalled();
@@ -71,7 +84,7 @@ describe("PushNotificationToggle", () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: "Вимкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Вимкнути push-сповіщення" }),
     );
     expect(pushState.unsubscribe).toHaveBeenCalledTimes(1);
   });
@@ -80,7 +93,7 @@ describe("PushNotificationToggle", () => {
     pushState.loading = true;
     render(<PushNotificationToggle />);
     expect(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     ).toBeDisabled();
   });
 });

@@ -115,34 +115,33 @@ export function extractLinks(content) {
   const out = [];
   const lines = content.split(/\r?\n/);
   let fence = null;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  // Blank out fenced-code lines instead of dropping them, so the scannable
+  // buffer keeps a 1:1 line mapping and prose links that prettier wrapped
+  // across two lines stay matchable.
+  const scannable = lines.map((line) => {
     const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
     if (fenceMatch) {
       const marker = fenceMatch[1];
       const markerChar = marker[0];
-      if (!fence) {
-        fence = { markerChar, length: marker.length };
-        continue;
-      }
-      if (markerChar === fence.markerChar && marker.length >= fence.length) {
+      if (!fence) fence = { markerChar, length: marker.length };
+      else if (markerChar === fence.markerChar && marker.length >= fence.length)
         fence = null;
-      }
-      continue;
+      return "";
     }
-    if (fence) continue;
-
+    if (fence) return "";
     // Strip inline code spans so we don't pick up `[stuff](./x)` literals.
-    const stripped = line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
+    return line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
+  });
 
-    // Match [text](target) — no newlines inside target, allow nested parens
-    // only one level deep (good enough for markdown in this repo).
-    const re =
-      /\[([^\]]+)\]\(([^()\s]+(?:\([^()]*\))?[^()\s]*)(?:\s+"[^"]*")?\)/g;
-    let m;
-    while ((m = re.exec(stripped)) !== null) {
-      out.push({ text: m[1], target: m[2], line: i + 1 });
-    }
+  const buffer = scannable.join("\n");
+  // Match [text](target) — label may wrap across lines, target may not.
+  // Nested parens in the target are allowed one level deep.
+  const re =
+    /\[([^\]]+)\]\(([^()\s]+(?:\([^()]*\))?[^()\s]*)(?:\s+"[^"]*")?\)/g;
+  let m;
+  while ((m = re.exec(buffer)) !== null) {
+    const line = buffer.slice(0, m.index).split("\n").length;
+    out.push({ text: m[1], target: m[2], line });
   }
   return out;
 }

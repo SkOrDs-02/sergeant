@@ -17,6 +17,12 @@ import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { toLocalISODate } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
+import {
+  classifyDateBound,
+  DATE_WARN_MESSAGE,
+  HARD_MAX_DAY_KEY,
+  HARD_MIN_DAY_KEY,
+} from "@shared/lib/time/dateBounds";
 import { cn } from "@shared/lib/ui/cn";
 import {
   CANONICAL_TO_MANUAL_LABEL,
@@ -41,6 +47,7 @@ import {
 } from "./manualIncomeCategories";
 import {
   buildAmountSuggestions,
+  expenseAmountHryvnia,
   expenseFormSchema,
   sortCategoriesByFrequency,
   toExpenseInstant,
@@ -147,7 +154,10 @@ export function ManualExpenseSheet({
         onSave?.({
           ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
           description,
-          amount: parseFloat(values.amount),
+          // Локальний blob Фініка досі зберігає гривні (див.
+          // domain-invariants.md § Money) — парсер лише гарантує, що сюди
+          // не доїде `1e9`, `12.345` чи від'ємне.
+          amount: expenseAmountHryvnia(values.amount),
           // Write path: always emit slug (Era 3).
           category: slug,
           // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
@@ -185,16 +195,21 @@ export function ManualExpenseSheet({
   const amount = watch("amount");
   const amountError = formState.errors.amount?.message;
   const categoryError = formState.errors.category?.message;
+  const dateError = formState.errors.date?.message;
+  const dateWarning = useMemo(
+    () =>
+      date && classifyDateBound(date) === "warn" ? DATE_WARN_MESSAGE : null,
+    [date],
+  );
 
   // 6.2 hero preview — show big display-hero typography above the input
   // once a value is set. Input stays editable below. Parsed defensively
   // because react-hook-form stores `amount` as string while the schema
   // validates it as a non-empty numeric string.
-  const amountNumeric = useMemo(() => {
-    if (!amount) return 0;
-    const n = parseFloat(amount);
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  }, [amount]);
+  const amountNumeric = useMemo(
+    () => (amount ? expenseAmountHryvnia(amount) : 0),
+    [amount],
+  );
   const amountHeroVisible = amountNumeric > 0;
 
   // 6.3 inline AI suggestion — surfaces the silent merchant-driven
@@ -546,10 +561,20 @@ export function ManualExpenseSheet({
                 id={dateId}
                 type="date"
                 className="mt-2"
+                min={HARD_MIN_DAY_KEY}
+                max={HARD_MAX_DAY_KEY}
+                error={!!dateError}
+                helperText={dateError ?? undefined}
                 disabled={isSubmitting}
                 {...register("date")}
               />
             </details>
+            {/* М'яке вікно: зберігати дозволено, але рік варто перечитати. */}
+            {dateWarning ? (
+              <p className="mt-2 text-style-caption text-warning-strong dark:text-warning">
+                {dateWarning}
+              </p>
+            ) : null}
           </div>
         ) : (
           <button
@@ -569,6 +594,7 @@ export function ManualExpenseSheet({
           categorySlug={categorySlug}
           categorySlugs={categorySlugs}
           register={register}
+          setValue={setValue}
           setAiAppliedCategory={setAiAppliedCategory}
         />
       </div>

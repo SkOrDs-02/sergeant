@@ -252,6 +252,13 @@ jobs:
       - name: Bundle size guard (size-limit)
         run: pnpm --filter @sergeant/web exec size-limit
 
+      # Критичний шлях, а не сума всіх чанків: `size-limit` рахує 300+ файлів,
+      # включно з тими, які більшість людей ніколи не завантажить. Цей гейт
+      # міряє рівно те, що тягнеться до першого екрана — і його треба рухати
+      # вниз. Деталі й число — у самому скрипті.
+      - name: Eager bundle guard (критичний шлях)
+        run: node scripts/ci/check-eager-bundle.mjs
+
       - name: Bundle size PR comment
         if: >-
           github.event_name == 'pull_request' &&
@@ -360,58 +367,33 @@ jobs:
         # floor fails this job. Domain packages are already near 100%, so
         # they don't carry explicit floors yet.
         # `test:coverage:ci` skips @sergeant/mobile jest — web-focus phase.
+        # `--concurrency=2` у скрипті: без ліміту turbo фанаутить до 10
+        # coverage-pipeline-ів на 4-vCPU ранері (import-фаза vitest сягала
+        # 193s), server-тести ловили 30s testTimeout посеред хендлера, а
+        # покинутий хендлер-зомбі зʼїдав mock-чергу сусіднього тесту —
+        # звідси флейкові ExternalServiceError зі «зсунутим» статусом.
         run: pnpm test:coverage:ci
 
-      - name: Check coverage threshold (≥75%)
-        # Fails CI if any workspace drops below its floor.
-        # Floors live in coverage-thresholds.json (single source of truth) —
-        # the same file is read by the workspace vitest/jest configs, so the
-        # local `pnpm test:coverage` run and this gate can't drift apart.
-        # Raise floors in that JSON as coverage improves.
-        run: |
-          set -euo pipefail
-          FAILED=0
-
-          for summary in apps/*/coverage/coverage-summary.json packages/*/coverage/coverage-summary.json; do
-            if [ ! -f "$summary" ]; then
-              continue
-            fi
-
-            WORKSPACE=$(echo "$summary" | sed 's|/coverage/coverage-summary.json||')
-            # Web-focus phase: @sergeant/mobile jest is out of CI scope.
-            if [ "$WORKSPACE" = "apps/mobile" ]; then
-              echo "⏭️  $WORKSPACE: skipped (mobile excluded from CI gates)"
-              continue
-            fi
-            WS_THRESHOLD=$(jq -r --arg ws "$WORKSPACE" '.workspaces[$ws] // .default' coverage-thresholds.json)
-            COVERAGE=$(jq -r '.total.lines.pct' "$summary")
-
-            if [ "$COVERAGE" = "null" ] || [ -z "$COVERAGE" ]; then
-              echo "⚠️  $WORKSPACE: no coverage data found"
-              continue
-            fi
-
-            if (( $(echo "$COVERAGE < $WS_THRESHOLD" | bc -l) )); then
-              echo "❌ $WORKSPACE: ${COVERAGE}% (below ${WS_THRESHOLD}%)"
-              FAILED=1
-            else
-              echo "✅ $WORKSPACE: ${COVERAGE}% (floor: ${WS_THRESHOLD}%)"
-            fi
-          done
-
-          if [ "$FAILED" -eq 1 ]; then
-            echo ""
-            echo "Coverage gate failed: one or more workspaces below their floor threshold"
-            exit 1
-          fi
-
-          echo ""
-          echo "✅ All workspaces meet their coverage floor threshold"
+      - name: Check coverage threshold
+        # Fails CI if any workspace drops below its floor — or stops emitting
+        # coverage-summary.json at all. Floors live in coverage-thresholds.json
+        # (single source of truth) — the same file is read by the workspace
+        # vitest/jest configs, so the local `pnpm test:coverage` run and this
+        # gate can't drift apart. Raise floors in that JSON as coverage grows.
+        #
+        # Аудит 2026-08-04 (fail-open діра): колишній inline shell-loop глобив
+        # НАЯВНІ summary-файли і `continue`-ив відсутні — workspace, що
+        # переставав емітити coverage, тихо випадав з гейта. Тепер гейт живе у
+        # scripts/ci/coverage-ratchet.mjs (--floors): кожен workspace зі списку
+        # coverage-thresholds.json (крім apps/mobile — web-focus skip) МУСИТЬ
+        # мати summary, інакше job червоний (fail-closed). Незалистовані
+        # workspace-и з summary досі гейтяться за `default`.
+        run: node scripts/ci/coverage-ratchet.mjs --floors
 
       - name: Coverage ratchet — unit tests
         # Cheap pre-flight (same pattern as the dedupe-gate / SRI-gate tests):
-        # validates evaluateRatchet/applyBumps so a broken helper fails fast
-        # before the gate below decides the PR's fate.
+        # validates evaluateRatchet/applyBumps/evaluateFloors so a broken
+        # helper fails fast before the gates above/below decide the PR's fate.
         run: node --test scripts/ci/__tests__/coverage-ratchet.test.mjs
 
       - name: Coverage ratchet (apps/web + apps/server)

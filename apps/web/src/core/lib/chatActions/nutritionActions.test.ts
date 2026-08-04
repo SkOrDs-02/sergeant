@@ -12,12 +12,17 @@ const mem = vi.hoisted(() => ({
   pantries: null as Array<{
     id: string;
     name: string;
-    items: Array<{ name: string }>;
+    items: Array<{ name: string; qty?: number | null; unit?: string | null }>;
   }> | null,
   active: "home",
   water: {} as Record<string, number>,
   shopping: null as unknown,
 }));
+
+// W1-PANTRY-APPEND стадія 2 — `consume_from_pantry` тепер емітує ledger-подію
+// поряд зі старим `persistPantries`. Мок ловить payload без реального
+// SQLite/dual-write шляху — той шлях покритий adapter/hook-тестами.
+const appendPantryEventSpy = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
   const domain = await import("@sergeant/nutrition-domain");
@@ -51,6 +56,7 @@ vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
         return true;
       },
     ),
+    appendNutritionPantryEvent: appendPantryEventSpy,
   };
 });
 
@@ -315,6 +321,42 @@ describe("consume_from_pantry", () => {
     });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+
+  // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2) — раніше видаляло позицію
+  // ВСЛІПУ, ігноруючи qty; тепер записує ЧЕСНУ дельту (= та qty, що щойно
+  // зникла), а не вигадану частку.
+  it("з відомою qty → 'consume' з deltaQty = -(qty позиції)", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    call({ name: "consume_from_pantry", input: { name: "Молоко" } });
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(1);
+    const event = appendPantryEventSpy.mock.calls[0]![0];
+    expect(event).toMatchObject({
+      kind: "consume",
+      deltaQty: -500,
+      unit: "мл",
+      source: "chat_tool",
+    });
+  });
+
+  it("без відомої qty (напр. «сіль») — НЕ емітить подію", () => {
+    mem.pantries = [
+      { id: "home", name: "Домашня", items: [{ name: "Сіль", qty: null }] },
+    ];
+    call({ name: "consume_from_pantry", input: { name: "Сіль" } });
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  it("продукт не знайдено → подія не емітується", () => {
+    mem.pantries = [{ id: "home", name: "Домашня", items: [{ name: "Хліб" }] }];
+    call({ name: "consume_from_pantry", input: { name: "nonexistent" } });
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
   });
 });
 

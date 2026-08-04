@@ -40,6 +40,7 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.workouts).toEqual([]);
     expect(cache.customExercises).toEqual([]);
     expect(cache.measurements).toEqual([]);
+    expect(cache.injuries).toEqual([]);
     expect(cache.refreshedAt).not.toBeNull();
   });
 
@@ -234,9 +235,48 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.dailyLog[0]!.at).toBe("2026-05-01T07:00:00Z");
     expect(cache.dailyLog[0]!.weightKg).toBe(81.2);
   });
-});
 
-describe("getCachedFizrukSqliteState", () => {
+  it("hydrates open and cleared injury marks newest-first", async () => {
+    await handle.client.run(
+      `INSERT INTO fizruk_injuries
+         (id, user_id, site, started_at, cleared_at, note)
+       VALUES (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)`,
+      [
+        "inj-old",
+        UID,
+        "chest",
+        "2026-05-01T07:00:00.000Z",
+        "2026-05-02T07:00:00.000Z",
+        "",
+        "inj-new",
+        UID,
+        "knee",
+        "2026-05-03T07:00:00.000Z",
+        null,
+        "",
+      ],
+    );
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    // `knee` is a joint, not an atlas muscle — the reader must carry the
+    // wider ADR-0083 keyspace through untouched.
+    expect(cache.injuries).toEqual([
+      {
+        id: "inj-new",
+        site: "knee",
+        startedAt: "2026-05-03T07:00:00.000Z",
+        clearedAt: null,
+        note: "",
+      },
+      {
+        id: "inj-old",
+        site: "chest",
+        startedAt: "2026-05-01T07:00:00.000Z",
+        clearedAt: "2026-05-02T07:00:00.000Z",
+        note: "",
+      },
+    ]);
+  });
   it("returns the empty cache before any refresh", () => {
     const cache = getCachedFizrukSqliteState();
     expect(cache.refreshedAt).toBeNull();

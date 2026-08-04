@@ -99,3 +99,21 @@ describe("ManualExpenseCreateSchema", () => {
     expect(ManualExpenseCreateSchema.safeParse(body).success).toBe(false);
   });
 });
+
+describe("ManualExpenseCreateSchema — межі (beta-input-boundaries)", () => {
+  it("приймає верхню межу суми (10 000 000 ₴ у копійках)", () => {
+    const r = ManualExpenseCreateSchema.safeParse({
+      amount: 1_000_000_000,
+      category: "food",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it.each([
+    ["сума понад верхню межу", { amount: 1_000_000_001, category: "food" }],
+    ["дата до 1970", { amount: 100, category: "food", date: "1969-12-31" }],
+    ["дата після 2100", { amount: 100, category: "food", date: "2100-01-02" }],
+  ])("відхиляє %s", (_label, body) => {
+    expect(ManualExpenseCreateSchema.safeParse(body).success).toBe(false);
+  });
+});

@@ -41,6 +41,7 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   analytics: true,
   aiMemory: true,
   pushNotifications: false,
+  sergeantNudges: false,
 };
 
 function iso(value: Date | string): string {
@@ -71,6 +72,7 @@ function serializePreferences(
     analytics: row["analytics"] === true,
     aiMemory: row["ai_memory"] === true,
     pushNotifications: row["push_notifications"] === true,
+    sergeantNudges: row["sergeant_nudges"] === true,
     updatedAt: maybeIso(row["updated_at"] as Date | string | null | undefined),
   };
 }
@@ -80,7 +82,7 @@ export async function getUserPreferences(
   userId: string,
 ): Promise<UserPreferences> {
   const result = await db.query<Record<string, unknown>>(
-    `SELECT analytics, ai_memory, push_notifications, updated_at
+    `SELECT analytics, ai_memory, push_notifications, sergeant_nudges, updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -98,18 +100,26 @@ export async function upsertUserPreferences(
     analytics: patch.analytics ?? current.analytics,
     aiMemory: patch.aiMemory ?? current.aiMemory,
     pushNotifications: patch.pushNotifications ?? current.pushNotifications,
+    sergeantNudges: patch.sergeantNudges ?? current.sergeantNudges,
   };
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
-        (user_id, analytics, ai_memory, push_notifications, updated_at)
-      VALUES ($1, $2, $3, $4, NOW())
+        (user_id, analytics, ai_memory, push_notifications, sergeant_nudges, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
         push_notifications = EXCLUDED.push_notifications,
+        sergeant_nudges = EXCLUDED.sergeant_nudges,
         updated_at = NOW()
-      RETURNING analytics, ai_memory, push_notifications, updated_at`,
-    [userId, next.analytics, next.aiMemory, next.pushNotifications],
+      RETURNING analytics, ai_memory, push_notifications, sergeant_nudges, updated_at`,
+    [
+      userId,
+      next.analytics,
+      next.aiMemory,
+      next.pushNotifications,
+      next.sergeantNudges,
+    ],
   );
   return serializePreferences(result.rows[0]);
 }

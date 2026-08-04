@@ -9,11 +9,14 @@ import { cn } from "@shared/lib/ui/cn";
  * Sergeant Design System — ProgressBar.
  *
  * Linear progress indicator. Supports determinate and indeterminate
- * states, four size tiers (`xs` 2 px → `lg` 8 px), four status
- * variants, and an optional centred inner label.
+ * states, four size tiers (`xs` 2 px → `lg` 8 px), five status
+ * variants (`brand`/`success`/`warning`/`danger`/`neutral`), and an
+ * optional centred inner label.
  *
- * - All fills use the `*-strong` companion (Hard Rule #9) so the
- *   white inner text stays AA-contrast against the saturated fill.
+ * - Saturated fills (`brand`/`success`/`warning`/`danger`) use the
+ *   `*-strong` companion (Hard Rule #9) so the white inner text stays
+ *   AA-contrast against the fill. `neutral` (ink `bg-primary`) isn't
+ *   saturated, so it has no `-strong` companion.
  * - The indeterminate animation respects `prefers-reduced-motion:
  *   reduce` — under reduced motion the bar falls back to a slow
  *   `pulse-soft` so users still get a "we're working" affordance
@@ -21,12 +24,16 @@ import { cn } from "@shared/lib/ui/cn";
  */
 
 export type ProgressBarSize = "xs" | "sm" | "md" | "lg";
-export type ProgressBarVariant = "brand" | "success" | "warning" | "danger";
+export type ProgressBarVariant =
+  "brand" | "success" | "warning" | "danger" | "neutral";
 
 export interface ProgressBarProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "children"
 > {
+  // Rest props (e.g. `data-testid`, `id`, `style`) spread onto the
+  // `role="progressbar"` element itself — that's the accessible-name-bearing
+  // node callers/tests actually want to target, not the layout wrapper.
   /** Current value when determinate. Ignored if `indeterminate` is `true`. */
   value?: number;
   /** Upper bound. Default 100. */
@@ -58,6 +65,10 @@ const fillClass: Record<ProgressBarVariant, string> = {
   success: "bg-success-strong",
   warning: "bg-warning-strong",
   danger: "bg-danger-strong",
+  // `primary` (ink) isn't a saturated brand hue, so it needs no `-strong`
+  // companion (Hard Rule #9 only applies to saturated fills behind white
+  // text). Used for status-neutral progress (e.g. a sync/backfill job).
+  neutral: "bg-primary",
 };
 
 const labelTextClass: Record<ProgressBarSize, string> = {
@@ -94,7 +105,7 @@ export function ProgressBar({
   const fillStyle: CSSProperties = indeterminate ? {} : { width: `${pct}%` };
 
   return (
-    <div className={cn("flex flex-col gap-1", className)} {...rest}>
+    <div className={cn("flex flex-col gap-1", className)}>
       <div
         role="progressbar"
         aria-label={accessible}
@@ -106,6 +117,7 @@ export function ProgressBar({
           "relative w-full overflow-hidden rounded-full bg-line",
           sizeClass[size],
         )}
+        {...rest}
       >
         {indeterminate ? (
           <div

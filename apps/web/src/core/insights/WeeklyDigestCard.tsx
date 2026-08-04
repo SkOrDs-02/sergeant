@@ -2,19 +2,24 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { Icon } from "@shared/components/ui/Icon";
 import {
   DataState,
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { Badge } from "@shared/components/ui/Badge";
+import { messages } from "@shared/i18n/uk";
+import { STORAGE_KEYS } from "@sergeant/shared";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   useWeeklyDigest,
   useDigestHistory,
   getWeekKey,
+  aggregateNutrition,
 } from "./useWeeklyDigest";
 import { WeeklyDigestStories } from "./WeeklyDigestStories";
 import {
@@ -31,167 +36,21 @@ import {
 // path without touching either module.
 export { hasLiveWeeklyDigest } from "@shared/lib/storage/weeklyDigestStorage";
 
-// Wave 1b: `bgClass` / `borderClass` consolidated onto the
-// `{module}-soft` / `{module}-soft-border` token family (preset-owned
-// light/dark pair via `--c-{module}-soft*`). `colorClass` keeps the
-// explicit `-600 / dark:-400` pair because the module accent text uses
-// the saturated `-500` family (not the `-soft` wash) and does not have
-// a theme-adaptive semantic token today.
-const MODULE_CONFIG: Record<
-  ModuleKey,
-  {
-    icon: IconName;
-    label: string;
-    colorClass: string;
-    bgClass: string;
-    borderClass: string;
-  }
-> = {
-  finyk: {
-    icon: "credit-card",
-    label: "Фінанси",
-    colorClass: "text-brand-strong dark:text-brand",
-    bgClass: "bg-finyk-soft",
-    borderClass: "border-finyk-soft-border/60",
-  },
-  fizruk: {
-    icon: "dumbbell",
-    label: "Тренування",
-    colorClass: "text-fizruk-strong dark:text-fizruk-300",
-    bgClass: "bg-fizruk-soft",
-    borderClass: "border-fizruk-soft-border/60",
-  },
-  nutrition: {
-    icon: "utensils",
-    label: "Їжа",
-    colorClass: "text-nutrition-strong dark:text-nutrition",
-    bgClass: "bg-nutrition-soft",
-    borderClass: "border-nutrition-soft-border/60",
-  },
-  routine: {
-    icon: "check-circle",
-    label: "Звички",
-    colorClass: "text-routine-strong dark:text-routine",
-    bgClass: "bg-routine-soft",
-    borderClass: "border-routine-soft-border/60",
-  },
-};
-
-// `WeeklyDigestReport` (the AI-generated body) lives in
-// `@sergeant/shared`; we only need the per-module block shape here. The
-// hook returns the report flattened with `{ generatedAt, weekKey,
-// weekRange }` (saved digest) plus an `overallRecommendations` array, so
-// we describe just the fields the card touches rather than re-importing
-// the full report type.
-export type ModuleKey = "finyk" | "fizruk" | "nutrition" | "routine";
-
-export interface DigestModuleData {
-  summary?: string;
-  comment?: string;
-  recommendations?: string[];
-}
-
-export interface DigestPayload {
-  generatedAt?: string;
-  finyk?: DigestModuleData | null;
-  fizruk?: DigestModuleData | null;
-  nutrition?: DigestModuleData | null;
-  routine?: DigestModuleData | null;
-  overallRecommendations?: string[];
-}
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <Icon
-      name="chevron-right"
-      size={15}
-      strokeWidth={2.5}
-      className={cn(
-        "transition-transform duration-200 shrink-0 text-muted",
-        expanded && "rotate-90",
-      )}
-    />
-  );
-}
-
-interface ModuleBlockProps {
-  moduleKey: ModuleKey;
-  data: DigestModuleData | null | undefined;
-}
-
-function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
-  const [open, setOpen] = useState(false);
-  const cfg = MODULE_CONFIG[moduleKey];
-  if (!cfg || !data) return null;
-
-  return (
-    <div className="rounded-xl border border-line bg-bg overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2.5 flex items-center gap-2.5 hover:bg-panelHi/50 transition-colors"
-      >
-        <div
-          className={cn(
-            "w-6 h-6 rounded-xl flex items-center justify-center shrink-0",
-            cfg.bgClass,
-            cfg.colorClass,
-          )}
-        >
-          <Icon name={cfg.icon} size="sm" aria-hidden />
-        </div>
-        <div className="flex-1 min-w-0 text-left">
-          <span className="text-style-label font-semibold text-text">
-            {cfg.label}
-          </span>
-          {data.summary && (
-            <p className="text-style-caption text-muted truncate mt-0.5">
-              {data.summary}
-            </p>
-          )}
-        </div>
-        <ChevronIcon expanded={open} />
-      </button>
-
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-in-out",
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="px-3 pb-3 border-t border-line pt-2 space-y-2">
-            {data.comment && (
-              <p className="text-style-body text-muted leading-relaxed">
-                {data.comment}
-              </p>
-            )}
-            {Array.isArray(data.recommendations) &&
-              data.recommendations.length > 0 && (
-                <div className="space-y-1">
-                  {data.recommendations.map((rec: string, i: number) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <span
-                        className={cn(
-                          "text-style-caption font-bold mt-0.5 shrink-0",
-                          cfg.colorClass,
-                        )}
-                      >
-                        →
-                      </span>
-                      <span className="text-style-body text-text leading-snug">
-                        {rec}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// Блок одного модуля винесено у `WeeklyDigestModuleBlock.tsx`: картка
+// підійшла впритул до `max-lines: 600` (Hard Rule #18). Типи ре-експортуємо,
+// щоб історичні шляхи імпорту не змінювались.
+export {
+  ModuleBlock,
+  coverageBadge,
+  type ModuleKey,
+  type DigestModuleData,
+  type DigestPayload,
+} from "./WeeklyDigestModuleBlock";
+import {
+  ModuleBlock,
+  coverageBadge,
+  type DigestPayload,
+} from "./WeeklyDigestModuleBlock";
 
 // Shape-aware loader: matches the real digest layout — 4 module rows
 // (icon + 2 lines of summary text). When the digest lands, only the
@@ -260,6 +119,13 @@ interface DigestContentProps {
   digest: DigestPayload | null | undefined;
   loading: boolean;
   error: string | null | undefined;
+  /**
+   * Поріг публікації (hub-coach §6.2 / Хвиля 4 § G2) відмовив ЧЕСНО: даних
+   * за тиждень замало для звіту. Це НЕ помилка (мережа/5xx/парсинг) і НЕ
+   * звичайний порожній стан — окрема гілка, щоб не показати ані
+   * error-банер, ані порожню картку без пояснення.
+   */
+  insufficientData: boolean;
   isCurrentWeek: boolean;
   onGenerate: () => void;
   onUpdate: () => void;
@@ -270,12 +136,17 @@ interface DigestContentProps {
   surface: AdviceSurface;
   /** Чи розгорнута зовнішня `CollapsibleSection` (див. `AssistantAdviceCard`). */
   sectionOpen: boolean;
+  /** Скільки днів тижня залоговано в харчуванні — знаменник coverage. */
+  nutritionCoverage?: { logged: number; total: number } | null;
+  /** Юзер розгорнув тіло звіту — знімає бейдж «новий звіт». */
+  onOpened?: (() => void) | undefined;
 }
 
 function DigestContent({
   digest,
   loading,
   error,
+  insufficientData,
   isCurrentWeek,
   onGenerate,
   onUpdate,
@@ -283,6 +154,8 @@ function DigestContent({
   adviceId,
   surface,
   sectionOpen,
+  nutritionCoverage,
+  onOpened,
 }: DigestContentProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -305,6 +178,7 @@ function DigestContent({
   // «Згорнути». Нових кнопок не додаємо.
   const setExpandedTracked = (next: boolean) => {
     setExpanded(next);
+    if (next) onOpened?.();
     trackAdviceReaction(adviceId, next ? "expand" : "collapse");
   };
 
@@ -312,6 +186,31 @@ function DigestContent({
     trackAdviceReaction(adviceId, "refresh");
     fn();
   };
+
+  // Поріг публікації відмовив (§6.2) — окрема гілка ПЕРЕД `DataState`:
+  // ні error-банер (це не збій), ні generic порожній стан (не пояснював би
+  // ЧОМУ звіту немає). Рендериться лише коли нема тіла звіту — стейл-кеш
+  // минулого разу лишається видимим, якщо він є (`hasDigestBody(digest)`).
+  if (!loading && insufficientData && !hasDigestBody(digest)) {
+    return (
+      <div className="px-4 pb-4">
+        <p className="text-style-body text-muted mb-3 leading-relaxed">
+          Замало даних за цей тиждень — AI-звіт вийшов би занадто загальним.
+          Запиши хоча б одну транзакцію, тренування, прийом їжі чи звичку і
+          спробуй ще раз.
+        </p>
+        {isCurrentWeek && (
+          <button
+            type="button"
+            onClick={handleRegenerate(onGenerate)}
+            className="w-full h-9 min-h-[44px] rounded-xl border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+          >
+            Спробувати знову
+          </button>
+        )}
+      </div>
+    );
+  }
 
   // DataState contract: `data === undefined` → render skeleton slot,
   // otherwise content/empty/error are evaluated. We force `data` to
@@ -414,7 +313,16 @@ function DigestContent({
                 {(["finyk", "fizruk", "nutrition", "routine"] as const).map(
                   (key) =>
                     d?.[key] ? (
-                      <ModuleBlock key={key} moduleKey={key} data={d[key]} />
+                      <ModuleBlock
+                        key={key}
+                        moduleKey={key}
+                        data={d[key]}
+                        badge={
+                          key === "nutrition"
+                            ? coverageBadge(nutritionCoverage, isCurrentWeek)
+                            : undefined
+                        }
+                      />
                     ) : null,
                 )}
                 {d &&
@@ -427,9 +335,12 @@ function DigestContent({
                       {d.overallRecommendations.map(
                         (rec: string, i: number) => (
                           <div key={i} className="flex items-start gap-1.5">
-                            <span className="text-style-caption font-bold text-primary mt-0.5 shrink-0">
-                              ★
-                            </span>
+                            <Icon
+                              name="sparkle"
+                              size={12}
+                              className="text-primary mt-1 shrink-0"
+                              aria-hidden
+                            />
                             <span className="text-style-body text-text leading-snug">
                               {rec}
                             </span>
@@ -510,9 +421,31 @@ export function WeeklyDigestCard({
   const [showHistory, setShowHistory] = useState(false);
   const [storiesOpen, setStoriesOpen] = useState(false);
 
-  const { digest, loading, error, weekRange, generate, isCurrentWeek } =
-    useWeeklyDigest(selectedWeekKey);
+  const {
+    digest,
+    loading,
+    error,
+    insufficientData,
+    weekRange,
+    generate,
+    isCurrentWeek,
+  } = useWeeklyDigest(selectedWeekKey);
   const { data: history = [] } = useDigestHistory();
+
+  // Автогенерація по понеділках працює у фоні: звіт з'являвся мовчки, і
+  // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
+  // тримається, поки він не розгорнув саме цей тиждень.
+  const [lastSeenWeekKey, setLastSeenWeekKey] = useState<string>(
+    () => safeReadStringLS(STORAGE_KEYS.WEEKLY_DIGEST_LAST_SEEN) ?? "",
+  );
+  const hasUnreadDigest =
+    !loading && !!digest && lastSeenWeekKey !== selectedWeekKey;
+
+  const markDigestSeen = () => {
+    if (lastSeenWeekKey === selectedWeekKey) return;
+    setLastSeenWeekKey(selectedWeekKey);
+    safeWriteLS(STORAGE_KEYS.WEEKLY_DIGEST_LAST_SEEN, selectedWeekKey);
+  };
 
   const handleGenerate = () => generate();
 
@@ -527,6 +460,15 @@ export function WeeklyDigestCard({
   const adviceId = digest?.generatedAt
     ? adviceIdForScope(`weekly_digest:${selectedWeekKey}:${digest.generatedAt}`)
     : null;
+
+  // Coverage рахується з локального логу, а не з тіла звіту: `digest` —
+  // це AI-текст, і саме тому число має приїхати повз нього. Агрегат
+  // повертає `null`, коли не залоговано жодного дня, — тоді й самого
+  // nutrition-блоку в звіті немає, тож бейджу нема на чому висіти.
+  const nutritionCoverage = useMemo(() => {
+    const agg = aggregateNutrition(selectedWeekKey);
+    return agg ? { logged: agg.daysLogged, total: agg.daysInPeriod } : null;
+  }, [selectedWeekKey]);
 
   const isPast = selectedWeekKey !== currentWeekKey;
 
@@ -566,9 +508,27 @@ export function WeeklyDigestCard({
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-style-title font-bold text-text">Звіт тижня</div>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-style-title font-bold text-text truncate">
+              Звіт тижня
+            </span>
+            {hasUnreadDigest && (
+              <Badge variant="accent" size="xs">
+                {messages.sergeant.weeklyDigestUnread}
+              </Badge>
+            )}
+            {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
+                comment/recommendations — суцільний вільний текст моделі,
+                тож рівень «припущення» проставляється детерміновано на
+                рівні картки (не потребує розбору речень). */}
+            {!loading && hasDigestBody(digest) && (
+              <Badge variant="neutral" size="xs">
+                {messages.sergeant.insightAssumptionBadge}
+              </Badge>
+            )}
+          </div>
           <div className="text-style-caption text-muted mt-0.5">
-            {weekRange}
+            {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -674,6 +634,7 @@ export function WeeklyDigestCard({
         digest={digest}
         loading={loading}
         error={error}
+        insufficientData={insufficientData}
         isCurrentWeek={isCurrentWeek}
         onGenerate={handleGenerate}
         onUpdate={handleGenerate}
@@ -681,6 +642,8 @@ export function WeeklyDigestCard({
         adviceId={adviceId}
         surface={surface}
         sectionOpen={sectionOpen}
+        nutritionCoverage={nutritionCoverage}
+        onOpened={markDigestSeen}
       />
 
       {storiesOpen && digest && (

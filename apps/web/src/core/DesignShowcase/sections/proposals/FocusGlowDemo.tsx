@@ -23,7 +23,7 @@ export function FocusGlowDemo() {
             defaultValue="Сума"
             className="w-40 rounded-xl border border-line bg-panel px-3 py-2 text-style-body text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           />
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Нейтральний ring — однаковий скрізь
           </p>
         </CompareTile>
@@ -50,7 +50,7 @@ export function FocusGlowDemo() {
               }}
             />
           </div>
-          <p className="text-2xs text-muted">
+          <p className="text-style-caption text-muted">
             Ring тінтиться під акцент модуля
           </p>
         </CompareTile>

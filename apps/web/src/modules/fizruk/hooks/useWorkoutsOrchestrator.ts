@@ -34,6 +34,10 @@ import {
   todayLocalDateString,
 } from "../pages/Workouts.helpers";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
+import {
+  trackFizrukWorkoutDiscarded,
+  trackFizrukWorkoutStarted,
+} from "../lib/workoutTelemetry";
 
 interface TemplateGroup {
   id: string;
@@ -43,7 +47,15 @@ interface TemplateGroup {
   restSec?: number;
 }
 
-export function useWorkoutsOrchestrator() {
+interface UseWorkoutsOrchestratorOptions {
+  requestedWorkoutId?: string | undefined;
+  initialView?: WorkoutsView | undefined;
+  onWorkoutStarted?: ((workoutId: string) => void) | undefined;
+}
+
+export function useWorkoutsOrchestrator(
+  options: UseWorkoutsOrchestratorOptions = {},
+) {
   const toast = useToast();
   const {
     exercises,
@@ -100,11 +112,15 @@ export function useWorkoutsOrchestrator() {
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
-  const [view, setView] = useState<WorkoutsView>("home");
+  // Pulled out of `options` so the start callbacks can depend on the function
+  // itself rather than on the whole options object, which is a fresh literal
+  // on every render of the host page.
+  const { onWorkoutStarted } = options;
+  const [view, setView] = useState<WorkoutsView>(options.initialView ?? "home");
   const mode = view === "templates" || view === "home" ? "catalog" : view;
   const { restTimer, setRestTimer } = useRestTimer();
-  const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
-    safeReadStringLS(ACTIVE_WORKOUT_KEY),
+  const [activeWorkoutId, setActiveWorkoutId] = useState(
+    () => options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
@@ -112,7 +128,9 @@ export function useWorkoutsOrchestrator() {
     useState<WorkoutTemplate | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [retroOpen, setRetroOpen] = useState(false);
-  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  const [pendingWorkoutStart, setPendingWorkoutStart] = useState<
+    (() => void) | null
+  >(null);
   const [retroDate, setRetroDate] = useState(() => todayLocalDateString());
   const [retroTime, setRetroTime] = useState("18:00");
   const [form, setForm] = useState<AddExerciseForm>(() => ({
@@ -128,6 +146,21 @@ export function useWorkoutsOrchestrator() {
   const activeWorkout: Workout | null =
     workouts.find((w) => w.id === activeWorkoutId) || null;
 
+  // The route owns which workout is focused, so a `workout/<id>` change has
+  // to win over the pointer this hook already holds. Adjusting during render
+  // (rather than in an effect) keeps the first paint on the new id instead of
+  // flashing the previous one.
+  const [syncedRequestedId, setSyncedRequestedId] = useState(
+    options.requestedWorkoutId,
+  );
+  if (
+    options.requestedWorkoutId &&
+    options.requestedWorkoutId !== syncedRequestedId
+  ) {
+    setSyncedRequestedId(options.requestedWorkoutId);
+    setActiveWorkoutId(options.requestedWorkoutId);
+  }
+
   const activeDuration = useMemo(
     () =>
       formatActiveDuration(
@@ -138,6 +171,38 @@ export function useWorkoutsOrchestrator() {
     [activeWorkout?.startedAt, activeWorkout?.endedAt, now],
   );
 
+  const conflictingWorkout = useMemo(
+    () => workouts.find((workout) => !workout.endedAt) ?? null,
+    [workouts],
+  );
+
+  const requestWorkoutStart = useCallback(
+    (start: () => void) => {
+      if (!conflictingWorkout) {
+        start();
+        return;
+      }
+      setPendingWorkoutStart(() => start);
+    },
+    [conflictingWorkout],
+  );
+
+  const continuePendingWorkoutStart = useCallback(
+    (resolution: "finish" | "discard") => {
+      const start = pendingWorkoutStart;
+      if (!start || !conflictingWorkout) return;
+      if (resolution === "finish") endWorkout(conflictingWorkout.id);
+      else {
+        deleteWorkout(conflictingWorkout.id);
+        trackFizrukWorkoutDiscarded();
+      }
+      setActiveWorkoutId(null);
+      setPendingWorkoutStart(null);
+      start();
+    },
+    [conflictingWorkout, deleteWorkout, endWorkout, pendingWorkoutStart],
+  );
+
   useActiveWorkoutIdPersistence(activeWorkoutId);
   useStaleActiveWorkoutCleanup(
     workoutsLoaded,
@@ -145,7 +210,7 @@ export function useWorkoutsOrchestrator() {
     activeWorkoutId,
     setActiveWorkoutId,
   );
-  useWorkoutsViewFromSession(setView);
+  useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 
@@ -186,9 +251,22 @@ export function useWorkoutsOrchestrator() {
         );
         return;
       }
+      const conflicts = recoveryConflictsForExercise(ex, rec.by);
+      if (conflicts.injury.blocked) {
+        toast.warning(
+          "Ти позначив біль у цій групі. Ми не радимо її навантажувати.",
+        );
+      }
       addExerciseToActive(ex);
     },
-    [mode, activeWorkoutId, activeWorkout?.endedAt, addExerciseToActive, toast],
+    [
+      mode,
+      activeWorkoutId,
+      activeWorkout?.endedAt,
+      addExerciseToActive,
+      rec.by,
+      toast,
+    ],
   );
 
   const executeTemplateStart = useCallback(
@@ -232,9 +310,18 @@ export function useWorkoutsOrchestrator() {
       }
       if (tpl?.id) templateApi.markTemplateUsed(tpl.id);
       setActiveWorkoutId(w.id);
-      setView("log");
+      trackFizrukWorkoutStarted(w.id, "template");
+      if (onWorkoutStarted) onWorkoutStarted(w.id);
+      else setView("log");
     },
-    [exercises, createWorkout, addItem, updateWorkout, templateApi],
+    [
+      exercises,
+      createWorkout,
+      addItem,
+      updateWorkout,
+      templateApi,
+      onWorkoutStarted,
+    ],
   );
 
   const startWorkoutFromTemplate = useCallback(
@@ -249,31 +336,40 @@ export function useWorkoutsOrchestrator() {
         return;
       }
       const risky = picks.some(
-        (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+        (ex) => recoveryConflictsForExercise(ex, rec.by).hasHardBlock,
       );
       if (risky) {
         setRiskyTemplateConfirm(tpl);
         return;
       }
-      executeTemplateStart(tpl);
+      requestWorkoutStart(() => executeTemplateStart(tpl));
     },
-    [exercises, rec.by, executeTemplateStart, toast],
+    [exercises, rec.by, executeTemplateStart, requestWorkoutStart, toast],
   );
 
   const submitRetroWorkout = useCallback(() => {
-    const parts = retroDate.split("-").map(Number);
-    const kyivNow = getKyivDateParts();
-    const y = parts[0] ?? kyivNow.year;
-    const mo = parts[1] ?? kyivNow.month;
-    const d = parts[2] ?? kyivNow.day;
-    const timeParts = (retroTime || "12:00").split(":").map(Number);
-    const hh = timeParts[0] ?? 12;
-    const mm = timeParts[1] ?? 0;
-    const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
-    const w = createWorkoutWithTimes({ startedAt });
-    setActiveWorkoutId(w.id);
-    setRetroOpen(false);
-  }, [retroDate, retroTime, createWorkoutWithTimes]);
+    requestWorkoutStart(() => {
+      const parts = retroDate.split("-").map(Number);
+      const kyivNow = getKyivDateParts();
+      const y = parts[0] ?? kyivNow.year;
+      const mo = parts[1] ?? kyivNow.month;
+      const d = parts[2] ?? kyivNow.day;
+      const timeParts = (retroTime || "12:00").split(":").map(Number);
+      const hh = timeParts[0] ?? 12;
+      const mm = timeParts[1] ?? 0;
+      const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
+      const w = createWorkoutWithTimes({ startedAt });
+      setActiveWorkoutId(w.id);
+      setRetroOpen(false);
+      if (onWorkoutStarted) onWorkoutStarted(w.id);
+    });
+  }, [
+    retroDate,
+    retroTime,
+    createWorkoutWithTimes,
+    onWorkoutStarted,
+    requestWorkoutStart,
+  ]);
 
   const lastByExerciseId = useMemo(
     () => collectLastByExerciseId(workouts, activeWorkoutId),
@@ -308,29 +404,15 @@ export function useWorkoutsOrchestrator() {
     isLoading: !workoutsLoaded,
   };
 
-  const handleQuickStartConfirm = useCallback(
-    (picks: RawExerciseDef[]) => {
-      const w = createWorkout();
-      for (const ex of picks) {
-        const isCardio = ex.primaryGroup === "cardio";
-        addItem(w.id, {
-          exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
-          primaryGroup: ex.primaryGroup,
-          musclesPrimary: ex?.muscles?.primary || [],
-          musclesSecondary: ex?.muscles?.secondary || [],
-          type: isCardio ? "distance" : "strength",
-          ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-          durationSec: 0,
-          distanceM: 0,
-        });
-      }
-      setActiveWorkoutId(w.id);
-      setQuickStartOpen(false);
-      setView("log");
-    },
-    [createWorkout, addItem],
-  );
+  const handleQuickStart = useCallback(() => {
+    requestWorkoutStart(() => {
+      const workout = createWorkout();
+      setActiveWorkoutId(workout.id);
+      trackFizrukWorkoutStarted(workout.id, "quick_start");
+      if (onWorkoutStarted) onWorkoutStarted(workout.id);
+      else setView("log");
+    });
+  }, [createWorkout, onWorkoutStarted, requestWorkoutStart]);
 
   const handleDeleteExerciseConfirm = useCallback(() => {
     if (selected) {
@@ -350,8 +432,8 @@ export function useWorkoutsOrchestrator() {
     const tpl = riskyTemplateConfirm;
     setRiskyTemplateConfirm(null);
     if (!tpl) return;
-    executeTemplateStart(tpl);
-  }, [riskyTemplateConfirm, executeTemplateStart]);
+    requestWorkoutStart(() => executeTemplateStart(tpl));
+  }, [riskyTemplateConfirm, executeTemplateStart, requestWorkoutStart]);
 
   return {
     toast,
@@ -399,8 +481,10 @@ export function useWorkoutsOrchestrator() {
     now,
     retroOpen,
     setRetroOpen,
-    quickStartOpen,
-    setQuickStartOpen,
+    activeWorkoutConflictOpen: pendingWorkoutStart !== null,
+    finishActiveAndContinue: () => continuePendingWorkoutStart("finish"),
+    discardActiveAndContinue: () => continuePendingWorkoutStart("discard"),
+    cancelPendingWorkoutStart: () => setPendingWorkoutStart(null),
     retroDate,
     setRetroDate,
     retroTime,
@@ -419,7 +503,7 @@ export function useWorkoutsOrchestrator() {
     recentWorkouts,
     handlePullRefresh,
     journalQuery,
-    handleQuickStartConfirm,
+    handleQuickStart,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,

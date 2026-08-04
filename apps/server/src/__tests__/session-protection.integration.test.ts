@@ -215,7 +215,6 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // Public web-vitals beacon from anonymous browsers.
   "/api/metrics/web-vitals",
   // Anonymous / public endpoints, gated by anonymous-quota or rate-limit.
-  "/api/privat", // bank lookup proxy
   "/api/barcode", // anonymous nutrition scan
   "/api/chat", // anonymous chat with quota
   "/api/food-search", // anonymous food search
@@ -227,6 +226,13 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/api/v1/waitlist",
   "/api/waitlist/confirm",
   "/api/v1/waitlist/confirm",
+  // In-app фідбек — свідомо анонімний (див. шапку `routes/feedback.ts`):
+  // тестер бети має могти поскаржитись ще до логіну, і вимагати акаунт саме
+  // від людини, яка прийшла з проблемою, — найгірший момент для бар'єру.
+  // Сесія читається best-effort і лише щоб підвʼязати `user_id`; її
+  // відсутність не блокує запис. Захист — rate-limit 20/IP/год.
+  "/api/feedback",
+  "/api/v1/feedback",
   // Mono webhook — secret-in-URL, not session.
   "/api/mono/webhook",
   "/api/mono/webhook/:secret",

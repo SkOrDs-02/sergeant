@@ -1,4 +1,11 @@
-import { memo, useRef, type KeyboardEvent, type ReactNode } from "react";
+import {
+  memo,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 
@@ -72,6 +79,13 @@ export interface ModuleBottomNavProps {
   /** "navigation" (default) renders buttons as nav links with aria-current;
    *  "tablist" renders role=tab with aria-selected. */
   role?: "navigation" | "tablist";
+  /**
+   * Warm the target page ahead of the tap (fires on pointer-down, ~100 ms
+   * before `click`). Hosts whose pages are `React.lazy` should wire this to
+   * the page's `preload()` — see the AI-CONTEXT note on the optimistic
+   * highlight below for why a cold chunk otherwise looks like a dead button.
+   */
+  onPrefetch?: ((id: string) => void) | undefined;
   className?: string;
 }
 
@@ -114,6 +128,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   module,
   ariaLabel,
   role = "navigation",
+  onPrefetch,
   className,
 }: ModuleBottomNavProps) {
   const tokens = COLORS[module];
@@ -121,6 +136,43 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const kbInsetPx = useVisualKeyboardInset(true);
   const hidden = kbInsetPx > 0;
   const tablistRef = useRef<HTMLDivElement>(null);
+
+  // Optimistic tap acknowledgement.
+  //
+  // AI-CONTEXT: `activeId` is derived from the *committed* route, and
+  // react-router v7 runs navigations inside `React.startTransition`. When the
+  // target page is a `React.lazy` chunk that isn't cached yet, React keeps the
+  // previous screen mounted rather than revealing the new Suspense fallback —
+  // so for the whole download the tab doesn't highlight, the page doesn't
+  // change, and the button reads as broken ("клікаються, але не перемикається
+  // сторінка" — founder report 2026-07-31, intermittent because a warm chunk
+  // commits instantly). Painting the tapped tab immediately makes every tap
+  // acknowledged; `onPrefetch` shrinks the gap it has to cover.
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // The route committed (or the host ignored the change) — drop the override.
+  useEffect(() => {
+    setPendingId(null);
+  }, [activeId]);
+
+  // Ceiling so a navigation that never commits (blocked route, failed chunk →
+  // ErrorBoundary) cannot strand the highlight on a page the user isn't on.
+  useEffect(() => {
+    if (pendingId == null) return;
+    const t = setTimeout(() => setPendingId(null), 4_000);
+    return () => clearTimeout(t);
+  }, [pendingId]);
+
+  const shownActiveId = pendingId ?? activeId;
+
+  const handleSelect = (id: string) => {
+    // Tapping the tab we are already on cancels any in-flight optimistic
+    // highlight. Without the `else` branch a user who taps "Операції" and then
+    // changes their mind back to "Огляд" would keep watching "Операції" stay
+    // lit for the full 4 s ceiling while the route never moved.
+    setPendingId(id === activeId ? null : id);
+    onChange(id);
+  };
 
   const handleTablistKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!isTablist || hidden) return;
@@ -140,7 +192,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     );
     const activeIndex = Math.max(
       0,
-      items.findIndex((item) => item.id === activeId),
+      items.findIndex((item) => item.id === shownActiveId),
     );
     const fromIndex = focusedIndex >= 0 ? focusedIndex : activeIndex;
     const targetIndex =
@@ -155,7 +207,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     const item = items[targetIndex];
     if (!target || !item) return;
     target.focus();
-    onChange(item.id);
+    handleSelect(item.id);
   };
 
   return (
@@ -177,7 +229,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
         onKeyDown={isTablist ? handleTablistKeyDown : undefined}
       >
         {items.map((item) => {
-          const active = activeId === item.id;
+          const active = shownActiveId === item.id;
           return (
             <button
               key={item.id}
@@ -189,8 +241,13 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                 !isTablist ? (active ? "page" : undefined) : undefined
               }
               aria-controls={isTablist ? item.panelId : undefined}
+              data-pending={pendingId === item.id ? "true" : undefined}
               tabIndex={hidden ? -1 : isTablist ? (active ? 0 : -1) : undefined}
-              onClick={() => onChange(item.id)}
+              // Pointer-down fires ~100 ms before `click` — enough of a head
+              // start for the target page's chunk to be in flight (or done)
+              // by the time the navigation commits.
+              onPointerDown={onPrefetch ? () => onPrefetch(item.id) : undefined}
+              onClick={() => handleSelect(item.id)}
               className={cn(
                 "relative flex-1 flex items-center justify-center min-h-touch-target",
                 "my-1.5 rounded-xl border border-transparent",
@@ -222,7 +279,18 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                     />
                   )}
                 </span>
+                {/*
+                  `aria-hidden`: цей span — ВІЗУАЛЬНА половина лейбла, яка
+                  згортається анімацією (`max-w-0 opacity-0`) для неактивних
+                  вкладок. Нульова ширина й `opacity: 0` НЕ прибирають текст із
+                  дерева доступності, тож разом із `sr-only`-двійником нижче
+                  скрінрідер читав ім'я двічі — «ОпераціїОперації» (аудит
+                  2026-08-04, знахідка 15). Єдиним джерелом імені лишаємо
+                  `sr-only`-span: він не залежить від того, як саме візуальна
+                  половина ховається зараз чи ховатиметься після редизайну.
+                */}
                 <span
+                  aria-hidden
                   className={cn(
                     "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
                     "transition-[max-width,opacity] duration-200 motion-reduce:transition-none",

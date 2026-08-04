@@ -42,6 +42,20 @@ export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
   pushNotifications: z.boolean(),
+  /**
+   * Opt-in на проактивні повідомлення Сержанта (денний нудж від серверного
+   * шедулера). Свідомо окремо від `pushNotifications`: той прапорець — згода
+   * на пуші взагалі, цей — на конкретний канал. Дефолт `false` для всіх,
+   * включно з новими акаунтами, тож деплой нікого не будить.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб їде на Vercel, а сервер
+   * на Coolify — окремими деплоями. У вікні між ними новий клієнт розмовляє зі
+   * старим сервером, який поля ще не віддає; без дефолту `getPreferences()`
+   * кидав би ZodError і клав усю сторінку налаштувань заради тумблера, який
+   * усе одно вимкнений. Дефолт збігається з `DEFAULT` колонки в міграції 100,
+   * тож «поля нема» і «поле false» означають рівно те саме.
+   */
+  sergeantNudges: z.boolean().default(false),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -51,6 +65,7 @@ export const UserPreferencesPatchSchema = z
     analytics: z.boolean().optional(),
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
+    sergeantNudges: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
@@ -1202,6 +1217,49 @@ export const WaitlistSubmitResponseSchema = z.object({
 });
 export type WaitlistSubmitResponse = z.infer<
   typeof WaitlistSubmitResponseSchema
+>;
+
+// ────────────────────── In-app feedback ─────────────────────────────────────
+// Головний багрепорт-канал закритої бети. Одне джерело правди для клієнта
+// (`@sergeant/api-client`) і сервера (`parseBody`).
+//
+// Чому взагалі є серверний endpoint, якщо подія вже летить у PostHog:
+// PostHog — аналітика (воронка opened → submitted), і її домен блокують
+// розширення. Текст фідбеку мусить пережити блокувальник, офлайн і будь-який
+// збій транспорту, тому джерело істини для нього — власна БД, а клієнт
+// показує «надіслано» лише після 200. Розбір — feedback-loop.md § 2a.
+
+export const FeedbackCategorySchema = z.enum(["idea", "bug", "other"]);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/** Дзеркалить `MAX_MESSAGE_LENGTH` у `FeedbackDialog.tsx` і CHECK у міграції 093. */
+export const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
+export const FeedbackSubmitSchema = z.object({
+  category: FeedbackCategorySchema,
+  message: z.string().trim().min(1).max(FEEDBACK_MESSAGE_MAX_LENGTH),
+  // Контекст сторінки — опційний: `buildPageContext()` повертає null поза DOM.
+  // `page` уже пройшов `sanitizeUrl()` на клієнті, але сервер не довіряє
+  // цьому й ріже довжину сам (trust boundary).
+  page: z.string().trim().max(2048).optional(),
+  viewport: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}x\d{1,5}$/, "viewport має бути у форматі WxH")
+    .optional(),
+});
+export type FeedbackSubmitPayload = z.infer<typeof FeedbackSubmitSchema>;
+
+export const FeedbackSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `id` рядка у `feedback_entries`. BIGSERIAL у pg приїжджає рядком —
+  // серіалізатор коерсить у number (Hard Rule #1). Віддаємо, щоб людина
+  // могла назвати номер у Telegram, і щоб підтвердження було доказовим,
+  // а не просто «ok: true».
+  id: z.number().int().positive(),
+});
+export type FeedbackSubmitResponse = z.infer<
+  typeof FeedbackSubmitResponseSchema
 >;
 
 // ────────────────────── Billing (Stripe checkout MVP) ──────────────────────

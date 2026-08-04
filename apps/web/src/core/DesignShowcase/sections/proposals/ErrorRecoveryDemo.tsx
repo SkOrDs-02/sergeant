@@ -25,7 +25,7 @@ export function ErrorRecoveryDemo() {
               <Icon name="alert-triangle" size={20} />
             </span>
             <p className="text-style-caption text-text">Щось пішло не так</p>
-            <p className="text-2xs text-muted">Оновіть сторінку.</p>
+            <p className="text-style-caption text-muted">Оновіть сторінку.</p>
           </div>
         </MiniPhone>
       }
@@ -40,7 +40,7 @@ export function ErrorRecoveryDemo() {
                 <p className="text-style-caption text-text">
                   Секцію відновлено
                 </p>
-                <p className="text-2xs text-muted">
+                <p className="text-style-caption text-muted">
                   Дані підвантажились без перезавантаження.
                 </p>
               </>
@@ -52,20 +52,20 @@ export function ErrorRecoveryDemo() {
                 <p className="text-style-caption text-text">
                   Не вдалось завантажити звіт
                 </p>
-                <p className="text-2xs text-muted">
+                <p className="text-style-caption text-muted">
                   Схоже, зникла мережа під час синку.
                 </p>
                 <div className="flex flex-col gap-1.5 w-full pt-1">
                   <button
                     type="button"
                     onClick={() => setRecovered(true)}
-                    className="h-9 rounded-xl bg-accent text-bg text-2xs font-medium flex items-center justify-center gap-1.5"
+                    className="h-9 rounded-xl bg-accent text-bg text-style-caption font-medium flex items-center justify-center gap-1.5"
                   >
                     <Icon name="refresh-cw" size={14} /> Повторити
                   </button>
                   <button
                     type="button"
-                    className="h-9 rounded-xl border border-line bg-panel text-muted text-2xs"
+                    className="h-9 rounded-xl border border-line bg-panel text-muted text-style-caption"
                   >
                     Скинути кеш секції
                   </button>

@@ -4,14 +4,17 @@ import { dateKey, daysAgo, shortId, toISO, writeJSON } from "./utils";
 export function seedRoutine(): void {
   // 5 habits + a week of completions → streaks, heatmap, and the
   // «сьогодні» slot all render populated.
-  const today = new Date();
-
+  //
+  // Дні рахуємо через `daysAgo()` з `./utils`, а не інлайновою
+  // `Date`-арифметикою: host-local семантика демо-сіду там уже
+  // задокументована й винесена з-під `prefer-kyiv-time` одним
+  // file-level disable, замість того щоб розповзатися по сіді.
   const habits = [
     {
       id: shortId("demo_h", 1),
       demo: true,
       name: "Випити 2 л води",
-      emoji: "💧",
+      emoji: "droplet",
       recurrence: "daily",
       createdAt: toISO(daysAgo(30)),
       tagIds: [],
@@ -21,7 +24,7 @@ export function seedRoutine(): void {
       id: shortId("demo_h", 2),
       demo: true,
       name: "Читати 20 хвилин",
-      emoji: "📚",
+      emoji: "book-open",
       recurrence: "daily",
       createdAt: toISO(daysAgo(30)),
       tagIds: [],
@@ -31,7 +34,7 @@ export function seedRoutine(): void {
       id: shortId("demo_h", 3),
       demo: true,
       name: "Медитація",
-      emoji: "🧘",
+      emoji: "leaf",
       recurrence: "daily",
       createdAt: toISO(daysAgo(30)),
       tagIds: [],
@@ -41,7 +44,7 @@ export function seedRoutine(): void {
       id: shortId("demo_h", 4),
       demo: true,
       name: "10 000 кроків",
-      emoji: "🚶",
+      emoji: "run",
       recurrence: "daily",
       createdAt: toISO(daysAgo(30)),
       tagIds: [],
@@ -51,7 +54,7 @@ export function seedRoutine(): void {
       id: shortId("demo_h", 5),
       demo: true,
       name: "Без цукру",
-      emoji: "🍬",
+      emoji: "utensils",
       recurrence: "daily",
       createdAt: toISO(daysAgo(30)),
       tagIds: [],
@@ -69,9 +72,7 @@ export function seedRoutine(): void {
       if (i === 3 && habit.id.endsWith("_2")) continue;
       if (i === 5 && habit.id.endsWith("_4")) continue;
       if (i === 7 && habit.id.endsWith("_5")) continue;
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      dates.push(dateKey(d));
+      dates.push(dateKey(daysAgo(i)));
     }
     completions[habit.id] = dates;
   }
@@ -80,10 +81,8 @@ export function seedRoutine(): void {
   // (usePushupActivity), the Routine module no longer renders this data.
   const pushupsByDate: Record<string, number> = {};
   const pushupPlan = [25, 30, 28, 35, 40, 30, 32, 45, 50, 42, 38, 40, 55, 48];
-  for (let i = 0; i < pushupPlan.length; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    pushupsByDate[dateKey(d)] = pushupPlan[i]!;
+  for (const [i, count] of pushupPlan.entries()) {
+    pushupsByDate[dateKey(daysAgo(i))] = count;
   }
 
   const state = {

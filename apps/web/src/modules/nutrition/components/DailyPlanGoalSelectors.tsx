@@ -1,11 +1,12 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-08-03
  * Status: Active
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, RefObject, SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
@@ -26,42 +27,6 @@ const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
   bulking: TDEE_COPY.goalBulking,
 };
 
-export interface Preset {
-  id: string;
-  label: string;
-  kcal: number;
-  protein_g: number;
-  fat_g: number;
-  carbs_g: number;
-}
-
-export const PRESETS: readonly Preset[] = [
-  {
-    id: "cutting",
-    label: "Схуднення",
-    kcal: 1500,
-    protein_g: 130,
-    fat_g: 55,
-    carbs_g: 130,
-  },
-  {
-    id: "maintenance",
-    label: "Підтримка",
-    kcal: 2000,
-    protein_g: 150,
-    fat_g: 70,
-    carbs_g: 200,
-  },
-  {
-    id: "bulking",
-    label: "Набір маси",
-    kcal: 2700,
-    protein_g: 200,
-    fat_g: 90,
-    carbs_g: 290,
-  },
-];
-
 // Popup menu width + the gap kept from either screen edge (round-2 UI
 // audit M6).
 const MENU_WIDTH_PX = 240;
@@ -69,7 +34,7 @@ const MENU_EDGE_GAP_PX = 8;
 
 /**
  * `left` offset (in px, relative to `trigger`'s own positioned ancestor —
- * both triggers below are wrapped in `position: relative`) that keeps a
+ * the trigger below is wrapped in `position: relative`) that keeps a
  * `MENU_WIDTH_PX`-wide popup fully on-screen. Centers under the trigger by
  * default, then slides just enough to clear whichever screen edge the
  * trigger is closest to.
@@ -115,12 +80,22 @@ interface DailyPlanGoalSelectorsProps {
 }
 
 /**
- * Header pair of dropdowns above the goal inputs row:
- * - «Розрахувати з профілю» — Mifflin-St Jeor TDEE з біометрії хаба.
- * - «Підказати з пресету» — три ручні пресети cutting/maintenance/bulking.
+ * Single "Підказати з пресету" dropdown above the goal inputs row.
  *
- * Обидві випадайки закриваються по pointer-down поза собою (mousedown +
- * touchstart), щоб тап на інпут одразу віддавав фокус полю без блимання.
+ * Presets are personalized whenever biometrics (weight/height/age/sex/
+ * activity — hub profile + fizruk weight-of-record) are complete: each of
+ * the three goals (схуднення/підтримка/набір) shows a Mifflin-St Jeor TDEE
+ * target computed from those numbers, annotated as "розраховано з
+ * профілю". When biometrics are incomplete, the menu instead prompts the
+ * user to fill in their profile — there is no separate hardcoded fallback
+ * preset shown, since a fixed 1500/2000/2700 kcal ladder can't be honest
+ * about whether it fits this particular person.
+ *
+ * Previously this rendered two separate dropdowns — a "Розрахувати з
+ * профілю" TDEE calculator and a "Підказати з пресету" static ladder — and
+ * users could easily miss the personalized one because both were tucked
+ * behind similarly-worded triggers. Merging them into one control removes
+ * that ambiguity.
  */
 export function DailyPlanGoalSelectors({
   prefs,
@@ -128,13 +103,11 @@ export function DailyPlanGoalSelectors({
   busy,
   dayPlanBusy,
 }: DailyPlanGoalSelectorsProps) {
-  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
-  const presetMenuRef = useRef<HTMLDivElement | null>(null);
-  const presetMenuLeft = useClampedMenuLeft(presetMenuOpen, presetMenuRef);
+  const toast = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuLeft = useClampedMenuLeft(menuOpen, menuRef);
 
-  const [tdeeMenuOpen, setTdeeMenuOpen] = useState(false);
-  const tdeeMenuRef = useRef<HTMLDivElement | null>(null);
-  const tdeeMenuLeft = useClampedMenuLeft(tdeeMenuOpen, tdeeMenuRef);
   const { biometrics } = useBiometrics();
   // W1-WEIGHT-SOT стадія 1: вага для TDEE приходить із fizruk-SoT
   // (union daily_log + measurements). `biometrics.weightKg` лишається
@@ -159,24 +132,17 @@ export function DailyPlanGoalSelectors({
     return result as Record<NutritionGoalId, NutritionTargets>;
   }, [biometrics, fizrukWeightKg]);
 
-  const activePreset = PRESETS.find(
-    (p) =>
-      p.kcal === prefs.dailyTargetKcal &&
-      p.protein_g === prefs.dailyTargetProtein_g &&
-      p.fat_g === prefs.dailyTargetFat_g &&
-      p.carbs_g === prefs.dailyTargetCarbs_g,
-  );
-
-  const applyPreset = (preset: Preset) => {
-    setPrefs((p) => ({
-      ...p,
-      dailyTargetKcal: preset.kcal,
-      dailyTargetProtein_g: preset.protein_g,
-      dailyTargetFat_g: preset.fat_g,
-      dailyTargetCarbs_g: preset.carbs_g,
-    }));
-    setPresetMenuOpen(false);
-  };
+  const activeGoal = tdeeTargets
+    ? NUTRITION_GOALS.find((goal) => {
+        const t = tdeeTargets[goal];
+        return (
+          t.kcal === prefs.dailyTargetKcal &&
+          t.protein_g === prefs.dailyTargetProtein_g &&
+          t.fat_g === prefs.dailyTargetFat_g &&
+          t.carbs_g === prefs.dailyTargetCarbs_g
+        );
+      })
+    : undefined;
 
   const applyTdeeTargets = (targets: NutritionTargets) => {
     setPrefs((p) => ({
@@ -186,17 +152,18 @@ export function DailyPlanGoalSelectors({
       dailyTargetFat_g: targets.fat_g,
       dailyTargetCarbs_g: targets.carbs_g,
     }));
-    setTdeeMenuOpen(false);
+    setMenuOpen(false);
+    toast.success(TDEE_COPY.appliedToast);
   };
 
   useEffect(() => {
-    if (!presetMenuOpen) return;
+    if (!menuOpen) return;
     const onPointer = (e: MouseEvent | TouchEvent) => {
-      const root = presetMenuRef.current;
+      const root = menuRef.current;
       if (!root) return;
       const target = e.target as Node | null;
       if (target && root.contains(target)) return;
-      setPresetMenuOpen(false);
+      setMenuOpen(false);
     };
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("touchstart", onPointer);
@@ -204,34 +171,17 @@ export function DailyPlanGoalSelectors({
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("touchstart", onPointer);
     };
-  }, [presetMenuOpen]);
-
-  useEffect(() => {
-    if (!tdeeMenuOpen) return;
-    const onPointer = (e: MouseEvent | TouchEvent) => {
-      const root = tdeeMenuRef.current;
-      if (!root) return;
-      const target = e.target as Node | null;
-      if (target && root.contains(target)) return;
-      setTdeeMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    document.addEventListener("touchstart", onPointer);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      document.removeEventListener("touchstart", onPointer);
-    };
-  }, [tdeeMenuOpen]);
+  }, [menuOpen]);
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-      <div ref={tdeeMenuRef} className="relative">
+      <div ref={menuRef} className="relative">
         <button
           type="button"
-          onClick={() => setTdeeMenuOpen((v) => !v)}
+          onClick={() => setMenuOpen((v) => !v)}
           disabled={busy || dayPlanBusy}
           aria-haspopup="menu"
-          aria-expanded={tdeeMenuOpen}
+          aria-expanded={menuOpen}
           title={tdeeTargets ? undefined : TDEE_COPY.triggerHint}
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
@@ -241,109 +191,64 @@ export function DailyPlanGoalSelectors({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
-          {TDEE_COPY.triggerLabel}
-          <span aria-hidden className="text-style-caption">
-            ▾
-          </span>
-        </button>
-        {tdeeMenuOpen && (
-          <div
-            role="menu"
-            className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg shadow-lg overflow-hidden"
-            style={{ width: MENU_WIDTH_PX, left: tdeeMenuLeft }}
-          >
-            {tdeeTargets ? (
-              NUTRITION_GOALS.map((goal) => {
-                const targets = tdeeTargets[goal];
-                return (
-                  <button
-                    key={goal}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => applyTdeeTargets(targets)}
-                    disabled={busy || dayPlanBusy}
-                    className={cn(
-                      "w-full text-left px-3 py-2 border-b border-line last:border-0",
-                      "hover:bg-panelHi disabled:opacity-50 transition-colors",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
-                    )}
-                  >
-                    <div className="text-style-label">
-                      {TDEE_GOAL_LABELS[goal]}
-                    </div>
-                    <div className="text-style-caption text-subtle mt-0.5">
-                      {targets.kcal} ккал · Б{targets.protein_g} · Ж
-                      {targets.fat_g} · В{targets.carbs_g}
-                    </div>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-3 py-2 text-xs text-subtle">
-                <div className="text-text">{TDEE_COPY.triggerHint}</div>
-                <Link
-                  to={PROFILE_PATH}
-                  className="mt-1 inline-block text-nutrition-strong dark:text-nutrition underline"
-                  onClick={() => setTdeeMenuOpen(false)}
-                >
-                  {TDEE_COPY.profileLink}
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      <div ref={presetMenuRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setPresetMenuOpen((v) => !v)}
-          disabled={busy || dayPlanBusy}
-          aria-haspopup="menu"
-          aria-expanded={presetMenuOpen}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
-            "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
-            "disabled:opacity-50 transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-          )}
-        >
-          {activePreset
-            ? `Пресет: ${activePreset.label}`
+          {activeGoal
+            ? `Пресет: ${TDEE_GOAL_LABELS[activeGoal]}`
             : "Підказати з пресету"}
           <span aria-hidden className="text-style-caption">
             ▾
           </span>
         </button>
-        {presetMenuOpen && (
+        {menuOpen && (
           <div
             role="menu"
-            // Same fix as the TDEE menu above (round-2 UI audit M6) — this
-            // menu previously had no width cap at all.
             className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg shadow-lg overflow-hidden"
-            style={{ width: MENU_WIDTH_PX, left: presetMenuLeft }}
+            style={{ width: MENU_WIDTH_PX, left: menuLeft }}
           >
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                role="menuitem"
-                onClick={() => applyPreset(preset)}
-                disabled={busy || dayPlanBusy}
-                className={cn(
-                  "w-full text-left px-3 py-2 border-b border-line",
-                  "hover:bg-panelHi disabled:opacity-50 transition-colors",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
-                  activePreset?.id === preset.id &&
-                    "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
-                )}
-              >
-                <div className="text-style-label">{preset.label}</div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {preset.kcal} ккал · Б{preset.protein_g} · Ж{preset.fat_g} · В
-                  {preset.carbs_g}
-                </div>
-              </button>
-            ))}
+            {tdeeTargets ? (
+              <>
+                {NUTRITION_GOALS.map((goal) => {
+                  const targets = tdeeTargets[goal];
+                  return (
+                    <button
+                      key={goal}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => applyTdeeTargets(targets)}
+                      disabled={busy || dayPlanBusy}
+                      className={cn(
+                        "w-full text-left px-3 py-2 border-b border-line",
+                        "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
+                        activeGoal === goal &&
+                          "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
+                      )}
+                    >
+                      <div className="text-style-label">
+                        {TDEE_GOAL_LABELS[goal]}
+                      </div>
+                      <div className="text-style-caption text-subtle mt-0.5">
+                        {targets.kcal} ккал · Б{targets.protein_g} · Ж
+                        {targets.fat_g} · В{targets.carbs_g}
+                      </div>
+                      <div className="text-style-caption text-nutrition-strong dark:text-nutrition mt-0.5">
+                        розраховано з профілю
+                      </div>
+                    </button>
+                  );
+                })}
+              </>
+            ) : (
+              <div className="px-3 py-2 text-xs text-subtle border-b border-line">
+                <div className="text-text">{TDEE_COPY.triggerHint}</div>
+                <Link
+                  to={PROFILE_PATH}
+                  className="mt-1 inline-block text-nutrition-strong dark:text-nutrition underline"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {TDEE_COPY.profileLink}
+                </Link>
+              </div>
+            )}
             <button
               type="button"
               role="menuitem"
@@ -355,7 +260,7 @@ export function DailyPlanGoalSelectors({
                   dailyTargetFat_g: null,
                   dailyTargetCarbs_g: null,
                 }));
-                setPresetMenuOpen(false);
+                setMenuOpen(false);
               }}
               disabled={busy || dayPlanBusy}
               className={cn(

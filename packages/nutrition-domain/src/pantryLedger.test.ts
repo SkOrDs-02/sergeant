@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildPantryInitialCheckpointId,
   derivePantryQty,
   isPantryCheckpoint,
   isPantryEventKind,
@@ -369,5 +370,76 @@ describe("sortPantryEvents", () => {
       ev({ id: "a", kind: "initial", absQty: 5, occurredAt: "2026-07-01" }),
     ];
     expect(sortPantryEvents(events).map((e) => e.id)).toEqual(["a", "c"]);
+  });
+});
+
+describe("buildPantryInitialCheckpointId — детермінований id (ADR-0077 §5)", () => {
+  it("та сама позиція → той самий id (повторний backfill схлопується)", () => {
+    expect(buildPantryInitialCheckpointId("home", "рис")).toBe(
+      buildPantryInitialCheckpointId("home", "рис"),
+    );
+  });
+
+  it("різні позиції → різні id", () => {
+    expect(buildPantryInitialCheckpointId("home", "рис")).not.toBe(
+      buildPantryInitialCheckpointId("home", "гречка"),
+    );
+    expect(buildPantryInitialCheckpointId("home", "рис")).not.toBe(
+      buildPantryInitialCheckpointId("office", "рис"),
+    );
+  });
+
+  it("НЕ залежить від qty/unit — те саме значення позиції на різні дні дає той самий id", () => {
+    // Саме тому клієнтський і серверний backfill сходяться в ОДИН
+    // чекпойнт, навіть якщо викликані в різний час зі старим/новим qty.
+    const id = buildPantryInitialCheckpointId("home", "молоко");
+    expect(id).toBe(buildPantryInitialCheckpointId("home", "молоко"));
+    expect(id).toContain("home");
+    expect(id).toContain("молоко");
+  });
+});
+
+describe("W1-PANTRY-APPEND стадія 2 — чекпойнт + дельти збігаються з qty", () => {
+  // Це і є доказ того, що стадія 3 (shadow-read parity) колись зійдеться:
+  // derived-залишок, порахований з журналу, дорівнює тому, що зараз лежить
+  // у мутованому лічильнику `nutrition_pantry_items.qty`.
+  it("initial-чекпойнт сам по собі дорівнює поточному qty", () => {
+    const currentQty = 500;
+    const events = [
+      ev({ kind: "initial", absQty: currentQty, occurredAt: "2026-08-01" }),
+    ];
+    expect(derivePantryQty(events)).toBe(currentQty);
+  });
+
+  it("initial + подальші consume/replenish дають те саме, що ручне обчислення qty", () => {
+    // Симулюємо той самий сценарій, що й UI: backfill 500 г, юзер спожив
+    // 120 (== старий шлях якраз так і робить: qty -= deduct), потім
+    // поповнив на 300.
+    const backfillQty = 500;
+    const consumed = 120;
+    const replenished = 300;
+    const expectedQty = backfillQty - consumed + replenished;
+
+    const events = [
+      ev({
+        kind: "initial",
+        absQty: backfillQty,
+        source: "backfill",
+        occurredAt: "2026-08-01T00:00:00.000Z",
+      }),
+      ev({
+        kind: "consume",
+        deltaQty: -consumed,
+        source: "meal_log",
+        occurredAt: "2026-08-02T00:00:00.000Z",
+      }),
+      ev({
+        kind: "replenish",
+        deltaQty: replenished,
+        source: "manual",
+        occurredAt: "2026-08-03T00:00:00.000Z",
+      }),
+    ];
+    expect(derivePantryQty(events)).toBe(expectedQty);
   });
 });

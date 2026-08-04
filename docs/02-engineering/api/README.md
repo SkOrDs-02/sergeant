@@ -1,15 +1,17 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Типізований TS-клієнт — [`packages/api-client/src/generated/openapi.d.ts`](../../../packages/api-client/src/generated/openapi.d.ts) (автогенерований через [`openapi-typescript`](https://github.com/openapi-ts/openapi-typescript)).
+
+Cost-model rate-limiter-а (чому per-route cost-multiplier, а не 1 токен на запит) — [`rate-limiting.md`](./rate-limiting.md); правила поведінки при відмові — [`rate-limit-failure-mode.md`](../../04-governance/security/rate-limit-failure-mode.md).
 
 ## Чому коммітимо JSON
 
 - **Diff-friendly review**: PR показує semantic API change в одному файлі.
 - **External integrators**: можна імпортувати в Postman/Insomnia/Swagger UI без додаткового build-step.
-- **CI gate**: PR що змінює zod-схему, але не оновив spec — fail через `pnpm api:check-openapi` (workflow `.github/workflows/openapi-freshness.yml` додається вручну, шаблон у [ADR-0025 §8](../../04-governance/adr/0025-openapi-generation.md)).
+- **CI gate**: PR що змінює zod-схему, але не оновив spec — fail через `pnpm api:check-openapi`. Гейт уже вживлений: job `openapi-roundtrip` у [`.github/workflows/contract-tests.yml`](../../../.github/workflows/contract-tests.yml) плюс `pnpm api:check-openapi` у хвості root-скрипта `lint`.
 
 Drift-protection — мотивація, описана в [ADR-0025](../../04-governance/adr/0025-openapi-generation.md).
 
@@ -27,7 +29,7 @@ pnpm api:generate-openapi
 pnpm api:check-openapi
 ```
 
-Скрипт призначений для CI (workflow-шаблон у [ADR-0025 §8](../../04-governance/adr/0025-openapi-generation.md)). Якщо коммітнутий файл відстає від generator output — exit 1 з підказкою, що запустити.
+Скрипт уже виконується в CI: job `openapi-roundtrip` (`contract-tests.yml`) і root `pnpm lint`. Якщо коммітнутий файл відстає від generator output — exit 1 з підказкою, що запустити.
 
 ## Як переглянути в браузері
 

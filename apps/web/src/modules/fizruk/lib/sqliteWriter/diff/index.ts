@@ -9,7 +9,7 @@
  * `feature.fizruk.sqlite_v2.dual_write` gate — the SQLite mirror is
  * now unconditional whenever a dual-write context is registered.
  *
- * Six entity classes are tracked:
+ * Seven entity classes are tracked:
  *
  *   1. **Workouts** — `Workout[]` persisted under
  *      `WORKOUTS_STORAGE_KEY`. Each workout contains nested
@@ -37,10 +37,16 @@
  *   6. **Workout templates** — `WorkoutTemplate[]` persisted under
  *      `STORAGE_KEYS.FIZRUK_TEMPLATES`. One row per template in
  *      `fizruk_workout_templates`. Stage 12 / PR #070f-dualwrite.
+ *
+ *   7. **Injury marks** — the "не можна" model (ADR-0083). One row per
+ *      mark in `fizruk_injuries`. Unlike the six above there is no
+ *      localStorage origin: injuries were born SQLite-only, so this class
+ *      has no LS key to mirror from.
  */
 
 import { diffCustomExercisesOps } from "./customExercises";
 import { diffDailyLogOps } from "./dailyLog";
+import { diffInjuriesOps } from "./injuries";
 import { diffMeasurementsOps } from "./measurements";
 import { diffMonthlyPlanOps } from "./monthlyPlan";
 import { diffWorkoutTemplatesOps } from "./workoutTemplates";
@@ -56,6 +62,11 @@ import type {
   DailyLogUpsertOp,
   FizrukDailyLogSnapshot,
 } from "./dailyLog";
+import type {
+  FizrukInjurySnapshot,
+  InjuryDeleteOp,
+  InjuryUpsertOp,
+} from "./injuries";
 import type {
   FizrukMeasurementSnapshot,
   MeasurementDeleteOp,
@@ -88,12 +99,15 @@ export type {
   DailyLogUpsertOp,
   FizrukCustomExerciseSnapshot,
   FizrukDailyLogSnapshot,
+  FizrukInjurySnapshot,
   FizrukItemSnapshot,
   FizrukMeasurementSnapshot,
   FizrukMonthlyPlanSnapshot,
   FizrukSetSnapshot,
   FizrukWorkoutSnapshot,
   FizrukWorkoutTemplateSnapshot,
+  InjuryDeleteOp,
+  InjuryUpsertOp,
   MeasurementDeleteOp,
   MeasurementUpsertOp,
   MonthlyPlanSetOp,
@@ -114,7 +128,9 @@ export type FizrukDualWriteOp =
   | DailyLogDeleteOp
   | MonthlyPlanSetOp
   | WorkoutTemplateUpsertOp
-  | WorkoutTemplateDeleteOp;
+  | WorkoutTemplateDeleteOp
+  | InjuryUpsertOp
+  | InjuryDeleteOp;
 
 // -----------------------------------------------------------------------
 // State shape
@@ -137,6 +153,11 @@ export interface FizrukDualWriteState {
    * Workout-template entries keyed by `id`. Stage 12 / PR #070f-dualwrite.
    */
   readonly workoutTemplates: readonly FizrukWorkoutTemplateSnapshot[];
+  /**
+   * Injury marks — the "не можна" model (ADR-0083). One row per mark in
+   * `fizruk_injuries`; `clearedAt === null` means the zone is still blocked.
+   */
+  readonly injuries: readonly FizrukInjurySnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -153,6 +174,7 @@ export interface FizrukDualWriteState {
  *   4. daily-log-upsert / daily-log-delete (by id asc)
  *   5. monthly-plan-set (at most one)
  *   6. workout-template-upsert / workout-template-delete (by id asc)
+ *   7. injury-upsert / injury-delete (by id asc)
  */
 export function diffFizrukDualWriteOps(
   prev: FizrukDualWriteState,
@@ -165,5 +187,6 @@ export function diffFizrukDualWriteOps(
     ...diffDailyLogOps(prev.dailyLog, next.dailyLog),
     ...diffMonthlyPlanOps(prev.monthlyPlan, next.monthlyPlan),
     ...diffWorkoutTemplatesOps(prev.workoutTemplates, next.workoutTemplates),
+    ...diffInjuriesOps(prev.injuries, next.injuries),
   ];
 }

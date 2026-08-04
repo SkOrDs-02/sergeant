@@ -96,6 +96,7 @@ export function HubChatPage() {
           initialMessage={initialMessage}
           autoSendInitial={false}
           onOpenCatalogue={handleOpenCatalogue}
+          source="route"
         />
       </SuspenseWithMinDelay>
     </main>

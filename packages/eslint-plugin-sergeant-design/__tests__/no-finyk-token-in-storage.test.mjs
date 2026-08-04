@@ -51,6 +51,40 @@ describe("no-finyk-token-in-storage", () => {
     assert.equal(messages.length, 1);
   });
 
+  // PrivatBank — F1 у `docs/90-work/planning/specs/beta-security-readiness.md`.
+  // Правило спершу знало лише ключі Monobank, тому merchant-токен ПриватБанку
+  // роками писався в `localStorage` повз цей гард. Кейси нижче — якір, щоб
+  // звуження назад до одного банку не пройшло непоміченим.
+  it("flags `writeRaw('finyk_privat_token', …)` — the wrapper the Privat flow used", () => {
+    const messages = lint(`writeRaw("finyk_privat_token", "xxx");`);
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
+  it("flags `sessionStorage.setItem('finyk_privat_token', …)`", () => {
+    const messages = lint(
+      `sessionStorage.setItem("finyk_privat_token", "xxx");`,
+    );
+    assert.equal(messages.length, 1);
+  });
+
+  it("flags the merchant id too — it is half of the credential pair", () => {
+    const messages = lint(`localStorage.setItem("finyk_privat_id", "mid");`);
+    assert.equal(messages.length, 1);
+  });
+
+  it("still allows reading and removing the legacy Privat keys (migration path)", () => {
+    const messages = lint(
+      `const t = readRaw("finyk_privat_token", ""); removeItem("finyk_privat_token"); sessionStorage.removeItem("finyk_privat_id");`,
+    );
+    assert.equal(messages.length, 0);
+  });
+
+  it("does not fire on unrelated keys passed to the same wrapper", () => {
+    const messages = lint(`writeRaw("finyk_privat_tx_cache", "[]");`);
+    assert.equal(messages.length, 0);
+  });
+
   it("flags `safeWriteLS('finyk_token', …)`", () => {
     const messages = lint(`safeWriteLS("finyk_token", "xxx");`);
     assert.equal(messages.length, 1);

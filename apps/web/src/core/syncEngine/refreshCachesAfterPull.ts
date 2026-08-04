@@ -10,6 +10,11 @@ const ROUTINE_PULL_TABLES = new Set([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  "routine_habit_skips",
+  // W1-ROUTINE-APPEND стадія 1. Писар уже є (append-only journal), читачів
+  // ще немає — але без цього рядка перший же pull чужого запису не
+  // інвалідує routine-кеш, коли (у стадії 3) журнал стане джерелом правди.
+  "routine_completion_events",
 ]);
 const FINYK_PULL_TABLES = new Set([
   "finyk_hidden_accounts",
@@ -40,6 +45,10 @@ const FIZRUK_PULL_TABLES = new Set([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  // Модель «не можна» (ADR-0083). Тримати тут ОБОВʼЯЗКОВО: підтягнута з
+  // сервера позначка травми має негайно перерахувати список вправ, інакше
+  // юзер бачить як дозволену вправу, яку модель уже блокує.
+  "fizruk_injuries",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

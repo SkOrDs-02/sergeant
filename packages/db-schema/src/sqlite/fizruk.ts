@@ -375,3 +375,42 @@ export const fizrukWorkoutTemplates = sqliteTable(
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );
+
+/**
+ * SQLite schema for `fizruk_injuries`.
+ *
+ * Mirrors `apps/server/src/migrations/097_fizruk_injuries.sql` and
+ * `packages/db-schema/src/pg/fizruk.ts`. Injury marks are the client-authored
+ * half of the "не можна" model (ADR-0083) — they must survive a device change,
+ * which is why they live in a synced table rather than local-only state.
+ *
+ * Differences from Postgres: TIMESTAMPTZ → TEXT (ISO-8601 with offset);
+ * index names carry the `_lite` suffix to spot drift. `id` is TEXT on BOTH
+ * sides here — the client id is not a bare UUID.
+ */
+export const fizrukInjuries = sqliteTable(
+  "fizruk_injuries",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    site: text().notNull(),
+    startedAt: text("started_at").notNull(),
+    clearedAt: text("cleared_at"),
+    note: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_injuries_user_active_idx_lite")
+      .on(table.userId, table.site)
+      .where(sql`${table.deletedAt} IS NULL AND ${table.clearedAt} IS NULL`),
+    index("fizruk_injuries_user_started_at_idx_lite")
+      .on(table.userId, sql`${table.startedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);

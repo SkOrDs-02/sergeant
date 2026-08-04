@@ -15,19 +15,20 @@
 
 Кожна нетривіальна фіча починається зі спеки у [`specs/`](./specs/) (шаблон: [`specs/TEMPLATE.md`](./specs/TEMPLATE.md)). Scaffolded / Active спеки лишаються тут; закриті snapshot-и доступні у Git history.
 
-> Станом на 2026-07-29 у `specs/` дві відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual) і `telegram-waitlist.md` (потрібне founder-рішення). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` мають статус `Implemented` і чекають лише ручного founder-QA; `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
+> Станом на 2026-08-01 у `specs/` три відкриті роботи: `anonymous-local-first-persistence.md` (agent-ready residual), `telegram-waitlist.md` (потрібне founder-рішення) і `silpo-mcp-integration.md` (спека ухвалена founder-ом 2026-07-31: G/H ратифіковано як Pro, хакатон — ні, B/C/D — рівноправні треки; Phase 0-спайк agent-ready; відкриті гейти — оферта Сільпо й формулювання приватності). `goal-progress-auto.md`, `keyboard-and-scroll.md` та `transactions-page-polish.md` видалено 2026-08-01 як реалізовані (PR #481 / #439 / #478) — snapshot-и лишаються в Git history. `TEMPLATE.md` не є роботою. Спеку груп A/B перенесено в `archive/specs/` після code-reconcile з PR #427.
 
 ### Зведені роадмапи
 
-| Документ                                                             | Скоуп                                                           | Статус                                                                    |
-| -------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)             | План спринтів 9–10: performance / reliability / product-surface | Active — reconcile 2026-07-29; відкриті: S10-R2 + залишок S10-R1 (`/app`) |
-| [`sync-client-wiring.md`](./sync-client-wiring.md)                   | Multi-device op-log wiring після SQLite cut-over                | Active — Phase 1–2 code shipped; Phase 2 verification + Phase 3–4 open    |
-| [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md) | Операційний playbook sync wiring                                | Active                                                                    |
-| [`product-knowledge-backlog.md`](./product-knowledge-backlog.md)     | ~55 задач у 6 хвилях за підсумками knowledge-аудиту 6 модулів   | Active — хвилі 0–3 = передумова invite-gate                               |
-| [`product-brainstorm-2026-07.md`](./product-brainstorm-2026-07.md)   | Продуктовий брейншторм: рішення після knowledge-аудиту          | Reference — рішення спожиті канонами й `product-knowledge-backlog.md`     |
-| [`ai-coding-improvements.md`](./ai-coding-improvements.md)           | План покращення AI-coding workflow                              | Active — 3 напрями `next`; перед виконанням кожен потребує окремої спеки  |
-| [`harness-engineering-v1.md`](./harness-engineering-v1.md)           | Harness-engineering v1 rollout + follow-ups                     | Reference — v1 rollout завершено 2026-06-29                               |
+| Документ                                                                                 | Скоуп                                                                     | Статус                                                                    |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`sprint-9-10-plan-2026.md`](./sprint-9-10-plan-2026.md)                                 | План спринтів 9–10: performance / reliability / product-surface           | Active — reconcile 2026-07-29; відкриті: S10-R2 + залишок S10-R1 (`/app`) |
+| [`sync-client-wiring.md`](./sync-client-wiring.md)                                       | Multi-device op-log wiring після SQLite cut-over                          | Active — Phase 1–2 code shipped; Phase 2 verification + Phase 3–4 open    |
+| [`sync-client-wiring-playbook.md`](./sync-client-wiring-playbook.md)                     | Операційний playbook sync wiring                                          | Active                                                                    |
+| [`product-knowledge-backlog.md`](./product-knowledge-backlog.md)                         | ~55 задач у 6 хвилях за підсумками knowledge-аудиту 6 модулів             | Active — хвилі 0–3 = передумова invite-gate                               |
+| [`product-brainstorm-2026-07.md`](./product-brainstorm-2026-07.md)                       | Продуктовий брейншторм: рішення після knowledge-аудиту                    | Reference — рішення спожиті канонами й `product-knowledge-backlog.md`     |
+| [`ai-coding-improvements.md`](./ai-coding-improvements.md)                               | План покращення AI-coding workflow                                        | Active — 3 напрями `next`; перед виконанням кожен потребує окремої спеки  |
+| [`harness-engineering-v1.md`](./harness-engineering-v1.md)                               | Harness-engineering v1 rollout + follow-ups                               | Reference — v1 rollout завершено 2026-06-29                               |
+| [`2026-06-30-harness-v1-summary-worklog.md`](./2026-06-30-harness-v1-summary-worklog.md) | Worklog фінальної сесії harness-v1 (перенесено з кореневого `WORKLOG.md`) | Reference — сесію закрито 2026-07-01                                      |
 
 ## Історія завершених планів
 

@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -31,8 +31,9 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 ## Surface-specific gotchas
 
 - **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`). No inline `queryKey: [...]`.
-- **Tailwind colour-opacity (Hard Rule #8):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion (Rule #9). No arbitrary hex in `className` (Rule #11). Use `focus-visible:` not `focus:` (Rule #14).
-- **Module accents (Rule #12):** module-accent containment — no foreign accents inside a module subtree.
+- **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
+- **No arbitrary hex / focus-visible (дизайн-конвенція — tokens + review, ex-Rules #11/#14, retired ADR-0081):** no arbitrary hex in `className`; use `focus-visible:` not `focus:`.
+- **Module accents (дизайн-конвенція — tokens + review, ex-Rule #12, retired ADR-0081):** module-accent containment — no foreign accents inside a module subtree.
 - **Module size (Hard Rule #18):** `max-lines: 600` for web TS/TSX. Permanent lint-enforced convention — split before crossing.
 - **Storage:** wrapper from `@shared/storage`; allowlist enforced by `pnpm lint:localstorage-allowlist`.
 - **Touch targets:** `Button` auto-applies `min-h-[44px] min-w-[44px]` **лише під `@media (pointer: coarse)`** for `xs`/`sm`/`iconOnly` (на fine-pointer/desktop-миші floor навмисно не діє — `Button.tsx` `pointer-coarse:` варіант); opt out with `data-compact` only for intentionally small cells (heatmaps).
@@ -44,7 +45,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard` + `seedDemoData/*`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 
-**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це ~365 kB. Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
+**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це було ~365 kB, на 2026-08-02 — 430 kB, і з того дня воно **гейтиться окремо** (`pnpm --filter @sergeant/web size:eager`). Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
 
 **Якщо потрібно підняти ліміт:** у тому ж PR, що додає dep / feature; explicit обґрунтування у PR-description. Bypass: label `audit-exception` (як для всіх optional CI checks).
 
@@ -109,7 +110,7 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 3. Не sub-автентифікуй юзера через `fetch("/api/auth/sign-up")` у тесті — реальний sign-up через UI ловить regression-и у `RegisterForm` + `AuthContext`. Якщо потрібен seeded стан — використовуй `page.addInitScript` для `localStorage` (як у `onboarding-happy-path.spec.ts` для `sergeant.whatsNew.lastSeenId.v1`).
 4. Analytics-події читай з `window.__hubAnalytics` ring-buffer (`apps/web/src/core/observability/analytics.ts`) — PostHog network transport gated на `VITE_POSTHOG_KEY` (unset у smoke), buffer — deterministic.
 5. Trace / screenshot on failure уже сконфігуровано (`trace: "retain-on-failure"`, `screenshot: "only-on-failure"`). HTML report публікується як artifact `playwright-critical-flow-report` (14d retention).
-6. **Smoke-environment gotcha:** `vite preview` НЕ emit-ить COOP/COEP response-headers, тому `SharedArrayBuffer` недоступний → `sqlite-wasm` падає на memory-only VFS. Bottom-line assertion-и навколо SQLite-backed state (`hub_onboarding_done_v1`, тощо) можуть гонитися з warm-cache write-cycle-ом. Pragmatic — використовуй analytics ring-buffer як deterministic signal-of-truth; UI-level DOM assertions, що залежать від SQLite-backed gate, документуй inline (див. § 4a у `onboarding-happy-path.spec.ts`).
+6. **Smoke-environment gotcha (пом'якшено 2026-08-04):** історично `vite preview` НЕ emit-ив COOP/COEP response-headers → `SharedArrayBuffer` недоступний → `sqlite-wasm` падав на memory-only VFS, і SQLite-backed стан осцилював проти оптимістичного (root cause постійних detach-фейлів routine/nutrition ніг `deep-module-crud`). Тепер `vite.config.js` → `preview.headers` шле ті самі COOP/COEP, що й прод (`vercel.json`), тож smoke-середовище працює на OPFS VFS як продакшн. Порада лишається чинною як defensive-практика: analytics ring-buffer — deterministic signal-of-truth, а UI-assertions навколо SQLite-backed gate документуй inline (див. § 4a у `onboarding-happy-path.spec.ts`).
 
 ## Deeper docs
 

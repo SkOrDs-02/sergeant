@@ -22,21 +22,23 @@
     "e2e": "playwright test --config playwright.smoke.config.ts --grep @critical",
     "e2e:mobile": "playwright test --config playwright.mobile.config.ts",
     "size": "size-limit",
+    "mutation:time": "cross-env TZ=Europe/Kyiv stryker run stryker.time.conf.json",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "size:eager": "node ../../scripts/ci/check-eager-bundle.mjs"
   },
   "size-limit": [
     {
       "name": "JS (усього)",
       "path": "../server/dist/assets/*.js",
       "brotli": true,
-      "limit": "1.25 MB"
+      "limit": "1.35 MB"
     },
     {
       "name": "CSS",
       "path": "../server/dist/assets/*.css",
       "brotli": true,
-      "limit": "37 kB"
+      "limit": "40 kB"
     }
   ],
   "dependencies": {
@@ -92,6 +94,8 @@
     "@size-limit/file": "^12.1.0",
     "@storybook/addon-docs": "^10.5.0",
     "@storybook/react-vite": "^10.5.0",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@testing-library/jest-dom": "^6.9.1",

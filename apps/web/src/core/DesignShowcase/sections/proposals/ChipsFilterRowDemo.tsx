@@ -44,12 +44,12 @@ export function ChipsFilterRowDemo() {
               <div className="px-4 flex items-center justify-between">
                 <span className="text-style-label text-text">Транзакції</span>
                 <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-line bg-panel text-muted">
-                  <Icon name="sliders-horizontal" size={14} />
-                  <span className="text-2xs">Фільтри</span>
+                  <Icon name="filter" size={14} />
+                  <span className="text-style-caption">Фільтри</span>
                 </span>
               </div>
               <div className="px-4 pt-4 space-y-2">
-                <p className="text-2xs text-muted">
+                <p className="text-style-caption text-muted">
                   Активний фільтр невидимий — треба відкрити модалку.
                 </p>
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -94,7 +94,7 @@ export function ChipsFilterRowDemo() {
                 </div>
               </div>
               <div className="px-4 pt-4 space-y-2">
-                <p className="text-2xs text-muted">
+                <p className="text-style-caption text-muted">
                   Фільтр: <span className="text-text">{active}</span> ·{" "}
                   {active === "Усі" ? 24 : 6} записів
                 </p>

@@ -104,6 +104,11 @@ export function ExerciseDetailSheet({
     >
       {cf?.hasWarning && (
         <div className="mb-4 rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-xs text-warning-strong dark:text-warning leading-snug">
+          {cf.injury.blocked ? (
+            <div className="font-semibold">
+              Ти позначив біль. Ми не радимо навантажувати цю групу.
+            </div>
+          ) : null}
           {cf.red?.length ? (
             <div>
               <span className="font-semibold">Рано:</span>{" "}
@@ -226,6 +231,11 @@ export function ExerciseDetailSheet({
                 "Це тренування вже завершено. Обери чернетку або створи нове.",
               );
               return;
+            }
+            if (cf.injury.blocked) {
+              toast?.warning?.(
+                "Ти позначив біль у цій групі. Ми не радимо її навантажувати.",
+              );
             }
             addExerciseToActive(selected);
             onClose();

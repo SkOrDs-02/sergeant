@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
 import { useAnnounce } from "./ScreenReaderAnnouncer";
 import { Icon } from "./Icon";
@@ -126,6 +127,9 @@ export function Sheet({
   // Lock body scroll while sheet is open — iOS-safe (position: fixed),
   // not just `overflow: hidden` (round-2 UI audit X2).
   useBodyScrollLock(open);
+
+  // Browser / Android Back closes the sheet instead of leaving the module.
+  useHistoryDismiss(open, onClose);
 
   // Announce the sheet title to assistive tech when it opens. The
   // `aria-labelledby` wiring already exposes the title to screen

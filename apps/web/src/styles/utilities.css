@@ -35,17 +35,7 @@
       var(--tw-ring-offset-color);
     --tw-ring-shadow: 0 0 0
       calc(var(--focus-ring-offset, 2px) + var(--focus-ring-width, 3px))
-      var(--focus-ring-color, rgba(16, 185, 129, 0.4));
-  }
-}
-
-@utility focus-ring-enhanced {
-  /* Enhanced focus ring — thicker, with animation on keyboard focus.
-     Applies to all interactive elements that don't define their own ring. */
-  @apply outline-hidden;
-  transition: box-shadow 0.15s ease-out;
-  &:focus-visible {
-    box-shadow: var(--shadow-focus-ring, 0 0 0 3px rgba(16, 185, 129, 0.4));
+      var(--focus-ring-color, rgba(15, 118, 110, 0.4));
   }
 }
 
@@ -392,6 +382,24 @@
   border-radius: 1.5rem 1.5rem 0 0;
   padding-top: 0.375rem;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility bottom-nav-height-var {
+  /* Exposes `--bottom-nav-height` for portaled <Sheet>s to offset above
+     the hub bottom nav. Must equal the nav's REAL occupied box, not the
+     inner track alone: `bottom-nav-shell`'s `border` (1px top + 1px
+     bottom) and `padding-top: 0.375rem` sit outside the `h-[60px]`
+     (`h-[64px]` coarse) track — round-3 UI audit measured the box at
+     68px (fine) while the old formula (`60px + 0.375rem`) only produced
+     66px, a 2px `border` shortfall. Track + border explicitly instead
+     of guessing. */
+  --bottom-nav-height: calc(60px + 0.375rem + 2px);
+}
+
+@media (pointer: coarse) {
+  .bottom-nav-height-var {
+    --bottom-nav-height: calc(64px + 0.375rem + 2px);
+  }
 }
 
 @utility no-scrollbar {

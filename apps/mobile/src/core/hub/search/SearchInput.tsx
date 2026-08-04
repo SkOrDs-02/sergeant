@@ -45,7 +45,6 @@ export const SearchInput = forwardRef<TextInput, SearchInputProps>(
             accessibilityRole="search"
             testID="hub-search-input"
             className="h-11 pl-10 pr-10 rounded-2xl bg-panel-hi border border-line text-fg text-sm"
-            style={{ color: colors.text }}
           />
           {query.length > 0 ? (
             <Pressable

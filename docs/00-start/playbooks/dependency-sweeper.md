@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
@@ -8,7 +8,7 @@
 ## Owner surface
 
 - Primary surface: `package.json` (root + per-workspace), `pnpm-lock.yaml`, `renovate.json`.
-- Coupled surface: [`audit-exceptions.md`](../../04-governance/security/audit-exceptions.md) (ledger waived-CVE), `scripts/generate-licenses.mjs` (license-політика).
+- Coupled surface: [`audit-exceptions.md`](../../04-governance/security/audit-exceptions.md) (ledger waived-CVE), `scripts/dependency-sweeper-report.mjs` (engine звіту).
 - Governing skill: `sergeant-bugfix-and-regression` (для власне бампів — `bump-dep-safely.md`).
 - Engine: [`scripts/dependency-sweeper-report.mjs`](../../../scripts/dependency-sweeper-report.mjs) — read-only движок звіту L1.
 

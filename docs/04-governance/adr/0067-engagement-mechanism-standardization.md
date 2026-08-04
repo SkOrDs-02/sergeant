@@ -155,7 +155,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 | PR                                                       | Title                                                        | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo        | PENDING    |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo        | 2026-07-29 |
 | [#3665](https://github.com/Skords-01/Sergeant/pull/3665) | docs(web): add ADR-0067 engagement mechanism standardization | 2026-06-20 |
 
 _Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._

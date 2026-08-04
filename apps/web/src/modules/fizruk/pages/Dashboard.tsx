@@ -95,6 +95,8 @@ export function Dashboard({
     loaded: workoutsLoaded,
     createWorkout,
     addItem,
+    endWorkout,
+    deleteWorkout,
   } = useWorkouts();
   const { exercises } = useExerciseCatalog();
   const {
@@ -106,6 +108,18 @@ export function Dashboard({
   const monthlyPlan = useMonthlyPlan();
   const { entries: measurements } = useMeasurements();
 
+  // Declared before the start-flow handlers below because they close over
+  // `activeWorkout` to detect a start conflict. Leaving the memo further
+  // down makes React Compiler drop the memoization it cannot order.
+  const activeWorkoutId = useActiveFizrukWorkout();
+  const activeWorkout = useMemo(() => {
+    if (!activeWorkoutId) return null;
+    const w = (workouts || []).find(
+      (it) => it && it.id === activeWorkoutId && !it.endedAt,
+    );
+    return w || null;
+  }, [activeWorkoutId, workouts]);
+
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
   const [pendingPicks, setPendingPicks] = useState<RawExerciseDef[] | null>(
     null,
@@ -113,6 +127,10 @@ export function Dashboard({
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
     null,
   );
+  const [startConflict, setStartConflict] = useState<{
+    picks: RawExerciseDef[];
+    templateId: string | null;
+  } | null>(null);
 
   const closePlanConfirm = () => {
     setPlanConfirmOpen(false);
@@ -131,7 +149,7 @@ export function Dashboard({
   // (5/12/17/22 buckets including "Доброї ночі" for 22:00–05:00).
   const greeting = useMemo(() => getKyivGreeting(), []);
 
-  const startWorkoutFromPlan = (
+  const executeWorkoutFromPlan = (
     picks: RawExerciseDef[],
     templateId?: string | null,
   ) => {
@@ -152,9 +170,27 @@ export function Dashboard({
     }
     if (templateId) markTemplateUsed(templateId);
     safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
-    // non-fatal: workouts tab remains reachable in its default mode
-    safeWriteSS("fizruk_workouts_mode", "log");
-    onNavigate("workouts");
+    onNavigate(`workout/${w.id}`);
+  };
+
+  const requestWorkoutFromPlan = (
+    picks: RawExerciseDef[],
+    templateId?: string | null,
+  ) => {
+    if (activeWorkout) {
+      setStartConflict({ picks, templateId: templateId ?? null });
+      return;
+    }
+    executeWorkoutFromPlan(picks, templateId);
+  };
+
+  const resolveStartConflict = (resolution: "finish" | "discard") => {
+    if (!startConflict || !activeWorkout) return;
+    if (resolution === "finish") endWorkout(activeWorkout.id);
+    else deleteWorkout(activeWorkout.id);
+    const pending = startConflict;
+    setStartConflict(null);
+    executeWorkoutFromPlan(pending.picks, pending.templateId);
   };
 
   const tryStartPlan = (
@@ -173,7 +209,7 @@ export function Dashboard({
     }
     setPendingPicks(null);
     setPendingTemplateId(null);
-    startWorkoutFromPlan(picks, templateId);
+    requestWorkoutFromPlan(picks, templateId);
   };
 
   const primaryAction = useMemo(() => {
@@ -252,7 +288,6 @@ export function Dashboard({
   // template (recentlyUsed) > upcoming scheduled day > empty nudge.
   // Each branch returns a fully-typed `HeroCardState` so the hero can
   // decide on layout without re-deriving any data.
-  const activeWorkoutId = useActiveFizrukWorkout();
 
   // ── Insight triggers ────────────────────────────────────────────────
   // Max 2 shown simultaneously; PR-pending takes priority over rest-day.
@@ -273,14 +308,6 @@ export function Dashboard({
     if (restDayInsight && out.length < 2) out.push(restDayInsight);
     return out;
   }, [prPendingInsight, restDayInsight]);
-
-  const activeWorkout = useMemo(() => {
-    if (!activeWorkoutId) return null;
-    const w = (workouts || []).find(
-      (it) => it && it.id === activeWorkoutId && !it.endedAt,
-    );
-    return w || null;
-  }, [activeWorkoutId, workouts]);
 
   const nextPlanSession = useMemo(() => {
     if (!templates?.length) return null;
@@ -343,14 +370,7 @@ export function Dashboard({
   ]);
 
   const openWorkoutsTab = () => {
-    // `Workouts` defaults to the `home` view and only switches to the
-    // journal/log when the `fizruk_workouts_mode` hint is primed in
-    // sessionStorage (see `apps/web/src/modules/fizruk/pages/Workouts.tsx`).
-    // When the hero CTA resumes an active session we want the user to
-    // land directly on the log — one extra tap is a real UX regression
-    // otherwise. non-fatal: default view is still reachable.
-    safeWriteSS("fizruk_workouts_mode", "log");
-    onNavigate("workouts");
+    onNavigate(activeWorkout?.id ? `workout/${activeWorkout.id}` : "workouts");
   };
   const openTemplates = () => {
     safeWriteSS("fizruk_workouts_mode", "templates");
@@ -543,7 +563,7 @@ export function Dashboard({
                 const picks = pendingPicks ?? [];
                 const templateId = pendingTemplateId;
                 closePlanConfirm();
-                startWorkoutFromPlan(picks, templateId);
+                requestWorkoutFromPlan(picks, templateId);
               }}
             >
               Продовжити
@@ -554,6 +574,45 @@ export function Dashboard({
         <p className="text-sm text-subtle leading-relaxed">
           У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити
           старт тренування?
+        </p>
+      </Sheet>
+
+      <Sheet
+        open={startConflict !== null}
+        onClose={() => setStartConflict(null)}
+        title="Уже є активне тренування"
+        description="Перш ніж почати нове, заверши поточне або викинь його."
+        panelClassName="fizruk-sheet max-w-md"
+        zIndex={110}
+        footer={
+          <div className="flex flex-col gap-2">
+            <Button
+              module="fizruk"
+              className="w-full h-12"
+              onClick={() => resolveStartConflict("finish")}
+            >
+              Завершити старе й почати нове
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full h-12"
+              onClick={() => resolveStartConflict("discard")}
+            >
+              Викинути старе й почати нове
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full h-12"
+              onClick={() => setStartConflict(null)}
+            >
+              Скасувати
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-style-body text-subtle leading-relaxed">
+          Нове тренування не створиться, доки ти не вибереш, що зробити з
+          поточним.
         </p>
       </Sheet>
     </div>

@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -13,6 +13,7 @@
 - **Спеціалізовані UX-патерни** → таблиця нижче.
 - **Закриті аудити та реалізовані пропозиції (для governance-trace)** → [`archive/`](./archive/README.md).
 - **Product-side design specs** → [`specs/`](./specs/README.md).
+- **Портативний конфіг візуальної системи для AI-агентів** → [`DESIGN.md`](../../../DESIGN.md).
 
 ## v2 redesign (травень 2026)
 
@@ -34,29 +35,42 @@ migration, execution-plan, live execution-status, backlog) плюс index,
 - тогли theme (light/dark/hc), density (comfortable/compact), напрямок (LTR/RTL)
   та reduced-motion override прямо в шапці;
 - у кожному розділі — live demo + копі-паст snippet + Do / Don't таблиця +
-  pinned Hard Rule + ESLint rule badges.
+  pinned convention badges (дизайн-конвенції — tokens + review, retired ADR-0081).
 
 Якщо щось нове додаєш у `@shared/components/ui` — спочатку онови розділ,
 у якому воно живе, а тоді бампай freshness у `design-system.md`.
 
 ## Maturity matrix (primitives)
 
-| Розділ         | Maturity   | Showcase якір | Lint                                                                                                   |
-| -------------- | ---------- | ------------- | ------------------------------------------------------------------------------------------------------ |
-| Кольори        | **stable** | `#colors`     | `no-hex-in-classname`, `valid-tailwind-opacity`, `no-low-contrast-text-on-fill`, `no-raw-dark-palette` |
-| Типографіка    | **stable** | `#typography` | `prefer-text-style`, `no-arbitrary-text-size`, `no-eyebrow-drift`, `no-ellipsis-dots`                  |
-| Spacing        | **stable** | `#spacing`    | `no-rounded-lg`                                                                                        |
-| Elevation      | **stable** | `#elevation`  | —                                                                                                      |
-| Motion         | **stable** | `#motion`     | (HR #17 budget — convention only)                                                                      |
-| Форми          | **stable** | `#forms`      | `prefer-focus-visible`, `prefer-data-state`                                                            |
-| Фідбек         | **stable** | `#feedback`   | `no-bare-empty-text`, `no-ellipsis-dots`                                                               |
-| Overlays       | **stable** | `#overlays`   | `prefer-focus-visible`, `prefer-data-state`                                                            |
-| Theming        | **beta**   | `#theming`    | `no-raw-dark-palette`, `no-hex-in-classname`                                                           |
-| A11y           | **stable** | `#a11y`       | `prefer-focus-visible`, `no-low-contrast-text-on-fill`                                                 |
-| Module accents | **stable** | `#accents`    | `no-foreign-module-accent`                                                                             |
+Колонка «Конвенції» — дизайн-конвенції, що тримаються tokens + review
+(колишні ESLint-правила retired [ADR-0081](../../04-governance/adr/0081-repository-simplification.md)):
+
+| Розділ         | Maturity   | Showcase якір | Конвенції (tokens + review)                                       |
+| -------------- | ---------- | ------------- | ----------------------------------------------------------------- |
+| Кольори        | **stable** | `#colors`     | no raw hex, opacity scale, `-strong` companion, no raw dark pairs |
+| Типографіка    | **stable** | `#typography` | `.text-style-*` utilities, 12px floor, no arbitrary text size     |
+| Spacing        | **stable** | `#spacing`    | radius rhythm (no `rounded-lg`)                                   |
+| Elevation      | **stable** | `#elevation`  | —                                                                 |
+| Motion         | **stable** | `#motion`     | animation budget (ex-HR #17)                                      |
+| Форми          | **stable** | `#forms`      | `focus-visible:` not `focus:`                                     |
+| Фідбек         | **stable** | `#feedback`   | empty-state tiers, toast error action                             |
+| Overlays       | **stable** | `#overlays`   | `focus-visible:` not `focus:`                                     |
+| Theming        | **beta**   | `#theming`    | no raw dark pairs, no raw hex                                     |
+| A11y           | **stable** | `#a11y`       | `focus-visible:`, `-strong` contrast, 44px touch targets          |
+| Module accents | **stable** | `#accents`    | module-accent containment                                         |
 
 `beta` — API ще не зафіксовано (Theming поки що читає лише `useDarkMode`,
 шедулер у роботі); `experimental` — поки що порожньо.
+
+## Enforcement status
+
+Після ADR-0081 частина конвенцій знову має **механічний гейт** — grep-скрипт
+[`scripts/check-design-conventions.mjs`](../../../scripts/check-design-conventions.mjs)
+(`pnpm lint:design-conventions`, входить у `pnpm lint` і CI `check`): no raw hex
+у className, `focus-visible:` замість `focus:`, 12px floor (`text-2xs` і
+`text-[<12px]` лише з allowlist-винятками у самому скрипті). **Review-only**
+лишаються AST-рівневі конвенції: opacity scale, `-strong` companions,
+module-accent containment — свідомо не покриті grep-скриптом.
 
 ## Пріоритет документів
 
@@ -96,10 +110,10 @@ migration, execution-plan, live execution-status, backlog) плюс index,
 
 ## Tooling / process
 
-| Документ                         | Опис                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------ |
-| [`storybook.md`](./storybook.md) | Storybook 10 setup, conventions, ESLint `require-stories-for-ui-components` контракт |
-| [`specs/`](./specs)              | Design specs для нетривіальних product-side фіч (раніше `agents/specs/`)             |
+| Документ                         | Опис                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| [`storybook.md`](./storybook.md) | Storybook 10 setup, conventions, story-coverage контракт (review-only, ADR-0081) |
+| [`specs/`](./specs)              | Design specs для нетривіальних product-side фіч (раніше `agents/specs/`)         |
 
 ## Archive
 

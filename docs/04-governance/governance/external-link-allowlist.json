@@ -229,6 +229,22 @@
     {
       "pattern": "^https?://zenfinanceai\\.com/ynab-vs-copilot-ai/?$",
       "reason": "Порівняння YNAB і Copilot цитовано в docs/90-work/audits/finyk-analytics-research.md. Хост обриває запити CI link-checker-а з `fetch failed`; pattern обмежено конкретною статтею."
+    },
+    {
+      "pattern": "^https?://sergeant\\.2dmanager\\.com\\.ua/\\.well-known/security\\.txt$",
+      "reason": "Власний прод-хост, посилання з docs/04-governance/security/beta-tester-brief.md. GitHub-раннери не встановлюють зʼєднання взагалі — `fetch failed`, а не HTTP-код, тобто це мережева недосяжність, а не 404. Pattern звужено рівно до цього одного URL, щоб решта прод-домену лишалась під перевіркою. УВАГА: недосяжність із CI не доводить, що файл віддається — це треба підтвердити з браузера, і доки не підтверджено, вважати відкритим питанням бета-готовності."
+    },
+    {
+      "pattern": "^https?://(www\\.)?barcodelookup\\.com/api$",
+      "reason": "Сторінка з прайсингом Barcode Lookup API цитована в docs/90-work/planning/barcode-database-research.md як одне з джерел порівняння цін. Хост віддає 403 небраузерному User-Agent (і локальному прогону, і GitHub-раннеру) — сторінка рендериться в браузері. Pattern звужено рівно до цього одного URL, решта домену лишається під перевіркою."
+    },
+    {
+      "pattern": "^https?://www\\.mdpi\\.com/2313-433X/11/8/271(/|$)",
+      "reason": "Наукова стаття (J. Imaging) цитована в docs/90-work/planning/barcode-database-research.md; mdpi.com віддає 403 на запити з CI user-agent-ів (anti-bot), у браузері лінк живий."
+    },
+    {
+      "pattern": "^https?://moneypatrol\\.com/moneytalk/budgeting/ynab-vs-copilot/",
+      "reason": "Порівняльний огляд, цитований у docs/90-work/audits/finyk-analytics-research.md; хост нестабільний для checker-а (504 gateway timeout на CI-запити), контент — історична референція дослідження."
     }
   ]
 }

@@ -27,6 +27,7 @@ import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
+import { nutritionPageMessages } from "./uk.nutrition";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
 
@@ -63,6 +64,12 @@ export const messages = {
     anonymousMigrationFailure:
       "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
     anonymousMigrationRetry: "Повторити",
+    anonymousMigrationDefer: "Продовжити, перенесу пізніше",
+    anonymousMigrationDeferredToast:
+      "Гаразд. Дані лишаються на цьому пристрої — спробуємо перенести їх при наступному запуску.",
+    anonymousMigrationDeferredNotice:
+      "Дані ще не перенесено в профіль — вони лише на цьому пристрої.",
+    anonymousMigrationDeferredRetry: "Спробувати зараз",
     anonymousMigrationSuccess:
       "Дані перенесено й безпечно збережено у профілі.",
     // Reserved legacy sync error copy. Historical retry cycle:
@@ -131,6 +138,7 @@ export const messages = {
     // `applyCreateCategory` (case-insensitive trim) — UI ловить
     // `next === state` після `setRoutine` і показує цей copy у toast.
     tagNameDuplicate: "Тег з такою назвою вже існує",
+    categoryNameRequired: "Введи назву категорії",
     categoryNameDuplicate: "Категорія з такою назвою вже існує",
     goalNameRequired: "Введи назву цілі",
     goalAmountRequired: "Введи суму цілі більше 0",
@@ -387,24 +395,20 @@ export const messages = {
     // Round 16 — onboarding-specific labels.
     hideChecklist: "Сховати чекліст",
 
-    // PR-18 / §C12 — Tour vs Restart copy revamp.
-    // Дві різні дії: екскурсія — повторний показ вітального екрану
-    // без жодних змін у даних; «Почати з початку» — скидання вибору
-    // модулів і повторні перші підказки.
-    //
-    // UX-feedback 2026-05-08: вирізали англіцизми «FTUX»,
-    // «vibe-picks», «read-only» — користувачі не айтішники, текст
-    // має бути зрозумілим.
-    tourSettingsTitle: "Знайомство з додатком",
-    tourLaunchLabel: "Переглянути вступну екскурсію",
-    tourResetLabel: "Почати знайомство з початку",
-    tourCopyExplanation:
-      "Екскурсія — повторний показ вітального екрану. Дані не зміняться. Почати з початку — знову обрати модулі та побачити перші підказки. Записи в модулях лишаться як є.",
-    tourResetConfirmTitle: "Почати знайомство з початку?",
-    tourResetConfirmDescription:
-      "Ти знову побачиш вітальний екран і перші підказки. Дані модулів (транзакції, тренування, прийоми їжі) лишаться без змін.",
-    tourResetConfirmAction: "Почати з початку",
-    tourResetSuccess: "Знайомство перезапущено",
+    // 2026-08-03: секції «Загальні» (знайомство) і «Що вміє Сержант»
+    // злиті в один блок «Можливості» — обидві відповідали на питання «а що
+    // тут взагалі є», і користувач мусив здогадуватись про різницю.
+    // «Почати знайомство з початку» прибрано разом із його confirm-копією:
+    // ре-онбординг із редіректом на `/welcome` не мав що робити в блоці,
+    // який в іншому лише читає.
+    capabilitiesGroupTitle: "Можливості",
+    // 2026-08-01: кнопка більше не переграє вітальний екран. «Вступна
+    // екскурсія» показувала той самий welcome-візард у read-only — тобто
+    // повтор привітання, а не розповідь про можливості. Тепер веде на
+    // `/capabilities`, і назва це відображає.
+    tourLaunchLabel: "Що вміє додаток",
+    appCapabilitiesHint:
+      "Що вміє кожен розділ і як вони працюють разом. Дані не зміняться.",
 
     // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
     // frame the outcome-first variant of the welcome screen, and
@@ -498,6 +502,21 @@ export const messages = {
     openSettings: "Налаштування модуля",
   },
 
+  // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).
+  routinePause: {
+    heading: "Пауза",
+    hint: "Заяви паузу наперед — відпустку чи хворобу. Дні паузи випадають із розкладу і серію не ламають.",
+    activeHint: "Ці дні не рахуються — серія їх не помітить.",
+    fromLabel: "З",
+    toLabel: "По (необовʼязково)",
+    declare: "Поставити паузу",
+    resumeToday: "Повернутись сьогодні",
+    activePrefix: "На паузі",
+    activeOpenPrefix: "На паузі з",
+    plannedPrefix: "Заплановано:",
+    fromShort: "з",
+  },
+
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",
@@ -513,6 +532,9 @@ export const messages = {
       emptyDescription:
         "Заверши сети з вагою — рекорди зʼявляться тут автоматично.",
       emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+      /** Канон §6: борд бачить не лише рух угору. */
+      staleBadge: "давно не робив",
+      belowPeakPrefix: "зараз",
     },
     // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
     hoursUnit: "год",
@@ -528,9 +550,14 @@ export const messages = {
     fromPantry: "З комори",
     mealType: "Прийом їжі",
     templates: "Шаблони",
+    deleteTemplateTitle: "Видалити шаблон?",
     reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
+    // Порожній стан сканера штрихкодів (аудит nutrition E-6).
+    barcodeNoticeRetry: "Спробувати ще раз",
+    barcodeNoticeUsePhoto: "Сфотографувати страву",
+    barcodeNoticeManual: "Ввести вручну",
     waterHistory: {
       openLabel: "Історія води",
       title: "Історія води",
@@ -544,6 +571,39 @@ export const messages = {
       emptyTitle: "Поки немає історії",
       emptyDescription: "Додай воду за сьогодні — і тут зʼявиться графік.",
     },
+    // Комора: згортка-гайд режиму «Списком» + прев'ю розібраних позицій.
+    pantryGuide: {
+      summary: "Як писати список?",
+      separators: "Розділяй продукти комою або новим рядком:",
+      separatorsExample: "курка, рис, огірки",
+      qtyPlacement: "Кількість можна ставити спереду або ззаду:",
+      qtyExampleLeading: "2 яйця",
+      qtyExampleTrailing: "курка 500 г",
+      unitsLabel: "Одиниці:",
+      unitsList: "г, кг, мл, л, шт, уп",
+      unitsFallback: "Без одиниці кількість читається як «шт».",
+      aiNote:
+        "Можна диктувати як завгодно — список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
+      confirmNote:
+        "Розібране покажемо списком — додасться лише те, що ти підтвердиш.",
+    },
+    pantryPreview: {
+      parsedCount: "Розібрано",
+      localFallback: "AI недоступний — розібрано на пристрої",
+      confirm: "Додати",
+      dismiss: "Скасувати",
+    },
+    pantryEmpty: {
+      // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
+      // над карткою, і дослівний повтор читався як збій рендеру.
+      title: "Тут поки порожньо",
+      description:
+        "Тут зʼявляться продукти, які є вдома — і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
+      hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
+    },
+    // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
+    // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
+    ...nutritionPageMessages,
   },
 
   routine: routinePageMessages,
@@ -568,6 +628,8 @@ export const messages = {
     unknownIp: "IP невідомий",
     unknownDevice: "Невідомий пристрій",
     lastSeenPrefix: "Активна",
+    currentUnknown:
+      "Не вдалося визначити сесію цього пристрою. Онови список, щоб завершувати сесії.",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in
@@ -583,6 +645,51 @@ export const messages = {
     optInLabel: "Я розумію, що це ранні можливості",
     optInHint:
       "Після підтвердження перемикачі стануть активними. Налаштування зберігається тільки на цьому пристрої.",
+  },
+
+  /**
+   * Персонаж AI. Один на весь застосунок — «Сержант».
+   *
+   * До 2026-08-01 у продукті жили два імені: «асистент» (чат) і «коуч»
+   * (денна порада + тижневий звіт). Для користувача це поводилось як одна
+   * сутність, тож два імені лише плутали — картка денної поради коуча
+   * взагалі була підписана «Порада асистента».
+   *
+   * Правило: базове імʼя всюди `name`; маркер каналу додається ЛИШЕ там, де
+   * без нього незрозуміло, звідки прилетіло (пуш, бейдж, заголовок звіту).
+   * Тримай рядки тут, а не в компонентах — формулювання персонажа має
+   * мінятись в одному місці.
+   */
+  sergeant: {
+    name: "Сержант",
+    /** Канальний суфікс для тижневого звіту: «Сержант · звіт тижня». */
+    weeklyChannel: "Сержант · звіт тижня",
+    adviceCardTitle: "Сержант",
+    adviceLoadingAria: "Сержант готує пораду",
+    adviceAskHint:
+      "«Запитати AI про це» відкриває Сержанта із цим контекстом у чаті.",
+    /**
+     * Градація впевненості (Хвиля 4, hub-coach § G2) — рішення власника
+     * 2026-08-04: два рівні, «факт» (порахував код) і «припущення» (написала
+     * модель або вивела кореляція). Порада дня й тижневий звіт — суцільний
+     * вільний текст моделі, тож увесь їхній вміст рівня «припущення»; бейдж
+     * стоїть на рівні картки, а не речення, бо різниці всередині немає.
+     */
+    insightAssumptionBadge: "Припущення",
+    capabilitiesSectionTitle: "Що вміє Сержант",
+    appCapabilitiesIntro:
+      "Коротко про кожен розділ і про те, як вони працюють разом. Тапни картку, щоб одразу туди перейти.",
+    capabilitiesSectionBody:
+      "~60 інструментів, які може запустити Сержант у чаті: фінанси, тренування, звички, харчування, аналітика, утиліти, памʼять. Тапни картку — і одразу побачиш приклади команд.",
+    capabilitiesOpenLabel: "Відкрити каталог",
+    weeklyDigestPreparing: "Сержант готує звіт тижня…",
+    weeklyDigestUnread: "Новий звіт",
+    nudgesToggleLabel: "Повідомлення від Сержанта",
+    nudgesToggleDescription:
+      "Нагадає повернутись, якщо тебе не було кілька днів. Приходить зранку і не частіше ніж 3 рази на тиждень відсутності. Коли ти в застосунку — не турбує.",
+    nudgesSaveError: "Не вдалося зберегти налаштування. Спробуй ще раз.",
+    nudgesAuthRequired:
+      "Увійди в акаунт, щоб Сержант знав, кому і коли писати.",
   },
 
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
@@ -740,12 +847,18 @@ export const messages = {
     placeholderIdea: "Чого тобі бракує в застосунку?",
     placeholderBug: "Що саме поламалось і на якому екрані?",
     placeholderOther: "Розкажи, що думаєш",
-    contextLabel: "Додати контекст сторінки",
-    contextDescription:
-      "Адреса поточної сторінки та розмір екрана — допоможе відтворити проблему.",
     submit: "Надіслати",
+    submitting: "Надсилаю…",
     submitted: "Дякую! Відгук надіслано.",
     emptyError: "Напиши хоча б кілька слів — порожній відгук не долетить.",
+    // Помилки закриваються дією (style-guide.uk.md): людина щойно витратила
+    // час на текст, і найгірше — залишити її без способу його врятувати.
+    errorOffline:
+      "Немає зв'язку — відгук не надіслався. Скопіюй текст і спробуй ще раз, коли з'явиться інтернет.",
+    errorGeneric:
+      "Не вдалося надіслати — запит не дійшов. Спробуй ще раз або скопіюй текст і кинь у чат бети.",
+    copyMessage: "Скопіювати текст",
+    copied: "Скопійовано",
   },
 
   // Phase 7 D2 — paywall feature gates. Per-feature copy used by the

@@ -37,18 +37,16 @@ describe("buildCompletionEventId", () => {
       habitId: "hab_1",
       dateKey: "2026-07-20",
       state: "done" as const,
-      occurredAt: "2026-07-20T09:00:00.000+03:00",
       deviceId: "dev-a",
     };
     expect(buildCompletionEventId(input)).toBe(buildCompletionEventId(input));
   });
 
-  it("різні пристрої в ту саму мілісекунду дають РІЗНІ id — журнал чесний", () => {
+  it("різні пристрої дають РІЗНІ id — журнал чесний", () => {
     const base = {
       habitId: "hab_1",
       dateKey: "2026-07-20",
       state: "done" as const,
-      occurredAt: "2026-07-20T09:00:00.000+03:00",
     };
     expect(buildCompletionEventId({ ...base, deviceId: "dev-a" })).not.toBe(
       buildCompletionEventId({ ...base, deviceId: "dev-b" }),
@@ -60,11 +58,57 @@ describe("buildCompletionEventId", () => {
       habitId: "hab_1",
       dateKey: "2026-07-20",
       state: "done",
-      occurredAt: "2026-07-20T09:00:00.000+03:00",
       deviceId: null,
     });
-    expect(id.split("|")).toHaveLength(5);
+    expect(id.split("|")).toHaveLength(4);
     expect(id.startsWith("hab_1|2026-07-20|")).toBe(true);
+  });
+
+  it("НЕ залежить від `occurredAt` — той самий факт з РІЗНИХ холодних стартів дає ОДИН id, не два", () => {
+    // Регресія беклог-пастки #1 (W1-ROUTINE-APPEND): холодний старт дифить
+    // порожній `prev` проти завантаженого `next` і штампує `occurredAt`
+    // МОМЕНТУ ЗАВАНТАЖЕННЯ, а не моменту реальної відмітки. Два холодні
+    // старти того самого факту (той самий habitId/dateKey/state/deviceId)
+    // MUST зійтись в один `id` — інакше append-only журнал розпухає
+    // дублями при кожному запуску застосунку.
+    const input = {
+      habitId: "hab_1",
+      dateKey: "2026-07-20",
+      state: "done" as const,
+      deviceId: "dev-a",
+    };
+    const firstColdStart = createCompletionEvent(
+      input.habitId,
+      input.dateKey,
+      input.state,
+      {
+        occurredAt: "2026-07-20T09:00:00.000+03:00",
+        tzOffsetMin: 180,
+        dayAnchor: "device-local",
+        source: "ui",
+        deviceId: input.deviceId,
+      },
+    );
+    const secondColdStart = createCompletionEvent(
+      input.habitId,
+      input.dateKey,
+      input.state,
+      {
+        occurredAt: "2026-07-21T08:00:00.000+03:00",
+        tzOffsetMin: 180,
+        dayAnchor: "device-local",
+        source: "ui",
+        deviceId: input.deviceId,
+      },
+    );
+    expect(firstColdStart.id).toBe(secondColdStart.id);
+
+    // Один `id` → `INSERT OR IGNORE` (клієнт) / `ON CONFLICT DO NOTHING`
+    // (сервер) залишає рівно ОДИН рядок для обох "холодних стартів".
+    const rows = new Map(
+      [firstColdStart, secondColdStart].map((ev) => [ev.id, ev]),
+    );
+    expect(rows.size).toBe(1);
   });
 });
 

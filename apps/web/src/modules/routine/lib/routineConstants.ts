@@ -31,8 +31,7 @@ export const ROUTINE_THEME = {
   habitRowDone: "border-l-routine bg-routine-soft/50",
 
   // Icon containers
-  iconBox:
-    "bg-routine-surface dark:bg-routine-surface-dark/10 border-coral-100 dark:border-routine-border-dark/30 text-routine-strong dark:text-routine",
+  iconBox: "bg-routine-soft border-routine-soft-border text-routine-soft-fg",
 
   // Navigation
   navActive: "text-routine-strong dark:text-routine",
@@ -40,7 +39,7 @@ export const ROUTINE_THEME = {
 
   // Chips/pills
   chipOn:
-    "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine shadow-sm",
+    "border-routine-soft-border bg-routine-soft text-routine-soft-fg shadow-sm",
   chipOff:
     "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors",
 
@@ -53,14 +52,14 @@ export const ROUTINE_THEME = {
     "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-coral-100/50 dark:ring-routine-border-dark/30",
 
   // Completion states
-  done: "border-routine/45 bg-routine-surface dark:bg-routine-surface-dark/10 text-routine-strong dark:text-routine",
+  done: "border-routine-soft-border bg-routine-soft text-routine-soft-fg",
   doneCheck: "text-routine-strong dark:text-routine",
 
   // Primary button
   primary:
     "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 active:scale-[0.98] dark:bg-routine dark:text-bg dark:hover:bg-routine/90",
   primarySoft:
-    "bg-routine-surface hover:bg-coral-100 text-routine-strong dark:text-routine border border-routine-ring/50 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200",
+    "bg-routine-soft hover:bg-routine-soft-hover text-routine-soft-fg border border-routine-soft-border transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200",
 
   // Secondary/ghost
   secondary:

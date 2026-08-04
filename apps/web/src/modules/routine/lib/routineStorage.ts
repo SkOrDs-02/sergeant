@@ -34,6 +34,10 @@ import {
   applyMoveHabitInOrder,
   applySetHabitOrder,
   applySetCompletionNote,
+  applySetHabitSkip,
+  applyClearHabitSkip,
+  applyPauseHabitBetween,
+  applyResumeHabitFrom,
   applyUpdateTag,
   applyUpdateCategory,
   applyDeleteCategory,
@@ -48,6 +52,7 @@ import {
   type RoutineState,
   type Habit,
   type HabitSnapshot,
+  type SkipReason,
 } from "@sergeant/routine-domain";
 import { triggerRoutineDualWrite } from "./sqliteWriter/index.js";
 import {
@@ -79,7 +84,7 @@ export function emitRoutineStorage() {
  * `bootSqliteReadPath()` warm-up has populated
  * `getCachedSqliteRoutineState()` we overlay all 7 entity slices
  * (habits / tags / categories / prefs / pushups / habitOrder /
- * completionNotes) onto a fresh `defaultRoutineState()`. The
+ * completionNotes / skips) onto a fresh `defaultRoutineState()`. The
  * legacy `getCachedSqliteCompletions()` cache wins for
  * `completions` (it stays as source-of-truth for the
  * `routine_entries` reader so the rest of the codebase keeps
@@ -106,6 +111,7 @@ export function loadRoutineState(): RoutineState {
       pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
+      skips: fullState.skips,
     };
   }
 
@@ -153,6 +159,7 @@ export function saveRoutineState(next: RoutineState): boolean {
       pushupsByDate: next.pushupsByDate,
       habitOrder: next.habitOrder,
       completionNotes: next.completionNotes,
+      skips: next.skips ?? {},
     });
     setCachedSqliteCompletions(next.completions);
 
@@ -198,6 +205,7 @@ function readCachedRoutineState(): RoutineState {
       pushupsByDate: fullState.pushupsByDate,
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
+      skips: fullState.skips,
     };
   }
   if (completionsCache.refreshedAt !== null) {
@@ -344,6 +352,57 @@ export function setHabitOrder(
   orderedActiveIds: string[],
 ): RoutineState {
   return persist(applySetHabitOrder(state, orderedActiveIds));
+}
+
+/**
+ * Позначити день як «не зміг з причиною» (канон §5, третій стан).
+ *
+ * Взаємно виключно з відміткою виконання — домен сам зніме `completions`-ключ.
+ */
+export function setHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+  reason: SkipReason,
+  note?: string,
+): RoutineState {
+  const next = applySetHabitSkip(state, habitId, dateKey, reason, note);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Зняти позначку «не зміг» — день повертається у стан «не зробив». */
+export function clearHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const next = applyClearHabitSkip(state, habitId, dateKey);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Заявити плановану паузу датованим інтервалом (канон §4). */
+export function pauseHabitBetween(
+  state: RoutineState,
+  habitId: string,
+  fromKey: string,
+  toKey: string | null,
+): RoutineState {
+  const next = applyPauseHabitBetween(state, habitId, fromKey, toKey);
+  if (next === state) return state;
+  return persist(next);
+}
+
+/** Достроково завершити паузу, що накриває день. */
+export function resumeHabitFrom(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const next = applyResumeHabitFrom(state, habitId, dateKey);
+  if (next === state) return state;
+  return persist(next);
 }
 
 export function setCompletionNote(

@@ -36,7 +36,7 @@ function MiniWindow({
         <span className="h-6 w-6 rounded-md bg-accent/15 flex items-center justify-center">
           <Icon name="wallet" size={13} className="text-accent" />
         </span>
-        <span className="text-2xs text-muted">{label}</span>
+        <span className="text-style-caption text-muted">{label}</span>
       </div>
     </div>
   );
@@ -52,7 +52,7 @@ function Stage({ children }: { children: React.ReactNode }) {
 
 function ShortcutTap() {
   return (
-    <div className="flex items-center gap-1.5 text-2xs text-muted">
+    <div className="flex items-center gap-1.5 text-style-caption text-muted">
       <Icon name="plus" size={12} className="text-accent" />
       Тап на shortcut «Додати»
     </div>
@@ -75,7 +75,7 @@ export function LaunchHandlerDemo() {
               className="absolute translate-x-6 translate-y-2 rotate-[4deg]"
             />
           </div>
-          <span className="inline-flex items-center gap-1 text-2xs text-warning">
+          <span className="inline-flex items-center gap-1 text-style-caption text-warning">
             <Icon name="x" size={12} />
             Другий інстанс
           </span>
@@ -93,7 +93,7 @@ export function LaunchHandlerDemo() {
               className="relative ring-2 ring-accent/50"
             />
           </div>
-          <span className="inline-flex items-center gap-1 text-2xs text-success">
+          <span className="inline-flex items-center gap-1 text-style-caption text-success">
             <Icon name="check-circle" size={12} />
             Фокус наявного вікна
           </span>

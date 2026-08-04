@@ -4,7 +4,7 @@
  * Status: Active
  * Unit tests for `usePantryBarcodeScan` — barcode → pantry-item flow.
  */
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const lookupMock = vi.fn();
@@ -33,7 +33,8 @@ function setup() {
     }),
   );
   return {
-    scan: result.current,
+    scan: result.current.scan,
+    getResult: () => result.current,
     upsertItem,
     setPantryScannerOpen,
     setPantryScanStatus,
@@ -82,13 +83,43 @@ describe("usePantryBarcodeScan", () => {
     );
   });
 
-  it("reports product-not-found", async () => {
+  it("reports product-not-found as a distinct not-found notice (404, not text)", async () => {
     lookupMock.mockResolvedValue(null);
-    const { scan, setPantryScanStatus } = setup();
-    await scan("4820000000003");
-    expect(setPantryScanStatus).toHaveBeenLastCalledWith(
-      "Продукт не знайдено в базі. Додай вручну.",
+    const { scan, getResult } = setup();
+    await act(async () => {
+      await scan("4820000000003");
+    });
+    expect(getResult().notice).toEqual({
+      kind: "not-found",
+      code: "4820000000003",
+    });
+  });
+
+  it("reports a 503 as unavailable — distinct from not-found — and retry re-scans the same code", async () => {
+    lookupMock.mockRejectedValueOnce(
+      new ApiError({
+        kind: "http",
+        message: "upstreams down",
+        url: "/api/barcode",
+        status: 503,
+      }),
     );
+    const { scan, getResult } = setup();
+    await act(async () => {
+      await scan("4820000000009");
+    });
+    expect(getResult().notice).toEqual({
+      kind: "unavailable",
+      code: "4820000000009",
+    });
+
+    // retry() is `scan(notice.code)` fired again — assert it re-issues the
+    // lookup with the SAME code, not a fresh scan/empty code.
+    act(() => {
+      getResult().retry();
+    });
+    expect(lookupMock).toHaveBeenCalledTimes(2);
+    expect(lookupMock).toHaveBeenLastCalledWith("4820000000009");
   });
 
   it("reports a product with a missing name", async () => {

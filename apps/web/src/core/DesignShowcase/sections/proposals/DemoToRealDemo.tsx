@@ -32,7 +32,7 @@ export function DemoToRealDemo() {
               <Icon name="file-text" size={20} />
             </span>
             <p className="text-style-caption text-text">Поки що порожньо</p>
-            <p className="text-2xs text-muted">
+            <p className="text-style-caption text-muted">
               Демо-записи стерлись на старті.
             </p>
           </div>
@@ -65,7 +65,7 @@ export function DemoToRealDemo() {
                         </Badge>
                       ) : null}
                     </div>
-                    <span className="text-2xs tabular-nums text-muted">
+                    <span className="text-style-caption tabular-nums text-muted">
                       {s.amount}
                     </span>
                   </div>
@@ -77,7 +77,7 @@ export function DemoToRealDemo() {
                     <button
                       type="button"
                       onClick={() => setReal((p) => new Set(p).add(s.id))}
-                      className="text-2xs font-medium text-accent whitespace-nowrap"
+                      className="text-style-caption font-medium text-accent whitespace-nowrap"
                     >
                       Зробити своїм
                     </button>
@@ -85,7 +85,7 @@ export function DemoToRealDemo() {
                 </div>
               );
             })}
-            <p className="text-2xs text-muted pt-1">
+            <p className="text-style-caption text-muted pt-1">
               Зразок стає реальним записом, а не зникає.
             </p>
           </div>

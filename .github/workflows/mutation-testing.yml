@@ -1,0 +1,282 @@
+name: Mutation testing
+
+# Owner: @SkOrDs-02 (solo maintainer).
+# Visibility: a red weekly run creates/refreshes an idempotent
+#             `mutation-testing` issue (job `report-red-run` below) — same
+#             pattern as `pact-drift.yml` / `db-backup-verify.yml`, so a
+#             failed cron never goes unnoticed between Mondays.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shared-utils:
+    name: shared utils tier-1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup pnpm
+        # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      - name: Setup Node
+        # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Stryker shared utils tier-1
+        env:
+          TZ: Europe/Kyiv
+        run: pnpm --filter @sergeant/shared mutation:utils
+
+      - name: Upload mutation report
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mutation-tier-1-shared-utils-report
+          path: |
+            packages/shared/reports/mutation/utils/index.html
+            packages/shared/reports/mutation/utils/mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  server-normalizers:
+    name: server normalizers tier-1
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build db-schema (server vitest resolves workspace types)
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Run Stryker server normalizers tier-1
+        env:
+          TZ: Europe/Kyiv
+        run: pnpm --filter @sergeant/server mutation:normalizers
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mutation-tier-1-server-normalizers-report
+          path: |
+            apps/server/reports/mutation/normalizers/index.html
+            apps/server/reports/mutation/normalizers/mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  finyk-domain-core:
+    name: finyk-domain core tier-2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup pnpm
+        # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      - name: Setup Node
+        # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Stryker finyk-domain core tier-2
+        env:
+          TZ: Europe/Kyiv
+        run: pnpm --filter @sergeant/finyk-domain mutation:core
+
+      - name: Upload mutation report
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mutation-tier-2-finyk-domain-core-report
+          path: |
+            packages/finyk-domain/reports/mutation/core/index.html
+            packages/finyk-domain/reports/mutation/core/mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  web-kyiv-time:
+    name: web kyiv time tier-2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The time-utils suites are pure Node (no db-schema/jsdom deps), so no
+      # extra build step is needed — see apps/web/vitest.mutation.time.config.ts.
+      - name: Run Stryker web kyiv time tier-2
+        env:
+          TZ: Europe/Kyiv
+        run: pnpm --filter @sergeant/web mutation:time
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mutation-tier-2-web-kyiv-time-report
+          path: |
+            apps/web/reports/mutation/time/index.html
+            apps/web/reports/mutation/time/mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  report-red-run:
+    name: Create / refresh issue on red run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [shared-utils, server-normalizers, finyk-domain-core, web-kyiv-time]
+    # Fires when ANY mutation job goes red on the weekly cron. Manual
+    # `workflow_dispatch` runs are watched by a human, so they do not open
+    # issues — mirrors the `github.event_name == 'schedule'` gate in
+    # pact-drift.yml.
+    if: always() && contains(needs.*.result, 'failure') && github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Create / refresh mutation-testing issue
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const date = new Date().toISOString().slice(0, 10);
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const failed = Object.entries(needs)
+              .filter(([, v]) => v.result === 'failure')
+              .map(([job]) => job);
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const failedList = failed.map((j) => `- \`${j}\``).join('\n');
+            const title = `[Mutation] Weekly mutation run is red — ${date}`;
+            const body = [
+              '## Weekly mutation-testing run failed',
+              '',
+              `**Run:** ${runUrl}`,
+              `**Date:** ${new Date().toISOString()}`,
+              `**Triggered by:** \`${context.eventName}\` (cron 06:00 UTC Monday)`,
+              '',
+              '**Failed jobs:**',
+              '',
+              failedList,
+              '',
+              'A red job means the mutation score dropped below `thresholds.break`',
+              '(surviving mutants = untested behaviour in money/time/normalizer',
+              'logic) — or the run itself broke (infra/timeout). Either way it',
+              'needs eyes: without this issue a red weekly cron is invisible',
+              'until the next manual look at the Actions tab.',
+              '',
+              'Triage:',
+              '',
+              '1. Open the run above → per-target `mutation-*-report` artifact',
+              '   (`index.html`) for the surviving-mutant diff.',
+              '2. Kill the survivors with targeted tests, or — if a mutant is a',
+              '   true equivalent — add a Stryker ignore with justification.',
+              '3. Do NOT lower `thresholds.break` to make the job green; a bump',
+              '   needs an explicit owner decision in the PR description.',
+              '',
+              'cc @SkOrDs-02',
+            ].join('\n');
+
+            // Idempotent: refresh the existing open issue rather than creating
+            // a new one every week. Same pattern as pact-drift.yml /
+            // db-backup-verify.yml.
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'mutation-testing',
+              per_page: 100,
+            });
+            const existing = issues.find((i) =>
+              i.title.startsWith('[Mutation]'),
+            );
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: [
+                  `### Re-detected on ${date}`,
+                  '',
+                  `**Run:** ${runUrl}`,
+                  '',
+                  '**Failed jobs:**',
+                  '',
+                  failedList,
+                ].join('\n'),
+              });
+              core.info(`Updated existing issue #${existing.number}.`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['mutation-testing', 'tech-debt'],
+              });
+              core.info(`Created new issue #${created.data.number}.`);
+            }

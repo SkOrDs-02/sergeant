@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
-import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
+import { trackFizrukWorkoutStarted } from "../lib/workoutTelemetry";
 
 interface Exercise {
   id: string;
@@ -17,6 +18,7 @@ interface Session {
 
 interface WorkoutsApi {
   workouts: Array<{
+    endedAt?: string | null;
     items?:
       | Array<{
           exerciseId?: string | undefined;
@@ -40,9 +42,11 @@ export function useFizrukProgramStart({
   addItem,
   exercises,
   navigate,
+  onConflict,
 }: WorkoutsApi & {
   exercises: readonly Exercise[];
   navigate: (next: string) => void;
+  onConflict?: ((start: () => void) => void) | undefined;
 }) {
   return useCallback(
     (session: Session | undefined | null) => {
@@ -52,48 +56,54 @@ export function useFizrukProgramStart({
         .map((id) => exercises.find((e) => e.id === id))
         .filter((e): e is Exercise => Boolean(e));
       if (picks.length === 0) return;
-      const progressionKg = session.progressionKg ?? 0;
-      const w = createWorkout();
-      for (const ex of picks) {
-        const isCardio = ex.primaryGroup === "cardio";
-        let suggestedWeight = 0;
-        if (!isCardio && progressionKg > 0) {
-          const lastWorkoutWithEx = workouts.find((wo) =>
-            (wo.items || []).some((it) => it.exerciseId === ex.id),
-          );
-          if (lastWorkoutWithEx) {
-            const item = lastWorkoutWithEx.items?.find(
-              (it) => it.exerciseId === ex.id,
+      const start = () => {
+        const progressionKg = session.progressionKg ?? 0;
+        const w = createWorkout();
+        for (const ex of picks) {
+          const isCardio = ex.primaryGroup === "cardio";
+          let suggestedWeight = 0;
+          if (!isCardio && progressionKg > 0) {
+            const lastWorkoutWithEx = workouts.find((wo) =>
+              (wo.items || []).some((it) => it.exerciseId === ex.id),
             );
-            const maxWeight = Math.max(
-              0,
-              ...(item?.sets || []).map((s) => s.weightKg || 0),
-            );
-            if (maxWeight > 0) {
-              suggestedWeight = Math.round((maxWeight + progressionKg) * 2) / 2;
+            if (lastWorkoutWithEx) {
+              const item = lastWorkoutWithEx.items?.find(
+                (it) => it.exerciseId === ex.id,
+              );
+              const maxWeight = Math.max(
+                0,
+                ...(item?.sets || []).map((s) => s.weightKg || 0),
+              );
+              if (maxWeight > 0) {
+                suggestedWeight =
+                  Math.round((maxWeight + progressionKg) * 2) / 2;
+              }
             }
           }
+          addItem(w.id, {
+            exerciseId: ex.id,
+            nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
+            primaryGroup: ex.primaryGroup || "",
+            musclesPrimary: ex?.muscles?.primary || [],
+            musclesSecondary: ex?.muscles?.secondary || [],
+            type: isCardio ? "distance" : "strength",
+            ...(isCardio
+              ? {}
+              : { sets: [{ weightKg: suggestedWeight, reps: 0 }] }),
+            durationSec: 0,
+            ...(isCardio ? { distanceM: 0 } : {}),
+          });
         }
-        addItem(w.id, {
-          exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
-          primaryGroup: ex.primaryGroup || "",
-          musclesPrimary: ex?.muscles?.primary || [],
-          musclesSecondary: ex?.muscles?.secondary || [],
-          type: isCardio ? "distance" : "strength",
-          ...(isCardio
-            ? {}
-            : { sets: [{ weightKg: suggestedWeight, reps: 0 }] }),
-          durationSec: 0,
-          ...(isCardio ? { distanceM: 0 } : {}),
-        });
+        safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
+        trackFizrukWorkoutStarted(w.id, "template");
+        navigate(`workout/${w.id}`);
+      };
+      if (workouts.some((workout) => !workout.endedAt) && onConflict) {
+        onConflict(start);
+        return;
       }
-      safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
-      // best-effort session handoff; failure just means the Workouts page
-      // opens in its default mode.
-      safeWriteSS("fizruk_workouts_mode", "log");
-      navigate("workouts");
+      start();
     },
-    [workouts, createWorkout, addItem, exercises, navigate],
+    [workouts, createWorkout, addItem, exercises, navigate, onConflict],
   );
 }

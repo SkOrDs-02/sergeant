@@ -4,7 +4,7 @@
  * Status: Active
  * Unit tests for the meal-sheet `useBarcodeLookup` hook.
  */
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const lookupFoodByBarcodeMock = vi.fn();
@@ -104,12 +104,39 @@ describe("handleBarcodeLookup", () => {
     expect(lookupProductMock).toHaveBeenCalled();
   });
 
-  it("reports product-not-found", async () => {
+  it("reports product-not-found as a distinct not-found notice (404, not a 503 text blob)", async () => {
     lookupFoodByBarcodeMock.mockResolvedValue(null);
     lookupProductMock.mockResolvedValue(null);
     const { result, setPickedFood } = setup();
-    await result.current.handleBarcodeLookup("4820000000004");
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820000000004");
+    });
     expect(setPickedFood).not.toHaveBeenCalled();
+    expect(result.current.barcodeNotice).toEqual({
+      kind: "not-found",
+      code: "4820000000004",
+    });
+  });
+
+  it("reports a 503 (upstreams down) as unavailable — distinct from not-found", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        message: "upstreams down",
+        url: "/api/barcode",
+        status: 503,
+      }),
+    );
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820000000010");
+    });
+    expect(setPickedFood).not.toHaveBeenCalled();
+    expect(result.current.barcodeNotice).toEqual({
+      kind: "unavailable",
+      code: "4820000000010",
+    });
   });
 
   it("reports an incomplete remote product (no name)", async () => {

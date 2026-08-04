@@ -14,8 +14,8 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
-import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { webhookTxToNormalized } from "./monoTxNormalize";
 import { CURRENCY } from "../constants";
 import {
   trackEvent,
@@ -43,32 +43,6 @@ import {
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
 const TX_STALE = 60_000;
-
-function webhookTxToNormalized(dto: MonoTransactionDto): Transaction {
-  return normalizeTransaction(
-    {
-      id: dto.monoTxId,
-      time: Math.floor(new Date(dto.time).getTime() / 1000),
-      amount: dto.amount,
-      description: dto.description ?? "",
-      mcc: dto.mcc ?? 0,
-      originalMcc: dto.originalMcc ?? undefined,
-      hold: dto.hold ?? undefined,
-      operationAmount: dto.operationAmount,
-      currencyCode: dto.currencyCode,
-      commissionRate: dto.commissionRate ?? undefined,
-      cashbackAmount: dto.cashbackAmount ?? undefined,
-      balance: dto.balance ?? undefined,
-      comment: dto.comment ?? undefined,
-      receiptId: dto.receiptId ?? undefined,
-      invoiceId: dto.invoiceId ?? undefined,
-      counterEdrpou: dto.counterEdrpou ?? undefined,
-      counterIban: dto.counterIban ?? undefined,
-      counterName: dto.counterName ?? undefined,
-    },
-    { source: "monobank", accountId: dto.monoAccountId },
-  );
-}
 
 /**
  * Webhook-backed Monobank hook (Track C).
@@ -136,7 +110,16 @@ export function useMonobankWebhook({
   const webhookAccounts = accountsQuery.data;
   const accounts = useMemo(
     () =>
-      (webhookAccounts ?? [])
+      // Shape-guard: `webhookAccounts` is typed `MonoAccountDto[]` (the
+      // contracted `/api/mono/accounts` response) but nothing here actually
+      // enforces that at runtime — `?? []` only rescues `null`/`undefined`.
+      // A misbehaving intermediary (dev proxy, stale SW cache, test mock)
+      // that hands back a truthy non-array (e.g. `{ ok: true }`) used to
+      // reach `.filter` directly and crash this whole render with
+      // `TypeError: ... .filter is not a function`, tripping the
+      // `SectionErrorBoundary` around the Assets page. Same defensive
+      // pattern as `usePrivatbank.ts`'s `Array.isArray(data) ? data : []`.
+      (Array.isArray(webhookAccounts) ? webhookAccounts : [])
         .filter((a) => a.currencyCode === CURRENCY.UAH)
         .map((a) => ({
           id: a.monoAccountId,
@@ -424,8 +407,21 @@ export function useMonobankWebhook({
         // failure mode (offline, timeout, 403/5xx, DNS, etc.). The first
         // case is a copy-paste / expiry mistake the user can fix locally;
         // the second is connectivity that no token edit will repair.
+        //
+        // Два РІЗНИХ 401 приходять на цей шлях: наш власний session-gate
+        // (анонім не має сесії) і `MONO_TOKEN_INVALID` від Mono. Без
+        // розрізнення анонім із бездоганним токеном читав «Mono відхилив
+        // токен» і йшов перегенеровувати справний токен.
         if (isApiError(e) && e.kind === "http" && e.status === 401) {
-          setAuthError(messages.finyk.monoConnectErrors.tokenRejected);
+          const code =
+            e.body && typeof e.body === "object"
+              ? (e.body as { code?: unknown }).code
+              : undefined;
+          setAuthError(
+            code === "MONO_TOKEN_INVALID"
+              ? messages.finyk.monoConnectErrors.tokenRejected
+              : messages.finyk.monoConnectErrors.accountRequired,
+          );
         } else {
           setError(messages.finyk.monoConnectErrors.networkUnavailable);
         }

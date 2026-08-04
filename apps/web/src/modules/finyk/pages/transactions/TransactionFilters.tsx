@@ -79,7 +79,10 @@ export function TransactionFilters({
   };
 
   return (
-    <div data-no-swipe className="-mx-3 px-3 overflow-x-auto no-scrollbar">
+    <div
+      data-no-swipe
+      className="-mx-3 px-3 overflow-x-auto no-scrollbar [touch-action:pan-x_pan-y]"
+    >
       <div
         ref={toolbarRef}
         role="toolbar"
@@ -115,7 +118,7 @@ export function TransactionFilters({
               // outline stays 28px on desktop; the hit area only grows
               // where it actually matters.
               "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
-              "pointer-coarse:min-h-[44px]",
+              "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
               filter === f.id
                 ? "bg-primary border-primary text-bg shadow-sm"

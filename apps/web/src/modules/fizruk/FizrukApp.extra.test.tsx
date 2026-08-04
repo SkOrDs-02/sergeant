@@ -398,7 +398,10 @@ describe("FizrukApp (extra) — header callbacks", () => {
       navigate: navigateMock,
     });
     render(<FizrukApp />);
-    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
   });
 
   it("keeps the module header stable on the programs page", () => {
@@ -418,7 +421,10 @@ describe("FizrukApp (extra) — header callbacks", () => {
       deactivateProgram: vi.fn(),
     });
     render(<FizrukApp />);
-    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
     expect(screen.queryByText("Активна: Сила 5×5")).not.toBeInTheDocument();
   });
 });

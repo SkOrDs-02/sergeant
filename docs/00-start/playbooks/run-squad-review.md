@@ -2,7 +2,7 @@
 
 # Playbook: Squad review — паралельний PR review через 4 lens-агентів
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs.
@@ -29,7 +29,7 @@ Load skill: sergeant-review-squad
 Create an agent team to review PR #<number>.
 Spawn 4 teammates:
 1. contract-reviewer — Hard Rules #1, #3, #4
-2. design-reviewer — Hard Rules #8, #9, #11-17
+2. design-reviewer — дизайн-конвенції (tokens + review, ex-Hard Rules #8/#9/#11-17, retired ADR-0081): opacity scale, -strong, no raw hex, focus-visible, module-accent containment, 12px floor, 44px touch targets
 3. security-reviewer — Hard Rules #20, #21, #22
 4. docs-reviewer — Hard Rules #10, #15, #25, #26
 

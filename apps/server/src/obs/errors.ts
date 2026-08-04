@@ -89,14 +89,23 @@ export function makeAiProviderError(opts: {
   rawProviderMessage: string | undefined | null;
   status: number | undefined;
 }): ExternalServiceError {
+  // Ніколи не пробрасываем upstream-статус як власний: Anthropic-401
+  // (невалідний ключ на НАШОМУ боці) доходив до клієнта як HTTP 401, і UI
+  // показував залогіненому користувачу «Доступ заборонено» (аудит
+  // 2026-08-04, знахідка 6). Семантика для клієнта: 429 → 503 (перевантажений
+  // провайдер, спробуй пізніше), усе інше — 502 Bad Gateway.
+  const status = opts.status === 429 ? 503 : 502;
   const err = new ExternalServiceError(
     "Асистент тимчасово недоступний. Спробуй пізніше.",
     {
-      // Use 502 Bad Gateway when the upstream status is absent (undefined) or
-      // not a valid HTTP status (0 from network-level glitches).
-      status: opts.status && opts.status > 0 ? opts.status : 502,
+      status,
       code: "ANTHROPIC_ERROR",
+      // `message` у cause — навмисно: pino приклеює `String(cause)` до
+      // повідомлення помилки, і без message виходило «…: [object Object]».
       cause: {
+        message: `anthropic upstream ${opts.status ?? "?"}: ${
+          opts.rawProviderMessage ?? "(no message)"
+        }`,
         rawProviderMessage: opts.rawProviderMessage ?? "(no message)",
         upstreamStatus: opts.status,
       },

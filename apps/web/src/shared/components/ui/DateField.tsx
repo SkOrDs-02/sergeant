@@ -1,6 +1,12 @@
 import { forwardRef, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Input, type InputProps } from "./Input";
+import {
+  classifyDateBound,
+  dateBoundMessage,
+  HARD_MAX_DAY_KEY,
+  HARD_MIN_DAY_KEY,
+} from "@shared/lib/time/dateBounds";
 
 export interface DateFieldProps extends Omit<
   InputProps,
@@ -10,6 +16,16 @@ export interface DateFieldProps extends Omit<
   helperText?: string | undefined;
   /** Visible while the native date input is empty and unfocused. */
   emptyLabel?: string | undefined;
+  /**
+   * Apply the shared calendar bounds (beta-input-boundaries spec): clamp the
+   * native picker to the hard window and surface a soft-window warning /
+   * hard-window error under the field.
+   *
+   * On by default so every date in the app behaves the same way without each
+   * call site re-deriving it. A caller's own `helperText` / `error` always
+   * wins — pass `bounded={false}` to opt out entirely.
+   */
+  bounded?: boolean | undefined;
 }
 
 /**
@@ -27,6 +43,7 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
       label,
       helperText,
       emptyLabel = "Обери дату",
+      bounded = true,
       value,
       className,
       error,
@@ -41,7 +58,14 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
     const id = idProp ?? generatedId;
     const [focused, setFocused] = useState(false);
     const isEmpty = value == null || String(value) === "";
-    const helperId = helperText ? `${id}-helper` : undefined;
+
+    // Explicit caller state wins over the derived one — a form that already
+    // knows why a date is wrong should say so in its own words.
+    const bound = bounded && !isEmpty ? classifyDateBound(String(value)) : "ok";
+    const resolvedError = error ?? bound === "invalid";
+    const resolvedHelperText =
+      helperText ?? dateBoundMessage(bound) ?? undefined;
+    const helperId = resolvedHelperText ? `${id}-helper` : undefined;
 
     return (
       <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
@@ -55,12 +79,15 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
         ) : null}
         <div className="relative grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-line bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
           <Input
+            {...(bounded
+              ? { min: HARD_MIN_DAY_KEY, max: HARD_MAX_DAY_KEY }
+              : {})}
             {...props}
             ref={ref}
             id={id}
             type="date"
             value={value}
-            error={error}
+            error={resolvedError}
             aria-label={ariaLabel ?? label ?? emptyLabel}
             aria-describedby={helperId}
             onFocus={(event) => {
@@ -85,16 +112,20 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(
             </span>
           ) : null}
         </div>
-        {helperText ? (
+        {resolvedHelperText ? (
           <p
             id={helperId}
-            role={error ? "alert" : "status"}
+            role={resolvedError ? "alert" : "status"}
             className={cn(
               "text-style-caption leading-snug",
-              error ? "text-danger-strong dark:text-danger" : "text-subtle",
+              resolvedError
+                ? "text-danger-strong dark:text-danger"
+                : bound === "warn"
+                  ? "text-warning-strong dark:text-warning"
+                  : "text-subtle",
             )}
           >
-            {helperText}
+            {resolvedHelperText}
           </p>
         ) : null}
       </div>

@@ -32,6 +32,10 @@ import {
   startFtuxDripWorker,
   type StartedFtuxDripWorker,
 } from "./lib/jobs/ftuxDrip.js";
+import {
+  startReminderScheduler,
+  type StartedReminderScheduler,
+} from "./lib/reminders/scheduler.js";
 import { endPoolWithAbortTimeout } from "./lib/poolShutdown.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
@@ -170,6 +174,14 @@ const authMailWorker: StartedAuthMailWorker | null = startAuthMailWorker();
 // у `email_campaigns_log` через той самий pg-pool, що й решта server-у.
 configureFtuxDripDispatcher({ pool });
 const ftuxDripWorker: StartedFtuxDripWorker | null = startFtuxDripWorker();
+
+// Нагадування про звички / їжу / тренування. Свідомо НЕ BullMQ, на відміну
+// від сусідів вище: черга не стартує без `REDIS_URL`, якого у проді немає,
+// і канал мовчав би далі. Хвилинний таймер + claim-before-send дедуп у
+// Postgres дають ту саму гарантію «не більше одного пушу на подію» навіть
+// при кількох репліках. Деталі — `lib/reminders/sweep.ts`.
+const reminderScheduler: StartedReminderScheduler | null =
+  env.REMINDER_SWEEP_ENABLED ? startReminderScheduler(pool) : null;
 
 // AI memory ingestion BullMQ worker. Так само як `authMailWorker`, повертає
 // null коли `REDIS_URL` не задано (CI / local dev) — у такому разі
@@ -316,6 +328,13 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           err: serializeError(err, { includeStack: false }),
         });
       }
+    }
+
+    if (reminderScheduler) {
+      // Синхронний `clearTimeout` — черги in-flight робіт тут немає, а вже
+      // відправлені пуші застовплені в БД, тож дочекатись нічого.
+      reminderScheduler.stop();
+      logger.info({ msg: "reminder_scheduler_stopped" });
     }
 
     if (memoryIngestWorker) {

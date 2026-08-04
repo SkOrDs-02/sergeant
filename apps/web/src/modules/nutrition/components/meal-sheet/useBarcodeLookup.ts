@@ -25,11 +25,24 @@ export interface UseBarcodeLookupParams {
   setForm: Dispatch<SetStateAction<MealFormState>>;
 }
 
+/**
+ * Розрізняє "продукту немає" (404 → `null`, справжній all-miss) від
+ * "джерела не відповіли" (503 — `useBarcodeProduct.ts` AI-DANGER). Обидва
+ * раніше зливались в один текстовий `barcodeStatus` рядок — аудит nutrition
+ * E-6.
+ */
+export interface BarcodeLookupNotice {
+  kind: "not-found" | "unavailable";
+  code: string;
+}
+
 export interface UseBarcodeLookupResult {
   barcode: string;
   setBarcode: Dispatch<SetStateAction<string>>;
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
+  barcodeNotice: BarcodeLookupNotice | null;
+  setBarcodeNotice: Dispatch<SetStateAction<BarcodeLookupNotice | null>>;
   scannerOpen: boolean;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
   handleBarcodeLookup: (code: string) => Promise<void>;
@@ -44,6 +57,8 @@ export function useBarcodeLookup({
 }: UseBarcodeLookupParams): UseBarcodeLookupResult {
   const [barcode, setBarcode] = useState("");
   const [barcodeStatus, setBarcodeStatus] = useState("");
+  const [barcodeNotice, setBarcodeNotice] =
+    useState<BarcodeLookupNotice | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const lookupProduct = useBarcodeProductLookup();
 
@@ -52,10 +67,11 @@ export function useBarcodeLookup({
       const code = String(codeRaw || "").trim();
       if (!code) return;
       setBarcodeStatus("Шукаю…");
+      setBarcodeNotice(null);
 
       const localFound = await lookupFoodByBarcode(code);
       if (localFound) {
-        setBarcodeStatus("Знайдено ✔");
+        setBarcodeStatus("Знайдено");
         setPickedFood(localFound);
         setPickedGrams(String(Math.round(localFound.defaultGrams || 100)));
         return;
@@ -71,6 +87,15 @@ export function useBarcodeLookup({
           );
           return;
         }
+        // AI-DANGER: 503 = "усі три upstream-и каскаду не відповіли" (аудит
+        // nutrition G5/E-6), не "продукту немає". Тримай цю гілку ПЕРЕД
+        // загальним `kind === "http"` — інакше вона зіллється назад у той
+        // самий текст, що й 404, і E-6 повернеться.
+        if (isApiError(err) && err.status === 503) {
+          setBarcodeStatus("");
+          setBarcodeNotice({ kind: "unavailable", code });
+          return;
+        }
         if (isApiError(err) && err.kind === "http") {
           setBarcodeStatus(
             err.serverMessage || "Помилка пошуку. Спробуй пізніше.",
@@ -84,7 +109,8 @@ export function useBarcodeLookup({
       }
 
       if (!p) {
-        setBarcodeStatus("Продукт не знайдено. Можна ввести дані вручну.");
+        setBarcodeStatus("");
+        setBarcodeNotice({ kind: "not-found", code });
         return;
       }
       if (!p.name) {
@@ -139,7 +165,7 @@ export function useBarcodeLookup({
         );
       } else {
         setBarcodeStatus(
-          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")} ✔`,
+          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")}`,
         );
       }
     },
@@ -160,7 +186,7 @@ export function useBarcodeLookup({
         return;
       }
       const ok = await bindBarcodeToFood(code, String(pickedFood.id));
-      setBarcodeStatus(ok ? "Прив'язано ✔" : "Не вдалося прив'язати");
+      setBarcodeStatus(ok ? "Прив'язано" : "Не вдалося прив'язати");
     },
     [pickedFood],
   );
@@ -170,6 +196,8 @@ export function useBarcodeLookup({
     setBarcode,
     barcodeStatus,
     setBarcodeStatus,
+    barcodeNotice,
+    setBarcodeNotice,
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,

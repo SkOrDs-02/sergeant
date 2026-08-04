@@ -298,7 +298,7 @@ export function GeneralSection() {
       <SettingsSubGroup title="Дашборд">
         <ToggleRow
           label="Показувати AI-коуч"
-          description="Блок з щоденною порадою коуча на головному екрані."
+          description="Блок з щоденною порадою Сержанта на головному екрані."
           checked={showCoach}
           onChange={(next) =>
             setPrefs((prev) => ({ ...prev, showCoach: next }))

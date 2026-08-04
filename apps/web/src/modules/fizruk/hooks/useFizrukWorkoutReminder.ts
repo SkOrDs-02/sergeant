@@ -11,24 +11,6 @@ function readLastFiredDay(): string | null {
   return safeReadStringLS(LAST_KEY);
 }
 
-interface FizrukReminderState {
-  reminderEnabled: boolean;
-  reminderHour: number;
-  reminderMinute: number;
-  days: Record<string, unknown>;
-}
-
-function sendFizrukStateToSW(state: FizrukReminderState): void {
-  try {
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
-      return;
-    navigator.serviceWorker.controller.postMessage({
-      type: "FIZRUK_STATE_UPDATE",
-      data: state,
-    });
-  } catch {}
-}
-
 /**
  * Локальне нагадування (через Notification API, якщо дозволено).
  * `enabled` — на сьогодні є запис у календарі плану.
@@ -41,13 +23,11 @@ export function useFizrukWorkoutReminder({
   reminderHour,
   reminderMinute,
   reminderEnabled,
-  days,
 }: {
   enabled: boolean;
   reminderHour: number;
   reminderMinute: number;
   reminderEnabled: boolean;
-  days: Record<string, unknown>;
 }) {
   // Seed from localStorage so that remount within the same day (e.g. after
   // HMR, route change, or the user navigating away and back) does not
@@ -60,14 +40,13 @@ export function useFizrukWorkoutReminder({
     configRef.current = { reminderHour, reminderMinute };
   }, [reminderHour, reminderMinute]);
 
-  useEffect(() => {
-    sendFizrukStateToSW({
-      reminderEnabled,
-      reminderHour,
-      reminderMinute,
-      days,
-    });
-  }, [reminderEnabled, reminderHour, reminderMinute, days]);
+  // AI-CONTEXT: тут раніше стояв `postMessage("FIZRUK_STATE_UPDATE")`, що
+  // живив цикл нагадувань усередині сервіс-воркера. Цикл прибрано — він не
+  // міг спрацювати при закритому застосунку (браузер вбиває неактивний SW
+  // за ~30 с, а стан жив у його памʼяті). Нагадування шле сервер:
+  // `apps/server/src/lib/reminders/`. Разом із ним відпав і параметр `days`:
+  // він існував ЛИШЕ щоб віддати воркеру календар плану, а сам хук дивиться
+  // на вже обчислений `enabled` (`!!monthlyPlan.todayTemplateId`).
 
   // `onMinuteTick` receives Kyiv-local dayKey + hm — this is the bug fix:
   // previously `new Date().getHours()` / `getMinutes()` used the host timezone.
@@ -94,7 +73,11 @@ export function useFizrukWorkoutReminder({
       showReminderNotification(
         "Фізрук — тренування",
         "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
-        `fizruk-plan-${dayKey}`,
+        // Тег МУСИТЬ збігатися з `dedupKey` серверного sweep-у
+        // (`fizrukDueNow` у `apps/server/src/lib/reminders/due.ts`): обидва
+        // шляхи можуть спрацювати на одну хвилину, і лише однаковий тег
+        // робить другий банер заміщенням, а не другим рядком у шторці.
+        `fizruk_notify_${dayKey}`,
       )
         .then(persistFired)
         .catch(onShowFailed);

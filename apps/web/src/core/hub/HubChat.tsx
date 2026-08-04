@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { trackEvent } from "../observability/analytics";
 import { HubChatHistoryDrawer } from "./HubChatHistoryDrawer";
 import { useChatSessions } from "./chat/useChatSessions";
 import { useChatSend } from "./chat/useChatSend";
@@ -14,6 +16,12 @@ interface HubChatProps {
   initialMessage?: string;
   autoSendInitial?: boolean;
   onOpenCatalogue?: () => void;
+  /**
+   * Поверхня, з якої відкрито чат — їде в `hubchat_opened`. Проп, а не
+   * висновок з `location.pathname`: оверлей можна відкрити і перебуваючи
+   * на `/chat`, і тоді шлях збрехав би «route».
+   */
+  source?: "overlay" | "route";
 }
 
 /**
@@ -37,11 +45,30 @@ function HubChat({
   initialMessage,
   autoSendInitial,
   onOpenCatalogue,
+  source = "overlay",
 }: HubChatProps) {
   // Warm the SQLite read caches + register the finyk dual-write context
   // so the off-React chat-action executors read fresh data and persist
   // their writes (see `useHubChatStorageBoot`).
   useHubChatStorageBoot();
+
+  // Знаменник воронки HubChat. Сидить саме тут, а не в двох host-ах
+  // (`HubChatOverlay` + `HubChatPage`), бо цей компонент — єдина спільна
+  // точка монтування обох поверхонь: один call-site замість двох, які
+  // неминуче розійшлися б. Обидва host-и монтують `HubChat` лише коли
+  // чат реально відкритий (оверлей — `if (!open) return null`, сторінка —
+  // окремий роут), тож mount == відкриття.
+  //
+  // Ref-гард — той самий патерн, що в `PageviewTracker`: ref переживає
+  // StrictMode-івський mount→unmount→mount, тож подія лишається однією на
+  // реальне відкриття. Справжнє переоткриття створює новий інстанс (і новий
+  // ref), тож воно рахується окремо — саме так і треба.
+  const openedFiredRef = useRef(false);
+  useEffect(() => {
+    if (openedFiredRef.current) return;
+    openedFiredRef.current = true;
+    trackEvent(ANALYTICS_EVENTS.HUBCHAT_OPENED, { source });
+  }, [source]);
 
   const sessionsState = useChatSessions();
   const {

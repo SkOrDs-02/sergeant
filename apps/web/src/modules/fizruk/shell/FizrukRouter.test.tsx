@@ -52,12 +52,11 @@ vi.mock("../pages/Exercise", () => ({
   ),
 }));
 vi.mock("../pages/Workouts", () => ({
-  Workouts: (p: { onOpenRoutine?: () => void; onOpenPrograms: () => void }) => (
+  Workouts: (p: { onOpenRoutine?: () => void }) => (
     <div data-testid="page-workouts">
       <button disabled={!p.onOpenRoutine} onClick={() => p.onOpenRoutine?.()}>
         wk-open-routine
       </button>
-      <button onClick={p.onOpenPrograms}>wk-open-programs</button>
     </div>
   ),
 }));
@@ -161,13 +160,6 @@ describe("FizrukRouter — prop wiring", () => {
     render(<FizrukRouter {...baseProps({ page: "workouts", onOpenModule })} />);
     fireEvent.click(await screen.findByText("wk-open-routine"));
     expect(onOpenModule).toHaveBeenCalledWith("routine", { hash: "calendar" });
-  });
-
-  it("workouts onOpenPrograms navigates to programs", async () => {
-    const onNavigate = vi.fn();
-    render(<FizrukRouter {...baseProps({ page: "workouts", onNavigate })} />);
-    fireEvent.click(await screen.findByText("wk-open-programs"));
-    expect(onNavigate).toHaveBeenCalledWith("programs");
   });
 
   it("progress onNavigate routes through props", async () => {

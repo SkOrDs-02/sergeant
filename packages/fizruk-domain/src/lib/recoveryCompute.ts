@@ -54,20 +54,78 @@ export function loadPointsForItem(
 }
 
 /**
+ * Скільки годин запис самопочуття лишається придатним як вхід recovery.
+ *
+ * ⚠️ **Інженерний дефолт, не рішення founder-а.** Аудит E-3 називає діапазон
+ * «≤48–72 год», канон числа не дає. 72 години обрано як верхню межу того
+ * діапазону: сон дволітньої давності про сьогоднішню готовність не каже
+ * нічого, але вужче вікно вимикало б множник у того, хто веде журнал не
+ * щодня, і фіча ставала б безглуздою.
+ *
+ * AI-DANGER: без цього вікна єдиний запис «8.5 год сну» місячної давності
+ * НАЗАВЖДИ прискорював видиме відновлення (множник до 0.7) — тобто зсував
+ * кольори в бік «тренуй раніше» саме там, де на них тримається травма-safety
+ * (§5 канону). Це і був розрив E-3.
+ */
+export const WELLBEING_FRESH_WINDOW_HOURS = 72;
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Розібраний вхід самопочуття — множник плюс те, ЧОМУ він такий. */
+export interface WellbeingSignal {
+  /** Множник для формули втоми, clamp [0.7, 1.4]. */
+  multiplier: number;
+  /** Вік найсвіжішого запису зі сном у годинах. `null` — записів немає. */
+  sleepAgeHours: number | null;
+  /** Вік найсвіжішого запису з енергією. `null` — записів немає. */
+  energyAgeHours: number | null;
+  /** Сон реально врахований (запис існує і потрапив у вікно). */
+  usedSleep: boolean;
+  /** Енергія реально врахована. */
+  usedEnergy: boolean;
+  /**
+   * Записи є, але жоден не потрапив у вікно — множник відкотився до 1.0.
+   * UI має це показувати: інакше «журнал заповнено» і «журнал впливає» —
+   * різні речі, які виглядають однаково.
+   */
+  stale: boolean;
+  /** Вікно, за яким рахували. */
+  windowHours: number;
+}
+
+function ageHours(at: string | undefined, nowMs: number): number | null {
+  if (typeof at !== "string" || at.length === 0) return null;
+  const t = Date.parse(at);
+  if (!Number.isFinite(t)) return null;
+  // Майбутня дата — це 0 годин тому, не від'ємний вік.
+  return Math.max(0, (nowMs - t) / MS_PER_HOUR);
+}
+
+/**
  * Compute a recovery multiplier from recent daily log entries.
  * Prioritises the most recent entry with sleep data and most recent entry with
  * energy data independently (they may be logged on different days).
  * Poor sleep (<6h) or low energy (≤2/5) slows recovery by 20–30%
  * (multiplier > 1 increases effective fatigue time).
  * Good sleep/energy speeds recovery (multiplier < 1).
- * Falls back to 1.0 when no sleep/energy data is present.
- * @param {Array<{at?: string, sleepHours?: number, energyLevel?: number}>} dailyLogEntries
- * @returns {number} Multiplier clamped to [0.7, 1.4].
+ * Falls back to 1.0 when no sleep/energy data is present **or when the
+ * freshest entry is older than {@link WELLBEING_FRESH_WINDOW_HOURS}**.
  */
-export function computeWellbeingMultiplier(
+export function computeWellbeingSignal(
   dailyLogEntries: Array<Partial<DailyLogEntry>> = [],
-): number {
-  if (!dailyLogEntries || dailyLogEntries.length === 0) return 1.0;
+  nowMs: number = Date.now(),
+  windowHours: number = WELLBEING_FRESH_WINDOW_HOURS,
+): WellbeingSignal {
+  const empty: WellbeingSignal = {
+    multiplier: 1.0,
+    sleepAgeHours: null,
+    energyAgeHours: null,
+    usedSleep: false,
+    usedEnergy: false,
+    stale: false,
+    windowHours,
+  };
+  if (!dailyLogEntries || dailyLogEntries.length === 0) return empty;
 
   const sorted = [...dailyLogEntries].sort((a, b) =>
     (b.at || "").localeCompare(a.at || ""),
@@ -82,9 +140,16 @@ export function computeWellbeingMultiplier(
     (e) => e.energyLevel != null && Number.isFinite(Number(e.energyLevel)),
   );
 
+  const sleepAgeHours = ageHours(latestSleepEntry?.at, nowMs);
+  const energyAgeHours = ageHours(latestEnergyEntry?.at, nowMs);
+  // Запис без придатної дати не має віку — і не має права рухати множник:
+  // «невідомо коли» ближче до «давно», ніж до «щойно».
+  const usedSleep = sleepAgeHours !== null && sleepAgeHours <= windowHours;
+  const usedEnergy = energyAgeHours !== null && energyAgeHours <= windowHours;
+
   let multiplier = 1.0;
 
-  if (latestSleepEntry) {
+  if (usedSleep && latestSleepEntry) {
     const hrs = Number(latestSleepEntry.sleepHours);
     if (hrs < 5) multiplier += 0.3;
     else if (hrs < 6) multiplier += 0.2;
@@ -92,7 +157,7 @@ export function computeWellbeingMultiplier(
     else if (hrs >= 8) multiplier -= 0.1;
   }
 
-  if (latestEnergyEntry) {
+  if (usedEnergy && latestEnergyEntry) {
     const energy = Number(latestEnergyEntry.energyLevel);
     if (energy <= 1) multiplier += 0.3;
     else if (energy <= 2) multiplier += 0.2;
@@ -101,7 +166,24 @@ export function computeWellbeingMultiplier(
     else if (energy >= 4) multiplier -= 0.1;
   }
 
-  return clamp(multiplier, 0.7, 1.4);
+  const hasAnyEntry = Boolean(latestSleepEntry || latestEnergyEntry);
+  return {
+    multiplier: clamp(multiplier, 0.7, 1.4),
+    sleepAgeHours,
+    energyAgeHours,
+    usedSleep,
+    usedEnergy,
+    stale: hasAnyEntry && !usedSleep && !usedEnergy,
+    windowHours,
+  };
+}
+
+/** Лише множник — тонка обгортка над {@link computeWellbeingSignal}. */
+export function computeWellbeingMultiplier(
+  dailyLogEntries: Array<Partial<DailyLogEntry>> = [],
+  nowMs: number = Date.now(),
+): number {
+  return computeWellbeingSignal(dailyLogEntries, nowMs).multiplier;
 }
 
 /**
@@ -122,7 +204,10 @@ export function computeRecoveryBy(
   const WEEK = 7 * 24 * 60 * 60 * 1000;
   const DAY = 24 * 60 * 60 * 1000;
 
-  const wellbeingMult = computeWellbeingMultiplier(dailyLogEntries);
+  // `nowMs` передаємо далі навмисно: без нього вікно свіжості рахувалось би
+  // від справжнього годинника, а решта функції — від переданого часу, і
+  // тести з фіксованим `now` міряли б дві різні «зараз».
+  const wellbeingMult = computeWellbeingMultiplier(dailyLogEntries, nowMs);
 
   const muscleIds = new Set(Object.keys(musclesUk || {}));
   for (const w of workouts || []) {

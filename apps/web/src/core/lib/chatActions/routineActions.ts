@@ -4,6 +4,12 @@ import {
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import {
+  applyPauseHabitBetween,
+  applyResumeHabitFrom,
+  resolveHabitGlyph,
+  upgradeHabitGlyph,
+} from "@sergeant/routine-domain";
 import type {
   MarkHabitDoneAction,
   CreateHabitAction,
@@ -159,7 +165,9 @@ export function handleRoutineAction(
       const stateBefore = loadRoutineState();
       const nextState = routineCreateHabit(stateBefore, {
         name: trimmed,
-        emoji: emoji || "✓",
+        // `emoji` з tool-call може бути й emoji, і slug — reducer
+        // нормалізує обидва (`@sergeant/routine-domain` → `glyphs.ts`).
+        emoji: resolveHabitGlyph(emoji),
         recurrence: rec,
         weekdays: wdays && wdays.length ? wdays : undefined,
         timeOfDay: tod,
@@ -349,7 +357,7 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const nextState = routineCreateHabit(state, {
         name: evName,
-        emoji: emoji || "📅",
+        emoji: upgradeHabitGlyph(emoji) ?? "calendar-check",
         recurrence: "once",
         startDate: d,
         endDate: d,
@@ -376,9 +384,10 @@ export function handleRoutineAction(
         updated.name = name.trim();
         changes.push(`назва → "${name.trim()}"`);
       }
-      if (emoji) {
-        updated.emoji = emoji;
-        changes.push(`емодзі → ${emoji}`);
+      const nextGlyph = upgradeHabitGlyph(emoji);
+      if (nextGlyph) {
+        updated.emoji = nextGlyph;
+        changes.push(`іконка → ${nextGlyph}`);
       }
       if (recurrence) {
         const allowedRec = new Set(["daily", "weekdays", "weekly", "monthly"]);
@@ -437,28 +446,40 @@ export function handleRoutineAction(
       return `Розклад звички "${habit.name || id}" — ${labels}`;
     }
     case "pause_habit": {
-      const { habit_id, paused } = (action as PauseHabitAction).input;
+      // Хвиля 4: тул пише ДАТОВАНИЙ інтервал, а не недатований прапор
+      // `paused`. Старий шлях був головною пасткою E-3 — опис обіцяв
+      // «зберігає історію», а насправді пауза ретроактивно вимивала
+      // звичку з усіх минулих вікон і обнуляла стрік.
+      const { habit_id, paused, from, to } = (action as PauseHabitAction).input;
       const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const target = paused !== false;
       const state = loadRoutineState();
-      const habits = state.habits.slice();
-      const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const habit = habits[hIdx];
+      const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      const current = habit.paused === true;
       const habitName = habit.name || id;
-      if (current === target) {
-        return target
-          ? `Звичка "${habitName}" вже на паузі.`
-          : `Звичка "${habitName}" вже активна.`;
+      const todayKey = getKyivDayKey();
+
+      if (!target) {
+        const next = applyResumeHabitFrom(state, id, todayKey);
+        if (next === state) return `Звичка "${habitName}" вже активна.`;
+        saveRoutineState(next);
+        return `Звичку "${habitName}" повернуто з паузи від сьогодні.`;
       }
-      habits[hIdx] = { ...habit, paused: target };
-      saveRoutineState({ ...state, habits });
-      return target
-        ? `Звичку "${habitName}" поставлено на паузу.`
-        : `Звичку "${habitName}" знято з паузи.`;
+
+      const fromKey = isDateKey(from) ? from : todayKey;
+      const toKey = isDateKey(to) ? to : null;
+      if (toKey !== null && toKey < fromKey) {
+        return "Кінець паузи не може бути раніше за початок.";
+      }
+      const next = applyPauseHabitBetween(state, id, fromKey, toKey);
+      if (next === state) {
+        return `Звичка "${habitName}" уже на паузі в цьому діапазоні.`;
+      }
+      saveRoutineState(next);
+      return toKey === null
+        ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються — серія їх не помітить.`
+        : `Звичку "${habitName}" поставлено на паузу ${fromKey} — ${toKey}. Ці дні не рахуються — серія їх не помітить.`;
     }
     case "reorder_habits": {
       const { habit_ids } = (action as ReorderHabitsAction).input;
@@ -511,7 +532,9 @@ export function handleRoutineAction(
       }
       const pct = days > 0 ? Math.round((doneCount / days) * 100) : 0;
       const parts: string[] = [
-        `Статистика "${habit.emoji || ""} ${habit.name || id}" за ${days} днів:`,
+        // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
+        // тексті чату виглядало б як помилка рендера.
+        `Статистика "${habit.name || id}" за ${days} днів:`,
         `Виконано: ${doneCount}/${days} (${pct}%)`,
         `Поточна серія: ${streak} днів`,
         `Макс. серія: ${maxStreak} днів`,
@@ -580,4 +603,9 @@ export function handleRoutineAction(
     default:
       return undefined;
   }
+}
+
+/** Вузький гейт на `YYYY-MM-DD` — модель інколи шле «завтра» словами. */
+function isDateKey(v: unknown): v is string {
+  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 }

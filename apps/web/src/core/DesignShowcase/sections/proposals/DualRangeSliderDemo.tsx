@@ -49,7 +49,7 @@ export function DualRangeSliderDemo() {
           <MiniPhone dim>
             <div className="flex-1 min-h-0 flex flex-col justify-center px-5">
               <div className="mb-6">
-                <p className="text-2xs text-muted">максимум</p>
+                <p className="text-style-caption text-muted">максимум</p>
                 <p className="text-style-label tabular-nums text-text">
                   до ₴ {single}
                 </p>
@@ -82,7 +82,7 @@ export function DualRangeSliderDemo() {
                   style={{ left: `${singlePct}%` }}
                 />
               </div>
-              <p className="text-2xs text-muted text-center mt-6">
+              <p className="text-style-caption text-muted text-center mt-6">
                 Лише верхня межа — нижню не задати
               </p>
             </div>
@@ -93,13 +93,13 @@ export function DualRangeSliderDemo() {
             <div className="flex-1 min-h-0 flex flex-col justify-center px-5">
               <div className="flex items-baseline justify-between mb-6">
                 <div>
-                  <p className="text-2xs text-muted">від</p>
+                  <p className="text-style-caption text-muted">від</p>
                   <p className="text-style-label tabular-nums text-text">
                     ₴ {lo}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xs text-muted">до</p>
+                  <p className="text-style-caption text-muted">до</p>
                   <p className="text-style-label tabular-nums text-text">
                     ₴ {hi}
                   </p>
@@ -145,7 +145,7 @@ export function DualRangeSliderDemo() {
                 ))}
               </div>
 
-              <p className="text-2xs text-muted text-center mt-6">
+              <p className="text-style-caption text-muted text-center mt-6">
                 Діапазон ₴ {lo} – ₴ {hi} одним жестом
               </p>
             </div>

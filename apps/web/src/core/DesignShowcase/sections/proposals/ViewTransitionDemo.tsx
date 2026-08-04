@@ -117,7 +117,7 @@ function NavBtn({ label, onClick }: { label: string; onClick: () => void }) {
       <button
         type="button"
         onClick={onClick}
-        className="w-full h-9 rounded-xl bg-accent text-bg text-2xs font-medium"
+        className="w-full h-9 rounded-xl bg-accent text-bg text-style-caption font-medium"
       >
         {label}
       </button>

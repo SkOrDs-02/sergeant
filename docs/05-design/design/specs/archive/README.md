@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-17 by @Skords-01.
 > **Next review:** at-need.
-> **Status:** Archive.
+> **Status:** Active — каталог архіву.
 
 Superseded design specs. Файли тут лишаються як **історичний контекст**:
 видно з якого попереднього етапу виросла поточна реалізація, які компроміси

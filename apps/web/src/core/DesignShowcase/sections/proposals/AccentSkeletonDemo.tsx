@@ -11,7 +11,7 @@ const MODULES = [
     rgb: moduleAccentRgb.nutrition.default,
   },
   { key: "fizruk", label: "Фізрук", rgb: moduleAccentRgb.fizruk.default },
-];
+] as const;
 
 /**
  * R2-V-9 — Акцент-aware skeleton.
@@ -56,7 +56,7 @@ function SkeletonRows({ rgb }: { rgb: string | null }) {
 
 export function AccentSkeletonDemo() {
   const [active, setActive] = useState(0);
-  const current = MODULES[active] ?? MODULES[0]!;
+  const current = MODULES[active] ?? MODULES[0];
 
   return (
     <div className="flex flex-col items-center gap-4">

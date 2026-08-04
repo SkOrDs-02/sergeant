@@ -87,7 +87,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
   },
   {
     "params": [
-      "h1|2026-06-20|2026-06-23T00:00:00.000Z|done|dev-snapshot",
+      "h1|2026-06-20|done|dev-snapshot",
       "u1",
       "h1",
       "2026-06-20",
@@ -109,7 +109,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_completion_events",
       "insert",
-      "{"id":"h1|2026-06-20|2026-06-23T00:00:00.000Z|done|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-20","state":"done","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
+      "{"id":"h1|2026-06-20|done|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-20","state":"done","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000005",
     ],
@@ -119,7 +119,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
   },
   {
     "params": [
-      "h1|2026-06-19|2026-06-23T00:00:00.000Z|undone|dev-snapshot",
+      "h1|2026-06-19|undone|dev-snapshot",
       "u1",
       "h1",
       "2026-06-19",
@@ -141,7 +141,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_completion_events",
       "insert",
-      "{"id":"h1|2026-06-19|2026-06-23T00:00:00.000Z|undone|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-19","state":"undone","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
+      "{"id":"h1|2026-06-19|undone|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-19","state":"undone","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000006",
     ],
@@ -180,6 +180,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "morning",
       "["08:00"]",
       "[1,2,3,4,5]",
+      "[{"from":"2026-06-10","to":"2026-06-14"}]",
       "2026-06-01T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -187,8 +188,8 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            (id, user_id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+            pause_intervals_json, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            emoji = excluded.emoji,
@@ -202,6 +203,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            time_of_day = excluded.time_of_day,
            reminder_times_json = excluded.reminder_times_json,
            weekdays_json = excluded.weekdays_json,
+           pause_intervals_json = excluded.pause_intervals_json,
            updated_at = excluded.updated_at,
            deleted_at = NULL
          WHERE excluded.updated_at > routine_habits.updated_at",
@@ -211,7 +213,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_habits",
       "insert",
-      "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","created_at":"2026-06-01T00:00:00.000Z"}",
+      "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","pause_intervals_json":"[{\\"from\\":\\"2026-06-10\\",\\"to\\":\\"2026-06-14\\"}]","created_at":"2026-06-01T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000007",
     ],
@@ -235,6 +237,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "",
       "[]",
       "[0,1,2,3,4,5,6]",
+      "[]",
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -242,8 +245,8 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            (id, user_id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+            pause_intervals_json, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            emoji = excluded.emoji,
@@ -257,6 +260,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            time_of_day = excluded.time_of_day,
            reminder_times_json = excluded.reminder_times_json,
            weekdays_json = excluded.weekdays_json,
+           pause_intervals_json = excluded.pause_intervals_json,
            updated_at = excluded.updated_at,
            deleted_at = NULL
          WHERE excluded.updated_at > routine_habits.updated_at",
@@ -266,7 +270,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_habits",
       "insert",
-      "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","created_at":"2026-06-23T00:00:00.000Z"}",
+      "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","pause_intervals_json":"[]","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000008",
     ],
@@ -549,6 +553,66 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "{"user_id":"u1","note_key":"h1__2026-06-19"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000018",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "h1__2026-06-18",
+      "sick",
+      "температура",
+      "2026-06-18T07:30:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habit_skips
+           (user_id, skip_key, reason, note, at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(user_id, skip_key) DO UPDATE SET
+           reason = excluded.reason,
+           note = excluded.note,
+           at = excluded.at,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_habit_skips.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habit_skips",
+      "insert",
+      "{"user_id":"u1","skip_key":"h1__2026-06-18","reason":"sick","note":"температура","at":"2026-06-18T07:30:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000019",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1__2026-06-17",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_habit_skips
+            SET deleted_at = ?, updated_at = ?
+          WHERE user_id = ?
+            AND skip_key = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habit_skips",
+      "delete",
+      "{"user_id":"u1","skip_key":"h1__2026-06-17"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000020",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)

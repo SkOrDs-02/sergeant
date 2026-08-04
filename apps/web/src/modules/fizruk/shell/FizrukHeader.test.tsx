@@ -10,7 +10,10 @@ describe("FizrukHeader", () => {
     const onContextualBack = vi.fn();
     render(<FizrukHeader page="atlas" onContextualBack={onContextualBack} />);
 
-    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Назад до Моє тіло" }));
     expect(onContextualBack).toHaveBeenCalledTimes(1);
   });
@@ -53,7 +56,10 @@ describe("FizrukHeader", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Фізрук" })).toBeInTheDocument();
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
     expect(screen.queryByText("Активна: Сила 5×5")).toBeNull();
   });
 

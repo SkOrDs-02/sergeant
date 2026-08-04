@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -184,6 +184,37 @@ sum(rate(sync_operations_total[w]))
 з інших девайсів), тому жорсткіший бюджет ніж у HTTP.
 
 **Latency SLO**: `histogram_quantile(0.95, sum(rate(sync_duration_ms_bucket[w])) by (le)) < 2500`
+
+### 3.1 Термінальні reject-и per-op (`SyncApplyFailedSpike`)
+
+SLI вище рахує **запити**, а не окремі операції: батч, у якому кожен op
+відхилено, повертає HTTP 200 і потрапляє в чисельник як успіх. Саме ця сліпа
+пляма дала багу з типами PK у Рутині прожити 12 днів — сервер увесь час писав
+`sync_v2_apply_failed` і крутив лічильник, але правило, яке б на це дивилось,
+не існувало (аудит `docs/90-work/audits/web-qa-pre-beta.md`).
+
+```
+sum(rate(sync_op_log_apply_total{status="rejected",reason!="lww_conflict"}[15m])) by (table, reason)
+> 0
+```
+
+`lww_conflict` виключено навмисно — це штатний програш last-write-wins, а не
+відмова. Будь-яка інша термінальна причина (`apply_failed`, `missing_id`,
+`table_not_allowed`, …) означає, що дані користувача не доїхали і самі не
+доїдуть.
+
+**Поріг**: перші 15 хв поспіль з ненульовим rate по будь-якій парі
+`(table, reason)` → warning. Стійкий ненульовий rate по одній таблиці — це
+майже завжди розлад схеми, а не поодинокий збійний рядок, тому мітка `table`
+у правилі обовʼязкова: без неї «трохи реджектів» розмазується по всіх модулях
+і виглядає як шум.
+
+**Клієнтський бік**: `markRejected` у `apps/web/src/core/syncEngine/singleton.ts`
+шле той самий факт у Sentry (`area=sync`, `reject_reason`), щоб розлад було
+видно навіть там, де до Prometheus руки не дійшли.
+
+**Статус**: design-only, як і решта правил у цьому документі — див. § «Статус
+wiring».
 
 ## 4. Auth (SLO 99.0 %)
 

@@ -405,11 +405,11 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             // modules), not a module accent.
             submitSuccess
               ? "bg-success-strong text-white"
-              : "bg-fizruk-strong text-white hover:bg-cyan-900 active:scale-[0.98]",
+              : "bg-fizruk-strong text-white hover:bg-fizruk-hover active:scale-[0.98]",
             (isSubmitting || isEntryEmpty) && "opacity-60",
           )}
         >
-          {submitSuccess ? "Записано ✓" : "Записати"}
+          {submitSuccess ? "Записано" : "Записати"}
         </button>
         {isEntryEmpty && !submitSuccess && (
           <p id="body-entry-empty" className="text-xs text-subtle -mt-2">

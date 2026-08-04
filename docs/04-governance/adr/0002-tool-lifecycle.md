@@ -1,6 +1,6 @@
 # ADR-0002: AI tool lifecycle (proposal → safety review → rollout → KPIs)
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Date:** 2026-04-27
 - **Last validated:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
   > **Status:** Active

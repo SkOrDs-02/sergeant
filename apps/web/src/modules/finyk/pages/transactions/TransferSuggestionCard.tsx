@@ -9,7 +9,10 @@ interface TransferSuggestionCardProps {
   accounts: ReadonlyArray<TxAccount> | undefined;
   showBalance: boolean;
   onConfirm: () => void;
-  onDismiss: () => void;
+  /** Permanent "Не переказ" rejection — this pair never resurfaces. */
+  onReject: () => void;
+  /** "Не зараз" — hides this pair until the next Kyiv calendar day. */
+  onSnooze: () => void;
 }
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -45,24 +48,59 @@ export function TransferSuggestionCard({
   accounts,
   showBalance,
   onConfirm,
-  onDismiss,
+  onReject,
+  onSnooze,
 }: TransferSuggestionCardProps) {
   const fromId =
     suggestion.outgoing.accountId ?? suggestion.outgoing._accountId;
   const toId = suggestion.incoming.accountId ?? suggestion.incoming._accountId;
+  // Money landing on a credit-card account is a repayment, not a transfer
+  // between two "own money" pots — the hint needs to explain that the
+  // spending already happened (the card purchases), not this movement.
+  const toAccount = accounts?.find((account) => account.id === toId);
+  const isCreditCardRepayment =
+    typeof toAccount?.creditLimit === "number" && toAccount.creditLimit > 0;
   const amount = `${Math.round(suggestion.amountMinor / 100).toLocaleString(
     "uk-UA",
   )} ₴`;
+  // Account labels alone ("Чорна • 1234 → Банка") do not let the user recall
+  // which pair of operations this is about. Show each side's own description
+  // and date, the way the transaction list identifies them.
+  const sideLabel = (tx: InternalTransferSuggestion["outgoing"]): string => {
+    const seconds = Number(tx.time);
+    const instant = Number.isFinite(seconds)
+      ? seconds > 10_000_000_000
+        ? seconds
+        : seconds * 1000
+      : 0;
+    const date = instant
+      ? new Date(instant).toLocaleDateString("uk-UA", {
+          timeZone: "Europe/Kyiv",
+          day: "numeric",
+          month: "short",
+        })
+      : "";
+    const description = (tx.description ?? "").trim();
+    return [date, description].filter(Boolean).join(" · ");
+  };
 
   return (
     <Card module="finyk" prominence="soft" radius="lg" className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-style-label text-text">
-            {messages.finyk.transferSuggestion.title}
+            {isCreditCardRepayment
+              ? messages.finyk.transferSuggestion.creditRepaymentTitle
+              : messages.finyk.transferSuggestion.title}
           </p>
           <p className="text-xs text-muted mt-0.5 truncate">
             {accountLabel(fromId, accounts)} → {accountLabel(toId, accounts)}
+          </p>
+          <p className="text-xs text-subtle mt-1 truncate">
+            −{sideLabel(suggestion.outgoing)}
+          </p>
+          <p className="text-xs text-subtle truncate">
+            +{sideLabel(suggestion.incoming)}
           </p>
         </div>
         <span className="text-style-label tabular-nums text-finyk-strong dark:text-finyk shrink-0">
@@ -70,7 +108,9 @@ export function TransferSuggestionCard({
         </span>
       </div>
       <p className="text-xs text-muted leading-snug">
-        {messages.finyk.transferSuggestion.hint}
+        {isCreditCardRepayment
+          ? messages.finyk.transferSuggestion.creditRepaymentHint
+          : messages.finyk.transferSuggestion.hint}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -85,9 +125,18 @@ export function TransferSuggestionCard({
         <Button
           type="button"
           size="sm"
+          variant="outline"
+          tone="neutral"
+          onClick={onReject}
+        >
+          {messages.finyk.transferSuggestion.reject}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
           variant="ghost"
           tone="neutral"
-          onClick={onDismiss}
+          onClick={onSnooze}
         >
           {messages.finyk.transferSuggestion.dismiss}
         </Button>

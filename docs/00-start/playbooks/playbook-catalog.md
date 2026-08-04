@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -11,6 +11,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Add or change DB schema                        | [`add-sql-migration.md`](./add-sql-migration.md)                                          | `sergeant-data-and-migrations`                          | Human + agent |
 | Add or change HubChat tool                     | [`add-hubchat-tool.md`](./add-hubchat-tool.md)                                            | `sergeant-hubchat`                                      | Human + agent |
 | Fix red CI on a PR                             | [`fix-failing-ci.md`](./fix-failing-ci.md)                                                | `sergeant-bugfix-and-regression`                        | Human + agent |
+| Run the app locally after a merge              | [`run-locally-after-merge.md`](./run-locally-after-merge.md)                              | `sergeant-verify-before-done`                           | Human         |
 | Respond to a prod regression                   | [`hotfix-prod-regression.md`](./hotfix-prod-regression.md)                                | `sergeant-deploy-and-observability`                     | Human + agent |
 | Investigate an alert or degradation            | [`investigate-alert.md`](./investigate-alert.md)                                          | `sergeant-deploy-and-observability`                     | Human + agent |
 | Ship any production release                    | [`release.md`](./release.md)                                                              | `sergeant-deploy-and-observability`                     | Human + agent |
@@ -71,18 +72,11 @@ Curated table вище лишається швидким роутером для
 
 ## Deprecated redirect anchors
 
-Ці файли збережені для старих посилань і PR-контексту. Для виконання відкривай canonical playbook у другій колонці.
+Ці файли збережені для старих посилань і PR-контексту. Для виконання відкривай canonical playbook у другій колонці. Redirect-стаби ініціативи 0009 (`grant-/revoke-privileged-access`, `run-access-review`, `respond-to-suspected-account-compromise`, `release-web-and-api`, `release-mobile-shell`, `release-expo-mobile`) видалені — відкривай [`access-governance.md`](./access-governance.md) і [`release.md`](./release.md).
 
-| Historical file                              | Canonical owner                                                                                                                                    |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `grant-privileged-access.md`                 | [`access-governance.md` § Grant privileged access](./access-governance.md#1-grant-privileged-access)                                               |
-| `release-expo-mobile.md`                     | [`release.md` § Expo](./release.md#3-expo)                                                                                                         |
-| `release-mobile-shell.md`                    | [`release.md` § Mobile shell (Capacitor)](./release.md#2-mobile-shell-capacitor)                                                                   |
-| `release-web-and-api.md`                     | [`release.md` § Web + API](./release.md#1-web--api)                                                                                                |
-| `respond-to-suspected-account-compromise.md` | [`access-governance.md` § Suspected account compromise](./access-governance.md#4-suspected-account-compromise)                                     |
-| `revoke-privileged-access.md`                | [`access-governance.md` § Revoke privileged access](./access-governance.md#2-revoke-privileged-access)                                             |
-| `run-access-review.md`                       | [`access-governance.md` § Periodic access review](./access-governance.md#3-periodic-access-review)                                                 |
-| `rotate-openclaw-credentials.md`             | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)) |
+| Historical file                  | Canonical owner                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rotate-openclaw-credentials.md` | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)) |
 
 ## Notes
 

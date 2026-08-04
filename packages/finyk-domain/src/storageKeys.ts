@@ -57,3 +57,26 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   customCategories: "finyk_custom_cats_v1",
   dismissedRecurring: "finyk_rec_dismissed",
 } as const);
+
+/**
+ * Pair keys (`${outgoing.id}:${incoming.id}`, see `transferSuggestionPairKey`
+ * in `domain/transferMatching.ts`) the user permanently rejected via the
+ * "Не переказ" action on `TransferSuggestionCard`. Device-local — not part
+ * of {@link FINYK_BACKUP_STORAGE_KEYS}, mirroring the "dismiss forever"
+ * intent of `dismissedRecurring` without requiring the cross-device SQLite
+ * prefs-slice plumbing that key gets (a permanent per-device opt-out does
+ * not need to travel with the account).
+ */
+export const FINYK_TRANSFER_SUGGESTION_REJECTED_KEY =
+  "finyk_transfer_suggestion_rejected_v1";
+
+/**
+ * Pair keys snoozed via the "Не зараз" action on `TransferSuggestionCard`,
+ * stored as a `Record<pairKey, kyivDayKey>` — the Kyiv day (`YYYY-MM-DD`)
+ * the snooze was set on. The suggestion stays hidden only while the
+ * current Kyiv day still matches the stored key; see
+ * `filterTransferSuggestions` in `domain/transferMatching.ts`. Device-local,
+ * same rationale as {@link FINYK_TRANSFER_SUGGESTION_REJECTED_KEY}.
+ */
+export const FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY =
+  "finyk_transfer_suggestion_snoozed_v1";

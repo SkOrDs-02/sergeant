@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { messages } from "@shared/i18n/uk";
+import { InjuryManager } from "../components/InjuryManager";
 import {
   buildBodyWeightSeries,
   selectLatestBodyWeight,
@@ -17,7 +18,7 @@ import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
-import { statusColors, chartSeries, chartPalette } from "@shared/charts";
+import { chartStatusSeries, chartSeries, chartPalette } from "@shared/charts";
 
 // Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
@@ -175,6 +176,8 @@ export function Body({ onOpenAtlas }: BodyProps) {
 
         <BodyEntryForm onSubmitEntry={handleSubmitEntry} />
 
+        <InjuryManager />
+
         {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
 
         {(
@@ -185,7 +188,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка ваги",
               data: weightData,
               unit: "кг",
-              color: statusColors.success,
+              color: chartStatusSeries.success,
               metricLabel: "вагу",
             },
             {
@@ -203,7 +206,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка енергії",
               data: energyData,
               unit: "/5",
-              color: statusColors.warning,
+              color: chartStatusSeries.warning,
               metricLabel: "рівень енергії",
             },
             {

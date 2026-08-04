@@ -15,6 +15,7 @@ export {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineHabitSkips,
 } from "./routine.js";
 export {
   fizrukWorkouts,
@@ -28,6 +29,7 @@ export {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukInjuries,
 } from "./fizruk.js";
 export {
   nutritionMeals,

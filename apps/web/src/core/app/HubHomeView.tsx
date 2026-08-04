@@ -1,4 +1,4 @@
-import { Suspense, type CSSProperties } from "react";
+import { Suspense } from "react";
 import { type User } from "@sergeant/shared";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
@@ -144,21 +144,14 @@ export function HubHomeView(props: HubHomeViewProps) {
     // not carry `page-enter`: its translateY keyframe creates document-level
     // overflow on iOS and moves bottom-edge hit targets during the gesture.
     // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
-    // `--bottom-nav-height` so portaled <Sheet>s
-    // resolve their `var(--bottom-nav-height, 0px)` calc against a real
-    // 60px floor instead of 0px. Closes M4 + M6 (Sheet positioning on
-    // hub) with the same single edit. The 60px matches the inner
-    // `h-[60px]` track of HubBottomNav (see HubBottomNav.tsx tablist); the
-    // added `0.375rem` matches `bottom-nav-shell`'s fixed top padding
-    // (round-3 UI audit — the round-2 env() mirror was reverted).
-    <MeshBackground
-      className="safe-area-pt"
-      style={
-        {
-          "--bottom-nav-height": "calc(60px + 0.375rem)",
-        } as CSSProperties
-      }
-    >
+    // `--bottom-nav-height` so portaled <Sheet>s resolve their
+    // `var(--bottom-nav-height, 0px)` calc against the nav's real box
+    // instead of 0px. Closes M4 + M6 (Sheet positioning on hub). The
+    // `bottom-nav-height-var` utility (styles/utilities.css) tracks the
+    // actual occupied height — inner track + `bottom-nav-shell`'s border
+    // and top padding — including the coarse-pointer 64px track, so it
+    // stays in sync with HubBottomNav.tsx instead of guessing here.
+    <MeshBackground className="safe-area-pt bottom-nav-height-var">
       <OfflineBanner />
 
       <HubHeader

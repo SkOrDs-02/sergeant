@@ -46,12 +46,12 @@ export function BatchSelectDemo() {
                 className="h-11 rounded-xl border border-line bg-panel flex items-center justify-between px-3"
               >
                 <span className="text-style-caption text-text">{it.name}</span>
-                <span className="text-2xs tabular-nums text-muted">
+                <span className="text-style-caption tabular-nums text-muted">
                   {it.amount}
                 </span>
               </div>
             ))}
-            <p className="text-2xs text-muted pt-1">
+            <p className="text-style-caption text-muted pt-1">
               Видалення — по одному запису.
             </p>
           </div>
@@ -91,7 +91,7 @@ export function BatchSelectDemo() {
                     <span className="text-style-caption text-text">
                       {it.name}
                     </span>
-                    <span className="ml-auto text-2xs tabular-nums text-muted">
+                    <span className="ml-auto text-style-caption tabular-nums text-muted">
                       {it.amount}
                     </span>
                   </button>

@@ -68,7 +68,7 @@ export function ProposalsUXSection() {
 
         <div className="my-2 flex items-center gap-3">
           <span className="h-px flex-1 bg-line" />
-          <span className="text-2xs uppercase tracking-wide text-muted">
+          <span className="text-style-caption uppercase tracking-wide text-muted">
             Друга хвиля · review 2026-07
           </span>
           <span className="h-px flex-1 bg-line" />

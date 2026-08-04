@@ -97,6 +97,9 @@ type RecoveryResult = {
   hasHardBlock: boolean;
   red: { label: string }[];
   yellow: { label: string }[];
+  // Production always resolves an injury verdict (ADR-0083); a double that
+  // omits it renders a component state that cannot occur.
+  injury: { blocked: boolean; viaMuscles: string[]; viaZones: string[] };
 };
 
 type RecoveryFn = (ex: unknown, by?: unknown) => RecoveryResult;
@@ -108,6 +111,7 @@ const noopRecovery: RecoveryFn = vi.fn(
       hasHardBlock: false,
       red: [],
       yellow: [],
+      injury: { blocked: false, viaMuscles: [], viaZones: [] },
     }) satisfies RecoveryResult,
 );
 const mockToast = { warning: vi.fn() };
@@ -257,6 +261,7 @@ describe("ExerciseDetailSheet – images strip", () => {
 describe("ExerciseDetailSheet – recovery warning", () => {
   it("renders warning block with red muscles when hasWarning=true and red array present", () => {
     const recovery: RecoveryFn = vi.fn(() => ({
+      injury: { blocked: false, viaMuscles: [], viaZones: [] },
       hasWarning: true,
       hasHardBlock: true,
       red: [{ label: "Квадрицепс" }],
@@ -277,6 +282,7 @@ describe("ExerciseDetailSheet – recovery warning", () => {
 
   it("renders warning block with yellow muscles only", () => {
     const recovery: RecoveryFn = vi.fn(() => ({
+      injury: { blocked: false, viaMuscles: [], viaZones: [] },
       hasWarning: true,
       hasHardBlock: false,
       red: [],

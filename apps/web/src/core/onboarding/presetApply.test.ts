@@ -41,7 +41,7 @@ describe("applyPreset", () => {
   });
 
   it("creates a routine habit via saveRoutineState", () => {
-    applyPreset("routine", { name: "Stretch", emoji: "🤸" });
+    applyPreset("routine", { name: "Stretch", emoji: "run" });
     const state = routineState.current as {
       habits: Array<{ name: string; emoji: string; demo: boolean }>;
       habitOrder: string[];
@@ -50,7 +50,7 @@ describe("applyPreset", () => {
     expect(state.habits).toHaveLength(1);
     expect(state.habits[0]).toMatchObject({
       name: "Stretch",
-      emoji: "🤸",
+      emoji: "run",
       demo: false,
       recurrence: "daily",
     });
@@ -58,7 +58,7 @@ describe("applyPreset", () => {
     expect(state.schemaVersion).toBe(3);
   });
 
-  it("falls back to a default emoji and appends to existing routine habits", () => {
+  it("falls back to the default glyph and appends to existing routine habits", () => {
     routineState.current = {
       habits: [{ id: "h0" }],
       habitOrder: ["h0"],
@@ -71,7 +71,7 @@ describe("applyPreset", () => {
       prefs: { custom: boolean };
     };
     expect(state.habits).toHaveLength(2);
-    expect(state.habits[1]!.emoji).toBe("✓");
+    expect(state.habits[1]!.emoji).toBe("check");
     expect(state.habitOrder).toHaveLength(2);
     expect(state.prefs).toEqual({ custom: true });
   });

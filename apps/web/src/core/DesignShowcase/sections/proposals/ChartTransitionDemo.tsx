@@ -45,7 +45,7 @@ export function ChartTransitionDemo() {
                 />
               ))}
             </div>
-            <p className="text-2xs text-muted">
+            <p className="text-style-caption text-muted">
               Ремаунт + fade — стовпці «блимають»
             </p>
           </CompareTile>
@@ -61,7 +61,7 @@ export function ChartTransitionDemo() {
                 />
               ))}
             </div>
-            <p className="text-2xs text-muted">
+            <p className="text-style-caption text-muted">
               Плавний tween висоти — дані «перетікають»
             </p>
           </CompareTile>

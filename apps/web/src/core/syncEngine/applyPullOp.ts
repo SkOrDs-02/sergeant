@@ -16,6 +16,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "routine_pushups",
   "routine_habit_order",
   "routine_completion_notes",
+  "routine_habit_skips",
   // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток.
   "routine_completion_events",
   "fizruk_workouts",
@@ -29,6 +30,10 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "fizruk_programs",
   "fizruk_wellbeing",
   "fizruk_workout_templates",
+  // Модель «не можна» (ADR-0083). Без цього рядка позначки травм із іншого
+  // пристрою мовчки відкидаються на pull — тобто травма, позначена на
+  // телефоні, не блокує вправи у вебі.
+  "fizruk_injuries",
   "nutrition_meals",
   "nutrition_pantries",
   "nutrition_pantry_items",

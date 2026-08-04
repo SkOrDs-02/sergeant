@@ -130,6 +130,8 @@ export function MacrosEditor({
               onChange={handleMacroChange(key)}
               inputMode="decimal"
               placeholder={placeholder}
+              maxLength={8}
+              showCharCount={false}
               aria-label={label}
             />
           </div>

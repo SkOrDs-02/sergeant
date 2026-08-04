@@ -12,6 +12,7 @@ export {
   routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineHabitSkips,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
@@ -94,6 +95,7 @@ export {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukInjuries,
 } from "./fizruk.js";
 export {
   nutritionMeals,

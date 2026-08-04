@@ -179,6 +179,16 @@ const WHITELIST = [
     column: "client_updated_at",
     reason: "CloudSync column; not in Drizzle model for this path",
   },
+  // "user".last_seen_at (міграція 100) — телеметрія візитів для добового
+  // проходу підштовхувань. Пишеться throttled із `requireSession`, читається
+  // тим же проходом; жоден клієнтський запит її не бачить, тож у Drizzle-моделі
+  // `user` вона зайва.
+  {
+    table: "user",
+    column: "last_seen_at",
+    reason:
+      "server-only visit telemetry; read by the nudge sweep, never by the client",
+  },
   // push_subscriptions: soft-delete column not in Drizzle model
   {
     table: "push_subscriptions",
@@ -276,13 +286,23 @@ function parseSqlFile(content) {
     }
   }
 
-  // ALTER TABLE ... ADD COLUMN [IF NOT EXISTS] col type
-  const addColRe =
-    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([`"']?\w+[`"']?)\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"']?\w+[`"']?)/gi;
-  for (const m of stripped.matchAll(addColRe)) {
-    const tbl = normId(m[1]);
-    if (!tables.has(tbl)) tables.set(tbl, new Set());
-    tables.get(tbl).add(normId(m[2]));
+  // ALTER TABLE ... ADD COLUMN [IF NOT EXISTS] col type [, ADD COLUMN ...]
+  //
+  // Один `ALTER TABLE` може додати кілька колонок через кому. Регекс,
+  // прив'язаний до `ALTER TABLE … ADD COLUMN`, бачив лише першу клаузу —
+  // решта колонок мовчки лишалась «Drizzle-only» (міграція 092 додає
+  // `stop_reason_awaited_at` і `stop_reason` одним стейтментом). Тому спершу
+  // виділяємо стейтмент до `;`, а вже в ньому шукаємо всі `ADD COLUMN`.
+  const alterTableRe =
+    /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?([`"']?\w+[`"']?)([^;]*)/gi;
+  const addColClauseRe =
+    /\bADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?([`"']?\w+[`"']?)/gi;
+  for (const stmt of stripped.matchAll(alterTableRe)) {
+    const tbl = normId(stmt[1]);
+    for (const clause of stmt[2].matchAll(addColClauseRe)) {
+      if (!tables.has(tbl)) tables.set(tbl, new Set());
+      tables.get(tbl).add(normId(clause[1]));
+    }
   }
 
   // ALTER TABLE ... DROP COLUMN [IF EXISTS] col
@@ -633,6 +653,16 @@ const PG_SQLITE_CROSS_WHITELIST = [
     reason: "SQLite TEXT name; PG counterpart is weekdays",
   },
   {
+    table: "routine_habits",
+    column: "pause_intervals",
+    reason: "PG JSONB name; SQLite counterpart is pause_intervals_json",
+  },
+  {
+    table: "routine_habits",
+    column: "pause_intervals_json",
+    reason: "SQLite TEXT name; PG counterpart is pause_intervals",
+  },
+  {
     table: "routine_prefs",
     column: "data",
     reason: "PG JSONB name; SQLite counterpart is data_json",
@@ -698,6 +728,10 @@ const SQL_ONLY_TABLES = [
   "mono_connection",
   "mono_jar",
   "mono_transaction",
+  // ПриватБанк merchant-креденшели під AES-256-GCM (міграція 091). Той самий
+  // контур, що й `mono_connection` / `plata_card_token`: секрет читає лише
+  // серверний банк-проксі, у Drizzle його свідомо немає.
+  "privat_connection",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",
@@ -711,10 +745,18 @@ const SQL_ONLY_TABLES = [
   "openclaw_write_audit",
   // Push delivery — реєстр девайсів і аудит відправок; пише лише сервер.
   "push_devices",
+  // Ідемпотентний журнал нагадувань: рядок вставляється ДО відправки, тому
+  // дублікат ловиться унікальним ключем, а не станом у памʼяті. Читає й пише
+  // виключно серверний sweep (`apps/server/src/lib/reminders/sweep.ts`) —
+  // клієнту ця таблиця не видна ні через Drizzle, ні через API.
+  "push_reminder_log",
   "push_send_audit",
   // Telegram alerting — ack-и алертів та архів топіків; server-only.
   "tg_alert_acks",
   "tg_topic_archive",
+  // Відповіді на мікро-опитування бета-тестерів у Telegram-боті (міграція 091).
+  // Пише лише webhook-хендлер бота, клієнт цих рядків не бачить.
+  "telegram_beta_survey_responses",
   // Growth / product analytics — агреговані daily/weekly таблиці, наповнюються
   // серверними job-ами; клієнт не читає їх через Drizzle.
   "app_store_reviews",
@@ -747,6 +789,21 @@ const SQL_ONLY_TABLES = [
   "rate_limit_buckets",
   // User preferences — server-managed key-value налаштування (не Drizzle-read).
   "user_preferences",
+  // Продуктовий фідбек (міграція 093). Пишеться одним сирим
+  // `INSERT INTO feedback_entries` у `feedbackService.ts`; читається руками
+  // через psql (див. docs/03-operations/observability/feedback-loop.md).
+  // Клієнт отримує з API лише `id` вставленого рядка, тож Drizzle-модель
+  // не потрібна.
+  "feedback_entries",
+  // Журнал надісланих нагадувань і проактивних пушів (міграція 099). Читає й
+  // пише лише серверний прохід (`apps/server/src/lib/reminders/`) сирим
+  // `INSERT ... ON CONFLICT DO NOTHING` як claim-before-send. Клієнт про цю
+  // таблицю не знає взагалі — він бачить лише сам пуш.
+  "push_reminder_log",
+  // Консерва денної поради Сержанта (міграція 100). Пишеться обробником
+  // `/api/coach/insight`, читається добовим проходом підштовхувань. Обидва —
+  // серверні; клієнту віддається текст поради у відповіді, не рядок таблиці.
+  "sergeant_nudge_cache",
 ];
 
 function isSqlOnlyAllowlisted(table) {

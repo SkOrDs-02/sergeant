@@ -1,5 +1,6 @@
 import { getCategory } from "../utils";
 import { toLocalISODate } from "@sergeant/shared";
+import { INTERNAL_TRANSFER_ID } from "../constants";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
 
 /** Мінімальний набір полів транзакції, потрібних прогнозу. */
@@ -62,7 +63,7 @@ function buildDailySpending(
     const splits = txSplits[tx.id];
     if (splits && splits.length > 0) {
       for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
+        if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;
         dayMap[dayKey][s.categoryId] =
           (dayMap[dayKey][s.categoryId] || 0) + (s.amount || 0);
       }
@@ -73,7 +74,7 @@ function buildDailySpending(
         txCategories[tx.id],
         customCategories,
       );
-      if (cat.id === "internal_transfer") continue;
+      if (cat.id === INTERNAL_TRANSFER_ID) continue;
       const amt = Math.abs(tx.amount / 100);
       dayMap[dayKey][cat.id] = (dayMap[dayKey][cat.id] || 0) + amt;
     }

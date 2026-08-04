@@ -7,8 +7,29 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Spinner } from "@shared/components/ui/Spinner";
 import { cn } from "@shared/lib/ui/cn";
 import type { NullableMacros } from "@sergeant/shared";
+
+/**
+ * Inline "in progress" line — spinner + copy, anchored right where the
+ * action was triggered instead of a page-top banner the user has to
+ * scroll up to notice (page-audit nutrition-overview-01, issue 3: "фото
+ * не аналізується" reports where the analysis was actually running).
+ * `role="status"` + `aria-live="polite"` per `Spinner`'s own a11y note.
+ */
+function InlineAnalysisStatus({ text }: { text: string }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="mt-2 flex items-center gap-2 text-style-caption text-subtle"
+    >
+      <Spinner size="xs" />
+      <span>{text}</span>
+    </div>
+  );
+}
 
 /**
  * Ключ підтвердження, що людина прочитала попередження про фото.
@@ -80,6 +101,10 @@ interface PhotoAnalyzeCardProps {
   answers: Record<string, string>;
   setAnswers: Dispatch<SetStateAction<Record<string, string>>>;
   onSaveToLog?: (() => void | Promise<void>) | undefined;
+  /** `photo.isAnalyzing` — drives the inline status line next to «Аналізувати». */
+  analyzing?: boolean | undefined;
+  /** `photo.isRefining` — drives the inline status line next to «Перерахувати». */
+  refining?: boolean | undefined;
 }
 
 export function PhotoAnalyzeCard({
@@ -96,6 +121,8 @@ export function PhotoAnalyzeCard({
   answers,
   setAnswers,
   onSaveToLog,
+  analyzing,
+  refining,
 }: PhotoAnalyzeCardProps) {
   return (
     <Card className="p-4">
@@ -118,6 +145,8 @@ export function PhotoAnalyzeCard({
           {busy ? "…" : "Аналізувати"}
         </button>
       </div>
+
+      {analyzing && <InlineAnalysisStatus text="Аналізую фото…" />}
 
       <PhotoPrivacyNotice />
 
@@ -222,7 +251,7 @@ export function PhotoAnalyzeCard({
             ].map((m) => (
               <div
                 key={m.label}
-                className="rounded-xl border border-nutrition/20 bg-nutrition/8 px-2 py-2 text-center"
+                className="min-w-0 rounded-xl border border-nutrition/20 bg-nutrition/8 px-2 py-2 text-center"
               >
                 <SectionHeading
                   as="div"
@@ -232,7 +261,7 @@ export function PhotoAnalyzeCard({
                 >
                   {m.label}
                 </SectionHeading>
-                <div className="text-sm font-extrabold text-text leading-none">
+                <div className="text-sm font-extrabold text-text leading-none truncate">
                   {m.value}
                 </div>
               </div>
@@ -249,7 +278,7 @@ export function PhotoAnalyzeCard({
                 "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
               )}
             >
-              📓 Зберегти в журнал
+              Зберегти в журнал
             </button>
           )}
 
@@ -310,6 +339,9 @@ export function PhotoAnalyzeCard({
                 >
                   Перерахувати за всіма відповідями
                 </button>
+                {refining && (
+                  <InlineAnalysisStatus text="Уточнюю порцію та перераховую…" />
+                )}
               </div>
             )}
         </div>

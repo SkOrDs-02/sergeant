@@ -14,8 +14,17 @@
  */
 
 import { dateKeyFromDate } from "./dateKeys.js";
+import { DEFAULT_ROUTINE_GLYPH, upgradeHabitGlyph } from "./glyphs.js";
 import { reconcileHabitOrder } from "./habitOrder.js";
-import type { Habit, RoutineState } from "./types.js";
+import {
+  SKIP_REASONS,
+  type Category,
+  type Habit,
+  type HabitSkip,
+  type PauseInterval,
+  type RoutineState,
+  type SkipReason,
+} from "./types.js";
 
 /** localStorage / MMKV key for the whole routine state blob. */
 export const ROUTINE_STORAGE_KEY = "hub_routine_v1";
@@ -28,8 +37,17 @@ export const ROUTINE_STORAGE_ERROR = "hub-routine-storage-error";
 
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Current on-disk schema version. Bump with any breaking shape change. */
-export const ROUTINE_SCHEMA_VERSION = 3;
+/**
+ * Current on-disk schema version. Bump with any breaking shape change.
+ *
+ * `4` — гнучкий стрік (Хвиля 4): `RoutineState.skips` і
+ * `Habit.pauseIntervals`. Стара форма читається без міграції — обидва поля
+ * необовʼязкові й нормалізуються в порожні.
+ */
+export const ROUTINE_SCHEMA_VERSION = 4;
+
+/** Максимальна довжина вільної нотатки до пропуску. */
+export const SKIP_NOTE_MAX_LENGTH = 200;
 
 /**
  * Generate a collision-resistant id with a domain prefix.
@@ -71,6 +89,82 @@ export function normalizeCompletionsMap(
   return out;
 }
 
+/**
+ * Coerce a raw pause-interval list into well-formed, sorted, non-overlapping
+ * intervals. Битий запис відкидається цілком — інтервал із невалідною межею
+ * тихо ховав би дні з розкладу, і це було б непомітно на всіх поверхнях.
+ */
+export function normalizePauseIntervals(raw: unknown): PauseInterval[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PauseInterval[] = [];
+  for (const v of raw) {
+    if (!v || typeof v !== "object") continue;
+    const iv = v as Partial<PauseInterval>;
+    if (typeof iv.from !== "string" || !DATE_KEY_RE.test(iv.from)) continue;
+    const to =
+      iv.to === null || iv.to === undefined
+        ? null
+        : typeof iv.to === "string" && DATE_KEY_RE.test(iv.to)
+          ? iv.to
+          : undefined;
+    if (to === undefined) continue;
+    if (to !== null && to < iv.from) continue;
+    out.push({ from: iv.from, to });
+  }
+  out.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
+  // Злиття перекриттів: два інтервали, що торкаються, — це один. Інакше
+  // `pauseDays` у розкладі стріку рахувався б двічі.
+  const merged: PauseInterval[] = [];
+  for (const iv of out) {
+    const last = merged[merged.length - 1];
+    if (last && (last.to === null || iv.from <= last.to)) {
+      if (last.to !== null && (iv.to === null || iv.to > last.to)) {
+        merged[merged.length - 1] = { from: last.from, to: iv.to };
+      }
+      continue;
+    }
+    merged.push(iv);
+  }
+  return merged;
+}
+
+/** Normalize one `dateKey → HabitSkip` map for a single habit. */
+export function normalizeSkipMap(raw: unknown): Record<string, HabitSkip> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, HabitSkip> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!DATE_KEY_RE.test(k)) continue;
+    if (!v || typeof v !== "object") continue;
+    const s = v as Partial<HabitSkip>;
+    const reason = SKIP_REASONS.includes(s.reason as SkipReason)
+      ? (s.reason as SkipReason)
+      : "other";
+    const note =
+      typeof s.note === "string" && s.note.trim()
+        ? s.note.trim().slice(0, SKIP_NOTE_MAX_LENGTH)
+        : undefined;
+    out[k] = {
+      reason,
+      at: typeof s.at === "string" ? s.at : new Date(0).toISOString(),
+      ...(note === undefined ? {} : { note }),
+    };
+  }
+  return out;
+}
+
+/** Coerce the whole skips map into `{ [habitId]: { [dateKey]: HabitSkip } }`. */
+export function normalizeSkipsMap(
+  raw: unknown,
+): Record<string, Record<string, HabitSkip>> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, Record<string, HabitSkip>> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const m = normalizeSkipMap(v);
+    if (Object.keys(m).length > 0) out[k] = m;
+  }
+  return out;
+}
+
 /** Normalize a single habit record into the canonical shape. */
 export function normalizeHabit(h: unknown): Habit {
   if (!h || typeof h !== "object") return h as Habit;
@@ -80,6 +174,9 @@ export function normalizeHabit(h: unknown): Habit {
     : dateKeyFromDate(new Date());
   return {
     ...(src as Habit),
+    // Гліф: legacy emoji → канонічний slug на кожному читанні. Див.
+    // `glyphs.ts` — батч-міграції в БД немає, наступний запис закріплює.
+    emoji: upgradeHabitGlyph(src.emoji) ?? DEFAULT_ROUTINE_GLYPH,
     recurrence: (src.recurrence as Habit["recurrence"]) || "daily",
     startDate: src.startDate || created,
     endDate: src.endDate === undefined ? null : (src.endDate ?? null),
@@ -89,7 +186,24 @@ export function normalizeHabit(h: unknown): Habit {
       Array.isArray(src.weekdays) && src.weekdays.length > 0
         ? (src.weekdays as number[])
         : [0, 1, 2, 3, 4, 5, 6],
+    pauseIntervals: normalizePauseIntervals(src.pauseIntervals),
   };
+}
+
+/**
+ * Normalize a single category record.
+ *
+ * Категорія має лише `id` / `name` / гліф, тож єдина робота тут — той самий
+ * legacy-emoji → slug апгрейд, що й для звички. На відміну від звички гліф
+ * категорії необовʼязковий: `undefined` означає «без іконки», і список у
+ * налаштуваннях малює нейтральний плейсхолдер, а не дефолтний `check`.
+ */
+export function normalizeCategory(c: unknown): Category {
+  if (!c || typeof c !== "object") return c as Category;
+  const src = c as Partial<Category> & Record<string, unknown>;
+  const glyph = upgradeHabitGlyph(src.emoji);
+  const base: Category = { id: String(src.id), name: String(src.name ?? "") };
+  return glyph ? { ...base, emoji: glyph } : base;
 }
 
 /**
@@ -110,6 +224,8 @@ export function defaultRoutineState(): RoutineState {
     categories: [],
     habits: [],
     completions: {},
+    /** habitId -> dateKey -> «не зміг з причиною» (канон §5) */
+    skips: {},
     /** "YYYY-MM-DD" -> кількість відтискань */
     pushupsByDate: {},
     /** порядок id активних звичок (drag/up-down) */
@@ -157,9 +273,12 @@ export function normalizeRoutineState(raw: unknown): RoutineState {
     ...p,
     prefs: { ...base.prefs, ...((p.prefs as RoutineState["prefs"]) || {}) },
     tags: Array.isArray(p.tags) ? p.tags : [],
-    categories: Array.isArray(p.categories) ? p.categories : [],
+    categories: Array.isArray(p.categories)
+      ? p.categories.map(normalizeCategory)
+      : [],
     habits: Array.isArray(p.habits) ? p.habits.map(normalizeHabit) : [],
     completions: normalizeCompletionsMap(p.completions),
+    skips: normalizeSkipsMap(p.skips),
     pushupsByDate:
       typeof p.pushupsByDate === "object" && p.pushupsByDate
         ? (p.pushupsByDate as Record<string, number>)

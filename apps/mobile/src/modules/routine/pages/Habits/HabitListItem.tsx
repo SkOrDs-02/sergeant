@@ -28,6 +28,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { RECURRENCE_OPTIONS, type Habit } from "@sergeant/routine-domain";
+import { HabitGlyph } from "../../components/HabitGlyph";
 
 export interface HabitListItemProps {
   habit: Habit;
@@ -78,9 +79,15 @@ export const HabitListItem = memo(function HabitListItem({
     <View className={rowClass} testID={testID}>
       <View className="flex-row items-start justify-between gap-2">
         <View className="min-w-0 flex-1">
-          <Text className="text-sm font-medium text-fg" numberOfLines={1}>
-            {(h.emoji || "✓") + " " + (h.name || "")}
-          </Text>
+          <View className="flex-row items-center gap-1.5">
+            <HabitGlyph value={h.emoji} size={14} />
+            <Text
+              className="text-sm font-medium text-fg flex-1"
+              numberOfLines={1}
+            >
+              {h.name || ""}
+            </Text>
+          </View>
           {meta ? (
             <Text className="text-xs text-fg-muted mt-0.5" numberOfLines={2}>
               {meta}

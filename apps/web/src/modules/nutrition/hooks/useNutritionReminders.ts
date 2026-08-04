@@ -32,21 +32,11 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
     prefsRef.current = prefs;
   }, [prefs]);
 
-  useEffect(() => {
-    try {
-      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: "NUTRITION_STATE_UPDATE",
-          data: {
-            reminderEnabled: prefs.reminderEnabled,
-            reminderHour: prefs.reminderHour ?? 12,
-          },
-        });
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [prefs.reminderEnabled, prefs.reminderHour]);
+  // AI-CONTEXT: тут раніше стояв `postMessage("NUTRITION_STATE_UPDATE")`, що
+  // живив цикл нагадувань усередині сервіс-воркера. Той цикл прибрано —
+  // він не міг спрацювати при закритому застосунку (браузер вбиває
+  // неактивний SW за ~30 с, а стан жив у його памʼяті). Нагадування тепер
+  // шле сервер: `apps/server/src/lib/reminders/`.
 
   // `onMinuteTick` receives Kyiv-local dayKey + hm — this is the bug fix:
   // previously `new Date().getHours()` used the host timezone.
@@ -67,10 +57,14 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
       lastNotifyKeyRef.current = key;
       writeLastNotifyKey(key);
 
+      // Тег МУСИТЬ збігатися з `dedupKey` серверного sweep-у
+      // (`nutritionDueNow` у `apps/server/src/lib/reminders/due.ts`). Обидва
+      // шляхи можуть спрацювати в одну годину, і тільки однаковий тег робить
+      // другий банер заміщенням першого, а не другим рядком у шторці.
       showReminderNotification(
         "Їжа",
         "Час записати прийоми їжі.",
-        `nutrition-reminder-${key}`,
+        `nutrition_notify_${dayKey}`,
       ).catch(() => {
         /* ignore */
       });

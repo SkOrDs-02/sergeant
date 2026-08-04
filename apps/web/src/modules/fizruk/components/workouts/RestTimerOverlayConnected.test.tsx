@@ -27,7 +27,16 @@ describe("RestTimerOverlayConnected", () => {
   it("clears rest timer via overlay cancel", () => {
     render(<Harness initial={{ remaining: 30, total: 60 }} />);
     expect(screen.getByRole("timer")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Скасувати/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Пропустити/i }));
     expect(screen.queryByRole("timer")).not.toBeInTheDocument();
+  });
+
+  it("adjusts the running timer without blocking the page", () => {
+    render(<Harness initial={{ remaining: 30, total: 60 }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Додати 15 секунд" }));
+    expect(screen.getByRole("timer")).toHaveAttribute(
+      "aria-label",
+      "Відпочинок, залишилось 45 секунд",
+    );
   });
 });

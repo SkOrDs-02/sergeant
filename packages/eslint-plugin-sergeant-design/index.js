@@ -1061,8 +1061,22 @@ const noStrictBypass = {
 const FINYK_TOKEN_KEY_VALUES = new Set([
   "finyk_token",
   "finyk_token_remembered",
+  // PrivatBank merchant credentials. Added after the beta-readiness audit
+  // (`docs/90-work/planning/specs/beta-security-readiness.md`, F1) found the
+  // merchant token sitting in cleartext `localStorage`: the Monobank fix had
+  // been locked down by this very rule, but the rule was written narrowly
+  // around Monobank's key names, so PrivatBank walked straight past it.
+  // The merchant id is guarded alongside the token because the pair is the
+  // credential — and because writing the id back is exactly the signal that
+  // the old client-side flow has returned.
+  "finyk_privat_token",
+  "finyk_privat_id",
 ]);
-const FINYK_TOKEN_KEY_NAMES = new Set(["FINYK_TOKEN"]);
+const FINYK_TOKEN_KEY_NAMES = new Set([
+  "FINYK_TOKEN",
+  "FINYK_PRIVAT_TOKEN",
+  "FINYK_PRIVAT_ID",
+]);
 
 const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "setItem",
@@ -1075,10 +1089,14 @@ const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "createModuleStorage",
   "lsSet",
   "writeLS",
+  // `finykStorage.writeRaw` — the wrapper the PrivatBank flow used to persist
+  // its merchant token. Non-credential keys pass through untouched; the rule
+  // only fires when the key argument itself is a guarded one.
+  "writeRaw",
 ]);
 
 const FINYK_TOKEN_MESSAGE =
-  "Monobank PAT (`finyk_token`) must not be persisted client-side. The token lives in `mono_connection.token_ciphertext` server-side; legacy LS/sessionStorage values are migrated by `useMonoTokenMigration` and then removed. Only reads (for migration) and removals are allowed.";
+  "Bank credentials (`finyk_token`, `finyk_privat_token`, `finyk_privat_id`) must not be persisted client-side. They live encrypted server-side (`mono_connection` / `privat_connection` `token_ciphertext`); legacy LS/sessionStorage values are migrated once on cold-boot and then removed. Only reads (for migration) and removals are allowed.";
 
 function isFinykTokenKeyArgument(arg) {
   if (!arg) return false;
@@ -2108,23 +2126,32 @@ const noConsolePii = {
   },
 };
 
-// prefer-kyiv-time — Theme 1 (audit consolidated 2026-05-13 § Theme 1).
+// prefer-kyiv-time — Theme 1 (audit consolidated 2026-05-13 § Theme 1),
+// re-scoped 2026-08-04 by ADR-0078.
 //
 // `Date.prototype.getHours()` / `getMinutes()` / `getDate()` / `getDay()` /
-// `getMonth()` / `getFullYear()` / `getSeconds()` return host-local values,
-// not Europe/Kyiv. Reading them and stamping a day-key / streak / drawer
-// label silently drifts off-by-one when the device timezone differs from
-// Kyiv. The repo declares **Europe/Kyiv** as the single source of truth
-// for time (`docs/architecture/domain-invariants.md`).
+// `getMonth()` / `getFullYear()` / `getSeconds()` return host-local values.
+// The rule does NOT mean "Kyiv belongs here" — ADR-0078 ratified the opposite
+// for the **personal day boundary**: a habit tick / meal log / daily entry
+// belongs to the device clock, and Europe/Kyiv stays only for time *display*,
+// server-side reports and financial periods. Both doctrines are live, so a
+// bare host-getter is ambiguous: it never shows whether the author chose the
+// device on purpose or just wrote the shortest code. This rule forces that
+// choice to be explicit.
 //
-// Use helpers in `apps/web/src/shared/lib/time/kyivTime.ts`:
-//   getKyivDateParts(ts)   → { year, month, day, hour, minute }
-//   getKyivDayKey(d)       → "YYYY-MM-DD" in Kyiv
-//   isSameKyivDay(ts)      → boolean
+// Two legitimate resolutions per site:
+//   1. Kyiv (display / report / financial period) — use the helpers in
+//      `apps/web/src/shared/lib/time/kyivTime.ts`:
+//        getKyivDateParts(ts) → { year, month, day, hour, minute }
+//        getKyivDayKey(d)     → "YYYY-MM-DD" in Kyiv
+//        isSameKyivDay(ts)    → boolean
+//   2. Device (personal day) — keep the host getters and suppress with a WHY
+//      that names ADR-0078. Reference: `deviceDayKey` in
+//      `apps/web/src/core/observability/adviceTelemetry.ts`. In shared code
+//      prefer `dateKeyFromDate` from `@sergeant/routine-domain`.
 //
-// Severity ramp: `warn` initially (many existing sites — covered by
-// `kyivTime.ts` exemption + per-file `eslint-disable` comments while
-// migration is in flight). Promote to `error` when audit closes.
+// Severity: stays `warn` permanently. The old ramp to `error` targeted zero
+// host-getters, which after ADR-0078 would penalise correct device-local code.
 //
 // Allowlist (rule-level skip):
 //   - The helper itself (`kyivTime.ts`)
@@ -2133,12 +2160,15 @@ const noConsolePii = {
 //   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
 //     itself the recommended pattern.
 //
-// See docs/04-governance/governance/rules/kyiv-time-helpers.md for the full migration
-// plan and the audit cross-ref.
+// See docs/04-governance/governance/rules/kyiv-time-helpers.md for the full
+// doctrine table, the suppress-comment contract and the audit cross-ref.
 const PREFER_KYIV_TIME_MESSAGE =
-  "Don't read host-local date parts ({{name}}). Use @shared/lib/time/kyivTime helpers " +
-  "(getKyivDateParts, getKyivDayKey, isSameKyivDay) so day boundaries stay anchored " +
-  "to Europe/Kyiv per the domain-invariants spec.";
+  "Host-local date part ({{name}}) — make the day-boundary doctrine explicit (ADR-0078). " +
+  "Display, server reports and financial periods → @shared/lib/time/kyivTime " +
+  "(getKyivDateParts, getKyivDayKey, isSameKyivDay). The PERSONAL day (habit tick, meal " +
+  "log, daily entry, streak) belongs to the DEVICE — that is canonical, so keep the host " +
+  "getters and suppress with `-- ADR-0078: <why the device owns this day>`. " +
+  "See docs/04-governance/governance/rules/kyiv-time-helpers.md.";
 
 const HOST_TIME_GETTERS = new Set([
   "getFullYear",
@@ -2155,7 +2185,7 @@ const preferKyivTime = {
     type: "suggestion",
     docs: {
       description:
-        "Forbid host-local Date getters; route through @shared/lib/time/kyivTime helpers.",
+        "Flag host-local Date getters so the day-boundary doctrine is explicit (ADR-0078): Kyiv helpers for display/reports, documented suppress for the device-local personal day.",
     },
     schema: [],
     messages: {

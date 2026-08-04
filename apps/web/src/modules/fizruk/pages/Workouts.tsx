@@ -12,7 +12,6 @@ import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
 import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
 import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
-import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
 import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
@@ -21,6 +20,9 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
 
 interface WorkoutsProps {
+  workoutId?: string | undefined;
+  activeOnly?: boolean;
+  onNavigate?: ((target: string) => void) | undefined;
   /**
    * Deep-link to the Routine module's calendar tab. Wired by
    * `FizrukRouter.tsx` from the optional `onOpenModule` prop on the
@@ -30,21 +32,21 @@ interface WorkoutsProps {
    * tab that the user asked us to dissolve.
    */
   onOpenRoutine?: (() => void) | undefined;
-  /**
-   * Deep-link to the Fizruk «Програми» page. Wired by
-   * `FizrukRouter.tsx` from the parent `onNavigate` so the Workouts
-   * home can surface a tile in «Довідники» that takes users into the
-   * built-in program catalogue without forcing them back to the
-   * dashboard hero just to find it.
-   */
-  onOpenPrograms?: (() => void) | undefined;
 }
 
 export function Workouts({
+  workoutId,
+  activeOnly = false,
+  onNavigate,
   onOpenRoutine,
-  onOpenPrograms,
 }: WorkoutsProps = {}) {
-  const o = useWorkoutsOrchestrator();
+  const o = useWorkoutsOrchestrator({
+    requestedWorkoutId: workoutId,
+    initialView: activeOnly ? "log" : "home",
+    onWorkoutStarted: onNavigate
+      ? (id) => onNavigate(`workout/${id}`)
+      : undefined,
+  });
   const cloudPullPending = useCloudPullPending();
 
   const workoutsLoadingSkeleton = (
@@ -71,7 +73,9 @@ export function Workouts({
           view={o.view}
           activeWorkout={o.activeWorkout}
           finishedCount={o.finishedCount}
-          onBack={() => o.setView("home")}
+          onBack={() =>
+            activeOnly ? onNavigate?.("workouts") : o.setView("home")
+          }
           onAddCatalog={() => o.setAddOpen(true)}
         />
 
@@ -80,17 +84,18 @@ export function Workouts({
             activeWorkout={o.activeWorkout}
             activeDuration={o.activeDuration}
             recentWorkouts={o.recentWorkouts}
-            onOpenSession={() => o.setView("log")}
+            onOpenSession={() => {
+              if (o.activeWorkout?.id && onNavigate) {
+                onNavigate(`workout/${o.activeWorkout.id}`);
+              } else {
+                o.setView("log");
+              }
+            }}
             onOpenCatalog={() => o.setView("catalog")}
             onOpenTemplates={() => o.setView("templates")}
             onOpenJournal={() => o.setView("log")}
-            onRequestStart={() => o.setQuickStartOpen(true)}
-            onOpenRetro={() => {
-              o.setRetroOpen(true);
-              o.setView("log");
-            }}
+            onRequestStart={o.handleQuickStart}
             onOpenSchedule={onOpenRoutine}
-            onOpenPrograms={onOpenPrograms}
           />
         ) : null}
 
@@ -139,6 +144,10 @@ export function Workouts({
                 submitRetroWorkout={o.submitRetroWorkout}
                 deleteWorkout={o.deleteWorkout}
                 restoreWorkout={o.restoreWorkout}
+                activeOnly={activeOnly}
+                onSessionClosed={
+                  activeOnly ? () => onNavigate?.("workouts") : undefined
+                }
               />
             )}
           </DataState>
@@ -203,23 +212,11 @@ export function Workouts({
           addExercise={o.addExercise}
         />
 
-        <QuickStartSheet
-          open={o.quickStartOpen}
-          onClose={() => o.setQuickStartOpen(false)}
-          exercises={o.exercises}
-          search={o.search}
-          primaryGroupsUk={o.primaryGroupsUk}
-          onPickTemplate={() => {
-            o.setQuickStartOpen(false);
-            o.setView("templates");
-          }}
-          onConfirmExercises={o.handleQuickStartConfirm}
-        />
-
         <WorkoutFinishSheets
           finishFlash={o.finishFlash}
           setFinishFlash={o.setFinishFlash}
           updateWorkout={o.updateWorkout}
+          onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
         />
       </div>
 
@@ -230,6 +227,10 @@ export function Workouts({
         riskyTemplate={o.riskyTemplateConfirm}
         onRiskyTemplateConfirm={o.handleRiskyTemplateConfirm}
         onRiskyTemplateCancel={() => o.setRiskyTemplateConfirm(null)}
+        activeWorkoutConflictOpen={o.activeWorkoutConflictOpen}
+        onFinishActiveAndContinue={o.finishActiveAndContinue}
+        onDiscardActiveAndContinue={o.discardActiveAndContinue}
+        onCancelActiveConflict={o.cancelPendingWorkoutStart}
       />
     </PullToRefresh>
   );

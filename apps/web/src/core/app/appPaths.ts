@@ -22,10 +22,12 @@ export const APP_TITLE = "Sergeant — Твій персональний хаб 
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant — Статус системи",
   "/chat": "Sergeant — Асистент",
-  "/assistant": "Sergeant — Можливості асистента",
+  "/assistant": "Sergeant — Що вміє Сержант",
+  "/capabilities": "Sergeant — Що вміє додаток",
   "/pricing": "Sergeant — Тарифи",
   "/sign-in": "Sergeant — Вхід",
   "/reset-password": "Sergeant — Скидання пароля",
+  "/verify-email": "Sergeant — Підтвердження email",
   "/welcome": "Sergeant — Ласкаво просимо",
   "/settings": "Sergeant — Налаштування",
   "/insights": "Sergeant — Звіти",
@@ -87,6 +89,13 @@ export const SIGN_IN_ALIAS_PATHS: ReadonlyArray<string> = [
 // and can be deep-linked from notifications / docs.
 export const ASSISTANT_PATH = "/assistant";
 
+/**
+ * Каталог можливостей САМОГО ДОДАТКА. Окремо від ASSISTANT_PATH, який
+ * перелічує інструменти чату: це два різні питання, і зведення їх на один
+ * екран топило б новачка у 60 сценаріях.
+ */
+export const CAPABILITIES_PATH = "/capabilities";
+
 // Dedicated AI chat route. Replaces the fullscreen modal that used to
 // slam over the dashboard. Reads `?q=` and `?autoSend=1` so launcher
 // hand-offs (`InlineAiRail`'s "Open in chat" escalation, `ai-handoff`
@@ -102,6 +111,13 @@ export const CHAT_PATH = "/chat";
 export const WELCOME_PATH = "/welcome";
 
 export const RESET_PASSWORD_PATH = "/reset-password";
+
+// Лендинг, куди Better Auth редиректить після `GET /api/auth/verify-email`.
+// Значення дзеркалить `VERIFY_EMAIL_CALLBACK_PATH` у
+// `apps/server/src/auth/verificationMail.ts` — саме сервер вшиває цей шлях
+// у `callbackURL` листа, тож пара має лишатись синхронною (розʼїзд = біла
+// сторінка після кліку в пошті).
+export const VERIFY_EMAIL_PATH = "/verify-email";
 export const PROFILE_PATH = "/profile";
 export const DESIGN_PATH = "/design";
 export const PRICING_PATH = "/pricing";

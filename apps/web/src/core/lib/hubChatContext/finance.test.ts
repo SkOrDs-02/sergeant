@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { appendFinanceLines } from "./finance";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import type { AllData } from "./types";
 
 function joined(d: AllData, now: Date): string {
@@ -88,6 +89,73 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("[Середня витрата/день]");
     expect(out).toContain("[Прогноз витрат до кінця місяця]");
     expect(out).toContain("[Останні операції]");
+  });
+
+  it("monthly totals are windowed to the current month (стадія 2c)", () => {
+    // Раніше «Витрати місяця» сумували ВЕСЬ mono-mirror-кеш і підписувались
+    // як місяць: транзакція за травень тягнулась у червневе число, а прогноз
+    // до кінця місяця будувався на завищеній середній. Тепер вікно явне.
+    const out = joined(
+      baseData({
+        statTx: [
+          {
+            id: "t-june",
+            amount: -25000, // 250 грн, поточний місяць
+            time: Math.floor(Date.parse("2026-06-10T12:00:00Z") / 1000),
+            description: "ATB",
+          },
+          {
+            id: "t-may",
+            amount: -100000, // 1000 грн, минулий місяць
+            time: Math.floor(Date.parse("2026-05-20T12:00:00Z") / 1000),
+            description: "Сільпо",
+          },
+        ],
+        txCategories: { "t-june": "food", "t-may": "food" },
+      }),
+      NOW,
+    );
+    expect(out).toContain("[Витрати місяця] 250 грн");
+    // Категорійна розбивка ріжеться тим самим вікном — інакше сума категорій
+    // суперечила б підсумку в тому ж промпт-блоці.
+    expect(out).toContain("[Категорії витрат] 🛒 Продукти: 250 грн");
+  });
+
+  it("excludes internal_transfer from the [Категорії витрат] breakdown", () => {
+    // A transaction categorized as an internal transfer is spend-shaped
+    // (negative amount) but must never surface as a spending category in
+    // the AI-coach prompt — otherwise moving money between own accounts
+    // would look like real spending to the model.
+    const out = joined(
+      baseData({
+        statTx: [
+          {
+            id: "t-transfer",
+            amount: -50000, // 500 грн, would count as spend if not excluded
+            time: Math.floor(Date.parse("2026-06-10T12:00:00Z") / 1000),
+            description: "Переказ між картками",
+          },
+          {
+            id: "t-food",
+            amount: -25000, // 250 грн, real spend for comparison
+            time: Math.floor(Date.parse("2026-06-11T12:00:00Z") / 1000),
+            description: "ATB",
+          },
+        ],
+        txCategories: {
+          "t-transfer": INTERNAL_TRANSFER_ID,
+          "t-food": "food",
+        },
+      }),
+      NOW,
+    );
+    const categoryLine = out
+      .split("\n")
+      .find((l) => l.startsWith("[Категорії витрат]"));
+    expect(categoryLine).toBe("[Категорії витрат] 🛒 Продукти: 250 грн");
+    // Recent-ops listing is a separate, unfiltered surface (transfer tx
+    // still shows its own category label there) — only the spend-category
+    // breakdown line is asserted to exclude internal_transfer.
   });
 
   it("emits debt details for active manual debts", () => {

@@ -33,7 +33,7 @@ export function TableToCardDemo() {
                 Транзакції
               </span>
               <div className="rounded-xl border border-line overflow-hidden">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-1.5 bg-surface-muted text-[9px] text-muted">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-1.5 bg-surface-muted text-style-caption text-muted">
                   <span>Назва</span>
                   <span>Дата</span>
                   <span className="text-right">Сума</span>
@@ -41,7 +41,7 @@ export function TableToCardDemo() {
                 {ROWS.map((r) => (
                   <div
                     key={r.name}
-                    className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-2 border-t border-line text-[10px]"
+                    className="grid grid-cols-[1fr_auto_auto] gap-1.5 px-2 py-2 border-t border-line text-style-caption"
                   >
                     <span className="text-text truncate">{r.name}</span>
                     <span className="text-muted whitespace-nowrap">
@@ -53,7 +53,7 @@ export function TableToCardDemo() {
                   </div>
                 ))}
               </div>
-              <p className="text-2xs text-muted mt-3">
+              <p className="text-style-caption text-muted mt-3">
                 Дрібно, обрізано, читати по горизонталі.
               </p>
             </div>
@@ -75,7 +75,7 @@ export function TableToCardDemo() {
                       <p className="text-style-label text-text truncate">
                         {r.name}
                       </p>
-                      <p className="text-2xs text-muted mt-0.5">
+                      <p className="text-style-caption text-muted mt-0.5">
                         {r.cat} · {r.date}
                       </p>
                     </div>
@@ -85,7 +85,7 @@ export function TableToCardDemo() {
                   </div>
                 ))}
               </div>
-              <p className="text-2xs text-muted mt-3">
+              <p className="text-style-caption text-muted mt-3">
                 Сума помітна, все читається згори вниз.
               </p>
             </div>

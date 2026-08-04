@@ -27,4 +27,13 @@ describe("LoadCalculator", () => {
     render(<LoadCalculator oneRM={0} />);
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
+
+  it("labels the header as a reduced reference instead of 1RM when reduced", () => {
+    render(<LoadCalculator oneRM={90} reduced />);
+    expect(screen.getByText(/орієнтир = 90 кг/)).toBeInTheDocument();
+    expect(screen.queryByText(/1RM =/)).not.toBeInTheDocument();
+    // The zones still render — `reduced` only changes the caption, the
+    // calculator keeps working off the (already-reduced) `oneRM` it got.
+    expect(screen.getByText("Сила")).toBeInTheDocument();
+  });
 });

@@ -4,6 +4,7 @@
  */
 import { useCallback, useEffect, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
@@ -14,6 +15,11 @@ import { FoodHitRow } from "./FoodHitRow";
 import { MacroChip } from "./MacroChip";
 import { macrosForGrams, type FoodProduct } from "../../lib/foodDb/foodDb";
 import type { MealFormState } from "./mealFormUtils";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+
+/** 10 кг однієї порції — межа проти зайвого нуля, не дієтологія. */
+const MAX_PORTION_GRAMS = 10_000;
 
 export interface PickedFood {
   id?: string | number;
@@ -126,6 +132,8 @@ export function FoodPickerSection({
             value={foodQuery}
             onChange={(e) => setFoodQuery(e.target.value)}
             placeholder="Курка, Activia, вівсянка, Lays…"
+            maxLength={NAME_MAX_LEN}
+            showCharCount={false}
             aria-label="Пошук продукту"
           />
           {foodErr && <div className="text-xs text-muted">{foodErr}</div>}
@@ -147,14 +155,14 @@ export function FoodPickerSection({
                   <>
                     {foodHits.length > 0 && (
                       <li className="px-3 py-1.5 text-style-caption text-subtle bg-panelHi/50 font-semibold uppercase tracking-widest">
-                        🌍 Open Food Facts
+                        Open Food Facts
                       </li>
                     )}
                     {offHits.map((p) => (
                       <FoodHitRow
                         key={p.id}
                         p={p}
-                        badge="🌍"
+                        externalSource
                         onPick={() => {
                           setPickedFood(p as PickedFood);
                           const grams = Number(p.defaultGrams) || 100;
@@ -180,9 +188,12 @@ export function FoodPickerSection({
                   .filter(Boolean)
                   .join(" · ")}
                 {pickedFood.source === "off" && (
-                  <span className="ml-1 text-style-caption text-subtle">
-                    🌍
-                  </span>
+                  <Icon
+                    name="link"
+                    size="xs"
+                    className="ml-1 inline-block align-baseline text-subtle"
+                    title="Open Food Facts"
+                  />
                 )}
               </div>
               <div className="text-xs text-subtle mt-0.5">
@@ -203,7 +214,7 @@ export function FoodPickerSection({
               className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors text-sm"
               aria-label="Скинути продукт"
             >
-              ✕
+              <Icon name="close" size={16} aria-hidden />
             </button>
           </div>
 
@@ -242,7 +253,19 @@ export function FoodPickerSection({
                     inputMode="decimal"
                     value={pickedGrams}
                     min={1}
-                    onChange={(e) => setPickedGrams(e.target.value)}
+                    max={MAX_PORTION_GRAMS}
+                    onChange={(e) =>
+                      setPickedGrams(
+                        e.target.value === ""
+                          ? ""
+                          : String(
+                              clampNumericInput(
+                                e.target.value,
+                                MAX_PORTION_GRAMS,
+                              ),
+                            ),
+                      )
+                    }
                     aria-label="Грами"
                     className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />

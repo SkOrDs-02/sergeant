@@ -157,7 +157,7 @@ export function ModuleChecklist({
       // Celebrate only on the transition to "all done"; auto-hide is handled
       // by the useEffect below so we don't double-fire setTimeout here.
       if (justCompleted) {
-        toast.success(`${def.title}: перші кроки виконано! 🎉`, 4000);
+        toast.success(`${def.title}: перші кроки виконано!`, 4000);
       }
     },
     [moduleId, onAction, def.steps, def.title, toast],

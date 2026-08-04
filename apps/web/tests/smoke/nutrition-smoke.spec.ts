@@ -15,7 +15,9 @@ test("@critical nutrition: cold-load mounts module shell", async ({ page }) => {
 
   await page.goto("/?module=nutrition", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "ЇЖА" })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "ЇЖА" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(

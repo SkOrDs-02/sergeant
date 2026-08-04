@@ -43,11 +43,24 @@
       "project": ["src/**/*.{js,jsx,ts,tsx}"],
       // Scaffolded module barrels — all carry @scaffolded + @nextStep markers per AGENTS.md
       // Hard Rule #10. Do NOT delete; wire the barrel consumers in follow-up PRs.
+      //
+      // `scripts/knip-respects-scaffolded.mjs` читає ці маркери сам, але CI
+      // ганяє сирий `pnpm knip`, який про них не знає — тож файл має бути
+      // і тут, і з маркером у шапці.
       "ignore": [
+        // Write-половина моделі травм (ADR-0083, #589): серверний бік і
+        // pull-шлях уже чекають на ці outbox-рядки, споживача ще нема.
+        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/core/errors/index.ts",
         "src/core/profile/index.ts",
         "src/modules/finyk/index.ts",
         "src/modules/fizruk/index.ts",
+        // Не барель, а @scaffolded-модуль: локальний запис позначок травм
+        // (ADR-0083), який поки не підключений — робочий шлях іде через
+        // `useInjuries` → `triggerFizrukDualWrite`. Маркер у файлі поважає
+        // `pnpm dead-code:files`, але CI-джоба «Dead Code (Knip)» запускає
+        // сирий `knip`, тож потрібен ще й цей запис. TODO(0589-injury-repo).
+        "src/modules/fizruk/lib/injuryRepository.ts",
         "src/modules/nutrition/index.ts",
         "src/modules/routine/index.ts",
         "src/shared/lib/insights/index.ts"
@@ -59,7 +72,10 @@
         // @testing-library/user-event — used in nutrition page tests; not in web package.json
         "@testing-library/user-event",
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
-        "@tanstack/query-persist-client-core"
+        "@tanstack/query-persist-client-core",
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.time.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
       ]
     },
     "apps/landing": {
@@ -120,7 +136,13 @@
       //   package has no package.json dependencies at all (hoisted from root)
       "ignoreDependencies": ["@typescript-eslint/parser"]
     },
-    "packages/finyk-domain": {},
+    "packages/finyk-domain": {
+      "ignoreDependencies": [
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.core.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
+      ]
+    },
     "packages/shared": {
       "project": ["src/**/*.ts"],
       "ignoreDependencies": [

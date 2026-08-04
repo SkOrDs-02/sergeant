@@ -1,18 +1,22 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { MemoryEntry } from "./types";
+import type { IconName } from "@shared/components/ui/Icon";
 
 export const PROFILE_KEY = STORAGE_KEYS.USER_PROFILE;
 
-export const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
-  allergy: { label: "Алергії", emoji: "🚫" },
-  diet: { label: "Дієта", emoji: "🍎" },
-  goal: { label: "Цілі", emoji: "🎯" },
-  training: { label: "Тренування", emoji: "🏋️" },
-  health: { label: "Здоров'я", emoji: "💊" },
-  preference: { label: "Уподобання", emoji: "⭐" },
-  other: { label: "Інше", emoji: "📝" },
-};
+// `icon` — імʼя з атласу дизайн-системи (`@shared/components/ui/Icon`).
+// До 2026-08-03 поле звалось `emoji` і містило системні emoji-гліфи.
+export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
+  {
+    allergy: { label: "Алергії", icon: "alert-triangle" },
+    diet: { label: "Дієта", icon: "leaf" },
+    goal: { label: "Цілі", icon: "target" },
+    training: { label: "Тренування", icon: "dumbbell" },
+    health: { label: "Здоров'я", icon: "heart" },
+    preference: { label: "Уподобання", icon: "sparkles" },
+    other: { label: "Інше", icon: "pen" },
+  };
 
 export const MEMORY_ONBOARDING_PROMPT = [
   "Проведи коротке AI-інтервʼю, щоб заповнити лише мій профіль і памʼять ШІ.",

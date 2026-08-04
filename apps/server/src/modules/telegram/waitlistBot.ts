@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Pool } from "pg";
+import { SURVEYS, type SurveyDefinition } from "./betaTexts.js";
 
 /**
  * Telegram-вейтліст: обробка апдейтів бота бети.
@@ -7,6 +8,8 @@ import type { Pool } from "pg";
  *
  * Модуль свідомо не знає про Express — це чисті функції над `Pool` плюс
  * парсер апдейта. Роутер лишається тонким, а логіка тестується без HTTP.
+ *
+ * Тексти відповідей і визначення опитувань живуть у `betaTexts.ts`.
  */
 
 /** Мінімальна форма Telegram-апдейта, яка нас цікавить. */
@@ -22,12 +25,49 @@ export interface TelegramUpdate {
     };
     text?: string;
   };
+  /**
+   * Натискання inline-кнопки. Приходить ОКРЕМИМ типом апдейта, а не як
+   * повідомлення, і чат тут лежить на рівень глибше — у `message`, до якого
+   * кнопка причеплена. Саме тому роутер не може взяти `chat.id` в одному
+   * місці для обох випадків.
+   */
+  callback_query?: {
+    id?: string;
+    from?: { id?: number; is_bot?: boolean };
+    message?: {
+      message_id?: number;
+      chat?: { id?: number; type?: string };
+    };
+    data?: string;
+  };
 }
 
 export type ParsedCommand =
   | { kind: "start"; payload: string | null }
   | { kind: "stop" }
   | { kind: "stats" }
+  | { kind: "app" }
+  | { kind: "install" }
+  | { kind: "help" }
+  /**
+   * Відповідь на мікро-опитування. `callbackQueryId` обовʼязковий: без
+   * `answerCallbackQuery` кнопка в клієнті крутить годинник близько 30
+   * секунд, і людина встигає натиснути ще раз.
+   */
+  | {
+      kind: "survey";
+      survey: SurveyDefinition;
+      answer: string;
+      callbackQueryId: string;
+      messageId: number | null;
+    }
+  /**
+   * Довільний текст без команди. Раніше він одразу ставав `ignore`; тепер
+   * доїжджає до роутера, бо може виявитись причиною відписки. Чи чекаємо ми
+   * на неї — знає БАЗА, не парсер: інакше довелось би тягнути стан у чисту
+   * функцію.
+   */
+  | { kind: "text"; text: string }
   | { kind: "ignore" };
 
 /**
@@ -37,7 +77,120 @@ export type ParsedCommand =
  */
 const PAYLOAD_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
+/** Префікс `callback_data` опитувань: `s:<survey_id>:<answer>`. */
+export const SURVEY_CALLBACK_PREFIX = "s";
+
+/**
+ * Telegram ріже `callback_data` на 64 БАЙТАХ і мовчки відкидає кнопку, що
+ * не влізла. Перевіряється в тесті на кожному оголошеному опитуванні —
+ * ран-тайм-валідація тут нічого не врятує: до продакшена кнопка або є, або
+ * її немає.
+ */
+export const CALLBACK_DATA_MAX_BYTES = 64;
+
+export function encodeSurveyCallback(surveyId: string, answer: string): string {
+  return `${SURVEY_CALLBACK_PREFIX}:${surveyId}:${answer}`;
+}
+
+export interface InlineKeyboardButton {
+  text: string;
+  callback_data: string;
+}
+
+export interface InlineKeyboardMarkup {
+  inline_keyboard: InlineKeyboardButton[][];
+}
+
+/**
+ * Клавіатура опитування — один ряд.
+ *
+ * Один ряд, а не сітка: варіантів завжди небагато (шкала 1–5), і Telegram
+ * сам стискає кнопки під ширину екрана. Розкладка по рядах знадобиться
+ * тільки коли зʼявиться питання з довгими підписами — тоді й додамо.
+ */
+export function buildSurveyKeyboard(
+  survey: SurveyDefinition,
+): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      survey.options.map((o) => ({
+        text: o.label,
+        callback_data: encodeSurveyCallback(survey.id, o.value),
+      })),
+    ],
+  };
+}
+
+/**
+ * Розбір натискання inline-кнопки.
+ *
+ * `data` звіряється з каталогом `SURVEYS`, а не парситься довільно. Причина
+ * прозаїчна: повідомлення з кнопками лишається в чаті назавжди, і через
+ * місяць хтось натисне кнопку опитування, якого вже немає в коді. Без
+ * звірки такий рядок поїхав би в БД і зіпсував агрегат — а FK його б не
+ * спіймав, бо `survey_id` навмисно не має власної таблиці.
+ */
+function parseCallback(
+  callback: NonNullable<TelegramUpdate["callback_query"]>,
+): ParsedCommand {
+  const id = callback.id;
+  const data = callback.data;
+  if (!id || !data) return { kind: "ignore" };
+
+  const [prefix, surveyId, answer] = data.split(":");
+  if (prefix !== SURVEY_CALLBACK_PREFIX || !surveyId || !answer) {
+    return { kind: "ignore" };
+  }
+
+  const survey = SURVEYS[surveyId];
+  if (!survey) return { kind: "ignore" };
+  if (!survey.options.some((o) => o.value === answer))
+    return { kind: "ignore" };
+
+  return {
+    kind: "survey",
+    survey,
+    answer,
+    callbackQueryId: id,
+    messageId: callback.message?.message_id ?? null,
+  };
+}
+
+export interface UpdateOrigin {
+  chatId: number | null;
+  chatType: string | null;
+  fromBot: boolean;
+}
+
+/**
+ * Звідки приїхав апдейт — однаково для повідомлення й натискання кнопки.
+ *
+ * Існує рівно тому, що Telegram кладе чат у двох різних місцях:
+ * `message.chat` для тексту і `callback_query.message.chat` для кнопки
+ * (бо кнопка причеплена до повідомлення, а не до чату). Роутер, який
+ * читав би `update.message.chat.id` напряму, мовчки ігнорував би всі
+ * натискання — і це виглядало б як «кнопки не працюють».
+ */
+export function resolveUpdateOrigin(update: TelegramUpdate): UpdateOrigin {
+  const callback = update.callback_query;
+  if (callback) {
+    return {
+      chatId: callback.message?.chat?.id ?? null,
+      chatType: callback.message?.chat?.type ?? null,
+      fromBot: callback.from?.is_bot === true,
+    };
+  }
+
+  return {
+    chatId: update.message?.chat?.id ?? null,
+    chatType: update.message?.chat?.type ?? null,
+    fromBot: update.message?.from?.is_bot === true,
+  };
+}
+
 export function parseCommand(update: TelegramUpdate): ParsedCommand {
+  if (update.callback_query) return parseCallback(update.callback_query);
+
   const text = update.message?.text?.trim();
   if (!text) return { kind: "ignore" };
 
@@ -50,13 +203,24 @@ export function parseCommand(update: TelegramUpdate): ParsedCommand {
   // chat_id живе в роутері. Незнайомець отримує ту саму тишу, що й на
   // будь-яку невідому команду, тож саме існування команди не видає себе.
   if (command === "/stats") return { kind: "stats" };
-  if (command !== "/start") return { kind: "ignore" };
+  if (command === "/app") return { kind: "app" };
+  if (command === "/install") return { kind: "install" };
+  if (command === "/help") return { kind: "help" };
 
-  const payload = rest[0];
-  return {
-    kind: "start",
-    payload: payload && PAYLOAD_RE.test(payload) ? payload : null,
-  };
+  if (command === "/start") {
+    const payload = rest[0];
+    return {
+      kind: "start",
+      payload: payload && PAYLOAD_RE.test(payload) ? payload : null,
+    };
+  }
+
+  // Невідома команда лишається тишею: людина явно намагалась звернутись до
+  // бота, а не пояснити, чому йде. Причиною відписки вважаємо лише
+  // звичайний текст.
+  if (text.startsWith("/")) return { kind: "ignore" };
+
+  return { kind: "text", text };
 }
 
 /**
@@ -90,6 +254,19 @@ export interface StartInput {
 export interface StartResult {
   /** `true` — це перший `/start` цього чату. */
   created: boolean;
+  /**
+   * Порядковий номер у списку, рахуючи з 1.
+   *
+   * Стабільний назавжди: рахується від власного `id` рядка (`BIGSERIAL`,
+   * монотонний, рядки ніколи не видаляються — `/stop` лише ставить
+   * `opted_out_at`). Тому повторний `/start` покаже те саме число.
+   *
+   * Свідомо НЕ перераховується з урахуванням відписок: інакше номер стрибав
+   * би вниз щоразу, коли хтось попереду натиснув `/stop`, і людина читала б
+   * це як помилку. Черга на розсилку все одно рухається правильно — вибірку
+   * робить `broadcast-waitlist.mjs`, і вона відписаних пропускає.
+   */
+  position: number;
 }
 
 /**
@@ -107,7 +284,11 @@ export async function recordStart(
   pool: Pool,
   input: StartInput,
 ): Promise<StartResult> {
-  const result = await pool.query<{ created: boolean }>(
+  // `id` — BIGSERIAL, тож pg віддає його РЯДКОМ (Hard Rule #1). Тут він
+  // нікуди далі не тече — лише назад у наступний запит як параметр, — тому
+  // лишаємо рядком і не коерсимо: Number() на bigint був би втратою точності
+  // без жодної потреби.
+  const result = await pool.query<{ created: boolean; id: string }>(
     `INSERT INTO telegram_waitlist
        (chat_id, telegram_username, first_name, language_code, start_payload)
      VALUES ($1, $2, $3, $4, $5)
@@ -118,11 +299,14 @@ export async function recordStart(
        -- Перший payload лишається: він і є каналом, що привів людину.
        start_payload     = COALESCE(telegram_waitlist.start_payload,
                                     EXCLUDED.start_payload),
-       opted_out_at      = NULL
+       opted_out_at      = NULL,
+       -- Повернення скасовує очікування причини виходу. Без цього рядка
+       -- перше ж повідомлення того, хто передумав, осіло б у stop_reason.
+       stop_reason_awaited_at = NULL
      -- xmax = 0 — канонічний спосіб відрізнити INSERT від UPDATE в
      -- RETURNING після ON CONFLICT. Читати тут старе значення колонки не
      -- можна: RETURNING віддає рядок УЖЕ після UPDATE.
-     RETURNING (xmax = 0) AS created`,
+     RETURNING (xmax = 0) AS created, id`,
     [
       input.chatId,
       input.username,
@@ -132,21 +316,116 @@ export async function recordStart(
     ],
   );
 
-  return { created: result.rows[0]?.created ?? false };
+  const row = result.rows[0];
+  if (!row) return { created: false, position: 0 };
+
+  // Позиція від власного id, а не від created_at: id монотонний і не має
+  // колізій, тож ранг стабільний між викликами. Hard Rule #1 — count(*) у pg
+  // це bigint, тобто РЯДОК; коерція тут, інакше `position > limit` порівняє
+  // рядок із числом і дасть тихо неправильну гілку відповіді.
+  const rank = await pool.query<{ position: string }>(
+    `SELECT count(*) AS position FROM telegram_waitlist WHERE id <= $1`,
+    [row.id],
+  );
+
+  return {
+    created: row.created,
+    position: Number(rank.rows[0]?.position ?? 0),
+  };
 }
 
 /**
  * `/stop`. Рядок не видаляємо: інакше людина, яка відписалась, отримала б
  * інвайт при наступній розсилці як «новий» контакт, якби натиснула Start
  * ще раз. `opted_out_at` — це памʼять про рішення.
+ *
+ * `COALESCE` тримає ПЕРШУ дату відписки: повторний `/stop` не має вдавати,
+ * ніби людина щойно передумала. А от `stop_reason_awaited_at` ставиться
+ * заново — бот щоразу питає «чому», і щоразу готовий почути відповідь.
  */
 export async function recordStop(pool: Pool, chatId: number): Promise<void> {
   await pool.query(
     `UPDATE telegram_waitlist
-        SET opted_out_at = NOW()
-      WHERE chat_id = $1 AND opted_out_at IS NULL`,
+        SET opted_out_at           = COALESCE(opted_out_at, NOW()),
+            stop_reason_awaited_at = NOW()
+      WHERE chat_id = $1`,
     [chatId],
   );
+}
+
+/**
+ * Верхня межа тексту причини. 1000 символів — це вже не «одним рядком», а
+ * вичерпний лист; усе, що довше, обрізаємо, щоб у колонці не осідали
+ * випадкові простирадла.
+ */
+export const STOP_REASON_MAX_LEN = 1000;
+
+/**
+ * Записує причину відписки, якщо ми справді на неї чекаємо.
+ *
+ * Один `UPDATE` замість пари «прочитати стан → записати» — і це не
+ * мікрооптимізація. Дві операції лишили б вікно, у якому два повідомлення
+ * поспіль обидва пройшли б перевірку й друге перетерло б перше.
+ *
+ * Вікно `1 day` відсікає найгірший сценарій: людина натиснула `/stop`, за
+ * два тижні написала боту щось стороннє — і без обмеження це осіло б як
+ * «причина виходу», спотворивши єдину якісну метрику відвалу, яка в нас є.
+ *
+ * @returns `true`, якщо причину зараховано; `false` — якщо не чекали.
+ */
+export async function recordStopReason(
+  pool: Pool,
+  chatId: number,
+  reason: string,
+): Promise<boolean> {
+  const trimmed = reason.trim().slice(0, STOP_REASON_MAX_LEN);
+  if (!trimmed) return false;
+
+  const result = await pool.query(
+    `UPDATE telegram_waitlist
+        SET stop_reason            = $2,
+            -- Знімаємо очікування: причина потрібна одна, а не стрічка.
+            stop_reason_awaited_at = NULL
+      WHERE chat_id = $1
+        AND stop_reason_awaited_at IS NOT NULL
+        AND stop_reason_awaited_at > NOW() - INTERVAL '1 day'`,
+    [chatId, trimmed],
+  );
+
+  return (result.rowCount ?? 0) > 0;
+}
+
+export interface SurveyAnswerInput {
+  chatId: number;
+  surveyId: string;
+  answer: string;
+}
+
+/**
+ * Записує відповідь на опитування. Другий раз на те саме питання не
+ * проходить — і це вирішує БАЗА через `UNIQUE (chat_id, survey_id)`.
+ *
+ * `ON CONFLICT DO NOTHING RETURNING id` дає атомарну відповідь «зарахували
+ * чи ні» одним запитом. Варіант «SELECT, чи вже голосував, потім INSERT»
+ * виглядає читабельніше, але має вікно гонки рівно там, де воно найбільш
+ * імовірне: Telegram ретраїть callback-апдейт, поки не побачить `200`, тож
+ * два однакові апдейти в польоті — штатна ситуація, а не край.
+ *
+ * @returns `accepted: false` — людина вже відповідала; це не помилка.
+ */
+export async function recordSurveyAnswer(
+  pool: Pool,
+  input: SurveyAnswerInput,
+): Promise<{ accepted: boolean }> {
+  const result = await pool.query(
+    `INSERT INTO telegram_beta_survey_responses (chat_id, survey_id, answer)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (chat_id, survey_id) DO NOTHING
+     RETURNING id`,
+    [input.chatId, input.surveyId, input.answer],
+  );
+
+  return { accepted: (result.rowCount ?? 0) > 0 };
 }
 
 export interface WaitlistStats {
@@ -237,14 +516,3 @@ export function formatStatsReply(s: WaitlistStats): string {
 
   return lines.join("\n");
 }
-
-export const START_REPLY_NEW =
-  "Готово — ти в списку бети Sergeant. Напишу сюди, щойно відкриємо доступ.\n\n" +
-  "Sergeant тримає гроші, тіло, звички та їжу в одному місці й показує звʼязки між ними.\n\n" +
-  "Передумаєш — надішли /stop.";
-
-export const START_REPLY_AGAIN =
-  "Ти вже в списку — місце за тобою. Напишу, щойно відкриємо доступ.";
-
-export const STOP_REPLY =
-  "Прибрав тебе зі списку. Захочеш повернутись — просто надішли /start.";

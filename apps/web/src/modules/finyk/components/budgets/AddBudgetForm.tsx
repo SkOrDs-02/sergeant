@@ -1,11 +1,15 @@
 import { memo, useId, useMemo, useState } from "react";
 import { z } from "zod";
+import {
+  amountStringSchema,
+  amountStringToHryvnia,
+} from "@shared/lib/format/amountSchema";
+import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
@@ -13,6 +17,7 @@ import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
 import { JarSelector } from "../JarSelector";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 
 export type BudgetFormType = "limit" | "goal";
 
@@ -51,18 +56,30 @@ interface AddBudgetFormProps {
   onCancel: () => void;
 }
 
-const GOAL_EMOJI_OPTIONS: readonly { emoji: string; label: string }[] = [
-  { emoji: "🎯", label: "Ціль" },
-  { emoji: "🏠", label: "Житло" },
-  { emoji: "🚗", label: "Авто" },
-  { emoji: "✈️", label: "Подорож" },
-  { emoji: "💻", label: "Техніка" },
-  { emoji: "📱", label: "Гаджет" },
-  { emoji: "💍", label: "Подія" },
-  { emoji: "🎓", label: "Освіта" },
-  { emoji: "🏋️", label: "Спорт" },
-  { emoji: "💰", label: "Заощадження" },
+// Іконка цілі. Поле в даних історично зветься `emoji` (і так само зветься
+// колонка), але з 2026-08-03 містить імʼя іконки дизайн-системи, а не
+// emoji-гліф — той рендерився системним шрифтом і виглядав по-різному на
+// кожній ОС. Перейменування колонки — окрема двофазна міграція.
+const GOAL_ICON_OPTIONS: readonly { icon: IconName; label: string }[] = [
+  { icon: "target", label: "Ціль" },
+  { icon: "home", label: "Житло" },
+  { icon: "truck", label: "Авто" },
+  { icon: "compass", label: "Подорож" },
+  { icon: "monitor", label: "Техніка" },
+  { icon: "camera", label: "Гаджет" },
+  { icon: "heart", label: "Подія" },
+  { icon: "book-open", label: "Освіта" },
+  { icon: "dumbbell", label: "Спорт" },
+  { icon: "piggy-bank", label: "Заощадження" },
 ];
+
+const DEFAULT_GOAL_ICON: IconName = "target";
+
+/** Легасі-значення (emoji чи порожньо) деградує до дефолтної іконки. */
+function goalIconOf(raw: string | undefined): IconName {
+  const known = GOAL_ICON_OPTIONS.find((o) => o.icon === raw);
+  return known ? known.icon : DEFAULT_GOAL_ICON;
+}
 
 // Item #8 round-13: form-engine — `useApiForm` + zod для inline-create
 // limit/goal-бюджету. Раніше state жив у `Budgets.tsx` (`newB`, `formError`),
@@ -75,18 +92,18 @@ const GOAL_EMOJI_OPTIONS: readonly { emoji: string; label: string }[] = [
 // Goal/limit мають різні набори полів, тож тримаємо два окремі
 // `useApiForm`-інстанси замість discriminated union на одній схемі —
 // uniform pattern, ще й RHF-state не зміщується між type-toggle-ами.
-const isPositiveNumberString = (value: string) => {
-  const parsed = Number(value);
-  return (
-    value.trim() !== "" &&
-    Number.isFinite(parsed) &&
-    Number.isInteger(parsed) &&
-    parsed > 0
-  );
-};
-
+// Межі й нормалізація сум — спільні (спека beta-input-boundaries), тож
+// «1e9» і 20-значний ліміт відсікаються так само, як у формі витрати.
+// `integerOnly` зберігає наявну продуктову вимогу бюджетів: дробовий
+// ліміт читається як помилка вводу, а не як намір.
 const positiveNumberString = (message: string) =>
-  z.string().refine(isPositiveNumberString, message);
+  amountStringSchema(message, { integerOnly: true });
+
+/** Той самий парсер, що й у схемі — для enable/disable кнопки. */
+const isValidAmountString = (value: string) => {
+  const parsed = parseAmountToMinor(value);
+  return parsed.ok && parsed.minor % 100 === 0;
+};
 
 type LimitFormValues = {
   type: "limit";
@@ -124,7 +141,7 @@ const LIMIT_DEFAULTS: LimitFormValues = {
 const GOAL_DEFAULTS: GoalFormValues = {
   type: "goal",
   name: "",
-  emoji: "🎯",
+  emoji: DEFAULT_GOAL_ICON,
   targetAmount: "",
   targetDate: "",
   linkedJarId: "",
@@ -177,7 +194,7 @@ function AddBudgetFormComponent({
       onSubmit({
         type: "limit",
         categoryId: values.categoryId,
-        limit: Number(values.limit),
+        limit: amountStringToHryvnia(values.limit),
         period: values.period,
         // eslint-disable-next-line no-restricted-syntax -- UTC creation instant for one-time limit anchoring, not a Kyiv day key
         createdAt: new Date().toISOString(),
@@ -193,7 +210,7 @@ function AddBudgetFormComponent({
         type: "goal",
         name: values.name.trim(),
         emoji: values.emoji,
-        targetAmount: Number(values.targetAmount),
+        targetAmount: amountStringToHryvnia(values.targetAmount),
         targetDate: values.targetDate,
         linkedJarId: values.linkedJarId || undefined,
       });
@@ -237,9 +254,9 @@ function AddBudgetFormComponent({
   };
 
   const limitDraftValid =
-    Boolean(limitCategoryId) && isPositiveNumberString(limitAmount);
+    Boolean(limitCategoryId) && isValidAmountString(limitAmount);
   const goalDraftValid =
-    goalName.trim() !== "" && isPositiveNumberString(goalTargetAmount);
+    goalName.trim() !== "" && isValidAmountString(goalTargetAmount);
 
   const isSubmitting =
     formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
@@ -372,22 +389,29 @@ function AddBudgetFormComponent({
           className="space-y-3"
           aria-label="Нова ціль бюджету"
         >
-          <select
-            className="input-focus-finyk w-full h-10 min-w-0 rounded-xl border border-line bg-bg px-3 text-sm text-text"
-            value={goalEmoji}
-            aria-label="Іконка цілі"
-            onChange={(e) =>
-              goalForm.setValue("emoji", e.target.value, {
-                shouldDirty: true,
-              })
-            }
-          >
-            {GOAL_EMOJI_OPTIONS.map((opt) => (
-              <option key={opt.emoji} value={opt.emoji}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            {/* Прев'ю обраної іконки — нативний `<option>` малює лише
+                текст, тож без нього вибір лишався б невидимим. */}
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-panelHi text-finyk">
+              <Icon name={goalIconOf(goalEmoji)} size={18} aria-hidden />
+            </span>
+            <select
+              className="input-focus-finyk h-10 min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 text-sm text-text"
+              value={goalIconOf(goalEmoji)}
+              aria-label="Іконка цілі"
+              onChange={(e) =>
+                goalForm.setValue("emoji", e.target.value, {
+                  shouldDirty: true,
+                })
+              }
+            >
+              {GOAL_ICON_OPTIONS.map((opt) => (
+                <option key={opt.icon} value={opt.icon}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <Label htmlFor={goalNameId}>Назва цілі</Label>
             <Input

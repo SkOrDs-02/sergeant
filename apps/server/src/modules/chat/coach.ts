@@ -3,7 +3,6 @@ import pool from "../../db.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { env } from "../../env/env.js";
 import { resolveProTier } from "./aiQuota.js";
-import { sendToUserQuietly } from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import {
   CoachInsightSchema,
@@ -315,6 +314,38 @@ export async function getCoachCorrelationsBlock(
 }
 
 /**
+ * Максимальна довжина тіла пуша, яку приймає SW (`sanitize(payload.body, 200)`
+ * у `apps/web/src/sw/pushPayload.ts`). Ріжемо на запису, а не на відправці:
+ * інакше в БД лежав би текст, довший за все, що взагалі може долетіти до юзера.
+ */
+const NUDGE_BODY_MAX = 200;
+
+/**
+ * Кладе останній згенерований текст поради у `sergeant_nudge_cache` для
+ * серверного проходу підштовхувань (міграція 100).
+ *
+ * Fire-and-forget за задумом: юзер уже отримав пораду у відповіді, і збій
+ * запису кешу не має перетворюватись на помилку запиту. Один рядок на юзера —
+ * прохід читає лише найсвіжіший, історія не потрібна.
+ */
+async function saveNudgeCache(userId: string, body: string): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO sergeant_nudge_cache (user_id, body, generated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE
+           SET body = EXCLUDED.body, generated_at = NOW()`,
+      [userId, body.slice(0, NUDGE_BODY_MAX)],
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "sergeant_nudge_cache_write_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * GET /api/coach/memory — віддати поточну coach-пам'ять користувача.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
@@ -445,8 +476,14 @@ ${memorySummary}
 ПОТОЧНИЙ ТИЖДЕНЬ:
 ${snapshotText}
 
+ЯКЩО ДАНИХ БРАКУЄ — СКАЖИ ЦЕ, А НЕ ЗАПОВНЮЙ ПОРОЖНЕЧУ.
+Рядок «Даних за поточний тиждень ще немає» — це не дані, а їх відсутність.
+Коли патерну не видно, чесна відповідь — назвати це прямо й запропонувати
+щось записати. Вигаданий висновок гірший за визнану відсутність висновку:
+порожній тиждень — нормальний вихід, а не слот, який треба заповнити.
+
 Сформулюй ОДНЕ коротке проактивне повідомлення дня (2-3 речення). Воно має:
-- Відзначити конкретний патерн або прогрес (з даних)
+- Відзначити конкретний патерн або прогрес (з даних) — або чесно сказати, що даних для висновку замало
 - Запропонувати одну конкретну дію на сьогодні
 - Бути особистим і мотивуючим, але без загальних фраз
 - Якщо згадуєш "сьогодні" чи прогрес тижня — спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
@@ -507,18 +544,21 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
 
   const text = aiResult.text;
 
-  // Fire-and-forget push з AI-«нудж»-повідомленням дня. Якщо `text` порожній
-  // (Anthropic повернула структуру без текстових блоків) — нічого не шлемо,
-  // щоб не спамити юзеру порожній пуш. Side-effect non-fatal: `sendToUserQuietly`
-  // ковтає будь-яку помилку всередині і лише логує, тож response юзеру ми
-  // вже відправили і чекати на нього не треба.
-  const userId = (req as WithSessionUser).user?.id;
-  if (userId && text && text.trim()) {
-    void sendToUserQuietly(
-      userId,
-      { title: "Коуч", body: text.trim().slice(0, 200) },
-      { module: "coach" },
-    );
+  // AI-CONTEXT: тут раніше стояв fire-and-forget push з тим самим текстом,
+  // який ми віддаємо у відповіді. Цей endpoint викликає ТІЛЬКИ клієнт на
+  // передньому плані (`useCoachInsight`), тож юзер отримував сповіщення про
+  // текст, який у цю ж секунду читає на екрані — і по одному з кожної
+  // поверхні (веб + мобілка), без `tag`, без дедупу.
+  //
+  // Рішення власника (2026-08-01): пуш іде лише тоді, коли апка ЗАКРИТА.
+  // Оскільки цей шлях за визначенням foreground, надсилати звідси нічого не
+  // можна — але саме тут народжується єдиний текст, який прохід потім зможе
+  // переслати. Сервер не вміє згенерувати пораду сам: снапшот приходить із
+  // клієнтського SQLite. Тому кладемо «консерву» — прохід її переюзає, якщо
+  // юзер завтра не зайде.
+  const insightUserId = (req as WithSessionUser).user?.id;
+  if (insightUserId && text && text.trim()) {
+    void saveNudgeCache(insightUserId, text.trim());
   }
 
   res.json({ ok: true, insight: text });

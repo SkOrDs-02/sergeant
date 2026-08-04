@@ -43,6 +43,28 @@ const TWO_PHASE_DROP_PROBE_RE = /^--[ \t]*TWO-PHASE-DROP:/im;
 
 export const MIN_DEPRECATION_DAYS = 14;
 
+/**
+ * Номери, продубльовані на `main` історично, — виняток із «no duplicates».
+ *
+ * 2026-07-31: PR #540 і #541 були відкриті паралельно, обидва взяли `091`
+ * (на `main` тоді був `090`), і кросбранчевий детектор нижче їх не спіймав —
+ * на момент останнього прогону CI жоден із них ще не був змерджений, тож для
+ * кожного `origin/main` виглядав чистим. Після мержу обох на `main` лежать
+ * `091_privat_connection` і `091_telegram_beta_survey`.
+ *
+ * Чому не перенумеровуємо. Раннер (`packages/db-schema/src/migrate/runner.ts`)
+ * веде реєстр застосованих міграцій **за іменем файлу**, а обидві вже накочені
+ * на прод (деплої 2026-07-31 21:34 і 21:36 UTC). Перейменування зробило б файл
+ * новим для раннера, і він виконав би `CREATE TABLE privat_connection` вдруге —
+ * без `IF NOT EXISTS`, тобто наступний продовий деплой упав би.
+ *
+ * Двозначності це не створює: файли застосовуються в лексикографічному
+ * порядку, а `091_privat_connection` стабільно передує
+ * `091_telegram_beta_survey`. Список НЕ поповнювати для нових колізій — їх
+ * ловить кросбранчева перевірка й вирішує ребейз із перенумеруванням.
+ */
+export const APPLIED_DUPLICATE_NUMBERS = [91];
+
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
 /** True when the trimmed line is a SQL single-line comment (`-- …`). */
@@ -565,8 +587,16 @@ export function run({
     );
   }
 
-  if (duplicates.length > 0) {
-    const padded = duplicates.map((n) => String(n).padStart(3, "0")).join(", ");
+  // Історично продубльовані номери (вже накочені на прод — перейменувати
+  // не можна, див. `APPLIED_DUPLICATE_NUMBERS`) не рахуємо за порушення.
+  const newDuplicates = duplicates.filter(
+    (n) => !APPLIED_DUPLICATE_NUMBERS.includes(n),
+  );
+
+  if (newDuplicates.length > 0) {
+    const padded = newDuplicates
+      .map((n) => String(n).padStart(3, "0"))
+      .join(", ");
     errors.push(
       `❌ Duplicate migration numbers: ${padded}.\n` +
         `   AGENTS.md rule #4: no duplicates.`,

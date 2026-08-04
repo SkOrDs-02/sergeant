@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last validated:** 2026-06-12 by @claude. **Next review:** 2026-09-10.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-10-31.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.
@@ -40,7 +40,7 @@ header + `rounded-2xl` body.
 `elevation`; CSS-змінні лежать в
 [`apps/web/src/styles/theme.css`](../../../../apps/web/src/styles/theme.css)
 і автоматично перемикаються в `.dark` — ніяких `dark:shadow-*`
-(Hard Rule #13).
+(дизайн-конвенція).
 
 | Клас        | Рівень      | Коли                                     | Z-tier       |
 | ----------- | ----------- | ---------------------------------------- | ------------ |
@@ -91,7 +91,7 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 ```tsx
 /* ⛔ НЕ ТРЕБА — вибиває візуальну ієрархію */
 <Card className="shadow-e4" />                          /* картка не має важити як Modal */
-<div className="shadow-card dark:shadow-2xl" />         /* парні dark: — Hard Rule #13 */
+<div className="shadow-card dark:shadow-2xl" />         /* парні dark: — дизайн-конвенція */
 <div className="shadow-e3 z-toast" />                   /* попап на toast тірі — розсинхрон з e3 */
 ```
 
@@ -202,9 +202,10 @@ import { ThemeSwitcher } from "@shared/components/ui";
 <ThemeSwitcher variant="dropdown" />;
 ```
 
-- Token-only стилізація (Hard Rules #11, #13). Жодного `bg-[#...]` —
+- Token-only стилізація (дизайн-конвенція — tokens + review, ex-Hard
+  Rules #11/#13, retired ADR-0081). Жодного `bg-[#...]` —
   все через `bg-panel`, `bg-brand-soft`, `border-line`.
-- `focus-visible:ring-2 ring-brand-500/45` (Hard Rule #14).
+- `focus-visible:ring-2 ring-brand-500/45` (дизайн-конвенція).
 - Кожен radio-item має `aria-label` (Ukrainian) + `aria-checked`.
 - Dropdown — `role="menu"` + `aria-haspopup="menu"`, ESC закриває,
   фокус повертається на тригер.

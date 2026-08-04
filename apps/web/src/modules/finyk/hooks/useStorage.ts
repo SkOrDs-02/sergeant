@@ -166,7 +166,7 @@ export function useStorage({
     setReceivables,
     monthlyPlan,
     setMonthlyPlan,
-    toggleLinkedTx: mutations.toggleLinkedTx,
+    setLinkedTxRole: mutations.setLinkedTxRole,
     hiddenTxIds,
     hideTx: mutations.hideTx,
     exportData: backupSync.exportData,

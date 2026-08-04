@@ -17,10 +17,11 @@ import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
+import type { HabitSkip } from "@sergeant/routine-domain";
 import { RoutineCalendarHero } from "./RoutineCalendarHero";
 import { RoutineCalendarMonthGrid } from "./RoutineCalendarMonthGrid";
+import { RoutineFilterChips } from "./RoutineFilterChips";
 import {
-  FIZRUK_GROUP_LABEL,
   parseDateKey,
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
@@ -37,6 +38,7 @@ import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
 import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
+import { Icon } from "@shared/components/ui/Icon";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -92,6 +94,8 @@ export function RoutineCalendarPanel({
     onOpenModule,
     onBulkMarkDay,
     onOpenQuickAddHabit,
+    onSetHabitSkip,
+    onClearHabitSkip,
   } = useRoutineCalendarActions();
 
   const streakInsight = useStreakRecordPendingInsight(routine);
@@ -140,6 +144,16 @@ export function RoutineCalendarPanel({
       ...h,
       completed: (routine.completions[h.id] || []).includes(todayKey),
     }));
+
+  // Позначки «не зміг» саме за цей день, зведені в `habitId → HabitSkip`.
+  const skipsForToday = useMemo(() => {
+    const out: Record<string, HabitSkip> = {};
+    for (const [habitId, byDate] of Object.entries(routine.skips || {})) {
+      const s = byDate?.[todayKey];
+      if (s) out[habitId] = s;
+    }
+    return out;
+  }, [routine.skips, todayKey]);
 
   const dayLabel = parseDateKey(todayKey).toLocaleDateString("uk-UA", {
     weekday: "long",
@@ -197,6 +211,11 @@ export function RoutineCalendarPanel({
         scheduledHabits={scheduledHabitsForReport}
         onToggleHabit={onToggleHabit}
         dateKey={todayKey}
+        skipsForDay={skipsForToday}
+        onSetSkip={(habitId, reason) =>
+          onSetHabitSkip(habitId, todayKey, reason)
+        }
+        onClearSkip={(habitId) => onClearHabitSkip(habitId, todayKey)}
       />
 
       {canBulkMark && (
@@ -254,74 +273,14 @@ export function RoutineCalendarPanel({
         aria-label="Пошук подій"
       />
 
-      <div
-        className="flex flex-nowrap overflow-x-auto gap-1.5 items-center pb-1 sm:flex-wrap sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        role="group"
-        aria-label="Фільтр за тегом"
-      >
-        <SectionHeading as="span" size="xs" className="shrink-0 sm:w-auto">
-          Теги
-        </SectionHeading>
-        <button
-          type="button"
-          aria-pressed={tagFilter === null}
-          onClick={() => setTagFilter(null)}
-          className={cn(
-            "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            tagFilter === null ? C.chipOn : C.chipOff,
-          )}
-        >
-          Усі
-        </button>
-        {routine.prefs.showFizrukInCalendar !== false && (
-          <button
-            type="button"
-            aria-pressed={tagFilter === "__fizruk"}
-            onClick={() =>
-              setTagFilter((f) => (f === "__fizruk" ? null : "__fizruk"))
-            }
-            className={cn(
-              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              tagFilter === "__fizruk"
-                ? "border-info/50 bg-info/10 text-text"
-                : C.chipOff,
-            )}
-          >
-            {FIZRUK_GROUP_LABEL}
-          </button>
-        )}
-        {routine.prefs.showFinykSubscriptionsInCalendar !== false && (
-          <button
-            type="button"
-            aria-pressed={tagFilter === "__finyk_sub"}
-            onClick={() =>
-              setTagFilter((f) => (f === "__finyk_sub" ? null : "__finyk_sub"))
-            }
-            className={cn(
-              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border max-w-[75vw] sm:max-w-[200px] whitespace-normal break-words leading-snug min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              tagFilter === "__finyk_sub"
-                ? "border-success/40 bg-success/10 text-text"
-                : C.chipOff,
-            )}
-          >
-            Підписки Фініка
-          </button>
-        )}
-        {tagChips.map((name) => (
-          <button
-            key={name}
-            type="button"
-            aria-pressed={tagFilter === name}
-            onClick={() => setTagFilter((f) => (f === name ? null : name))}
-            className={cn(
-              "shrink-0 text-style-caption px-2.5 py-1.5 rounded-full border max-w-[70vw] sm:max-w-[160px] whitespace-normal break-words leading-snug min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              tagFilter === name ? C.chipOn : C.chipOff,
-            )}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
+      <RoutineFilterChips
+        tagFilter={tagFilter}
+        setTagFilter={setTagFilter}
+        onClearFilter={() => setTagFilter(null)}
+        tagChips={tagChips}
+        showFizruk={routine.prefs.showFizrukInCalendar !== false}
+        showFinykSubs={routine.prefs.showFinykSubscriptionsInCalendar !== false}
+      />
 
       {timeMode === "month" && (
         <RoutineCalendarMonthGrid
@@ -436,9 +395,9 @@ export function RoutineCalendarPanel({
                         ? () => onToggleHabit(habitId, e.date)
                         : undefined
                     }
-                    leftLabel="✓ Виконано"
+                    leftLabel="Виконано"
                     leftColor="bg-success"
-                    rightLabel="↩ Скасувати"
+                    rightLabel="Скасувати"
                     rightColor="bg-muted"
                   >
                     <div
@@ -538,7 +497,11 @@ export function RoutineCalendarPanel({
                               }
                               title={e.completed ? "Скасувати" : "Виконано"}
                             >
-                              {e.completed ? "✓" : "○"}
+                              <Icon
+                                name={e.completed ? "check" : "circle-outline"}
+                                size={18}
+                                aria-hidden
+                              />
                             </Button>
                           )}
                         </div>

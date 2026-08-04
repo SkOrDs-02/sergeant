@@ -19,13 +19,24 @@
 // test:coverage — cache-hit replay віддає той самий JSON.
 //
 // Usage:
-//   node scripts/ci/coverage-ratchet.mjs               # check + bump file
-//   node scripts/ci/coverage-ratchet.mjs --check-only  # check, не писати
+//   node scripts/ci/coverage-ratchet.mjs               # ratchet: check + bump file
+//   node scripts/ci/coverage-ratchet.mjs --check-only  # ratchet: check, не писати
+//   node scripts/ci/coverage-ratchet.mjs --floors      # статичні floors
+//                                                      # (coverage-thresholds.json)
 //
 // Exit 0 = не гірше baseline (можливо, baseline піднято); exit 1 = деградація
 // понад epsilonPp або відсутній coverage-summary.json для workspace-у.
+//
+// `--floors` (аудит 2026-08-04, fail-open діра): замінює колишній shell-loop
+// «Check coverage threshold» у ci.yml, який глобив НАЯВНІ
+// coverage-summary.json і робив `continue` для відсутніх — workspace, що
+// переставав емітити coverage, ТИХО випадав з гейта. Тепер кожен workspace,
+// перелічений у coverage-thresholds.json (крім явного skip-списку), МУСИТЬ
+// мати coverage-summary.json — інакше exit 1 (fail-closed). Workspace-и, які
+// емітять summary, але не перелічені (напр. apps/mobile-shell), гейтяться за
+// `default`, як і раніше.
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { resolve } from "node:path";
@@ -33,6 +44,12 @@ import { resolve } from "node:path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../..");
 export const BASELINE_PATH = path.join(REPO_ROOT, "coverage-ratchet.json");
+export const THRESHOLDS_PATH = path.join(REPO_ROOT, "coverage-thresholds.json");
+
+// Web-focus phase: apps/mobile jest виключений із CI-скоупу (див.
+// test:coverage:ci у кореневому package.json), тому floor-гейт його
+// свідомо пропускає, а не фейлить fail-closed.
+export const FLOOR_SKIPPED_WORKSPACES = ["apps/mobile"];
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -100,6 +117,91 @@ export function applyBumps(baseline, bumps) {
   return { ...baseline, workspaces };
 }
 
+/**
+ * Статичний floor-гейт (fail-closed). Чиста функція — файлова робота живе у
+ * main(), щоб node --test не потребував фікстур на диску.
+ *
+ * @param {{default: number, workspaces: Record<string, number>}} thresholds
+ *   — вміст coverage-thresholds.json
+ * @param {Record<string, number|null>} actuals — workspace → total.lines.pct.
+ *   Ключі = union(перелічені у thresholds.workspaces, знайдені на диску
+ *   summary); null = summary відсутній або без total.lines.pct.
+ * @param {string[]} skipped — workspace-и поза CI-скоупом (web-focus phase)
+ * @returns {{failures: string[], report: string[]}}
+ */
+export function evaluateFloors(
+  thresholds,
+  actuals,
+  skipped = FLOOR_SKIPPED_WORKSPACES,
+) {
+  const failures = [];
+  const report = [];
+
+  const workspaces = [
+    ...new Set([
+      ...Object.keys(thresholds.workspaces),
+      ...Object.keys(actuals),
+    ]),
+  ].sort();
+
+  for (const workspace of workspaces) {
+    if (skipped.includes(workspace)) {
+      report.push(
+        `⏭️  ${workspace}: skipped (поза CI-скоупом, web-focus phase)`,
+      );
+      continue;
+    }
+
+    const floor = thresholds.workspaces[workspace] ?? thresholds.default;
+    const actual = actuals[workspace];
+
+    if (actual === null || actual === undefined) {
+      // Fail-closed: workspace, що перестав емітити coverage-summary.json,
+      // раніше тихо випадав з гейта (`continue` у shell-loop) — тепер це
+      // помилка. Перевір, що test:coverage workspace-у відпрацював і що
+      // vitest-конфіг містить json-summary репортер (baseCoverageConfig).
+      failures.push(
+        `${workspace}: coverage-summary.json відсутній або без total.lines.pct — ` +
+          `floor-гейт не може підтвердити покриття (fail-closed).`,
+      );
+      continue;
+    }
+
+    if (actual < floor) {
+      failures.push(
+        `${workspace}: lines ${actual}% < floor ${floor}% (coverage-thresholds.json).`,
+      );
+    } else {
+      report.push(`✅ ${workspace}: ${actual}% (floor: ${floor}%)`);
+    }
+  }
+
+  return { failures, report };
+}
+
+/**
+ * Сканує apps/* і packages/* на наявні coverage/coverage-summary.json —
+ * щоб workspace-и, не перелічені у coverage-thresholds.json, все одно
+ * гейтились за default-floor (поведінка старого shell-glob-у збережена).
+ */
+export function discoverCoverageWorkspaces(repoRoot) {
+  const found = [];
+  for (const group of ["apps", "packages"]) {
+    const groupDir = path.join(repoRoot, group);
+    if (!existsSync(groupDir)) continue;
+    for (const entry of readdirSync(groupDir)) {
+      const summaryPath = path.join(
+        groupDir,
+        entry,
+        "coverage",
+        "coverage-summary.json",
+      );
+      if (existsSync(summaryPath)) found.push(`${group}/${entry}`);
+    }
+  }
+  return found;
+}
+
 /** Читає total.lines.pct з coverage-summary.json workspace-у (null якщо нема). */
 export function readWorkspaceLinesPct(repoRoot, workspace) {
   const summaryPath = path.join(
@@ -120,7 +222,40 @@ export function readWorkspaceLinesPct(repoRoot, workspace) {
 
 // ── CLI entrypoint ───────────────────────────────────────────────────────────
 
+function mainFloors() {
+  const thresholds = JSON.parse(readFileSync(THRESHOLDS_PATH, "utf8"));
+
+  const workspaces = new Set([
+    ...Object.keys(thresholds.workspaces),
+    ...discoverCoverageWorkspaces(REPO_ROOT),
+  ]);
+  const actuals = {};
+  for (const workspace of workspaces) {
+    actuals[workspace] = readWorkspaceLinesPct(REPO_ROOT, workspace);
+  }
+
+  const { failures, report } = evaluateFloors(thresholds, actuals);
+
+  for (const line of report) console.log(line);
+
+  if (failures.length > 0) {
+    console.error("");
+    for (const failure of failures) console.error(`❌ ${failure}`);
+    console.error(
+      "\nCoverage floor gate failed: workspace нижче floor-у або не емітить coverage-summary.json.",
+    );
+    process.exit(1);
+  }
+
+  console.log("\n✅ All workspaces meet their coverage floor threshold");
+}
+
 function main() {
+  if (process.argv.includes("--floors")) {
+    mainFloors();
+    return;
+  }
+
   const checkOnly = process.argv.includes("--check-only");
   const baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8"));
 

@@ -1,6 +1,6 @@
 # Playbook: Bump Dependency Safely
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.
@@ -89,7 +89,7 @@ pnpm lint        # має пройти
 
 - **Окремий PR** — не змішувати dependency bumps з feature work (AGENTS.md soft rule).
 - Renovate автоматично створює PR-и для minor/patch — для major потрібен manual review.
-- Перевірити `THIRD_PARTY_LICENSES.md` — може потребувати регенерації (`pnpm licenses:gen`).
+- License-звірка механічно не виконується — гейт і `THIRD_PARTY_LICENSES.md` прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §1; за потреби разовий огляд — `pnpm licenses list`.
 - Якщо оновлюється `@types/*` — це зазвичай safe, але все одно `pnpm typecheck`.
 
 ## See also

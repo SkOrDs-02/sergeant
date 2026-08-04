@@ -100,7 +100,19 @@ export function PersonalInfoSection({
       }
     },
     onSuccess: async () => {
-      toast.success("Лист підтвердження нового email надіслано");
+      // Better Auth має дві гілки зміни email, і користувачу треба сказати
+      // рівно те, що станеться далі:
+      //   - поточна адреса НЕ підтверджена → сервер міняє її одразу
+      //     (`updateEmailWithoutVerification`) і шле верифікацію на нову;
+      //   - поточна підтверджена → спершу лист-підтвердження на СТАРУ адресу,
+      //     і лише після кліку в ньому адреса зміниться.
+      // Обидві гілки віддають `{ status: true }`, тож розрізняємо їх за тим
+      // самим прапорцем, який бачив сервер.
+      toast.success(
+        user.emailVerified
+          ? "Лист підтвердження надіслано на поточну адресу"
+          : "Адресу змінено — перевір нову скриньку",
+      );
       setEditingEmail(false);
       await onRefresh();
     },
@@ -192,7 +204,7 @@ export function PersonalInfoSection({
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
             className={cn(
-              "relative w-20 h-20 rounded-[22px] overflow-hidden",
+              "relative w-20 h-20 rounded-3xl overflow-hidden",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
@@ -298,7 +310,7 @@ export function PersonalInfoSection({
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
             <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
-              Email не підтверджено — перевірте вашу поштову скриньку
+              Email не підтверджено — перевір свою поштову скриньку
             </p>
             <Button
               variant="ghost"

@@ -43,6 +43,7 @@ function emptyCache(
     dailyLog: [],
     monthlyPlan: null,
     workoutTemplates: [],
+    injuries: [],
     refreshedAt: null,
     ...overrides,
   };
@@ -58,6 +59,7 @@ function emptyDualWriteState(
     dailyLog: [],
     monthlyPlan: null,
     workoutTemplates: [],
+    injuries: [],
     ...overrides,
   };
 }

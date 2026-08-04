@@ -1,3 +1,5 @@
+import { ProgressBar } from "@shared/components/ui";
+
 /**
  * OnboardingProgress — slim activation progress bar shown above the bento
  * grid for users who have not yet recorded a first real entry. Replaces
@@ -26,25 +28,16 @@ export function OnboardingProgress({
   totalModules = 4,
 }: OnboardingProgressProps) {
   const count = Math.min(activeModules.length, totalModules);
-  // `Math.round` keeps the visible width snapped to whole percentages so
-  // the transition lands cleanly on each step (0 / 25 / 50 / 75 / 100).
-  const percent = Math.round((count / totalModules) * 100);
 
   return (
-    <div
-      className="flex items-center gap-3 px-1"
-      role="progressbar"
-      aria-valuenow={count}
-      aria-valuemin={0}
-      aria-valuemax={totalModules}
-      aria-label={`Модулів увімкнено: ${count} з ${totalModules}`}
-    >
-      <div className="flex-1 h-1.5 rounded-full bg-line/60 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-brand transition-[width] duration-500"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+    <div className="flex items-center gap-3 px-1">
+      <ProgressBar
+        value={count}
+        max={totalModules}
+        size="sm"
+        className="flex-1"
+        aria-label={`Модулів увімкнено: ${count} з ${totalModules}`}
+      />
       {/* Було «{count}/{totalModules} розділів» — на порожньому FTUX-хабі
           це читалося як «4/4, все зроблено», хоча жодного запису ще немає.
           Смуга показує, скільки модулів УВІМКНЕНО, а не скільки пройдено. */}

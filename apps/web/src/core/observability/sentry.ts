@@ -316,8 +316,17 @@ export async function initSentry() {
 
   mod.init({
     dsn,
+    // `VITE_APP_ENV` — спільний перемикач середовища для всієї телеметрії
+    // (його ж читає `posthog.ts`), щоб не задавати одне значення двома
+    // змінними й не давати їм розійтись. `VITE_SENTRY_ENVIRONMENT` лишається
+    // вужчим override-ом на випадок, коли Sentry треба розвести окремо.
+    //
+    // Фолбек на `MODE` свідомо ОСТАННІЙ: на Vercel він віддає власне
+    // значення білду, і саме так у проєкті `sergeant-web` завівся сторонній
+    // environment `vercel-production` — фільтр по `production` його не бачить.
     environment:
       import.meta.env["VITE_SENTRY_ENVIRONMENT"] ||
+      import.meta.env["VITE_APP_ENV"] ||
       import.meta.env.MODE ||
       "production",
     release: import.meta.env["VITE_SENTRY_RELEASE"],

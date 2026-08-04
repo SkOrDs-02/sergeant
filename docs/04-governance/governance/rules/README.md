@@ -1,6 +1,6 @@
 # Hard Rules — per-rule canonical files
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > One file per Hard Rule (full prose + BAD/GOOD examples). Compact summary table in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break). Registry: [`hard-rules.json`](../hard-rules.json). Matrix: [`hard-rules-matrix.md`](../hard-rules-matrix.md). Sync gate: `pnpm lint:hard-rules-registry`.
@@ -26,3 +26,10 @@
 | 26  | PR ledger update on merge                                                             | [`26-pr-ledger-update-on-merge.md`](./26-pr-ledger-update-on-merge.md)                     |
 
 Номери #8, #9, #11–#14, #16, #17 і #24 retired за [ADR-0081](../../adr/0081-repository-simplification.md) та не перевикористовуються.
+
+## Ненумеровані ESLint-конвенції
+
+Правила з механічним enforcement у `eslint-plugin-sergeant-design`, які не є нумерованими Hard Rules і не живуть у `hard-rules.json`:
+
+- [`kyiv-time-helpers.md`](./kyiv-time-helpers.md) — явна доктрина межі доби в `apps/web/**` (ADR-0078): Kyiv для відображення/звітів, device-local для особистого дня.
+- [`prefer-parse-body.md`](./prefer-parse-body.md) — `parseBody` / `parseQuery` замість sentinel-`validateBody` / `validateQuery`.

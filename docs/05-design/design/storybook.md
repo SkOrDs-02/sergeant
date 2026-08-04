@@ -1,26 +1,25 @@
 # Storybook (apps/web)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Sergeant ships a Storybook 10 (`@storybook/react-vite`) playground for the web design-system. It serves as:
 
 1. The canonical, deployed "what does this component look like" reference for design partners + contributors.
-2. The contract surface for ESLint rule [`sergeant-design/require-stories-for-ui-components`](../../../packages/eslint-plugin-sergeant-design/index.js) (severity `error`) — every public UI component in `apps/web/src/shared/components/ui/` either has a sibling `.stories.tsx` or is in the rule's allowlist with a documented rationale.
+2. The coverage convention surface: every public UI component in `apps/web/src/shared/components/ui/` either has a sibling `.stories.tsx` or a documented rationale for why it is not a visual component. This is a design convention enforced in review — the former ESLint rule `sergeant-design/require-stories-for-ui-components` was retired by [ADR-0081](../../04-governance/adr/0081-repository-simplification.md).
 
-Storybook is **not** a visual-regression source. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the scope decision and [ADR-0034](../../04-governance/adr/0034-visual-regression-testing.md) for the actual VRT pipeline (Argos + Playwright over real hub surfaces).
+Storybook is **not** a visual-regression source. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the scope decision and [ADR-0034](../../04-governance/adr/0034-visual-regression-testing.md) for the historical VRT pipeline (Argos + Playwright over real hub surfaces). **Той пайплайн знято** — [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4 прибрав `visual-regression.yml`, тож автоматичного pixel-diff gate сьогодні немає.
 
 ---
 
 ## Where things live
 
-| Path                                              | What                                                                 |
-| ------------------------------------------------- | -------------------------------------------------------------------- |
-| `apps/web/.storybook/main.ts`                     | Storybook config (framework, stories glob, vite-plugin-pwa stripper) |
-| `apps/web/.storybook/preview.tsx`                 | Global decorators (Tailwind CSS entry, ToastProvider)                |
-| `apps/web/src/**/*.stories.tsx`                   | Co-located story files                                               |
-| `.github/workflows/storybook-deploy.yml`          | GitHub Pages deploy (PR build + `main` deploy)                       |
-| `packages/eslint-plugin-sergeant-design/index.js` | `require-stories-for-ui-components` rule + default allowlist         |
+| Path                                     | What                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `apps/web/.storybook/main.ts`            | Storybook config (framework, stories glob, vite-plugin-pwa stripper) |
+| `apps/web/.storybook/preview.tsx`        | Global decorators (Tailwind CSS entry, ToastProvider)                |
+| `apps/web/src/**/*.stories.tsx`          | Co-located story files                                               |
+| `.github/workflows/storybook-deploy.yml` | GitHub Pages deploy (PR build + `main` deploy)                       |
 
 Stories live **next to the component**, not in a separate folder:
 
@@ -108,20 +107,20 @@ Use the escape hatch in stories. Don't rely on real animation timing — Storybo
 
 ## Coverage contract
 
-ESLint rule `sergeant-design/require-stories-for-ui-components` enforces story coverage on `apps/web/src/shared/components/ui/**/*.tsx`. It runs on every PR via `pnpm lint`. Severity is `error` after initiative 0007 round-10 (2026-05-05).
+Story coverage for `apps/web/src/shared/components/ui/**/*.tsx` is a **design convention enforced in review only** — the former ESLint rule `sergeant-design/require-stories-for-ui-components` (severity `error` since initiative 0007 round-10, 2026-05-05) was retired by [ADR-0081](../../04-governance/adr/0081-repository-simplification.md) together with the other visual AST rules. No lint gate fires today; PR review holds the line.
 
-When the rule fires on a new component:
+When adding a new public UI component:
 
-1. **First option:** add the sibling `<Name>.stories.tsx`. The rule looks for `dirname(file)/<basename>.stories.tsx`.
-2. **Second option:** if the file is genuinely not a visual component (helper / illustration / sub-module / gesture-обгортка / transient overlay), add it to `DEFAULT_REQUIRE_STORIES_ALLOWLIST` in `packages/eslint-plugin-sergeant-design/index.js`. **MUST** include a per-file rationale comment in the block above the `Set` literal. PR review rejects allowlist additions without rationale.
+1. **First option:** add the sibling `<Name>.stories.tsx` (`dirname(file)/<basename>.stories.tsx`).
+2. **Second option:** if the file is genuinely not a visual component (helper / illustration / sub-module / gesture-обгортка / transient overlay), say so in the PR description with a one-line rationale. PR review rejects skipped stories without rationale.
 
-The allowlist is grouped into three sections:
+Historically exempt buckets (still useful as review guidance):
 
 - **Sub-module / barrel** — `index.tsx`, `Icon.paths.*.tsx`, `EmptyStateIllustrations.tsx`.
 - **Utility / wrapper / a11y** — `PageTransition`, `ScreenReaderAnnouncer`, `SkipLink`, `SectionErrorBoundary`, `SuspenseWithMinDelay`, `ModulePageLoader`.
 - **Gesture / transient overlay** — `KeyboardAccessory`, `PullToRefresh{,Indicator}`, `OptimizedImage`, `SwipeToAction`, `QuickActionsMenu`, `CelebrationModal`, `KeyboardShortcutsModal`, `VoiceMicButton`.
 
-If a future component lands in one of those buckets, reuse the same pattern — group + rationale + entry in the `Set`.
+If a future component lands in one of those buckets, reuse the same pattern — name the bucket + rationale in the PR.
 
 ---
 
@@ -138,7 +137,7 @@ Failed deploy → previous Pages build stays live. Investigate via the workflow 
 
 ## What stories are NOT
 
-- **Not a visual regression baseline.** ADR-0034 (Argos + Playwright over hub surfaces) is the only authorised pixel-diff source. Stories MUST NOT call `argosScreenshot()` or `expect.toHaveScreenshot()`. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the rationale.
+- **Not a visual regression baseline.** ADR-0034 (Argos + Playwright over hub surfaces) описував pixel-diff source до ADR-0082; автоматичного VRT-гейта зараз немає. Заборона лишається чинною: stories MUST NOT call `argosScreenshot()` or `expect.toHaveScreenshot()`. See [ADR-0046](../../04-governance/adr/0046-storybook-vrt-scope.md) for the rationale.
 - **Not a unit-test substitute.** Vitest + RTL covers behaviour; stories cover _appearance_. Don't move test assertions into Storybook play functions.
 - **Not a dependency-free entry point.** Stories run inside the same Vite pipeline as the app — Tailwind + design-tokens + accent CSS variables flow through `preview.tsx`. If a global is missing, fix `preview.tsx`, don't work around it per-story.
 
@@ -147,7 +146,7 @@ Failed deploy → previous Pages build stays live. Investigate via the workflow 
 ## Links
 
 - [ADR-0046 — Storybook visual regression scope](../../04-governance/adr/0046-storybook-vrt-scope.md)
-- [ADR-0034 — Visual regression testing via Argos + Playwright](../../04-governance/adr/0034-visual-regression-testing.md)
+- [ADR-0034 — Visual regression testing via Argos + Playwright](../../04-governance/adr/0034-visual-regression-testing.md) — superseded [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md)
 - [Initiative 0007 — Design-system tooling](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md)
 - [`apps/web/.storybook/main.ts`](../../../apps/web/.storybook/main.ts)
 - [`packages/eslint-plugin-sergeant-design/`](../../../packages/eslint-plugin-sergeant-design)

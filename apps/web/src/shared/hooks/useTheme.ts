@@ -6,7 +6,10 @@
  * Class-on-html contract (single source of truth for the theme.css vars):
  *   - `light`  → `<html>` має жодного theme-класу (`dark` off, `hc` off).
  *   - `dark`   → `<html class="dark">`.
- *   - `system` → клас `dark` слідує за `matchMedia('(prefers-color-scheme: dark)')`.
+ *   - `system` → клас `dark` слідує за `matchMedia('(prefers-color-scheme: dark)')`,
+ *                клас `hc` — за `(prefers-contrast: more)` / `(forced-colors: active)`.
+ *                Тобто слабкозорий користувач із системним high-contrast отримує
+ *                AAA-набір одразу, не шукаючи перемикач у меню «⋯».
  *   - `hc`     → `<html class="hc [dark]">`. HC залишається light/dark
  *                відповідно до системної переваги, але семантичні токени
  *                переключаються на AAA-leaning набір через `html.hc { ... }`.
@@ -55,6 +58,13 @@ function readSystemPrefersDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+const CONTRAST_QUERY = "(prefers-contrast: more), (forced-colors: active)";
+
+function readSystemPrefersContrast(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia(CONTRAST_QUERY).matches;
+}
+
 function migrateLegacyChoice(): ThemeChoice | null {
   // Legacy schedule "system" → `system` mode wins over the boolean.
   const schedule = safeReadStringLS(LEGACY_SCHEDULE_KEY);
@@ -97,6 +107,7 @@ interface ResolvedTheme {
 function resolveTheme(
   choice: ThemeChoice,
   systemPrefersDark: boolean,
+  systemPrefersContrast = false,
 ): ResolvedTheme {
   // HC follows the system color-scheme so AAA-leaning users on a dark
   // OS get HC-dark and vice versa. The hc class is additive — it does
@@ -104,17 +115,49 @@ function resolveTheme(
   if (choice === "hc") {
     return { isDark: systemPrefersDark, isHighContrast: true };
   }
+  // `system` follows the OS on BOTH axes. A low-vision user who turned on
+  // "Increase Contrast" (iOS) / high-contrast text (Android) / Windows HC
+  // arrives with the AAA token set already applied — without having to
+  // discover the manual switch buried in the header "⋯" menu. An explicit
+  // light/dark choice is a deliberate opt-out and is never overridden.
   if (choice === "system") {
-    return { isDark: systemPrefersDark, isHighContrast: false };
+    return { isDark: systemPrefersDark, isHighContrast: systemPrefersContrast };
   }
   return { isDark: choice === "dark", isHighContrast: false };
 }
+
+/**
+ * Browser-chrome `theme-color` for each resolved theme. Must track the
+ * `--c-bg` values in `src/styles/theme.css` (`:root` #f2ecdf / `.dark`
+ * #0d1512). `html.hc` / `html.hc.dark` layer AAA-leaning text/border
+ * tokens on top but do not override `--c-bg`, so HC uses the same bg as
+ * its underlying light/dark tier — no separate HC entry needed here.
+ */
+const THEME_COLOR_BY_MODE = {
+  light: "#f2ecdf",
+  dark: "#0d1512",
+} as const;
 
 function applyResolvedTheme({ isDark, isHighContrast }: ResolvedTheme): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.classList.toggle("dark", isDark);
   root.classList.toggle("hc", isHighContrast);
+
+  // Keep the OS status-bar / title-bar in sync with the *resolved* theme.
+  // The static `<meta name="theme-color" media="...">` pair in index.html
+  // only covers the pre-JS default (before this hook mounts) and tracks
+  // `prefers-color-scheme` — it never learns about an explicit in-app
+  // light/dark/hc pick that diverges from the OS setting. Overwrite every
+  // matching meta once resolved so both the light- and dark-media
+  // variants agree, regardless of which one the browser would otherwise
+  // pick.
+  const metas = document.querySelectorAll<HTMLMetaElement>(
+    'meta[name="theme-color"]',
+  );
+  if (metas.length === 0) return;
+  const color = isDark ? THEME_COLOR_BY_MODE.dark : THEME_COLOR_BY_MODE.light;
+  metas.forEach((meta) => meta.setAttribute("content", color));
 }
 
 export interface UseThemeReturn {
@@ -142,11 +185,20 @@ export function useTheme(): UseThemeReturn {
     const initial = readInitialChoice();
     // Apply synchronously so the first paint already matches the persisted
     // choice (avoids a flash of light theme when reload-ing into dark).
-    applyResolvedTheme(resolveTheme(initial, readSystemPrefersDark()));
+    applyResolvedTheme(
+      resolveTheme(
+        initial,
+        readSystemPrefersDark(),
+        readSystemPrefersContrast(),
+      ),
+    );
     return initial;
   });
   const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(
     readSystemPrefersDark,
+  );
+  const [systemPrefersContrast, setSystemPrefersContrast] = useState<boolean>(
+    readSystemPrefersContrast,
   );
 
   // Keep an up-to-date snapshot for callbacks that mustn't re-create on
@@ -158,8 +210,8 @@ export function useTheme(): UseThemeReturn {
   }, [choice]);
 
   const resolved = useMemo(
-    () => resolveTheme(choice, systemPrefersDark),
-    [choice, systemPrefersDark],
+    () => resolveTheme(choice, systemPrefersDark, systemPrefersContrast),
+    [choice, systemPrefersDark, systemPrefersContrast],
   );
 
   // Reactively apply classes whenever the resolution changes.
@@ -178,10 +230,12 @@ export function useTheme(): UseThemeReturn {
     const restore = () => {
       const persisted = readInitialChoice();
       const prefersDark = readSystemPrefersDark();
+      const prefersContrast = readSystemPrefersContrast();
       choiceRef.current = persisted;
       setChoiceState(persisted);
       setSystemPrefersDark(prefersDark);
-      applyResolvedTheme(resolveTheme(persisted, prefersDark));
+      setSystemPrefersContrast(prefersContrast);
+      applyResolvedTheme(resolveTheme(persisted, prefersDark, prefersContrast));
     };
     const onVisibility = () => {
       if (document.visibilityState === "visible") restore();
@@ -204,6 +258,23 @@ export function useTheme(): UseThemeReturn {
     };
     // `addEventListener` is Safari ≥ 14; on older browsers fall back to
     // the deprecated `addListener` so the hook still works headlessly.
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
+    mq.addListener(handler);
+    return () => mq.removeListener(handler);
+  }, []);
+
+  // System contrast: `prefers-contrast: more` (iOS "Increase Contrast",
+  // Android high-contrast text) or `forced-colors: active` (Windows HC).
+  // Only consumed by the `system` choice — see `resolveTheme`.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia(CONTRAST_QUERY);
+    const handler = (event: MediaQueryListEvent) => {
+      setSystemPrefersContrast(event.matches);
+    };
     if (typeof mq.addEventListener === "function") {
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);

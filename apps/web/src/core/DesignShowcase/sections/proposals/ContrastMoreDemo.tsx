@@ -40,7 +40,7 @@ function Card({ high }: { high: boolean }) {
         </div>
         <p
           className={cn(
-            "text-2xs mt-2",
+            "text-style-caption mt-2",
             high ? "text-text font-medium" : "text-muted",
           )}
         >
@@ -49,14 +49,14 @@ function Card({ high }: { high: boolean }) {
         <button
           type="button"
           className={cn(
-            "mt-3 w-full h-8 rounded-lg text-2xs font-medium",
+            "mt-3 w-full h-8 rounded-lg text-style-caption font-medium",
             high ? "bg-text text-bg" : "bg-panel border border-line text-text",
           )}
         >
           Додати
         </button>
       </div>
-      <p className="text-2xs text-muted mt-2">
+      <p className="text-style-caption text-muted mt-2">
         {high ? "prefers-contrast: more" : "Стандарт"}
       </p>
     </CompareTile>

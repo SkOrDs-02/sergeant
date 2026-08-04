@@ -41,6 +41,10 @@ describe("ModuleHeader", () => {
     );
 
     expect(screen.getByText("ФІЗРУК")).toBeInTheDocument();
+    // Module chrome title is shell decoration, not a section heading — it
+    // precedes each page's own <h1> in DOM order, so it must not register
+    // as a heading (would invert the a11y heading outline).
+    expect(screen.queryByRole("heading", { name: "ФІЗРУК" })).toBeNull();
     expect(screen.getByText("ОСОБИСТИЙ ЖУРНАЛ")).toBeInTheDocument();
     expect(screen.getByText("Тренування · прогрес")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Назад" })).toBeInTheDocument();

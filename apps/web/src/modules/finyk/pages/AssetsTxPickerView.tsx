@@ -6,28 +6,29 @@ import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import {
-  getAccountLabel,
-  getMonoDebt,
-  getDebtPaid,
-  getRecvPaid,
-  calcDebtRemaining,
-  calcReceivableRemaining,
-  getDebtEffectiveTotal,
-  getReceivableEffectiveTotal,
-} from "../utils";
-import {
-  getDebtTxRole,
-  getReceivableTxRole,
-  type Debt,
-  type Receivable,
+import { getAccountLabel, getMonoDebt } from "../utils";
+import type {
+  Debt,
+  LinkedTxRole,
+  Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  classifyMonoCardLink,
+  isSuggestedMonoCardRepayment,
+  sumMonoCardPaid,
+} from "@sergeant/finyk-domain/domain/monoCardDebt";
+import { AssetsDebtTxPicker } from "./AssetsDebtTxPicker";
+import {
+  buildMonthOptions,
+  useLinkableTransactions,
+} from "../hooks/useLinkableTransactions";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
-import { cn } from "@shared/lib/ui/cn";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { messages } from "@shared/i18n/uk";
+import { cn } from "@shared/lib/ui/cn";
 
 type Subscription = {
   id: string;
@@ -65,10 +66,12 @@ interface AssetsTxPickerViewProps {
   updateSubscription: (subId: string, patch: Record<string, unknown>) => void;
   manualDebts: readonly Debt[];
   receivables: readonly Receivable[];
-  toggleLinkedTx: (
+  setLinkedTxRole: (
     id: string,
     txId: string,
     type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
   ) => void;
   showBalance: boolean;
   customCategories?: readonly CustomCategoryInput[];
@@ -106,13 +109,25 @@ export function AssetsTxPickerView({
   updateSubscription,
   manualDebts,
   receivables,
-  toggleLinkedTx,
+  setLinkedTxRole,
   showBalance,
   customCategories,
 }: AssetsTxPickerViewProps) {
   const [query, setQuery] = useState("");
   const [month, setMonth] = useState("");
-  const [openedAt] = useState(() => Date.now());
+  // AI-CONTEXT: `mono.transactions` (проп) — це навмисно лише поточний
+  // календарний місяць (див. `useMonobankWebhook`). Пікер тягне свій,
+  // ширший діапазон, інакше напис «Останні 90 днів» бреше: 3-го числа під
+  // ним видно 7 операцій.
+  const linkable = useLinkableTransactions({
+    month,
+    enabled: true,
+    base: allTransactions as never,
+  });
+  const sourceTransactions = linkable.transactions as readonly TxRowTx[];
+  const isLoading = loading || linkable.loading;
+  const loadError = error ?? linkable.error;
+  const retry = onRetry ?? linkable.refetch;
   const linkedIds = useMemo(() => {
     if (txPicker.type === "monoDebt") {
       return new Set(monoDebtLinkedTxIds[txPicker.id] ?? []);
@@ -128,54 +143,34 @@ export function AssetsTxPickerView({
       collection.find((item) => item.id === txPicker.id)?.linkedTxIds ?? [],
     );
   }, [manualDebts, monoDebtLinkedTxIds, receivables, subscriptions, txPicker]);
-  const monthOptions = useMemo(
-    () =>
-      [
-        ...new Set(
-          allTransactions
-            .map((item) => {
-              const instant = transactionInstant(item.time);
-              return instant > 0
-                ? new Intl.DateTimeFormat("en-CA", {
-                    timeZone: "Europe/Kyiv",
-                    year: "numeric",
-                    month: "2-digit",
-                  }).format(instant)
-                : "";
-            })
-            .filter(Boolean),
-        ),
-      ]
-        .sort()
-        .reverse(),
-    [allTransactions],
-  );
+  // Опції періоду будуються з календаря, а не з уже завантажених даних —
+  // інакше селект пропонує рівно той місяць, який і так видно.
+  const monthOptions = useMemo(() => buildMonthOptions(), []);
+  // Діапазон уже відфільтрував сервер — тут лишається тільки пошук
+  // і локальні (ручні) записи поза вибраним місяцем.
   const transactions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const cutoff = openedAt - 90 * 24 * 60 * 60 * 1000;
-    const hasRecent = allTransactions.some(
-      (item) => transactionInstant(item.time) >= cutoff,
-    );
-    return allTransactions.filter((item) => {
-      const instant = transactionInstant(item.time);
-      const itemMonth =
-        instant > 0
-          ? new Intl.DateTimeFormat("en-CA", {
-              timeZone: "Europe/Kyiv",
-              year: "numeric",
-              month: "2-digit",
-            }).format(instant)
-          : "";
-      const inRange = month
-        ? itemMonth === month
-        : !hasRecent || instant >= cutoff || linkedIds.has(item.id);
-      const haystack =
-        `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
-      return (
-        inRange && (!normalizedQuery || haystack.includes(normalizedQuery))
-      );
-    });
-  }, [allTransactions, linkedIds, month, openedAt, query]);
+    return sourceTransactions
+      .filter((item) => {
+        const instant = transactionInstant(item.time);
+        const itemMonth =
+          instant > 0
+            ? new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Europe/Kyiv",
+                year: "numeric",
+                month: "2-digit",
+              }).format(instant)
+            : "";
+        const inRange = month ? itemMonth === month : true;
+        const haystack =
+          `${item.description ?? ""} ${Math.abs(item.amount / 100)}`.toLowerCase();
+        return (
+          (inRange || linkedIds.has(item.id)) &&
+          (!normalizedQuery || haystack.includes(normalizedQuery))
+        );
+      })
+      .sort((a, b) => transactionInstant(b.time) - transactionInstant(a.time));
+  }, [sourceTransactions, linkedIds, month, query]);
   const pickerControls = (
     <div className="mb-3 space-y-2">
       <Input
@@ -198,26 +193,24 @@ export function AssetsTxPickerView({
           </option>
         ))}
       </select>
-      {loading && allTransactions.length === 0 && (
+      {isLoading && sourceTransactions.length === 0 && (
         <div aria-busy="true" className="space-y-2">
           <Skeleton className="h-14 rounded-xl" />
           <Skeleton className="h-14 rounded-xl" />
           <Skeleton className="h-14 rounded-xl" />
         </div>
       )}
-      {Boolean(error) && allTransactions.length === 0 && (
+      {Boolean(loadError) && sourceTransactions.length === 0 && (
         <Card variant="flat" radius="md" className="space-y-2">
           <p className="text-style-caption text-danger-strong dark:text-danger">
             Не вдалося завантажити транзакції.
           </p>
-          {onRetry && (
-            <Button size="sm" onClick={onRetry}>
-              Повторити
-            </Button>
-          )}
+          <Button size="sm" onClick={retry}>
+            Повторити
+          </Button>
         </Card>
       )}
-      {!loading && !error && transactions.length === 0 && (
+      {!isLoading && !loadError && transactions.length === 0 && (
         <p
           className="py-6 text-center text-style-caption text-subtle"
           role="status"
@@ -247,15 +240,30 @@ export function AssetsTxPickerView({
       );
     }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
-    const paid = transactions
-      .filter((t) => linkedIds.includes(t.id))
-      .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+    // AI-CONTEXT: рахуємо по `allTransactions` — проп зі стану сторінки
+    // (поточний місяць + ручні записи), а НЕ по `transactions` і не по
+    // `sourceTransactions`. Перший звужений пошуком, другий — вибраним
+    // періодом, тож обидва змушували б суму стрибати від відкритого
+    // фільтра. `allTransactions` не залежить ні від того, ні від іншого,
+    // і рівно він відповідає підпису «Погашено цього місяця» — та сама
+    // множина, що живить `AssetsLiabilitiesSection`, тож два екрани
+    // показують одне число. Правило погашення — канонічне в
+    // `@sergeant/finyk-domain` (дубль із секцією пасивів знято).
+    const paid = sumMonoCardPaid(allTransactions, linkedIds, txPicker.id);
     const remaining = getMonoDebt(account);
     const total = paid + remaining;
     const label = getAccountLabel(account);
 
     const isSuggested = (t: TxRowTx) =>
-      t._accountId === txPicker.id && t.amount > 0;
+      isSuggestedMonoCardRepayment(t, txPicker.id);
+
+    const monoLinkKind = (t: TxRowTx) => classifyMonoCardLink(t, txPicker.id);
+    const monoLinkLabel = (t: TxRowTx) => {
+      const copy = messages.finyk.monoCardLink;
+      const kind = monoLinkKind(t);
+      if (kind === "repayment") return copy.repayment;
+      return kind === "card-purchase" ? copy.cardPurchase : copy.otherIncome;
+    };
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -307,6 +315,22 @@ export function AssetsTxPickerView({
                   {suggested && !isLinked && (
                     <div className="text-style-caption font-semibold text-success-strong dark:text-success px-1 pt-1">
                       ↑ Поповнення картки
+                    </div>
+                  )}
+                  {isLinked && (
+                    // Галочка `TxRow` лише каже «привʼязано». Що саме
+                    // привʼязка зробила — тут: покупка по картці й рух на
+                    // чужому рахунку в суму погашеного не йдуть, і мовчати
+                    // про це означало б обіцяти неіснуючий внесок.
+                    <div
+                      className={cn(
+                        "text-style-caption font-semibold px-1 pt-1",
+                        monoLinkKind(t) === "repayment"
+                          ? "text-success-strong dark:text-success"
+                          : "text-warning-strong dark:text-warning",
+                      )}
+                    >
+                      {monoLinkLabel(t)}
                     </div>
                   )}
                   <TxRow
@@ -440,93 +464,18 @@ export function AssetsTxPickerView({
       </div>
     );
   }
-  const linked = item.linkedTxIds || [];
-  const paid = isDebt
-    ? getDebtPaid(item as Debt, transactions as TxRowTx[])
-    : getRecvPaid(item as Receivable, transactions as TxRowTx[]);
-  const total = isDebt
-    ? getDebtEffectiveTotal(item as Debt, transactions as TxRowTx[])
-    : getReceivableEffectiveTotal(
-        item as Receivable,
-        transactions as TxRowTx[],
-      );
-  const remaining = isDebt
-    ? calcDebtRemaining(item as Debt, transactions as TxRowTx[])
-    : calcReceivableRemaining(item as Receivable, transactions as TxRowTx[]);
-  const getTxRole = (tx: TxRowTx) =>
-    isDebt ? getDebtTxRole(tx) : getReceivableTxRole(tx);
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
-        <button
-          onClick={() => setTxPicker(null)}
-          className="text-sm text-muted hover:text-text transition-colors"
-        >
-          ← Назад
-        </button>
-        <span className="text-style-label">
-          {isDebt ? "Транзакції по пасиву" : "Транзакції по активу"}
-        </span>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card variant="flat" radius="md" className="mb-4">
-            <div className="text-xs text-subtle">
-              {item?.emoji} {item?.name}
-            </div>
-            <p className="text-xs text-subtle mt-2 leading-relaxed">
-              Обери транзакції, які належать цьому запису. Привʼязані транзакції
-              враховуються в сумі сплаченого та позначаються роллю платежу.
-            </p>
-            <div
-              className={cn(
-                "text-style-headline mt-1",
-                isDebt
-                  ? "text-danger-strong dark:text-danger"
-                  : "text-success-strong dark:text-success",
-              )}
-            >
-              {isDebt ? "−" : "+"}
-              {remaining.toLocaleString("uk-UA")} ₴ залишок
-            </div>
-            <div className="text-xs text-subtle mt-1">
-              Сплачено: {paid.toLocaleString("uk-UA")} з{" "}
-              {total?.toLocaleString("uk-UA")} ₴
-            </div>
-          </Card>
-          {pickerControls}
-          {transactions.map((t, i) => {
-            const isLinked = linked.includes(t.id);
-            const role = isLinked ? getTxRole(t) : null;
-            return (
-              <div key={i}>
-                {isLinked && role && (
-                  <div
-                    className="text-style-caption px-1 py-1"
-                    style={{ color: role.color }}
-                  >
-                    {role.label}
-                  </div>
-                )}
-                <TxRow
-                  tx={t}
-                  highlighted={isLinked}
-                  onClick={() =>
-                    toggleLinkedTx(
-                      (txPicker as { id: string }).id,
-                      t.id,
-                      (txPicker as { type: "debt" | "receivable" }).type,
-                    )
-                  }
-                  hideAmount={!showBalance}
-                  customCategories={customCategories}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <AssetsDebtTxPicker
+      kind={isDebt ? "debt" : "receivable"}
+      item={item}
+      transactions={transactions}
+      allTransactions={sourceTransactions}
+      setLinkedTxRole={setLinkedTxRole}
+      showBalance={showBalance}
+      {...(customCategories ? { customCategories } : {})}
+      controls={pickerControls}
+      onBack={() => setTxPicker(null)}
+    />
   );
 }

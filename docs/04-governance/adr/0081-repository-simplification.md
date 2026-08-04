@@ -1,6 +1,6 @@
 # ADR-0081: Спрощення repository automation та історії
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Last validated:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 - **Date:** 2026-07-29
 - **Reviewers:** @SkOrDs-02

@@ -11,7 +11,10 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    /* Was a static `--color-gray-200` fallback that never flipped in dark
+       mode (2026-08 design-audit T12) — `--c-line` is the theme-aware
+       border token (light: warm-gray hairline; dark: ink hairline). */
+    border-color: rgb(var(--c-line));
   }
 }
 

@@ -6,6 +6,13 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon } from "@shared/components/ui/Icon";
+import { clampNumericInput } from "@shared/lib/format/numberInput";
+import {
+  MAX_DISTANCE_M,
+  MAX_DURATION_SEC,
+  MAX_REPS,
+  MAX_WEIGHT_KG,
+} from "../../lib/numericBounds";
 import {
   recoveryConflictsForWorkoutItem,
   type Workout,
@@ -46,6 +53,10 @@ export type WorkoutItemCardProps = {
   ) => void;
   setRestTimer: (state: RestTimerState | null) => void;
   getDefaultForGroup: (primaryGroup: string) => number;
+  getDefaultForExercise?:
+    ((exerciseId: string, primaryGroup: string) => number) | undefined;
+  setDefaultForExercise?:
+    ((exerciseId: string, sec: number) => void) | undefined;
   /**
    * Called after updateItem is invoked with the filtered sets array.
    * Receives the workout id, item id, and the snapshot of the sets array
@@ -87,6 +98,8 @@ export function WorkoutItemCard({
   updateItem,
   setRestTimer,
   getDefaultForGroup,
+  getDefaultForExercise,
+  setDefaultForExercise,
   onDeleteSet,
 }: WorkoutItemCardProps) {
   // Path-based deep-link into the Exercise detail page. The legacy
@@ -104,7 +117,10 @@ export function WorkoutItemCard({
       ? calcCardioMetrics(it.distanceM, it.durationSec)
       : null;
 
-  const defSec = getDefaultForGroup(it.primaryGroup);
+  const defSec = it.exerciseId
+    ? (getDefaultForExercise?.(it.exerciseId, it.primaryGroup) ??
+      getDefaultForGroup(it.primaryGroup))
+    : getDefaultForGroup(it.primaryGroup);
   const cat = getRestCategory(it.primaryGroup);
   const catLabel = REST_CATEGORY_LABELS[cat] || "";
   const quickOptions = [60, 90, 120, 180].filter((s) => s !== defSec);
@@ -279,6 +295,8 @@ export function WorkoutItemCard({
                 type="number"
                 inputMode="decimal"
                 placeholder="кг"
+                min={0}
+                max={MAX_WEIGHT_KG}
                 aria-label="Вага в кілограмах"
                 value={s.weightKg || ""}
                 readOnly={isReadOnly}
@@ -289,8 +307,7 @@ export function WorkoutItemCard({
                   if (!current) return;
                   next[idx] = {
                     ...current,
-                    weightKg:
-                      e.target.value === "" ? 0 : Number(e.target.value),
+                    weightKg: clampNumericInput(e.target.value, MAX_WEIGHT_KG),
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });
                 }}
@@ -300,29 +317,30 @@ export function WorkoutItemCard({
                 type="number"
                 inputMode="numeric"
                 placeholder="повт."
+                min={0}
+                max={MAX_REPS}
                 aria-label="Кількість повторень"
                 value={s.reps || ""}
                 readOnly={isReadOnly}
                 onFocus={(e) => e.target.select()}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter") return;
-                  // UX: як у більшості трекерів — Enter на повторах = "залоговано" → запускаємо таймер
-                  if (activeWorkout.endedAt) return;
-                  if (group) return;
-                  const reps = Number(s.reps) || 0;
-                  const w = Number(s.weightKg) || 0;
-                  if (reps <= 0 && w <= 0) return;
-                  setRestTimer({ remaining: defSec, total: defSec });
-                }}
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
                   const current = next[idx];
                   if (!current) return;
+                  const reps = clampNumericInput(e.target.value, MAX_REPS);
                   next[idx] = {
                     ...current,
-                    reps: e.target.value === "" ? 0 : Number(e.target.value),
+                    reps,
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });
+                  if (
+                    !activeWorkout.endedAt &&
+                    !group &&
+                    (Number(current.reps) || 0) <= 0 &&
+                    reps > 0
+                  ) {
+                    setRestTimer({ remaining: defSec, total: defSec });
+                  }
                 }}
               />
               <button
@@ -419,14 +437,20 @@ export function WorkoutItemCard({
                 }
                 title={`Рекомендований час для ${catLabel.toLowerCase()}`}
               >
-                {defSec} с ★
+                {defSec} с
               </button>
               {quickOptions.map((sec) => (
                 <button
                   key={sec}
                   type="button"
                   className="min-h-[44px] px-4 rounded-xl border border-line bg-panelHi text-sm text-text hover:bg-panel transition-colors"
-                  onClick={() => setRestTimer({ remaining: sec, total: sec })}
+                  onClick={() => {
+                    if (it.exerciseId) {
+                      setDefaultForExercise?.(it.exerciseId, sec);
+                    }
+                    setRestTimer({ remaining: sec, total: sec });
+                  }}
+                  title="Запустити й зберегти як типовий час для цієї вправи"
                 >
                   {sec} с
                 </button>
@@ -449,7 +473,10 @@ export function WorkoutItemCard({
             onFocus={(e) => e.target.select()}
             onChange={(e) =>
               updateItem(activeWorkout.id, it.id, {
-                durationSec: e.target.value === "" ? 0 : Number(e.target.value),
+                durationSec: clampNumericInput(
+                  e.target.value,
+                  MAX_DURATION_SEC,
+                ),
               })
             }
           />
@@ -467,13 +494,15 @@ export function WorkoutItemCard({
               type="number"
               inputMode="numeric"
               placeholder="метри"
+              min={0}
+              max={MAX_DISTANCE_M}
               aria-label="Дистанція в метрах"
               value={it.distanceM || ""}
               readOnly={isReadOnly}
               onFocus={(e) => e.target.select()}
               onChange={(e) =>
                 updateItem(activeWorkout.id, it.id, {
-                  distanceM: e.target.value === "" ? 0 : Number(e.target.value),
+                  distanceM: clampNumericInput(e.target.value, MAX_DISTANCE_M),
                 })
               }
             />
@@ -488,8 +517,10 @@ export function WorkoutItemCard({
               onFocus={(e) => e.target.select()}
               onChange={(e) =>
                 updateItem(activeWorkout.id, it.id, {
-                  durationSec:
-                    e.target.value === "" ? 0 : Number(e.target.value),
+                  durationSec: clampNumericInput(
+                    e.target.value,
+                    MAX_DURATION_SEC,
+                  ),
                 })
               }
             />

@@ -7,13 +7,18 @@
  * `biometrics-storage-plan.md`). Persisted under
  * `STORAGE_KEYS.HUB_BIOMETRICS` (`hub_biometrics_v1`).
  *
- * AI-DANGER: **це device-local кеш, а не синкована сутність.** Попередня
- * версія цього докстрінга стверджувала, що вага «rides the existing
- * `SYNC_MODULES.profile` LWW path» — такого шляху не існує (перевірено
- * W1-WEIGHT-SOT, стадія 2):
+ * AI-DANGER: **це device-local кеш, а не джерело істини.** Рішення власника
+ * 2026-08-04 (W1-WEIGHT-SOT, стадії 3-4; ADR-0080): **fizruk-журнал
+ * (`fizruk_measurements`) — канонічне сховище ваги; профіль лишається
+ * головним ВХОДОМ** (місце, де людина керує вагою — зокрема без модуля
+ * fizruk, де вона все одно потрібна для КБЖВ), а `weightKg` тут — похідний
+ * кеш останнього відомого значення, не незалежний запис.
  *
- *   - `hub_biometrics` немає в `OP_LOG_TABLE_REGISTRY`
- *     (`apps/server/src/modules/sync/syncV2.ts`) і в жодній PG-міграції;
+ * Чому кеш, а не SoT: `hub_biometrics` — localStorage браузера, без
+ * серверної таблиці й без історії (одне число, не часовий ряд):
+ *
+ *   - немає в `OP_LOG_TABLE_REGISTRY` (`apps/server/src/modules/sync/syncV2.ts`)
+ *     і в жодній PG-міграції;
  *   - `SYNC_MODULES.profile` (`packages/shared/src/sync/modules.ts`) —
  *     tombstone: жоден рантайм його не споживає;
  *   - серверної таблиці `kv_store` теж немає.
@@ -21,19 +26,24 @@
  * Практичний наслідок: «поточна вага» тут НЕ переживає зміну пристрою
  * чи очистку браузера. Історія ваги, яка переживає, живе у fizruk-таблицях
  * (`fizruk_daily_log` + `fizruk_measurements`) — читай її через
- * `selectLatestBodyWeight` з `@sergeant/fizruk-domain`. Доля цього слоту
- * (внести в sync-реєстр чи офіційно демоутити до кешу) — питання ADR,
- * стадія 4 W1-WEIGHT-SOT.
+ * `selectLatestBodyWeight` з `@sergeant/fizruk-domain`. Для юзера, чия вага
+ * лишилась тільки тут (записана до cutover-у), клієнтський bootstrap
+ * (`bodyWeightBootstrap.ts`, стадія 4) одноразово й ідемпотентно сідить
+ * fizruk-журнал цим значенням при boot-і.
  *
  * Weight is treated as the "current weight" snapshot for Nutrition
  * (Mifflin-St Jeor uses one number, not a time-series) і як фолбек для
- * юзера без модуля fizruk. Fizruk keeps the historical journal. The two
+ * юзера без модуля fizruk, коли fizruk-журнал ще порожній (офлайн / до
+ * першого boot-bootstrap-у). Fizruk keeps the canonical journal. The two
  * stay in lockstep:
  *
  *   - Profile → Fizruk: `BiometricsSection` calls
  *     `useDailyLog.addEntry({ weightKg })` on save when weight
  *     changes — going through the canonical fizruk hook keeps the
- *     SQLite overlay (PR #030, storage-roadmap) transparent.
+ *     SQLite overlay (PR #030, storage-roadmap) transparent, and
+ *     `useDailyLog.addEntry` itself funnels through `recordBodyWeight()`
+ *     (stage 2), so this is the SAME writer as every other Fizruk-side
+ *     weigh-in — there is no separate bypass path.
  *   - Fizruk → Profile: усі писачі ваги (обидва хуки + три AI-тули)
  *     ходять через `recordBodyWeight()` (`./recordBodyWeight.ts`), який
  *     інкапсулює `mirrorWeightToBiometrics`.

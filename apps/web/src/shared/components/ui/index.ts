@@ -51,9 +51,6 @@ export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 export { DateScrubber } from "./DateScrubber";
 export type { DateScrubberProps } from "./DateScrubber";
 
-export { NumericAccessoryBar } from "./NumericAccessoryBar";
-export type { NumericAccessoryBarProps } from "./NumericAccessoryBar";
-
 export { MorphChevron } from "./MorphChevron";
 export type { MorphChevronProps } from "./MorphChevron";
 
@@ -87,20 +84,10 @@ export type {} from "./AnimatedNumber";
 export { MaskedAmount } from "./MaskedAmount";
 export type { MaskedAmountProps } from "./MaskedAmount";
 
-export { PageTransition } from "./PageTransition";
-export type { TransitionDirection } from "./PageTransition";
-
 export { PullToRefresh } from "./PullToRefresh";
 export type { PullToRefreshProps, PullToRefreshVariant } from "./PullToRefresh";
 export { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 export type { PullToRefreshIndicatorProps } from "./PullToRefreshIndicator";
-
-export {
-  AccentColorPicker,
-  AccentColorPickerCard,
-  useAccentColor,
-} from "./AccentColorPicker";
-export type { AccentColor } from "./AccentColorPicker";
 
 export { FormField, Label } from "./FormField";
 export type { FormFieldProps, LabelProps } from "./FormField";
@@ -115,9 +102,6 @@ export type {
   InputVariant,
   TextareaProps,
 } from "./Input";
-
-export { Prose } from "./Prose";
-export type { ProseProps, ProseVariant } from "./Prose";
 
 export { SectionHeader, SectionHeading } from "./SectionHeading";
 export type {

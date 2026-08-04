@@ -51,13 +51,13 @@ describe("pg/nutritionMeals schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 035", () => {
+  it("declares column types matching migrations 035 + 095", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
     expect(columnMap["id"]!.dataType).toBe("string");
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
@@ -119,12 +119,12 @@ describe("pg/nutritionPantries schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 035", () => {
+  it("declares column types matching migrations 035 + 095", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
 
     expect(columnMap["user_id"]!.notNull).toBe(true);
@@ -163,13 +163,13 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 035", () => {
+  it("declares column types matching migrations 035 + 095", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
-    expect(columnMap["pantry_id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
+    expect(columnMap["pantry_id"]!.columnType).toBe("PgText");
     expect(columnMap["pantry_id"]!.notNull).toBe(true);
 
     expect(columnMap["qty"]!.columnType).toBe("PgReal");
@@ -209,7 +209,7 @@ describe("pg/nutritionPrefs schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 035", () => {
+  it("declares column types matching migrations 035 + 095", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -221,7 +221,7 @@ describe("pg/nutritionPrefs schema snapshot", () => {
     expect(columnMap["prefs_json"]!.notNull).toBe(true);
     expect(columnMap["prefs_json"]!.hasDefault).toBe(true);
 
-    expect(columnMap["active_pantry_id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["active_pantry_id"]!.columnType).toBe("PgText");
     expect(columnMap["active_pantry_id"]!.notNull).toBe(false);
   });
 
@@ -250,12 +250,12 @@ describe("pg/nutritionRecipes schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 035", () => {
+  it("declares column types matching migrations 035 + 095", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["data_json"]!.columnType).toBe("PgJsonb");
     expect(columnMap["data_json"]!.notNull).toBe(true);
     expect(columnMap["data_json"]!.hasDefault).toBe(true);

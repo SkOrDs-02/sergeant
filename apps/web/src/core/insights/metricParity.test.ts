@@ -61,6 +61,7 @@ import {
   aggregateKcal,
   aggregateSpending as aggregateSpendingByDate,
 } from "../hub/hubReports.aggregation";
+import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { readAllData } from "../lib/hubChatContext/readAllData";
 import { aggregateSpending as chatAggregateSpending } from "../lib/chatActions/queryFinykActions";
 import { calcFinykSpendingTotal } from "@sergeant/finyk-domain";
@@ -278,29 +279,38 @@ describe("парність метрики «витрати за період»",
     expect(canon.totalIncome).toBe(2000);
   });
 
-  it("РОЗБІЖНІСТЬ: дайджест не бачить готівки — 900 грн замість 1150", () => {
+  it("ЗБІГ: дайджест бачить готівку — 1150 грн (стадія 2d)", () => {
     const digest = aggregateFinyk(WEEK_KEY);
-    expect(digest.totalSpent).toBe(900);
+    // Було 900: банк-only всесвіт губив рівно 250 грн ручної витрати.
+    // Тепер `readFinykStatsContext` віддає канонічний всесвіт
+    // (`buildFinykSpendingUniverse`), тож дайджест і коуч — обидва ходять
+    // через нього — зійшлися з Overview і з каноном.
+    expect(digest.totalSpent).toBe(1150);
     expect(digest.totalIncome).toBe(2000);
-    // Δ = 250 грн рівно на суму ручної витрати. Закривається стадією 2d.
+    // Готівка мусить осісти у своїй категорії, а не в «other»: інакше
+    // топ-категорії дайджесту почали б брехати рівно на суму ручного світу.
+    expect(digest.topCategories).toContainEqual({
+      name: "🛒 Продукти",
+      amount: 1150,
+    });
   });
 
-  it("ЗБІГ (per-device): Hub-Reports рахує те саме, що дайджест — 900 грн", () => {
+  it("ЗБІГ: Hub-Reports бачить готівку — 1150 грн (стадія 2d)", () => {
+    // Входи будуються рівно так, як це робить `ExpensesCard`: через
+    // `readFinykStatsContext`. Раніше тест збирав `txList`/`excludedTxIds`
+    // вручну — і тому вимірював не той конвеєр, що бачить користувач.
+    const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
     const reports = aggregateSpendingByDate(
       {
-        txList: BANK_TXS as never,
-        excludedTxIds: [
-          ...HIDDEN_TX_IDS,
-          ...EXCLUDED_STAT_TX_IDS,
-          "t-transfer",
-          "t-recv",
-        ],
-        txSplits: TX_SPLITS,
+        txList: txs as never,
+        excludedTxIds,
+        txSplits: txSplits as Record<string, unknown[]>,
       },
       WEEK_DAYS,
     );
-    expect(reports.total).toBe(900);
-    // Hub-Reports теж банк-only → та сама розбіжність із каноном (-250 грн).
+    // Було 900 (банк-only). Тепер картка Витрат, тижневий дайджест і канон
+    // дають одне число на одних даних.
+    expect(reports.total).toBe(1150);
   });
 
   it("ЗБІГ: HubChat-контекст поважає finyk_excluded_stat_txs (стадія 2а)", () => {
@@ -316,14 +326,14 @@ describe("парність метрики «витрати за період»",
     const chatSpent = calcFinykSpendingTotal(d.statTx, {
       txSplits: TX_SPLITS,
     });
-    // 300 + 600 = 900. Було 1100 — зайві 200 давала `t-excl-stat`.
-    // Тепер чат сходиться з дайджестом і Hub-Reports (обидва 900).
-    // Із каноном (1150) розбіжність ЛИШАЄТЬСЯ: чат банк-only, готівки не
-    // бачить — це стадія 2г, окреме рішення, не цей патч.
-    expect(chatSpent).toBe(900);
+    // 300 + 600 + 250 (готівка) = 1150. Шлях числа: 1100 (до стадії 2а,
+    // `t-excl-stat` протікав) → 900 (2а) → 1150 (2d, зʼявилась готівка).
+    // Контекст чату тепер сходиться і з чат-тулзою, і з дайджестом, і з
+    // каноном — це було головне, бо модель отримує обидва в одній розмові.
+    expect(chatSpent).toBe(1150);
   });
 
-  it("РОЗБІЖНІСТЬ: чат-тулза aggregate_spending має власний всесвіт", () => {
+  it("ЗБІГ: чат-тулза aggregate_spending дає канонічні 1150 (стадія 2b)", () => {
     const out = chatAggregateSpending({
       type: "aggregate_spending",
       input: {
@@ -334,14 +344,17 @@ describe("парність метрики «витрати за період»",
       },
     } as never);
 
-    // Знімок поточної поведінки: тулза виключає лише `hidden`, ігнорує
-    // спліти / внутрішні перекази / receivables / excluded_stat, зате
-    // мерджить готівку. Разом 2500 грн проти 1150 канонічних:
-    //   t-food 300 + t-split 1000 (спліт не застосовано, замість 600)
-    //   + t-excl-stat 200 + t-transfer 500 + t-recv 250 + готівка 250.
-    // Це найбільший розрив серед усіх поверхонь. Закривається стадією 2b.
+    // Було 2500 грн проти 1150 канонічних — найбільший розрив серед усіх
+    // поверхонь: тулза виключала лише `hidden`, ігнорувала спліти /
+    // внутрішні перекази / receivables / excluded_stat, зате мерджила
+    // готівку. Тепер вона рахує канонічним excluded-set-ом і застосовує
+    // спліт: t-food 300 + спліт-частка 600 + готівка 250 = 1150.
+    //
+    // Це перша поверхня, що ЗІЙШЛАСЯ З КАНОНОМ, а не з рештою: вона єдина
+    // (крім Overview) бачить готівку. Дайджест, Hub-Reports і
+    // HubChat-контекст досі дають 900 — їх підтягує стадія 2d.
     expect(out).toMatchInlineSnapshot(
-      `"Витрати за 2026-05-04 — 2026-05-10: 2500 грн усього (6 транзакц.). Розбивка за категоріями: 🛒 Продукти: 1750 грн (4); ↔️ Внутрішній переказ: 500 грн (1); Без категорії: 250 грн (1)"`,
+      `"Витрати за 2026-05-04 — 2026-05-10: 1150 грн усього (3 транзакц.). Розбивка за категоріями: 🛒 Продукти: 1150 грн (3)"`,
     );
   });
 });

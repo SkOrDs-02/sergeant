@@ -11,7 +11,9 @@ test("@critical fizruk: bottom nav switches path-backed module sections", async 
 
   await page.goto("/fizruk", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByRole("heading", { name: "Фізрук" })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фізрук" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   const nav = page.getByRole("navigation", { name: "Розділи Фізрука" });
@@ -48,7 +50,10 @@ test("@critical routine: stats tab deep-link round-trips to calendar", async ({
   await page.goto("/routine", { waitUntil: "domcontentloaded" });
 
   await expect(
-    page.getByRole("heading", { name: "Рутина" }).first(),
+    page
+      .getByTestId("module-header-title")
+      .filter({ hasText: "Рутина" })
+      .first(),
   ).toBeVisible({ timeout: 10_000 });
   const nav = page.getByRole("navigation", { name: "Розділи Рутини" });
   await expect(nav).toBeVisible();

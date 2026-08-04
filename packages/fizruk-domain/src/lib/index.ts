@@ -6,6 +6,7 @@ export * from "./backupSerialization.js";
 export * from "./periodAggregate.js";
 export * from "./recoveryCompute.js";
 export * from "./recoveryConflict.js";
+export * from "./injuryBlock.js";
 export * from "./recoveryForecast.js";
 export * from "./restSettings.js";
 export * from "./trainingPrograms.js";

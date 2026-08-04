@@ -3,6 +3,7 @@ import { chartAxis, chartGrid, chartTick, statusColors } from "@shared/charts";
 import { useChartScrub, useTweenedValues } from "@shared/hooks";
 import { ChartScrubOverlay } from "@shared/components/charts";
 import { ChartGoalLine } from "@shared/components/charts";
+import { cn } from "@shared/lib/ui/cn";
 
 interface NetworthPoint {
   month: string;
@@ -49,6 +50,36 @@ function NetworthChartInner({
 
   const px = (i: number) => PAD.left + (i / (data.length - 1)) * chartW;
   const py = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
+
+  // Month-label thinning: with 8-12+ points the 8px labels collide when
+  // rendered on every tick. Keep spacing at ~24 viewBox units by only
+  // labelling every Nth point, but always keep the first and last so the
+  // series bounds stay legible.
+  const MIN_LABEL_SPACING = 30;
+  const pointSpacing = chartW / Math.max(1, data.length - 1);
+  const labelStep = Math.max(
+    1,
+    Math.ceil(MIN_LABEL_SPACING / Math.max(1, pointSpacing)),
+  );
+  // The final label is forced, so a periodic label that lands closer than
+  // labelStep points to the end would collide with it — suppress those.
+  const showMonthLabel = (i: number) =>
+    i === 0 ||
+    i === data.length - 1 ||
+    (i % labelStep === 0 && data.length - 1 - i >= labelStep);
+
+  // Value-label placement for the first/last point: anchor above the point
+  // by default, but clamp inside the viewBox and flip below the point when
+  // it sits near the top edge so the label never overlaps the card header.
+  const VALUE_LABEL_MIN_Y = 8;
+  const NEAR_TOP_THRESHOLD = PAD.top + 12;
+  const valueLabelPlacement = (i: number) => {
+    const y = py(vAt(i));
+    const nearTop = y < NEAR_TOP_THRESHOLD;
+    return nearTop
+      ? { y: y + 12, dominantBaseline: "hanging" as const }
+      : { y: Math.max(y - 5, VALUE_LABEL_MIN_Y), dominantBaseline: undefined };
+  };
 
   // V-18: tween the plotted y-values so the line/area morph smoothly when the
   // series changes (e.g. account filter, new month) instead of snapping. The
@@ -185,30 +216,41 @@ function NetworthChartInner({
         {data.map((d, i) => (
           <g key={i}>
             <circle cx={px(i)} cy={py(vAt(i))} r="3" fill={color} />
-            {/* Month label */}
-            <text
-              x={px(i)}
-              y={H - 4}
-              textAnchor={chartTick.textAnchor}
-              fontSize="8"
-              className={chartTick.className}
-            >
-              {monthLabel(d.month)}
-            </text>
-            {/* Value label for first and last (hide when scrubbing to avoid overlap) */}
-            {(i === 0 || i === data.length - 1) && activeIndex === null && (
+            {/* Month label (thinned — see showMonthLabel above) */}
+            {showMonthLabel(i) && (
               <text
                 x={px(i)}
-                y={py(vAt(i)) - 5}
-                textAnchor={i === 0 ? "start" : "end"}
+                y={H - 4}
+                textAnchor={chartTick.textAnchor}
                 fontSize="8"
-                fill={color}
-                fontWeight="600"
-                className={chartAxis.label.className}
+                className={chartTick.className}
               >
-                {fmt(d.networth)}₴
+                {monthLabel(d.month)}
               </text>
             )}
+            {/* Value label for first and last (hide when scrubbing to avoid overlap) */}
+            {(i === 0 || i === data.length - 1) &&
+              activeIndex === null &&
+              (() => {
+                const { y, dominantBaseline } = valueLabelPlacement(i);
+                return (
+                  <text
+                    x={px(i)}
+                    y={y}
+                    dominantBaseline={dominantBaseline}
+                    textAnchor={i === 0 ? "start" : "end"}
+                    fontSize="8"
+                    fontWeight="600"
+                    strokeWidth="3"
+                    strokeLinejoin="round"
+                    paintOrder="stroke"
+                    className={cn(chartAxis.label.className, "stroke-panel")}
+                    fill={color}
+                  >
+                    {fmt(d.networth)}₴
+                  </text>
+                );
+              })()}
           </g>
         ))}
 

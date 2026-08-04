@@ -68,6 +68,56 @@ function readVercelCsp(): string {
   return cspHeader.value;
 }
 
+/**
+ * The ENFORCED policy specifically — `readVercelCsp()` above returns whichever
+ * CSP header appears first, which is the (deliberately looser) Report-Only
+ * baseline.
+ *
+ * Parity must be anchored on the enforced policy, not the baseline. Anchoring
+ * it on Report-Only is what let the meta tag keep `script-src 'unsafe-inline'`
+ * for months after the enforced header dropped it: both "matched", so the
+ * guard stayed green while the fallback policy was strictly weaker than the
+ * one real users get (spec beta-security-readiness, F4).
+ */
+function readVercelEnforcedCsp(): string {
+  const cfg = JSON.parse(
+    readFileSync(resolve(process.cwd(), "vercel.json"), "utf8"),
+  ) as {
+    headers: Array<{
+      source: string;
+      headers: Array<{ key: string; value: string }>;
+    }>;
+  };
+  const wildcard = cfg.headers.find((h) => h.source === "/(.*)");
+  if (!wildcard) throw new Error("vercel.json missing wildcard header block");
+  const enforced = wildcard.headers.find(
+    (h) => h.key === "Content-Security-Policy",
+  );
+  if (!enforced)
+    throw new Error("vercel.json wildcard block missing enforced CSP header");
+  return enforced.value;
+}
+
+/**
+ * Origins the meta fallback may carry that the production header must NOT.
+ * The meta tag is what applies under `file://` and local `vite preview`, where
+ * the dev server and HMR socket live on loopback. Anything outside loopback
+ * is a real divergence and must fail.
+ */
+const META_DEV_ONLY_SOURCES = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "ws://localhost:*",
+  "ws://127.0.0.1:*",
+]);
+
+/** Keywords that make a policy weaker; never allowed to appear only in meta. */
+const UNSAFE_KEYWORDS = new Set([
+  "'unsafe-inline'",
+  "'unsafe-eval'",
+  "'unsafe-hashes'",
+]);
+
 function readMetaCsp(): string {
   const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
   const match = html.match(
@@ -156,7 +206,6 @@ describe("L11: CSP monitoring allowlist", () => {
   });
 
   describe("parity between vercel.json and meta fallback", () => {
-    const vercelCsp = parseCsp(readVercelCsp());
     const metaCsp = parseCsp(readMetaCsp());
 
     // The HTML spec disallows `report-uri`, `report-to`, `frame-ancestors`,
@@ -171,26 +220,20 @@ describe("L11: CSP monitoring allowlist", () => {
       "sandbox",
     ]);
 
-    it("connect-src is identical (set equality)", () => {
-      expect(new Set(metaCsp["connect-src"])).toEqual(
-        new Set(vercelCsp["connect-src"]),
-      );
-    });
-
-    it("script-src is identical (set equality)", () => {
-      expect(new Set(metaCsp["script-src"])).toEqual(
-        new Set(vercelCsp["script-src"]),
-      );
-    });
-
-    it("meta CSP is a subset of vercel CSP (modulo HTML-spec exclusions)", () => {
+    // Per-directive parity now lives in the S11 block below, anchored on the
+    // ENFORCED header. What stays here is the one property that block cannot
+    // express as cleanly: the meta fallback must never grant an origin that
+    // the enforced policy withholds — dev loopback origins excepted.
+    it("meta CSP grants nothing beyond the enforced policy + dev loopback", () => {
+      const enforced = parseCsp(readVercelEnforcedCsp());
       for (const [directive, sources] of Object.entries(metaCsp)) {
         if (META_NOT_ALLOWED.has(directive)) continue;
-        const vercelSources = vercelCsp[directive] ?? [];
+        const enforcedSources = enforced[directive] ?? [];
         for (const src of sources) {
+          if (META_DEV_ONLY_SOURCES.has(src)) continue;
           expect(
-            vercelSources,
-            `meta CSP ${directive} has source ${src} that vercel.json does not`,
+            enforcedSources,
+            `meta CSP ${directive} grants ${src}, which the enforced policy does not`,
           ).toContain(src);
         }
       }
@@ -213,7 +256,7 @@ describe("L11: CSP monitoring allowlist", () => {
   describe("S11: full directive-set parity (vercel.json ↔ index.html meta)", () => {
     // Parse both CSP strings with the shared helper so assertions use
     // Set semantics (source order does not matter).
-    const vercelMap = parseCspToMap(readVercelCsp());
+    const vercelMap = parseCspToMap(readVercelEnforcedCsp());
     const metaMap = parseCspToMap(readMetaCsp());
 
     // Directives forbidden inside <meta http-equiv="Content-Security-Policy">
@@ -252,14 +295,47 @@ describe("L11: CSP monitoring allowlist", () => {
     });
 
     it.each(comparableDirectives)(
-      'directive "%s" — source list is set-equal in both policies',
+      'directive "%s" — source list matches the enforced policy (modulo dev-only origins)',
       (directive) => {
         const vercelSources = vercelMap.get(directive) ?? new Set<string>();
         const metaSources = metaMap.get(directive) ?? new Set<string>();
+
+        // Everything the meta tag allows must either be allowed by the
+        // enforced policy or be an explicitly-listed loopback dev origin.
+        const metaExtras = [...metaSources].filter(
+          (src) => !vercelSources.has(src) && !META_DEV_ONLY_SOURCES.has(src),
+        );
         expect(
-          metaSources,
-          `"${directive}" source sets differ between meta and vercel.json`,
-        ).toEqual(vercelSources);
+          metaExtras,
+          `"${directive}": meta allows sources the enforced policy does not`,
+        ).toEqual([]);
+
+        // And it must not silently drop a source the enforced policy grants —
+        // that would make local preview fail in ways production never does.
+        const metaMissing = [...vercelSources].filter(
+          (src) => !metaSources.has(src),
+        );
+        expect(
+          metaMissing,
+          `"${directive}": meta is missing sources the enforced policy grants`,
+        ).toEqual([]);
+      },
+    );
+
+    it.each(comparableDirectives)(
+      'directive "%s" — meta carries no unsafe keyword the enforced policy dropped',
+      (directive) => {
+        const vercelSources = vercelMap.get(directive) ?? new Set<string>();
+        const metaSources = metaMap.get(directive) ?? new Set<string>();
+        // The regression this whole file exists to catch: a fallback policy
+        // that is WEAKER than the one production enforces.
+        const weakening = [...metaSources].filter(
+          (src) => UNSAFE_KEYWORDS.has(src) && !vercelSources.has(src),
+        );
+        expect(
+          weakening,
+          `"${directive}": meta fallback is weaker than the enforced policy`,
+        ).toEqual([]);
       },
     );
   });

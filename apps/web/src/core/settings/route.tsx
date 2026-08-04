@@ -6,7 +6,6 @@ import { useState } from "react";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { lazyImport } from "../lib/lazyImport";
 import { PageLoader } from "../app/PageLoader";
-import { useHubShell } from "../app/HubShellContext";
 
 const HubSettingsPage = lazyImport(
   () => import("../hub/HubSettingsPage"),
@@ -23,7 +22,6 @@ const HubSettingsPage = lazyImport(
  * thin gate here pulls shared state from `useHubShell()`.
  */
 export function Component() {
-  const { user } = useHubShell();
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(
     null,
   );
@@ -36,7 +34,7 @@ export function Component() {
       className="h-app-dvh overflow-y-auto max-w-lg mx-auto w-full px-5 pb-28 outline-none"
     >
       <SuspenseWithMinDelay fallback={<PageLoader />}>
-        <HubSettingsPage user={user} scrollContainer={scrollContainer} />
+        <HubSettingsPage scrollContainer={scrollContainer} />
       </SuspenseWithMinDelay>
     </main>
   );

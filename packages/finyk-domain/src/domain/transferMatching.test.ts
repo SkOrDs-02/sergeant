@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type { Transaction } from "./types";
-import { findInternalTransferSuggestions } from "./transferMatching";
+import {
+  filterTransferSuggestions,
+  findInternalTransferSuggestions,
+  transferSuggestionPairKey,
+} from "./transferMatching";
 
 function tx(
   id: string,
@@ -115,5 +119,55 @@ describe("findInternalTransferSuggestions", () => {
         },
       }),
     ).toEqual([]);
+  });
+});
+
+describe("transferSuggestionPairKey", () => {
+  it("joins outgoing and incoming ids with a colon", () => {
+    const outgoing = tx("out", -10_000, "black", 1_000);
+    const incoming = tx("in", 10_000, "white", 1_010);
+    expect(transferSuggestionPairKey({ outgoing, incoming })).toBe("out:in");
+  });
+});
+
+describe("filterTransferSuggestions", () => {
+  const outgoing = tx("out", -10_000, "black", 1_000);
+  const incoming = tx("in", 10_000, "white", 1_010);
+  const suggestions = findInternalTransferSuggestions([outgoing, incoming]);
+
+  it("keeps a suggestion with no reject/snooze state", () => {
+    expect(
+      filterTransferSuggestions(suggestions, { todayKey: "2026-06-15" }),
+    ).toEqual(suggestions);
+  });
+
+  it("drops a permanently rejected pair regardless of the day key", () => {
+    expect(
+      filterTransferSuggestions(suggestions, {
+        rejectedPairKeys: ["out:in"],
+        todayKey: "2026-06-15",
+      }),
+    ).toEqual([]);
+    expect(
+      filterTransferSuggestions(suggestions, {
+        rejectedPairKeys: new Set(["out:in"]),
+        todayKey: "2099-01-01",
+      }),
+    ).toEqual([]);
+  });
+
+  it("drops a pair snoozed for today but keeps it once the day advances", () => {
+    expect(
+      filterTransferSuggestions(suggestions, {
+        snoozedPairKeys: { "out:in": "2026-06-15" },
+        todayKey: "2026-06-15",
+      }),
+    ).toEqual([]);
+    expect(
+      filterTransferSuggestions(suggestions, {
+        snoozedPairKeys: { "out:in": "2026-06-15" },
+        todayKey: "2026-06-16",
+      }),
+    ).toEqual(suggestions);
   });
 });

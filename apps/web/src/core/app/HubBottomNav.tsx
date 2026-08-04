@@ -137,7 +137,7 @@ function HubBottomNavTab({
   // under prefers-reduced-motion via the `reduceMotion` prop).
   const transition = reduceMotion
     ? "transition-opacity"
-    : "transition-[width,opacity,padding]";
+    : "transition-[max-width,opacity]";
 
   return (
     <button
@@ -152,7 +152,7 @@ function HubBottomNavTab({
       className={cn(
         "relative flex-1 flex items-center justify-center",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
-        "active:scale-95",
+        "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         "text-text",
         hiddenSlot && "invisible pointer-events-none",
@@ -163,7 +163,11 @@ function HubBottomNavTab({
       <span
         aria-hidden
         className={cn(
-          "flex items-center justify-center gap-1.5 rounded-2xl",
+          // `max-w-full` тримає піл усередині свого `flex-1`-слота. Без нього
+          // піл росте під `icon + gap + max-w-[96px] label + px-3` ≈ 146px,
+          // а слот на 375px-екрані — ≈89px: активний піл вилазив за межі
+          // кнопки, у крайнього таба — за край екрана (user report).
+          "flex items-center justify-center gap-1.5 rounded-2xl max-w-full",
           "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
           active
             ? "bg-brand-strong dark:bg-brand-400 text-bg px-3 py-1.5"
@@ -171,11 +175,16 @@ function HubBottomNavTab({
           !reduceMotion && "transition-[background-color,padding,color]",
         )}
       >
-        <Icon name={iconName} size={20} strokeWidth={active ? 2.5 : 2} />
+        <Icon
+          name={iconName}
+          size={20}
+          strokeWidth={active ? 2.5 : 2}
+          className="shrink-0"
+        />
         {/* Label: visible only for active tab, slides in/out */}
         <span
           className={cn(
-            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
+            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
             transition,
             "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
             active
@@ -364,7 +373,6 @@ export function HubBottomNav({
     iconName: "settings",
     prefetchPage: "settings",
     label: "Налаштування",
-    visibleLabel: "Налашт.",
   });
 
   return (

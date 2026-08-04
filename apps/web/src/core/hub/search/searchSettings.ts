@@ -53,10 +53,10 @@ export const SETTINGS_INDEX: ReadonlyArray<{
   },
   {
     id: "assistant",
-    title: "Можливості асистента",
-    description: "Каталог інструментів, які може запустити AI",
+    title: "Що вміє Сержант",
+    description: "Каталог інструментів, які може запустити Сержант",
     keywords:
-      "асистент команди chat help допомога інструменти каталог можливості tools",
+      "сержант асистент команди chat help допомога інструменти каталог можливості tools",
     icon: "sparkles",
   },
   {

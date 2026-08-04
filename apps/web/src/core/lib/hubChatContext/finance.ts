@@ -2,10 +2,10 @@ import {
   mergeExpenseCategoryDefinitions,
   INTERNAL_TRANSFER_ID,
 } from "../../../modules/finyk/constants";
+import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import {
   getCategory,
   getMonoTotals,
-  getTxStatAmount,
   calcCategorySpent,
   calcDebtRemaining,
   calcReceivableRemaining,
@@ -62,6 +62,13 @@ function appendBalanceLines(lines: string[], d: AllData): void {
   lines.push(`[Борг загальний] ${fmt(monoDebt + manualDebtTotal)} грн`);
 }
 
+/** `time` у транзакціях Фініка — секунди (легасі) або мілісекунди. */
+function txTimeMs(time: number | undefined): number {
+  const raw = time ?? 0;
+  if (!Number.isFinite(raw)) return Number.NaN;
+  return raw > 1e10 ? raw : raw * 1000;
+}
+
 function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   if (d.statTx.length === 0) return;
   const { year, month, day } = getKyivDateParts(now);
@@ -69,12 +76,33 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   // days-in-month: calendar arithmetic on the Kyiv-resolved year/month (see above).
   // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- Kyiv year/month length; not a host day key
   const daysInMonth = new Date(year, month, 0).getDate();
-  const spent = d.statTx
-    .filter((t) => t.amount < 0)
-    .reduce((s, t) => s + getTxStatAmount(t, d.txSplits), 0);
-  const income = d.statTx
-    .filter((t) => t.amount > 0)
-    .reduce((s, t) => s + t.amount / 100, 0);
+
+  // AI-CONTEXT (W1-CANON-AGG, стадія 2c): до цього патча жоден із рядків
+  // нижче не був обмежений місяцем — `spent` / `income` / `[Категорії
+  // витрат]` сумувалися по ВСЬОМУ mono-mirror-кешу, а підписувалися як
+  // «місяця». Глибший кеш давав завищене число і завищений прогноз, і
+  // помилка мовчки залежала від того, скільки історії встиг накопичити
+  // клієнт. Тепер вікно явне, а самі суми рахує канонічна
+  // `calcFinykPeriodAggregate` — та сама, що обслуговує дайджест і
+  // Hub-Reports (реєстр: docs/02-engineering/architecture/metric-registry.md).
+  //
+  // Межі місяця — host-local, як у дайджеста і Hub-Reports. Київська межа
+  // доби лишається окремим боргом на всіх поверхнях одразу (стадія 5г):
+  // зробити її тут поодинці означало б розсинхронити чат із рештою.
+  const monthStart = new Date(year, month - 1, 1).getTime();
+  const monthEnd = new Date(year, month, 1).getTime();
+  const monthTx = d.statTx.filter((t) => {
+    const ms = txTimeMs(t.time);
+    return Number.isFinite(ms) && ms >= monthStart && ms < monthEnd;
+  });
+
+  const aggregate = calcFinykPeriodAggregate(monthTx, {
+    start: monthStart,
+    end: monthEnd,
+    txSplits: d.txSplits,
+  });
+  const spent = aggregate.totalSpent;
+  const income = aggregate.totalIncome;
   const avgPerDay = dayOfMonth > 0 ? spent / dayOfMonth : 0;
   const projected = avgPerDay * daysInMonth;
 
@@ -91,8 +119,11 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
     .map((c) => ({
       id: c.id,
       label: c.label,
+      // Той самий місячний зріз, що й `spent` вище: інакше «Витрати місяця»
+      // і сума рядка «Категорії витрат» розійшлися б у межах одного
+      // промпт-блоку, і модель отримала б суперечливі числа.
       spent: calcCategorySpent(
-        d.statTx,
+        monthTx,
         c.id,
         d.txCategories,
         d.txSplits,

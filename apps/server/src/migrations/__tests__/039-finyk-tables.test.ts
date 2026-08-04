@@ -220,7 +220,11 @@ describe("039_finyk_tables migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // 096_finyk_fizruk_pk_text.sql widened id uuid -> text: the
+      // client's `b_${Date.now()}` (and sibling `sub_`/`a_`/`cus_`/bare
+      // Date.now()) ids aren't UUIDs, so the original `uuid` column type
+      // 22P02'd every push.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["data_json"]!.type).toBe("jsonb");
@@ -423,10 +427,19 @@ describe("039_finyk_tables migration", () => {
       // Stage 13 / PR #075 — 053 додає ALTER TABLE на finyk_prefs;
       // щоб down→up цикл відновив той самий fingerprint, порядок
       // важливий: спершу откатити 053 (DROP COLUMN), потім вже 039.
+      //
+      // 096_finyk_fizruk_pk_text.sql widens id uuid -> text on top of
+      // finyk_budgets (and its 7 siblings, plus 7 fizruk tables in the
+      // same transaction). It must be unwound before 039's down.sql
+      // drops the finyk tables it touches, and re-applied last — after
+      // 039/053 recreate them fresh as uuid — else `after` would still
+      // be uuid while `before` (captured post-097) is text.
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.down.sql");
       await execSqlFile(pool, "039_finyk_tables.down.sql");
       await execSqlFile(pool, "039_finyk_tables.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.sql");
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
 
       const after = {
         tables: await listTables(pool),

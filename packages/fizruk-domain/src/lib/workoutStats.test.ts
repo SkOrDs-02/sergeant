@@ -25,6 +25,12 @@ describe("epley1rm", () => {
   it("estimates 1RM for positive weight and reps", () => {
     expect(epley1rm(100, 5)).toBeCloseTo(100 * (1 + 5 / 30));
   });
+
+  it("excludes sets above the 10-rep safety cap", () => {
+    expect(epley1rm(40, 10)).toBeGreaterThan(0);
+    expect(epley1rm(40, 11)).toBe(0);
+    expect(epley1rm(40, 20)).toBe(0);
+  });
 });
 
 describe("workoutTonnageKg", () => {

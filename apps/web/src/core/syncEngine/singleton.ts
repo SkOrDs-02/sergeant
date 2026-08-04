@@ -28,6 +28,40 @@ import {
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
 
+/**
+ * `lww_conflict` — штатний результат last-write-wins: сервер уже має свіжішу
+ * версію рядка, локальна операція просто програла. Решта термінальних причин
+ * означає, що дані НЕ доїхали і самі не доїдуть.
+ */
+const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
+
+/**
+ * Термінальний reject у outbox довго був повністю німим: рядок отримував
+ * `status='rejected'` у локальному SQLite і на цьому все — ні логу, ні Sentry.
+ * Саме через це розлад типів PK у Рутині (`hab_<uuid>` проти `uuid`-колонки)
+ * прожив від 2026-07-24 до 2026-08-01: сервер сумлінно писав
+ * `sync_v2_apply_failed` і крутив `sync_op_log_apply_total`, а на клієнті
+ * ніхто нічого не бачив. Див. `docs/90-work/audits/web-qa-pre-beta.md`.
+ *
+ * `syncV2.pushLoop` навмисно лишається без обсервабіліті (це переносний
+ * примітив), тож звітуємо тут — у місці, де рантайм збирається для вебу.
+ */
+function reportTerminalRejection(id: number, reason: string): void {
+  if (BENIGN_REJECT_REASONS.has(reason)) return;
+  void (async () => {
+    try {
+      const { logger } = await import("@shared/lib");
+      logger.warn("[sync] outbox op rejected terminally", { id, reason });
+      const { captureException } = await import("../observability/sentry");
+      captureException(new Error(`sync outbox op rejected: ${reason}`), {
+        tags: { area: "sync", reject_reason: reason },
+      });
+    } catch {
+      /* обсервабіліті ніколи не має ламати шлях запису */
+    }
+  })();
+}
+
 export interface BootSyncEngineWriterOptions {
   readonly createRuntime?: RuntimeFactory;
   readonly captureException?: (
@@ -426,12 +460,14 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         shared.dbSchema.markOutboxSuccess(await shared.resolveClient(), id),
       markRetry: async (id, plan) =>
         shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
-      markRejected: async (id, reason) =>
-        shared.dbSchema.markOutboxRejected(
+      markRejected: async (id, reason) => {
+        reportTerminalRejection(id, reason);
+        return shared.dbSchema.markOutboxRejected(
           await shared.resolveClient(),
           id,
           reason,
-        ),
+        );
+      },
       planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
       jitterMs: () => Math.random() * shared.dbSchema.SYNC_OP_JITTER_WINDOW_MS,

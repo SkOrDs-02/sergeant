@@ -30,15 +30,24 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <!--
+      Values must track `--c-bg` in `src/styles/theme.css` (`:root` /
+      `.dark`) — #f2ecdf light / #0d1512 dark. These media-query metas are
+      only the pre-JS default (first paint before `useTheme()` mounts);
+      once the app boots, `useTheme.ts` `applyResolvedTheme()` overwrites
+      both with the actually-resolved theme so an in-app light/dark/hc
+      pick (which can diverge from the OS `prefers-color-scheme`) is
+      reflected in the browser chrome too.
+    -->
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
-      content="#fdf9f3"
+      content="#f2ecdf"
     />
     <meta
       name="theme-color"
       media="(prefers-color-scheme: dark)"
-      content="#171412"
+      content="#0d1512"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -61,10 +70,22 @@
       `frame-ancestors` / `sandbox` (HTML spec restriction), so the directive
       set here is a reduced subset of the Vercel policy. Keep the two in
       sync when the Vercel policy changes.
+
+      "Reduced subset" must mean FEWER directives, never WEAKER ones. Until
+      the beta-readiness audit
+      (`docs/90-work/planning/specs/beta-security-readiness.md`, F4) this tag
+      still carried `script-src 'unsafe-inline'` after the Vercel policy had
+      dropped it — so the fallback that exists for the least-protected
+      contexts (file://, stripped headers, local preview) was the most
+      permissive policy we shipped. `'unsafe-inline'` is gone from both now.
+
+      `wss:`/`ws:` were also removed: `apps/web` opens no WebSocket at all,
+      so the wildcard was pure attack surface. Only the local-dev HMR origins
+      remain here, and they are absent from the production header.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss: ws:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
     <title>Sergeant — Твій персональний хаб життя</title>
     <!--

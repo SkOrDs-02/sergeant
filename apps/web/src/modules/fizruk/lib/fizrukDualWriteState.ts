@@ -30,6 +30,7 @@ import {
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
+  type FizrukInjurySnapshot,
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
   type FizrukMonthlyPlanSnapshot,
@@ -77,6 +78,14 @@ export interface FizrukWorkoutTemplateLike {
   lastUsedAt?: string | null;
 }
 
+export interface FizrukInjuryLike {
+  id?: string | null;
+  site?: string | null;
+  startedAt?: string | null;
+  clearedAt?: string | null;
+  note?: string | null;
+}
+
 export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
@@ -84,6 +93,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
 };
 
 /**
@@ -104,6 +114,7 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       workoutTemplates: extractWorkoutTemplateSnapshots(
         cache.workoutTemplates ?? [],
       ),
+      injuries: extractInjurySnapshots(cache.injuries ?? []),
     };
   } catch {
     return null;
@@ -354,5 +365,29 @@ function toWellbeingSnapshot(w: WorkoutWellbeing): {
   const out: { energy?: number | null; mood?: number | null } = {};
   if (w.energy !== undefined) out.energy = w.energy;
   if (w.mood !== undefined) out.mood = w.mood;
+  return out;
+}
+
+/**
+ * Injury marks — the "не можна" model (ADR-0083).
+ *
+ * `clearedAt` is normalized to `null` (never `undefined`): the diff compares
+ * it with `!==`, and `undefined` vs `null` would emit a phantom op on every
+ * write cycle.
+ */
+export function extractInjurySnapshots(
+  injuries: readonly FizrukInjuryLike[],
+): FizrukInjurySnapshot[] {
+  const out: FizrukInjurySnapshot[] = [];
+  for (const i of injuries) {
+    if (!i || typeof i !== "object" || !i.id || !i.site) continue;
+    out.push({
+      id: i.id,
+      site: i.site,
+      startedAt: i.startedAt ?? "",
+      clearedAt: i.clearedAt ?? null,
+      note: i.note ?? "",
+    });
+  }
   return out;
 }

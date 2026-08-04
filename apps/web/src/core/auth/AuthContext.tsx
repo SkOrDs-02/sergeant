@@ -391,6 +391,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // далі все одно викидаємо локальний me-кеш — UI має показати
       // sign-in surface, а не застрягти в «напів-залогіненому» стані.
     }
+    // Drop the whole in-memory query cache FIRST, before any of the
+    // best-effort teardown below. Two reasons:
+    //
+    //   1. `invalidateMe()` alone only marks `me` stale and refetches — but the
+    //      refetch 401s and React Query *retains* the last-good `me` payload on
+    //      error, so `user` stayed populated and the UI stayed logged-in until a
+    //      manual reload (browser-QA finding (a)). `clear()` removes the cached
+    //      user (and every authed module query) immediately, so `useUser`
+    //      re-renders with no data → `unauthenticated`.
+    //   2. Ordering is the safety net: this used to run LAST, so a single
+    //      wedged step in between (SW `ready` never settling — see
+    //      `swControl.ts :: SW_READY_TIMEOUT_MS`) left the server session
+    //      destroyed while the UI kept rendering the signed-out user's profile
+    //      and data, with no redirect (аудит 2026-08-04, знахідка 4). Clearing
+    //      up-front makes the UI transition unconditional; everything below is
+    //      cleanup that must never gate it.
+    queryClient.clear();
     // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
     // never resolves a stale cache entry that belonged to user A on
     // shared devices. Fire-and-forget — ignore SW failures since the
@@ -430,12 +447,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (err) {
       logger.warn("[auth.logout] local-first data purge failed", err);
     }
-    // Drop the whole in-memory query cache. `invalidateMe()` alone only marks
-    // `me` stale and refetches — but the refetch 401s and React Query *retains*
-    // the last-good `me` payload on error, so `user` stayed populated and the
-    // UI stayed logged-in until a manual reload (browser-QA finding (a)).
-    // `clear()` removes the cached user (and every authed module query)
-    // immediately, so `useUser` re-renders with no data → `unauthenticated`.
+    // Second `clear()`: the teardown above is async, so a query that was
+    // already in flight when the first clear ran can land afterwards and
+    // repopulate the cache. Cheap and idempotent.
     queryClient.clear();
   }, [queryClient]);
 

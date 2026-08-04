@@ -13,7 +13,6 @@ import {
 } from "@sergeant/fizruk-domain/data";
 import type { RecoveryStatus } from "@sergeant/fizruk-domain";
 import { cn } from "@shared/lib/ui/cn";
-import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 
 export type { AtlasMuscleDatum, AtlasData } from "../lib/atlasData";
@@ -45,13 +44,21 @@ const SELECTED_STROKE = "rgb(var(--c-fg))";
 /**
  * Vertical gloss stops that turn a flat fill into a sculpted, lit volume:
  * lightened top highlight → base → darkened bottom, plus a matching edge.
+ *
+ * Endpoints are var-backed (`--c-bg` / `--c-fg`), not literal `#ffffff`/
+ * `#000000` — a static white/black mix reads as a fixed light-mode gloss
+ * and goes muddy/blown-out on the ink (dark) surface. `--c-bg` (near-white
+ * on cream, near-black on ink) and `--c-fg` (near-black on cream,
+ * near-white on ink) invert together with the theme, so "top" and
+ * "bottom" stay the lighter/darker edge of the sculpt in both themes
+ * instead of a hardcoded light-mode-only highlight direction.
  */
 function glossStops(base: string) {
   return {
-    top: `color-mix(in srgb, ${base}, #ffffff 30%)`,
+    top: `color-mix(in srgb, ${base}, rgb(var(--c-bg)) 30%)`,
     mid: base,
-    bottom: `color-mix(in srgb, ${base}, #000000 30%)`,
-    stroke: `color-mix(in srgb, ${base}, #000000 42%)`,
+    bottom: `color-mix(in srgb, ${base}, rgb(var(--c-fg)) 30%)`,
+    stroke: `color-mix(in srgb, ${base}, rgb(var(--c-fg)) 42%)`,
   };
 }
 
@@ -89,20 +96,23 @@ function smoothPath(points: string): string {
   return `${d}Z`;
 }
 
-/** Parse a `#rrggbb` string into an [r, g, b] tuple. */
-function toRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace("#", ""), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-const HEAT_LOW = toRgb(THEME_HEX.success);
-const HEAT_MID = toRgb(THEME_HEX.warning);
-const HEAT_HIGH = toRgb(THEME_HEX.danger);
-
-const mix = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
+/**
+ * Heat ramp endpoints — var-backed (`--c-chart-{success,warning,danger}`
+ * from `theme.css`), NOT static hex. `THEME_HEX` (a fixed hex mirror of
+ * `statusColors`) was JS-interpolated here previously, which froze the
+ * whole heat surface to its light-mode colours forever — a hex computed
+ * once at module-eval time can't react to `.dark`/`html.hc` (design-audit
+ * TH1/TH7). `color-mix()` lets the browser do the interpolation instead,
+ * so the ramp re-resolves per theme like every other chart primitive in
+ * this app.
+ */
+const HEAT_LOW = "rgb(var(--c-chart-success))";
+const HEAT_MID = "rgb(var(--c-chart-warning))";
+const HEAT_HIGH = "rgb(var(--c-chart-danger))";
 
 /**
- * Map an intensity 0..1 to a heat colour (success → warning → danger).
+ * Map an intensity 0..1 to a heat colour (success → warning → danger) as a
+ * CSS `color-mix()` expression over the var-backed endpoints above.
  * Returns `null` below a small floor so "cold" muscles keep the neutral
  * silhouette fill instead of a washed-out brand tint.
  */
@@ -111,13 +121,8 @@ function heatColor(t: number): string | null {
   const from = t < 0.5 ? HEAT_LOW : HEAT_MID;
   const to = t < 0.5 ? HEAT_MID : HEAT_HIGH;
   const k = t < 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
-  return `#${[0, 1, 2]
-    .map((i) =>
-      mix(from[i] ?? 0, to[i] ?? 0, k)
-        .toString(16)
-        .padStart(2, "0"),
-    )
-    .join("")}`;
+  const pct = Math.round(k * 100);
+  return `color-mix(in oklab, ${to} ${pct}%, ${from})`;
 }
 
 /** Intensity for the active mode: fatigue / recency / normalised volume. */
@@ -236,7 +241,7 @@ export function BodyAtlas({
             compact ? "mx-auto flex-[0_0_200px]" : "flex-[0_0_300px]",
           )}
         >
-          <div className="mb-1.5 flex items-center justify-center gap-2 text-2xs text-subtle">
+          <div className="mb-1.5 flex items-center justify-center gap-2 text-style-caption text-subtle">
             <span>{LEGEND_COPY[mode].left}</span>
             <div className="flex h-1.5 w-28 overflow-hidden rounded-full">
               {Array.from({ length: 24 }, (_, i) => (
@@ -289,7 +294,7 @@ export function BodyAtlas({
                 d={smoothPath(s.points)}
                 style={{
                   fill: NEUTRAL_BASE,
-                  stroke: `color-mix(in srgb, ${NEUTRAL_BASE}, #000000 18%)`,
+                  stroke: `color-mix(in srgb, ${NEUTRAL_BASE}, rgb(var(--c-fg)) 18%)`,
                   strokeWidth: 0.4,
                   strokeLinejoin: "round",
                 }}
@@ -536,7 +541,7 @@ function SelectedCard({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-surface p-2.5">
-      <p className="text-2xs text-subtle">{label}</p>
+      <p className="text-style-caption text-subtle">{label}</p>
       <p className="mt-0.5 text-lg font-medium text-text">{value}</p>
     </div>
   );

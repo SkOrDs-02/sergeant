@@ -91,7 +91,7 @@ describe("PantryCard add modes", () => {
         })}
       />,
     );
-    fireEvent.click(screen.getByText("Список"));
+    fireEvent.click(screen.getByText("Списком"));
     fireEvent.click(screen.getByText("Розібрати"));
     expect(parsePantry).toHaveBeenCalled();
   });
@@ -99,7 +99,7 @@ describe("PantryCard add modes", () => {
   it("routes list-mode text edits through setPantryText", () => {
     const setPantryText = vi.fn();
     render(<Card {...baseProps({ setPantryText })} />);
-    fireEvent.click(screen.getByText("Список"));
+    fireEvent.click(screen.getByText("Списком"));
     fireEvent.change(screen.getByPlaceholderText(/2 яйця/), {
       target: { value: "банани, молоко" },
     });
@@ -115,9 +115,10 @@ describe("PantryCard add modes", () => {
 });
 
 describe("PantryCard inventory", () => {
-  it("renders nothing for an empty inventory", () => {
+  it("renders an empty state instead of hiding the inventory card", () => {
     render(<Card {...baseProps()} />);
     expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
+    expect(screen.getByText("Тут поки порожньо")).toBeInTheDocument();
   });
 
   it("renders inventory items and routes edit/remove", () => {

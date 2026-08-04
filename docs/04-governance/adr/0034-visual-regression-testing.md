@@ -1,6 +1,6 @@
 # ADR-0034: Visual regression testing via Argos + Playwright
 
-- **Status:** superseded by [ADR-0082](./0082-private-storage-repo-posture.md)
+- **Status:** Superseded by [ADR-0082](./0082-private-storage-repo-posture.md)
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-03
 - **Deciders:** @Skords-01

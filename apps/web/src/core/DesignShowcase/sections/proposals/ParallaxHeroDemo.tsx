@@ -40,7 +40,9 @@ function HeroScroll({ parallax }: { parallax: boolean }) {
           className="absolute inset-x-0 bottom-3 px-4"
           style={{ transform: `translateY(${fore * -1}px)` }}
         >
-          <p className="text-2xs uppercase tracking-wide text-muted">Баланс</p>
+          <p className="text-style-caption uppercase tracking-wide text-muted">
+            Баланс
+          </p>
           <p className="text-2xl font-semibold text-text">₴ 12 480</p>
         </div>
       </div>

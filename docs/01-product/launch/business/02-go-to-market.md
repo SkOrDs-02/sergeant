@@ -1,11 +1,13 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
 > **Status:** Active
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
 > Джерело: `sergeant-monetization-plan.md` (ч.2), `sergeant-launch-checklist.md` (§7–§9),
 > `sergeant-toolstack.md` (§5–§7, §11).
+>
+> **Звірка з кодом 2026-07-31:** §2.1 і §3.1 приведені у відповідність до реального стану — лендінг існує (`apps/landing`), збір вейтліста йде через Telegram-бота, а не через email-інвайти; інвайт-системи «3-5 інвайтів на юзера» в коді немає. Маркетингова стратегія, канали й цифри монетизації не змінювались.
 
 ---
 
@@ -14,7 +16,7 @@
 ```
 ФАЗА 0: Pre-launch (T-4 … T-2 тижні)
   │
-ФАЗА 1: Soft launch / Closed beta (2–4 тижні)
+ФАЗА 1: Soft launch / Closed beta (2 тижні, 30 тестерів)
   │
 ФАЗА 2: Public launch (тиждень запуску)
   │
@@ -31,35 +33,36 @@
 
 ### 2.1 Pre-launch checklist
 
-| #   | Дія                                                      | Дедлайн   | Відповідальний |
-| --- | -------------------------------------------------------- | --------- | -------------- |
-| 1   | Зареєструвати домен `sergeant.com.ua`                    | T-28 днів | Засновник      |
-| 2   | Задеплоїти landing page (Astro або Vite static build)    | T-25 днів | Засновник      |
-| 3   | Підключити email-збір (Loops або ConvertKit free tier)   | T-25 днів | Засновник      |
-| 4   | Створити Telegram-канал «Sergeant 🎖️» + бот для підписки | T-24 дні  | Засновник      |
-| 5   | Опублікувати перший Build-in-Public пост (Twitter/X)     | T-21 день | Засновник      |
-| 6   | Написати founder's story для DOU.ua (див. §4.3 нижче)    | T-18 днів | Засновник      |
-| 7   | Запустити опитування «Які модулі найважливіші?» (Tally)  | T-17 днів | Засновник      |
-| 8   | Провести 10–15 custdev-інтерв'ю з target-юзерами         | T-14 днів | Засновник      |
-| 9   | Підготувати Product Hunt assets (демо-відео, скріни)     | T-10 днів | Засновник      |
-| 10  | Зібрати 20+ PH-хантерів / early supporters               | T-7 днів  | Засновник      |
-| 11  | Фіналізувати share-card генератор (OG images)            | T-5 днів  | Засновник      |
-| 12  | Dry-run launch day: перевірити всі лінки, CTA, analytics | T-2 дні   | Засновник      |
+| #   | Дія                                                      | Дедлайн   | Відповідальний | Стан                                                                                           |
+| --- | -------------------------------------------------------- | --------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| 1   | Зареєструвати домен `sergeant.com.ua`                    | T-28 днів | Засновник      | [ ]                                                                                            |
+| 2   | Задеплоїти landing page                                  | T-25 днів | Засновник      | [~] `apps/landing` + `vercel.json` є; лишились домен і прив'язка Vercel-проєкту                |
+| 3   | Збір вейтліста                                           | T-25 днів | Засновник      | [x] Telegram-бот `@serg_qa_bot` (єдиний CTA лендінга)                                          |
+| 4   | Створити Telegram-канал «Sergeant 🎖️»                    | T-24 дні  | Засновник      | [ ] окремо від бота вейтліста                                                                  |
+| 5   | Опублікувати перший Build-in-Public пост (Twitter/X)     | T-21 день | Засновник      | [ ]                                                                                            |
+| 6   | Написати founder's story для DOU.ua (див. §4.3 нижче)    | T-18 днів | Засновник      | [ ]                                                                                            |
+| 7   | Запустити опитування «Які модулі найважливіші?»          | T-17 днів | Засновник      | [ ] нативний Telegram-полл, не зовнішня форма                                                  |
+| 8   | Провести 10–15 custdev-інтерв'ю з target-юзерами         | T-14 днів | Засновник      | [ ]                                                                                            |
+| 9   | Підготувати Product Hunt assets (демо-відео, скріни)     | T-10 днів | Засновник      | [ ]                                                                                            |
+| 10  | Зібрати 20+ PH-хантерів / early supporters               | T-7 днів  | Засновник      | [ ]                                                                                            |
+| 11  | Фіналізувати share-card генератор (OG images)            | T-5 днів  | Засновник      | [~] OG-картка лендінга є (`apps/landing/scripts/generate-og.mjs`); per-module share cards — ні |
+| 12  | Dry-run launch day: перевірити всі лінки, CTA, analytics | T-2 дні   | Засновник      | [ ]                                                                                            |
 
 > **T** = дата public launch (ФАЗА 2). Всі дедлайни — від цієї дати назад.
 
 ### 2.2 Landing page
 
-- Окремий лендінг: «Sergeant — один додаток замість п'яти».
-- Email-збір: «Отримай ранній доступ + пожиттєву знижку».
-- Таймер зворотного відліку.
-- **Інструменти:** Sergeant web (Vite SSG build) або Astro/Framer для швидкості.
-- **URL-стратегія:**
+**Реалізовано** як `apps/landing` — окремий workspace на Vite + React 18 + Tailwind 4, ділить `@sergeant/design-tokens` і `@sergeant/shared` з монорепо. Поточний hero: «Бачить звʼязки між усім, що важливо» / «Гроші, тіло, звички й харчування в одному приватному просторі». Секції: `HowItWorks`, `ModulesSection`, `ConnectionsSection`, `HonestSection`, `BetaCta`.
+
+- **Єдиний CTA — Telegram:** «Приєднатися до бети» → `t.me/<bot>?start=landing` (і `?start=landing_footer` знизу). **Email-форми на лендінгу немає** — спека допускала її як другорядну, але реалізація звузилась до однієї conversion action. `WaitlistForm` живе в `apps/web` (`/pricing`) і standalone-лендінг його не викликає.
+- **Чому так:** email-розсилка заблокована неверифікованим доменом у Resend — список ріс, а запросити з нього людей було неможливо. Telegram знімає і цей блокер, і зайві кроки в лійці. Email лишається як портативний запасний канал на рівні продукту, не лендінга.
+- **Таймер зворотного відліку — не робити.** Fake countdown шкодить довірі UA-аудиторії; те саме правило в [`marketing/launch-plan.md`](../../marketing/launch-plan.md) § Urgency mechanic.
+- **URL-стратегія (цільова, ще не діюча — домен не зареєстрований):**
 
 ```
-sergeant.com.ua                → Landing page (маркетинг)
-app.sergeant.com.ua            → PWA-додаток
-sergeant.com.ua/blog           → SEO-блог (Astro SSG)
+sergeant.com.ua                → Landing page (apps/landing, Vite+React)
+app.sergeant.com.ua            → PWA-додаток (apps/web)
+sergeant.com.ua/blog           → SEO-блог (ще не існує; потребує SSG-кроку)
 ```
 
 ### 2.3 Build in Public
@@ -72,21 +75,29 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 ### 2.4 Збір фідбеку
 
-- Tally / Typeform: «Які модулі вам найважливіші?»
+- Нативні Telegram-полли: «Які модулі вам найважливіші?» — зовнішнього form-сервісу в стеці немає, а на pre-launch обсягах полл дає вищий response rate.
 - Telegram-канал/група для ранніх адоптерів.
-- 10–15 інтерв'ю з потенційними юзерами (Calendly + Google Meet).
+- 10–15 інтерв'ю з потенційними юзерами (домовленість у переписці + Google Meet; scheduling-інструмента в стеці немає).
+- **In-product:** NPS уже автоматизований через PostHog Surveys (тригер `nps_survey_eligible` за віком акаунта), фідбек-віджет — Settings → «Фідбек» (`feedback_submitted`). Деталі: [`feedback-loop.md`](../../../03-operations/observability/feedback-loop.md).
 
 ---
 
 ## 3. ФАЗА 1 — Soft launch / Closed beta
 
-**Мета:** 100–200 активних тестерів, сигнали Product-Market Fit.
+**Мета:** сигнали Product-Market Fit на малій когорті.
 
-### 3.1 Інвайт-система
+> **Розмір бети — 30 тестерів, 2 тижні.** Раніше тут стояло «100–200 активних тестерів»; актуальний план менший і коротший, бо 4-годинний SLA відповіді founder-а в Telegram-групі не масштабується далі. Тижневий розклад — [`01-web-launch-with-users.md` §3.2](../phases/01-web-launch-with-users.md#32-closed-beta-w0--w1).
 
-- Кожен бета-юзер отримує 3–5 інвайтів.
-- «Приведи друга — отримай +1 місяць Pro безкоштовно».
-- Створює exclusivity + word-of-mouth.
+### 3.1 Як роздається доступ
+
+**Механізм — розсилка, не інвайт-коди.** У коді немає ні поля invite при реєстрації, ні квоти «3-5 інвайтів на юзера»: реєстрація в `apps/web` відкрита (Better Auth `emailAndPassword`). Доступ до бети регулюється списком адресатів:
+
+1. Людина тисне Start у боті з лендінга → `chat_id` потрапляє в `telegram_waitlist` (міграція 089). Бот **не може написати першим** — це обмеження Bot API, з якого й випливає вся конструкція.
+2. Власник вручну запускає `scripts/telegram/broadcast-waitlist.mjs` по вибірці `WHERE notified_at IS NULL AND opted_out_at IS NULL`.
+3. У повідомленні — інвайт-лінк у приватну Telegram-групу (`TELEGRAM_BETA_INVITE_LINK`). Автододавання в групу немає.
+4. Відписка — нативна: `/stop` або блок бота → `403` → `opted_out_at`.
+
+**Referral «приведи друга → +1 місяць Pro»** — у коді відсутній (таблиці `referrals`, ендпоінтів `/api/referral/*` немає). Дизайн — §5.2, реалізація запланована на W7-W8 Phase 1. До того word-of-mouth не інструментований і не вимірюється.
 
 ### 3.2 Фідбек-лупи
 
@@ -289,7 +300,7 @@ Sergeant — це один додаток замість п'яти: фінанс
 | «Sergeant vs MyFitnessPal: порівняння»   | sergeant vs mfp          | BOFU        |
 | «Як я скинув 10 кг з трекером»           | user story               | TOFU        |
 
-> Блог на `sergeant.com.ua/blog` (Astro SSG) — дає SEO juice основному домену.
+> Блог на `sergeant.com.ua/blog` — **ще не існує** (ні маршруту, ні контенту). Потребує SSG-кроку поверх `apps/landing` або окремого статичного генератора; до того SEO-контент з таблиці вище не має де жити.
 > Інструменти для контенту/SEO → [03-services-and-toolstack.md](./03-services-and-toolstack.md) §6.5–§6.6.
 
 ### 5.2 Реферальна програма
@@ -577,7 +588,7 @@ backlog для розширення після перевірки базової
 
 PWA SEO складніший (SPA = один HTML), але можна:
 
-- [ ] **Pre-rendering** для landing (Vite SSG або Astro site).
+- [ ] **Pre-rendering** для landing. `apps/landing` зараз — client-side React SPA без prerender: OG-теги в `index.html` статичні (тому шеринг працює), але контент секцій краулер бачить лише після виконання JS. Для SEO-цінності блогу знадобиться SSG-крок.
 - [x] **Meta tags** — title, description, canonical/OG для поточної marketing-сторінки.
 - [ ] **Structured data** — JSON-LD для SoftwareApplication (schema.org).
 - [ ] **Sitemap.xml** — для landing і блогу.

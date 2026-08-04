@@ -120,6 +120,7 @@ describe("story slide components", () => {
         avgFat: 70,
         avgCarbs: 180,
         daysLogged: 5,
+        daysInPeriod: 7,
       },
       ai: { summary: "Білок стабільний." },
     };

@@ -149,7 +149,9 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // append_only_violation (гейт update/delete для append-only таблиць),
     // invalid_event_kind і missing_delta_or_abs (ledger комори),
     // invalid_goal_origin (журнал цілей КБЖВ). Реєстр таблиць виріс до 45.
-    expect(APPLY_REJECT_REASONS.length).toBe(58);
+    // Хвиля 4: +2 (`missing_skip_key`, `invalid_at`) для `routine_habit_skips`
+    // — третій стан дня «не зміг з причиною» (канон `routine.md` §5).
+    expect(APPLY_REJECT_REASONS.length).toBe(62);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,

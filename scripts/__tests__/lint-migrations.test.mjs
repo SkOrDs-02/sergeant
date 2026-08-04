@@ -21,6 +21,7 @@ import {
   parseTwoPhaseDropHeader,
   validateTwoPhaseDropHeader,
   MIN_DEPRECATION_DAYS,
+  APPLIED_DUPLICATE_NUMBERS,
   run,
 } from "../lint-migrations.mjs";
 
@@ -363,6 +364,22 @@ describe("checkSequentialNumbers", () => {
     const files = ["001_init.sql", "001_other.sql", "002_bar.sql"];
     const { duplicates } = checkSequentialNumbers(files);
     assert.deepEqual(duplicates, [1]);
+  });
+
+  // `checkSequentialNumbers` лишається чесною: вона доповідає факт дубля,
+  // а виняток застосовує вже `run()` — щоб історична поблажка була видима
+  // в одному місці, а не розмазана по детектору.
+  it("still reports historically-allowed duplicates as facts", () => {
+    const files = [
+      "090_a.sql",
+      "091_privat_connection.sql",
+      "091_telegram_beta_survey.sql",
+      "092_b.sql",
+    ];
+    const { gaps, duplicates } = checkSequentialNumbers(files);
+    assert.deepEqual(gaps, []);
+    assert.deepEqual(duplicates, [91]);
+    assert.ok(APPLIED_DUPLICATE_NUMBERS.includes(91));
   });
 
   it("ignores .down.sql files in numbering", () => {

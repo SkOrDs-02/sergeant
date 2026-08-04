@@ -133,8 +133,13 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     [announce, announceText, disabled, isControlled, label, onChange],
   );
 
+  // `brand-strong` — це stone-800 (#292524). У «Чорнилі» вимкнений трек
+  // (`--c-line` = #1f2a25) майже не відрізняється від нього, тож обидва стани
+  // читались як один темний піл (user report). `dark:bg-brand-400` дає той
+  // самий світлий-на-темному контраст, який `HubBottomNav` уже застосовує до
+  // активного таба.
   const trackBg = currentChecked
-    ? "bg-brand-strong"
+    ? "bg-brand-strong dark:bg-brand-400"
     : error
       ? "bg-danger-soft"
       : "bg-line";
@@ -190,7 +195,10 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         <span
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute left-[3px] rounded-full bg-panel shadow-card",
+            // Бігунок світлий в обох темах (iOS-конвенція). У «Чорнилі»
+            // `bg-panel` (#121c17) зливався з вимкненим треком (#1f2a25) і
+            // стан не читався навіть по позиції.
+            "pointer-events-none absolute left-[3px] rounded-full bg-panel dark:bg-text shadow-card",
             "transition-transform duration-200",
             thumbSize[size],
             thumbCheckedTranslate[size],

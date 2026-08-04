@@ -1,9 +1,9 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active — draft roadmap for first user-facing launch фази.
+> **Last touched:** 2026-08-01 by @claude. **Next review:** 2026-10-30.
+> **Status:** Active — roadmap for first user-facing launch фази.
 
-> Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 16 тижнів від `W-4` до `W+12`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
+> Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
 >
 > **Не дублює** бізнес-стратегію з `business/` і FTUX-delivery з `product-os/` — натомість зшиває їх у тижневий timeline та визначає acceptance gates між під-фазами.
 >
@@ -25,8 +25,8 @@
 ## Зміст
 
 1. [TL;DR + entry/exit criteria фази Web](#1-tldr--entryexit-criteria)
-2. [Лендінг decision — 3 опції + рекомендація](#2-лендінг-decision)
-3. [Тижневий план (W-4 … W+12)](#3-тижневий-план)
+2. [Лендінг — стан і що лишилось](#2-лендінг--стан-і-що-лишилось)
+3. [Тижневий план (W-4 … W10)](#3-тижневий-план)
 4. [User testing strategy](#4-user-testing-strategy)
 5. [Технічні передумови (audit-фідбек)](#5-технічні-передумови)
 6. [Метрики успіху](#6-метрики-успіху)
@@ -40,16 +40,18 @@
 
 ### 1.1 TL;DR
 
-Phase 1 — це **16-тижнева кампанія від "web-PWA шипить тільки на staging" до "web-PWA стабільно тримає 500-2000 MAU"**. Розбита на 4 під-фази по логічних acceptance-gate-ах:
+Phase 1 — це **15-тижнева кампанія від "web-PWA шипить тільки на staging" до "web-PWA стабільно тримає 500-2000 MAU"**. Розбита на 4 під-фази по логічних acceptance-gate-ах:
 
 | Під-фаза        | Тижні     | Юзери (target)       | Ключова мета                                   | Готовність до payment?  |
 | --------------- | --------- | -------------------- | ---------------------------------------------- | ----------------------- |
-| **Pre-launch**  | W-4 → W-1 | 0 → 100-300 waitlist | інфра, лендінг, custdev-10, інвайт-лист        | ❌ free-only            |
-| **Closed beta** | W0 → W3   | 20 → 50 active       | knowledge transfer, FTUX iter, top-10 bug list | ❌ free-only            |
-| **Soft public** | W4 → W7   | 200 → 1500 signups   | sustain organic growth, NPS ≥ 30               | ❌ free-only (waitlist) |
-| **Stable**      | W8 → W12  | 1500 → 2000 MAU      | retention discipline, exit-gate до Capacitor   | ⚠️ paywall-stub OK      |
+| **Pre-launch**  | W-4 → W-1 | 0 → 100-300 waitlist | інфра, лендінг, custdev-10, Telegram-вейтліст  | ❌ free-only            |
+| **Closed beta** | W0 → W1   | 30 тестерів          | knowledge transfer, FTUX iter, top-10 bug list | ❌ free-only            |
+| **Soft public** | W2 → W5   | 200 → 1500 signups   | sustain organic growth, NPS ≥ 30               | ❌ free-only (waitlist) |
+| **Stable**      | W6 → W10  | 1500 → 2000 MAU      | retention discipline, exit-gate до Capacitor   | ⚠️ paywall-stub OK      |
 
-> **Запуск як free.** Paywall PR-20 свідомо відкладений (див. [`paywall-implementation-plan.md` Path C](../archive/product-os/paywall-implementation-plan.md#23-path-c--defer-pr-20-impl-до-0010-phase-3-merge-рекомендована)). Web-launch — це **discovery + retention experiment**, не revenue experiment. Pricing-сторінка на `/pricing` залишається waitlist-формою (`apps/web/src/core/pricing/WaitlistForm.tsx`) до Phase 2.
+> **Розмір і тривалість бети.** Closed beta — **30 тестерів, 2 тижні** (W0-W1). Раніше в цьому документі стояло 50 тестерів і 4 тижні; число зменшене свідомо: 30 — це стеля, яку solo-founder встигає особисто відпрацювати в Telegram-групі за 4-годинний SLA відповіді (§4.2), а 2 тижні — рівно один повний цикл «інвайт → фідбек → фікс → повторний прогін». Довша бета без росту когорти не додає сигналу, лише відтягує soft public.
+
+> **Запуск як free.** Paywall PR-20 свідомо відкладений (див. [`paywall-implementation-plan.md` Path C](../archive/product-os/paywall-implementation-plan.md#23-path-c--defer-pr-20-impl-до-0010-phase-3-merge-рекомендована)). Web-launch — це **discovery + retention experiment**, не revenue experiment. Pricing-сторінка на `/pricing` (`apps/web/src/core/PricingPage.tsx`) залишається без активного checkout-у до Phase 2; email-форма вейтліста живе в `apps/web/src/core/pricing/WaitlistForm.tsx`.
 
 ### 1.2 Entry criteria — що мусить бути перед W-4
 
@@ -61,9 +63,11 @@ Phase 1 — це **16-тижнева кампанія від "web-PWA шипит
 - [x] **FTUX funnel працює:** 8 канонічних подій у PostHog (`onboarding_started → … → celebration_shown`); див. [`posthog-ftux-dashboards.md` §2](../../../03-operations/observability/posthog-ftux-dashboards.md).
 - [x] **Sentry alerts активні** для error-rate, unhandled exceptions.
 - [x] **Vercel preview-per-PR + production-on-merge-to-main** живий, CI зеленіє з `pnpm check` matrix.
+- [x] **Marketing-лендінг існує** як окремий workspace `apps/landing` (Vite + React 18 + Tailwind 4) з hero, module-showcase, cross-module-секцією і Telegram-CTA. Див. [§2](#2-лендінг--стан-і-що-лишилось).
+- [x] **Юридичний пак опубліковано** — `apps/web/src/core/legal/LegalPage.tsx` містить 4 документи (Privacy Policy, Terms, Cookie Policy, Публічна оферта), чинні з 12.07.2026. **Лишається:** підставити реквізити ФОП (зараз `CONTROLLER_PLACEHOLDER` + IBAN — плейсхолдери). Деталі — [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#1-юридичне-та-compliance).
+- [x] **Telegram-вейтліст живий** — бот `@serg_qa_bot`, webhook `POST /api/v1/telegram/webhook` (`apps/server/src/modules/telegram/waitlistBot.ts`), таблиця `telegram_waitlist` (міграція 089), ручна розсилка `scripts/telegram/broadcast-waitlist.mjs`.
 - [ ] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex (status TBD — open question).
-- [ ] **Privacy Policy + ToS stub-и** є у `/legal` (можна Termly draft); blockers до public launch — див. [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#1-юридичне-та-compliance).
-- [ ] **Telegram-канал «Sergeant 🎖️»** створений; bot для підписки.
+- [ ] **Telegram-канал «Sergeant 🎖️»** створений (окремо від бота вейтліста).
 - [ ] **Founder написав bullet-список того, які 10 фіч web-стеку він вважає shippable** (а не «майже готово»).
 
 ### 1.3 Exit criteria — що мусить бути перед переходом на Phase 2
@@ -79,124 +83,46 @@ Phase 1 — це **16-тижнева кампанія від "web-PWA шипит
 
 ---
 
-## 2. Лендінг decision
+## 2. Лендінг — стан і що лишилось
 
-### 2.1 Контекст
+> **Рішення ухвалене й відвантажене.** Раніше цей розділ порівнював три опції (окремий Astro-сайт / monolith-route в `apps/web` / гібрид) і рекомендував гібрид на Astro. Порівняння знято: лендінг існує як окремий workspace, стек — **Vite + React 18 + Tailwind 4**, не Astro. Нижче — фактичний стан і залишковий backlog.
 
-План з [`02-go-to-market.md §2.2`](../business/02-go-to-market.md#22-landing-page) вже пропонує:
+### 2.1 Що вже є
 
-```
-sergeant.com.ua                → Landing page (маркетинг)
-app.sergeant.com.ua            → PWA-додаток
-sergeant.com.ua/blog           → SEO-блог (Astro SSG)
-```
+`apps/landing` — окремий пакет `@sergeant/landing` у pnpm-workspace, dev-порт 3100.
 
-Але web-app **уже** має `/welcome` route (`apps/web/src/core/app/WelcomeScreen.tsx` + `appPaths.ts` `WELCOME_PATH = "/welcome"`) з populated-hub peek і splash-карткою — це ефективно "м'який лендінг" всередині PWA. Питання: **чи варто витрачати тиждень на окремий лендінг прямо зараз, чи відкласти до Soft public?**
+| Компонент                                   | Що робить                                                                        |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `src/pages/HomePage.tsx`                    | Hero: «Бачить звʼязки між усім, що важливо» + Telegram-CTA                       |
+| `src/components/DashboardPreview.tsx`       | Візуальний preview хабу з 4 модулями                                             |
+| `src/components/HomeSections.tsx`           | `HowItWorks`, `ModulesSection`, `ConnectionsSection`, `HonestSection`, `BetaCta` |
+| `src/components/TelegramCta.tsx`            | Головна кнопка → `t.me/<bot>?start=landing` / `?start=landing_footer`            |
+| `src/lib/links.ts`                          | `telegramStartLink(payload)`; юзернейм — через `VITE_TELEGRAM_BOT`               |
+| `src/lib/analytics.ts`                      | Cookieless PostHog; події `landing_viewed`, `landing_telegram_clicked`           |
+| `scripts/generate-og.mjs` + `public/og.png` | OG-картка (згенерована, не ручна)                                                |
+| `public/robots.txt`                         | robots                                                                           |
+| `vercel.json`                               | Deploy-конфіг окремого Vercel-проєкту                                            |
+| `src/pages/NotFoundPage.tsx`                | 404                                                                              |
+| `tokens.drift.test.ts`                      | Гвардія проти дрейфу від `@sergeant/design-tokens`                               |
 
-### 2.2 Три опції
+> **Єдина conversion action — Telegram.** Email-форми на standalone-лендінгу **немає**: `WaitlistForm` живе в `apps/web` (сторінка `/pricing`), і standalone-лендінг `waitlistApi` не викликає. Це свідоме звуження до одного CTA — не забутий елемент.
 
-#### Опція A — окремий sergeant.com.ua (Astro / Framer)
+Аналітика — cookieless PostHog напряму в лендінгу. Операційна довідка — [`apps/landing/README.md`](../../../../apps/landing/README.md). Останній редизайн — «redesign landing around connected insights»; скріншот стану — `docs/90-work/audits/landing-redesign-2026-07-29.png`.
 
-Повноцінний static site на окремому домені, поруч `app.sergeant.com.ua` для PWA.
+### 2.2 Чому не Astro (постфактум)
 
-|                           | A                                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------------- |
-| **Час до live**           | 7-10 днів (Astro template + контент + Vercel + DNS)                                       |
-| **Кошти**                 | Vercel free + домен ~$15/рік                                                              |
-| **SEO**                   | ⭐⭐⭐⭐⭐ static HTML, OG cards, blog-ready                                              |
-| **Performance**           | ⭐⭐⭐⭐⭐ < 1s LCP, ~30 kB total                                                         |
-| **Marketing flexibility** | ⭐⭐⭐⭐⭐ pricing-table, testimonials, video, FAQ — все без re-build PWA                 |
-| **Maintenance overhead**  | ⭐⭐ окремий repo або окрема workspace, окремі deploy, окремий PostHog project            |
-| **DNS / cookies**         | складніше: `sergeant.com.ua` для cookies signup-flow, `app.sergeant.com.ua` — auth domain |
+Стек розійшовся з початковою рекомендацією свідомо: лендінг ділить `@sergeant/design-tokens` і `@sergeant/shared` з рештою монорепо, тож React-сторінка успадковує токени й `ANALYTICS_EVENTS` без дублювання. Astro дав би трохи кращий perf-профіль, але вимагав би власної копії дизайн-системи — а `tokens.drift.test.ts` показує, що саме дрейф токенів був реальним ризиком, не кілобайти.
 
-#### Опція B — monolith: public landing route на тому ж домені
+### 2.3 Що лишилось
 
-Залишити все в `apps/web`, додати окремий public route (e.g. `/`) який рендерить marketing-сторінку до signup. Чим хоч `/welcome` поточний є саме цим.
+- [ ] **Домен.** `sergeant.com.ua` не зареєстрований. Розділення apex (лендінг) ↔ `app.` (PWA) — досі цільова схема, але не діюча.
+- [ ] **Прив'язати Vercel-проєкт.** `apps/landing/vercel.json` у репо є; лишається створити окремий Vercel-проєкт і навести на нього apex-домен.
+- [ ] **PostHog production config.** Підтвердити `VITE_POSTHOG_KEY`/host і що події `landing_viewed` + `landing_telegram_clicked` доходять у вибраний проєкт.
+- [ ] **Юзернейм бота.** `serg_qa_bot` читається як внутрішній тестовий. Перейменування вб'є вже роздані deep link-и — робити **до** першої публічної роздачі, не після ([`telegram-waitlist.md`](../../../90-work/planning/specs/telegram-waitlist.md)).
+- [ ] **Рядок про приватність біля CTA.** Окремої юридичної сторінки на лендінгу немає за рішенням власника 2026-07-26; замість неї — рядок у точці збору. Він має сказати, що при `/start` зберігається ID чату і що відписка — це `/stop`.
+- [ ] **Блог** `sergeant.com.ua/blog` — не існує; SEO-контент з [`02-go-to-market.md §5.1`](../business/02-go-to-market.md#51-контент-маркетинг-seo) не має де жити.
 
-|                           | B                                                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Час до live**           | 3-5 днів (один PR-серія, копірайт + img-assets)                                                              |
-| **Кошти**                 | $0 (вже Vercel)                                                                                              |
-| **SEO**                   | ⭐⭐⭐ SPA з SSR-pre-render через Vite SSG плагін — недосконало для SEO                                      |
-| **Performance**           | ⭐⭐ підтягуємо React-bundle для landing-сторінки (~365 kB eager, див. `apps/web/AGENTS.md` § Bundle budget) |
-| **Marketing flexibility** | ⭐⭐ кожне оновлення pricing = web PR + deploy + bump bundle size                                            |
-| **Maintenance overhead**  | ⭐⭐⭐⭐ один codebase, один deploy, один PostHog project                                                    |
-| **DNS / cookies**         | просто: `sergeant.com.ua` = app                                                                              |
-
-#### Опція C — гібрид: швидкий MVP-лендінг зараз, повноцінний сайт пізніше
-
-Запустити **одно-сторінкову Astro-сторінку** на `sergeant.com.ua` (3 секції: hero, value-prop, waitlist), а `app.sergeant.com.ua` залишити PWA з поточним `/welcome` як FTUX. Через 3-4 місяці (Phase 2) — розширити одно-сторінку в повноцінний marketing site з blog/pricing/customer-stories.
-
-|                           | C                                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------------- |
-| **Час до live**           | 2-3 дні (Astro starter, hero + waitlist form + 2-3 секції)                                |
-| **Кошти**                 | ~$15/рік (домен) + Vercel free                                                            |
-| **SEO**                   | ⭐⭐⭐⭐ static HTML, але початково один URL — повний SEO потенціал розкриється у Phase 2 |
-| **Performance**           | ⭐⭐⭐⭐⭐ Astro = майже HTML-only                                                        |
-| **Marketing flexibility** | ⭐⭐⭐⭐ можна шипити marketing-копі без torchування PWA                                  |
-| **Maintenance overhead**  | ⭐⭐⭐ окремий micro-repo або subfolder `apps/landing/` під turborepo                     |
-| **DNS / cookies**         | clean separation: marketing на apex, app — на subdomain                                   |
-
-### 2.3 Рекомендація — Опція C
-
-**Чому C, а не A:**
-
-1. **Solo founder.** A вимагає 7-10 днів повноцінного marketing-сайту — це тиждень коли не пишеш FTUX-фікси, не робиш custdev. C вимагає 2-3 дні і покриває те ж 80% потреби (hero + value-prop + email-capture).
-2. **Waitlist уже працює.** `apps/web/src/core/pricing/WaitlistForm.tsx` + `waitlistApi` готові, тільки треба показати їх з marketing-обгорткою. Це не нова інфра — це shim.
-3. **SEO у W-4..W0 — пустий.** Перший трафік піде з Telegram/Twitter/DOU.ua — там перший клік приземляє на pre-rendered HTML з OG-card, повноцінний blog/landing-keyword-стек не критичний до W+8.
-4. **Domain separation дешево купити зараз, дорого змінити пізніше.** `sergeant.com.ua` (marketing) + `app.sergeant.com.ua` (PWA) — стандартний pattern, відмова від нього у W-4 змусить migration у W+12.
-
-**Чому C, а не B:**
-
-1. **Performance regression.** Поточний eager bundle web-app ~365 kB (див. `apps/web/AGENTS.md` § Bundle budget). Додавання marketing-копі + img-assets піднімає LCP на static landing-сторінку на 200-400 ms — це гірший first-impression для холодного відвідувача.
-2. **Маркетинг ≠ продукт.** Marketing-копі змінюється щотижня (A/B-тести headline, social proof, ціни). У `apps/web` це означає PR + CI + size-limit gate + Lighthouse — повільно. На Astro — push → live за 30 секунд.
-3. **OG cards.** `@vercel/og` (Satori) інтегрується тривіально на Astro, у поточному `apps/web` потребує окремого edge handler.
-
-### 2.4 Мінімальний MVP-варіант Опції C (W-4 / W-3)
-
-> **Стан 2026-07-29:** рішення виконано іншим стеком — `apps/landing` є окремим Vite 7 + React 18 build з Telegram CTA, OG/robots/404 і cookieless PostHog. Опис Astro нижче — початковий design intent; для execution використовуй [`apps/landing/README.md`](../../../../apps/landing/README.md).
-
-Структура `sergeant.com.ua` — **одна сторінка**, 5 секцій. Реалізація — наявний `apps/landing`, deploy на окремий Vercel project:
-
-```
-┌─ Hero (h1, sub-headline, CTA → email capture) ─┐
-│  «Гроші, тіло, звички, їжа — в одному додатку. │
-│   Local-first. Приватно.»                       │
-│   [Email] → [Залишити заявку]                    │
-│   [Спробувати демо →] (link to app.../welcome?demo=1)│
-└────────────────────────────────────────────────┘
-
-┌─ Value-prop (4 модулі grid) ──────────────────┐
-│  💰 Фінік │ 🏋️ Фізрук │ ✅ Рутина │ 🍽 Харчування │
-│  + AI-коуч що бачить весь твій день.           │
-└─────────────────────────────────────────────────┘
-
-┌─ How it works (3 кроки) ──────────────────────┐
-│  1. Підключи Mono → авто-категорізація          │
-│  2. Логуй тренування + їжу одним натиском       │
-│  3. AI пише: "Сержанте, що мені порадиш?"       │
-└────────────────────────────────────────────────┘
-
-┌─ Trust signals ───────────────────────────────┐
-│  🇺🇦 Зроблений в Україні                        │
-│  🔒 Дані — на твоєму пристрої                   │
-│  📴 Працює офлайн                               │
-└────────────────────────────────────────────────┘
-
-┌─ Final CTA ───────────────────────────────────┐
-│  [Email] → [Залишити заявку → побачиш першим]    │
-│  Уже маєш інвайт? [Увійти →] (link to app.../sign-in)│
-└────────────────────────────────────────────────┘
-```
-
-**Stack:**
-
-- Astro 4.x (mid-2025 stable), `astro-tailwind`, Vercel adapter.
-- Email-capture POST → existing `apps/server` `POST /api/waitlist` (вже існує per `waitlistApi`).
-- PostHog `$autocapture` для click-funnel-метрик.
-- OG cards: один статичний `og.png` (1200×630), згенерований у Figma/Canva.
-
-**Action items на W-4 / W-3** — список конкретних tasks включений у §3 нижче.
+> **`/welcome` — не лендінг.** `apps/web/src/core/app/WelcomeScreen.tsx` лишається FTUX-splash **всередині** PWA для вже зареєстрованого юзера. Кореневий `/` у `apps/web` — це `RootRoute` (хаб), а не маркетингова сторінка. Плутати ці дві поверхні не треба: холодний відвідувач приземляється на `apps/landing`, теплий — на хаб.
 
 ---
 
@@ -208,24 +134,29 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 Готуємо все для closed beta. Бачимо waitlist 100-300 людей до Day 0.
 
-#### W-4 — Інфра + лендінг foundation
+#### W-4 — Домен + деплой лендінга
 
-**Goals:** запустити marketing-landing live, отримати domain, ввімкнути Telegram-канал.
+**Goals:** вивести наявний `apps/landing` на публічний домен, зареєструвати webhook бота, ввімкнути Telegram-канал.
+
+> Лендінг і Telegram-вейтліст **уже написані** (§2.1). Цей тиждень — не будівництво, а доставка: домен, деплой, webhook, перший живий прогін.
 
 **Concrete actions:**
 
 - [ ] **Купити `sergeant.com.ua`** (~₴500/рік через Imena.ua або UA-DNS). Налаштувати DNS на Vercel.
-- [x] **Створити standalone app:** `apps/landing` (Vite 7 + React 18) у monorepo; Telegram CTA, OG/robots/404, lint/typecheck/test/build shipped.
-- [ ] **Deploy на Vercel:** apex `sergeant.com.ua` → landing; subdomain `app.sergeant.com.ua` → existing apps/web. Тест: SSL працює, OG cards рендеряться.
-- [ ] **PostHog production config:** підтвердити `VITE_POSTHOG_KEY`/host і події `landing_viewed` + `landing_telegram_clicked` у вибраному project.
-- [ ] **Telegram waitlist smoke:** CTA → `/start` production-бота → запис у `telegram_waitlist`; email `waitlistApi` standalone-лендінг більше не використовує.
-- [ ] **Telegram-канал «Sergeant 🎖️»:** створити, налаштувати pinned-message про waitlist, додати join-link на лендінг.
-- [ ] **Telegram-бот для subscribe:** не критично у W-4, можна перенести на W-3.
+- [ ] **Deploy `apps/landing` на Vercel:** окремий Vercel-проєкт (конфіг уже є — `apps/landing/vercel.json`); apex `sergeant.com.ua` → landing, subdomain `app.sergeant.com.ua` → existing `apps/web`. Тест: SSL працює, `public/og.png` рендериться в Telegram-preview.
+- [ ] **Зареєструвати webhook бота:** `node scripts/telegram/setup-webhook.mjs` (після деплою серверного ендпоінта, не раніше — інакше Telegram піде в exponential backoff). Перевірка стану — `--check`.
+- [ ] **BotFather-налаштування:** `/setprivacy → Enable` (обов'язково — інакше бот читає переписку бета-групи), `/setdescription`, `/setabout`, `/setuserpic`. Порожній опис на екрані «почати діалог» ріже конверсію рівно в тій точці, заради якої все робиться.
+- [ ] **Рішення по юзернейму бота:** `serg_qa_bot` → продуктова назва, якщо перейменовуємо. **Тільки зараз** — після першої публічної роздачі deep link-и помруть.
+- [ ] **PostHog production config:** підтвердити `VITE_POSTHOG_KEY`/host і що події `landing_viewed` + `landing_telegram_clicked` доходять; підключати до існуючого `Default project` (167740) для уніфікації funnel, окремий проєкт не заводити.
+- [ ] **Telegram waitlist smoke:** CTA на лендінгу → `/start` production-бота → рядок у `telegram_waitlist` зі `start_payload='landing'` + текст відповіді бота.
+- [ ] **Telegram-канал «Sergeant 🎖️»:** створити (це **окремий** канал, не бот вейтліста), pinned-message з посиланням на лендінг.
 
 **Acceptance gate:**
 
 - `sergeant.com.ua` live, повертає 200, OG-share у Telegram рендерить нормально.
-- Waitlist form приймає сабміт, запис зявляється у БД, founder отримує admin-email-нотифікацію.
+- `getWebhookInfo` показує зареєстрований URL без `last_error_message`.
+- `/start` з лендінг-кнопки створює рядок у `telegram_waitlist` зі `start_payload='landing'`.
+- Email-форма в `apps/web` (`/pricing`) приймає сабміт, запис зʼявляється у `waitlist_entries` (на лендінгу форми немає — §2.1).
 - Telegram-канал live, перший pinned-пост опубліковано.
 
 **Target users:** 0 active (тільки founder + 1-2 близьких).
@@ -236,10 +167,10 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 **Concrete actions:**
 
-- [ ] **Custdev recruitment:** 10 особистих контактів у Telegram-DM («можеш приділити 30 хв розмови про твою рутину фінанси/фітнес?»). Calendly slot 30 min.
+- [ ] **Custdev recruitment:** 10 особистих контактів у Telegram-DM («можеш приділити 30 хв розмови про твою рутину фінанси/фітнес?»). Слот узгоджуємо в переписці — scheduling-інструмента в стеці немає (§8.1).
 - [ ] **Custdev script:** 5 запитань, 25 хв розмови, 5 хв запис висновків. Шаблон скрипту — у [`02-go-to-market.md §2.4`](../business/02-go-to-market.md#24-збір-фідбеку).
-- [ ] **Перший build-in-public пост:** Twitter/X (англ., якщо аудиторія dev) або Threads/Telegram (укр., якщо UA-аудиторія). Тема: «Запускаю Sergeant — 16-тижневий план. Прозоро. Підписуйся: sergeant.com.ua».
-- [ ] **Опитування «Які модулі найважливіші?»:** Tally form, шеру у двох-трьох українських productivity/fitness Telegram-чатах.
+- [ ] **Перший build-in-public пост:** Twitter/X (англ., якщо аудиторія dev) або Threads/Telegram (укр., якщо UA-аудиторія). Тема: «Запускаю Sergeant — 15-тижневий план. Прозоро. Підписуйся: sergeant.com.ua».
+- [ ] **Опитування «Які модулі найважливіші?»:** нативний Telegram-полл у двох-трьох українських productivity/fitness чатах — без зовнішньої форми (§4.7.3).
 - [ ] **Founder's story для DOU.ua:** drafting почати; публікація — W-2.
 - [ ] **Запуск founder-pulse у PostHog:** [`docs/03-operations/observability/posthog-founder-pulse.md`](../../../03-operations/observability/posthog-founder-pulse.md) — щоденний digest «новий signup / нова сесія / новий error».
 
@@ -257,11 +188,12 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 **Concrete actions:**
 
-- [ ] **DOU.ua publication:** «Як я будую all-in-one life tracker — 16-тижневий timeline». Шаблон — у [`02-go-to-market.md §4.3`](../business/02-go-to-market.md#43-douua--ainua--founders-story-template).
+- [ ] **DOU.ua publication:** «Як я будую all-in-one life tracker — 15-тижневий timeline». Шаблон — у [`02-go-to-market.md §4.3`](../business/02-go-to-market.md#43-douua--ainua--founders-story-template).
 - [ ] **Mirror на AIN.ua** (коротша версія, 600-800 слів) і Threads UA (короткий thread із 5 постів).
-- [ ] **Email-collection sanity:** очистити dedupe-логіку у waitlist (один email = один запис), додати `WAITLIST_SUBMITTED` PostHog event tracking (вже в `WaitlistForm.tsx`).
+- [ ] **Атрибуція каналів через `start_payload`:** для кожного зовнішнього посту — свій deep link (`?start=dou`, `?start=ain`, `?start=threads`). Це безкоштовна атрибуція без трекера; ліміт Telegram — 64 символи, `A-Za-z0-9_-`.
+- [ ] **Email-collection sanity:** перевірити dedupe у `waitlist_entries` (один email = один запис), підтвердити `WAITLIST_SUBMITTED` PostHog event (вже в `WaitlistForm.tsx`).
 - [ ] **Custdev інтервʼю +5:** добивати total 15-20 інтервʼю до Day 0.
-- [ ] **Зведення custdev нотаток у документ:** «10 patterns we heard» — це стане базою для FTUX iter у W0-W3.
+- [ ] **Зведення custdev нотаток у документ:** «10 patterns we heard» — це стане базою для FTUX iter у W0-W1.
 
 **Acceptance gate:**
 
@@ -271,153 +203,124 @@ sergeant.com.ua/blog           → SEO-блог (Astro SSG)
 
 **Target users:** 0 active, 150 waitlist.
 
-#### W-1 — Інвайт-лист + dry-run
+#### W-1 — Підготовка хвилі інвайтів + dry-run
 
-**Goals:** зібрати 20-50 перших інвайт-кандидатів, провести full dry-run web-стеку.
+**Goals:** підготувати розсилку на 30 тестерів, провести full dry-run web-стеку.
+
+> **Гейт — не інвайт-код.** Реєстрація в `apps/web` відкрита (Better Auth `emailAndPassword`); поля інвайту в коді немає. Доступ до бети регулюється тим, **кому надіслано інвайт-лінк у приватну Telegram-групу**, а не технічним замком на signup. Механіка — §4.2.
 
 **Concrete actions:**
 
-- [ ] **Інвайт-лист:** з 150+ waitlist обираємо 20-50 за критеріями: (a) UA-аудиторія, (b) відповіли в опитуванні «активно використовую 2+ tracker-додатки», (c) готові спілкуватись у Telegram-групі.
-- [ ] **Email-template «Ласкаво просимо у Sergeant Beta»:** Loops або Resend. Включає invite-link з `?ref=beta_w0` для PostHog source tracking.
-- [ ] **Telegram-група «Sergeant Beta»:** приватна, інвайти лише з email-листа. Mini-rule «один пост — один bug-report АБО одна ідея».
-- [ ] **In-app feedback widget:** мінімум — посилання "Знайшов баг? Ідея?" → Telegram-bot. Більш повний варіант — Sentry user-feedback widget (вже в стеці).
+- [ ] **Відбір 30 тестерів:** вибірка з `telegram_waitlist` (`WHERE notified_at IS NULL AND opted_out_at IS NULL`, `ORDER BY created_at`). Критерії пріоритету: (a) UA-аудиторія, (b) `start_payload` з каналу, що дав якісний трафік, (c) активні в Telegram.
+- [ ] **Текст розсилки:** редагується в `scripts/telegram/broadcast-waitlist.mjs`; інвайт у приватну групу підставляється з `TELEGRAM_BETA_INVITE_LINK`.
+- [ ] **`--dry-run` прогін:** обов'язковий — друкує кількість і текст, нічого не шле. Перевірити, що вибірка = 30, а не весь список.
+- [ ] **Тестова відправка на власний `chat_id`** перед реальною хвилею.
+- [ ] **Telegram-група «Sergeant Beta»:** приватна, вступ лише за інвайт-лінком із розсилки. Mini-rule «один пост — один bug-report АБО одна ідея».
+- [ ] **In-app feedback widget:** уже shipped — Settings → «Фідбек», події `feedback_widget_opened` / `feedback_submitted` у PostHog ([`feedback-loop.md`](../../../03-operations/observability/feedback-loop.md)). Перевірити, що працює, не будувати заново.
 - [ ] **Bug-tracking templates:** GitHub Issue template `bug-from-beta.md` з полями: device, OS, browser, кроки, screenshot.
 - [ ] **Dry-run launch day:** запустити демо-юзера-від-нуля у Chrome incognito + mobile-Chrome. Прогнати критичний flow: signup → Welcome → перший модуль → перший запис. Фіксувати кожен bug.
-- [ ] **Privacy Policy stub:** Termly draft, опублікувати на `sergeant.com.ua/privacy` (не commit-блокер, але mando до closed beta — health data).
+- [ ] **Реквізити ФОП у юридичний пак:** підставити ПІБ, РНОКПП, адресу та IBAN замість плейсхолдерів у `apps/web/src/core/legal/LegalPage.tsx`. Тексти вже чинні з 12.07.2026 — бракує лише реквізитів.
 - [ ] **Сповістити founder-pulse Telegram alert channel:** додати alert на «signup spike > 10/hour» (закрита бета не повинна мати спайків — це signal помилкового сценарію).
 
 **Acceptance gate:**
 
-- 20-50 інвайтів готові до відправки.
-- Dry-run без P0/P1 bugs (P2 ОК).
-- Privacy Policy stub live на `sergeant.com.ua/privacy`.
+- `--dry-run` показує рівно 30 адресатів і фінальний текст.
+- Dry-run продукту без P0/P1 bugs (P2 ОК).
+- Юридичний пак доступний на `/legal/privacy`, `/legal/terms`, `/legal/cookies`, `/legal/offer` з реальними реквізитами.
 - Telegram-група і bug-template готові.
 
-**Target users:** 0 active, 200-300 waitlist, 20-50 у інвайт-листі.
+**Target users:** 0 active, 200-300 у вейтлістах (email + Telegram), 30 відібраних на першу хвилю.
 
 ### 3.2 Closed beta (W0 → W3)
 
 Moment of truth: реальні юзери торкаються продукту.
 
-#### W0 — Send invites + observe
+#### W0 — Розсилка + спостереження
 
-**Goals:** відіслати 20-50 інвайтів, побачити перші 5-10 signups + activations.
+**Goals:** відправити хвилю на 30 тестерів, побачити перші signups + activations.
 
 **Concrete actions:**
 
-- [ ] **Send-day:** 20-50 інвайт-листів через Loops/Resend у W0 day 1, hour 10:00 Київ (working hours).
-- [ ] **Telegram welcome message:** при першому signup юзер отримує DM у Telegram (через bot) — «Вітаю! Дякую за бету. Чекаю на твій перший фідбек у групі».
+- [ ] **Send-day:** `node scripts/telegram/broadcast-waitlist.mjs` у W0 day 1, 10:00 Київ. Тротлінг ~20 msg/sec; на `429` скрипт читає `retry_after`. `403 bot was blocked` → `opted_out_at`, без ретраю. `notified_at` стамповиться порядково — перерваний прогін просто перезапускається.
 - [ ] **Observe PostHog FTUX funnel:** дашборд [`FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031) — стежимо за 8-step funnel. Target: ≥ 30% з signup → first_real_entry за 24 години.
 - [ ] **Daily standup з самим собою:** 15 хв ранкова саморевʼю — «що зламалось вчора, що пофіксити сьогодні».
 - [ ] **Bug triage cadence:** усі bug-reports з Telegram-групи перенесено у GitHub Issues протягом 4 годин. Severity-label: `bug-p0` (data loss, login broken), `bug-p1` (core flow broken), `bug-p2` (cosmetic).
 - [ ] **Hotfix cadence:** P0 — fix у день, P1 — fix у 48 годин, P2 — у спрінт.
 - [ ] **Метрика: «Wizard → first_real_entry conversion»** (FTUX SLO target ≥ 30%; див. [`ftux-master-tracker.md` §1](../product-os/ftux-master-tracker.md#1-tldr)).
+- [ ] **Конверсія хвилі:** `COUNT(telegram_waitlist WHERE notified_at IS NOT NULL)` проти реальних signup-ів у PostHog.
 
 **Acceptance gate:**
 
-- ≥ 10 з 20-50 інвайт-кандидатів зробили signup.
-- ≥ 5 з signupers досягли `first_real_entry` (заповнили один модуль реальними даними).
+- ≥ 15 з 30 адресатів зробили signup.
+- ≥ 8 з них досягли `first_real_entry` (заповнили один модуль реальними даними).
 - Жоден P0-bug не відкритий > 24 годин.
 
-**Target users:** 10-20 active.
+**Target users:** 15-20 active.
 
-#### W1 — Custdev-у-зворотньому-напрямку (post-use)
+#### W1 — Фідбек, фікси, decision week
 
-**Goals:** провести 5-7 custdev-розмов з юзерами, які вже скористались, агрегувати top-5 friction points.
+**Goals:** зібрати фідбек, виправити top-3 friction, ухвалити «йдемо в soft public» чи «повторюємо бету».
 
-**Concrete actions:**
-
-- [ ] **Calendly invite до 10 з активних бетерів:** «30 хв розмови — поділись враженням». 50% no-show OK, цільові 5-7 розмов.
-- [ ] **Session recording через PostHog:** включити для всіх бетерів (вже opt-in через consent). Дивитись recording найактивніших sesions ~10 хв сесій.
-- [ ] **Top-5 friction list:** після W1 day 5 — публікувати у Telegram-групу «Ось 5 проблем, які ми побачили. Дякуємо. Ось як ми це фіксимо».
-- [ ] **First weekly digest email:** «Що ми зробили цього тижня за вашим фідбеком».
-- [ ] **NPS pulse:** після D7 — відправити NPS-форму (Tally), мінімум 1 запитання «Чи рекомендуєш Sergeant другу? 0-10».
-
-**Acceptance gate:**
-
-- 5-7 custdev-розмов з бетерами проведені, top-5 friction list публічно в Telegram-групі.
-- Перший weekly digest email відправлено.
-- D7 retention (від W0 cohort) ≥ 20% (поріг go/no-go з [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md#42-funnel-метрики)).
-
-**Target users:** 15-30 active.
-
-#### W2 — Fix top-5 + invite +10
-
-**Goals:** виправити top-3 з friction list, додати ще 10 інвайтів.
+> Це стиснутий тиждень: у 4-тижневій версії плану custdev, фікси й go/no-go були рознесені по W1-W3. На 30 тестерах вони вміщаються в один тиждень, бо когорта мала й фідбек приходить швидко.
 
 **Concrete actions:**
 
-- [ ] **Top-3 fix-PRs:** беремо 3 найбільш гострі friction points з W1, шипимо PR-и через стандартний release-flow ([`playbooks/release.md` §1`](../../../00-start/playbooks/release.md#1-web--api)).
-- [ ] **Invite wave +10:** взяти наступних 10 з waitlist (тих, хто не отримав інвайт у W-1).
-- [ ] **Feedback loop close:** у Telegram-групі «Ось що ми виправили — спробуй ще раз». Це створює exclusivity + word-of-mouth.
-- [ ] **First PostHog cohort analysis:** який модуль найчастіше — first_real_entry? Чи є кореляція з retention?
-- [ ] **Sentry triage:** перевірити що error-rate < 1% від total sessions.
-
-**Acceptance gate:**
-
-- Top-3 friction fixed, валідовано у session recordings.
-- +10 нових signups з друкої хвилі.
-- Sentry error-rate ≤ 1%.
-- WAU (від W0 cohort + W2 wave): 20-30.
-
-**Target users:** 25-40 active.
-
-#### W3 — Decision week: scale або iterate
-
-**Goals:** прийняти рішення «йдемо у W4 soft public» чи «повторюємо closed beta ще 2 тижні».
-
-**Concrete actions:**
-
-- [ ] **Beta retrospective:** довідка по 4 тижням — що працює, що не працює, NPS, D7 retention, top-5 фідбек-tем.
-- [ ] **Activation rate calc:** users-who-did-2plus-modules-in-3d / signups. Target ≥ 40% (з [`04-launch-readiness.md` §4.2`](../business/04-launch-readiness.md#42-funnel-метрики)).
-- [ ] **Go/no-go decision:** записати у `docs/01-product/launch/phases/01-web-launch-with-users.md` §3.2 (постфактум).
-- [ ] **Якщо GO:** підготувати open-signup wave (W4 plan, див. §3.3).
-- [ ] **Якщо NO-GO:** написати «retro V1 — чому ми ще не готові», переробити FTUX, повторити W2-W3.
+- [ ] **5-7 custdev-розмов** з активними бетерами: «30 хв — поділись враженням». Слоти узгоджуються в Telegram-переписці, 50% no-show закладено.
+- [ ] **Session recording через PostHog:** включити для бетерів (opt-in через consent). Дивитись 3-5 найактивніших сесій.
+- [ ] **Top-5 friction list** → публікувати в Telegram-групу: «Ось 5 проблем, які ми побачили. Ось як фіксимо».
+- [ ] **Top-3 fix-PRs:** шипимо через стандартний release-flow ([`playbooks/release.md` §1`](../../../00-start/playbooks/release.md#1-web--api)).
+- [ ] **Feedback loop close:** «Ось що ми виправили — спробуй ще раз».
+- [ ] **NPS pulse:** PostHog Surveys, тригер `nps_survey_eligible` за віком акаунта — уже shipped, розсилати вручну не треба ([`feedback-loop.md`](../../../03-operations/observability/feedback-loop.md)).
+- [ ] **Sentry triage:** error-rate < 1% від total sessions.
+- [ ] **Go/no-go decision** — записати постфактум у цей файл.
 
 **Acceptance gate (для переходу на soft public):**
 
-- D7 retention ≥ 20% (від bottom 50% of beta cohort).
-- NPS ≥ 30 (10+ відповідей).
+- D7 retention ≥ 20% (від W0-когорти).
+- NPS ≥ 30 (10+ відповідей — на 30 тестерах це реалістична стеля).
 - Activation rate ≥ 25%.
 - 0 open P0-bugs.
 - Sentry error-rate ≤ 1%.
-- WAU ≥ 30.
+- Top-3 friction fixed, валідовано в session recordings.
 - Founder feels: «я можу спокійно лягти спати під час open signup».
 
-**Target users:** 30-50 active.
+**Якщо NO-GO:** написати «retro V1 — чому ми ще не готові», переробити FTUX, повторити W0-W1 із **новою** хвилею на 30 (не тими самими людьми — вони вже бачили перше враження).
 
-### 3.3 Soft public launch (W4 → W7)
+**Target users:** 20-30 active.
+
+### 3.3 Soft public launch (W2 → W5)
 
 Відкриваємо signup. Очікуємо traffic-spike з public-каналів.
 
-#### W4 — Open signup + Product Hunt prep
+#### W2 — Публічний вхід + Product Hunt prep
 
-**Goals:** дозволити open signup на `app.sergeant.com.ua/sign-up`, почати готувати Product Hunt launch на W6.
+**Goals:** перевести лендінг з «бета за інвайтом» на публічний вхід, почати готувати Product Hunt launch на W4.
+
+> **Технічного «фліпа» немає.** Реєстрація в `apps/web` уже відкрита — прапорця `feature.invite_only_signup` у `apps/web/src/core/lib/featureFlags.ts` не існує і ніколи не існувало. Перехід у soft public — це **зміна копії й CTA на лендінгу** плюс припинення ручного гейту через Telegram-розсилку, а не код-зміна в auth.
 
 **Concrete actions:**
 
-- [ ] **Flip feature flag:** `feature.invite_only_signup` → off. Open signup live.
-- [ ] **Push update на лендінг:** замінити «Залишити заявку» на «Спробувати безкоштовно зараз». Email-collection лишається як fallback.
-- [ ] **Public Telegram-канал live:** publish 3 posts: (a) «Beta closed, public live», (b) screenshots/demo з beta-користувачів, (c) AMA-thread.
+- [ ] **Лендінг:** `TelegramCta` з «Приєднатися до бети» → «Спробувати безкоштовно» з посиланням на `app.sergeant.com.ua/sign-up`. Telegram-кнопка лишається другорядною — як канал спільноти, не як гейт.
+- [ ] **Public Telegram-канал live:** publish 3 posts: (a) «Бета закрита, публічний вхід відкритий», (b) screenshots/demo з beta-користувачів, (c) AMA-thread.
 - [ ] **Product Hunt assets prep:** demo-video 90-120 сек (OBS Studio), 5 screenshots, headline-формула з [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook).
-- [ ] **Privacy Policy + ToS full versions:** перевести stub-и у production-ready (потребує юриста або Termly Pro ~$10/міс).
+- [ ] **Юридичний пак — фінальна перевірка:** тексти чинні з 12.07.2026; переконатися, що реквізити ФОП підставлені (закривалось у W-1) і що cookie-банер відповідає списку cookies у Політиці cookies.
 - [ ] **Activation/retention dashboards:** перейти з "beta cohort" на "all-time cohort" у PostHog.
 
 **Acceptance gate:**
 
-- Open signup live, перший public signup зафіксовано в PostHog.
-- Privacy Policy + ToS опубліковані на `sergeant.com.ua/privacy` і `sergeant.com.ua/terms`.
-- Product Hunt draft з assets готовий (заплановано publish на W6).
+- Публічний вхід live, перший public signup зафіксовано в PostHog.
+- `/legal/*` — 4 документи з реальними реквізитами, без плейсхолдерів.
+- Product Hunt draft з assets готовий (заплановано publish на W4).
 
 **Target users:** 50-150 signups, 30-60 active.
 
-#### W5 — DOU/Threads boost + community-led growth
+#### W3 — DOU/Threads boost + community-led growth
 
 **Goals:** опублікувати follow-up DOU-стаття «3 місяці тому я написав про Sergeant — ось що сталось», розгалуження UA-каналів.
 
 **Concrete actions:**
 
-- [ ] **DOU follow-up article:** «Що ми побачили у 50 бета-юзерів — 10 patterns для UA-life-tracking». Реальні цифри з PostHog.
+- [ ] **DOU follow-up article:** «Що ми побачили у 30 бета-юзерів — 10 patterns для UA-life-tracking». Реальні цифри з PostHog.
 - [ ] **Threads UA серія постів:** 5 постів по 1 patterns кожен.
 - [ ] **UA-Telegram outreach:** написати у 5 каналах з [`02-go-to-market.md §4.2`](../business/02-go-to-market.md#42-українські-канали) (@startupukraine, @ain_ua, @productivity_ua, @digitalnomad_ua, @groshi_ua). Бартер: Pro-account за 1 пост.
 - [ ] **Telegram-спільнота growth:** запустити перший weekly digest у канал «Sergeant Community».
@@ -432,7 +335,7 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Target users:** 150-400 signups, 80-150 active.
 
-#### W6 — Product Hunt launch
+#### W4 — Product Hunt launch
 
 **Goals:** запустити на Product Hunt, отримати top-10 of the day.
 
@@ -442,7 +345,7 @@ Moment of truth: реальні юзери торкаються продукту
 - [ ] **First maker comment:** template з §4.1 — «Привіт, Product Hunt! Я [Ім'я], засновник Sergeant…».
 - [ ] **Outreach 20+ supporters:** написати DM на LinkedIn/Twitter за 3 дні до launch.
 - [ ] **Monitor + respond:** перші 12 годин — відповідь на кожен коментар протягом 1 години.
-- [ ] **Sentry / PostHog on alert:** очікуємо signup-spike 5-10x normal — backend і API мають витримати. Якщо saturation росте — scale/redeploy через Coolify.
+- [ ] **Sentry / PostHog on alert:** очікуємо signup-spike 5-10x normal — backend і API мають витримати. Якщо saturation росте — scale/redeploy через Coolify. Запас потужності на Hetzner — це **не миттєва операція**, тож плануй ресурс заздалегідь у W3, а не в день запуску.
 - [ ] **Status page update:** [Instatus](https://instatus.com/) показує "Operational" протягом всього launch day.
 
 **Acceptance gate:**
@@ -454,14 +357,14 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Target users:** 400-800 signups, 150-300 active.
 
-#### W7 — Post-PH stabilization + feedback wave
+#### W5 — Post-PH stabilization + feedback wave
 
 **Goals:** заспокоїти trafic-spike, проаналізувати retention, провести +5 custdev-розмов з public-юзерами.
 
 **Concrete actions:**
 
 - [ ] **Public retro у Telegram-канал:** «Що сталось після Product Hunt — цифри + висновки».
-- [ ] **+5 custdev з public-юзерів:** Calendly invite до 10 найактивніших — 30 хв розмови. Цільові 5.
+- [ ] **+5 custdev з public-юзерів:** написати 10 найактивнішим — 30 хв розмови. Цільові 5.
 - [ ] **PostHog cohort analysis:** Compare PH-cohort vs Telegram-cohort vs Beta-cohort. Який канал дає кращий activation/retention?
 - [ ] **Performance audit:** Lighthouse manual run, перевірити LCP/FCP. Якщо є regression — створити tech-debt PR.
 - [ ] **NPS pulse #2:** виміряти серед PH-cohort.
@@ -478,18 +381,18 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Target users:** 800-1500 signups, 200-400 active.
 
-### 3.4 Stable (W8 → W12)
+### 3.4 Stable (W6 → W10)
 
 Закріплюємо retention. Готуємо exit-gates для Phase 2 (Capacitor).
 
-#### W8 — Retention focus
+#### W6 — Retention focus
 
 **Goals:** покращити D7/D30 retention на 5pp.
 
 **Concrete actions:**
 
 - [ ] **Push notification campaign:** «Ти не логував їжу 3 дні — додай швидко?». Один проактивний push на тиждень, не більше. Strategy doc → [`04-launch-readiness.md` §3.1](../business/04-launch-readiness.md#31-ops-checklist).
-- [ ] **Email re-engagement:** Loops automation — D7 dormant юзери отримують email «Що ти зробив за тиждень».
+- [ ] **Email re-engagement:** розширити наявний FTUX-drip (`apps/server/src/email/ftuxDripMail.ts`, черга через BullMQ, копія в `ftuxDripCopy.ts`, відписка через `ftuxUnsubscribeToken.ts`) сценарієм для D7-dormant. Транспорт — Resend; окремої marketing-платформи в стеці немає. **Передумова:** верифікований домен у Resend, інакше розсилка не піде (див. §8.1).
 - [ ] **Cohort analysis:** яка фіча best-correlated з D30 retention? (Найкраща fitness streak? Mono-sync? AI-чат?). Інвестуй у цю фічу.
 - [ ] **Quick wins у FTUX:** взяти top-3 з friction list, шипити PR-и.
 
@@ -497,7 +400,7 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Target users:** 1000-1500 signups, 250-500 active.
 
-#### W9-W10 — Виральні петлі live
+#### W7-W8 — Виральні петлі live
 
 **Goals:** активувати share cards для всіх 4 модулів, перший referral-flow ship.
 
@@ -512,14 +415,14 @@ Moment of truth: реальні юзери торкаються продукту
 
 **Target users:** 1500-1800 signups, 400-600 active.
 
-#### W11-W12 — Exit-gates prep + Phase 2 planning
+#### W9-W10 — Exit-gates prep + Phase 2 planning
 
 **Goals:** валідація exit-criteria для Phase 2 (Capacitor), бриф для Phase 2 сесії.
 
 **Concrete actions:**
 
 - [ ] **Exit-gates audit (див. §9):** проганяємо checkliste, фіксуємо що так/ні.
-- [ ] **Phase 1 retrospective document:** агрегований doc «Що ми дізнались за 12 тижнів».
+- [ ] **Phase 1 retrospective document:** агрегований doc «Що ми дізнались за 15 тижнів».
 - [ ] **Phase 2 entry brief:** короткий brief (1-2 сторінки) для Capacitor-фази: що працює на web, що потрібно перенести, які трейдоффи.
 - [ ] **Performance baseline:** Lighthouse + bundle size — фіксуємо для регрессій у Phase 2.
 - [ ] **Paywall scaffolding (optional):** якщо 0010 phase 3 готова, шипимо PR-20a (FF + PostHog events scaffolding) — це підготовка, не paywall live.
@@ -536,54 +439,67 @@ Moment of truth: реальні юзери торкаються продукту
 
 | Канал                                | Розмір вибірки | Як                                    | Cost | Якість фідбеку                |
 | ------------------------------------ | -------------- | ------------------------------------- | ---- | ----------------------------- |
-| **Особисті контакти**                | 10-20          | DM, Calendly link                     | ₴0   | ⭐⭐⭐⭐⭐ глибокий, але bias |
+| **Особисті контакти**                | 10-20          | DM з deep link `?start=dm`            | ₴0   | ⭐⭐⭐⭐⭐ глибокий, але bias |
 | **Telegram-канал «Sergeant»**        | 50-200         | Pinned post «Шукаю beta-тестерів»     | ₴0   | ⭐⭐⭐⭐ self-selected        |
-| **Twitter/X build-in-public**        | 20-100         | Tweet з invite-form                   | ₴0   | ⭐⭐⭐ глобальний, не UA      |
-| **DOU.ua коментарі**                 | 50-300         | CTA в статті «Хочеш бету? Email тут»  | ₴0   | ⭐⭐⭐⭐ tech-savvy           |
+| **Twitter/X build-in-public**        | 20-100         | Tweet з deep link `?start=twitter`    | ₴0   | ⭐⭐⭐ глобальний, не UA      |
+| **DOU.ua коментарі**                 | 50-300         | CTA в статті з `?start=dou`           | ₴0   | ⭐⭐⭐⭐ tech-savvy           |
 | **Indie Hackers / Reddit r/ukraine** | 20-100         | Build-in-public пост                  | ₴0   | ⭐⭐ noisy                    |
 | **Friends-of-friends**               | 30-50          | Особисті повідомлення «Передай другу» | ₴0   | ⭐⭐⭐⭐⭐ trust-based        |
 
-**Рекомендований mix для closed beta (W-1):**
+> **Кожен канал — свій `start_payload`.** Deep link виду `t.me/<bot>?start=dou` дає атрибуцію каналу безкоштовно, без жодного трекера: колонка `start_payload` у `telegram_waitlist` показує, звідки прийшла людина. Ліміт Telegram — 64 символи, `A-Za-z0-9_-`.
 
-- 50% з особистих контактів + friends-of-friends (трасть-based, готові давати фідбек)
-- 30% з Telegram-каналу (self-selected, активні)
-- 20% з DOU/Twitter (tech-savvy, можуть дати глибокий технічний фідбек)
+**Рекомендований mix для closed beta (W-1), 30 тестерів:**
 
-### 4.2 Closed beta process (W0-W3)
+- ~50% (15) з особистих контактів + friends-of-friends (trust-based, готові давати фідбек)
+- ~30% (9) з Telegram-каналу (self-selected, активні)
+- ~20% (6) з DOU/Twitter (tech-savvy, можуть дати глибокий технічний фідбек)
+
+> Якщо особистого нетворку немає — mix зсувається у бік публічних каналів; готовий starter kit у [§4.7](#47-рекрутинг-тестерів-незнайомців--starter-kit-без-особистого-нетворку).
+
+### 4.2 Closed beta process (W0-W1)
 
 **Принципи:**
 
-1. **Інвайт-only**, інвайт-код видається через email-template.
-2. **Telegram-група закрита**, додавання тільки після першого signup.
+1. **Гейт — розсилка, не код.** Реєстрація відкрита; доступ до бети регулюється тим, кому надіслано інвайт у приватну Telegram-групу. Інвайт-кодів у продукті немає.
+2. **Telegram-група закрита**, вступ лише за інвайт-лінком з розсилки (`TELEGRAM_BETA_INVITE_LINK`).
 3. **"One bug = one report"** правило у групі — захищає від спаму.
-4. **Founder в групі live**, відповідає на коментарі протягом 4 годин.
+4. **Founder в групі live**, відповідає на коментарі протягом 4 годин. Саме цей SLA обмежує когорту 30-ма людьми.
 5. **Sessions recording opt-in** через PostHog consent banner.
 
-**Інвайт-template (email):**
+**Як фізично відправляється хвиля:**
 
-```
-Тема: Ласкаво просимо у Sergeant Beta 🎖️
-
-Привіт, [Ім'я]!
-
-Ти у перших 50, які бачать Sergeant до публічного запуску.
-Дякую, що погодився протестувати.
-
-Лінк: https://app.sergeant.com.ua/sign-up?invite=BETA_W0_XXX
-Код: BETA_W0_XXX (autoматично прикладеться)
-Telegram-група: https://t.me/sergeant_beta (приватна, інвайт по email)
-
-Правила:
-1. Користуйся щодня хоча б 1 модулем
-2. Якщо щось зламано — пиши в групу
-3. Якщо щось дратує — пиши в групу
-4. Я відповідаю протягом 4 годин
-
-Questions? Reply сюди.
-— [Ім'я founder-а]
+```bash
+node scripts/telegram/broadcast-waitlist.mjs --dry-run
 ```
 
-### 4.3 Public soft launch process (W4-W7)
+Вибірка — `WHERE notified_at IS NULL AND opted_out_at IS NULL`. Транспорт — наявний `createTelegramApiClient` (`apps/server/src/modules/alerts/telegramShipper.ts`), новий не пишемо. `--dry-run` друкує кількість і текст, нічого не шле — **обов'язковий** перед бойовим прогоном. Після успішної відправки порядково стамповиться `notified_at`, тож перерваний прогін безпечно перезапускається.
+
+**Відписка** працює з першого дня і не потребує власної інфраструктури: `/stop` або блок бота → `403 bot was blocked by the user` → `opted_out_at`. Це нативний механізм Telegram — саме тому обіцянку про відписку можна давати чесно.
+
+**Текст розсилки (Telegram, не email):**
+
+Живе в `scripts/telegram/broadcast-waitlist.mjs`; інвайт-лінк підставляється з `TELEGRAM_BETA_INVITE_LINK`. Без імені — бот знає `first_name`, але персоналізація в масовій розсилці читається як шаблон, а не як лист від людини.
+
+```
+Привіт! Sergeant відкриває закриту бету — ти серед перших 30.
+
+Що це: фінанси, тренування, звички й харчування в одному місці,
+з AI, що бачить повну картину дня.
+
+Заходь: https://app.sergeant.com.ua
+Група для фідбеку: {TELEGRAM_BETA_INVITE_LINK}
+
+Про що прошу:
+1. Користуйся щодня хоча б одним модулем
+2. Щось зламалось або дратує — пиши в групу
+3. Відповідаю протягом 4 годин
+
+Не на часі — просто надішли /stop, більше не потурбую.
+```
+
+> Окремої реєстрації за кодом немає — посилання веде на звичайний signup. Гейт — це список адресатів, а не замок на формі.
+
+### 4.3 Public soft launch process (W2-W5)
 
 **Принципи:**
 
@@ -595,15 +511,21 @@ Questions? Reply сюди.
 
 ### 4.4 Feedback loops
 
-| Loop                         | Періодичність                               | Канал                           | Дія                                  |
-| ---------------------------- | ------------------------------------------- | ------------------------------- | ------------------------------------ |
-| **In-app feedback widget**   | Continuous                                  | Sentry user-feedback або custom | bug/idea → GitHub Issue              |
-| **Telegram-група**           | Continuous                                  | Telegram                        | bug/idea → triage в групі            |
-| **Custdev sessions**         | Weekly у beta, biweekly у soft public       | Calendly + Google Meet          | 30 хв, 5-7 patterns/тиждень          |
-| **NPS pulse**                | D7 від signup                               | Tally form                      | aggregated NPS-score                 |
-| **Weekly digest email**      | Weekly                                      | Loops                           | «Що ми зробили цього тижня»          |
-| **Session recording review** | Weekly                                      | PostHog                         | дивитись 3-5 sessions, log frictions |
-| **Bug triage cadence**       | Daily у beta, every-other-day у soft public | GitHub Issues                   | P0 < 24h, P1 < 48h, P2 < sprint      |
+| Loop                         | Періодичність                               | Канал (реальний)                           | Дія                                  | Стан         |
+| ---------------------------- | ------------------------------------------- | ------------------------------------------ | ------------------------------------ | ------------ |
+| **In-app feedback widget**   | Continuous                                  | Settings → «Фідбек» (`feedback_submitted`) | bug/idea → GitHub Issue              | ✅ shipped   |
+| **Telegram-група**           | Continuous                                  | Telegram                                   | bug/idea → triage в групі            | ✅ живе      |
+| **Custdev sessions**         | Weekly у beta, biweekly у soft public       | Домовленість у Telegram + Google Meet      | 30 хв, 5-7 patterns/тиждень          | ⚠️ вручну    |
+| **NPS pulse**                | D7 від signup                               | PostHog Surveys (`nps_survey_eligible`)    | aggregated NPS-score                 | ✅ shipped   |
+| **Weekly digest email**      | Weekly                                      | Resend (`ftuxDripMail.ts`, черга BullMQ)   | «Що ми зробили цього тижня»          | 🔴 блоковано |
+| **Session recording review** | Weekly                                      | PostHog                                    | дивитись 3-5 sessions, log frictions | ✅ shipped   |
+| **Bug triage cadence**       | Daily у beta, every-other-day у soft public | GitHub Issues                              | P0 < 24h, P1 < 48h, P2 < sprint      | ✅ живе      |
+
+> **Ні Loops, ні Calendly в стеці немає** — раніше вони стояли в цій таблиці як діючі інструменти. Фактично:
+>
+> - **Email** — єдиний транспорт це **Resend** (`RESEND_API_KEY`, `RESEND_FROM`). Код розсилок: `apps/server/src/email/authTransactionalMail.ts` (транзакційні) і `ftuxDripMail.ts` + `ftuxDripCopy.ts` + `ftuxUnsubscribeToken.ts` (FTUX-drip через BullMQ). **Блокер:** домен у Resend не верифіковано, тому масова розсилка сьогодні не піде — це і є причина, чому Telegram став головним каналом ([`telegram-waitlist.md`](../../../90-work/planning/specs/telegram-waitlist.md)).
+> - **Scheduling** — інструмента немає. Слоти custdev узгоджуються в переписці. Заводити Calendly заради 5-7 дзвінків на тиждень не варто; якщо стане боляче — це рішення для Phase 2, не блокер Phase 1.
+> - **NPS** — не Tally, а PostHog Surveys: клієнтський тригер за віком акаунта, разова настройка survey у дашборді ([`feedback-loop.md § 2`](../../../03-operations/observability/feedback-loop.md)).
 
 ### 4.5 Custdev session script (30 хв)
 
@@ -630,7 +552,7 @@ flowchart LR
   HOTFIX --> RELEASE[playbooks/release.md §1]
   ISSUE --> PR[Standard PR flow]
   ISSUE2 --> PR
-  PR --> CLOSE[Close + reply у Telegram\n«Fixed in #1234»]
+  PR --> CLOSE[Close + reply у Telegram\n«Fixed in #NNN»]
 ```
 
 **GitHub Issue templates:**
@@ -693,17 +615,15 @@ Sergeant: фінанси + тренування + звички + харчува�
 > як особисті контакти — заголовок мусить продати вигоду («довічний Pro», «10-15 хв»)
 > за 3 секунди читання, а не за абзац.
 
-#### 4.7.3 Опитувальники (Tally) — 3-штучний пакет
+#### 4.7.3 Опитувальники — 3-штучний пакет
 
-| Опитувальник               | Коли                               | Довжина   | Питання (мінімум)                                                                                   |
-| -------------------------- | ---------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
-| **Onboarding**             | Одразу після вступу в групу        | 1-2 хв    | «Які трекери вже використовуєш?» · «Що найбільше болить у фінансах/фітнесі/звичках/їжі зараз?»      |
-| **NPS pulse (D7)**         | 7 днів після signup (вже є у §4.4) | 1 питання | «Наскільки ймовірно порекомендуєш Sergeant другу? (0-10)»                                           |
-| **Exit / weekly короткий** | Раз на тиждень, весь цикл бети     | 2-3 хв    | «Що було незрозуміло цього тижня?» · «Чого бракує?» · «Що хочеш побачити далі?» (open text, 3 поля) |
+| Опитувальник               | Коли                               | Довжина   | Де                | Питання (мінімум)                                                                                   |
+| -------------------------- | ---------------------------------- | --------- | ----------------- | --------------------------------------------------------------------------------------------------- |
+| **Onboarding**             | Одразу після вступу в групу        | 1-2 хв    | Telegram-полл     | «Які трекери вже використовуєш?» · «Що найбільше болить у фінансах/фітнесі/звичках/їжі зараз?»      |
+| **NPS pulse (D7)**         | 7 днів після signup (вже є у §4.4) | 1 питання | PostHog Survey ✅ | «Наскільки ймовірно порекомендуєш Sergeant другу? (0-10)»                                           |
+| **Exit / weekly короткий** | Раз на тиждень, весь цикл бети     | 2-3 хв    | Пост у групі      | «Що було незрозуміло цього тижня?» · «Чого бракує?» · «Що хочеш побачити далі?» (open text, 3 поля) |
 
-> Усі три — окремі Tally-форми (free tier, безлімітно, вже рекомендовано в
-> [`business/03-services-and-toolstack.md` §2.16](../business/03-services-and-toolstack.md#216-фідбек-та-дослідження)).
-> Лінки на onboarding- і weekly-форми — закріпити (`pin`) у Telegram-групі поруч із правилами.
+> **Без окремого form-сервісу.** Раніше тут стояли три Tally-форми; Tally в стеці немає. NPS уже реалізований як PostHog Survey (тригер `nps_survey_eligible` за віком акаунта), а на когорті в 30 людей два інші опитування дешевше провести прямо в Telegram-групі: нативні полли дають вищий response rate, ніж клік у зовнішню форму, і не потребують зшивання даних. Закріпити (`pin`) weekly-пост у групі поруч із правилами.
 
 #### 4.7.4 Bug-report — Telegram-friendly шаблон
 
@@ -738,26 +658,29 @@ Sergeant: фінанси + тренування + звички + харчува�
 - [x] **Vercel preview-per-PR + production deploy-on-merge** працює.
 - [x] **Coolify/Hetzner backend + Postgres** з instant rollback опцією (ADR-0074).
 - [x] **DB backup verification** — раз перевірити що backup відновлюється.
-- [ ] **Status page** на `sergeant.com.ua/status` (вже є `/status` route у webapp — переконатись що live).
-- [ ] **In-app feedback widget** (мінімум Sentry user-feedback або link на Telegram-bot).
-- [ ] **Privacy Policy stub** на `sergeant.com.ua/privacy`.
+- [x] **Юридичний пак** — 4 документи в `apps/web/src/core/legal/LegalPage.tsx` (`/legal/privacy`, `/legal/terms`, `/legal/cookies`, `/legal/offer`), чинні з 12.07.2026.
+- [x] **In-app feedback widget** — Settings → «Фідбек», події `feedback_widget_opened` / `feedback_submitted`.
+- [x] **Telegram-вейтліст** — webhook, таблиця `telegram_waitlist`, broadcast-скрипт.
+- [ ] **Реквізити ФОП у юридичному паку** — `CONTROLLER_PLACEHOLDER` та IBAN досі плейсхолдери.
+- [ ] **Status page** на `sergeant.com.ua/status` (`apps/web/src/core/status/StatusPage.tsx` існує — переконатись що live).
 - [ ] **Telegram alert channel** для on-call (founder отримує push при P0).
-- [ ] **Feature flag `feature.invite_only_signup`** додати у `apps/web/src/core/lib/featureFlags.ts` (default `true`, flip у W4).
 - [ ] **Bug-tracking templates** (GitHub Issue forms).
 
-### 5.2 Перед public launch (W3 → W4)
+> **Прапорця `feature.invite_only_signup` не заводимо.** Раніше тут стояв пункт «додати FF, default `true`, flip у W4». Він не потрібен: гейт бети — це список адресатів розсилки, а не замок на формі реєстрації (§4.2). Зайвий FF довелося б потім знімати разом із мертвою гілкою в auth.
+
+### 5.2 Перед public launch (W1 → W2)
 
 Довкола core — все що приваблює і захищає публічного користувача.
 
-- [ ] **Privacy Policy + ToS full** (не stub) — health + financial data вимагає GDPR-compliant version. Termly Pro або юрист.
-- [ ] **Cookie Policy** — Better Auth використовує cookies; EU-юзери потребують banner.
-- [ ] **Публічна оферта** — для UA-ринку, ФОП-формат. Шаблон з Дія.Бізнес.
+- [x] **Privacy Policy + ToS + Cookie Policy + Публічна оферта** — повні тексти, не stub-и; health + financial data покриті, GDPR-розділи (права суб'єкта, SCC для US-субпроцесорів, retention, breach-повідомлення 72 год) на місці.
+- [ ] **Реквізити ФОП** підставлені в оферту й Privacy Policy (єдине, що лишилось з юридичного блоку).
+- [ ] **Cookie consent banner** — Better Auth використовує cookies; перевірити, що банер збігається зі списком у Політиці cookies (`sergeant.consent.v1`, `sergeant.analytics.opt-in`, `ph_<posthog>`).
 - [ ] **All `4xx`/`5xx` error pages мають retry-CTA** — `apps/web/src/core/errors/NotFoundPage.tsx` базовий є; додати «Спробувати ще раз», «Повернутись на головну».
 - [ ] **Performance budget зелений** — `pnpm --filter @sergeant/web size` + `lighthouse` локально passing.
-- [ ] **Lighthouse CI gate live** — T5 з [`sprint-roadmap-q2q3-2026.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md) — якщо ще ні, manual run щотижня.
+- [x] **Lighthouse CI gate live** — `.github/workflows/lighthouse-ci.yml`, status check `Lighthouse CI` на кожен PR до `main`; LCP `error`-gated на 3000 ms.
 - [ ] **A11y baseline** — Playwright + axe lane (`pnpm --filter @sergeant/web test:a11y`) зелений.
 - [ ] **PostHog dashboards public** — public read-only mirror для transparency.
-- [ ] **Billing email templates** (Resend) — навіть для free-only launch; «welcome», «password reset». Loops для marketing emails.
+- [ ] **Email-домен верифіковано в Resend** — блокер для будь-якої розсилки, включно з «welcome» і weekly digest. Транзакційні шаблони вже в коді (`authTransactionalMail.ts`), окремої marketing-платформи не заводимо.
 - [ ] **Monitoring alerts повний sets з [`04-launch-readiness.md` §3.2](../business/04-launch-readiness.md#32-monitoring-та-alerting-для-платного-продукту)** — payment_failed скіпаємо до paywall, але signup_rate_drop, api_error_rate, db_storage — мусять.
 
 ### 5.3 До paywall (post-Phase 2, для довідки)
@@ -779,15 +702,17 @@ Sergeant: фінанси + тренування + звички + харчува�
 
 **WAU (weekly active users), де "active" = ≥ 1 модуль used за тиждень.**
 
-Чому WAU, а не MAU: Phase 1 — 12 тижнів, MAU дає 3 точки даних, WAU — 12. Швидше iteration loop.
+Чому WAU, а не MAU: Phase 1 — 15 тижнів, MAU дає 3 точки даних, WAU — 15. Швидше iteration loop.
 
 | Тиждень                | WAU baseline | WAU target | WAU stretch |
 | ---------------------- | ------------ | ---------- | ----------- |
-| W0 (closed beta)       | 0            | 10         | 20          |
-| W3 (end of beta)       | 10           | 30         | 50          |
-| W4 (soft public start) | 30           | 50         | 100         |
-| W7 (post-PH)           | 100          | 200        | 400         |
-| W12 (stable)           | 300          | 500        | 800         |
+| W0 (closed beta)       | 0            | 15         | 25          |
+| W1 (end of beta)       | 15           | 25         | 30          |
+| W2 (soft public start) | 25           | 50         | 100         |
+| W5 (post-PH)           | 100          | 200        | 400         |
+| W10 (stable)           | 300          | 500        | 800         |
+
+> Стеля бети — 30, бо стільки людей у когорті. `WAU target 25` на W1 означає 83% утримання когорти всередині тижня, а не ріст.
 
 ### 6.2 Activation funnel
 
@@ -799,9 +724,9 @@ signup → onboarding_started → step_completed × 4 → first_real_entry
 
 **Target — % з signup до `first_real_entry` за 24h:**
 
-- Закрита бета (W0-W3): ≥ 40% (можна тренувати на маленьких числах)
-- Soft public (W4-W7): ≥ 30%
-- Stable (W8-W12): ≥ 25%
+- Закрита бета (W0-W1): ≥ 40% (можна тренувати на маленьких числах)
+- Soft public (W2-W5): ≥ 30%
+- Stable (W6-W10): ≥ 25%
 
 **Acceptable mid-funnel drop-offs:**
 
@@ -824,10 +749,10 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 | Метрика                       | Definition                      | Target                    |
 | ----------------------------- | ------------------------------- | ------------------------- |
-| **Modules used per session**  | DISTINCT modules per session_id | ≥ 1.5 у W3, ≥ 2.0 у W12   |
-| **Session duration**          | p50 (median)                    | ≥ 2 хв у W3, ≥ 3 хв у W12 |
-| **Sessions per WAU per week** | sessions / WAU                  | ≥ 3 у W3, ≥ 4 у W12       |
-| **AI chat engagement**        | % WAU which used /chat          | ≥ 20% у W12               |
+| **Modules used per session**  | DISTINCT modules per session_id | ≥ 1.5 у W1, ≥ 2.0 у W10   |
+| **Session duration**          | p50 (median)                    | ≥ 2 хв у W1, ≥ 3 хв у W10 |
+| **Sessions per WAU per week** | sessions / WAU                  | ≥ 3 у W1, ≥ 4 у W10       |
+| **AI chat engagement**        | % WAU which used /chat          | ≥ 20% у W10               |
 
 ### 6.5 NPS і churn
 
@@ -835,7 +760,7 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 | ------------------------------- | --------------------------------- | ------------------------- |
 | **NPS**                         | ≥ 25 (soft public), ≥ 35 (stable) | SaaS B2C: 20-40           |
 | **Weekly churn (для активних)** | ≤ 15% (early), ≤ 8% (stable)      | Indie SaaS: 5-15% monthly |
-| **Reasons-for-churn**           | Captured у Tally exit-survey      | top-3 — actionable list   |
+| **Reasons-for-churn**           | Captured у PostHog Survey         | top-3 — actionable list   |
 
 ### 6.6 Tech health
 
@@ -854,7 +779,7 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 - MRR / paid subscribers (не запускаємо paywall до post-Phase 2)
 - LTV / CAC (потребує paid acquisition; ми organic-only у Phase 1)
 - Mobile app store rating (Phase 2-3 territory)
-- Viral coefficient > 0.3 (target тільки 0.05-0.1 у W12)
+- Viral coefficient > 0.3 (target тільки 0.05-0.1 у W10)
 
 ---
 
@@ -862,25 +787,27 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 ### 7.1 Risk register (Phase 1)
 
-| #   | Risk                                                                                | Likelihood | Impact   | Mitigation                                                                                                                                                                    |
-| --- | ----------------------------------------------------------------------------------- | ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R-1 | **Solo founder вигоряння** — 16 тижнів без перерви, custdev + dev + ops + marketing | High       | Critical | Phase 1 timeline має 2 "slack tooth" тижні (W3, W7) — якщо exit-gate не пройшов, не push: повторюй під-фазу. Telegram alerts limited до P0/P1.                                |
-| R-2 | **FTUX wizard має поточну conversion < 30%** (W0-W3)                                | Medium     | High     | FTUX SLO живий у `ftux-slo.yml`; якщо < 30%, повтор W2-W3, не йди у W4. Iteration на hero copy + first action — швидкі PR-и.                                                  |
-| R-3 | **Product Hunt launch flop** — top-20 не досягнуто                                  | Medium     | Medium   | Self-launch ОК (per [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook)). Backup-канал — DOU/AIN/Threads UA уже працюють. Не залежимо на PH. |
-| R-4 | **Privacy Policy не готова до public launch** — block W4                            | Medium     | High     | Termly Pro stub-у W-1; повний review до W3. Якщо юрист не встигає — затримати W4 на 1 тиждень.                                                                                |
-| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W6)                        | Medium     | Critical | Coolify/VPS scaling і rollback path мають бути перевірені; preemptive load-test у W5 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.                                |
-| R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W2                               | Medium     | High     | Recruit з 3 каналів одночасно (особисті + Telegram + DOU); follow-up DM через 48h для тихих. Telegram-група має «one post per day» правило.                                   |
-| R-7 | **Activation rate < 20%** на стабільному cohort у W3                                | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                 |
-| R-8 | **Mobile strategy змінилась після ADR-0010**                                        | Medium     | Medium   | ADR-0052 робить Capacitor primary; Phase 2 brief має перевірити актуальну parity-стратегію, а не старий T₀/T₁/T₂ sunset-графік.                                               |
+| #   | Risk                                                                                | Likelihood | Impact   | Mitigation                                                                                                                                                                                         |
+| --- | ----------------------------------------------------------------------------------- | ---------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R-1 | **Solo founder вигоряння** — 15 тижнів без перерви, custdev + dev + ops + marketing | High       | Critical | Timeline має slack-тижні (W1, W5) — якщо exit-gate не пройшов, не push: повторюй під-фазу. Telegram alerts limited до P0/P1.                                                                       |
+| R-2 | **FTUX wizard має поточну conversion < 30%** (W0-W1)                                | Medium     | High     | FTUX SLO живий у `ftux-slo.yml`; якщо < 30%, повтор W0-W1, не йди у W2. Iteration на hero copy + first action — швидкі PR-и.                                                                       |
+| R-3 | **Product Hunt launch flop** — top-20 не досягнуто                                  | Medium     | Medium   | Self-launch ОК (per [`02-go-to-market.md §4.1`](../business/02-go-to-market.md#41-product-hunt-playbook)). Backup-канал — DOU/AIN/Threads UA уже працюють. Не залежимо на PH.                      |
+| R-4 | **Реквізити ФОП не підставлені до public launch** — block W2                        | Medium     | Medium   | Тексти юридичного паку вже чинні (12.07.2026); лишились реквізити. Ризик знижений з High: це заповнення полів, не написання документів.                                                            |
+| R-5 | **Backend не витримує PH-spike** (5-10x normal traffic у W4)                        | Medium     | Critical | Coolify/VPS scaling і rollback path мають бути перевірені заздалегідь — апгрейд інстанса **не миттєвий**. Preemptive load-test у W3 (artillery або k6 із 100 RPS). Якщо < 100 RPS — escalate.      |
+| R-6 | **Beta-юзери відсутні / тихі** — нема фідбеку у W0-W1                               | Medium     | High     | На 30 тестерах і 2 тижнях цей ризик **вищий**, ніж був на 50/4 тижні: менше людей і менше часу на розгойдування. Recruit з 3 каналів одночасно; follow-up DM через 48h для тихих.                  |
+| R-7 | **Activation rate < 20%** на когорті у W1                                           | Low-Medium | Critical | Це fatal — означає FTUX broken. Stop Phase 1, повтор Sprint 1-3 з FTUX-master-tracker. Engage parent session для re-planning.                                                                      |
+| R-8 | **Mobile strategy змінилась після ADR-0010**                                        | Medium     | Medium   | ADR-0052 робить Capacitor primary; Phase 2 brief має перевірити актуальну parity-стратегію, а не старий T₀/T₁/T₂ sunset-графік.                                                                    |
+| R-9 | **Email-канал мертвий** — домен у Resend не верифіковано                            | High       | Medium   | Уже реалізувалось: саме тому вейтліст переїхав у Telegram. Email лишається як портативний запасний канал — Telegram може заблокувати бота, і тоді список у `waitlist_entries` єдиний, що лишиться. |
 
-### 7.2 Pre-mortem (W12)
+### 7.2 Pre-mortem (W10)
 
 «Чому Phase 1 провалився?» — гіпотетичні сценарії, які треба відстежувати:
 
 1. **"Ми ніколи не вийшли з closed beta"** — D7 retention сидить на 15%, NPS на 20, бета-юзери тихі. Indication: FTUX wizard потребує переписати, не патчити. → Sprint 5 (goal-first wizard, поки optional).
-2. **"Ми пройшли beta, але public signup провалився"** — 50 з PH, але D7 retention 5%. Indication: лендінг over-promises, продукт under-delivers. → Hero copy + value-prop revision, повтор W4.
-3. **"Технічно стабільно, але нікому байдуже"** — Sentry зелений, WAU 50. Indication: positioning / channel-fit problem. → Revisit GTM (`business/02-go-to-market.md §4.2`), спробувати інші Telegram-канали або pivot на B2B-niche.
-4. **"Все працює, але я виснажений"** — founder burnout. Indication: не міняй продукт, міняй pace. Пауза 2 тижні, потім продовжуй.
+2. **"Ми пройшли beta, але public signup провалився"** — 50 з PH, але D7 retention 5%. Indication: лендінг over-promises, продукт under-delivers. → Hero copy + value-prop revision, повтор W2.
+3. **"Бета була закоротка"** — 30 людей за 2 тижні дали 3 репорти, з яких жоден не про FTUX. Indication: когорта не встигла дійти до другого тижня використання. → Не розтягуй ту саму хвилю; шли **другу** хвилю на 30 нових і дивись, чи повторюються patterns.
+4. **"Технічно стабільно, але нікому байдуже"** — Sentry зелений, WAU 50. Indication: positioning / channel-fit problem. → Revisit GTM (`business/02-go-to-market.md §4.2`), спробувати інші Telegram-канали або pivot на B2B-niche.
+5. **"Все працює, але я виснажений"** — founder burnout. Indication: не міняй продукт, міняй pace. Пауза 2 тижні, потім продовжуй.
 
 ---
 
@@ -890,26 +817,34 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 ### 8.1 Already in stack (підтвердити що live)
 
-| Tool                | Purpose                               | Plan                                       | Stato   |
-| ------------------- | ------------------------------------- | ------------------------------------------ | ------- |
-| **Vercel**          | Web hosting (apps/web + apps/landing) | Free / Pro $20/міс при traffic > free-tier | ✅ Live |
-| **Hetzner/Coolify** | Backend + Postgres 18 + Redis         | ~$7/міс fixed CX23                         | ✅ Live |
-| **Sentry**          | Error monitoring + alerts             | Free tier 5K events/міс                    | ✅ Live |
-| **PostHog**         | Product analytics + FTUX dashboards   | Cloud EU, free до 1M events/міс            | ✅ Live |
-| **GitHub**          | Issues + PRs + CI Actions             | Free для public, $4/seat private           | ✅ Live |
-| **GitHub Issues**   | Bug-tracking                          | Free                                       | ✅ Live |
+| Tool                 | Purpose                                     | Plan                                       | Стан                               |
+| -------------------- | ------------------------------------------- | ------------------------------------------ | ---------------------------------- |
+| **Vercel**           | Web hosting (`apps/web` + `apps/landing`)   | Free / Pro $20/міс при traffic > free-tier | ✅ Live (лендінг — не задеплоєний) |
+| **Hetzner/Coolify**  | Backend + Postgres 18 + Redis (ADR-0074)    | ~$7/міс fixed CX23                         | ✅ Live                            |
+| **Coolify**          | Self-hosted PaaS: деплой, rollback, env     | Self-hosted, $0 ліцензії                   | ✅ Live                            |
+| **GHCR**             | Docker-образи API (`deploy-api.yml`)        | Free для public repo                       | ✅ Live                            |
+| **Sentry**           | Error monitoring + alerts                   | Free tier 5K events/міс                    | ✅ Live                            |
+| **PostHog**          | Product analytics, FTUX dashboards, Surveys | Cloud EU, free до 1M events/міс            | ✅ Live                            |
+| **Resend**           | Транзакційні email + FTUX-drip              | Free 100/day, $20/міс при scale            | ⚠️ код є, домен не верифіковано    |
+| **Telegram Bot API** | Вейтліст (`@serg_qa_bot`) + ops-алерти      | Free                                       | ✅ Live                            |
+| **GitHub**           | Issues + PRs + CI Actions                   | Free для public, $4/seat private           | ✅ Live                            |
+
+> **Railway виведено з експлуатації.** Бекенд переїхав на Hetzner CX23 під Coolify — ADR-0074 (superseded ADR-0009 у частині бекенду). Деплой: GitHub Actions білдить образ → GHCR → Coolify тягне. Pre-deploy міграції: `node dist-server/migrate.js` через Coolify `pre_deployment_command`, потрібен `MIGRATE_DATABASE_URL`. Health: `/health`. Практичний наслідок для запуску: **instant rollback і миттєвий scale-up, які план приписував Railway, працюють інакше** — rollback є (previous image у Coolify + previous deployment у Vercel), а от зміна розміру інстанса в Hetzner потребує планування, не одного кліка.
 
 ### 8.2 Add у Phase 1
 
-| Tool                             | Purpose                                                                   | When | Plan                                           |
-| -------------------------------- | ------------------------------------------------------------------------- | ---- | ---------------------------------------------- |
-| **Loops**                        | Transactional + marketing emails (welcome, password reset, weekly digest) | W-1  | Free до 1K contacts, $39/міс при growth        |
-| **Resend** (alt.)                | Transactional emails                                                      | W-1  | Free 100/day, $20/міс при scale                |
-| **Tally**                        | Forms (NPS, custdev recruitment, exit-survey)                             | W-3  | Free unlimited forms                           |
-| **Calendly**                     | Custdev scheduling                                                        | W-3  | Free tier 1 event type, $10/міс basic          |
-| **UptimeRobot** або **Instatus** | Status page + uptime                                                      | W-1  | Free 50 monitors UptimeRobot; Instatus $20/міс |
-| **Astro**                        | Landing на `sergeant.com.ua`                                              | W-4  | Open-source, $0 + Vercel free                  |
-| **PostHog session recording**    | Detect frictions у custdev sessions                                       | W0   | Included у PostHog free до 5K recordings/міс   |
+| Tool                             | Purpose                             | When | Plan                                           |
+| -------------------------------- | ----------------------------------- | ---- | ---------------------------------------------- |
+| **UptimeRobot** або **Instatus** | Status page + uptime                | W-1  | Free 50 monitors UptimeRobot; Instatus $20/міс |
+| **Домен `sergeant.com.ua`**      | Apex для лендінга                   | W-4  | ~₴500/рік                                      |
+| **PostHog session recording**    | Detect frictions у custdev sessions | W0   | Included у PostHog free до 5K recordings/міс   |
+
+> **Чого свідомо не додаємо (і чому раніше стояло в цій таблиці):**
+>
+> - **Loops** — окрема marketing-email платформа не потрібна: транспорт уже є (Resend), drip-механіка вже написана (`ftuxDripMail.ts` + BullMQ + `ftuxUnsubscribeToken.ts`). Вузьке місце — верифікація домену, а не інструмент. Другий вендор її не обійде.
+> - **Calendly** — 5-7 дзвінків на тиждень домовляються в переписці дешевше, ніж коштує ще один SaaS у стеці.
+> - **Tally** — форми замінені PostHog Surveys: NPS уже shipped із тригером за віком акаунта, і дані одразу лежать поряд із рештою продуктової аналітики, без ручного зшивання.
+> - **Astro** — лендінг написаний на Vite + React, щоб ділити `@sergeant/design-tokens` з рештою монорепо (§2.2).
 
 ### 8.3 Add у Phase 2 (для довідки)
 
@@ -922,26 +857,29 @@ If one stage drops below — focus iteration there. Дашборд: [PostHog FTU
 
 - ~~Intercom / Crisp chat~~ — overhead, founder в Telegram-групі
 - ~~Help Scout / Zendesk~~ — занадто для < 1000 users
-- ~~Customer.io~~ — Loops/Resend достатньо
+- ~~Customer.io / Loops~~ — Resend достатньо
+- ~~Calendly~~ — домовляємось у переписці
+- ~~Tally~~ — PostHog Surveys покривають
 - ~~Mixpanel~~ — PostHog покриває все
 - ~~Linear~~ — GitHub Issues + Project board достатньо
-- ~~Stripe~~ — paywall відкладений
+- ~~Активний checkout~~ — paywall відкладений до post-Phase 2
 
 ### 8.5 Tooling-cost projection Phase 1 (місячний)
 
 ```
-Vercel:       $0 (free, ймовірно до W12)
+Vercel:       $0 (free, ймовірно до W10)
 Hetzner:      ~$7 (CX23 fixed; scale окремим рішенням)
+Coolify:      $0 (self-hosted на тому ж інстансі)
 Sentry:       $0 (free до 5K events)
 PostHog:      $0 (free до 1M events)
-Loops:        $0-39 (free до 1K contacts)
-Tally:        $0
-Calendly:     $0-10 (free достатньо)
+Resend:       $0 (free 100/day — на 30 тестерах вистачає)
 UptimeRobot:  $0
 Domain:       ~₴500/рік (~$1.25/міс)
 ──────────────────────────────────────
-Total:        $6-70/міс протягом Phase 1
+Total:        ~$8/міс протягом Phase 1
 ```
+
+Верхня межа впала проти попередньої оцінки ($6-70): зникли Loops ($39) і Calendly ($10), а Railway з usage-based хвостом замінив фіксований Hetzner-інстанс.
 
 Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 години роботи — payback позитивний».
 
@@ -953,15 +891,15 @@ Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 годин
 
 ### 9.1 Gate checklist
 
-| #       | Gate                          | Threshold                                                           | Source of truth                                                              |
-| ------- | ----------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **G-1** | **Web WAU stable**            | ≥ 300 WAU sustained 2+ тижні                                        | PostHog WAU cohort                                                           |
-| **G-2** | **D7 retention discipline**   | ≥ 15% (cohort W6-W10 avg)                                           | PostHog retention cohort                                                     |
-| **G-3** | **Activation rate baseline**  | ≥ 25% signup → first_real_entry @ 24h                               | PostHog funnel                                                               |
-| **G-4** | **NPS validation**            | ≥ 25 (≥ 30 responses)                                               | Tally NPS form                                                               |
-| **G-5** | **Tech stability**            | Sentry error-rate ≤ 2% sustained 14 днів; LCP p75 ≤ 2.5s            | Sentry + PostHog Web Vitals                                                  |
-| **G-6** | **Legal compliance**          | Privacy Policy + ToS + Cookie Policy live; data-portability working | `sergeant.com.ua/privacy` + GDPR export feature                              |
-| **G-7** | **Capacitor readiness brief** | Phase 2 entry doc написаний; web↔shell parity-gap list documented   | `docs/01-product/launch/phases/02-capacitor-launch.md` (Phase 2 deliverable) |
+| #       | Gate                          | Threshold                                                                  | Source of truth                                                              |
+| ------- | ----------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **G-1** | **Web WAU stable**            | ≥ 300 WAU sustained 2+ тижні                                               | PostHog WAU cohort                                                           |
+| **G-2** | **D7 retention discipline**   | ≥ 15% (cohort W4-W8 avg)                                                   | PostHog retention cohort                                                     |
+| **G-3** | **Activation rate baseline**  | ≥ 25% signup → first_real_entry @ 24h                                      | PostHog funnel                                                               |
+| **G-4** | **NPS validation**            | ≥ 25 (≥ 30 responses)                                                      | PostHog Survey                                                               |
+| **G-5** | **Tech stability**            | Sentry error-rate ≤ 2% sustained 14 днів; LCP p75 ≤ 2.5s                   | Sentry + PostHog Web Vitals                                                  |
+| **G-6** | **Legal compliance**          | 4 документи live **з реальними реквізитами ФОП**; data-portability working | `/legal/*` + `GET /api/me/export`                                            |
+| **G-7** | **Capacitor readiness brief** | Phase 2 entry doc написаний; web↔shell parity-gap list documented          | `docs/01-product/launch/phases/02-capacitor-launch.md` (Phase 2 deliverable) |
 
 ### 9.2 Soft gates (бажано, але не блок)
 

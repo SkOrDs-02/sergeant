@@ -31,11 +31,14 @@ export interface MacroRingDatum {
 
 export function MacroRings({
   macros,
+  incomplete = false,
   "aria-label": ariaLabel,
 }: {
   macros: MacroRingDatum[];
   /** Group label, sourced from the i18n catalog by the caller. */
   "aria-label": string;
+  /** Day-level "partial data" flag — see `ProgressRing`'s `incomplete` prop. */
+  incomplete?: boolean;
 }) {
   return (
     <ul className="grid grid-cols-3 gap-2" aria-label={ariaLabel}>
@@ -47,7 +50,16 @@ export function MacroRings({
               variant={variant}
               value={consumed}
               max={safeGoal || 1}
-              size="md"
+              // `sm` (48px) rather than `md` (72px): three fixed-diameter
+              // rings at 72px leave <8px of horizontal slack at a 320px
+              // viewport once the hero card's own padding is subtracted —
+              // any longer caption word or a slightly narrower device
+              // tips it into overflow (page-audit nutrition-overview-01).
+              // `ProgressRing`'s `size` is a fixed-px enum, not fluid, so
+              // shrinking the enum step is the only overflow-safe fix
+              // that doesn't fight the shared component with `!important`.
+              size="sm"
+              incomplete={incomplete}
               aria-label={
                 safeGoal > 0
                   ? `${label}: ${consumed} з ${safeGoal} ${unit}`
@@ -59,7 +71,7 @@ export function MacroRings({
                     {consumed}
                   </span>
                   {safeGoal > 0 && (
-                    <span className="text-2xs text-muted tabular-nums">
+                    <span className="text-style-caption text-muted tabular-nums">
                       / {safeGoal}
                     </span>
                   )}
@@ -69,7 +81,7 @@ export function MacroRings({
             <div className="text-center">
               <div className="text-style-caption text-text">{label}</div>
               {outcome && (
-                <div className="text-2xs text-subtle text-pretty">
+                <div className="text-style-caption text-subtle text-pretty">
                   {outcome}
                 </div>
               )}

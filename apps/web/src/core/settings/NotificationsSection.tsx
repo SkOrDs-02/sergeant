@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
+import { usePushNotifications } from "@shared/hooks/usePushNotifications";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import {
@@ -11,12 +12,16 @@ import {
   NUTRITION_PREFS_KEY,
   type NutritionPrefs,
 } from "../../modules/nutrition/lib/nutritionStorage";
+import { messages } from "@shared/i18n/uk";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
 import {
   SettingsGroup,
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
+import { useServerPreference } from "./useServerPreference";
+
+const sergeantCopy = messages.sergeant;
 
 type PermStatus = NotificationPermission | "unsupported";
 
@@ -28,7 +33,25 @@ export function NotificationsSection() {
   );
   const { warning: toastWarning } = useToast();
 
+  // Три перемикачі нижче обіцяли «навіть коли застосунок закрито» —
+  // і це була неправда: нагадування вів локальний таймер, який помирав
+  // разом із вкладкою. Тепер їх шле сервер, але лише тим, у кого є жива
+  // push-підписка. Тож обіцянку віддаємо умовно, за фактичним станом:
+  // мовчазний перемикач, що нічого не робить, — гірший за чесний рядок.
+  const { subscribed: pushSubscribed } = usePushNotifications();
+  const backgroundHint = (base: string): string =>
+    pushSubscribed
+      ? `${base} Приходить навіть коли застосунок закрито.`
+      : `${base} Щоб приходило при закритому застосунку, увімкни push-сповіщення вище.`;
+
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
+
+  // Живе на сервері, а не в localStorage: цей прапорець читає серверний
+  // шедулер тоді, коли жодного клієнта не запущено.
+  const sergeantNudges = useServerPreference("sergeantNudges", {
+    saveError: sergeantCopy.nudgesSaveError,
+    authRequired: sergeantCopy.nudgesAuthRequired,
+  });
 
   const monthlyPlan = useMonthlyPlan();
 
@@ -131,7 +154,11 @@ export function NotificationsSection() {
             {permLabel}
           </p>
         </div>
-        {permStatus !== "granted" && permStatus !== "unsupported" && (
+        {/* `denied` — це кінцевий стан: `Notification.requestPermission()`
+            резолвиться миттєво тим самим `denied`, не показуючи промпт.
+            Кнопка тут була б обіцянкою, яку браузер не виконає, тож на
+            цьому шляху лишається лише інструкція. */}
+        {permStatus === "default" && (
           <Button
             type="button"
             size="sm"
@@ -142,18 +169,42 @@ export function NotificationsSection() {
           </Button>
         )}
         {permStatus === "denied" && (
-          <p className="text-style-caption text-subtle">
-            Відкрий налаштування браузера, щоб дозволити
+          <p className="text-style-caption text-subtle max-w-[14rem] text-right">
+            Відкрий налаштування сайту в браузері (значок біля адреси) і дозволь
+            сповіщення
           </p>
         )}
       </div>
 
       <PushNotificationToggle className="p-3 rounded-xl bg-bg border border-line" />
 
+      <SettingsSubGroup title={sergeantCopy.name} defaultOpen>
+        <ToggleRow
+          label={sergeantCopy.nudgesToggleLabel}
+          description={sergeantCopy.nudgesToggleDescription}
+          checked={sergeantNudges.value}
+          onChange={(checked) => {
+            // Дозвіл питаємо ДО запису: увімкнений на сервері канал без
+            // дозволу браузера — це тиха підписка на нічого.
+            if (checked && permStatus !== "granted") {
+              void requestPermission();
+            }
+            void sergeantNudges.set(checked);
+          }}
+        />
+        {sergeantNudges.error && (
+          <p className="text-style-caption text-danger-strong dark:text-danger">
+            {sergeantNudges.error}
+          </p>
+        )}
+      </SettingsSubGroup>
+
       <SettingsSubGroup title="Рутина (звички)" defaultOpen>
         <ToggleRow
           label="Нагадування про звички"
-          description="Спрацьовує у встановлений в кожній звичці час, навіть коли застосунок закрито."
+          description={backgroundHint(
+            "Спрацьовує у час, вказаний у кожній звичці.",
+          )}
           checked={routine.prefs?.routineRemindersEnabled === true}
           onChange={handleRoutineToggle}
         />
@@ -162,7 +213,9 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Фізрук (тренування)" defaultOpen>
         <ToggleRow
           label="Нагадування про тренування"
-          description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування."
+          description={backgroundHint(
+            "Надсилається о вказаній годині, якщо на сьогодні призначено тренування.",
+          )}
           checked={monthlyPlan.reminderEnabled}
           onChange={handleFizrukToggle}
         />
@@ -185,7 +238,9 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Їжа" defaultOpen>
         <ToggleRow
           label="Нагадування про їжу"
-          description="Щоденне нагадування записати прийоми їжі, навіть коли застосунок закрито."
+          description={backgroundHint(
+            "Щоденне нагадування записати прийоми їжі.",
+          )}
           checked={Boolean(nutritionPrefs.reminderEnabled)}
           onChange={handleNutritionToggle}
         />

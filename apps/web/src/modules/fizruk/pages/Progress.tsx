@@ -22,9 +22,13 @@ import {
   selectBodyWeightSamples,
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
+import {
+  REGRESSION_NOTICE_PCT,
+  computeOneRmAging,
+} from "@sergeant/fizruk-domain/domain";
 import { kyivMondayStartMs } from "@sergeant/shared";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
-import { statusColors } from "@shared/charts";
+import { chartStatusSeries } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
@@ -160,6 +164,10 @@ export function Progress({ onNavigate }: ProgressProps) {
       nameUk: string | null;
     };
     const by: Record<string, PR> = {};
+    // Канон §6 — «PR-борд розуміє регрес». Пік сам по собі не каже нічого
+    // про СЬОГОДНІ: він міг бути півтора роки тому. Тому поруч тримаємо
+    // останню силову сесію вправи і її результат.
+    const latest: Record<string, { at: string; best1rm: number }> = {};
     for (const w of workouts || []) {
       for (const it of w.items || []) {
         const exId = it.exerciseId;
@@ -175,6 +183,13 @@ export function Progress({ onNavigate }: ProgressProps) {
               at: w.startedAt,
               nameUk: it.nameUk ?? null,
             };
+          const at = w.startedAt || "";
+          const prevLatest = latest[exId];
+          if (!prevLatest || at > prevLatest.at) {
+            latest[exId] = { at, best1rm: est };
+          } else if (at === prevLatest.at && est > prevLatest.best1rm) {
+            prevLatest.best1rm = est;
+          }
         }
       }
     }
@@ -190,11 +205,24 @@ export function Progress({ onNavigate }: ProgressProps) {
     return Object.entries(by)
       .map(([id, v]) => {
         const group = groupById.get(id) || null;
+        const last = latest[id];
+        const aging = computeOneRmAging({
+          peak1rm: v.best1rm,
+          lastSessionAt: last?.at ?? null,
+        });
+        const lastBest = last?.best1rm ?? 0;
         return {
           id,
           name: labelById.get(id) || v.nameUk || id,
           muscleGroup: group,
           muscleGroupLabel: group ? musclesUk?.[group] || null : null,
+          isStale: aging.isStale,
+          deltaVsPeakPct:
+            lastBest > 0 && v.best1rm > 0
+              ? Math.round(((lastBest - v.best1rm) / v.best1rm) * 100)
+              : 0,
+          isRegression:
+            lastBest > 0 && lastBest < v.best1rm * (1 - REGRESSION_NOTICE_PCT),
           ...v,
         };
       })
@@ -449,7 +477,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             <MiniLineChart
               data={weightTrend}
               unit={messages.fizruk.kgUnit}
-              color={statusColors.success}
+              color={chartStatusSeries.success}
               metricLabel={messages.fizruk.progress.weightMetricLabel}
             />
           </Card>
@@ -464,7 +492,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             <MiniLineChart
               data={fatTrend}
               unit="%"
-              color={statusColors.warning}
+              color={chartStatusSeries.warning}
               metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
             />
           </Card>

@@ -130,6 +130,24 @@ export interface RateLimitOptions {
    */
   failMode?: "open" | "closed";
   /**
+   * Overrides what the bucket is keyed on. Default (omitted) is
+   * {@link rateLimitSubject} — `u:<sessionUserId>` when a session is already
+   * resolved, else `ip:<clientIp>`.
+   *
+   * **Why this exists.** On pre-auth credential flows there is no session
+   * yet, so the default collapses to per-IP — and per-IP alone does not
+   * bound a distributed attack: 100 IPs against one account multiply the
+   * effective guess rate by 100 while every individual bucket stays green.
+   * Keying a second limiter on the *targeted account* makes the cap a
+   * property of the victim rather than of the attacker's network, which is
+   * the only thing a botnet cannot rent its way around.
+   *
+   * Returning `undefined` means "this request has nothing to key on" — the
+   * caller should skip the limiter rather than silently fall back to IP,
+   * otherwise two different policies would share one bucket.
+   */
+  subject?: (req: Request) => string | undefined;
+  /**
    * Per-request cost multiplier. Defaults to `1` (current behavior — every
    * call consumes exactly one token from the bucket). Pass a function to
    * make heavy calls bill more than one token.
@@ -310,7 +328,7 @@ export async function checkRateLimitRedis(
   req: Request,
   options: RateLimitOptions,
 ): Promise<RateLimitResult> {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitRedisBySubject(redis, subject, options, cost);
 }
@@ -342,7 +360,7 @@ export async function checkRateLimitPg(
   req: Request,
   options: RateLimitOptions,
 ): Promise<RateLimitResult> {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitPgBySubject(subject, options, cost);
 }
@@ -495,7 +513,7 @@ export function checkRateLimit(
   req: Request,
   options: RateLimitOptions,
 ): RateLimitResult {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitBySubject(subject, options, cost);
 }
@@ -588,11 +606,20 @@ export function rateLimitExpress({
   failMode = "open",
   cost,
   ipLimit,
+  subject,
 }: RateLimitOptions): RequestHandler {
   return async (req, res, next) => {
     const redis = getRedis();
     let rl: RateLimitResult | null = null;
-    const options: RateLimitOptions = { key, limit, windowMs, cost };
+    const options: RateLimitOptions = {
+      key,
+      limit,
+      windowMs,
+      cost,
+      // Умовний спред, а не `subject,` — під `exactOptionalPropertyTypes`
+      // явний `undefined` не те саме, що відсутнє поле.
+      ...(subject ? { subject } : {}),
+    };
 
     if (redis) {
       try {
@@ -671,9 +698,15 @@ export function rateLimitExpress({
       // actual subject — anonymous throttling must report RATE_LIMIT_IP, not
       // RATE_LIMIT_USER. `reportedLimit` stays the primary `limit`, which is
       // the cap the anonymous IP bucket was checked against.
+      // A policy with a custom `subject` (e.g. the per-account credential
+      // bucket) is neither per-user nor per-IP, so label it by the effective
+      // subject rather than the default one — otherwise a 429 from the
+      // account bucket would masquerade as RATE_LIMIT_IP and send incident
+      // triage looking at the wrong dimension.
+      const effectiveSubject = subject?.(req) ?? rateLimitSubject(req);
       rl = {
         ...rl,
-        blockedBy: rateLimitSubject(req).startsWith("u:") ? "user" : "ip",
+        blockedBy: effectiveSubject.startsWith("ip:") ? "ip" : "user",
       };
     }
 

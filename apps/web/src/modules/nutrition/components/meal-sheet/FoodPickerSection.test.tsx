@@ -198,7 +198,8 @@ describe("FoodPickerSection — picked mode", () => {
         })}
       />,
     );
-    expect(screen.getByText("🌍")).toBeInTheDocument();
+    // Позначка «Open Food Facts» — тепер `<Icon title="…">`, а не emoji.
+    expect(screen.getByTitle("Open Food Facts")).toBeInTheDocument();
   });
 
   it("increments and decrements the gram portion", () => {

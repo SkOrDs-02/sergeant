@@ -5,6 +5,7 @@ import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import {
   ASSISTANT_PATH,
+  CAPABILITIES_PATH,
   CHAT_PATH,
   DESIGN_PATH,
   LEGAL_COOKIES_PATH,
@@ -17,6 +18,7 @@ import {
   RESET_PASSWORD_PATH,
   SIGN_IN_ALIAS_PATHS,
   SIGN_IN_PATH,
+  VERIFY_EMAIL_PATH,
   WELCOME_PATH,
   isPathBasedModulePath,
 } from "./appPaths";
@@ -34,9 +36,17 @@ const WelcomeScreen = lazyImport(
   "WelcomeScreen",
 );
 const AuthPage = lazyImport(() => import("../auth/AuthPage"), "AuthPage");
+const CapabilitiesPage = lazyImport(
+  () => import("../capabilities/CapabilitiesPage"),
+  "CapabilitiesPage",
+);
 const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
   "ResetPasswordPage",
+);
+const VerifyEmailPage = lazyImport(
+  () => import("../auth/VerifyEmailPage"),
+  "VerifyEmailPage",
 );
 // Internal styleguide — dev-only. The `import.meta.env.DEV` guard lets Vite
 // statically drop the `import()` (and the whole DesignShowcase chunk) from
@@ -192,6 +202,22 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ),
   }),
 
+  // `/verify-email` — лендинг Better Auth після `GET /api/auth/verify-email`.
+  // Рендеримо безумовно: на цю адресу приходять із поштового клієнта, і сесії
+  // в цьому браузері може не бути взагалі (лист відкрили на іншому пристрої).
+  // Гейт на `user` тут відрізав би саме той сценарій, заради якого сторінка
+  // існує.
+  defineStandaloneRoute({
+    paths: [VERIFY_EMAIL_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <VerifyEmailPage />
+        </div>
+      </Suspense>
+    ),
+  }),
+
   // `/profile` is a legacy deep-link target — profile actions now live
   // behind the bottom-nav `Профіль` tab inside the hub. Redirect to
   // the hub with the `profile` tab pre-activated so old links keep
@@ -291,6 +317,19 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ),
   }),
 
+  // Каталог можливостей додатка. Замінив колишню «вступну екскурсію», що
+  // лише переграла вітальний екран у read-only.
+  defineStandaloneRoute({
+    paths: [CAPABILITIES_PATH],
+    render: ({ onAssistantClose }) => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <CapabilitiesPage onClose={onAssistantClose} />
+        </div>
+      </Suspense>
+    ),
+  }),
+
   defineStandaloneRoute({
     paths: [CHAT_PATH],
     render: () => (
@@ -305,7 +344,24 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // the dashboard instead of being asked to re-onboard.
   defineStandaloneRoute({
     paths: [WELCOME_PATH],
-    render: ({ storageReady, onLeaveWelcome, onOpenAuth }) => {
+    render: ({
+      user,
+      authLoading,
+      storageReady,
+      onLeaveWelcome,
+      onOpenAuth,
+    }) => {
+      // An authenticated user is never a first-time visitor. `/welcome` is the
+      // anonymous surface — a demo dashboard plus «Почати» / «У мене вже є
+      // акаунт» — and the local-only `shouldShowOnboarding()` heuristic below
+      // cannot see the session, so a user who signed in on a clean device was
+      // shown the splash and offered to log into the account they were already
+      // signed into (аудит 2026-08-04, знахідка 5). Same `!authLoading && user`
+      // shape as the `/sign-in` entry above: defer until the session settles so
+      // a freshly-mounted page does not bounce a genuine visitor away.
+      if (!authLoading && user) {
+        return <RedirectTo to="/" />;
+      }
       // Until the persistent store resolves we cannot tell a genuine first-time
       // visitor (show the splash screen) from a returning user who deep-linked
       // `/welcome` (bounce to `/`). Render a loader rather than flashing the
