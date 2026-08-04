@@ -310,7 +310,7 @@ export const HubMainContent = memo(function HubMainContent({
               className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <HubSettingsPage user={user} scrollContainer={scrollElement} />
+                <HubSettingsPage scrollContainer={scrollElement} />
                 <TabReadyProbe tab="settings" />
               </SuspenseWithMinDelay>
             </div>

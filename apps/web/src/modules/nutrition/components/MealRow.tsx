@@ -130,7 +130,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         aria-label="Видалити запис"
         className="text-muted hover:text-danger hover:bg-danger/10 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        ✕
+        <Icon name="close" size={14} aria-hidden />
       </Button>
     </div>
   );

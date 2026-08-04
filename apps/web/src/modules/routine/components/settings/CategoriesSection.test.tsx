@@ -30,8 +30,9 @@ vi.mock("@shared/lib/storage/storage", async () => {
   };
 });
 
-// Category list renders "<emoji> <name>" inside a single span, so the
-// emoji prefix splits the text into nodes — use a substring matcher.
+// Category rows render the glyph as a sibling <svg>, so the name lives in
+// its own node — the substring matcher stays for robustness against
+// whitespace-only text splits.
 const hasText = (needle: string) => (content: string) =>
   content.includes(needle);
 
@@ -68,7 +69,11 @@ describe("CategoriesSection", () => {
     render(<Harness initial={defaultRoutineState()} />);
     expect(screen.getByText("Категорії")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Назва категорії")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("🏠")).toBeInTheDocument();
+    // Emoji-текстове поле замінено пікером іконок (2026-08-03).
+    expect(
+      screen.getByRole("button", { name: "Обрати іконку категорії" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("🏠")).not.toBeInTheDocument();
   });
 
   it("creates a category from the draft and lists it with a habit count", async () => {

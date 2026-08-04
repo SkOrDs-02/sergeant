@@ -132,6 +132,14 @@
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
+    "2.0.5": {
+      "releasedAt": "2026-08-04",
+      "changes": [
+        "bump from 2.0.4 -> 2.0.5: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
     "3.0.0": {
       "releasedAt": "2026-08-04",
       "changes": [

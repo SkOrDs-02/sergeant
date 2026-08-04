@@ -1,4 +1,4 @@
-// Two top-level pages — calendar (default) and stats. Same shape as the
+// Three top-level pages — calendar (default), habits and stats. Same shape as the
 // existing `RoutineMainTab` from `context/RoutineCalendarContext.tsx`,
 // re-exported here so consumers can pick either type symbol.
 //
@@ -7,9 +7,16 @@
 // now the canonical source of truth (`/routine` → calendar, `/routine/stats`
 // → stats); localStorage is kept as a "last-active tab" memory but is no
 // longer the URL-shaping authority.
-export type RoutinePage = "calendar" | "stats";
+// `habits` додано 2026-08-03 разом із переїздом керування звичками з
+// Налаштувань у модуль (`components/RoutineHabitsPanel.tsx`) — сторінка
+// адресується як `/routine/habits`.
+export type RoutinePage = "calendar" | "habits" | "stats";
 
-const VALID_ROUTINE_PAGES: readonly RoutinePage[] = ["calendar", "stats"];
+const VALID_ROUTINE_PAGES: readonly RoutinePage[] = [
+  "calendar",
+  "habits",
+  "stats",
+];
 
 export interface ParsedRoutineRoute {
   page: RoutinePage;
@@ -34,8 +41,8 @@ export function parseRoutineSegments(
 }
 
 /**
- * Build the route suffix **inside** the `/routine` namespace (`"stats"`,
- * `""`). Callers prepend `/routine/` (or use `routineRoutePath`).
+ * Build the route suffix **inside** the `/routine` namespace (`"habits"`,
+ * `"stats"`, `""`). Callers prepend `/routine/` (or use `routineRoutePath`).
  *
  * `calendar` is the default landing tab — encoded as the empty suffix so
  * the URL stays `/routine` rather than the redundant `/routine/calendar`.
@@ -46,7 +53,7 @@ export function buildRoutinePath(next: RoutinePage | null | undefined): string {
   return page;
 }
 
-/** Absolute path for navigation: `/routine`, `/routine/stats`. */
+/** Absolute path for navigation: `/routine`, `/routine/habits`, `/routine/stats`. */
 export function routineRoutePath(next: RoutinePage | null | undefined): string {
   const suffix = buildRoutinePath(next);
   return suffix ? `/routine/${suffix}` : "/routine";

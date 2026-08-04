@@ -121,16 +121,31 @@ routine-календар і hub-картка мають бути першокл�
 Модуль володіє власним доменом (`packages/routine-domain`). Розклад —
 **enum, не cron.**
 
-| Сутність           | Web storage / стан                            | Серверна таблиця                                | Примітка                                                                                     |
-| ------------------ | --------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Habit**          | `hub_routine_v1` (tombstoned) → SQLite        | `routine_habits` (`050_routine_full_state.sql`) | `recurrence`, `weekdays[]`, `paused`, `archived`, `startDate`/`endDate`                      |
-| **Completion**     | `completions: Record<habitId, dateKey[]>`     | `routine_entries` (`026_routine_tables.sql`)    | **бінарна** відмітка за днями (`reducers.ts:162`)                                            |
-| **Streak**         | derived (client) + `routine_streaks`          | `routine_streaks` (`026`, increment-counter)    | клієнт рахує з відміток; сервер — окремий PN-лічильник (`applySync.ts:149`)                  |
-| **Reminder**       | prefs `routineRemindersEnabled` (default off) | —                                               | дескриптори (`reminders.ts:24-40`) → SW (web) / expo-notifications (mobile); idempotency 45д |
-| **Category / Tag** | домен `types.ts:28-38`                        | `routine_tags` / `routine_categories` (`050`)   | повний CRUD + каскадне чищення (`reducers.ts:41-77`); без ієрархій                           |
-| **CompletionNote** | `completionNotes` (cap 500)                   | `routine_completion_notes` (`050`)              | вільна нотатка, прив'язана до **відмітки**, не до пропуску                                   |
-| **pushupsByDate**  | `RoutineState.pushupsByDate` (`types.ts:54`)  | `routine_pushups` (`050`)                       | **живе в routine, читається fizruk** — шов (§10)                                             |
-| **Archive**        | `Habit.archived=true` (`reducers.ts:203`)     | soft-tombstone (`applySyncFullState.ts:37`)     | безстрокове м'яке приховування; без TTL                                                      |
+| Сутність           | Web storage / стан                            | Серверна таблиця                                | Примітка                                                                                                                            |
+| ------------------ | --------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Habit**          | `hub_routine_v1` (tombstoned) → SQLite        | `routine_habits` (`050_routine_full_state.sql`) | `recurrence`, `weekdays[]`, `paused`, `archived`, `startDate`/`endDate`                                                             |
+| **Completion**     | `completions: Record<habitId, dateKey[]>`     | `routine_entries` (`026_routine_tables.sql`)    | **бінарна** відмітка за днями (`reducers.ts:162`)                                                                                   |
+| **Streak**         | derived (client) + `routine_streaks`          | `routine_streaks` (`026`, increment-counter)    | клієнт рахує з відміток; сервер — окремий PN-лічильник (`applySync.ts:149`)                                                         |
+| **Reminder**       | prefs `routineRemindersEnabled` (default off) | —                                               | дескриптори (`reminders.ts:24-40`) → SW (web) / expo-notifications (mobile); idempotency 45д                                        |
+| **Category / Tag** | домен `types.ts:28-38`                        | `routine_tags` / `routine_categories` (`050`)   | повний CRUD + каскадне чищення (`reducers.ts:41-77`); без ієрархій. Тегів на звичці — **кілька** (`tagIds[]`), категорія — **одна** |
+| **CompletionNote** | `completionNotes` (cap 500)                   | `routine_completion_notes` (`050`)              | вільна нотатка, прив'язана до **відмітки**, не до пропуску                                                                          |
+| **pushupsByDate**  | `RoutineState.pushupsByDate` (`types.ts:54`)  | `routine_pushups` (`050`)                       | **живе в routine, читається fizruk** — шов (§10)                                                                                    |
+| **Archive**        | `Habit.archived=true` (`reducers.ts:203`)     | soft-tombstone (`applySyncFullState.ts:37`)     | безстрокове м'яке приховування; без TTL                                                                                             |
+
+**Гліф звички / категорії (`glyphs.ts`, з 2026-08-03).** Поле `emoji` в
+домені та колонка `emoji` в БД зберігають **slug із закритого набору
+`ROUTINE_GLYPHS`**, який збігається з іменами іконок дизайн-системи, — а не
+emoji-символ. Легасі-записи апгрейдяться на кожному читанні
+(`upgradeHabitGlyph` у `normalizeHabit` / `normalizeCategory`), батч-міграції
+в БД немає. Наслідок для продукту: гліф більше не залежить від системного
+emoji-шрифту й **не потрапляє в текст нагадування** — заголовок пуша несе
+саму назву звички. Перейменування колонки `emoji` → `icon` лишається окремою
+двофазною міграцією.
+
+**Керування звичками живе в модулі, не в Налаштуваннях (з 2026-08-03).**
+Вкладка «Звички» (`/routine/habits`) володіє списком, порядком (він же
+порядок у календарі) та архівом; архівувати / відновити можна і з картки
+звички. У Налаштуваннях лишились календарні тумблери, теги й категорії.
 
 **Розклади (`Recurrence`, `schedule.ts:8,27-48`):** `daily`, `weekdays`
 (Пн-Пт), `weekly` (обрані `weekdays[]`), `monthly` (число місяця, короткий

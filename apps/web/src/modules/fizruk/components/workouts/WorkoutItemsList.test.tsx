@@ -132,7 +132,7 @@ describe("WorkoutItemsList", () => {
     expect(
       screen.getByText("Спільний таймер відпочинку між колами"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "120 с ★" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "120 с" })).toBeInTheDocument();
     expect(screen.getAllByTestId("workout-item-card")).toHaveLength(2);
   });
 
@@ -157,7 +157,7 @@ describe("WorkoutItemsList", () => {
     ];
     renderList({ groups });
 
-    fireEvent.click(screen.getByRole("button", { name: "60 с ★" }));
+    fireEvent.click(screen.getByRole("button", { name: "60 с" }));
     fireEvent.click(screen.getByRole("button", { name: "Розгрупувати" }));
 
     expect(setRestTimer).toHaveBeenCalledWith({ remaining: 60, total: 60 });

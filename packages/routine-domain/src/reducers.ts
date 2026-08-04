@@ -12,6 +12,11 @@
  */
 
 import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
+import {
+  DEFAULT_ROUTINE_GLYPH,
+  resolveHabitGlyph,
+  upgradeHabitGlyph,
+} from "./glyphs.js";
 import { habitScheduledOnDate } from "./schedule.js";
 import { completionNoteKey } from "./completionNoteKey.js";
 import { reconcileHabitOrder } from "./habitOrder.js";
@@ -73,10 +78,13 @@ export function applyCreateCategory(
   if (state.categories.some((c) => c.name.trim().toLocaleLowerCase() === key)) {
     return state;
   }
+  // `emoji` тут — гліф-slug (див. `glyphs.ts`); legacy emoji, що приходить
+  // від чат-тулів чи старих клієнтів, апгрейдиться, невідоме відкидається.
+  const glyph = upgradeHabitGlyph(emoji);
   const c: Category = {
     id: routineUid("cat"),
     name: n,
-    ...(emoji ? { emoji } : {}),
+    ...(glyph ? { emoji: glyph } : {}),
   };
   return { ...state, categories: [...state.categories, c] };
 }
@@ -88,7 +96,7 @@ export function applyCreateHabit(
   state: RoutineState,
   {
     name = "",
-    emoji = "✓",
+    emoji = DEFAULT_ROUTINE_GLYPH,
     tagIds = [],
     categoryId = null,
     recurrence = "daily",
@@ -110,7 +118,7 @@ export function applyCreateHabit(
   const h = normalizeHabit({
     id: id || routineUid("hab"),
     name: n,
-    emoji: emoji || "✓",
+    emoji: resolveHabitGlyph(emoji),
     tagIds: Array.isArray(tagIds) ? tagIds : [],
     categoryId: categoryId || null,
     createdAt: new Date().toISOString(),
@@ -579,8 +587,8 @@ export function applyUpdateCategory(
             ...(patch.name !== undefined
               ? { name: (patch.name || "").trim() || c.name }
               : {}),
-            ...(patch.emoji !== undefined && patch.emoji
-              ? { emoji: patch.emoji }
+            ...(patch.emoji !== undefined && upgradeHabitGlyph(patch.emoji)
+              ? { emoji: upgradeHabitGlyph(patch.emoji) }
               : {}),
           }
         : c,

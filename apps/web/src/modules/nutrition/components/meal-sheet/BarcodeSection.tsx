@@ -68,7 +68,7 @@ export function BarcodeSection({
             setScannerOpen(true);
           }}
         >
-          📷 Сканувати
+          Сканувати
         </Button>
       </div>
       {barcodeStatus && (

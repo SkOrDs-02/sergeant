@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { routineUid } from "@sergeant/routine-domain";
+import { resolveHabitGlyph, routineUid } from "@sergeant/routine-domain";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
@@ -55,7 +55,7 @@ export interface HabitQuickCreateDialogProps {
 function habitToDraft(habit: Habit): HabitDraft {
   return {
     name: habit.name || "",
-    emoji: habit.emoji || "✓",
+    emoji: resolveHabitGlyph(habit.emoji),
     tagIds: habit.tagIds || [],
     categoryId: habit.categoryId || null,
     recurrence: habit.recurrence || "daily",

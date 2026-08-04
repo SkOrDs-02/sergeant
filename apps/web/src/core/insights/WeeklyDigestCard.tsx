@@ -302,9 +302,12 @@ function DigestContent({
                       {d.overallRecommendations.map(
                         (rec: string, i: number) => (
                           <div key={i} className="flex items-start gap-1.5">
-                            <span className="text-style-caption font-bold text-primary mt-0.5 shrink-0">
-                              ★
-                            </span>
+                            <Icon
+                              name="sparkle"
+                              size={12}
+                              className="text-primary mt-1 shrink-0"
+                              aria-hidden
+                            />
                             <span className="text-style-body text-text leading-snug">
                               {rec}
                             </span>

@@ -14,9 +14,11 @@
  */
 
 import { dateKeyFromDate } from "./dateKeys.js";
+import { DEFAULT_ROUTINE_GLYPH, upgradeHabitGlyph } from "./glyphs.js";
 import { reconcileHabitOrder } from "./habitOrder.js";
 import {
   SKIP_REASONS,
+  type Category,
   type Habit,
   type HabitSkip,
   type PauseInterval,
@@ -172,6 +174,9 @@ export function normalizeHabit(h: unknown): Habit {
     : dateKeyFromDate(new Date());
   return {
     ...(src as Habit),
+    // Гліф: legacy emoji → канонічний slug на кожному читанні. Див.
+    // `glyphs.ts` — батч-міграції в БД немає, наступний запис закріплює.
+    emoji: upgradeHabitGlyph(src.emoji) ?? DEFAULT_ROUTINE_GLYPH,
     recurrence: (src.recurrence as Habit["recurrence"]) || "daily",
     startDate: src.startDate || created,
     endDate: src.endDate === undefined ? null : (src.endDate ?? null),
@@ -183,6 +188,22 @@ export function normalizeHabit(h: unknown): Habit {
         : [0, 1, 2, 3, 4, 5, 6],
     pauseIntervals: normalizePauseIntervals(src.pauseIntervals),
   };
+}
+
+/**
+ * Normalize a single category record.
+ *
+ * Категорія має лише `id` / `name` / гліф, тож єдина робота тут — той самий
+ * legacy-emoji → slug апгрейд, що й для звички. На відміну від звички гліф
+ * категорії необовʼязковий: `undefined` означає «без іконки», і список у
+ * налаштуваннях малює нейтральний плейсхолдер, а не дефолтний `check`.
+ */
+export function normalizeCategory(c: unknown): Category {
+  if (!c || typeof c !== "object") return c as Category;
+  const src = c as Partial<Category> & Record<string, unknown>;
+  const glyph = upgradeHabitGlyph(src.emoji);
+  const base: Category = { id: String(src.id), name: String(src.name ?? "") };
+  return glyph ? { ...base, emoji: glyph } : base;
 }
 
 /**
@@ -252,7 +273,9 @@ export function normalizeRoutineState(raw: unknown): RoutineState {
     ...p,
     prefs: { ...base.prefs, ...((p.prefs as RoutineState["prefs"]) || {}) },
     tags: Array.isArray(p.tags) ? p.tags : [],
-    categories: Array.isArray(p.categories) ? p.categories : [],
+    categories: Array.isArray(p.categories)
+      ? p.categories.map(normalizeCategory)
+      : [],
     habits: Array.isArray(p.habits) ? p.habits.map(normalizeHabit) : [],
     completions: normalizeCompletionsMap(p.completions),
     skips: normalizeSkipsMap(p.skips),

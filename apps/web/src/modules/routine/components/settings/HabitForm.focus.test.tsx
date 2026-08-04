@@ -46,16 +46,18 @@ describe("HabitForm focus stability", () => {
     expect(document.activeElement).toBe(input);
   });
 
-  it("closes the emoji picker on Escape (keyboard parity with click-outside)", () => {
+  it("closes the icon picker on Escape (keyboard parity with click-outside)", () => {
     render(<Harness />);
 
-    const toggle = screen.getByRole("button", { name: "Обрати емодзі" });
+    const toggle = screen.getByRole("button", { name: "Обрати іконку звички" });
     fireEvent.click(toggle);
     expect(
-      screen.queryByRole("dialog", { name: "Обрати емодзі" }),
+      screen.queryByRole("dialog", { name: "Обрати іконку звички" }),
     ).not.toBeNull();
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Обрати емодзі" })).toBeNull();
+    expect(
+      screen.queryByRole("dialog", { name: "Обрати іконку звички" }),
+    ).toBeNull();
   });
 });

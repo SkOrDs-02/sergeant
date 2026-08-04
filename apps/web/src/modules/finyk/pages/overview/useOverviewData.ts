@@ -348,7 +348,7 @@ export function useOverviewData({
           );
           return {
             id: `debt-${d.id}`,
-            title: `${d.emoji || "💸"} ${d.name}`,
+            title: d.name || "Борг",
             amount: d.remaining,
             sign: "-",
             color: THEME_HEX.danger,
@@ -376,7 +376,7 @@ export function useOverviewData({
           );
           return {
             id: `recv-${r.id}`,
-            title: `${r.emoji || "💰"} ${r.name}`,
+            title: r.name || "Дебіторка",
             amount: r.remaining,
             sign: "+",
             color: THEME_HEX.success,

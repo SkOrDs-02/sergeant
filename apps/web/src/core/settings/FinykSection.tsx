@@ -54,7 +54,7 @@ export function FinykSection() {
               type="text"
               value={newCategoryLabel}
               onChange={(event) => setNewCategoryLabel(event.target.value)}
-              placeholder="Напр. 🎨 Хобі"
+              placeholder="Напр. Хобі"
               maxLength={80}
               className={catInputClass}
               onKeyDown={(event) => {

@@ -1,6 +1,6 @@
 # Міграція на React Native (Expo)
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **Стратегічний контекст:** за [ADR-0052](../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
@@ -844,15 +844,15 @@ foodDb export / import, UI). Жодних змін у публічному API `
 Зведення навмисних заглушок і відкладених інтеграцій, щоб не розмазувати
 їх по окремих issue без зв'язку з фазами вище.
 
-| Зона                        | Файл (приклад)                                                                                           | Цільова фаза / PR          | Коротко                                                                                                    |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| JSON backup download        | `apps/mobile/src/lib/fileDownload.ts`                                                                    | ~~Phase 4+ (R8)~~ Done     | `expo-file-system` + `expo-sharing` + `expo-document-picker`. Import / export UI live in `GeneralSection`. |
-| Weekly digest UI            | `apps/mobile/src/core/dashboard/WeeklyDigestCard.tsx`                                                    | Після паритету з web       | Мінімальний stub замість повного `WeeklyDigestCard` з PWA.                                                 |
-| Deep links / hub маршрути   | `apps/mobile/src/components/DeepLinkPlaceholder.tsx`, `apps/mobile/src/modules/finyk/pages/PageStub.tsx` | За мірою появи екранів     | Плейсхолдери до повного nested-стеку.                                                                      |
-| Observability               | `apps/mobile/src/core/ModuleErrorBoundary.tsx`                                                           | Phase 12+                  | `TODO(phase-12):` `@sentry/react-native` breadcrumbs + performance.                                        |
-| Haptics `pattern`           | `apps/mobile/src/lib/haptic.ts`                                                                          | RN API                     | `expo-haptics` не експонує pattern — no-op + TODO.                                                         |
-| Universal links             | `apps/mobile/app.config.ts`                                                                              | Публікація / Phase 10+     | Associated domains після стабільного прод-домену.                                                          |
-| Routine reminders vs web SW | `apps/mobile/src/modules/routine/hooks/useRoutineReminders.ts`                                           | Паралельно з нотифікаціями | Коментар про відмінність від web Service Worker.                                                           |
+| Зона                        | Файл (приклад)                                                                                           | Цільова фаза / PR          | Коротко                                                                                                                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JSON backup download        | `apps/mobile/src/lib/fileDownload.ts`                                                                    | ~~Phase 4+ (R8)~~ Done     | `expo-file-system` + `expo-sharing` + `expo-document-picker`. Import / export UI live in the mobile `GeneralSection` (веб-аналог злитий у `CapabilitiesSection` 2026-08-03). |
+| Weekly digest UI            | `apps/mobile/src/core/dashboard/WeeklyDigestCard.tsx`                                                    | Після паритету з web       | Мінімальний stub замість повного `WeeklyDigestCard` з PWA.                                                                                                                   |
+| Deep links / hub маршрути   | `apps/mobile/src/components/DeepLinkPlaceholder.tsx`, `apps/mobile/src/modules/finyk/pages/PageStub.tsx` | За мірою появи екранів     | Плейсхолдери до повного nested-стеку.                                                                                                                                        |
+| Observability               | `apps/mobile/src/core/ModuleErrorBoundary.tsx`                                                           | Phase 12+                  | `TODO(phase-12):` `@sentry/react-native` breadcrumbs + performance.                                                                                                          |
+| Haptics `pattern`           | `apps/mobile/src/lib/haptic.ts`                                                                          | RN API                     | `expo-haptics` не експонує pattern — no-op + TODO.                                                                                                                           |
+| Universal links             | `apps/mobile/app.config.ts`                                                                              | Публікація / Phase 10+     | Associated domains після стабільного прод-домену.                                                                                                                            |
+| Routine reminders vs web SW | `apps/mobile/src/modules/routine/hooks/useRoutineReminders.ts`                                           | Паралельно з нотифікаціями | Коментар про відмінність від web Service Worker.                                                                                                                             |
 
 ## 12. Ризики
 

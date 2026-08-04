@@ -58,27 +58,18 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
 
+import { ROUTINE_GLYPHS, type RoutineGlyph } from "@sergeant/routine-domain";
+
+import { HabitGlyph, routineGlyphLabel } from "../../components/HabitGlyph";
 import { WeekdayPicker } from "./WeekdayPicker";
 
-/** 16 emoji suggestions — identical set as the web file. */
-export const HABIT_EMOJI_SUGGESTIONS: readonly string[] = [
-  "✓",
-  "💧",
-  "🚶",
-  "🏃",
-  "💪",
-  "🧘",
-  "📖",
-  "✍️",
-  "🧠",
-  "💊",
-  "🥗",
-  "😴",
-  "☕",
-  "🎯",
-  "⏰",
-  "🌙",
-];
+/**
+ * Набір гліфів — спільний із вебом, канон у `@sergeant/routine-domain`
+ * (`glyphs.ts`). До 2026-08-03 тут лежали 16 emoji-символів, які RN малює
+ * системним шрифтом: вигляд відрізнявся між iOS і Android, і гліф не
+ * підхоплював колір теми.
+ */
+export const HABIT_GLYPH_SUGGESTIONS: readonly RoutineGlyph[] = ROUTINE_GLYPHS;
 
 export interface HabitFormProps {
   /** Whether the sheet is visible. */
@@ -235,12 +226,12 @@ export function HabitForm({
             <Pressable
               onPress={() => setShowEmoji((v) => !v)}
               accessibilityRole="button"
-              accessibilityLabel="Обрати емодзі"
+              accessibilityLabel="Обрати іконку звички"
               accessibilityState={{ expanded: showEmoji }}
               testID={testID ? `${testID}-emoji-toggle` : undefined}
               className="w-14 h-12 rounded-xl border border-cream-300 bg-cream-50 items-center justify-center"
             >
-              <Text className="text-xl">{draft.emoji || "✓"}</Text>
+              <HabitGlyph value={draft.emoji} size={20} color="#1c1917" />
             </Pressable>
             <View className="flex-1">
               <Input
@@ -263,26 +254,26 @@ export function HabitForm({
           ) : null}
           {showEmoji ? (
             <View className="mt-2 p-2 rounded-2xl border border-cream-300 bg-cream-50 flex-row flex-wrap gap-1">
-              {HABIT_EMOJI_SUGGESTIONS.map((e) => {
-                const selected = draft.emoji === e;
+              {HABIT_GLYPH_SUGGESTIONS.map((g) => {
+                const selected = draft.emoji === g;
                 return (
                   <Pressable
-                    key={e}
+                    key={g}
                     onPress={() => {
-                      setDraft((d) => ({ ...d, emoji: e }));
+                      setDraft((d) => ({ ...d, emoji: g }));
                       setShowEmoji(false);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Емодзі ${e}`}
+                    accessibilityLabel={routineGlyphLabel(g)}
                     accessibilityState={{ selected }}
-                    testID={testID ? `${testID}-emoji-${e}` : undefined}
+                    testID={testID ? `${testID}-emoji-${g}` : undefined}
                     className={
                       selected
                         ? "w-10 h-10 rounded-lg items-center justify-center bg-coral-100 border border-coral-400"
                         : "w-10 h-10 rounded-lg items-center justify-center bg-white"
                     }
                   >
-                    <Text className="text-lg">{e}</Text>
+                    <HabitGlyph value={g} size={18} color="#1c1917" />
                   </Pressable>
                 );
               })}

@@ -238,10 +238,14 @@ export function MemoryBankSection() {
         ) : (
           <div className="space-y-3">
             {Object.entries(grouped).map(([cat, items]) => {
-              const meta = CATEGORY_META[cat] || { label: cat, emoji: "📝" };
+              const meta = CATEGORY_META[cat] || {
+                label: cat,
+                icon: "pen" as const,
+              };
               return (
                 <div key={cat}>
-                  <div className="text-style-overline text-muted/70 mb-2">
+                  <div className="text-style-overline text-muted/70 mb-2 flex items-center gap-1.5">
+                    <Icon name={meta.icon} size="xs" aria-hidden />
                     {meta.label}
                   </div>
                   <div className="max-h-80 space-y-1 overflow-y-auto pr-1">

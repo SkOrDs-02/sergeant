@@ -26,7 +26,9 @@ export interface RoutineMonthCursor {
 
 export type RoutineTimeMode = "today" | "tomorrow" | "day" | "week" | "month";
 
-export type RoutineMainTab = "calendar" | "stats";
+// «habits» додано 2026-08-03 разом із переїздом керування звичками з
+// Налаштувань у модуль — див. `components/RoutineHabitsPanel.tsx`.
+export type RoutineMainTab = "calendar" | "habits" | "stats";
 
 export interface RoutineCalendarData {
   rangeLabel: string;

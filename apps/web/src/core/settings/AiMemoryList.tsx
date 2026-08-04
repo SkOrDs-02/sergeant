@@ -26,6 +26,7 @@ import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import type { AiMemoryListItem } from "@sergeant/api-client";
 
 import { ConfirmModal } from "./SettingsPrimitives";
+import { Icon } from "@shared/components/ui/Icon";
 
 const m = messages.privacy.aiMemory;
 
@@ -137,7 +138,7 @@ export function AiMemoryList() {
               className="text-danger-strong"
               onClick={() => setPending(item)}
             >
-              ✕
+              <Icon name="close" size={14} aria-hidden />
             </Button>
           </li>
         ))}
