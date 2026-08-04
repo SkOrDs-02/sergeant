@@ -1,6 +1,6 @@
 # Harness versioning
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 > **Owns:** [.kilo/harness-versions.json](../../../.kilo/harness-versions.json), [`scripts/ci-bump-harness-version.mjs`](../../../scripts/ci-bump-harness-version.mjs).
 > **Decided by:** [ADR-0072](../adr/0072-harness-versioning.md).
@@ -81,13 +81,13 @@ If you need to override the detected bump (e.g. you are touching a rule file but
 
 ## A/B evaluation
 
-`.github/workflows/harness-a-b.yml` runs weekly Sunday 00:00 UTC and on `workflow_dispatch`. It checks out two refs in a matrix (`main` as the control, `experimental/loop-detect` as a placeholder treatment) and uploads an artifact per cohort with the harness version it ran against. The benchmark step is currently gated `if: false` — it lights up once the golden-task suite ships (follow-up tracked in ADR-0072 §Open Questions).
+`.github/workflows/harness-a-b.yml` **прибрано** рішенням [ADR-0082](../adr/0082-private-storage-repo-posture.md) §4: воно щонеділі ганяло матрицю проти гілки `experimental/loop-detect`, якої немає в origin, а benchmark-крок і так стояв під `if: false`. A/B-прогони наразі **ручні**; сам реєстр `abExperiments` лишається чинним.
 
 To start a new experiment:
 
 1. Add an entry to `abExperiments` in the registry (`minor` bump).
 2. Branch from `main` to `experimental/<short-name>`.
-3. Update the workflow's `matrix.ref` to include the new branch.
+3. Відновити воркфлоу з git-історії (стан до ADR-0082) і вписати нову гілку у `matrix.ref` — або прогнати когорти вручну.
 4. Drop the `if: false` gate on the benchmark step once the suite exists.
 5. Record outcomes in the experiment entry (`status: "draft" | "running" | "concluded"`, `cohort` results).
 

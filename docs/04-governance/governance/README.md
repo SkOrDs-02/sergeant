@@ -1,6 +1,6 @@
 # Governance
 
-> **Last validated:** 2026-07-10 by @cursoragent. **Next review:** 2026-10-08.
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
@@ -27,7 +27,6 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - `pnpm hard-rules:check`
 - `pnpm docs:check-freshness-coverage`
 - `pnpm docs:check-freshness-dashboard`
-- `pnpm lint:codeowners`
 
 ## Update governance docs when
 
