@@ -211,4 +211,36 @@ describe("kyivTime", () => {
       expect(getDaysInMonth(2026, 12)).toBe(31);
     });
   });
+
+  describe("parseKyivDate — DST-spring-forward regression", () => {
+    // CI fast-check counterexample (seed -123969103): 3920565600000 =
+    // 2094-03-27T22:00Z = Kyiv 2094-03-28 00:00 EET. Опівніч дня переходу
+    // ще в +2, а опівденна проба вже в +3 — старий код віддавав інстант у
+    // 23:00 попереднього дня.
+    it("round-trips the day key on the CI counterexample day (2094-03-28)", () => {
+      const key = getKyivDayKey(3_920_565_600_000);
+      expect(key).toBe("2094-03-28");
+      const parsed = parseKyivDate(key);
+      expect(parsed).not.toBeNull();
+      expect(getKyivDayKey(parsed as Date)).toBe(key);
+      // справжня київська опівніч 28-го = 22:00Z 27-го (EET, +2)
+      expect((parsed as Date).toISOString()).toBe("2094-03-27T22:00:00.000Z");
+    });
+
+    it("round-trips the upcoming real spring transitions (2025-03-30, 2026-03-29)", () => {
+      for (const key of ["2025-03-30", "2026-03-29"]) {
+        const parsed = parseKyivDate(key);
+        expect(parsed).not.toBeNull();
+        expect(getKyivDayKey(parsed as Date)).toBe(key);
+      }
+    });
+
+    it("still round-trips fall-back transition days (25-годинна доба)", () => {
+      for (const key of ["2025-10-26", "2026-10-25"]) {
+        const parsed = parseKyivDate(key);
+        expect(parsed).not.toBeNull();
+        expect(getKyivDayKey(parsed as Date)).toBe(key);
+      }
+    });
+  });
 });
