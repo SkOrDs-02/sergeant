@@ -112,6 +112,20 @@ const SKIP_PREFIXES_BY_TSCONFIG = {
   // config and reports flags (exactOptionalPropertyTypes /
   // noPropertyAccessFromIndexSignature) that the SW build never enforces.
   "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/"],
+  // Every `packages/*` tsconfig pins `rootDir: ./src` + `include: ["src/**/*"]`,
+  // so the root-level `vitest.config.ts` sits outside the program and the
+  // canonical `pnpm typecheck` never sees it. `tsc-files` force-adding it to
+  // the `files` list trips TS6059 ("not under rootDir") — skip it to mirror
+  // the canonical scope.
+  "packages/api-client/tsconfig.json": ["vitest.config.ts"],
+  "packages/db-schema/tsconfig.json": ["vitest.config.ts"],
+  "packages/dualwrite-core/tsconfig.json": ["vitest.config.ts"],
+  "packages/finyk-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/fizruk-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/insights/tsconfig.json": ["vitest.config.ts"],
+  "packages/nutrition-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/routine-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/shared/tsconfig.json": ["vitest.config.ts"],
 };
 
 function main() {

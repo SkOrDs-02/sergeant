@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// Render-test for the «Розрахувати з профілю» CTA on `DailyPlanCard`.
+// Render-test for the «Підказати з пресету» CTA on `DailyPlanCard`.
 // The button is the user-visible end of `lib/tdee.ts` — once we know
 // the maths is correct (`tdee.test.ts`), all that's left is to assert
 // the dropdown:
@@ -11,7 +11,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { ToastProvider } from "@shared/hooks/useToast";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   defaultNutritionPrefs,
@@ -19,6 +18,7 @@ import {
 } from "@sergeant/nutrition-domain";
 
 import type { Biometrics } from "../../../core/profile/biometrics";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { DailyPlanCard } from "./DailyPlanCard";
 import { NUTRITION_GOALS, computeNutritionTargets } from "../lib/tdee";
 
@@ -46,12 +46,9 @@ function renderCard(overrides: { biometrics?: Biometrics } = {}) {
       ) => void
     >();
   const prefs = defaultNutritionPrefs();
-  // `DailyPlanGoalSelectors` (рендериться всередині картки) читає `useToast`,
-  // а той кидає без провайдера — той самий патерн обгортки, що вже
-  // застосований у `RecipesCard.branches.test.tsx`.
   render(
-    <ToastProvider>
-      <MemoryRouter>
+    <MemoryRouter>
+      <ToastProvider>
         <DailyPlanCard
           prefs={prefs}
           setPrefs={setPrefs}
@@ -66,8 +63,8 @@ function renderCard(overrides: { biometrics?: Biometrics } = {}) {
           weekPlanBusy={false}
           fetchWeekPlan={() => {}}
         />
-      </MemoryRouter>
-    </ToastProvider>,
+      </ToastProvider>
+    </MemoryRouter>,
   );
   return { setPrefs, prefs };
 }
@@ -83,10 +80,9 @@ afterEach(() => {
   localStorage.clear();
 });
 
-// Тригер-кнопка називається «Підказати з пресету»: два випадні списки
-// («Розрахувати з профілю» + статичний пресет-набір) злиті в один
-// контрол — див. JSDoc у `DailyPlanGoalSelectors.tsx`. Тест шукав стару
-// назву й падав на main (аудит 2026-08-04, ремонт червоного сьюта).
+// Тригер називається «Підказати з пресету»: TDEE-калькулятор і статичний
+// пресет-набір злиті в один контрол (див. JSDoc у
+// `DailyPlanGoalSelectors.tsx`). Стара назва лишалась тільки в підписах.
 describe("DailyPlanCard «Підказати з пресету»", () => {
   it("shows the profile hint when biometrics is incomplete", () => {
     renderCard();

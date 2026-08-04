@@ -22,15 +22,19 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "mutation:core": "cross-env TZ=Europe/Kyiv stryker run stryker.core.conf.json"
   },
   "dependencies": {
     "@sergeant/shared": "workspace:*"
   },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^20.19.41",
     "@vitest/coverage-v8": "^4.1.10",
+    "cross-env": "^10.1.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   }

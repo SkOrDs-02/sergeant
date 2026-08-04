@@ -505,7 +505,12 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 
     const payloads = dataPayloads(res.writes);
     expect(payloads).toContain(JSON.stringify({ t: "часткова… " }));
-    expect(payloads).toContain(JSON.stringify({ err: "network down" }));
+    // Continuation-помилка віддає generic-меседж (CWE-209): сирий текст
+    // помилки провайдера не має витікати клієнту.
+    expect(payloads).toContain(
+      JSON.stringify({ err: "AI continuation failed" }),
+    );
+    expect(payloads.join("")).not.toContain("network down");
     expect(payloads[payloads.length - 1]).toBe("[DONE]");
   });
 });

@@ -373,7 +373,10 @@ export function EmptyState({
       {hint && (
         <p
           className={cn(
-            "flex items-center gap-1.5 text-style-caption text-subtle mt-2",
+            // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
+            // text"), тож потрібен контраст 4.5:1; dark --c-subtle #5f6b64 дає
+            // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
+            "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
           )}

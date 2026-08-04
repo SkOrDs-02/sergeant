@@ -2,20 +2,28 @@
 //
 // audit-08 F12 — NutritionMenuPage page-level test coverage.
 //
-// NutritionMenuPage wires:
-//   • SubTabs switching between "plan" and "recipes"
-//   • DataState<NutritionDayPlan | null> → DailyPlanCard  (plan tab)
-//   • RecipesCard  (recipes tab)
+// Integration test (over-mocking refactor): renders NutritionMenuPage with
+// its REAL children — SubTabs, DailyPlanCard (goal inputs, plan-generation
+// buttons, meal rows), and RecipesCard (saved-recipes + generator) — inside
+// the real provider stack the page needs (QueryClientProvider, MemoryRouter
+// for `DailyPlanGoalSelectors`' <Link>, ToastProvider for RecipesCard/
+// DailyPlanGoalSelectors' `useToast()`). `fake-indexeddb/auto` backs
+// RecipesCard's saved-recipe store (`../lib/recipeBook.ts` → IndexedDB) so
+// its effects resolve instead of throwing under jsdom.
 //
-// We mock DailyPlanCard and RecipesCard to avoid provisioning their deep
-// deps (prefs-editors, recipe-LLM, etc.) and focus on the page's routing
-// and callback delegation.
-
+// We assert on real DOM text/roles and real callback-triggering user
+// interactions (clicking the actual "Згенерувати денний план" / "↻
+// Замінити" / "+ Журнал" buttons rendered by DailyPlanCard), not on
+// component-mock echoes.
+import "fake-indexeddb/auto";
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
+import { ToastProvider } from "@shared/hooks/useToast";
 
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type {
@@ -25,70 +33,6 @@ import type {
 import type { RecipeCacheEntry } from "../lib/recipeCache";
 import type { PlanMeal } from "../components/DailyPlanMealRow";
 import { NutritionMenuPage } from "./NutritionMenuPage";
-
-// ---------------------------------------------------------------------------
-// Break the import chain that leads to @sergeant/db-schema/sqlite (not built
-// in this worktree environment). Chain:
-//   NutritionMenuPage → DataState → EmptyState → Icon → @shared/lib
-//     → storage/storage → kvStoreBoot → @sergeant/db-schema/sqlite
-// This mirrors the pattern used in analytics.test.ts and similar tests.
-// ---------------------------------------------------------------------------
-vi.mock("@shared/lib/storage/storage", () => ({
-  safeReadLS: vi.fn(() => null),
-  safeWriteLS: vi.fn(() => true),
-  safeReadStringLS: vi.fn(() => null),
-  safeReadLSValidated: vi.fn(() => null),
-  safeRemoveLS: vi.fn(() => true),
-  safeListLSKeys: vi.fn(() => []),
-  webKVStore: { get: vi.fn(() => null), set: vi.fn(), remove: vi.fn() },
-}));
-
-// ---------------------------------------------------------------------------
-// Mock DailyPlanCard to expose the key callback props as buttons.
-// ---------------------------------------------------------------------------
-vi.mock("../components/DailyPlanCard", () => ({
-  DailyPlanCard: ({
-    fetchDayPlan,
-    regenMeal,
-    addMealToLog,
-  }: {
-    fetchDayPlan: () => void;
-    regenMeal: (mealType: string) => void;
-    addMealToLog: (meal: PlanMeal) => void;
-  }) => (
-    <div data-testid="daily-plan-card">
-      <button onClick={fetchDayPlan}>Оновити план</button>
-      <button onClick={() => regenMeal("breakfast")}>
-        Регенерувати сніданок
-      </button>
-      <button
-        onClick={() =>
-          addMealToLog({
-            id: "pm1",
-            name: "Каша",
-            time: "08:00",
-            mealType: "breakfast",
-            macros: { kcal: 300, protein_g: 10, fat_g: 5, carbs_g: 50 },
-            label: "",
-            source: "plan",
-            macroSource: "plan",
-            amount_g: null,
-            foodId: null,
-          })
-        }
-      >
-        Додати до журналу
-      </button>
-    </div>
-  ),
-}));
-
-// ---------------------------------------------------------------------------
-// Mock RecipesCard.
-// ---------------------------------------------------------------------------
-vi.mock("../components/RecipesCard", () => ({
-  RecipesCard: () => <div data-testid="recipes-card">Рецепти</div>,
-}));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -157,6 +101,17 @@ function makeLoadingQuery<T>(): DataStateQueryLike<T> {
   };
 }
 
+const SAMPLE_MEAL: PlanMeal = {
+  type: "breakfast",
+  label: "Сніданок",
+  name: "Каша вівсяна",
+  kcal: 300,
+  protein_g: 10,
+  fat_g: 5,
+  carbs_g: 50,
+  ingredients: [],
+};
+
 interface RenderMenuPageOptions {
   menuSubTab?: "plan" | "recipes";
   setMenuSubTab?: (id: "plan" | "recipes") => void;
@@ -178,35 +133,47 @@ function renderMenuPage(overrides: RenderMenuPageOptions = {}) {
   const fetchDayPlan = overrides.fetchDayPlan ?? vi.fn();
   const addMealFromPlan = overrides.addMealFromPlan ?? vi.fn();
 
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   render(
-    <NutritionMenuPage
-      menuSubTab={menuSubTab}
-      setMenuSubTab={setMenuSubTab}
-      pantry={makePantry()}
-      prefs={EMPTY_PREFS}
-      setPrefs={vi.fn()}
-      busy={false}
-      err=""
-      dayPlan={dayPlan}
-      dayPlanBusy={overrides.dayPlanBusy ?? false}
-      dayPlanQuery={dayPlanQuery}
-      dayPlanLoadingSkeleton={<div data-testid="skeleton">Завантаження…</div>}
-      fetchDayPlan={fetchDayPlan}
-      addMealFromPlan={addMealFromPlan}
-      weekPlan={null}
-      weekPlanRaw=""
-      weekPlanBusy={false}
-      fetchWeekPlan={vi.fn()}
-      firstRunHint={overrides.firstRunHint ?? false}
-      onDismissFirstRunHint={vi.fn()}
-      recommendRecipes={vi.fn()}
-      recipes={overrides.recipes ?? []}
-      recipesTried={false}
-      recipesRaw=""
-      recipeCacheEntry={null as RecipeCacheEntry<unknown> | null}
-      wrappedSaveMeal={vi.fn()}
-      selectedDate="2025-01-01"
-    />,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ToastProvider>
+          <NutritionMenuPage
+            menuSubTab={menuSubTab}
+            setMenuSubTab={setMenuSubTab}
+            pantry={makePantry()}
+            prefs={EMPTY_PREFS}
+            setPrefs={vi.fn()}
+            busy={false}
+            err=""
+            dayPlan={dayPlan}
+            dayPlanBusy={overrides.dayPlanBusy ?? false}
+            dayPlanQuery={dayPlanQuery}
+            dayPlanLoadingSkeleton={
+              <div data-testid="skeleton">Завантаження…</div>
+            }
+            fetchDayPlan={fetchDayPlan}
+            addMealFromPlan={addMealFromPlan}
+            weekPlan={null}
+            weekPlanRaw=""
+            weekPlanBusy={false}
+            fetchWeekPlan={vi.fn()}
+            firstRunHint={overrides.firstRunHint ?? false}
+            onDismissFirstRunHint={vi.fn()}
+            recommendRecipes={vi.fn()}
+            recipes={overrides.recipes ?? []}
+            recipesTried={false}
+            recipesRaw=""
+            recipeCacheEntry={null as RecipeCacheEntry<unknown> | null}
+            wrappedSaveMeal={vi.fn()}
+            selectedDate="2025-01-01"
+          />
+        </ToastProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
   return { setMenuSubTab, fetchDayPlan, addMealFromPlan };
@@ -221,16 +188,21 @@ describe("NutritionMenuPage", () => {
     expect(screen.getByRole("tab", { name: "Рецепти" })).toBeTruthy();
   });
 
-  it("shows DailyPlanCard when menuSubTab is 'plan' and query is ready", () => {
+  it("shows the real DailyPlanCard when menuSubTab is 'plan' and query is ready", () => {
     renderMenuPage({ menuSubTab: "plan" });
-    expect(screen.getByTestId("daily-plan-card")).toBeTruthy();
-    expect(screen.queryByTestId("recipes-card")).toBeNull();
+    // Real DailyPlanCard content — not a mock testid.
+    expect(screen.getByText("Денний план")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Згенерувати денний план" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Мої рецепти")).not.toBeInTheDocument();
   });
 
-  it("shows RecipesCard when menuSubTab is 'recipes'", () => {
+  it("shows the real RecipesCard when menuSubTab is 'recipes'", async () => {
     renderMenuPage({ menuSubTab: "recipes" });
-    expect(screen.getByTestId("recipes-card")).toBeTruthy();
-    expect(screen.queryByTestId("daily-plan-card")).toBeNull();
+    // RecipesCard's SavedSection renders the "Мої рецепти" collapsible.
+    expect(await screen.findByText("Мої рецепти")).toBeInTheDocument();
+    expect(screen.queryByText("Денний план")).not.toBeInTheDocument();
   });
 
   it("clicking 'Рецепти' tab calls setMenuSubTab('recipes')", async () => {
@@ -249,44 +221,52 @@ describe("NutritionMenuPage", () => {
     expect(setMenuSubTab).toHaveBeenCalledWith("plan");
   });
 
-  it("DataState shows skeleton when query is loading (no data)", () => {
+  it("DataState shows the loading skeleton when query is loading (no data)", () => {
     renderMenuPage({
       menuSubTab: "plan",
       dayPlanQuery: makeLoadingQuery<NutritionDayPlan | null>(),
     });
     expect(screen.getByTestId("skeleton")).toBeTruthy();
-    expect(screen.queryByTestId("daily-plan-card")).toBeNull();
+    expect(screen.queryByText("Денний план")).not.toBeInTheDocument();
   });
 
-  it("DailyPlanCard's fetchDayPlan button calls fetchDayPlan(null)", async () => {
-    const fetchDayPlan = vi.fn();
-    renderMenuPage({ fetchDayPlan });
-
-    await userEvent.click(screen.getByRole("button", { name: "Оновити план" }));
-    expect(fetchDayPlan).toHaveBeenCalledWith(null);
-  });
-
-  it("DailyPlanCard's regenMeal button calls fetchDayPlan('breakfast')", async () => {
+  it("real 'Згенерувати денний план' button calls fetchDayPlan(null)", async () => {
     const fetchDayPlan = vi.fn();
     renderMenuPage({ fetchDayPlan });
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Регенерувати сніданок" }),
+      screen.getByRole("button", { name: "Згенерувати денний план" }),
+    );
+    expect(fetchDayPlan).toHaveBeenCalledWith(null);
+  });
+
+  it("real meal row's '↻ Замінити' button calls fetchDayPlan(mealType)", async () => {
+    const fetchDayPlan = vi.fn();
+    renderMenuPage({
+      fetchDayPlan,
+      dayPlan: { meals: [SAMPLE_MEAL], totalKcal: 300 } as NutritionDayPlan,
+    });
+
+    const mealRow = screen.getByText("Каша вівсяна").closest("div")!
+      .parentElement!.parentElement as HTMLElement;
+    await userEvent.click(
+      within(mealRow).getByRole("button", { name: "↻ Замінити" }),
     );
     expect(fetchDayPlan).toHaveBeenCalledWith("breakfast");
   });
 
-  it("DailyPlanCard's addMealToLog button calls addMealFromPlan with the meal", async () => {
+  it("real meal row's '+ Журнал' button calls addMealFromPlan with the meal", async () => {
     const addMealFromPlan = vi.fn();
-    renderMenuPage({ addMealFromPlan });
+    renderMenuPage({
+      addMealFromPlan,
+      dayPlan: { meals: [SAMPLE_MEAL], totalKcal: 300 } as NutritionDayPlan,
+    });
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Додати до журналу" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "+ Журнал" }));
     expect(addMealFromPlan).toHaveBeenCalledTimes(1);
     const firstCall = (addMealFromPlan as ReturnType<typeof vi.fn>).mock
       .calls[0];
     const meal = firstCall?.[0];
-    expect(meal).toMatchObject({ id: "pm1", name: "Каша" });
+    expect(meal).toMatchObject({ name: "Каша вівсяна", type: "breakfast" });
   });
 });
