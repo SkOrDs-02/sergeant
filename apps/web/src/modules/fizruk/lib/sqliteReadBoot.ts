@@ -16,6 +16,10 @@
  *     keys are gone.
  *  3. Performs the initial `refreshFizrukSqliteState()` so the cache
  *     is warm before the first overlay read.
+ *  4. W1-WEIGHT-SOT стадія 3: `bootstrapBodyWeightFromBiometrics()`
+ *     seeds `fizruk_measurements` from `hub_biometrics.weightKg` when
+ *     the journal has no weight sample yet. Idempotent; no-ops once a
+ *     weight entry exists in either fizruk store.
  *
  * The function is idempotent — calling it twice within the same
  * process is a no-op on the second call.
@@ -24,6 +28,7 @@
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
+import { bootstrapBodyWeightFromBiometrics } from "./bodyWeightBootstrap.js";
 import { migrateFizruk } from "./clientMigrate.js";
 import { importFizrukResidualFromLs } from "./residualImport.js";
 import { refreshFizrukSqliteState } from "./sqliteReader.js";
@@ -57,6 +62,12 @@ export async function bootFizrukSqliteReadPath(
     await importFizrukResidualFromLs(client, userId);
 
     await refreshFizrukSqliteState(client, userId);
+
+    // W1-WEIGHT-SOT стадія 3: seed the journal from the Profile
+    // biometrics cache when it has no weight sample yet — see
+    // `bodyWeightBootstrap.ts` (self-contained error handling; never
+    // throws, so it can't fail the rest of the boot).
+    await bootstrapBodyWeightFromBiometrics(client, userId);
 
     booted = true;
     return true;
