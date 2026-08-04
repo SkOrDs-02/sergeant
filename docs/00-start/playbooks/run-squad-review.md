@@ -2,7 +2,7 @@
 
 # Playbook: Squad review — паралельний PR review через 4 lens-агентів
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 > **Status:** Active
 
 **Trigger:** PR торкається ≥3 governed surfaces одночасно: SQL migrations, server serializers, web UI, mobile UI, SKILL.md, або HubChat tool defs.
@@ -76,3 +76,14 @@ Give each teammate the PR diff. Ask each to send findings to the lead when done.
 ## Governing skill
 
 [`sergeant-review-squad`](../../../.agents/skills/sergeant-review-squad/SKILL.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                   | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------- | ---------- |
+| [#608](https://github.com/Skords-01/Sergeant/pull/608) | fix(web): дизайн-система — фікс-хвиля за аудитом (dark/hc parity, a11y, mobile re-sync) | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
