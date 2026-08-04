@@ -55,7 +55,7 @@ export function useBarcodeLookup({
 
       const localFound = await lookupFoodByBarcode(code);
       if (localFound) {
-        setBarcodeStatus("Знайдено ✔");
+        setBarcodeStatus("Знайдено");
         setPickedFood(localFound);
         setPickedGrams(String(Math.round(localFound.defaultGrams || 100)));
         return;
@@ -139,7 +139,7 @@ export function useBarcodeLookup({
         );
       } else {
         setBarcodeStatus(
-          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")} ✔`,
+          `Знайдено: ${[p.name, p.brand].filter(Boolean).join(" — ")}`,
         );
       }
     },
@@ -160,7 +160,7 @@ export function useBarcodeLookup({
         return;
       }
       const ok = await bindBarcodeToFood(code, String(pickedFood.id));
-      setBarcodeStatus(ok ? "Прив'язано ✔" : "Не вдалося прив'язати");
+      setBarcodeStatus(ok ? "Прив'язано" : "Не вдалося прив'язати");
     },
     [pickedFood],
   );

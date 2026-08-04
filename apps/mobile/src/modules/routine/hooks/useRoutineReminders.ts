@@ -178,7 +178,9 @@ async function scheduleHabit(h: Habit): Promise<string[]> {
   if (routineWeekdays.length === 0) return [];
 
   const out: string[] = [];
-  const title = `${h.emoji || "✓"} ${h.name}`;
+  // Гліф звички — icon-slug (`@sergeant/routine-domain` → `glyphs.ts`),
+  // а не emoji: у заголовку пуша він читався б як «droplet Пити воду».
+  const title = h.name;
 
   for (const rw of routineWeekdays) {
     for (const hm of times) {

@@ -307,7 +307,7 @@ describe("DailyPlanCard — targets row and Скинути", () => {
     expect(screen.getByText(/Б: 150г/)).toBeInTheDocument();
   });
 
-  it("'✕ Скинути' button clears all target fields", () => {
+  it("'Скинути' button clears all target fields", () => {
     const setPrefs = vi.fn();
     render(
       <DailyPlanCard
@@ -321,7 +321,7 @@ describe("DailyPlanCard — targets row and Скинути", () => {
         setPrefs={setPrefs}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: /✕ Скинути/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Скинути/ }));
     expect(setPrefs).toHaveBeenCalled();
     const updater = setPrefs.mock.calls[0]![0] as (
       p: NutritionPrefs,

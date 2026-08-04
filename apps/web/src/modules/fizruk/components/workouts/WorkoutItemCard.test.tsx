@@ -139,8 +139,9 @@ describe("WorkoutItemCard — strength", () => {
   it("renders the recommended rest-timer preset and quick options", () => {
     const setDefaultForExercise = vi.fn();
     renderCard({ setDefaultForExercise });
-    // Default 90 → "90 с ★" recommended button.
-    expect(screen.getByText("90 с ★")).toBeInTheDocument();
+    // Default 90 → "90 с" recommended button. Гліф «★» прибрано
+    // 2026-08-03; «рекомендований» лишається в `title` кнопки.
+    expect(screen.getByText("90 с")).toBeInTheDocument();
     // Quick options exclude the default (90).
     expect(screen.getByRole("button", { name: "60 с" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "60 с" }));
@@ -193,7 +194,7 @@ describe("WorkoutItemCard — last-time hint + groups", () => {
     const group = { id: "g1", type: "superset" } as WorkoutGroup;
     renderCard({ group });
     // Grouped strength items hide the per-item rest-timer block.
-    expect(screen.queryByText("90 с ★")).not.toBeInTheDocument();
+    expect(screen.queryByText("90 с")).not.toBeInTheDocument();
   });
 });
 

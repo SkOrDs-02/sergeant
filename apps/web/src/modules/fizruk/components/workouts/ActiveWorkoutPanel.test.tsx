@@ -130,9 +130,10 @@ describe("ActiveWorkoutPanel", () => {
     render(
       wrap(<ActiveWorkoutPanel activeWorkout={makeWorkout()} {...props} />),
     );
-    // The recommended preset button shows "★".
-    const star = screen.getByText(/★/);
-    fireEvent.click(star);
+    // Рекомендований пресет — кнопка з `title="Рекомендований час…"`
+    // (до 2026-08-03 його позначав текстовий гліф «★»).
+    const recommended = screen.getByTitle(/Рекомендований час/);
+    fireEvent.click(recommended);
     expect(props.setRestTimer).toHaveBeenCalledWith(
       expect.objectContaining({ remaining: expect.any(Number) }),
     );

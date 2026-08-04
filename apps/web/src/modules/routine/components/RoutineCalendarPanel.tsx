@@ -38,6 +38,7 @@ import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
 import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
+import { Icon } from "@shared/components/ui/Icon";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -394,9 +395,9 @@ export function RoutineCalendarPanel({
                         ? () => onToggleHabit(habitId, e.date)
                         : undefined
                     }
-                    leftLabel="✓ Виконано"
+                    leftLabel="Виконано"
                     leftColor="bg-success"
-                    rightLabel="↩ Скасувати"
+                    rightLabel="Скасувати"
                     rightColor="bg-muted"
                   >
                     <div
@@ -496,7 +497,11 @@ export function RoutineCalendarPanel({
                               }
                               title={e.completed ? "Скасувати" : "Виконано"}
                             >
-                              {e.completed ? "✓" : "○"}
+                              <Icon
+                                name={e.completed ? "check" : "circle-outline"}
+                                size={18}
+                                aria-hidden
+                              />
                             </Button>
                           )}
                         </div>

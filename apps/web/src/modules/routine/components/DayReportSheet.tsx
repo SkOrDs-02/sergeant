@@ -8,6 +8,7 @@ import { SKIP_REASON_LABELS, SKIP_REASON_OPTIONS } from "../lib/skipReasons";
 import type { HabitSkip, SkipReason } from "@sergeant/routine-domain";
 import type { Habit } from "../lib/types";
 import { HabitGlyph } from "./HabitGlyph";
+import { Icon } from "@shared/components/ui/Icon";
 
 export interface ScheduledHabitForReport extends Habit {
   completed: boolean;
@@ -86,7 +87,7 @@ export function DayReportSheet({
                   )}
                   aria-label="Скасувати виконання"
                 >
-                  ✓
+                  <Icon name="check" size={14} aria-hidden />
                 </IconButton>
                 <span className="text-style-label text-text flex items-center gap-1.5 truncate">
                   <HabitGlyph value={h.emoji} size="sm" />
