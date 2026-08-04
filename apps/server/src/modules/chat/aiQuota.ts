@@ -211,10 +211,15 @@ export function isAiQuotaDisabled(): boolean {
   return v === "1" || v === "true";
 }
 
-// Default = PROD (Railway `AI_DAILY_ANON_LIMIT`, 2026-06-27). Lower than the
-// free-user cap (5) on purpose: anonymous (IP-keyed) callers are the cheapest
-// to spin up, so they get the tightest daily AI budget.
-const DEFAULT_ANON_LIMIT = 3;
+// Anonymous callers get exactly one message a day: enough to see what the
+// assistant does, not enough to use it as a product. Lower than the free-user
+// cap (5) on purpose — an IP-keyed caller is the cheapest identity to spin up,
+// so it gets the tightest budget, and the 429 it hits is a sign-in prompt
+// (`AI_QUOTA_ANON` below), not a "try tomorrow" dead end.
+//
+// The deployed value comes from env `AI_DAILY_ANON_LIMIT` — changing this
+// constant alone does NOT move production while that variable is set.
+const DEFAULT_ANON_LIMIT = 1;
 
 /** Daily AI-message cap for an anonymous (IP-keyed) caller — env-tunable. */
 function anonDailyLimit(): number | null {
@@ -230,9 +235,8 @@ function anonDailyLimit(): number | null {
  *
  * Distinct from a Pro plan: a founder keeps whatever billing plan they have
  * but is never blocked by the per-user counter, so internal dogfooding and
- * demos don't burn the free 5/day cap (which is also lower than the anon
- * 40/day cap — the inversion that makes this bypass necessary for a real
- * owner account). Covers both the default chat bucket and tool-use buckets.
+ * demos don't burn the free 5/day cap. Covers both the default chat bucket
+ * and tool-use buckets.
  */
 function isFounderUser(userId: string): boolean {
   const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
@@ -418,11 +422,25 @@ export async function assertAiQuota(
       } catch {
         /* ignore */
       }
-      res.status(429).json({
-        error: "Денний ліміт AI вичерпано. Спробуй завтра.",
-        code: "AI_QUOTA",
-        limit: result.limit,
-      });
+      // Анонім і Free вичерпують РІЗНІ ліміти, тож і виходу в них різні.
+      // Free справді лишається чекати доби. Аноніму чекати нема сенсу —
+      // вхід піднімає його ліміт негайно, і саме це має сказати копія.
+      // Клієнт розрізняє випадки за `code` (див. `friendlyApiError` у
+      // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
+      res.status(429).json(
+        sessionUser
+          ? {
+              error: "Денний ліміт AI вичерпано. Спробуй завтра.",
+              code: "AI_QUOTA",
+              limit: result.limit,
+            }
+          : {
+              error:
+                "Безкоштовна проба на сьогодні вичерпана. Увійди — 5 запитів на добу, без карти.",
+              code: "AI_QUOTA_ANON",
+              limit: result.limit,
+            },
+      );
       return false;
     }
     try {
