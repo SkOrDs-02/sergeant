@@ -309,4 +309,38 @@ describe("renderStandaloneRoute() — /welcome", () => {
       callRouteArgs({ pathname: WELCOME_PATH, storageReady: true }),
     ).not.toBeNull();
   });
+
+  it("redirects an authenticated user away without consulting the onboarding gate", () => {
+    // Аудит 2026-08-04, знахідка 5: `shouldShowOnboarding()` бачить лише
+    // локальний стан, тож користувач, який щойно увійшов на чистому пристрої
+    // (дані на сервері, локально ще порожньо), потрапляв на анонімний splash
+    // із кнопкою «У мене вже є акаунт». Гейт для залогіненого не має навіть
+    // опитуватись — рішення ухвалює сесія.
+    mockShouldShowOnboarding.mockClear();
+    mockShouldShowOnboarding.mockReturnValue(true);
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({
+        pathname: WELCOME_PATH,
+        user: authedUser,
+        storageReady: true,
+      }),
+    ).not.toBeNull();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  it("still renders the splash while the session is loading (no premature bounce)", () => {
+    // `authLoading` ще не осів — не женемо генуїнного візитера геть із
+    // splash-у на підставі порожнього `user`.
+    mockShouldShowOnboarding.mockClear();
+    mockShouldShowOnboarding.mockReturnValue(true);
+    expect(
+      callRouteArgs({
+        pathname: WELCOME_PATH,
+        authLoading: true,
+        storageReady: true,
+      }),
+    ).not.toBeNull();
+    expect(mockShouldShowOnboarding).toHaveBeenCalled();
+  });
 });
