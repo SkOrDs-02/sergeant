@@ -34,6 +34,12 @@ export function SessionsSection({ online }: { online: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  // When getSession() fails we cannot tell which listed session is the
+  // current device. Revoking in that blind state would skip the full
+  // logout() teardown for the current session (review finding) — so we
+  // track the failure explicitly and block revocation until a successful
+  // refresh instead of silently treating every row as non-current.
+  const [currentLookupFailed, setCurrentLookupFailed] = useState(false);
 
   // Converted from async/await to explicit .then()/.catch() so that all
   // setState calls live inside nested callback functions. The React Compiler
@@ -54,13 +60,22 @@ export function SessionsSection({ online }: { online: boolean }) {
       listSessions(),
       Promise.resolve()
         .then(() => getSession())
-        .catch(() => null),
+        .catch(() => "__lookup_failed__" as const),
     ])
       .then(([list, current]) => {
-        const cur = current as {
-          data?: { session?: { id?: string } } | null;
-        } | null;
-        setCurrentSessionId(cur?.data?.session?.id ?? null);
+        if (current === "__lookup_failed__") {
+          setCurrentSessionId(null);
+          setCurrentLookupFailed(true);
+        } else {
+          const cur = current as {
+            data?: { session?: { id?: string } } | null;
+          } | null;
+          const id = cur?.data?.session?.id ?? null;
+          setCurrentSessionId(id);
+          // A 200 without a session id is the same blind state as a failed
+          // lookup — we still can't mark the current row.
+          setCurrentLookupFailed(id === null);
+        }
         setError(null);
         if (list.data) {
           setSessions(list.data);
@@ -152,52 +167,59 @@ export function SessionsSection({ online }: { online: boolean }) {
             {COPY.empty}
           </p>
         ) : (
-          <ul className="space-y-2">
-            {sessions.map((s) => {
-              const isExpired = new Date(s.expiresAt) < new Date();
-              const isCurrent = currentSessionId === s.id;
-              const ua = parseUserAgent(s.userAgent);
-              const lastSeen = formatRelativeUk(s.updatedAt);
-              return (
-                <li
-                  key={s.id}
-                  className="flex items-start gap-3 p-3 rounded-xl border border-line bg-panel"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-style-label text-text truncate">
-                        {ua.label}
+          <>
+            {currentLookupFailed && (
+              <p className="text-style-caption text-muted mb-2">
+                {COPY.currentUnknown}
+              </p>
+            )}
+            <ul className="space-y-2">
+              {sessions.map((s) => {
+                const isExpired = new Date(s.expiresAt) < new Date();
+                const isCurrent = currentSessionId === s.id;
+                const ua = parseUserAgent(s.userAgent);
+                const lastSeen = formatRelativeUk(s.updatedAt);
+                return (
+                  <li
+                    key={s.id}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-line bg-panel"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-style-label text-text truncate">
+                          {ua.label}
+                        </p>
+                        {isCurrent && (
+                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong dark:text-brand border border-brand-500/30">
+                            {COPY.thisDevice}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-style-caption text-muted mt-0.5">
+                        {s.ipAddress ?? COPY.unknownIp}
+                        {" \u00b7 "}
+                        {`${COPY.lastSeenPrefix} ${lastSeen}`}
                       </p>
-                      {isCurrent && (
-                        <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong dark:text-brand border border-brand-500/30">
-                          {COPY.thisDevice}
+                      {isExpired && (
+                        <span className="text-style-caption text-danger-strong dark:text-danger font-medium">
+                          {COPY.expired}
                         </span>
                       )}
                     </div>
-                    <p className="text-style-caption text-muted mt-0.5">
-                      {s.ipAddress ?? COPY.unknownIp}
-                      {" \u00b7 "}
-                      {`${COPY.lastSeenPrefix} ${lastSeen}`}
-                    </p>
-                    {isExpired && (
-                      <span className="text-style-caption text-danger-strong dark:text-danger font-medium">
-                        {COPY.expired}
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="danger"
-                    size="xs"
-                    disabled={revoking === s.id}
-                    loading={revoking === s.id}
-                    onClick={() => handleRevoke(s.id, s.token, isCurrent)}
-                  >
-                    {COPY.revoke}
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+                    <Button
+                      variant="danger"
+                      size="xs"
+                      disabled={revoking === s.id || currentLookupFailed}
+                      loading={revoking === s.id}
+                      onClick={() => handleRevoke(s.id, s.token, isCurrent)}
+                    >
+                      {COPY.revoke}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </div>
     </Card>

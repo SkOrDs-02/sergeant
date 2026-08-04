@@ -142,6 +142,27 @@ describe("SessionsSection — revoke flow", () => {
     );
   });
 
+  // Review finding: a rejected getSession() used to degrade silently into
+  // "no session is current" — revoking the actual current session then
+  // skipped the logout() teardown. In that blind state revocation must be
+  // blocked until a successful refresh.
+  it("blocks revocation with a hint when the current-session lookup fails", async () => {
+    getSessionMock.mockRejectedValueOnce(new Error("network down"));
+    renderSection(true);
+
+    const revokeButton = await screen.findByRole("button", {
+      name: /Завершити/i,
+    });
+    expect(
+      screen.getByText(/Не вдалося визначити сесію цього пристрою/),
+    ).toBeTruthy();
+    expect(revokeButton).toBeDisabled();
+
+    fireEvent.click(revokeButton);
+    await waitFor(() => expect(revokeSessionMock).not.toHaveBeenCalled());
+    expect(logoutMock).not.toHaveBeenCalled();
+  });
+
   it("maps Better Auth error code into a UA toast on failure", async () => {
     // F5 (web-frontend-ergonomics-roast): сирий `error.message` тепер
     // прокидується через `mapApiErrorToUserCopy`. Сервер віддає `code`

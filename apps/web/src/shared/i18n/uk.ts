@@ -620,6 +620,8 @@ export const messages = {
     unknownIp: "IP невідомий",
     unknownDevice: "Невідомий пристрій",
     lastSeenPrefix: "Активна",
+    currentUnknown:
+      "Не вдалося визначити сесію цього пристрою. Онови список, щоб завершувати сесії.",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in

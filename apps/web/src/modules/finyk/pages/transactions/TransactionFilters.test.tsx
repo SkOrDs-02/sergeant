@@ -118,10 +118,11 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     );
     const scroller = container.querySelector("[data-no-swipe]");
     expect(scroller).not.toBeNull();
-    // `touch-pan-y` on FinykApp's swipe wrapper intersects with descendant
-    // touch-action, silently blocking horizontal panning unless the
-    // scroller itself declares `touch-pan-x` (data-no-swipe alone only
-    // opts out of the JS swipe gesture, not the CSS touch-action).
-    expect(scroller).toHaveClass("touch-pan-x");
+    // The strip is its own scroll container, so the touch-action chain for a
+    // horizontal pan stops here — it must allow pan-x. It also declares pan-y
+    // so a vertical page-scroll started on a chip still bubbles up through
+    // FinykApp's touch-pan-y wrapper instead of being swallowed (data-no-swipe
+    // alone only opts out of the JS swipe gesture, not the CSS touch-action).
+    expect(scroller).toHaveClass("[touch-action:pan-x_pan-y]");
   });
 });

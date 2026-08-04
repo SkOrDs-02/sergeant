@@ -113,7 +113,7 @@ export function FinykStatsStrip({
     <div
       data-no-swipe
       className={cn(
-        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden touch-pan-x",
+        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden [touch-action:pan-x_pan-y]",
         className,
       )}
       role="list"

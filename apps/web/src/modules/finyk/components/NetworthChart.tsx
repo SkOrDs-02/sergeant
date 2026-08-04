@@ -61,8 +61,12 @@ function NetworthChartInner({
     1,
     Math.ceil(MIN_LABEL_SPACING / Math.max(1, pointSpacing)),
   );
+  // The final label is forced, so a periodic label that lands closer than
+  // labelStep points to the end would collide with it — suppress those.
   const showMonthLabel = (i: number) =>
-    i === 0 || i === data.length - 1 || i % labelStep === 0;
+    i === 0 ||
+    i === data.length - 1 ||
+    (i % labelStep === 0 && data.length - 1 - i >= labelStep);
 
   // Value-label placement for the first/last point: anchor above the point
   // by default, but clamp inside the viewBox and flip below the point when

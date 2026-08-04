@@ -139,6 +139,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 
     const isRange = props.range === true;
     const trackRef = useRef<HTMLDivElement | null>(null);
+    const thumbRefs = useRef<[HTMLDivElement | null, HTMLDivElement | null]>([
+      null,
+      null,
+    ]);
     const generatedId = useId();
     const uid = generatedId;
     const isVertical = orientation === "vertical";
@@ -263,9 +267,18 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       setActiveThumb(null);
       // Bug fix: the drag-tooltip must not outlive the drag. Clear it here
       // (not just on thumb `onBlur`, which never fires on touch because
-      // pointer capture lives on the track, not the thumb). The keyboard
-      // focus path still re-shows the tooltip via the thumb's `onFocus`.
-      setTooltipThumb(null);
+      // pointer capture lives on the track, not the thumb). One exception:
+      // if a thumb genuinely holds DOM focus (keyboard user who then
+      // dragged), keep ITS tooltip alive until blur — clearing it here
+      // would strand a focused thumb with no value readout.
+      const focusedThumb = thumbRefs.current.findIndex(
+        (el) => el !== null && el === document.activeElement,
+      );
+      setTooltipThumb(
+        focusedThumb === 0 || focusedThumb === 1
+          ? (focusedThumb as 0 | 1)
+          : null,
+      );
       try {
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
       } catch {
@@ -336,6 +349,9 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       return (
         <div
           key={thumb}
+          ref={(el) => {
+            thumbRefs.current[thumb] = el;
+          }}
           role="slider"
           tabIndex={disabled ? -1 : 0}
           aria-orientation={orientation}

@@ -75,6 +75,34 @@ describe("NetworthChart", () => {
     expect(monthTexts.at(-1)?.textContent).toBe("Груд");
   });
 
+  it("keeps minimum spacing between adjacent month labels when the series is unaligned with the tick step (review fix)", () => {
+    // 11 points: labelStep does not divide (length-1) evenly, so the forced
+    // final label could land right next to the last periodic label unless
+    // periodic ticks within labelStep of the end are suppressed.
+    const data = Array.from({ length: 11 }, (_, i) => ({
+      month: `2026-${String(i + 1).padStart(2, "0")}`,
+      networth: 1000 + i * 100,
+    }));
+    const { container } = render(<NetworthChart data={data} />);
+    const xs = Array.from(container.querySelectorAll("text"))
+      .filter((t) => t.getAttribute("text-anchor") === "middle")
+      .map((t) => Number(t.getAttribute("x")))
+      .sort((a, b) => a - b);
+    expect(xs.length).toBeGreaterThanOrEqual(2);
+    // ~20 viewBox units fit a short month label; adjacent labels closer
+    // than that visually collide at the rendered size.
+    const MIN_GAP = 20;
+    for (let i = 1; i < xs.length; i++) {
+      const prev = xs[i - 1];
+      const curr = xs[i];
+      expect(prev).toBeDefined();
+      expect(curr).toBeDefined();
+      expect((curr as number) - (prev as number)).toBeGreaterThanOrEqual(
+        MIN_GAP,
+      );
+    }
+  });
+
   it("keeps every month label for a short series (no thinning needed)", () => {
     const { container } = render(
       <NetworthChart
