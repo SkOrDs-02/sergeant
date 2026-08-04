@@ -19,7 +19,7 @@
     --c-muted: 87 83 78;
     --c-subtle: 107 100 93;
     --c-primary: 28 25 23;
-    --c-accent: 16 185 129;
+    --c-accent: 15 118 110; /* teal-700 (2026-07: was emerald-500 #10b981) */
     --c-surface: var(--c-panel);
     --c-surface-muted: var(--c-panel-hi);
     --c-fg: var(--c-text);
@@ -34,6 +34,52 @@
     --c-warning-soft: 254 243 199;
     --c-danger-soft: 254 226 226;
     --c-info-soft: 224 242 254;
+    /* `-soft-fg` — theme-aware foreground ink for status soft fills
+       (soft Badges/Banners). Mirror apps/web/src/styles/theme.css. */
+    --c-success-soft-fg: 4 120 87; /* emerald-700 on emerald-100 */
+    --c-warning-soft-fg: 180 83 9; /* amber-700 on amber-100 */
+    --c-danger-soft-fg: 185 28 28; /* red-700 on red-100 */
+    --c-info-soft-fg: 7 89 133; /* sky-800 on sky-100 */
+
+    /* ───────────────────────────────────────────────────────────────────
+       SOFT BRAND & MODULE TINTS — mirror apps/web/src/styles/theme.css.
+       `-soft` is the tinted surface wash, `-soft-border` the paired
+       hairline, `-soft-hover` the subtle hover tint, `-soft-fg` the
+       theme-aware foreground ink for soft-fill controls. Consumed by
+       `Card` module variants, `Badge`, `Tabs`, `SearchResultItem`,
+       `InlineAiRail`.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-brand-soft: 245 245 244; /* stone-100 */
+    --c-brand-soft-border: 231 229 228; /* stone-200 */
+    --c-brand-soft-hover: 231 229 228; /* stone-200 */
+    --c-brand-soft-fg: 41 37 36; /* stone-800 */
+
+    --c-finyk-soft: 240 253 250; /* teal-50 */
+    --c-finyk-soft-border: 153 246 228; /* teal-200 */
+    --c-finyk-soft-hover: 204 251 241; /* teal-100 */
+    --c-finyk-soft-fg: 17 94 89; /* teal-800 */
+
+    --c-fizruk-soft: 236 254 255; /* cyan-50 */
+    --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
+    --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
+    --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
+
+    --c-routine-soft: 255 245 243; /* coral-50 */
+    --c-routine-soft-border: 255 210 200; /* coral-200 */
+    --c-routine-soft-hover: 255 232 227; /* coral-100 */
+    --c-routine-soft-fg: 194 58 58; /* coral-700 */
+
+    --c-nutrition-soft: 248 254 231; /* lime-50 */
+    --c-nutrition-soft-border: 217 249 157; /* lime-200 */
+    --c-nutrition-soft-hover: 239 252 203; /* lime-100 */
+    --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
+
+    /* Chart series — mirror `--c-chart-{module}` in web theme.css. Backs
+       `bg-chart-{module}` progress fills used by the hub report cards. */
+    --c-chart-finyk: 17 94 89; /* teal-800 */
+    --c-chart-fizruk: 21 94 117; /* cyan-800 */
+    --c-chart-routine: 194 58 58; /* coral-700 */
+    --c-chart-nutrition: 70 98 18; /* lime-800 */
 
     /* Semantic A11y / states tokens — mirror apps/web/src/styles/theme.css.
        NativeWind reads these RGB triplets at compile time; opacity
@@ -72,12 +118,52 @@
     --c-muted: 180 174 169;
     --c-subtle: 135 128 121;
     --c-primary: 250 247 241;
-    --c-accent: 16 185 129;
+    --c-accent: 45 212 191; /* teal-400 (2026-07: was emerald-500 #10b981) */
     --c-border-strong: 112 102 90;
     --c-success-soft: 6 95 70;
     --c-warning-soft: 146 64 14;
     --c-danger-soft: 153 27 27;
     --c-info-soft: 7 89 133;
+    --c-success-soft-fg: 110 231 183; /* emerald-300 */
+    --c-warning-soft-fg: 252 211 77; /* amber-300 */
+    --c-danger-soft-fg: 254 202 202; /* red-200 */
+    --c-info-soft-fg: 125 211 252; /* sky-300 */
+
+    /* Dark-theme overrides for the soft brand/module tints — mirror
+       apps/web/src/styles/theme.css. Values are deliberately deep
+       (`-900` family) so tinted surfaces read as accent, not bright
+       fill, on the dark panel. */
+    --c-brand-soft: 41 37 36; /* stone-800 */
+    --c-brand-soft-border: 68 64 60; /* stone-700 */
+    --c-brand-soft-hover: 68 64 60; /* stone-700 */
+    --c-brand-soft-fg: 214 211 209; /* stone-300 */
+
+    --c-finyk-soft: 19 78 74; /* teal-900 */
+    --c-finyk-soft-border: 17 94 89; /* teal-800 */
+    --c-finyk-soft-hover: 17 94 89; /* teal-800 */
+    --c-finyk-soft-fg: 94 234 212; /* teal-300 */
+
+    --c-fizruk-soft: 22 78 99; /* cyan-900 */
+    --c-fizruk-soft-border: 21 94 117; /* cyan-800 */
+    --c-fizruk-soft-hover: 21 94 117; /* cyan-800 */
+    --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
+
+    --c-routine-soft: 159 36 30; /* coral-900 */
+    --c-routine-soft-border: 185 54 48; /* coral-800 */
+    --c-routine-soft-hover: 185 54 48; /* coral-800 */
+    --c-routine-soft-fg: 255 212 203; /* coral-200 */
+
+    --c-nutrition-soft: 63 98 18; /* lime-800 */
+    --c-nutrition-soft-border: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
+
+    /* Chart series — brighter -400 tier for visibility on dark bg.
+       Mirror apps/web/src/styles/theme.css. */
+    --c-chart-finyk: 45 212 191; /* teal-400 */
+    --c-chart-fizruk: 34 211 238; /* cyan-400 */
+    --c-chart-routine: 255 140 120; /* coral-400 */
+    --c-chart-nutrition: 176 230 54; /* lime-400 */
 
     /* Dark-theme A11y / states overrides — mirror apps/web/src/styles/theme.css. */
     --c-ring: 52 211 153;
@@ -104,14 +190,14 @@
        `packages/design-tokens/tokens.js` — change them here
        independently when dark-mode tints need their own treatment.
        ─────────────────────────────────────────────────────────────────── */
-    --c-finyk-surface-dark: 16 185 129; /* emerald-500 */
-    --c-finyk-border-dark: 16 185 129; /* emerald-500 */
+    --c-finyk-surface-dark: 15 118 110; /* teal-700 (2026-07: was emerald-500) */
+    --c-finyk-border-dark: 15 118 110; /* teal-700 (2026-07: was emerald-500) */
     --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
     --c-routine-surface-dark: 249 112 102; /* coral-500 */
     --c-routine-border-dark: 249 112 102; /* coral-500 */
-    --c-nutrition-surface-dark: 146 204 23; /* lime-500 */
-    --c-nutrition-border-dark: 146 204 23; /* lime-500 */
+    --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel (was lime-500) */
+    --c-nutrition-border-dark: 176 230 54; /* lime-400 (was lime-500) */
   }
 }
 
@@ -176,9 +262,9 @@
 .hero-gradient-finyk {
   background: linear-gradient(
     135deg,
-    rgba(16, 185, 129, 0.08) 0%,
-    rgba(16, 185, 129, 0.02) 100%
-  );
+    rgba(15, 118, 110, 0.08) 0%,
+    rgba(15, 118, 110, 0.02) 100%
+  ); /* teal-700 (2026-07: was emerald-500) */
 }
 
 .hero-gradient-fizruk {
@@ -261,13 +347,13 @@
   --c-finyk-primary: 16 185 129; /* emerald-500 */
   --c-finyk-secondary: 5 150 105; /* emerald-600 */
 
-  --c-fizruk-primary: 6 182 212; /* cyan-500 (changed from teal for differentiation) */
+  --c-fizruk-primary: 14 116 144; /* cyan-700 (2026-07: was cyan-500 #06b6d4) */
   --c-fizruk-secondary: 8 145 178; /* cyan-600 */
 
   --c-routine-primary: 249 112 102; /* coral-500 */
   --c-routine-secondary: 239 68 68; /* red-500 */
 
-  --c-nutrition-primary: 132 204 22; /* lime-500 */
+  --c-nutrition-primary: 146 204 23; /* brand lime #92cc17 (was stock Tailwind lime-500 #84cc16) */
   --c-nutrition-secondary: 101 163 13; /* lime-600 */
 }
 
