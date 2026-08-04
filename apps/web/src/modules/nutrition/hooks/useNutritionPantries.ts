@@ -12,6 +12,8 @@ import { nutritionApi } from "@shared/api";
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { mergeItems } from "../lib/mergeItems";
 import {
+  appendNutritionPantryEvent,
+  backfillNutritionPantryCheckpoints,
   loadActivePantryId,
   loadPantries,
   makeDefaultPantry,
@@ -23,6 +25,7 @@ import {
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import {
+  canonicalFoodKey,
   normalizeFoodName,
   normalizeUnit,
   parseLoosePantryText,
@@ -175,6 +178,12 @@ export function useNutritionPantries({
     setPantryStorageErr(ok ? "" : "Не вдалося зберегти дані комор.");
   }, [pantries, activePantryId]);
 
+  // W1-PANTRY-APPEND стадія 2 — чекпойнт 'initial' на живу позицію (ADR-0077
+  // §5); ідемпотентно, гейт повтору — усередині функції.
+  useEffect(() => {
+    backfillNutritionPantryCheckpoints();
+  }, []);
+
   const pantrySummary = useMemo(() => {
     if (!Array.isArray(pantryItems) || pantryItems.length === 0) return "—";
     return pantryItems
@@ -204,6 +213,24 @@ export function useNutritionPantries({
         items: mergeItems(Array.isArray(p.items) ? p.items : [], parsed),
       })),
     );
+    // W1-PANTRY-APPEND стадія 2 — паралельно до запису `qty` вище: одна
+    // 'replenish'-подія на кожну позицію з відомою кількістю. Позиції без
+    // qty (гола назва — «сіль») дельту не несуть, тож пропускаємо.
+    for (const item of parsed) {
+      if (item.qty == null || !Number.isFinite(item.qty)) continue;
+      appendNutritionPantryEvent({
+        id: null,
+        pantryId: activePantryId,
+        itemId: null,
+        itemKey: canonicalFoodKey(item.name),
+        kind: "replenish",
+        deltaQty: item.qty,
+        absQty: null,
+        unit: item.unit,
+        source: "manual",
+        mealId: null,
+      });
+    }
   };
 
   const removeItem = (name: string) => {
@@ -217,6 +244,21 @@ export function useNutritionPantries({
         ),
       })),
     );
+    // W1-PANTRY-APPEND стадія 2 — позиція прибирається цілком: чекпойнт
+    // 'adjust' на 0, а не вигадана 'consume'-дельта (не знаємо, ЩО саме
+    // сталось із залишком) — симетрично до `removeItemAt` нижче.
+    appendNutritionPantryEvent({
+      id: null,
+      pantryId: activePantryId,
+      itemId: null,
+      itemKey: canonicalFoodKey(n),
+      kind: "adjust",
+      deltaQty: null,
+      absQty: 0,
+      unit: null,
+      source: "manual",
+      mealId: null,
+    });
   };
 
   const ensureStructuredItems = () => {
@@ -255,6 +297,12 @@ export function useNutritionPantries({
 
   const removeItemAt = (idx: number) => {
     if (!ensureStructuredItems()) return;
+    // Читаємо ім'я ДО setPantries — той самий закриттєвий патерн, що вже
+    // працює у `editItemAt` вище: `activePantry` в цьому рендері ще бачить
+    // структуровані items, які щойно поставив `ensureStructuredItems`.
+    const removedName = (
+      Array.isArray(activePantry?.items) ? activePantry.items : []
+    )[idx]?.name;
     setPantries((curPantries) =>
       updatePantry(curPantries, activePantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
@@ -262,6 +310,23 @@ export function useNutritionPantries({
         return { ...p, items };
       }),
     );
+    // W1-PANTRY-APPEND стадія 2 — симетрично до `removeItem`: чекпойнт
+    // 'adjust' на 0, не вигадана 'consume'-дельта.
+    const n = normalizeFoodName(removedName);
+    if (n) {
+      appendNutritionPantryEvent({
+        id: null,
+        pantryId: activePantryId,
+        itemId: null,
+        itemKey: canonicalFoodKey(n),
+        kind: "adjust",
+        deltaQty: null,
+        absQty: 0,
+        unit: null,
+        source: "manual",
+        mealId: null,
+      });
+    }
   };
 
   const beginRenamePantry = () => {
@@ -314,6 +379,11 @@ export function useNutritionPantries({
     qty: number | string | null,
     unit: string | null,
   ) => {
+    // `setPantries`-updater виконується синхронно (React зве його одразу,
+    // щоб порахувати наступний стан) — той самий патерн, що вже несе
+    // `consumePantryItem` нижче для передачі значень поза замикання.
+    let editedName: string | null = null;
+    let editedQty: number | null = null;
     setPantries((curPantries) =>
       updatePantry(curPantries, activePantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
@@ -322,11 +392,31 @@ export function useNutritionPantries({
         const qtyNum = qty == null || qty === "" ? null : Number(qty);
         const normalizedQty =
           qtyNum != null && Number.isFinite(qtyNum) ? qtyNum : null;
+        editedName = item.name;
+        editedQty = normalizedQty;
         items[idx] = { ...item, qty: normalizedQty, unit };
         return { ...p, items };
       }),
     );
     setItemEdit((s) => ({ ...s, open: false }));
+    // W1-PANTRY-APPEND стадія 2 — ручне редагування qty = чекпойнт 'adjust',
+    // це буквально "тепер знаю, що насправді X". Пропускаємо, коли юзер
+    // очистив кількість (null) — без числа чекпойнт нести нічого (ADR §3.1).
+    const n = normalizeFoodName(editedName);
+    if (n && editedQty != null) {
+      appendNutritionPantryEvent({
+        id: null,
+        pantryId: activePantryId,
+        itemId: null,
+        itemKey: canonicalFoodKey(n),
+        kind: "adjust",
+        deltaQty: null,
+        absQty: editedQty,
+        unit,
+        source: "manual",
+        mealId: null,
+      });
+    }
   };
 
   // AI-CONTEXT: списує gramsConsumed зі складської позиції, конвертуючи грами
@@ -339,6 +429,8 @@ export function useNutritionPantries({
   const consumePantryItem = (name: string, gramsConsumed: number) => {
     const norm = normalizeFoodName(name);
     if (!norm) return;
+    let deductedQty: number | null = null;
+    let deductedUnit: string | null = null;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
@@ -350,6 +442,8 @@ export function useNutritionPantries({
         if (!Number.isFinite(qty) || qty <= 0) return p;
         const deduct = gramsToUnitQty(gramsConsumed, item.unit, item.name);
         if (deduct == null) return p;
+        deductedQty = deduct;
+        deductedUnit = item.unit;
         const remaining = qty - deduct;
         if (remaining <= 0) {
           items.splice(idx, 1);
@@ -359,6 +453,24 @@ export function useNutritionPantries({
         return { ...p, items };
       }),
     );
+    // W1-PANTRY-APPEND стадія 2 — audit E-2: це саме той шлях, який ADR-0077
+    // закриває. 'consume' несе РЕАЛЬНО списану дельту (та сама `deduct`, що
+    // й пішла у `qty` вище), а не вигадану — batch-страва все одно дасть
+    // N подій на N логів, і це навмисно ВИДИМО, а не приховано (ADR §6).
+    if (deductedQty != null) {
+      appendNutritionPantryEvent({
+        id: null,
+        pantryId: activePantryId,
+        itemId: null,
+        itemKey: canonicalFoodKey(norm),
+        kind: "consume",
+        deltaQty: -deductedQty,
+        absQty: null,
+        unit: deductedUnit,
+        source: "meal_log",
+        mealId: null,
+      });
+    }
   };
 
   const setPantryText = (text: string) => {

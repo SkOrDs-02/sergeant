@@ -8,7 +8,13 @@ import { Icon } from "@shared/components/ui/Icon";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
 
-const SESSION_DISMISS_KEY = "hub_demo_banner_dismissed_session";
+// Key name kept from the original "dismiss for the session" feature —
+// renaming the string would drop anyone mid-session back into the
+// (now non-existent) fully-hidden state on their next render. Semantics
+// changed 2026-08: the flag now means "collapsed", not "removed" — the
+// CTA path must stay reachable on Hub Home at all times in demo (founder
+// decision: the X must not remove the only in-hub exit, just shrink it).
+const SESSION_COLLAPSED_KEY = "hub_demo_banner_dismissed_session";
 
 /**
  * S4.1 retention banner. Surfaces inside the populated hub whenever
@@ -17,11 +23,15 @@ const SESSION_DISMISS_KEY = "hub_demo_banner_dismissed_session";
  *
  * - "Створити свій" → `resetDemoData()` + redirect to `/welcome` so
  *   the regular onboarding flow takes over against an empty store.
- * - Close (X) → hide for the rest of the session (sessionStorage key
- *   is cleared on the next cold start; the demo flag itself stays).
+ * - Close (X) → collapses into a compact single-row variant for the
+ *   rest of the session (sessionStorage key is cleared on the next
+ *   cold start; the demo flag itself stays). The collapsed row keeps
+ *   "Створити свій" tappable — the X must not be able to fully hide
+ *   the in-hub path out of demo mode, only shrink its footprint.
+ * - Chevron on the collapsed row re-expands back to the full card.
  *
  * Analytics:
- *   `demo_to_wizard_confirmed` on CTA, `demo_dismissed` on close.
+ *   `demo_to_wizard_confirmed` on CTA, `demo_dismissed` on collapse.
  *   Kept outside the `onboarding_*` funnel so demo browsing doesn't
  *   pollute activation cohorts.
  */
@@ -31,30 +41,39 @@ export function DemoModeBanner() {
   // `sessionStorage` being unavailable (incognito, hardened browsers,
   // SSR pre-hydrate).
   const [demo] = useState<boolean>(() => isDemoMode());
-  const [dismissed, setDismissed] = useState<boolean>(() => {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
-      return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === "1";
+      return window.sessionStorage.getItem(SESSION_COLLAPSED_KEY) === "1";
     } catch {
       return false;
     }
   });
 
-  if (!demo || dismissed) return null;
+  if (!demo) return null;
 
-  const dismiss = () => {
+  const collapse = () => {
     trackEvent(ANALYTICS_EVENTS.DEMO_DISMISSED);
     try {
-      window.sessionStorage.setItem(SESSION_DISMISS_KEY, "1");
+      window.sessionStorage.setItem(SESSION_COLLAPSED_KEY, "1");
     } catch {
-      /* sessionStorage unavailable — banner just stays hidden in-memory. */
+      /* sessionStorage unavailable — banner just stays collapsed in-memory. */
     }
-    setDismissed(true);
+    setCollapsed(true);
+  };
+
+  const expand = () => {
+    try {
+      window.sessionStorage.removeItem(SESSION_COLLAPSED_KEY);
+    } catch {
+      /* noop */
+    }
+    setCollapsed(false);
   };
 
   const goToWizard = () => {
     try {
-      window.sessionStorage.removeItem(SESSION_DISMISS_KEY);
+      window.sessionStorage.removeItem(SESSION_COLLAPSED_KEY);
     } catch {
       /* noop */
     }
@@ -65,6 +84,45 @@ export function DemoModeBanner() {
     // reloading than by tearing them down in JS.
     exitDemoToWizard();
   };
+
+  if (collapsed) {
+    return (
+      <div
+        role="region"
+        aria-label="Демо-режим"
+        className="flex items-center gap-2 rounded-2xl border border-brand-500/40 bg-brand-500/5 px-3 py-2 shadow-card"
+      >
+        <Icon
+          name="sparkles"
+          size={16}
+          className="shrink-0 text-brand-strong dark:text-brand"
+          aria-hidden
+        />
+        <span className="min-w-0 flex-1 truncate text-style-caption text-muted">
+          Це приклад
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="shrink-0 text-brand-strong dark:text-brand"
+          onClick={goToWizard}
+        >
+          Створити свій
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          onClick={expand}
+          aria-label="Розгорнути банер демо-режиму"
+          className="shrink-0 text-muted hover:text-text"
+        >
+          <Icon name="chevron-down" size={16} />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -92,8 +150,8 @@ export function DemoModeBanner() {
           variant="ghost"
           size="xs"
           iconOnly
-          onClick={dismiss}
-          aria-label="Сховати банер демо-режиму"
+          onClick={collapse}
+          aria-label="Згорнути банер демо-режиму"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
           <Icon name="close" size={16} />

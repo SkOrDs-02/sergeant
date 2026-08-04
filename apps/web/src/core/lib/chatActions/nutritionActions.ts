@@ -1,5 +1,6 @@
 import { logger } from "@shared/lib";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { canonicalFoodKey } from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
@@ -14,6 +15,7 @@ import {
 // the module UI and mirrored to SQLite for cross-device sync.
 import {
   addLogEntry,
+  appendNutritionPantryEvent,
   loadActivePantryId,
   loadNutritionLog,
   loadNutritionPrefs,
@@ -257,19 +259,43 @@ export function handleNutritionAction(
       if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
       const lower = rawName.toLowerCase();
       const items = Array.isArray(pantry.items) ? pantry.items : [];
-      const before = items.length;
-      const nextItems = items.filter(
+      const itemIdx = items.findIndex(
         (it) =>
           String(it.name || "")
             .trim()
-            .toLowerCase() !== lower,
+            .toLowerCase() === lower,
       );
-      if (nextItems.length === before) {
+      if (itemIdx < 0) {
         return `Продукт "${rawName}" у коморі не знайдено.`;
       }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- itemIdx validated via findIndex >= 0 check above
+      const item = items[itemIdx]!;
+      const nextItems = items.filter((_, i) => i !== itemIdx);
       const next = [...pantries];
       next[idx] = { ...pantry, items: nextItems };
       persistPantries(undefined, undefined, next, activeId);
+      // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2). Інпут інструменту несе
+      // лише `name` — AI НЕ каже, скільки саме спожито. Код і далі прибирає
+      // позицію ЦІЛКОМ (без цього поля нема на чому будувати часткове
+      // списання), але тепер записує ЧЕСНУ дельту: рівно ту qty, яку
+      // позиція мала (те саме число, що щойно зникло з `qty`), а не
+      // вигадану частку. Без відомої qty (наприклад «сіль») подія не несе
+      // сенсу — не емітимо.
+      const qty = Number(item.qty);
+      if (Number.isFinite(qty) && qty > 0) {
+        appendNutritionPantryEvent({
+          id: null,
+          pantryId: activeId,
+          itemId: null,
+          itemKey: canonicalFoodKey(rawName),
+          kind: "consume",
+          deltaQty: -qty,
+          absQty: null,
+          unit: item.unit ?? null,
+          source: "chat_tool",
+          mealId: null,
+        });
+      }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
     }
     case "set_daily_plan": {

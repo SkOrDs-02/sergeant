@@ -27,6 +27,7 @@ import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
+import { nutritionPageMessages } from "./uk.nutrition";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
 
@@ -553,6 +554,10 @@ export const messages = {
     reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
+    // Порожній стан сканера штрихкодів (аудит nutrition E-6).
+    barcodeNoticeRetry: "Спробувати ще раз",
+    barcodeNoticeUsePhoto: "Сфотографувати страву",
+    barcodeNoticeManual: "Ввести вручну",
     waterHistory: {
       openLabel: "Історія води",
       title: "Історія води",
@@ -596,6 +601,9 @@ export const messages = {
         "Тут зʼявляться продукти, які є вдома — і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
       hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
     },
+    // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
+    // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
+    ...nutritionPageMessages,
   },
 
   routine: routinePageMessages,
@@ -620,6 +628,8 @@ export const messages = {
     unknownIp: "IP невідомий",
     unknownDevice: "Невідомий пристрій",
     lastSeenPrefix: "Активна",
+    currentUnknown:
+      "Не вдалося визначити сесію цього пристрою. Онови список, щоб завершувати сесії.",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in
@@ -658,6 +668,14 @@ export const messages = {
     adviceLoadingAria: "Сержант готує пораду",
     adviceAskHint:
       "«Запитати AI про це» відкриває Сержанта із цим контекстом у чаті.",
+    /**
+     * Градація впевненості (Хвиля 4, hub-coach § G2) — рішення власника
+     * 2026-08-04: два рівні, «факт» (порахував код) і «припущення» (написала
+     * модель або вивела кореляція). Порада дня й тижневий звіт — суцільний
+     * вільний текст моделі, тож увесь їхній вміст рівня «припущення»; бейдж
+     * стоїть на рівні картки, а не речення, бо різниці всередині немає.
+     */
+    insightAssumptionBadge: "Припущення",
     capabilitiesSectionTitle: "Що вміє Сержант",
     appCapabilitiesIntro:
       "Коротко про кожен розділ і про те, як вони працюють разом. Тапни картку, щоб одразу туди перейти.",

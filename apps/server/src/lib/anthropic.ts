@@ -7,12 +7,14 @@ import {
   externalHttpDurationMs,
   externalHttpRequestsTotal,
 } from "../obs/metrics.js";
+import { env } from "../env.js";
 import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 import { estimateAnthropicCostUsd, pickAnthropicPricing } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
 import { elapsedMs, sleep } from "./timing.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/messages";
 
 export interface AnthropicCallOptions {
   timeoutMs?: number | undefined;
@@ -36,6 +38,53 @@ export interface AnthropicCallOptions {
    * aggregate. `undefined` (anon / machine-caller) → лише global.
    */
   userId?: string | undefined;
+  /**
+   * Рішення виклику піти через OpenRouter — уже обчислене, не прапорець
+   * «можна». Opt-in навмисно per-callsite: `anthropic.ts` спільний для digest,
+   * nutrition, mono й classify, і їхній прямий шлях в `api.anthropic.com` має
+   * лишатись незмінним. Без цього поля транспорт не перемикається взагалі.
+   *
+   * WHY рішення, а не дозвіл: гейт колись жив усередині `pickTransport` і
+   * читав `CHAT_VIA_OPENROUTER`. Щойно на шлюз знадобилось перевести другий
+   * незалежний шлях (зір), спільний прапорець зробив би відкат одного
+   * відкатом обох. Тепер кожен шлях приносить власну умову.
+   */
+  allowOpenRouter?: boolean | undefined;
+}
+
+/**
+ * Обирає URL + заголовки авторизації для одного запиту.
+ *
+ * Тіло запиту однакове для обох шлюзів: OpenRouter віддає Anthropic-сумісний
+ * Messages API — та сама граматика SSE-подій, ті самі `tool_use` /
+ * `input_json_delta`. Різниця лише в ендпоінті й схемі авторизації.
+ *
+ * Немає ключа шлюзу → тихо лишаємось на прямому Anthropic: краще деградувати
+ * до робочого транспорту, ніж віддати 401. Про відсутній ключ попереджає
+ * `assertStartupEnv()` на старті.
+ */
+function pickTransport(
+  apiKey: string,
+  allowOpenRouter: boolean | undefined,
+): { url: string; headers: Record<string, string> } {
+  if (allowOpenRouter && env.OPENROUTER_API_KEY) {
+    return {
+      url: OPENROUTER_URL,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "anthropic-version": "2023-06-01",
+      },
+    };
+  }
+  return {
+    url: ANTHROPIC_URL,
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+  };
 }
 
 /**
@@ -231,29 +280,21 @@ function recordUsage(
 export async function anthropicMessages(
   apiKey: string,
   payload: Record<string, unknown>,
-  {
-    timeoutMs = 20000,
-    endpoint = "unknown",
-    signal: externalSignal,
-    promptVersion,
-    userId,
-  }: AnthropicCallOptions = {},
+  opts: AnthropicCallOptions = {},
 ): Promise<AnthropicMessagesResult> {
   const model = (payload?.["model"] as string) || "unknown";
+  const endpoint = opts.endpoint ?? "unknown";
+  // WHY передаємо `opts` цілим, а не перезбираємо по полях: попередня версія
+  // перелічувала поля вручну, і кожне нове мовчки губилось по дорозі в inner
+  // (без помилки типів — просто не діяло). Дефолти лишаються в inner.
   return aiSpan(
     `anthropic.messages ${endpoint}`,
-    () =>
-      anthropicMessagesInner(
-        apiKey,
-        payload,
-        { timeoutMs, endpoint, signal: externalSignal, promptVersion, userId },
-        model,
-      ),
+    () => anthropicMessagesInner(apiKey, payload, opts, model),
     {
       provider: "anthropic",
       model,
       endpoint,
-      ...(promptVersion ? { promptVersion } : {}),
+      ...(opts.promptVersion ? { promptVersion: opts.promptVersion } : {}),
     },
   );
 }
@@ -267,9 +308,11 @@ async function anthropicMessagesInner(
     signal: externalSignal,
     promptVersion,
     userId,
+    allowOpenRouter,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<[AnthropicMessagesResult, AiSpanResultMeta]> {
+  const transport = pickTransport(apiKey, allowOpenRouter);
   const maxAttempts = 3;
   // T2 audit finding #9 — jitterless `[0, 250, 750]` ms cascade ignored
   // the upstream `retry-after` hint and stamped concurrent users at the
@@ -306,13 +349,9 @@ async function anthropicMessagesInner(
         );
       }
 
-      const response = await fetch(ANTHROPIC_URL, {
+      const response = await fetch(transport.url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
+        headers: transport.headers,
         body: JSON.stringify(payload),
         signal,
       });
@@ -423,9 +462,11 @@ async function anthropicMessagesStreamInner(
     endpoint = "unknown",
     timeoutMs = 60000,
     signal: externalSignal,
+    allowOpenRouter,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicStreamResult> {
+  const transport = pickTransport(apiKey, allowOpenRouter);
   const start = process.hrtime.bigint();
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
@@ -433,13 +474,9 @@ async function anthropicMessagesStreamInner(
 
   let response: Response;
   try {
-    response = await fetch(ANTHROPIC_URL, {
+    response = await fetch(transport.url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: transport.headers,
       body: JSON.stringify({ ...payload, stream: true }),
       signal,
     });

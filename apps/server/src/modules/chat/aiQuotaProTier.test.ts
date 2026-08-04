@@ -52,6 +52,10 @@ const ENV = [
   "AI_PRO_STANDARD_DAILY_LIMIT",
   "DATABASE_URL",
   "CHAT_MODEL_SYNTHESIS",
+  "AI_PRO_STANDARD_CHAT_MODEL",
+  "AI_PRO_FLOOR_CHAT_MODEL",
+  "CHAT_VIA_OPENROUTER",
+  "OPENROUTER_API_KEY",
   "OPENROUTER_COACH_MODEL",
   "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
 ];
@@ -66,6 +70,10 @@ beforeEach(() => {
   delete process.env["AI_QUOTA_DISABLED"];
   delete process.env["AI_QUOTA_FOUNDER_IDS"];
   delete process.env["CHAT_MODEL_SYNTHESIS"];
+  delete process.env["AI_PRO_STANDARD_CHAT_MODEL"];
+  delete process.env["AI_PRO_FLOOR_CHAT_MODEL"];
+  delete process.env["CHAT_VIA_OPENROUTER"];
+  delete process.env["OPENROUTER_API_KEY"];
   delete process.env["OPENROUTER_COACH_MODEL"];
   delete process.env["ANTHROPIC_BUDGET_HARD_DEGRADE_ALL"];
   isHardExceeded.mockReturnValue(false);
@@ -193,6 +201,47 @@ describe("resolveProTier — Pro cascade premium → standard → floor", () => 
     const r = await resolveProTier(makeReq(), makeRes(), "coach");
     expect(r.tier).toBe("floor");
     expect(r.model).toBe("google/gemini-2.5-flash-lite");
+  });
+});
+
+describe("resolveProTier — chat-тиринг під CHAT_VIA_OPENROUTER", () => {
+  // Прапорець перемикає і транспорт, і сімейство model-id: з ним чат мусить
+  // отримати OpenRouter-id, бо api.anthropic.com на них відповідає 404 (і
+  // навпаки — без прапорця Claude-id, бо шлюз вимкнений).
+  beforeEach(() => {
+    process.env["CHAT_VIA_OPENROUTER"] = "true";
+    // Ключ обовʼязковий: прапорець без нього свідомо не діє, інакше вийшов би
+    // півстан «OpenRouter-моделі у прямий Anthropic» → 404. Інваріант
+    // закріплено окремо в `env/chatViaOpenRouter.test.ts`.
+    process.env["OPENROUTER_API_KEY"] = "sk-or-test";
+  });
+
+  it("premium → z-ai/glm-5.2", async () => {
+    pool.query.mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("premium");
+    expect(r.model).toBe("z-ai/glm-5.2");
+  });
+
+  it("standard → deepseek/deepseek-v4-flash", async () => {
+    pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("standard");
+    expect(r.model).toBe("deepseek/deepseek-v4-flash");
+  });
+
+  it("floor → google/gemini-2.5-flash-lite", async () => {
+    pool.query.mockResolvedValueOnce(full()).mockResolvedValueOnce(full());
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.tier).toBe("floor");
+    expect(r.model).toBe("google/gemini-2.5-flash-lite");
+  });
+
+  it("явний env-override перекриває дефолт шлюзу", async () => {
+    process.env["CHAT_MODEL_SYNTHESIS"] = "openai/gpt-5.1-mini";
+    pool.query.mockResolvedValueOnce(ok(1));
+    const r = await resolveProTier(makeReq(), makeRes(), "chat");
+    expect(r.model).toBe("openai/gpt-5.1-mini");
   });
 });
 

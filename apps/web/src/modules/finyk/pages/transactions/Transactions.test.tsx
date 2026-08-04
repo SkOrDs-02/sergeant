@@ -69,6 +69,11 @@ import type {
   TransactionsStorageSlice,
 } from "./Transactions";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import {
+  FINYK_TRANSFER_SUGGESTION_REJECTED_KEY,
+  FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
+} from "@sergeant/finyk-domain/storage-keys";
 
 const KYIV = new Date("2026-06-15T09:00:00Z");
 
@@ -254,8 +259,8 @@ describe("Transactions page shell", () => {
     );
   });
 
-  it("dismisses a transfer suggestion for the current page mount", () => {
-    const pair = [
+  function buildTransferPair() {
+    return [
       {
         ...SAMPLE_TX,
         id: "transfer-out",
@@ -274,8 +279,77 @@ describe("Transactions page shell", () => {
         type: "income" as const,
       },
     ];
-    renderTransactions({ mono: { realTx: pair } });
+  }
+
+  it("snoozes a transfer suggestion via 'Не зараз', persisted for the current Kyiv day", () => {
+    const pair = buildTransferPair();
+    const { unmount } = renderTransactions({ mono: { realTx: pair } });
     fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+    expect(
+      safeReadLS<Record<string, string>>(
+        FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
+        {},
+      ),
+    ).toEqual({ "transfer-out:transfer-in": "2026-06-15" });
+
+    // Remount on the same Kyiv day (e.g. a reload) — stays snoozed.
+    unmount();
+    renderTransactions({ mono: { realTx: pair } });
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("re-shows a snoozed transfer suggestion once the Kyiv day advances", () => {
+    const pair = buildTransferPair();
+    const { unmount } = renderTransactions({ mono: { realTx: pair } });
+    fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    unmount();
+
+    vi.setSystemTime(new Date("2026-06-16T09:00:00Z"));
+    renderTransactions({ mono: { realTx: pair } });
+    expect(screen.getByText("Схоже на внутрішній переказ")).toBeInTheDocument();
+  });
+
+  it("permanently rejects a transfer suggestion via 'Не переказ', surviving reload and day changes", () => {
+    const pair = buildTransferPair();
+    const { unmount } = renderTransactions({ mono: { realTx: pair } });
+    fireEvent.click(screen.getByRole("button", { name: "Не переказ" }));
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+    expect(
+      safeReadLS<string[]>(FINYK_TRANSFER_SUGGESTION_REJECTED_KEY, []),
+    ).toEqual(["transfer-out:transfer-in"]);
+
+    unmount();
+    vi.setSystemTime(new Date("2026-06-16T09:00:00Z"));
+    renderTransactions({ mono: { realTx: pair } });
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("labels the suggestion as a credit-card repayment when the incoming account has a credit limit", () => {
+    const pair = buildTransferPair();
+    renderTransactions({
+      mono: {
+        realTx: pair,
+        accounts: [
+          { id: "black", type: "black" },
+          { id: "white", type: "black", creditLimit: 50_000 },
+        ],
+      },
+    });
+    expect(screen.getByText("Схоже на погашення кредитки")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Погашення не рахується як витрата — витратами були покупки з кредитки",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.queryByText("Схоже на внутрішній переказ"),
     ).not.toBeInTheDocument();

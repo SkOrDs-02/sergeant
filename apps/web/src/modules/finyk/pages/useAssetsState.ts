@@ -49,6 +49,17 @@ type AccountLike = Partial<MonoAccount> & {
   [extra: string]: unknown;
 };
 
+/** Loose duck-typed jar shape — mirrors `MonoJarDto` fields this hook reads. */
+export type JarLike = {
+  id?: string | undefined;
+  monoJarId?: string | undefined;
+  title?: string | null | undefined;
+  balance?: number | null | undefined;
+  goal?: number | null | undefined;
+  currencyCode?: number | undefined;
+  [extra: string]: unknown;
+};
+
 export type AssetsProps = {
   mono: {
     accounts: AccountLike[];
@@ -56,6 +67,7 @@ export type AssetsProps = {
     loadingTx?: boolean;
     error?: unknown;
     refetchTransactions?: () => void;
+    jars?: readonly JarLike[] | undefined;
   };
   storage: StorageSlice;
   showBalance?: boolean;
@@ -76,8 +88,14 @@ export function useAssetsState({
   initialOpenDebt = false,
   initialOpenSubscriptions = false,
 }: AssetsProps) {
-  const { accounts, transactions, loadingTx, error, refetchTransactions } =
-    mono;
+  const {
+    accounts,
+    transactions,
+    loadingTx,
+    error,
+    refetchTransactions,
+    jars,
+  } = mono;
   const {
     hiddenAccounts,
     toggleHideAccount,
@@ -181,6 +199,13 @@ export function useAssetsState({
     manualDebts,
     receivables,
     transactions,
+    jars: (jars ?? []).map((j) => ({
+      id: j.monoJarId ?? j.id,
+      title: j.title,
+      balance: j.balance,
+      goal: j.goal,
+      currencyCode: j.currencyCode,
+    })),
   });
   const {
     monoBalance: monoTotal,
@@ -188,6 +213,7 @@ export function useAssetsState({
     totalLiabilities: totalDebt,
     receivableTotal: totalReceivable,
     manualAssetTotal,
+    jarsTotal,
     networth,
     totalAssets,
   } = assetsSummary;
@@ -258,6 +284,8 @@ export function useAssetsState({
   return {
     // Raw data from props
     accounts,
+    jars: jars ?? [],
+    jarsTotal,
     transactions: linkableTransactions,
     loadingTx: Boolean(loadingTx),
     transactionsError: error,

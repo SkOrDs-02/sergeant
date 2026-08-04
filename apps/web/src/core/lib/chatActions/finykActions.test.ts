@@ -19,6 +19,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/**
+ * Write executors reject ids that do not resolve to a stored entity (the
+ * hallucinated-id guard), so happy-path cases must seed the transaction
+ * they act on.
+ */
+function seedTransactions(...ids: string[]): void {
+  __setFinykSqliteStateCacheForTests({
+    manualExpenses: ids.map((id) => ({
+      id,
+      date: "2026-04-22",
+      description: "Тест",
+      amount: 100,
+      category: "food",
+    })),
+  });
+}
+
 function call(action: ChatAction): string {
   const out = handleFinykAction(action);
   if (out == null) {
@@ -32,6 +49,7 @@ function call(action: ChatAction): string {
 // ---------------------------------------------------------------------------
 describe("change_category", () => {
   it("happy: assigns category and returns string", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "change_category",
       input: { tx_id: "tx1", category_id: "food" },
@@ -224,6 +242,7 @@ describe("create_receivable", () => {
 // ---------------------------------------------------------------------------
 describe("hide_transaction", () => {
   it("happy: hides transaction", () => {
+    seedTransactions("tx99");
     const out = call({
       name: "hide_transaction",
       input: { tx_id: "tx99" },
@@ -594,6 +613,7 @@ describe("import_monobank_range", () => {
 // ---------------------------------------------------------------------------
 describe("split_transaction", () => {
   it("happy: splits transaction", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "split_transaction",
       input: {
@@ -625,6 +645,7 @@ describe("split_transaction", () => {
   });
 
   it("error: less than 2 parts returns error", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "split_transaction",
       input: { tx_id: "tx1", parts: [{ category_id: "a", amount: 10 }] },

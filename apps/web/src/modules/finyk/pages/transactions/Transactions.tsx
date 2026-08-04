@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";
@@ -12,7 +14,15 @@ import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import { Button } from "@shared/components/ui/Button";
 import { TransferSuggestionCard } from "./TransferSuggestionCard";
-import { findInternalTransferSuggestions } from "@sergeant/finyk-domain/domain/transferMatching";
+import {
+  filterTransferSuggestions,
+  findInternalTransferSuggestions,
+  transferSuggestionPairKey,
+} from "@sergeant/finyk-domain/domain/transferMatching";
+import {
+  FINYK_TRANSFER_SUGGESTION_REJECTED_KEY,
+  FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
+} from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import { messages } from "@shared/i18n/uk";
 import type {
@@ -201,29 +211,65 @@ export function Transactions({
     dayFilter,
   });
 
-  const [dismissedTransferKeys, setDismissedTransferKeys] = useState<
+  // Both actions below persist device-locally (no cross-device sync — see
+  // `FINYK_TRANSFER_SUGGESTION_REJECTED_KEY` / `_SNOOZED_KEY` docs), so a
+  // rejected/snoozed pair survives reload instead of only lasting for the
+  // current page mount.
+  const [rejectedTransferPairs, setRejectedTransferPairs] = useState<
     Set<string>
-  >(() => new Set());
+  >(
+    () =>
+      new Set(
+        safeReadLS<string[]>(FINYK_TRANSFER_SUGGESTION_REJECTED_KEY, []) ?? [],
+      ),
+  );
+  const [snoozedTransferPairs, setSnoozedTransferPairs] = useState<
+    Record<string, string>
+  >(
+    () =>
+      safeReadLS<Record<string, string>>(
+        FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
+        {},
+      ) ?? {},
+  );
+
   const transferSuggestions = useMemo(() => {
     const hidden = new Set(hiddenTxIds);
-    return findInternalTransferSuggestions(
+    const raw = findInternalTransferSuggestions(
       filters.activeTx.filter((tx) => !hidden.has(tx.id)),
       { txCategories },
     );
-  }, [filters.activeTx, hiddenTxIds, txCategories]);
-  const visibleTransferSuggestion = transferSuggestions.find(
-    (suggestion) =>
-      !dismissedTransferKeys.has(
-        `${suggestion.outgoing.id}:${suggestion.incoming.id}`,
-      ),
-  );
+    return filterTransferSuggestions(raw, {
+      rejectedPairKeys: rejectedTransferPairs,
+      snoozedPairKeys: snoozedTransferPairs,
+      todayKey: getKyivDayKey(),
+    });
+  }, [
+    filters.activeTx,
+    hiddenTxIds,
+    txCategories,
+    rejectedTransferPairs,
+    snoozedTransferPairs,
+  ]);
+  const visibleTransferSuggestion = transferSuggestions[0] ?? null;
   const visibleTransferKey = visibleTransferSuggestion
-    ? `${visibleTransferSuggestion.outgoing.id}:${visibleTransferSuggestion.incoming.id}`
+    ? transferSuggestionPairKey(visibleTransferSuggestion)
     : null;
-  const dismissTransferSuggestion = useCallback((key: string) => {
-    setDismissedTransferKeys((current) => {
+
+  const rejectTransferSuggestion = useCallback((key: string) => {
+    setRejectedTransferPairs((current) => {
+      if (current.has(key)) return current;
       const next = new Set(current);
       next.add(key);
+      safeWriteLS(FINYK_TRANSFER_SUGGESTION_REJECTED_KEY, Array.from(next));
+      return next;
+    });
+  }, []);
+
+  const snoozeTransferSuggestion = useCallback((key: string) => {
+    setSnoozedTransferPairs((current) => {
+      const next = { ...current, [key]: getKyivDayKey() };
+      safeWriteLS(FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY, next);
       return next;
     });
   }, []);
@@ -351,10 +397,10 @@ export function Transactions({
                     visibleTransferSuggestion.incoming.id,
                     INTERNAL_TRANSFER_ID,
                   );
-                  dismissTransferSuggestion(visibleTransferKey);
                   toast.success(messages.finyk.transferSuggestion.confirmed);
                 }}
-                onDismiss={() => dismissTransferSuggestion(visibleTransferKey)}
+                onReject={() => rejectTransferSuggestion(visibleTransferKey)}
+                onSnooze={() => snoozeTransferSuggestion(visibleTransferKey)}
               />
             )}
             <TransactionFilters

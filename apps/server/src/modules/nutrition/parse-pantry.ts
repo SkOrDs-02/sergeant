@@ -12,7 +12,7 @@ type WithAnthropicKey = Request & {
   user?: { id: string };
 };
 
-const SYSTEM = `Ти помічник з харчування. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти помічник з харчування. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Задача: перетвори сирий список продуктів (може бути надиктований, з помилками) у структурований масив.
@@ -27,6 +27,14 @@ const SYSTEM = `Ти помічник з харчування. Відповід�
 - Якщо один і той самий продукт зустрічається кілька разів — об'єднуй в один запис.
 - Пріоритет має запис з qty та unit; якщо обидва мають qty — суми не додавай, залишай перший.
 
+Що НЕ є продуктом:
+- Текст може бути будь-яким — нагадування, справи, нотатки. Бери з нього ЛИШЕ їстівне.
+- Нехарчовий запис («запис до стоматолога», «подзвонити мамі», «купити зарядку»)
+  пропускай мовчки. Не перетворюй його на позицію комори.
+- Якщо їстівного немає взагалі — поверни {"items": []}. Порожній масив це
+  правильна відповідь; вигаданий продукт потрапить у комору й зіпсує подальші
+  рецепти та списки покупок.
+
 Формат JSON:
 {
   "items": [
@@ -34,6 +42,20 @@ const SYSTEM = `Ти помічник з харчування. Відповід�
   ]
 }
 `;
+
+/**
+ * Промпт розбору комори — рівно той, що йде в прод (винесено заради стенду
+ * `scripts/eval/pipelines.nutrition.ts`).
+ */
+export function buildParsePantryPrompt(input: {
+  text: string;
+  locale?: string | undefined;
+}): { system: string; user: string } {
+  return {
+    system: SYSTEM,
+    user: `Мова: ${input.locale || "uk-UA"}.\nОсь список продуктів:\n${input.text}`,
+  };
+}
 
 /**
  * POST /api/nutrition/parse-pantry — розпарсити сирий список продуктів.
@@ -46,7 +68,7 @@ export default async function handler(
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
   const userId = (req as WithAnthropicKey).user?.id;
 
-  const { text: raw, locale } = parseBody(ParsePantrySchema, req);
+  const prompt = buildParsePantryPrompt(parseBody(ParsePantrySchema, req));
 
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
@@ -61,13 +83,8 @@ export default async function handler(
     // ріжуться там, а обірваний JSON ловить `extractJsonFromText` нижче.
     maxTokens: 2000,
     temperature: 0.2,
-    system: SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: `Мова: ${locale || "uk-UA"}.\nОсь список продуктів:\n${raw}`,
-      },
-    ],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20000,
     endpoint: "parse-pantry",
     ...(userId ? { userId } : {}),

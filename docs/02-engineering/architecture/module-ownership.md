@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map); deep per-path table is here so the Stack-pulse PR-04 secondary-column contract and the per-module ownership map stay close to one another. Механічного гейта більше немає — CODEOWNERS + coverage-перевірку прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §3.

@@ -12,6 +12,7 @@ import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { VOICE_RULE } from "./toolDefs/systemPrompt.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -28,10 +29,39 @@ interface WeeklyDigestEntry {
   correlations?: string[] | undefined;
 }
 
-interface CoachMemory {
+export interface CoachMemory {
   weeklyDigests: WeeklyDigestEntry[];
   lastInsightDate: string | null;
   lastInsightText: string | null;
+}
+
+/** Знімок тижня, з якого коуч будує повідомлення дня. */
+export interface CoachSnapshot {
+  dateContext?: {
+    todayKey?: string;
+    weekDayUk?: string;
+    dayOfWeekIso?: number;
+    daysIntoWeek?: number;
+    weekRange?: string;
+  };
+  finyk?: {
+    totalSpent?: number;
+    totalIncome?: number;
+    txCount?: number;
+    topCategories?: Array<{ name: string; amount: number }>;
+  };
+  fizruk?: {
+    workoutsCount?: number;
+    totalVolume?: number;
+    recoveryLabel?: string;
+  };
+  nutrition?: {
+    avgKcal?: number;
+    targetKcal?: number;
+    avgProtein?: number;
+    daysLogged?: number;
+  };
+  routine?: { overallRate?: number; habitCount?: number };
 }
 
 interface IncomingMemory {
@@ -353,42 +383,22 @@ export async function coachMemoryPost(
 }
 
 /**
- * POST /api/coach/insight — згенерувати AI-повідомлення дня.
- * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ * Промпт повідомлення дня — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з `coachInsight`, щоб стенд
+ * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не однорядкову
+ * заглушку. Промпт динамічний (пам'ять + знімок тижня), тож експортується
+ * білдер; стенд подає йому фіксований зразок.
+ *
+ * Прод шле весь текст ОДНИМ user-повідомленням без `system` — це не помилка
+ * винесення, а поточна поведінка. Стенд має її дзеркалити, інакше міряє
+ * інший режим моделі.
  */
-export async function coachInsight(req: Request, res: Response): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
-    snapshot: {
-      dateContext?: {
-        todayKey?: string;
-        weekDayUk?: string;
-        dayOfWeekIso?: number;
-        daysIntoWeek?: number;
-        weekRange?: string;
-      };
-      finyk?: {
-        totalSpent?: number;
-        totalIncome?: number;
-        txCount?: number;
-        topCategories?: Array<{ name: string; amount: number }>;
-      };
-      fizruk?: {
-        workoutsCount?: number;
-        totalVolume?: number;
-        recoveryLabel?: string;
-      };
-      nutrition?: {
-        avgKcal?: number;
-        targetKcal?: number;
-        avgProtein?: number;
-        daysLogged?: number;
-      };
-      routine?: { overallRate?: number; habitCount?: number };
-    };
-    memory: CoachMemory | null;
-  };
-
+export function buildCoachInsightPrompt(input: {
+  snapshot: CoachSnapshot;
+  memory: CoachMemory | null;
+}): { user: string } {
+  const { snapshot, memory } = input;
   const memorySummary = buildMemorySummary(memory);
 
   const dateContext = snapshot?.dateContext;
@@ -477,8 +487,26 @@ ${snapshotText}
 - Запропонувати одну конкретну дію на сьогодні
 - Бути особистим і мотивуючим, але без загальних фраз
 - Якщо згадуєш "сьогодні" чи прогрес тижня — спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
+- Порівнюючи з ПАМ'ЯТТЮ, називай напрям прямо. Цифри впали — це спад, і сказати треба про спад, а не привітати з прогресом.
+${VOICE_RULE}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
+
+  return { user: systemPrompt };
+}
+
+/**
+ * POST /api/coach/insight — згенерувати AI-повідомлення дня.
+ * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ */
+export async function coachInsight(req: Request, res: Response): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
+    snapshot: CoachSnapshot;
+    memory: CoachMemory | null;
+  };
+
+  const prompt = buildCoachInsightPrompt({ snapshot, memory });
 
   // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
   // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
@@ -489,18 +517,19 @@ ${snapshotText}
 
   // Routed through the LLMProvider factory so coach can be re-targeted off
   // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
-  // redeploy; Anthropic stays the fallback. `env.CHAT_MODEL_SYNTHESIS`
-  // (default `claude-sonnet-4-6`) is the model the Anthropic provider (and
-  // the OpenRouter fallback target) uses.
+  // redeploy; Anthropic stays the fallback. `env.COACH_MODEL_ANTHROPIC`
+  // (default `claude-sonnet-4-6`) is the model the Anthropic provider uses —
+  // окрема від `CHAT_MODEL_SYNTHESIS`, бо той під `CHAT_VIA_OPENROUTER`
+  // несе OpenRouter-only id, на який Anthropic віддає 404.
   const provider = getLLMProvider({
     provider: env.LLM_COACH_PROVIDER,
     anthropicApiKey: apiKey,
     openrouterModel: tier.model,
   });
   const aiResult = await invokeLLM(provider, {
-    model: env.CHAT_MODEL_SYNTHESIS,
+    model: env.COACH_MODEL_ANTHROPIC,
     maxTokens: 300,
-    messages: [{ role: "user", content: systemPrompt }],
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20_000,
     endpoint: "coach-insight",
     userId: (req as WithSessionUser).user?.id,

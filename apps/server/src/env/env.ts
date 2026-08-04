@@ -1,4 +1,6 @@
 import { z } from "zod";
+
+import { defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
 
 const coerceInt = z.coerce.number().int();
@@ -173,7 +175,12 @@ const envSchema = z.object({
 
   CHAT_MODEL_FIRST_TURN: stringWithDefault("claude-haiku-4-5-20251001"),
 
-  CHAT_MODEL_SYNTHESIS: stringWithDefault("claude-sonnet-4-6"),
+  CHAT_MODEL_SYNTHESIS: stringWithDefault(defaultChatModel("synthesis")),
+
+  // Kill-switch транспорту чату: `true` — Messages API OpenRouter-а,
+  // `false` (дефолт) — прямий Anthropic-ендпоінт. Впливає лише на
+  // `/api/chat`; digest, nutrition, mono й classify ходять напряму завжди.
+  CHAT_VIA_OPENROUTER: boolFromEnv(false),
 
   CHAT_STRICT_TOOLS: boolFromEnv(true),
 
@@ -245,9 +252,9 @@ const envSchema = z.object({
 
   AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
 
-  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault(defaultChatModel("standard")),
 
-  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault(defaultChatModel("floor")),
 
   AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
     "google/gemini-2.5-flash-lite",
@@ -635,7 +642,32 @@ const envSchema = z.object({
   OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
   OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
 
+  // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
+  // OpenRouter-ом). WHY окрема змінна: раніше тут стояв
+  // `CHAT_MODEL_SYNTHESIS`, а він тепер може нести OpenRouter-only id —
+  // Anthropic на такий відповість 404 і зніме коучу останню сітку безпеки.
+  COACH_MODEL_ANTHROPIC: stringWithDefault("claude-sonnet-4-6"),
+
   NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
+
+  /**
+   * Зорові шляхи (`analyze-photo`, `refine-photo`) через OpenRouter.
+   *
+   * WHY окремий прапорець від `CHAT_VIA_OPENROUTER`: ці два ендпоінти НЕ
+   * ходять через `getLLMProvider()` — їм потрібен `image`-блок у тілі, тож
+   * вони кличуть `anthropicMessages` напряму й `LLM_NUTRITION_PROVIDER` їх
+   * не стосується. Спільний із чатом прапорець зробив би відкат одного
+   * відкатом обох, а це різні за ризиком поверхні.
+   */
+  VISION_VIA_OPENROUTER: boolFromEnv(false),
+
+  /**
+   * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
+   * зорового стенду (розмите фото, порожній кадр, етикетка іноземною,
+   * перерахунок порції) за $0.13/1k і 1.3 с. Новіші `gemini-3.1/3.5-flash-lite`
+   * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
+   */
+  OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 
   LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
 
@@ -711,6 +743,22 @@ export function assertStartupEnv(): void {
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(
       "OPENROUTER_API_KEY is not set but LLM_*_PROVIDER=openrouter — those paths will degrade to StubProvider.",
+    );
+  }
+
+  // Відкат тут повний (`chatViaOpenRouter()` вимагає ключа, тож і транспорт,
+  // і model-id повертаються на Anthropic разом), тому чат лишається робочим.
+  // Але прапорець виставили не просто так — мовчати про те, що він не подіяв,
+  // означає лишити ops у переконанні, що міграція відбулась.
+  if (env.CHAT_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "CHAT_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids; the flag has no effect.",
+    );
+  }
+
+  if (env.VISION_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "VISION_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — analyze-photo/refine-photo stay on direct Anthropic with NUTRITION_MODEL; the flag has no effect.",
     );
   }
 

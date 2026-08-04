@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
-import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { RefinePhotoSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { visionModel, visionViaOpenRouter } from "./visionTransport.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -18,7 +18,7 @@ type WithAnthropicKey = Request & {
   user?: { id: string };
 };
 
-const SYSTEM = `Ти нутріціолог-помічник. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти нутріціолог-помічник. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Задача: користувач дав уточнення (вага порції у грамах та/або відповіді на питання).
@@ -34,6 +34,42 @@ const SYSTEM = `Ти нутріціолог-помічник. Відповіда
   "questions": string[]
 }
 `;
+
+export interface RefinePhotoPrompt {
+  system: string;
+  user: string;
+  /** Нормалізована вага порції — той самий `fallbackGrams`, що йде в нормалізатор. */
+  grams: number | null;
+}
+
+/**
+ * Промпт цього шляху одним місцем — джерело і для прода, і для зорового
+ * стенду (`pnpm eval:vision`). Нормалізацію `portion_grams`/`qna` тримаємо
+ * тут же: інакше стенд подавав би моделі інший текст, ніж прод, щойно вхід
+ * виявився б нечисловим або довшим за 8 питань.
+ */
+export function buildRefinePhotoPrompt(input: {
+  prior_result: unknown;
+  portion_grams?: unknown;
+  qna?: unknown;
+  locale?: string | undefined;
+}): RefinePhotoPrompt {
+  const grams =
+    typeof input.portion_grams === "number" ? input.portion_grams : null;
+  const qa = Array.isArray(input.qna) ? input.qna.slice(0, 8) : [];
+  return {
+    system: SYSTEM,
+    grams,
+    user: `Мова: ${input.locale || "uk-UA"}.
+Ось попередній результат (може бути приблизний): ${safeJson(input.prior_result)}
+
+Уточнення користувача:
+- Порція (г): ${grams != null ? grams : "—"}
+- Q&A: ${safeJson(qa)}
+
+Перерахуй і поверни JSON.`,
+  };
+}
 
 /**
  * POST /api/nutrition/refine-photo — уточнити результати analyze-photo.
@@ -72,23 +108,19 @@ export default async function handler(
     return;
   }
   const mediaType = validation.mimeType;
-  const grams = typeof portion_grams === "number" ? portion_grams : null;
-  const qa = Array.isArray(qna) ? qna.slice(0, 8) : [];
-
-  const userText = `Мова: ${locale || "uk-UA"}.
-Ось попередній результат (може бути приблизний): ${safeJson(prior_result)}
-
-Уточнення користувача:
-- Порція (г): ${grams != null ? grams : "—"}
-- Q&A: ${safeJson(qa)}
-
-Перерахуй і поверни JSON.`;
+  const prompt = buildRefinePhotoPrompt({
+    prior_result,
+    portion_grams,
+    qna,
+    locale,
+  });
+  const grams = prompt.grams;
 
   const payload = {
-    model: env.NUTRITION_MODEL,
+    model: visionModel(),
     max_tokens: 650,
     temperature: 0.2,
-    system: SYSTEM,
+    system: prompt.system,
     messages: [
       {
         role: "user",
@@ -97,7 +129,7 @@ export default async function handler(
             type: "image",
             source: { type: "base64", media_type: mediaType, data: b64 },
           },
-          { type: "text", text: userText },
+          { type: "text", text: prompt.user },
         ],
       },
     ],
@@ -106,6 +138,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "refine-photo",
+    allowOpenRouter: visionViaOpenRouter(),
     ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {

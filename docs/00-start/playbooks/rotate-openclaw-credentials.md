@@ -2,7 +2,7 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Цей playbook більше не діє — OpenClaw GitHub-інтеграції немає. Лишається лише fail-closed guard проти залишкового `OPENCLAW_GITHUB_PAT` у prod (Hard Rule #20). Для загальної ротації секретів див. [`rotate-secrets.md`](./rotate-secrets.md). Файл лишено як історичний запис (лінкується immutable-ADR-0055).
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 
 **Trigger:** _(deprecated — OpenClaw decommissioned ADR-0075)_ ротація будь-якого OpenClaw GitHub credential —

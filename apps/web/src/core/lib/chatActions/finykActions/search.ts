@@ -6,6 +6,13 @@
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import {
+  finykCategoryExists,
+  finykTransactionExists,
+  normalizeFinykId,
+  unknownCategoryMessage,
+  unknownTransactionMessage,
+} from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
@@ -183,13 +190,20 @@ function formatTxList(items: FinykSearchTx[]): string {
 }
 
 export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
-  const { tx_id, category_id } = action.input;
+  const txId = normalizeFinykId(action.input.tx_id);
+  const categoryId = normalizeFinykId(action.input.category_id);
+  // Validate before writing: an override keyed by a hallucinated tx id is
+  // invisible in every screen, so the model would report a success that
+  // never happened.
+  if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
+  if (!finykCategoryExists(categoryId))
+    return unknownCategoryMessage(categoryId);
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
-  cats[tx_id] = category_id;
+  cats[txId] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
   const customC = getCachedFinykSqliteState().customCategories;
-  const cat = resolveExpenseCategoryMeta(category_id, customC);
-  return `Категорію транзакції ${tx_id} змінено на ${cat?.label || category_id}`;
+  const cat = resolveExpenseCategoryMeta(categoryId, customC);
+  return `Категорію транзакції ${txId} змінено на ${cat?.label || categoryId}`;
 }
 
 export function findTransaction(
@@ -230,9 +244,11 @@ export function batchCategorize(
 ): ChatActionResult {
   const input = action.input;
   const pattern = String(input.pattern || "").trim();
-  const categoryId = String(input.category_id || "").trim();
+  const categoryId = normalizeFinykId(input.category_id);
   if (!pattern) return "Для batch_categorize потрібен pattern.";
   if (!categoryId) return "Для batch_categorize потрібен category_id.";
+  if (!finykCategoryExists(categoryId))
+    return unknownCategoryMessage(categoryId);
   const amount =
     input.amount != null && Number.isFinite(Number(input.amount))
       ? Number(input.amount)

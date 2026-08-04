@@ -21,6 +21,7 @@ function makeDay(overrides: Partial<DaySummary> = {}): DaySummary {
     mealCount: 0,
     hasMeals: false,
     hasAnyMacros: false,
+    estimatedKcalShare: 0,
     ...overrides,
   };
 }

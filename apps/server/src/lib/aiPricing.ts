@@ -103,6 +103,23 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 18.75,
     cacheRead: 1.5,
   },
+  // ── Моделі чату через OpenRouter (2026-07-30) ──────────────────────────
+  // Запасний шлях: коли шлюз прислав `usage.cost`, ця таблиця не потрібна
+  // (див. `estimateAnthropicCostUsd`). Cache-ціни — за тією ж конвенцією
+  // 1.25×/0.10×, хоча через OpenRouter cache-токени вимірювано лишаються
+  // нулями, тож на суму вони не впливають.
+  "openai/gpt-5.1": {
+    input: 1.25,
+    output: 10.0,
+    cacheWrite: 1.5625,
+    cacheRead: 0.125,
+  },
+  "google/gemini-2.5-flash-lite": {
+    input: 0.1,
+    output: 0.4,
+    cacheWrite: 0.125,
+    cacheRead: 0.01,
+  },
 };
 
 /**
@@ -137,6 +154,10 @@ export interface AnthropicUsageTokens {
   output_tokens?: number | null | undefined;
   cache_creation_input_tokens?: number | null | undefined;
   cache_read_input_tokens?: number | null | undefined;
+  /**
+   * OpenRouter-only: сума в USD, яку шлюз реально списав за цей виклик.
+   */
+  cost?: number | null | undefined;
 }
 
 function toNonNegativeInt(value: unknown): number {
@@ -160,6 +181,20 @@ export function estimateAnthropicCostUsd(
   usage: AnthropicUsageTokens | null | undefined,
 ): number | null {
   if (!usage) return null;
+
+  // WHY факт важливіший за оцінку: OpenRouter рахує вартість сам і повертає
+  // її в `usage.cost` — це вже списані гроші, з урахуванням його націнки й
+  // актуального прайсу моделі. Таблиця нижче апроксимує і застаріває при
+  // кожній зміні цін у вендора, тож лишається лише для Anthropic-direct і
+  // для випадку, коли шлюз `cost` не прислав.
+  if (
+    typeof usage.cost === "number" &&
+    Number.isFinite(usage.cost) &&
+    usage.cost > 0
+  ) {
+    return usage.cost;
+  }
+
   const price = pickAnthropicPricing(model);
   if (!price) return null;
 

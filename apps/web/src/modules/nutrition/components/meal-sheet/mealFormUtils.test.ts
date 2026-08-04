@@ -92,4 +92,13 @@ describe("emptyForm", () => {
     expect(form.name).toBe("");
     expect(form.kcal).toBe("");
   });
+
+  it("blanks the name when dishName is the server's unidentified-food fallback literal", () => {
+    // AI photo analysis couldn't identify the food — the server falls back
+    // to the literal "Результат" (see nutritionResponse.ts). Prefilling it
+    // reads as a real name, so we blank it and let name-required validation
+    // nudge the user to type one instead.
+    const form = emptyForm({ dishName: "Результат" });
+    expect(form.name).toBe("");
+  });
 });

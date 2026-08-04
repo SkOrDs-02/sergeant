@@ -94,6 +94,7 @@ export function useOverviewData({
     error: monoError,
     refresh: monoRefresh,
     privatTotal = 0,
+    jars,
   } = mono;
   const {
     budgets,
@@ -211,6 +212,7 @@ export function useOverviewData({
         manualDebts,
         receivables,
         transactions,
+        jars,
       }),
     [
       accounts,
@@ -219,6 +221,7 @@ export function useOverviewData({
       manualDebts,
       receivables,
       transactions,
+      jars,
     ],
   );
   const monoTotal = assetsSummary.monoBalance + privatTotal;

@@ -106,4 +106,23 @@ describe("TransactionFilters — toolbar a11y (F13)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
     expect(onChange).toHaveBeenCalledWith("income");
   });
+
+  it("allows horizontal touch-panning inside the strip even under an ancestor touch-pan-y (bug fix)", () => {
+    const { container } = render(
+      <TransactionFilters
+        filter="all"
+        onChangeFilter={vi.fn()}
+        hasCreditAccounts={false}
+        catSpends={CATS}
+      />,
+    );
+    const scroller = container.querySelector("[data-no-swipe]");
+    expect(scroller).not.toBeNull();
+    // The strip is its own scroll container, so the touch-action chain for a
+    // horizontal pan stops here — it must allow pan-x. It also declares pan-y
+    // so a vertical page-scroll started on a chip still bubbles up through
+    // FinykApp's touch-pan-y wrapper instead of being swallowed (data-no-swipe
+    // alone only opts out of the JS swipe gesture, not the CSS touch-action).
+    expect(scroller).toHaveClass("[touch-action:pan-x_pan-y]");
+  });
 });

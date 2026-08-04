@@ -34,9 +34,19 @@ import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWri
 import { useFinykMonoMirrorBoot } from "../../modules/finyk/hooks/useFinykMonoMirrorBoot";
 import { useFinykQuickStatsBoot } from "../../modules/finyk/hooks/useFinykQuickStatsBoot";
 import { useFinykSqliteReadBoot } from "../../modules/finyk/hooks/useFinykSqliteReadBoot";
+import { useFizrukDualWriteBoot } from "../../modules/fizruk/hooks/useFizrukDualWriteBoot";
+import { useFizrukSqliteReadBoot } from "../../modules/fizruk/hooks/useFizrukSqliteReadBoot";
+import { useRoutineDualWriteBoot } from "../../modules/routine/hooks/useRoutineDualWriteBoot";
+import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/routine/hooks/useSqliteReadBoot";
+import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
-// Side-effect-only child rendered exclusively for authenticated users.
+// Side-effect-only child rendered for authenticated users AND demo sessions.
+// The nested boot hooks all resolve their storage id via `useLocalUserId`
+// (auth id, or the synthetic `demo-local` id while `isDemoActive()`), so
+// mounting them under either condition warms the SQLite read cache the
+// module's own screens rely on — and, transitively, the Hub Reports cards
+// that read the same cache without ever opening the module screen.
 function AuthenticatedNutritionBoot() {
   useNutritionDualWriteBoot();
   useNutritionSqliteReadBoot();
@@ -45,7 +55,7 @@ function AuthenticatedNutritionBoot() {
 
 function NutritionBootGate() {
   const { user } = useAuth();
-  return user ? <AuthenticatedNutritionBoot /> : null;
+  return user || isDemoActive() ? <AuthenticatedNutritionBoot /> : null;
 }
 
 // Installs the Finyk storage context app-wide. The lightweight read/mirror
@@ -61,7 +71,34 @@ function AuthenticatedFinykBoot() {
 
 function FinykBootGate() {
   const { user } = useAuth();
-  return user ? <AuthenticatedFinykBoot /> : null;
+  return user || isDemoActive() ? <AuthenticatedFinykBoot /> : null;
+}
+
+// Fizruk and Routine previously only booted their SQLite read path inside
+// their own module shell (`FizrukApp.tsx`, `useRoutineAppState.ts`), so the
+// Hub Reports "Тренування" / "Звички" cards — which read the same warm
+// cache directly — stayed empty until the user opened that module at least
+// once. Mirrors the Nutrition/Finyk gates above.
+function AuthenticatedFizrukBoot() {
+  useFizrukDualWriteBoot();
+  useFizrukSqliteReadBoot();
+  return null;
+}
+
+function FizrukBootGate() {
+  const { user } = useAuth();
+  return user || isDemoActive() ? <AuthenticatedFizrukBoot /> : null;
+}
+
+function AuthenticatedRoutineBoot() {
+  useRoutineDualWriteBoot();
+  useRoutineSqliteReadBoot();
+  return null;
+}
+
+function RoutineBootGate() {
+  const { user } = useAuth();
+  return user || isDemoActive() ? <AuthenticatedRoutineBoot /> : null;
 }
 
 /**
@@ -92,6 +129,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
       />
       <NutritionBootGate />
       <FinykBootGate />
+      <FizrukBootGate />
+      <RoutineBootGate />
       <NpsSurveyGate />
       <DemoModeBadge />
       {children}

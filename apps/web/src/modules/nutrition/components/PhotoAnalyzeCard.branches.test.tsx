@@ -31,6 +31,33 @@ describe("PhotoAnalyzeCard", () => {
     expect(screen.getByRole("button", { name: "…" })).toBeDisabled();
   });
 
+  it("shows an inline status line next to the analyze button while analyzing", () => {
+    render(<PhotoAnalyzeCard {...baseProps} analyzing />);
+    expect(screen.getByRole("status")).toHaveTextContent("Аналізую фото…");
+  });
+
+  it("does not show the inline status line when neither analyzing nor refining", () => {
+    render(<PhotoAnalyzeCard {...baseProps} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("shows an inline status line next to the refine button while refining", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        refining
+        photoResult={{
+          dishName: "Борщ",
+          macros: {},
+          questions: ["Порція?"],
+        }}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Уточнюю порцію та перераховую…",
+    );
+  });
+
   it("renders result and save-to-log", () => {
     const onSaveToLog = vi.fn();
     render(

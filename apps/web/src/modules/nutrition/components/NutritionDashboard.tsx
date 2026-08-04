@@ -24,6 +24,7 @@ import type {
   PantryItem,
 } from "@sergeant/nutrition-domain";
 import {
+  ESTIMATED_KCAL_SHARE_THRESHOLD,
   addDaysISODate,
   getDayMacros,
   getDaySummary,
@@ -192,6 +193,22 @@ export function NutritionDashboard({
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
+  // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
+  // partial log must not read as a deficit). The canon's own example is
+  // "1 of 4 meals", so <3 logged meals covers both an empty day and a
+  // one-meal day without inventing a per-user "expected meal count"
+  // setting; 3+ meals reads as a deliberately completed log.
+  const isIncompleteDay = summary.mealCount < 3;
+
+  // Nutrition audit E-5 / founder decision 2026-08-04: share is calorie-
+  // weighted (see `getDaySummary`), threshold is strictly ">50%" — exactly
+  // 50% shows nothing. Distinct from `isIncompleteDay`: a day can have
+  // plenty of meals (dashed track off) yet still be mostly photo-guessed
+  // (badge on), so the two signals read independently rather than fighting
+  // for the same visual.
+  const isMostlyEstimated =
+    summary.estimatedKcalShare > ESTIMATED_KCAL_SHARE_THRESHOLD;
+
   const kcalConsumed = Math.round(macros.kcal || 0);
   const kcalGoal = prefs.dailyTargetKcal || 0;
 
@@ -285,16 +302,26 @@ export function NutritionDashboard({
 
           {hasGoal ? (
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center gap-1.5">
                 <ProgressRing
                   variant="nutrition"
                   value={kcalConsumed}
                   max={kcalGoal}
                   size="lg"
-                  aria-label={`Калорії: ${kcalConsumed} з ${kcalGoal}`}
+                  incomplete={isIncompleteDay}
+                  aria-label={
+                    isMostlyEstimated
+                      ? `Калорії: ${kcalConsumed} з ${kcalGoal} · ${messages.nutrition.estimatedBadge.a11ySuffix}`
+                      : `Калорії: ${kcalConsumed} з ${kcalGoal}`
+                  }
                   label={
                     <span className="flex flex-col items-center leading-none gap-0.5">
                       <span className="text-style-title text-hero-ink tabular-nums">
+                        {isMostlyEstimated && (
+                          <span aria-hidden="true">
+                            {messages.nutrition.estimatedBadge.label}
+                          </span>
+                        )}
                         {kcalConsumed}
                       </span>
                       <span className="text-style-caption text-hero-ink">
@@ -303,9 +330,15 @@ export function NutritionDashboard({
                     </span>
                   }
                 />
+                {isMostlyEstimated && (
+                  <p className="text-style-caption text-hero-ink text-center text-pretty">
+                    {messages.nutrition.estimatedBadge.caption}
+                  </p>
+                )}
               </div>
               <MacroRings
                 aria-label={messages.nutrition.macrosToday}
+                incomplete={isIncompleteDay}
                 macros={[
                   {
                     label: "Білки",

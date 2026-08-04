@@ -9,6 +9,18 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * `anthropic.ts` читає з env лише два поля — прапорець шлюзу і ключ
+ * OpenRouter. Мокаємо саме їх, щоб тести перемикали транспорт без реального
+ * env-модуля (він валідується один раз при імпорті і не мутується).
+ */
+const envMock = vi.hoisted(() => ({
+  CHAT_VIA_OPENROUTER: false,
+  OPENROUTER_API_KEY: "",
+}));
+
+vi.mock("../env.js", () => ({ env: envMock }));
+
 const anthropicMocks = vi.hoisted(() => ({
   aiCostEstimateUsd: { inc: vi.fn() },
   aiRequestDurationMs: { observe: vi.fn() },
@@ -64,6 +76,8 @@ function mkResponse(headers: Record<string, string>, status = 429): Response {
 }
 
 function resetAnthropicMocks(): void {
+  envMock.CHAT_VIA_OPENROUTER = false;
+  envMock.OPENROUTER_API_KEY = "";
   anthropicMocks.aiCostEstimateUsd.inc.mockClear();
   anthropicMocks.aiRequestDurationMs.observe.mockClear();
   anthropicMocks.aiRequestsTotal.inc.mockClear();
@@ -275,6 +289,71 @@ describe("anthropicMessages", () => {
     expect(extractAnthropicText(result.data)).toBe("ok");
   });
 
+  it("routes to OpenRouter with a Bearer token when the flag and the opt-in are both on", async () => {
+    envMock.CHAT_VIA_OPENROUTER = true;
+    envMock.OPENROUTER_API_KEY = "sk-or-test";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await anthropicMessages(
+      "sk-anthropic",
+      { model: "openai/gpt-5.1" },
+      { endpoint: "chat", allowOpenRouter: true },
+    );
+
+    const [url, request] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
+    expect(url).toBe("https://openrouter.ai/api/v1/messages");
+    expect(request.headers["Authorization"]).toBe("Bearer sk-or-test");
+    // `x-api-key` шлюз ігнорує — не світимо туди Anthropic-ключ.
+    expect(request.headers["x-api-key"]).toBeUndefined();
+  });
+
+  it("keeps non-chat callers on api.anthropic.com even when the flag is on", async () => {
+    envMock.CHAT_VIA_OPENROUTER = true;
+    envMock.OPENROUTER_API_KEY = "sk-or-test";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await anthropicMessages(
+      "sk-anthropic",
+      { model: "claude-sonnet-4-6" },
+      { endpoint: "day-hint" },
+    );
+
+    const [url, request] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    expect(request.headers["x-api-key"]).toBe("sk-anthropic");
+  });
+
+  it("falls back to Anthropic when the gateway key is missing", async () => {
+    envMock.CHAT_VIA_OPENROUTER = true;
+    envMock.OPENROUTER_API_KEY = "";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await anthropicMessages(
+      "sk-anthropic",
+      { model: "claude-sonnet-4-6" },
+      { endpoint: "chat", allowOpenRouter: true },
+    );
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "https://api.anthropic.com/v1/messages",
+    );
+  });
+
   it("does not retry an already aborted caller signal", async () => {
     const controller = new AbortController();
     controller.abort();
@@ -331,6 +410,57 @@ describe("anthropicMessagesStream", () => {
       upstream: "anthropic",
       outcome: "ok",
     });
+  });
+
+  // Регресія на конкретний клас дефекту: `anthropicMessagesStream` і його
+  // `…Inner` — окрема пара від non-stream шляху, і опції перетікають туди
+  // через власний destructure. Якщо `allowOpenRouter` там загубиться,
+  // typecheck лишиться зеленим, а стрім тихо піде в Anthropic.
+  it("routes the stream to OpenRouter when the flag and the opt-in are both on", async () => {
+    envMock.CHAT_VIA_OPENROUTER = true;
+    envMock.OPENROUTER_API_KEY = "sk-or-test";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("stream", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await anthropicMessagesStream(
+      "sk-anthropic",
+      { model: "openai/gpt-5.1" },
+      { endpoint: "chat-stream", allowOpenRouter: true },
+    );
+
+    const [url, request] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
+    expect(url).toBe("https://openrouter.ai/api/v1/messages");
+    expect(request.headers["Authorization"]).toBe("Bearer sk-or-test");
+    expect(request.headers["x-api-key"]).toBeUndefined();
+    result.recordStreamEnd("ok");
+  });
+
+  it("keeps the stream on api.anthropic.com without the opt-in", async () => {
+    envMock.CHAT_VIA_OPENROUTER = true;
+    envMock.OPENROUTER_API_KEY = "sk-or-test";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("stream", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await anthropicMessagesStream(
+      "sk-anthropic",
+      { model: "claude-sonnet-4-6" },
+      { endpoint: "day-hint" },
+    );
+
+    const [url, request] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    expect(request.headers["x-api-key"]).toBe("sk-anthropic");
+    result.recordStreamEnd("ok");
   });
 
   it("records rate_limited for non-ok stream responses", async () => {

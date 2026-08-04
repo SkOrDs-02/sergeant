@@ -125,6 +125,12 @@ function renderPantryPage(
     setPantrySubTab?: (id: "items" | "shopping") => void;
     setPantryScanStatus?: Dispatch<SetStateAction<string>>;
     setPantryScannerOpen?: Dispatch<SetStateAction<boolean>>;
+    pantryBarcodeNotice?: {
+      kind: "not-found" | "unavailable";
+      code: string;
+    } | null;
+    onRetryPantryBarcode?: () => void;
+    onDismissPantryBarcodeNotice?: () => void;
   } = {},
 ) {
   const pantry = makePantry(overrides.pantry);
@@ -155,6 +161,11 @@ function renderPantryPage(
       pantryScanStatus={overrides.pantryScanStatus ?? ""}
       setPantryScanStatus={setPantryScanStatus}
       setPantryScannerOpen={setPantryScannerOpen}
+      pantryBarcodeNotice={overrides.pantryBarcodeNotice ?? null}
+      onRetryPantryBarcode={overrides.onRetryPantryBarcode ?? vi.fn()}
+      onDismissPantryBarcodeNotice={
+        overrides.onDismissPantryBarcodeNotice ?? vi.fn()
+      }
       toast={toast}
       generateShoppingList={vi.fn()}
       addCheckedItemsToPantry={vi.fn()}
@@ -253,6 +264,35 @@ describe("NutritionPantryPage", () => {
   it("scan-status text is absent when pantryScanStatus is empty", () => {
     renderPantryPage({ pantryScanStatus: "" });
     expect(screen.queryByText(/Знайдено/)).toBeNull();
+  });
+
+  it("renders the not-found notice card (not plain text) and its dismiss calls onDismissPantryBarcodeNotice", async () => {
+    const onDismissPantryBarcodeNotice = vi.fn();
+    renderPantryPage({
+      pantryBarcodeNotice: { kind: "not-found", code: "482000" },
+      onDismissPantryBarcodeNotice,
+    });
+    expect(screen.getByText("Продукт не знайдено")).toBeTruthy();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Ввести вручну" }),
+    );
+    expect(onDismissPantryBarcodeNotice).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the unavailable notice card (503) — distinct copy — and retry calls onRetryPantryBarcode", async () => {
+    const onRetryPantryBarcode = vi.fn();
+    renderPantryPage({
+      pantryBarcodeNotice: { kind: "unavailable", code: "482000" },
+      onRetryPantryBarcode,
+    });
+    expect(screen.getByText("Джерела тимчасово не відповідають")).toBeTruthy();
+    expect(screen.queryByText("Продукт не знайдено")).toBeNull();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Спробувати ще раз" }),
+    );
+    expect(onRetryPantryBarcode).toHaveBeenCalledTimes(1);
   });
 
   it("clicking 'Сканувати штрих-код' clears scan-status and opens the scanner", async () => {

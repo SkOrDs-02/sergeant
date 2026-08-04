@@ -13,6 +13,7 @@ import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
 import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
+import { defaultChatModel } from "../../env/chatModels.js";
 
 type SessionUser = { id: string } | null;
 
@@ -140,23 +141,29 @@ function envStr(name: string, fallback: string): string {
   return v === undefined || v === "" ? fallback : v;
 }
 
-/** Дефолтні моделі по (tier × endpoint). Premium reuse-ить наявні env. */
+/**
+ * Дефолтні моделі по (tier × endpoint). Premium reuse-ить наявні env.
+ *
+ * Chat-дефолти беруться з `defaultChatModel()` — того самого джерела, що й
+ * zod-дефолти в `env/env.ts`. WHY не хардкод: під `CHAT_VIA_OPENROUTER=true`
+ * чат ходить у шлюз і потребує OpenRouter-id (`z-ai/glm-5.2`,
+ * `deepseek/deepseek-v4-flash`), під `false` — Claude-id, бо
+ * прямий Anthropic на перші відповість 404. Розійдуться два списки —
+ * тиринг почне мовчки слати модель не в той шлюз.
+ */
 const PRO_TIER_MODEL: Record<ProTier, Record<ProEndpoint, () => string>> = {
   premium: {
-    chat: () => envStr("CHAT_MODEL_SYNTHESIS", "claude-sonnet-4-6"),
+    chat: () => envStr("CHAT_MODEL_SYNTHESIS", defaultChatModel("synthesis")),
     coach: () => envStr("OPENROUTER_COACH_MODEL", "openai/gpt-5.1"),
   },
   standard: {
     chat: () =>
-      envStr("AI_PRO_STANDARD_CHAT_MODEL", "claude-haiku-4-5-20251001"),
+      envStr("AI_PRO_STANDARD_CHAT_MODEL", defaultChatModel("standard")),
     coach: () =>
       envStr("AI_PRO_STANDARD_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },
   floor: {
-    // Was `claude-3-haiku-20240307` — retired from the Anthropic API
-    // (model-eval 2026-07-20). Defaults to Haiku 4.5 (= standard) to keep
-    // floor-degraded chat working; kept in sync with env.ts `AI_PRO_FLOOR_CHAT_MODEL`.
-    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", "claude-haiku-4-5-20251001"),
+    chat: () => envStr("AI_PRO_FLOOR_CHAT_MODEL", defaultChatModel("floor")),
     coach: () =>
       envStr("AI_PRO_FLOOR_COACH_MODEL", "google/gemini-2.5-flash-lite"),
   },

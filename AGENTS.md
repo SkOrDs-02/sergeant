@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -153,7 +153,7 @@ Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rat
 
 ## Domain invariants
 
-Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key is `YYYY-MM-DD` in Kyiv local; week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/02-engineering/architecture/domain-invariants.md`](./docs/02-engineering/architecture/domain-invariants.md).
+Single source of truth: **Europe/Kyiv** for time **display, server-side reports and financial periods** — але **НЕ** для межі особистої доби: день-ключ відмітки звички, логу їжі й денного запису визначається годинником **пристрою** ([ADR-0078](./docs/04-governance/adr/0078-day-boundary-device-local.md)). Далі: **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key format is `YYYY-MM-DD` (device-local for personal entities, Kyiv for server reports); week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/02-engineering/architecture/domain-invariants.md`](./docs/02-engineering/architecture/domain-invariants.md).
 
 ## RQ keys factory
 

@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
-import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { AnalyzePhotoSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { visionModel, visionViaOpenRouter } from "./visionTransport.js";
 import {
   anthropicMessages,
   extractAnthropicText,
@@ -18,7 +18,7 @@ type WithAnthropicKey = Request & {
   user?: { id: string };
 };
 
-const SYSTEM = `Ти нутріціолог-помічник. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти нутріціолог-помічник. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Задача: з фото їжі оцінити страву, інгредієнти, приблизну порцію, та приблизні КБЖВ (ккал, білки/жири/вуглеводи у грамах).
@@ -34,6 +34,26 @@ const SYSTEM = `Ти нутріціолог-помічник. Відповіда
   "questions": string[]
 }
 `;
+
+export interface AnalyzePhotoPrompt {
+  system: string;
+  user: string;
+}
+
+/**
+ * Промпт цього шляху одним місцем. Зоровий стенд (`pnpm eval:vision`) імпортує
+ * саме його: копія тексту в стенді гарантовано розійшлася б із продом — рівно
+ * так і зіпсувалася попередня ітерація бенчмарку.
+ */
+export function buildAnalyzePhotoPrompt(input: {
+  locale?: string | undefined;
+}): AnalyzePhotoPrompt {
+  return {
+    system: SYSTEM,
+    user: `Мова: ${input.locale || "uk-UA"}.
+Опиши, що на фото і порахуй приблизне КБЖВ. Якщо треба — задай уточнення.`,
+  };
+}
 
 /**
  * POST /api/nutrition/analyze-photo — розпізнати страву з фото і повернути
@@ -84,14 +104,13 @@ export default async function handler(
   }
   const mediaType = validation.mimeType;
 
-  const userText = `Мова: ${locale || "uk-UA"}.
-Опиши, що на фото і порахуй приблизне КБЖВ. Якщо треба — задай уточнення.`;
+  const prompt = buildAnalyzePhotoPrompt({ locale });
 
   const payload = {
-    model: env.NUTRITION_MODEL,
+    model: visionModel(),
     max_tokens: 700,
     temperature: 0.2,
-    system: SYSTEM,
+    system: prompt.system,
     messages: [
       {
         role: "user",
@@ -100,7 +119,7 @@ export default async function handler(
             type: "image",
             source: { type: "base64", media_type: mediaType, data: b64 },
           },
-          { type: "text", text: userText },
+          { type: "text", text: prompt.user },
         ],
       },
     ],
@@ -109,6 +128,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "analyze-photo",
+    allowOpenRouter: visionViaOpenRouter(),
     ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
@@ -7,6 +8,8 @@ import { ValidationError, makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { pantryPromptSection } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
+
+export type ShoppingListInput = z.infer<typeof ShoppingListSchema>;
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -26,7 +29,7 @@ interface ShoppingCategory {
   items: ShoppingItem[];
 }
 
-const SYSTEM = `Ти помічник з планування покупок і харчування. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти помічник з планування покупок і харчування. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Формат JSON:
@@ -51,28 +54,36 @@ const SYSTEM = `Ти помічник з планування покупок і 
 - М'ясо, птиця, риба, морепродукти → "М'ясо та риба"
 - Яйця → "Яйця"
 
-Правила:
-- КОЖЕН продукт має з'явитися в списку ЛИШЕ ОДИН РАЗ — якщо той самий продукт є в кількох рецептах, об'єднай у один пункт і підсумуй кількість
-- ВИКЛЮЧАЙ продукти, що вже є в коморі (pantry)
+ГОЛОВНЕ ПРАВИЛО — що НЕ потрапляє в список:
+1. Продукт уже є в коморі (блок нижче). Пройдись по коморі ПЕРЕД тим, як
+   писати список, і викресли кожен збіг. Купити вдруге те, що лежить удома, —
+   найдорожча помилка цього екрана.
+2. Продукту немає в жодному рецепті. Ні солі, ні спецій, ні олії, ні «базових»
+   про запас — нічого, чого ти не бачив у списку інгредієнтів вище.
+3. Продукт уже є в списку. Той самий продукт із кількох рецептів — ОДИН пункт
+   із підсумованою кількістю.
+
+Усе потрібне вже вдома — поверни {"categories": []}. Порожній список це
+правильна відповідь, а не помилка: вигаданий пункт відправить людину в магазин
+по те, що їй не потрібно.
+
+Оформлення:
 - quantity: вказуй кількість (напр. "500 г", "1 шт", "2 пачки")
-- note: якщо потрібна порада або уточнення — додай стисло, інакше ""
-- Якщо список покупок порожній (все є в коморі) — поверни порожній масив categories`;
+- note: якщо потрібна порада або уточнення — додай стисло, інакше ""`;
 
 /**
- * POST /api/nutrition/shopping-list — скласти список покупок з рецептів.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт списку покупок — рівно той, що йде в прод (винесено заради стенду
+ * `scripts/eval/pipelines.nutrition.ts`).
+ *
+ * Кидає `ValidationError`, коли нема ні рецептів, ні тижневого плану —
+ * інваріант лишається на місці, лише переїхав разом зі своїм єдиним
+ * користувачем.
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
-  const { recipes, weekPlan, pantryItems, locale } = parseBody(
-    ShoppingListSchema,
-    req,
-  );
+export function buildShoppingListPrompt(input: ShoppingListInput): {
+  system: string;
+  user: string;
+} {
+  const { recipes, weekPlan, pantryItems, locale } = input;
   const loc = String(locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({
@@ -120,6 +131,22 @@ ${ingredientsList}
 
 Склади список покупок, виключи все що вже є в коморі, згрупуй за категоріями.`;
 
+  return { system: SYSTEM, user: prompt };
+}
+
+/**
+ * POST /api/nutrition/shopping-list — скласти список покупок з рецептів.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildShoppingListPrompt(parseBody(ShoppingListSchema, req));
+
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
     anthropicApiKey: apiKey,
@@ -129,8 +156,8 @@ ${ingredientsList}
     model: env.NUTRITION_MODEL,
     maxTokens: 1200,
     temperature: 0.15,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.shoppingList,
     endpoint: "shopping-list",
     ...(userId ? { userId } : {}),

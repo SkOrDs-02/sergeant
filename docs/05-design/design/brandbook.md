@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last validated:** 2026-08-04 by @claude. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-08-11.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** з Emerald-акцентом (Fizruk-модуль

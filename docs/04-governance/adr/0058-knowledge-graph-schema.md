@@ -1,6 +1,6 @@
 # ADR-0058: Knowledge graph schema and storage format
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 
 - **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-05-15

@@ -5,29 +5,42 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   navigateMock,
   toastInfoMock,
+  toastSuccessMock,
+  toastErrorMock,
   setChoiceMock,
   registerMock,
   debugMock,
+  logoutMock,
   themeState,
 } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
   toastInfoMock: vi.fn(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
   setChoiceMock: vi.fn(),
   registerMock: vi.fn(),
   debugMock: vi.fn(),
+  logoutMock: vi.fn<() => Promise<void>>(),
   themeState: { isDark: false },
 }));
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => navigateMock }));
 vi.mock("@shared/lib", () => ({ logger: { debug: debugMock } }));
 vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({ info: toastInfoMock }),
+  useToast: () => ({
+    info: toastInfoMock,
+    success: toastSuccessMock,
+    error: toastErrorMock,
+  }),
 }));
 vi.mock("@shared/hooks/useTheme", () => ({
   useTheme: () => ({ isDark: themeState.isDark, setChoice: setChoiceMock }),
 }));
 vi.mock("@shared/components/ui/CommandPalette", () => ({
   useRegisterCommand: registerMock,
+}));
+vi.mock("../auth/AuthContext.jsx", () => ({
+  useAuth: () => ({ logout: logoutMock }),
 }));
 
 import { useDemoCommands } from "./useDemoCommands";
@@ -47,9 +60,13 @@ describe("useDemoCommands", () => {
   beforeEach(() => {
     navigateMock.mockReset();
     toastInfoMock.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
     setChoiceMock.mockReset();
     registerMock.mockReset();
     debugMock.mockReset();
+    logoutMock.mockReset();
+    logoutMock.mockResolvedValue(undefined);
     themeState.isDark = false;
   });
 
@@ -96,12 +113,42 @@ describe("useDemoCommands", () => {
     expect(setChoiceMock).toHaveBeenCalledWith("light");
   });
 
-  it("settings.open and session.sign-out surface WIP toasts", () => {
+  it("settings.open surfaces a WIP toast", () => {
     renderHook(() => useDemoCommands());
     const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
     byId["settings.open"]!.run();
+    expect(toastInfoMock).toHaveBeenCalledTimes(1);
+    expect(debugMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: `session.sign-out` used to be a `toast.info` stub that never
+  // called `logout()` — the ⌘K "Вийти з акаунту" command did nothing. It
+  // must now drive the real AuthContext logout flow and redirect to sign-in,
+  // mirroring `ProfilePage.handleLogout`.
+  it("session.sign-out logs out and redirects to sign-in", async () => {
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
     byId["session.sign-out"]!.run();
-    expect(toastInfoMock).toHaveBeenCalledTimes(2);
-    expect(debugMock).toHaveBeenCalledTimes(2);
+
+    await vi.waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true }),
+    );
+    expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта");
+    expect(toastInfoMock).not.toHaveBeenCalled();
+  });
+
+  it("session.sign-out shows an error toast when logout fails", async () => {
+    logoutMock.mockRejectedValueOnce(new Error("network"));
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["session.sign-out"]!.run();
+
+    await vi.waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалося вийти, спробуйте ще раз",
+      ),
+    );
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

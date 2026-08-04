@@ -205,11 +205,17 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   const meals = (Array.isArray(day?.meals) ? day.meals : []) as Meal[];
   const totals = getDayMacros(log, date);
   const hasAnyMacros = meals.some((m) => macrosHasAnyValue(m?.macros));
+  const estimatedKcal = meals.reduce((sum, m) => {
+    if (m?.macroSource !== "photoAI") return sum;
+    return sum + macrosToTotals(m?.macros).kcal;
+  }, 0);
+  const estimatedKcalShare = totals.kcal > 0 ? estimatedKcal / totals.kcal : 0;
   return {
     date,
     mealCount: meals.length,
     hasMeals: meals.length > 0,
     hasAnyMacros,
+    estimatedKcalShare,
     ...totals,
   };
 }

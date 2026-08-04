@@ -14,6 +14,15 @@ describe("intentPrefetch", () => {
     const props = getModulePrefetchProps("finyk");
     expect(() => props.onMouseEnter()).not.toThrow();
     expect(() => props.onFocus()).not.toThrow();
+    expect(() => props.onPointerDown()).not.toThrow();
+  });
+
+  it("calls the registered prefetcher with the module id on pointer down — the touch/coarse-pointer entry point (mouseEnter/focus never fire on tap)", () => {
+    const prefetch = vi.fn();
+    setModulePrefetcher(prefetch);
+    const props = getModulePrefetchProps("nutrition");
+    props.onPointerDown();
+    expect(prefetch).toHaveBeenCalledWith("nutrition");
   });
 
   it("calls the registered prefetcher with the module id on mouse enter", () => {

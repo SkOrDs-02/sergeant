@@ -9,6 +9,7 @@ vi.mock("../ai-memory/ingestQueue.js", () => ({
 import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import defaultHandler, {
   buildTemplateReport,
+  countDigestSignalModules,
   createWeeklyDigestHandler,
 } from "./weekly-digest.js";
 import type { WeeklyDigestHandlerOptions } from "./weekly-digest.js";
@@ -141,7 +142,15 @@ describe("weekly-digest handler · validation", () => {
   // zod-схема ↔ серверний handler ↔ цей тест.
   it("приймає metricsVersion і НЕ падає без нього (старіші бандли)", async () => {
     const section = {
-      routine: { habitsTracked: 1, overallRate: 100, perHabit: [] },
+      // habitCount:1 — реальний сигнал, щоб пройти поріг публікації (§6.2);
+      // habitsTracked/perHabit — легасі-поля поза схемою, тест перевіряє,
+      // що вони мовчки відкидаються, а не ламають парсинг.
+      routine: {
+        habitCount: 1,
+        habitsTracked: 1,
+        overallRate: 100,
+        perHabit: [],
+      },
     };
 
     // Зі штампом — так шле поточний бандл.
@@ -186,6 +195,112 @@ describe("weekly-digest handler · validation", () => {
   });
 });
 
+/**
+ * Поріг публікації для тижневого дайджесту — канон hub-coach §6.2
+ * («краще мовчати, ніж шуміти») + Хвиля 4 / hub-coach § G2.
+ *
+ * До цього гейта `finyk` приїжджав з клієнта ЗАВЖДИ truthy (нулі замість
+ * `null` навіть без жодної транзакції), тож стара структурна перевірка
+ * `!sections.length` ніколи не спрацьовувала — дайджест генерувався навіть
+ * коли за весь тиждень не сталось нічого. Дзеркалить `coachSnapshotSignals`
+ * (`apps/web/src/core/insights/useCoachInsight.ts`), лише на серверному боці.
+ */
+describe("weekly-digest handler · поріг публікації (countDigestSignalModules)", () => {
+  it("нуль сигналів (усі модулі нульові) → ValidationError code=INSUFFICIENT_DATA, LLM не викликається", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: {
+        weekRange: "2026-W01",
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        fizruk: { workoutsCount: 0, totalVolume: 0 },
+        nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 0 },
+        routine: { overallRate: 0, habitCount: 0 },
+      },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      code: "INSUFFICIENT_DATA",
+    });
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it("жодна секція взагалі не передана → та сама ValidationError, LLM не викликається", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({ anthropicKey: "k", body: { weekRange: "2026-W01" } });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      code: "INSUFFICIENT_DATA",
+    });
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["finyk.txCount", { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } }],
+    ["fizruk.workoutsCount", { fizruk: { workoutsCount: 1, totalVolume: 0 } }],
+    [
+      "nutrition.daysLogged",
+      { nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 1 } },
+    ],
+    ["routine.habitCount", { routine: { overallRate: 0, habitCount: 1 } }],
+  ])(
+    "рівно один сигнал (%s) — цього достатньо, гейт пропускає",
+    async (_label, section) => {
+      const { handler, provider } = buildHandler();
+      const req = asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", ...section },
+      });
+
+      await handler(req, makeRes());
+      expect(provider.calls).toHaveLength(1);
+    },
+  );
+
+  describe("countDigestSignalModules (чиста функція)", () => {
+    it("усі модулі відсутні або нульові → 0", () => {
+      expect(countDigestSignalModules({})).toBe(0);
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+          fizruk: { workoutsCount: 0, totalVolume: 0 },
+          nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 0 },
+          routine: { overallRate: 0, habitCount: 0 },
+        }),
+      ).toBe(0);
+    });
+
+    it("finyk рахується за txCount, а не за наявністю обʼєкта", () => {
+      // `finyk` приїжджає truthy завжди (агрегатор повертає нулі навіть
+      // без транзакцій) — перевірка «поле присутнє» дала б хибний сигнал
+      // кожному користувачу без жодної транзакції за тиждень.
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        }),
+      ).toBe(0);
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 3 },
+        }),
+      ).toBe(1);
+    });
+
+    it("кілька модулів із даними складаються", () => {
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 100, totalIncome: 0, txCount: 5 },
+          fizruk: { workoutsCount: 2, totalVolume: 1800 },
+          nutrition: { avgKcal: 1900, targetKcal: 2000, daysLogged: 4 },
+          routine: { overallRate: 71, habitCount: 3 },
+        }),
+      ).toBe(4);
+    });
+  });
+});
+
 describe("weekly-digest handler · prompt assembly", () => {
   it("finyk-секція додає всі поля у системний промпт", async () => {
     const { handler, provider } = buildHandler();
@@ -227,7 +342,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     const { handler, provider } = buildHandler();
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
@@ -269,7 +384,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 1500, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 1500, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -280,7 +397,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 2600, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 2600, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -291,7 +410,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 2010, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 2010, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -305,7 +426,13 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { routine: { overallRate: 0, habitCount: 0 } },
+          // routine саме по собі — нуль сигналу (0 активних звичок), тож
+          // додаємо реальну finyk-транзакцію лише щоб пройти поріг
+          // публікації (§6.2) і дійти до перевірки routine-форматування.
+          body: {
+            finyk: { totalSpent: 10, totalIncome: 0, txCount: 1 },
+            routine: { overallRate: 0, habitCount: 0 },
+          },
         }),
         makeRes(),
       );
@@ -344,7 +471,10 @@ describe("weekly-digest handler · prompt assembly", () => {
         body: {
           finyk: {},
           fizruk: {},
-          nutrition: {},
+          // Один залогований день — єдиний сигнал у запиті, щоб пройти
+          // поріг публікації (§6.2) і дійти до перевірки zero-fallback-ів
+          // усіх ІНШИХ полів nutrition + решти секцій.
+          nutrition: { daysLogged: 1 },
           routine: {},
         },
       }),
@@ -358,7 +488,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(sys).toContain("Загальний об'єм: 0 кг");
     expect(sys).toContain("Стан відновлення: Немає даних");
     expect(sys).toContain("Середньодобово: 0 ккал (ціль 2000 ккал");
-    expect(sys).toContain("Днів із записами: 0 з 7");
+    expect(sys).toContain("Днів із записами: 1 з 7");
     expect(sys).toContain("Загальний відсоток: 0%");
     expect(sys).toContain("Активних звичок: 0");
   });
@@ -371,7 +501,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       anthropicKey: "k",
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -393,7 +523,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     });
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -413,7 +543,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     });
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -429,7 +559,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult("просто текст без JSON"));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -444,7 +574,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult('before { "x": 1 '));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -458,7 +588,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult(""));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await expect(handler(req, res)).rejects.toMatchObject({
@@ -479,7 +609,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -496,7 +626,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -522,7 +652,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
@@ -535,7 +665,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
 
     await expect(handler(req, makeRes())).rejects.toMatchObject({
@@ -670,7 +800,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     await handler(
       asReq({
         anthropicKey: "k",
-        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
       }),
       makeRes(),
     );
@@ -707,7 +837,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     await handler(
       asReq({
         anthropicKey: "k",
-        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
       }),
       makeRes(),
     );
@@ -726,7 +856,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       anthropicKey: "k",
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -739,7 +869,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
     const req = asReq({
       anthropicKey: "k",
       user: { id: "user_42" },
-      body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+      body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
@@ -753,7 +883,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "user_42" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
         nutrition: { avgKcal: 2000, targetKcal: 2000 },
       },
     });
@@ -829,7 +959,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "u" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -851,7 +981,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "u" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -1107,7 +1237,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         res,
       ),
@@ -1138,7 +1268,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         makeRes(),
       ),
@@ -1168,7 +1298,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         makeRes(),
       );

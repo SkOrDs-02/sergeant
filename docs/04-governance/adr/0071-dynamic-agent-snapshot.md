@@ -1,6 +1,6 @@
 # ADR-0071: Dynamic agent snapshot for harness context
 
-> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-06-29

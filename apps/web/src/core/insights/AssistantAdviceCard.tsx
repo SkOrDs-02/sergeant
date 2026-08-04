@@ -138,6 +138,15 @@ export function AssistantAdviceCard({
             <SectionHeading as="span" size="xs" variant="muted">
               {messages.sergeant.adviceCardTitle}
             </SectionHeading>
+            {/* Градація впевненості (Хвиля 4, hub-coach § G2): порада дня —
+                суцільний вільний текст моделі, тож рівень «припущення»
+                проставляється детерміновано на рівні картки, а не promt-ом.
+                Показуємо лише коли текст реально є (не на скелетоні). */}
+            {insight && (
+              <Badge variant="neutral" size="xs">
+                {messages.sergeant.insightAssumptionBadge}
+              </Badge>
+            )}
             {degradedLabel && (
               <Badge variant="neutral" size="xs">
                 {degradedLabel}

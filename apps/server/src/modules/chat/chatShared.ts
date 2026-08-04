@@ -33,6 +33,8 @@ export interface StreamUsage {
   output_tokens?: number;
   cache_creation_input_tokens?: number;
   cache_read_input_tokens?: number;
+  /** OpenRouter-only: реально списана сума в USD за цей виклик. */
+  cost?: number;
 }
 
 /**

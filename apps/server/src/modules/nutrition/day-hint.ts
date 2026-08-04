@@ -1,10 +1,14 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayHintSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
+import { VOICE_RULE } from "../chat/toolDefs/systemPrompt.js";
+
+export type DayHintInput = z.infer<typeof DayHintSchema>;
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -23,19 +27,16 @@ function normalizeHint(text: unknown): string {
 }
 
 /**
- * POST /api/nutrition/day-hint — коротка порада по денних макросах.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт денної підказки — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з хендлера заради стенду
+ * (`scripts/eval/pipelines.nutrition.ts`). `system` тут немає навмисно —
+ * прод шле все одним user-повідомленням; стенд має дзеркалити це, інакше
+ * міряє інший режим моделі.
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
+export function buildDayHintPrompt(input: DayHintInput): { user: string } {
   const { macros, targets, locale, hasMeals, hasAnyMacros, macroSources } =
-    parseBody(DayHintSchema, req);
-
+    input;
   const mRaw = macros || {};
   const m = {
     kcal: safeNonNegOrNull(mRaw.kcal),
@@ -46,21 +47,54 @@ export default async function handler(
   const t = targets || {};
   const loc = String(locale || "uk-UA");
 
-  const contextNote =
-    hasMeals && !hasAnyMacros
-      ? "У журналі є прийоми їжі, але без КБЖВ (макроси не задані). Дай пораду, як краще заповнювати/оцінювати КБЖВ, не звинувачуючи.\n"
-      : "";
-
   const sourcesNote =
     macroSources && typeof macroSources === "object"
       ? `Походження КБЖВ (кількість прийомів): ${JSON.stringify(macroSources)}.\nЯкщо багато AI — обережно формулюй висновки, можеш порадити уточнити вагу/порцію.\n`
       : "";
 
-  const prompt = `Мова: ${loc}.
-${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"}, білки ${m.protein_g ?? "—"} г, жири ${m.fat_g ?? "—"} г, вуглеводи ${m.carbs_g ?? "—"} г.
-Цілі (якщо є): ккал ${t.dailyTargetKcal ?? "—"}, білки ${t.dailyTargetProtein_g ?? "—"}, жири ${t.dailyTargetFat_g ?? "—"}, вуглеводи ${t.dailyTargetCarbs_g ?? "—"}.
+  // Гілка без макросів отримує ВЛАСНУ задачу, а не примітку поверх спільної.
+  //
+  // AI-CONTEXT: раніше сюди дописувався `contextNote` («дай пораду, як краще
+  // заповнювати КБЖВ»), але решта промпта лишалася незмінною — блок «Цілі»
+  // друкував `ккал 2200`, а фінальна інструкція просила «порівняй з цілями».
+  // Дві інструкції суперечили одна одній, і моделі слухалися сильнішої:
+  // sonnet-4-6 валив цю гілку 12/12, gpt-5.1 — 9/12, будуючи пораду навколо
+  // цілі, якої нема з чим порівнювати. Прибрати суперечність можна лише
+  // прибравши цілі з поля зору, а не додавши ще одне речення.
+  const noMacros = Boolean(hasMeals) && !hasAnyMacros;
 
-Дай 2–4 речення: коротко порівняй з цілями (якщо цілі задані), що добре / що звернути увагу завтра. Без моралізаторства. Відповідь ТІЛЬКИ JSON: {"hint":"..."}`;
+  const factsBlock = noMacros
+    ? `У журналі є прийоми їжі, але КБЖВ не заповнені — жодного числа за день немає.`
+    : `Факт за день: ккал ${m.kcal ?? "—"}, білки ${m.protein_g ?? "—"} г, жири ${m.fat_g ?? "—"} г, вуглеводи ${m.carbs_g ?? "—"} г.
+Цілі (якщо є): ккал ${t.dailyTargetKcal ?? "—"}, білки ${t.dailyTargetProtein_g ?? "—"}, жири ${t.dailyTargetFat_g ?? "—"}, вуглеводи ${t.dailyTargetCarbs_g ?? "—"}.`;
+
+  const task = noMacros
+    ? `Дай 2–4 речення про те, ЯК зручніше фіксувати КБЖВ (вага порції, готові страви, фото), без звинувачень.
+НЕ називай жодних чисел — ні спожитих, ні цільових: порівнювати нема з чим, і будь-яка цифра тут буде вигаданою.`
+    : `Дай 2–4 речення: коротко порівняй з цілями (якщо цілі задані), що добре / що звернути увагу завтра. Без моралізаторства.`;
+
+  const prompt = `Мова: ${loc}.
+${sourcesNote}${factsBlock}
+
+${task}
+${VOICE_RULE}
+Відповідь ТІЛЬКИ JSON: {"hint":"..."}`;
+
+  return { user: prompt };
+}
+
+/**
+ * POST /api/nutrition/day-hint — коротка порада по денних макросах.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildDayHintPrompt(parseBody(DayHintSchema, req));
 
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
@@ -71,7 +105,7 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
     model: env.NUTRITION_MODEL,
     maxTokens: 400,
     temperature: 0.3,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20000,
     endpoint: "day-hint",
     ...(userId ? { userId } : {}),

@@ -45,6 +45,35 @@ function logWith(kcal: number, protein = 0, fat = 0, carbs = 0) {
   } as never;
 }
 
+function logWithSources(entries: Array<{ kcal: number; macroSource: string }>) {
+  return {
+    [today]: {
+      meals: entries.map((e, i) => ({
+        id: `m${i + 1}`,
+        time: "12:00",
+        mealType: "lunch",
+        name: `Прийом ${i + 1}`,
+        macroSource: e.macroSource,
+        macros: { kcal: e.kcal, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      })),
+    },
+  } as never;
+}
+
+function logWithMealCount(count: number) {
+  return {
+    [today]: {
+      meals: Array.from({ length: count }, (_, i) => ({
+        id: `m${i + 1}`,
+        time: "12:00",
+        mealType: "lunch",
+        name: `Прийом ${i + 1}`,
+        macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
+      })),
+    },
+  } as never;
+}
+
 const GOAL_PREFS = {
   dailyTargetKcal: 2000,
   dailyTargetProtein_g: 120,
@@ -129,5 +158,59 @@ describe("NutritionDashboard", () => {
     expect(screen.getByText("Додай більше білка")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Отримати"));
     expect(onFetchDayHint).toHaveBeenCalled();
+  });
+
+  it("dashes the kcal ring on an incomplete day (fewer than 3 meals)", () => {
+    render(<NutritionDashboard log={logWithMealCount(1)} prefs={GOAL_PREFS} />);
+    const ring = screen.getByLabelText(/Калорії: 300 з 2000/);
+    expect(ring.getAttribute("aria-label")).toContain("неповні дані за день");
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBe("4 3");
+  });
+
+  it("renders a solid kcal ring once 3+ meals are logged", () => {
+    render(<NutritionDashboard log={logWithMealCount(3)} prefs={GOAL_PREFS} />);
+    const ring = screen.getByLabelText(/Калорії: 900 з 2000/);
+    expect(ring.getAttribute("aria-label")).not.toContain(
+      "неповні дані за день",
+    );
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBeNull();
+  });
+
+  it("shows the ≈ badge and caption when photoAI kcal share is above 50% (nutrition audit E-5)", () => {
+    render(
+      <NutritionDashboard
+        log={logWithSources([
+          { kcal: 490, macroSource: "manual" },
+          { kcal: 510, macroSource: "photoAI" },
+        ])}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
+    expect(ring.getAttribute("aria-label")).toContain(
+      "переважно оцінка з фото",
+    );
+    expect(screen.getByText(/Більшість ккал сьогодні/)).toBeInTheDocument();
+  });
+
+  it("hides the ≈ badge when photoAI kcal share is exactly 50% (threshold is strictly >50%)", () => {
+    render(
+      <NutritionDashboard
+        log={logWithSources([
+          { kcal: 500, macroSource: "manual" },
+          { kcal: 500, macroSource: "photoAI" },
+        ])}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
+    expect(ring.getAttribute("aria-label")).not.toContain(
+      "переважно оцінка з фото",
+    );
+    expect(
+      screen.queryByText(/Більшість ккал сьогодні/),
+    ).not.toBeInTheDocument();
   });
 });

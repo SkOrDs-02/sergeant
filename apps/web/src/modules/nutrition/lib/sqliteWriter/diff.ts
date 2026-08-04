@@ -9,9 +9,10 @@
  * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
  * now unconditional whenever a dual-write context is registered.
  *
- * Mirrors the fizruk dual-write diff layer (PR #028) — same shape,
- * same semantics, separate types because the entity surface is
- * different.
+ * Mirrors the fizruk dual-write diff layer (PR #028) — same shape, same
+ * semantics, separate types because the entity surface is different. A 7th
+ * class (pantry ledger events, W1-PANTRY-APPEND stage 2) lives in
+ * `diff.pantryEvents.ts` (Hard Rule #18 split) and is wired in below.
  *
  * Six entity classes are tracked:
  *
@@ -42,6 +43,13 @@
  *      `nutrition_shopping_list`; mirrors the `prefs-upsert` singleton
  *      pattern. Stage 11 / PR #070n-dualwrite.
  */
+import {
+  diffPantryEventOps,
+  type NutritionPantryEventSnapshot,
+  type PantryEventAppendOp,
+} from "./diff.pantryEvents.js";
+// Re-export: types live in `diff.pantryEvents.ts` (Hard Rule #18 split).
+export type { NutritionPantryEventSnapshot, PantryEventAppendOp };
 
 // -----------------------------------------------------------------------
 // Snapshot shapes — loose mirrors of the domain types, kept minimal so
@@ -220,7 +228,8 @@ export type NutritionDualWriteOp =
   | RecipeDeleteOp
   | WaterLogSetOp
   | ShoppingListSetOp
-  | GoalPeriodInsertOp;
+  | GoalPeriodInsertOp
+  | PantryEventAppendOp;
 
 // -----------------------------------------------------------------------
 // State shape — what LS looks like across all nutrition keys
@@ -242,6 +251,11 @@ export interface NutritionDualWriteState {
    * as a single `shopping-list-set` op.
    */
   readonly shoppingList: NutritionShoppingListSnapshot | null;
+  /** Черга ledger-подій цього переходу, не персистований стан — деталі в
+   * `diff.pantryEvents.ts` (W1-PANTRY-APPEND стадія 2). Опційне: старіші
+   * стани, зібрані вручну в тестах, не несуть цього поля — трактується як
+   * `[]` (`diffPantryEventOps` уже робить `?? []`). */
+  readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -284,6 +298,8 @@ export function diffNutritionDualWriteOps(
     (p) => ops.push({ kind: "pantry-upsert", pantry: p }),
     (id) => ops.push({ kind: "pantry-delete", pantryId: id }),
   );
+
+  diffPantryEventOps(prev, next, ops); // W1-PANTRY-APPEND стадія 2
 
   // --- Prefs (singleton) ---
   if (prefsChanged(prev.prefs, next.prefs) && next.prefs) {
