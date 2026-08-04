@@ -51,7 +51,12 @@ export interface AddToShoppingListAction {
 
 export interface ConsumeFromPantryAction {
   name: "consume_from_pantry";
-  input: { name: string };
+  /**
+   * `qty` опційна: без неї позиція прибирається цілком (стара поведінка й
+   * єдина можлива до W1-PANTRY-APPEND). Модель шле рядок або число залежно
+   * від того, як сформулювала виклик, тому приймаємо обидва.
+   */
+  input: { name: string; qty?: number | string };
 }
 
 export interface SetDailyPlanAction {
