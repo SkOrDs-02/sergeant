@@ -6,6 +6,7 @@ import {
   getAccountCurrencySymbol,
   getManualAssetCurrencySymbol,
   sumDebtsRemaining,
+  sumJarsUAH,
   sumManualAssetsUAH,
   sumReceivablesRemaining,
 } from "./aggregates.js";
@@ -14,6 +15,7 @@ import type {
   AssetsReceivable,
   ManualAsset,
   MonoAccount,
+  MonoJarLike,
 } from "./types.js";
 
 const asTx = <T extends object>(tx: T): never => tx as never;
@@ -98,6 +100,38 @@ describe("assets — sumReceivablesRemaining", () => {
   });
 });
 
+describe("assets — sumJarsUAH", () => {
+  it("повертає 0 для порожнього/відсутнього списку", () => {
+    expect(sumJarsUAH([])).toBe(0);
+    expect(sumJarsUAH(undefined)).toBe(0);
+    expect(sumJarsUAH(null)).toBe(0);
+  });
+
+  it("сумує UAH-банки (копійки → гривні)", () => {
+    const jars: MonoJarLike[] = [
+      { id: "j1", title: "Відпустка", balance: 150_00, currencyCode: 980 },
+      { id: "j2", title: "Подушка", balance: 500_00, currencyCode: 980 },
+    ];
+    expect(sumJarsUAH(jars)).toBe(650);
+  });
+
+  it("ігнорує не-UAH банки", () => {
+    const jars: MonoJarLike[] = [
+      { id: "j1", balance: 100_00, currencyCode: 980 },
+      { id: "j2", balance: 999_00, currencyCode: 840 },
+    ];
+    expect(sumJarsUAH(jars)).toBe(100);
+  });
+
+  it("трактує відсутній/null balance як 0, не як помилку", () => {
+    const jars: MonoJarLike[] = [
+      { id: "j1", balance: null, currencyCode: 980 },
+      { id: "j2", currencyCode: 980 },
+    ];
+    expect(sumJarsUAH(jars)).toBe(0);
+  });
+});
+
 describe("assets — filterVisibleAccounts", () => {
   it("відсікає сховані рахунки по id", () => {
     const accounts: MonoAccount[] = [
@@ -156,6 +190,7 @@ describe("assets — computeAssetsSummary", () => {
       monoBalance: 0,
       monoDebt: 0,
       manualAssetTotal: 0,
+      jarsTotal: 0,
       manualDebtTotal: 0,
       receivableTotal: 0,
       totalAssets: 0,
@@ -272,6 +307,86 @@ describe("assets — computeAssetsSummary", () => {
     expect(summary.monoDebt).toBe(150);
     expect(summary.totalLiabilities).toBe(150);
     expect(summary.networth).toBe(150);
+  });
+
+  it("рахує власні кошти кредитки (balance > creditLimit) в totalAssets", () => {
+    // Кредитка з балансом ПОНАД ліміт: creditLimit=1000_00, balance=1300_00
+    // → власні кошти зверху ліміту = 300₴ ідуть в capital, боргу немає.
+    const accounts: MonoAccount[] = [
+      {
+        id: "credit-over",
+        balance: 1300_00,
+        creditLimit: 1000_00,
+        currencyCode: 980,
+      },
+    ];
+    const summary = computeAssetsSummary({
+      accounts,
+      hiddenAccounts: [],
+      manualAssets: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+    });
+    expect(summary.monoBalance).toBe(300);
+    expect(summary.monoDebt).toBe(0);
+    expect(summary.totalAssets).toBe(300);
+    expect(summary.networth).toBe(300);
+  });
+
+  it("кредитка в мінусі відносно ліміту дає 0 у balance, борг — у Пасивах", () => {
+    const accounts: MonoAccount[] = [
+      {
+        id: "credit-under",
+        balance: 300_00,
+        creditLimit: 1000_00,
+        currencyCode: 980,
+      },
+    ];
+    const summary = computeAssetsSummary({
+      accounts,
+      hiddenAccounts: [],
+      manualAssets: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+    });
+    expect(summary.monoBalance).toBe(0);
+    expect(summary.monoDebt).toBe(700);
+    expect(summary.totalAssets).toBe(0);
+    expect(summary.totalLiabilities).toBe(700);
+  });
+
+  it("включає банки Monobank у totalAssets/networth", () => {
+    const accounts: MonoAccount[] = [
+      { id: "a1", balance: 500_00, currencyCode: 980 },
+    ];
+    const jars: MonoJarLike[] = [
+      { id: "j1", title: "Відпустка", balance: 200_00, currencyCode: 980 },
+    ];
+    const summary = computeAssetsSummary({
+      accounts,
+      hiddenAccounts: [],
+      manualAssets: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+      jars,
+    });
+    expect(summary.jarsTotal).toBe(200);
+    expect(summary.totalAssets).toBe(500 + 200);
+    expect(summary.networth).toBe(700);
+  });
+
+  it("не передані jars (mobile caller) → jarsTotal 0, назад-сумісно", () => {
+    const summary = computeAssetsSummary({
+      accounts: [],
+      manualAssets: [],
+      manualDebts: [],
+      receivables: [],
+      transactions: [],
+    });
+    expect(summary.jarsTotal).toBe(0);
   });
 
   it("враховує лінковані платежі при підсумку боргів", () => {

@@ -21,6 +21,21 @@ export function getMonoDebt(acc: MonoAccount): number {
   return 0;
 }
 
+/**
+ * "Власні кошти" на рахунку — те, що лишається понад кредитний ліміт.
+ * Для звичайних карток (без `creditLimit`) дорівнює `balance` без змін;
+ * для кредиток — `max(0, balance - creditLimit)`, тобто 0, доки картка
+ * "в мінусі" відносно ліміту (сам борг тоді живе окремо в
+ * `getMonoDebt`/`isMonoDebt` і потрапляє в «Пасиви», не в «Активи»).
+ * Одиниці — копійки (як і `balance`), не ділені на 100.
+ */
+export function getMonoOwnFunds(acc: MonoAccount): number {
+  const creditLimit = acc.creditLimit ?? 0;
+  const balance = acc.balance ?? 0;
+  if (creditLimit > 0) return Math.max(0, balance - creditLimit);
+  return balance;
+}
+
 export function isMonoDebt(acc: MonoAccount): boolean {
   const creditLimit = acc.creditLimit ?? 0;
   const balance = acc.balance ?? 0;
@@ -51,14 +66,15 @@ export function getMonoTotals(
   const visible = accounts.filter(
     (a) => !(a.id !== undefined && hiddenAccountIds.includes(a.id)),
   );
+  // Кредитки більше не виключені з balance — власні кошти зверху ліміту
+  // (getMonoOwnFunds) враховуються в капітал, лише сам борг (creditLimit -
+  // balance, коли додатний) лишається виключно в debt/«Пасиви» нижче.
   const balance = visible
-    .filter(
-      (a) =>
-        (a.balance ?? 0) > 0 &&
-        !a.creditLimit &&
-        a.currencyCode === (CURRENCY.UAH as number),
-    )
-    .reduce((sum, a) => sum + (a.balance ?? 0) / 100, 0);
+    .filter((a) => a.currencyCode === (CURRENCY.UAH as number))
+    .reduce((sum, a) => {
+      const ownFunds = getMonoOwnFunds(a);
+      return ownFunds > 0 ? sum + ownFunds / 100 : sum;
+    }, 0);
   // Приховані рахунки виключаємо і з balance, і з debt —
   // інакше при схованій кредитці `networth = balance - debt` займає
   // її борг, а сама кредитка не видна у списку.

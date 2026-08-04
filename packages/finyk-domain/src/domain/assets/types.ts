@@ -50,6 +50,23 @@ export interface AssetsReceivable extends Receivable {
   note?: string;
 }
 
+/**
+ * Minimal Monobank "jar" (банка) shape consumed by
+ * {@link computeAssetsSummary}. Mirrors the fields
+ * `MonoJarDtoSchema`/`MonoJarDto` (`packages/shared/src/schemas/api.ts`)
+ * actually needs here — kept loose/duck-typed so this package doesn't
+ * pull in `@sergeant/shared`'s zod schema just for a structural shape.
+ */
+export interface MonoJarLike {
+  id?: string | undefined;
+  title?: string | null | undefined;
+  /** Minor units (копійки), like `MonoAccount.balance`. */
+  balance?: number | null | undefined;
+  /** Minor units (копійки); `null`/`undefined` when no goal is set. */
+  goal?: number | null | undefined;
+  currencyCode?: number | undefined;
+}
+
 /** Aggregated totals used by the Assets page networth header. */
 export interface AssetsSummary {
   /** Mono (real-bank) UAH balance sum — excludes hidden accounts. */
@@ -58,11 +75,13 @@ export interface AssetsSummary {
   monoDebt: number;
   /** Sum of UAH-denominated manual assets. */
   manualAssetTotal: number;
+  /** Sum of UAH-denominated Monobank jar ("банка") balances. */
+  jarsTotal: number;
   /** Sum of manual-debt remaining amounts (≥ 0 per row). */
   manualDebtTotal: number;
   /** Sum of receivable remaining amounts (≥ 0 per row). */
   receivableTotal: number;
-  /** Assets side: mono + manual + receivables. */
+  /** Assets side: mono + manual + receivables + jars. */
   totalAssets: number;
   /** Liability side: mono credit debt + manual debts. */
   totalLiabilities: number;
@@ -78,4 +97,10 @@ export interface AssetsSummaryInput {
   manualDebts: readonly AssetsDebt[];
   receivables: readonly AssetsReceivable[];
   transactions: readonly Transaction[];
+  /**
+   * Monobank jars ("банки"). Optional — backward compatible for callers
+   * (e.g. `apps/mobile`) that don't pass jars yet. Omitted/undefined
+   * behaves exactly like `[]`.
+   */
+  jars?: readonly MonoJarLike[] | undefined;
 }

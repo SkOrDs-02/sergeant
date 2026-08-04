@@ -8,6 +8,7 @@ import {
   getReceivableEffectiveTotal,
 } from "../utils";
 import { AssetsMonoCards } from "./AssetsMonoCards";
+import { AssetsMonoJars } from "./AssetsMonoJars";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ReceivableForm, AssetForm } from "./AssetsForm";
@@ -23,6 +24,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   const [assetsExpanded, setAssetsExpanded] = useState(true);
   const {
     accounts,
+    jars,
     transactions,
     hiddenAccounts,
     toggleHideAccount,
@@ -56,6 +58,8 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         toggleHideAccount={toggleHideAccount}
         showBalance={showBalance}
       />
+
+      <AssetsMonoJars jars={jars} showBalance={showBalance} />
 
       <Card radius="lg" padding="sm" className="space-y-2">
         <button
