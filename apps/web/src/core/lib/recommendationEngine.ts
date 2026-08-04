@@ -8,25 +8,17 @@
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion -- pre-existing burndown: localDateKey/daysBetween/startOfWeek read host-local date parts (kyiv-time Theme 1) and a few non-null assertions sit on already-Array.isArray-guarded index lookups; both pre-existing and out of scope for this tombstone read-source fix. */
 import { buildFinanceContext } from "./recommendations/financeContext";
 import { Recommendations } from "@sergeant/insights";
-import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
   loadNutritionLog,
   loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
-import { getVisibleFinykMonoMirrorState } from "../../modules/finyk/lib/monoMirrorReader";
-import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
-import { getTxStatAmount } from "@sergeant/finyk-domain/lib/transactions";
+import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { readFinykStatsContext } from "@finyk/lib/lsStats";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;
-
-interface Transaction {
-  id: string;
-  amount: number;
-  time: number;
-}
 
 interface Exercise {
   nameUk?: string;
@@ -40,10 +32,6 @@ interface Workout {
   startedAt: string;
   endedAt?: string | undefined;
   items?: Exercise[];
-}
-
-function safeLS<T>(key: string, fallback: T): T {
-  return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
 function localDateKey(d: Date = new Date()): string {
@@ -132,10 +120,6 @@ function startOfWeek(d: Date): Date {
   x.setDate(x.getDate() - dow);
   x.setHours(0, 0, 0, 0);
   return x;
-}
-
-function txTimestamp(tx: Transaction): number {
-  return tx.time > 1e10 ? tx.time : tx.time * 1000;
 }
 
 function buildFinanceRecs(): Rec[] {
@@ -419,29 +403,27 @@ function buildWeeklyDigestRecs(): Rec[] {
     habitPctText = `звички ${pct}%`;
   }
 
-  // Витрати минулого тижня
-  const transactions: Transaction[] = getVisibleFinykMonoMirrorState()
-    .transactions as Transaction[];
-  const txCategories = safeLS<Record<string, string>>("finyk_tx_cats", {});
-  const hiddenTxIds = new Set<string>(safeLS<string[]>("finyk_hidden_txs", []));
-  const transferIds = new Set<string>(
-    Object.entries(txCategories)
-      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
-      .map(([k]) => k),
-  );
-  let spendLastWeek = 0;
-  for (const tx of transactions) {
-    if (hiddenTxIds.has(tx.id) || transferIds.has(tx.id)) continue;
-    if ((tx.amount ?? 0) >= 0) continue;
-    const ts = txTimestamp(tx);
-    if (ts >= monPrev.getTime() && ts <= sunPrev.getTime()) {
-      // AI-NOTE: splits/`excluded_stat`/готівка сюди навмисно не подані —
-      // це зрушило б число, яке користувач уже бачить, а реєстр метрик
-      // вимагає окремого PR на кожен такий зсув. Виклик канону лишає
-      // розрив видимим у сигнатурі, а не схованим в арифметиці.
-      spendLastWeek += getTxStatAmount(tx);
-    }
-  }
+  // Витрати минулого тижня — канонічний конвеєр, той самий, що обслуговує
+  // тижневий дайджест і Hub-Reports (`readFinykStatsContext` → всесвіт
+  // `bank + manual`, канонічний excluded-set, спліти).
+  //
+  // AI-CONTEXT: до 2026-08-04 цей блок був СЬОМИМ конвеєром витрат, якого
+  // навіть не було в таблиці реєстру: він фільтрував лише `finyk_hidden_txs`
+  // і внутрішні перекази, тож не знав ані про спліти, ані про
+  // `finyk_excluded_stat_txs`, ані про звʼязані з receivables транзакції, ані
+  // про готівку. Число в цьому нагадуванні розходилось із дайджестом на тих
+  // самих даних.
+  //
+  // Межа вікна: `sunPrev` — остання мілісекунда перед `monThis`, а канон бере
+  // `end` ЕКСКЛЮЗИВНО, тож сюди йде `monThis`, а не `sunPrev`. Пряма підстановка
+  // `sunPrev` втратила б останню мілісекунду тижня.
+  const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
+  const { totalSpent: spendLastWeek } = calcFinykPeriodAggregate(txs, {
+    start: monPrev.getTime(),
+    end: monThis.getTime(),
+    excludedTxIds,
+    txSplits,
+  });
 
   const parts: string[] = [];
   if (workoutsLastWeek > 0) parts.push(`${workoutsLastWeek} трен.`);

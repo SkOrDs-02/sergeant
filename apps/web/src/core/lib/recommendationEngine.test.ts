@@ -1019,6 +1019,41 @@ describe("generateRecommendations", () => {
     expect(digest!.body).toContain("звички"); // habits
   });
 
+  /**
+   * Сьомий конвеєр витрат приведено до канону (реєстр метрик, § Гейт).
+   *
+   * До цього блок фільтрував лише `finyk_hidden_txs` і внутрішні перекази,
+   * тож явно виключена зі статистики транзакція протікала в число, яке
+   * дайджест і Hub-Reports уже рахували правильно. Тест пінить саме різницю:
+   * на тих самих даних нагадування має показати 500, а не 700.
+   *
+   * Перевіряє `excluded_stat`, а не готівку, свідомо: ручні витрати живуть у
+   * SQLite-кеші, а не в LS, і мокати їх тут означало б тягнути в цей тест
+   * половину dual-write шару. Готівку покриває parity-тест.
+   */
+  it("витрати минулого тижня поважають finyk_excluded_stat_txs", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
+
+    const txTime = Math.floor(
+      new Date("2026-04-22T12:00:00Z").getTime() / 1000,
+    );
+    setLS("finyk_tx_cache", {
+      txs: [
+        { id: "tx1", amount: -50000, time: txTime, description: "Покупки" },
+        { id: "tx2", amount: -20000, time: txTime, description: "Виключена" },
+      ],
+    });
+    setLS("finyk_excluded_stat_txs", ["tx2"]);
+    setLS("hub_routine_v1", { habits: [{ id: "h1" }], completions: {} });
+
+    const recs = generateRecommendations();
+    const digest = recs.find((r) => r.id?.startsWith("weekly_digest_"));
+    expect(digest).toBeDefined();
+    expect(digest!.body).toContain("500");
+    expect(digest!.body).not.toContain("700");
+  });
+
   // -----------------------------------------------------------------------
   // Edge cases — corrupt/partial localStorage
   // -----------------------------------------------------------------------
