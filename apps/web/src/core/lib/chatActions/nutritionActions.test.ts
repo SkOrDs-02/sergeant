@@ -358,6 +358,72 @@ describe("consume_from_pantry", () => {
     call({ name: "consume_from_pantry", input: { name: "nonexistent" } });
     expect(appendPantryEventSpy).not.toHaveBeenCalled();
   });
+
+  // Часткове списання: схема тула отримала опційне `qty` (SYSTEM_PROMPT_VERSION
+  // v14). До цього модель фізично не могла сказати «спиши 200» — і позиція
+  // зникала цілком навіть тоді, коли людина спожила частину.
+  it("з qty менше залишку → зменшує позицію і пише дельту рівно на спожите", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Молоко", qty: 200 },
+    });
+    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(mem.pantries[0]!.items[0]).toMatchObject({ qty: 300 });
+    expect(out).toContain("200");
+    expect(out).toContain("300");
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(1);
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      kind: "consume",
+      deltaQty: -200,
+      unit: "мл",
+    });
+  });
+
+  it("qty рядком (модель шле і так) — теж часткове списання", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Рис", qty: 1000, unit: "г" }],
+      },
+    ];
+    call({
+      name: "consume_from_pantry",
+      input: { name: "Рис", qty: "250" },
+    });
+    expect(mem.pantries[0]!.items[0]).toMatchObject({ qty: 750 });
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      deltaQty: -250,
+    });
+  });
+
+  // Прохання на більше, ніж є, НЕ створює від'ємного залишку і НЕ пише
+  // дельту більшу за наявне: журнал фіксує те, що фактично зникло.
+  it("з qty ≥ залишку → прибирає позицію, дельта = наявний залишок", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Молоко", qty: 900 },
+    });
+    expect(mem.pantries[0]!.items).toHaveLength(0);
+    expect(out).toContain("прибрано");
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      deltaQty: -500,
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

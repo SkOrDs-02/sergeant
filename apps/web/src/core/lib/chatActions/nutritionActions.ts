@@ -270,31 +270,54 @@ export function handleNutritionAction(
       }
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- itemIdx validated via findIndex >= 0 check above
       const item = items[itemIdx]!;
-      const nextItems = items.filter((_, i) => i !== itemIdx);
+      const stock = Number(item.qty);
+      const hasStock = Number.isFinite(stock) && stock > 0;
+
+      // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2). `qty` в інпуті опційна:
+      // без неї (продукт закінчився / кількість невідома) позиція йде цілком,
+      // як було до розширення контракту. Запит на кількість, що дорівнює
+      // залишку або перевищує його, теж прибирає позицію — лишати нуль-рядок
+      // у коморі гірше, ніж прибрати: він виглядає як наявний продукт.
+      const askedRaw = (action as ConsumeFromPantryAction).input.qty;
+      const asked = askedRaw == null ? NaN : Number(askedRaw);
+      const partial =
+        hasStock && Number.isFinite(asked) && asked > 0 && asked < stock;
+
+      const consumed = partial ? asked : hasStock ? stock : 0;
       const next = [...pantries];
-      next[idx] = { ...pantry, items: nextItems };
+      if (partial) {
+        const nextItems = items.map((it, i) =>
+          i === itemIdx ? { ...it, qty: stock - asked } : it,
+        );
+        next[idx] = { ...pantry, items: nextItems };
+      } else {
+        next[idx] = { ...pantry, items: items.filter((_, i) => i !== itemIdx) };
+      }
       persistPantries(undefined, undefined, next, activeId);
-      // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2). Інпут інструменту несе
-      // лише `name` — AI НЕ каже, скільки саме спожито. Код і далі прибирає
-      // позицію ЦІЛКОМ (без цього поля нема на чому будувати часткове
-      // списання), але тепер записує ЧЕСНУ дельту: рівно ту qty, яку
-      // позиція мала (те саме число, що щойно зникло з `qty`), а не
-      // вигадану частку. Без відомої qty (наприклад «сіль») подія не несе
+
+      // Дельта — рівно те, що фактично зникло з `qty`, а не те, що попросили:
+      // якщо просили більше за наявне, журнал має записати наявне. Без
+      // відомого залишку (наприклад «сіль» без кількості) подія не несе
       // сенсу — не емітимо.
-      const qty = Number(item.qty);
-      if (Number.isFinite(qty) && qty > 0) {
+      if (consumed > 0) {
         appendNutritionPantryEvent({
           id: null,
           pantryId: activeId,
           itemId: null,
           itemKey: canonicalFoodKey(rawName),
           kind: "consume",
-          deltaQty: -qty,
+          deltaQty: -consumed,
           absQty: null,
           unit: item.unit ?? null,
           source: "chat_tool",
           mealId: null,
         });
+      }
+
+      if (partial) {
+        const left = stock - asked;
+        const unit = item.unit ? ` ${item.unit}` : "";
+        return `Списано ${asked}${unit} «${rawName}», лишилось ${left}${unit} у коморі "${pantry.name}"`;
       }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
     }
