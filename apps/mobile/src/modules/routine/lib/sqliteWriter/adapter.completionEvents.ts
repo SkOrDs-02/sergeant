@@ -46,7 +46,6 @@ export async function appendCompletionEvent(
     habitId: op.habitId,
     dateKey: op.dateKey,
     state: op.state,
-    occurredAt: clientTs,
     deviceId,
   });
 

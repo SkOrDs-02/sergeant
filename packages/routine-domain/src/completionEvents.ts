@@ -26,9 +26,8 @@ import type {
  * Роздільник частин `id` події.
  *
  * Свідомо НЕ `:` — на відміну від `buildCompletionRowId` (`habitId:dateKey`)
- * для `routine_entries`. По-перше, `occurredAt` в ISO-8601 сам містить `:`,
- * тож розбір був би неоднозначним. По-друге, візуальна різниця не дає
- * переплутати PK журналу з PK старої таблиці у логах і в БД.
+ * для `routine_entries`. Візуальна різниця не дає переплутати PK журналу з
+ * PK старої таблиці у логах і в БД.
  */
 const EVENT_ID_SEPARATOR = "|";
 
@@ -51,23 +50,37 @@ export interface CompletionEventContext {
 /**
  * Детермінований `id` події.
  *
- * Ідемпотентність: (habitId, dateKey, occurredAt, state, deviceId) —
- * природний ключ однієї дії користувача. Два РІЗНІ пристрої, що клацнули
- * ту саму звичку в ту саму мілісекунду, дадуть різні `id` і обидві події
- * збережуться (журнал має бути чесним); повторна доставка тієї самої
- * події з того самого пристрою дасть однаковий `id` і буде проігнорована.
+ * Ідемпотентність: (habitId, dateKey, state, deviceId) — природний ключ
+ * ОДНОГО ФАКТУ «звичка X у день Y перейшла в стан Z на пристрої W».
+ * `occurredAt` НЕ входить у ключ — він лишається колонкою payload, яку
+ * `foldCompletionEvents` використовує для впорядкування (виграє пізніший
+ * `occurredAt`), але не для ідентичності.
+ *
+ * Чому: холодний старт (`saveRoutineState` на завантаженому знімку) дифить
+ * порожній `prev` проти щойно завантаженого `next` і читає КОЖНУ наявну
+ * відмітку як свіжий `add`, підставляючи `occurredAt = clientTs` МОМЕНТУ
+ * ЦЬОГО завантаження, а не моменту реальної дії користувача (`RoutineState`
+ * взагалі не зберігає таймстемп на відмітку). Якби `occurredAt` був у
+ * ключі, кожен холодний старт видавав би НОВИЙ `id` для тієї самої
+ * відмітки — журнал розпух би дублями, яких `INSERT OR IGNORE` не ловить,
+ * бо id дійсно різні (аудит W1-ROUTINE-APPEND, беклог-пастка #1).
+ *
+ * Два РІЗНІ пристрої, що клацнули ту саму звичку в ту саму мілісекунду,
+ * дадуть різні `id` (різний `deviceId`) і обидві події збережуться —
+ * журнал має бути чесним. Повторний запис того самого стану з того
+ * самого пристрою (ретрай АБО повторний холодний старт) дає однаковий
+ * `id` і стає легітимним no-op: два факти «зроблено» за той самий день
+ * з того самого пристрою — це один факт.
  */
 export function buildCompletionEventId(input: {
   readonly habitId: string;
   readonly dateKey: string;
   readonly state: CompletionEventState;
-  readonly occurredAt: string;
   readonly deviceId: string | null;
 }): string {
   return [
     input.habitId,
     input.dateKey,
-    input.occurredAt,
     input.state,
     input.deviceId ?? UNKNOWN_DEVICE,
   ].join(EVENT_ID_SEPARATOR);
@@ -85,7 +98,6 @@ export function createCompletionEvent(
       habitId,
       dateKey,
       state,
-      occurredAt: ctx.occurredAt,
       deviceId: ctx.deviceId,
     }),
     habitId,
