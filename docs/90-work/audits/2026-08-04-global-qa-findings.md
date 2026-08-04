@@ -15,7 +15,7 @@ Chromium. Акаунти A1–A5 створені через UI signup.
 | 1   | Інтермітентний фриз рендерера при hard-навігації залогіненого користувача        | `/`, `/finyk/*`, auth     | blocker  | functional     | описано        |
 | 2   | Після auth-переходу всі kv_store-записи падають «DB has been closed» до reload   | глобально                 | major    | data-integrity | **виправлено** |
 | 3   | Подвійна JSON-серіалізація у jsonb-полях sync-шляху (finyk, fizruk)              | sync v2                   | major    | data-integrity | **виправлено** |
-| 4   | Logout не очищає UI: профіль користувача видно після sign-out (сервер вже 401)   | `/profile`                | major    | functional     | описано        |
+| 4   | Logout не очищає UI: профіль користувача видно після sign-out (сервер вже 401)   | `/profile`                | major    | functional     | **виправлено** |
 | 5   | Онбординг-стан не привʼязаний до акаунта: existing user → `/welcome` з демо      | auth-флоу                 | major    | ux             | описано        |
 | 6   | Anthropic-401 мапиться у HTTP 401 → UI бреше «Доступ заборонено»                 | `/chat`                   | major    | functional     | **виправлено** |
 | 7   | Повернення AI-квоти ламається об check constraint (`23514`) — квота згорає       | server                    | major    | data-integrity | **виправлено** |
@@ -51,6 +51,17 @@ Chromium. Акаунти A1–A5 створені через UI signup.
 invalid x-api-key` (без `[object Object]`).
 - **7 (quota refund):** міграція 101 — CHECK `request_count >= 0`. Вериф:
   фейл-запит без `ai_quota_refund_failed`; декремент у 0 проходить.
+
+### Друга хвиля (знахідка 4)
+
+- **4 (logout):** корінь — `navigator.serviceWorker.ready` без стелі
+  ([`swControl.ts`](../../../apps/web/src/core/app/swControl.ts)). Без активного
+  SW цей await не резолвиться **ніколи**, тож `logout()` вмирав одразу після
+  `signOut()`: серверну сесію вбито, а `queryClient.clear()` і редірект уже не
+  виконувались. Фікс: `swReady()` зі стелею 2 с + `queryClient.clear()`
+  піднято ПЕРЕД best-effort-тірдауном, щоб UI ніколи не залежав від нього.
+  Вериф наживо: клік «Вийти» → тост «Ви вийшли з акаунта», редірект геть із
+  профілю, імені користувача в DOM немає (0 входжень), `/api/v1/me` → 401.
 
 ---
 

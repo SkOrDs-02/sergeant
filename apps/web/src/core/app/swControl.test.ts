@@ -36,10 +36,13 @@ describe("swControl", () => {
     const { sw, controller } = installServiceWorkerMock();
 
     const p = swGetDebugSnapshot();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(controller.postMessage).toHaveBeenCalledTimes(1);
+    // Чекаємо на факт відправки, а не на фіксовану кількість мікротасків:
+    // `serviceWorker.ready` тепер проходить через `swReady()` (стеля на
+    // необмежений await), і будь-яка зміна довжини цього ланцюга ламала б
+    // tick-лічильник.
+    await vi.waitFor(() =>
+      expect(controller.postMessage).toHaveBeenCalledTimes(1),
+    );
     const msg = controller.postMessage.mock.calls[0]![0];
     expect(msg.type).toBe("SW_DEBUG");
     expect(msg.data?.requestId).toMatch(/^sw_debug_/);
@@ -62,10 +65,9 @@ describe("swControl", () => {
     const { sw, controller } = installServiceWorkerMock();
 
     const p = swClearCaches();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(controller.postMessage).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() =>
+      expect(controller.postMessage).toHaveBeenCalledTimes(1),
+    );
     const msg = controller.postMessage.mock.calls[0]![0];
     expect(msg.type).toBe("CLEAR_SW_CACHES");
     expect(msg.data?.requestId).toMatch(/^sw_clear_/);
@@ -82,5 +84,32 @@ describe("swControl", () => {
     );
 
     await expect(p).resolves.toEqual(result);
+  });
+
+  it("swClearCaches rejects instead of hanging when serviceWorker.ready never settles", async () => {
+    // Аудит 2026-08-04, знахідка 4: `navigator.serviceWorker.ready` не
+    // резолвиться, поки для скоупу немає активного SW (dev-сервер, private
+    // mode, провалена реєстрація) — і не реджектиться ніколи. Без стелі
+    // `logout()` зависав на цьому await після вбитої серверної сесії, і UI
+    // лишався залогіненим.
+    vi.useFakeTimers();
+    try {
+      Object.defineProperty(globalThis.navigator, "serviceWorker", {
+        value: {
+          controller: { postMessage: vi.fn() },
+          ready: new Promise(() => {}), // навмисно ніколи не settles
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        },
+        configurable: true,
+      });
+
+      const p = swClearCaches();
+      const assertion = expect(p).rejects.toThrow(/timeout/i);
+      await vi.advanceTimersByTimeAsync(2100);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
