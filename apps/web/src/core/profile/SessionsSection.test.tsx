@@ -20,6 +20,16 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+
+const navigateMock = vi.fn();
+vi.mock("react-router-dom", async () => {
+  const actual =
+    await vi.importActual<typeof import("react-router-dom")>(
+      "react-router-dom",
+    );
+  return { ...actual, useNavigate: () => navigateMock };
+});
 
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -37,7 +47,20 @@ vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({ success: toastSuccessMock, error: toastErrorMock }),
 }));
 
+const logoutMock = vi.fn<() => Promise<void>>();
+vi.mock("../auth/AuthContext.jsx", () => ({
+  useAuth: () => ({ logout: logoutMock }),
+}));
+
 import { SessionsSection } from "./SessionsSection";
+
+function renderSection(online: boolean) {
+  return render(
+    <MemoryRouter>
+      <SessionsSection online={online} />
+    </MemoryRouter>,
+  );
+}
 
 const SAMPLE_SESSION = {
   id: "sess_abc",
@@ -65,7 +88,7 @@ describe("SessionsSection — revoke flow", () => {
   });
 
   it("calls revokeSession with the session token (NOT the id)", async () => {
-    render(<SessionsSection online={true} />);
+    renderSection(true);
 
     // Wait for listSessions to populate the row.
     const revokeButton = await screen.findByRole("button", {
@@ -82,8 +105,8 @@ describe("SessionsSection — revoke flow", () => {
     );
   });
 
-  it("removes the session from the list and shows a success toast on success", async () => {
-    render(<SessionsSection online={true} />);
+  it("shows a success toast on success", async () => {
+    renderSection(true);
 
     const revokeButton = await screen.findByRole("button", {
       name: /Завершити/i,
@@ -94,8 +117,29 @@ describe("SessionsSection — revoke flow", () => {
     await waitFor(() =>
       expect(toastSuccessMock).toHaveBeenCalledWith("Сесію завершено"),
     );
-    // After success the row is gone — fallback empty-state copy renders.
-    expect(await screen.findByText(/Немає сесій/i)).toBeTruthy();
+  });
+
+  // Regression test: `SAMPLE_SESSION` is also the CURRENT session here
+  // (`getSessionMock` resolves the same `id`). Revoking your own current
+  // session destroys it server-side, but React Query / the Better Auth
+  // cookie cache still held the old `me` payload — the UI kept rendering
+  // as "logged in" until a manual reload. The fix routes a current-session
+  // revoke through the full `logout()` teardown + redirect to sign-in
+  // instead of a bare local list filter.
+  it("revoking the CURRENT session logs out and redirects to sign-in", async () => {
+    logoutMock.mockResolvedValue(undefined);
+    renderSection(true);
+
+    const revokeButton = await screen.findByRole("button", {
+      name: /Завершити/i,
+    });
+
+    fireEvent.click(revokeButton);
+
+    await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true }),
+    );
   });
 
   it("maps Better Auth error code into a UA toast on failure", async () => {
@@ -106,7 +150,7 @@ describe("SessionsSection — revoke flow", () => {
     revokeSessionMock.mockResolvedValueOnce({
       error: { code: "SESSION_NOT_FRESH", message: "Session is not fresh" },
     } as never);
-    render(<SessionsSection online={true} />);
+    renderSection(true);
 
     const revokeButton = await screen.findByRole("button", {
       name: /Завершити/i,
@@ -190,15 +234,41 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
   });
 
   it("renders 3 sessions with parsed UA labels", async () => {
-    render(<SessionsSection online={true} />);
+    renderSection(true);
 
     expect(await screen.findByText("Chrome 132 на Windows")).toBeTruthy();
     expect(screen.getByText("Safari 17 на iPhone")).toBeTruthy();
     expect(screen.getByText("Firefox 122 на Linux")).toBeTruthy();
   });
 
+  // Non-current sessions keep the pre-existing local-removal behavior —
+  // only a CURRENT-session revoke should trigger the full logout flow.
+  it("revoking a NON-current session removes it locally without logging out", async () => {
+    renderSection(true);
+
+    const iphoneRow = (await screen.findByText("Safari 17 на iPhone")).closest(
+      "li",
+    );
+    if (!iphoneRow) throw new Error("non-current session row missing");
+    const revokeButton = within(iphoneRow).getByRole("button", {
+      name: /Завершити/i,
+    });
+
+    fireEvent.click(revokeButton);
+
+    await waitFor(() =>
+      expect(toastSuccessMock).toHaveBeenCalledWith("Сесію завершено"),
+    );
+    expect(screen.queryByText("Safari 17 на iPhone")).toBeNull();
+    // The remaining two sessions are untouched, and no logout/redirect fired.
+    expect(screen.getByText("Chrome 132 на Windows")).toBeTruthy();
+    expect(screen.getByText("Firefox 122 на Linux")).toBeTruthy();
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+
   it("tags only the current session with the «Цей пристрій» badge", async () => {
-    render(<SessionsSection online={true} />);
+    renderSection(true);
 
     // Знаходимо рядок поточної сесії за UA → у цьому рядку має бути бейдж.
     const currentRow = (
@@ -214,7 +284,7 @@ describe("SessionsSection — «Цей пристрій» badge + last-seen (PR-
   });
 
   it("renders human-readable last-seen lines for all 3 sessions", async () => {
-    render(<SessionsSection online={true} />);
+    renderSection(true);
 
     // Поточна — minute-grained relative copy.
     const currentRow = (

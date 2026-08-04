@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -11,6 +12,8 @@ import { messages } from "@shared/i18n/uk";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { formatRelativeUk } from "@shared/lib/format/relativeTime.uk";
 import { parseUserAgent } from "@shared/lib/format/userAgent";
+import { SIGN_IN_PATH } from "../app/appPaths";
+import { useAuth } from "../auth/AuthContext";
 import {
   getSession,
   listSessions,
@@ -22,6 +25,8 @@ const COPY = messages.profileSessions;
 
 export function SessionsSection({ online }: { online: boolean }) {
   const toast = useToast();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   // Initialize loading=true only when online so the spinner shows during the
   // initial fetch; offline shows the "Оновити" button (disabled) immediately.
@@ -74,7 +79,11 @@ export function SessionsSection({ online }: { online: boolean }) {
     void load();
   }, [load]);
 
-  const handleRevoke = async (id: string, token: string) => {
+  const handleRevoke = async (
+    id: string,
+    token: string,
+    isCurrent: boolean,
+  ) => {
     setRevoking(id);
     try {
       // Better Auth's `/revoke-session` endpoint validates the body with
@@ -90,6 +99,18 @@ export function SessionsSection({ online }: { online: boolean }) {
         return;
       }
       toast.success(COPY.revokeSuccess);
+      // Revoking the CURRENT session destroys it server-side, but the
+      // client still holds the `me` query result in the React Query cache
+      // (plus the Better Auth session cookie cache) — a bare `setSessions`
+      // filter left the rest of the UI rendering as "logged in" until a
+      // manual reload. Route through the full `logout()` teardown (clears
+      // the query cache, purges SW/SQLite/local-first state) and send the
+      // user to sign-in, mirroring `ProfilePage.handleLogout`.
+      if (isCurrent) {
+        await logout();
+        navigate(SIGN_IN_PATH, { replace: true });
+        return;
+      }
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
       toast.error(COPY.revokeFailed);
@@ -169,7 +190,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                     size="xs"
                     disabled={revoking === s.id}
                     loading={revoking === s.id}
-                    onClick={() => handleRevoke(s.id, s.token)}
+                    onClick={() => handleRevoke(s.id, s.token, isCurrent)}
                   >
                     {COPY.revoke}
                   </Button>
