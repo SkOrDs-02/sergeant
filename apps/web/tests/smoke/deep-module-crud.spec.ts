@@ -362,7 +362,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
       await page.getByRole("button", { name: "Записати" }).click();
     });
 
-    await expect(page.getByText("Записано ✓")).toBeVisible();
+    // Гліф «✓» прибрано з кнопки 2026-08-03 разом з рештою текстових
+    // emoji-замінників — лишився сам стан «Записано».
+    await expect(page.getByText("Записано")).toBeVisible();
 
     await page.goto("/fizruk/body", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "fizruk");

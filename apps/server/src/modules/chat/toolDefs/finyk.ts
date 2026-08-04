@@ -117,7 +117,8 @@ export const FINYK_TOOLS: AnthropicTool[] = [
         },
         emoji: {
           type: "string",
-          description: "Емодзі (опціонально, за замовчуванням 💸)",
+          description:
+            "Іконка боргу (опціонально). Не передавай emoji — клієнт малює іконки дизайн-системи.",
         },
       },
       required: ["name", "amount"],

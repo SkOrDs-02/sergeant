@@ -15,6 +15,7 @@ import {
   PasswordStrengthBar,
   PasswordVisibilityToggle,
 } from "./authFormPrimitives";
+import { Icon } from "@shared/components/ui/Icon";
 
 interface RegisterFormProps {
   onAlreadyRegistered: () => void;
@@ -57,8 +58,14 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         `Готово, ${name}!`,
         "Твої дані тепер з тобою на всіх пристроях.",
         [
-          { icon: "🔐", label: "Захищений акаунт" },
-          { icon: "🔄", label: "Синхронізація" },
+          {
+            icon: <Icon name="lock" size="md" aria-hidden />,
+            label: "Захищений акаунт",
+          },
+          {
+            icon: <Icon name="refresh-cw" size="md" aria-hidden />,
+            label: "Синхронізація",
+          },
         ],
       );
     },

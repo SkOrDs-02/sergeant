@@ -136,8 +136,9 @@ export function TagsSection({
             setRoutine((s) => createTag(s, trimmed));
             setTagDraft("");
           }}
+          aria-label="Додати тег"
         >
-          +
+          <Icon name="plus" size={16} aria-hidden />
         </Button>
       </div>
       <ul className="flex flex-wrap gap-2">
@@ -175,6 +176,19 @@ export function TagsSection({
             ) : (
               <>
                 {t.name}
+                {/*
+                  Скільки звичок носять тег. До 2026-08-03 це число існувало
+                  лише в тексті undo-тоста ПІСЛЯ видалення — тобто дізнатись
+                  «а чи використовується цей тег» можна було, тільки видаливши
+                  його.
+                */}
+                <span className="text-style-caption text-subtle tabular-nums">
+                  {
+                    routine.habits.filter((h) =>
+                      (h.tagIds || []).includes(t.id),
+                    ).length
+                  }
+                </span>
                 <IconButton
                   size="xs"
                   variant="ghost"
@@ -208,7 +222,7 @@ export function TagsSection({
                   }}
                   aria-label={`Видалити ${t.name}`}
                 >
-                  ×
+                  <Icon name="close" size={14} aria-hidden />
                 </IconButton>
               </>
             )}

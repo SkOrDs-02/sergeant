@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { Icon } from "@shared/components/ui/Icon";
 interface FoodHitRowProduct {
   name?: string | null;
   brand?: string | null;
@@ -15,11 +16,16 @@ interface FoodHitRowProduct {
 
 interface FoodHitRowProps {
   p: FoodHitRowProduct;
-  badge?: string;
+  /**
+   * Позначка «продукт із зовнішньої бази Open Food Facts». Раніше сюди
+   * передавали emoji-рядок «🌍»; тепер це прапорець, а гліф малює `Icon`,
+   * тож він тематизується й не залежить від системного emoji-шрифту.
+   */
+  externalSource?: boolean;
   onPick: () => void;
 }
 
-export function FoodHitRow({ p, badge, onPick }: FoodHitRowProps) {
+export function FoodHitRow({ p, externalSource, onPick }: FoodHitRowProps) {
   return (
     <li>
       <button
@@ -30,10 +36,13 @@ export function FoodHitRow({ p, badge, onPick }: FoodHitRowProps) {
         <div className="flex items-center justify-between gap-2">
           <div className="text-style-label text-text truncate">
             {[p.name, p.brand].filter(Boolean).join(" · ")}
-            {badge && (
-              <span className="ml-1 text-style-caption text-subtle">
-                {badge}
-              </span>
+            {externalSource && (
+              <Icon
+                name="link"
+                size="xs"
+                className="ml-1 inline-block align-baseline text-subtle"
+                title="Open Food Facts"
+              />
             )}
           </div>
           <div className="text-style-caption text-nutrition-strong dark:text-nutrition shrink-0">

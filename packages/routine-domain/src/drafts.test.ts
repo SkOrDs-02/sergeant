@@ -40,7 +40,7 @@ describe("routine-domain/drafts", () => {
       paused: false,
     });
     expect(p.name).toBe("Test");
-    expect(p.emoji).toBe("✓");
+    expect(p.emoji).toBe("check");
     expect(p.categoryId).toBe(null);
     expect(p.endDate).toBe(null);
     expect(p.reminderTimes).toEqual(["08:00", "13:00"]);
@@ -51,7 +51,7 @@ describe("routine-domain/drafts", () => {
   it("emptyHabitDraft returns today-normalised draft", () => {
     const draft = emptyHabitDraft();
     expect(draft.name).toBe("");
-    expect(draft.emoji).toBe("✓");
+    expect(draft.emoji).toBe("check");
     expect(draft.recurrence).toBe("daily");
     expect(draft.weekdays).toEqual([0, 1, 2, 3, 4, 5, 6]);
     expect(draft.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -89,7 +89,8 @@ describe("routine-domain/drafts", () => {
       };
       const draft = habitToDraft(habit);
       expect(draft.name).toBe("Пити воду");
-      expect(draft.emoji).toBe("💧");
+      // Легасі-emoji апгрейдиться до slug (`glyphs.ts`).
+      expect(draft.emoji).toBe("droplet");
       expect(draft.tagIds).toEqual(["t1", "t2"]);
       expect(draft.categoryId).toBe("c1");
       expect(draft.recurrence).toBe("weekly");
@@ -102,7 +103,7 @@ describe("routine-domain/drafts", () => {
     it("fills sensible defaults when the habit is sparse", () => {
       const draft = habitToDraft({ id: "h2", name: "" });
       expect(draft.name).toBe("");
-      expect(draft.emoji).toBe("✓");
+      expect(draft.emoji).toBe("check");
       expect(draft.tagIds).toEqual([]);
       expect(draft.categoryId).toBe(null);
       expect(draft.recurrence).toBe("daily");

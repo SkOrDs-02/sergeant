@@ -115,7 +115,7 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     const habitDetails = habits
       .map((h) => {
         const done = (completions[h.id] ?? []).includes(todayKey);
-        return `${h.emoji || ""} ${h.name} (id:${h.id}): ${done ? "✓" : "✗"}`;
+        return `${h.name} (id:${h.id}): ${done ? "виконано" : "не виконано"}`;
       })
       .join(", ");
     lines.push(`[Рутина сьогодні] ${habitDetails}`);

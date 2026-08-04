@@ -271,9 +271,12 @@ export const BentoCard = memo(function BentoCard({
             )}
             title={adaptiveReason}
           >
-            <span aria-hidden className="leading-none mt-px">
-              ✦
-            </span>
+            <Icon
+              name="sparkle"
+              size={12}
+              className="shrink-0 mt-px"
+              aria-hidden
+            />
             {/* Render the full reason instead of a 12-char truncated tail —
              * the reason is what makes the adaptive reorder explainable
              * (e.g. "ранкова кава" / "вечірня вечеря"); chopping it to

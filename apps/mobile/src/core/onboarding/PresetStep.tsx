@@ -14,7 +14,7 @@
  * identical empty forms would be a mini-deception); they show only the
  * fallback CTA, which routes into the module add-flow.
  *
- * The catalog copy/emojis are copied verbatim from the web `PRESETS`
+ * The catalog copy/glyphs are copied verbatim from the web `PRESETS`
  * map so the two surfaces cannot drift.
  */
 
@@ -27,6 +27,7 @@ import { Sheet } from "@/components/ui/Sheet";
 
 import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
 import { writePresetPrefill } from "./presetPrefill";
+import { HabitGlyph } from "@/modules/routine/components/HabitGlyph";
 
 /**
  * Add-flow actions a preset can deep-link into. Mirrors the web
@@ -61,7 +62,7 @@ interface PresetModuleConfig {
 type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
 
 /**
- * Per-module "tap-to-log" presets. Copy and emojis mirror the web
+ * Per-module "tap-to-log" presets. Copy and glyphs mirror the web
  * `PRESETS` map verbatim. `routine` = 3 presets written directly;
  * `finyk` = 3 presets that stage a name/category prefill then open the
  * add-expense sheet; `nutrition` / `fizruk` = no presets, fallback CTA
@@ -76,24 +77,24 @@ const PRESETS: PresetCatalog = {
     items: [
       {
         id: "water",
-        emoji: "💧",
+        emoji: "droplet",
         title: "Випити воду",
         desc: "Щодня, будь-коли",
-        data: { name: "Випити воду", emoji: "💧" },
+        data: { name: "Випити воду", emoji: "droplet" },
       },
       {
         id: "walk",
-        emoji: "🚶",
+        emoji: "run",
         title: "Пройти 10 хв",
         desc: "Короткий вихід після обіду",
-        data: { name: "Пройти 10 хв", emoji: "🚶" },
+        data: { name: "Пройти 10 хв", emoji: "run" },
       },
       {
         id: "read",
-        emoji: "📖",
+        emoji: "book-open",
         title: "Прочитати 10 сторінок",
         desc: "Вечірня звичка",
-        data: { name: "Прочитати 10 сторінок", emoji: "📖" },
+        data: { name: "Прочитати 10 сторінок", emoji: "book-open" },
       },
     ],
   },
@@ -106,21 +107,21 @@ const PRESETS: PresetCatalog = {
     items: [
       {
         id: "coffee",
-        emoji: "☕",
+        emoji: "coffee",
         title: "Кава",
         desc: "ранкова звичка — введи свою суму",
         data: { description: "Кава", category: "їжа" },
       },
       {
         id: "ride",
-        emoji: "🚕",
+        emoji: "truck",
         title: "Таксі",
         desc: "дорога на роботу чи додому",
         data: { description: "Таксі", category: "транспорт" },
       },
       {
         id: "lunch",
-        emoji: "🥗",
+        emoji: "utensils",
         title: "Обід",
         desc: "що з'їв — і за скільки",
         data: { description: "Обід", category: "їжа" },
@@ -252,7 +253,10 @@ export function PresetStep({
             <View
               className={`h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.accentChip}`}
             >
-              <Text className="text-xl">{item.emoji}</Text>
+              {/* Гліф плитки — icon-slug із `ROUTINE_GLYPHS`
+                  (`@sergeant/routine-domain`), не emoji: RN малював би
+                  emoji системним шрифтом, різним на iOS і Android. */}
+              <HabitGlyph value={item.emoji} size={20} color="#1c1917" />
             </View>
             <View className="min-w-0 flex-1">
               <Text className="text-sm font-bold text-fg" numberOfLines={1}>

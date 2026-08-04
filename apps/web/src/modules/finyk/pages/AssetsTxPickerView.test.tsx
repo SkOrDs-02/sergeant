@@ -215,7 +215,11 @@ describe("AssetsTxPickerView", () => {
           txPicker={{ type: "monoDebt", id: "acc-1" }}
         />,
       );
-      expect(screen.getByText(/✅ Погашення/)).toBeInTheDocument();
+      // Гліф «✅» прибрано 2026-08-03, тож заголовок групи «Погашення» тепер
+      // збігається з префіксом рядка «Погашення: …» — матчимо саме заголовок.
+      expect(
+        screen.getByText((_t, el) => el?.textContent === "Погашення"),
+      ).toBeInTheDocument();
       expect(screen.getByText(/Покупка по картці/)).toBeInTheDocument();
       expect(screen.getByText(/Рух на іншому рахунку/)).toBeInTheDocument();
     });

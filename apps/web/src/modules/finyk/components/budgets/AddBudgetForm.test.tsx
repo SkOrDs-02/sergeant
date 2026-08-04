@@ -195,7 +195,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       expect(onSubmit).toHaveBeenCalledWith({
         type: "goal",
         name: "Нова авто",
-        emoji: "🎯",
+        emoji: "target",
         targetAmount: 20000,
         targetDate: "2026-12-31",
         linkedJarId: undefined,
@@ -330,12 +330,12 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("goal emoji selection via aria-pressed reflects in submit payload", async () => {
+  it("goal icon selection reflects in submit payload", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
 
     fireEvent.change(screen.getByLabelText("Іконка цілі"), {
-      target: { value: "🏠" },
+      target: { value: "home" },
     });
 
     fireEvent.change(screen.getByLabelText("Назва цілі"), {
@@ -350,7 +350,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
           type: "goal",
-          emoji: "🏠",
+          emoji: "home",
           name: "Хата",
         }),
       );

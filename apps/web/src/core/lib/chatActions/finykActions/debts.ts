@@ -21,7 +21,7 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
     name,
     totalAmount: Number(amount),
     dueDate: due_date || "",
-    emoji: emoji || "💸",
+    emoji: emoji || "",
     linkedTxIds: [],
   };
   debts.push(newDebt);
@@ -68,7 +68,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const debts = ls<Debt[]>("finyk_debts", []);
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- idx ≥ 0 confirmed above; noUncheckedIndexedAccess makes [idx] T|undefined
+
   const debt = { ...debts[idx]! };
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
