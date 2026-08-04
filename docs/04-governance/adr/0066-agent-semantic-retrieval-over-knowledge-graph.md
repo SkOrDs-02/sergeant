@@ -1,7 +1,6 @@
 # ADR-0066: Agent semantic retrieval over the knowledge graph
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Deprecated
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 
 - **Status:** Superseded by [ADR-0081](./0081-repository-simplification.md)
 - **Date:** 2026-06-08

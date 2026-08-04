@@ -1,6 +1,6 @@
 # ADR-0083: Травма-модель на рівні зони, а не лише м'яза
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Last validated:** 2026-08-01 by @Skords-01. **Next review:** 2026-10-30.
 - **Date:** 2026-08-01
 - **Reviewers:** @SkOrDs-02

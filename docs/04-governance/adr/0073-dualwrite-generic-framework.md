@@ -1,7 +1,6 @@
 # ADR-0073: Generic dual-write framework для 4 модульних пайплайнів
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Accepted
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-07-03

@@ -1,7 +1,6 @@
 # ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active
+> **Last touched:** 2026-08-04 by @claude. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-05-15

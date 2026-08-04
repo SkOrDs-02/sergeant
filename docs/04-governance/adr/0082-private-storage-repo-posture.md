@@ -1,6 +1,6 @@
 # ADR-0082: Репозиторій як приватний склад — зняття release/distribution та solo-overhead автоматизації
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Last validated:** 2026-07-30 by @SkOrDs-02. **Next review:** 2026-10-28.
 - **Date:** 2026-07-30
 - **Reviewers:** @SkOrDs-02

@@ -1,6 +1,6 @@
 # ADR-0007: Tailwind colour-opacity scale + WCAG-AA `-strong` tier
 
-- **Status:** accepted
+- **Status:** Accepted
 - **Enforcement:** частково superseded — [ADR-0081](./0081-repository-simplification.md) вилучив ESLint-правила `valid-tailwind-opacity` і `no-low-contrast-text-on-fill` разом із їхніми тестами. Сама шкала й `-strong` tier лишаються канонічними в design tokens; механічного gate більше немає.
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-04-27
