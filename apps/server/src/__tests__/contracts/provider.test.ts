@@ -15,8 +15,9 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 25 consumer interactions across 16
-// unique routes, including the chat-usage extension. Of those, 8 routes are fully-verified
+// **Coverage:** the pact file has 37 consumer interactions across 26
+// unique routes, including the chat-usage extension and the
+// billing/privat/finyk consumer expansion (2026-08-04). Of those, 8 routes are fully-verified
 // here via supertest replay against `createApp()`:
 //
 //   - GET  /api/v1/me                       (hub persona)
@@ -204,10 +205,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 25 expected consumer interactions across 16 routes", () => {
+  it("pact file has 37 expected consumer interactions across 26 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(25);
+    expect(pact.interactions).toHaveLength(37);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -228,6 +229,17 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v2/sync/pull",
       "POST /api/v2/sync/push",
       "POST /api/v1/nutrition/parse-pantry",
+      // billing + privat + finyk consumer expansion (10)
+      "GET /api/v1/billing/providers",
+      "GET /api/v1/billing/status",
+      "POST /api/v1/billing/cancel",
+      "POST /api/v1/billing/checkout",
+      "POST /api/v1/billing/portal",
+      "GET /api/v1/privat",
+      "GET /api/v1/privat/status",
+      "POST /api/v1/privat/connect",
+      "POST /api/v1/privat/disconnect",
+      "POST /api/v1/finyk/manual-expenses",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
