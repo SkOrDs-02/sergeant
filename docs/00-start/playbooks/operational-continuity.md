@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -105,3 +105,14 @@ lang: en
 - `docs/03-operations/runbooks/operations-runbook.md` — full operations guide
 - `docs/04-governance/security/disaster-recovery.md` — DR scenarios (Postgres restore, bad migration, etc.)
 - `docs/03-operations/observability/runbook.md` — metrics + alerting runbook
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------- |
+| [#618](https://github.com/Skords-01/Sergeant/pull/618) | feat(web): чесність кільця, сканера, ваги й дайджесту — пʼять рядків беклогу канонів | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

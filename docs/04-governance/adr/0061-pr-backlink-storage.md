@@ -1,6 +1,6 @@
 # ADR-0061: PR ↔ doc backlinks — hybrid storage (ledger + in-doc block)
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-05-15
@@ -113,10 +113,11 @@ Sergeant уже екстрагує `#NNNN` PR-згадки **з** докумен
 
 ## Recent PRs
 
-| PR                                                       | Title                                                                | Merged     |
-| -------------------------------------------------------- | -------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                | 2026-07-29 |
-| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5) | 2026-05-15 |
+| PR                                                       | Title                                                                                | Merged     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------- |
+| [#618](https://github.com/Skords-01/Sergeant/pull/618)   | feat(web): чесність кільця, сканера, ваги й дайджесту — пʼять рядків беклогу канонів | 2026-08-04 |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                                | 2026-07-29 |
+| [#2899](https://github.com/Skords-01/Sergeant/pull/2899) | feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5)                 | 2026-05-15 |
 
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

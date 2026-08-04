@@ -81,3 +81,14 @@ boot бачить непорожній журнал і no-op-ить, без ок
 - Канон fizruk §10 — тепер має ратифікований механізм, а не лише намір.
 - Аудит fizruk § C3/D-3.
 - Беклог, рядок `W1-WEIGHT-SOT` — ✅ стадії 1-4 (2026-08-04).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------- |
+| [#618](https://github.com/Skords-01/Sergeant/pull/618) | feat(web): чесність кільця, сканера, ваги й дайджесту — пʼять рядків беклогу канонів | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

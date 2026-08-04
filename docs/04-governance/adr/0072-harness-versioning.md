@@ -1,6 +1,6 @@
 # ADR-0072: Harness versioning and A/B evaluation
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-06-29
@@ -77,3 +77,14 @@ Introduce a minimal, append-only harness version registry plus a weekly A/B work
 - Golden-task benchmark suite for `pnpm harness:bench` — separate ADR once at least 10 reproducible harness-sensitive tasks exist.
 - Promote `0.1.0` → `1.0.0` after the first 3 minor bumps land without a rollback (signal of stability).
 - `lint:harness-version-freshness` — janitor that opens an issue if the registry's `current` lags behind the most recent bump-worthy commit by more than 7 days. Tracked in `docs/90-work/tech-debt/agents.md` (follow-up).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------- |
+| [#618](https://github.com/Skords-01/Sergeant/pull/618) | feat(web): чесність кільця, сканера, ваги й дайджесту — пʼять рядків беклогу канонів | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

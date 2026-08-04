@@ -1,6 +1,6 @@
 # ADR-0050: TypeScript major-version policy + `@types/node` pinning
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-04 by @github-actions[bot]. **Next review:** 2026-11-02.
 
 - **Status:** Accepted
 - **Date:** 2026-05-06
@@ -61,3 +61,14 @@ If TS 6 causes unresolvable breakage in >3 packages simultaneously:
 - `pnpm typecheck` must pass with `@types/node@20` — any code using Node 22+ APIs that relied on the wrong types will now fail to compile (desired: surface the bug).
 - Renovate will not auto-bump `@types/node` past major 20 until the Volta `node` version in `package.json` is updated.
 - `tools/openclaw` TypeScript version — **N/A** (directory removed; see ADR-0055).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------- |
+| [#618](https://github.com/Skords-01/Sergeant/pull/618) | feat(web): чесність кільця, сканера, ваги й дайджесту — пʼять рядків беклогу канонів | 2026-08-04 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
