@@ -67,6 +67,20 @@ const PANTRY = [
   { name: "олія соняшникова", qty: 1, unit: "л" },
 ];
 
+/**
+ * Основа слова для звірки інгредієнта з коморою.
+ *
+ * AI-DANGER: без відкидання закінчення суддя валить ПРАВИЛЬНУ відповідь.
+ * У коморі «яйця», модель написала «яйце - 1 шт» — і `includes("яйця")` дав
+ * промах, хоча це той самий продукт. Так само «морква» проти «моркву».
+ * Відкидаємо один символ лише зі слів довших за 4 літери: «рис» → «ри» вже
+ * ловив би «рисова паста» й будь-яке слово на «ри».
+ */
+function pantryStem(pantryName: string): string {
+  const first = pantryName.split(" ")[0] ?? pantryName;
+  return first.length > 4 ? first.slice(0, -1) : first;
+}
+
 /** Базові допущення, які промпти явно дозволяють додавати понад комору. */
 const ALLOWED_EXTRAS =
   /сіл|перц|перець|вод|оли|олі|спец|приправ|цукор|оцет|лавров/i;
@@ -406,7 +420,7 @@ const recipesPipeline: Pipeline = {
             const n = normalizeName(ing);
             return !(
               ALLOWED_EXTRAS.test(n) ||
-              pantryNames.some((p) => n.includes(p.split(" ")[0] ?? p))
+              pantryNames.some((p) => n.includes(pantryStem(p)))
             );
           }),
         );

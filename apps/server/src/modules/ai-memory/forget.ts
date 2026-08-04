@@ -514,6 +514,7 @@ export async function previewForget(
     query: input.query,
     topK,
     sources: ["cofounder"],
+    caller: "forget-preview",
   });
 
   const token = randomUUID();
