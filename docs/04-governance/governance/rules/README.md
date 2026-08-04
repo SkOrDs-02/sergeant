@@ -31,5 +31,5 @@
 
 Правила з механічним enforcement у `eslint-plugin-sergeant-design`, які не є нумерованими Hard Rules і не живуть у `hard-rules.json`:
 
-- [`kyiv-time-helpers.md`](./kyiv-time-helpers.md) — заборона host-local date-частин у `apps/web/**`.
+- [`kyiv-time-helpers.md`](./kyiv-time-helpers.md) — явна доктрина межі доби в `apps/web/**` (ADR-0078): Kyiv для відображення/звітів, device-local для особистого дня.
 - [`prefer-parse-body.md`](./prefer-parse-body.md) — `parseBody` / `parseQuery` замість sentinel-`validateBody` / `validateQuery`.

@@ -17,7 +17,7 @@ import {
   clearNutritionSqliteCache,
 } from "../../../modules/nutrition/lib/sqliteReader";
 import { writeMemoryEntries } from "../../profile/memoryBank";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
 
 const NOW = new Date("2026-06-15T12:00:00Z");
 
@@ -87,7 +87,7 @@ describe("appendRoutineLines", () => {
   });
 
   it("emits routine summary when habits + completions exist", () => {
-    const todayKey = getKyivDayKey(NOW);
+    const todayKey = dateKeyFromDate(NOW);
     __setRoutineSqliteStateCacheForTests({
       habits: [
         { id: "h1", name: "Біг", emoji: "🏃", archived: false },
@@ -104,6 +104,35 @@ describe("appendRoutineLines", () => {
     expect(out).toContain("[Рутина сьогодні]");
     expect(out).toContain("[Рутина тиждень]");
   });
+
+  /**
+   * ADR-0078: межа особистої доби — за пристроєм, не за Києвом.
+   *
+   * Момент навмисно взятий такий, де київська й UTC-дати РОЗХОДЯТЬСЯ:
+   * 21:30 UTC — це вже 00:30 наступного дня в Києві. Відмітка лежить під
+   * локальним ключем пристрою (так її пише Рутина), тож київський розрахунок
+   * шукав би її під завтрашньою датою й показав «виконано 0».
+   *
+   * Межа тесту, чесно: на машині з київською таймзоною локальна й київська
+   * дати збігаються, і регресію він не зловить. Ловить її CI (UTC).
+   */
+  it("бере день-ключ пристрою, а не київський, на межі доби", () => {
+    const lateUtc = new Date("2026-06-15T21:30:00Z");
+    const deviceKey = dateKeyFromDate(lateUtc);
+    __setRoutineSqliteStateCacheForTests({
+      habits: [
+        { id: "h1", name: "Біг", emoji: "🏃", archived: false },
+      ] as never,
+    });
+    __setRoutineSqliteCompletionsCacheForTests({
+      completions: { h1: [deviceKey] },
+    });
+    const lines: string[] = [];
+    appendRoutineLines(lines, lateUtc);
+    const out = lines.join("\n");
+    expect(out).toContain("виконано сьогодні: 1 з 1");
+    expect(out).toContain("Біг (id:h1): виконано");
+  });
 });
 
 describe("appendNutritionLines", () => {
@@ -114,7 +143,7 @@ describe("appendNutritionLines", () => {
   });
 
   it("emits nutrition summary for today's meals + targets + weekly avg", () => {
-    const todayKey = getKyivDayKey(NOW);
+    const todayKey = dateKeyFromDate(NOW);
     __setNutritionSqliteCacheForTests({
       log: {
         [todayKey]: {

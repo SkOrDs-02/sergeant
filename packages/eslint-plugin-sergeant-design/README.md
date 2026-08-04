@@ -1,6 +1,6 @@
 # eslint-plugin-sergeant-design
 
-> **Last touched:** 2026-07-29 by @dimastahov16012003. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
 > **Status:** Active
 
 Локальний ESLint-плагін для runtime-, security-, storage-, API- та domain-інваріантів Sergeant. Попри історичну назву, він більше не кодує в AST суб’єктивні візуальні рішення: колір, радіус, типографіка, motion і композиція перевіряються design tokens, Storybook та review згідно з [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md).
@@ -22,7 +22,7 @@
 - `forbid-shell-only-feature` — блокує feature-код лише в одному shell.
 - `no-hash-router-in-modules` — захищає канонічний router contract.
 - `no-legacy-telegram-parse-mode` — блокує legacy Telegram parse mode.
-- `prefer-kyiv-time` — вимагає доменні Kyiv-time helpers.
+- `prefer-kyiv-time` — вимагає явної доктрини межі доби (ADR-0078): Kyiv-хелпери для відображення/звітів, документований suppress для device-local особистого дня.
 - `no-inline-body-size-limit` — вимагає централізовані body-size limits.
 - `prefer-parse-body-over-validate-body` — вимагає типізований parse contract.
 - `sri-on-third-party-script` — вимагає SRI для third-party scripts.

@@ -153,7 +153,7 @@ Five comment prefixes: `AI-NOTE` (pointer hint), `AI-CONTEXT` (architectural rat
 
 ## Domain invariants
 
-Single source of truth: **Europe/Kyiv** for time, **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key is `YYYY-MM-DD` in Kyiv local; week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/02-engineering/architecture/domain-invariants.md`](./docs/02-engineering/architecture/domain-invariants.md).
+Single source of truth: **Europe/Kyiv** for time **display, server-side reports and financial periods** — але **НЕ** для межі особистої доби: день-ключ відмітки звички, логу їжі й денного запису визначається годинником **пристрою** ([ADR-0078](./docs/04-governance/adr/0078-day-boundary-device-local.md)). Далі: **minor units (kopiykas) as `number`** for money, **Better Auth opaque strings** for user IDs (not UUID). Day key format is `YYYY-MM-DD` (device-local for personal entities, Kyiv for server reports); week start Monday (ISO 8601). Anti-patterns from past bugs and the AI-tool execution path: [`docs/02-engineering/architecture/domain-invariants.md`](./docs/02-engineering/architecture/domain-invariants.md).
 
 ## RQ keys factory
 
