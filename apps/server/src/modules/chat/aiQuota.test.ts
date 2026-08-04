@@ -131,14 +131,17 @@ function makeAtomicPoolMock() {
     return enqueue(() => {
       const isUpsert = /INSERT INTO ai_usage_daily/i.test(text);
       if (!isUpsert) return { rows: [], rowCount: 0 };
-      const [subject, day, bucket, cost, limit] = values as [
+      // Params order: subject, day, bucket, endpoint, cost, limit (міграції
+      // 104/106 додали `endpoint` як 4-ту колонку PK).
+      const [subject, day, bucket, endpoint, cost, limit] = values as [
+        string,
         string,
         string,
         string,
         number,
         number,
       ];
-      const key = `${subject}|${day}|${bucket}`;
+      const key = `${subject}|${day}|${bucket}|${endpoint}`;
       const cur = store.get(key) ?? 0;
       const next = cur + cost;
       if (next > limit) {
@@ -235,11 +238,14 @@ describe("assertAiQuota (default bucket)", () => {
     expect(pool.query).toHaveBeenCalledOnce();
     const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toMatch(/INSERT INTO ai_usage_daily/);
-    expect(sql).toMatch(/ON CONFLICT \(subject_key, usage_day, bucket\)/);
+    expect(sql).toMatch(
+      /ON CONFLICT \(subject_key, usage_day, bucket, endpoint\)/,
+    );
     expect(sql).toMatch(/DO UPDATE/);
     expect(values[2]).toBe("default");
-    expect(values[3]).toBe(1); // cost for plain chat
-    expect(values[4]).toBe(10); // limit
+    expect(values[3]).toBe(__aiQuotaTestHooks.AI_QUOTA_ENDPOINT);
+    expect(values[4]).toBe(1); // cost for plain chat
+    expect(values[5]).toBe(10); // limit
   });
 
   it("fails closed with 503 when the quota circuit breaker is open", async () => {
@@ -282,6 +288,7 @@ describe("assertAiQuota (default bucket)", () => {
       expect.any(String),
       __aiQuotaTestHooks.DEFAULT_BUCKET,
       1,
+      __aiQuotaTestHooks.AI_QUOTA_ENDPOINT,
     ]);
   });
 
@@ -356,7 +363,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(res.headers["X-AI-Quota-Remaining"]).toBe("4"); // 5 - 1
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // limit passed to UPSERT
+    expect((upsert![1] as unknown[])[5]).toBe(5); // limit passed to UPSERT
   });
 
   it("leaves an authenticated PRO user unlimited (no quota row written)", async () => {
@@ -407,7 +414,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap still enforced
+    expect((upsert![1] as unknown[])[5]).toBe(5); // free cap still enforced
   });
 
   it("falls back to the FREE cap when the plan lookup throws", async () => {
@@ -421,7 +428,7 @@ describe("assertAiQuota (plan-aware user limit — ADR-1.7)", () => {
     expect(ok).toBe(true);
     const upsert = findUpsert();
     expect(upsert).toBeDefined();
-    expect((upsert![1] as unknown[])[4]).toBe(5); // free cap enforced despite error
+    expect((upsert![1] as unknown[])[5]).toBe(5); // free cap enforced despite error
   });
 });
 
@@ -452,8 +459,9 @@ describe("consumeToolQuota (tool buckets)", () => {
     expect(pool.query).toHaveBeenCalledOnce();
     const [, values] = pool.query.mock.calls[0]!;
     expect(values![2]).toBe("tool:change_category");
-    expect(values![3]).toBe(3); // cost
-    expect(values![4]).toBe(12); // limit
+    expect(values![3]).toBe(__aiQuotaTestHooks.AI_QUOTA_ENDPOINT);
+    expect(values![4]).toBe(3); // cost
+    expect(values![5]).toBe(12); // limit
   });
 
   it("uses per-tool limit from AI_QUOTA_TOOL_LIMITS JSON", async () => {
@@ -467,7 +475,7 @@ describe("consumeToolQuota (tool buckets)", () => {
 
     await consumeToolQuota(makeReq(), "create_debt");
     const [, values] = pool.query.mock.calls[0]!;
-    expect(values![4]).toBe(5);
+    expect(values![5]).toBe(5);
     expect(values![2]).toBe("tool:create_debt");
   });
 
@@ -561,8 +569,18 @@ describe("atomic consumeQuota — concurrent increments", () => {
     ]);
     expect(plainRes.filter((r) => r.ok).length).toBe(3);
     expect(toolsRes.filter((r) => r.ok).length).toBe(3);
-    expect(store.get("u:x|2026-01-01|default")).toBe(3);
-    expect(store.get("u:x|2026-01-01|tool:create_debt")).toBe(9);
+    // Key includes `endpoint` (constant `AI_QUOTA_ENDPOINT`), mirroring the
+    // real 4-column PK (subject_key, usage_day, bucket, endpoint).
+    expect(
+      store.get(
+        `u:x|2026-01-01|default|${__aiQuotaTestHooks.AI_QUOTA_ENDPOINT}`,
+      ),
+    ).toBe(3);
+    expect(
+      store.get(
+        `u:x|2026-01-01|tool:create_debt|${__aiQuotaTestHooks.AI_QUOTA_ENDPOINT}`,
+      ),
+    ).toBe(9);
   });
 
   it("rejects cost that alone exceeds limit (pre-check)", async () => {
