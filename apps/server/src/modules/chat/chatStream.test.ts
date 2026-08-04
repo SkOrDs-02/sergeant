@@ -275,15 +275,17 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
       (e: unknown) => e,
     );
     expect(caught).toBeInstanceOf(ExternalServiceError);
-    // `cause` в асерції навмисно: якщо CI знову побачить 502 замість 503,
-    // Received покаже rawProviderMessage/upstreamStatus — тобто ЩО саме
-    // прочитав код замість нашої 503-відповіді.
+    // Апстрімний статус назовні не проходить: `makeAiProviderError` мапить
+    // 429 → 503 (retry-after має сенс), решту — у 502. Тут апстрім віддав
+    // 503, тож наша відповідь — 502, а справжній код лишається в `cause`.
+    // `cause` в асерції навмисно: у Received видно rawProviderMessage і
+    // upstreamStatus — тобто ЩО саме прочитав код.
     const err = caught as ExternalServiceError & { cause?: unknown };
     expect({
       status: err.status,
       code: err.code,
       cause: err.cause,
-    }).toMatchObject({ status: 503, code: "ANTHROPIC_ERROR" });
+    }).toMatchObject({ status: 502, code: "ANTHROPIC_ERROR" });
     expect(refund).toHaveBeenCalledTimes(1);
   });
 
