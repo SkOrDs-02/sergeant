@@ -37,19 +37,39 @@ function isUndoable(
   return typeof out === "object" && out !== null && "undo" in out;
 }
 
+const lsFixtures = new Map<string, unknown>();
+
 beforeEach(() => {
   vi.clearAllMocks();
-  // Mirrors the real `ls(key, fallback)` behaviour (empty storage → fallback)
-  // so per-call return shape (array vs. record) stays correct without every
-  // test having to know the exact number/order of `ls()` calls a handler
-  // makes. Tests that need a non-empty read override with `mockReturnValueOnce`.
-  mockLs.mockImplementation((_key: string, fallback: unknown) => fallback);
+  lsFixtures.clear();
+  // Mirrors the real `ls(key, fallback)` behaviour (empty storage → fallback),
+  // але читання KEY-AWARE: seed конкретного ключа через lsFixtures.set(...) —
+  // хендлер, що читає не той ключ, отримає fallback і тест впаде чесно.
+  mockLs.mockImplementation((key: string, fallback: unknown) =>
+    lsFixtures.has(key) ? lsFixtures.get(key) : fallback,
+  );
   mockResolveMeta.mockReturnValue(null);
 });
 
 // ─── createTransaction ──────────────────────────────────────────────────────
 
 describe("createTransaction", () => {
+  it("зберігає явну дату як київський день незалежно від TZ хоста", () => {
+    const out = createTransaction({
+      name: "create_transaction",
+      input: { amount: 100, type: "expense", date: "2026-08-04" },
+    });
+    expect(typeof out).not.toBe("string");
+    const saved = mockWrite.mock.calls.find(
+      (c) => c[0] === "finyk_manual_expenses_v1",
+    );
+    expect(saved).toBeDefined();
+    const tx = (saved?.[1] as Array<{ date: string }>).at(-1);
+    // Інстант — київська опівніч 2026-08-04 (21:00Z 3-го, EEST +3):
+    // день у Europe/Kyiv збережений, хай би який TZ був у хоста/браузера.
+    expect(tx?.date).toBe("2026-08-03T21:00:00.000Z");
+  });
+
   it("returns error for non-numeric amount", () => {
     const out = createTransaction({
       name: "create_transaction",
