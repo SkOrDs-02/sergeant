@@ -148,6 +148,98 @@
       }
     },
     {
+      "description": "a GET /api/v1/billing/providers request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 resolves to country=UA"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/providers"
+      },
+      "response": {
+        "body": {
+          "providers": [
+            "liqpay",
+            "plata"
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (active pro)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active pro subscription via liqpay"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "subscription": {
+            "active": true,
+            "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
+            "id": 42,
+            "plan": "pro",
+            "provider": "liqpay",
+            "status": "active"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (no subscription)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has never subscribed"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "subscription": {
+            "active": false,
+            "currentPeriodEnd": null,
+            "id": null,
+            "plan": null,
+            "provider": null,
+            "status": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/chat/usage request",
       "providerStates": [
         {
@@ -478,6 +570,104 @@
       }
     },
     {
+      "description": "a GET /api/v1/privat/status request (connected)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with an active PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat/status"
+      },
+      "response": {
+        "body": {
+          "connected": true,
+          "merchantId": "pact-merchant-001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/privat/status request (not connected)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-002 with no PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat/status"
+      },
+      "response": {
+        "body": {
+          "connected": false,
+          "merchantId": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/privat?path=/statements/balance/final request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with a valid PrivatBank connection; upstream balance/final returns 1 account"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat",
+        "query": {
+          "country": [
+            "UA"
+          ],
+          "path": [
+            "/statements/balance/final"
+          ],
+          "showRest": [
+            "true"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "balances": [
+            {
+              "acc": "UA213996220000026007233566001",
+              "balanceOut": "12345.67",
+              "balanceOutEq": "12345.67",
+              "currency": "980",
+              "nameACC": "Пласт. картка"
+            }
+          ],
+          "exist_next_page": false,
+          "status": "SUCCESS"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v2/sync/pull?since=0&limit=2 request (first page, more data)",
       "providerStates": [
         {
@@ -742,6 +932,91 @@
       }
     },
     {
+      "description": "a POST /api/v1/billing/cancel request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/cancel"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/checkout request (plan=pro, provider=liqpay)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 in UA with liqpay enabled; no existing subscription"
+        }
+      ],
+      "request": {
+        "body": {
+          "plan": "pro",
+          "provider": "liqpay"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/checkout"
+      },
+      "response": {
+        "body": {
+          "mode": "live",
+          "ok": true,
+          "sessionId": "cs_pact_liqpay_001",
+          "url": "https://www.liqpay.ua/checkout/cs_pact_liqpay_001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/portal request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/portal"
+      },
+      "response": {
+        "body": {
+          "ok": true,
+          "url": "https://sergeant.app/settings?billing=manage"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/chat request without tool-calls (non-streaming)",
       "providerStates": [
         {
@@ -776,6 +1051,48 @@
           "content-type": "application/json"
         },
         "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/manual-expenses request (12000 kopiykas, food)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within finyk write quota"
+        }
+      ],
+      "request": {
+        "body": {
+          "amount": 12000,
+          "category": "food",
+          "date": "2026-06-11",
+          "note": "кава"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/manual-expenses"
+      },
+      "response": {
+        "body": {
+          "expense": {
+            "amountKopiykas": 12000,
+            "category": "food",
+            "createdAt": "2026-06-11T10:00:00.000Z",
+            "date": "2026-06-11",
+            "id": "0b7e6c3a-7e0f-4b59-9b39-2f4f7f6f9d11",
+            "note": "кава",
+            "updatedAt": "2026-06-11T10:00:00.000Z"
+          },
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
       }
     },
     {
@@ -926,6 +1243,63 @@
             "totalProtein_g": 50
           },
           "rawText": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/privat/connect request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with no prior PrivatBank connection; upstream credential probe succeeds"
+        }
+      ],
+      "request": {
+        "body": {
+          "merchantId": "pact-merchant-001",
+          "token": "pact-fake-token-not-a-real-cred"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/privat/connect"
+      },
+      "response": {
+        "body": {
+          "connected": true,
+          "merchantId": "pact-merchant-001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/privat/disconnect request (no body)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with an active PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/privat/disconnect"
+      },
+      "response": {
+        "body": {
+          "connected": false
         },
         "headers": {
           "Content-Type": "application/json",
