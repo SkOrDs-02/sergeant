@@ -1,16 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 
-// Мокаємо node:fs/promises до завантаження handler-а — аналогічно
-// backup-download.test.ts, щоб vi.mock-фабрика відпрацювала до реального import.
-vi.mock("node:fs/promises", () => ({
-  default: {
-    mkdir: vi.fn(async () => undefined),
-    writeFile: vi.fn(async () => undefined),
-  },
+const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
+
+vi.mock("../../db.js", () => ({
+  default: { query: queryMock },
+  pool: { query: queryMock },
+  query: queryMock,
 }));
 
-import fs from "node:fs/promises";
 import { env } from "../../env/env.js";
 import handler from "./backup-upload.js";
 
@@ -66,8 +64,8 @@ const TEST_SECRET = "test-secret-for-backup-upload-unit-tests-32bytes!";
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
-  vi.mocked(fs.mkdir).mockReset();
-  vi.mocked(fs.writeFile).mockReset();
+  queryMock.mockReset();
+  queryMock.mockResolvedValue({ rows: [], rowCount: 1 });
   (env as Record<string, unknown>)["NUTRITION_BACKUP_KEY_SECRET"] = TEST_SECRET;
 });
 
@@ -77,7 +75,7 @@ afterEach(() => {
 });
 
 describe("nutrition backup-upload handler", () => {
-  it("happy path: зберігає blob на диск і повертає { ok: true, savedAt }", async () => {
+  it("happy path: upsert-ить blob у nutrition_backups і повертає { ok: true, savedAt }", async () => {
     const blob = { version: 2, entries: [{ id: "e1", kcal: 500 }] };
     const nowBefore = Date.now();
 
@@ -90,17 +88,13 @@ describe("nutrition backup-upload handler", () => {
     expect(typeof body["savedAt"]).toBe("number");
     expect(body["savedAt"] as number).toBeGreaterThanOrEqual(nowBefore);
 
-    // Переконуємось, що mkdir і writeFile були викликані рівно по одному разу.
-    expect(vi.mocked(fs.mkdir)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(fs.writeFile)).toHaveBeenCalledTimes(1);
-
-    // Перевіряємо, що writeFile отримав правильний JSON та UTF-8 encoding.
-    const [filePath, content, encoding] = vi.mocked(fs.writeFile).mock
-      .calls[0] as [string, string, string];
-    expect(encoding).toBe("utf8");
-    expect(JSON.parse(content)).toEqual(blob);
-    // Шлях файлу має містити "nutrition-backup-" і закінчуватись на ".json".
-    expect(filePath).toMatch(/nutrition-backup-[0-9a-f]{32}\.json$/);
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    const [sql, params] = queryMock.mock.calls[0]!;
+    expect(sql).toMatch(/INSERT INTO nutrition_backups/);
+    expect(sql).toMatch(/ON CONFLICT \(user_id, key\) DO UPDATE/);
+    expect(params[0]).toBe("user_99");
+    expect(typeof params[1]).toBe("string"); // HMAC key
+    expect(JSON.parse(params[2] as string)).toEqual(blob);
   });
 
   it("кидає UnauthorizedError коли user відсутній у запиті", async () => {
@@ -110,7 +104,7 @@ describe("nutrition backup-upload handler", () => {
       name: "UnauthorizedError",
       status: 401,
     });
-    expect(vi.mocked(fs.writeFile)).not.toHaveBeenCalled();
+    expect(queryMock).not.toHaveBeenCalled();
   });
 
   it("кидає AppError(503) коли NUTRITION_BACKUP_KEY_SECRET не задано", async () => {
@@ -123,7 +117,7 @@ describe("nutrition backup-upload handler", () => {
       status: 503,
       code: "BACKUP_DISABLED",
     });
-    expect(vi.mocked(fs.writeFile)).not.toHaveBeenCalled();
+    expect(queryMock).not.toHaveBeenCalled();
   });
 
   it("кидає ValidationError коли blob відсутній у body (schema fail)", async () => {
@@ -134,7 +128,7 @@ describe("nutrition backup-upload handler", () => {
       name: "ValidationError",
       message: "Некоректні дані запиту",
     });
-    expect(vi.mocked(fs.writeFile)).not.toHaveBeenCalled();
+    expect(queryMock).not.toHaveBeenCalled();
   });
 
   it("кидає AppError(413) коли JSON blob перевищує 2.5 МБ", async () => {
@@ -149,29 +143,30 @@ describe("nutrition backup-upload handler", () => {
       status: 413,
       code: "PAYLOAD_TOO_LARGE",
     });
-    expect(vi.mocked(fs.writeFile)).not.toHaveBeenCalled();
+    expect(queryMock).not.toHaveBeenCalled();
   });
 
-  it("пробрасує fs.writeFile-помилки без перехоплення", async () => {
-    const ioErr = Object.assign(new Error("EIO: i/o error"), { code: "EIO" });
-    vi.mocked(fs.writeFile).mockRejectedValueOnce(ioErr as never);
+  it("пробрасує DB-помилки без перехоплення", async () => {
+    const ioErr = Object.assign(new Error("ECONNRESET"), {
+      code: "ECONNRESET",
+    });
+    queryMock.mockRejectedValueOnce(ioErr);
 
     await expect(
       handler(makeReq("user_1", { blob: { v: 1 } }), makeRes()),
-    ).rejects.toThrow("EIO: i/o error");
+    ).rejects.toThrow("ECONNRESET");
   });
 
-  it("різні userId дають різні шляхи файлів (ізоляція між юзерами)", async () => {
+  it("різні userId дають різні HMAC-ключі (ізоляція між юзерами)", async () => {
     const blob = { v: 1 };
 
     await handler(makeReq("alice", { blob }, "same-token"), makeRes());
     await handler(makeReq("bob", { blob }, "same-token"), makeRes());
 
-    const calls = vi.mocked(fs.writeFile).mock.calls;
-    expect(calls).toHaveLength(2);
-    const [pathAlice] = calls[0] as [string, ...unknown[]];
-    const [pathBob] = calls[1] as [string, ...unknown[]];
-    // Шляхи мають відрізнятись — HMAC різного userId дає різний ключ.
-    expect(pathAlice).not.toBe(pathBob);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    const keyAlice = queryMock.mock.calls[0]![1][1] as string;
+    const keyBob = queryMock.mock.calls[1]![1][1] as string;
+    // HMAC різного userId дає різний ключ.
+    expect(keyAlice).not.toBe(keyBob);
   });
 });

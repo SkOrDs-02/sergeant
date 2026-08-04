@@ -1,8 +1,7 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import type { Request, Response } from "express";
 import { safeBackupKeyFromToken } from "../../lib/backupKey.js";
 import { env } from "../../env/env.js";
+import { query } from "../../db.js";
 import {
   AppError,
   NotFoundError,
@@ -19,8 +18,9 @@ type AuthedRequest = Request & { user?: { id: string } };
  * `safeBackupKeyFromToken`, тому юзер фізично не може прочитати чужий
  * бекап навіть якщо знає чужий `x-token`.
  *
- * Вузький catch тільки на очікувану ситуацію "файл відсутній" (ENOENT).
- * Пошкоджений JSON і файлові помилки летять наверх в errorHandler.
+ * Storage: `nutrition_backups` (міграція 114) — замінило пряме читання з
+ * `process.cwd()/.data/` (ефемерна ФС контейнера, pre-beta schema-debt
+ * аудит 2026-08-04).
  */
 export default async function handler(
   req: Request,
@@ -39,20 +39,19 @@ export default async function handler(
     });
   }
 
-  const dir = path.join(process.cwd(), ".data");
   const key = safeBackupKeyFromToken(userId, req.headers["x-token"], secret);
-  const file = path.join(dir, `nutrition-backup-${key}.json`);
 
-  let raw: string;
-  try {
-    raw = await fs.readFile(file, "utf8");
-  } catch (e: unknown) {
-    if ((e as NodeJS.ErrnoException)?.code === "ENOENT") {
-      throw new NotFoundError("Бекап не знайдено");
-    }
-    throw e;
+  const { rows } = await query<{ payload: unknown }>(
+    `SELECT payload FROM nutrition_backups WHERE user_id = $1 AND key = $2`,
+    [userId, key],
+    { op: "nutrition_backup_select" },
+  );
+
+  if (rows.length === 0) {
+    throw new NotFoundError("Бекап не знайдено");
   }
 
-  const blob = JSON.parse(raw);
-  res.status(200).json({ ok: true, blob });
+  // `payload` — JSONB; `pg` уже парсить його у JS-значення, `JSON.parse`
+  // не потрібен (на відміну від старого файлового шляху, де читали raw text).
+  res.status(200).json({ ok: true, blob: rows[0]!.payload });
 }
