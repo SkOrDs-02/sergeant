@@ -56,16 +56,31 @@ export function getActiveModule(): ActiveModule | null {
 }
 
 /**
- * HubChat-специфічний `friendlyApiError`. Додає два кейси поверх
+ * HubChat-специфічний `friendlyApiError`. Додає три кейси поверх
  * загального мапера в `@shared/lib/friendlyApiError`:
  *  - 500 без ключа AI → окремий текст про чат;
+ *  - 429 `AI_QUOTA_ANON` → серверна копія проходить БЕЗ перезапису;
  *  - 429 з маркером AI_QUOTA / «ліміт AI» → явне повідомлення про
  *    денний ліміт (замість загального «Забагато запитів»).
+ *
+ * AI-CONTEXT: `code` читається з тіла відповіді, а не з тексту. Незалогінений
+ * відвідувач вичерпує анонімний IP-ліміт, і його вихід — вхід в акаунт, а не
+ * очікування доби; текст цього випадку живе на сервері (`assertAiQuota` у
+ * `apps/server/src/modules/chat/aiQuota.ts`) в одному екземплярі. Матчити його
+ * регуляркою тут означало б тримати ту саму копію у двох файлах — саме так
+ * дрейфують повідомлення.
  */
-export function friendlyApiError(status: number, message?: string): string {
+export function friendlyApiError(
+  status: number,
+  message?: string,
+  code?: string,
+): string {
   const m = message || "";
   if (status === 500 && /ANTHROPIC|not set|key/i.test(m)) {
     return "Чат на сервері не налаштовано (немає ключа AI).";
+  }
+  if (status === 429 && code === "AI_QUOTA_ANON" && m) {
+    return m;
   }
   if (status === 429 && /ліміт AI|AI_QUOTA|квот/i.test(m)) {
     return "Денний ліміт AI вичерпано. Спробуй завтра або зменш навантаження.";
