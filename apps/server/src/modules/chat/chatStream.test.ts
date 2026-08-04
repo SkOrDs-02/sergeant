@@ -38,6 +38,19 @@ import {
 import { streamAnthropicToSse } from "./chatStream.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 
+// AI-CONTEXT: CodeQL не моделює Node-глобали fetch-стека (Response,
+// ReadableStream, TextEncoder) і позначає прямі `new Response(...)` як
+// "invocation of non-function". Аліаси з runtime-guard-ом семантично
+// ідентичні глобалам, але дають аналізатору визначений callee.
+const {
+  Response: NodeResponse,
+  ReadableStream: NodeReadableStream,
+  TextEncoder: NodeTextEncoder,
+} = globalThis;
+if (!NodeResponse || !NodeReadableStream || !NodeTextEncoder) {
+  throw new Error("Node fetch-stack globals missing (need Node >= 18)");
+}
+
 const anthropicMessagesStream = _anthropicMessagesStream as unknown as Mock;
 const recordAnthropicUsageMock = _recordAnthropicUsage as unknown as Mock;
 
@@ -58,14 +71,14 @@ function makeUpstreamSse(
   init: { status?: number } = {},
 ): globalThis.Response {
   const status = init.status ?? 200;
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
+  const encoder = new NodeTextEncoder();
+  const stream = new NodeReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(encoder.encode(eventsToSseString(events)));
       controller.close();
     },
   });
-  return new Response(stream, {
+  return new NodeResponse(stream, {
     status,
     headers: { "content-type": "text/event-stream" },
   });
@@ -212,7 +225,7 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
 describe("streamAnthropicToSse — first-call upstream errors", () => {
   it("upstream !ok (JSON error body) → throws ExternalServiceError, writes nothing, refunds quota", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
-      response: new Response(
+      response: new NodeResponse(
         JSON.stringify({ error: { message: "rate limited" } }),
         { status: 429, headers: { "content-type": "application/json" } },
       ),
@@ -234,7 +247,7 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
 
   it("upstream !ok (non-JSON body) → falls back to raw text via clone(), still throws + refunds", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
-      response: new Response("Service Unavailable", {
+      response: new NodeResponse("Service Unavailable", {
         status: 503,
         headers: { "content-type": "text/plain" },
       }),
@@ -263,10 +276,13 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
 
   it("missing aiQuotaRefund on req is tolerated (best-effort refund, no throw)", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
-      response: new Response(JSON.stringify({ error: { message: "boom" } }), {
-        status: 500,
-        headers: { "content-type": "application/json" },
-      }),
+      response: new NodeResponse(
+        JSON.stringify({ error: { message: "boom" } }),
+        {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        },
+      ),
       recordStreamEnd: vi.fn(),
     });
 
@@ -283,7 +299,7 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
   });
 
   it("getReader() === null (empty body on 200 OK) → writes err event then [DONE], SSE headers already set", async () => {
-    const responseWithoutBody = new Response(null, {
+    const responseWithoutBody = new NodeResponse(null, {
       status: 200,
       headers: { "content-type": "text/event-stream" },
     });
@@ -403,7 +419,7 @@ describe("streamAnthropicToSse — auto-continuation", () => {
         recordStreamEnd: vi.fn(),
       })
       .mockResolvedValueOnce({
-        response: new Response(JSON.stringify({ error: "upstream 500" }), {
+        response: new NodeResponse(JSON.stringify({ error: "upstream 500" }), {
           status: 500,
         }),
         recordStreamEnd: vi.fn(),
@@ -510,13 +526,13 @@ describe("streamAnthropicToSse — heartbeat", () => {
     // (that promise settles via microtask, so it is unaffected by the
     // fake timer advance).
     let controller!: ReadableStreamDefaultController<Uint8Array>;
-    const pendingStream = new ReadableStream<Uint8Array>({
+    const pendingStream = new NodeReadableStream<Uint8Array>({
       start(c) {
         controller = c;
       },
     });
     anthropicMessagesStream.mockResolvedValueOnce({
-      response: new Response(pendingStream, {
+      response: new NodeResponse(pendingStream, {
         status: 200,
         headers: { "content-type": "text/event-stream" },
       }),
@@ -546,7 +562,7 @@ describe("streamAnthropicToSse — heartbeat", () => {
 
     // Now finish the upstream body — the stream should drain to [DONE] and
     // the heartbeat interval must be cleared (no dangling handle).
-    const encoder = new TextEncoder();
+    const encoder = new NodeTextEncoder();
     controller.enqueue(
       encoder.encode(
         `data: ${JSON.stringify({
