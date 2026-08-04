@@ -10,28 +10,47 @@ Chromium. Акаунти A1–A5 створені через UI signup.
 
 ## Зведення
 
-| #   | Знахідка                                                                         | Маршрут                   | Severity | Категорія      | Стан    |
-| --- | -------------------------------------------------------------------------------- | ------------------------- | -------- | -------------- | ------- |
-| 1   | Інтермітентний фриз рендерера при hard-навігації залогіненого користувача        | `/`, `/finyk/*`, auth     | blocker  | functional     | описано |
-| 2   | Після auth-переходу всі kv_store-записи падають «DB has been closed» до reload   | глобально                 | major    | data-integrity | описано |
-| 3   | Подвійна JSON-серіалізація у jsonb-полях sync-шляху (finyk, fizruk)              | sync v2                   | major    | data-integrity | описано |
-| 4   | Logout не очищає UI: профіль користувача видно після sign-out (сервер вже 401)   | `/profile`                | major    | functional     | описано |
-| 5   | Онбординг-стан не привʼязаний до акаунта: existing user → `/welcome` з демо      | auth-флоу                 | major    | ux             | описано |
-| 6   | Anthropic-401 мапиться у HTTP 401 → UI бреше «Доступ заборонено»                 | `/chat`                   | major    | functional     | описано |
-| 7   | Повернення AI-квоти ламається об check constraint (`23514`) — квота згорає       | server                    | major    | data-integrity | описано |
-| 8   | Deep-link `/finyk/cards` мовчки фолбечиться на «Огляд»                           | `/finyk/cards`            | minor    | functional     | описано |
-| 9   | Після «Завершити» тренування — «Активне тренування не знайдено» замість підсумку | `/fizruk/workout/:id`     | minor    | ux             | описано |
-| 10  | Понадлімітна сума витрати: `aria-invalid` без видимого тексту, submit no-op      | `/finyk`                  | minor    | ux/a11y        | описано |
-| 11  | «Не вдалося отримати план харчування» — без причини і дії                        | `/nutrition/menu`         | minor    | ux-copy        | описано |
-| 12  | Англомовні артефакти: Month/Day/Year, Hours/Minutes/AM/PM, Quick Start, «check»  | profile, settings, fizruk | minor    | ux-copy        | описано |
-| 13  | «перевірте вашу поштову скриньку» — ви-форма всупереч style guide                | `/profile`                | polish   | ux-copy        | описано |
-| 14  | «80 сценаріїв» (`/assistant`) vs «~60 сценаріїв» (`/capabilities`)               | assistant/capabilities    | polish   | ux-copy        | описано |
-| 15  | Подвоєний accessible text у нав-кнопках («ОпераціїОперації»)                     | модулі                    | minor    | a11y           | описано |
-| 16  | `ai-memory/event-sync` спамить 503 при вимкненому AI_MEMORY                      | глобально                 | minor    | perf           | описано |
-| 17  | `send-verification-email` віддає 200 без відправки (RESEND незконфігурований)    | `/profile`                | minor    | functional*    | описано |
-| 18  | Біометрія: date-спінбатони з дефолтними значеннями `0`                           | `/profile`                | polish   | ux             | описано |
+| #   | Знахідка                                                                         | Маршрут                   | Severity | Категорія      | Стан           |
+| --- | -------------------------------------------------------------------------------- | ------------------------- | -------- | -------------- | -------------- |
+| 1   | Інтермітентний фриз рендерера при hard-навігації залогіненого користувача        | `/`, `/finyk/*`, auth     | blocker  | functional     | описано        |
+| 2   | Після auth-переходу всі kv_store-записи падають «DB has been closed» до reload   | глобально                 | major    | data-integrity | **виправлено** |
+| 3   | Подвійна JSON-серіалізація у jsonb-полях sync-шляху (finyk, fizruk)              | sync v2                   | major    | data-integrity | **виправлено** |
+| 4   | Logout не очищає UI: профіль користувача видно після sign-out (сервер вже 401)   | `/profile`                | major    | functional     | описано        |
+| 5   | Онбординг-стан не привʼязаний до акаунта: existing user → `/welcome` з демо      | auth-флоу                 | major    | ux             | описано        |
+| 6   | Anthropic-401 мапиться у HTTP 401 → UI бреше «Доступ заборонено»                 | `/chat`                   | major    | functional     | **виправлено** |
+| 7   | Повернення AI-квоти ламається об check constraint (`23514`) — квота згорає       | server                    | major    | data-integrity | **виправлено** |
+| 8   | Deep-link `/finyk/cards` мовчки фолбечиться на «Огляд»                           | `/finyk/cards`            | minor    | functional     | описано        |
+| 9   | Після «Завершити» тренування — «Активне тренування не знайдено» замість підсумку | `/fizruk/workout/:id`     | minor    | ux             | описано        |
+| 10  | Понадлімітна сума витрати: `aria-invalid` без видимого тексту, submit no-op      | `/finyk`                  | minor    | ux/a11y        | описано        |
+| 11  | «Не вдалося отримати план харчування» — без причини і дії                        | `/nutrition/menu`         | minor    | ux-copy        | описано        |
+| 12  | Англомовні артефакти: Month/Day/Year, Hours/Minutes/AM/PM, Quick Start, «check»  | profile, settings, fizruk | minor    | ux-copy        | описано        |
+| 13  | «перевірте вашу поштову скриньку» — ви-форма всупереч style guide                | `/profile`                | polish   | ux-copy        | описано        |
+| 14  | «80 сценаріїв» (`/assistant`) vs «~60 сценаріїв» (`/capabilities`)               | assistant/capabilities    | polish   | ux-copy        | описано        |
+| 15  | Подвоєний accessible text у нав-кнопках («ОпераціїОперації»)                     | модулі                    | minor    | a11y           | описано        |
+| 16  | `ai-memory/event-sync` спамить 503 при вимкненому AI_MEMORY                      | глобально                 | minor    | perf           | описано        |
+| 17  | `send-verification-email` віддає 200 без відправки (RESEND незконфігурований)    | `/profile`                | minor    | functional*    | описано        |
+| 18  | Біометрія: date-спінбатони з дефолтними значеннями `0`                           | `/profile`                | polish   | ux             | описано        |
 
 \* env-залежне — потребує звірки на проді.
+
+## Фікс-хвиля 2026-08-04 (знахідки 2, 3, 6, 7)
+
+Виправлено й верифіковано наживо тим самим стеком:
+
+- **2 (kv_store):** `makeSqliteKvStoreClient` тепер перерезолвлює live-handle
+  через `getSqliteDb()` на кожен запис і проганяє kv-міграції для свіжої
+  партиції. Вериф: логін A2 — **0** ворнінгів «DB has been closed» (було 38);
+  диміс банера «Без банку» переживає hard reload.
+- **3 (подвійна серіалізація):** `toJsonbParam` пропускає вже серіалізовані
+  JSON-обʼєкти/масиви як є; міграція 102 розгорнула існуючі рядки. Вериф:
+  стара витрата — `jsonb_typeof='object'`, `->>'amount'` = 347.5; нова
+  витрата через UI — одразу object (128.75).
+- **6 (chat 401):** `makeAiProviderError` мапить upstream 429→503, решту→502;
+  cause несе message. Вериф: POST `/api/chat` → **502**, UI: «Асистент
+  тимчасово недоступний. Спробуй пізніше.», лог: `anthropic upstream 401:
+invalid x-api-key` (без `[object Object]`).
+- **7 (quota refund):** міграція 101 — CHECK `request_count >= 0`. Вериф:
+  фейл-запит без `ai_quota_refund_failed`; декремент у 0 проходить.
 
 ---
 
