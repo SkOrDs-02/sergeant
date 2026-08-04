@@ -203,6 +203,36 @@ check constraint "ai_usage_daily_request_count_check" (code 23514)
   чесне повідомлення з дією; `/status`, `/legal/*`, `/design` живі.
 - Кросс-модульна підказка «Додати прийом їжі з кафе?» після витрати в кафе.
 
+## Read-only код-діагностика (Workflow web-ux-cycle, 64 агенти)
+
+Паралельно з браузерним прогоном фан-аут прочитав код маршрутів `/`, `/finyk`,
+`/fizruk`, `/routine`, `/nutrition` і повернув **47 верифікованих знахідок**
+(0 critical/high — усі medium/low). Вони доповнюють браузерні: це системні
+патерни якості коду, а не окремі падіння. Зведення за патернами:
+
+**Medium (16):**
+
+- **ARIA-семантика без клавіатурної механіки** — `role="menu"` у NotificationBell без фокус-меню (`NotificationBell.tsx:112`), aria-modal без focus-trap у BentoCardPeek (`BentoCard.tsx:446`), `role="radiogroup"` без roving tabindex у HabitForm (`HabitForm.tsx:224`), `role="tablist"` без стрілок у Nutrition SubTabs (`SubTabs.tsx:32`).
+- **SR-спам від таймерів** — aria-live оновлюється щосекунди в активному тренуванні (`HeroCard.tsx:295`) і RestTimerOverlay (`RestTimerOverlay.tsx:27`).
+- **Клавіатурний reorder сітки модулів захардкоджений на 2 колонки** при 3–4 фактичних (`HubModulesGrid.tsx:37`).
+- **Поля без accessible name** — reminder-time у Рутині (`ReminderPresets.tsx:75`), portion/refine у PhotoAnalyzeCard (`PhotoAnalyzeCard.tsx:276`).
+- **«Скинути» зносить усі 4 КБЖВ-цілі без підтвердження/undo** (`DailyPlanCard.tsx:241`).
+- **Rule #13 порушення на весь модуль Nutrition** — сирі light/dark пари замість токенів (`NutritionHeader.tsx:20`).
+- Стейл-копі у delete-confirm Рутини (`HabitDetailSheet.tsx:552`), кліп лейбла «Прогрес і заміри» без ellipsis (`fizrukNav.tsx:45`), диміс-контрол зі стрілкою «→» (`InsightCard.tsx:227`), невидимий для AT kcal-чарт (`LogCardAnalytics.tsx:97`), дроп-зона фото без фокус-індикатора (`PhotoAnalyzeCard.tsx:125`).
+
+**Low (31), домінантні патерни:**
+
+- **Rule #14**: відсутній/неканонічний focus-visible ring у ~10 місцях (dashboardCards, FirstInsightBanner, SyncStatusBadge, Dashboard Фізрука, RoutineFilterChips, RoutineCalendarPanel, NutritionDashboard…).
+- **Rule #13/#16 і радіуси**: сирі палітрові класи (`routineConstants.ts:52`, `MonthPulseCard.tsx:106`), 10px-текст нижче 12px-floor (`HabitForm.tsx:387`, `MacroRings.tsx:72`), заборонені tier-и радіусів (`DayReportSheet.tsx:132`, `HabitDetailSheet.tsx:511`, `NotificationBell.tsx:123`).
+- **Стан**: таймер ActiveWorkoutBanner рахує від mount, не від старту тренування (`ActiveWorkoutBanner.tsx:8`); `<button>` без `type="button"` (`StatusStrip.tsx:59`).
+- **Копі**: стейл empty-state «формою вище» без форми (`ActiveHabitsSection.tsx:87`), грамroot-помилка в sync-error тості без action-prompt (`FinykApp.tsx:125`).
+- Решта — aria-expanded без aria-controls, selection тільки кольором, зламаний порядок заголовків `<h3>` перед `<h1>`, відсутній `min-w-0`.
+
+Повний JSON з evidence по кожній — у сесійному артефакті Workflow
+(`wf_d5f23f12-dbf`); сюди винесено зведення, бо 47 позицій — це матеріал для
+серії дрібних фікс-PR (групувати за патерном: focus-ring pass, aria-pass,
+token-pass), а не для одного.
+
 ### Скріншоти
 
 `a1-hub.png` (Hub A1), `a2-tx-reload.png` (білий екран, знахідка 1),

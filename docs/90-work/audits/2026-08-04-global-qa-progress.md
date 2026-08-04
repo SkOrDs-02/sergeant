@@ -70,5 +70,5 @@ headless-емуляція не дає `pointer: coarse`, а floor навмисн
 
 ## Знахідки
 
-Лічильник: **18** (blocker: 1 · major: 6 · minor: 8 · polish: 3) —
+Лічильник: **18** браузерних (blocker: 1 · major: 6 · minor: 8 · polish: 3) + **47** код-рівневих з Workflow-діагностики (16 medium · 31 low) —
 деталі у [`2026-08-04-global-qa-findings.md`](./2026-08-04-global-qa-findings.md).

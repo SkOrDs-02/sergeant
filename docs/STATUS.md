@@ -30,14 +30,14 @@
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 
-## 🔵 В роботі — 47 відкритих
+## 🔵 В роботі — 46 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 3        |
 | Планування                       | 20       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 7        |
+| Аудити й прожарки                | 6        |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
