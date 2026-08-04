@@ -20,6 +20,14 @@ export const routinePageMessages = {
     description:
       "Додай будь-яку звичку для старту. Далі сам редагуватимеш і додаватимеш нові з цього ж діалогу.",
   },
+  // Рядок чипів-фільтрів над стрічкою «Огляду». Містить і теги, і
+  // категорії — див. `components/RoutineFilterChips.tsx`.
+  filterChips: {
+    groupLabel: "Фільтр за тегом або категорією",
+    heading: "Фільтр",
+    all: "Усі",
+    finykSubs: "Підписки Фініка",
+  },
   // Вкладка «Звички» модуля — керування списком, що переїхало з
   // Налаштувань 2026-08-03 (`components/RoutineHabitsPanel.tsx`).
   habitsTab: {

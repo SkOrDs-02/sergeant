@@ -9,7 +9,13 @@
  * visibility guards.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from "@testing-library/react";
 import { useState } from "react";
 import { emptyHabitDraft } from "../../lib/routineDraftUtils";
 import type { HabitDraft, RoutineState } from "../../lib/types";
@@ -191,11 +197,32 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(screen.getByText(/Орієнтир — день місяця/)).toBeInTheDocument();
   });
 
-  it("renders the tag select when routine has tags (in advanced section)", () => {
+  it("renders multi-select tag chips when routine has tags (in advanced section)", () => {
     render(<Harness editingId="h1" routine={routineWithTagsAndCategories()} />);
-    const tagSelect = screen.getByRole("combobox", { name: /Тег/ });
-    expect(tagSelect).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Ранок" })).toBeInTheDocument();
+    const group = screen.getByRole("group", { name: "Теги" });
+    expect(group).toBeInTheDocument();
+    expect(
+      within(group).getByRole("button", { name: "Ранок" }),
+    ).toBeInTheDocument();
+  });
+
+  it("toggles several tags on at once (tagIds is a real array)", () => {
+    render(<Harness editingId="h1" routine={routineWithTagsAndCategories()} />);
+    const group = screen.getByRole("group", { name: "Теги" });
+    const chips = within(group).getAllByRole("button");
+
+    fireEvent.click(chips[0]!);
+    expect(chips[0]).toHaveAttribute("aria-pressed", "true");
+
+    if (chips[1]) {
+      fireEvent.click(chips[1]);
+      expect(chips[0]).toHaveAttribute("aria-pressed", "true");
+      expect(chips[1]).toHaveAttribute("aria-pressed", "true");
+    }
+
+    // Second tap on the same chip clears it again.
+    fireEvent.click(chips[0]!);
+    expect(chips[0]).toHaveAttribute("aria-pressed", "false");
   });
 
   it("renders the category select when routine has categories (in advanced section)", () => {
@@ -212,17 +239,18 @@ describe("HabitForm – advanced options disclosure", () => {
 
     const start = screen.getByLabelText(/Початок/) as HTMLInputElement;
     const end = screen.getByLabelText(/Кінець/) as HTMLInputElement;
-    const tag = screen.getByRole("combobox", { name: /Тег/ });
+    const tagGroup = screen.getByRole("group", { name: "Теги" });
+    const tagChip = within(tagGroup).getByRole("button", { name: "Ранок" });
     const category = screen.getByRole("combobox", { name: /Категорія/ });
 
     fireEvent.change(start, { target: { value: "2026-06-01" } });
     fireEvent.change(end, { target: { value: "2026-06-30" } });
-    fireEvent.change(tag, { target: { value: "t1" } });
+    fireEvent.click(tagChip);
     fireEvent.change(category, { target: { value: "c1" } });
 
     expect(start).toHaveValue("2026-06-01");
     expect(end).toHaveValue("2026-06-30");
-    expect(tag).toHaveValue("t1");
+    expect(tagChip).toHaveAttribute("aria-pressed", "true");
     expect(category).toHaveValue("c1");
   });
 

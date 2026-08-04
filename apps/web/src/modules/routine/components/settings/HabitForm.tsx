@@ -92,6 +92,7 @@ export function HabitForm({
   const nameErrId = `${fieldIds}-name-err`;
   const nameId = `${fieldIds}-name`;
   const weekdaysErrId = `${fieldIds}-weekdays-err`;
+  const tagsLabelId = `${fieldIds}-tags`;
   const sectionRef = useRef<HTMLElement | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const weekdaysRef = useRef<HTMLDivElement | null>(null);
@@ -342,31 +343,52 @@ export function HabitForm({
             </p>
           )}
 
+          {/*
+            Мультивибір тегів. До 2026-08-03 тут стояв `<select>`, який писав
+            рівно один id, хоча `tagIds` і в типі, і в SQLite, і в sync-контракті
+            завжди був масивом — підказка під полем прямо це визнавала
+            («масив для сумісності»). Через це «ранкова пробіжка» не могла бути
+            одночасно «ранок» і «спорт», а фільтр у календарі показував її лише
+            під одним чипом. Чипи-тумблери знімають обмеження, не чіпаючи схему.
+          */}
           {routine.tags.length > 0 && (
-            <label className="block text-xs text-subtle">
-              Тег
-              <select
-                className="routine-touch-select mt-1"
-                value={habitDraft.tagIds[0] || ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setHabitDraft((d) => ({
-                    ...d,
-                    tagIds: id ? [id] : [],
-                  }));
-                }}
+            <div className="block text-xs text-subtle">
+              <span id={tagsLabelId}>Теги</span>
+              <div
+                role="group"
+                aria-labelledby={tagsLabelId}
+                className="mt-1 flex flex-wrap gap-1.5"
               >
-                <option value="">— без тегу —</option>
-                {routine.tags.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <span className="block text-2xs text-subtle mt-1 leading-snug">
-                Один тег на звичку (поле tagIds у даних — масив для сумісності).
+                {routine.tags.map((t) => {
+                  const active = habitDraft.tagIds.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      aria-pressed={active}
+                      className={cn(
+                        "text-style-caption min-h-[44px] rounded-xl border px-2.5 py-1.5 transition-colors",
+                        active ? C.chipOn : C.chipOff,
+                      )}
+                      onClick={() =>
+                        setHabitDraft((d) => ({
+                          ...d,
+                          tagIds: d.tagIds.includes(t.id)
+                            ? d.tagIds.filter((id) => id !== t.id)
+                            : [...d.tagIds, t.id],
+                        }))
+                      }
+                    >
+                      {t.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="mt-1 block text-2xs text-subtle leading-snug">
+                Можна обрати кілька. Теги створюються в Налаштуваннях →
+                «Рутина».
               </span>
-            </label>
+            </div>
           )}
 
           {routine.categories.length > 0 && (

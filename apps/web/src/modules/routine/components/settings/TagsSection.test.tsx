@@ -184,7 +184,7 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
     fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
       target: { value: " вечір " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати тег" }));
 
     await waitFor(() => {
       expect(screen.getByText("вечір")).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
     fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
       target: { value: "   " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати тег" }));
 
     expect(screen.queryByRole("button", { name: /Змінити/ })).toBeNull();
   });
@@ -210,7 +210,7 @@ describe("TagsSection — useApiForm inline rename (Item #8 round-12)", () => {
     fireEvent.change(screen.getByPlaceholderText("Новий тег"), {
       target: { value: " ранок " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "+" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати тег" }));
 
     expect(
       await screen.findByText("Тег з такою назвою вже існує"),

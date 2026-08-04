@@ -146,6 +146,11 @@ export function HabitDetailSheet({
     );
   }, [habit, routine.categories]);
 
+  const categoryGlyph = useMemo(() => {
+    if (!habit?.categoryId) return undefined;
+    return routine.categories.find((c) => c.id === habit.categoryId)?.emoji;
+  }, [habit, routine.categories]);
+
   const recLabel = habit
     ? RECURRENCE_OPTIONS.find((o) => o.value === (habit.recurrence || "daily"))
         ?.label || ""
@@ -320,7 +325,8 @@ export function HabitDetailSheet({
           </span>
         ))}
         {category && (
-          <span className="text-style-caption px-2 py-0.5 rounded-full bg-panelHi border border-line text-muted font-medium">
+          <span className="text-style-caption inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-panelHi border border-line text-muted font-medium">
+            <HabitGlyph value={categoryGlyph} size="xs" optional />
             {category}
           </span>
         )}
