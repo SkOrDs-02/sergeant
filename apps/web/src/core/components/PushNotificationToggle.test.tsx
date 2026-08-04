@@ -59,7 +59,7 @@ describe("PushNotificationToggle", () => {
       screen.getByText("Заблоковано в налаштуваннях браузера"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     ).toBeDisabled();
   });
 
@@ -68,7 +68,7 @@ describe("PushNotificationToggle", () => {
     render(<PushNotificationToggle />);
 
     await user.click(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     );
     expect(pushState.subscribe).toHaveBeenCalledTimes(1);
     expect(pushState.unsubscribe).not.toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe("PushNotificationToggle", () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: "Вимкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Вимкнути push-сповіщення" }),
     );
     expect(pushState.unsubscribe).toHaveBeenCalledTimes(1);
   });
@@ -93,7 +93,7 @@ describe("PushNotificationToggle", () => {
     pushState.loading = true;
     render(<PushNotificationToggle />);
     expect(
-      screen.getByRole("button", { name: "Увімкнути push-сповіщення" }),
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     ).toBeDisabled();
   });
 });

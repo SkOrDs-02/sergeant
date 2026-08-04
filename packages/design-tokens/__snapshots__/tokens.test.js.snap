@@ -2,8 +2,8 @@
 
 exports[`@sergeant/design-tokens — mobile.js > mobile.colors matches the canonical web moduleColors + statusColors 1`] = `
 {
-  "accent": "#10b981",
-  "accentStrong": "#047857",
+  "accent": "#0f766e",
+  "accentStrong": "#115e59",
   "bg": "#0b0d10",
   "border": "#1f242c",
   "danger": "#ef4444",
@@ -40,7 +40,7 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 
 }
 `;
 
-exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/coral/teal/lime/amber/cream scales) 1`] = `
+exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/coral/lime/stone scales) 1`] = `
 {
   "coral": {
     "100": "#ffe8e3",

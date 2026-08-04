@@ -41,25 +41,19 @@ export function NutritionSlide({ slide }: { slide: NutritionSlideData }) {
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="rounded-xl bg-white/15 border border-white/20 px-3 py-2 text-center">
-          <div className="text-2xs uppercase tracking-wider text-white/75 font-bold">
-            Білки
-          </div>
+          <div className="text-style-overline text-white/75">Білки</div>
           <div className="text-style-title font-black tabular-nums mt-0.5">
             {fmtNum(agg?.avgProtein)}г
           </div>
         </div>
         <div className="rounded-xl bg-white/15 border border-white/20 px-3 py-2 text-center">
-          <div className="text-2xs uppercase tracking-wider text-white/75 font-bold">
-            Жири
-          </div>
+          <div className="text-style-overline text-white/75">Жири</div>
           <div className="text-style-title font-black tabular-nums mt-0.5">
             {fmtNum(agg?.avgFat)}г
           </div>
         </div>
         <div className="rounded-xl bg-white/15 border border-white/20 px-3 py-2 text-center">
-          <div className="text-2xs uppercase tracking-wider text-white/75 font-bold">
-            Вугл.
-          </div>
+          <div className="text-style-overline text-white/75">Вугл.</div>
           <div className="text-style-title font-black tabular-nums mt-0.5">
             {fmtNum(agg?.avgCarbs)}г
           </div>

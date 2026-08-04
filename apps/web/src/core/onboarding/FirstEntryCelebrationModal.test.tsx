@@ -10,12 +10,14 @@ import {
 import { getFirstEntryCelebrationCopy } from "@sergeant/shared";
 import { FirstEntryCelebrationModal } from "./FirstEntryCelebrationModal";
 
-const { hapticTapMock } = vi.hoisted(() => ({
+const { hapticTapMock, hapticPatternMock } = vi.hoisted(() => ({
   hapticTapMock: vi.fn(),
+  hapticPatternMock: vi.fn(),
 }));
 
 vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticTap: hapticTapMock,
+  hapticPattern: hapticPatternMock,
 }));
 
 // Stub the analytics sink so the assertion is deterministic — the real
@@ -68,6 +70,7 @@ describe("FirstEntryCelebrationModal — celebration_shown payload (PR-A)", () =
   beforeEach(() => {
     vi.mocked(trackEvent).mockClear();
     hapticTapMock.mockClear();
+    hapticPatternMock.mockClear();
     vi.useFakeTimers();
     Object.defineProperty(navigator, "vibrate", {
       configurable: true,
@@ -136,6 +139,7 @@ describe("FirstEntryCelebrationModal — interaction branches", () => {
 
   beforeEach(() => {
     hapticTapMock.mockClear();
+    hapticPatternMock.mockClear();
     vi.useFakeTimers();
     Object.defineProperty(navigator, "vibrate", {
       configurable: true,
@@ -205,8 +209,10 @@ describe("FirstEntryCelebrationModal — interaction branches", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("triggers haptic feedback on open when vibrate is available", () => {
+  it("triggers haptic feedback on open via the shared haptic layer", () => {
+    // C6 web-audit: routed through `hapticPattern` (respects
+    // prefers-reduced-motion) instead of a raw `navigator.vibrate` call.
     renderOpenModal({ ttvMs: 500, moduleId: "fizruk" });
-    expect(navigator.vibrate).toHaveBeenCalledWith([50, 30, 50]);
+    expect(hapticPatternMock).toHaveBeenCalledWith([50, 30, 50]);
   });
 });

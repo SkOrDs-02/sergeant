@@ -77,3 +77,68 @@ describe("soft design-token contrast", () => {
     }
   }
 });
+
+// Module families that carry a `-soft-hover` token (status colors don't).
+const MODULE_FAMILIES = [
+  "brand",
+  "finyk",
+  "fizruk",
+  "routine",
+  "nutrition",
+] as const;
+
+describe("HC text hierarchy vs surfaces is at least 7:1 (AAA contract)", () => {
+  for (const scope of ["hc", "darkHc"] as const) {
+    const variables = THEMES[scope];
+    for (const role of ["c-text", "c-muted", "c-subtle"] as const) {
+      for (const surface of ["c-bg", "c-panel"] as const) {
+        it(`${scope}: ${role} on ${surface} is at least 7:1`, () => {
+          const foreground = variables[role];
+          const background = variables[surface];
+          expect(foreground).toBeDefined();
+          expect(background).toBeDefined();
+          expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(7);
+        });
+      }
+    }
+  }
+});
+
+describe("accent vs bg contrast is at least 3:1 (all scopes)", () => {
+  for (const [theme, variables] of Object.entries(THEMES)) {
+    it(`${theme}: c-accent on c-bg is at least 3:1`, () => {
+      const foreground = variables["c-accent"];
+      const background = variables["c-bg"];
+      expect(foreground).toBeDefined();
+      expect(background).toBeDefined();
+      expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
+describe("celebration vs bg contrast is at least 3:1 (light + dark)", () => {
+  for (const theme of ["light", "dark"] as const) {
+    const variables = THEMES[theme];
+    it(`${theme}: c-celebration on c-bg is at least 3:1`, () => {
+      const foreground = variables["c-celebration"];
+      const background = variables["c-bg"];
+      expect(foreground).toBeDefined();
+      expect(background).toBeDefined();
+      expect(contrast(foreground!, background!)).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
+describe("-soft-hover is distinct from resting -soft (all scopes)", () => {
+  for (const [theme, variables] of Object.entries(THEMES)) {
+    for (const family of MODULE_FAMILIES) {
+      it(`${theme}: ${family}-soft-hover differs from ${family}-soft`, () => {
+        const soft = variables[`c-${family}-soft`];
+        const hover = variables[`c-${family}-soft-hover`];
+        expect(soft).toBeDefined();
+        expect(hover).toBeDefined();
+        expect(hover).not.toBe(soft);
+      });
+    }
+  }
+});

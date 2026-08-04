@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-08-04 by @claude. **Next review:** 2026-09-07.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.
@@ -114,7 +114,7 @@ const TINT = {
 // apps/web/src/modules/fizruk/pages/PlanCalendar.tsx
 <button className="focus-visible:ring-routine">…</button>
 // (coral focus-ring читається користувачем як «Рутина», а не «Фізрук»)
-// Enforced by `sergeant-design/no-foreign-module-accent` (error).
+// Дизайн-конвенція — tokens + review (ex-Hard Rule #12, retired ADR-0081).
 
 // ✅ GOOD — ambient-акцент усередині поверхні модуля
 <ModuleShell module="routine">
@@ -123,9 +123,9 @@ const TINT = {
 </ModuleShell>
 ```
 
-### Module-accent containment (`sergeant-design/no-foreign-module-accent`)
+### Module-accent containment (дизайн-конвенція — tokens + review, ex-Hard Rule #12, retired [ADR-0081](../../04-governance/adr/0081-repository-simplification.md))
 
-Усередині `apps/<app>/src/modules/<X>/` дозволені лише акцент-утиліти `<X>` (`bg-<X>-surface`, `text-<X>-strong`, `ring-<X>`, `bg-<X>-500/15`, …). Правило прозоро обробляє variant-prefix-и (`dark:`, `hover:`, `lg:`), shade-suffix-и (`-500`, `-soft`, `-strong`) і opacity-suffix-и (`/15`).
+Усередині `apps/<app>/src/modules/<X>/` дозволені лише акцент-утиліти `<X>` (`bg-<X>-surface`, `text-<X>-strong`, `ring-<X>`, `bg-<X>-500/15`, …). Конвенція покриває variant-prefix-и (`dark:`, `hover:`, `lg:`), shade-suffix-и (`-500`, `-soft`, `-strong`) і opacity-suffix-и (`/15`).
 
 Виключені subtree-и (вільно посилаються на всі акценти):
 
@@ -133,7 +133,7 @@ const TINT = {
 - `apps/*/src/modules/shared/**` — не-канонічна module-папка; cross-module-утиліта, не власник акценту.
 - `__tests__/*.{ts,tsx,mjs}` — test-fixture-и природно посилаються на всі чотири для покриття.
 
-Hard-rule #12 у `AGENTS.md` — повна специфікація. Анти-патерн «file-at-a-time» вище — `fizruk`-сторінка з `ring-routine` — це саме те, що правило ловить:
+ESLint цю конвенцію більше не перевіряє — тримається design-review. Анти-патерн «file-at-a-time» вище — `fizruk`-сторінка з `ring-routine` — це саме те, що review має ловити:
 
 ```tsx
 // ❌ BAD
@@ -142,9 +142,9 @@ Hard-rule #12 у `AGENTS.md` — повна специфікація. Анти-�
 <button className="focus-visible:ring-fizruk" />
 ```
 
-### Без arbitrary-hex-кольорів (`sergeant-design/no-hex-in-classname`)
+### Без arbitrary-hex-кольорів (дизайн-конвенція — tokens + review, ex-Hard Rule #11, retired ADR-0081)
 
-Не пишіть `bg-[#10b981]` / `text-[#fff]/50` / `ring-[#1234ab]` усередині `className`. Сирий hex-літерал обходить уся три-шарову систему вище — `--module-accent-rgb` не може його тонувати, `-strong`-companion для нього не існує, а dark-mode не може його адаптувати. Якщо вам справді потрібен новий shade — додайте його в `packages/design-tokens/tailwind-preset.js` (із `-soft` / `-strong`-companion-ом за rule #9 у `AGENTS.md`). Enforced by `sergeant-design/no-hex-in-classname` (error); див. hard-rule #11 у `AGENTS.md`.
+Не пишіть `bg-[#10b981]` / `text-[#fff]/50` / `ring-[#1234ab]` усередині `className`. Сирий hex-літерал обходить уся три-шарову систему вище — `--module-accent-rgb` не може його тонувати, `-strong`-companion для нього не існує, а dark-mode не може його адаптувати. Якщо вам справді потрібен новий shade — додайте його в `packages/design-tokens/tailwind-preset.js` (із `-soft` / `-strong`-companion-ом за конвенцією `-strong`, ex-Rule #9). ESLint це більше не перевіряє — конвенція тримається design-review.
 
 ## API
 
@@ -181,9 +181,9 @@ border-module-accent       border-module-accent-strong
 ring-module-accent         ring-module-accent-strong
 ```
 
-Усі стандартні Tailwind opacity-modifier-и із зареєстрованої шкали (`0, 5, 8, 10, 15, 20, 25, …`) працюють. Не зареєстровані кроки (`/12`, `/18`) тихо дропаються — див. hard-rule #8 у `AGENTS.md`.
+Усі стандартні Tailwind opacity-modifier-и із зареєстрованої шкали (`0, 5, 8, 10, 15, 20, 25, …`) працюють. Не зареєстровані кроки (`/12`, `/18`) на Tailwind v4 теж скомпілюються (arbitrary alpha) — але це порушення дизайн-конвенції opacity scale (tokens + review, ex-Hard Rule #8, retired ADR-0081), ловиться на review.
 
-> Web вже на Tailwind v4 ([#1495](https://github.com/Skords-01/Sergeant/pull/1495)); `<alpha-value>`-плейсхолдер у preset-і працює тому, що JS-конфіг підвантажується через `@config`-директиву (`apps/web/src/index.css`). Mobile залишається на NativeWind 4 / Tailwind 3 — токени читаються однаково на обох runtime-ах. Деталі — `docs/90-work/planning/tailwind-v4-migration.md`.
+> Web вже на Tailwind v4 ([#1495](https://github.com/Skords-01/Sergeant/pull/1495)); `<alpha-value>`-плейсхолдер у preset-і працює тому, що JS-конфіг підвантажується через `@config`-директиву (`apps/web/src/index.css`). Mobile залишається на NativeWind 4 / Tailwind 3 — токени читаються однаково на обох runtime-ах. Деталі — [архівний план міграції](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/tailwind-v4-migration.md).
 
 ## Тестування
 
@@ -214,8 +214,5 @@ it("публікує --module-accent-rgb + strong для finyk", () => {
 - [`docs/05-design/design/brandbook.md`](./brandbook.md) — WCAG-AA `-strong` Tier
   - повна per-family-таблиця контрасту.
 - [`docs/05-design/design/archive/brand-palette-wcag-aa-proposal.md`](./archive/brand-palette-wcag-aa-proposal.md) — migration-історія (PR-и #854 / #855 / #857).
-- `AGENTS.md` hard rule #8 — Tailwind opacity scale.
-- `AGENTS.md` hard rule #9 — `-strong`-companion під `text-white`.
-- `AGENTS.md` hard rule #11 — no arbitrary hex colors in `className`.
-- `AGENTS.md` hard rule #12 — module-accent containment.
+- Дизайн-конвенції — tokens + review (ex-Hard Rules #8/#9/#11/#12, retired ADR-0081): Tailwind opacity scale; `-strong`-companion під `text-white`; no arbitrary hex colors in `className`; module-accent containment.
 - [`docs/05-design/design/archive/dark-mode-audit.md`](./archive/dark-mode-audit.md) — pending міграційний план із 28 raw-palette `dark:`-патчів у семантичні токени (`bg-{module}-surface`, `bg-{status}-soft`, і Wave-1b target-токени `bg-brand-soft` / `border-brand-soft-border` / `-soft-hover`, які увійдуть у preset одночасно з міграцією).

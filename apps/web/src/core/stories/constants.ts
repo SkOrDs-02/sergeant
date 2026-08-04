@@ -13,17 +13,26 @@ export const HOLD_THRESHOLD_MS = 180;
 // overlay never detaches from the finger.
 export const MAX_DRAG_TRANSLATE = 260;
 
+// Re-keyed 2026-08 design-audit: `brand-*` used to alias teal but now
+// resolves to the neutral stone ramp (hub-chrome, 2026-07 design-audit M1),
+// so `from-brand-500 …` silently rendered a gray slide. `indigo-*` / `rose-*`
+// were one-off foreign hues with no other call-site in the app. Every slide
+// now stays within its module's registered saturated family (finyk teal ·
+// fizruk cyan · routine coral · nutrition lime; intro mixes teal with the
+// neutral `brand-strong` stone), on the -600..-800 tier so fixed
+// `text-white` clears 4.5:1 — the -400 tiers used previously were too light
+// under white text.
 export const BG_GRADIENTS = {
   intro:
-    "from-brand-500 via-brand-400 to-teal-400 dark:from-brand-700 dark:via-brand-600 dark:to-teal-600",
+    "from-teal-600 via-brand-700 to-brand-800 dark:from-teal-800 dark:via-brand-800 dark:to-brand-900",
   finyk:
-    "from-brand-600 via-brand-500 to-indigo-400 dark:from-brand-800 dark:via-brand-700 dark:to-indigo-700",
+    "from-teal-600 via-teal-700 to-teal-800 dark:from-teal-700 dark:via-teal-800 dark:to-teal-900",
   fizruk:
-    "from-teal-500 via-teal-400 to-cyan-400 dark:from-teal-700 dark:via-teal-600 dark:to-cyan-700",
+    "from-cyan-600 via-cyan-700 to-cyan-800 dark:from-cyan-700 dark:via-cyan-800 dark:to-cyan-900",
   nutrition:
-    "from-lime-500 via-lime-400 to-emerald-400 dark:from-lime-700 dark:via-lime-600 dark:to-emerald-700",
+    "from-lime-600 via-lime-700 to-lime-800 dark:from-lime-700 dark:via-lime-800 dark:to-lime-900",
   routine:
-    "from-coral-500 via-coral-400 to-rose-400 dark:from-coral-700 dark:via-coral-600 dark:to-rose-700",
+    "from-coral-600 via-coral-700 to-coral-800 dark:from-coral-700 dark:via-coral-800 dark:to-coral-900",
   overall:
-    "from-amber-500 via-orange-400 to-coral-400 dark:from-amber-700 dark:via-orange-600 dark:to-coral-700",
+    "from-amber-600 via-orange-600 to-coral-700 dark:from-amber-800 dark:via-orange-800 dark:to-coral-800",
 } as const;

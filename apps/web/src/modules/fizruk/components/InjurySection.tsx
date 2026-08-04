@@ -54,7 +54,7 @@ export function InjurySection() {
       </SectionHeading>
 
       {active.length === 0 ? (
-        <p className="text-xs text-muted-foreground mt-2">{t.empty}</p>
+        <p className="text-xs text-muted mt-2">{t.empty}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {active.map((m) => (
@@ -66,7 +66,7 @@ export function InjurySection() {
                 <span className="block text-sm font-medium truncate">
                   {injurySiteLabelUk(m.site)}
                 </span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-xs text-muted">
                   {formatSince(m.startedAt)}
                 </span>
               </span>
@@ -114,7 +114,7 @@ export function InjurySection() {
         </div>
       )}
 
-      <p className="text-2xs text-muted-foreground mt-4 leading-relaxed">
+      <p className="text-style-caption text-muted mt-4 leading-relaxed">
         {t.disclaimer}
       </p>
     </Card>
@@ -136,9 +136,7 @@ function ZoneGroup({
 }) {
   return (
     <div>
-      <p className="text-2xs uppercase tracking-wide text-muted-foreground mb-2">
-        {title}
-      </p>
+      <p className="text-style-overline text-muted mb-2">{title}</p>
       <div className="flex flex-wrap gap-2">
         {ids.map((id) => {
           const marked = activeSites.has(id as InjurySiteId);

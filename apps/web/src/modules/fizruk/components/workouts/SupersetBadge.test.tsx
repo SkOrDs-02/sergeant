@@ -13,4 +13,9 @@ describe("SupersetBadge", () => {
     render(<SupersetBadge type="circuit" />);
     expect(screen.getByText("Коло")).toBeInTheDocument();
   });
+
+  it("renders abbreviated label for superset type when compact", () => {
+    render(<SupersetBadge type="superset" compact />);
+    expect(screen.getByText("СС")).toBeInTheDocument();
+  });
 });

@@ -62,6 +62,32 @@ async function seedLocalStorage(
   }, seed);
 }
 
+/**
+ * Themed variant of `hub_theme_v2` (see `useTheme.ts`) — `"dark"` and
+ * `"hc"` are the two non-light choices that ship their own runtime
+ * contrast tokens (`html.dark`, `html.hc`). Merged into `SEEDED_LS` so
+ * themed runs keep the same FTUX-skipping seed as the light-theme pass.
+ */
+type ThemedChoice = "dark" | "hc";
+
+/**
+ * Belt-and-braces: `hub_theme_v2` alone only takes effect once
+ * `useTheme()` mounts and resolves the choice on the first render. Also
+ * stamping `documentElement` classList in the init script means the very
+ * first paint (before React hydrates) is already themed, matching what a
+ * returning user with a persisted choice sees — the axe scan should audit
+ * steady-state contrast, not the pre-hydration flash.
+ */
+async function seedTheme(page: Page, theme: ThemedChoice) {
+  await page.addInitScript((mode: ThemedChoice) => {
+    try {
+      document.documentElement.classList.add(mode === "dark" ? "dark" : "hc");
+    } catch {
+      /* ignore */
+    }
+  }, theme);
+}
+
 function isNavigationRace(error: unknown) {
   return (
     error instanceof Error &&
@@ -177,6 +203,110 @@ for (const { name, path, seed } of SURFACES) {
           !e.includes("Failed to load resource"),
       ),
       `console errors on ${path}:\n${consoleErrors.join("\n")}`,
+    ).toEqual([]);
+  });
+}
+
+/**
+ * Themed subset — dark and hc ship their own contrast tokens
+ * (`html.dark` / `html.hc` in `src/styles/theme.css`) and previously ran
+ * completely unaudited: every case above only ever exercises the
+ * light-theme default. Bounded to a representative slice (hub root,
+ * design-showcase, one module dashboard, settings) rather than the full
+ * `SURFACES` matrix to keep the added run count in check.
+ */
+const THEMED_SURFACES: Array<{
+  name: string;
+  path: string;
+  seed: Record<string, string>;
+  theme: ThemedChoice;
+}> = (
+  [
+    { name: "hub-root", path: "/" },
+    { name: "design-showcase", path: "/design" },
+    { name: "fizruk-dashboard", path: "/?module=fizruk" },
+    { name: "settings", path: "/settings" },
+  ] as const
+).flatMap(({ name, path }) =>
+  (["dark", "hc"] as const).map((theme) => ({
+    name,
+    path,
+    seed: { ...SEEDED_LS, hub_theme_v2: theme },
+    theme,
+  })),
+);
+
+for (const { name, path, seed, theme } of THEMED_SURFACES) {
+  test(`a11y: ${name} [${theme}] has no serious/critical violations`, async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, seed);
+    await seedTheme(page, theme);
+
+    const consoleErrors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+    await page
+      .waitForLoadState("networkidle", { timeout: 15_000 })
+      .catch(() => {
+        /* allow-through: some surfaces keep long-polling connections open */
+      });
+    await page
+      .locator("main, [role='main'], [data-a11y-root], #root > *")
+      .first()
+      .waitFor({ state: "visible", timeout: 10_000 });
+
+    const results = await analyzeA11y(page);
+
+    const blocking = results.violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+
+    if (blocking.length > 0) {
+      const summary = blocking
+        .map((v) => {
+          const nodes = v.nodes
+            .slice(0, 3)
+            .map((node, index) => {
+              const target = node.target.join(" ");
+              const html = node.html.replace(/\s+/g, " ").slice(0, 220);
+              const failure = node.failureSummary
+                ? `\n      ${node.failureSummary.replace(/\s+/g, " ")}`
+                : "";
+              return `    ${index + 1}. ${target}\n      ${html}${failure}`;
+            })
+            .join("\n");
+          return `- [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${
+            v.nodes.length === 1 ? "" : "s"
+          })\n    ${v.helpUrl}\n${nodes}`;
+        })
+        .join("\n");
+      throw new Error(
+        `axe found ${blocking.length} serious/critical violation(s) on ${path} [${theme}]:\n${summary}`,
+      );
+    }
+
+    const softCount = results.violations.length - blocking.length;
+    if (softCount > 0) {
+      test.info().annotations.push({
+        type: "axe-soft",
+        description: `${softCount} non-blocking violation(s) on ${path} [${theme}] (minor/moderate).`,
+      });
+    }
+
+    expect(
+      consoleErrors.filter(
+        (e) =>
+          !e.includes("workbox") &&
+          !e.includes("Service worker") &&
+          !e.includes("Failed to load resource"),
+      ),
+      `console errors on ${path} [${theme}]:\n${consoleErrors.join("\n")}`,
     ).toEqual([]);
   });
 }

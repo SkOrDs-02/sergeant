@@ -1,6 +1,6 @@
 # Ритм border-radius
 
-> **Last validated:** 2026-07-26 by v0 (design-consistency audit — enforcement section corrected; v2 radius namespace removed). **Next review:** 2026-10-26.
+> **Last validated:** 2026-08-04 by @claude (enforcement переведено на convention-wording per ADR-0081). **Next review:** 2026-10-26.
 > **Status:** Active
 
 > **Аудиторія:** усі, хто пише UI у `apps/web` або `apps/mobile`.
@@ -27,7 +27,7 @@ Sergeant використовує **size-driven** шкалу радіусів: �
 
 2. **Радіус має відповідати розміру елемента.** Icon-кнопка 48 × 48 px використовує `rounded-2xl`, а не `rounded-xl` (надто гострий для такого footprint-а) і не `rounded-3xl` (надто округлий — починає виглядати як pill). Icon-кнопка 32 × 32 використовує `rounded-xl`, а не `rounded-2xl`.
 
-3. **Не вводьте `rounded-lg` (8 px)** — він живе між Marker і Control без чіткої семантичної ролі. Це enforced лінтом (`no-rounded-lg`, error — див. нижче); решта наявних використань — легасі дорадіусних часів під `eslint-disable` з посиланням на tech-debt. Новий код має округлятися вгору до `rounded-xl` або вниз до `rounded-md` залежно від footprint-а елемента.
+3. **Не вводьте `rounded-lg` (8 px)** — він живе між Marker і Control без чіткої семантичної ролі. Це дизайн-конвенція — tokens + review (колишнє lint-правило `no-rounded-lg` retired ADR-0081 — див. нижче); решта наявних використань — легасі дорадіусних часів з коментарем-посиланням на tech-debt. Новий код має округлятися вгору до `rounded-xl` або вниз до `rounded-md` залежно від footprint-а елемента.
 
 4. **Не вводьте `rounded-4xl` / `rounded-5xl`** — ці токени є в Tailwind-preset-і для разових ілюстрацій (наприклад, onboarding-hero blob). Вони **не** є частиною звичайного ритму.
 
@@ -64,14 +64,14 @@ Sergeant використовує **size-driven** шкалу радіусів: �
 
 ## Як це enforce-иться
 
-`eslint-plugin-sergeant-design` містить правило **`no-rounded-lg`**, увімкнене як
-**error** для `apps/web`. Воно ловить `rounded-lg` (8 px) у className і пропонує
-`rounded-xl` / `rounded-md`. Легітимні винятки (демо-сторінки самого дизайн-system-у,
-кілька легасі-поверхонь) стоять під `// eslint-disable-next-line
-sergeant-design/no-rounded-lg` з коментарем-обґрунтуванням, тож борг видимий і
-трекнутий, а не мовчазний.
+Дизайн-конвенція — tokens + review (колишнє ESLint-правило **`no-rounded-lg`**
+retired [ADR-0081](../../04-governance/adr/0081-repository-simplification.md)).
+`rounded-lg` (8 px) у className — знахідка для design-review; заміна —
+`rounded-xl` / `rounded-md`. Легітимні винятки (демо-сторінки самого
+дизайн-system-у, кілька легасі-поверхонь) документуй коментарем-обґрунтуванням
+поряд із класом, тож борг видимий і трекнутий, а не мовчазний.
 
-Ще не enforced (кандидати, якщо дрейф повернеться):
+Кандидати на посилення, якщо дрейф повернеться:
 
 - Ворнити, коли сирий `rounded-2xl` / `rounded-3xl` використовується замість
   `<Card>` / `<Button>` для поверхонь 100 × 100+.
