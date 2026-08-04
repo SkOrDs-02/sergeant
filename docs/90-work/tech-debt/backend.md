@@ -29,6 +29,8 @@
 > **Оновлено 2026-06-01.** Не-actionable секції тепер несуть токен `🚫 Blocked-reason: <category>`: «Operational visibility — Coolify env-var changes» (`owner-decision`) та «Push credentials» (`external-infra`). Легенда + grep-підказка — у [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні).
 >
 > **Оновлено 2026-06-01 (annex reconcile).** Із 2026-05-15 code-debt annex закрито два пункти: **(a)** `TODO(token-reencrypt)` — є proactive sweep CLI `apps/server/scripts/token-reencrypt-rollover.ts` (`pnpm reencrypt:tokens`), key-rotation playbook більше не заблокований (H4 Closed); **(c)** `sessionProtection.ts` із 2 `as unknown as X` кастами **видалено** — session-логіка переїхала в `auth/sessionFingerprint.ts` + `http/requireSession.ts`, bypass-патернів у non-test server-src — 0. Пункт **(b)** (`sync_op_log` партиціювання, roadmap PR-050) лишається відкритим — **план зафіксовано в [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md)** (PG `LISTEN/NOTIFY` fan-out + retention-за-курсором; реалізація gated на multi-instance тригер). Суміжний client-side DLQ TTL вже закрито окремо (`purgeStaleTerminalOutbox` у `packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts`).
+>
+> **Оновлено 2026-08-04 (pre-beta schema-debt audit).** Пункт **(b)** досліджено ще раз під тиском «а що як реалізувати зараз, поки `sync_op_log` порожня перед wipe-ом» — і **свідомо НЕ реалізовано**. Знахідка: партиціювання по будь-якій time-колонці (напр. `server_ts`) вимагає розширити `UNIQUE (user_id, idempotency_key)` до `UNIQUE (user_id, idempotency_key, server_ts)` (Postgres-вимога — partition key мусить входити в кожен unique/PK), а це назавжди вимикає backstop проти конкурентного дубль-інсерту одного ідемпотентного ключа (обидва конкурентні INSERT-и мають різний `server_ts`, тож другий більше не падає з 23505 і apply-шлях виконується двічі). Порожність таблиці знімає ризик "перестворення гарячої таблиці", але НЕ цей структурний ризик — він стосується кожного майбутнього рядка, не лише backfill-у. Деталі — доданий "Addendum (2026-08-04)" у [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md). Схема лишилась незмінною; тригер реалізації (§ Compliance в ADR-0065) не змінився.
 
 > **Оновлено 2026-05-15.** Code-debt audit annex (Claude Opus 4.7 external session, monorepo-wide scan). **Closed in this PR (`refactor(server): consolidate sleep() helper into lib/timing`):** consolidated 6 duplicated `sleep(ms)` helpers (`db.ts`, `lib/anthropic.ts`, `lib/bankProxy.ts`, `lib/webpushSend.ts`, `modules/ai-memory/embeddings.ts`, `push/send.ts`) into the existing `lib/timing.ts:sleep` export; replaced 7 hardcoded AI-call timeout literals with named constants — new `modules/nutrition/timeouts.ts:NUTRITION_AI_TIMEOUTS_MS` (5 sites: day-plan/week-plan/recommend-recipes/shopping-list/food-search) and `modules/chat/chat.ts:CHAT_TOOL_TIMEOUT_MS` (2 sites). **New items added to backlog (low signal-to-noise, not blockers):** (a) `apps/server/src/auth/encryptingAdapter.ts:95` — `TODO(token-reencrypt)` lazy rollover relies on user-triggered OAuth (no background re-encryption path; blocks key-rotation playbook); (b) `apps/server/src/modules/sync/syncV2.ts:243` + `syncV2Stream.ts:42` — `TODO(roadmap-pr-050)` `sync_op_log` партиціювання + архівація (tied to roadmap PR-050); (c) `apps/server/src/auth/sessionProtection.ts` — 2 non-test `as unknown as X` casts (document, не блокує).
 
@@ -314,12 +316,12 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Індекси — по реальних query-патернах
 
-| Таблиця              | Реальні запити                                                                              | Індекс                                            | Статус |
-| -------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------ |
-| `module_data`        | `WHERE user_id=$1 AND module=$2` (push/pull); `INSERT … ON CONFLICT (user_id, module)`      | PK `(user_id, module)`                            | **OK** |
-| `ai_usage_daily`     | `INSERT … ON CONFLICT (subject_key, usage_day)`; `DELETE WHERE usage_day < NOW() - 30 days` | PK `(subject_key, usage_day)` + idx `(usage_day)` | **OK** |
-| `push_subscriptions` | `SELECT … WHERE user_id=$1`; `DELETE WHERE endpoint = ANY($1)`                              | UNIQUE(endpoint) + index на user_id               | **OK** |
-| `session`            | Better Auth — керує сама                                                                    | n/a                                               | **OK** |
+| Таблиця              | Реальні запити                                                                                                | Індекс                                                                                                                                                                                                                                                                                                                                                                                                           | Статус |
+| -------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `module_data`        | `WHERE user_id=$1 AND module=$2` (push/pull); `INSERT … ON CONFLICT (user_id, module)`                        | PK `(user_id, module)`                                                                                                                                                                                                                                                                                                                                                                                           | **OK** |
+| `ai_usage_daily`     | `INSERT … ON CONFLICT (subject_key, usage_day, bucket, endpoint)`; `DELETE WHERE usage_day < NOW() - 30 days` | PK `(subject_key, usage_day, bucket, endpoint)` (**ЗАКРИТО 2026-08-04**, міграція `106_ai_usage_daily_endpoint_pk.sql`; раніше PK лишався 3-колонковим `(subject_key, usage_day, bucket)` з міграції 004, тоді як код уже писав `ON CONFLICT` на 4 колонки з міграції 104 — другий `endpoint` на ту саму трійку падав `23505`, бо `ON CONFLICT` не резолвиться проти НЕ-arbiter констрейнта) + idx `(usage_day)` | **OK** |
+| `push_subscriptions` | `SELECT … WHERE user_id=$1`; `DELETE WHERE endpoint = ANY($1)`                                                | UNIQUE(endpoint) + index на user_id                                                                                                                                                                                                                                                                                                                                                                              | **OK** |
+| `session`            | Better Auth — керує сама                                                                                      | n/a                                                                                                                                                                                                                                                                                                                                                                                                              | **OK** |
 
 ### EXPLAIN ANALYZE — закрито в PR D ✅
 
@@ -513,6 +515,72 @@ PG-таблиці, (b) ім'я SQLite-таблиці всередині вже �
 клієнтів, (c) wire-protocol table key increment-опів з outbox. Потрібен
 координований web+mobile rollout з app-store лагом (EAS) — Hard Rule #4
 two-phase DROP цього класу змін не покриває.
+
+### Pre-beta schema-debt audit (ЗАКРИТО частково 2026-08-04)
+
+Разовий прохід по схемних боргах, скористаний тим, що прод-БД не містить
+користувачів і буде wipe-нута перед бетою (founder confirmed). Міграції
+`104`–`115`, `apps/server/src/migrations/`.
+
+- ✅ **091-номер потрійний конфлікт** — `091_ai_usage_endpoint_and_cache.sql`
+  (третій, ніколи не задеплоєний файл із зайнятим номером) перейменовано на
+  `104_ai_usage_endpoint_and_cache.sql` + bookkeeping-guard
+  `105_rename_091_ai_usage_endpoint_and_cache.sql`. `scripts/lint-migrations.mjs`
+  whitelist переведено з number-based на filename-based
+  (`APPLIED_DUPLICATE_FILENAMES`), щоб нові колізії по 091 більше не
+  проходили мовчки.
+- ✅ **`ai_usage_daily` PK vs `ON CONFLICT`** — `106_ai_usage_daily_endpoint_pk.sql`
+  перебудував PK на 4 колонки `(subject_key, usage_day, bucket, endpoint)`;
+  див. рядок в "Індекси" вище. Sentinel-канон для відсутнього ендпоінта —
+  `'legacy'` (backfill), Stage 2 має уніфікувати з живим кодом
+  (`anthropicUsageStore.ts:169` досі пише `'unknown'`).
+- ⚠️ **`mono_connection.webhook_secret` (plaintext) — DROP НЕ виконано, лише
+  запланований.** `107_mono_connection_drop_webhook_secret.sql` містить
+  Phase-2 DROP із `TWO-PHASE-DROP` header-ом, готовий до merge, АЛЕ
+  `connection.ts`/`rotateSecret.ts` досі пишуть цю колонку — Stage 2 має
+  спершу прибрати ці записи, інакше деплой цієї міграції зламає upsert.
+- ✅ **`routine_habits.paused` — DROP НЕ виконано (свідомо).** На відміну
+  від задачі, знайдено ЖИВИХ читачів/писарів по обидва боки:
+  `applySyncFullState.ts` + `lib/reminders/sweep.ts` (сервер),
+  `routine-domain/src/reducers.ts` + web/mobile `sqliteReader`/`sqliteWriter`
+  (клієнт). Two-phase Phase 1 (сервер перестає читати/писати) ще не
+  відбувся — DROP зараз повторив би incident #704. Задокументовано в
+  `packages/db-schema/src/pg/routine.ts` і `sqlite/routine.ts`.
+- ✅ **`finyk_networth_history.networth` REAL → DOUBLE PRECISION** —
+  `108_finyk_networth_history_double.sql`, лослесс widening cast.
+- ✅ **day-key доктрина (ADR-0078)** — `nutrition_pantry_events` і
+  `nutrition_goal_periods` отримали `tz_offset_min` (`109_nutrition_events_tz_offset.sql`
+  - клієнтська sqlite-міграція `006_nutrition_events_tz_offset.sql`),
+    зрівнявши їх із `routine_completion_events` (085). `effective_from`
+    переформульовано з "Kyiv-local" на device-local (коментар-only, формат
+    CHECK не змінився).
+- ✅ **CHECK на day-key формат** — `110_day_key_format_checks.sql` додає
+  `^\d{4}-\d{2}-\d{2}$` на `routine_pushups.date_key`,
+  `nutrition_water_log.date_key`, `fizruk_wellbeing.date_key`,
+  `routine_completion_events.date_key`, `push_reminder_log.day_key`.
+- ✅ **GDPR-схема** — `111_user_preferences_gdpr.sql`
+  (`health_data_consent` + `analytics` DEFAULT TRUE→FALSE; **server-side
+  fallback `dataRights.ts:DEFAULT_PREFERENCES.analytics=true` НЕ
+  оновлено цією міграцією — Stage 2**), `112_user_force_verify_at.sql`
+  (`"user".force_verify_at`, Phase D email-verification-sweep gate),
+  `113_gdpr_cleanup_queue.sql` (ADR-0016 § ADR-6.3, wiring — Stage 2).
+- ✅ **`nutrition_backups`** — `114_nutrition_backups.sql`, PG-заміна
+  ефемерного `fs.writeFile` у `backup-upload.ts` (перенос коду — Stage 2).
+- ✅ **`user_profile`** — `115_user_profile.sql` + Drizzle-модель
+  `packages/db-schema/src/pg/profile.ts`, write-through сховище для
+  `USER_PROFILE`/`HUB_BIOMETRICS` (endpoint-и — Stage 2/4).
+- 🚫 **`sync_op_log` retention/partition — НЕ реалізовано (свідомо).**
+  Партиціювання по time-колонці вимагало б розширити
+  `UNIQUE(user_id, idempotency_key)` до трьох колонок, що назавжди
+  вимикає idempotency-backstop проти конкурентного дубль-інсерту. Деталі —
+  addendum у [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md)
+  (2026-08-04).
+- 🚫 **SPIKE-легасі в sqlite migrations — НЕ прибрано (свідомо).**
+  `ROUTINE_SPIKE_CLIENT_MIGRATIONS`/`ROUTINE_SPIKE_MIGRATIONS_TABLE`
+  активно імпортуються web+mobile `clientMigrate.ts` і 9 test-файлами;
+  `@removeBy 2026-09-01` ще не настав. `001_routine_spike.sql` ledger-ім'я
+  лишено — рескейл ризикує зламати вже змігровані локальні SQLite-стани
+  розробників/бета-тестерів за нульову функціональну вигоду.
 
 ---
 
