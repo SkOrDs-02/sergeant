@@ -408,6 +408,12 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
   const METRICS_BASELINE = {
     NODE_ENV: "production" as const,
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    // Pre-existing gap (unrelated to this batch): a later production check
+    // (`BETTER_AUTH_URL is required in production`) landed without this
+    // baseline being updated, so every test using it tripped that check
+    // instead of exercising METRICS_TOKEN. Fixed alongside the pre-beta
+    // schema-debt audit since it left the suite red.
+    BETTER_AUTH_URL: "https://api.example.com",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
     // backend-perf PR-01 — keep VAPID present so the not-throw case reaches
@@ -583,6 +589,8 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
   const VAPID_MISSING_BASELINE = {
     NODE_ENV: "production" as const,
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    // See METRICS_BASELINE comment above — same pre-existing gap.
+    BETTER_AUTH_URL: "https://api.example.com",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
     METRICS_TOKEN: "c".repeat(64),
@@ -675,6 +683,8 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
   const SENTRY_MISSING_BASELINE = {
     NODE_ENV: "production" as const,
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
+    // See METRICS_BASELINE comment above — same pre-existing gap.
+    BETTER_AUTH_URL: "https://api.example.com",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
     METRICS_TOKEN: "c".repeat(64),
