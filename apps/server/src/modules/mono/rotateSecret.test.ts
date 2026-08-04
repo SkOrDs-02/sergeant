@@ -139,16 +139,12 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
     expect(query!.callsOrdered[0]!.op).toBe("mono_rotate_select");
     expect(query!.callsOrdered[1]!.op).toBe("mono_rotate_update");
 
-    // UPDATE values: [userId, newSecret, newSecretHash]
-    const updateValues = query!.callsOrdered[1]!.values as [
-      string,
-      string,
-      string,
-    ];
+    // UPDATE values: [userId, newSecretHash] — migration 107 dropped the
+    // plaintext `webhook_secret` column, so only the hash is persisted now.
+    const updateValues = query!.callsOrdered[1]!.values as [string, string];
+    expect(updateValues).toHaveLength(2);
     expect(updateValues[0]).toBe("user_1");
     expect(updateValues[1]).toMatch(/^[0-9a-f]{64}$/);
-    expect(updateValues[2]).toMatch(/^[0-9a-f]{64}$/);
-    expect(updateValues[1]).not.toBe(updateValues[2]);
   });
 
   it("returns not_found when no active connection for user", async () => {
