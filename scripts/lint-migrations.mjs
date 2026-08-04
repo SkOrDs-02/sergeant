@@ -44,7 +44,7 @@ const TWO_PHASE_DROP_PROBE_RE = /^--[ \t]*TWO-PHASE-DROP:/im;
 export const MIN_DEPRECATION_DAYS = 14;
 
 /**
- * Номери, продубльовані на `main` історично, — виняток із «no duplicates».
+ * Файли, продубльовані на `main` історично, — виняток із «no duplicates».
  *
  * 2026-07-31: PR #540 і #541 були відкриті паралельно, обидва взяли `091`
  * (на `main` тоді був `090`), і кросбранчевий детектор нижче їх не спіймав —
@@ -60,10 +60,40 @@ export const MIN_DEPRECATION_DAYS = 14;
  *
  * Двозначності це не створює: файли застосовуються в лексикографічному
  * порядку, а `091_privat_connection` стабільно передує
- * `091_telegram_beta_survey`. Список НЕ поповнювати для нових колізій — їх
- * ловить кросбранчева перевірка й вирішує ребейз із перенумеруванням.
+ * `091_telegram_beta_survey`.
+ *
+ * 2026-08-04 (аудит pre-beta schema debt): whitelist був **number**-based
+ * (`[91]`), тож БУДЬ-ЯКИЙ третій файл з номером 091 (напр.
+ * `091_ai_usage_endpoint_and_cache.sql`, ніколи не задеплоєний) мовчки
+ * проходив ту саму поблажку — лінтер не міг відрізнити «ще один із двох
+ * відомих застосованих дублів» від «новий, ще не задеплоєний файл, що
+ * випадково взяв зайнятий номер». Замінено на filename-based список:
+ * рахуємо номер N дозволеним історичним дублем, лише коли КОЖЕН файл з цим
+ * номером входить у `APPLIED_DUPLICATE_FILENAMES` — інакше (як у випадку
+ * `091_ai_usage_endpoint_and_cache.sql`) номер лишається `newDuplicates`
+ * violation, і контрибʼютору доводиться перенумерувати замість тихого
+ * проходження. Список НЕ поповнювати для нових колізій — їх ловить
+ * кросбранчева перевірка й вирішує ребейз із перенумеруванням.
  */
-export const APPLIED_DUPLICATE_NUMBERS = [91];
+export const APPLIED_DUPLICATE_FILENAMES = new Set([
+  "091_privat_connection.sql",
+  "091_telegram_beta_survey.sql",
+]);
+
+/**
+ * Backward-compat: номери, похідні від `APPLIED_DUPLICATE_FILENAMES`. Раніше
+ * це був єдиний whitelist (number-based) — деякі тести й зовнішні читачі
+ * досі очікують масив номерів, тож лишаємо похідну версію замість видалення
+ * публічного експорту.
+ */
+export const APPLIED_DUPLICATE_NUMBERS = [
+  ...new Set(
+    [...APPLIED_DUPLICATE_FILENAMES].map((f) => {
+      const m = f.match(MIGRATION_FILE_RE);
+      return m ? Number(m[1]) : null;
+    }),
+  ),
+].filter((n) => n !== null);
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -587,11 +617,29 @@ export function run({
     );
   }
 
-  // Історично продубльовані номери (вже накочені на прод — перейменувати
-  // не можна, див. `APPLIED_DUPLICATE_NUMBERS`) не рахуємо за порушення.
-  const newDuplicates = duplicates.filter(
-    (n) => !APPLIED_DUPLICATE_NUMBERS.includes(n),
-  );
+  // Historically-allowed duplicates are filename-based (see
+  // `APPLIED_DUPLICATE_FILENAMES` above), not number-based: a duplicate
+  // number N is excused ONLY when every file sharing N is one of the
+  // exact, already-applied-to-prod filenames. A brand-new file that reuses
+  // an excused number (e.g. a fresh `091_*.sql`) is NOT covered — it still
+  // trips `newDuplicates`, because it is not itself in the whitelist.
+  const filenamesByNumber = new Map();
+  for (const f of allFiles) {
+    if (DOWN_FILE_RE.test(f)) continue;
+    const m = f.match(MIGRATION_FILE_RE);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (!filenamesByNumber.has(n)) filenamesByNumber.set(n, []);
+    filenamesByNumber.get(n).push(f);
+  }
+
+  const newDuplicates = duplicates.filter((n) => {
+    const names = filenamesByNumber.get(n) ?? [];
+    const allKnownApplied =
+      names.length > 0 &&
+      names.every((name) => APPLIED_DUPLICATE_FILENAMES.has(name));
+    return !allKnownApplied;
+  });
 
   if (newDuplicates.length > 0) {
     const padded = newDuplicates

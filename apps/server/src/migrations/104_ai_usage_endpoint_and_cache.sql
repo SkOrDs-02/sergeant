@@ -1,4 +1,17 @@
--- 091: облік AI-вартості по ендпоінтах, реальна ціна і кеш-токени.
+-- 104 (перейменовано з 091): облік AI-вартості по ендпоінтах, реальна ціна
+-- і кеш-токени.
+--
+-- Renumbering note (2026-08-04, аудит pre-beta schema debt). Файл народився
+-- як `091_ai_usage_endpoint_and_cache.sql` на гілці, паралельній до вже
+-- накочених у прод `091_privat_connection.sql` і
+-- `091_telegram_beta_survey.sql` (див. `APPLIED_DUPLICATE_NUMBERS` у
+-- `scripts/lint-migrations.mjs`). На відміну від тих двох, ЦЕЙ файл ніколи
+-- не деплоївся — `schema_migrations` у проді про нього не знає, тож
+-- перейменування безпечне без bookkeeping-DELETE (на відміну від прецеденту
+-- `038_rename_035_rate_limit_buckets.sql` /
+-- `044_rename_041_email_unsubscribes.sql`, де старий номер уже був у
+-- ledger-і). PK на 4 колонки додає окрема міграція
+-- `105_ai_usage_daily_endpoint_pk.sql`.
 --
 -- WHY. Досі `ai_usage_daily` розрізняв споживання лише по `bucket`
 -- (`anthropic:<model>`). Поки перший тур і синтез їхали різними моделями, це
