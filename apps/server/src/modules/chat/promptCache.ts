@@ -6,6 +6,7 @@
 
 import { env } from "../../env.js";
 import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
+import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import {
   buildToolSearchPayload,
   isCacheable,
@@ -100,6 +101,18 @@ function stableCacheControl(): CacheControl {
     : { type: "ephemeral" };
 }
 
+/**
+ * Другий system-блок несе дані, яких ми НЕ писали: клієнтський `context` із
+ * тіла `/api/chat`, RAG-витяг із `ai_memories` (теж написаний користувачем) і
+ * coach-кореляції. Тому він іде в `<user_data>`-огорожі — тією ж логікою, що
+ * `tool_result` у `wrapAndScanToolResults`, і з парним параграфом у
+ * `SYSTEM_PREFIX` (v17+), який наказує моделі трактувати вміст як дані.
+ *
+ * AI-DANGER: не прибирай огорожу «бо це ж наш власний context». Снапшот
+ * будує КЛІЄНТ (`apps/web/src/core/hub/chat/useChatSend`), сервер його не
+ * звіряє ні з чим — без огорожі один POST переписує системний промпт і
+ * перетворює асистента на універсальний LLM.
+ */
 export function buildSystem(context: string): AnthropicSystemBlock[] {
   const cached: AnthropicSystemBlock = {
     type: "text",
@@ -107,7 +120,7 @@ export function buildSystem(context: string): AnthropicSystemBlock[] {
     cache_control: stableCacheControl(),
   };
   if (!context) return [cached];
-  return [cached, { type: "text", text: context }];
+  return [cached, { type: "text", text: wrapAndScanUserContext(context) }];
 }
 
 /**

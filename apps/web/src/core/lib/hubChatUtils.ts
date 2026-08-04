@@ -78,6 +78,12 @@ export function friendlyChatError(e: unknown): string {
   if (/failed to fetch|network|load failed/i.test(msg)) {
     return "Немає з'єднання з мережею або сервер недоступний.";
   }
+  // `/api/chat` стоїть за `requireSession()` (аудит `ai-abuse-2026-08-05.md`, A1),
+  // тож анонім упирається сюди. Сервер віддає «Потрібна автентифікація» —
+  // технічно правильно, але без підказки, що робити далі.
+  if (/Потрібна автентифікація|UNAUTHORIZED/i.test(msg)) {
+    return "Асистент працює після входу в акаунт — увійди, і повернемось до розмови.";
+  }
   return `Помилка: ${msg}`;
 }
 
