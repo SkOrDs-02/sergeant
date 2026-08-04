@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
@@ -11,18 +12,25 @@ import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
 
+export type RecommendRecipesInput = z.infer<typeof RecommendRecipesSchema>;
+
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
   user?: { id: string };
 };
 
-const SYSTEM = `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
+export const SYSTEM = `Ти шеф-кухар і нутріціолог. Відповідай ТІЛЬКИ українською.
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 
 Задача: запропонувати 2–4 реалістичних рецептів з наявних продуктів.
 Не вигадуй інгредієнти. Дозволено додати лише базові "припущення" (сіль, перець, вода, олія) і тоді явно познач їх у tips.
+Режим комори "only" означає БУКВАЛЬНО тільки те, що є в списку: кожен інгредієнт
+рецепта мусить бути в коморі, окрім тих самих базових. Якщо з наявного не
+складається жоден пристойний рецепт — поверни менше рецептів або порожній
+"recipes". Рецепт із продуктом, якого в користувача немає, гірший за відсутність
+рецепта: людина стане готувати й зупиниться на середині.
 Дай короткі поради по приготуванню і безпеці (температура/час) без зайвої води.
 ВАЖЛИВО: відповідь має бути КОРОТКА і НЕ Обрізана. Якщо не вміщається — поверни МЕНШЕ рецептів і/або коротші steps/tips.
 
@@ -43,21 +51,14 @@ ${ADVICE_BOUNDARY_RULE}
 `;
 
 /**
- * POST /api/nutrition/recommend-recipes — рецепти з наявних продуктів.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт рекомендації рецептів — рівно той, що йде в прод (винесено заради
+ * стенду `scripts/eval/pipelines.nutrition.ts`).
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
-  const { pantry: pantryIn, preferences } = parseBody(
-    RecommendRecipesSchema,
-    req,
-  );
-
+export function buildRecommendRecipesPrompt(input: RecommendRecipesInput): {
+  system: string;
+  user: string;
+} {
+  const { pantry: pantryIn, preferences } = input;
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
   const servings = Number(prefs.servings || 1);
@@ -89,6 +90,24 @@ ${pantrySec}
 - ingredients: тільки ключові позиції
 Якщо продуктів мало — все одно поверни 2 прості рецепти.`;
 
+  return { system: SYSTEM, user: prompt };
+}
+
+/**
+ * POST /api/nutrition/recommend-recipes — рецепти з наявних продуктів.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildRecommendRecipesPrompt(
+    parseBody(RecommendRecipesSchema, req),
+  );
+
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
     anthropicApiKey: apiKey,
@@ -98,8 +117,8 @@ ${pantrySec}
     model: env.NUTRITION_MODEL,
     maxTokens: 2800,
     temperature: 0.2,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.recommendRecipes,
     endpoint: "recommend-recipes",
     ...(userId ? { userId } : {}),

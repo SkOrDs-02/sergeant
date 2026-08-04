@@ -29,10 +29,39 @@ interface WeeklyDigestEntry {
   correlations?: string[] | undefined;
 }
 
-interface CoachMemory {
+export interface CoachMemory {
   weeklyDigests: WeeklyDigestEntry[];
   lastInsightDate: string | null;
   lastInsightText: string | null;
+}
+
+/** Знімок тижня, з якого коуч будує повідомлення дня. */
+export interface CoachSnapshot {
+  dateContext?: {
+    todayKey?: string;
+    weekDayUk?: string;
+    dayOfWeekIso?: number;
+    daysIntoWeek?: number;
+    weekRange?: string;
+  };
+  finyk?: {
+    totalSpent?: number;
+    totalIncome?: number;
+    txCount?: number;
+    topCategories?: Array<{ name: string; amount: number }>;
+  };
+  fizruk?: {
+    workoutsCount?: number;
+    totalVolume?: number;
+    recoveryLabel?: string;
+  };
+  nutrition?: {
+    avgKcal?: number;
+    targetKcal?: number;
+    avgProtein?: number;
+    daysLogged?: number;
+  };
+  routine?: { overallRate?: number; habitCount?: number };
 }
 
 interface IncomingMemory {
@@ -322,42 +351,22 @@ export async function coachMemoryPost(
 }
 
 /**
- * POST /api/coach/insight — згенерувати AI-повідомлення дня.
- * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ * Промпт повідомлення дня — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з `coachInsight`, щоб стенд
+ * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не однорядкову
+ * заглушку. Промпт динамічний (пам'ять + знімок тижня), тож експортується
+ * білдер; стенд подає йому фіксований зразок.
+ *
+ * Прод шле весь текст ОДНИМ user-повідомленням без `system` — це не помилка
+ * винесення, а поточна поведінка. Стенд має її дзеркалити, інакше міряє
+ * інший режим моделі.
  */
-export async function coachInsight(req: Request, res: Response): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
-    snapshot: {
-      dateContext?: {
-        todayKey?: string;
-        weekDayUk?: string;
-        dayOfWeekIso?: number;
-        daysIntoWeek?: number;
-        weekRange?: string;
-      };
-      finyk?: {
-        totalSpent?: number;
-        totalIncome?: number;
-        txCount?: number;
-        topCategories?: Array<{ name: string; amount: number }>;
-      };
-      fizruk?: {
-        workoutsCount?: number;
-        totalVolume?: number;
-        recoveryLabel?: string;
-      };
-      nutrition?: {
-        avgKcal?: number;
-        targetKcal?: number;
-        avgProtein?: number;
-        daysLogged?: number;
-      };
-      routine?: { overallRate?: number; habitCount?: number };
-    };
-    memory: CoachMemory | null;
-  };
-
+export function buildCoachInsightPrompt(input: {
+  snapshot: CoachSnapshot;
+  memory: CoachMemory | null;
+}): { user: string } {
+  const { snapshot, memory } = input;
   const memorySummary = buildMemorySummary(memory);
 
   const dateContext = snapshot?.dateContext;
@@ -443,6 +452,22 @@ ${snapshotText}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 
+  return { user: systemPrompt };
+}
+
+/**
+ * POST /api/coach/insight — згенерувати AI-повідомлення дня.
+ * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ */
+export async function coachInsight(req: Request, res: Response): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
+    snapshot: CoachSnapshot;
+    memory: CoachMemory | null;
+  };
+
+  const prompt = buildCoachInsightPrompt({ snapshot, memory });
+
   // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
   // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
   // For Free/Anon/founder/flag-off it returns the premium model = current
@@ -464,7 +489,7 @@ ${snapshotText}
   const aiResult = await invokeLLM(provider, {
     model: env.COACH_MODEL_ANTHROPIC,
     maxTokens: 300,
-    messages: [{ role: "user", content: systemPrompt }],
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20_000,
     endpoint: "coach-insight",
     userId: (req as WithSessionUser).user?.id,

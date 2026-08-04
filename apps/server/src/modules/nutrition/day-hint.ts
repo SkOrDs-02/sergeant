@@ -1,10 +1,13 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { DayHintSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
+
+export type DayHintInput = z.infer<typeof DayHintSchema>;
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -23,19 +26,16 @@ function normalizeHint(text: unknown): string {
 }
 
 /**
- * POST /api/nutrition/day-hint — коротка порада по денних макросах.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт денної підказки — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з хендлера заради стенду
+ * (`scripts/eval/pipelines.nutrition.ts`). `system` тут немає навмисно —
+ * прод шле все одним user-повідомленням; стенд має дзеркалити це, інакше
+ * міряє інший режим моделі.
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const userId = (req as WithAnthropicKey).user?.id;
-
+export function buildDayHintPrompt(input: DayHintInput): { user: string } {
   const { macros, targets, locale, hasMeals, hasAnyMacros, macroSources } =
-    parseBody(DayHintSchema, req);
-
+    input;
   const mRaw = macros || {};
   const m = {
     kcal: safeNonNegOrNull(mRaw.kcal),
@@ -62,6 +62,22 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
 
 Дай 2–4 речення: коротко порівняй з цілями (якщо цілі задані), що добре / що звернути увагу завтра. Без моралізаторства. Відповідь ТІЛЬКИ JSON: {"hint":"..."}`;
 
+  return { user: prompt };
+}
+
+/**
+ * POST /api/nutrition/day-hint — коротка порада по денних макросах.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildDayHintPrompt(parseBody(DayHintSchema, req));
+
   const provider = getLLMProvider({
     provider: env.LLM_NUTRITION_PROVIDER,
     anthropicApiKey: apiKey,
@@ -71,7 +87,7 @@ ${contextNote}${sourcesNote}Факт за день: ккал ${m.kcal ?? "—"},
     model: env.NUTRITION_MODEL,
     maxTokens: 400,
     temperature: 0.3,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20000,
     endpoint: "day-hint",
     ...(userId ? { userId } : {}),
