@@ -224,12 +224,13 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
 
 describe("streamAnthropicToSse — first-call upstream errors", () => {
   it("upstream !ok (JSON error body) → throws ExternalServiceError, writes nothing, refunds quota", async () => {
+    const firstRecordEnd = vi.fn();
     anthropicMessagesStream.mockResolvedValueOnce({
       response: new NodeResponse(
         JSON.stringify({ error: { message: "rate limited" } }),
         { status: 429, headers: { "content-type": "application/json" } },
       ),
-      recordStreamEnd: vi.fn(),
+      recordStreamEnd: firstRecordEnd,
     });
 
     const refund = vi.fn().mockResolvedValue(undefined);
@@ -241,6 +242,8 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
     ).rejects.toBeInstanceOf(ExternalServiceError);
 
     expect(refund).toHaveBeenCalledTimes(1);
+    expect(firstRecordEnd).toHaveBeenCalledTimes(1);
+    expect(firstRecordEnd).toHaveBeenCalledWith("error");
     expect(res.writes).toHaveLength(0);
     expect(res.headers["Content-Type"]).toBeUndefined();
   });
@@ -437,7 +440,7 @@ describe("streamAnthropicToSse — auto-continuation", () => {
     expect(res.writableEnded).toBe(true);
   });
 
-  it("continuation call throws → writes err event with message, still ends [DONE]", async () => {
+  it("continuation call throws → writes generic err event (no raw provider text), still ends [DONE]", async () => {
     anthropicMessagesStream
       .mockResolvedValueOnce({
         response: makeUpstreamSse([
@@ -455,7 +458,11 @@ describe("streamAnthropicToSse — auto-continuation", () => {
     await streamAnthropicToSse(makeReq(), res, "sk-test", PAYLOAD);
 
     const payloads = dataPayloads(res.writes);
-    expect(payloads).toContain(JSON.stringify({ err: "network down" }));
+    // Сирий текст помилки не витікає клієнту — лише generic (CWE-209).
+    expect(payloads).toContain(
+      JSON.stringify({ err: "AI continuation failed" }),
+    );
+    expect(res.writes.join("")).not.toContain("network down");
     expect(payloads.at(-1)).toBe("[DONE]");
   });
 
@@ -582,5 +589,7 @@ describe("streamAnthropicToSse — heartbeat", () => {
       "[DONE]",
     ]);
     expect(res.writableEnded).toBe(true);
+    // clearInterval у finally реально спрацював — жодного живого таймера.
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
