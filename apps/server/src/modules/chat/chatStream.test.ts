@@ -225,13 +225,18 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
 describe("streamAnthropicToSse — first-call upstream errors", () => {
   it("upstream !ok (JSON error body) → throws ExternalServiceError, writes nothing, refunds quota", async () => {
     const firstRecordEnd = vi.fn();
-    anthropicMessagesStream.mockResolvedValueOnce({
+    // Персистентна mockImplementation (не Once-черга): CI-прогони під
+    // starvation-навантаженням тричі поспіль віддавали !ok-тестам не їхню
+    // відповідь (503→502, деталі в історії PR #605). Свіжий Response на
+    // кожен виклик — body одноразовий, а тест більше не залежить від
+    // стану Once-черги.
+    anthropicMessagesStream.mockImplementation(async () => ({
       response: new NodeResponse(
         JSON.stringify({ error: { message: "rate limited" } }),
         { status: 429, headers: { "content-type": "application/json" } },
       ),
       recordStreamEnd: firstRecordEnd,
-    });
+    }));
 
     const refund = vi.fn().mockResolvedValue(undefined);
     const req = makeReq(refund);
@@ -249,20 +254,36 @@ describe("streamAnthropicToSse — first-call upstream errors", () => {
   });
 
   it("upstream !ok (non-JSON body) → falls back to raw text via clone(), still throws + refunds", async () => {
-    anthropicMessagesStream.mockResolvedValueOnce({
+    anthropicMessagesStream.mockImplementation(async () => ({
       response: new NodeResponse("Service Unavailable", {
         status: 503,
         headers: { "content-type": "text/plain" },
       }),
       recordStreamEnd: vi.fn(),
-    });
+    }));
 
     const refund = vi.fn().mockResolvedValue(undefined);
     const req = makeReq(refund);
 
-    await expect(
-      streamAnthropicToSse(req, makeSseRes(), "sk-test", PAYLOAD),
-    ).rejects.toMatchObject({ status: 503, code: "ANTHROPIC_ERROR" });
+    const caught: unknown = await streamAnthropicToSse(
+      req,
+      makeSseRes(),
+      "sk-test",
+      PAYLOAD,
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    // `cause` в асерції навмисно: якщо CI знову побачить 502 замість 503,
+    // Received покаже rawProviderMessage/upstreamStatus — тобто ЩО саме
+    // прочитав код замість нашої 503-відповіді.
+    const err = caught as ExternalServiceError & { cause?: unknown };
+    expect({
+      status: err.status,
+      code: err.code,
+      cause: err.cause,
+    }).toMatchObject({ status: 503, code: "ANTHROPIC_ERROR" });
     expect(refund).toHaveBeenCalledTimes(1);
   });
 
