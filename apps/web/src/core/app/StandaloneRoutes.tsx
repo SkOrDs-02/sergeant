@@ -344,7 +344,24 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // the dashboard instead of being asked to re-onboard.
   defineStandaloneRoute({
     paths: [WELCOME_PATH],
-    render: ({ storageReady, onLeaveWelcome, onOpenAuth }) => {
+    render: ({
+      user,
+      authLoading,
+      storageReady,
+      onLeaveWelcome,
+      onOpenAuth,
+    }) => {
+      // An authenticated user is never a first-time visitor. `/welcome` is the
+      // anonymous surface — a demo dashboard plus «Почати» / «У мене вже є
+      // акаунт» — and the local-only `shouldShowOnboarding()` heuristic below
+      // cannot see the session, so a user who signed in on a clean device was
+      // shown the splash and offered to log into the account they were already
+      // signed into (аудит 2026-08-04, знахідка 5). Same `!authLoading && user`
+      // shape as the `/sign-in` entry above: defer until the session settles so
+      // a freshly-mounted page does not bounce a genuine visitor away.
+      if (!authLoading && user) {
+        return <RedirectTo to="/" />;
+      }
       // Until the persistent store resolves we cannot tell a genuine first-time
       // visitor (show the splash screen) from a returning user who deep-linked
       // `/welcome` (bounce to `/`). Render a loader rather than flashing the
