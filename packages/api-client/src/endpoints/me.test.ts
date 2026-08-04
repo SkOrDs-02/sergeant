@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  USER_PROFILE_MAX_BYTES,
+  USER_PROFILE_MAX_DEPTH,
+} from "@sergeant/shared";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
 import { createMeEndpoints } from "./me";
@@ -115,6 +119,7 @@ describe("createMeEndpoints", () => {
       aiMemory: false,
       pushNotifications: true,
       sergeantNudges: true,
+      healthDataConsent: false,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const me = createMeEndpoints(createHttpClient());
@@ -124,6 +129,7 @@ describe("createMeEndpoints", () => {
       aiMemory: false,
       pushNotifications: true,
       sergeantNudges: true,
+      healthDataConsent: false,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const url = firstCall(fetchMock)[0] as string;
@@ -163,6 +169,128 @@ describe("createMeEndpoints", () => {
     expect(init.body).toBe(JSON.stringify({ analytics: false }));
   });
 
+  // ────────────────────── healthDataConsent (GDPR Art. 9) ──────────────────
+  // Migration 111 — explicit opt-in for health-adjacent data (fizruk/
+  // nutrition). Default `false` for rolling-deploy compat (web on Vercel,
+  // server on Coolify deploy independently).
+
+  it("GET /api/me/preferences повертає healthDataConsent явно", async () => {
+    mockFetchOnce({
+      analytics: false,
+      aiMemory: false,
+      pushNotifications: false,
+      sergeantNudges: false,
+      healthDataConsent: true,
+      updatedAt: "2026-06-06T10:00:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getPreferences()).resolves.toMatchObject({
+      healthDataConsent: true,
+    });
+  });
+
+  it("GET /api/me/preferences дефолтить healthDataConsent у false для старого сервера", async () => {
+    // Той самий rolling-deploy сценарій, що і sergeantNudges: старий сервер
+    // ще не віддає поле — клієнт не повинен впасти ZodError-ом.
+    mockFetchOnce({
+      analytics: false,
+      aiMemory: false,
+      pushNotifications: false,
+      sergeantNudges: false,
+      updatedAt: null,
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getPreferences()).resolves.toMatchObject({
+      healthDataConsent: false,
+    });
+  });
+
+  it("PATCH /api/me/preferences шле healthDataConsent у body", async () => {
+    const fetchMock = mockFetchOnce({
+      analytics: false,
+      aiMemory: false,
+      pushNotifications: false,
+      sergeantNudges: false,
+      healthDataConsent: true,
+      updatedAt: "2026-06-06T10:05:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await me.updatePreferences({ healthDataConsent: true });
+
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.method).toBe("PATCH");
+    expect(init.body).toBe(JSON.stringify({ healthDataConsent: true }));
+  });
+
+  // ────────────────────── /api/me/profile (write-through) ──────────────────
+  // Migration 115 — profile/biometrics blob. NOT oplog-sync: plain GET/PUT
+  // upsert by user_id, "defaults, not 404" when no row exists yet.
+
+  it("GET /api/me/profile повертає дефолт {profile:{}, updatedAt:null} для нового юзера", async () => {
+    const fetchMock = mockFetchOnce({ profile: {}, updatedAt: null });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getProfile()).resolves.toEqual({
+      profile: {},
+      updatedAt: null,
+    });
+    const url = firstCall(fetchMock)[0] as string;
+    expect(url).toContain("/api/v1/me/profile");
+  });
+
+  it("PUT /api/me/profile робить roundtrip профілю", async () => {
+    const stored = { name: "Ada", heightCm: 170 };
+    const fetchMock = mockFetchOnce({
+      profile: stored,
+      updatedAt: "2026-06-06T10:05:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    const res = await me.updateProfile(stored);
+
+    expect(res).toEqual({
+      profile: stored,
+      updatedAt: "2026-06-06T10:05:00.000Z",
+    });
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({ profile: stored }));
+  });
+
+  it("PUT /api/me/profile відхиляє payload >16КБ ДО мережевого запиту", async () => {
+    // Клієнт валідує через ту саму `UserProfilePutBodySchema`, що і
+    // сервер — payload завеликий ловиться локально, `fetch` не викликається
+    // взагалі (не «сервер відповів 400», а «клієнт навіть не спробував»).
+    const fetchMock = mockFetchOnce({ profile: {}, updatedAt: null });
+    const me = createMeEndpoints(createHttpClient());
+
+    // `{ blob: "x".repeat(N) }` serializes to > USER_PROFILE_MAX_BYTES once
+    // JSON-stringified with the wrapping key overhead accounted for.
+    const oversized = { blob: "x".repeat(USER_PROFILE_MAX_BYTES + 100) };
+
+    await expect(me.updateProfile(oversized)).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("PUT /api/me/profile відхиляє вкладеність >3 рівнів ДО мережевого запиту", async () => {
+    const fetchMock = mockFetchOnce({ profile: {}, updatedAt: null });
+    const me = createMeEndpoints(createHttpClient());
+
+    // Depth-4 object nesting: level1 → level2 → level3 → level4 (top-level
+    // object itself is depth 1). USER_PROFILE_MAX_DEPTH === 3, so this must
+    // be rejected client-side, symmetrically with the server.
+    let deep: Record<string, unknown> = { leaf: true };
+    for (let i = 0; i < USER_PROFILE_MAX_DEPTH + 1; i++) {
+      deep = { nested: deep };
+    }
+
+    await expect(me.updateProfile(deep)).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("GET /api/me/export повертає privacy export без client-side трансформацій", async () => {
     const payload = {
       generatedAt: "2026-06-06T10:10:00.000Z",
@@ -179,6 +307,7 @@ describe("createMeEndpoints", () => {
         aiMemory: true,
         pushNotifications: false,
         sergeantNudges: false,
+        healthDataConsent: false,
         updatedAt: null,
       },
       data: {
