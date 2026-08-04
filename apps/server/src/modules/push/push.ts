@@ -167,13 +167,26 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   // iOS / Android — opaque device token. Upsert по (platform, token),
   // з воскресінням soft-deleted рядків (reinstall повертає той самий token).
-  await pool.query(
+  //
+  // Власника рядка можна змінити лише тоді, коли попередній власник сам
+  // його звільнив (`unregister` → soft-delete). Без цього guard-а знання
+  // чужого токена = перехоплення чужих сповіщень: `DO UPDATE SET user_id`
+  // мовчки перепризначав пристрій на того, хто останнім викликав register.
+  const upsert = await pool.query(
     `INSERT INTO push_devices (user_id, platform, token)
        VALUES ($1, $2, $3)
        ON CONFLICT (platform, token) DO UPDATE
-         SET user_id = $1, updated_at = NOW(), deleted_at = NULL`,
+         SET user_id = $1, updated_at = NOW(), deleted_at = NULL
+       WHERE push_devices.user_id = $1 OR push_devices.deleted_at IS NOT NULL`,
     [user.id, data.platform, data.token],
   );
+  if (upsert.rowCount === 0) {
+    res.status(409).json({
+      error: "Цей пристрій уже зареєстровано на інший акаунт.",
+      code: "PUSH_DEVICE_OWNED",
+    });
+    return;
+  }
   res.json({ ok: true, platform: data.platform });
 }
 

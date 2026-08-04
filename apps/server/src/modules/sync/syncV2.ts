@@ -223,6 +223,26 @@ export const SYNC_V2_SUPPORTED_TABLES = Object.freeze(
   Object.keys(OP_LOG_TABLE_REGISTRY),
 );
 
+/**
+ * `op.table` приходить сирим із тіла запиту, тож належність до реєстру
+ * перевіряємо лише по власних ключах — інакше `constructor` / `toString`
+ * резолвляться через прототип і дають фальшивий `applied` без запису в БД.
+ */
+function lookupApplyFn(table: string): ApplyFn | undefined {
+  return Object.prototype.hasOwnProperty.call(OP_LOG_TABLE_REGISTRY, table)
+    ? OP_LOG_TABLE_REGISTRY[table]
+    : undefined;
+}
+
+/**
+ * Лейбл `table` для `sync_op_log_apply_total`. Реєстр — єдине джерело
+ * дозволених значень; усе інше згортаємо в `__unknown__`, щоб тіло запиту
+ * не роздувало кардинальність серії (бюджет — `obs/metrics/sync.ts`).
+ */
+function metricTable(table: string): string {
+  return lookupApplyFn(table) ? table : "__unknown__";
+}
+
 export async function syncV2Push(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
@@ -293,7 +313,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         }
         try {
           syncOpLogApplyTotal.inc({
-            table: op.table,
+            table: metricTable(op.table),
             status: "duplicate",
             reason: "duplicate",
           });
@@ -322,7 +342,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "op_not_supported";
       }
 
-      const applyFn = OP_LOG_TABLE_REGISTRY[op.table];
+      const applyFn = lookupApplyFn(op.table);
       if (status === "applied" && !applyFn) {
         status = "rejected";
         reason = "table_not_allowed";
@@ -406,10 +426,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       }
 
       try {
-        const labelTable =
-          reason === "table_not_allowed" ? "__unknown__" : op.table;
         syncOpLogApplyTotal.inc({
-          table: labelTable,
+          table: metricTable(op.table),
           status,
           reason: status === "applied" ? "none" : reason || "unknown",
         });

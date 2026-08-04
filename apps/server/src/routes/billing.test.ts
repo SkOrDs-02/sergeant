@@ -60,6 +60,7 @@ import {
 } from "@sergeant/shared";
 
 import { createBillingRouter } from "./billing.js";
+import { getUserPlan } from "../modules/billing/index.js";
 
 function createQueryPool(query: ReturnType<typeof vi.fn>) {
   return {
@@ -378,6 +379,22 @@ describe("billing routes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
+  });
+
+  // Термін дії підписки. `getUserPlan()` — джерело істини для `requirePlan()`
+  // і AI-квоти, тож саме його запит має відсікати прострочені рядки: статус
+  // сам по собі ніколи не змінюється (cancel_at_period_end і past_due
+  // лишаються назавжди), а бета-доступи видаються з `current_period_end` у
+  // майбутньому і мають закриватися самі. Мок-пул не виконує SQL, тож
+  // перевіряємо саме предикат — фільтрує Postgres, не JS.
+  it("getUserPlan only counts a subscription while its period is still running", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] });
+    const plan = await getUserPlan(createQueryPool(query) as never, "user_1");
+
+    expect(plan.plan).toBe("free");
+    expect(String(query.mock.calls[0]?.[0])).toContain(
+      "current_period_end IS NULL OR current_period_end > NOW()",
+    );
   });
 
   it("liqpay-callback with missing signature → 400 (no processing)", async () => {

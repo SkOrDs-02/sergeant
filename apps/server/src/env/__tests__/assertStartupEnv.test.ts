@@ -45,6 +45,10 @@ const PROD_BASELINE = {
   // Independent audit 2026-06-11 ws-06 — SENTRY_DSN is required in production.
   // Negative path lives in its own `describe` block below (DSN-less baseline).
   SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
+  // BETTER_AUTH_URL обовʼязковий у production: без нього Better Auth деривує
+  // http://localhost:$PORT і тихо знімає Secure з session-cookie. Негативний
+  // шлях перевіряється окремим кейсом, який видаляє ключ із baseline.
+  BETTER_AUTH_URL: "https://api.example.com",
 };
 
 describe("isDeployedProduction — host-agnostic prod detection", () => {
@@ -473,9 +477,10 @@ describe("assertStartupEnv — HTTPS scheme hard-fail (T2 audit #6)", () => {
     expect(() => assertStartupEnv()).not.toThrow();
   });
 
-  it("does NOT throw in production when both URLs are unset (Better Auth derives them)", async () => {
-    const assertStartupEnv = await loadAssertStartupEnv(HTTPS_BASELINE);
-    expect(() => assertStartupEnv()).not.toThrow();
+  it("throws in production when BETTER_AUTH_URL is unset", async () => {
+    const { BETTER_AUTH_URL: _unset, ...withoutAuthUrl } = HTTPS_BASELINE;
+    const assertStartupEnv = await loadAssertStartupEnv(withoutAuthUrl);
+    expect(() => assertStartupEnv()).toThrow(/BETTER_AUTH_URL/);
   });
 
   it("does NOT throw in NODE_ENV=development when BETTER_AUTH_URL uses http://localhost", async () => {

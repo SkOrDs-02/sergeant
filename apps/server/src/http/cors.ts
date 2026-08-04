@@ -8,25 +8,39 @@ import { logger } from "../obs/logger.js";
  * Для Vercel preview-деплойменотів із плаваючими hash-префіксами
  * (`sergeant-git-branch-user.vercel.app`) перераховувати кожен URL в
  * ALLOWED_ORIGINS незручно — для цього додана змінна `ALLOWED_ORIGIN_REGEX`
- * (один regex, що тестується проти `req.headers.origin`). Приклад значення:
- *   `^https://sergeant(?:-[a-z0-9-]+)?\.vercel\.app$`
+ * (один regex, що тестується проти `req.headers.origin`).
+ *
+ * Патерн має бути максимально вузьким. Простір імен проєктів на
+ * `*.vercel.app` глобальний, тож широке `^https://sergeant(?:-[a-z0-9-]+)?
+ * \.vercel\.app$` віддало б credentialed CORS будь-кому, хто зареєструє
+ * сумісний піддомен у власному акаунті. Прив'язуйте патерн до фіксованого
+ * суфікса своєї команди/акаунта, напр.:
+ *   `^https://sergeant-git-[a-z0-9-]+-myteam\.vercel\.app$`
  *
  * Жодних wild-card defaults — щоб випадково не відкрити CORS на чуже
  * Vercel-тенант. Regex треба явно виставити.
  */
-const DEFAULT_ORIGINS = [
+const PROD_ORIGINS = [
+  "https://sergeant.vercel.app",
+  "https://sergeant.2dmanager.com.ua",
+];
+
+// Локальні dev-поверхні: Vite :5173, `vite preview` :4173, unified-mode
+// сервер :5000 і Metro/Expo web :8081 (нативні клієнти Origin не шлють і
+// CORS не перевіряють, але Expo-web симулятор і браузерна прев'юшка —
+// шлють). У production у список НЕ потрапляють: session-cookie там
+// `SameSite=None; Secure`, тож сторінка на localhost жертви інакше робила б
+// credentialed cross-site запити до прода і читала б відповідь. Той самий
+// NODE_ENV-гейт, що в `getTrustedOrigins()` (`auth.ts`). Якщо localhost
+// потрібен у проді свідомо — додайте його через `ALLOWED_ORIGINS`.
+const DEV_ORIGINS = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:4173",
   "http://127.0.0.1:4173",
   "http://localhost:5000",
   "http://127.0.0.1:5000",
-  // Expo web dev (Metro bundler) за замовчуванням слухає 8081. Нативні
-  // клієнти CORS не перевіряють (Origin не шлють), але Expo-web симулятор
-  // і браузерна прев'юшка у dev-режимі — шлють, тому явно дозволяємо.
   "http://localhost:8081",
-  "https://sergeant.vercel.app",
-  "https://sergeant.2dmanager.com.ua",
 ];
 
 const DEFAULT_ALLOW_HEADERS = [
@@ -44,7 +58,11 @@ export function getAllowedOrigins() {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return [...new Set([...DEFAULT_ORIGINS, ...extra])];
+  const defaults =
+    process.env["NODE_ENV"] === "production"
+      ? PROD_ORIGINS
+      : [...PROD_ORIGINS, ...DEV_ORIGINS];
+  return [...new Set([...defaults, ...extra])];
 }
 
 // Кешуємо скомпільований regex, щоб не пересправляти його на кожен запит.

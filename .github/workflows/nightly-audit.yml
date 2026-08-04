@@ -82,15 +82,25 @@ jobs:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
-      - name: Install osv-scanner v2.3.5
+      - name: Install osv-scanner v2.3.5 (checksum-pinned)
+        # Дайджест — з `osv-scanner_SHA256SUMS` того ж релізу. Оновлюючи
+        # версію, підстав новий хеш звідти, інакше крок впаде.
         run: |
-          curl -fsSL https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64 \
-            -o /usr/local/bin/osv-scanner
-          chmod +x /usr/local/bin/osv-scanner
+          set -euo pipefail
+          OSV_VERSION=2.3.5
+          OSV_SHA256=bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b
+          curl -fsSL \
+            "https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64" \
+            -o /tmp/osv-scanner
+          echo "${OSV_SHA256}  /tmp/osv-scanner" | sha256sum -c -
+          chmod +x /tmp/osv-scanner
+          sudo mv /tmp/osv-scanner /usr/local/bin/osv-scanner
           osv-scanner --version
 
       - name: Run osv-scanner
         id: scan
+        # Код виходу зберігаємо, а не гейтимо тут: SARIF ще треба залити в
+        # code-scanning і в артефакт. Гейт — окремий крок нижче.
         run: |
           set +e
           osv-scanner --format sarif --output osv-scanner.sarif --recursive ./
@@ -114,15 +124,22 @@ jobs:
           path: osv-scanner.sarif
           retention-days: 30
 
-      - name: Check for critical/high vulnerabilities
+      - name: Check for vulnerabilities
+        # osv-scanner емітить усі results на рівні `warning`, тож фільтр по
+        # `level == "error"` ніколи не спрацьовував. Джерело істини — код
+        # виходу сканера (0 = чисто, 1 = знайдено вразливості, 127/128 =
+        # помилка запуску); кількість results іде в summary для контексту.
+        env:
+          SCAN_EXIT: ${{ steps.scan.outputs.exit_code }}
         run: |
-          ERRORS=$(jq '[.runs[]?.results[]? | select(.level == "error")] | length' osv-scanner.sarif 2>/dev/null || echo 0)
+          FINDINGS=$(jq '[.runs[]?.results[]?] | length' osv-scanner.sarif 2>/dev/null || echo 0)
 
           echo "### OSV-Scanner summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Critical/High vulnerabilities (SARIF level=error): ${ERRORS}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Scanner exit code: ${SCAN_EXIT}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SARIF results: ${FINDINGS}" >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "${ERRORS}" -gt 0 ]; then
-            echo "::error::Found ${ERRORS} critical/high vulnerabilities in OSV-Scanner results"
+          if [ "${SCAN_EXIT}" -ne 0 ]; then
+            echo "::error::osv-scanner exited ${SCAN_EXIT} (${FINDINGS} finding(s) in SARIF)"
             exit 1
           fi
 

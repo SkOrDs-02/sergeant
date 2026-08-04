@@ -7,14 +7,14 @@ settings:
 overrides:
   ioredis: ^5.11.1
   react-server-dom-webpack: ^19.2.8
-  tar: '>=7.5.19'
+  tar: ^7.5.21
   '@xmldom/xmldom': '>=0.8.13 <0.9.0'
   serialize-javascript: '>=7.0.5'
   postcss: '>=8.5.18'
   uuid: ^14.0.0
   '@tootallnate/once': '>=3.0.1'
   '@types/node': ^20.19.41
-  protobufjs@>=7.0.0 <7.6.4: ^7.6.4
+  protobufjs@>=7.0.0 <=7.6.4: ^7.6.5
   protobufjs@>=8.0.0 <8.4.1: '>=8.4.1'
   esbuild@<0.28.1: '>=0.28.1'
   ajv@>=7.0.0-alpha.0 <8.18.0: '>=8.18.0'
@@ -30,7 +30,7 @@ overrides:
   brace-expansion@<1.1.18: 1.1.18
   brace-expansion@>=2.0.0 <2.1.4: 2.1.4
   brace-expansion@>=3.0.0 <5.0.9: 5.0.9
-  dompurify@<3.4.11: 3.4.11
+  dompurify: ^3.4.13
   js-yaml@>=3.0.0 <3.15.0: 3.15.0
   js-yaml@>=4.0.0 <4.3.0: 4.3.0
   qs@>=6.11.1 <6.15.2: 6.15.2
@@ -2190,11 +2190,11 @@ packages:
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
-    deprecated: 'Merged into tsx: https://tsx.hirok.io'
+    deprecated: 'Merged into tsx: https://tsx.is'
 
   '@esbuild-kit/esm-loader@2.6.5':
     resolution: {integrity: sha512-FxEMIkJKnodyA1OaCUoEvbYRkoZlLZ4d/eXFu9Fh8CbBBgP5EmZxrfTRyN0qpXZ4vOvqnE5YdRdcrmUUXuU+dA==}
-    deprecated: 'Merged into tsx: https://tsx.hirok.io'
+    deprecated: 'Merged into tsx: https://tsx.is'
 
   '@esbuild/aix-ppc64@0.28.1':
     resolution: {integrity: sha512-Svl7tq8k/08+p6CXPpRjQ1fKX+1odH/BQbb48fV6fj3CWHhsoIOoY87w1oHXm0qEpkIK3ZfVgp0hed3XBXzXMQ==}
@@ -6957,8 +6957,8 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  dompurify@3.4.11:
-    resolution: {integrity: sha512-zhlUV12GsaRzMsf9q5M254YhA4+VuF0fG+QFqu6aYpoGlKtz+w8//jBcGVYBgQkR5GHjUomejY84AV+/uPbWdw==}
+  dompurify@3.4.13:
+    resolution: {integrity: sha512-2vmYIoqjze2d+kakP8S/nS5shfsl587kzwEjcGlTdiksUVgFHnFCsLYDVj/JNqJVOQZGSYBTmuycv0PodwmnMQ==}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -10569,8 +10569,8 @@ packages:
     resolution: {integrity: sha512-WPn+h9RGEExOKdu4bsF4HksG/uzd3cFq3MFtq8PsFeExPse5Ha/VOjQNyHhjboBFwGXGev6muJYTSPAOkROq2g==}
     engines: {node: '>=18'}
 
-  protobufjs@7.6.4:
-    resolution: {integrity: sha512-RJJPTTpvFfHcWLkIa2JFWK4XvtSzS0yEWDmunqHXli1h3JlkbcQZXDZdcWxv+JK3Xsl5/UFDPZ0iGm7DAengYw==}
+  protobufjs@7.6.5:
+    resolution: {integrity: sha512-/FPD0nUc9jH6rfFjji9IBqOz4pcSE3CsT1m7Ep6Mdb0LxSUMj8hgl6GomOvZzpNpAqqGaXA0P3VSrZLFzIhQrw==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -11750,8 +11750,8 @@ packages:
   tar-stream@3.2.0:
     resolution: {integrity: sha512-ojzvCvVaNp6aOTFmG7jaRD0meowIAuPc3cMMhSgKiVWws1GyHbGd/xvnyuRKcKlMpt3qvxx6r0hreCNITP9hIg==}
 
-  tar@7.5.20:
-    resolution: {integrity: sha512-9FcyK4PA6+WbzlTM9WhQm6vB5W7cP7dUiPsv1g7YDwEQnQ1CGpK3MGlKk/ITVWMk05kHZuBhmVhiv8LZoy/PFQ==}
+  tar@7.5.21:
+    resolution: {integrity: sha512-XdhtCvlMywwxpCW8YEq3lOXBJpUPTR2OHHcwLPO3HwsJqOHa2Ok/oJ7ruGzp+JrKoRPVCzJwAdEjqLW/vNRPHA==}
     engines: {node: '>=18'}
 
   tdigest@0.1.2:
@@ -14128,7 +14128,7 @@ snapshots:
       prompts: 2.4.2
       rimraf: 6.1.3
       semver: 7.8.5
-      tar: 7.5.20
+      tar: 7.5.21
       tslib: 2.8.1
       xml2js: 0.6.2
     transitivePeerDependencies:
@@ -14579,7 +14579,7 @@ snapshots:
       source-map-support: 0.5.21
       stacktrace-parser: 0.1.11
       structured-headers: 0.4.1
-      tar: 7.5.20
+      tar: 7.5.21
       temp-dir: 2.0.0
       tempy: 0.7.1
       terminal-link: 2.1.1
@@ -14849,14 +14849,14 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       yargs: 17.7.3
 
   '@grpc/proto-loader@0.8.1':
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       yargs: 17.7.3
 
   '@hookform/resolvers@5.4.0(react-hook-form@7.81.0(react@18.3.1))':
@@ -18843,7 +18843,7 @@ snapshots:
       minipass-pipeline: 1.2.4
       p-map: 4.0.0
       ssri: 10.0.6
-      tar: 7.5.20
+      tar: 7.5.21
       unique-filename: 3.0.0
 
   caf@15.0.1: {}
@@ -19621,7 +19621,7 @@ snapshots:
       '@grpc/grpc-js': 1.14.4
       '@grpc/proto-loader': 0.7.15
       docker-modem: 5.0.7
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       tar-fs: 2.1.4
     transitivePeerDependencies:
       - supports-color
@@ -19654,7 +19654,7 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.4.11:
+  dompurify@3.4.13:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -23962,7 +23962,7 @@ snapshots:
       '@posthog/core': 1.40.2
       '@posthog/types': 1.393.0
       core-js: 3.49.0
-      dompurify: 3.4.11
+      dompurify: 3.4.13
       fflate: 0.4.8
       preact: 10.29.7
       query-selector-shadow-dom: 1.0.1
@@ -24074,7 +24074,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  protobufjs@7.6.4:
+  protobufjs@7.6.5:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
@@ -25592,7 +25592,7 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
-  tar@7.5.20:
+  tar@7.5.21:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0

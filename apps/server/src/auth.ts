@@ -344,6 +344,13 @@ export const auth = betterAuth({
      *     підв'язати чужий банк) не чекає на глобальний flip.
      */
     requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
+    /**
+     * Скидання пароля — це дія «мене зламали, виженіть усіх». Better Auth
+     * дефолтить прапорець у `false`, тож без нього вкрадена сесія переживала
+     * reset до кінця 7-денного TTL. Дзеркалить `hooks.before` нижче, який
+     * форсує те саме для `/change-password`.
+     */
+    revokeSessionsOnPasswordReset: true,
     // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
     sendResetPassword: async ({ user, url }) => {
       queueAuthTransactionalEmail({
@@ -658,12 +665,16 @@ interface SessionUser {
 
 export async function getSessionUser(
   req: Request,
+  opts?: { disableCookieCache?: boolean },
 ): Promise<SessionUser | null> {
   const start = process.hrtime.bigint();
   let outcome: "miss" | "hit" | "error" = "miss";
   try {
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
+      ...(opts?.disableCookieCache
+        ? { query: { disableCookieCache: true } }
+        : {}),
     });
     const user = (session?.user ?? null) as SessionUser | null;
     if (user?.id) {
@@ -738,4 +749,15 @@ export async function getSessionUser(
       /* metrics must never break a request */
     }
   }
+}
+
+/**
+ * Той самий резолв сесії, але в обхід 5-хвилинного `session.cookieCache`:
+ * відкликана сесія перестає проходити негайно, а не за кеш-вікно. Ціна —
+ * один SELECT на запит, тому лишаємо це для поверхонь, де вартість вікна
+ * вища за latency: повний експорт даних, видалення акаунта, привʼязка
+ * банку.
+ */
+export function getFreshSessionUser(req: Request): Promise<SessionUser | null> {
+  return getSessionUser(req, { disableCookieCache: true });
 }

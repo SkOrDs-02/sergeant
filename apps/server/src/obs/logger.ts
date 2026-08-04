@@ -92,19 +92,26 @@ const REDACT_KEY_SET: ReadonlySet<string> = new Set(
  *     новий обʼєкт/масив будується тільки коли реально треба замаскувати
  *     поле. Це критично, бо pino передає сюди merged-обʼєкт, який ділить
  *     nested-references із caller-обʼєктами — мутація би пошкодила бізнес-стан.
- *   - Cycle-safe: `WeakSet` ловить self-referencing обʼєкти (`Error.cause`
- *     chains, OTel span attributes), щоб walker не зациклився.
+ *   - `seen` — мемо-кеш, а не cycle-guard: один і той самий обʼєкт може
+ *     трапитись у дереві двічі як aliasing (не цикл), і тоді повторне
+ *     відвідування має віддати вже відредагований результат, а не сире
+ *     значення. Для істинних циклів placeholder кладеться у мапу ДО спуску
+ *     в піддерево, тож рекурсія не зациклюється (`Error.cause` chains,
+ *     OTel span attributes), а pino-стрінгіфаєр домалює `[Circular]`.
  *   - Object-valued sensitive keys мапляться у `null`, щоб не лишати
  *     структуру дочірніх полів (наприклад, `{ password: { hash: ... } }` →
  *     `{ password: null }`); primitive-значення стають `"[redacted]"`.
  */
 export function redactKeysRecursively(
   value: unknown,
-  seen: WeakSet<object> = new WeakSet(),
+  seen: WeakMap<object, unknown> = new WeakMap(),
 ): unknown {
   if (value == null || typeof value !== "object") return value;
-  if (seen.has(value as object)) return value;
-  seen.add(value as object);
+  // У мапі лежать лише обʼєкти (оригінал-placeholder або його копія), тож
+  // `undefined` однозначно означає «ще не відвідували».
+  const memo = seen.get(value as object);
+  if (memo !== undefined) return memo;
+  seen.set(value as object, value);
 
   if (Array.isArray(value)) {
     let mutated = false;
@@ -115,7 +122,9 @@ export function redactKeysRecursively(
       if (redacted !== item) mutated = true;
       next[i] = redacted;
     }
-    return mutated ? next : value;
+    const result = mutated ? next : value;
+    seen.set(value as object, result);
+    return result;
   }
 
   const src = value as Record<string, unknown>;
@@ -132,7 +141,9 @@ export function redactKeysRecursively(
     if (redacted !== v) mutated = true;
     next[key] = redacted;
   }
-  return mutated ? next : value;
+  const result = mutated ? next : value;
+  seen.set(value as object, result);
+  return result;
 }
 
 // Explicit path-based redaction для documented sensitive-полів. Це defense-in-depth

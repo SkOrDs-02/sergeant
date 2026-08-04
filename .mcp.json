@@ -16,10 +16,6 @@
         "${SERGEANT_PG_READONLY_URL}"
       ]
     },
-    "sergeant-agent-find": {
-      "command": "node",
-      "args": ["scripts/agent/mcp-server.mjs"]
-    },
     "codebase-memory": {
       "command": "${CODEBASE_MEMORY_MCP_BIN:-codebase-memory-mcp}"
     }

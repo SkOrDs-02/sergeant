@@ -14,6 +14,12 @@ export interface UserPlanResult {
  * Reads the canonical subscriptions table (migration 056) for the given user.
  * Returns a synthetic free-plan record when no active/trialing/past_due row exists.
  *
+ * A row is only an entitlement while its period still runs: `current_period_end`
+ * in the past means expired, regardless of `status` (a canceled-at-period-end or
+ * past_due row keeps its status forever — nothing flips it back). `NULL` means
+ * "no period at all" — manual/admin grants and the Stripe checkout row written
+ * before the first subscription webhook — and stays valid.
+ *
  * userId is a TEXT primary key matching the "user" table (Better Auth / session id).
  */
 /**
@@ -55,6 +61,7 @@ export async function getUserPlan(
      FROM subscriptions
      WHERE user_id = $1
        AND status IN ('active', 'trialing', 'past_due')
+       AND (current_period_end IS NULL OR current_period_end > NOW())
      LIMIT 1`,
     [userId],
   );

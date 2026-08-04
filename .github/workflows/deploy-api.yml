@@ -47,6 +47,11 @@ jobs:
   build-and-push:
     name: Build & push sergeant-api
     runs-on: ubuntu-latest
+    # `workflow_dispatch` можна дернути з будь-якої гілки — прод-образ
+    # збираємо лише з main. Environment вмикає GitHub-side protection
+    # (required reviewer / deployment branch policy) на цьому job.
+    if: github.ref == 'refs/heads/main'
+    environment: production
     steps:
       # actions/checkout v6.0.2 (SHA-pinned, як у решті workflow-ів)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -86,6 +91,10 @@ jobs:
           # identity (Sentry release, X-Server-Build-Id, app_build_info).
           build-args: |
             GIT_SHA=${{ github.sha }}
+          # `:latest` мутабельний — attestation-и дають перевіряний зв'язок
+          # образ ↔ комміт ↔ склад залежностей.
+          provenance: true
+          sbom: true
           # Спільний gha-кеш прискорює важкий pnpm-install шар. Окремий
           # scope, щоб не битись за кеш із container-scan.
           cache-from: type=gha,scope=deploy-api

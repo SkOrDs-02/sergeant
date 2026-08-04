@@ -597,7 +597,8 @@ export async function consumeToolQuota(
  * Каскад (лише для Pro-плану): premium-bucket (дорога модель) → standard-bucket
  * (дешевша) → floor (∞, майже-безкоштовна). Free/Anon/founder/disabled/flag-off
  * та будь-який fail-open шлях → `premium`-модель (поточна поведінка; Free вже
- * обмежений КІЛЬКІСТЮ через `assertAiQuota`, модель не деградує).
+ * обмежений КІЛЬКІСТЮ через `assertAiQuota`, модель не деградує) — окрім
+ * hard-breach деградації, яка накриває всіх, крім founder-а.
  *
  * Refund: інкрементиться рівно одне відро на запит (premium АБО standard), тож
  * єдиного `req.aiQuotaRefund`-слота достатньо — `attachRefund` прикріплюється
@@ -628,19 +629,18 @@ export async function resolveProTier(
   if (!tieredProEnabled()) return premium();
 
   const sessionUser = await safeSessionUser(req);
-  // Anon (no session) — gated by count via assertAiQuota, not model-tiered.
-  if (!sessionUser) return premium();
   // Founder — never degraded (plan-agnostic).
-  if (isFounderUser(sessionUser.id)) return premium();
+  if (sessionUser && isFounderUser(sessionUser.id)) return premium();
 
   // Catastrophic-cost circuit-breaker (opt-in, default off). Коли денний
   // глобальний Anthropic-spend перевищив hard-поріг І
-  // `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=true` — деградуємо КОЖНОГО не-founder
-  // юзера (Free + Pro) на floor-модель, не лише тих, хто вичерпав власну
-  // квоту. Це справжня стеля вартості: Free отримує premium-модель (cap-иться
-  // лише КІЛЬКІСТЮ через assertAiQuota), тож на масштабі домінує в AI-COGS —
-  // деградація саме його згинає криву. Sync-флаг, без DB-залежності → працює
-  // навіть при db-outage. Floor нічого не списує (no refund).
+  // `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=true` — деградуємо КОЖЕН не-founder
+  // виклик (анонімний, Free і Pro) на floor-модель, не лише ті, що
+  // вичерпали власну квоту. Це справжня стеля вартості, тому перевірка стоїть
+  // ВИЩЕ за анонімну гілку: анонім не має плану, який можна деградувати
+  // «наступного разу», і саме він найдешевший для масового виклику. Sync-флаг,
+  // без DB-залежності → працює навіть при db-outage. Floor нічого не списує
+  // (no refund).
   if (hardBreachDegradeAllEnabled() && isAnthropicBudgetHardExceeded()) {
     setTierHeader(res, "floor");
     return {
@@ -650,6 +650,9 @@ export async function resolveProTier(
       limit: 0,
     };
   }
+
+  // Anon (no session) — gated by count via assertAiQuota, not model-tiered.
+  if (!sessionUser) return premium();
 
   let plan: "free" | "pro" = "free";
   try {

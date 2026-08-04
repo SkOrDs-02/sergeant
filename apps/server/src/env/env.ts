@@ -778,6 +778,12 @@ export function assertStartupEnv(): void {
     );
   }
 
+  if (isProduction && !env.BETTER_AUTH_URL) {
+    throw new Error(
+      "BETTER_AUTH_URL is required in production. Without it Better Auth falls back to `http://localhost:$PORT`, and `getAdvancedCookieOptions()` in auth.ts silently drops Secure / SameSite=None from the session cookie — sessions ship over plaintext and cross-site login stops working. Set it to the public HTTPS API URL.",
+    );
+  }
+
   if (isProduction) {
     const insecureUrls: string[] = [];
     if (env.BETTER_AUTH_URL && !env.BETTER_AUTH_URL.startsWith("https://")) {

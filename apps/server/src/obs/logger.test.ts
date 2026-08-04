@@ -602,6 +602,23 @@ describe("logger", () => {
       const result = redactKeysRecursively(cyclic) as Record<string, unknown>;
       expect(result["token"]).toBe("[redacted]");
     });
+
+    it("aliasing — той самий обʼєкт у двох гілках редагується в обох", () => {
+      const shared = { password: "shared-leak" };
+      const { logger, chunks } = makeTestLogger();
+      logger.info({ first: shared, second: { nested: shared } });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("shared-leak");
+      const parsed = JSON.parse(raw) as {
+        first: Record<string, unknown>;
+        second: { nested: Record<string, unknown> };
+      };
+      expect(parsed.first["password"]).toBe("[redacted]");
+      expect(parsed.second.nested["password"]).toBe("[redacted]");
+      // Non-mutating: вихідний обʼєкт залишився недоторканим.
+      expect(shared.password).toBe("shared-leak");
+    });
   });
 
   // M3 — Sentry redactKeyNames узгоджені з Pino redactPaths

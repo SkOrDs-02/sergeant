@@ -55,18 +55,10 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 90
     env:
-      # Code signing / keychain
-      APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
-      APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
-      APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
-      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
-      # App Store Connect API (for provisioning profile download + TestFlight upload)
-      APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-      APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-      APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
-      # Identifiers
+      # Лише не-секретні ідентифікатори. Підписні секрети живуть на
+      # step-level env тих кроків, яким вони справді потрібні — інакше
+      # їх бачить і postinstall будь-якої залежності на `pnpm install`.
       IOS_BUNDLE_ID: ${{ vars.IOS_BUNDLE_ID || 'com.sergeant.shell' }}
-      IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
       # ExportOptions.plist rendering — `provisioningProfiles` dict key
       # matches the bundle id and the value is the *name* (not UUID) of
       # the App Store profile downloaded by apple-actions/download-provisioning-profiles.
@@ -83,7 +75,16 @@ jobs:
         # Single gate for the signed path. Any one of the four code-sign
         # secrets missing flips the job into unsigned-fallback mode and
         # emits a GitHub `::warning::` so the tag-push run surfaces it
-        # in the Actions UI without failing.
+        # in the Actions UI without failing. Наявність опційних секретів
+        # теж віддаємо тут як output — щоб `if:` нижчих кроків не тягнув
+        # секрети в env заради самої лише перевірки на порожнечу.
+        env:
+          APPLE_BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
+          APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
         run: |
           set -euo pipefail
           if [ -z "${APPLE_BUILD_CERTIFICATE_BASE64:-}" ] \
@@ -94,6 +95,12 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "${APPLE_PROVISIONING_PROFILE_BASE64:-}" ]; then
+            echo "has_profile=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "${APP_STORE_CONNECT_API_KEY_ID:-}" ]; then
+            echo "has_asc_key=true" >> "$GITHUB_OUTPUT"
           fi
 
       # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening).
@@ -192,13 +199,15 @@ jobs:
         if: steps.secrets.outputs.configured == 'true'
         uses: apple-actions/import-codesign-certs@5142e029c445c10ffc7149d172e540235a065466 # v7.0.0
         with:
-          p12-file-base64: ${{ env.APPLE_BUILD_CERTIFICATE_BASE64 }}
-          p12-password: ${{ env.APPLE_P12_PASSWORD }}
-          keychain-password: ${{ env.APPLE_KEYCHAIN_PASSWORD }}
+          p12-file-base64: ${{ secrets.APPLE_BUILD_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.APPLE_P12_PASSWORD }}
+          keychain-password: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
 
       - name: Install provisioning profile (from APPLE_PROVISIONING_PROFILE_BASE64)
-        if: steps.secrets.outputs.configured == 'true' && env.APPLE_PROVISIONING_PROFILE_BASE64 != ''
+        if: steps.secrets.outputs.configured == 'true' && steps.secrets.outputs.has_profile == 'true'
         shell: bash
+        env:
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
         # Manual fallback when `apple-actions/download-provisioning-profiles`
         # isn't viable (e.g. ASC API key missing but a pre-baked profile
         # is still in a repo secret). macOS expects the profile at
@@ -212,21 +221,21 @@ jobs:
             > "$HOME/Library/MobileDevice/Provisioning Profiles/sergeant-shell.mobileprovision"
 
       - name: Download provisioning profiles (App Store Connect API)
-        if: steps.secrets.outputs.configured == 'true' && env.APP_STORE_CONNECT_API_KEY_ID != ''
+        if: steps.secrets.outputs.configured == 'true' && steps.secrets.outputs.has_asc_key == 'true'
         uses: apple-actions/download-provisioning-profiles@c62019de00bb4395ed414e4a17c98f4e279636de # v6.0.0
         with:
           bundle-id: ${{ env.IOS_BUNDLE_ID }}
           profile-type: IOS_APP_STORE
-          issuer-id: ${{ env.APP_STORE_CONNECT_API_ISSUER_ID }}
-          api-key-id: ${{ env.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ env.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
 
       - name: Render ExportOptions.plist
         if: steps.secrets.outputs.configured == 'true'
         working-directory: apps/mobile-shell/ios/App
         env:
           IOS_BUNDLE_ID: ${{ env.IOS_BUNDLE_ID }}
-          IOS_TEAM_ID: ${{ env.IOS_TEAM_ID }}
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
           IOS_PROVISIONING_PROFILE_NAME: ${{ env.IOS_PROVISIONING_PROFILE_NAME }}
         # Keep `envsubst` allow-list explicit — any un-substituted
         # placeholders stay as `${VAR}` in the plist, which xcodebuild
@@ -243,6 +252,8 @@ jobs:
       - name: xcodebuild archive
         if: steps.secrets.outputs.configured == 'true'
         working-directory: apps/mobile-shell/ios/App
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
         run: |
           set -euo pipefail
           xcodebuild archive \
@@ -281,11 +292,11 @@ jobs:
         # provided the ASC API secrets are present.
         if: |
           steps.secrets.outputs.configured == 'true'
-          && env.APP_STORE_CONNECT_API_KEY_ID != ''
+          && steps.secrets.outputs.has_asc_key == 'true'
           && (github.event_name != 'workflow_dispatch' || inputs.upload_testflight)
         uses: apple-actions/upload-testflight-build@1ad58030672057aa084b4e96beb6f7a8c627f9e6 # v5.2.1
         with:
           app-path: apps/mobile-shell/ios/App/build/App.ipa
-          issuer-id: ${{ env.APP_STORE_CONNECT_API_ISSUER_ID }}
-          api-key-id: ${{ env.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ env.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}

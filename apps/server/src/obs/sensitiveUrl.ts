@@ -20,6 +20,7 @@
  *     fallback на пустий рядок);
  *   - URL з відомим секрет-prefix-ом → секрет замінюється на `[redacted]`,
  *     query-string зберігається;
+ *   - Telegram-bot-токен у path вихідного URL → `[redacted]`;
  *   - усі інші URL — повертаються as-is, без копіювання.
  */
 
@@ -40,6 +41,18 @@ const SENSITIVE_PATH_PREFIXES = [
 ] as const;
 
 /**
+ * Outbound-напрямок: Telegram тримає bot-токен у самому path-і
+ * (`https://api.telegram.org/bot<token>/sendMessage`, див.
+ * `securityEventsRoom.ts` і `tools/openclaw/telegramShipper`). Query-редактор
+ * його не бачить, а `scrubPII` навмисно не інспектує рядки — тож ловимо тут.
+ *
+ * Форма токена — та сама, що у `PII_STRING_PATTERNS.telegram-bot-token`
+ * (`packages/shared/src/lib/pii.ts`): `<numeric-id>:<url-safe-base64>`.
+ */
+const TELEGRAM_BOT_TOKEN_IN_PATH =
+  /(\/\/api\.telegram\.org\/bot)\d{5,15}:[A-Za-z0-9_-]{30,45}/g;
+
+/**
  * Замінює секрет у URL-path-і на `[redacted]`. Зберігає query-string і
  * fragment, якщо вони є.
  *
@@ -53,19 +66,24 @@ const SENSITIVE_PATH_PREFIXES = [
 export function redactSensitiveUrl(url: string | undefined | null): string {
   if (!url) return "";
 
+  const safeUrl = url.replace(
+    TELEGRAM_BOT_TOKEN_IN_PATH,
+    `$1${REDACTED_PLACEHOLDER}`,
+  );
+
   // Розділяємо path і query/fragment один раз. Express зазвичай дає
   // `req.originalUrl` без фрагменту, але Sentry-payload може мати повний
   // URL із фрагментом — тримаємо це у `tail`.
-  const queryIdx = url.search(/[?#]/);
-  const pathPart = queryIdx >= 0 ? url.slice(0, queryIdx) : url;
-  const tailPart = queryIdx >= 0 ? url.slice(queryIdx) : "";
+  const queryIdx = safeUrl.search(/[?#]/);
+  const pathPart = queryIdx >= 0 ? safeUrl.slice(0, queryIdx) : safeUrl;
+  const tailPart = queryIdx >= 0 ? safeUrl.slice(queryIdx) : "";
 
   for (const prefix of SENSITIVE_PATH_PREFIXES) {
     if (pathPart.startsWith(prefix)) {
       // Якщо після prefix-у нічого нема — лишаємо як є (помилковий запит,
       // нема чого редагувати).
       const rest = pathPart.slice(prefix.length);
-      if (rest === "") return url;
+      if (rest === "") return safeUrl;
       // Якщо у rest є ще `/` — редагуємо лише перший сегмент, лишаючи
       // потенційний suffix (на майбутнє, якщо колись будуть під-роути).
       const slashIdx = rest.indexOf("/");
@@ -75,5 +93,5 @@ export function redactSensitiveUrl(url: string | undefined | null): string {
       return `${prefix}${REDACTED_PLACEHOLDER}${tailPart}`;
     }
   }
-  return url;
+  return safeUrl;
 }

@@ -51,19 +51,29 @@ jobs:
     name: Run post-deploy smoke tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Vercel preview deployments are protected before request routing, so they
-    # cannot prove the API's liveness and would only yield Vercel 401s. API
-    # smoke runs after non-Vercel deployments, or explicitly via schedule/manual.
+    # `environment_url` приходить із payload-у `deployment_status`, який
+    # пише будь-хто з правом на deployments — тож пускаємо лише успішний
+    # деплой, чий URL починається з дозволеного префікса
+    # `vars.SMOKE_ALLOWED_BASE_URL` (порожня змінна = не пускаємо нікого;
+    # `secrets` у `jobs.<job_id>.if` заборонені й ламають увесь файл).
+    # Vercel preview цей гейт і так не проходить: він закритий ще до
+    # роутингу і віддає самі 401.
     if: |
       github.event_name != 'deployment_status' ||
       (github.event.deployment_status.state == 'success' &&
-      !contains(github.event.deployment_status.environment_url, '.vercel.app'))
+      vars.SMOKE_ALLOWED_BASE_URL != '' &&
+      startsWith(github.event.deployment_status.environment_url,
+      vars.SMOKE_ALLOWED_BASE_URL))
     env:
       TARGET_BASE_URL: >-
         ${{ github.event.inputs.base_url
             || github.event.deployment_status.environment_url
             || secrets.STAGING_BASE_URL }}
       STAGING_SESSION_COOKIE: ${{ secrets.STAGING_SESSION_COOKIE }}
+      # Другий, незалежний від payload-у бар'єр: скрипт відмовиться слати
+      # сесійну куку на хост поза цим списком.
+      SMOKE_ALLOWED_HOSTS: >-
+        ${{ vars.SMOKE_ALLOWED_BASE_URL || secrets.STAGING_BASE_URL }}
 
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)

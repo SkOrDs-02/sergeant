@@ -13,7 +13,8 @@ import { requireCsrfHeader } from "./requireCsrfHeader.js";
  *      повертає 200.
  *   3. Safe methods (GET/HEAD/OPTIONS) пропускаються БЕЗ header-а.
  *   4. Allowlist шляхи (`/api/auth/*`, `/api/mono/webhook`,
- *      `/api/telegram/webhook`, `/api/csp-report`,
+ *      `/api/telegram/webhook`, `/api/billing/*-webhook`,
+ *      `/api/billing/liqpay-callback`, `/api/csp-report`,
  *      `/api/metrics/web-vitals`, `/api/internal/*`)
  *      пропускаються незалежно від методу і без header-а.
  *   5. Запити з `X-Api-Secret` header-ом пропускаються (S2S cron) —
@@ -46,6 +47,15 @@ function makeApp(handler: express.RequestHandler) {
     res.status(200).json({ ok: true });
   });
   app.all("/api/v1/telegram/webhook", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+  app.all("/api/billing/stripe-webhook", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+  app.all("/api/billing/liqpay-callback", (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+  app.all("/api/billing/plata-webhook", (_req, res) => {
     res.status(200).json({ ok: true });
   });
   app.all("/api/csp-report", (_req, res) => {
@@ -136,6 +146,9 @@ describe("requireCsrfHeader — exempt paths", () => {
     "/api/mono/webhook/legacy",
     "/api/telegram/webhook",
     "/api/v1/telegram/webhook",
+    "/api/billing/stripe-webhook",
+    "/api/billing/liqpay-callback",
+    "/api/billing/plata-webhook",
     "/api/csp-report",
     "/api/metrics/web-vitals",
     "/api/v1/metrics/web-vitals",

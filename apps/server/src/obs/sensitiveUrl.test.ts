@@ -68,6 +68,22 @@ describe("redactSensitiveUrl", () => {
     ).toBe("https://api.example.com/api/mono/webhook/abc");
   });
 
+  it("маскує Telegram bot-токен у path вихідного URL", () => {
+    const token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    expect(
+      redactSensitiveUrl(`https://api.telegram.org/bot${token}/sendMessage`),
+    ).toBe("https://api.telegram.org/bot[redacted]/sendMessage");
+    expect(
+      redactSensitiveUrl(`https://api.telegram.org/bot${token}/getMe`),
+    ).not.toContain(token);
+  });
+
+  it("не чіпає telegram-URL без токена у path-і", () => {
+    expect(redactSensitiveUrl("https://api.telegram.org/botanical")).toBe(
+      "https://api.telegram.org/botanical",
+    );
+  });
+
   it("залишає suffix після секрету (defensive — на майбутнє під-роути)", () => {
     // Якщо коли-небудь з'явиться `/api/mono/webhook/<secret>/replay` — суфікс
     // не має маскуватись, тільки сам секрет.

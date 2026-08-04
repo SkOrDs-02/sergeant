@@ -213,6 +213,21 @@ export const scrubPII = sharedScrubPII;
 const dsn = process.env["SENTRY_DSN"];
 
 /**
+ * Єдина форма редакції URL для будь-якого Sentry-payload: секрет у path-і
+ * (mono-webhook, Telegram bot-token) → sensitive query-params → pattern-скраб
+ * рядка. Порядок важливий: перші два кроки структурні й дешеві, третій ловить
+ * решту (email/JWT/AWS-key), що могла потрапити в URL з чужого API.
+ */
+function redactUrlForSink(url: string): string {
+  return scrubPIIString(redactSensitiveQueryParams(redactSensitiveUrl(url)));
+}
+
+/**
+ * Span-атрибути OTel, у які інструментація кладе повний outbound-URL.
+ */
+const SPAN_URL_ATTRIBUTES = ["http.url", "url.full", "http.target"] as const;
+
+/**
  * Чистий beforeSend-хук — extracted у named-функцію (а не inline-closure
  * всередині `Sentry.init`), щоб тести могли його викликати напряму без
  * Sentry-моків. Контракт: мутує `event` in-place і повертає його ж (як того
@@ -233,9 +248,7 @@ export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
   // `?code=` query params get the same treatment so OAuth callbacks
   // and magic-link error captures don't leak the credential.
   if (typeof event.request?.url === "string") {
-    event.request.url = redactSensitiveQueryParams(
-      redactSensitiveUrl(event.request.url),
-    );
+    event.request.url = redactUrlForSink(event.request.url);
   }
   // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs. Ловимо
   // випадки, коли user-payload потрапив у `event.extra` через
@@ -315,9 +328,7 @@ export function applyBeforeBreadcrumb(
     // (`/api/mono/webhook/<secret>`) сюди не потрапляє — Sentry HTTP-breadcrumb-и
     // для inbound-у не створюються.
     if (typeof breadcrumb.data["url"] === "string") {
-      breadcrumb.data["url"] = redactSensitiveQueryParams(
-        redactSensitiveUrl(breadcrumb.data["url"]),
-      );
+      breadcrumb.data["url"] = redactUrlForSink(breadcrumb.data["url"]);
     }
     scrubPII(breadcrumb.data);
   }
@@ -325,6 +336,40 @@ export function applyBeforeBreadcrumb(
     breadcrumb.message = scrubPIIString(breadcrumb.message);
   }
   return breadcrumb;
+}
+
+/**
+ * Transaction-події йдуть повз `beforeSend` (той бачить лише error-и), тож без
+ * цього хука URL запиту, назва транзакції і span-атрибути летять у Sentry
+ * сирими — разом із секретами в path-ах outbound-запитів.
+ *
+ * Дженерик над `Sentry.Event` (а не `TransactionEvent`), бо `@sentry/node` не
+ * реекспортує останній; SDK інстанціює його сам при передачі в `init`.
+ */
+export function applyBeforeSendTransaction<E extends Sentry.Event>(
+  event: E,
+): E {
+  if (typeof event.request?.url === "string") {
+    event.request.url = redactUrlForSink(event.request.url);
+  }
+  if (event.request?.headers) scrubPII(event.request.headers);
+  if (typeof event.transaction === "string") {
+    event.transaction = redactUrlForSink(event.transaction);
+  }
+  if (event.extra) scrubPII(event.extra);
+  if (event.contexts) scrubPII(event.contexts);
+  for (const span of event.spans ?? []) {
+    if (typeof span.description === "string") {
+      span.description = redactUrlForSink(span.description);
+    }
+    if (!span.data) continue;
+    scrubPII(span.data);
+    for (const attr of SPAN_URL_ATTRIBUTES) {
+      const value: unknown = span.data[attr];
+      if (typeof value === "string") span.data[attr] = redactUrlForSink(value);
+    }
+  }
+  return event;
 }
 
 /**
@@ -406,6 +451,7 @@ if (dsn) {
     // error events bypass sampling entirely without this list.
     denyUrls: [...SENTRY_DENY_URLS],
     beforeSend: applyBeforeSend,
+    beforeSendTransaction: applyBeforeSendTransaction,
     beforeBreadcrumb: applyBeforeBreadcrumb,
   });
 

@@ -194,17 +194,22 @@
     ]
   },
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "unrs-resolver"
+    ],
     "overrides": {
       "ioredis": "^5.11.1",
       "react-server-dom-webpack": "^19.2.8",
-      "tar": ">=7.5.19",
+      "tar": "^7.5.21",
       "@xmldom/xmldom": ">=0.8.13 <0.9.0",
       "serialize-javascript": ">=7.0.5",
       "postcss": ">=8.5.18",
       "uuid": "^14.0.0",
       "@tootallnate/once": ">=3.0.1",
       "@types/node": "^20.19.41",
-      "protobufjs@>=7.0.0 <7.6.4": "^7.6.4",
+      "protobufjs@>=7.0.0 <=7.6.4": "^7.6.5",
       "protobufjs@>=8.0.0 <8.4.1": ">=8.4.1",
       "esbuild@<0.28.1": ">=0.28.1",
       "ajv@>=7.0.0-alpha.0 <8.18.0": ">=8.18.0",
@@ -220,7 +225,7 @@
       "brace-expansion@<1.1.18": "1.1.18",
       "brace-expansion@>=2.0.0 <2.1.4": "2.1.4",
       "brace-expansion@>=3.0.0 <5.0.9": "5.0.9",
-      "dompurify@<3.4.11": "3.4.11",
+      "dompurify": "^3.4.13",
       "js-yaml@>=3.0.0 <3.15.0": "3.15.0",
       "js-yaml@>=4.0.0 <4.3.0": "4.3.0",
       "qs@>=6.11.1 <6.15.2": "6.15.2",
