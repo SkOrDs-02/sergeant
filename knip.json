@@ -72,7 +72,10 @@
         // @testing-library/user-event — used in nutrition page tests; not in web package.json
         "@testing-library/user-event",
         // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
-        "@tanstack/query-persist-client-core"
+        "@tanstack/query-persist-client-core",
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.time.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
       ]
     },
     "apps/landing": {
@@ -133,7 +136,13 @@
       //   package has no package.json dependencies at all (hoisted from root)
       "ignoreDependencies": ["@typescript-eslint/parser"]
     },
-    "packages/finyk-domain": {},
+    "packages/finyk-domain": {
+      "ignoreDependencies": [
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.core.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
+      ]
+    },
     "packages/shared": {
       "project": ["src/**/*.ts"],
       "ignoreDependencies": [
