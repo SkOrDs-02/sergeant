@@ -399,7 +399,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
 
     await expect(handler(req, res)).rejects.toMatchObject({
       name: "ExternalServiceError",
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
@@ -1089,7 +1089,7 @@ describe("weekly-digest default export", () => {
  * Anthropic failures as ExternalServiceError → errorHandler → 5xx.
  */
 describe("weekly-digest · prod regression — provider failure must not return 200", () => {
-  it("provider error → ExternalServiceError ANTHROPIC_ERROR (safe UA message, status=503)", async () => {
+  it("provider error → ExternalServiceError ANTHROPIC_ERROR (safe UA message, status=502)", async () => {
     const failProvider = makeFakeProvider("anthropic", () => ({
       ok: false as const,
       error: "Your credit balance is too low",
@@ -1113,7 +1113,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       ),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       // Safe UA message — raw provider text must NOT appear in the message
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",

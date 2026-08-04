@@ -550,7 +550,7 @@ describe("coachInsight", () => {
   });
 
   it("AI upstream !ok → кидає ExternalServiceError зі статусом і безпечним UA-message", async () => {
-    // Уніфікуємо upstream-помилки під `errorHandler`: status 504,
+    // Уніфікуємо upstream-помилки під `errorHandler`: upstream 504 мапиться у 502,
     // code: ANTHROPIC_ERROR — сирий provider-message НЕ виходить до клієнта.
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: false, status: 504 },
@@ -565,7 +565,7 @@ describe("coachInsight", () => {
     }
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
-      status: 504,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });

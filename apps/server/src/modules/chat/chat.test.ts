@@ -534,7 +534,7 @@ describe("chat handler — tool_use parsing", () => {
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
       name: "ExternalServiceError",
-      status: 429,
+      status: 503,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });

@@ -535,7 +535,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     }
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
-      status: 429,
+      status: 503,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
@@ -567,7 +567,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     }
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
