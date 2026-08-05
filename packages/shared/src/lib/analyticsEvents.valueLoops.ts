@@ -150,4 +150,37 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   // mobile показує «0 дн.» безумовно. Тому крос-платформна агрегація
   // робиться лише з розрізом по `surface`.
   ROUTINE_STREAK_SHOWN: "routine_streak_shown",
+
+  // ── 5) Стабільний крос-девайсний advice_id (беtа-хардненінг, рішення
+  // founder-а) ─────────────────────────────────────────────────────────
+  //
+  // Доповнює §1 (`VALUE_SIGNAL_*`), а не замінює: ті події навмисно НЕ
+  // несуть сирий insight id (high-cardinality + potential PII в
+  // кастомній категорії), тож дашборд «скільки унікальних порад
+  // згенеровано» побудувати з них не можна. `advice_id` тут —
+  // `computeAdviceId(adviceType, canonicalContent)`
+  // (`packages/insights/src/adviceId.ts`) — детермінований хеш, тож той
+  // самий інсайт на двох пристроях того самого акаунта дає ОДИН і той
+  // самий id (на відміну від `ai_advice_shown.advice_id`, який лишається
+  // випадковим uuid — окреме, документоване рішення в
+  // `apps/web/src/core/observability/adviceTelemetry.ts`, тут НЕ
+  // ревізується).
+  //
+  //   ADVICE_SHOWN     { advice_id: string, advice_type: string,
+  //                       module: Module | "hub" }
+  //   ADVICE_DISMISSED { advice_id: string, advice_type: string,
+  //                       module: Module | "hub" }
+  //
+  // `advice_type` — стабільний kind (той самий словник, що `signal` у §1:
+  // `finyk-budget-overrun`, а НЕ `…-<categoryId>`). `ADVICE_SHOWN` — once
+  // per `advice_id` per сесію (той самий page-load `shownOnce`-guard, що
+  // й `VALUE_SIGNAL_SHOWN`, — `advice_id` детерміновано з `id`, тож
+  // ключ еквівалентний). `ADVICE_DISMISSED` — фактичний dismiss-клік
+  // («юзер сховав»), без дедуплікації: кожен dismiss — окремий факт.
+  // Обидві емітяться лише коли активна analytics-згода
+  // (`getAnalyticsConsent()`,
+  // `apps/web/src/core/observability/analyticsConsent.ts`) — «мінімальний
+  // зріз» без серверного реєстру унікальних порад.
+  ADVICE_SHOWN: "advice_shown",
+  ADVICE_DISMISSED: "advice_dismissed",
 } as const);
