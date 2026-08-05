@@ -1,11 +1,13 @@
 import type { Pool, PoolClient } from "pg";
 import type {
+  DashboardModuleId,
   MeDeleteResponse,
   MeExportResponse,
   MeResponse,
   UserPreferences,
   UserPreferencesPatch,
 } from "@sergeant/shared";
+import { DASHBOARD_MODULE_IDS } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
@@ -51,6 +53,12 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   // GDPR Art. 9 — health-adjacent data (fizruk/nutrition) needs explicit
   // opt-in; DEFAULT FALSE matches the DB column (migration 111).
   healthDataConsent: false,
+  // `null`, НЕ `[]` — «сервер ще не знає вибору модулів», а не «вибір є
+  // і він порожній». Дефолт `[]` тут відтворив би знахідку B2 з іншого
+  // боку: клієнт вирішив би, що людина свідомо вимкнула все, і затер
+  // локальний `hub_onboarding_vibes_v1`. Збігається з nullable-колонкою
+  // без DEFAULT у міграції 116.
+  activeModules: null,
 };
 
 function iso(value: Date | string): string {
@@ -83,8 +91,26 @@ function serializePreferences(
     pushNotifications: row["push_notifications"] === true,
     sergeantNudges: row["sergeant_nudges"] === true,
     healthDataConsent: row["health_data_consent"] === true,
+    // `pg` round-trip-ить `text[]` як `string[]`, але shape-guard тут не
+    // зайвий: до міграції 116 колонки не існувало, тож старий рядок (або
+    // ручний запит без неї) дасть `undefined`, і воно має читатись як
+    // «вибору немає», а не впасти на `.filter` нижче.
+    activeModules: serializeActiveModules(row["active_modules"]),
     updatedAt: maybeIso(row["updated_at"] as Date | string | null | undefined),
   };
+}
+
+/**
+ * DB → API для `active_modules`. Відсіює невідомі id (колонка має CHECK,
+ * але він не діє на рядки, що приїхали до 116) і зберігає порядок, у
+ * якому людина зробила вибір.
+ */
+function serializeActiveModules(value: unknown): DashboardModuleId[] | null {
+  if (!Array.isArray(value)) return null;
+  const known = new Set<string>(DASHBOARD_MODULE_IDS);
+  return value.filter((id): id is DashboardModuleId =>
+    typeof id === "string" ? known.has(id) : false,
+  );
 }
 
 export async function getUserPreferences(
@@ -93,7 +119,7 @@ export async function getUserPreferences(
 ): Promise<UserPreferences> {
   const result = await db.query<Record<string, unknown>>(
     `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
-            health_data_consent, updated_at
+            health_data_consent, active_modules, updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -113,21 +139,31 @@ export async function upsertUserPreferences(
     pushNotifications: patch.pushNotifications ?? current.pushNotifications,
     sergeantNudges: patch.sergeantNudges ?? current.sergeantNudges,
     healthDataConsent: patch.healthDataConsent ?? current.healthDataConsent,
+    // AI-DANGER: тут `??` був би багом. Для булевих полів «поля нема в
+    // патчі» і «поле = false» розрізняє сам `??`, бо `false` не nullish.
+    // Для `activeModules` осмислене значення саме `null` («прибрати
+    // серверний вибір»), і `??` мовчки перетворив би його на «не чіпай».
+    // Розрізняємо явно за `undefined`.
+    activeModules:
+      patch.activeModules !== undefined
+        ? patch.activeModules
+        : current.activeModules,
   };
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
         (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
-         health_data_consent, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         health_data_consent, active_modules, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
         push_notifications = EXCLUDED.push_notifications,
         sergeant_nudges = EXCLUDED.sergeant_nudges,
         health_data_consent = EXCLUDED.health_data_consent,
+        active_modules = EXCLUDED.active_modules,
         updated_at = NOW()
       RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
-                health_data_consent, updated_at`,
+                health_data_consent, active_modules, updated_at`,
     [
       userId,
       next.analytics,
@@ -135,6 +171,7 @@ export async function upsertUserPreferences(
       next.pushNotifications,
       next.sergeantNudges,
       next.healthDataConsent,
+      next.activeModules,
     ],
   );
   return serializePreferences(result.rows[0]);

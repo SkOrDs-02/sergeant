@@ -246,6 +246,9 @@ describe("/api/v1/me data rights", () => {
       sergeantNudges: false,
       // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
       healthDataConsent: false,
+      // Міграція 116 (знахідка B2): `null` = «серверного вибору нема»,
+      // і це НЕ те саме, що `[]` = «вибір є, і він порожній».
+      activeModules: null,
       updatedAt: null,
     });
   });
@@ -267,6 +270,7 @@ describe("/api/v1/me data rights", () => {
           // name, dropped SELECT/RETURNING field, etc). Asserting `true`
           // here is a genuine round-trip check of `row["health_data_consent"]`.
           health_data_consent: true,
+          active_modules: ["finyk", "routine"],
           updated_at: new Date("2026-06-06T10:05:00.000Z"),
         },
       ],
@@ -285,11 +289,76 @@ describe("/api/v1/me data rights", () => {
       pushNotifications: false,
       sergeantNudges: false,
       healthDataConsent: true,
+      activeModules: ["finyk", "routine"],
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    expect(params).toEqual([user.id, false, true, false, false, false]);
+    // Останній параметр — `active_modules`. Патч його не згадує, тож
+    // upsert мусить перенести поточне значення (тут `null`, бо перший
+    // SELECT повернув порожній набір), а не затерти вибір.
+    expect(params).toEqual([user.id, false, true, false, false, false, null]);
+  });
+
+  it("PATCH /api/v1/me/preferences зберігає вибір модулів і дедуплікує його", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: false,
+          ai_memory: true,
+          push_notifications: false,
+          sergeant_nudges: false,
+          health_data_consent: false,
+          active_modules: ["nutrition", "finyk"],
+          updated_at: new Date("2026-08-05T09:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      // Дублікат навмисне: `CHECK` міграції 116 його НЕ ловить (вираз
+      // CHECK не може містити підзапит), тож дедуп — обов'язок Zod-схеми.
+      .send({ activeModules: ["nutrition", "finyk", "nutrition"] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeModules).toEqual(["nutrition", "finyk"]);
+    const [, params] = queryMock.mock.calls[1]!;
+    expect(params?.[6]).toEqual(["nutrition", "finyk"]);
+  });
+
+  it("PATCH /api/v1/me/preferences розрізняє порожній вибір і його відсутність", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: false,
+          ai_memory: true,
+          push_notifications: false,
+          sergeant_nudges: false,
+          health_data_consent: false,
+          active_modules: [],
+          updated_at: new Date("2026-08-05T09:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .send({ activeModules: [] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeModules).toEqual([]);
+    const [, params] = queryMock.mock.calls[1]!;
+    // `[]`, а не `null`: якби `upsertUserPreferences` зливав ці два
+    // стани через `??`, порожній вибір мовчки перетворився б на «не
+    // чіпай» і людина не змогла б вимкнути всі модулі.
+    expect(params?.[6]).toEqual([]);
   });
 
   it("PATCH /api/v1/me/preferences відхиляє невідомий shape", async () => {

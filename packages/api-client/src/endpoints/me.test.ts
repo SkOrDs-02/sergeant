@@ -130,6 +130,10 @@ describe("createMeEndpoints", () => {
       pushNotifications: true,
       sergeantNudges: true,
       healthDataConsent: false,
+      // Відповідь мока не містить `activeModules` (як і будь-який
+      // сервер до міграції 116) — схема підставляє `null`, а не `[]`:
+      // «сервер не знає вибору», а не «вибору немає».
+      activeModules: null,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const url = firstCall(fetchMock)[0] as string;
@@ -308,6 +312,7 @@ describe("createMeEndpoints", () => {
         pushNotifications: false,
         sergeantNudges: false,
         healthDataConsent: false,
+        activeModules: ["finyk", "routine"],
         updatedAt: null,
       },
       data: {
