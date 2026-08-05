@@ -252,4 +252,109 @@ describe("enqueueOutboxUpsert", () => {
       expect(runMock).not.toHaveBeenCalled();
     });
   });
+
+  describe("concurrency — serialised lookup+insert (CodeRabbit PR #627)", () => {
+    /**
+     * A stateful fake client, unlike `makeMockClient`'s canned
+     * `mockResolvedValueOnce` sequence: two concurrent
+     * `enqueueOutboxUpsert` calls each issue their own 2-3 `all`/`run`
+     * calls, interleaved in whatever order the mutex (or its absence)
+     * allows, so the mock must answer from actual accumulated state
+     * rather than a fixed call-index script.
+     */
+    function makeStatefulClient(): {
+      client: SqliteMigrationClient;
+      rows: Array<{
+        id: number;
+        user_id: string;
+        table_name: string;
+        op: string;
+        row: string;
+        client_ts: string;
+        idempotency_key: string;
+      }>;
+    } {
+      let nextId = 1;
+      const rows: Array<{
+        id: number;
+        user_id: string;
+        table_name: string;
+        op: string;
+        row: string;
+        client_ts: string;
+        idempotency_key: string;
+      }> = [];
+
+      const all = vi.fn(async (sql: string, params: unknown[] = []) => {
+        if (sql.includes("status = 'pending'")) {
+          const [userId, table, op] = params as [string, string, string];
+          const match = [...rows]
+            .reverse()
+            .find(
+              (r) =>
+                r.user_id === userId && r.table_name === table && r.op === op,
+            );
+          return match
+            ? [{ id: match.id, row: match.row, client_ts: match.client_ts }]
+            : [];
+        }
+        const [idemKey] = params as [string];
+        const match = rows.find((r) => r.idempotency_key === idemKey);
+        return match ? [{ id: match.id }] : [];
+      });
+
+      const run = vi.fn(async (_sql: string, params: unknown[] = []) => {
+        // Widen the race window between the dedup lookup (above) and this
+        // INSERT — without the mutex, a concurrent call's own lookup can
+        // slot in right here and see no pending row yet.
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        const [userId, table, op, rowJson, clientTs, idempotencyKey] =
+          params as [string, string, string, string, string, string];
+        rows.push({
+          id: nextId++,
+          user_id: userId,
+          table_name: table,
+          op,
+          row: rowJson,
+          client_ts: clientTs,
+          idempotency_key: idempotencyKey,
+        });
+      });
+
+      const client: SqliteMigrationClient = {
+        exec: vi.fn(),
+        run: run as unknown as SqliteMigrationClient["run"],
+        all: all as unknown as SqliteMigrationClient["all"],
+      };
+      return { client, rows };
+    }
+
+    it("two concurrent calls with different idempotency keys but identical content produce exactly one pending row", async () => {
+      const { client, rows } = makeStatefulClient();
+
+      const [r1, r2] = await Promise.all([
+        enqueueOutboxUpsert(
+          client,
+          makeInput({ idempotencyKey: crypto.randomUUID() }),
+        ),
+        enqueueOutboxUpsert(
+          client,
+          makeInput({ idempotencyKey: crypto.randomUUID() }),
+        ),
+      ]);
+
+      // Without the mutex both calls would race the content-dedup lookup
+      // before either had inserted, both see "nothing pending", and both
+      // insert — two rows for one logical write.
+      expect(rows).toHaveLength(1);
+      const inserted = [r1, r2].filter((r) => r.inserted);
+      const skipped = [r1, r2].filter((r) => !r.inserted);
+      expect(inserted).toHaveLength(1);
+      expect(skipped).toHaveLength(1);
+      // The second call discovers the first's row via content-dedup and
+      // returns ITS id — it never inserts a second one.
+      expect(skipped[0]!.id).toBe(inserted[0]!.id);
+      expect(rows[0]!.id).toBe(inserted[0]!.id);
+    });
+  });
 });

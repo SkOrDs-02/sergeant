@@ -88,8 +88,41 @@ export interface EnqueueOutboxUpsertResult {
  *
  * Never throws on idempotency-key collision; SQL / disk errors propagate
  * to the caller unchanged.
+ *
+ * **Concurrency:** the (content-dedup lookup → INSERT) pair below is not
+ * atomic by itself — two concurrent calls for the same
+ * `(user_id, table_name, op)` content can both run `findDuplicatePending`
+ * before either has inserted, both see "nothing pending yet", and both
+ * insert (CodeRabbit PR #627). The browser's single JS thread makes a
+ * plain module-level promise-chain mutex sufficient (no real lock
+ * needed): every call is queued onto {@link enqueueChain}, so the whole
+ * lookup-then-insert critical section for one call always finishes before
+ * the next one starts.
  */
-export async function enqueueOutboxUpsert(
+let enqueueChain: Promise<unknown> = Promise.resolve();
+
+export function enqueueOutboxUpsert(
+  client: SqliteMigrationClient,
+  input: OutboxUpsertInput,
+): Promise<EnqueueOutboxUpsertResult> {
+  const run = () => enqueueOutboxUpsertLocked(client, input);
+  // Chained onto the tail regardless of whether the previous call
+  // resolved or rejected (`run` is both the fulfilled- and
+  // rejected-handler) — one caller's failure must never wedge every
+  // later caller waiting on the shared chain.
+  const chained = enqueueChain.then(run, run);
+  // Keep the module-held reference always "handled" so an ignored
+  // rejection here (e.g. a fire-and-forget caller that never awaits) does
+  // not surface as an unhandled-rejection warning; the real error still
+  // propagates to THIS call's own caller via `chained`, returned below.
+  enqueueChain = chained.then(
+    () => undefined,
+    () => undefined,
+  );
+  return chained;
+}
+
+async function enqueueOutboxUpsertLocked(
   client: SqliteMigrationClient,
   input: OutboxUpsertInput,
 ): Promise<EnqueueOutboxUpsertResult> {
