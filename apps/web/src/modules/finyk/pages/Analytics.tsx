@@ -19,6 +19,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import { signedDeltaClass } from "@shared/lib";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { filterToKyivMonth } from "../lib/monthWindow";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
@@ -296,16 +297,33 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
       .map((e) => manualExpenseToTransaction(e));
   }, [storage.manualExpenses, prevYear, prevMonth]);
 
+  // AI-DANGER: банківський зріз ОБОВʼЯЗКОВО клампиться по місяцю, як в
+  // Огляді (`useOverviewData`) і Бюджетах (`Budgets.tsx`). Ручні витрати
+  // вище вже вікноавані, а банківські — ні, і саме ця асиметрія робила
+  // Аналітику єдиною поверхнею Фініка без клампу.
+  //
+  // `mono.realTx` — це `overlayTransactions` із `useMonobankWebhook`: коли
+  // мережевий зріз поточного місяця порожній (холодний старт, перше число
+  // місяця), він підставляє ВЕСЬ SQLite-mirror. Відколи `fetchMonth`
+  // backfill-ить дзеркало історією, цей overlay тягне сюди кожен
+  // синхронізований місяць — і «Підсумок місяця» показував би суму за весь
+  // час. Це той самий клас бага, що й founder-репорт 2026-07-31 («Витрати
+  // 128 842 ₴ за серпень» першого числа), лише інша поверхня.
+  //
+  // Клампимо й `monthCache`-гілку: вона приходить із місяцевого fetch-у, але
+  // його межі анкорені на фіксований `+03:00`, а `filterToKyivMonth` — на
+  // справжній київський зсув, тож взимку краї місяця розходяться на годину.
   const activeTx = useMemo(() => {
-    const bankTx = isCurrentMonth
-      ? mono.realTx || []
-      : monthCache[monthKey] || [];
+    const bankTx = filterToKyivMonth(
+      isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
+      monthKey,
+    );
     if (manualExpenseTxs.length === 0) return bankTx;
     return [...bankTx, ...manualExpenseTxs];
   }, [isCurrentMonth, mono.realTx, monthCache, monthKey, manualExpenseTxs]);
 
   const prevTx = useMemo(() => {
-    const bankTx = monthCache[prevKey] || [];
+    const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
     if (prevManualExpenseTxs.length === 0) return bankTx;
     return [...bankTx, ...prevManualExpenseTxs];
   }, [monthCache, prevKey, prevManualExpenseTxs]);
