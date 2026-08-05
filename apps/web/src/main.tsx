@@ -307,15 +307,28 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
-  // Hard-reload one time when the SW controller changes. SW `install`
+  // Hard-reload one time when the SW controller змінюється ПІД уже
+  // контрольованою сторінкою (див. гейт `hadControllerAtLoad` нижче). SW `install`
   // тепер unconditional-но робить `skipWaiting()`, тож новий worker
   // активується одразу і `clients.claim()` у `activate` тригерить
   // `controllerchange` у всіх відкритих вкладках. Без reload-у
   // dynamic-import-и старих hash-named chunks падають у 404, бо
   // workbox-precache новij ге́нерації не містить їх. Guard `refreshing`
   // блокує цикл, якщо SW з якоїсь причини активувався двічі підряд.
+  //
+  // AI-CONTEXT: гейт `hadControllerAtLoad` обов'язковий. `clients.claim()`
+  // тригерить `controllerchange` і на ПЕРШОМУ візиті — коли контролера ще
+  // не було зовсім. Без гейта кожен новий відвідувач отримував один
+  // повний reload через ~1–3 с після приземлення (нестабільний момент —
+  // залежить від того, коли SW встиг install+activate). Перезавантажувати
+  // там нема від чого: сторінку віддала мережа, а не SW старої генерації,
+  // тож усі hash-named chunks у ній уже поточні. Саме ця гонка ламала
+  // axe-лейн (`page.evaluate: Execution context was destroyed`) —
+  // див. `tests/a11y/expanded-routes.spec.ts`.
+  const hadControllerAtLoad = navigator.serviceWorker.controller !== null;
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadControllerAtLoad) return;
     if (refreshing) return;
     refreshing = true;
     window.location.reload();
