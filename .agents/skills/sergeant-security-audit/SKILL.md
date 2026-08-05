@@ -53,7 +53,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 ```
 
 - Cross-reference CVEs with `renovate.json` — if Renovate already has a pending update PR, do not create a duplicate; comment on the existing one instead.
-- Check `THIRD_PARTY_LICENSES.md` for GPL transitive deps — compliance risk.
+- Check licenses via `pnpm licenses list --prod` for GPL transitive deps — compliance risk (no committed license registry file exists).
 - Run `pnpm outdated` to surface packages outside Renovate range constraints.
 - For safe dep bumps, follow `docs/00-start/playbooks/bump-dep-safely.md`.
 

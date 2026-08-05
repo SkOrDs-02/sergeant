@@ -47,7 +47,7 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 - **Project:** `Default project` (id `167740`, prod token `phc_A8dsj…`). Окремий `dev serg` проєкт (id `167756`, token `phc_mSvKK…`) покриває preview deployments — той самий дашборд, окремий датасет.
 - **Folder:** [`Dashboards → Founder Pulse`](https://eu.posthog.com/project/167740/dashboard/777283) (id `777283`).
 - **Permissions:** founder + on-call SRE — `Dashboard collaborator`. Усі решта PostHog-користувачів — view-only.
-- **Часовий пояс проєкту: `UTC`** — розходиться з доменним інваріантом продукту (доба рахується в `Europe/Kyiv`, див. [`getKyivDayKey`](../../../apps/web/src/shared/lib/time/kyivTime.ts) і [domain-invariants.md](../../02-engineering/architecture/domain-invariants.md)). Наслідки й план міграції — **§10**.
+- **Часовий пояс проєкту: `UTC`** — розходиться з доменним інваріантом продукту (серверні звіти рахують добу в `Europe/Kyiv` — межа особистої доби device-local per ADR-0078, див. [`getKyivDayKey`](../../../apps/web/src/shared/lib/time/kyivTime.ts) і [domain-invariants.md](../../02-engineering/architecture/domain-invariants.md)). Наслідки й план міграції — **§10**.
 
 > **Status (2026-06-26):** ✅ Dashboard + 7 insights створено через [`scripts/posthog/import-founder-pulse.mjs`](../../../scripts/posthog/import-founder-pulse.mjs) (project `167740`, dashboard `777283`). Live short_id-и: active-users `XBRWeTrn`, funnel-overall `9T025rBs`, funnel-per-module `WPf62Cq6`, activation-rate `bC6ZbB3v`, new-subscriptions `7SSCvzEA`, retention `k0pjSfoY`, funnel-zeroes `vMEk4MKL`.
 >

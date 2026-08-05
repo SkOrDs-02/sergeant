@@ -55,7 +55,7 @@ apps/<web|mobile>/src/modules/<domain>/
 
 ## Cross-module правила (короткий нагадач)
 
-- **Modules не імпортують один одного напряму.** Cross-module комунікація — через `apps/<web|mobile>/src/core/lib/hubBus.ts` (event bus) або через спільні `packages/<X>-domain/` (тільки чиста логіка, без React).
+- **Modules не імпортують один одного напряму.** Cross-module комунікація — через `apps/web/src/shared/lib/modules/hubBus.ts` (event bus) або через спільні `packages/<X>-domain/` (тільки чиста логіка, без React).
 - **`packages/*` не імпортує з `apps/*`** (Hard rule, [ADR-0024](../../04-governance/adr/0024-monorepo-apps-packages-split.md)).
 - **Module Quick Actions** (HubChat) — реєструються через `apps/web/src/shared/lib/modules/moduleQuickActions.ts`; кожен модуль експонує свій action-set через `apps/web/src/core/lib/chatActions/<module>Actions.ts`.
 - **Storage** — кожен модуль використовує свій namespace через `createModuleStorage(moduleName)` з `@shared/lib/storage/createModuleStorage` (web) / MMKV-bound еквівалент (mobile).

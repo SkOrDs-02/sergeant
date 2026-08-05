@@ -1,6 +1,6 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
 
 | Field              | Value                                                                                             |
@@ -88,7 +88,7 @@ helmet({
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/web/vercel.json` (або root `vercel.json` — див. [H7](./README.md)) | Додати `Content-Security-Policy-Report-Only` header (Report-Only spec вище).                                                                     |
 | `apps/web/index.html:39–42`                                              | Додати fallback `<meta http-equiv="Content-Security-Policy" content="..." />` (нижчий пріоритет за Vercel headers, але страхує).                 |
-| `apps/server/src/modules/csp-report/router.ts` (новий або existing)      | Перевірити, що `/api/csp-report` приймає JSON body, валідує, rate-limit-ить, і логує у `csp_violation_total{directive=...}` метрику.             |
+| `apps/server/src/routes/csp-report.ts` (новий або existing)              | Перевірити, що `/api/csp-report` приймає JSON body, валідує, rate-limit-ить, і логує у `csp_violation_total{directive=...}` метрику.             |
 | `apps/web/public/.well-known/csp-violations` (тимчасовий)                | Додатковий sink для legacy reporters (можна skip-нути, якщо Sentry приймає `Reporting-API`).                                                     |
 | `apps/server/src/http/security.ts`                                       | Якщо CSP_DISABLE / CSP_REPORT_ONLY env-flags використовуються — синхронізувати поведінку server-side helmet з frontend (див. [M1](./README.md)). |
 

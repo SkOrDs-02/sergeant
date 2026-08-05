@@ -22,7 +22,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ### Clean Architecture (Onion)
 
-Шари (залежності від центру наовнолинь):
+Шари (залежності від центру наовнолинь). **Це target-патерн для нових/рефакторених модулів, не опис поточної структури** — сьогодні всі модулі в `apps/server/src/modules/` flat, без цих піддиректорій:
 
 - **Domain** (`apps/server/src/modules/**/domain/`): Entities, value objects, domain events
 - **Application** (`apps/server/src/modules/**/use-cases/`): Use cases, command/query handlers

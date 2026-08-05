@@ -1,7 +1,7 @@
 # Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
-> **Status:** Active
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Status:** Active — але лише Vercel-частина; Railway-секції (§1–2, §8) історичні (див. банер нижче)
 >
 > **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2, §8) — історичний контекст доміграційного стеку; Railway config видалено, а OpenClaw повністю декомісовано [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) з `BACKEND_URL` на Coolify API.
 

@@ -1,6 +1,6 @@
 # Playbook: Embedding Provider Migration
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 **Trigger:** «Перемкнути embedding-провайдер або модель» / «Змінити embedding vendor» / «re-embed ai_memories на нову модель» / виявлено нову embedding-модель з кращою якістю або меншою вартістю.
@@ -21,7 +21,7 @@
 - `embedding_model` — конкретна модель (наприклад, `"voyage-3.5-lite"`).
 - `embedding_version` — внутрішня semver-версія схеми (наприклад, `"1"`).
 
-`vectorStore.query` фільтрує результати за `embedding_model = $N`, де `$N = env.VOYAGE_EMBEDDING_MODEL`. Це active-model read-filter з PR-24 (`docs/90-work/initiatives/stack-pulse-2026-05/pr-24-embedding-vendor-abstraction.md`). Він гарантує, що ANN-пошук не змішує вектори різних моделей у HNSW-просторі, що зламало б recall.
+`vectorStore.query` фільтрує результати за `embedding_model = $N`, де `$N = env.VOYAGE_EMBEDDING_MODEL`. Це active-model read-filter з PR-24 ([картка @6e7b212](https://github.com/Skords-01/Sergeant/blob/6e7b21275fd8a72060257598f3f8cf1afa69da4b/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-24-embedding-vendor-abstraction.md)). Він гарантує, що ANN-пошук не змішує вектори різних моделей у HNSW-просторі, що зламало б recall.
 
 Провайдер-фабрики живуть у `embeddings.ts` (`createVoyageEmbeddingProvider`). Vendor-агностичний інтерфейс — `EmbeddingProvider` у `types.ts`.
 

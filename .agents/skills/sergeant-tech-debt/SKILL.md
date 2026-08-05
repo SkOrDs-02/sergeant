@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # Technical Debt у Sergeant
 
-Technical debt in Sergeant has a taxonomy: the 26 hard rules define what "correct" looks like, and `eslint-baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
+Technical debt in Sergeant has a taxonomy: the 17 active hard rules (numbered up to #26; 9 retired per ADR-0081) define what "correct" looks like, and `eslint.baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
 
 ## Debt inventory tools
 
@@ -47,7 +47,7 @@ grep -rn "<symbol>" --include="*.{ts,tsx,js,jsx,mjs,cjs,json,md}" .
 
 ### 3. Module size (Hard Rule #18 — `lint-enforced-convention`)
 
-Hard Rule #18 sets `max-lines: 600` for `apps/web` TS/TSX files as a permanent lint-enforced ESLint rule (promoted after initiative 0001 closed; allowlist removed).
+Hard Rule #18 sets `max-lines: 600` for `apps/web` TS/TSX and `apps/server` TS/JS files as a permanent lint-enforced ESLint rule (promoted after initiative 0001 closed; allowlist removed).
 
 When a file exceeds 600 lines, decompose by extracting a focused concern — a custom hook, a utility function, or a sub-component — into a sibling file within the same feature folder. Do not move shared logic to `apps/web/src/shared/` unless it truly belongs there; verify boundary with `sergeant-monorepo-boundaries` first.
 

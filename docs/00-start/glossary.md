@@ -32,15 +32,15 @@
 
 ## Дані, sync, час, гроші
 
-| Термін                     | Що це                                                                                                                                                                         |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **syncV2 / CloudSync v2**  | Op-log writer-runtime (`getSyncEngineWriter()`), `core/syncEngine/`. v1 знятий — ADR → [`0047-cloudsync-v1-410-gone.md`](../04-governance/adr/0047-cloudsync-v1-410-gone.md). |
-| **kopiykas / minor units** | Канонічне представлення грошей — копійки як `number` (не float-гривні).                                                                                                       |
-| **Kyiv tz / day key**      | Час завжди Europe/Kyiv. Day key — `YYYY-MM-DD` у Kyiv-local; тиждень починається з понеділка (ISO 8601).                                                                      |
-| **Better Auth**            | Бібліотека auth/сесій. User ID — **opaque-рядок** (не UUID). ADR-0017.                                                                                                        |
-| **RQ keys factory**        | Централізовані React-Query ключі в [`queryKeys.ts`](../../apps/web/src/shared/lib/api/queryKeys.ts). Inline-ключі заборонені (Hard Rule #2).                                  |
-| **pgvector / RAG**         | Postgres-розширення для embeddings + retrieval-augmented generation у AI-пайплайні.                                                                                           |
-| **RLS**                    | Row-Level Security у Postgres — ізоляція даних по користувачу на рівні БД.                                                                                                    |
+| Термін                     | Що це                                                                                                                                                                                                                                    |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **syncV2 / CloudSync v2**  | Op-log writer-runtime (`getSyncEngineWriter()`), `core/syncEngine/`. v1 знятий — ADR → [`0047-cloudsync-v1-410-gone.md`](../04-governance/adr/0047-cloudsync-v1-410-gone.md).                                                            |
+| **kopiykas / minor units** | Канонічне представлення грошей — копійки як `number` (не float-гривні).                                                                                                                                                                  |
+| **Kyiv tz / day key**      | Europe/Kyiv — для display, серверних звітів і фінансових періодів. Day key — `YYYY-MM-DD`: **device-local** для особистих сутностей (звички, їжа, денні записи — ADR-0078), Kyiv — для серверних звітів; тиждень з понеділка (ISO 8601). |
+| **Better Auth**            | Бібліотека auth/сесій. User ID — **opaque-рядок** (не UUID). ADR-0017.                                                                                                                                                                   |
+| **RQ keys factory**        | Централізовані React-Query ключі в [`queryKeys.ts`](../../apps/web/src/shared/lib/api/queryKeys.ts). Inline-ключі заборонені (Hard Rule #2).                                                                                             |
+| **pgvector / RAG**         | Postgres-розширення для embeddings + retrieval-augmented generation у AI-пайплайні.                                                                                                                                                      |
+| **RLS**                    | Row-Level Security у Postgres — ізоляція даних по користувачу на рівні БД.                                                                                                                                                               |
 
 ## Платформа і пакети
 

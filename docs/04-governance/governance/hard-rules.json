@@ -4,7 +4,7 @@
   "source": "AGENTS.md § Hard rules (do not break)",
   "generated": false,
   "_comment": [
-    "Single source of truth for the Hard Rules numbering \u0026 enforcement map.",
+    "Single source of truth for the Hard Rules numbering & enforcement map.",
     "Sync is enforced by `pnpm lint:hard-rules-registry`:",
     "  AGENTS.md § Hard rules ↔ this file ↔ CONTRIBUTING.md § Hard rules.",
     "When you add or rewrite a Hard Rule, do all three in the same PR."
@@ -85,10 +85,6 @@
         {
           "kind": "ci",
           "ref": "pnpm lint:migrations"
-        },
-        {
-          "kind": "codeowners",
-          "ref": ".github/CODEOWNERS"
         }
       ],
       "links": [
@@ -134,7 +130,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "GitHub branch protection: \u0027Allow force pushes\u0027 = off on main"
+          "ref": "GitHub branch protection: 'Allow force pushes' = off on main"
         }
       ],
       "links": [
@@ -212,7 +208,7 @@
         },
         {
           "kind": "ci",
-          "ref": "pnpm lint:hard-rules-registry (this rule\u0027s own enforcer)"
+          "ref": "pnpm lint:hard-rules-registry (this rule's own enforcer)"
         },
         {
           "kind": "pr-template",
@@ -386,7 +382,7 @@
     },
     {
       "id": 25,
-      "title": "Auto-generated docs must start with `\u003c!-- AUTO-GENERATED --\u003e` marker",
+      "title": "Auto-generated docs must start with `<!-- AUTO-GENERATED -->` marker",
       "scope": [
         "docs/open-work.md",
         "docs/90-work/initiatives/follow-ups.md",

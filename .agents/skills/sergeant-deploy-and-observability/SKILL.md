@@ -11,7 +11,7 @@ Production-facing зміни в Sergeant не вважаються заверш�
 
 ## Що покриває
 
-- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `vercel.json`, deploy-доки, health-endpoints
+- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `apps/web/vercel.json` / `apps/landing/vercel.json`, deploy-доки, health-endpoints
 - env-зміни через web/server
 - Sentry, readiness/liveness, маршрутизація алертів, release-верифікація
 - operator-facing доки для деплою або реакції на інцидент

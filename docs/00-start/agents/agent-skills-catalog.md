@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -41,11 +41,11 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-e2e-testing`](../../../.agents/skills/sergeant-e2e-testing/SKILL.md)                           | Playwright E2E tests, smoke tests, a11y                          | 8 golden rules, seedFTUX, no waitForTimeout, role selectors                 |
 | [`sergeant-security-audit`](../../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety                    | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain           |
 | [`sergeant-tech-debt`](../../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline                            | Knip, eslint-baseline.js, module-size #18, noUncheckedIndexedAccess #19     |
-| _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, entropy issues, PR-ledger    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback |
+| _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, PR-ledger                    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback |
 | [`sergeant-writing-skills`](../../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`                          | TDD-for-skills, frontmatter shape, lock SHA-256, security scan              |
 | [`sergeant-review-squad`](../../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team             | Parallel lens coverage (contract, design, security, docs)                   |
 | [`sergeant-deliver-squad`](../../../.agents/skills/sergeant-deliver-squad/SKILL.md)                       | Cross-surface feature delivery (DB→server→api-client→web/mobile) | Sequential handoff order, bigint coercion chain, contract triplet           |
-| [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel                          | Per-surface test + typecheck, all 4 surfaces before synthesis               |
+| [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel                          | Per-surface test + typecheck, all 3 surfaces before synthesis               |
 | [`sergeant-council`](../../../.agents/skills/sergeant-council/SKILL.md)                                   | Advisory board for product/strategy/UX decisions                 | Dynamic specialist roster, parallel Agent Team, synthesis format            |
 | [`sergeant-planning-batch`](../../../.agents/skills/sergeant-planning-batch/SKILL.md)                     | Execute a batch of N planning tasks via parallel agents          | Dynamic batch select, parallel fan-out, tracker sync, fast-forward archive  |
 

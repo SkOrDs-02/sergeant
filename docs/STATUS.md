@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-08-04 by docs:gen-status. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-05 by docs:gen-status. **Next review:** 2026-08-12.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,14 +30,14 @@
 - [#3611](https://github.com/Skords-01/Sergeant/pull/3611) — fix(web): clear a11y gate _(2026-06-16)_
 - [#3577](https://github.com/Skords-01/Sergeant/pull/3577) — fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs _(2026-06-14)_
 
-## 🔵 В роботі — 46 відкритих
+## 🔵 В роботі — 44 відкритих
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 3        |
-| Планування                       | 20       |
+| Планування                       | 17       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 6        |
+| Аудити й прожарки                | 7        |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |

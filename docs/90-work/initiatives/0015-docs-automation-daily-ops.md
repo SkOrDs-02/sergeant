@@ -94,7 +94,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 ### Phase 2
 
 - [x] `open-work.md` має колонки `Skill` + `Playbook` для кожного item у Ініціативах і Plansах _(score-based skill mapping у `scripts/docs/skill-mapping.json` + `generate-open-work.mjs`; enriched-tracker рядки несуть `Agent-ready`/`Skill`/`Playbook` колонки)_
-- [x] Усі numbered initiatives мають `agent-ready` field _(lint `4/4`: 0006 `blocked` (Withdrawn), 0010 `needs-decision`, 0015 `yes`, 0022 `needs-decision`; archived 0003/0017 більше не в active set)_
+- [x] Усі numbered initiatives мають `agent-ready` field _(lint `3/3`: 0010 `needs-decision`, 0015 `blocked` — лишилось лише maintainer-самоспостереження, 0022 `needs-decision`; 0006 та archived 0003/0017 більше не в active set)_
 - [x] Items з `agent-ready: yes` сорtяться першими в open-work tables _(`sortByAgentReady`: yes → needs-decision → blocked → unset)_
 - [x] CI gate `lint:initiative-agent-ready` блокує новий initiative без поля _(`scripts/docs/lint-initiative-agent-ready.mjs` + `pnpm lint:initiative-agent-ready`, wired у aggregate `lint`)_
 

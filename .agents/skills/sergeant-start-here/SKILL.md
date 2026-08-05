@@ -30,10 +30,10 @@ Read `.kilocode/snapshot.md` and react:
 
 - Red CI on `main` → stop, investigate before opening a new PR.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
-- Open entropy-janitor issues mentioning the touched surface → load `sergeant-tech-debt`.
+- Entropy-сигнали по зачепленій поверхні (dead code, docs drift, cycles — прямі перевірки, див. `sergeant-tech-debt` § «Прямі entropy checks») → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
 
-The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0067 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
+The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0071 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
 
 ## Не-узгоджувані правила
 

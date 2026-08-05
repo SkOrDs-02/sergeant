@@ -14,10 +14,9 @@
 >    перевірки (ADR-0082 видалив VRT, Storybook CI перевіряє лише білд).
 >    Рішення: дешевий grep/AST-скрипт у lint-ланцюг АБО чесний запис
 >    «review-only» в ADR-0081.
-> 2. **Тема-сліпі чарти (high).** fizruk chartSeries/statusColors — статичні
->    hex (dark: ~3.3:1); BodyAtlas heat-ramp — статичні THEME_HEX + literal
->    #fff/#000 gloss. Мігрувати на `rgb(var(--c-chart-*))`-патерн
->    (ProgressRing — зразок); WeeklyVolumeChart вже мігрований.
+> 2. ~~**Тема-сліпі чарти (high).**~~ — **Done** (хвиля 3, `e6a01ce`, 2026-08-04).
+>    `chartSeries.ts` / `statusColors.ts` більше не існують; у fizruk немає
+>    статичних hex поза тестами, `BodyAtlas.tsx` перейшов на var-backed кольори.
 > 3. ~~**Компоненти-сироти.**~~ — **Done.** AccentColorPicker, MacroBarRow,
 >    Prose, PageTransition — видалено (0 споживачів, жодного активного
 >    plan-посилання; MacroBarRow фактично замінений на MacroRings ще в
@@ -54,7 +53,7 @@
 >     `--c-finyk-accent`-старт hero тепер на tier-800 — звірити з
 >     «start stop matches accent» коментарем при наступному ретюні.
 
-> **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 27 web / 10 mobile; production `any` **2** by-design; web exhaustive-deps **0**; mobile **9** — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
+> **Оновлено 2026-07-20 (post-waves).** Hard Rule #18 leakers **закриті**: `ManualExpenseSheet.tsx` ~416 LOC ([#348](https://github.com/SkOrDs-02/Sergeant/pull/348)), `TxRow.tsx` ~270 LOC ([#350](https://github.com/SkOrDs-02/Sergeant/pull/350)). Storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351); `no-non-null-assertion` burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Re-audit baseline: **999** production sources / **875** tests; coverage floor **89**; allowlist порожній; `no-eyebrow-drift` 2 web / 1 mobile (станом на 2026-08-05; було 27/10); production `any` **2** by-design; web exhaustive-deps **0**; mobile **9** — [`apps-mobile-exhaustive-deps.md`](../../02-engineering/architecture/apps-mobile-exhaustive-deps.md). Initiative 0017 (§2.5) code-complete; RUM validation — окремий checkpoint.
 
 > **Оновлено 2026-06-01.** §7 follow-up виконано: ESLint-правило `no-console: error` додано до `apps/web/src/**` (виключення — `*.test.*`, `__tests__/`, `*.stories.*`); три documented call-sites (`perf.ts`, `sw/debug.ts`, `analytics.ts`) отримали `eslint-disable-next-line no-console` з обґрунтуванням; `logger.ts` — disable для canonical transport; ще 5 call-сайтів (`CommandPalette.tsx`, `serverBuildIdBus.ts`, `StatusPage.tsx`, `useDemoCommands.ts` ×2) мігровані на `logger`. §9 follow-up виконано: `@typescript-eslint/no-explicit-any` підвищено до `error` для `apps/web/src/modules/**` і `apps/web/src/core/**` (виключення — тести та stories). §6 follow-up виконано: `HubReports` / `useCoachInsight` / `useWeeklyDigest` coverage.
 

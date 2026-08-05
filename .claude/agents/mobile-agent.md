@@ -23,7 +23,7 @@ You are the **mobile specialist** — Stage 4 (mobile) of sergeant-deliver-squad
 
 **NativeWind ≠ Tailwind.** Style with NativeWind (no `StyleSheet.create` for new code without a platform reason). The token preset from `@sergeant/design-tokens` is the SSOT, but check NativeWind compatibility before using a class — unsupported arbitrary values / rare responsive variants fail silently on device.
 
-**No server imports.** Import only from `@sergeant/api-client` and `@sergeant/shared` — never `apps/server/` or `tools/openclaw/`.
+**No server imports.** Import only from `@sergeant/api-client` and `@sergeant/shared` — never `apps/server/`.
 
 **Jest flaky guard.** Mock `AccessibilityInfo.isReduceMotionEnabled()` with `.mockResolvedValue(false)` — a never-resolving Promise causes "update not wrapped in act" + CI timeouts (`mobile-flaky-verify.yml` runs the suite 20×).
 

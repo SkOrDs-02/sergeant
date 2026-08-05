@@ -1,6 +1,6 @@
 # Specialists ↔ skills mapping
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Цей файл — канонічний міст між **історичними runtime specialist agents** (колишній Telegram `/assign` dispatcher у видаленому `tools/openclaw`) і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують агенти під час роботи в репо.
@@ -33,7 +33,7 @@
 
 ## Як підтримувати свіжість
 
-- При додаванні нового specialist-а в `SpecialistAgent` enum — обовʼязково додати рядок у цю таблицю + JSDoc `@see` посилання в dispatcher.ts.
+- ~~При додаванні нового specialist-а в `SpecialistAgent` enum — додати рядок у цю таблицю + JSDoc `@see` в dispatcher.ts~~ _(historical: enum і dispatcher.ts видалені разом із `tools/openclaw`, ADR-0075)_.
 - При публікації нового skill під `.agents/skills/` — оновити stовпець у відповідному рядку (з `extra` → реальний skill).
 - При редагуванні primary playbook'а одного з мепінгів — перевір, чи цей playbook все ще канонічний (часом краще додати другий primary, ніж перевизначати єдиний).
 - Лінтер `pnpm lint:skills` сінкає shape кожного SKILL.md, але не валідує цю таблицю безпосередньо. Перевірка drift — manual під час review (за governing skill `sergeant-monorepo-boundaries`).

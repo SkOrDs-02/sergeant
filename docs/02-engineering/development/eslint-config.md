@@ -14,7 +14,7 @@ Sergeant використовує ESLint flat-config (v9+). Цей докуме�
 ```
 eslint.config.js              (root — thin composition manifest, ~37 рядків)
 eslint.baseline.js            (shared baseline — phase 1 extract, ~276 рядків)
-eslint.web.js                 (apps/web blocks + 3 burndown JSON allowlists)
+eslint.web.js                 (apps/web blocks + i18n burndown JSON allowlist)
 eslint.server.js              (apps/server blocks)
 eslint.mobile.js              (apps/mobile blocks)
 eslint.shell.js               (apps/mobile-shell blocks)
@@ -23,8 +23,6 @@ eslint.packages.js            (eslint-plugin-sergeant-design self-lint blocks)
 eslint.cross-surface.js       (blocks spanning 2+ surfaces — server+web,
                                web+mobile; historical server+openclaw block removed)
 apps/web/eslint.i18n-allowlist.json
-apps/web/eslint.toast-error-action-allowlist.json
-apps/web/eslint.bare-fixed-inset-modal-allowlist.json
 packages/eslint-plugin-sergeant-design/index.js
 ```
 
@@ -141,8 +139,7 @@ per-surface ризику.
 Завжди:
 
 - Дай rule пояснювальний коментар (як кодова база уже робить — див.
-  `react-hooks/set-state-in-effect`, `sergeant-design/no-low-contrast-
-text-on-fill`, etc.) з посиланням на ADR/playbook де релевантно.
+  `react-hooks/set-state-in-effect`, `sergeant-design/rq-keys-only-from-factory`, etc.) з посиланням на ADR/playbook де релевантно.
 - Якщо rule severity `warn` тимчасово, додай `TODO(<initiative>):
 <ETA>` коментар поряд.
 - Запусти `pnpm lint` локально перед commit.
@@ -150,7 +147,7 @@ text-on-fill`, etc.) з посиланням на ADR/playbook де релева
 ## Pre-existing failures
 
 Станом на 2026-05-13 (після dead-code purge): `@sergeant/web` лінт чистий. Попереднє pre-existing
-failure (`sergeant-design/no-low-contrast-text-on-fill` на видаленому зараз віджеті dashboard) вирішено
+failure (`sergeant-design/no-low-contrast-text-on-fill` — правило згодом retired [ADR-0081](../../04-governance/adr/0081-repository-simplification.md) — на видаленому зараз віджеті dashboard) вирішено
 при dead-code purge у PR ПО слідам [audit `2026-05-13-dead-code-hard-rules-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-dead-code-hard-rules-roast.md).
 
 ## Refs

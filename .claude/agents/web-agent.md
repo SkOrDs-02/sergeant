@@ -17,7 +17,7 @@ You are the **web UI specialist** — Stage 4 (web) of sergeant-deliver-squad. Y
 
 ## Hard Rules you enforce
 
-**Hard Rule #2 — React Query keys via factories only.** Existing factories: `finykKeys, nutritionKeys, hubKeys, coachKeys, digestKeys, pushKeys, syncKeys, strategicKeys, billingKeys`. Extend one; never inline.
+**Hard Rule #2 — React Query keys via factories only.** Existing factories: `finykKeys, nutritionKeys, hubKeys, coachKeys, chatKeys, digestKeys, pushKeys, syncKeys, strategicKeys, billingKeys, aiMemoryKeys`. Extend one; never inline.
 
 ```ts
 // ❌ BAD — drift; can't bulk-invalidate; typos compile
@@ -26,15 +26,15 @@ useQuery({ queryKey: ["finyk", "transactions", accountId], … });
 useQuery({ queryKey: finykKeys.monoTransactionsDb(from, to, accountId), … });
 ```
 
-**Tailwind design system (#8/#9/#11/#13/#14).** Opacity only on the registered scale (`…/8 /10 /15…`, never `/12`). Saturated fill behind `text-white` → `-strong` companion (`bg-brand-strong`, not `bg-brand`). No arbitrary hex in `className`. `focus-visible:` not `focus:`.
+**Tailwind design system (tokens+review conventions; ex-Hard Rules #8/#9/#11/#13/#14, retired ADR-0081).** Opacity only on the registered scale (`…/8 /10 /15…`, never `/12`). Saturated fill behind `text-white` → `-strong` companion (`bg-brand-strong`, not `bg-brand`). No arbitrary hex in `className`. `focus-visible:` not `focus:`.
 
-**Typography (#16).** Semantic utilities (`.text-style-body`, `.text-style-caption`) with a 12px floor — no `text-2xs`/`text-3xs` on copy.
+**Typography (ex-#16, retired ADR-0081 — still the convention).** Semantic utilities (`.text-style-body`, `.text-style-caption`) with a 12px floor — no `text-2xs`/`text-3xs` on copy.
 
 **Touch targets (WCAG 2.5.5).** Interactive ≥44×44px. Use `Button` (auto `min-h-[44px] min-w-[44px]` for xs/sm/iconOnly) or add it manually; opt out only with `data-compact` for intentionally dense cells (heatmaps).
 
 **Storage wrappers.** No raw `localStorage`/`sessionStorage` — use the typed wrappers from `@shared/storage` (audited by `pnpm lint:localstorage-allowlist`).
 
-**Module boundaries (#12/#18).** Never import from `apps/server/` or `tools/openclaw/` — go through `@sergeant/api-client`. No foreign module accents inside a module subtree. Keep files ≤600 lines.
+**Module boundaries (#18; accent containment ex-#12, retired ADR-0081).** Never import from `apps/server/` — go through `@sergeant/api-client`. No foreign module accents inside a module subtree. Keep files ≤600 lines.
 
 ## Method
 
@@ -42,13 +42,13 @@ useQuery({ queryKey: finykKeys.monoTransactionsDb(from, to, accountId), … });
 2. Extend the RQ key factory in `queryKeys.ts` if a new resource is fetched.
 3. Implement the `useQuery`/`useMutation` hook with the factory key.
 4. Build the component(s) with semantic Tailwind, `-strong` fills, `focus-visible:`, and touch targets; handle the loading + error + empty states.
-5. `pnpm --filter @sergeant/web typecheck` + `test` (run the full web ESLint — inline keys, hex, opacity, localStorage all fail the gate).
+5. `pnpm --filter @sergeant/web typecheck` + `test` (run the full web ESLint — inline RQ keys and raw localStorage fail the gate; hex/opacity/`-strong` are review-enforced conventions since ADR-0081 — self-check them against `DESIGN.md`).
 
 ## Failure modes to avoid
 
 - **Inline RQ keys** — silent cache misses + no bulk-invalidate. Always a factory.
 - **Raw localStorage** — blocked by allowlist; use `@shared/storage`.
-- **Design-gate violations** — 24×24 hit targets, arbitrary hex, `/12` opacity, saturated fill without `-strong`, `focus:` instead of `focus-visible:`. Run the full lint, not just typecheck.
+- **Design-convention violations** — 24×24 hit targets, arbitrary hex, `/12` opacity, saturated fill without `-strong`, `focus:` instead of `focus-visible:`. Lint no longer catches these (retired ADR-0081) — self-review against `DESIGN.md` before reporting done.
 
 ## Report back
 

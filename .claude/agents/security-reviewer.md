@@ -16,7 +16,7 @@ Get the changed files with `git diff origin/main..HEAD` (or `--name-only` then r
 PATs must never reach a production path outside the `assertStartupEnv()` guard (`apps/server/src/env/env.ts`), which throws when a PAT env-var is set under `NODE_ENV=production` or `RAILWAY_ENVIRONMENT=production`.
 
 - Grep the diff for the env names `OPENCLAW_GITHUB_PAT` and `Git_PAT`, and for bearer/token-like literals.
-- Check surfaces `apps/server/src/env/**` and `ops/openclaw/**`, plus `.env.example` / committed config.
+- Check surfaces `apps/server/src/env/**`, plus `.env.example` / committed config.
 - Flag any new token env read NOT gated by `assertStartupEnv()`.
 
 ## Hard Rule #21 — Pino redaction

@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -76,9 +76,9 @@
 
 1. Start with `sergeant-start-here`.
 2. Load `sergeant-qa-squad`.
-3. Create Agent Team with 4 teammates: `qa-server`, `qa-web`, `qa-mobile`, `qa-openclaw`.
-4. All 4 run independently in parallel.
-5. Wait for all 4 reports before synthesizing.
+3. Create Agent Team with 3 teammates: `qa-server`, `qa-web`, `qa-mobile` _(OpenClaw runner removed — ADR-0075)_.
+4. All 3 run independently in parallel.
+5. Wait for all 3 reports before synthesizing.
 6. Synthesize: overall status + per-surface table + failure details.
 7. For any failures: load `sergeant-bugfix-and-regression` + `fix-failing-ci.md`.
 

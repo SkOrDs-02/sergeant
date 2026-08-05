@@ -1,9 +1,9 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
-Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps`: web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md) (0 production); mobile — [apps-mobile-exhaustive-deps.md](./apps-mobile-exhaustive-deps.md).
+Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps`: web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md) (5 production); mobile — [apps-mobile-exhaustive-deps.md](./apps-mobile-exhaustive-deps.md).
 
 ## Монорепо
 
@@ -30,7 +30,7 @@
 
 - **Hub-оболонка**: таби, хедер, модалки, онбординг, PWA (install/update), офлайн-банер, sync status
 - **Ліниві модулі**: Finyk, Fizruk, Nutrition, Routine; окремо Auth, Profile, DesignShowcase
-- **Pricing/Waitlist**: `core/pricing/PricingPage.tsx`, `core/PricingPage.test.tsx`; waitlist форма — `core/pricing/WaitlistForm.tsx`
+- **Pricing/Waitlist**: `core/PricingPage.tsx`, `core/PricingPage.test.tsx`; waitlist форма — `core/pricing/WaitlistForm.tsx`
 - **Observability**: `core/observability/` — PostHog pageview tracker, analytics, posthog init, sanitizeUrl
 - **Sync engine**: `core/syncEngine/` — `SyncEngineWriterRuntime`, singleton boot; `core/cloudSync/` — тільки `useSyncStatus` (v1 engine знятий, ADR-0047)
 - **DB шар**: `core/db/sqlite.ts` — lazy SQLite-WASM з VFS priority OPFS-SAH → kvvfs → memory
@@ -71,6 +71,5 @@
 ### Ризики та напрями покращення
 
 - Різні мінорні версії React між веб і моб — вирівнювати при нагоді
-- Частина `core` у `.jsx` — поступова міграція на TS підвищує консистентність
 - PWA + великі ліниві модулі — контролювати бандл (`pnpm build:analyze` у `@sergeant/web`)
 - Sync v2 read-overlay: Stage 8 PR #057\* зняв `feature.*.sqlite_v2.read_sqlite` флаги — SQLite read unconditional після boot; залишковий LS/MMKV fallback для first-paint трекається окремими tombstone-PR-ами

@@ -1,6 +1,6 @@
 # Nightly-audit — потік triage
 
-> **Last touched:** 2026-06-16 by @Skords-01. **Next review:** 2026-09-14.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Огляд
@@ -66,5 +66,4 @@ Workflow автоматично створює/оновлює issue з title "Ni
 
 - [docs/04-governance/security/audit-exceptions.md](./audit-exceptions.md) — винятки з аудиту.
 - [docs/04-governance/security/vulnerability-sla.md](./vulnerability-sla.md) — SLA-матриця.
-- `.github/workflows/security-sla-reminder.yml` — щотижневий SLA reminder.
 - AGENTS.md → секція CI — загальний опис CI workflows.

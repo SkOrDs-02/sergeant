@@ -1,6 +1,6 @@
 # Log-level policy
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Default levels
@@ -17,12 +17,19 @@ Valid values: `fatal` `error` `warn` `info` `debug` `trace`
 
 Temporarily lower production log level to `debug` **without a restart or env-var change**:
 
-### Via `/debug-window` in the ops Telegram console
+### Via the internal debug-window HTTP API
 
-```
-/debug-window 5m         # enable debug logs for 5 minutes
-/debug-window 30m        # maximum allowed duration
-/debug-window-status     # show remaining time
+Telegram-консоль (OpenClaw) декомісована — [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md).
+Вікно вмикається напряму через internal API (`apps/server/src/routes/internal/debug-window.ts`,
+Bearer `INTERNAL_API_KEY`):
+
+```bash
+curl -X POST $PROD_API_URL/api/internal/debug-window/enable \
+  -H "Authorization: Bearer $INTERNAL_API_KEY" \
+  -H "Content-Type: application/json" -d '{"minutes":5}'   # максимум 30
+
+curl -X GET  $PROD_API_URL/api/internal/debug-window/status  -H "Authorization: Bearer $INTERNAL_API_KEY"
+curl -X POST $PROD_API_URL/api/internal/debug-window/disable -H "Authorization: Bearer $INTERNAL_API_KEY"
 ```
 
 - **Hard ceiling:** 30 minutes. Longer requests are automatically capped.

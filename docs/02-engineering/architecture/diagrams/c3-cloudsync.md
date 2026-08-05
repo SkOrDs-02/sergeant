@@ -1,6 +1,6 @@
 # C3 — Sync Engine v2 (web)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Внутрішня структура sync engine v2 у `apps/web`. CloudSync v1 (dirtyMap / offlineQueue / LWW resolver) знятий (ADR-0047). Єдиний sync-шлях — **op-log outbox**: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції й пушить на сервер через `/api/v2/sync/push`.
@@ -76,7 +76,7 @@ flowchart LR
 | `@sergeant/api-client` → `SyncEngineFlushOnReconnect` | Підписується на `online` event, негайно flush відкладеного.                                       |
 | `core/cloudSync/hook/useSyncStatus.ts`                | React-hook: зчитує `SyncOpOutboxStatusCounts` для UI badge.                                       |
 | `packages/db-schema/sqlite`                           | SQLite Drizzle-схема: `sync_op_outbox` + domain tables.                                           |
-| `apps/server/modules/sync/syncV2.ts`                  | `OP_LOG_TABLE_REGISTRY` whitelist + per-table `applyFn`. Push handler, pull handler, dead-letter. |
+| `apps/server/src/modules/sync/syncV2.ts`              | `OP_LOG_TABLE_REGISTRY` whitelist + per-table `applyFn`. Push handler, pull handler, dead-letter. |
 
 ## Статуси в outbox
 
@@ -92,7 +92,7 @@ pending  →  in_flight  →  applied   (normal path)
 
 | Аспект             | v1 (знятий, ADR-0047)                              | v2 (поточний)                                       |
 | ------------------ | -------------------------------------------------- | --------------------------------------------------- |
-| Transport          | `POST /api/sync` (410 Gone)                        | `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`   |
+| Transport          | `POST /api/sync` (знятий → 404)                    | `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`   |
 | Granularity        | Whole-module blob (LWW на весь module)             | Per-row operation (LWW + soft-delete per row)       |
 | Conflict detection | На рівні blob timestamp                            | `(user_id, idempotency_key)` UNIQUE у `sync_op_log` |
 | Offline queue      | `offlineQueue.ts` у localStorage                   | `sync_op_outbox` у SQLite-WASM (durable OPFS)       |

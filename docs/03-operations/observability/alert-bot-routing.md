@@ -14,7 +14,10 @@ alert-bot accountability layer. It is the canonical wire-map for:
 - the `POST /api/internal/alerts/post` writer
   ([`apps/server/src/modules/alerts/store.ts`](../../../apps/server/src/modules/alerts/store.ts)),
 - WF-103 alert-escalation cron + WF-104 alert-callback router,
-- and the `/alerts pending` slash-command (O5, PR #2507).
+- and the `POST /api/internal/alerts/pending` endpoint (раніше його викликала
+  Telegram-команда `/alerts pending`, O5 / PR #2507 — командний рантайм пішов
+  разом з OpenClaw, [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md);
+  сам HTTP-ендпоінт живий).
 
 ## Wire pattern
 
@@ -24,8 +27,7 @@ Telegram node:
 1. **Build alert payload (Code node)** — constructs a deterministic `alertId`
    of the form `<workflow_id>:<execution_id>[:<suffix>]`. Suffix is used when
    a single workflow execution can fan out into multiple semantically
-   distinct alerts (e.g. WF-15 branches on Railway deploy `branch` +
-   `commitHash`; WF-98 keys on the failed workflow + `error_signature` to
+   distinct alerts (напр. WF-98 keys on the failed workflow + `error_signature` to
    match its 30-min SQL cooldown 1:1).
 2. **POST /api/internal/alerts/post (HTTP Request node)** — Bearer-auth call
    to `{{ $env.PUBLIC_API_BASE_URL }}/api/internal/alerts/post` with
@@ -41,7 +43,7 @@ The Telegram node then renders an inline-keyboard with the three ack buttons
 Validator gates (`pnpm ops:n8n:validate`):
 
 - Workflow JSON in git must keep `"active": false`. Activation is a manual
-  step in the n8n UI after all `requiredEnv` are set on n8n Railway.
+  step in the n8n UI after all `requiredEnv` are set on the n8n host (ops docker-compose stack).
 - Every `$env.VAR` referenced inside a node must appear in
   `ops/n8n-workflows/manifest.json` → `requiredEnv`.
 
@@ -53,12 +55,12 @@ cadence + owner. PR column links the wave that wired the ack pattern.
 
 | WF | Workflow | Topic | Severity | `alertId` shape | PR |
 | ----- | ------------------------------------- | ----------------- | ---------------------- | -------------------------------------- | ----------------------- | --- | ----- | ------------------------------- | -------- | --- | ------------------------------- | ------------------ |
-| WF-01 | `01-stripe-pro-upgrade.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-02 | `02-stripe-payment-failed.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-03 | `03-anthropic-budget-guard.json` | `incidents`/`ops` | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>` | W3 PR-3 batch 1 (#1503) |
+| WF-01 | `01-billing-pipeline.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
+| WF-02 | `02-failed-payment-recovery.json` | `incidents` | P0 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
+| WF-03 | `03-sentry-alert-routing.json` | `incidents`/`ops` | P0 (fatal) / P1 (warn) | `<wfId>:<execId>:<branch>` | W3 PR-3 batch 1 (#1503) |
 | WF-04 | `04-daily-backup-verification.json` | `incidents` | P1 | `<wfId>:<execId>` | W3 PR-2 (#1480) |
-| WF-05 | `05-renovate-nonpatch.json` | `engineering` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
-| WF-06 | `06-mono-monthly-budget.json` | `ops` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
+| WF-05 | `05-renovate-pr-auto-handler.json` | `engineering` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
+| WF-06 | `06-mono-webhook-enrichment.json` | `ops` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
 | WF-08 | `08-weekly-financial-digest.json` | `digest` | P2 | `<wfId>:<execId>:weekly-digest` | W3 PR-4 (O9 batch) | | WF-16 | `16-posthog-daily-metrics.json` | `growth` | P2 | `<wfId>:<execId>:posthog-daily` | W3 PR-4 (O9 batch) |
 | WF-17 | `17-github-pr-stale-alert.json` | `engineering` | P2 | `<wfId>:<execId>` | W3 PR-3 batch 2 |
 | WF-18 | `18-nightly-security-audit.json` | `incidents` | P1 | `<wfId>:<execId>` | W3 PR-3 batch 1 (#1503) |
@@ -71,11 +73,9 @@ cadence + owner. PR column links the wave that wired the ack pattern.
 
 ### Notes per row
 
-- **WF-15** uses dynamic topic + severity expressions: the Build alert payload
-  Code node sets `topic = parsed.ok ? "ops" : "incidents"` and
-  `severity = parsed.ok ? "P2" : "P1"`. The suffix
-  (`railway-<branch>-<commitHash>`) keeps successive deploys to the same
-  service distinct.
+- **WF-15** (Railway deploy notifier) видалено разом із Railway-хостингом
+  ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)) — файлу
+  `15-*.json` в `ops/n8n-workflows/` більше немає.
 - **WF-98** is the n8n global error handler. Its ack-row key
   (`wf98:<failed_workflow_id>:<error_signature>`) is intentionally the same
   granularity as the WF-98 SQL cooldown (30 min per failure class), so the
@@ -136,7 +136,7 @@ POST /api/internal/alerts/pending
         │
         ▼
 POST /api/internal/alerts/escalate     ──►  UPDATE escalated_at = NOW(),
-                                            DM founder via OpenClaw_sergeant_bot
+                                            DM founder via Sergeant_alert_bot
 
 [T2, every 15 min] WF-105 alert-repeat-ping cron
         │
@@ -182,17 +182,17 @@ Idempotency invariant: T1/T2/T3 mark-функції використовують
 що cron retry (n8n queue replay, network flake) не призведе до double-DM /
 double-repeat / double-Sentry-event.
 
-The same `/alerts/pending` endpoint powers the `/alerts pending` slash-command
-(O5 / PR #2507), which calls без filter prefs і renders усі open ack-rows у
-founder DM.
+Той самий `/alerts/pending` ендпоінт колись живив Telegram-команду `/alerts pending`
+(O5 / PR #2507). Команда-рантайм пішов разом з OpenClaw ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md));
+ендпоінт лишився і викликається з n8n / вручну.
 
 For post-mortem debugging, `/alerts history [<days>] [limit=<N>]` (this PR)
 hits the sibling `POST /api/internal/alerts/history` endpoint. It runs two
 SQL aggregates against `tg_alert_acks` — top-N noisiest workflows (grouped by
 `split_part(alert_id, ':', 1)`) plus a window-wide summary (totals, ack-rate,
 avg time-to-ack, tier counts). Defaults: 7d look-back, top-10 workflows.
-Same founder-only allowlist + 3/min rate-limit + `openclaw_invocations`
-audit row as `/alerts pending`.
+Той самий founder-only allowlist + 3/min rate-limit, що й у `/alerts/pending`
+(audit-таблиця `openclaw_invocations` лишилась від командного рантайму OpenClaw).
 
 ## T2 repeat-ping inline keyboard
 

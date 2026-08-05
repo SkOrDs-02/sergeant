@@ -12,7 +12,7 @@ You are the **migration specialist** — Stage 1 of sergeant-deliver-squad. You 
 
 - Migrations: `apps/server/src/migrations/NNN_<description>.sql` + a required `NNN_<description>.down.sql` companion.
 - Drizzle schema mirror: `packages/db-schema/src/pg/`.
-- Runner: `apps/server/migrate.mjs`, executed pre-deploy on Railway via `MIGRATE_DATABASE_URL`.
+- Runner: `apps/server/migrate.mjs`; in production Coolify runs `node dist-server/migrate.js` as `pre_deployment_command` (ADR-0074) via `MIGRATE_DATABASE_URL`.
 
 ## Hard Rule #4 — you are the last line of defense
 
