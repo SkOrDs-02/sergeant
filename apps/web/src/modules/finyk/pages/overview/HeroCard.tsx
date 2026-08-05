@@ -90,11 +90,14 @@ const HeroCardImpl = function HeroCard({
       />
       <div className="relative px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
+          {/* AI-CONTEXT: підпис «Капітал» іде ПІД числом. Число має зустрічати
+              око першим, а підпис — пояснювати вже побачене. Зверху він
+              змушував прочитати службове слово, перш ніж дійти до факту,
+              заради якого екран відкрили. */}
           <div className="min-w-0">
-            <p className="text-style-caption text-hero-ink">Капітал</p>
             <p
               className={cn(
-                "text-style-title tabular-nums leading-tight mt-0.5",
+                "text-style-title tabular-nums leading-tight",
                 networth < 0
                   ? "text-danger-strong dark:text-danger"
                   : "text-hero-ink",
@@ -109,14 +112,19 @@ const HeroCardImpl = function HeroCard({
                 networthMasked
               )}
             </p>
+            <p className="text-style-caption text-hero-ink mt-0.5">Капітал</p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-xs text-hero-ink tabular-nums">
+            <p className="text-style-caption text-hero-ink tabular-nums">
               {daysLeft} дн до кінця
             </p>
           </div>
         </div>
-        <p className="text-xs text-hero-ink mt-1.5 leading-snug">
+        {/* mt-3, а не mt-1.5: підпис «Капітал» тепер стоїть ПІД числом, тож
+            цей рядок опинився впритул до нього — той самий кегль, той самий
+            колір, і два різні за роллю рядки читались як один блок. Відступ
+            і є тим, що відділяє підпис числа від сусіднього факту. */}
+        <p className="text-style-caption text-hero-ink mt-3 leading-snug">
           {showBalance ? (
             <>
               <span>На картках </span>
@@ -151,7 +159,7 @@ const HeroCardImpl = function HeroCard({
             <p className="text-style-headline text-hero-ink leading-tight">
               Скільки можна витрачати на день?
             </p>
-            <p className="text-sm text-hero-ink/85 mt-1 leading-snug">
+            <p className="text-style-label text-hero-ink mt-1 leading-snug">
               Задай місячний план витрат — і я рахуватиму денний бюджет із
               урахуванням підписок і боргів.
             </p>
@@ -187,7 +195,7 @@ const HeroCardImpl = function HeroCard({
                 "••••"
               )}
             </div>
-            <p className="text-sm text-hero-ink mt-1">
+            <p className="text-style-label text-hero-ink mt-1">
               <span>Можна сьогодні</span>
               <span className="text-hero-ink"> · </span>
               <span className="text-hero-ink font-semibold">{statusText}</span>
@@ -196,7 +204,7 @@ const HeroCardImpl = function HeroCard({
         )}
 
         <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-hero-ink mb-1">
+          <div className="flex items-center justify-between text-style-caption text-hero-ink mb-1">
             <span>
               День {daysPassed} з {daysInMonth}
             </span>

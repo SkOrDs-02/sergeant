@@ -51,6 +51,24 @@ describe("HeroCard", () => {
     )[0]!;
   }
 
+  /**
+   * Підпис «Капітал» іде ПІД числом — число має зустрічати око першим.
+   * Перевіряємо порядок у DOM: до цієї зміни обидва вузли теж існували,
+   * просто в зворотному порядку, тож перевірка наявності нічого б не ловила.
+   */
+  it("puts the Капітал caption after the number, not before", () => {
+    render(<HeroCard {...baseProps} />);
+    const number = screen.getByText(
+      (_, el) =>
+        el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
+        el.tagName === "P",
+    );
+    const position = number.compareDocumentPosition(
+      screen.getByText("Капітал"),
+    );
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("renders networth, breakdown row and big day-budget number", () => {
     render(<HeroCard {...baseProps} />);
     expect(screen.getByText("Капітал")).toBeInTheDocument();
