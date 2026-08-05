@@ -29,6 +29,41 @@ export function InjuryManager() {
   const [selected, setSelected] = useState<InjurySiteId[]>([]);
   const [busy, setBusy] = useState(false);
 
+  /**
+   * Зняти позначку травми. `clear` пише у local-first сховище і кидає лише
+   * на квоті / зламаному JSON — обидва стани минущі, тож «Повторити» у
+   * тості має сенс і не дублює жодної дії на екрані.
+   */
+  const clearInjury = (id: string) => {
+    try {
+      clear(id);
+      toast.success(t.clearedToast);
+    } catch {
+      toast.error(t.clearFailedToast, undefined, {
+        label: "Повторити",
+        onClick: () => clearInjury(id),
+      });
+    }
+  };
+
+  /** Зберегти позначені сайти. Ті самі властивості, що й `clearInjury`. */
+  const saveSelected = () => {
+    setBusy(true);
+    try {
+      for (const site of selected) mark(site);
+      setSelected([]);
+      toast.success(t.savedToast);
+    } catch {
+      // `selected` не чистили — повтор працює з тим самим набором.
+      toast.error(t.saveFailedToast, undefined, {
+        label: "Повторити",
+        onClick: () => saveSelected(),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggle = (site: InjurySiteId) => {
     setSelected((current) =>
       current.includes(site)
@@ -89,14 +124,7 @@ export function InjuryManager() {
                 size="sm"
                 variant="secondary"
                 disabled={busy}
-                onClick={() => {
-                  try {
-                    clear(injury.id);
-                    toast.success(t.clearedToast);
-                  } catch {
-                    toast.error(t.clearFailedToast);
-                  }
-                }}
+                onClick={() => clearInjury(injury.id)}
               >
                 {t.clearCta}
               </Button>
@@ -112,18 +140,7 @@ export function InjuryManager() {
         module="fizruk"
         className="w-full h-12"
         disabled={busy || selected.length === 0}
-        onClick={() => {
-          setBusy(true);
-          try {
-            for (const site of selected) mark(site);
-            setSelected([]);
-            toast.success(t.savedToast);
-          } catch {
-            toast.error(t.saveFailedToast);
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onClick={saveSelected}
       >
         {t.submit}
       </Button>

@@ -34,7 +34,12 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Не вдалось імпортувати файл";
-        toast.error(message);
+        // Файл битий — повтор із ним впаде так само; єдиний вихід —
+        // інший файл, тож дія відкриває той самий input ще раз.
+        toast.error(message, undefined, {
+          label: "Обрати інший",
+          onClick: () => e.target.click(),
+        });
       }
       e.target.value = "";
     };

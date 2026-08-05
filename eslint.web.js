@@ -235,6 +235,55 @@ export const webBlocks = [
       "sergeant-design/no-adhoc-metric-aggregation": "error",
     },
   },
+  // ── Toast recovery-action gate ────────────────────────────────────────
+  //
+  // `toast.error(...)` мусить нести `{ label, onClick }`. Правило з такою
+  // назвою вже існувало і було retired в ADR-0081 із тезою, що коректність
+  // дії залежить від сценарію й не має надійного синтаксичного сигналу.
+  // Теза правильна, висновок — ні: за пів року без гейта дію мали 3 з 37
+  // error-тостів у `apps/web`. Решта лишали користувача в глухому куті.
+  //
+  // Тому гейт повертається у формі, яка визнає ту саму тезу: він ловить
+  // лише ФАКТ відсутності дії, а «тут дії справді бути не може» — це
+  // явний запис нижче з причиною. Мовчазний глухий кут стає підписаним.
+  //
+  // Політика тону і формa `action` — docs/05-design/ui/toast-policy.md.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+    ],
+    rules: {
+      "sergeant-design/require-toast-error-action": [
+        "error",
+        {
+          allowlist: [
+            // Rate-limit 429: копія вже несе інструкцію («Спробуй за
+            // годину»), а «Повторити» зараз гарантовано впаде знову.
+            "apps/web/src/core/pricing/WaitlistForm.tsx",
+            // Імпорт лога харчування з битого JSON. Хук не володіє
+            // файловим input-ом, тож «Обрати інший» звідси не підняти, а
+            // сама кнопка імпорту лишається на екрані — recovery-шлях
+            // видимий без тоста.
+            "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
+            // Те саме для Фініка: `importData` приймає готовий `Blob` і не
+            // знає, звідки той узявся, тож «Обрати інший» тут не підняти.
+            // (На 2026-08-05 хук ще й не має жодного UI-споживача — він
+            // висить у `useStorage` без виклику.)
+            "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Повторний виклик
+            // `onUndo` після часткового відкату може подвоїти запис —
+            // ретрай тут небезпечніший за його відсутність.
+            "apps/web/src/shared/lib/ui/undoToast.tsx",
+            // Docstring-приклад у JSDoc, не виконуваний код.
+            "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts",
+          ],
+        },
+      ],
+    },
+  },
   // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
   // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
   // a single TS/TSX file in the web bundle must not exceed 600 LOC

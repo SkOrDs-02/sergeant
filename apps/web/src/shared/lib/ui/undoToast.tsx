@@ -59,7 +59,17 @@ export function showUndoToast(
   }: UndoToastOptions,
 ): number {
   hapticWarning();
-  return toast.show(msg, "info", duration, {
+  // tone=success, не info.
+  //
+  // Користувач щойно зробив те, що хотів — запис видалено, операцію
+  // приховано, — і повідомлення підтверджує РЕЗУЛЬТАТ дії. Це рівно
+  // визначення `success` у tone-таблиці. Синій `info` читався як
+  // «система тобі щось повідомляє», хоча ініціатором був користувач, і
+  // єдина дія в аркуші — «Повернути», тобто відкат уже виконаного.
+  //
+  // Небезпеку дії несе не колір, а haptic (`hapticWarning` вище) і сама
+  // наявність вікна скасування з відліком.
+  return toast.show(msg, "success", duration, {
     label: undoLabel,
     onClick: () => {
       hapticTap();

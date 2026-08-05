@@ -495,7 +495,9 @@ describe("FinykApp (extra) — URL sync effect", () => {
     storageMock.loadFromUrl.mockReturnValue(false);
     render(<FinykApp />);
     expect(toastMock.error).toHaveBeenCalledWith(
-      "Не вдалось завантажити синк-даних",
+      "Не вдалось завантажити синк-дані",
+      undefined,
+      expect.objectContaining({ label: "Повторити" }),
     );
   });
 });

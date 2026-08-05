@@ -183,10 +183,20 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     const velocity = Math.abs(dx) / dt;
     touchStartXRef.current = null;
     setDragging(false);
+    // Аркуш із дією коштує дорожче за звичайний: змахнувши його, людина
+    // мовчки спалює вікно undo — а свайп у неї в голові означає «прибери
+    // це з очей», а не «підтверджую видалення». Тому для action-тостів
+    // приймаємо лише повний, свідомий свайп: flick-скорочення (32 px на
+    // швидкості) вимкнене, а поріг подвоєний. Випадковий рух пальцем під
+    // час скролу більше не забирає можливість повернути запис.
+    const requiredDistance = hasAction
+      ? SWIPE_DISMISS_DISTANCE_PX * 2
+      : SWIPE_DISMISS_DISTANCE_PX;
     const flick =
+      !hasAction &&
       Math.abs(dx) >= SWIPE_DISMISS_MIN_DISTANCE_FOR_VELOCITY_PX &&
       velocity >= SWIPE_DISMISS_VELOCITY_PX_PER_MS;
-    if (Math.abs(dx) >= SWIPE_DISMISS_DISTANCE_PX || flick) {
+    if (Math.abs(dx) >= requiredDistance || flick) {
       // Treat horizontal swipe-dismiss as a deliberate "I've read this"
       // gesture. For undo-toasts this is equivalent to letting the 5 s
       // timer expire — the snapshot is dropped and `onUndo` never runs.
@@ -196,7 +206,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     setDragX(0);
     setPaused(false);
     resume(toast.id);
-  }, [dismiss, dragX, resume, toast.id]);
+  }, [dismiss, dragX, hasAction, resume, toast.id]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -217,7 +227,11 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     style.transition = "none";
     // Fade out as the swipe approaches the dismiss threshold so the user
     // gets a clear visual confirmation that release will dismiss.
-    const progress = Math.min(1, Math.abs(dragX) / SWIPE_DISMISS_DISTANCE_PX);
+    const progress = Math.min(
+      1,
+      Math.abs(dragX) /
+        (hasAction ? SWIPE_DISMISS_DISTANCE_PX * 2 : SWIPE_DISMISS_DISTANCE_PX),
+    );
     style.opacity = 1 - progress * 0.5;
   }
 

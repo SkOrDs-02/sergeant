@@ -236,7 +236,11 @@ describe("MemoryBankSection — import", () => {
   it("rejects a non-array payload", async () => {
     importFile(JSON.stringify({ not: "an array" }));
     await vi.waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith("Невалідний формат файлу");
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Невалідний формат файлу",
+        undefined,
+        expect.objectContaining({ label: "Обрати інший" }),
+      );
     });
     expect(writeMemoryEntriesMock).not.toHaveBeenCalled();
   });
@@ -244,7 +248,11 @@ describe("MemoryBankSection — import", () => {
   it("reports a parse failure on malformed JSON", async () => {
     importFile("{ broken json");
     await vi.waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith("Не вдалося прочитати файл");
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалося прочитати файл",
+        undefined,
+        expect.objectContaining({ label: "Обрати інший" }),
+      );
     });
   });
 });

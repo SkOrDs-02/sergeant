@@ -2790,6 +2790,159 @@ const noAdhocMetricAggregation = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// ── require-toast-error-action ──────────────────────────────────────────
+//
+// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`.
+//
+// Історія. Правило з такою ж назвою існувало до ADR-0081 і було retired
+// разом із рештою «естетичних» AST-правил — з тезою, що коректність дії
+// залежить від сценарію й не має надійного синтаксичного сигналу. Теза
+// правильна, висновок — ні: за пів року без гейта з 37 error-тостів у
+// `apps/web` дію мали ТРИ. Решта 34 лишали користувача в глухому куті
+// («Не вдалося оновити аватар» — і все).
+//
+// Тому правило повертається, але у формі, яка визнає ту саму тезу:
+// синтаксично воно ловить лише ФАКТ відсутності дії, а рішення «тут дії
+// справді бути не може» фіксується явним записом в `allowlist` — з
+// причиною в коді конфіга. Тобто гейт не вирішує за людину, а вимагає,
+// щоб мовчазний глухий кут став свідомим і підписаним.
+//
+// Виявляє `toast.error(...)`, `t.error(...)`, `toastApi.error(...)` — усе,
+// де об'єкт-приймач названий `*toast*` (case-insensitive), плюс голий
+// `error(...)`, деструктурований з `useToast()`. Третій аргумент має бути
+// об'єктним літералом із `label` і `onClick`, або ідентифікатором /
+// spread-ом (тоді довіряємо — форма не читається статично).
+const REQUIRE_TOAST_ERROR_ACTION_MESSAGE =
+  '`toast.error()` без recovery-дії лишає користувача в глухому куті: він не знає, чи буде нова спроба і що робити далі. Додай третім аргументом `{ label, onClick }` (напр. `{ label: "Повторити", onClick: retry }`). Якщо дії справді не може бути — валідація файлу, rate-limit із поясненням у копії, помилка форми, що вже видно інлайном — додай файл у `allowlist` цього правила з коментарем-причиною.';
+
+function isToastReceiver(node) {
+  if (!node) return false;
+  if (node.type === "Identifier") return /toast/i.test(node.name);
+  // `this.toast.error(...)` / `ctx.toast.error(...)`
+  if (
+    node.type === "MemberExpression" &&
+    node.property?.type === "Identifier"
+  ) {
+    return /toast/i.test(node.property.name);
+  }
+  return false;
+}
+
+function hasToastAction(args) {
+  const action = args[2];
+  if (!action) return false;
+  // Не object-literal (змінна, spread, виклик) — статично не прочитати,
+  // довіряємо авторові.
+  if (action.type !== "ObjectExpression") return true;
+  let hasLabel = false;
+  let hasClick = false;
+  for (const prop of action.properties) {
+    if (prop.type === "SpreadElement") return true;
+    const key = prop.key;
+    const name =
+      key?.type === "Identifier"
+        ? key.name
+        : key?.type === "Literal"
+          ? String(key.value)
+          : null;
+    if (name === "label") hasLabel = true;
+    if (name === "onClick") hasClick = true;
+  }
+  return hasLabel && hasClick;
+}
+
+const requireToastErrorAction = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Require a `{ label, onClick }` recovery action on `toast.error(...)`; exempt files must be listed in `allowlist` with a reason.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Project-relative file paths (forward-slash) exempt from the rule. " +
+              "Кожен запис — свідоме рішення; тримай причину коментарем поруч.",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { needsAction: REQUIRE_TOAST_ERROR_ACTION_MESSAGE },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const allowlist = options.allowlist || [];
+    const filename = (
+      context.filename ??
+      context.getFilename?.() ??
+      ""
+    ).replace(/\\/g, "/");
+
+    for (const entry of allowlist) {
+      const norm = entry.replace(/\\/g, "/").replace(/^\.\//, "");
+      if (filename === norm || filename.endsWith("/" + norm)) return {};
+    }
+    // Тести, stories і сам toast-примітив живуть за іншими правилами.
+    if (
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename)
+    ) {
+      return {};
+    }
+
+    // Імена, деструктуровані з `useToast()` — щоб голий `error("…")` теж
+    // ловився, а не лише `toast.error("…")`.
+    const destructuredErrorNames = new Set();
+
+    return {
+      VariableDeclarator(node) {
+        if (node.id?.type !== "ObjectPattern") return;
+        const init = node.init;
+        if (
+          init?.type !== "CallExpression" ||
+          init.callee?.type !== "Identifier" ||
+          init.callee.name !== "useToast"
+        ) {
+          return;
+        }
+        for (const prop of node.id.properties) {
+          if (prop.type !== "Property") continue;
+          if (prop.key?.type !== "Identifier" || prop.key.name !== "error") {
+            continue;
+          }
+          const local = prop.value;
+          if (local?.type === "Identifier") {
+            destructuredErrorNames.add(local.name);
+          }
+        }
+      },
+      CallExpression(node) {
+        const callee = node.callee;
+        const isMemberCall =
+          callee?.type === "MemberExpression" &&
+          callee.property?.type === "Identifier" &&
+          callee.property.name === "error" &&
+          !callee.computed &&
+          isToastReceiver(callee.object);
+        const isBareCall =
+          callee?.type === "Identifier" &&
+          destructuredErrorNames.has(callee.name);
+        if (!isMemberCall && !isBareCall) return;
+        if (hasToastAction(node.arguments)) return;
+        context.report({ node, messageId: "needsAction" });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-raw-tracked-storage": noRawTrackedStorage,
@@ -2813,6 +2966,7 @@ const plugin = {
     "sri-on-third-party-script": sriOnThirdPartyScript,
     "no-raw-storage-key": noRawStorageKey,
     "no-adhoc-metric-aggregation": noAdhocMetricAggregation,
+    "require-toast-error-action": requireToastErrorAction,
   },
 };
 
@@ -2845,6 +2999,7 @@ export {
   RAW_STORAGE_KEY_LITERALS,
   RAW_STORAGE_HELPER_NAMES,
   NO_RAW_STORAGE_KEY_MESSAGE,
+  REQUIRE_TOAST_ERROR_ACTION_MESSAGE,
 };
 
 export default plugin;

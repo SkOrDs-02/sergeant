@@ -190,6 +190,8 @@ describe("HubBackupPanel", () => {
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
         "Некоректний файл резервної копії Hub.",
+        undefined,
+        expect.objectContaining({ label: "Обрати інший" }),
       ),
     );
     expect(reloadMock).not.toHaveBeenCalled();

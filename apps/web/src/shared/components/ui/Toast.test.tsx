@@ -199,8 +199,30 @@ describe("Toast — swipe-to-dismiss (touch-only)", () => {
     expect(document.querySelector("[data-toast-id]")).toBeNull();
   });
 
-  it("undo-toast: swipe не викликає onUndo (=consume undo-window)", () => {
+  it("undo-toast: повний swipe (≥128 px) закриває і НЕ викликає onUndo", () => {
     // Це той самий ефект, як expired timeout — snapshot drop, не restore.
+    const onUndo = vi.fn();
+    const { api } = renderHarness();
+    act(() => {
+      showUndoToast(api, { msg: "Видалено", onUndo });
+    });
+    const row = getToastRoot();
+
+    fireEvent.touchStart(row, { touches: touches(200, 50) });
+    fireEvent.touchMove(row, { touches: touches(60, 50) }); // dx = -140
+    fireEvent.touchEnd(row);
+
+    act(() => {
+      vi.advanceTimersByTime(220);
+    });
+    expect(onUndo).not.toHaveBeenCalled();
+    expect(document.querySelector("[data-toast-id]")).toBeNull();
+  });
+
+  it("undo-toast: swipe на 80 px НЕ закриває — вікно undo не спалюється", () => {
+    // 80 px закрило б звичайний тост (поріг 64), але аркуш із дією коштує
+    // дорожче: свайп у голові користувача означає «прибери з очей», а не
+    // «підтверджую видалення», тож поріг для нього подвоєний.
     const onUndo = vi.fn();
     const { api } = renderHarness();
     act(() => {
@@ -215,8 +237,25 @@ describe("Toast — swipe-to-dismiss (touch-only)", () => {
     act(() => {
       vi.advanceTimersByTime(220);
     });
-    expect(onUndo).not.toHaveBeenCalled();
-    expect(document.querySelector("[data-toast-id]")).toBeNull();
+    expect(document.querySelector("[data-toast-id]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Повернути" })).toBeVisible();
+  });
+
+  it("undo-toast: швидкий flick на 40 px не закриває (для звичайного — закрив би)", () => {
+    const { api } = renderHarness();
+    act(() => {
+      showUndoToast(api, { msg: "Видалено", onUndo: vi.fn() });
+    });
+    const row = getToastRoot();
+
+    fireEvent.touchStart(row, { touches: touches(100, 50) });
+    fireEvent.touchMove(row, { touches: touches(60, 50) }); // dx = -40
+    fireEvent.touchEnd(row);
+
+    act(() => {
+      vi.advanceTimersByTime(220);
+    });
+    expect(document.querySelector("[data-toast-id]")).not.toBeNull();
   });
 
   it("короткий swipe < 64 px не dismiss-ить — toast лишається", () => {

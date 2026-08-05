@@ -42,6 +42,8 @@ export function TagsSection({
   setTagDraft,
 }: TagsSectionProps) {
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  /** Помилка валідації поля «Новий тег» — під полем, не в тості. */
+  const [draftError, setDraftError] = useState<string | null>(null);
   const toast = useToast();
 
   // `useApiForm` тримає uniform pattern (server-error mapping залишається
@@ -50,39 +52,44 @@ export function TagsSection({
   // imperatively); `isSubmitting`-guard всередині useApiForm дедуплікує
   // одночасні виклики, замінюючи `tagSavedRef` antipattern із попередньої
   // інкарнації.
-  const { register, submit, reset, isSubmitting, formState } = useApiForm<
-    TagRenameValues,
-    void
-  >({
-    schema: tagRenameSchema,
-    defaultValues: { tagName: "" },
-    onSubmit: async (values) => {
-      if (!editingTagId) return;
-      const trimmed = values.tagName.trim();
-      // PR-058 (web): дзеркало create-flow. Reducer-level `applyUpdateTag`
-      // тепер returns same state при conflict (інший тег уже носить таку
-      // назву) — без цього guard'у `onSuccess` би прогнав reset, edit-mode
-      // зник, а тег у списку лишився б зі старим імʼям без жодного UI
-      // signal. Throw тримає edit-mode активним, toast показує copy.
-      const conflict = routine.tags.some(
-        (t) =>
-          t.id !== editingTagId &&
-          t.name.trim().toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
-      );
-      if (conflict) {
-        // Validation-feedback tone-table (docs/ui/toast-policy.md):
-        // «duplicate» — не fail-stop, а soft-fail в автовиправляємому
-        // стані (user перепринтує інше імʼя) — tone=warning без action.
-        toast.warning(messages.validation.tagNameDuplicate);
-        throw new Error(messages.validation.tagNameDuplicate);
-      }
-      setRoutine((s) => updateTag(s, editingTagId, trimmed));
-    },
-    onSuccess: () => {
-      setEditingTagId(null);
-      reset({ tagName: "" });
-    },
-  });
+  const { register, submit, reset, setError, isSubmitting, formState } =
+    useApiForm<TagRenameValues, void>({
+      schema: tagRenameSchema,
+      defaultValues: { tagName: "" },
+      onSubmit: async (values) => {
+        if (!editingTagId) return;
+        const trimmed = values.tagName.trim();
+        // PR-058 (web): дзеркало create-flow. Reducer-level `applyUpdateTag`
+        // тепер returns same state при conflict (інший тег уже носить таку
+        // назву) — без цього guard'у `onSuccess` би прогнав reset, edit-mode
+        // зник, а тег у списку лишився б зі старим імʼям без жодного UI
+        // signal. Throw тримає edit-mode активним, toast показує copy.
+        const conflict = routine.tags.some(
+          (t) =>
+            t.id !== editingTagId &&
+            t.name.trim().toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
+        );
+        if (conflict) {
+          // Помилка поля → у поле: `setError` фарбує інпут і дає AT
+          // `aria-invalid`. Toast тут лишається СВІДОМО, на відміну від
+          // create-flow нижче: перейменування живе в chip-інпуті шириною
+          // 6rem усередині flex-wrap списку тегів — рядка helper-тексту під
+          // ним нема куди покласти, не розсунувши всю решітку. Червона
+          // рамка без слів не пояснює «чому», тож текст несе toast.
+          setError("tagName", {
+            type: "validate",
+            message: messages.validation.tagNameDuplicate,
+          });
+          toast.warning(messages.validation.tagNameDuplicate);
+          throw new Error(messages.validation.tagNameDuplicate);
+        }
+        setRoutine((s) => updateTag(s, editingTagId, trimmed));
+      },
+      onSuccess: () => {
+        setEditingTagId(null);
+        reset({ tagName: "" });
+      },
+    });
 
   const startEdit = useCallback(
     (id: string, name: string) => {
@@ -107,7 +114,12 @@ export function TagsSection({
           className="routine-touch-field min-w-0 flex-1"
           placeholder="Новий тег"
           value={tagDraft}
-          onChange={(e) => setTagDraft(e.target.value)}
+          error={!!draftError}
+          helperText={draftError ?? undefined}
+          onChange={(e) => {
+            setTagDraft(e.target.value);
+            if (draftError) setDraftError(null);
+          }}
         />
         <Button
           type="button"
@@ -130,9 +142,12 @@ export function TagsSection({
                 trimmed.toLocaleLowerCase(),
             );
             if (isDuplicate) {
-              toast.warning(messages.validation.tagNameDuplicate);
+              // Тут поле повнорозмірне — помилка живе під ним, а не в
+              // тості в протилежному куті екрана.
+              setDraftError(messages.validation.tagNameDuplicate);
               return;
             }
+            setDraftError(null);
             setRoutine((s) => createTag(s, trimmed));
             setTagDraft("");
           }}

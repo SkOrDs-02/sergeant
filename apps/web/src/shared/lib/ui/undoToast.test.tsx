@@ -72,13 +72,15 @@ describe("showUndoToast", () => {
     expect(toast.error).toHaveBeenCalledWith("Не вдалось повернути звичку");
   });
 
-  it("використовує default duration=5000 і info-тип", () => {
+  it("використовує default duration=5000 і success-тип", () => {
     const toast = makeToast();
     showUndoToast(toast, { msg: "Видалено", onUndo: () => {} });
 
     expect(toast.show).toHaveBeenCalledTimes(1);
     const call = (toast.show as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call![1]!).toBe("info");
+    // Підтвердження результату дії користувача — це `success`, а не
+    // «система тобі щось повідомляє». Небезпеку несе haptic + вікно undo.
+    expect(call![1]!).toBe("success");
     expect(call![2]!).toBe(5000);
   });
 });

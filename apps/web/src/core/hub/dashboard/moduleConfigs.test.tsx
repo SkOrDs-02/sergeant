@@ -45,7 +45,10 @@ describe("MODULE_CONFIGS", () => {
     });
     expect(MODULE_CONFIGS.routine.getPreview()).toEqual({
       main: "4/5",
-      sub: "Серія: 2 днів",
+      // «2» — форма few (2-4), тобто «дні», а не «днів». Очікування нижче
+      // лишалось від зашитого суфікса, який замінив `pluralDays` у 90f1b4e;
+      // веб-тест тоді не оновили, і він світився червоним на `main`.
+      sub: "Серія: 2 дні",
       progress: 80,
     });
     expect(MODULE_CONFIGS.nutrition.getPreview()).toEqual({

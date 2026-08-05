@@ -46,13 +46,21 @@ export function MemoryBankSection() {
     null,
   );
 
+  // Іменований function expression: retry у тості кличе сам себе, а `const`
+  // ще в TDZ у момент створення замикання.
   const saveEntries = useCallback(
-    (next: MemoryEntry[]) => {
+    function persist(next: MemoryEntry[]) {
       setEntries(next);
       try {
         writeMemoryEntries(next);
       } catch {
-        toast.error("Не вдалося зберегти пам'ять профілю");
+        // Запис у local-first сховище падає на квоті — стан минущий
+        // (користувач звільнив місце / закрив іншу вкладку), тож повтор
+        // із тим самим `next` має шанс і це єдиний шлях не втратити зміну.
+        toast.error("Не вдалося зберегти пам'ять профілю", undefined, {
+          label: "Повторити",
+          onClick: () => persist(next),
+        });
       }
     },
     [toast],
@@ -102,8 +110,15 @@ export function MemoryBankSection() {
       const isJsonFile =
         file.name.toLowerCase().endsWith(".json") ||
         file.type === "application/json";
+      // Тут і нижче recovery — НЕ «Повторити»: той самий файл впаде так
+      // само. Єдиний реальний вихід — обрати інший, тож дія відкриває
+      // файловий діалог (input ми щойно очистили, він готовий).
+      const pickAnother = {
+        label: "Обрати інший",
+        onClick: () => importRef.current?.click(),
+      };
       if (!isJsonFile) {
-        toast.error("Імпорт підтримує лише JSON-файли");
+        toast.error("Імпорт підтримує лише JSON-файли", undefined, pickAnother);
         return;
       }
       const reader = new FileReader();
@@ -111,22 +126,26 @@ export function MemoryBankSection() {
         try {
           const parsed = JSON.parse(reader.result as string);
           if (!Array.isArray(parsed)) {
-            toast.error("Невалідний формат файлу");
+            toast.error("Невалідний формат файлу", undefined, pickAnother);
             return;
           }
           const preview = buildMemoryImportPreview(entries, parsed);
           if (preview.validCount === 0) {
-            toast.error("Файл не містить валідних записів");
+            toast.error(
+              "Файл не містить валідних записів",
+              undefined,
+              pickAnother,
+            );
             return;
           }
           setPendingImport({ ...preview, fileName: file.name });
           toast.success("JSON прочитано. Перевір підсумок і підтвердь імпорт.");
         } catch {
-          toast.error("Не вдалося прочитати файл");
+          toast.error("Не вдалося прочитати файл", undefined, pickAnother);
         }
       };
       reader.onerror = () => {
-        toast.error("Не вдалося прочитати файл");
+        toast.error("Не вдалося прочитати файл", undefined, pickAnother);
       };
       reader.readAsText(file);
     },
@@ -136,7 +155,9 @@ export function MemoryBankSection() {
   const confirmImport = useCallback(() => {
     if (!pendingImport) return;
     if (pendingImport.newEntries.length === 0) {
-      toast.error("Немає нових записів для імпорту");
+      // Не помилка: файл валідний, просто всі записи вже є. `info` без
+      // дії — користувачу нема що «повторювати» чи виправляти.
+      toast.info("Немає нових записів — усі вже в памʼяті");
       return;
     }
     saveEntries([...entries, ...pendingImport.newEntries]);

@@ -64,8 +64,11 @@ export function PersonalInfoSection({
     schema: nameSchema,
     defaultValues: { name: user.name ?? "" },
     onSubmit: async (values) => {
+      // Помилка форми лишається у формі: `useApiForm` кладе кинуте
+      // повідомлення у `serverError`, який рендериться під полем нижче.
+      // Паралельний toast.error давав те саме речення двічі — у полі й у
+      // куті екрана; сусідня email-форма ніколи так не робила.
       const res = await updateUser({ name: values.name }).catch(() => {
-        toast.error("Не вдалося оновити ім'я");
         throw new Error("Не вдалося оновити ім'я");
       });
       if (res.error) {
@@ -120,18 +123,26 @@ export function PersonalInfoSection({
 
   // ── Non-form actions (avatar, verification) ───────────────────────────────
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (fileRef.current) fileRef.current.value = "";
+  /**
+   * Завантаження аватара. `file` тримаємо в замиканні, тому «Повторити» у
+   * тості жене той самий файл ще раз — користувачу не треба знову лізти в
+   * файловий діалог (тим паче що `fileRef.value` ми вже очистили).
+   *
+   * Валідаційні відмови (`assertAvatarFile` — не зображення, >5 MB) НЕ
+   * отримують «Повторити»: другий такий самий запит впаде так само, а
+   * реальний вихід — обрати інший файл. Тому для них окрема гілка з
+   * «Обрати інший», яка відкриває діалог вибору.
+   */
+  const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
     try {
-      assertAvatarFile(file);
       const dataUrl = await compressAvatar(file);
       const res = await updateUser({ image: dataUrl });
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, "Не вдалося оновити аватар"),
+          undefined,
+          { label: "Повторити", onClick: () => void uploadAvatar(file) },
         );
         return;
       }
@@ -142,10 +153,32 @@ export function PersonalInfoSection({
         error instanceof Error
           ? error.message
           : "Не вдалося обробити зображення",
+        undefined,
+        { label: "Повторити", onClick: () => void uploadAvatar(file) },
       );
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (fileRef.current) fileRef.current.value = "";
+    try {
+      assertAvatarFile(file);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Непідтримуваний файл",
+        undefined,
+        {
+          label: "Обрати інший",
+          onClick: () => fileRef.current?.click(),
+        },
+      );
+      return;
+    }
+    await uploadAvatar(file);
   };
 
   const handleRemoveAvatar = async () => {
@@ -156,13 +189,18 @@ export function PersonalInfoSection({
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, "Не вдалося видалити аватар"),
+          undefined,
+          { label: "Повторити", onClick: () => void handleRemoveAvatar() },
         );
         return;
       }
       toast.success("Аватар видалено");
       await onRefresh();
     } catch {
-      toast.error("Не вдалося видалити аватар");
+      toast.error("Не вдалося видалити аватар", undefined, {
+        label: "Повторити",
+        onClick: () => void handleRemoveAvatar(),
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -179,12 +217,17 @@ export function PersonalInfoSection({
             res.error,
             "Не вдалося надіслати лист підтвердження",
           ),
+          undefined,
+          { label: "Повторити", onClick: () => void handleSendVerification() },
         );
         return;
       }
       toast.success("Лист підтвердження надіслано");
     } catch {
-      toast.error("Не вдалося надіслати лист підтвердження");
+      toast.error("Не вдалося надіслати лист підтвердження", undefined, {
+        label: "Повторити",
+        onClick: () => void handleSendVerification(),
+      });
     } finally {
       setSendingVerification(false);
     }
