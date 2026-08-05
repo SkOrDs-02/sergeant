@@ -208,6 +208,35 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("Відпустка");
   });
 
+  it("budget limits are windowed to the current month (стадія 2c — хвіст)", () => {
+    // `[Ліміти]` лишався єдиним рядком файла, що рахував МІСЯЧНИЙ ліміт по
+    // ВСЬОМУ mono-mirror: витрата за травень тягнулась у червневе «спожито»,
+    // і чат вигадував перевитрату, суперечачи «Витратам місяця» двома
+    // рядками вище в тому ж промпт-блоці.
+    const may = Math.floor(new Date("2026-05-20T12:00:00Z").getTime() / 1000);
+    const june = Math.floor(NOW.getTime() / 1000) - 100;
+    // Категорію пінимо явно через `txCategories` — інакше вона резолвилась би
+    // з опису/MCC і тест міряв би класифікатор, а не вікно.
+    const out = joined(
+      baseData({
+        budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 5000 }],
+        txCategories: { "t-may": "food", "t-june": "food" },
+        statTx: [
+          { id: "t-may", amount: -900000, time: may, description: "ATB" },
+          { id: "t-june", amount: -25000, time: june, description: "ATB" },
+        ],
+      }),
+      NOW,
+    );
+
+    const limitLine = out.split("\n").find((l) => l.startsWith("[Ліміти]"));
+    expect(limitLine).toBeDefined();
+    // Спожито = лише червневі 250 грн. Травневі 9 000 грн поза вікном, тож
+    // сума 9 250 (у будь-якому пробільному форматуванні) не має зʼявитись.
+    expect(limitLine).toMatch(/\b250\s*\//);
+    expect(limitLine?.replace(/\s/g, "")).not.toContain("9250");
+  });
+
   it("emits monthly plan and subscriptions", () => {
     const out = joined(
       baseData({

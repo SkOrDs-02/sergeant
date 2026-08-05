@@ -192,9 +192,29 @@ function appendReceivableLines(lines: string[], d: AllData): void {
   );
 }
 
-function appendBudgetLines(lines: string[], d: AllData): void {
+function appendBudgetLines(lines: string[], d: AllData, now: Date): void {
   const limits = d.budgets.filter((b): b is BudgetLimit => b.type === "limit");
   if (limits.length > 0) {
+    // AI-CONTEXT (W1-CANON-AGG, стадія 2c — хвіст): `[Ліміти]` лишався
+    // єдиним рядком цього файла, що сумував ВЕСЬ mono-mirror проти
+    // МІСЯЧНОГО ліміту. Сусідній `appendMonthlyTotals` вікноавали ще тоді,
+    // а цей — ні, тож в одному промпт-блоці «Витрати місяця» і «Ліміти»
+    // рахувались по різних всесвітах: чат бадьоро повідомляв «Продукти:
+    // 45 000/8 000 грн» і вигадував перевитрати в сотні відсотків. Помилка
+    // росла мовчки разом із глибиною кешу — а відколи `fetchMonth`
+    // backfill-ить дзеркало історією, вона росла б ще швидше.
+    //
+    // Межі місяця — host-local, як у `appendMonthlyTotals` вище: київська
+    // межа доби лишається спільним боргом усіх поверхонь (стадія 5г), і
+    // робити її тут поодинці означало б розсинхронити чат із рештою.
+    const { year, month } = getKyivDateParts(now);
+    const monthStart = new Date(year, month - 1, 1).getTime();
+    const monthEnd = new Date(year, month, 1).getTime();
+    const monthTx = d.statTx.filter((t) => {
+      const ms = txTimeMs(t.time);
+      return Number.isFinite(ms) && ms >= monthStart && ms < monthEnd;
+    });
+
     lines.push(
       `[Ліміти] ${limits
         .map((b) => {
@@ -203,7 +223,7 @@ function appendBudgetLines(lines: string[], d: AllData): void {
             d.customCategories,
           );
           const spent = calcCategorySpent(
-            d.statTx,
+            monthTx,
             b.categoryId,
             d.txCategories,
             d.txSplits,
@@ -268,7 +288,7 @@ export function appendFinanceLines(
   appendMonthlyTotals(lines, d, now);
   appendDebtLines(lines, d);
   appendReceivableLines(lines, d);
-  appendBudgetLines(lines, d);
+  appendBudgetLines(lines, d, now);
   appendPlanAndSubscriptionLines(lines, d);
   appendCategoryCatalogLine(lines, d);
 }

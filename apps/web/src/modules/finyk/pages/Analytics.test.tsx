@@ -187,6 +187,28 @@ describe("Analytics page", () => {
     });
   });
 
+  it("clamps the bank slice to the selected month (mirror-overlay leak)", async () => {
+    // `mono.realTx` — це `overlayTransactions`: коли мережевий зріз місяця
+    // порожній (холодний старт, перше число), він підставляє ВЕСЬ SQLite-
+    // mirror. Відколи `fetchMonth` backfill-ить дзеркало історією, сюди
+    // потрапляє кожен синхронізований місяць, і «Підсумок місяця» показував
+    // би суму за весь час. Ручні витрати вже клампились — банківські ні.
+    const june = Math.floor(KYIV.getTime() / 1000);
+    const may = Math.floor(new Date("2026-05-20T09:00:00Z").getTime() / 1000);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({
+            realTx: [mkTx("june", -10000, june), mkTx("may", -900000, may)],
+          })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    // Лише червневі 100 грн у розподілі — травневі 9 000 грн поза вікном.
+    expect(await screen.findByTestId("pie")).toHaveTextContent("pie total 100");
+  });
+
   it("merges manual expenses for the selected month", async () => {
     const manualExpenses = [
       {
