@@ -249,7 +249,7 @@ Railway і рахує рядки в таблиці, дропнутій мігр�
 примітив. `.mcp.json` тягне MCP-сервери через `npx -y` без пінінгу; секретів у ньому **немає**
 (PAT і Postgres-URL — посилання на env, не літерали), але `sergeant-agent-find` вказує на
 scripts/agent/mcp-server.mjs, якого не існує (шлях без code-span навмисно: файла нема, і
-governance-sync інакше рахує це danging-посиланням).
+governance-sync інакше рахує це dangling-посиланням).
 
 ## Інструменти та версії
 
