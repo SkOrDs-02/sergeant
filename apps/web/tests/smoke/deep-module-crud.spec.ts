@@ -137,8 +137,12 @@ test.describe("@critical deep module CRUD browser loop", () => {
         .click();
     });
 
-    await page.getByRole("button", { name: /Розгорнути Сьогодні/ }).click();
-    await expect(page.getByText("DCRUD кава")).toBeVisible();
+    // Знахідка B6 (браузерний аудит 2026-08-05): день щойно доданого
+    // ручного запису тепер розгортається сам, тож безумовний клік по
+    // «Розгорнути Сьогодні» більше не знаходить кнопки — вона вже
+    // «Згорнути Сьогодні». `expandTodayAndExpect` ідемпотентний: клікає
+    // лише коли група справді згорнута, тому працює для обох станів.
+    await expandTodayAndExpect(page, "DCRUD кава");
 
     await page.getByText("DCRUD кава").click();
     await expect(

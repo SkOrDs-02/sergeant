@@ -182,8 +182,10 @@ async function addPantryItem(page: Page, title: string): Promise<void> {
   const add = page.getByRole("button", { name: "Додати", exact: true }).first();
   await expect(add).toBeEnabled();
   await add.click();
-  // Комора нормалізує назву в нижній регістр — порівнюємо без урахування кейсу.
-  await expect(visibleText(page, new RegExp(title, "i"))).toBeVisible();
+  // Рядковий матчер у Playwright — це вже case-insensitive підрядок (`exact`
+  // за замовчуванням `false`), тож регулярка тут не потрібна; збирати її з
+  // назви продукту було ще й `js/regex-injection` (CodeQL).
+  await expect(visibleText(page, title)).toBeVisible();
 }
 
 /** Профіль, який вимагає акаунта, отримує свій — або скіпається зі зрозумілою причиною. */
