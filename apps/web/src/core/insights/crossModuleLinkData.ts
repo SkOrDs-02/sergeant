@@ -25,6 +25,7 @@ import type {
 import { CURATED_PAIRS, type NotablePair } from "./digestCorrelations";
 import type {
   CrossModuleLinkCardProps,
+  CrossModuleLinkDay,
   CrossModuleLinkModule,
   CrossModuleLinkPole,
 } from "./CrossModuleLinkCard";
@@ -33,6 +34,17 @@ import type {
  * Метрика → модуль, якому вона належить. Тримає module-accent containment:
  * полюс фарбується акцентом СВОГО модуля, тож зіставлення має бути одне на
  * весь продукт, а не вгадуватись на місці рендеру.
+ *
+ * AI-CONTEXT: `wellbeing` спершу було записано в Рутину — помилково.
+ * Самопочуття пишеться і читається зі ЩОДЕННИКА ФІЗРУКА (`readFizrukDaily`
+ * у `dailySeries.ts`, запис через `fizrukActions/wellbeing.ts`) — того
+ * самого, звідки береться вага. Помилка була не косметична: вона
+ * перевертала фільтр `isCrossModule` на двох парах — `habit_rate ×
+ * wellbeing` дарма відкидалась як внутрішньомодульна, а `workout_volume ×
+ * wellbeing` дарма вважалась крос-модульною.
+ *
+ * Наслідок, який варто знати: Рутина має рівно ОДНУ метрику —
+ * `habit_rate`. Усі її крос-модульні пари йдуть тільки через неї.
  */
 const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
   spending: "finyk",
@@ -43,7 +55,7 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
   workout_volume: "fizruk",
   workouts: "fizruk",
   weight: "fizruk",
-  wellbeing: "routine",
+  wellbeing: "fizruk",
   habit_rate: "routine",
 };
 
@@ -109,6 +121,39 @@ function pole(metric: DailyMetric, mean: number): CrossModuleLinkPole {
   };
 }
 
+/**
+ * Ті самі спільні дні, але поштучно — для розгортання доказової смуги.
+ * Найновіші перші: остання картина цікавіша за позаминулий місяць.
+ *
+ * Формат значень той самий, що й на полюсах (`formatPoleValue`), щоб число
+ * в списку не суперечило числу над ним.
+ */
+export function pairwiseDays(
+  series: DailySeries,
+  a: DailyMetric,
+  b: DailyMetric,
+): CrossModuleLinkDay[] {
+  const colA = series.raw[a];
+  const colB = series.raw[b];
+  if (!colA || !colB) return [];
+
+  const out: CrossModuleLinkDay[] = [];
+  const len = Math.min(colA.length, colB.length, series.days.length);
+  for (let i = 0; i < len; i += 1) {
+    const va = colA[i];
+    const vb = colB[i];
+    const key = series.days[i];
+    if (key === undefined || va === undefined || vb === undefined) continue;
+    if (!Number.isFinite(va) || !Number.isFinite(vb)) continue;
+    out.push({
+      key,
+      valueA: formatPoleValue(va),
+      valueB: formatPoleValue(vb),
+    });
+  }
+  return out.reverse();
+}
+
 /** Чи справді пара перетинає межу модулів. */
 export function isCrossModule(a: DailyMetric, b: DailyMetric): boolean {
   return METRIC_MODULE[a] !== METRIC_MODULE[b];
@@ -138,6 +183,7 @@ export function linkFromPair(
     observations: pair.n,
     strength: pair.pearson,
     phrase: capitalizeFirst(pair.phrase),
+    days: pairwiseDays(series, pair.a, pair.b),
   };
 }
 

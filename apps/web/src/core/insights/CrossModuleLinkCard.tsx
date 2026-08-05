@@ -18,14 +18,19 @@
  * Три ступені градації + право мовчати — рахує `crossModuleLinkTiers.ts`
  * з порогів `digestCorrelations.ts` (`MIN_N`, `NOTABLE_R`), не з голови.
  * Коли зв'язку не видно (`gradeCrossModuleLink` → `null`), картка НЕ
- * ховається — вона чесно каже «закономірностей поки не бачу» і показує
- * прогрес до порогу. Це окремий стан із власним виглядом (пунктирна
- * рамка, без містка й доказової смуги), не порожній список.
+ * ховається — вона чесно каже «зв'язків поки не бачу» і показує прогрес до
+ * порогу. Це окремий стан із власним виглядом (пунктирна рамка, без містка
+ * й доказової смуги), не порожній список.
+ *
+ * Доказова смуга розгортається в список тих самих спільних днів (`days`):
+ * твердження про власні дані має бути перевірним, інакше це «повір мені».
  *
  * Домішки: жодного causality-натяку (немає стрілки — це кореляція, не
  * причина); нейтральний місток (текстовий/приглушений колір), акцент —
  * лише на полюсах, по одному на модуль (module-accent containment).
  */
+import { useState } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -41,6 +46,15 @@ import {
 
 export type CrossModuleLinkModule =
   "finyk" | "fizruk" | "routine" | "nutrition";
+
+/** Один спільний день у розгорнутій доказовій смузі. */
+export interface CrossModuleLinkDay {
+  /** Ключ дня `YYYY-MM-DD`. */
+  key: string;
+  /** Значення полюса А того дня, уже відформатоване. */
+  valueA: string;
+  valueB: string;
+}
 
 export interface CrossModuleLinkPole {
   module: CrossModuleLinkModule;
@@ -77,6 +91,18 @@ export interface CrossModuleLinkCardProps {
    * не має, картка мовчить, а не вигадує.
    */
   phrase?: string;
+  /**
+   * Ті самі спільні дні, які порахувала доказова смуга — щоб твердження
+   * можна було перевірити, а не тільки прочитати.
+   *
+   * AI-CONTEXT: додано 2026-08-05 на прохання власника. Смуга показувала
+   * `n` абстрактними позначками: «34 спостереження» — але які саме дні,
+   * побачити було неможливо. Твердження про власні дані, яке не можна
+   * перевірити, — це «повір мені» від моделі, тобто рівно та поведінка,
+   * через яку не довіряють AI-фічам. Дні вже пораховані в
+   * `pairwiseDays`, тож показ нічого не коштує.
+   */
+  days?: CrossModuleLinkDay[];
   /**
    * Скільки тижнів поспіль зв'язок тримається. Опційно і НЕ оцінюється з
    * `observations` (різні статистики — див. AI-CONTEXT у
@@ -211,6 +237,74 @@ function EvidenceStrip({
   );
 }
 
+function formatDayLabel(key: string): string {
+  // Парсимо готовий day-key на візуальну мітку — годинник хоста не
+  // читається, тож `prefer-kyiv-time` тут не застосовний (той самий підхід,
+  // що у `HabitStreakCanvas.formatCellDate`).
+  return new Date(`${key}T12:00:00`).toLocaleDateString("uk-UA", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/** Розгорнутий список спільних днів під смугою доказів. */
+function EvidenceDays({
+  days,
+  poleA,
+  poleB,
+}: {
+  days: CrossModuleLinkDay[];
+  poleA: CrossModuleLinkPole;
+  poleB: CrossModuleLinkPole;
+}) {
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <p className="text-style-caption text-subtle">
+        {messages.crossModuleLink.daysNote}
+      </p>
+      <table
+        className="mt-2 w-full text-style-caption tabular-nums"
+        aria-label={messages.crossModuleLink.daysAria}
+      >
+        <thead>
+          <tr className="text-subtle">
+            <th scope="col" className="text-left font-normal" />
+            <th
+              scope="col"
+              className={cn(
+                "text-right font-bold",
+                MODULE_TEXT_CLASS[poleA.module],
+              )}
+            >
+              {poleA.label}
+            </th>
+            <th
+              scope="col"
+              className={cn(
+                "text-right font-bold",
+                MODULE_TEXT_CLASS[poleB.module],
+              )}
+            >
+              {poleB.label}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {days.map((d) => (
+            <tr key={d.key}>
+              <th scope="row" className="text-left font-normal text-muted">
+                {formatDayLabel(d.key)}
+              </th>
+              <td className="text-right text-text">{d.valueA}</td>
+              <td className="text-right text-text">{d.valueB}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /** «Мовчання з гідністю» — окремий стан, не порожній список. */
 function SilentBody({
   poleA,
@@ -262,8 +356,10 @@ export function CrossModuleLinkCard({
   strength,
   weeks,
   phrase,
+  days,
 }: CrossModuleLinkCardProps) {
   const tier = gradeCrossModuleLink(observations, strength);
+  const [daysOpen, setDaysOpen] = useState(false);
 
   return (
     <div
@@ -306,6 +402,25 @@ export function CrossModuleLinkCard({
             </div>
           </div>
           <EvidenceStrip tier={tier} observations={observations} />
+
+          {days && days.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2 -ml-2"
+                aria-expanded={daysOpen}
+                onClick={() => setDaysOpen((v) => !v)}
+              >
+                {daysOpen
+                  ? messages.crossModuleLink.daysToggleClose
+                  : messages.crossModuleLink.daysToggleOpen}
+              </Button>
+              {daysOpen && (
+                <EvidenceDays days={days} poleA={poleA} poleB={poleB} />
+              )}
+            </>
+          )}
         </>
       )}
     </div>

@@ -69,9 +69,9 @@ describe("nextTierThreshold", () => {
 
 describe("tierWord", () => {
   it("has distinct UA copy per tier", () => {
-    expect(tierWord(1)).toBe("Схоже на закономірність");
+    expect(tierWord(1)).toBe("Поки що збіг");
     expect(tierWord(2)).toBe("Повторюється");
-    expect(tierWord(3)).toBe("Стабільно повторюється");
+    expect(tierWord(3)).toBe("Тримається стабільно");
   });
 });
 

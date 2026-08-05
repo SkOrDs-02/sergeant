@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
 import { MIN_N, REPEATING_N, STABLE_N } from "./crossModuleLinkTiers";
@@ -36,7 +37,7 @@ describe("CrossModuleLinkCard — напрямок зв'язку", () => {
     );
 
     const phrase = screen.getByText("У дні тренувань ти витрачаєш менше");
-    const tier = screen.getByText("Стабільно повторюється");
+    const tier = screen.getByText("Тримається стабільно");
     expect(phrase).toBeInTheDocument();
     // Порядок у DOM: спершу що саме збігається, потім наскільки впевнено.
     expect(
@@ -54,15 +55,66 @@ describe("CrossModuleLinkCard — напрямок зв'язку", () => {
       />,
     );
 
-    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+    expect(screen.getByText("Тримається стабільно")).toBeInTheDocument();
     expect(screen.queryByText(/витрачаєш/)).toBeNull();
+  });
+});
+
+describe("CrossModuleLinkCard — перевірка доказів", () => {
+  afterEach(cleanup);
+
+  const days = [
+    { key: "2026-08-03", valueA: "1,5", valueB: "380" },
+    { key: "2026-08-02", valueA: "1,0", valueB: "520" },
+  ];
+
+  it("дні сховані, поки не попросили, і показуються після тапу", async () => {
+    const user = userEvent.setup();
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={0.62}
+        days={days}
+      />,
+    );
+
+    expect(screen.queryByText("3 серп.")).toBeNull();
+
+    const toggle = screen.getByRole("button", { name: "Показати ці дні" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await user.click(toggle);
+
+    expect(screen.getByText("3 серп.")).toBeInTheDocument();
+    expect(screen.getByText("2 серп.")).toBeInTheDocument();
+    expect(screen.getByText("380")).toBeInTheDocument();
+    // Підпис пояснює, чому днів саме стільки, а не 60.
+    expect(
+      screen.getByText("Дні, коли ти записав і те, і те"),
+    ).toBeInTheDocument();
+  });
+
+  it("без днів кнопки немає — нема чого розгортати", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={0.62}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Показати ці дні/ }),
+    ).toBeNull();
   });
 });
 
 describe("CrossModuleLinkCard — три ступені градації", () => {
   afterEach(cleanup);
 
-  it("tier 1 — «схоже на закономірність» щойно за порогом мовчання", () => {
+  it("tier 1 — «поки що збіг» щойно за порогом мовчання", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
@@ -73,7 +125,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
       />,
     );
 
-    expect(screen.getByText("Схоже на закономірність")).toBeInTheDocument();
+    expect(screen.getByText("Поки що збіг")).toBeInTheDocument();
     expect(screen.getByText("2 тижні · 5 спостережень")).toBeInTheDocument();
     // Обидва полюси видно з їхнім значенням і одиницею.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
@@ -98,7 +150,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
     expect(screen.getByText("10 спостережень")).toBeInTheDocument();
   });
 
-  it("tier 3 — «стабільно повторюється», коли покрито половину вікна аналізу", () => {
+  it("tier 3 — «тримається стабільно», коли покрито половину вікна аналізу", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
@@ -109,7 +161,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
       />,
     );
 
-    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+    expect(screen.getByText("Тримається стабільно")).toBeInTheDocument();
     expect(
       screen.getByText("9 тижнів поспіль · 30 спостережень"),
     ).toBeInTheDocument();
@@ -125,7 +177,7 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
       />,
     );
 
-    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+    expect(screen.getByText("Тримається стабільно")).toBeInTheDocument();
   });
 });
 
@@ -142,18 +194,16 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
       />,
     );
 
-    expect(
-      screen.getByText("Поки що закономірностей не бачу"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Поки що зв'язків не бачу")).toBeInTheDocument();
     expect(screen.getByText(/2 з 5 спостережень/)).toBeInTheDocument();
     // Полюси лишаються — контекст «що саме перевіряємо» не зникає, лише
     // конкретні значення/одиниці мовчать.
     expect(screen.getByText("Фізрук")).toBeInTheDocument();
     expect(screen.getByText("Фінік")).toBeInTheDocument();
     // Але сама тіла картки не стверджує ступінь впевненості.
-    expect(screen.queryByText("Схоже на закономірність")).toBeNull();
+    expect(screen.queryByText("Поки що збіг")).toBeNull();
     expect(screen.queryByText("Повторюється")).toBeNull();
-    expect(screen.queryByText("Стабільно повторюється")).toBeNull();
+    expect(screen.queryByText("Тримається стабільно")).toBeNull();
   });
 
   it("залишається мовчазним, коли спостережень достатньо, але зв'язку не видно (|r| < NOTABLE_R)", () => {
@@ -166,9 +216,7 @@ describe("CrossModuleLinkCard — право мовчати (порожній с
       />,
     );
 
-    expect(
-      screen.getByText("Поки що закономірностей не бачу"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Поки що зв'язків не бачу")).toBeInTheDocument();
     // Прогрес-бар не бреше: спостережень уже достатньо (5 з 5), проблема
     // не в кількості даних, а у відсутності самого зв'язку.
     expect(screen.getByText("5 з 5 спостережень")).toBeInTheDocument();

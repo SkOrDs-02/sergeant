@@ -8,6 +8,7 @@ import type {
 import { notablePairsFromSeries } from "./digestCorrelations";
 import {
   pairwiseMeans,
+  pairwiseDays,
   isCrossModule,
   linkFromPair,
   closestCrossModulePair,
@@ -61,17 +62,79 @@ describe("pairwiseMeans", () => {
   });
 });
 
+describe("pairwiseDays", () => {
+  it("віддає лише спільні дні, найновіші перші", () => {
+    const out = pairwiseDays(
+      series(
+        {
+          spending: [100, 200, 999, undefined, 300],
+          workout_volume: [10, 20, undefined, 999, 30],
+        },
+        5,
+      ),
+      "spending",
+      "workout_volume",
+    );
+
+    // Дні 3 і 4 мають лише одну метрику — у список не потрапляють, як і в
+    // середні: обидва числа на картці описують ту саму множину днів.
+    expect(out.map((d) => d.key)).toEqual([
+      "2026-01-05",
+      "2026-01-02",
+      "2026-01-01",
+    ]);
+    expect(out[0]).toMatchObject({
+      valueA: (300).toLocaleString("uk-UA"),
+      valueB: (30).toLocaleString("uk-UA"),
+    });
+  });
+
+  it("порожній список, коли спільних днів немає", () => {
+    expect(
+      pairwiseDays(
+        series({ spending: [1, undefined], kcal: [undefined, 2] }, 2),
+        "spending",
+        "kcal",
+      ),
+    ).toEqual([]);
+  });
+
+  it("кількість днів збігається з `n`, який показує картка", () => {
+    // Смуга доказів обіцяє «N спостережень» — розгорнутий список має
+    // містити рівно стільки рядків, інакше перевірка спростовує підпис.
+    const s = series(
+      {
+        spending: [100, 200, 300, undefined, 500],
+        workout_volume: [10, 20, 30, 40, undefined],
+      },
+      5,
+    );
+    const means = pairwiseMeans(s, "spending", "workout_volume")!;
+    expect(pairwiseDays(s, "spending", "workout_volume")).toHaveLength(means.n);
+  });
+});
+
 describe("isCrossModule", () => {
   it("пара всередині одного модуля не є крос-модульною", () => {
-    // Обидві метрики належать Рутині — саме та пара з курованого набору,
+    // Обидві метрики належать Фізруку — саме та пара з курованого набору,
     // яка легітимна для рядка дайджесту, але не для картки зв'язку.
-    expect(isCrossModule("habit_rate", "wellbeing")).toBe(false);
+    expect(isCrossModule("workout_volume", "wellbeing")).toBe(false);
     expect(isCrossModule("kcal", "protein")).toBe(false);
   });
 
   it("пара через межу модулів є крос-модульною", () => {
     expect(isCrossModule("workout_volume", "spending")).toBe(true);
     expect(isCrossModule("habit_rate", "kcal")).toBe(true);
+  });
+
+  it("самопочуття належить Фізруку, а не Рутині", () => {
+    // Регресія: `wellbeing` пишеться в щоденник Фізрука
+    // (`fizrukActions/wellbeing.ts`), звідки береться й вага. Коли воно
+    // помилково рахувалось за Рутину, фільтр перевертався на двох парах:
+    // `habit_rate × wellbeing` дарма відкидалась, `workout_volume ×
+    // wellbeing` дарма проходила.
+    expect(isCrossModule("habit_rate", "wellbeing")).toBe(true);
+    expect(isCrossModule("weight", "wellbeing")).toBe(false);
   });
 });
 
@@ -125,9 +188,11 @@ describe("linkFromPair", () => {
   });
 
   it("відкидає пару всередині одного модуля, навіть якщо вона помітна", () => {
+    // Обидві в Фізруку: об'єм тренування й самопочуття з того самого
+    // щоденника.
     const s = series(
       {
-        habit_rate: [10, 20, 30, 40, 50],
+        workout_volume: [1000, 2000, 3000, 4000, 5000],
         wellbeing: [1, 2, 3, 4, 5],
       },
       5,
@@ -139,12 +204,12 @@ describe("linkFromPair", () => {
   });
 
   it("дрібні лічильники лишають десяткову, великі округляються", () => {
-    // `workouts × habit_rate` — курована пара, і вона крос-модульна
-    // (Фізрук × Рутина), тож доходить до картки.
+    // `kcal × wellbeing` — курована пара, крос-модульна (Їжа × Фізрук).
+    // Самопочуття це бал 1–5, тобто дрібне число поруч із калоріями.
     const s = series(
       {
-        workouts: [1, 1, 2, 1, 2],
-        habit_rate: [10, 20, 30, 40, 50],
+        kcal: [1800, 2000, 2200, 2100, 2300],
+        wellbeing: [3, 4, 5, 4, 5],
       },
       5,
     );
@@ -152,9 +217,9 @@ describe("linkFromPair", () => {
     expect(pair).toBeDefined();
     const link = linkFromPair(s, pair!)!;
     const values = [link.poleA.value, link.poleB.value];
-    // 7/5 = 1.4 — ціле «1» приховало б різницю між «майже щодня» і «через день».
-    expect(values).toContain((1.4).toLocaleString("uk-UA"));
-    expect(values).toContain((30).toLocaleString("uk-UA"));
+    // 21/5 = 4.2 — ціле «4» стерло б різницю між «стабільно добре» і «так собі».
+    expect(values).toContain((4.2).toLocaleString("uk-UA"));
+    expect(values).toContain((2080).toLocaleString("uk-UA"));
   });
 });
 
@@ -162,11 +227,11 @@ describe("closestCrossModulePair", () => {
   it("обирає крос-модульну пару з найбільшою кількістю спільних днів", () => {
     const s = series(
       {
-        // habit_rate × wellbeing має найбільше спільних днів (5), але вони
-        // обидві в Рутині — має перемогти наступна за розміром КРОС-пара.
-        habit_rate: [1, 2, 3, 4, 5],
+        // workout_volume × wellbeing має найбільше спільних днів (5), але
+        // обидві в Фізруку — має перемогти наступна за розміром КРОС-пара.
+        workout_volume: [1, 2, 3, 4, 5],
         wellbeing: [1, 2, 3, 4, 5],
-        workouts: [1, 1, 1, undefined, undefined],
+        habit_rate: [1, 2, 3, 4, undefined],
         kcal: [10, 20, 30, 40, undefined],
       },
       5,
