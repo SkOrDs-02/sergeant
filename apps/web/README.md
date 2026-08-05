@@ -23,7 +23,7 @@ src/
 ├── shared/         # UI-кіт, спільні хуки, утиліти (cn, date, storage, queryKeys)
 ├── sw.ts           # Service Worker (офлайн-кеш, Web Push)
 └── main.tsx        # Точка входу
-middleware.ts       # Vercel Edge Middleware: проксіює /api/* на Railway
+middleware.ts       # Vercel Edge Middleware: проксіює /api/* на Coolify-бекенд
 ```
 
 ## Команди
@@ -40,7 +40,7 @@ pnpm --filter @sergeant/web typecheck      # TypeScript
 
 ## Деплой
 
-Vercel автодеплоїть при push у `main`. Edge Middleware проксіює `/api/*` на `BACKEND_URL` (Railway).
+Vercel автодеплоїть при push у `main`. Edge Middleware проксіює `/api/*` на `BACKEND_URL` (Coolify-бекенд, [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)).
 
 Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
 
