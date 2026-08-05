@@ -35,6 +35,8 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/legal/terms": "Sergeant — Умови використання",
   "/legal/cookies": "Sergeant — Політика cookies",
   "/legal/offer": "Sergeant — Публічна оферта",
+  "/offline": "Sergeant — Немає зʼєднання",
+  "/500": "Sergeant — Помилка сервера",
 };
 
 // Path-based module surfaces (`/finyk/...`, `/fizruk/...`) resolve their
@@ -130,6 +132,19 @@ export const LEGAL_OFFER_PATH = "/legal/offer";
 // view from `/api/status`. No auth — same intent as `/pricing` (public
 // trust surface, must be reachable without a session).
 export const STATUS_PATH = "/status";
+
+// Canonical offline surface (`OfflinePage`). Directly navigable so it can be
+// deep-linked / bookmarked; the SW's offline navigation-fallback
+// (`sw/cache.ts`'s `setCatchHandler`, page-audit-10 F1) already serves the
+// precached SPA shell for ANY uncached navigation while offline, so once
+// this path is a real client route the existing fallback covers it for free
+// — no separate SW change needed.
+export const OFFLINE_PATH = "/offline";
+
+// Canonical unrecoverable-render-error surface (`ServerErrorPage`). Mounted
+// as the top-level `<ErrorBoundary>` fallback (`main.tsx`) and, for parity
+// with `/offline`, also directly navigable.
+export const SERVER_ERROR_PATH = "/500";
 
 /**
  * Modules that have graduated from `/?module=<id>` to a top-level

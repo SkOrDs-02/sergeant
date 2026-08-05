@@ -271,6 +271,7 @@ describe("adapter — запис сходинки і outbox", () => {
     vi.restoreAllMocks();
     vi.mocked(fireSyncOutboxUpsert).mockClear();
     vi.spyOn(goalPeriodEnv, "deviceId").mockReturnValue("device-A");
+    vi.spyOn(goalPeriodEnv, "tzOffsetMin").mockReturnValue(180);
   });
 
   it("пише INSERT OR IGNORE, без ON CONFLICT DO UPDATE", async () => {
@@ -352,5 +353,32 @@ describe("adapter — запис сходинки і outbox", () => {
       clientTs: "2026-07-25T10:00:00.000Z",
     });
     expect(calls.filter((c) => c.sql.includes("nutrition_prefs"))).toEqual([]);
+  });
+
+  it("пише tz_offset_min пристрою в локальний INSERT і в outbox (той самий патерн, що routine_completion_events)", async () => {
+    const { client, calls } = makeRecordingClient();
+    await applyNutritionDualWriteOps(client, [OP], {
+      userId: "user_1",
+      clientTs: "2026-07-25T10:00:00.000Z",
+    });
+    const insert = calls.find((c) => c.sql.includes("nutrition_goal_periods"))!;
+    expect(insert.sql).toMatch(/tz_offset_min/);
+    // Column order: id, user_id, effective_from, kcal, protein_g, fat_g,
+    // carbs_g, water_ml, origin, tz_offset_min, created_at, updated_at.
+    expect(insert.params[9]).toBe(180);
+
+    const payload = vi.mocked(fireSyncOutboxUpsert).mock.calls[0]![1];
+    expect(payload.row["tz_offset_min"]).toBe(180);
+  });
+
+  it("tz_offset_min падає на null, коли Date.getTimezoneOffset недоступний", async () => {
+    vi.spyOn(goalPeriodEnv, "tzOffsetMin").mockReturnValue(null);
+    const { client, calls } = makeRecordingClient();
+    await applyNutritionDualWriteOps(client, [OP], {
+      userId: "user_1",
+      clientTs: "2026-07-25T10:00:00.000Z",
+    });
+    const insert = calls.find((c) => c.sql.includes("nutrition_goal_periods"))!;
+    expect(insert.params[9]).toBeNull();
   });
 });

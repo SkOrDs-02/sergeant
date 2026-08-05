@@ -137,6 +137,14 @@ describe("renderStandaloneRoute()", () => {
     expect(callRoute("/legal/cookies")).not.toBeNull();
     expect(callRoute("/legal/offer")).not.toBeNull();
   });
+
+  it("renders /offline without auth (an offline visitor may have no session)", () => {
+    expect(callRoute("/offline")).not.toBeNull();
+  });
+
+  it("renders /500 without auth", () => {
+    expect(callRoute("/500")).not.toBeNull();
+  });
 });
 
 describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive §1.2)", () => {

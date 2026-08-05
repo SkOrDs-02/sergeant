@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   getSqliteDbMock,
   migrateMock,
-  residualMock,
   refreshCompletionsMock,
   refreshStateMock,
   recordReadFallbackMock,
@@ -11,7 +10,6 @@ const {
 } = vi.hoisted(() => ({
   getSqliteDbMock: vi.fn(),
   migrateMock: vi.fn(),
-  residualMock: vi.fn(),
   refreshCompletionsMock: vi.fn(),
   refreshStateMock: vi.fn(),
   recordReadFallbackMock: vi.fn(),
@@ -24,9 +22,6 @@ vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
 }));
 vi.mock("../../../core/db/sqlite.js", () => ({ getSqliteDb: getSqliteDbMock }));
 vi.mock("./clientMigrate.js", () => ({ migrateRoutine: migrateMock }));
-vi.mock("./residualImport.js", () => ({
-  importRoutineResidualFromLs: residualMock,
-}));
 vi.mock("./sqliteReader.js", () => ({
   refreshSqliteCompletions: refreshCompletionsMock,
   refreshSqliteRoutineState: refreshStateMock,
@@ -44,7 +39,6 @@ describe("bootSqliteReadPath", () => {
     const client = { id: "client" };
     getSqliteDbMock.mockResolvedValue({ migrationClient: () => client });
     migrateMock.mockResolvedValue(undefined);
-    residualMock.mockResolvedValue({ imported: false, cleaned: false });
     refreshCompletionsMock.mockResolvedValue(undefined);
     refreshStateMock.mockResolvedValue(undefined);
   });
@@ -57,7 +51,6 @@ describe("bootSqliteReadPath", () => {
   it("boots the read path and warms both caches", async () => {
     expect(await bootSqliteReadPath("u1")).toBe(true);
     expect(migrateMock).toHaveBeenCalled();
-    expect(residualMock).toHaveBeenCalledWith({ id: "client" }, "u1");
     expect(refreshCompletionsMock).toHaveBeenCalledWith({ id: "client" }, "u1");
     expect(refreshStateMock).toHaveBeenCalledWith({ id: "client" }, "u1");
   });

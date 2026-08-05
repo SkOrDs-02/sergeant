@@ -3,6 +3,8 @@ import * as sqliteSchema from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 import { logger } from "@shared/lib";
+import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
+import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
@@ -92,6 +94,15 @@ let resolvedKey: string | null = null;
  *  delete the right per-user persistent storage. */
 let currentOpen: OpenedDb | null = null;
 let activeUserKey = ANON_USER_KEY;
+/**
+ * Raw (unsanitized) id behind {@link activeUserKey}, or `null` for the
+ * anonymous/default partition. Kept alongside the filename-safe key
+ * because the kvvfs wipe path (see {@link wipeSqliteDb}) needs the exact
+ * `user_id` column value to scope its row-level `DELETE`s — the sanitized
+ * key is filename-safe but not guaranteed byte-identical to what write
+ * paths stored.
+ */
+let activeUserId: string | null = null;
 
 /** Filesystem-safe partition key. User ids are cuid/uuid-ish; strip anything
  *  that could escape the OPFS-SAH pool filename, and fall back to `anon`. */
@@ -137,6 +148,7 @@ export async function switchSqliteUser(
     },
   });
   activeUserKey = key;
+  activeUserId = key === ANON_USER_KEY ? null : (userId ?? null);
   const stale = resolved;
   resolved = null;
   resolvedKey = null;
@@ -153,17 +165,46 @@ export async function switchSqliteUser(
  * reset the singleton. Called from `AuthContext.logout` so user B never reads
  * user A's rows on a shared device (page-audit-10 F17). Best-effort: storage
  * removal failures are logged, not thrown, so logout always completes.
+ *
+ * On OPFS this is a full-file delete — the just-signed-out user already has
+ * their own `sergeant-<id>.db`, so nothing else lives in that file. On the
+ * `kvvfs` fallback (Safari < 17 / iOS < 16.4) there is only ONE physical
+ * store shared by every partition on the device (`JsStorageDb`, keyed by a
+ * fixed `"local"` name, not per-user), so a wholesale `clearStorage()` used
+ * to also erase the anonymous visitor's own rows (and any other account's,
+ * on a shared device) — see
+ * `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+ * § «Відомий залишковий ризик». {@link OpenedDb.wipe} is therefore handed
+ * the raw id of the user being logged out and, on kvvfs, scopes its
+ * teardown to that id's rows only (row-level `DELETE ... WHERE user_id = ?`
+ * across every user-scoped table) instead of nuking the whole store.
  */
 export async function wipeSqliteDb(): Promise<void> {
   // Snapshot + reset synchronously so any concurrent getSqliteDb() re-opens a
   // fresh DB instead of reusing the one being wiped.
   const open = currentOpen;
   const stale = resolved;
+  const userIdBeingWiped = activeUserId;
   resolved = null;
   resolvedKey = null;
   inFlight = null;
   inFlightKey = null;
   currentOpen = null;
+
+  // Ordering is VFS-dependent and NOT interchangeable:
+  //   - kvvfs's row-level `DELETE` (see `OpenedDb.wipe`) needs the
+  //     connection still open, so it must run BEFORE `close()`.
+  //   - OPFS-SAH's `unlink` is the opposite — the pool's own contract
+  //     leaves the result undefined if the file is still open for access,
+  //     so it must run AFTER `close()` releases the sync-access-handle lock.
+  if (open && open.vfs === "kvvfs") {
+    try {
+      await open.wipe(userIdBeingWiped);
+    } catch (err) {
+      logger.warn("[sqlite] storage wipe failed", err);
+    }
+  }
+
   if (stale) {
     try {
       await stale.close();
@@ -171,9 +212,10 @@ export async function wipeSqliteDb(): Promise<void> {
       logger.warn("[sqlite] close during wipe failed", err);
     }
   }
-  if (open) {
+
+  if (open && open.vfs !== "kvvfs") {
     try {
-      await open.wipe();
+      await open.wipe(userIdBeingWiped);
     } catch (err) {
       logger.warn("[sqlite] storage wipe failed", err);
     }
@@ -233,6 +275,7 @@ export function __resetSqliteDbForTests(): void {
   resolvedKey = null;
   currentOpen = null;
   activeUserKey = ANON_USER_KEY;
+  activeUserId = null;
 }
 
 async function initSqliteDb(
@@ -348,8 +391,18 @@ interface OpenedDb {
   readonly vfs: SqliteVfs;
   /** Name of the underlying store (OPFS filename / kvvfs slot / `:memory:`). */
   readonly dbName: string;
-  /** Removes this DB's persistent storage. Call only after {@link close}. */
-  wipe(): Promise<void>;
+  /**
+   * Removes this DB's persistent storage. Call only after {@link close}.
+   *
+   * @param userId Raw id of the user being wiped, or `null` when there is
+   *   none to scope by. On OPFS this is unused (the file itself already
+   *   belongs to exactly one user). On `kvvfs` — a single physical store
+   *   shared by every partition on the device — this scopes the teardown to
+   *   a row-level `DELETE ... WHERE user_id = ?` instead of clearing the
+   *   whole store, so other partitions (notably the anonymous visitor's own
+   *   rows) survive. See {@link wipeSqliteDb}.
+   */
+  wipe(userId: string | null): Promise<void>;
 }
 
 async function openDb(
@@ -372,6 +425,8 @@ async function openDb(
         vfs: "opfs-sahpool",
         dbName,
         async wipe() {
+          // Per-user file — nothing else lives here, so a full unlink is
+          // always correct regardless of which userId is passed in.
           pool.unlink(dbName);
         },
       };
@@ -400,8 +455,18 @@ async function openDb(
         db,
         vfs: "kvvfs",
         dbName: "local",
-        async wipe() {
-          db.clearStorage();
+        async wipe(userId) {
+          // Row-level scope instead of `db.clearStorage()` — see the
+          // `OpenedDb.wipe` doc comment and
+          // `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+          // § «Відомий залишковий ризик». A `null`/synthetic-local userId
+          // (anon / demo) means there is nothing safe to scope by, so we
+          // leave the shared store untouched rather than risk erasing every
+          // partition on the device — this call site (`wipeSqliteDb` from
+          // `AuthContext.logout`) only ever wipes a real authenticated user.
+          if (userId !== null && isSyncableUserId(userId)) {
+            wipeKvvfsUserRows(db, userId);
+          }
         },
       };
     } catch (err) {
@@ -427,6 +492,34 @@ async function openDb(
     dbName: ":memory:",
     wipe: async () => {},
   };
+}
+
+/**
+ * Row-level teardown for the shared `kvvfs` store: deletes `userId`'s own
+ * rows from every user-scoped table, leaving every other partition (other
+ * accounts, `local-anon`, `demo-local`) on the same physical store intact.
+ *
+ * Iterates {@link CLIENT_PULL_SUPPORTED_TABLES} — the same registry the
+ * anonymous-data migration uses to snapshot user-scoped rows — rather than
+ * `sqlite_master`, so a stray non-user-scoped table (migrations bookkeeping,
+ * etc.) is never touched. Each table's `DELETE` is wrapped individually: a
+ * table that hasn't been created yet on this device (e.g. a module the user
+ * never opened) must not abort the sweep for the rest.
+ */
+function wipeKvvfsUserRows(db: Sqlite3Database, userId: string): void {
+  for (const table of CLIENT_PULL_SUPPORTED_TABLES) {
+    try {
+      db.exec({
+        sql: `DELETE FROM ${table} WHERE user_id = ?`,
+        bind: [userId],
+      });
+    } catch (err) {
+      // Most common cause: table doesn't exist yet on this device. Any
+      // other failure is logged but must not stop the remaining tables —
+      // partial cleanup beats none.
+      logger.debug(`[sqlite] kvvfs row-wipe skipped for ${table}`, err);
+    }
+  }
 }
 
 function hasOpfsSupport(): boolean {

@@ -8,6 +8,8 @@ import {
   HARD_MAX_DAY_KEY,
   nameTextSchema,
   NAME_MAX_LEN,
+  noteTextSchema,
+  NOTE_MAX_LEN,
 } from "./bounds.js";
 
 describe("amountMinorSchema", () => {
@@ -71,5 +73,18 @@ describe("nameTextSchema", () => {
   it("відхиляє рядок довший за NAME_MAX_LEN", () => {
     const tooLong = "a".repeat(NAME_MAX_LEN + 1);
     expect(nameTextSchema.safeParse(tooLong).success).toBe(false);
+  });
+});
+
+describe("noteTextSchema", () => {
+  it("приймає порожній рядок і рядок максимальної довжини", () => {
+    expect(noteTextSchema.parse("")).toBe("");
+    const maxNote = "a".repeat(NOTE_MAX_LEN);
+    expect(noteTextSchema.parse(maxNote)).toBe(maxNote);
+  });
+
+  it("відхиляє рядок довший за NOTE_MAX_LEN", () => {
+    const tooLong = "a".repeat(NOTE_MAX_LEN + 1);
+    expect(noteTextSchema.safeParse(tooLong).success).toBe(false);
   });
 });

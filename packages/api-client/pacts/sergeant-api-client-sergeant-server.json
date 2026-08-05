@@ -377,6 +377,91 @@
       }
     },
     {
+      "description": "a GET /api/v1/me/preferences request (consented)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has opted into health-adjacent data processing (GDPR Art. 9)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": true,
+          "pushNotifications": true,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-01T12:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (legacy server, no healthDataConsent field)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 predates the healthDataConsent column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "aiMemory": false,
+          "analytics": true,
+          "pushNotifications": false,
+          "sergeantNudges": true,
+          "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/profile request (new user, no row)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has no user_profile row yet"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/profile"
+      },
+      "response": {
+        "body": {
+          "profile": {},
+          "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/mono/accounts request",
       "providerStates": [
         {
@@ -1517,6 +1602,45 @@
               "status": "applied"
             }
           ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/me/profile request with a small biometrics payload",
+      "providerStates": [
+        {
+          "name": "user-pact-003 authenticated session"
+        }
+      ],
+      "request": {
+        "body": {
+          "profile": {
+            "heightCm": 170,
+            "sex": "f",
+            "weightKg": 62
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/me/profile"
+      },
+      "response": {
+        "body": {
+          "profile": {
+            "heightCm": 170,
+            "sex": "f",
+            "weightKg": 62
+          },
+          "updatedAt": "2026-08-01T12:05:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",

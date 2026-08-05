@@ -166,7 +166,10 @@ export async function recordAnthropicUsageToDb(
           outTok,
           totalTok,
           estCost,
-          endpoint ?? "unknown",
+          // Sentinel-канон 'legacy' (не 'unknown') — узгоджено з backfill-ом
+          // у міграціях 104/106, щоб `GROUP BY endpoint` в /internal/ai-usage
+          // не розділяв один логічний "без ендпоінта" кейс на два рядки.
+          endpoint ?? "legacy",
           crTok,
           cwTok,
           actualCostUsd ?? null,

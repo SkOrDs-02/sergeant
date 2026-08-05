@@ -1219,6 +1219,25 @@ CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_active_idx_lite
   WHERE deleted_at IS NULL;
 `;
 
+/**
+ * Клієнтське дзеркало серверної `109_nutrition_events_tz_offset.sql` —
+ * pre-beta schema-debt аудит 2026-08-04. Обидва Хвиля-1 журнали
+ * (`004_nutrition_pantry_events.sql`, `005_nutrition_goal_periods.sql`)
+ * народились БЕЗ `tz_offset_min`, хоча ADR-0078 §3.2 стверджує, що всі
+ * Хвиля-1 журнали вже несуть offset на момент запису — тут це правило
+ * нарешті виконано і на клієнті, а не лише на сервері (яким уже дзеркало
+ * `routine_completion_events.tz_offset_min`, міграція 007).
+ *
+ * `ALTER TABLE ... ADD COLUMN` — SQLite не підтримує `IF NOT EXISTS` на
+ * ADD COLUMN, але міграції append-only й ведуться леджером
+ * `__nutrition_migrations`, тож повторного застосування не буде (той самий
+ * патерн, що й `009_routine_habit_skips.sql` для routine).
+ */
+const NUTRITION_006_EVENTS_TZ_OFFSET_SQL = `
+ALTER TABLE nutrition_pantry_events ADD COLUMN tz_offset_min INTEGER;
+ALTER TABLE nutrition_goal_periods ADD COLUMN tz_offset_min INTEGER;
+`;
+
 export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
   {
@@ -1236,6 +1255,10 @@ export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "005_nutrition_goal_periods.sql",
     sql: NUTRITION_005_GOAL_PERIODS_SQL,
+  },
+  {
+    name: "006_nutrition_events_tz_offset.sql",
+    sql: NUTRITION_006_EVENTS_TZ_OFFSET_SQL,
   },
 ] as const;
 

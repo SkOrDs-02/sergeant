@@ -7,6 +7,7 @@ import { useAppLockContext } from "../security/AppLockContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 import { writeMemoryEntries } from "../profile/memoryBank";
+import { setAnalyticsConsent } from "../observability/analyticsConsent";
 import { AiMemoryList } from "./AiMemoryList";
 
 const m = messages.privacy.lock;
@@ -16,10 +17,12 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   aiMemory: true,
   pushNotifications: false,
   sergeantNudges: false,
+  healthDataConsent: false,
   updatedAt: null,
 };
 
-type PreferenceKey = "analytics" | "aiMemory" | "pushNotifications";
+type PreferenceKey =
+  "analytics" | "aiMemory" | "pushNotifications" | "healthDataConsent";
 
 export function PrivacySection() {
   const appLock = useAppLockContext();
@@ -44,6 +47,7 @@ export function PrivacySection() {
         if (cancelled) return;
         setPreferences(next);
         setPreferencesLoaded(true);
+        setAnalyticsConsent(next.analytics);
       })
       .catch(() => {
         if (cancelled) return;
@@ -83,12 +87,25 @@ export function PrivacySection() {
     setSavingPreference(key);
     const previous = preferences;
     setPreferences({ ...previous, [key]: checked });
+    if (key === "analytics") {
+      // Optimistic, ahead of the network round trip (CodeRabbit PR #627):
+      // a dismiss fired between this click and the server's response must
+      // already respect the user's new choice — waiting for
+      // `updatePreferences()` to resolve left a window where a toggle-off
+      // still emitted `advice_shown`/`advice_dismissed` under the old
+      // (consenting) value. Reverted in the `catch` below on failure.
+      setAnalyticsConsent(checked);
+    }
     try {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
       setPreferencesLoaded(true);
+      setAnalyticsConsent(next.analytics);
     } catch {
       setPreferences(previous);
+      if (key === "analytics") {
+        setAnalyticsConsent(previous.analytics);
+      }
       setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
       setSavingPreference(null);
@@ -158,6 +175,18 @@ export function PrivacySection() {
           }
           checked={preferences.aiMemory}
           onChange={(checked) => void updatePreference("aiMemory", checked)}
+        />
+        <ToggleRow
+          label="Дані про здоровʼя"
+          description={
+            savingPreference === "healthDataConsent"
+              ? "Зберігаю…"
+              : "Явна згода на обробку тренувань, самопочуття й харчування — без неї ця інформація не використовується."
+          }
+          checked={preferences.healthDataConsent}
+          onChange={(checked) =>
+            void updatePreference("healthDataConsent", checked)
+          }
         />
         <div className="rounded-2xl border border-line bg-panelHi p-3">
           <p className="text-style-caption text-subtle leading-relaxed">

@@ -376,10 +376,19 @@ describe("pg/nutritionPantryEvents schema snapshot", () => {
       "source",
       "meal_id",
       "occurred_at",
+      "tz_offset_min",
       "created_at",
       "updated_at",
       "deleted_at",
     ]);
+  });
+
+  it("carries tz_offset_min nullable (migration 109, ADR-0078 device-local day boundary)", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["tz_offset_min"]!.columnType).toBe("PgInteger");
+    expect(columnMap["tz_offset_min"]!.notNull).toBe(false);
   });
 
   it("keeps id/pantry_id/item_id as PgText, NOT PgUUID", () => {
@@ -451,10 +460,16 @@ describe("pg/nutritionGoalPeriods schema snapshot", () => {
       "carbs_g",
       "water_ml",
       "origin",
+      "tz_offset_min",
       "created_at",
       "updated_at",
       "deleted_at",
     ]);
+  });
+
+  it("carries tz_offset_min nullable (migration 109, ADR-0078 device-local day boundary)", () => {
+    expect(columnMap["tz_offset_min"]!.columnType).toBe("PgInteger");
+    expect(columnMap["tz_offset_min"]!.notNull).toBe(false);
   });
 
   it("keeps id as PgText without a default — client mints it deterministically", () => {
@@ -468,7 +483,8 @@ describe("pg/nutritionGoalPeriods schema snapshot", () => {
   });
 
   it("keeps effective_from as PgText day key, NOT a date/timestamp", () => {
-    // Kyiv-локальний 'YYYY-MM-DD', як `nutrition_water_log.date_key`.
+    // Device-local 'YYYY-MM-DD' (ADR-0078), як `nutrition_water_log.date_key`.
+    // Corrected 2026-08-04 (migration 109) from an earlier "Kyiv-local" claim.
     expect(columnMap["effective_from"]!.columnType).toBe("PgText");
     expect(columnMap["effective_from"]!.notNull).toBe(true);
   });

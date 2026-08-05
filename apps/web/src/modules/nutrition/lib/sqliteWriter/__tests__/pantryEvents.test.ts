@@ -24,6 +24,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { fireSyncOutboxUpsert } from "../../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 import { applyNutritionDualWriteOps } from "../adapter";
+import { pantryEventEnv } from "../adapter.pantryEvents.js";
 import {
   diffNutritionDualWriteOps,
   type NutritionDualWriteOp,
@@ -138,6 +139,7 @@ describe("adapter — append-only запис і outbox", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.mocked(fireSyncOutboxUpsert).mockClear();
+    vi.spyOn(pantryEventEnv, "tzOffsetMin").mockReturnValue(180);
   });
 
   it("пише INSERT OR IGNORE, без ON CONFLICT DO UPDATE", async () => {
@@ -226,5 +228,45 @@ describe("adapter — append-only запис і outbox", () => {
     expect(
       calls.filter((c) => c.sql.includes("nutrition_pantry_items")),
     ).toEqual([]);
+  });
+
+  it("пише tz_offset_min пристрою в локальний INSERT і в outbox (той самий патерн, що routine_completion_events / nutrition_goal_periods)", async () => {
+    const { client, calls } = makeRecordingClient();
+    const op: NutritionDualWriteOp = {
+      kind: "pantry-event-append",
+      event: event(),
+    };
+    await applyNutritionDualWriteOps(client, [op], {
+      userId: "user_1",
+      clientTs: "2026-08-01T10:00:00.000Z",
+    });
+    const insert = calls.find((c) =>
+      c.sql.includes("nutrition_pantry_events"),
+    )!;
+    expect(insert.sql).toMatch(/tz_offset_min/);
+    // Column order: id, user_id, pantry_id, item_id, item_key, kind,
+    // delta_qty, abs_qty, unit, source, meal_id, occurred_at,
+    // tz_offset_min, created_at, updated_at.
+    expect(insert.params[12]).toBe(180);
+
+    const payload = vi.mocked(fireSyncOutboxUpsert).mock.calls[0]![1];
+    expect(payload.row["tz_offset_min"]).toBe(180);
+  });
+
+  it("tz_offset_min падає на null, коли Date.getTimezoneOffset недоступний", async () => {
+    vi.spyOn(pantryEventEnv, "tzOffsetMin").mockReturnValue(null);
+    const { client, calls } = makeRecordingClient();
+    const op: NutritionDualWriteOp = {
+      kind: "pantry-event-append",
+      event: event(),
+    };
+    await applyNutritionDualWriteOps(client, [op], {
+      userId: "user_1",
+      clientTs: "2026-08-01T10:00:00.000Z",
+    });
+    const insert = calls.find((c) =>
+      c.sql.includes("nutrition_pantry_events"),
+    )!;
+    expect(insert.params[12]).toBeNull();
   });
 });

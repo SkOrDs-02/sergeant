@@ -1,10 +1,14 @@
 // AI-CONTEXT: Seeds the global Command Palette with a baseline set of
 // demo commands (navigation + theme + settings + sign-out). `settings.open`
-// remains a WIP stub (settings UI lives behind the user menu — wiring is
-// module-side); `session.sign-out` is wired to the real `useAuth().logout()`
-// flow (see `ProfilePage.handleLogout` for the reference implementation).
+// navigates to the Hub Settings tab via `openHubSettingsSection()` — the
+// same event-based helper the inactive-module Bento card uses, so it goes
+// through `useAppEffects`'s `HUB_OPEN_SETTINGS_EVENT` listener rather than a
+// raw `navigate("/?tab=settings")` (keeps the in-memory hub-view state and
+// the URL in sync in one commit). `session.sign-out` is wired to the real
+// `useAuth().logout()` flow (see `ProfilePage.handleLogout` for the
+// reference implementation).
 //
-// Status: Active (Track 5 seed). Last validated: 2026-08-04 by @claude.
+// Status: Active (Track 5 seed). Last validated: 2026-08-05 by @claude.
 
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +19,7 @@ import {
   useRegisterCommand,
   type PaletteCommand,
 } from "@shared/components/ui/CommandPalette";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { SIGN_IN_PATH } from "./appPaths";
 import { useAuth } from "../auth/AuthContext";
 
@@ -88,11 +93,9 @@ export function useDemoCommands(): void {
         description: "Профіль, конфіденційність, експериментальні фічі",
         group: "Налаштування",
         keywords: ["settings", "preferences", "налаштування"],
-        // Settings UI lives behind the user menu — wiring is module-side;
-        // surface as WIP until that lands.
         run: () => {
-          logger.debug("[command-palette] settings.open (WIP)");
-          toast.info("Налаштування — у розробці (WIP)");
+          logger.debug("[command-palette] settings.open");
+          openHubSettingsSection();
         },
       },
       {
@@ -107,7 +110,7 @@ export function useDemoCommands(): void {
         },
       },
     ],
-    [isDark, navigate, signOutFromPalette, toast, toggleDark],
+    [isDark, navigate, signOutFromPalette, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);

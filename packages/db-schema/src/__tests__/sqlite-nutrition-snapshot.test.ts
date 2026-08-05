@@ -420,7 +420,7 @@ describe("sqlite/nutrition migrations exports", () => {
 
   it("ships the Stage 11 002_nutrition_full_state.sql delta", () => {
     // Append-only — `001_*` first, then `002_*` for the Stage 11 delta.
-    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(5);
+    expect(NUTRITION_CLIENT_MIGRATIONS).toHaveLength(6);
     expect(NUTRITION_CLIENT_MIGRATIONS[1]!.name).toBe(
       "002_nutrition_full_state.sql",
     );
@@ -507,6 +507,19 @@ describe("sqlite/nutrition migrations exports", () => {
     expect(sql).not.toMatch(/ALTER TABLE nutrition_prefs/);
   });
 
+  it("ships the 006_nutrition_events_tz_offset.sql delta (ADR-0078 parity, pre-beta audit 2026-08-04)", () => {
+    expect(NUTRITION_CLIENT_MIGRATIONS[5]!.name).toBe(
+      "006_nutrition_events_tz_offset.sql",
+    );
+    const sql = NUTRITION_CLIENT_MIGRATIONS[5]!.sql;
+    expect(sql).toMatch(
+      /ALTER TABLE nutrition_pantry_events ADD COLUMN tz_offset_min INTEGER/,
+    );
+    expect(sql).toMatch(
+      /ALTER TABLE nutrition_goal_periods ADD COLUMN tz_offset_min INTEGER/,
+    );
+  });
+
   it("uses a separate `__nutrition_migrations` ledger table", () => {
     expect(NUTRITION_MIGRATIONS_TABLE).toBe("__nutrition_migrations");
   });
@@ -533,10 +546,18 @@ describe("sqlite/nutritionPantryEvents schema snapshot", () => {
       "source",
       "meal_id",
       "occurred_at",
+      "tz_offset_min",
       "created_at",
       "updated_at",
       "deleted_at",
     ]);
+  });
+
+  it("carries tz_offset_min nullable (client migration 006, ADR-0078)", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(columnMap["tz_offset_min"]!.notNull).toBe(false);
   });
 
   it("keeps id/pantry_id/item_id as TEXT (client sends non-UUID ids)", () => {
@@ -587,10 +608,15 @@ describe("sqlite/nutritionGoalPeriods schema snapshot", () => {
       "carbs_g",
       "water_ml",
       "origin",
+      "tz_offset_min",
       "created_at",
       "updated_at",
       "deleted_at",
     ]);
+  });
+
+  it("carries tz_offset_min nullable (client migration 006, ADR-0078)", () => {
+    expect(columnMap["tz_offset_min"]!.notNull).toBe(false);
   });
 
   it("stores timestamps as TEXT (ISO-8601) — the only diff from Postgres", () => {

@@ -3,64 +3,19 @@ import { z } from "zod";
 import { aiRoutingEnvShape } from "./aiRoutingEnv.js";
 import { defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
-
-const coerceInt = z.coerce.number().int();
-
-const intFromEnv = (defaultValue: number) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined || v === "") return defaultValue;
-      const n = Number.parseInt(v, 10);
-      return Number.isNaN(n) ? defaultValue : n;
-    });
-
-const floatFromEnv = (defaultValue: number) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined || v === "") return defaultValue;
-      const n = Number.parseFloat(v);
-      return Number.isFinite(n) ? n : defaultValue;
-    });
-
-const boolFromEnv = (defaultValue: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined) return defaultValue;
-      const lower = v.toLowerCase();
-      if (lower === "true" || lower === "1") return true;
-      if (lower === "false" || lower === "0") return false;
-      return defaultValue;
-    });
-
-const stringWithDefault = (defaultValue: string) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => v ?? defaultValue);
-
-const optionalUrl = () =>
-  z
-    .string()
-    .optional()
-    .transform((v) => v ?? "")
-    .refine(
-      (v) => {
-        if (v === "") return true;
-        try {
-          new URL(v);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      { message: "Invalid URL" },
-    );
+// Хелпери винесені в `./envHelpers.js` цією гілкою; main паралельно
+// забрав LLM_*-ключі у `aiRoutingEnvShape` (PR #634), тож
+// `llmProviderEnum` тут більше не потрібен — `aiRoutingEnv.ts` тримає
+// власну копію.
+import {
+  boolFromEnv,
+  coerceInt,
+  floatFromEnv,
+  intFromEnv,
+  optionalUrl,
+  stringWithDefault,
+} from "./envHelpers.js";
+import { telegramEnvShape } from "./telegramEnv.js";
 
 const envSchema = z.object({
   ...aiRoutingEnvShape,
@@ -527,47 +482,10 @@ const envSchema = z.object({
 
   SERGEANT_OPS_CHAT_ID: stringWithDefault(""),
 
-  TELEGRAM_TOPIC_ENGINEERING: stringWithDefault(""),
-
-  TELEGRAM_WAITLIST_BOT_TOKEN: stringWithDefault(""),
-
-  TELEGRAM_WAITLIST_WEBHOOK_SECRET: stringWithDefault(""),
-
-  TELEGRAM_BETA_INVITE_LINK: stringWithDefault(""),
-  /**
-   * Адреса застосунку бети. Окремий Vercel-проєкт із власним доменом
-   * (`docs/90-work/beta-launch/run-beta-wave.md` § Фаза 0.3), тому НЕ
-   * виводиться з `BETTER_AUTH_URL` — це різні хости.
-   *
-   * Порожній рядок легальний: бот скаже, що адреси ще немає, замість того
-   * щоб надіслати `/install` із діркою посеред інструкції.
-   */
-  TELEGRAM_BETA_APP_URL: stringWithDefault(""),
-  /**
-   * Анонімна форма зворотного звʼязку бети (Google Form / Tally). Окремий
-   * канал від групи саме тому, що анонімний: частина відгуків не звучить,
-   * поки під ними стоїть імʼя.
-   */
-  TELEGRAM_BETA_FEEDBACK_FORM_URL: stringWithDefault(""),
-  /**
-   * Контакт founder-а разом із `@` (наприклад `@skords`). Останній канал у
-   * `/help` — для особистого й термінового.
-   */
-  TELEGRAM_BETA_FOUNDER_USERNAME: stringWithDefault(""),
-  /**
-   * Розмір першої хвилі бети. Хто прийшов пізніше — отримує від бота номер у
-   * черзі замість «ти в списку». Це лише ТЕКСТ відповіді: кого реально
-   * запрошувати, вирішує `--limit` у `broadcast-waitlist.mjs`, і ці два числа
-   * навмисно не зв'язані — розсилати можна меншими партіями, ніж оголошена
-   * хвиля, не переписуючи те, що бачать нові підписники.
-   */
-  TELEGRAM_BETA_WAVE_SIZE: coerceInt.positive().default(35),
-  /**
-   * `chat_id` власника — єдиний, кому бот відповідає на `/stats`. Порожній →
-   * команда інертна для всіх, включно з власником: сліпий режим безпечніший,
-   * ніж випадково відкрита статистика.
-   */
-  TELEGRAM_WAITLIST_ADMIN_CHAT_ID: stringWithDefault(""),
+  // Telegram waitlist/beta-invite fields — moved to `telegramEnv.ts` purely
+  // to shave lines off this file (Hard Rule #18). Spread keeps the merged
+  // shape (and therefore `Env`/`env.TELEGRAM_*`) byte-identical.
+  ...telegramEnvShape,
 
   WEBHOOK_EVENTS_RETENTION_DAYS: intFromEnv(30),
 

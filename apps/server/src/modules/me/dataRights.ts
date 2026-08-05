@@ -8,6 +8,7 @@ import type {
 } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
+import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
@@ -37,11 +38,19 @@ async function notifyProvidersCancel(
   );
 }
 
+// Migration 111 changed `user_preferences.analytics` DEFAULT TRUE → FALSE:
+// product policy is opt-in analytics, not opt-out. This app-level fallback
+// (used when a user has never called `/api/me/preferences`, i.e. no row
+// exists yet) must move in lockstep with the DB DEFAULT — see 111's header
+// comment, which explicitly calls out this exact constant.
 const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
-  analytics: true,
+  analytics: false,
   aiMemory: true,
   pushNotifications: false,
   sergeantNudges: false,
+  // GDPR Art. 9 — health-adjacent data (fizruk/nutrition) needs explicit
+  // opt-in; DEFAULT FALSE matches the DB column (migration 111).
+  healthDataConsent: false,
 };
 
 function iso(value: Date | string): string {
@@ -73,6 +82,7 @@ function serializePreferences(
     aiMemory: row["ai_memory"] === true,
     pushNotifications: row["push_notifications"] === true,
     sergeantNudges: row["sergeant_nudges"] === true,
+    healthDataConsent: row["health_data_consent"] === true,
     updatedAt: maybeIso(row["updated_at"] as Date | string | null | undefined),
   };
 }
@@ -82,7 +92,8 @@ export async function getUserPreferences(
   userId: string,
 ): Promise<UserPreferences> {
   const result = await db.query<Record<string, unknown>>(
-    `SELECT analytics, ai_memory, push_notifications, sergeant_nudges, updated_at
+    `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
+            health_data_consent, updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -101,24 +112,29 @@ export async function upsertUserPreferences(
     aiMemory: patch.aiMemory ?? current.aiMemory,
     pushNotifications: patch.pushNotifications ?? current.pushNotifications,
     sergeantNudges: patch.sergeantNudges ?? current.sergeantNudges,
+    healthDataConsent: patch.healthDataConsent ?? current.healthDataConsent,
   };
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
-        (user_id, analytics, ai_memory, push_notifications, sergeant_nudges, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW())
+        (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
+         health_data_consent, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
         push_notifications = EXCLUDED.push_notifications,
         sergeant_nudges = EXCLUDED.sergeant_nudges,
+        health_data_consent = EXCLUDED.health_data_consent,
         updated_at = NOW()
-      RETURNING analytics, ai_memory, push_notifications, sergeant_nudges, updated_at`,
+      RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
+                health_data_consent, updated_at`,
     [
       userId,
       next.analytics,
       next.aiMemory,
       next.pushNotifications,
       next.sergeantNudges,
+      next.healthDataConsent,
     ],
   );
   return serializePreferences(result.rows[0]);
@@ -251,6 +267,34 @@ export async function deleteUserData(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    // Snapshot email + Stripe customer id BEFORE any deletion, for the
+    // external-services cleanup queue (ADR-0016 § ADR-6.3). Skipped
+    // entirely when the user row is already gone (idempotent second
+    // delete, or founder-confirmed pre-beta test data) — nothing to
+    // snapshot, nothing to clean up externally.
+    const userRow = await client.query<{ email: string | null }>(
+      `SELECT email FROM "user" WHERE id = $1`,
+      [userId],
+    );
+    if (userRow.rows.length > 0) {
+      const stripeRow = await client.query<{
+        provider_customer_id: string | null;
+      }>(
+        `SELECT provider_customer_id
+           FROM subscriptions
+          WHERE user_id = $1 AND provider = 'stripe'
+          ORDER BY updated_at DESC
+          LIMIT 1`,
+        [userId],
+      );
+      await enqueueGdprCleanup(client, {
+        userId,
+        email: userRow.rows[0]!.email ?? `${userId}@deleted.sergeant.app`,
+        stripeCustomerId: stripeRow.rows[0]?.provider_customer_id ?? null,
+      });
+    }
+
     await client.query(
       `UPDATE subscriptions
           SET status = 'canceled',
@@ -260,13 +304,24 @@ export async function deleteUserData(
           AND status IN ('active', 'trialing', 'past_due', 'incomplete')`,
       [userId],
     );
-    await client.query(
-      `UPDATE ai_memories
-          SET deleted_at = COALESCE(deleted_at, NOW()),
-              updated_at = NOW()
-        WHERE user_id = $1`,
-      [userId],
-    );
+
+    // `ai_usage_daily.subject_key` is a bare TEXT ('u:<userId>' / 'ip:<addr>'),
+    // never an FK — CASCADE from `DELETE FROM "user"` below cannot reach it
+    // (ADR-0016 § ADR-6.2: "Tables WITHOUT FK CASCADE"). Left unpurged this
+    // is exactly the PII orphan the ADR calls out: a synthetic-but-still
+    // per-user token surviving account deletion forever.
+    await client.query(`DELETE FROM ai_usage_daily WHERE subject_key = $1`, [
+      `u:${userId}`,
+    ]);
+
+    // NOTE: no separate `ai_memories` soft-delete step here. `ai_memories.
+    // user_id` has `ON DELETE CASCADE` (migration 025) straight to
+    // `"user"(id)` — the hard `DELETE FROM "user"` below already removes
+    // every row. A prior revision of this function soft-deleted
+    // `ai_memories` first (`deleted_at = NOW()`) and then hard-deleted the
+    // user two statements later, which destroyed the very rows the
+    // soft-delete had just marked — a self-contradicting no-op write.
+    // Canon: hard-delete via cascade, no separate soft-delete step.
     await client.query(
       `DELETE FROM "user"
         WHERE id = $1`,

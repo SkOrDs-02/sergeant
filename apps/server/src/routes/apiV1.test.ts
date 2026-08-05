@@ -238,11 +238,14 @@ describe("/api/v1/me data rights", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      analytics: true,
+      // Migration 111: DB DEFAULT flipped TRUE → FALSE (opt-in analytics).
+      analytics: false,
       aiMemory: true,
       pushNotifications: false,
       // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів.
       sergeantNudges: false,
+      // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
+      healthDataConsent: false,
       updatedAt: null,
     });
   });
@@ -256,6 +259,14 @@ describe("/api/v1/me data rights", () => {
           ai_memory: true,
           push_notifications: false,
           sergeant_nudges: false,
+          // `true` (not the DEFAULT_PREFERENCES value `false`) on purpose —
+          // CodeRabbit PR #627 review: the old mocked row omitted this
+          // column entirely, so the assertion below matched by COINCIDENCE
+          // with serializePreferences()'s own `=== true` default-to-false
+          // fallback and could never catch a real regression (wrong column
+          // name, dropped SELECT/RETURNING field, etc). Asserting `true`
+          // here is a genuine round-trip check of `row["health_data_consent"]`.
+          health_data_consent: true,
           updated_at: new Date("2026-06-06T10:05:00.000Z"),
         },
       ],
@@ -273,11 +284,12 @@ describe("/api/v1/me data rights", () => {
       aiMemory: true,
       pushNotifications: false,
       sergeantNudges: false,
+      healthDataConsent: true,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    expect(params).toEqual([user.id, false, true, false, false]);
+    expect(params).toEqual([user.id, false, true, false, false, false]);
   });
 
   it("PATCH /api/v1/me/preferences відхиляє невідомий shape", async () => {
@@ -328,10 +340,15 @@ describe("/api/v1/me data rights", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
+    // Mock resolves `{ rows: [] }` for every query, so the `SELECT email`
+    // snapshot returns 0 rows → the gdpr_cleanup_queue enqueue is skipped
+    // (nothing to snapshot). No separate `UPDATE ai_memories` step: hard
+    // delete cascades (migration 025), see `dataRights.ts::deleteUserData`.
     expect(client.query.mock.calls.map((call) => String(call[0]))).toEqual([
       "BEGIN",
+      expect.stringMatching(/SELECT email FROM "user"/),
       expect.stringMatching(/UPDATE subscriptions/),
-      expect.stringMatching(/UPDATE ai_memories/),
+      expect.stringMatching(/DELETE FROM ai_usage_daily/),
       expect.stringMatching(/DELETE FROM "user"/),
       "COMMIT",
     ]);

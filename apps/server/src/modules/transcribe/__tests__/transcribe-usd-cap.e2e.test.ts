@@ -254,10 +254,12 @@ describe("H9 e2e — POST /api/transcribe with real WAV fixture", () => {
     const cap = expectedMicros; // exactly at the cap
     process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = String(cap);
 
+    // `endpoint` (міграції 104/106) NOT NULL / частина PK — фіксоване
+    // значення 'transcribe' для цього модуля (дзеркалить usdCap.ts).
     await testPool.query(
       `INSERT INTO ai_usage_daily
-         (subject_key, usage_day, bucket, request_count, usd_micros)
-       VALUES ($1, (NOW() AT TIME ZONE 'Europe/Kyiv')::date, $2, 1, $3)`,
+         (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+       VALUES ($1, (NOW() AT TIME ZONE 'Europe/Kyiv')::date, $2, 'transcribe', 1, $3)`,
       [`u:${TEST_USER_ID}`, `transcribe:${MODEL}`, cap],
     );
 

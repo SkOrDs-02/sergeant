@@ -41,6 +41,8 @@ import { useFizrukQuickStatsBoot } from "../../modules/fizruk/hooks/useFizrukQui
 import { useRoutineDualWriteBoot } from "../../modules/routine/hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/routine/hooks/useSqliteReadBoot";
 import { useRoutineQuickStatsBoot } from "../../modules/routine/hooks/useRoutineQuickStatsBoot";
+import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
+import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
@@ -119,6 +121,16 @@ function RoutineBootGate() {
  */
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
+  // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
+  // Unlike the module boot-gates below, this hook is self-gating (its own
+  // `useQuery` is `enabled: false` while signed out), so it mounts
+  // unconditionally rather than behind a `user || isDemoActive()` gate —
+  // demo sessions have no server profile to reconcile against.
+  useProfileWriteThroughBoot();
+  // Hydrates the synchronous `analyticsConsent` gate from the server as
+  // soon as possible after an authenticated boot (CodeRabbit PR #627) —
+  // see `useAnalyticsConsentBoot`'s doc comment for the race it closes.
+  useAnalyticsConsentBoot();
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route

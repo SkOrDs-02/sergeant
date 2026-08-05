@@ -70,6 +70,52 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── /api/me/profile ──────────────────────
+  // Write-through сховище профілю/біометрії (migration 115) — НЕ oplog-sync.
+  "/api/me/profile": {
+    get: {
+      summary: "Профіль/біометрія користувача (write-through блоб)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Profile blob; { profile: {}, updatedAt: null } коли рядка ще немає.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+    put: {
+      summary: "Перезаписати профіль/біометрію (upsert по user_id)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        // OpenAPI 3 defaults `requestBody.required` to `false` when omitted
+        // — misleading here since `UserProfilePutBodySchema` requires a
+        // `profile` field with no default; a client generated straight off
+        // the spec could omit the body entirely and only find out it's
+        // mandatory from the 400 (CodeRabbit PR #627 review).
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.UserProfilePutBody },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Оновлений profile blob.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
   // ────────────────────── /api/chat ──────────────────────
   "/api/chat": {
     post: {

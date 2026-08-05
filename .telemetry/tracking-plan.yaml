@@ -5,7 +5,7 @@ meta:
   product: Sergeant
   version: 1
   created: 2026-05-17
-  updated: 2026-07-25 # value_loop: +10 подій, усі 10 мають web-callsite-и
+  updated: 2026-08-05 # value_loop: +2 (advice_shown/advice_dismissed — cross-device advice_id)
   owner: "@Skords-01"
   product_type: B2C
   destinations: [posthog]
@@ -786,6 +786,59 @@ events:
             type: string_enum,
             required: true,
             values: [max_across_habits],
+          },
+        ],
+    }
+
+  # Стабільний крос-девайсний advice_id (беta-хардненінг, рішення
+  # founder-а). Доповнює value_signal_* вище, а не замінює: ті події
+  # навмисно не несуть сирий insight id (high-cardinality + potential
+  # PII), тож дашборд «скільки унікальних порад згенеровано» з них не
+  # побудувати. advice_id = computeAdviceId(adviceType, canonicalContent)
+  # (packages/insights/src/adviceId.ts) — детермінований хеш, тож той
+  # самий інсайт на двох пристроях того самого акаунта дає ОДИН і той
+  # самий id. НЕ плутати з ai_advice_shown.advice_id вище — той лишається
+  # випадковим uuid (окреме, документоване рішення). Мінімальний зріз:
+  # без серверного реєстру. ІНСТРУМЕНТОВАНО — писар:
+  # apps/web/src/shared/components/ui/InsightCard.tsx (той самий шов, що
+  # value_signal_shown/dismissed). Обидві події гейтяться
+  # getAnalyticsConsent() (apps/web/src/core/observability/analyticsConsent.ts).
+  - {
+      name: advice_shown,
+      category: value_loop,
+      source: frontend,
+      description: "Перший показ конкретного advice_id за сесію (once-guard за id, детермінованим з advice_id).",
+      properties:
+        [
+          { name: advice_id, type: string, required: true },
+          {
+            name: advice_type,
+            type: string,
+            required: true,
+            description: "Стабільний kind без змінного суфікса — той самий словник, що value_signal_shown.signal.",
+          },
+          {
+            name: module,
+            type: string_enum,
+            required: true,
+            values: [finyk, fizruk, routine, nutrition, hub, unknown],
+          },
+        ],
+    }
+  - {
+      name: advice_dismissed,
+      category: value_loop,
+      source: frontend,
+      description: "Юзер сховав пораду (dismiss-клік). Без дедуплікації — кожен dismiss окремий факт.",
+      properties:
+        [
+          { name: advice_id, type: string, required: true },
+          { name: advice_type, type: string, required: true },
+          {
+            name: module,
+            type: string_enum,
+            required: true,
+            values: [finyk, fizruk, routine, nutrition, hub, unknown],
           },
         ],
     }

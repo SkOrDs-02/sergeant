@@ -1,10 +1,10 @@
 import {
   boolean,
+  doublePrecision,
   index,
   jsonb,
   pgTable,
   primaryKey,
-  real,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -370,13 +370,18 @@ export const finykMonoDebtLinks = pgTable(
  * byte-for-byte. `snapshot_json` reserves space for richer per-month
  * payloads (per-asset breakdowns, FX rate at snapshot time) without a
  * follow-up migration.
+ *
+ * `networth` is `DOUBLE PRECISION` (migration 108, pre-beta schema-debt
+ * audit 2026-08-04) — `REAL` (float4, ~6-7 significant digits) silently
+ * rounded net-worth sums past 7 digits, breaking the byte-for-byte LWW
+ * invariant above. `float8` matches the client's JS `number` precision.
  */
 export const finykNetworthHistory = pgTable(
   "finyk_networth_history",
   {
     userId: text("user_id").notNull(),
     month: text().notNull(),
-    networth: real().notNull().default(0),
+    networth: doublePrecision().notNull().default(0),
     snapshotJson: jsonb("snapshot_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

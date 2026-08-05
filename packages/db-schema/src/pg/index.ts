@@ -2,6 +2,7 @@ export { waitlistEntries } from "./waitlistEntries.js";
 export { telegramWaitlist } from "./telegramWaitlist.js";
 export { coachMemory } from "./coachMemory.js";
 export { user, session, account, verification } from "./auth.js";
+export { userProfile } from "./profile.js";
 export { syncAuditLog } from "./syncAuditLog.js";
 export { syncOpLog } from "./syncOpLog.js";
 export { pushSubscriptions } from "./pushSubscriptions.js";

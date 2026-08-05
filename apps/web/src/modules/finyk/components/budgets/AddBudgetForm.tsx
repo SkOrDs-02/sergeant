@@ -18,6 +18,7 @@ import type { MonoJarDto } from "@shared/api";
 import { CategorySelector } from "../CategorySelector";
 import { JarSelector } from "../JarSelector";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 
 export type BudgetFormType = "limit" | "goal";
 
@@ -124,7 +125,11 @@ type GoalFormValues = {
 
 const goalFormSchema = z.object({
   type: z.literal("goal"),
-  name: z.string().trim().min(1, messages.validation.goalNameRequired),
+  name: z
+    .string()
+    .trim()
+    .min(1, messages.validation.goalNameRequired)
+    .max(NAME_MAX_LEN),
   emoji: z.string(),
   targetAmount: positiveNumberString(messages.validation.goalAmountRequired),
   targetDate: z.string(),
@@ -417,6 +422,7 @@ function AddBudgetFormComponent({
             <Input
               id={goalNameId}
               placeholder="Напр. На відпустку"
+              maxLength={NAME_MAX_LEN}
               aria-invalid={goalNameError ? true : undefined}
               disabled={isSubmitting}
               {...goalForm.register("name")}

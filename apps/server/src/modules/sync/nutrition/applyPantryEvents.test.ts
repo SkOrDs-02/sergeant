@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { describe, expect, it } from "vitest";
+import { NAME_MAX_LEN } from "@sergeant/shared";
 
 import type { SyncV2Op } from "../../../http/schemas.js";
 import { applyNutritionPantryEvents } from "./applyPantryEvents.js";
@@ -134,8 +135,88 @@ describe("applyNutritionPantryEvents — вставка", () => {
       USER,
       CLIENT_TS,
     );
-    expect(fake.queries[0]!.params[11]).toEqual(CLIENT_TS);
-    expect(fake.queries[0]!.params[12]).toEqual(CLIENT_TS);
+    expect(fake.queries[0]!.params[11]).toEqual(CLIENT_TS); // occurred_at
+    expect(fake.queries[0]!.params[13]).toEqual(CLIENT_TS); // created_at
+  });
+});
+
+describe("applyNutritionPantryEvents — tz_offset_min (міграція 109)", () => {
+  it("пише tz_offset_min з рядка клієнта, коли він є", async () => {
+    const fake = new FakeClient();
+    await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -180 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(fake.queries[0]!.params[12]).toBe(-180);
+  });
+
+  it("лишає NULL, коли клієнт ще не шле tz_offset_min (старий клієнт)", async () => {
+    const fake = new FakeClient();
+    await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+    expect(fake.queries[0]!.params[12]).toBeNull();
+  });
+
+  // Pre-beta input-boundaries audit / CodeRabbit PR #627: раніше приймався
+  // будь-який integer, тепер — лише реальний діапазон UTC-офсетів
+  // [-840, 840] хвилин (UTC-14 .. UTC+14).
+  it("приймає межове значення -840 (UTC-14, Baker Island)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -840 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "applied" });
+    expect(fake.queries[0]!.params[12]).toBe(-840);
+  });
+
+  it("приймає межове значення +840 (UTC+14, Line Islands)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: 840 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "applied" });
+    expect(fake.queries[0]!.params[12]).toBe(840);
+  });
+
+  it("відхиляє -841 (за межею реальних UTC-офсетів) з invalid_tz_offset_min", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -841 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({
+      status: "rejected",
+      reason: "invalid_tz_offset_min",
+    });
+    expect(fake.queries).toHaveLength(0);
+  });
+
+  it("відхиляє +841 (за межею реальних UTC-офсетів) з invalid_tz_offset_min", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: 841 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({
+      status: "rejected",
+      reason: "invalid_tz_offset_min",
+    });
   });
 });
 
@@ -316,6 +397,20 @@ describe("applyNutritionPantryEvents — валідація", () => {
       CLIENT_TS,
     );
     expect(res).toEqual({ status: "rejected", reason: "missing_id" });
+  });
+
+  // Pre-beta input-boundaries audit: item_key is canonicalFoodKey, derived
+  // from a user-typed food name — `curl` bypasses the client NAME_MAX_LEN.
+  it("item_key довший за NAME_MAX_LEN → text_too_long", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ item_key: "a".repeat(NAME_MAX_LEN + 1) })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "rejected", reason: "text_too_long" });
+    expect(fake.queries).toHaveLength(0);
   });
 });
 

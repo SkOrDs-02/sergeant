@@ -1,6 +1,8 @@
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import {
+  isWithinTextBound,
+  NOTE_MAX_LEN,
   parseOptionalDate,
   parseRequiredDate,
   parseOptionalNumber,
@@ -77,6 +79,11 @@ export async function applyNutritionMeals(
     typeof row["meal_type"] === "string" ? row["meal_type"] : "snack";
   const name = typeof row["name"] === "string" ? row["name"] : "";
   const label = typeof row["label"] === "string" ? row["label"] : "";
+  // Pre-beta input-boundaries audit: `curl` bypasses the client-side
+  // `NAME_MAX_LEN` guard on the meal name/label — bound it server-side too.
+  if (!isWithinTextBound(name) || !isWithinTextBound(label)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
   const source = typeof row["source"] === "string" ? row["source"] : "manual";
   const macroSource =
     typeof row["macro_source"] === "string" ? row["macro_source"] : "manual";
@@ -231,6 +238,11 @@ export async function applyNutritionPantries(
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
   const text = typeof row["text"] === "string" ? row["text"] : "";
+  // Pre-beta input-boundaries audit: `text` is the longer free-text note
+  // on a pantry, `name` is name-shaped — different bounds, same guard.
+  if (!isWithinTextBound(name) || !isWithinTextBound(text, NOTE_MAX_LEN)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
@@ -331,6 +343,15 @@ export async function applyNutritionPantryItems(
   }
   const unit = typeof row["unit"] === "string" ? row["unit"] : null;
   const notes = typeof row["notes"] === "string" ? row["notes"] : null;
+  // Pre-beta input-boundaries audit: pantry item name/unit are name-shaped,
+  // free-form notes get the longer bound.
+  if (
+    !isWithinTextBound(name) ||
+    !isWithinTextBound(unit) ||
+    !isWithinTextBound(notes, NOTE_MAX_LEN)
+  ) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
   const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
@@ -496,6 +517,9 @@ export async function applyNutritionRecipes(
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
+  if (!isWithinTextBound(name)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
   const dataJson = toJsonbParam(row["data_json"]);
   if (dataJson === null) {
     return { status: "rejected", reason: "missing_data_json" };

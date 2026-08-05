@@ -11,6 +11,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
@@ -341,6 +342,7 @@ export function PantryCard({
                 }
               }}
               placeholder="напр. лосось 300г"
+              maxLength={NAME_MAX_LEN}
               disabled={busy}
             />
             <button
@@ -365,6 +367,7 @@ export function PantryCard({
               onChange={(e) => setPantryText(e.target.value)}
               placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
               className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
+              maxLength={NOTE_MAX_LEN}
               disabled={busy}
             />
             <button

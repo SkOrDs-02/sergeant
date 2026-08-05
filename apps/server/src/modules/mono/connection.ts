@@ -186,25 +186,25 @@ export async function connectHandler(
 
   const encrypted = encryptTokenWithRing(token, ring);
   const fingerprint = tokenFingerprint(token);
-  // Plaintext secret stays in `webhook_secret` only for one release cycle
-  // (rollback safety) — see migration 017's header. The new lookup path
-  // resolves rows by `webhook_secret_hash`, so even if the plaintext
-  // column is dropped tomorrow this insert keeps working.
+  // Phase 2 DROP (migration 107) removed the plaintext `webhook_secret`
+  // column entirely — only `webhook_secret_hash` (017) is persisted now.
+  // Webhook lookup/verification resolves rows exclusively by hash; the
+  // raw `webhookSecret` value only ever lives in the outbound webhook URL
+  // we register with Monobank, never at rest in our DB.
   const webhookSecretHashHex = webhookSecretHash(webhookSecret);
 
   await query(
     `INSERT INTO mono_connection
        (user_id, token_ciphertext, token_iv, token_tag, token_key_version,
-        token_fingerprint, webhook_secret, webhook_secret_hash,
+        token_fingerprint, webhook_secret_hash,
         webhook_registered_at, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active', NOW())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'active', NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        token_ciphertext = EXCLUDED.token_ciphertext,
        token_iv = EXCLUDED.token_iv,
        token_tag = EXCLUDED.token_tag,
        token_key_version = EXCLUDED.token_key_version,
        token_fingerprint = EXCLUDED.token_fingerprint,
-       webhook_secret = EXCLUDED.webhook_secret,
        webhook_secret_hash = EXCLUDED.webhook_secret_hash,
        webhook_registered_at = NOW(),
        status = 'active',
@@ -216,7 +216,6 @@ export async function connectHandler(
       encrypted.tag,
       encrypted.keyVersion,
       fingerprint,
-      webhookSecret,
       webhookSecretHashHex,
     ],
     { op: "mono_connection_upsert" },

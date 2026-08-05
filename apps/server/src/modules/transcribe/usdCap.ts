@@ -30,6 +30,15 @@ const MICROS_PER_USD = 1_000_000;
 const TEN_MB_BYTES = 10 * 1024 * 1024;
 const GROQ_WHISPER_USD_MICROS_PER_10MB = 40_000; // $0.04 = 40_000 micros
 
+/**
+ * `endpoint` тег для цього модуля (міграції 104/106): PK `ai_usage_daily`
+ * тепер 4-колонковий `(subject_key, usage_day, bucket, endpoint)`, і
+ * `endpoint` NOT NULL без DEFAULT — INSERT без явного значення падає
+ * `23502`. Фіксоване значення 'transcribe' достатнє: bucket уже несе модель
+ * (`transcribe:<model>`), а тег кроку тут один-єдиний.
+ */
+const TRANSCRIBE_ENDPOINT = "transcribe";
+
 const DEFAULT_DAILY_CAP_MICROS = 1 * MICROS_PER_USD; // $1.00 / day / user
 
 interface CapResult {
@@ -129,8 +138,9 @@ export async function assertTranscribeUsdCap(
   try {
     const { rows } = await pool.query<UsageRow>(
       `SELECT usd_micros FROM ai_usage_daily
-       WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3`,
-      [subject, day, bucket],
+       WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3
+         AND endpoint = $4`,
+      [subject, day, bucket, TRANSCRIBE_ENDPOINT],
     );
     if (rows.length > 0) {
       // pg `BIGINT` приходить як string — коерсимо у number (AGENTS.md
@@ -223,12 +233,12 @@ export async function recordTranscribeUsdSpend(
   try {
     await pool.query(
       `INSERT INTO ai_usage_daily
-         (subject_key, usage_day, bucket, request_count, usd_micros)
-       VALUES ($1, $2, $3, 1, $4)
-       ON CONFLICT (subject_key, usage_day, bucket) DO UPDATE SET
+         (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+       VALUES ($1, $2, $3, $4, 1, $5)
+       ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
          request_count = ai_usage_daily.request_count + 1,
          usd_micros = ai_usage_daily.usd_micros + EXCLUDED.usd_micros`,
-      [subject, day, bucket, cost],
+      [subject, day, bucket, TRANSCRIBE_ENDPOINT, cost],
     );
   } catch (err) {
     // Не блокуємо успішну транскрипцію через збій ledger-а; залогуємо.
@@ -250,4 +260,5 @@ export const __testing = {
   MICROS_PER_USD,
   GROQ_WHISPER_USD_MICROS_PER_10MB,
   DEFAULT_DAILY_CAP_MICROS,
+  TRANSCRIBE_ENDPOINT,
 };

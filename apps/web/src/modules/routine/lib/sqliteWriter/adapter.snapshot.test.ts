@@ -26,6 +26,17 @@
  *    interleaving-послідовність зафіксована snapshot-ом і може
  *    зміститися від семантично-нейтрального рефакторингу (додатковий
  *    `await`) — це очікувана чутливість гейта.
+ * 3. Саме таке зміщення сталося в CodeRabbit PR #627:
+ *    `enqueueOutboxUpsert` (`core/syncEngine/enqueueOutboxUpsert.ts`) тепер
+ *    серіалізує (content-dedup lookup → INSERT) через module-level
+ *    promise-chain mutex (два конкурентні виклики більше не можуть обидва
+ *    побачити "nothing pending" і обидва вставити рядок). Наслідок для
+ *    ЦЬОГО snapshot-а: кілька fire-and-forget `enqueueOutboxUpsert`
+ *    викликів канонічного набору op-ів більше не переплітаються
+ *    round-robin — кожен виклик тепер завершує свій INSERT цілком, перш
+ *    ніж запуститься наступний у черзі. Той самий набір `(sql, params)`,
+ *    у новому порядку — підтверджено sorted-diff-ом проти
+ *    pre-fix snapshot-а (жоден запис не додався, не зник і не змінився).
  *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.

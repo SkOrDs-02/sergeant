@@ -189,6 +189,16 @@ const WHITELIST = [
     reason:
       "server-only visit telemetry; read by the nudge sweep, never by the client",
   },
+  // "user".force_verify_at (міграція 112, pre-beta schema-debt аудит
+  // 2026-08-04) — Phase D gate для email-verification-sweep. Nullable,
+  // читається лише майбутнім Better Auth sign-in hook-ом (Stage 2, ще не
+  // підключено); клієнт її не бачить і не читає через Drizzle.
+  {
+    table: "user",
+    column: "force_verify_at",
+    reason:
+      "server-only email-verification Phase D gate (docs/01-product/launch/email-verification-sweep.md); read only by the future Better Auth sign-in hook, never by the client",
+  },
   // push_subscriptions: soft-delete column not in Drizzle model
   {
     table: "push_subscriptions",
@@ -804,6 +814,17 @@ const SQL_ONLY_TABLES = [
   // `/api/coach/insight`, читається добовим проходом підштовхувань. Обидва —
   // серверні; клієнту віддається текст поради у відповіді, не рядок таблиці.
   "sergeant_nudge_cache",
+  // GDPR external-cleanup queue (міграція 113, ADR-0016 § ADR-6.3).
+  // Server-only worker-таблиця (Stripe/Sentry/PostHog/Resend purge після
+  // deleteUser); клієнт про неї не знає, і Drizzle-модель без FK на
+  // "user"(id) не додає типової цінності поза сервером.
+  "gdpr_cleanup_queue",
+  // Серверний write-through бекап-стор для nutrition (міграція 114) —
+  // заміна ефемерної файлової системи контейнера
+  // (`apps/server/src/modules/nutrition/backup-upload.ts`). Читає/пише
+  // лише той серверний модуль; клієнт бачить лише success/failure
+  // відповіді ендпоінта, не рядки таблиці.
+  "nutrition_backups",
 ];
 
 function isSqlOnlyAllowlisted(table) {

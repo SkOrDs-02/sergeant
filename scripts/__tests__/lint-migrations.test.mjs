@@ -763,6 +763,30 @@ describe("run() — integration", () => {
     assert.equal(ok, false);
     assert.ok(errors.some((e) => e.includes("Duplicate")));
   });
+
+  // CodeRabbit PR #627 review — regression case for the filename-based
+  // `APPLIED_DUPLICATE_FILENAMES` allowlist (see its header comment above):
+  // the two historically-applied 091 files must keep passing together, but
+  // a THIRD file reusing number 091 (never deployed, not in the allowlist)
+  // must still trip `newDuplicates` — the whitelist excuses exactly those
+  // two filenames, not "any duplicate on number 91".
+  it("fails when a third 091 file joins the two allowlisted ones", () => {
+    writeFileSync(join(tmpDir, "090_a.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "091_privat_connection.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "091_telegram_beta_survey.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "091_new.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "092_b.sql"), "SELECT 1;\n");
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "091_new.sql")],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("Duplicate migration numbers: 091")),
+      `expected a duplicate-091 error, got: ${errors.join(" | ")}`,
+    );
+  });
 });
 
 // ── findCrossBranchCollisions ────────────────────────────────────────────────

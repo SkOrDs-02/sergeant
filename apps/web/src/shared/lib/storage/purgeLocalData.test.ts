@@ -19,8 +19,6 @@ describe("isAppOwnedLocalStorageKey", () => {
     expect(isAppOwnedLocalStorageKey("sergeant.profile.memory.open")).toBe(
       true,
     );
-    // sqlite-wasm kvvfs backing store
-    expect(isAppOwnedLocalStorageKey("kvvfs-local-42")).toBe(true);
     // Exact non-prefixed registry keys
     expect(isAppOwnedLocalStorageKey("ios_install_banner_dismissed")).toBe(
       true,
@@ -37,6 +35,10 @@ describe("isAppOwnedLocalStorageKey", () => {
     expect(isAppOwnedLocalStorageKey("__better_auth_session")).toBe(false);
     expect(isAppOwnedLocalStorageKey("some_random_key")).toBe(false);
   });
+
+  it("never matches the sqlite-wasm kvvfs backing store — isolation for that lives in wipeSqliteDb()'s row-level DELETE, not a wholesale key purge (see anonymous-local-first-persistence spec)", () => {
+    expect(isAppOwnedLocalStorageKey("kvvfs-local-42")).toBe(false);
+  });
 });
 
 describe("purgeAppOwnedLocalStorage", () => {
@@ -47,22 +49,31 @@ describe("purgeAppOwnedLocalStorage", () => {
     localStorage.setItem("finyk_tx_cache", "[{tx}]");
     localStorage.setItem("nutrition_water_v1", "{}");
     localStorage.setItem("hub_dark_mode_v1", "true");
-    localStorage.setItem("kvvfs-local-0", "blob-0");
-    localStorage.setItem("kvvfs-local-1", "blob-1");
     localStorage.setItem("ph_phc_project", "id");
     localStorage.setItem("sentry_replay", "x");
 
     const removed = purgeAppOwnedLocalStorage();
 
-    expect(removed).toBe(5);
+    expect(removed).toBe(3);
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("nutrition_water_v1")).toBeNull();
     expect(localStorage.getItem("hub_dark_mode_v1")).toBeNull();
-    expect(localStorage.getItem("kvvfs-local-0")).toBeNull();
-    expect(localStorage.getItem("kvvfs-local-1")).toBeNull();
     // Foreign origins survive.
     expect(localStorage.getItem("ph_phc_project")).toBe("id");
     expect(localStorage.getItem("sentry_replay")).toBe("x");
+  });
+
+  it("leaves the kvvfs backing store untouched — a shared, non-per-user physical store that wipeSqliteDb() scopes by user_id instead", () => {
+    localStorage.setItem("kvvfs-local-0", "blob-0");
+    localStorage.setItem("kvvfs-local-1", "blob-1");
+
+    purgeAppOwnedLocalStorage();
+
+    expect(localStorage.getItem("kvvfs-local-0")).toBe("blob-0");
+    expect(localStorage.getItem("kvvfs-local-1")).toBe("blob-1");
+
+    localStorage.removeItem("kvvfs-local-0");
+    localStorage.removeItem("kvvfs-local-1");
   });
 
   it("is a no-op on an empty store", () => {

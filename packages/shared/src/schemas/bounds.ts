@@ -21,6 +21,14 @@ export const HARD_MAX_DAY_KEY = "2100-01-01";
 export const NAME_MAX_LEN = 200;
 
 /**
+ * Довші вільні тексти (нотатки, описи комори). Дзеркалить
+ * `apps/web/src/shared/lib/text/limits.ts::NOTE_MAX_LEN` — клієнт цю
+ * константу не імпортує звідси (web поза скоупом цієї зміни), тож при
+ * зміні одного значення звір і друге вручну.
+ */
+export const NOTE_MAX_LEN = 1000;
+
+/**
  * Сума в копійках: ціле число в `[1; 1 000 000 000]`. `.int()` уже
  * відкидає `NaN`, `±Infinity` і дробові значення.
  */
@@ -45,3 +53,6 @@ export const boundedDayKeySchema = z
 
 /** Назва / короткий опис — не довше 200 символів. */
 export const nameTextSchema = z.string().max(NAME_MAX_LEN);
+
+/** Вільний текст (нотатки/опис) — не довше 1000 символів. */
+export const noteTextSchema = z.string().max(NOTE_MAX_LEN);

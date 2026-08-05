@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI 15 повідомлень/день + cloud-sync 2 пристрої. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
@@ -8,6 +8,8 @@
 > **Update 2026-05-06:** pricing v3 зафіксовано в [ADR-0051](../../../04-governance/adr/0051-pricing-v3-single-tier.md) — **Superseded by ADR-0068**. Секції §2.2 (Plus tier з decoy), §2.3 (pay-per-feature) та альтернативна ціна ₴2999 Lifetime — не йдуть у код MVP (залишаються як historical context нижче).
 >
 > **Канон 2026-05-19:** delivery-статус живе у [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-revenue-2026-05.md). Pricing tables і LiqPay/native-IAP варіанти нижче — історичний decision context. Поточний billing-контракт у коді: `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/stripe-webhook`; live rollout/env/legal readiness лишається в Initiative 0010.
+>
+> **Update 2026-08-05 (рішення founder-а, pre-beta аудит 2026-08-04):** у **беті платежів немає** — тестери отримують Pro вручну. Цільові платіжні провайдери після бети — **LiqPay** та **«Плата» від Monobank**; Stripe-контракт у коді лишається як задел, але не вмикається. Grandfather-міграція для «існуючих юзерів» скасована (прод-БД зачищається перед бетою) — див. [06 § Update 2026-08-05](./06-monetization-architecture.md).
 
 > Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:
 > `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.
@@ -154,7 +156,7 @@ Freemium — найкращий вибір для Sergeant, бо:
            (як Spotify/Netflix) — легально, але Apple воює.
 ```
 
-**Прескриптивний висновок для Sergeant:**
+**Прескриптивний висновок для Sergeant** _(historical, травень 2026 — superseded рішенням founder-а 2026-08-05: цільова пара після бети — LiqPay + «Плата» від Monobank; Stripe — неактивний задел, Paddle знято з активної послідовності; див. Update у шапці)_:
 
 1. **Місяць 1–3 (MVP, UA):** обрати **LiqPay** — найшвидший старт, рідний для UA, знайома checkout-сторінка для Mono-юзерів.
 2. **Місяць 3–6 (масштаб):** додати **Stripe** паралельно — міжнародні картки, Customer Portal, subscription lifecycle webhooks.

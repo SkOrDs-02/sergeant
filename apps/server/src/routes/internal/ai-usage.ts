@@ -58,9 +58,9 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
         inputTokens,
         outputTokens,
         totalTokens,
-        // Без ендпоінта рядок не дедуплікується новим унікальним індексом
-        // (міграція 091): NULL-и в Postgres унікальні між собою, тож кожен
-        // виклик створював би окремий рядок замість інкременту.
+        // Без ендпоінта рядок не дедуплікується PK (міграції 104/106):
+        // NULL-и в Postgres унікальні між собою, тож кожен виклик
+        // створював би окремий рядок замість інкременту.
         `n8n:${source}`,
       ],
     );
@@ -85,7 +85,7 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
 
     const { rows } = await pool.query(
       `SELECT
-         COALESCE(endpoint, 'unknown')          AS endpoint,
+         COALESCE(endpoint, 'legacy')           AS endpoint,
          bucket,
          SUM(request_count)::bigint             AS calls,
          SUM(input_tokens)::bigint              AS input_tokens,

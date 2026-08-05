@@ -196,8 +196,8 @@ async function seedConnection(
   await testPool.query(
     `INSERT INTO mono_connection
        (user_id, token_ciphertext, token_iv, token_tag, token_fingerprint,
-        webhook_secret, webhook_secret_hash, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        webhook_secret_hash, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT (user_id) DO NOTHING`,
     [
       userId,
@@ -205,7 +205,6 @@ async function seedConnection(
       Buffer.from("dummy_iv"),
       Buffer.from("dummy_tag"),
       "dummy_fingerprint",
-      secret,
       secretHash,
       status,
     ],

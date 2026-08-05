@@ -17,6 +17,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { useAuthOptional } from "../auth/AuthContext";
 import {
   BIOMETRICS_KEY,
   readBiometrics,
@@ -24,6 +25,7 @@ import {
   writeBiometricsPatch,
   type Biometrics,
 } from "./biometrics";
+import { pushBiometricsToServer } from "./profileWriteThrough";
 
 export interface UseBiometricsResult {
   biometrics: Biometrics;
@@ -39,6 +41,14 @@ export interface UseBiometricsResult {
 }
 
 export function useBiometrics(): UseBiometricsResult {
+  // Non-throwing: consumers of this hook (e.g. nutrition's
+  // `DailyPlanGoalSelectors`) render both inside the authenticated app
+  // shell (wrapped in `AuthProvider`) and in narrower contexts (unit
+  // tests mounting a single presentational component) that don't need
+  // the full provider tree. `user` is only used to decide whether to
+  // fire the best-effort server write-through below.
+  const auth = useAuthOptional();
+  const user = auth?.user ?? null;
   const [biometrics, setBiometrics] = useState<Biometrics>(() =>
     readBiometrics(),
   );
@@ -60,9 +70,16 @@ export function useBiometrics(): UseBiometricsResult {
     (next) => {
       const merged = writeBiometricsPatch(next);
       setBiometrics(merged);
+      // Write-through to `/api/me/profile` for authenticated users only —
+      // best-effort, never blocks the local save. See
+      // `./profileWriteThrough.ts` for the LWW contract with the boot-time
+      // reconcile (`useProfileWriteThroughBoot`).
+      if (user?.id) {
+        void pushBiometricsToServer(merged);
+      }
       return merged;
     },
-    [],
+    [user?.id],
   );
 
   return { biometrics, saveBiometrics };

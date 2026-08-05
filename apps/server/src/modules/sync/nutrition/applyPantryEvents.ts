@@ -1,6 +1,11 @@
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
-import { parseOptionalDate, parseOptionalNumber } from "../syncV2-core.js";
+import {
+  isWithinTextBound,
+  parseOptionalDate,
+  parseOptionalNumber,
+  parseOptionalTzOffsetMin,
+} from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
 /**
@@ -121,6 +126,11 @@ export async function applyNutritionPantryEvents(
       ? row["item_key"]
       : null;
   if (!itemKey) return { status: "rejected", reason: "missing_id" };
+  // Pre-beta input-boundaries audit: `item_key` is `canonicalFoodKey`,
+  // derived from a user-typed food name — bound it like any other name field.
+  if (!isWithinTextBound(itemKey)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
 
   const kind = typeof row["kind"] === "string" ? row["kind"] : "";
   if (!EVENT_KINDS.has(kind)) {
@@ -150,6 +160,14 @@ export async function applyNutritionPantryEvents(
   const unit = typeof row["unit"] === "string" ? row["unit"] : null;
   const source = typeof row["source"] === "string" ? row["source"] : "manual";
   const mealId = typeof row["meal_id"] === "string" ? row["meal_id"] : null;
+  // `tz_offset_min` (міграція 109) — опційне: старі клієнти його ще не
+  // шлють, тоді лишається NULL (ADR-0078 device-local day boundary). Поза
+  // реальним діапазоном UTC-офсетів — reject, а не мовчазний NULL
+  // (pre-beta input-boundaries audit, CodeRabbit PR #627).
+  const tzOffsetMin = parseOptionalTzOffsetMin(row["tz_offset_min"]);
+  if (tzOffsetMin === "invalid") {
+    return { status: "rejected", reason: "invalid_tz_offset_min" };
+  }
 
   // `occurred_at` свідомо перевикористовує reason `invalid_created_at`
   // замість власного літерала: обидва поля — timestamptz однієї події, а
@@ -171,8 +189,9 @@ export async function applyNutritionPantryEvents(
   await client.query(
     `INSERT INTO nutrition_pantry_events
        (id, user_id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
-        unit, source, meal_id, occurred_at, created_at, updated_at, deleted_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        unit, source, meal_id, occurred_at, tz_offset_min, created_at,
+        updated_at, deleted_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
      ON CONFLICT (id) DO NOTHING`,
     [
       id,
@@ -187,6 +206,7 @@ export async function applyNutritionPantryEvents(
       source,
       mealId,
       occurredAt ?? clientTs,
+      tzOffsetMin,
       createdAt ?? clientTs,
       clientTs,
       deletedAt ?? null,

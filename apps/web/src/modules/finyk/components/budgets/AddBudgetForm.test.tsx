@@ -308,6 +308,14 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("caps the goal name at NAME_MAX_LEN (client maxLength, beta-input-boundaries)", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));
+
+    const nameInput = screen.getByLabelText("Назва цілі");
+    expect(nameInput).toHaveAttribute("maxLength", "200");
+  });
+
   it("rejects a decimal goal target amount", async () => {
     const { onSubmit } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Ціль/ }));

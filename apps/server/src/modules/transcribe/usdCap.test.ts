@@ -264,7 +264,10 @@ describe("H9 recordTranscribeUsdSpend — UPSERT", () => {
     expect(sql).toContain("usd_micros = ai_usage_daily.usd_micros + EXCLUDED");
     expect(args[0]).toBe("u:u-paid");
     expect(args[2]).toBe(`transcribe:${MODEL}`);
-    expect(args[3]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
+    // Міграції 104/106: `endpoint` тепер NOT NULL / частина PK — фіксоване
+    // значення 'transcribe' для цього модуля.
+    expect(args[3]).toBe(__testing.TRANSCRIBE_ENDPOINT);
+    expect(args[4]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
   });
 
   it("0 байт → НЕ викликає DB (нема чого записувати)", async () => {

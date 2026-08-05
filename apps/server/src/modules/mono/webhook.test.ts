@@ -196,7 +196,7 @@ describe("webhookHandler", () => {
 
   it("returns 400 for invalid payload", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
 
     const res = makeRes();
@@ -210,7 +210,7 @@ describe("webhookHandler", () => {
 
   it("processes valid webhook: upserts transaction, updates balance and last_event_at", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
 
     const client = makeClient();
@@ -250,7 +250,7 @@ describe("webhookHandler", () => {
 
   it("fires push (fire-and-forget) on first INSERT with formatted amount + balance", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -300,7 +300,7 @@ describe("webhookHandler", () => {
       },
     };
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -316,7 +316,7 @@ describe("webhookHandler", () => {
 
   it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: false });
@@ -332,7 +332,7 @@ describe("webhookHandler", () => {
 
   it("marks `(резерв)` in body for hold transactions", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -362,7 +362,7 @@ describe("webhookHandler", () => {
 
   it("idempotent: duplicate mono_tx_id is handled by ON CONFLICT", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client1 = makeClient();
     queueHappyPathClient(client1, { inserted: true });
@@ -374,7 +374,7 @@ describe("webhookHandler", () => {
 
     vi.clearAllMocks();
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client2 = makeClient();
     queueHappyPathClient(client2, { inserted: false });
@@ -387,7 +387,7 @@ describe("webhookHandler", () => {
 
   it("returns 400 when payload is missing statementItem.id", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
 
     const badPayload = {
@@ -425,7 +425,7 @@ describe("webhookHandler", () => {
 
   it("C1: приймає секрет через X-Mono-Webhook-Secret header (header-only, path порожній)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -444,7 +444,7 @@ describe("webhookHandler", () => {
 
   it("C1: header виграє при колізії з path (forward-compat для rollout-у)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -482,7 +482,7 @@ describe("webhookHandler", () => {
     // proxy-нормалізації), ми трактуємо це як відсутність header-у і не
     // crash-имо. Тоді fallback на path-secret.
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -501,7 +501,7 @@ describe("webhookHandler", () => {
 
   it("маппить mcc → category_slug і передає його у INSERT (Monobank Roadmap C)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -521,7 +521,7 @@ describe("webhookHandler", () => {
 
   it("category_slug = null для невідомого MCC", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: true });
@@ -546,7 +546,7 @@ describe("webhookHandler", () => {
 
   it("ON CONFLICT-гілка SQL зберігає category_slug під захистом category_overridden", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     queueHappyPathClient(client, { inserted: false });
@@ -563,7 +563,7 @@ describe("webhookHandler", () => {
 
   it("re-throws DB errors and records error metric (rollback runs)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
     const client = makeClient();
     client.query
@@ -587,7 +587,7 @@ describe("webhookHandler", () => {
 
   it("FK violation (23503) on tx upsert → autocreates mono_account stub and retries inside same TX", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
 
     const fkErr = Object.assign(new Error("FK violation"), { code: "23503" });
@@ -633,7 +633,7 @@ describe("webhookHandler", () => {
 
   it("non-FK errors are NOT retried (only 23503 triggers autocreate)", async () => {
     dbQuery.mockResolvedValueOnce({
-      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+      rows: [{ user_id: "user_1" }],
     });
 
     const otherErr = Object.assign(new Error("connection lost"), {
