@@ -72,6 +72,31 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   },
   {
     "params": [
+      "i1:s0",
+      "i1",
+      "u1",
+      80,
+      8,
+      null,
+      0,
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO fizruk_workout_sets
+       (id, workout_item_id, user_id, weight_kg, reps, rpe,
+        sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+     ON CONFLICT(id) DO UPDATE SET
+       weight_kg       = excluded.weight_kg,
+       reps            = excluded.reps,
+       rpe             = excluded.rpe,
+       sort_order      = excluded.sort_order,
+       updated_at      = excluded.updated_at,
+       deleted_at      = NULL
+     WHERE excluded.updated_at > fizruk_workout_sets.updated_at",
+  },
+  {
+    "params": [
       "u1",
       "fizruk_workouts",
       "insert",
@@ -85,13 +110,13 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   },
   {
     "params": [
-      "i1:s0",
+      "i1:s1",
       "i1",
       "u1",
-      80,
+      85,
+      6,
       8,
-      null,
-      0,
+      1,
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -136,44 +161,6 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   },
   {
     "params": [
-      "i1:s1",
-      "i1",
-      "u1",
-      85,
-      6,
-      8,
-      1,
-      "2026-06-23T00:00:00.000Z",
-      "2026-06-23T00:00:00.000Z",
-    ],
-    "sql": "INSERT INTO fizruk_workout_sets
-       (id, workout_item_id, user_id, weight_kg, reps, rpe,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
-     ON CONFLICT(id) DO UPDATE SET
-       weight_kg       = excluded.weight_kg,
-       reps            = excluded.reps,
-       rpe             = excluded.rpe,
-       sort_order      = excluded.sort_order,
-       updated_at      = excluded.updated_at,
-       deleted_at      = NULL
-     WHERE excluded.updated_at > fizruk_workout_sets.updated_at",
-  },
-  {
-    "params": [
-      "u1",
-      "fizruk_workout_sets",
-      "insert",
-      "{"id":"i1:s1","user_id":"u1","workout_item_id":"i1","weight_kg":85,"reps":6,"rpe":8,"sort_order":1,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
-      "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000004",
-    ],
-    "sql": "INSERT OR IGNORE INTO sync_op_outbox
-       (user_id, table_name, op, row, client_ts, idempotency_key)
-     VALUES (?, ?, ?, ?, ?, ?)",
-  },
-  {
-    "params": [
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
       "i1",
@@ -187,6 +174,19 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
         AND user_id = ?
         AND deleted_at IS NULL
         AND id NOT IN (?,?)",
+  },
+  {
+    "params": [
+      "u1",
+      "fizruk_workout_sets",
+      "insert",
+      "{"id":"i1:s1","user_id":"u1","workout_item_id":"i1","weight_kg":85,"reps":6,"rpe":8,"sort_order":1,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000004",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
   },
   {
     "params": [
@@ -410,19 +410,6 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   },
   {
     "params": [
-      "u1",
-      "fizruk_daily_log",
-      "insert",
-      "{"id":"d1","user_id":"u1","entry_at":"2026-06-20T21:00:00.000Z","weight_kg":82.5,"sleep_hours":7.5,"energy_level":4,"mood":3,"note":"ok","created_at":"2026-06-23T00:00:00.000Z"}",
-      "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000010",
-    ],
-    "sql": "INSERT OR IGNORE INTO sync_op_outbox
-       (user_id, table_name, op, row, client_ts, idempotency_key)
-     VALUES (?, ?, ?, ?, ?, ?)",
-  },
-  {
-    "params": [
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
       "d2",
@@ -437,10 +424,10 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
     "params": [
       "u1",
       "fizruk_daily_log",
-      "delete",
-      "{"id":"d2","user_id":"u1"}",
+      "insert",
+      "{"id":"d1","user_id":"u1","entry_at":"2026-06-20T21:00:00.000Z","weight_kg":82.5,"sleep_hours":7.5,"energy_level":4,"mood":3,"note":"ok","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000011",
+      "00000000-0000-4000-8000-000000000010",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -462,11 +449,11 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   {
     "params": [
       "u1",
-      "fizruk_monthly_plan",
-      "insert",
-      "{"user_id":"u1","data_json":"{\\"month\\":\\"2026-06\\"}"}",
+      "fizruk_daily_log",
+      "delete",
+      "{"id":"d2","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000012",
+      "00000000-0000-4000-8000-000000000011",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -499,11 +486,11 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
   {
     "params": [
       "u1",
-      "fizruk_workout_templates",
+      "fizruk_monthly_plan",
       "insert",
-      "{"id":"tpl1","user_id":"u1","name":"Push day","exercise_ids_json":"[\\"bench-press\\"]","groups_json":"[]","last_used_at":null,"created_at":"2026-06-23T00:00:00.000Z"}",
+      "{"user_id":"u1","data_json":"{\\"month\\":\\"2026-06\\"}"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000013",
+      "00000000-0000-4000-8000-000000000012",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -520,6 +507,19 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
     "sql": "UPDATE fizruk_workout_templates
         SET deleted_at = ?, updated_at = ?
       WHERE id = ? AND user_id = ? AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "fizruk_workout_templates",
+      "insert",
+      "{"id":"tpl1","user_id":"u1","name":"Push day","exercise_ids_json":"[\\"bench-press\\"]","groups_json":"[]","last_used_at":null,"created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000013",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
   },
   {
     "params": [

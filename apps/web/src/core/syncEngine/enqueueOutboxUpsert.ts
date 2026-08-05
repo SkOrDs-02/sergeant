@@ -64,6 +64,20 @@ export interface EnqueueOutboxUpsertResult {
  * Idempotent on idempotencyKey — a pre-existing row with the same key
  * is returned as-is (inserted: false).
  *
+ * Additionally deduplicated on **content** (see {@link findDuplicatePending}):
+ * every caller in this codebase mints a fresh `crypto.randomUUID()` for
+ * `idempotencyKey` on every call, so the idempotency-key precheck alone
+ * never catches a genuine double-submit (double-click, retry-after-offline,
+ * a `popstate`-vs-submit race) — each attempt gets its own key. The content
+ * check compares against the single most-recent still-`pending` row for the
+ * same `(user_id, table_name, op)`; once a row is pushed it is `DELETE`-d
+ * (`markOutboxSuccess`), so a later *legitimate* repeat of the same content
+ * is never blocked by history. Limiting the comparison to the most recent
+ * pending row (not any older one) keeps rapid, genuinely different writes to
+ * the same op-shape (e.g. toggling a preference on/off/on again before the
+ * first push drains) from being coalesced into a stale earlier op — see
+ * `docs/90-work/planning/specs/beta-input-boundaries.md` § «Ризики».
+ *
  * Ops belonging to a synthetic local user id (anonymous / demo) are NOT
  * written: `drainSyncOpOutbox` scopes on the Better Auth session id, so
  * such a row could never be pushed nor purged. The call resolves with
@@ -93,6 +107,21 @@ export async function enqueueOutboxUpsert(
   // Локальний SQLite-запис уже стався вище по стеку і не залежить від цього.
   if (!isSyncableUserId(userId)) {
     return { id: null, inserted: false, skipped: "non-syncable-user" };
+  }
+
+  // Content-level dedup — see the doc comment above for rationale. Runs
+  // before the idempotency-key precheck since a hit here means we never
+  // touch the key path at all (the duplicate submit gets the *original*
+  // row's id back verbatim).
+  const duplicate = await findDuplicatePending(client, {
+    userId,
+    table,
+    op,
+    row,
+    clientTs,
+  });
+  if (duplicate !== null) {
+    return { id: duplicate, inserted: false, skipped: null };
   }
 
   // Pre-check idempotency — mirrors enqueueOutboxIncrement semantics.
@@ -132,4 +161,77 @@ export async function enqueueOutboxUpsert(
   notifyOutboxEnqueued();
 
   return { id: afterRow.id, inserted: true, skipped: null };
+}
+
+/**
+ * Looks up the most recent still-`pending` outbox row for the same
+ * `(user_id, table_name, op)` and returns its id if its content matches
+ * `row` — `null` when there is no such row or its content differs.
+ *
+ * "Content matches" ignores any field whose value equals that op's own
+ * `clientTs`: write paths commonly echo the call-time timestamp into
+ * columns like `completed_at` / `created_at`, and two truly duplicate
+ * submits fired milliseconds apart each mint their own `clientTs`, which
+ * would otherwise defeat an exact-JSON compare.
+ */
+async function findDuplicatePending(
+  client: SqliteMigrationClient,
+  args: {
+    userId: string;
+    table: string;
+    op: OutboxUpsertOpKind;
+    row: Readonly<Record<string, unknown>>;
+    clientTs: string;
+  },
+): Promise<number | null> {
+  const { userId, table, op, row, clientTs } = args;
+
+  const rows = await client.all<{
+    id: number;
+    row: string;
+    client_ts: string;
+  }>(
+    `SELECT id, row, client_ts FROM sync_op_outbox
+       WHERE user_id = ? AND table_name = ? AND op = ? AND status = 'pending'
+       ORDER BY id DESC
+       LIMIT 1`,
+    [userId, table, op],
+  );
+  const lastPending = rows[0];
+  if (lastPending === undefined) return null;
+
+  let parsedRow: unknown;
+  try {
+    parsedRow = JSON.parse(lastPending.row);
+  } catch {
+    return null;
+  }
+  if (typeof parsedRow !== "object" || parsedRow === null) return null;
+
+  const isMatch =
+    canonicalizeRowForDedup(
+      parsedRow as Record<string, unknown>,
+      lastPending.client_ts,
+    ) === canonicalizeRowForDedup(row, clientTs);
+
+  return isMatch ? lastPending.id : null;
+}
+
+/**
+ * Deterministic, sorted-key string form of `row` with any field whose
+ * value equals `clientTs` stripped out. Used only for the in-process
+ * content-dedup compare above — never persisted.
+ */
+function canonicalizeRowForDedup(
+  row: Readonly<Record<string, unknown>>,
+  clientTs: string,
+): string {
+  const keys = Object.keys(row).sort();
+  const parts: string[] = [];
+  for (const key of keys) {
+    const value = row[key];
+    if (value === clientTs) continue;
+    parts.push(`${JSON.stringify(key)}:${JSON.stringify(value)}`);
+  }
+  return `{${parts.join(",")}}`;
 }
