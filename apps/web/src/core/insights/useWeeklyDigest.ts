@@ -355,12 +355,14 @@ export interface RoutineAggregate {
 
 export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it
-  // is deleted on boot after the one-time SQLite import (`residualImport.ts`)
-  // and `saveRoutineState()` no longer writes it. Reading that key here
-  // returned `null` in production, so the weekly digest (and the `compare_weeks`
-  // chat tool, which calls this) reported zero habits even for users who had
-  // them. Read `loadRoutineState()` — the canonical SQLite-backed source the
-  // Routine UI and `queryRoutineActions` use — so digest and module UI agree.
+  // used to be deleted on boot after a one-time SQLite import
+  // (`residualImport.ts`, removed 2026-08 once no pre-beta testers were left
+  // with pre-SQLite LS data to migrate) and `saveRoutineState()` no longer
+  // writes it. Reading that key here returned `null` in production, so the
+  // weekly digest (and the `compare_weeks` chat tool, which calls this)
+  // reported zero habits even for users who had them. Read
+  // `loadRoutineState()` — the canonical SQLite-backed source the Routine UI
+  // and `queryRoutineActions` use — so digest and module UI agree.
   const state = loadRoutineState();
 
   const habits = state.habits.filter((h) => !h.archived);

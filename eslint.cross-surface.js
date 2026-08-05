@@ -247,12 +247,14 @@ export const crossSurfaceBlocks = [
       // read/write entry-points that everyone else should call.
       "apps/web/src/modules/routine/lib/routineStorage.ts",
       "apps/mobile/src/modules/routine/lib/routineStore.ts",
-      // Stage 8 PR #057r-tombstone — the residual-import helper +
-      // shared `routineStorage` instance are the only callsites
-      // allowed to touch the now-deprecated `hub_routine_v1` LS key.
-      // The helper drains the leftover LS payload into SQLite once
-      // on boot and then deletes the key.
-      "apps/web/src/modules/routine/lib/residualImport.ts",
+      // Stage 8 PR #057r-tombstone — the shared `routineStorage`
+      // instance is a callsite allowed to touch the now-deprecated
+      // `hub_routine_v1` LS key. It used to be shared with a
+      // boot-time residual-import helper (`residualImport.ts`, one-time
+      // pre-beta LS→SQLite drain, removed 2026-08 once no testers were
+      // left with pre-SQLite LS data to migrate — see git history) that
+      // drained the leftover LS payload into SQLite once on boot and
+      // then deleted the key.
       "apps/web/src/modules/routine/lib/routineStorageInstance.ts",
       // Stage 8 PR #057r-tombstone-mobile — mobile mirror of the
       // residual-import helper. Drains the leftover `hub_routine_v1`

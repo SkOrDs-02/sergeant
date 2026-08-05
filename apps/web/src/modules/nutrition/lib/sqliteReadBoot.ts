@@ -9,25 +9,27 @@
  * available:
  *
  *  1. Runs the nutrition SQLite migrations so the tables exist.
- *  2. Stage 8 PR #057n-tombstone: imports any residual LS values
- *     (`nutrition_log_v1`, `nutrition_pantries_v1`,
- *     `nutrition_active_pantry_v1`, `nutrition_prefs_v1`) into the
- *     SQLite tables and deletes the LS keys. Idempotent; subsequent
- *     boots no-op once the LS keys are gone.
- *  3. Performs the initial `refreshNutritionSqliteState()` so the cache
+ *  2. Performs the initial `refreshNutritionSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
  * Stage 8 PR #057n dropped `feature.nutrition.sqlite_v2.read_sqlite` —
  * the boot is unconditional once a `userId` is available. The function
  * latches via the module-level `booted` flag so the second call is a
  * no-op.
+ *
+ * Stage 8 PR #057n-tombstone originally also drained any residual LS
+ * values (`nutrition_log_v1`, `nutrition_pantries_v1`,
+ * `nutrition_active_pantry_v1`, `nutrition_prefs_v1`) into SQLite here
+ * via `importNutritionResidualFromLs` (`./residualImport.ts`). That
+ * one-time pre-beta drain was removed 2026-08 once no testers were left
+ * with pre-SQLite LS data to migrate — see git history for the prior
+ * implementation.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateNutrition } from "./clientMigrate.js";
-import { importNutritionResidualFromLs } from "./residualImport.js";
 import { refreshNutritionSqliteState } from "./sqliteReader.js";
 
 let booted = false;
@@ -49,13 +51,6 @@ export async function bootNutritionSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateNutrition(client);
-
-    // Stage 8 PR #057n-tombstone: drain LS into SQLite before the
-    // first cache refresh so warm-up sees any leftover values that
-    // older builds wrote. Failures here are non-fatal — the residual
-    // helper logs and falls back to a no-op so the boot can keep
-    // going on a fresh-install / clean-LS device.
-    await importNutritionResidualFromLs(client, userId);
 
     await refreshNutritionSqliteState(client, userId);
 

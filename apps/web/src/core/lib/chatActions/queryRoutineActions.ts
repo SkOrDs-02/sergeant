@@ -66,9 +66,11 @@ interface RoutineHabit {
 /**
  * Read-only routine snapshot from the canonical SQLite-backed state.
  *
- * Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it is
- * deleted on boot after the one-time SQLite import (`residualImport.ts`) and
- * `saveRoutineState()` (used by the routine write tools) no longer writes it.
+ * Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it
+ * used to be deleted on boot after a one-time SQLite import
+ * (`residualImport.ts`, removed 2026-08 once no pre-beta testers were left
+ * with pre-SQLite LS data to migrate) and `saveRoutineState()` (used by the
+ * routine write tools) no longer writes it.
  * Reading that key here returned an empty journal in production, so
  * `query_habits` / `habit_correlation` answered "Немає звичок" even for users
  * with habits, and a habit just created via the `create_habit` write tool

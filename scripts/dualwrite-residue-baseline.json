@@ -37,10 +37,6 @@
     "apps/mobile/src/modules/fizruk/hooks/useActiveFizrukWorkout.ts"
   ],
   "canonicalResidualImportPaths": [
-    "apps/web/src/modules/finyk/lib/residualImport.ts",
-    "apps/web/src/modules/fizruk/lib/residualImport.ts",
-    "apps/web/src/modules/nutrition/lib/residualImport.ts",
-    "apps/web/src/modules/routine/lib/residualImport.ts",
     "apps/mobile/src/modules/finyk/lib/residualImport.ts",
     "apps/mobile/src/modules/fizruk/lib/residualImport.ts",
     "apps/mobile/src/modules/nutrition/lib/residualImport.ts",

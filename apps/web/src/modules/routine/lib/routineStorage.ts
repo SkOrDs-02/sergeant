@@ -7,9 +7,12 @@
  * dual-write pipeline (the same one Stage 10 PR #070r-dualwrite uses
  * to mirror habits / tags / categories / prefs / pushups / habitOrder /
  * completionNotes / completions to the 7 routine_* SQLite tables).
- * Residual LS data is drained on boot once via
- * `importRoutineResidualFromLs` (`./residualImport.ts`) and then the
- * legacy `STORAGE_KEYS.ROUTINE` key is deleted.
+ * Residual LS data used to be drained on boot once via
+ * `importRoutineResidualFromLs` (`./residualImport.ts`) before the
+ * legacy `STORAGE_KEYS.ROUTINE` key was deleted — that one-time
+ * pre-beta drain was removed 2026-08 once no testers were left with
+ * pre-SQLite LS data to migrate (see git history for the prior
+ * implementation).
  *
  * The exported function names are unchanged so call sites across the
  * web app keep working — only the source of truth moved from LS to
