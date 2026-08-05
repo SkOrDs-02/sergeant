@@ -14,9 +14,14 @@ import { markOnboardingDone } from "./onboarding";
 import { ALL_MODULES, VIBE_PICKS_KEY, saveVibePicks } from "./vibePicks";
 
 describe("activeModules — getActiveModules", () => {
-  it("returns [] on a fresh store (S6.1: no auto-fallback before onboarding)", () => {
+  // Аудит 2026-08-05 (знахідка B2): «немає збереженого вибору» тепер означає
+  // «ми не знаємо, що людина обрала», а не «вона обрала нічого». Так буває
+  // після прямої реєстрації через /sign-in (візарда не було) і при вході на
+  // новому пристрої (вибір не синхронізується). Показувати там мертвий хаб
+  // з «0 з 4» — гірше, ніж показати всі модулі.
+  it("returns ALL_MODULES on a fresh store (нема вибору → показуємо все)", () => {
     const store = createMemoryKVStore();
-    expect(getActiveModules(store)).toEqual([]);
+    expect(getActiveModules(store)).toEqual([...ALL_MODULES]);
   });
 
   it("returns the saved subset when the user picked modules", () => {
@@ -32,10 +37,19 @@ describe("activeModules — getActiveModules", () => {
     expect(getActiveModules(store)).toEqual([...ALL_MODULES]);
   });
 
-  it("returns [] when picks empty AND onboarding not yet done (S6.1: opt-in path)", () => {
+  it("empty picks without onboarding also fall back to ALL_MODULES", () => {
     const store = createMemoryKVStore();
     saveVibePicks(store, []);
-    expect(getActiveModules(store)).toEqual([]);
+    expect(getActiveModules(store)).toEqual([...ALL_MODULES]);
+  });
+
+  // Інтент S6.1 не втрачено: хто ПРОХОДИТЬ візард, робить реальний вибір
+  // (основна CTA вимкнена, поки нічого не обрано) і потрапляє сюди.
+  it("a real selection always wins over the fallback", () => {
+    const store = createMemoryKVStore();
+    markOnboardingDone(store);
+    saveVibePicks(store, ["nutrition"]);
+    expect(getActiveModules(store)).toEqual(["nutrition"]);
   });
 
   it("filters unknown ids out via sanitization", () => {

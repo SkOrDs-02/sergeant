@@ -307,32 +307,40 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
-  // Hard-reload one time when the SW controller змінюється ПІД уже
-  // контрольованою сторінкою (див. гейт `hadControllerAtLoad` нижче). SW `install`
-  // тепер unconditional-но робить `skipWaiting()`, тож новий worker
-  // активується одразу і `clients.claim()` у `activate` тригерить
-  // `controllerchange` у всіх відкритих вкладках. Без reload-у
-  // dynamic-import-и старих hash-named chunks падають у 404, бо
-  // workbox-precache новij ге́нерації не містить їх. Guard `refreshing`
-  // блокує цикл, якщо SW з якоїсь причини активувався двічі підряд.
+  // AI-DANGER: тут НЕ можна перезавантажувати сторінку на `controllerchange`.
   //
-  // AI-CONTEXT: гейт `hadControllerAtLoad` обов'язковий. `clients.claim()`
-  // тригерить `controllerchange` і на ПЕРШОМУ візиті — коли контролера ще
-  // не було зовсім. Без гейта кожен новий відвідувач отримував один
-  // повний reload через ~1–3 с після приземлення (нестабільний момент —
-  // залежить від того, коли SW встиг install+activate). Перезавантажувати
-  // там нема від чого: сторінку віддала мережа, а не SW старої генерації,
-  // тож усі hash-named chunks у ній уже поточні. Саме ця гонка ламала
-  // axe-лейн (`page.evaluate: Execution context was destroyed`) —
-  // див. `tests/a11y/expanded-routes.spec.ts`.
-  const hadControllerAtLoad = navigator.serviceWorker.controller !== null;
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!hadControllerAtLoad) return;
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
+  // Історія. Раніше тут стояв `window.location.reload()` під гейтом
+  // «контролер уже був на момент завантаження». Він захищав від того, що
+  // після деплою dynamic-import-и старих hash-named chunks падають у 404 —
+  // workbox-precache нової генерації їх не містить.
+  //
+  // Чому прибрано (браузерний аудит 2026-08-05, знахідка B1). SW робить
+  // `skipWaiting()` в `install` і `clients.claim()` в `activate`, тож
+  // `controllerchange` може прилетіти будь-коли — включно з моментом, коли
+  // сторінка ще тягне свій entry-модуль. Reload у цю мить рубає завантаження
+  // СТАТИЧНИХ залежностей entry-чанка (`vendor-react`, `vendor-react-query`,
+  // `vendor-sqlite`) з `net::ERR_ABORTED` — і головний модуль ніколи не
+  // виконується. Наслідок: `#root` лишається порожнім НАЗАВЖДИ, білий екран,
+  // рятує лише ручний reload. При цьому винятку не кидається, тож
+  // `installChunkLoadRecover()` не спрацьовує — йому нема на що реагувати.
+  // Відтворювалось приблизно на 1–2 навігації зі ста, на анонімному
+  // користувачі, на прод-білді. Та сама гонка роками отруювала CI-лейни —
+  // див. `tests/a11y/expanded-routes.spec.ts` і
+  // `tests/smoke/fizruk-active-workout.spec.ts`.
+  //
+  // Чим закрито те, від чого reload захищав:
+  //   1. `chunkReload.ts` (`installChunkLoadRecover`) ловить 404 на
+  //      dynamic-import старого чанка і робить один reload — з cooldown-ом і
+  //      counter-guard-ом проти циклу. Це саме той сценарій, тільки з
+  //      відновленням замість сліпого перезавантаження.
+  //   2. `onNeedRefresh` нижче піднімає `pwa-update-ready`, який
+  //      `useSWUpdate` → `RootLayout` показують плашкою «є оновлення».
+  //      Reload там робить `applyUpdate()` — свідомо, за кліком користувача
+  //      і вже ПІСЛЯ того, як застосунок змонтувався.
+  //   3. `setupAutoUpdate` тримає periodic-polling і build-id hard-floor.
+  //
+  // Тобто оновлення тепер завжди застосовується у момент, коли сторінка
+  // жива, а не посеред її буту.
 
   import("virtual:pwa-register").then(async ({ registerSW }) => {
     const updateSW = registerSW({

@@ -12,8 +12,10 @@ vi.mock("@shared/lib/storage/storage", () => ({
 
 import {
   dayKeyFromTx,
+  findAddedManualExpenseDayKey,
   isDayExpanded,
   formatStickyDayLabel,
+  manualExpenseDayKey,
 } from "./transactionsLib";
 
 describe("dayKeyFromTx", () => {
@@ -76,6 +78,75 @@ describe("isDayExpanded", () => {
     expect(isDayExpanded(overrides, "2026-05-09", "2026-05-10")).toBe(true);
     // key = "2026-05-10" (today) with no override → false
     expect(isDayExpanded(overrides, "2026-05-10", "2026-05-10")).toBe(false);
+  });
+});
+
+describe("manualExpenseDayKey", () => {
+  it("бере Kyiv-день з ISO-інстанта запису (UTC-полудень із форми)", () => {
+    expect(manualExpenseDayKey("2026-05-02T12:00:00.000Z")).toBe("2026-05-02");
+  });
+
+  it("збігається з ключем групування (dayKeyFromTx) для того ж інстанта", () => {
+    const iso = "2026-05-02T21:30:00.000Z";
+    expect(manualExpenseDayKey(iso)).toBe(
+      dayKeyFromTx(Math.floor(Date.parse(iso) / 1000)),
+    );
+  });
+
+  it("повертає null для відсутньої чи некоректної дати", () => {
+    expect(manualExpenseDayKey(undefined)).toBeNull();
+    expect(manualExpenseDayKey("")).toBeNull();
+    expect(manualExpenseDayKey("не дата")).toBeNull();
+  });
+});
+
+describe("findAddedManualExpenseDayKey", () => {
+  it("повертає день єдиного нового запису", () => {
+    const known = new Set(["a"]);
+    expect(
+      findAddedManualExpenseDayKey(known, [
+        { id: "b", date: "2026-05-02T12:00:00.000Z" },
+        { id: "a", date: "2026-04-01T12:00:00.000Z" },
+      ]),
+    ).toBe("2026-05-02");
+  });
+
+  it("повертає день записаної дати, а не сьогоднішній", () => {
+    // Форма дозволяє «Не сьогодні? Змінити дату» — розгортати треба
+    // групу дня самої транзакції.
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "x", date: "2020-01-15T12:00:00.000Z" },
+      ]),
+    ).toBe("2020-01-15");
+  });
+
+  it("повертає null, коли нових записів немає", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(["a"]), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null при bulk-гідрації (2+ нових записів)", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+        { id: "b", date: "2026-05-03T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null для порожнього / відсутнього списку", () => {
+    expect(findAddedManualExpenseDayKey(new Set(), [])).toBeNull();
+    expect(findAddedManualExpenseDayKey(new Set(), undefined)).toBeNull();
+  });
+
+  it("повертає null, якщо в нового запису невалідна дата", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [{ id: "a", date: "хтозна" }]),
+    ).toBeNull();
   });
 });
 

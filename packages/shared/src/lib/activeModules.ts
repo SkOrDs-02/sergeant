@@ -25,7 +25,6 @@
 
 import { type DashboardModuleId } from "./dashboard";
 import { type KVStore } from "../storage/kv";
-import { isOnboardingDone } from "./onboarding";
 import { ALL_MODULES, getVibePicks, saveVibePicks } from "./vibePicks";
 
 /**
@@ -39,33 +38,40 @@ export const HIDE_INACTIVE_MODULES_KEY = "hub_hide_inactive_modules_v1";
  * Return the set of modules the user marked as active during
  * onboarding (or via Hub Settings).
  *
- * Empty-picks fallback policy (S6.1 / B-1):
+ * **Політика порожнього вибору: немає збереженого вибору → всі модулі.**
  *
- *   - **Already-onboarded legacy users** (`isOnboardingDone(store)`
- *     is true but the picks list is empty — possible on devices that
- *     completed onboarding before S6.1, or after the user manually
- *     unticked everything in Hub Settings): fall back to
- *     {@link ALL_MODULES} so the dashboard does not suddenly empty
- *     out from under them.
+ * Історія. До 2026-08-05 тут було три гілки: `picks > 0` → picks;
+ * `isOnboardingDone` → {@link ALL_MODULES}; інакше → `[]`. Порожній масив
+ * для «ще не онбордженого» — свідоме рішення S6.1: до нього візард на
+ * tap-through тихо підставляв усі чотири модулі, і людина отримувала
+ * заповнений хаб, якого не обирала; аудит звʼязав це з просіданням D7.
  *
- *   - **New users** (onboarding not yet finished, picks empty): return
- *     `[]`. The S6.1 wizard now disables its primary CTA in that
- *     state, so the empty-picks branch should never reach a populated
- *     dashboard for someone in the `none` arm of
- *     `onboarding_default_picks_v1`.
+ * Чому повертаємось до «всі чотири» (браузерний аудит 2026-08-05,
+ * знахідка B2). Гілка `[]` спрацьовує НЕ лише для того, хто пройшов візард
+ * і нічого не обрав. Вона спрацьовує щоразу, коли візарда взагалі не було:
  *
- * The change is intentional — pre-S6.1 the wizard silently fell back
- * to "all four modules" on tap-through, producing a populated hub the
- * user never actually chose. The audit (`docs/audits/2026-05-03-…`)
- * traced that to a measurable D7 retention drop. Keeping the fallback
- * for legacy onboarding-done users avoids breaking existing accounts
- * while the new behaviour ships behind the A/B flag.
+ *   1. Людина реєструється напряму через `/sign-in` — на `/welcome` її не
+ *      веде, бо туди потрапляє лише неавтентифікований відвідувач. Одразу
+ *      після signup вона бачить хаб з «Модулів увімкнено: 0 з 4» і всіма
+ *      чотирма плитками в стані «Неактивний».
+ *   2. Той самий акаунт на новому пристрої: дані з сервера підтягуються
+ *      коректно, а вибір модулів — ні, бо він живе лише в локальному KV
+ *      (`hub_onboarding_vibes_v1` не входить у cloud-sync). Хаб знову
+ *      показує «0 з 4» людині, яка місяць користується застосунком.
+ *
+ * В обох випадках порожній вибір означає «ми не знаємо, що вона обрала»,
+ * а не «вона обрала нічого» — і показувати мертвий хаб тут неправильно.
+ * Початковий інтент S6.1 при цьому не втрачено: візард має вимкнену
+ * основну CTA, поки нічого не вибрано, тож будь-хто, хто ЙОГО проходить,
+ * робить реальний вибір і потрапляє в гілку `picks > 0`.
+ *
+ * Друга половина знахідки B2 — синхронізація вибору з акаунтом, щоб на
+ * новому пристрої підтягувався справжній вибір, а не дефолт.
  */
 export function getActiveModules(store: KVStore): DashboardModuleId[] {
   const picks = getVibePicks(store);
   if (picks.length > 0) return picks;
-  if (isOnboardingDone(store)) return [...ALL_MODULES];
-  return [];
+  return [...ALL_MODULES];
 }
 
 /**
