@@ -70,9 +70,14 @@
     design-tokens, спека chornylo-visual-direction). Використовується рівно
     в одній секції: суцільно кремова сторінка на 4000px не має хребта, а
     модульні акценти тир-400 задумані саме як світіння на чорнилі.
+
+    2026-08-05: база зрушила з зелено-чорної (#0d1512 / #121c17) на тепле
+    вугілля — фон і акцент більше не одного hue (anti-slop-strategy § 5/P1).
+    Значення дзеркалять `inkTheme.surface`; синхронність тримає
+    `tokens.drift.test.ts`, бо спільного рантайму в лендінга з preset-ом нема.
   */
-  --color-ink: #0d1512;
-  --color-ink-surface: #121c17;
+  --color-ink: #14100e;
+  --color-ink-surface: #1b1613;
   --color-ink-line: rgba(255, 255, 255, 0.1);
   --color-ink-text: #f2f6f2;
   --color-ink-muted: #8a968e;
