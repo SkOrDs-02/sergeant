@@ -79,6 +79,28 @@ function makeReq(userId: string, body: unknown = {}, xToken?: string): Request {
 
 // ── lifecycle ────────────────────────────────────────────────────────────────
 
+/**
+ * Recognizes ONLY genuine Docker/Testcontainers-availability failures —
+ * CodeRabbit PR #627 review flagged that the `beforeAll` catch below used
+ * to swallow EVERY error as "testcontainers unavailable", including
+ * migration failures, missing env, or a broken handler import. Those must
+ * fail loudly (they are real regressions, not "no Docker locally"); only
+ * the specific signatures Testcontainers/Docker itself produces when the
+ * runtime genuinely isn't reachable get treated as a local skip.
+ */
+function isDockerUnavailableError(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e);
+  return (
+    // Testcontainers' own top-level error (`container-runtime/clients/client.js`)
+    // when it can't find ANY working container runtime strategy.
+    /could not find a working container runtime strategy/i.test(message) ||
+    /cannot connect to the docker daemon/i.test(message) ||
+    /is the docker daemon running/i.test(message) ||
+    /docker\.sock/i.test(message) ||
+    (/ENOENT/.test(message) && /docker/i.test(message))
+  );
+}
+
 beforeAll(async () => {
   try {
     // Set env BEFORE importing handlers so env.ts.parseEnv() sees the secret.
@@ -92,7 +114,7 @@ beforeAll(async () => {
     ({ default: downloadHandler } =
       await import("../modules/nutrition/backup-download.js"));
   } catch (e) {
-    if (process.env["CI"]) throw e;
+    if (process.env["CI"] || !isDockerUnavailableError(e)) throw e;
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
       `[nutrition-backup integration] Skipping: testcontainers unavailable — ${skipReason}`,
