@@ -348,7 +348,7 @@ fire-and-forget пишеться в довгострокову AI-пам'ять 
 
 `AI_DAILY_USER_LIMIT` **не читає жоден рядок ран-тайму.** Перевірено:
 
-```
+```console
 $ git grep -n "AI_DAILY_USER_LIMIT" -- 'apps/**/*.ts' 'packages/**/*.ts' | grep -v test
 apps/server/src/env/env.ts:237:  AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
 ```
@@ -399,7 +399,7 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 саме `floatFromEnv` для чисел.
 
 Наслідок на найгіршому місці: під час інциденту витрат ops ставить
-`ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=yes` (або `on`, або `TRUE ` з пробілом) — і
+`ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=yes` (або `on`, або `TRUE<пробіл>`) — і
 отримує `false`. «Справжня стеля вартості» не вмикається, попередження немає.
 
 Суміжне: `ANTHROPIC_BUDGET_HARD_USD=0` глушить hard-алярм назавжди
