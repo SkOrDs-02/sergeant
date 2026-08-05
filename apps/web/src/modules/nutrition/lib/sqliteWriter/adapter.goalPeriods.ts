@@ -50,6 +50,7 @@ export async function insertGoalPeriod(
 ): Promise<void> {
   const effectiveFrom = goalPeriodEnv.kyivDayKey(clientTs);
   const deviceId = goalPeriodEnv.deviceId();
+  const tzOffsetMin = goalPeriodEnv.tzOffsetMin();
   const id = buildGoalPeriodId(effectiveFrom, op.goal, deviceId);
   const { kcal, proteinG, fatG, carbsG, waterMl } = op.goal;
 
@@ -63,6 +64,7 @@ export async function insertGoalPeriod(
     carbsG,
     waterMl,
     "manual",
+    tzOffsetMin,
     clientTs,
     clientTs,
   ]);
@@ -85,6 +87,7 @@ export async function insertGoalPeriod(
       // 'preset' / 'tdee' з'являться, коли ціль почне рахувати калькулятор;
       // 'backfill' ставить ЛИШЕ серверна міграція 087 і ніхто інший.
       origin: "manual",
+      tz_offset_min: tzOffsetMin,
       created_at: clientTs,
     },
   });
@@ -94,11 +97,15 @@ export async function insertGoalPeriod(
  * `INSERT OR IGNORE` — дзеркало `ON CONFLICT (id) DO NOTHING` у серверному
  * `applyNutritionGoalPeriods`. `deleted_at` у списку колонок немає: новий
  * період завжди живий, а ретракція — окрема адресна операція.
+ *
+ * `tz_offset_min` (міграція 109, той самий патерн, що
+ * `routine_completion_events` / `nutrition_pantry_events`) — опційне поле
+ * на сервері; тут завжди пишемо значення пристрою на момент запису.
  */
 const GOAL_PERIOD_INSERT_SQL = `INSERT OR IGNORE INTO nutrition_goal_periods
        (id, user_id, effective_from, kcal, protein_g, fat_g, carbs_g,
-        water_ml, origin, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        water_ml, origin, tz_offset_min, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 /**
  * Детермінований id сходинки.
@@ -144,6 +151,19 @@ export const goalPeriodEnv = {
   deviceId(): string | null {
     try {
       return resolveOriginDeviceId({ store: webKVStore });
+    } catch {
+      return null;
+    }
+  },
+  /** Зсув таймзони пристрою у хвилинах (схід від UTC — додатний). */
+  tzOffsetMin(): number | null {
+    try {
+      // Той самий сирий факт, що `routine_completion_events.tz_offset_min` —
+      // див. коментар у `routine/.../adapter.completionEvents.ts`.
+      // (nutrition не входить у files-скоуп `no-restricted-syntax`
+      // new-Date()-guard-а в eslint.cross-surface.js — Theme 1 покриває
+      // лише finyk/fizruk/routine — тож disable-коментар тут не потрібен.)
+      return -new Date().getTimezoneOffset();
     } catch {
       return null;
     }
