@@ -556,6 +556,112 @@ describe("useMonobankWebhook — fetchMonth December boundary", () => {
   });
 });
 
+// ── fetchMonth — SQLite mirror backfill ──────────────────────────────────────
+//
+// Regression coverage for the "Минулий: 10 ₴" bug: the Hub Reports card
+// reads only the SQLite mirror, but `fetchMonth` (used by the Operations
+// page to browse past months) used to store its result solely in the
+// in-memory `historyTx` state and never touched the mirror — so any month
+// other than "whatever was current when the live-tx effect last ran" stayed
+// invisible to every mirror-backed reader.
+
+describe("useMonobankWebhook — fetchMonth mirror backfill", () => {
+  it("writes historical month transactions to the SQLite mirror when userId is set", async () => {
+    const { Wrapper } = makeWrapper(true); // seed me data → userId is set
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    fetchAllMonoTransactions.mockResolvedValue([
+      {
+        monoTxId: "hist-july",
+        monoAccountId: "acc1",
+        time: "2026-07-15T10:00:00Z",
+        amount: -180000,
+        operationAmount: -180000,
+        currencyCode: 980,
+        mcc: 5411,
+        description: "July historical tx",
+      },
+    ]);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("success");
+    });
+
+    // Reset call counts from the current-month live-tx effect so this
+    // assertion is scoped to what `fetchMonth` itself triggers.
+    writeMonoTransactions.mockClear();
+    refreshFinykMonoMirrorState.mockClear();
+
+    await act(async () => {
+      await result.current.fetchMonth(2026, 6); // July (0-based)
+    });
+
+    expect(writeMonoTransactions).toHaveBeenCalledTimes(1);
+    expect(writeMonoTransactions.mock.calls[0]?.[2]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "hist-july" })]),
+    );
+    expect(refreshFinykMonoMirrorState).toHaveBeenCalled();
+  });
+
+  it("does NOT write to the mirror when userId is null", async () => {
+    const { Wrapper } = makeWrapper(false); // no me data → userId=null
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    fetchAllMonoTransactions.mockResolvedValue([
+      {
+        monoTxId: "hist-no-user",
+        monoAccountId: "acc1",
+        time: "2026-07-15T10:00:00Z",
+        amount: -50000,
+        operationAmount: -50000,
+        currencyCode: 980,
+        mcc: 5411,
+        description: "July tx, no user",
+      },
+    ]);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("success");
+    });
+
+    writeMonoTransactions.mockClear();
+
+    await act(async () => {
+      await result.current.fetchMonth(2026, 6);
+    });
+
+    expect(writeMonoTransactions).not.toHaveBeenCalled();
+  });
+
+  it("does NOT write to the mirror when the historical month is empty", async () => {
+    const { Wrapper } = makeWrapper(true);
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    fetchAllMonoTransactions.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("success");
+    });
+
+    writeMonoTransactions.mockClear();
+
+    await act(async () => {
+      await result.current.fetchMonth(2026, 6);
+    });
+
+    expect(writeMonoTransactions).not.toHaveBeenCalled();
+  });
+});
+
 // ── clientInfo when accounts have UAH currency ───────────────────────────────
 
 describe("useMonobankWebhook — clientInfo populated from accounts", () => {
