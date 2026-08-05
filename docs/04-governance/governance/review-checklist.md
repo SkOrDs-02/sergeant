@@ -1,6 +1,6 @@
 # Review Checklist
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Checklist для reviewer'ів і pre-merge self-review.
@@ -13,7 +13,7 @@ Checklist для reviewer'ів і pre-merge self-review.
 
 1. Чи відповідає зміна одному primary skill і одному primary playbook.
 2. Чи оновлені docs разом із кодом, якщо змінилась поведінка, contract або workflow.
-3. Чи є drift між `AGENTS.md`, `hard-rules.json`, playbooks, PR template і CODEOWNERS.
+3. Чи є drift між `AGENTS.md`, `hard-rules.json`, playbooks і PR template (CODEOWNERS прибрано [ADR-0082](../adr/0082-private-storage-repo-posture.md)).
 4. Чи є правильні verification commands і чи відповідають вони touched surface.
 5. Чи безпечні migrations, rollout steps, env changes і deploy order.
 
@@ -23,5 +23,5 @@ Checklist для reviewer'ів і pre-merge self-review.
 - Migrations: sequential numbering, two-phase DROP, local migrate path, review notes для rollout?
 - HubChat: tool defs, executor path, action cards, risky labelling і prompt budget узгоджені?
 - Mobile: немає DOM leakage, web-only imports або дублювання shared domain logic?
-- Console/n8n/ops: немає write-side effects у read-only agents, metadata і manifests синхронізовані?
+- HubChat/n8n/ops: немає write-side effects у read-only agents, metadata і manifests синхронізовані?
 - Docs/governance: оновлено індекси, schema gates, freshness headers?

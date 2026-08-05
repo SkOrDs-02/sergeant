@@ -47,9 +47,10 @@ const dayKey = getKyivDayKey(new Date()); // серверний звіт, фін
 const isToday = isSameKyivDay(timestamp);
 ```
 
-Для ISO-тижня з понеділка канонічний патерн — `kyivMondayISO()`
-(`apps/web/src/pages/strategy/StrategyPage.tsx`): `Intl.DateTimeFormat` із
-`timeZone: "Europe/Kyiv"`. Правило вважає його compliant.
+Для ISO-тижня з понеділка канонічний патерн — `getKyivWeekStartKey()`
+(`apps/web/src/shared/lib/time/kyivTime.ts`, споживач — `apps/web/src/pages/strategy/StrategyPage.tsx`);
+серверний аналог — `kyivMondayStartMs()` у `packages/shared/src/utils/date.ts`. Обидва
+будуються на `Intl.DateTimeFormat` із `timeZone: "Europe/Kyiv"` і вважаються compliant.
 
 ## Спосіб 2 — пристрій (особистий день) із явним suppress
 

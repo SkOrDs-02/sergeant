@@ -1,7 +1,7 @@
 # Спека: Сержант як єдиний AI-персонаж + проактивні пуші
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
-> **Status:** Active — реалізовано, окрім явно перелічених відхилень нижче.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Status:** Implemented — міграції `099_push_reminder_log.sql` / `100_sergeant_proactive_push.sql`, планувальник `apps/server/src/lib/reminders/nudge.ts`; свідомі відхилення перелічені нижче.
 
 ## Що змінилось під час реалізації
 

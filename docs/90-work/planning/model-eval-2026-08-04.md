@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FILE. Do not edit by hand. Generator: `pnpm --filter @sergeant/server eval:models` / `eval:vision` (apps/server/scripts/eval/report.ts). -->
+
 # Звіт стенду моделей
 
 Згенеровано: 2026-08-04T00:48:32.491Z

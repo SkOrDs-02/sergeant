@@ -1,8 +1,7 @@
 # Спека: Telegram-вейтліст
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2026-10-29.
-> **Status:** Scaffolded (спека, не реалізовано)
-> **Agent-ready:** needs-decision — перед стартом founder підтверджує рішення з § «Рішення, ухвалені за замовчуванням».
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Status:** Implemented — бот вейтліста живий (`apps/server/src/modules/telegram/waitlistBot.ts`, міграція `089_telegram_waitlist.sql`, follow-up `/stats` у #524). Спека лишається як reference на прийняті рішення.
 
 ## Проблема
 

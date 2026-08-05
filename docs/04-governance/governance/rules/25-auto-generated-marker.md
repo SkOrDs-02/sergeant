@@ -34,6 +34,13 @@ Every auto-generated artifact in the repo. Currently:
 | `README.md`                               | trust-badge блок                                         | `pnpm docs:gen-trust-badge`  |
 | `docs/04-governance/pr-ledger/index.json` | PR-backlink блоки                                        | `pnpm docs:gen-pr-backlinks` |
 
+**Одноразові генеровані знімки** (dated snapshots — не входять у `docs:gen-daily`; freshness-excluded через `scripts/docs/freshness-config.json`):
+
+| Артефакт                                 | Генератор                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------- |
+| `docs/90-work/planning/model-eval-*.md`  | `pnpm --filter @sergeant/server eval:models` (`--out=…`, report.ts) |
+| `docs/90-work/planning/vision-eval-*.md` | `pnpm --filter @sergeant/server eval:vision` (`--out=…`, report.ts) |
+
 Add new artifacts here when a new generator lands.
 
 ## Enforced by

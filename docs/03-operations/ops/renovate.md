@@ -1,6 +1,6 @@
 # Renovate maintainer runbook
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../04-governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/02-engineering/integrations/renovate-usage.md`](../../02-engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
@@ -108,7 +108,7 @@ LOG_LEVEL=debug npx --package=renovate renovate \
 
 ## Як обробити security-PR від Dependabot
 
-Per ADR-0044, Dependabot піднімає security-PR-и daily. Воркфлоу `dependabot-automerge.yml` auto-merge-ить тільки `version-update:semver-patch` для `direct:production`. Все інше — ручне review.
+Per ADR-0044, Dependabot піднімає security-PR-и daily. Окремого auto-merge-воркфлоу в репо немає — усі security-PR-и проходять ручне review (історичний `dependabot-automerge.yml` прибрано).
 
 1. **Patch-only direct production** → нічого не робити, auto-merge впорається після зеленого CI;
 2. **Minor/major security** → читай advisory (`Dependabot fetched: GHSA-...` лінк у тілі PR), оцінюй breaking-ризик, якщо OK — merge;

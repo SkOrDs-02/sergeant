@@ -45,16 +45,17 @@ high-и одразу; тепер кожен виняток таргетован�
 
 ### ajv ReDoS via expo-dev-launcher (CVE-2025-69873)
 
-| Field      | Value                                                                                                                                                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Advisory   | https://github.com/advisories/GHSA-2g4f-4pwh-qvx6 (CVE-2025-69873)                                                                                                                                                                   |
-| Package    | `ajv@8.11.0` (vulnerable range `>=7.0.0-alpha.0 <8.18.0`; patched in `8.18.0`)                                                                                                                                                       |
-| Severity   | moderate (CVSS 5.3) — ReDoS лише через опцію `$data`                                                                                                                                                                                 |
-| Path       | `apps/mobile > expo-dev-client@5.0.20 > expo-dev-launcher@5.0.35 > ajv@8.11.0`                                                                                                                                                       |
-| Reason     | Transitive dev-only dependency of `expo-dev-client`. Upstream `expo-dev-launcher` ще не bump-нув `ajv` (трекаємо expo SDK release cadence — fix очікується разом із наступним SDK 53/54 minor).                                      |
-| Mitigation | `expo-dev-client` входить лише в `apps/mobile` dev-build (debug-launcher), не входить у production-bundle (`expo prebuild --release` його викидає). У production app-і ajv `8.11.0` фізично відсутній. Production-tree audit чистий. |
-| Due date   | 2026-09-30 (Q3 2026 — типове expo-bump вікно). Якщо не закрито — підняти у `security:medium` issue.                                                                                                                                  |
-| Owner      | @Skords-01                                                                                                                                                                                                                           |
+| Field      | Value                                                                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Advisory   | https://github.com/advisories/GHSA-2g4f-4pwh-qvx6 (CVE-2025-69873)                                                                                                                                                                                                                                         |
+| Package    | `ajv@8.11.0` (vulnerable range `>=7.0.0-alpha.0 <8.18.0`; patched in `8.18.0`)                                                                                                                                                                                                                             |
+| Severity   | moderate (CVSS 5.3) — ReDoS лише через опцію `$data`                                                                                                                                                                                                                                                       |
+| Path       | `apps/mobile > expo-dev-client@5.0.20 > expo-dev-launcher@5.0.35 > ajv@8.11.0`                                                                                                                                                                                                                             |
+| Reason     | Transitive dev-only dependency of `expo-dev-client`. Upstream `expo-dev-launcher` ще не bump-нув `ajv` (трекаємо expo SDK release cadence — fix очікується разом із наступним SDK 53/54 minor).                                                                                                            |
+| Mitigation | `expo-dev-client` входить лише в `apps/mobile` dev-build (debug-launcher), не входить у production-bundle (`expo prebuild --release` його викидає). У production app-і ajv `8.11.0` фізично відсутній. Production-tree audit чистий.                                                                       |
+| Due date   | 2026-09-30 (Q3 2026 — типове expo-bump вікно). Якщо не закрито — підняти у `security:medium` issue.                                                                                                                                                                                                        |
+| Owner      | @Skords-01                                                                                                                                                                                                                                                                                                 |
+| Статус     | **Закрито 2026-08-05** — override `"ajv@>=7.0.0-alpha.0 <8.18.0": ">=8.18.0"` у `package.json` підіймає вразливий діапазон; у lockfile лишились лише `ajv@6.15.0` / `8.18.0` / `8.20.0`. Присутній `@redocly/ajv@8.11.2` — окремий форк-пакет, не `ajv`. Запис лишено як історія до наступного прибирання. |
 
 Доказ, що production-tree чистий:
 
@@ -182,8 +183,8 @@ fixture у тесті), задокументуй тут перед викори�
 ## SAST baseline warnings (M11 — `eslint-plugin-security`)
 
 > See [`./hardening/M11-eslint-plugin-security.md`](hardening/archive/M11-eslint-plugin-security.md).
-> The plugin is wired in `eslint.config.js` for `apps/server/src/**`
-> and `tools/openclaw/src/**`. `security/detect-eval-with-expression`
+> The plugin is wired in `eslint.cross-surface.js` for `apps/server/src/**`
+> (історичний `tools/openclaw/src/**` блок прибрано разом з OpenClaw, ADR-0075). `security/detect-eval-with-expression`
 > ships at **error** (zero call-sites). The other two rules and the
 > custom `no-restricted-syntax` selector for templated `pool.query`
 > ship at **warn** for the existing baseline so CI is not blocked on
@@ -250,9 +251,6 @@ header). Owner-approved 2026-06-17.
 
 | Override                    | Range      | Чому форсуємо                                                                                                                                                                                                                            |
 | --------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cookie`                    | `>=0.7.0`  | CVE-2024-47764 — старі `cookie@<0.7` приймали недійсний `name`/`path` в `Set-Cookie` (XSS-vector через transitive `express` → `csurf`). Fix у 0.7.0.                                                                                     |
-| `tar-fs`                    | `>=2.1.4`  | CVE-2024-12905 — symlink-traversal у `tar-fs<2.1.4` (transitive через `prebuild-install`). Patch у 2.1.4 валідує destination paths.                                                                                                      |
-| `nanoid`                    | `>=5.0.9`  | CVE-2024-55565 — non-constant-time UUID alphabet permitted side-channel reconstruction. Fix у 5.0.9.                                                                                                                                     |
 | `@xmldom/xmldom`            | `>=0.8.13` | CVE-2024-39338 — XML parser confused by `<!DOCTYPE>` allowed XXE-extension через transitive `react-native-svg`. Fix у 0.8.13.                                                                                                            |
 | `serialize-javascript`      | `>=7.0.5`  | CVE-2024-59083 — improper escape of `</script>` у вкладеному JSON. Fix у 7.0.5.                                                                                                                                                          |
 | `postcss`                   | `>=8.5.10` | CVE-2024-31472 — line-return parsing issue в `<` 8.5. Fix у 8.5.10.                                                                                                                                                                      |

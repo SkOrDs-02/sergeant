@@ -1,6 +1,6 @@
 # CodeQL — SAST taint-flow analysis для TypeScript
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Огляд
@@ -55,8 +55,8 @@ analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
 | Action                         | SHA                                        | Версія  |
 | ------------------------------ | ------------------------------------------ | ------- |
 | `actions/checkout`             | `de0fac2e4500dabe0009e67214ff5f5447ce83dd` | v6.0.2  |
-| `github/codeql-action/init`    | `e46ed2cbd01164d986452f91f178727624ae40d7` | v4.35.2 |
-| `github/codeql-action/analyze` | `e46ed2cbd01164d986452f91f178727624ae40d7` | v4.35.2 |
+| `github/codeql-action/init`    | `8aad20d150bbac5944a9f9d289da16a4b0d87c1e` | v4.36.0 |
+| `github/codeql-action/analyze` | `8aad20d150bbac5944a9f9d289da16a4b0d87c1e` | v4.36.0 |
 
 ## Результат
 

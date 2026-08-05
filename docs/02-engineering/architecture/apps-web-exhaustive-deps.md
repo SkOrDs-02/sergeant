@@ -1,11 +1,21 @@
 # Web: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.
 
-**Поточний стан (2026-07-10, wave 4):** **0 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Усі колишні винятки знято; нижче — історія хвиль і патерни, які замінили disable. Живий список production-disable — у mobile: [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md).
+**Поточний стан (2026-08-05):** **5 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Хвиля 4 (2026-07-10) звела каталог до нуля; наведені нижче п'ять з'явилися після неї як свідомі винятки — кожен має інлайн-обґрунтування поруч із директивою:
+
+| Файл                                         | Рядок | Інваріант                                                                               |
+| -------------------------------------------- | ----- | --------------------------------------------------------------------------------------- |
+| `modules/finyk/components/NetworthChart.tsx` | 133   | `px(i)` — стабільна проєкція; додавання в deps перераховувало б memo щорендеру          |
+| `modules/finyk/hooks/usePrivatbank.ts`       | 484   | bootstrap рівно раз під guard `bootstrapped`; `hydrate`/`loadAccounts` нестабільні      |
+| `shared/hooks/useTweenedValues.ts`           | 71    | `values` навмисно поза deps — інакше tween рестартує щокадру; retarget лише на `target` |
+| `shared/hooks/useActiveFizrukWorkout.ts`     | 87    | ефект перезапускається саме на «тік» після запису, який правило не бачить               |
+| `core/app/HubMainContent.tsx`                | 219   | `HUB_TAB_ORDER` — module-level константа, dep не потрібен                               |
+
+Нижче — історія хвиль і патерни, які замінили disable. Аналогічний список для mobile: [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md).
 
 ---
 

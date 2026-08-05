@@ -385,8 +385,6 @@ describe("POST /api/ai-memory/recall — happy path", () => {
       query: "що я їв на сніданок",
       topK: 5,
       sources: undefined,
-      // `caller` додав retrieval-quality шар (recordRecallQuality) — роут
-      // передає його завжди, тож очікування без нього більше не збігається.
       caller: "explicit-recall",
     });
   });

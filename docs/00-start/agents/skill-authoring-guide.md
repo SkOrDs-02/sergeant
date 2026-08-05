@@ -59,4 +59,4 @@ tags: [postgres, schema, indexes, foreign-keys]
 
 - [`agent-skills-catalog.md`](./agent-skills-catalog.md) — routing-таблиця repo-owned skill-ів.
 - [`skills-evolution-roadmap.md`](./skills-evolution-roadmap.md) — PR 6 (ця конвенція) + PR 3 (перший набір Postgres references).
-- [`sergeant-e2e-testing/references/`](../../../.agents/skills/sergeant-e2e-testing/references) — приклади за цією конвенцією (Playwright). Набір `sergeant-data-and-migrations/references/` (9 Postgres reference-файлів) додається в PR 3.
+- [`sergeant-e2e-testing/references/`](../../../.agents/skills/sergeant-e2e-testing/references) — приклади за цією конвенцією (Playwright). Набір [`sergeant-data-and-migrations/references/`](../../../.agents/skills/sergeant-data-and-migrations/references) (9 Postgres reference-файлів) — теж за цією конвенцією (shipped, PR 3).

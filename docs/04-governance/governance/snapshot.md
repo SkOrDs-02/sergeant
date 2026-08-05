@@ -1,7 +1,7 @@
 # Dynamic Snapshot — Governance
 
 > **Status:** Active
-> **Last touched:** 2026-07-01 by @claude. **Next review:** 2026-09-29.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** [ADR-0071](../adr/0071-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
@@ -69,14 +69,14 @@ which question to ask the graph.
 
 ### Where they overlap
 
-- **Dead-code signal.** Janitors (snapshot-adjacent) run `knip`; codebase-memory
-  tracks function definitions and call sites. They may surface the same dead export
-  via different paths. The janitor opens a GitHub issue; codebase-memory shows
-  call-graph depth. Both are correct; the agent reads whichever the current step
-  needs.
-- **Circular dependencies.** `dep-cycles` janitor walks imports; codebase-memory
-  resolves them via LSP. The janitor outputs an issue; the graph outputs a
-  structured cycle. Same finding, two consumers.
+- **Dead-code signal.** Прямі перевірки (`pnpm dead-code:files`, `pnpm knip`) і
+  codebase-memory можуть показати той самий мертвий експорт різними шляхами: перша
+  дає список файлів/експортів, друга — глибину call-graph. Обидві коректні; агент
+  читає ту, що потрібна поточному кроку. _(Entropy-janitor-и, які раніше відкривали
+  issue автоматично, retired [ADR-0081](../adr/0081-repository-simplification.md).)_
+- **Circular dependencies.** `pnpm lint` (`import/no-cycle`) ловить цикл як помилку
+  лінта; codebase-memory резолвить його через LSP у структурований цикл. Той самий
+  факт, два споживачі.
 - **PR-ledger entries.** Snapshot lists recent PRs from `docs/04-governance/pr-ledger/index.json`;
   codebase-memory links them via `touchedDocs`. The agent should treat the snapshot
   list as a "skim before opening a PR" signal and the graph as "find every file this
@@ -100,13 +100,13 @@ When adding a new section to `tools/agent-snapshot/snapshot.mjs`:
 
 ## Failure modes — what the agent does
 
-| Failure                                        | Agent behavior                                                                                                              |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm snapshot` not installed (script missing) | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`).                                            |
-| `.kilocode/snapshot.md` older than 60 min      | Re-run `pnpm snapshot --refresh`.                                                                                           |
-| A single section returns `[unavailable: ...]`  | Continue with the other sections. Note the gap in the session's own worklog.                                                |
-| Total snapshot >50 KB                          | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it _can_ see over the ones it cannot. |
-| Cache file corrupted                           | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache).                                                         |
+| Failure                                         | Agent behavior                                                                                                              |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm snapshot` not installed (script missing)  | Skip §0.1, log a warning, proceed (CI enforces the script's presence on `main`).                                            |
+| `.kilocode/snapshot.md` older than 15 min (TTL) | Re-run `pnpm snapshot --refresh`.                                                                                           |
+| A single section returns `[unavailable: ...]`   | Continue with the other sections. Note the gap in the session's own worklog.                                                |
+| Total snapshot >50 KB                           | Truncation drops the richest sections first. The agent should prefer the §0.1 actions it _can_ see over the ones it cannot. |
+| Cache file corrupted                            | `pnpm snapshot --refresh` (re-runs all sections, overwrites cache).                                                         |
 
 ## Cross-references
 

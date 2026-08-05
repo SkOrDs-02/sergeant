@@ -1,12 +1,12 @@
 # AI-PR Checklist та guard workflow
 
-> **Last touched:** 2026-07-30 by @claude. **Next review:** 2026-10-28.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Deprecated (механізм прибрано — ADR-0082)
 
 Цей документ пояснює **навіщо** в Sergeant існує AI-Generation Signals секція
 в PR-шаблоні та **як** саме `.github/workflows/ai-pr-checklist.yml` її
-валідує. Механізм — частина harness-engineering v1 (див.
-`E:\Temp\kilo\harness-plan.md` §4).
+валідує. Механізм був частиною harness-engineering v1 (див.
+[`docs/90-work/planning/harness-engineering-v1.md`](../../90-work/planning/harness-engineering-v1.md)).
 
 ---
 

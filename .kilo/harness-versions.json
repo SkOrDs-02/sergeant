@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "3.0.1",
+  "current": "3.2.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -158,6 +158,43 @@
       "releasedAt": "2026-08-04",
       "changes": [
         "bump from 3.0.0 -> 3.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.1.0": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump 3.0.1 -> 3.1.0 (minor): agent-layer audit remediation + graph engineering",
+        "NEW: .agents/agent-graph.json — explicit skill/agent/workspace topology with typed handoff payloads (ADR-0084)",
+        "NEW: scripts/check-agent-graph.mjs + pnpm lint:agent-graph, wired into pnpm lint:skills",
+        "NEW agent: qa-packages (11 packages/* workspaces incl. api-client contract tests, Hard Rule #3 evidence)",
+        "NEW agent: docs-governance-auditor ported to .claude/agents (agent-workflows §10 was unrunnable on Claude)",
+        "qa-web extended to apps/landing; sergeant-qa-squad rescoped 3 -> 4 runners, all 17 workspaces covered",
+        "sergeant-deliver-squad: added mandatory stage 5 (qa-squad -> verify-before-done)",
+        "sergeant-backend-architecture rewritten against the real Express/flat-module stack (removed fabricated Clean/CQRS/Temporal/Saga layout)",
+        "ADR-0078 day-boundary split corrected in sergeant-server-api + server-agent (device-local personal entities vs Kyiv reports)",
+        "web-agent: retired rule numbers relabelled per ADR-0081; false claim that ESLint enforces visual conventions removed",
+        "ADR-0074/0075 sweep across 6 agents, CLAUDE.md, agent-workflows, codex-capabilities; .codex/agents/qa-openclaw.toml deleted",
+        "verification gate de-duplicated: sergeant-verify-before-done is canonical, review-and-merge/bugfix/feature-delivery point at it",
+        "skill-mapping.json: fixed dangling \"docs\" target, 8 -> 15 rules (e2e, deploy, security, mobile-shell, landing, tools, packages)",
+        "lang: frontmatter corrected on 17 skills whose bodies are Ukrainian per Hard Rule #15"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.0": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump 3.1.0 -> 3.2.0 (minor): наскрізна звірка документації з кодом (docs audit)",
+        "OVERRIDE: скрипт-бампер визначив major, бо в дифі є docs/04-governance/governance/rules/**. Ручне пониження до minor за § 'How to bump' harness-versioning.md — жодна норма правил не змінилась, змінені лише факти всередині них",
+        "rule #2: у список RQ-фабрик додано chatKeys і aiMemoryKeys (обидві давно є в queryKeys.ts)",
+        "rule #4: прибрано мертвий enforcement-вказівник .github/CODEOWNERS (файла не існує); діапазон міграцій 001-082 -> 001-103; неіснуючий visual-regression.yml -> db-backup-verify.yml",
+        "rule #5: scope-enum синхронізовано з commitlint.config.js — прибрано console/openclaw/openclaw-plugin, додано dualwrite-core, виправлено шляхи scope agents",
+        "rule #15: посилання на 'Hard Rules (#1-#15)' -> '#1-#26, з gap-ами по retired-правилах'",
+        "rule #25: eval-звіти емітять AUTO-GENERATED маркер із генератора (apps/server/scripts/eval/report.ts) і додані у scope правила",
+        "AGENTS.md: RQ-фабрики, формулювання Lighthouse CI, branch-naming, .codex 21 -> 20 файлів",
+        "skills: інфраструктурний дрифт Railway -> Coolify/Hetzner, зачистка мертвих згадок OpenClaw (ADR-0074/0075), retired hard rules більше не подаються як чинні (ADR-0081)"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

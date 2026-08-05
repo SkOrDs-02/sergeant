@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Контекст
@@ -35,7 +35,7 @@ Roadmap-довідник: [`docs/90-work/audits/2026-05-03-web-deep-dive`](https
     TagsSection) переведено на `messages.validation.*` (~22 рядки,
     20 нових ключів). Тести пройдено без зміни assertions.
   - ESLint rule `sergeant-design/no-cyrillic-jsx-literal` додано в
-    warn-режимі з allowlist на 239 файлів
+    warn-режимі з allowlist на 292 файли (станом на 2026-08-05; round-14 baseline був 239)
     (`apps/web/eslint.i18n-allowlist.json`). Burndown — зменшувати
     allowlist у наступних PR-ах; коли `[]` — promote до `error`.
   - Unit tests rule-у: 13 кейсів (file scoping, allowlist behaviour,
@@ -104,7 +104,7 @@ node scripts/codemods/i18n-burndown/script.mjs --filter=foo # subset
 (`messages.x.y`), template literals (next-round scope), та файли з
 allowlist у `apps/web/eslint.i18n-allowlist.json`.
 
-Round-14 baseline: 239 файлів у allowlist. Кожен наступний PR
+Round-14 baseline: 239 файлів у allowlist; поточний стан — 292 (регрес, див. таблицю нижче). Кожен наступний PR
 скорочує цей файл (одне-два видалення на PR). Після `[]` — promote
 до `"error"` у `eslint.config.js`.
 
@@ -127,7 +127,7 @@ allowlist-у через follow-up PR-и. Перевірити фактичну �
 
 ```bash
 jq 'length' apps/web/eslint.i18n-allowlist.json
-# → 199 (post round-16 codemod)
+# → 292 (2026-08-05; число росте, коли нові екрани заходять із inline-кирилицею)
 ```
 
 Або через ESLint warning count (eslint-rule безпосередньо):
@@ -146,9 +146,9 @@ Burndown plan (один файл за PR ↦ кілька десятків PR; �
 | 14    | 239            | Phase 1+2+3 закрито; rule в warn-mode + allowlist                                                                                                                                                                                    |
 | 15    | 233            | `i18n-burndown` codemod landed; 6 файлів мігровано (7 replacements)                                                                                                                                                                  |
 | 16    | 199            | High-frequency burndown: +9 catalog-груп, codemod multi-line-import bug fixed; 34 файли мігровано (50 replacements)                                                                                                                  |
-| 17–25 | ~100           | Settings panels + showcase sections мігровані                                                                                                                                                                                        |
 | 17    | 236            | Fizruk pages burndown: `Progress`, `Programs`, `Measurements`, `Body` + `Body/Journal{Section,EntryCard}` мігровано у `messages.fizruk.{progress,programs,measurements,body,journal}` (87 JSX-літералів, 6 файлів знято з allowlist) |
-| 25–40 | 0              | Promote rule до `"error"`                                                                                                                                                                                                            |
+| 18+   | 292            | **Регрес:** нові екрани (бета-хвиля) заходили з inline-кирилицею швидше, ніж ішов burndown — allowlist переріс baseline round-14. Перш ніж продовжувати codemod-раунди, треба зупинити приплив (rule на `error` для нових файлів).   |
+| —     | 0              | Ціль: promote rule до `"error"` глобально                                                                                                                                                                                            |
 
 Сирий мір по проекту (всі UA-strings, не тільки JSX-літерали; для
 референсу — НЕ closure-метрика):

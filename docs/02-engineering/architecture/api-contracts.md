@@ -1,6 +1,6 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 >
 > **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.
@@ -153,7 +153,7 @@ jobs:
 
 ⁽¹⁾ Provider replays `{platform: "ios"}` (same `{ ok, platform }` envelope). Це гарантує, що `PushRegisterResponseSchema` consumer-shape валідний для всіх трьох платформ; web-branch покритий module-load env у `apps/server/src/routes/pushTest.test.ts`.
 
-⁽²⁾ Added in the persona-extend PR (poverh PR-42). 5 new endpoints обрано за критерієм «real use в `apps/web/`» + cross-surface critical (`monoWebhookApi` + `nutritionApi` + `coachApi` — топ-3 за кількістю RQ-hooks). Routes як `fizruk/workouts/today` не існують як public REST (`fizruk` — local-first CRDT-sync). Історичний `openclaw/health` видалено разом з OpenClaw ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
+⁽²⁾ Added in the persona-extend PR (poverh PR-42). 5 new endpoints обрано за критерієм «real use в `apps/web/`» + cross-surface critical (`monoWebhookApi` + `nutritionApi` + `coachApi` — топ-3 за кількістю RQ-hooks). Routes як `fizruk/workouts/today` не існують як public REST (`fizruk` — local-first op-log sync). Історичний `openclaw/health` видалено разом з OpenClaw ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 ⁽³⁾ Anthropic-gated: provider-replay ніяк не торкається `api.anthropic.com`. Паттерн — `vi.mock("./../../lib/anthropic.js", () => createAnthropicMockHandle())` + `anthropicMessages.mockResolvedValueOnce(anthropicResponses.text(...))` зі спільного harness-у у `apps/server/src/test/__mocks__/anthropic.ts`. `ANTHROPIC_API_KEY` і `AI_QUOTA_DISABLED=true` піняться через `vi.hoisted` перед імпортом `createApp` — так `requireAnthropicKey` + `requireAiQuota` middleware-и пропускають запит до реального handler-а.
 
@@ -188,4 +188,4 @@ jobs:
 3. **Pact matchers** (`like()`, `term()`) для полів, де ми навмисно хочемо схему, а не значення (наприклад, `requestId` ULID-strings, `nextCursor` опаковий рядок).
 4. **Pact Broker** інтеграція — якщо буде потрібен contract-version-matrix на CI (web vs mobile consumers різних версій).
 5. **Streaming SSE контракт** для `/api/v1/chat` — Pact JSON не виражає SSE-фрейми; альтернатива — окремий `chat-stream.contract.test.ts` із власним адаптером.
-6. **Fizruk binary contract** — local-first CRDT sync через `/api/v2/sync/*`; sync-payload бінарний (Yjs), не JSON, тому Pact без custom encoder-а не підходить. Альтернатива — окремий contract test за байтовою фікстурою.
+6. **Fizruk sync contract** — local-first op-log sync через `/api/v2/sync/*`: payload — JSON `{ops}`, але шейп визначається доменними операціями, а не REST-ендпоінтом, тому Pact-фікстура швидко застаріває. Альтернатива — окремий contract test на рівні op-log-схеми.

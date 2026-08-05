@@ -1,14 +1,20 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
-Дизайн-філософія Sergeant — **Soft & Organic** з Emerald-акцентом (Fizruk-модуль
-перейшов з Teal на Cyan у v2-редизайні 2026-05 — див. § палітру нижче).
-Цей документ описує бренд-ідентичність, голос і marketing-asset-и.
-**Для UI-коду** — починай із [`design-system.md`](./design-system.md): саме він
-тримає канонічні токени, type-scale, компоненти і ESLint-контракти. Якщо щось
-у брендбуку розходиться з дизайн-системою — перемагає дизайн-система.
+Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
+
+> **⚠️ Канон палітри — [`DESIGN.md`](../../../DESIGN.md) (генерується з `packages/design-tokens/tokens.js`).**
+> Після stone-ребренду M1 (2026-07) `brand` більше не aliasить emerald: це `stone-700 #44403c`
+> (`-strong` = `stone-800 #292524`), а finyk перейшов з emerald-500 на **teal-700 `#0f766e`**
+> (`-strong` / `chart-finyk` = teal-800 `#115e59`). Fizruk перейшов з teal на cyan-700 у
+> v2-редизайні 2026-05. Emerald лишається лише семантичним `success`. Історичні emerald-таблиці
+> нижче зберігаються як контекст бренд-ідентичності; при розбіжності перемагають токени.
+> Цей документ описує бренд-ідентичність, голос і marketing-asset-и.
+> **Для UI-коду** — починай із [`design-system.md`](./design-system.md): саме він
+> тримає канонічні токени, type-scale, компоненти і ESLint-контракти. Якщо щось
+> у брендбуку розходиться з дизайн-системою — перемагає дизайн-система.
 
 ---
 
@@ -80,7 +86,7 @@ Cyan 800: #155e75  (fizruk-strong v2 — WCAG AA companion)
 
 | Модуль    | Primary | Surface | Сфера      |
 | --------- | ------- | ------- | ---------- |
-| Finyk     | #10b981 | #ecfdf5 | Фінанси    |
+| Finyk     | #0f766e | #f0fdfa | Фінанси    |
 | Fizruk    | #0e7490 | #ecfeff | Фітнес     |
 | Routine   | #f97066 | #fff5f3 | Звички     |
 | Nutrition | #92cc17 | #f8fee7 | Харчування |
@@ -93,7 +99,7 @@ Bar-чарти у `HubReports` та майбутніх дашбордах вик
 
 | Токен             | Utility              | Hex       | Contrast vs `bg-bg` |
 | ----------------- | -------------------- | --------- | ------------------- |
-| `chart-finyk`     | `bg-chart-finyk`     | `#047857` | 5.23 : 1            |
+| `chart-finyk`     | `bg-chart-finyk`     | `#115e59` | 5.12 : 1            |
 | `chart-fizruk`    | `bg-chart-fizruk`    | `#155e75` | 7.50 : 1            |
 | `chart-routine`   | `bg-chart-routine`   | `#c23a3a` | 5.06 : 1            |
 | `chart-nutrition` | `bg-chart-nutrition` | `#466212` | 6.64 : 1            |
@@ -118,7 +124,7 @@ Info:     #0ea5e9 (Sky 500)
 
 | Family    | Saturated (`-500`) | Strong (Tailwind utility)                                  | Hex       | Contrast vs `bg-bg` | Contrast vs `text-white` |
 | --------- | ------------------ | ---------------------------------------------------------- | --------- | ------------------- | ------------------------ |
-| brand     | `#10b981`          | `bg-brand-strong` / `text-brand-strong` (= emerald-700)    | `#047857` | 5.23 : 1            | 5.48 : 1                 |
+| brand     | `#44403c`          | `bg-brand-strong` / `text-brand-strong` (= stone-800)      | `#292524` | ~14 : 1             | ~14 : 1                  |
 | success   | `#10b981`          | `bg-success-strong` / `text-success-strong` (emerald-700)  | `#047857` | 5.23 : 1            | 5.48 : 1                 |
 | warning   | `#f59e0b`          | `bg-warning-strong` / `text-warning-strong` (amber-700)    | `#b45309` | 4.83 : 1            | 5.02 : 1                 |
 | danger    | `#ef4444`          | `bg-danger-strong` / `text-danger-strong` (red-700)        | `#b91c1c` | 6.17 : 1            | 6.47 : 1                 |

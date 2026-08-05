@@ -26,7 +26,7 @@ Canonical docs that receive PR backlinks (whitelist enforced by [`scripts/ci/upd
 
 ## Why / What is enforced
 
-Sergeant already extracts `#NNNN` PR mentions **from** docs (`generate-open-work.mjs`, `generate-knowledge-graph.mjs` `touched-by` edges). The reverse direction was previously manual: when a PR merged, the canonical doc would say nothing about which PRs touched it. The asymmetry made "what PRs touched initiative 0010 this month?" a manual git-log archeology task.
+Sergeant already extracts `#NNNN` PR mentions **from** docs (`generate-open-work.mjs`, `update-pr-backlinks.mjs` `touched-by` edges). The reverse direction was previously manual: when a PR merged, the canonical doc would say nothing about which PRs touched it. The asymmetry made "what PRs touched initiative 0010 this month?" a manual git-log archeology task.
 
 This rule closes the loop: every merged PR that touches a canonical doc gets recorded in [`docs/04-governance/pr-ledger/index.json`](../../pr-ledger/index.json), and the latest 5 entries appear as a `## Recent PRs` block at the end of each touched doc (delimited by `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` / `END` markers).
 

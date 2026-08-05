@@ -154,7 +154,7 @@ loops:
     file: LOOP.md#deploy-watch
     owner_skill: sergeant-deploy-and-observability
     related_skills: [sergeant-data-and-migrations, sergeant-security-audit]
-    goal: React to deploy health, Sentry alerts, env drift, Railway incidents
+    goal: React to deploy health, Sentry alerts, env drift, Coolify/infra incidents
     cadence: 5m-15m
     risk: high
     tools: [claude-code, kilo-code, github-actions, sentry-webhooks]
@@ -252,7 +252,7 @@ loops:
         sergeant-mobile-expo,
         sergeant-data-and-migrations,
       ]
-    goal: Per-surface test + typecheck across all 4 surfaces before synthesis; full QA fan-out
+    goal: Per-surface test + typecheck across all 3 surfaces before synthesis; full QA fan-out
     cadence: per-pr
     risk: low
     tools: [claude-code, kilo-code]

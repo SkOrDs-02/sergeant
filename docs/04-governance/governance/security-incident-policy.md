@@ -1,6 +1,6 @@
 # Security Incident Policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Use this policy when the incident is primarily about identity compromise, privileged misuse, leaked credentials, or unauthorized access to sensitive systems.
@@ -11,7 +11,7 @@ A security incident is the primary mode when at least one is true:
 
 - a maintainer, admin, or machine account may be compromised
 - a provider key, bot token, or admin credential may be leaked
-- unauthorized access to GitHub, Railway, Vercel, Stripe, mobile-store, DNS, or database surfaces is suspected
+- unauthorized access to GitHub, Coolify/Hetzner, Vercel, payment-provider, mobile-store, DNS, or database surfaces is suspected
 - logs, support reports, or vendor alerts suggest privileged misuse rather than ordinary runtime failure
 
 If the event is only service degradation without access compromise, use [incident-severity-policy.md](./incident-severity-policy.md) and the runtime playbooks.
@@ -21,7 +21,7 @@ If the event is only service degradation without access compromise, use [inciden
 | Severity | Security examples                                                                                                    | Required first actions                                                                                               |
 | -------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | SEV1     | Stolen GitHub owner session, production DB admin compromise, Stripe admin compromise, DNS takeover                   | Lock account/session, revoke access, rotate impacted credentials, freeze blast radius, open incident log immediately |
-| SEV2     | Leaked provider key, suspicious Railway/Vercel admin access, compromised bot token with mutation capability          | Revoke or rotate credential same day, inventory affected systems, verify no follow-on mutation occurred              |
+| SEV2     | Leaked provider key, suspicious Coolify/Vercel admin access, compromised bot token with mutation capability          | Revoke or rotate credential same day, inventory affected systems, verify no follow-on mutation occurred              |
 | SEV3     | Temporary contractor over-privileged, suspicious but unconfirmed vendor login, stale access discovered during review | Reduce access promptly, investigate evidence, open issue or incident note if mitigation spans multiple steps         |
 | SEV4     | Benign alert, quickly explained login anomaly, read-only access hygiene issue with no current exploit path           | Track and remediate through review/backlog if useful                                                                 |
 

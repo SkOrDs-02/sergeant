@@ -185,19 +185,18 @@ describe("smoke: createApp wiring", () => {
     expect(res.body).toMatchObject({ code: "NOT_CONFIGURED" });
   });
 
-  it("POST /api/chat → 401 без сесії (A1: requireSession стоїть перед ключем)", async () => {
+  // `getSessionUser` замокано на `null` вгорі файла, тож запит анонімний.
+  // Після закриття зловживання AI-чатом `/api/chat` стоїть за `requireSession()`,
+  // який спрацьовує ДО перевірки ключа — тому тут 401, а не 503. Обидві гілки
+  // (401 без сесії, 503 із сесією але без ключа) покриває `chat.route.test.ts`
+  // § «auth guard»; тут перевіряємо лише те, що роут узагалі змонтований.
+  it("POST /api/chat → 401 for an anonymous request (session guard runs first)", async () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/chat")
       .set("content-type", "application/json")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ messages: [] });
-    // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) поставила
-    // `requireSession()` ПЕРЕД `requireAnthropicKey()`, тож анонімний запит
-    // тепер відсікається на сесії (401) і до перевірки ключа не доходить.
-    // Раніше тут очікувалось 503 — це очікування пережило фікс і стало
-    // хибним. 401 раніше за 503 — правильний порядок: не світимо стан
-    // конфігурації тому, хто взагалі не має доступу.
     expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ error: expect.any(String) });
   });

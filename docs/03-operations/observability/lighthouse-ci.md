@@ -1,6 +1,6 @@
 # Lighthouse CI — perf-budget gate
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Призначення
@@ -46,7 +46,7 @@ Reports падають у `apps/web/.lighthouseci/` (gitignored).
 Жорсткого override-механізму немає (на відміну від `size-limit` `audit-exception` label). Якщо потрібен hotfix-bypass:
 
 1. **Preferred:** полагодь регресію перед merge — знайди у звіті `unused-javascript`, `largest-contentful-paint-element`, `render-blocking-resources`.
-2. **Якщо потрібен incident-bypass:** додай у PR-description `[skip-lighthouse-ci]` + причину; у follow-up PR (≤24h) — або фікс регресії, або підняти поріг у `apps/web/lighthouserc.json` з justification у commit message.
+2. **Якщо потрібен incident-bypass:** механічного маркера немає — джоб виконується завжди. Тимчасово підняти поріг у `apps/web/lighthouserc.json` з justification у commit message або (в крайньому разі) зняти required-status у branch protection; у follow-up PR (≤24h) — або фікс регресії, або підняти поріг у `apps/web/lighthouserc.json` з justification у commit message.
 3. GitHub required-status-check flip (переведення `Lighthouse CI` у required через branch-protection settings) — manual, зовнішній до цього репо.
 
 ## Джерела

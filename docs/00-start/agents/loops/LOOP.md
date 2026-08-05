@@ -134,7 +134,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 
 ### qa-squad-parallel
 
-- **Goal:** Per-surface test + typecheck across all 4 surfaces before synthesis; full QA fan-out.
+- **Goal:** Per-surface test + typecheck across all 3 surfaces before synthesis; full QA fan-out.
 - **Phases:** discover → fan-out → synthesize → report.
 - **Gates:** cross-surface bug, baseline amendment.
 - **Hard rules:** #18, #19.

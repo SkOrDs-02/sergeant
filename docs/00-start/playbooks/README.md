@@ -1,6 +1,6 @@
 # Playbooks
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
@@ -10,7 +10,7 @@ Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Sk
 - `delivery` - new features, API work, HubChat tools, product surfaces
 - `bugfix/debugging` - CI red, regressions, alerts, flaky tests
 - `data/migrations` - schema changes, rollout safety, DB hygiene, restore drills
-- `AI/HubChat` - tools, prompts, console agents
+- `AI/HubChat` - tools, prompts, chat executors
 - `mobile` - Expo, RN porting, migration progress, mobile releases
 - `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety, n8n workflows
 - `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene, access governance

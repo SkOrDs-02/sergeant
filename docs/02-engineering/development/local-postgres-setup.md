@@ -1,18 +1,18 @@
 # Local Postgres setup
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Локальний Postgres для розробки запускається через `docker-compose.yml` у
 корені репо. Використовується image `pgvector/pgvector:pg17` —
 **SHA-pinned** до того же digest, що й у CI (`.github/workflows/{ci,
-extended-e2e, visual-regression, db-backup-verify}.yml`).
+extended-e2e, db-backup-verify}.yml`).
 
 ## Запуск
 
 ```bash
 pnpm db:up         # = docker compose up -d (постгрес + healthcheck)
-pnpm db:migrate    # apps/server/migrate.mjs — застосовує всі NNN_*.sql
+pnpm db:migrate    # node dist-server/migrate.js (потребує build); dev-варіант без білда — pnpm --filter @sergeant/server db:migrate:dev
 pnpm dev           # Turborepo: web + server у parallel
 pnpm db:down       # docker compose down (зберігає volume)
 ```
@@ -45,7 +45,7 @@ Floating-теги (`:pg17`, `:latest`) автомутують upstream-вміс�
    `vector` extension) автоматично pull-иться під час `docker compose up`.
    Pin блокує це до явного bump-у.
 3. **CI ↔ local parity.** Чотири workflow-и (`ci.yml`, `extended-e2e.yml`,
-   `visual-regression.yml`, `db-backup-verify.yml`) уже пінять той самий SHA;
+   `db-backup-verify.yml`) уже пінять той самий SHA;
    локальний floating-тег ламає «works locally / fails in CI» triage.
 
 PR-37 (stack-pulse 2026-05 / L10) зафіксував цей invariant і додав
@@ -80,7 +80,6 @@ docker inspect pgvector/pgvector:pg17 --format '{{index .RepoDigests 0}}'
 #    - docker-compose.yml (services.postgres.image)
 #    - .github/workflows/ci.yml (services.postgres.image, ~line 465)
 #    - .github/workflows/extended-e2e.yml (~line 57)
-#    - .github/workflows/visual-regression.yml (~line 56)
 #    - .github/workflows/db-backup-verify.yml (~line 34)
 
 # 3. Smoke-test:
@@ -111,7 +110,7 @@ linux/amd64`. Зменшіть platform-mismatch правкою в `docker-compo
 ## Cross-links
 
 - `docker-compose.yml` — root, `services.postgres`.
-- CI workflows: `.github/workflows/{ci, extended-e2e, visual-regression, db-backup-verify}.yml`.
+- CI workflows: `.github/workflows/{ci, extended-e2e, db-backup-verify}.yml`.
 - Renovate config: `renovate.json` (`pgvector pinDigests` rule).
 - Migration: `apps/server/src/migrations/025_ai_memories_pgvector.sql`.
 - Pool sizing runbook: [`docs/03-operations/observability/pg-pool-sizing.md`](../../03-operations/observability/pg-pool-sizing.md).

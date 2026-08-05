@@ -15,11 +15,12 @@
 
 ## Enforced by
 
+- **eslint** — `sergeant-design/rq-keys-only-from-factory` (error, `eslint.web.js`)
 - **convention** — apps/web/src/shared/lib/api/queryKeys.ts (single source of truth)
 
 ## Why / What is enforced
 
-All `useQuery`/`useMutation` keys come from `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`.
+All `useQuery`/`useMutation` keys come from `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`.
 
 ```ts
 // ❌ BAD — drift; impossible to bulk-invalidate; typos compile
