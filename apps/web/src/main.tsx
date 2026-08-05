@@ -36,7 +36,6 @@ import { initPostHog } from "./core/observability/posthog.js";
 import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
 import { maybeRunOnboarding } from "./core/onboarding/index.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 import {
@@ -92,32 +91,33 @@ interface ErrorFallbackProps {
   resetError: () => void;
 }
 
+// Lazy: the top-level `<ErrorBoundary>` fallback only renders on an
+// unrecoverable crash (rare path), so the design-system `ServerErrorPage`
+// (`EmptyState` + illustration) stays out of the eager entry bundle —
+// `lazyImport` (not a bare `React.lazy`) so a stale-chunk-hash failure here
+// gets the same `ChunkLoadError` recovery as every other lazy route instead
+// of a raw `TypeError` on `m.ServerErrorPage`.
+const ServerErrorPage = lazyImport(
+  () => import("./core/errors/ServerErrorPage.js"),
+  "ServerErrorPage",
+);
+
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   // Hard rule #21 spirit: raw error.message може витекти внутрішні шляхи,
   // DB-колонки, API URL-и та `Error.cause`-ланцюги. У проді показуємо лише
-  // локалізований заголовок; повний нарратив усе ще в Sentry. Vite DCE
-  // вирізає dev-гілку з prod-бандлу.
+  // локалізований заголовок (усередині `ServerErrorPage`); повний нарратив
+  // усе ще в Sentry. Vite DCE вирізає dev-гілку з prod-бандлу.
   return (
-    <div className="p-8 font-sans">
-      <h2 className="text-style-title text-text">
-        {messages.errors.generic.somethingWrong}
-      </h2>
+    <>
+      <Suspense fallback={null}>
+        <ServerErrorPage onReset={resetError} />
+      </Suspense>
       {import.meta.env.DEV ? (
-        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap mt-2">
+        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap m-4 p-4 rounded-xl bg-panel border border-line">
           {error?.message}
         </pre>
       ) : null}
-      <button
-        type="button"
-        onClick={() => {
-          resetError?.();
-          window.location.reload();
-        }}
-        className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-style-label text-text"
-      >
-        {messages.actions.reload}
-      </button>
-    </div>
+    </>
   );
 }
 

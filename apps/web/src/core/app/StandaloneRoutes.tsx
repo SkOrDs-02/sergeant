@@ -12,7 +12,9 @@ import {
   LEGAL_OFFER_PATH,
   LEGAL_PRIVACY_PATH,
   LEGAL_TERMS_PATH,
+  OFFLINE_PATH,
   PRICING_PATH,
+  SERVER_ERROR_PATH,
   STATUS_PATH,
   PROFILE_PATH,
   RESET_PASSWORD_PATH,
@@ -71,6 +73,14 @@ const HubChatPage = lazyImport(
 const NotFoundPage = lazyImport(
   () => import("../errors/NotFoundPage"),
   "NotFoundPage",
+);
+const OfflinePage = lazyImport(
+  () => import("../errors/OfflinePage"),
+  "OfflinePage",
+);
+const ServerErrorPage = lazyImport(
+  () => import("../errors/ServerErrorPage"),
+  "ServerErrorPage",
 );
 
 export interface StandaloneRouteArgs {
@@ -302,6 +312,35 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         <div className="page-enter">
           <StatusPage />
         </div>
+      </Suspense>
+    ),
+  }),
+
+  // `/offline` — canonical offline surface (page-audit-10 F1 follow-up).
+  // Directly navigable / deep-linkable / bookmarkable. The SW's offline
+  // navigation fallback (`sw/cache.ts`'s `setCatchHandler`) already serves
+  // the precached SPA shell for any uncached navigation while offline, so
+  // this entry needs no additional SW wiring — once `/offline` is a real
+  // client route, the existing fallback covers it for free. No auth gate:
+  // an offline visitor may not have a resolved session yet.
+  defineStandaloneRoute({
+    paths: [OFFLINE_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <OfflinePage />
+      </Suspense>
+    ),
+  }),
+
+  // `/500` — canonical unrecoverable-render-error surface. Mounted as the
+  // top-level `<ErrorBoundary>` fallback in `main.tsx`; registered here too
+  // so it stays directly navigable/deep-linkable for parity with `/offline`
+  // (e.g. a support link that says "if this keeps happening, visit /500").
+  defineStandaloneRoute({
+    paths: [SERVER_ERROR_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <ServerErrorPage />
       </Suspense>
     ),
   }),
