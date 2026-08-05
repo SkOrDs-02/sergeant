@@ -112,7 +112,13 @@ export interface CrossModuleLinkCardProps {
   weeks?: number;
 }
 
-const MODULE_TEXT_CLASS: Record<CrossModuleLinkModule, string> = {
+/**
+ * Акцент модуля для тексту. Експортований, бо компактний рядок
+ * (`CrossModuleLinkRow`) фарбує полюси тим самим зіставленням — інакше
+ * згорнутий і розгорнутий вигляд того самого зв'язку розійшлись би в
+ * кольорі, і module-accent containment тримався б у двох місцях по-різному.
+ */
+export const MODULE_TEXT_CLASS: Record<CrossModuleLinkModule, string> = {
   finyk: "text-finyk",
   fizruk: "text-fizruk",
   routine: "text-routine",
