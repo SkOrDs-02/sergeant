@@ -43,6 +43,7 @@ import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/rou
 import { useRoutineQuickStatsBoot } from "../../modules/routine/hooks/useRoutineQuickStatsBoot";
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
+import { useActiveModulesSync } from "../hub/useActiveModulesSync";
 import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
@@ -131,6 +132,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // soon as possible after an authenticated boot (CodeRabbit PR #627) —
   // see `useAnalyticsConsentBoot`'s doc comment for the race it closes.
   useAnalyticsConsentBoot();
+  // Зводить вибір модулів між акаунтом і пристроєм (аудит 2026-08-05,
+  // знахідка B2): без цього той самий акаунт на новому пристрої бачив
+  // хаб із дефолтом «усі чотири» замість власного вибору.
+  useActiveModulesSync();
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route

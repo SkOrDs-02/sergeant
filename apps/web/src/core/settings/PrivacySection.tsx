@@ -18,6 +18,11 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   pushNotifications: false,
   sergeantNudges: false,
   healthDataConsent: false,
+  // Приватність цим екраном не керує — вибір модулів живе в
+  // «Дашборд» (`DashboardSection`) і синхронізується окремо
+  // (`activeModulesSync`). `null` тут означає «цей екран нічого не знає
+  // про вибір», а не «вибору немає».
+  activeModules: null,
   updatedAt: null,
 };
 

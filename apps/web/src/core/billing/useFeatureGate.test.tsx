@@ -28,11 +28,11 @@ describe("useFeatureGate", () => {
       subscription: null,
     });
 
-    const { result } = renderHook(() => useFeatureGate("multi-currency"));
+    const { result } = renderHook(() => useFeatureGate("analytics-export-pdf"));
 
     expect(result.current.canAccess).toBe(true);
-    expect(result.current.featureId).toBe("multi-currency");
-    expect(result.current.paywallSurface).toBe("other");
+    expect(result.current.featureId).toBe("analytics-export-pdf");
+    expect(result.current.paywallSurface).toBe("csv_export");
     expect(result.current.paywallOpen).toBe(false);
 
     let allowed = false;
@@ -84,7 +84,9 @@ describe("useFeatureGate", () => {
       subscription: null,
     });
 
-    const { result } = renderHook(() => useFeatureGate("multi-currency"));
+    // B3 (2026-08-05): гейт `multi-currency` видалено разом із фічею,
+    // якої не існувало — сценарій перевірено на живому `ai-photo-analysis`.
+    const { result } = renderHook(() => useFeatureGate("ai-photo-analysis"));
 
     act(() => {
       result.current.requireAccess();

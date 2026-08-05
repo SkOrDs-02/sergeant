@@ -4,7 +4,7 @@
  */
 import { NUTRITION_RECIPES_CACHE_KEY } from "@sergeant/nutrition-domain";
 
-import { normalizeFoodName } from "./pantryTextParser";
+import { matchFoodName } from "./pantryTextParser";
 
 /**
  * Recipe cache lives in `sessionStorage` (per-tab) by design — AI-generated
@@ -60,8 +60,10 @@ export function buildRecipeCacheKey(
   effectiveItems: ReadonlyArray<{ name?: unknown }>,
   prefs: RecipeCachePrefs | null | undefined,
 ): string {
+  // Match-ключ, а не display: зміна лише регістру назви не має інвалідувати
+  // кеш рецептів — набір продуктів той самий.
   const names = effectiveItems
-    .map((x) => normalizeFoodName(x?.name))
+    .map((x) => matchFoodName(x?.name))
     .filter(Boolean)
     .sort();
   const prefStr = [

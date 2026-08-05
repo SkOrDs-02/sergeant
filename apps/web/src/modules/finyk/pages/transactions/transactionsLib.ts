@@ -55,6 +55,57 @@ export function isDayExpanded(
 }
 
 /**
+ * Мінімальний контракт ручного запису для авто-розгортання його дня.
+ * Навмисно вужчий за `ManualExpense` — хелпер має приймати будь-який
+ * список з `id` + `date` без casting-у з боку викликача.
+ */
+export interface ManualExpenseDayInput {
+  id: string;
+  date?: string | undefined;
+}
+
+/**
+ * Day-key групи, у яку потрапить ручний запис. Рахуємо тим самим
+ * `dayKeyFromTx`, що й групування списку (`manualExpenseToTransaction`
+ * кладе `time = Date.parse(date) / 1000`), інакше «розгорнутий» ключ міг
+ * би не збігтися з ключем реальної групи. `null` — якщо дати немає або
+ * вона не парситься.
+ */
+export function manualExpenseDayKey(
+  date: string | null | undefined,
+): string | null {
+  if (!date) return null;
+  const ms = new Date(date).getTime();
+  if (!Number.isFinite(ms)) return null;
+  return dayKeyFromTx(Math.floor(ms / 1000));
+}
+
+/**
+ * День щойно доданого ручного запису — для авто-розгортання групи
+ * (знахідка B6: перша витрата «зникала» у згорнутій групі одразу після
+ * створення, бо всі дні згорнуті за замовчуванням).
+ *
+ * Повертає day-key ЛИШЕ коли відносно `knownIds` зʼявився рівно один
+ * новий запис — тобто це користувацьке додавання, а не bulk-гідрація
+ * списку (SQLite read-overlay / cloud-pull підміняють масив цілком).
+ * Ліміт «рівно один» — навмисний запобіжник: масове доливання не має
+ * розгортати пів місяця.
+ */
+export function findAddedManualExpenseDayKey(
+  knownIds: ReadonlySet<string>,
+  expenses: readonly ManualExpenseDayInput[] | null | undefined,
+): string | null {
+  if (!expenses) return null;
+  let added: ManualExpenseDayInput | null = null;
+  for (const e of expenses) {
+    if (!e || knownIds.has(e.id)) continue;
+    if (added) return null;
+    added = e;
+  }
+  return added ? manualExpenseDayKey(added.date) : null;
+}
+
+/**
  * Мінімальний контракт транзакції для підрахунку підсумку дня. Навмисно
  * вужчий за `Transaction` з finyk-domain — гарантує, що `computeDaySummary`
  * приймає будь-який список з `amount` / `id` без додаткового casting-у

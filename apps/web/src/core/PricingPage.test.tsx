@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -157,6 +158,38 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       screen.queryByRole("heading", { level: 3, name: "Plus" }),
     ).toBeNull();
     expect(screen.queryByRole("heading", { level: 3, name: "Pro" })).toBeNull();
+  });
+
+  // Браузерний аудит 2026-08-05, B3: рядок «Активи в іноземній валюті»
+  // обіцяв функцію, якої немає — у формі активу валюта статична («UAH»)
+  // однаково для Free і Premium.
+  it("does not advertise foreign-currency assets in either column (B3)", () => {
+    renderPricing();
+    expect(screen.queryByText(/іноземній валюті/i)).toBeNull();
+  });
+
+  // B4: Premium не запущений — конкретної ціни на сторінці бути не має,
+  // інакше вона суперечить waitlist-у «Ціну оголошу на запуску».
+  it("shows a launch placeholder instead of a concrete price (B4)", () => {
+    renderPricing();
+    expect(screen.queryByText(/199/)).toBeNull();
+    expect(screen.getByText("Скоро")).toBeInTheDocument();
+    expect(screen.getByText("Ціну оголошу на запуску")).toBeInTheDocument();
+    // Free-картка не змінилась.
+    expect(screen.getByText("0 ₴")).toBeInTheDocument();
+  });
+
+  // B4: вступний абзац більше не обіцяє, що тап одразу відкриє оплату.
+  it("does not promise that tapping Premium opens payment (B4)", () => {
+    renderPricing();
+    expect(screen.queryByText(/відкриється оплата/i)).toBeNull();
+    expect(
+      screen.getByText(/Один платний план\. Без рівнів/),
+    ).toBeInTheDocument();
+    // Кнопка checkout лишається на місці — прибрано лише обіцянку в тексті.
+    expect(
+      screen.getByRole("button", { name: /Спробувати Premium/i }),
+    ).toBeInTheDocument();
   });
 
   it("submits the waitlist form and tracks the WAITLIST_SUBMITTED event", async () => {
@@ -388,6 +421,34 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
         expect.objectContaining({ cta: "manage_subscription" }),
       );
+    });
+
+    // B5 (браузерний аудит 2026-08-05): маркер «Зараз ваш план» жив лише
+    // в disabled-кнопці Free-картки, тож підписник не бачив свого статусу
+    // ніде — його Premium-кнопка зайнята дією «Керувати підпискою».
+    function badgeTierName(badge: HTMLElement): string | null {
+      const card = badge.closest("article");
+      expect(card).not.toBeNull();
+      return within(card!).getByRole("heading", { level: 3 }).textContent;
+    }
+
+    it("marks the Free card as current for a free user (B5)", async () => {
+      renderPricing();
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(badges[0]!.textContent).toBe("Зараз ваш план");
+      expect(badgeTierName(badges[0]!)).toBe("Free");
+    });
+
+    it("marks the Premium card as current for an active subscriber (B5)", async () => {
+      withActiveSubscription();
+      renderPricing();
+      // Чекаємо на перехід usePlan у стан pro — його ознака на екрані.
+      await screen.findByRole("button", { name: /Керувати підпискою/i });
+      const badges = screen.getAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(badges[0]!.textContent).toBe("Зараз ваш план");
+      expect(badgeTierName(badges[0]!)).toBe("Premium");
     });
 
     it("shows a specific message on 409 NO_BILLING_CUSTOMER", async () => {

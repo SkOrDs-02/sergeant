@@ -14,6 +14,9 @@
 //
 //   - `GET/PATCH /api/v1/me/preferences` — new `healthDataConsent` field
 //     (GDPR Art. 9 explicit consent, migration 111). Default `false`.
+//     Plus `activeModules` (migration 116, browser audit 2026-08-05
+//     finding B2): a three-state field — `null` / `[]` / ordered array —
+//     where the client default is `null`, not `[]`.
 //   - `GET/PUT /api/v1/me/profile` — write-through profile/biometrics blob
 //     (migration 115, NOT oplog-sync). "Defaults, not 404":
 //     `{ profile: {}, updatedAt: null }` for a brand-new user.
@@ -137,6 +140,108 @@ describe(
           const me = createMeEndpoints(http);
           const out = await me.getPreferences();
           expect(out.healthDataConsent).toBe(false);
+        });
+    });
+
+    // Знахідка B2 (частина 2) браузерного аудиту 2026-08-05: вибір
+    // модулів переїхав на акаунт (міграція 116 + `active_modules` у
+    // серіалізаторі `dataRights.ts`). Контракт мусить закріпити саме
+    // три-станову семантику, бо на ній тримається вся поведінка: `null`
+    // — «сервер не знає, лиши локальний вибір», `[]` — «вибір є і він
+    // порожній», масив — власне вибір у порядку, який зробила людина.
+    it("round-trips a non-empty activeModules selection in the user's own order", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-003 keeps only nutrition and finyk on the hub")
+        .uponReceiving(
+          "a GET /api/v1/me/preferences request (activeModules set)",
+        )
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: false,
+            aiMemory: true,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            activeModules: ["nutrition", "finyk"],
+            updatedAt: "2026-08-05T09:00:00.000Z",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          // Порядок — частина контракту, не деталь: `sanitizePicks`
+          // зберігає його на клієнті, `TEXT[]` у 116 — у БД.
+          expect(out.activeModules).toEqual(["nutrition", "finyk"]);
+        });
+    });
+
+    it("keeps an explicitly empty activeModules distinct from an absent one", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-004 deliberately turned every module off")
+        .uponReceiving(
+          "a GET /api/v1/me/preferences request (activeModules empty)",
+        )
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: false,
+            aiMemory: true,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            activeModules: [],
+            updatedAt: "2026-08-05T09:00:00.000Z",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          expect(out.activeModules).toEqual([]);
+          expect(out.activeModules).not.toBeNull();
+        });
+    });
+
+    it("defaults activeModules to null when a pre-116 server omits the field", async () => {
+      // Той самий rolling-deploy аргумент, що й для healthDataConsent,
+      // але з іншим дефолтом: `null`, НЕ `[]`. Дефолт `[]` сказав би
+      // клієнту «людина свідомо вимкнула все» і затер би локальний
+      // `hub_onboarding_vibes_v1` — рівно знахідка B2 з іншого боку.
+      await pact
+        .addInteraction()
+        .given("user-pact-005 predates the active_modules column")
+        .uponReceiving(
+          "a GET /api/v1/me/preferences request (legacy server, no activeModules field)",
+        )
+        .withRequest("GET", "/api/v1/me/preferences", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            analytics: true,
+            aiMemory: false,
+            pushNotifications: false,
+            sergeantNudges: false,
+            healthDataConsent: false,
+            updatedAt: null,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const me = createMeEndpoints(http);
+          const out = await me.getPreferences();
+          expect(out.activeModules).toBeNull();
         });
     });
   },

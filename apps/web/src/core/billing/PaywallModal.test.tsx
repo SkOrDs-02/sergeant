@@ -95,6 +95,17 @@ describe("PaywallModal", () => {
     expect(screen.getByRole("button", { name: /Перейти до Pro/ })).toBeTruthy();
   });
 
+  // B4 (браузерний аудит 2026-08-05): сторінка тарифів каже «без
+  // trial-таймера», тож дефолтний список paywall-у не має обіцяти trial.
+  it("does not promise a trial in the default feature list", () => {
+    renderModal(true);
+    expect(screen.queryByText(/trial/i)).toBeNull();
+    expect(screen.queryByText(/прив'язки картки/i)).toBeNull();
+    // Решта дефолтних булітів лишається на місці.
+    expect(screen.getByText(/Безлімітний AI-чат/)).toBeInTheDocument();
+    expect(screen.getByText(/Експорт CSV\/PDF/)).toBeInTheDocument();
+  });
+
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();

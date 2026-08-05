@@ -21,6 +21,7 @@ import {
   type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
+import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   SettingsGroup,
   SettingsSubGroup,
@@ -82,6 +83,10 @@ export function DashboardSection() {
           ? prev.filter((x) => x !== id)
           : ALL_MODULES.filter((x) => prev.includes(x) || x === id);
         setActiveModules(webKVStore, next);
+        // Знахідка B2 (аудит 2026-08-05): вибір їде й на акаунт, щоб на
+        // наступному пристрої не показувати дефолт. Fire-and-forget —
+        // локальний KV уже оновлено, і мережа не має блокувати тумблер.
+        pushActiveModules(next);
         return next;
       });
     },

@@ -84,7 +84,10 @@ export function ActiveHabitsSection({
         <EmptyState
           illustration={<RoutineEmptyIllustration size={96} />}
           title="Поки порожньо"
-          description="Додай першу звичку формою вище."
+          // Форми «вище» на цьому екрані немає — вище лише поле пошуку по
+          // списку. Додавання йде через плаваючу «+», як і каже підказка
+          // зверху сторінки (`uk.routine.ts` → `habitsHint`).
+          description="Додай першу звичку кнопкою «+» унизу екрана."
           module="routine"
           action={
             typeof onOpenCalendar === "function" ? (

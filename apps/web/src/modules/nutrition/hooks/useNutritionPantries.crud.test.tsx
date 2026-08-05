@@ -126,6 +126,52 @@ describe("useNutritionPantries CRUD", () => {
     expect(result.current.pantryItems).toHaveLength(0);
   });
 
+  // B7 — комора показує назву як її ввела людина; зіставлення (видалення,
+  // списання) лишається нечутливим до регістру.
+  it("keeps the typed capitalization of a product name", () => {
+    seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
+    const { result } = renderHarness();
+
+    act(() => result.current.upsertItem("Яготинське молоко 1 л"));
+    expect(result.current.pantryItems[0]).toMatchObject({
+      name: "Яготинське молоко",
+      qty: 1,
+      unit: "л",
+    });
+
+    // сканер штрих-кодів шле бренд одним рядком
+    act(() => result.current.upsertItem("Coca-Cola Zero"));
+    expect(result.current.pantryItems.map((x) => x.name)).toContain(
+      "Coca-Cola Zero",
+    );
+
+    // видалення ловить позицію попри інший регістр
+    act(() => result.current.removeItem("яготинське МОЛОКО"));
+    expect(result.current.pantryItems.map((x) => x.name)).toEqual([
+      "Coca-Cola Zero",
+    ]);
+  });
+
+  it("matches an old lowercase record when consuming a mixed-case name", () => {
+    seed(
+      [
+        {
+          id: "home",
+          name: "Дім",
+          items: [{ name: "гречка", qty: 1000, unit: "г", notes: null }],
+          text: "",
+        },
+      ],
+      "home",
+    );
+    const { result } = renderHarness();
+    act(() => result.current.consumePantryItem("Гречка", 200));
+    expect(result.current.pantryItems[0]).toMatchObject({
+      name: "гречка",
+      qty: 800,
+    });
+  });
+
   it("opens the item editor and saves a qty/unit change", () => {
     seed(
       [

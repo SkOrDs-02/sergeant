@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { DASHBOARD_MODULE_IDS } from "../lib/dashboard";
+
 /**
  * Централізовані zod-схеми для AI/публічних endpoint-ів.
  * Обрізаємо довгі поля на сервері, щоб не платити Anthropic за
@@ -66,6 +68,31 @@ export const UserPreferencesSchema = z.object({
    * client-side. Matches the DB column DEFAULT (migration 111).
    */
   healthDataConsent: z.boolean().default(false),
+  /**
+   * Модулі, які людина лишила активними на хабі (браузерний аудит
+   * 2026-08-05, знахідка B2 — частина 2). До міграції 116 цей вибір жив
+   * ЛИШЕ в локальному KV (`hub_onboarding_vibes_v1` на web, MMKV на
+   * mobile) і не входив у cloud-sync, тож на новому пристрої хаб
+   * рендерився з фолбеком «усі чотири» замість справжнього вибору.
+   *
+   * Три стани, і всі три різні:
+   *  - `null` — серверного вибору ще немає; клієнт лишає локальний як є
+   *    (саме тому колонка nullable і без `DEFAULT '{}'` — див. 116);
+   *  - `[]` — вибір є, і він порожній;
+   *  - непорожній масив — власне вибір, у порядку, який людина зробила
+   *    (`sanitizePicks` порядок зберігає, `TEXT[]` теж).
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й
+   * `sergeantNudges`/`healthDataConsent`: web (Vercel) і сервер
+   * (Coolify) деплояться окремо, тож новий клієнт може розмовляти зі
+   * старим сервером, який поля ще не віддає. «Поля нема» і «серверного
+   * вибору нема» тут означають рівно те саме, тож дефолт безпечний.
+   */
+  activeModules: z
+    .array(z.enum(DASHBOARD_MODULE_IDS))
+    .max(DASHBOARD_MODULE_IDS.length)
+    .nullable()
+    .default(null),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -77,6 +104,21 @@ export const UserPreferencesPatchSchema = z
     pushNotifications: z.boolean().optional(),
     sergeantNudges: z.boolean().optional(),
     healthDataConsent: z.boolean().optional(),
+    /**
+     * Відсутнє поле = «не чіпай вибір»; `null` = «прибери серверний
+     * вибір» (повернення до локального); масив = новий вибір.
+     *
+     * Дедуп робимо ТУТ, а не в БД: вираз `CHECK` не може містити
+     * підзапит, тож `{finyk,finyk}` пройшов би констрейнт міграції 116.
+     * `sanitizePicks` уже дедуплікує на клієнті — це друга лінія для
+     * будь-якого іншого споживача API.
+     */
+    activeModules: z
+      .array(z.enum(DASHBOARD_MODULE_IDS))
+      .max(DASHBOARD_MODULE_IDS.length)
+      .transform((ids) => [...new Set(ids)])
+      .nullable()
+      .optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;

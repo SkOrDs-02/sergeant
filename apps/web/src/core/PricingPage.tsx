@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
+import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -52,11 +53,12 @@ interface Tier {
   readonly highlight: boolean;
 }
 
-// Canonical monthly price for the Premium tier (199 ₴/міс, 1490 ₴/рік).
-// Cadence line carries the billing period text from the locale catalog.
-// Знак ПІСЛЯ числа — гривнева конвенція решти продукту (Free = «0 ₴»);
-// «₴199» ламав паритет двох карток (design-audit P3).
-const PREMIUM_PRICE_MONTHLY = "199 ₴";
+// AI-NOTE: конкретної ціни Premium тут більше немає (B4, браузерний аудит
+// 2026-08-05). Premium ще не запущений, оплата не підключена, а внизу
+// сторінки стоїть waitlist «Один лист, коли Premium стартує» — число
+// «199 ₴ / місяць» прямо йому суперечило. Ціна і каденція тепер приходять
+// з каталогу (`tiers.premiumPrice` / `tiers.premiumCadence`); повертати
+// число слід туди ж, а не хардкодом у компонент.
 
 // Defense-in-depth open-redirect guard (audit F4,
 // docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
@@ -120,14 +122,13 @@ function buildTiers(
         { label: features.aiChat, limit: limits.aiChatPerDay },
         { label: features.cloudSync2Devices },
         { label: features.pdfExport, included: false },
-        { label: features.multiCurrency, included: false },
         { label: features.monoAutoSync, included: false },
       ],
     },
     {
       id: "premium",
       name: pricing.tiers.premiumName,
-      price: PREMIUM_PRICE_MONTHLY,
+      price: pricing.tiers.premiumPrice,
       cadence: pricing.tiers.premiumCadence,
       tagline: pricing.tiers.premiumTagline,
       highlight: true,
@@ -136,8 +137,9 @@ function buildTiers(
         { label: features.aiPhotoFoodShort, limit: limits.unlimited },
         { label: features.workoutTemplates, limit: limits.unlimited },
         { label: features.habits, limit: limits.unlimited },
+        // B3 (браузерний аудит 2026-08-05): рядок «Активи в іноземній валюті»
+        // прибрано з обох колонок — такої функції в застосунку немає.
         { label: features.pdfExport },
-        { label: features.multiCurrency },
         { label: features.cloudSync },
       ],
     },
@@ -444,9 +446,34 @@ export function PricingPage() {
                   aria-current={isCurrent ? "true" : undefined}
                 >
                   <header className="space-y-1">
-                    <h3 className={cn("text-style-headline", headingTone)}>
-                      {tier.name}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className={cn("text-style-headline", headingTone)}>
+                        {tier.name}
+                      </h3>
+                      {/* B5 (браузерний аудит 2026-08-05): маркер поточного
+                          тарифу жив лише в disabled-кнопці Free-картки, тож
+                          підписник не бачив його ніде — його Premium-кнопка
+                          зайнята дією «Керувати підпискою». Бейдж тепер
+                          стоїть на тій картці, яка активна, для обох станів. */}
+                      {isCurrent ? (
+                        <Badge
+                          data-testid="current-plan-badge"
+                          variant={isPremium ? "neutral" : "accent"}
+                          // Hero-картка: outline, а не заливка. Вимірювання
+                          // на світлому кінці градієнта (teal-700): чистий
+                          // `text-hero-ink` дає 5.22:1, а вже 15 % ink-washу
+                          // під ним — 3.93:1, тобто нижче AA для 12px-копії.
+                          tone={isPremium ? "outline" : "soft"}
+                          size="sm"
+                          className={cn(
+                            "shrink-0",
+                            isPremium && "text-hero-ink border-hero-ink/40",
+                          )}
+                        >
+                          {t.cta.currentPlan}
+                        </Badge>
+                      ) : null}
+                    </div>
                     <p className={cn("text-style-label", mutedTone)}>
                       {tier.tagline}
                     </p>

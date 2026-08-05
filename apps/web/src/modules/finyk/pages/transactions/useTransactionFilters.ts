@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SetStateAction } from "react";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type {
@@ -17,6 +17,7 @@ import {
   DAY_COLLAPSE_KEY,
   computeDaySummary,
   dayKeyFromTx,
+  findAddedManualExpenseDayKey,
   isDayExpanded,
   readDayCollapse,
   writeDayCollapse,
@@ -383,6 +384,41 @@ export function useTransactionFilters({
     },
     [todayDayKey],
   );
+
+  // B6 · Щойно доданий ручний запис не має «зникати» у згорнутій групі.
+  // Дні лишаються згорнутими за замовчуванням (inbox-style — свідоме
+  // рішення нижче), але саме день створеного запису розгортаємо, щоб
+  // людина побачила свою транзакцію одразу після тосту «Витрату додано».
+  //
+  // Чому тут, а не в місці збереження (`FinykApp` → `ManualExpenseSheet`):
+  // стан розгортання живе в цьому хуці, тож ефект дивиться на прихід
+  // нового запису в `manualExpenses` і покриває будь-яке джерело
+  // додавання (FAB-шит, quick-add, HubChat) без прокидання коллбеків
+  // через три файли.
+  //
+  // Розгортаємо день САМОЇ транзакції (у формі є «Не сьогодні? Змінити
+  // дату»), а не сьогоднішній, і через той самий `dayOverrides` /
+  // `writeDayCollapse` — стан переживає перезавантаження, а наступний
+  // тап користувача по хедеру знову згортає день (ручний override
+  // перемагає, бо ефект спрацьовує лише на НОВИЙ id).
+  const knownManualExpenseIdsRef = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    const list = manualExpenses ?? [];
+    const known = knownManualExpenseIdsRef.current;
+    knownManualExpenseIdsRef.current = new Set(list.map((e) => e.id));
+    // Перший прогін — лише baseline: список, з яким екран змонтувався,
+    // не є «щойно доданим».
+    if (!known) return;
+    const dayKey = findAddedManualExpenseDayKey(known, list);
+    if (!dayKey) return;
+    setDayOverrides((prev) => {
+      if (prev[dayKey]) return prev;
+      const next = { ...prev, [dayKey]: true };
+      writeDayCollapse(next);
+      return next;
+    });
+  }, [manualExpenses]);
 
   // Фільтр-чіпи (Витрати/Доходи/Кредитна/Борг) більше не форсять
   // розгортання — користувач явно хотів, щоб згортання працювало

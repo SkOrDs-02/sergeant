@@ -377,6 +377,71 @@
       }
     },
     {
+      "description": "a GET /api/v1/me/preferences request (activeModules empty)",
+      "providerStates": [
+        {
+          "name": "user-pact-004 deliberately turned every module off"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": [],
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-05T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (activeModules set)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 keeps only nutrition and finyk on the hub"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": [
+            "nutrition",
+            "finyk"
+          ],
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-05T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/me/preferences request (consented)",
       "providerStates": [
         {
@@ -398,6 +463,36 @@
           "pushNotifications": true,
           "sergeantNudges": false,
           "updatedAt": "2026-08-01T12:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (legacy server, no activeModules field)",
+      "providerStates": [
+        {
+          "name": "user-pact-005 predates the active_modules column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "aiMemory": false,
+          "analytics": true,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": null
         },
         "headers": {
           "Content-Type": "application/json",

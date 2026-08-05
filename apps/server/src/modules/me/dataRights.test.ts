@@ -54,6 +54,10 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       sergeantNudges: false,
       // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
       healthDataConsent: false,
+      // Міграція 116 (знахідка B2): `null`, а не `[]`. Дефолт `[]`
+      // сказав би клієнту «людина свідомо вимкнула всі модулі» і затер
+      // би її локальний вибір — дефолт тут частина контракту.
+      activeModules: null,
       updatedAt: null,
     });
   });
@@ -66,6 +70,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         push_notifications: true,
         sergeant_nudges: true,
         health_data_consent: true,
+        active_modules: ["nutrition", "finyk"],
         updated_at: new Date("2026-06-06T10:00:00.000Z"),
       },
     ]);
@@ -76,8 +81,36 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       pushNotifications: true,
       sergeantNudges: true,
       healthDataConsent: true,
+      // Порядок вибору зберігається наскрізь: `TEXT[]` у 116 → `pg` →
+      // серіалізатор. Це не косметика — на хабі плитки шикуються саме
+      // в порядку вибору.
+      activeModules: ["nutrition", "finyk"],
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
+  });
+
+  it("drops unknown module ids and reads a missing column as «no choice»", async () => {
+    // Рядки, створені до 116, колонки не мають — це має читатись як
+    // `null`, а не падати. А `CHECK` міграції не діє на дані, що вже
+    // лежали в БД, тож серіалізатор ще й відсіює невідомі id.
+    const legacy = await getUserPreferences(
+      mockDb([{ analytics: true, ai_memory: true, updated_at: null }]),
+      "user-1",
+    );
+    expect(legacy.activeModules).toBeNull();
+
+    const dirty = await getUserPreferences(
+      mockDb([
+        {
+          analytics: true,
+          ai_memory: true,
+          active_modules: ["finyk", "garage", 42, null],
+          updated_at: null,
+        },
+      ]),
+      "user-1",
+    );
+    expect(dirty.activeModules).toEqual(["finyk"]);
   });
 
   it("output passes UserPreferencesSchema — contract triplet anchor", async () => {
