@@ -112,7 +112,16 @@ export async function reconcileBiometricsWithServerProfile(
     Number.isFinite(localMs) &&
     (!Number.isFinite(serverMs) || localMs > serverMs);
 
-  if (localIsNewer) {
+  // Той самий owner-гейт, що й у гілці `!serverHasRow` вище (CodeRabbit
+  // PR #627, друга ітерація). LWW сам по собі його НЕ замінює: на спільному
+  // пристрої снапшот юзера A майже завжди свіжіший за серверний профіль
+  // щойно залогіненого юзера B (A користувався пристроєм останнім), тож
+  // «локальне новіше» відправило б біометрику A під сесією B. Коли власник
+  // не збігається — сервер завжди виграє, а локальний кеш гідратується
+  // профілем B.
+  const localBelongsToCurrentUser = readBiometricsOwnerId() === currentUserId;
+
+  if (localIsNewer && localBelongsToCurrentUser) {
     await pushBiometricsToServer(local);
   } else {
     writeBiometrics(serverBiometrics);

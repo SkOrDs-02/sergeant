@@ -206,6 +206,32 @@ describe("reconcileBiometricsWithServerProfile — cross-account upload guard", 
 
     expect(mockUpdateProfile).not.toHaveBeenCalled();
   });
+
+  // Друга ітерація гарду (CodeRabbit PR #627): LWW-гілка теж мусить його
+  // мати. На спільному пристрої це НЕ екзотика, а типовий випадок —
+  // останнім користувався A, тож його локальний снапшот майже завжди
+  // свіжіший за серверний профіль щойно залогіненого B.
+  it("does NOT upload user A's NEWER local snapshot over user B's older server profile", async () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(NEWER); // A's local data is newer than B's server row.
+
+    setBiometricsOwner(USER_B);
+    await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_B);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    // B's own (older) server profile wins and hydrates the local cache —
+    // інакше B бачив би на екрані чужі зріст/вагу.
+    expect(readBiometrics()).toEqual(OLDER);
+  });
+
+  it("still applies LWW normally when the newer local snapshot is the current user's own", async () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(NEWER);
+
+    await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_A);
+
+    expect(mockUpdateProfile).toHaveBeenCalledWith(NEWER);
+  });
 });
 
 // Sanity: the storage key this module reads/writes matches the one
