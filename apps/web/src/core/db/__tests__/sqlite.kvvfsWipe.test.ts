@@ -103,7 +103,7 @@ describe("wipeSqliteDb — kvvfs row-level scope", () => {
 
     setSqliteUser("local-anon");
     const reopened = await getSqliteDb();
-    const rows = reopened
+    const rows = await reopened
       .migrationClient()
       .all<{ user_id: string }>(`SELECT user_id FROM ${USER_TABLE}`);
     expect(rows).toEqual([{ user_id: "local-anon" }]);
