@@ -35,6 +35,12 @@ beforeEach(() => {
   resetSignalAttribution();
   trackEventMock.mockClear();
   __resetAnalyticsConsentForTests();
+  // `analyticsConsent` now defaults to `false` (deny until an
+  // authenticated boot hydrates it — CodeRabbit PR #627). Every test in
+  // this suite except the explicit "no consent" one below exercises the
+  // hydrated/consenting state, so opt in here and let that one test
+  // override with `setAnalyticsConsent(false)`.
+  setAnalyticsConsent(true);
 });
 
 /** Усі виклики `trackEvent` з конкретним іменем події. */

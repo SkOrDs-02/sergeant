@@ -10,20 +10,20 @@ afterEach(() => {
 });
 
 describe("analyticsConsent", () => {
-  it("defaults to true (opt-out model, matches UserPreferencesSchema.analytics default)", () => {
-    expect(getAnalyticsConsent()).toBe(true);
+  it("defaults to false — deny until an authenticated boot hydrates the server value (CodeRabbit PR #627)", () => {
+    expect(getAnalyticsConsent()).toBe(false);
   });
 
   it("reflects the last value written by setAnalyticsConsent", () => {
-    setAnalyticsConsent(false);
-    expect(getAnalyticsConsent()).toBe(false);
     setAnalyticsConsent(true);
     expect(getAnalyticsConsent()).toBe(true);
+    setAnalyticsConsent(false);
+    expect(getAnalyticsConsent()).toBe(false);
   });
 
-  it("__resetAnalyticsConsentForTests restores the default", () => {
-    setAnalyticsConsent(false);
+  it("__resetAnalyticsConsentForTests restores the deny-by-default", () => {
+    setAnalyticsConsent(true);
     __resetAnalyticsConsentForTests();
-    expect(getAnalyticsConsent()).toBe(true);
+    expect(getAnalyticsConsent()).toBe(false);
   });
 });

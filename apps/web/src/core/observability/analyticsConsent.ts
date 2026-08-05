@@ -16,31 +16,45 @@
  * toggle in `PrivacySection` does not yet enforce anywhere; fixing it
  * repo-wide is a separate, larger change, not this one.
  *
- * Default `true` mirrors `UserPreferencesSchema.analytics`'s implicit
- * opt-out model (every existing default in `PrivacySection.DEFAULT_PREFERENCES`
- * is `analytics: true`) — an anonymous visitor or a session that hasn't
- * fetched preferences yet is treated as consenting, same as everywhere else
- * in the app today.
+ * Default `false` — DENY UNTIL HYDRATED (CodeRabbit PR #627). This used to
+ * default `true` (mirroring `UserPreferencesSchema.analytics`'s implicit
+ * opt-out model), but that created a race on reload: this in-memory cache
+ * resets to the default on every page load, and `PrivacySection` — the
+ * only prior hydration point — only fetches `/api/me/preferences` once
+ * the user opens Settings → Privacy. Any `InsightCard` mounted before that
+ * (or in a session where Settings is never opened) fired `advice_shown` /
+ * `advice_dismissed` under an implicit "yes" the server may not agree
+ * with (server-side `analytics` column defaults `FALSE` — migration 111).
+ * Denying by default until an authenticated boot actually reads the
+ * server value closes that window; the false-negative cost (a few
+ * dropped events between boot and hydration) is much cheaper than an
+ * unconsented emit.
  *
- * `PrivacySection` is the only writer: it calls {@link setAnalyticsConsent}
- * after both `getPreferences()` (mount) and `updatePreferences()` (toggle)
- * resolve, so the cache tracks the server value as soon as either the page
- * loads or the user changes it — no polling, no subscription plumbing.
+ * Two writers keep this in sync with the server value:
+ *
+ *   - `useAnalyticsConsentBoot` (`./useAnalyticsConsentBoot.ts`) — mounted
+ *     app-wide next to `useProfileWriteThroughBoot`, hydrates once per
+ *     authenticated `userId` as early as possible after boot.
+ *   - `PrivacySection` — calls it again after both `getPreferences()`
+ *     (mount, if the user opens Settings) and `updatePreferences()`
+ *     (toggle, optimistically — see that component for the revert-on-
+ *     failure contract) resolve, so the cache never lags a page that's
+ *     already open.
  */
 
-let cachedAnalyticsConsent = true;
+let cachedAnalyticsConsent = false;
 
 /** `true` when analytics events are currently allowed to fire. */
 export function getAnalyticsConsent(): boolean {
   return cachedAnalyticsConsent;
 }
 
-/** Called by `PrivacySection` whenever it learns the server's current value. */
+/** Called whenever a caller learns the server's current (or optimistic) value. */
 export function setAnalyticsConsent(value: boolean): void {
   cachedAnalyticsConsent = value;
 }
 
 /** Test-only reset. Not for production call-sites. */
 export function __resetAnalyticsConsentForTests(): void {
-  cachedAnalyticsConsent = true;
+  cachedAnalyticsConsent = false;
 }

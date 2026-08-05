@@ -87,6 +87,15 @@ export function PrivacySection() {
     setSavingPreference(key);
     const previous = preferences;
     setPreferences({ ...previous, [key]: checked });
+    if (key === "analytics") {
+      // Optimistic, ahead of the network round trip (CodeRabbit PR #627):
+      // a dismiss fired between this click and the server's response must
+      // already respect the user's new choice — waiting for
+      // `updatePreferences()` to resolve left a window where a toggle-off
+      // still emitted `advice_shown`/`advice_dismissed` under the old
+      // (consenting) value. Reverted in the `catch` below on failure.
+      setAnalyticsConsent(checked);
+    }
     try {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
@@ -94,6 +103,9 @@ export function PrivacySection() {
       setAnalyticsConsent(next.analytics);
     } catch {
       setPreferences(previous);
+      if (key === "analytics") {
+        setAnalyticsConsent(previous.analytics);
+      }
       setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
       setSavingPreference(null);

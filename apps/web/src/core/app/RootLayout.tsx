@@ -39,6 +39,7 @@ import { useFizrukSqliteReadBoot } from "../../modules/fizruk/hooks/useFizrukSql
 import { useRoutineDualWriteBoot } from "../../modules/routine/hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/routine/hooks/useSqliteReadBoot";
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
+import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { isDemoActive } from "../onboarding/onboardingGate";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 
@@ -117,6 +118,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // unconditionally rather than behind a `user || isDemoActive()` gate —
   // demo sessions have no server profile to reconcile against.
   useProfileWriteThroughBoot();
+  // Hydrates the synchronous `analyticsConsent` gate from the server as
+  // soon as possible after an authenticated boot (CodeRabbit PR #627) —
+  // see `useAnalyticsConsentBoot`'s doc comment for the race it closes.
+  useAnalyticsConsentBoot();
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route

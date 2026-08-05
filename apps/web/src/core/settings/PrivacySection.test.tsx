@@ -228,6 +228,39 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
   });
 
+  it("sets analytics consent optimistically while the update request is still pending, and reverts it on failure (CodeRabbit PR #627)", async () => {
+    let rejectUpdate!: (err: unknown) => void;
+    const pending = new Promise<UserPreferences>((_resolve, reject) => {
+      rejectUpdate = reject;
+    });
+    vi.mocked(meApi.updatePreferences).mockReturnValue(pending);
+
+    render(<PrivacySection />);
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    // The PUT is still in flight, but the synchronous consent gate must
+    // already reflect the user's choice — this is exactly the window an
+    // `InsightCard` dismiss can race into.
+    expect(getAnalyticsConsent()).toBe(false);
+    expect(meApi.updatePreferences).toHaveBeenCalledTimes(1);
+
+    // The request eventually fails (network drop, 5xx) — the optimistic
+    // consent value must revert along with the toggle itself. (The
+    // `preferencesError` banner is gated on `!preferencesLoaded`, which
+    // this mount already flipped `true` — so the toggle's own reverted
+    // `checked` state is the observable signal here, same as the
+    // pre-existing "handles failure without crashing" test above.)
+    rejectUpdate(new Error("500"));
+    await waitFor(() => expect(analyticsToggle).toBeChecked());
+    expect(getAnalyticsConsent()).toBe(true);
+  });
+
   it("toggles aiMemory preference and calls updatePreferences", async () => {
     vi.mocked(meApi.updatePreferences).mockResolvedValue({
       ...basePrefs,
