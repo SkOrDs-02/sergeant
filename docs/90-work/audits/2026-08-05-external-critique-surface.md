@@ -410,6 +410,37 @@ Privacy, а orphaned-code-аудит окремо відзначив пов'яз
 governance-лінтер валить увесь `lint`). Варіант: розділити на `lint:code`
 (блокує) і `lint:governance` (окремий job, може бути non-blocking).
 
+### 4.1.1 `main` червоний, і це нікого не зупиняє
+
+**Severity: високо — знайдено під час цього ж аудиту.**
+
+Прогін CI на `main` після мержу [#635](https://github.com/SkOrDs-02/sergeant/pull/635)
+(`f2c80bb`, run `30997874374`) — **failure** у трьох джобах одночасно: `check`
+(крок «Format, lint, test, build»), `Critical-flow E2E (Playwright)` і
+`Test coverage (vitest)`. E2E падає на двох `@critical`-сценаріях:
+`onboarding-happy-path.spec.ts:213` (splash-CTA «Почати» не знаходиться) і
+`deep-module-crud.spec.ts:294` (CRUD звички в Рутині).
+
+Тобто PR злився в `main` при червоному CI, і наступні PR успадковують червону
+базу. Це доєбка з двох боків одразу:
+
+1. **Для рецензента** — репо з 26 Hard Rules, 30 governance-лінтерами і
+   документом «Iron Law: NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION
+   EVIDENCE» у PR-шаблоні має **зелений trunk** як мінімальну гігієну. Червоний
+   trunk знецінює весь цей апарат: якщо `main` можна зламати, то навіщо 45
+   кроків лінту.
+2. **Механічно** — далі кожен наступний PR світиться червоним не за свою
+   провину, і команда (або агент) звикає ігнорувати червоне. Це рівно той
+   механізм, через який згасли попередні гейти (див. § 1.5 про сліпий
+   `EXIT_MARKERS` і ратчет бандла в `AGENTS.md`, який «світився червоним
+   безперервно і перестав ловити регресії»).
+
+**Рішення:** увімкнути branch protection із required status checks на `main`
+(`check`, `critical-flow`, `coverage` як мінімум). Це одне налаштування в
+GitHub, воно не потребує коду — і закриває обидві претензії. Окремо: полагодити
+два `@critical`-сценарії, бо саме вони описують FTUX, який зараз є головним
+продуктовим пріоритетом.
+
 ### 4.2 Ukrainian-only — і в продукті, і в доках
 
 `apps/web/index.html` і `apps/landing/index.html` — `lang="uk"`. i18n є
