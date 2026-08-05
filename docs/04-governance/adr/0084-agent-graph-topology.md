@@ -101,3 +101,14 @@ security-scan, 92 trigger-eval — не побачили жодної з так�
 рев'ю). Codex-шар (`.codex/agents/*.toml`) поки не покритий вузлами — його склад
 відрізняється (немає `qa-packages`), і зведення двох харнесів в один граф лишається
 відкритим питанням.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                         | Merged     |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- | ---------- |
+| [#632](https://github.com/Skords-01/Sergeant/pull/632) | feat(agents): fix agent-layer audit findings and add validated graph topology | 2026-08-05 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
