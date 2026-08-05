@@ -65,6 +65,45 @@ function readDeferred(userId: string): boolean {
   return safeReadStringLS(deferralKey(userId)) === "1";
 }
 
+/**
+ * Піднімає обидва sync-runtime для автентифікованого юзера — незалежно від
+ * того, чим скінчився перенос анонімних даних.
+ *
+ * AI-DANGER: не переносити назад у success-гілку `kickoff`. Історія обох
+ * дір (browser QA 2026-08-04, Obs-009):
+ *
+ *   - **reader** підіймався ЛИШЕ в `.then()` переносу. Якщо
+ *     `migrateAnonymousDataToProfile` падав, reader не стартував узагалі, а
+ *     «Перенести пізніше» лише ховає блокуючий екран — сесія тихо жила без
+ *     жодного `pull`, тобто зміни з інших пристроїв не приїжджали.
+ *   - **writer** мав єдиний call-site у самому переносі, ще й ПІСЛЯ раннього
+ *     `return` для `snapshot.length === 0`. Тому вхід на пристрої без
+ *     анонімних даних (звичайний вхід на новому девайсі) не стартував
+ *     writer, і `sync_op_outbox` — куди пише кожен модульний sqliteWriter —
+ *     не дренився всю сесію.
+ *
+ * `switchSqliteUser` тут обовʼязковий і має бути ПЕРЕД boot-ом: якщо перенос
+ * впав посеред cleanup-фази, активна партиція могла лишитись анонімною, а
+ * runtime резолвить клієнта на кожному тіку — тоді серверні рядки юзера
+ * лягли б у анонімну базу. Виклик ідемпотентний (early-return на тому ж
+ * ключі), тож на успішному шляху це no-op.
+ */
+async function bootSyncForUser(userId: string): Promise<void> {
+  try {
+    const sqlite = await import("../db/sqlite.js");
+    await sqlite.switchSqliteUser(userId);
+    const sync = await import("../syncEngine/singleton.js");
+    await Promise.all([
+      sync.bootSyncEngineReader(),
+      sync.bootSyncEngineWriter(),
+    ]);
+  } catch {
+    // Обидва boot-и мають власний catch-all із Sentry-репортом; сюди долітає
+    // хіба збій `switchSqliteUser`. Ковтаємо: ми у `finally`, і неспійманий
+    // reject тут зламав би гейт, який щойно відпрацював коректно.
+  }
+}
+
 function runSingleFlight(userId: string): Promise<{ migratedRows: number }> {
   const existing = inFlightByUser.get(userId);
   if (existing) return existing;
@@ -119,17 +158,22 @@ function AuthenticatedMigrationGate({
   // на повторі, і живе він у `retry`.
   const kickoff = useCallback(() => {
     void runSingleFlight(userId)
-      .then(async (result) => {
-        const { bootSyncEngineReader } =
-          await import("../syncEngine/singleton.js");
-        await bootSyncEngineReader();
+      .then((result) => {
         setState("ready");
         if (result.migratedRows > 0 && !successToastUsers.has(userId)) {
           successToastUsers.add(userId);
           success(messages.sync.anonymousMigrationSuccess);
         }
       })
-      .catch(() => setState("failed"));
+      .catch(() => setState("failed"))
+      // Синк піднімаємо в `finally`, а не в success-гілці: він потрібен і
+      // після провалу переносу (юзер лишається в акаунті й натисне
+      // «Перенести пізніше»), і на чистому пристрої, де переносити нічого.
+      // Гейт більше не чекає на boot — «ready» означає «перенос завершено»,
+      // а не «синк прогрітий».
+      .finally(() => {
+        void bootSyncForUser(userId);
+      });
   }, [success, userId]);
 
   useEffect(() => {

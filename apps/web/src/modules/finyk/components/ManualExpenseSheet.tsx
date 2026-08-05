@@ -253,6 +253,23 @@ export function ManualExpenseSheet({
 
   useEffect(() => {
     if (!open) {
+      // Чистимо форму синхронно, ще до відкладеного скиду ключа нижче.
+      //
+      // Скид `prevOpenInitKey` навмисно лишається в мікротаску (синхронний
+      // `setState` тут ловить `react-hooks/set-state-in-effect`), але саме
+      // через цю відкладеність він міг не встигнути до наступного відкриття:
+      // тоді `openInitKey === prevOpenInitKey`, ранній `return` нижче з'їдав
+      // `reset()`, і аркуш відкривався з недобитою чернеткою — поле суми
+      // лишалося заповненим, а новий ввід дописувався в кінець («50000» +
+      // «50000» = «5000050000», browser QA 2026-08-04, F-009). `reset()` —
+      // метод react-hook-form, не React-стан, тож він тут дозволений і
+      // прибирає чернетку незалежно від того, чи виграв мікротаск гонку.
+      reset({
+        description: "",
+        amount: "",
+        category: DEFAULT_CATEGORY,
+        date: toLocalISODate(),
+      });
       void Promise.resolve().then(() => {
         setPrevOpenInitKey("");
       });

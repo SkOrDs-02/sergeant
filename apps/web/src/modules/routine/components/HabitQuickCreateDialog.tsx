@@ -150,6 +150,11 @@ export function HabitQuickCreateDialog({
     }
     if (Object.values(nextErrors).some(Boolean)) {
       setErrors(nextErrors);
+      // Порожня назва — найчастіший фейл сабміту, і повідомлення про нього
+      // легко лишається поза полем зору (форма скролиться, кнопка «Додати»
+      // внизу). Тик повертає фокус і скрол на поле назви — те саме, що
+      // робить відкриття аркуша (browser QA 2026-08-05, F-011).
+      if (nextErrors.name) setInternalFocusTick((t) => t + 1);
       return;
     }
     setErrors({});
