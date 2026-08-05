@@ -50,6 +50,10 @@
 4. Verify runtime behavior, not just compile success.
 5. Update deploy or observability docs in the same change when operator behavior moves.
 
+## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
+
+OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-hubchat`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
+
 ## 7. Squad Review (PR touches 3+ governed surfaces)
 
 1. Start with `sergeant-start-here`.
@@ -70,17 +74,18 @@
 5. Sequential: run `server-agent` with migration report as context.
 6. Sequential: run `api-client-agent` with server response shape as context.
 7. Parallel (if both surfaces touched): spawn `web-agent` + `mobile-agent` as Agent Team.
-8. Run `pnpm typecheck && pnpm test` after all agents complete.
+8. **Stage 5 — mandatory verification.** Per-stage typecheck only proves each surface compiles alone; the cross-surface contract is exactly what this squad exists to get right. Run `sergeant-qa-squad` (the `qa-packages` runner executes the api-client contract tests), then `sergeant-verify-before-done` before any "done" claim.
 
 ## 9. Squad QA (full cross-surface test validation)
 
 1. Start with `sergeant-start-here`.
 2. Load `sergeant-qa-squad`.
-3. Create Agent Team with 3 teammates: `qa-server`, `qa-web`, `qa-mobile` _(OpenClaw runner removed — ADR-0075)_.
-4. All 3 run independently in parallel.
-5. Wait for all 3 reports before synthesizing.
-6. Synthesize: overall status + per-surface table + failure details.
+3. Create Agent Team with 4 teammates: `qa-server`, `qa-web` (covers `apps/web` **and** `apps/landing`), `qa-mobile` (mobile + mobile-shell), `qa-packages` (the 11 `packages/*` workspaces, incl. the `api-client` contract tests that evidence Hard Rule #3).
+4. All 4 run independently in parallel.
+5. Wait for all 4 reports before synthesizing.
+6. Synthesize: overall status + per-surface table + failure details. If `qa-packages` is red, check first whether it explains app-surface failures — shared/`*-domain` is upstream of web and mobile.
 7. For any failures: load `sergeant-bugfix-and-regression` + `fix-failing-ci.md`.
+8. Out of scope for this squad: e2e/Playwright (`sergeant-e2e-testing`), Detox (needs a device), bundle/Lighthouse budgets (CI gates).
 
 ## 10. Docs Governance Audit / Dedup
 
@@ -90,10 +95,6 @@
 4. Ask it to inspect active trackers, source audits, canonical-owner links, generated catalogs, and lifecycle/header drift.
 5. Implement only after the auditor returns concrete file/status recommendations.
 6. Regenerate affected generated docs (`docs:gen-open-work`, `docs:gen-playbook-index`, `docs:gen-repo-map`) and run the matching `--check` scripts.
-
-## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
-
-OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-hubchat`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
 
 ## 11. Docs-Sync Sweep (parallel reconcile across `docs/`)
 

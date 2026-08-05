@@ -27,7 +27,7 @@
 Основні групи:
 
 - **Delivery:** `migration-agent`, `server-agent`, `api-client-agent`, `web-agent`, `mobile-agent`.
-- **QA:** `qa-server`, `qa-web`, `qa-mobile` _(qa-openclaw removed — ADR-0075)_.
+- **QA:** `qa-server`, `qa-web`, `qa-mobile`. (`qa-openclaw` видалено разом із поверхнею — ADR-0075. Claude-харнес має ще `qa-packages` для `packages/**`; у Codex-шарі його поки немає.)
 - **Review:** `contract-reviewer`, `design-reviewer`, `security-reviewer`, `docs-reviewer`.
 - **Docs governance:** `docs-governance-auditor`.
 - **Council:** `council-critic`, `council-growth-advisor`, `council-product-strategist`, `council-tech-architect`, `council-ux-advocate`.

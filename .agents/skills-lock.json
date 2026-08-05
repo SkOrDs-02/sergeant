@@ -4,117 +4,117 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "440957171e03b86f0c28caa0ad88070c6d37a34eeb427608cfcb2b9c5ada3eee"
+      "computedHash": "9e37838997540530d230ebed1487a9696181d306a9c48e95236a50128d74c95f"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "628ff6e9d5338d340e0503881a618b3db3464ea7bdec4a5ff41f56d9324626a5"
+      "computedHash": "c42d3b5a94b859d46ac0256c97f8c21cba23099f8d94ad2c4d5df53491c4478c"
     },
     "sergeant-data-and-migrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e5475a44025b25da573136547ee0709bd236fc7266ca2dd34b2e3e5539ae7045"
+      "computedHash": "fb7eb1a3d2c254bc0ea5f77c38206ca3dc2c3180adb4f1ce3abb684060a0d31e"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "3c3ba42fb9e34a3f5b5ff7a5b498978b3df48a8f40353122607c0712be1af349"
+      "computedHash": "566a11ddeeb0a8244406f814d87aa9575d2de5cb05aecd7792756d464da7ae38"
     },
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "febd3ddda23945c096d0db81a258c68e171929fe09420001f6b83a647114859a"
+      "computedHash": "bf2ce8969a143de3603037e4d6c25ee6a322d44af57d966a72597d6adecbdd82"
     },
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "ae4fd8d3638d28e653d90164657addcd43e0b4aa14cab6899c7ccb159ca99d4e"
+      "computedHash": "5fbc0b6526a4a0a6efb816bc937fda7b771493a021a570002a0643b4fc35037a"
     },
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5a6b9bf9094d871adb2ab447d59754c579832ab2bcb9209d4735cc025faf8e01"
+      "computedHash": "ecdb7287ef11494e6d13b70e8b92d1c1345558ade5252c4e5d872e1c87dd2cb5"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "1d2ed1e48216a78baa6fa92ef698f3d431e3f2f3d1f968bdf804bdc514d67396"
+      "computedHash": "8c9a599ff0e7277eab32c1bbc467b3871499139127ac931a2485b7c535d46596"
     },
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "98dad4f4810b780200ebd116cbe27d7c94c14c659004641a058fb5529ae277bc"
+      "computedHash": "825c070853d302013a0ab175452c07015a38b731a57856a81bedb2be39101e61"
     },
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5e6c4e1a57331ba40d6042ca2ff5597beb3a0b07ff3d2d4e9f033cf7a9800ffd"
+      "computedHash": "ada114d00e947b6e4619c0fa37f9ea841b082c2c1da387a41bed828015deba3a"
     },
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "26b6b4b67aa1d5b365099e24a6242d7fec4076b56e36bd71a0346178c05e3956"
+      "computedHash": "a73c25af655c208212acddd132aae694be7a7bddad9144b9e6174a44f23eee8b"
     },
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b00bbdea5f3d844a2d93f75df0012a8c3b35e02f10eda1dbc779a2de2609d80e"
+      "computedHash": "63ff15ae2be78a31e02e448e380256ea6ca40e175f19e5dc2da0ef0f33298951"
     },
     "sergeant-writing-skills": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "1a9ea1de7b38e99b417ac58c0805af2ceea66d0f2aa4d42ddee475ef6b219d21"
+      "computedHash": "521a46aee0ebb5f3bfb30e2cdbda8114639e1438dbdc58160dd36188ac64297a"
     },
     "sergeant-security-audit": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "f55975bc31d1d596f7b9d6caec31ad18d7ff31080a2f9b6aaf1ac949617a5e87"
+      "computedHash": "f80981e6a896805a67c37f2c471f6f45c09ebc569747e2352f77b581d22ab3da"
     },
     "sergeant-e2e-testing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "223467651210963ad9bb5cf9649dbf15e65183579c4882fc9c6db1088e41530c"
+      "computedHash": "05f729ac2f5abaa2b6a424008076933080e81b37afc45b20b6e62a7b45a6ceea"
     },
     "sergeant-tech-debt": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "9359bc534c601ed17e70098041e22909babbe747cba41e9d1b87a2dd1463135a"
+      "computedHash": "fbb17d91f5cf05b8422d6cd395c91cc8cd9b15476f90d4c7c3bc3677ccce44ca"
     },
     "sergeant-review-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "05896c492646a5e75c5489d3b4b70d3e822bfdc66dafecb37dc8d0369ad19074"
+      "computedHash": "02d0c6499a53db0f25b63fc3e002eba76ef329836950ef77b001c41e913a77e2"
     },
     "sergeant-deliver-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "cd90f9046df348e720dd3fe18e3d78d278485c0ba3fd3bdf744a9ff08c713b7b"
+      "computedHash": "526138ed54904c2bf9725381351bcad712630fb1e78de72d349570873452231c"
     },
     "sergeant-qa-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "07d999759d879baea8f6bb8f61b32ea8bfd5edbd6765b62ea24eae7d269aa46d"
+      "computedHash": "6852248d7d68a3e88fbfb7a305019eee9a71e67c348320430111790000758a53"
     },
     "sergeant-council": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "275041f7bdcd47d065a9575a79c93efbf290524632e703b77a374d68e68df6f0"
+      "computedHash": "c9f8eb36f6a7647a98820b84269579da96b1a7b7e5a488aefeb7aa1ca2f64547"
     },
     "sergeant-planning-batch": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "903ea9199e013b881bf419ea867ee5055bf73b7eb15744711dcb06e6a773647e"
+      "computedHash": "cced5ffaa7cd9f2b69f651f2ab2ee6958fc18907ba092cc23eb5c9209aa42a9f"
     },
     "sergeant-backend-architecture": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "9e3e9601f738195d635adca99bdc21d2b606a2f25411f02c84e46a9779f9c78b"
+      "computedHash": "e51d7fc0f62186f97738aa83aaf80d0cd660159f750c7d41f4da39fc58f05d34"
     },
     "sergeant-verify-before-done": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e789a64c900d892db1fa5e5c902204ff757c313733f4ac8e3edc4202ac4a99bc"
+      "computedHash": "28b71011ea0ae98f953dbe3844b7d2e35ff280667655a85ea99c59bf5afa96d9"
     }
   }
 }

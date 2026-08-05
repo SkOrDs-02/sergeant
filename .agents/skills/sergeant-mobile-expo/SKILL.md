@@ -1,8 +1,8 @@
 ---
 name: sergeant-mobile-expo
 description: Use when editing Sergeant Expo screens, React Native, mobile navigation, MMKV flows, Capacitor shell, or web→mobile ports; also for platform-specific bugs; UA: правиш Expo/RN/MMKV/Capacitor/mobile-shell.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Mobile Expo у Sergeant
@@ -20,7 +20,7 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 **Capacitor = primary production path. Expo = parallel path без дати sunset.**
 
 - PR не повинен ламати жоден із шляхів.
-- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18/22 matrix rows. Цього немає зараз — **не планувати sunset**.
+- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18/22 matrix rows (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/02-engineering/mobile/overview.md`](../../../docs/02-engineering/mobile/overview.md); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
 - `forbid-shell-only-feature` lint rule активний: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні.
 
 ## Жорсткі правила

@@ -30,7 +30,8 @@ Root вантажиться при старті; вкладені `CLAUDE.md` �
 
 ## Notes
 
-- OpenClaw/Gateway виведено з експлуатації ([ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md)); окремого скіла `sergeant-openclaw` більше немає. HubChat-поверхню веде `sergeant-hubchat`. Каталоги: [agent-workflows.md](./docs/00-start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
+- OpenClaw/Gateway виведено з експлуатації ([ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md)) — скіла `sergeant-openclaw` НЕ існує. Web-асистент → `sergeant-hubchat`; PAT-guard (Hard Rule #20) → `sergeant-security-audit`. Каталоги: [agent-workflows.md](./docs/00-start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
+- Топологія агентного шару (вузли skill/agent/workspace + дозволені переходи) — [`.agents/agent-graph.json`](./.agents/agent-graph.json), гейт `pnpm lint:agent-graph`. Додав скіл чи агента — додай вузол, інакше лінт червоніє.
 - SKILL.md зміни: спершу `sergeant-writing-skills`, потім `pnpm lint:skills && pnpm skills:lock`. Heavy local commands — лише за потреби чи на прохання.
 - Глобальні `~/.claude/agents/` subagent-и через `Agent` — для self-contained задач (ad copy, generic review, research), коли немає specialist skill-у.
 - Глобальні engineering-агенти (Frontend Developer, Mobile App Builder, Backend Architect, Database Optimizer, Code Reviewer тощо) ЗАБОРОНЕНІ для кодових правок у `apps/**` і `packages/**` — вони не знають Hard Rules (RQ-фабрики, дизайн-лінти, bigint-коерція, 44px touch targets). Для коду в цих директоріях — тільки репо-агенти (`.claude/agents/`) і specialist-скіли з `AGENTS.md`.

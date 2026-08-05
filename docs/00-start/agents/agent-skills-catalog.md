@@ -73,6 +73,16 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | `qa-mobile`               | Mobile QA report for `apps/mobile` + `apps/mobile-shell` unit tests and typecheck        | `sergeant-qa-squad`                                           |
 | `docs-governance-auditor` | Duplicate active docs, stale trackers, canonical-owner drift, generated catalog mismatch | `sergeant-tech-debt` or `sergeant-review-and-merge` by intent |
 
+## Agent graph (topology)
+
+Хто кого може викликати — не проза, а перевірюваний граф: [`.agents/agent-graph.json`](../../../.agents/agent-graph.json). Вузли — `skill` / `agent` / `workspace`; ребра — `governs`, `verifies`, `dispatches`, `handoff` (з `stage` і типізованим `payload`), `terminates`, `escalates`.
+
+```bash
+pnpm lint:agent-graph   # входить у pnpm lint:skills
+```
+
+Гейт падає на: висячому ребрі (squad кличе неіснуючого агента), workspace із тестами без жодного `verifies`-ребра, reviewer/runner/advisor із `Write`/`Edit`, роз'їханих `name` ↔ файл ↔ вузол, `skill-mapping.json`, що вказує на неіснуючий скіл, і deliver-ланцюгу без термінального ребра у верифікацію. Додав скіл або агента — додай вузол; інакше CI червоний. Rationale: [ADR-0084](../../04-governance/adr/0084-agent-graph-topology.md).
+
 ## Deprecated -> Replacement
 
 | Old skill                     | Status                    | Replacement                                           |
