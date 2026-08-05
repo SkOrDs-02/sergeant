@@ -94,6 +94,16 @@ export function pairwiseMeans(
   return { meanA: sumA / n, meanB: sumB / n, n };
 }
 
+/**
+ * Фрази в `PAIRS` написані як продовження рядка дайджесту («у дні
+ * тренувань…»), тож із малої. На картці це самостійне речення — велика
+ * літера. Джерело копії лишається одне, розходження формулювань немає.
+ */
+function capitalizeFirst(text: string): string {
+  const first = text.slice(0, 1);
+  return first ? first.toUpperCase() + text.slice(1) : text;
+}
+
 function pole(metric: DailyMetric, mean: number): CrossModuleLinkPole {
   const module = METRIC_MODULE[metric];
   return {
@@ -132,6 +142,7 @@ export function linkFromPair(
     poleB: pole(pair.b, means.meanB),
     observations: pair.n,
     strength: pair.pearson,
+    phrase: capitalizeFirst(pair.phrase),
   };
 }
 

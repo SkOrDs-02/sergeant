@@ -98,6 +98,32 @@ describe("linkFromPair", () => {
     expect(link.strength).toBeCloseTo(1, 5);
   });
 
+  it("протилежні за знаком кореляції дають РІЗНІ формулювання", () => {
+    // Зауваження власника 2026-08-05: без фрази картка при r=+0.74 і
+    // r=−0.74 виглядала однаково (полюси, місток, ступінь — усе те саме),
+    // тож два користувачі робили з неї протилежні висновки. Цей тест
+    // фіксує, що напрямок таки доходить до UI.
+    const rising = series(
+      { spending: [1, 2, 3, 4, 5], workout_volume: [10, 20, 30, 40, 50] },
+      5,
+    );
+    const falling = series(
+      { spending: [1, 2, 3, 4, 5], workout_volume: [50, 40, 30, 20, 10] },
+      5,
+    );
+
+    const up = linkFromPair(rising, notablePairsFromSeries(rising)[0]!)!;
+    const down = linkFromPair(falling, notablePairsFromSeries(falling)[0]!)!;
+
+    expect(up.phrase).toBeTruthy();
+    expect(down.phrase).toBeTruthy();
+    expect(up.phrase).not.toBe(down.phrase);
+    expect(up.strength).toBeGreaterThan(0);
+    expect(down.strength).toBeLessThan(0);
+    // Велика літера: на картці це самостійне речення, не хвіст рядка.
+    expect(up.phrase![0]).toBe(up.phrase![0]!.toUpperCase());
+  });
+
   it("відкидає пару всередині одного модуля, навіть якщо вона помітна", () => {
     const s = series(
       {

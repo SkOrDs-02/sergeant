@@ -60,6 +60,24 @@ export interface CrossModuleLinkCardProps {
   /** `PairCorrelation.pearson` — -1..1, знак не впливає на ступінь. */
   strength: number;
   /**
+   * Людське формулювання зв'язку — ЄДИНЕ місце, де видно НАПРЯМОК
+   * («…витрачаєш більше» проти «…менше»).
+   *
+   * AI-CONTEXT: додано 2026-08-05 після зауваження власника. До цього
+   * картка показувала два полюси, місток і ступінь — але знак `pearson`
+   * ніде не проявлявся, тож «Фізрук 1,3 × Фінік 412 ₴» читалось однаково
+   * і при r = +0.74, і при r = −0.74. Два користувачі робили з однієї
+   * картки протилежні висновки. Товщина містка несе ВПЕВНЕНІСТЬ, а не
+   * напрямок — і не може нести обидва, бо це різні виміри.
+   *
+   * Напрямок навмисно віддано тексту, а не стрілці: стрілка читалась би
+   * як причинність, а це кореляція (`product-overview.md` §6).
+   *
+   * Опційний із тієї ж причини, що й `weeks`: якщо викликач формулювання
+   * не має, картка мовчить, а не вигадує.
+   */
+  phrase?: string;
+  /**
    * Скільки тижнів поспіль зв'язок тримається. Опційно і НЕ оцінюється з
    * `observations` (різні статистики — див. AI-CONTEXT у
    * `crossModuleLinkTiers.ts`): якщо викликач не порахував тижні окремо,
@@ -243,6 +261,7 @@ export function CrossModuleLinkCard({
   observations,
   strength,
   weeks,
+  phrase,
 }: CrossModuleLinkCardProps) {
   const tier = gradeCrossModuleLink(observations, strength);
 
@@ -262,11 +281,29 @@ export function CrossModuleLinkCard({
             <LinkBond tier={tier} />
             <Pole pole={poleB} align="right" />
           </div>
-          <div className="mt-4 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-t border-line pt-3">
-            <span className={TIER_WORD_CLASS[tier]}>{tierWord(tier)}</span>
-            <span className="text-style-caption tabular-nums text-muted">
-              {tierMeta(tier, observations, weeks)}
-            </span>
+          <div className="mt-4 border-t border-line pt-3">
+            {/*
+              Формулювання стоїть НАД ступенем: спершу що саме збігається
+              (і в який бік), потім наскільки впевнено. Зворотний порядок
+              змушував би читати «Стабільно повторюється» ще не знаючи, що
+              саме повторюється.
+            */}
+            {phrase && (
+              <p className="text-style-body font-semibold leading-snug text-text">
+                {phrase}
+              </p>
+            )}
+            <div
+              className={cn(
+                "flex flex-wrap items-baseline gap-x-2 gap-y-0.5",
+                phrase && "mt-1",
+              )}
+            >
+              <span className={TIER_WORD_CLASS[tier]}>{tierWord(tier)}</span>
+              <span className="text-style-caption tabular-nums text-muted">
+                {tierMeta(tier, observations, weeks)}
+              </span>
+            </div>
           </div>
           <EvidenceStrip tier={tier} observations={observations} />
         </>
