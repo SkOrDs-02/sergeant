@@ -34,7 +34,7 @@ import {
  *     foreground (`text-bg`).
  *   - Dark («Чорнило»): a solid module-accent square (`tokens.fillDark`
  *     = luminescent tier-400) with the same ink foreground (`text-bg`
- *     resolves to `#0d1512` under `.dark`, so one bare class covers both
+ *     resolves to `#14100e` under `.dark`, so one bare class covers both
  *     themes). No drop-shadow glow.
  * - Labels `text-style-caption` (12px) per Hard Rule #16.
  *

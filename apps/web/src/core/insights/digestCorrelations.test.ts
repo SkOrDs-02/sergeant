@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  buildCrossModuleSeries,
   buildDigestCorrelations,
   correlationsFromSeries,
+  WINDOW_DAYS,
 } from "./digestCorrelations";
 import type { DailySeries } from "../lib/chatActions/crossActions/dailySeries";
 import type { DailyMetric } from "../lib/chatActions/crossActions/dailySeries";
@@ -123,6 +125,29 @@ describe("correlationsFromSeries", () => {
       ),
     );
     expect(out).toEqual([]);
+  });
+});
+
+describe("buildCrossModuleSeries — вікно в календарних днях", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  /*
+   * Регресія: початок вікна рахувався відніманням 59×24 год від моменту
+   * часу, а не 59 календарних днів. На переході Києва на літній час доба
+   * коротша за 24 год, тож вікно «з'їдало» зайвий день і давало 61 ключ.
+   *
+   * 2026-03-29 — останній тиждень березня, перехід на EEST (UTC+3).
+   * Момент нижче — 31 березня 21:30 UTC, тобто вже 1 квітня 00:30 у Києві.
+   * Старий код відкидав 59×24 год і потрапляв на 31 січня (у січні ще
+   * UTC+2), новий рахує календарно й дає 1 лютого.
+   */
+  it("дає рівно 60 ключів на вікні, що перетинає перехід на літній час", () => {
+    const series = buildCrossModuleSeries(Date.UTC(2026, 2, 31, 21, 30));
+
+    expect(series.to).toBe("2026-04-01");
+    expect(series.from).toBe("2026-02-01");
+    expect(series.days).toHaveLength(WINDOW_DAYS);
   });
 });
 

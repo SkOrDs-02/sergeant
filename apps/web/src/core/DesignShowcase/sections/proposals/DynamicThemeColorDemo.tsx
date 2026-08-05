@@ -7,7 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
  * V-3 — Dynamic theme-color.
  *
  * Today the PWA manifest ships a static `theme_color` (`--c-bg`: #f2ecdf
- * light / #0d1512 dark, see `apps/web/vite.config.js` + `index.html`), so
+ * light / #14100e dark, see `apps/web/vite.config.js` + `index.html`), so
  * the OS status-bar / title-bar follows light/dark but never the active
  * module's accent. The proposal drives `<meta name="theme-color">` at
  * runtime so the system chrome adopts the active module's accent (with a
@@ -58,7 +58,7 @@ export function DynamicThemeColorDemo() {
               Статус-бар завжди слідує лише light/dark, не модулю
             </span>
             <span className="text-style-caption text-subtle">
-              theme_color: --c-bg (light #f2ecdf / dark #0d1512)
+              theme_color: --c-bg (light #f2ecdf / dark #14100e)
             </span>
           </div>
         </MiniPhone>

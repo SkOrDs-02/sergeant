@@ -30,6 +30,8 @@ import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
+import { crossModuleLinkMessages } from "./uk.crossModuleLink";
+import { sergeantMessages } from "./uk.sergeant";
 
 export const messages = {
   auth: {
@@ -228,7 +230,15 @@ export const messages = {
     finykOverview: "Огляд",
     fizrukOverview: "Огляд",
     nutritionLog: "Журнал",
-    reports: "Звіти",
+    /**
+     * Рішення власника 2026-08-05: сторінка перейменована зі «Звіти» на
+     * «Зв'язки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
+     * кожного продукту, тобто не відрізняє нас ні від кого; «Зв'язки»
+     * називає рівно те, чого конкурент не має, бо не має чотирьох модулів на
+     * одних даних (`docs/05-design/design/anti-slop-strategy.md` §4).
+     * «Сержант» теж відкинуто: це вже ім'я асистента в чаті.
+     */
+    reports: "Зв'язки",
     finykSections: "Розділи Фініка",
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",
@@ -672,37 +682,13 @@ export const messages = {
    * Тримай рядки тут, а не в компонентах — формулювання персонажа має
    * мінятись в одному місці.
    */
-  sergeant: {
-    name: "Сержант",
-    /** Канальний суфікс для тижневого звіту: «Сержант · звіт тижня». */
-    weeklyChannel: "Сержант · звіт тижня",
-    adviceCardTitle: "Сержант",
-    adviceLoadingAria: "Сержант готує пораду",
-    adviceAskHint:
-      "«Запитати AI про це» відкриває Сержанта із цим контекстом у чаті.",
-    /**
-     * Градація впевненості (Хвиля 4, hub-coach § G2) — рішення власника
-     * 2026-08-04: два рівні, «факт» (порахував код) і «припущення» (написала
-     * модель або вивела кореляція). Порада дня й тижневий звіт — суцільний
-     * вільний текст моделі, тож увесь їхній вміст рівня «припущення»; бейдж
-     * стоїть на рівні картки, а не речення, бо різниці всередині немає.
-     */
-    insightAssumptionBadge: "Припущення",
-    capabilitiesSectionTitle: "Що вміє Сержант",
-    appCapabilitiesIntro:
-      "Коротко про кожен розділ і про те, як вони працюють разом. Тапни картку, щоб одразу туди перейти.",
-    capabilitiesSectionBody:
-      "~60 інструментів, які може запустити Сержант у чаті: фінанси, тренування, звички, харчування, аналітика, утиліти, памʼять. Тапни картку — і одразу побачиш приклади команд.",
-    capabilitiesOpenLabel: "Відкрити каталог",
-    weeklyDigestPreparing: "Сержант готує звіт тижня…",
-    weeklyDigestUnread: "Новий звіт",
-    nudgesToggleLabel: "Повідомлення від Сержанта",
-    nudgesToggleDescription:
-      "Нагадає повернутись, якщо тебе не було кілька днів. Приходить зранку і не частіше ніж 3 рази на тиждень відсутності. Коли ти в застосунку — не турбує.",
-    nudgesSaveError: "Не вдалося зберегти налаштування. Спробуй ще раз.",
-    nudgesAuthRequired:
-      "Увійди в акаунт, щоб Сержант знав, кому і коли писати.",
-  },
+  // Асистент-шар (картка поради, тижневий звіт, каталог, nudges) — копія
+  // в `uk.sergeant.ts` (той самий прецедент, що `uk.privacy.ts`).
+  sergeant: sergeantMessages,
+
+  // Крос-модульний зв'язок (`CrossModuleLinkCard`, P2 анти-слоп плану) —
+  // копія в `uk.crossModuleLink.ts` (той самий прецедент, що `uk.privacy.ts`).
+  crossModuleLink: crossModuleLinkMessages,
 
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
   privacy: privacyMessages,

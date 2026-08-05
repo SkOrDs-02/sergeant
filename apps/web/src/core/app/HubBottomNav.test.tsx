@@ -10,6 +10,11 @@ import { HubBottomNav } from "./HubBottomNav";
 
 const STORAGE_KEY = "sergeant.hub.reportsTabRevealedAt";
 
+// Читаємо мітку з каталогу, а не прибиваємо рядком: вкладку вже
+// перейменовували («Звіти» → «Зв'язки», 2026-08-05), і тест має ловити
+// зникнення вкладки, а не зміну її назви.
+const REPORTS_TAB = new RegExp(messages.nav.reports);
+
 type TestHubView = "dashboard" | "reports" | "profile" | "settings";
 
 function renderNav(props: {
@@ -46,7 +51,7 @@ describe("HubBottomNav", () => {
   it("рендерить три таби за замовчуванням", () => {
     renderNav({});
     expect(screen.getByRole("tab", { name: /Головна/ })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Звіти/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: REPORTS_TAB })).toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: /Налаштування/ }),
     ).toBeInTheDocument();
@@ -54,7 +59,7 @@ describe("HubBottomNav", () => {
 
   it("ховає «Звіти» коли showReports=false", () => {
     renderNav({ showReports: false });
-    expect(screen.queryByRole("tab", { name: /Звіти/ })).toBeNull();
+    expect(screen.queryByRole("tab", { name: REPORTS_TAB })).toBeNull();
   });
 
   it("ховає «Профіль» за замовчуванням (гість)", () => {
@@ -75,7 +80,7 @@ describe("HubBottomNav", () => {
 
   it("активний таб має aria-selected=true", () => {
     renderNav({ hubView: "reports" });
-    const reports = screen.getByRole("tab", { name: /Звіти/ });
+    const reports = screen.getByRole("tab", { name: REPORTS_TAB });
     expect(reports).toHaveAttribute("aria-selected", "true");
 
     const dashboard = screen.getByRole("tab", { name: /Головна/ });
@@ -167,7 +172,7 @@ describe("HubBottomNav", () => {
         showReports={true}
       />,
     );
-    const reports = screen.getByRole("tab", { name: /Звіти/ });
+    const reports = screen.getByRole("tab", { name: REPORTS_TAB });
     expect(reports.className).toContain("animate-bounce-in");
   });
 
@@ -176,7 +181,7 @@ describe("HubBottomNav", () => {
     renderNav({ showReports: true });
     // Bounce class = .animate-bounce-in. Без прапора й без transition «false→true»
     // анімація не повинна ставитись.
-    const reports = screen.getByRole("tab", { name: /Звіти/ });
+    const reports = screen.getByRole("tab", { name: REPORTS_TAB });
     expect(reports.className).not.toContain("animate-bounce-in");
   });
 
@@ -186,7 +191,7 @@ describe("HubBottomNav", () => {
       const { container } = renderNav({ showReports: false });
       // AT не бачить hidden-слот: `getByRole("tab", ..)` за замовчуванням
       // ігнорує елементи з `visibility: hidden` (computed style).
-      expect(screen.queryByRole("tab", { name: /Звіти/ })).toBeNull();
+      expect(screen.queryByRole("tab", { name: REPORTS_TAB })).toBeNull();
       // Але слот реально існує у DOM — це і фіксує геометрію tab-strip-у.
       const hiddenReports =
         container.querySelector<HTMLButtonElement>("#hub-tab-reports");
@@ -279,13 +284,13 @@ describe("HubBottomNav", () => {
       dashboard.focus();
       fireEvent.keyDown(dashboard, { key: "ArrowRight" });
       expect(document.activeElement).toBe(
-        screen.getByRole("tab", { name: /Звіти/ }),
+        screen.getByRole("tab", { name: REPORTS_TAB }),
       );
     });
 
     it("ArrowLeft переміщує фокус на попередній таб", () => {
       renderNav({ hubView: "reports" });
-      const reports = screen.getByRole("tab", { name: /Звіти/ });
+      const reports = screen.getByRole("tab", { name: REPORTS_TAB });
       reports.focus();
       fireEvent.keyDown(reports, { key: "ArrowLeft" });
       expect(document.activeElement).toBe(
@@ -366,7 +371,7 @@ describe("HubBottomNav", () => {
       // Flag must be written so the next mount doesn't re-run migration.
       expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
       // No bounce animation on cold-start mount.
-      const reports = screen.getByRole("tab", { name: /Звіти/ });
+      const reports = screen.getByRole("tab", { name: REPORTS_TAB });
       expect(reports.className).not.toContain("animate-bounce-in");
     });
 

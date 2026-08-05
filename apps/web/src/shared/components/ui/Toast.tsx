@@ -22,7 +22,7 @@ import { Icon, type IconName } from "./Icon";
 import { messages } from "@shared/i18n/uk";
 
 // «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
-// same `surface-hi` (#17231d dark / #faf7f0 light) + `text-ink` for every
+// same `surface-hi` (#221c18 dark / #faf7f0 light) + `text-ink` for every
 // type; only the left stripe, icon, and Undo-action carry the semantic
 // colour. Error additionally gets a full-perimeter `danger/35` border
 // instead of the neutral `line/8` hairline. Colour-coding reads from the

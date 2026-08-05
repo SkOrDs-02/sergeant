@@ -196,7 +196,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-hidden="true"
           className={cn(
             // Бігунок світлий в обох темах (iOS-конвенція). У «Чорнилі»
-            // `bg-panel` (#121c17) зливався з вимкненим треком (#1f2a25) і
+            // `bg-panel` (#1b1613) зливався з вимкненим треком (#1f2a25) і
             // стан не читався навіть по позиції.
             "pointer-events-none absolute left-[3px] rounded-full bg-panel dark:bg-text shadow-card",
             "transition-transform duration-200",

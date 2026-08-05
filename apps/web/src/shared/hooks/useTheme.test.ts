@@ -49,7 +49,7 @@ function addThemeColorMetas(): void {
   const dark = document.createElement("meta");
   dark.setAttribute("name", "theme-color");
   dark.setAttribute("media", "(prefers-color-scheme: dark)");
-  dark.setAttribute("content", "#0d1512");
+  dark.setAttribute("content", "#14100e");
   document.head.append(light, dark);
 }
 
@@ -163,7 +163,7 @@ describe("useTheme", () => {
     expect(metas()).toEqual(["#f2ecdf", "#f2ecdf"]);
 
     act(() => result.current.setChoice("dark"));
-    expect(metas()).toEqual(["#0d1512", "#0d1512"]);
+    expect(metas()).toEqual(["#14100e", "#14100e"]);
 
     act(() => result.current.setChoice("light"));
     expect(metas()).toEqual(["#f2ecdf", "#f2ecdf"]);

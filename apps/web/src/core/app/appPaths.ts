@@ -30,7 +30,7 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/verify-email": "Sergeant — Підтвердження email",
   "/welcome": "Sergeant — Ласкаво просимо",
   "/settings": "Sergeant — Налаштування",
-  "/insights": "Sergeant — Звіти",
+  "/insights": "Sergeant — Зв'язки",
   "/legal/privacy": "Sergeant — Політика приватності",
   "/legal/terms": "Sergeant — Умови використання",
   "/legal/cookies": "Sergeant — Політика cookies",

@@ -34,6 +34,7 @@ import {
 } from "../lib/routineConstants";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
 import { HabitPauseSection } from "./HabitPauseSection";
+import { HabitStreakCanvas } from "./HabitStreakCanvas";
 import type { Habit, RoutineState } from "../lib/types";
 import { HabitGlyph } from "./HabitGlyph";
 import { fillName } from "../lib/fillName";
@@ -189,14 +190,13 @@ export function HabitDetailSheet({
     [habit, completions, tk, routine.skips, habitId],
   );
   const currentStreak = streak?.days ?? 0;
-  const streakHint = useMemo(() => {
-    if (!streak) return null;
-    const parts: string[] = [];
-    if (streak.pauseDays > 0) parts.push(`пауза: ${streak.pauseDays} дн.`);
-    if (streak.skipDays > 0) parts.push(`не зміг: ${streak.skipDays} дн.`);
-    if (streak.graceUsed > 0) parts.push(`заморозки: ${streak.graceUsed}`);
-    return parts.length > 0 ? parts.join(" · ") : null;
-  }, [streak]);
+  // AI-CONTEXT: тут був `streakHint` — рядок «пауза: 2 дн. · не зміг: 1 дн. ·
+  // заморозки: 1» під числом серії. Прибрано 2026-08-05 разом із додаванням
+  // `HabitStreakCanvas` вище: полотно показує ті самі п'ять типів дня формою
+  // клітинки, тобто видно, ЯКІ саме дні були паузою, а не лише скільки їх.
+  // Тримати обидва означало б лишити рівно той патерн, який полотно й
+  // заміняє — одне число плюс текстове виправдання під ним
+  // (`docs/05-design/design/anti-slop-strategy.md` §5 P3).
   const bestStreak = useMemo(
     () => (habit ? maxStreakAllTime(habit, completions) : 0),
     [habit, completions],
@@ -386,6 +386,30 @@ export function HabitDetailSheet({
             )}
         </div>
 
+        {/*
+          Полотно серії — за ОДНУ звичку (рішення власника 2026-08-05).
+          Саме тут воно чесне: пауза, «не зміг» і розклад різні в кожної
+          звички, тож звести їх в одне полотно на всі звички означало б
+          показати п'ять типів дня, які насправді належать різним правилам.
+          Полотно на всі звички вже є окремо — `HabitHeatmap`.
+        */}
+        {/*
+          Заголовок рендерить саме полотно (`HabitStreakCanvas` → h3), тож
+          тут його немає: два однакові h3 підряд дублювались би і в тексті,
+          і в heading-навігації скрінрідера.
+        */}
+        <section
+          className="mb-5"
+          aria-label={messages.routine.streakCanvas.heading}
+        >
+          <HabitStreakCanvas
+            habit={habit}
+            completions={completions}
+            skips={routine.skips?.[habitId]}
+            todayKey={tk}
+          />
+        </section>
+
         <section className="mb-5" aria-label="Статистика">
           <SectionHeading as="h3" size="sm" className="mb-2">
             Статистика
@@ -398,11 +422,6 @@ export function HabitDetailSheet({
               <p className="text-style-caption text-subtle mt-0.5">
                 Поточна серія
               </p>
-              {streakHint && (
-                <p className="text-style-caption text-subtle mt-0.5">
-                  {streakHint}
-                </p>
-              )}
             </div>
             <div className={C.statCard}>
               <p className="text-style-headline text-text tabular-nums">

@@ -19,10 +19,33 @@ import {
  * ми лише даємо йому якісніший snapshot.
  */
 
-const DAY_MS = 86_400_000;
-const WINDOW_DAYS = 60;
-const NOTABLE_R = 0.4;
-const MIN_N = 5;
+// Exported (2026-08-05, P2 anti-slop форма зв'язку — `CrossModuleLinkCard`):
+// `crossModuleLinkTiers.ts` derives its 3-ступенева візуальна градація
+// впевненості з ЦИХ САМИХ порогів замість того, щоб вигадувати нові —
+// «епістемічний стандарт зв'язків» (product-overview.md §6) вимагає, щоб
+// поріг мовчання був один на весь продукт, а не по одному на кожну поверхню.
+export const WINDOW_DAYS = 60;
+export const NOTABLE_R = 0.4;
+
+/**
+ * Мінімум спільних днів, щоб пара взагалі заговорила.
+ *
+ * РІШЕННЯ ВЛАСНИКА 2026-08-05: лишаємо 5 на час бети — щоб на малих даних
+ * продукт узагалі щось показував і ми побачили реакцію. **Підняти до 10**
+ * після бети або раніше, якщо з'явиться бодай одна картка, у якій власник
+ * упізнає шум.
+ *
+ * Чому це борг, а не норма: на п'яти точках `|r| = 0.4` трапляється на
+ * випадкових даних приблизно в половині випадків, тобто перший ступінь
+ * стоїть на доказі рівня підкидання монети. Саме тому він і названий
+ * «Поки що збіг» (`crossModuleLinkTiers.ts`) — назва чесна, але вона не
+ * робить доказ сильнішим. Розширення набору пар (2026-08-05, з 9 до 14)
+ * цю проблему множить: більше перевірених гіпотез — вищий шанс, що хоч
+ * одна перетне поріг випадково.
+ *
+ * Трекер: `docs/90-work/tech-debt/frontend.md`.
+ */
+export const MIN_N = 5;
 const MAX_LINES = 3;
 
 interface PairPhrase {
@@ -50,20 +73,20 @@ const PAIRS: readonly PairPhrase[] = [
   {
     a: "protein",
     b: "workout_volume",
-    pos: "більше білка збігається з більшим об'ємом тренувань",
-    neg: "більше білка збігається з меншим об'ємом тренувань",
+    pos: "коли їси більше білка — тренуєшся важче",
+    neg: "коли їси більше білка — тренуєшся легше",
   },
   {
     a: "weight",
     b: "kcal",
     pos: "вага росте разом із калоріями",
-    neg: "вага знижується попри вищі калорії",
+    neg: "більше калорій збігається з нижчою вагою",
   },
   {
     a: "workout_volume",
     b: "wellbeing",
-    pos: "у дні з більшим об'ємом тренувань самопочуття краще",
-    neg: "у дні з більшим об'ємом тренувань самопочуття гірше",
+    pos: "після важчих тренувань почуваєшся краще",
+    neg: "після важчих тренувань почуваєшся гірше",
   },
   {
     a: "habit_rate",
@@ -83,13 +106,71 @@ const PAIRS: readonly PairPhrase[] = [
     pos: "у дні тренувань ти п'єш більше води",
     neg: "у дні тренувань ти п'єш менше води",
   },
+  /*
+   * Було `workouts × habit_rate` — замінено на об'єм 2026-08-05.
+   *
+   * `workouts` існує лише в дні з тренуванням, і там воно майже завжди
+   * дорівнює 1: розкиду в змінній практично немає, тож кореляція на ній —
+   * шум, який при `MIN_N = 5` регулярно перетинав би поріг. Об'єм тренування
+   * у тих самих днях має справжній розкид.
+   */
   {
-    a: "workouts",
+    a: "workout_volume",
     b: "habit_rate",
-    pos: "коли тренуєшся частіше — краще тримаєш звички",
-    neg: "коли тренуєшся частіше — гірше тримаєш звички",
+    pos: "коли тренуєшся важче — краще тримаєш звички",
+    neg: "коли тренуєшся важче — гірше тримаєш звички",
+  },
+
+  // ─── Додано 2026-08-05: покриття всіх шести комбінацій модулів ──────────
+  // До цього Фінік × Їжа не мала жодної пари — код бачив зв'язок, але не
+  // мав речення, щоб його сказати.
+  {
+    a: "spending",
+    b: "kcal",
+    pos: "коли витрачаєш більше — їси більше",
+    neg: "коли витрачаєш більше — їси менше",
+  },
+  {
+    a: "spending",
+    b: "habit_rate",
+    pos: "коли тримаєш звички — витрачаєш більше",
+    neg: "коли тримаєш звички — витрачаєш менше",
+  },
+  {
+    a: "workout_volume",
+    b: "kcal",
+    pos: "у дні важчих тренувань ти їси більше",
+    neg: "у дні важчих тренувань ти їси менше",
+  },
+  {
+    a: "kcal",
+    b: "wellbeing",
+    pos: "у дні, коли їси більше, самопочуття краще",
+    neg: "у дні, коли їси більше, самопочуття гірше",
+  },
+  {
+    a: "water",
+    b: "wellbeing",
+    pos: "коли п'єш більше води — почуваєшся краще",
+    neg: "коли п'єш більше води — почуваєшся гірше",
+  },
+  {
+    a: "weight",
+    b: "habit_rate",
+    pos: "коли тримаєш звички — вага вища",
+    neg: "коли тримаєш звички — вага нижча",
   },
 ];
+
+/**
+ * Метрики курованих пар без фраз — щоб стан мовчання міг показати прогрес по
+ * тих самих парах, які колись заговорять, а не по довільній комбінації
+ * метрик.
+ */
+export const CURATED_PAIRS: ReadonlyArray<{
+  a: DailyMetric;
+  b: DailyMetric;
+}> = PAIRS.map((p) => ({ a: p.a, b: p.b }));
 
 const METRICS: DailyMetric[] = [
   "spending",
@@ -104,31 +185,97 @@ const METRICS: DailyMetric[] = [
 ];
 
 /**
+ * Помітна пара в структурованому вигляді — та сама знахідка, що й рядок
+ * `correlationsFromSeries`, але до форматування в текст.
+ *
+ * AI-CONTEXT: винесено 2026-08-05, коли `CrossModuleLinkCard` (P2 анти-слоп)
+ * отримав власну секцію на `/insights`. Картці потрібні `n` і `r` окремими
+ * числами (з них рахується ступінь впевненості) плюс метрики полюсів (з них
+ * будуються дві осі) — тобто рівно те, що стара функція склеювала в рядок і
+ * викидала. Щоб поріг мовчання лишався ОДИН на продукт, обидва споживачі
+ * читають цей самий список, а не два паралельні обчислення.
+ */
+export interface NotablePair {
+  a: DailyMetric;
+  b: DailyMetric;
+  /** Людська фраза, уже обрана за знаком `pearson` (`pos` або `neg`). */
+  phrase: string;
+  /** Спільні дні з обома метриками (pairwise-complete). */
+  n: number;
+  pearson: number;
+}
+
+/**
+ * Чиста частина: з уже побудованих рядів дістає ВСІ помітні пари,
+ * відсортовані за |r|. Виокремлено для юніт-тестів (не залежить від
+ * storage/годинника). Обрізання під конкретну поверхню — на боці викликача.
+ */
+export function notablePairsFromSeries(series: DailySeries): NotablePair[] {
+  const byPair = new Map(
+    computePairwiseCorrelations(series).map((c) => [`${c.a}|${c.b}`, c]),
+  );
+
+  const found: NotablePair[] = [];
+  for (const p of PAIRS) {
+    const c = byPair.get(`${p.a}|${p.b}`) ?? byPair.get(`${p.b}|${p.a}`);
+    if (!c || c.n < MIN_N || !Number.isFinite(c.pearson)) continue;
+    if (Math.abs(c.pearson) < NOTABLE_R) continue;
+    found.push({
+      a: p.a,
+      b: p.b,
+      phrase: c.pearson > 0 ? p.pos : p.neg,
+      n: c.n,
+      pearson: c.pearson,
+    });
+  }
+
+  return found.sort((x, y) => Math.abs(y.pearson) - Math.abs(x.pearson));
+}
+
+/**
  * Чиста частина: з уже побудованих рядів дістає до 3 one-liner-ів про помітні
  * пари, відсортовані за |r|. Виокремлено для юніт-тестів (не залежить від
  * storage/годинника).
  */
 export function correlationsFromSeries(series: DailySeries): string[] {
-  const byPair = new Map(
-    computePairwiseCorrelations(series).map((c) => [`${c.a}|${c.b}`, c]),
-  );
-
-  const found: Array<{ text: string; abs: number }> = [];
-  for (const p of PAIRS) {
-    const c = byPair.get(`${p.a}|${p.b}`) ?? byPair.get(`${p.b}|${p.a}`);
-    if (!c || c.n < MIN_N || !Number.isFinite(c.pearson)) continue;
-    if (Math.abs(c.pearson) < NOTABLE_R) continue;
-    const phrase = c.pearson > 0 ? p.pos : p.neg;
-    found.push({
-      text: `${phrase} (r=${c.pearson.toFixed(2)}, ${c.n} дн)`,
-      abs: Math.abs(c.pearson),
-    });
-  }
-
-  return found
-    .sort((x, y) => y.abs - x.abs)
+  return notablePairsFromSeries(series)
     .slice(0, MAX_LINES)
-    .map((f) => f.text);
+    .map((p) => `${p.phrase} (r=${p.pearson.toFixed(2)}, ${p.n} дн)`);
+}
+
+/**
+ * Зсув ключа дня `YYYY-MM-DD` на N календарних днів.
+ *
+ * AI-CONTEXT: раніше початок вікна рахувався як `getKyivDayKey(now - 59 *
+ * DAY_MS)`, тобто відніманням МІЛІСЕКУНД від моменту часу. Це не те саме, що
+ * відняти 59 календарних днів: Київ переходить на літній час, і на переході
+ * доба триває 23 або 25 годин. Вікно, яке перетинає перехід, давало 61 ключ
+ * замість 60 — наприклад, для моменту одразу після півночі 1 квітня початок
+ * випадав на 31 січня замість 1 лютого.
+ *
+ * Ключ дня — це вже календарна дата без зони, тож арифметика робиться на
+ * ній самій через UTC-полудень: UTC не має переходів, і зсув на добу завжди
+ * рівно одна доба.
+ */
+function shiftDayKey(dayKey: string, deltaDays: number): string {
+  // UTC-полудень навмисно: це не читання «зараз», а чиста календарна
+  // арифметика над уже київським ключем дня.
+  const d = new Date(`${dayKey}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Ряди за вікно аналізу — спільна основа для дайджест-рядків і для секції
+ * зв'язків на `/insights`. Обидві поверхні мусять дивитись на ОДНЕ вікно,
+ * інакше та сама пара показала б різні `n` у різних місцях.
+ */
+export function buildCrossModuleSeries(now: number = Date.now()): DailySeries {
+  const to = getKyivDayKey(now);
+  return buildDailySeries(METRICS, {
+    from: shiftDayKey(to, -(WINDOW_DAYS - 1)),
+    to,
+  });
 }
 
 /**
@@ -136,7 +283,5 @@ export function correlationsFromSeries(series: DailySeries): string[] {
  * днів, відсортовані за |r|. Порожній масив, якщо нічого не набралося.
  */
 export function buildDigestCorrelations(now: number = Date.now()): string[] {
-  const to = getKyivDayKey(now);
-  const from = getKyivDayKey(now - (WINDOW_DAYS - 1) * DAY_MS);
-  return correlationsFromSeries(buildDailySeries(METRICS, { from, to }));
+  return correlationsFromSeries(buildCrossModuleSeries(now));
 }

@@ -196,6 +196,62 @@ describe("нещоденні звички", () => {
   });
 });
 
+describe("flexibleStreakBreakdown — вікно для UI-полотна (`window`)", () => {
+  it("хронологічний порядок: найдавніший день ліворуч, сьогодні праворуч", () => {
+    const done = runOfDays(TODAY, 3);
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.window.map((c) => c.key)).toEqual([
+      "2026-07-31",
+      "2026-08-01",
+      "2026-08-02",
+    ]);
+    expect(b.window.every((c) => c.kind === "done")).toBe(true);
+  });
+
+  it("розрізняє пропуск-із-причиною, паузу і мовчазний-прощений пропуск", () => {
+    // Один явний ланцюжок днів 07-11…08-02 з рівно одним «тихим» пропуском
+    // (07-25), щоб MAX_CONSECUTIVE_GRACE=1 не обірвав прохід — інакше
+    // ходьба назад від сьогодні зупиняється на першій же парі пропусків
+    // поспіль і взагалі не доходить до давніших днів паузи/skip.
+    const habit = daily({
+      startDate: "2026-07-11",
+      pauseIntervals: [{ from: "2026-07-21", to: "2026-07-21" }],
+    });
+    const done = [
+      ...runOfDays("2026-07-20", 10), // 07-11…07-20
+      "2026-07-22",
+      "2026-07-24",
+      "2026-07-26",
+      ...runOfDays(TODAY, 7), // 07-27…08-02
+    ];
+    const b = flexibleStreakBreakdown(habit, done, TODAY, {
+      skipsForHabit: { "2026-07-23": skip("busy") },
+    });
+    expect(b.brokenOn).toBeNull();
+    const byKey = new Map(b.window.map((c) => [c.key, c.kind]));
+    expect(byKey.get("2026-07-21")).toBe("pause");
+    expect(byKey.get("2026-07-23")).toBe("skip");
+    expect(byKey.get("2026-07-25")).toBe("miss");
+    // 07-25 лишилось без відмітки — тристанова модель рахує його мовчазним
+    // пропуском, прощеним бюджетом (`b.graceUsed`), а НЕ провалом, що
+    // зламав би вікно.
+    expect(b.graceUsed).toBe(1);
+  });
+
+  it("todayPending: сьогоднішній день входить у вікно як `pending`, не `miss`", () => {
+    const done = runOfDays("2026-08-01", 5);
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.todayPending).toBe(true);
+    const today = b.window.find((c) => c.key === TODAY);
+    expect(today?.kind).toBe("pending");
+  });
+
+  it("порожня історія — порожнє вікно", () => {
+    const b = flexibleStreakBreakdown(daily(), [], TODAY);
+    expect(b.window).toEqual([]);
+  });
+});
+
 describe("flexibleMaxActiveStreak", () => {
   it("бере максимум по неархівних звичках і поважає пропуски", () => {
     const a = daily({ id: "a" });

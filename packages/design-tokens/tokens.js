@@ -194,20 +194,31 @@ export const moduleAccentRgb = {
  *
  * Canonical values for the `.theme-dark` "Ink" visual direction (spec:
  * docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
- * deep green-black surface with luminescent per-module accents; depth comes
+ * deep warm-charcoal surface with luminescent per-module accents; depth comes
  * from surface tint + accent border + glow, not a downward shadow.
+ *
+ * AI-CONTEXT: база була зелено-чорною (#0d1512 / #121c17 / #17231d) до
+ * 2026-08-05. Зелений фон під зеленими tier-400 акцентами давав фон і акцент
+ * одного hue — головний «tell» генерованого дизайну, через який наш скрін не
+ * відрізнявся від чужих продуктів (docs/05-design/design/anti-slop-strategy.md
+ * § 2, § 5/P1). Тепле вугілля розводить hue фону й акценту і водночас робить
+ * теплу базу наскрізною ідеєю обох тем, а не збігом у світлій.
+ * Контраст не постраждав — нова база трохи темніша, тож усі пари виросли:
+ * текст strong 16.98 → 17.33, fg 15.93 → 16.26, muted 6.03 → 6.16 на фоні;
+ * акценти tier-400 на фоні 8.18–12.55 → 8.35–12.81; ink-текст поверх
+ * акцент-філу — ті самі числа (симетрична пара). Усе ≥ AA.
  *
  * `surface`/`text` are authored here as the source of truth for the `.dark`
  * CSS variables in apps/web/src/styles/theme.css. `accent` re-surfaces the
  * existing `brandColors.{emerald,cyan,coral,lime}[400]` tier-400 tones in
  * their module role — text placed over an accent fill is always `bg` ink
- * (#0d1512), never white (spec § 1).
+ * (#14100e), never white (spec § 1).
  */
 export const inkTheme = {
   surface: {
-    bg: "#0d1512", // page background
-    surface: "#121c17", // cards, rows, nav, fields
-    surfaceHi: "#17231d", // hover / input bg
+    bg: "#14100e", // page background — тепле вугілля
+    surface: "#1b1613", // cards, rows, nav, fields
+    surfaceHi: "#221c18", // hover / input bg
     line: "rgba(255, 255, 255, 0.06)", // hairline
     lineStrong: "rgba(255, 255, 255, 0.12)", // prominent divider
   },

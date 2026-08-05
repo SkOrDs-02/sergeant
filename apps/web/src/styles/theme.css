@@ -497,12 +497,12 @@
     color-scheme: dark;
 
     /* Page background — «Чорнило» ink base */
-    --c-bg: 13 21 18; /* #0d1512 — ink base */
+    --c-bg: 20 16 14; /* #14100e — ink base */
 
     /* Cards/panels — solid ink surface. `panel-hi` lifts one tint step so
        hover and input backgrounds separate from the base surface. */
-    --c-panel: 18 28 23; /* #121c17 — cards, rows, nav, fields */
-    --c-panel-hi: 23 35 29; /* #17231d — hover / input bg */
+    --c-panel: 27 22 19; /* #1b1613 — cards, rows, nav, fields */
+    --c-panel-hi: 34 28 24; /* #221c18 — hover / input bg */
 
     /* Border — ink hairline ≈ white/6% over the surface. Depth is carried by
        accent borders + glow, so the neutral edge stays quiet. */
@@ -580,7 +580,7 @@
        Selection flips to a deep teal wash with a bright foreground. */
     --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
     --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
-    --c-ring-offset: 18 28 23; /* panel — matches `--c-panel` */
+    --c-ring-offset: 27 22 19; /* panel — matches `--c-panel` */
     /* `--c-accent` mirrors `--c-ring` — same reason: the light-tier teal-700
        (`:root` value) reads ~3.4:1 on the ink surface, sub-AA for
        `text-accent`/`bg-accent` (107 call sites). Dark flips to the
@@ -593,7 +593,7 @@
     --c-selection-bg: 17 94 89; /* teal-800 */
     --c-selection-fg: 204 251 241; /* teal-100 */
     --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
-    --c-scrollbar-track: 18 28 23; /* panel */
+    --c-scrollbar-track: 27 22 19; /* panel */
     --c-scrollbar-thumb: 31 42 37; /* matches --c-line */
     --c-scrollbar-thumb-hover: 95 107 100; /* matches --c-subtle */
     --c-divider-weak: 23 31 27; /* between panel and line */
@@ -739,9 +739,9 @@
      ═══════════════════════════════════════════════════════════════════════ */
   [data-theme-preview="dark"] {
     color-scheme: dark;
-    --c-bg: 13 21 18; /* #0d1512 — ink base */
-    --c-panel: 18 28 23; /* #121c17 */
-    --c-panel-hi: 23 35 29; /* #17231d */
+    --c-bg: 20 16 14; /* #14100e — ink base */
+    --c-panel: 27 22 19; /* #1b1613 */
+    --c-panel-hi: 34 28 24; /* #221c18 */
     --c-line: 31 42 37; /* #1f2a25 */
     --c-text: 242 246 242; /* #f2f6f2 */
     --c-muted: 138 150 142; /* #8a968e */
@@ -1130,7 +1130,7 @@
 
   .dark {
     /* «Чорнило» ink base — the solid surface under the mesh glows. */
-    --c-bg-base: 13 21 18; /* #0d1512 — ink base */
+    --c-bg-base: 20 16 14; /* #14100e — ink base */
 
     /* Ink text scale (spec § 1). */
     --c-ink: 231 240 234; /* #e7f0ea — body */
@@ -1143,15 +1143,15 @@
        accent border + glow, not translucency. These stay as back-compat
        aliases so existing `bg-surface-glass*` call sites resolve to the solid
        ink surface without a per-component rewrite. */
-    --surface-glass: rgba(18, 28, 23, 1); /* #121c17 — solid surface */
-    --surface-strong-glass: rgba(18, 28, 23, 1); /* #121c17 — navs, pills */
-    --surface-soft-glass: rgba(18, 28, 23, 1); /* #121c17 — tinted bg */
+    --surface-glass: rgba(27, 22, 19, 1); /* #1b1613 — solid surface */
+    --surface-strong-glass: rgba(27, 22, 19, 1); /* #1b1613 — navs, pills */
+    --surface-soft-glass: rgba(27, 22, 19, 1); /* #1b1613 — tinted bg */
     --surface-line: rgba(255, 255, 255, 0.06); /* ink hairline */
 
     --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
     --line-strong-v2: rgba(255, 255, 255, 0.12); /* ink divider (white/12%) */
 
-    /* Mesh dark — «Чорнило» fingerprint: 3 radial glows over #0d1512
+    /* Mesh dark — «Чорнило» fingerprint: 3 radial glows over #14100e
        (spec § 1). Positions live in `.bg-mesh`: 1 = emerald top-right,
        2 = cyan left, 3 = coral bottom. No 4th corner (perf on mobile). */
     --bg-mesh-1: rgba(52, 211, 153, 0.12); /* emerald-400 — top-right */
@@ -1218,14 +1218,14 @@
 
   html.hc.dark {
     /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
-    --surface-glass: rgba(18, 28, 23, 1); /* matches --c-panel (#121c17) */
+    --surface-glass: rgba(27, 22, 19, 1); /* matches --c-panel (#1b1613) */
     --surface-strong-glass: rgba(
-      23,
-      35,
-      29,
+      34,
+      28,
+      24,
       1
-    ); /* matches --c-panel-hi (#17231d) */
-    --surface-soft-glass: rgba(18, 28, 23, 0.95);
+    ); /* matches --c-panel-hi (#221c18) */
+    --surface-soft-glass: rgba(27, 22, 19, 0.95);
     --surface-line: rgba(255, 255, 255, 0.7);
 
     --c-ink-strong: 255 255 255;

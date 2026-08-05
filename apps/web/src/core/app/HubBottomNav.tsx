@@ -39,7 +39,7 @@ import { messages } from "@shared/i18n/uk";
  *     not a per-module accent.
  *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
  *     accent) square with the same ink foreground (`text-bg` resolves to
- *     `#0d1512` under `.dark`, so one bare class covers both themes).
+ *     `#14100e` under `.dark`, so one bare class covers both themes).
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
@@ -341,7 +341,7 @@ export function HubBottomNav({
     onClick: () => onChange("reports"),
     iconName: "bar-chart",
     prefetchPage: "reports",
-    label: "Звіти",
+    label: messages.nav.reports,
     hiddenSlot: !showReports,
     className: animateReveal ? "animate-bounce-in" : undefined,
   });
