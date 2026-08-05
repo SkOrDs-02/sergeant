@@ -360,12 +360,38 @@ export function useMonobankWebhook({
           .map(webhookTxToNormalized)
           .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
         setHistoryTx(normalized);
+
+        // Backfill the SQLite mirror with this historical slice, same as
+        // the current-month effect above. Without this, `fetchMonth` only
+        // ever populated the in-memory `historyTx` state consumed by the
+        // Operations page — any other reader of the mirror (Hub Reports'
+        // "previous period" card, weekly digest, coach insights) stayed
+        // blind to every month except whichever one happened to be "current"
+        // when the current-month effect last ran, silently under-reporting
+        // past months (founder report: Звіти showed "Минулий: 10 ₴" for
+        // липень while Операції correctly listed thousands in spend).
+        if (userId && normalized.length > 0) {
+          try {
+            const handle = await getSqliteDb();
+            const client = handle.migrationClient();
+            await migrateFinyk(client);
+            await writeMonoTransactions(client, userId, normalized);
+            await refreshFinykMonoMirrorState(client, userId);
+            notifyFinykMonoMirrorRefresh();
+          } catch (err) {
+            logger.warn(
+              "[finyk.monoMirror] write historical transactions failed",
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }
+
         return normalized;
       } finally {
         setLoadingHistory(false);
       }
     },
-    [isConnected, queryClient],
+    [isConnected, queryClient, userId],
   );
 
   // === Connect ===
