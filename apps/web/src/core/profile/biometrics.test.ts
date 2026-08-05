@@ -7,6 +7,8 @@ import {
   isBiometricsCompleteForTdee,
   mirrorWeightToBiometrics,
   readBiometrics,
+  readBiometricsOwnerId,
+  setBiometricsOwner,
   writeBiometrics,
   writeBiometricsPatch,
   type Biometrics,
@@ -96,6 +98,53 @@ describe("readBiometrics / writeBiometrics", () => {
   it("falls back to default when stored blob is malformed", () => {
     memoryStore.set(STORAGE_KEYS.HUB_BIOMETRICS, "{not json");
     expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
+  });
+});
+
+// CodeRabbit PR #627 — cross-account biometrics upload guard scaffolding.
+describe("setBiometricsOwner / readBiometricsOwnerId", () => {
+  afterEach(() => {
+    setBiometricsOwner(null);
+  });
+
+  it("defaults to null (unknown owner) when nothing has been written", () => {
+    expect(readBiometricsOwnerId()).toBeNull();
+  });
+
+  it("stamps the current owner onto every write, invisible on readBiometrics()", () => {
+    setBiometricsOwner("user-a");
+    const record: Biometrics = {
+      ...BIOMETRICS_DEFAULT,
+      heightCm: 178,
+      updatedAt: "2026-02-02T00:00:00.000Z",
+    };
+    writeBiometrics(record);
+
+    expect(readBiometricsOwnerId()).toBe("user-a");
+    // Public reader never leaks the owner tag into the typed shape.
+    expect(readBiometrics()).toEqual(record);
+  });
+
+  it("re-stamps on every subsequent write once the owner changes", () => {
+    setBiometricsOwner("user-a");
+    writeBiometrics({
+      ...BIOMETRICS_DEFAULT,
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(readBiometricsOwnerId()).toBe("user-a");
+
+    setBiometricsOwner("user-b");
+    writeBiometricsPatch({ heightCm: 190 }, "2026-01-02T00:00:00.000Z");
+    expect(readBiometricsOwnerId()).toBe("user-b");
+  });
+
+  it("treats a legacy blob with no ownerId field as unknown (null)", () => {
+    // Simulates data written before this field existed.
+    memoryStore.set(
+      STORAGE_KEYS.HUB_BIOMETRICS,
+      JSON.stringify({ ...BIOMETRICS_DEFAULT, heightCm: 178 }),
+    );
+    expect(readBiometricsOwnerId()).toBeNull();
   });
 });
 

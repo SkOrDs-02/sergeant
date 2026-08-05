@@ -28,6 +28,8 @@ import {
   BIOMETRICS_DEFAULT,
   BiometricsSchema,
   readBiometrics,
+  readBiometricsOwnerId,
+  setBiometricsOwner,
   writeBiometrics,
   type Biometrics,
 } from "./biometrics";
@@ -60,16 +62,39 @@ export async function pushBiometricsToServer(b: Biometrics): Promise<void> {
  * `GET /api/me/profile` response. Pure of network reads (the caller supplies
  * `serverProfile`, typically from the `hubKeys.profile` RQ cache) but still
  * async because the "local wins" branch pushes over the network.
+ *
+ * `currentUserId` is the authenticated session this reconcile is running
+ * for (`useProfileWriteThroughBoot`'s own `userId`) — required for the
+ * cross-account upload guard below (CodeRabbit PR #627): `hub_biometrics_v1`
+ * is a single global localStorage key, so on a shared device user A's
+ * local snapshot can still be sitting there when user B signs in with no
+ * server row of their own yet. Uploading it there would silently attach
+ * A's biometrics to B's account.
  */
 export async function reconcileBiometricsWithServerProfile(
   serverProfile: UserProfileResponse,
+  currentUserId: string,
 ): Promise<void> {
+  // Defensive: also stamp the owner here (not just in
+  // `useProfileWriteThroughBoot`'s own effect) so this function stays
+  // correct in isolation — e.g. called directly from a test, or from any
+  // future caller that forgets the boot-hook wiring.
+  setBiometricsOwner(currentUserId);
+
   const local = readBiometrics();
   const parsedServer = BiometricsSchema.safeParse(serverProfile.profile);
   const serverHasRow = serverProfile.updatedAt !== null && parsedServer.success;
 
   if (!serverHasRow) {
-    if (!isLocalBiometricsEmpty(local)) {
+    // Only upload when the local snapshot is stamped as belonging to
+    // THIS session's user. A legacy value with no owner tag (written
+    // before this fix shipped) or one stamped for a different account on
+    // this shared device must never be uploaded under someone else's
+    // session — see the regression test for the exact A-then-B scenario.
+    if (
+      !isLocalBiometricsEmpty(local) &&
+      readBiometricsOwnerId() === currentUserId
+    ) {
       await pushBiometricsToServer(local);
     }
     return;

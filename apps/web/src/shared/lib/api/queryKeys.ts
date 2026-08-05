@@ -115,8 +115,13 @@ export const hubKeys = {
    * `useProfileWriteThroughBoot` (`core/profile/profileWriteThrough.ts`) to
    * reconcile the local `hub_biometrics_v1` cache against the server on
    * first authenticated boot — see that module for the LWW contract.
+   *
+   * User-scoped (CodeRabbit PR #627): a static key let a second tab that
+   * switched sessions read user A's cached RQ profile response under user
+   * B — `userId` in the key makes a session switch a cache MISS instead of
+   * a stale hit.
    */
-  profile: ["hub", "profile"] as const,
+  profile: (userId: string) => ["hub", "profile", userId] as const,
 };
 
 // ─── Strategic mode (PR-34 — per-persona weekly goals) ────────────────────
