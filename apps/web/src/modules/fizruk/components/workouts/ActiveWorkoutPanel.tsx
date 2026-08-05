@@ -17,6 +17,7 @@ import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { useToast } from "@shared/hooks/useToast";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import {
   makeDefaultWarmup,
   makeDefaultCooldown,
@@ -276,6 +277,7 @@ export function ActiveWorkoutPanel({
               className="input-focus-fizruk w-full min-h-[72px] rounded-2xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
               placeholder="Напр. Важко на присіданнях, болить коліно…"
               value={activeWorkout.note || ""}
+              maxLength={NOTE_MAX_LEN}
               onChange={(e) =>
                 updateWorkout(activeWorkout.id, { note: e.target.value })
               }
