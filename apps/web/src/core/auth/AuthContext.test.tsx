@@ -289,13 +289,12 @@ describe("AuthContext", () => {
 
   it("purges app-owned localStorage on logout but preserves foreign keys", async () => {
     // Browser-QA finding (b): logout left the previous user's local-first data
-    // (transactions, water log, hub prefs, the sqlite-wasm kvvfs store)
-    // readable by the next user on a shared device. Logout must remove the
-    // app-owned slices but leave third-party origins (PostHog/Sentry) alone.
+    // (transactions, water log, hub prefs) readable by the next user on a
+    // shared device. Logout must remove the app-owned slices but leave
+    // third-party origins (PostHog/Sentry) alone.
     localStorage.setItem("finyk_tx_cache", "[{secret tx}]");
     localStorage.setItem("nutrition_water_v1", "{}");
     localStorage.setItem("hub_user_profile_v1", "[]");
-    localStorage.setItem("kvvfs-local-0", "page-blob");
     localStorage.setItem("ph_phc_project_posthog", "distinct-id");
     localStorage.setItem("sentry_session", "trace");
 
@@ -309,10 +308,24 @@ describe("AuthContext", () => {
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("nutrition_water_v1")).toBeNull();
     expect(localStorage.getItem("hub_user_profile_v1")).toBeNull();
-    expect(localStorage.getItem("kvvfs-local-0")).toBeNull();
     // Foreign keys are out of the allowlist — never touched.
     expect(localStorage.getItem("ph_phc_project_posthog")).toBe("distinct-id");
     expect(localStorage.getItem("sentry_session")).toBe("trace");
+
+    localStorage.clear();
+  });
+
+  it("does NOT purge the sqlite-wasm kvvfs backing store via the localStorage allowlist — that store is shared across every partition on the device (no per-user filename), so isolation for it lives in wipeSqliteDb()'s row-level DELETE instead of a wholesale key purge (see anonymous-local-first-persistence spec § «Відомий залишковий ризик»)", async () => {
+    localStorage.setItem("kvvfs-local-0", "page-blob");
+
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(localStorage.getItem("kvvfs-local-0")).toBe("page-blob");
 
     localStorage.clear();
   });
