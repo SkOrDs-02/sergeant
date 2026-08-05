@@ -105,7 +105,14 @@ export function useMonobankWebhook({
     refetchOnWindowFocus: false,
     retry: authAwareRetry(1),
   });
-  const jars = jarsQuery.data ?? [];
+  // Shape-guard — той самий інваріант, що й для `accounts` нижче: `?? []`
+  // рятує лише від `null`/`undefined`, а truthy не-масив (`{ ok: true }` від
+  // dev-проксі, застарілого SW-кешу чи тестового моку) доїжджав до
+  // `(jars ?? []).map` в `useAssetsState` і валив увесь рендер сторінки
+  // «Активи» у `SectionErrorBoundary` з `TypeError: ... .map is not a
+  // function`. Ловилось як фейл `tests/mobile/deep-route-viewport.spec.ts`
+  // на FINYK_ASSETS (браузерний аудит 2026-08-05).
+  const jars = Array.isArray(jarsQuery.data) ? jarsQuery.data : [];
 
   const webhookAccounts = accountsQuery.data;
   const accounts = useMemo(
