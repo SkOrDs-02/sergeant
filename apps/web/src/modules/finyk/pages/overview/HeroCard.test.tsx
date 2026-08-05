@@ -37,6 +37,20 @@ describe("HeroCard", () => {
     showBalance: true,
   };
 
+  /**
+   * Знайти суму, набрану `Money`, за її повним читабельним текстом.
+   * `getAllBy…[0]`, бо та сама сума легітимно трапляється двічі на картці
+   * (факт зверху і той самий факт у рядку прогнозу).
+   */
+  function money(text: string): HTMLElement {
+    return screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" &&
+        el.className.includes("tabular-nums") &&
+        (el.textContent ?? "").replace(/[\s\u00a0\u202f]/g, " ") === text,
+    )[0]!;
+  }
+
   it("renders networth, breakdown row and big day-budget number", () => {
     render(<HeroCard {...baseProps} />);
     expect(screen.getByText("Капітал")).toBeInTheDocument();
@@ -53,10 +67,11 @@ describe("HeroCard", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText(/На картках/)).toBeInTheDocument();
-    expect(screen.getByText("+255 ₴")).toBeInTheDocument();
-    expect(screen.getByText("−89 413 ₴")).toBeInTheDocument();
-    expect(screen.getByText("1 691")).toBeInTheDocument();
-    expect(screen.getByText("₴/день")).toBeInTheDocument();
+    // Суми набрані `Money`: знак, розряди й символ — окремі вузли (П4),
+    // тож звіряємось із textContent, а не з єдиним текстовим вузлом.
+    expect(money("+255 ₴")).toBeInTheDocument();
+    expect(money("−89 413 ₴")).toBeInTheDocument();
+    expect(money("1 691 ₴/день")).toBeInTheDocument();
     expect(screen.getByText(/Можна сьогодні/)).toBeInTheDocument();
   });
 
@@ -100,8 +115,15 @@ describe("HeroCard", () => {
 
   it("keeps the daily allowance readable on the light hero", () => {
     render(<HeroCard {...baseProps} />);
-    const amount = screen.getByText("1 691").parentElement;
-    expect(amount?.className).toContain("text-hero-ink");
+    // Тон живе на контейнері числа; `Money` успадковує його, а приглушені
+    // тири беруть hero-ink-палітру (інакше text-muted тоне в градієнті).
+    const amount = money("1 691 ₴/день");
+    expect(amount.closest("div")?.className).toContain("text-hero-ink");
+    // Тир не має власного кольору — гаситься прозорістю поверх currentColor,
+    // тож на градієнті лишається того самого чорнила, що й число.
+    expect(amount.querySelector(".text-\\[0\\.72em\\]")?.className).toContain(
+      "opacity-65",
+    );
     expect(screen.getByText("В нормі").className).toContain("text-hero-ink");
   });
 

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
+import { Money } from "@shared/components/ui/Money";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
@@ -85,28 +86,18 @@ const MonthPulseCardImpl = function MonthPulseCard({
               </button>
             </Tooltip>
           </div>
-          <div className="text-hero font-bold tabular-nums mt-1 leading-tight">
-            {showBalance
-              ? spent.toLocaleString("uk-UA", { maximumFractionDigits: 0 })
-              : "••••"}
-            {showBalance && (
-              <span className="text-style-body text-muted ml-1">₴</span>
-            )}
+          <div className="text-hero font-bold mt-1 leading-tight">
+            {showBalance ? <Money amount={spent} /> : "••••"}
           </div>
         </div>
         <div className="text-right">
           <div className="text-style-caption text-subtle">Дохід</div>
-          <div className="text-hero font-bold tabular-nums mt-1 leading-tight text-success-strong dark:text-success">
+          {/* `tone="inherit"` замість власного приглушеного зеленого: до П4
+              символ тут фарбувався `text-brand-700 dark:text-success/70`, а в
+              сусідній колонці — `text-muted`. Та сама роль, два різні кольори. */}
+          <div className="text-hero font-bold mt-1 leading-tight text-success-strong dark:text-success">
             {showBalance ? (
-              <>
-                +
-                {income.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })}
-                <span className="text-style-body text-brand-700 dark:text-success/70 ml-1">
-                  ₴
-                </span>
-              </>
+              <Money amount={income} signed tone="inherit" />
             ) : (
               "••••"
             )}
@@ -118,21 +109,11 @@ const MonthPulseCardImpl = function MonthPulseCard({
         <div className="mt-4 space-y-1.5">
           <div className="flex justify-between text-xs text-muted">
             <span>
-              {planPct}% з плану{" "}
-              <span className="tabular-nums">
-                {planExpense.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })}{" "}
-                ₴
-              </span>
+              {planPct}% з плану <Money amount={planExpense} />
             </span>
             {showMonthForecast && projectedSpend > 0 && (
-              <span className="tabular-nums">
-                прогноз{" "}
-                {Math.round(projectedSpend).toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })}{" "}
-                ₴
+              <span>
+                прогноз <Money amount={projectedSpend} />
               </span>
             )}
           </div>
@@ -152,16 +133,12 @@ const MonthPulseCardImpl = function MonthPulseCard({
         <div className="mt-4">
           <p className="text-xs text-muted leading-snug">
             За {daysPassed} {pluralDays(daysPassed)} · факт{" "}
-            <span className="font-semibold text-text tabular-nums">
-              {spent.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
-            </span>
+            <Money amount={spent} className="font-semibold text-text" />
             {" · "}до кінця місяця ~{" "}
-            <span className="font-semibold text-text tabular-nums">
-              {Math.round(projectedSpend).toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })}{" "}
-              ₴
-            </span>
+            <Money
+              amount={projectedSpend}
+              className="font-semibold text-text"
+            />
           </p>
         </div>
       )}
@@ -169,15 +146,9 @@ const MonthPulseCardImpl = function MonthPulseCard({
       {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
         showBalance && (
           <p className="text-xs text-muted mt-3 leading-relaxed">
-            Враховано планових: −
-            {recurringOutThisMonth.toLocaleString("uk-UA", {
-              maximumFractionDigits: 0,
-            })}{" "}
-            / +
-            {recurringInThisMonth.toLocaleString("uk-UA", {
-              maximumFractionDigits: 0,
-            })}{" "}
-            ₴{unknownOutCount > 0 && ` + ${unknownOutCount} без суми`}
+            Враховано планових: <Money amount={-recurringOutThisMonth} /> /{" "}
+            <Money amount={recurringInThisMonth} signed />
+            {unknownOutCount > 0 && ` + ${unknownOutCount} без суми`}
           </p>
         )}
     </Card>
