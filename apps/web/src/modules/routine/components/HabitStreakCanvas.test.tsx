@@ -123,7 +123,7 @@ describe("HabitStreakCanvas", () => {
     expect(cell.className).not.toContain("border");
   });
 
-  it("зберігає сьогоднішній pending-день на полотні окремо від п'яти станів", () => {
+  it("сьогодні поза розкладом лишається «не за розкладом», а не pending", () => {
     render(
       <HabitStreakCanvas
         habit={HABIT}
@@ -134,6 +134,33 @@ describe("HabitStreakCanvas", () => {
     );
     expect(
       screen.getByLabelText("2 серп.: не за розкладом"),
+    ).toBeInTheDocument();
+  });
+
+  /*
+   * Цей тест колись називався «зберігає сьогоднішній pending-день», але
+   * перевіряв рівно протилежне: `TODAY` — неділя, а звичка головної фікстури
+   * має розклад `weekdays`, тож сьогодні завжди `off`. Гілка `pending` не
+   * виконувалась жодного разу.
+   *
+   * Власна фікстура, а не `COMPLETIONS`: під `daily` суботи й неділі
+   * головної фікстури стають мовчазними пропусками, серія рветься, і
+   * сьогоднішній день випадає з вікна ще до рендеру. Потрібна ціла серія,
+   * що впирається просто в сьогодні.
+   */
+  it("сьогодні за розкладом і без відмітки — це pending, а не пропуск", () => {
+    render(
+      <HabitStreakCanvas
+        habit={weekdaysHabit({
+          recurrence: "daily",
+          startDate: "2026-07-29",
+        })}
+        completions={["2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01"]}
+        todayKey={TODAY}
+      />,
+    );
+    expect(
+      screen.getByLabelText("2 серп.: сьогодні, ще попереду"),
     ).toBeInTheDocument();
   });
 

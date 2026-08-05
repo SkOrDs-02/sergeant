@@ -19,8 +19,6 @@ import {
  * ми лише даємо йому якісніший snapshot.
  */
 
-const DAY_MS = 86_400_000;
-
 // Exported (2026-08-05, P2 anti-slop форма зв'язку — `CrossModuleLinkCard`):
 // `crossModuleLinkTiers.ts` derives its 3-ступенева візуальна градація
 // впевненості з ЦИХ САМИХ порогів замість того, щоб вигадувати нові —
@@ -179,14 +177,38 @@ export function correlationsFromSeries(series: DailySeries): string[] {
 }
 
 /**
+ * Зсув ключа дня `YYYY-MM-DD` на N календарних днів.
+ *
+ * AI-CONTEXT: раніше початок вікна рахувався як `getKyivDayKey(now - 59 *
+ * DAY_MS)`, тобто відніманням МІЛІСЕКУНД від моменту часу. Це не те саме, що
+ * відняти 59 календарних днів: Київ переходить на літній час, і на переході
+ * доба триває 23 або 25 годин. Вікно, яке перетинає перехід, давало 61 ключ
+ * замість 60 — наприклад, для моменту одразу після півночі 1 квітня початок
+ * випадав на 31 січня замість 1 лютого.
+ *
+ * Ключ дня — це вже календарна дата без зони, тож арифметика робиться на
+ * ній самій через UTC-полудень: UTC не має переходів, і зсув на добу завжди
+ * рівно одна доба.
+ */
+function shiftDayKey(dayKey: string, deltaDays: number): string {
+  // UTC-полудень навмисно: це не читання «зараз», а чиста календарна
+  // арифметика над уже київським ключем дня.
+  const d = new Date(`${dayKey}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
  * Ряди за вікно аналізу — спільна основа для дайджест-рядків і для секції
  * зв'язків на `/insights`. Обидві поверхні мусять дивитись на ОДНЕ вікно,
  * інакше та сама пара показала б різні `n` у різних місцях.
  */
 export function buildCrossModuleSeries(now: number = Date.now()): DailySeries {
   const to = getKyivDayKey(now);
-  const from = getKyivDayKey(now - (WINDOW_DAYS - 1) * DAY_MS);
-  return buildDailySeries(METRICS, { from, to });
+  return buildDailySeries(METRICS, {
+    from: shiftDayKey(to, -(WINDOW_DAYS - 1)),
+    to,
+  });
 }
 
 /**

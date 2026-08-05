@@ -1220,9 +1220,9 @@
     /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
     --surface-glass: rgba(27, 22, 19, 1); /* matches --c-panel (#1b1613) */
     --surface-strong-glass: rgba(
-      23,
-      35,
-      29,
+      34,
+      28,
+      24,
       1
     ); /* matches --c-panel-hi (#221c18) */
     --surface-soft-glass: rgba(27, 22, 19, 0.95);

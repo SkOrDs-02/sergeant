@@ -25,6 +25,7 @@ import type {
   HabitSkip,
   StreakDayKind,
 } from "@sergeant/routine-domain";
+import { useMemo } from "react";
 import { pluralDays, pluralUa } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -226,9 +227,16 @@ export function HabitStreakCanvas({
   todayKey,
   className,
 }: HabitStreakCanvasProps) {
-  const breakdown = flexibleStreakBreakdown(habit, completions, todayKey, {
-    skipsForHabit: skips,
-  });
+  // `flexibleStreakBreakdown` обходить історію звички день за днем, тож на
+  // кожен ререндер полотна це зайвий прохід. `HabitDetailSheet` уже
+  // мемоїзує той самий виклик для тієї ж звички — тут те саме.
+  const breakdown = useMemo(
+    () =>
+      flexibleStreakBreakdown(habit, completions, todayKey, {
+        skipsForHabit: skips,
+      }),
+    [habit, completions, todayKey, skips],
+  );
   const { window: cells, days, graceUsed } = breakdown;
 
   const graceLine =

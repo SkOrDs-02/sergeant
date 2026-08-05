@@ -393,13 +393,15 @@ export function HabitDetailSheet({
           показати п'ять типів дня, які насправді належать різним правилам.
           Полотно на всі звички вже є окремо — `HabitHeatmap`.
         */}
+        {/*
+          Заголовок рендерить саме полотно (`HabitStreakCanvas` → h3), тож
+          тут його немає: два однакові h3 підряд дублювались би і в тексті,
+          і в heading-навігації скрінрідера.
+        */}
         <section
           className="mb-5"
           aria-label={messages.routine.streakCanvas.heading}
         >
-          <SectionHeading as="h3" size="sm" className="mb-2">
-            {messages.routine.streakCanvas.heading}
-          </SectionHeading>
           <HabitStreakCanvas
             habit={habit}
             completions={completions}

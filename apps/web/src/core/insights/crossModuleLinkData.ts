@@ -22,12 +22,7 @@ import type {
   DailyMetric,
   DailySeries,
 } from "../lib/chatActions/crossActions/dailySeries";
-import {
-  buildCrossModuleSeries,
-  notablePairsFromSeries,
-  CURATED_PAIRS,
-  type NotablePair,
-} from "./digestCorrelations";
+import { CURATED_PAIRS, type NotablePair } from "./digestCorrelations";
 import type {
   CrossModuleLinkCardProps,
   CrossModuleLinkModule,
@@ -144,26 +139,6 @@ export function linkFromPair(
     strength: pair.pearson,
     phrase: capitalizeFirst(pair.phrase),
   };
-}
-
-/**
- * Помітні зв'язки за вікно аналізу, найсильніші перші.
- *
- * Порожній масив — легітимна відповідь («право мовчати»), а не помилка:
- * викликач показує стан мовчання, а не ховає секцію.
- */
-export function buildCrossModuleLinks(
-  now: number = Date.now(),
-  limit = 3,
-): CrossModuleLinkCardProps[] {
-  const series = buildCrossModuleSeries(now);
-  const out: CrossModuleLinkCardProps[] = [];
-  for (const pair of notablePairsFromSeries(series)) {
-    const link = linkFromPair(series, pair);
-    if (link) out.push(link);
-    if (out.length >= limit) break;
-  }
-  return out;
 }
 
 /**

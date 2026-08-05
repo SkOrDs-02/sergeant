@@ -18,6 +18,47 @@ const poleB = {
   unit: "витрат на доставку",
 };
 
+describe("CrossModuleLinkCard — напрямок зв'язку", () => {
+  afterEach(cleanup);
+
+  // `phrase` — єдине місце в картці, де видно НАПРЯМОК: товщина містка
+  // несе впевненість, а знак `strength` сам по собі невидимий. Без цих
+  // тестів r=+0.74 і r=−0.74 знову могли б виглядати однаково.
+  it("показує формулювання над словом ступеня", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={-0.74}
+        phrase="У дні тренувань ти витрачаєш менше"
+      />,
+    );
+
+    const phrase = screen.getByText("У дні тренувань ти витрачаєш менше");
+    const tier = screen.getByText("Стабільно повторюється");
+    expect(phrase).toBeInTheDocument();
+    // Порядок у DOM: спершу що саме збігається, потім наскільки впевнено.
+    expect(
+      phrase.compareDocumentPosition(tier) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("без формулювання мовчить про напрямок, а не вигадує його", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={-0.74}
+      />,
+    );
+
+    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+    expect(screen.queryByText(/витрачаєш/)).toBeNull();
+  });
+});
+
 describe("CrossModuleLinkCard — три ступені градації", () => {
   afterEach(cleanup);
 
