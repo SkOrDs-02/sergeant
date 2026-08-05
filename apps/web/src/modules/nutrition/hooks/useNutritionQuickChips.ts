@@ -25,7 +25,7 @@
 import { useMemo } from "react";
 import { type NullableMacros } from "@sergeant/shared";
 import {
-  normalizeFoodName,
+  matchFoodName,
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -100,8 +100,10 @@ function aggregateRecentMeals(
     const meals = Array.isArray(day?.meals) ? day.meals : [];
     for (const meal of meals) {
       if (!meal) continue;
+      // `norm` — лише ключ агрегації; на чіпі показуємо `label`, тобто
+      // назву страви як її записали.
       const name = String(meal.name || "").trim();
-      const norm = normalizeFoodName(name);
+      const norm = matchFoodName(name);
       if (!name || !norm) continue;
       if (!macrosUsable(meal.macros)) continue;
 
@@ -137,7 +139,7 @@ export function useNutritionQuickChips(
 
     const pantryNorms = new Set(
       (Array.isArray(pantryItems) ? pantryItems : [])
-        .map((it) => normalizeFoodName(it?.name))
+        .map((it) => matchFoodName(it?.name))
         .filter(Boolean),
     );
 

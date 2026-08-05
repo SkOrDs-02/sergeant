@@ -18,8 +18,12 @@ import type { PaywallSurface } from "./PaywallModal";
  * time-based triggers are explicitly deferred per D2.
  */
 
-export type PremiumFeatureId =
-  "ai-photo-analysis" | "multi-currency" | "analytics-export-pdf";
+// AI-NOTE: `"multi-currency"` прибрано 2026-08-05 (B3 браузерного аудиту) —
+// гейт не викликався з жодного call-site, а функції, яку він нібито
+// захищав, у застосунку немає: у формі активу валюта статична («UAH»)
+// однаково для Free і Premium. Копія `paywall["multi-currency"]` у
+// каталогах i18n лишилася сиротою — прибирати її окремим проходом.
+export type PremiumFeatureId = "ai-photo-analysis" | "analytics-export-pdf";
 
 /**
  * Maps a `PremiumFeatureId` to the existing `PaywallSurface` analytics
@@ -29,7 +33,6 @@ export type PremiumFeatureId =
  */
 const FEATURE_TO_SURFACE: Record<PremiumFeatureId, PaywallSurface> = {
   "ai-photo-analysis": "unlimited_ai_photo",
-  "multi-currency": "other",
   "analytics-export-pdf": "csv_export",
 };
 

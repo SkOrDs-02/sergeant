@@ -45,7 +45,12 @@ describe("MODULE_CONFIGS", () => {
     });
     expect(MODULE_CONFIGS.routine.getPreview()).toEqual({
       main: "4/5",
-      sub: "Серія: 2 днів",
+      // `pluralDays` рахує форму за CLDR (`Intl.PluralRules("uk")`): few для
+      // 2–4 → «дні», many для 5+ → «днів». Очікування «2 днів» лишилось від
+      // часів до плюралізатора — воно і граматично хибне, і не збігається з
+      // тим, що повертає код. Сусідній fizruk-асерт із 5 днями коректний,
+      // тому й не падав.
+      sub: "Серія: 2 дні",
       progress: 80,
     });
     expect(MODULE_CONFIGS.nutrition.getPreview()).toEqual({

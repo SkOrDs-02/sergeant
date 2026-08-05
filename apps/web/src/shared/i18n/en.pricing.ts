@@ -7,8 +7,7 @@ export const pricingEn: MessageCatalog["pricing"] = {
   hero: {
     headlineLine1: "Sergeant is free for everyday use.",
     headlineLine2: "Premium — when you need everything at once.",
-    subtitle:
-      "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and payment opens (LiqPay / Plata).",
+    subtitle: "One paid plan. No tiers, no lifetime deal, no trial timer.",
   },
   tiers: {
     freeName: "Free",
@@ -16,7 +15,8 @@ export const pricingEn: MessageCatalog["pricing"] = {
     freeCadence: "forever",
     freeTagline: "All modules, unlimited manual tracking. AI — 5 messages/day.",
     premiumName: "Premium",
-    premiumCadence: "/ month (yearly plan — coming soon)",
+    premiumPrice: "Soon",
+    premiumCadence: "Price announced at launch",
     premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
   },
   features: {
@@ -33,7 +33,6 @@ export const pricingEn: MessageCatalog["pricing"] = {
     activeHabits: "Active habits",
     habits: "Habits",
     pdfExport: "PDF report export",
-    multiCurrency: "Foreign-currency assets",
     monoAutoSync: "Monobank auto-sync",
     cloudSync: "Cross-device CloudSync",
   },

@@ -46,11 +46,14 @@ export interface PaywallModalProps {
   dismissLabel?: string;
 }
 
+// AI-NOTE: буліт «7 днів trial без прив'язки картки» прибрано 2026-08-05
+// (B4 браузерного аудиту). Сторінка тарифів — джерело правди щодо моделі
+// оплати, і вона прямо каже «без trial-таймера»; обіцянка trial-у тут
+// суперечила їй. Не повертай його, поки trial не зʼявиться у /pricing.
 const DEFAULT_FEATURES: ReadonlyArray<string> = [
   "Безлімітний AI-чат + щоденні брифи",
   "Авто-синхронізація Mono + CloudSync між пристроями",
   "Експорт CSV/PDF + крос-модульні звіти",
-  "7 днів trial без прив'язки картки",
 ];
 
 export function PaywallModal({

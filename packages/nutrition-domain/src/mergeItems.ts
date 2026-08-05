@@ -1,6 +1,7 @@
 import {
   canonicalFoodKey,
-  normalizeFoodName,
+  displayFoodName,
+  matchFoodName,
   normalizeUnit,
   type PantryItem,
 } from "./pantryTextParser.js";
@@ -41,6 +42,32 @@ function fromBaseUnit(
   return { qty: base.value, unit: "шт" };
 }
 
+/**
+ * Чия display-назва виграє, коли дві позиції злились в одну.
+ *
+ * Базове правило — **перемагає та, що вже лежить у коморі**. Користувач її
+ * бачить; тихо перейменовувати позицію на кожному доливанні («Яготинське
+ * молоко» → «молоко», бо дописали «500 мл молока») було б несподівано.
+ * Перейменування лишається явною дією через редагування позиції.
+ *
+ * Єдиний виняток — «гоєння» записів, збережених до розділення display/match:
+ * якщо назви збігаються **з точністю до регістру** (однаковий `matchFoodName`)
+ * і збережена не має жодної великої літери, а нова має — беремо нову. Так
+ * комора, набита раніше суцільним нижнім регістром, поступово підхоплює
+ * правильні бренди («яготинське молоко» → «Яготинське молоко»), і при цьому
+ * жодна відмінкова/множинна форма (аліас) назву не перезаписує.
+ */
+function pickDisplayName(existing: unknown, incoming: unknown): string {
+  const cur = displayFoodName(existing);
+  const next = displayFoodName(incoming);
+  if (!cur) return next;
+  if (!next) return cur;
+  if (matchFoodName(cur) !== matchFoodName(next)) return cur;
+  const curHasUpper = cur !== cur.toLowerCase();
+  const nextHasUpper = next !== next.toLowerCase();
+  return !curHasUpper && nextHasUpper ? next : cur;
+}
+
 function roundNice(n: number): number {
   const x = Number(n);
   if (!Number.isFinite(x)) return n;
@@ -58,9 +85,10 @@ export function mergeItems(
   const merged: PantryItem[] = [...a];
 
   for (const it of b) {
-    const n = normalizeFoodName(it?.name);
-    if (!n) continue;
-    const key = canonicalFoodKey(n);
+    // `display` іде у показ і в новий запис, `key` — лише у зіставлення.
+    const display = displayFoodName(it?.name);
+    if (!display) continue;
+    const key = canonicalFoodKey(display);
 
     const rawQty =
       it?.qty != null &&
@@ -112,6 +140,7 @@ export function mergeItems(
             const out = fromBaseUnit(totalBase, ux);
             merged[idx] = {
               ...cur,
+              name: pickDisplayName(cur.name, display),
               qty: roundNice(out.qty),
               unit: out.unit,
             };
@@ -130,6 +159,7 @@ export function mergeItems(
       // Аналогічно вище: `findIndex` повернув валідний індекс,
       // отже `merged[sameNameIdx]` є.
       const cur = merged[sameNameIdx]!;
+      const winningName = pickDisplayName(cur.name, display);
       const curQty =
         cur?.qty != null &&
         (cur.qty as unknown) !== "" &&
@@ -142,18 +172,22 @@ export function mergeItems(
       if (curQty == null && !curUnit && (incomingQty != null || incomingUnit)) {
         merged[sameNameIdx] = {
           ...cur,
-          name: cur.name,
+          name: winningName,
           qty: incomingQty,
           unit: incomingUnit,
           notes: cur.notes ?? it?.notes ?? null,
         };
+      } else if (winningName !== cur.name) {
+        // Точний дубль / несумісні одиниці — кількість не чіпаємо, але
+        // «гоєння» регістру пропускати немає причин.
+        merged[sameNameIdx] = { ...cur, name: winningName };
       }
-      // В усіх інших випадках (включно з точним дублем) — пропускаємо
+      // Кількість в усіх інших випадках (включно з точним дублем) лишаємо як є
       continue;
     }
 
     merged.push({
-      name: n,
+      name: display,
       qty: incomingQty,
       unit: incomingUnit,
       notes: it?.notes ?? null,

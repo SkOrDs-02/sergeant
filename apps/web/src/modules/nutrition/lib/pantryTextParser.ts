@@ -9,7 +9,8 @@
  * `import { parseLoosePantryText } from "@sergeant/nutrition-domain";`
  */
 export {
-  normalizeFoodName,
+  displayFoodName,
+  matchFoodName,
   normalizeUnit,
   canonicalFoodKey,
   parseLoosePantryText,

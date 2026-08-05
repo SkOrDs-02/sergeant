@@ -26,7 +26,8 @@ import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import {
   canonicalFoodKey,
-  normalizeFoodName,
+  displayFoodName,
+  matchFoodName,
   normalizeUnit,
   parseLoosePantryText,
   type PantryItem,
@@ -67,11 +68,15 @@ export interface PantryParsePreview {
  * сканер, відповідь AI. Раніше AI-шлях клав `items` у стан як є, тому
  * модель, що повернула «гр» замість «г», плодила окрему позицію поруч
  * із уже наявною.
+ *
+ * `name` проходить через `displayFoodName`, а не через match-нормалізацію:
+ * зі сканера сюди приходять бренди («Coca-Cola Zero», «Яготинське»), і
+ * зіставлення все одно робиться окремим ключем.
  */
 function normalizeIncomingItems(raw: PantryItem | PantryItem[]): PantryItem[] {
   return (Array.isArray(raw) ? raw : [raw])
     .map((item) => ({
-      name: normalizeFoodName(item?.name),
+      name: displayFoodName(item?.name),
       qty:
         item?.qty == null || !Number.isFinite(Number(item.qty))
           ? null
@@ -234,13 +239,15 @@ export function useNutritionPantries({
   };
 
   const removeItem = (name: string) => {
-    const n = normalizeFoodName(name);
+    // Match-ключ з обох боків: старі записи лежать у нижньому регістрі,
+    // нові — як їх ввели, і видалення має ловити і ті, і ті.
+    const n = matchFoodName(name);
     if (!n) return;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => ({
         ...p,
         items: (Array.isArray(p.items) ? p.items : []).filter(
-          (x) => normalizeFoodName(x?.name) !== n,
+          (x) => matchFoodName(x?.name) !== n,
         ),
       })),
     );
@@ -268,7 +275,7 @@ export function useNutritionPantries({
       updatePantry(cur, activePantryId, (p) => ({
         ...p,
         items: effectiveItems.map((x) => ({
-          name: normalizeFoodName(x?.name),
+          name: displayFoodName(x?.name),
           qty: x?.qty ?? null,
           unit: x?.unit ?? null,
           notes: x?.notes ?? null,
@@ -284,7 +291,8 @@ export function useNutritionPantries({
       idx
     ];
     if (!cur) return;
-    const curName = normalizeFoodName(cur.name) || "Продукт";
+    // Поле «Назва» в редакторі показує людині її ж назву — display, не match.
+    const curName = displayFoodName(cur.name) || "Продукт";
     setItemEdit({
       open: true,
       idx,
@@ -312,7 +320,7 @@ export function useNutritionPantries({
     );
     // W1-PANTRY-APPEND стадія 2 — симетрично до `removeItem`: чекпойнт
     // 'adjust' на 0, не вигадана 'consume'-дельта.
-    const n = normalizeFoodName(removedName);
+    const n = matchFoodName(removedName);
     if (n) {
       appendNutritionPantryEvent({
         id: null,
@@ -402,7 +410,7 @@ export function useNutritionPantries({
     // W1-PANTRY-APPEND стадія 2 — ручне редагування qty = чекпойнт 'adjust',
     // це буквально "тепер знаю, що насправді X". Пропускаємо, коли юзер
     // очистив кількість (null) — без числа чекпойнт нести нічого (ADR §3.1).
-    const n = normalizeFoodName(editedName);
+    const n = matchFoodName(editedName);
     if (n && editedQty != null) {
       appendNutritionPantryEvent({
         id: null,
@@ -427,14 +435,14 @@ export function useNutritionPantries({
   // закриває inventory-drift із F15 (page-audit-08-nutrition) і коректно
   // обробляє кейс H2 ("200 г молока" зі "2 л" ≈ 0.19 л, а не вся пляшка).
   const consumePantryItem = (name: string, gramsConsumed: number) => {
-    const norm = normalizeFoodName(name);
+    const norm = matchFoodName(name);
     if (!norm) return;
     let deductedQty: number | null = null;
     let deductedUnit: string | null = null;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
-        const idx = items.findIndex((x) => normalizeFoodName(x?.name) === norm);
+        const idx = items.findIndex((x) => matchFoodName(x?.name) === norm);
         if (idx < 0) return p;
         const item = items[idx];
         if (!item) return p;

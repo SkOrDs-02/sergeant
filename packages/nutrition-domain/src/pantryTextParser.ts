@@ -1,18 +1,49 @@
 export interface PantryItem {
+  /**
+   * Display-назва — рівно те, що ввела людина (`displayFoodName`).
+   * Для будь-якого порівняння бери `matchFoodName(name)` чи
+   * `canonicalFoodKey(name)`: саме поле для зіставлення НЕ придатне.
+   */
   name: string;
   qty: number | null;
   unit: string | null;
   notes: string | null;
 }
 
-export function normalizeFoodName(s: unknown): string {
+/**
+ * Display-назва продукту: те, що ввела людина, з косметичним прибиранням
+ * (зайві пробіли, буліт-крапки, хвостові коми). Регістр НЕ чіпаємо —
+ * бренди й власні назви («Яготинське», «Coca-Cola», «Наша Ряба») мають
+ * лишатись такими, як їх написали.
+ *
+ * Це рівно `matchFoodName` мінус `toLowerCase()`, тож display-назва і
+ * match-ключ ніколи не розʼїжджаються ні за пробілами, ні за пунктуацією.
+ */
+export function displayFoodName(s: unknown): string {
   return String(s || "")
     .trim()
-    .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/[•·]/g, ",")
     .replace(/^[,;]+|[,;]+$/g, "");
 }
+
+/**
+ * Match-ключ назви: display-назва у нижньому регістрі. Живе тільки у
+ * зіставленні — злиття позицій, пошук, аліаси, дедуп списку покупок —
+ * і НІКОЛИ не тече у відображення.
+ */
+export function matchFoodName(s: unknown): string {
+  return displayFoodName(s).toLowerCase();
+}
+
+/**
+ * @deprecated Історична назва `matchFoodName`. Саме через неї
+ * нормалізований (нижній регістр) рядок протікав у показ, і комора
+ * малювала «яготинське молоко» замість «Яготинське молоко». Лишена
+ * аліасом для зовнішніх споживачів (`apps/mobile`); у новому коді бери
+ * явну пару `displayFoodName` (показ) / `matchFoodName` (зіставлення).
+ */
+export const normalizeFoodName = matchFoodName;
 
 export function normalizeUnit(u: unknown): string | null {
   const s = String(u || "")
@@ -161,7 +192,7 @@ const FOOD_ALIASES = new Map<string, string>([
 
 // Канонічний ключ продукту для порівняння при злитті.
 export function canonicalFoodKey(name: unknown): string {
-  const n = normalizeFoodName(name);
+  const n = matchFoodName(name);
   if (!n) return "";
   const alias = FOOD_ALIASES.get(n);
   if (alias) return alias;
@@ -188,15 +219,18 @@ const TRAILING_QTY_RE = new RegExp(
   `^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_CHAR_RE})?$`,
 );
 
+// `unitRaw` лишається у display-регістрі: `normalizeUnit` сам опускає
+// регістр, тож «0.5Л молоко» так само дасть одиницю «л», а гілка
+// «одне слово після числа = насправді назва» отримує назву як введено.
 function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
   const qty = m[1] ? Number(String(m[1]).replace(",", ".")) : null;
-  const unitRaw = normalizeFoodName(m[2] || "");
-  const rest = normalizeFoodName(m[3] || "");
+  const unitRaw = displayFoodName(m[2] || "");
+  const rest = displayFoodName(m[3] || "");
 
   // "2 яйця" — одне слово після числа = назва, не одиниця
   if (!rest && unitRaw) {
     return {
-      name: normalizeFoodName(unitRaw),
+      name: unitRaw,
       qty: qty != null && Number.isFinite(qty) ? qty : null,
       unit: qty != null && Number.isFinite(qty) ? "шт" : null,
       notes: null,
@@ -205,12 +239,12 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
 
   const name =
     rest ||
-    normalizeFoodName(raw.replace(m[0], "").trim()) ||
-    normalizeFoodName(raw);
+    displayFoodName(raw.replace(m[0], "").trim()) ||
+    displayFoodName(raw);
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
   const resolvedQty = qty != null && Number.isFinite(qty) ? qty : null;
   return {
-    name: normalizeFoodName(name),
+    name,
     qty: resolvedQty,
     unit: resolvedQty != null && unit == null ? "шт" : unit,
     notes: null,
@@ -218,10 +252,10 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
 }
 
 function buildTrailingResult(tm: RegExpMatchArray): PantryItem | null {
-  const name = normalizeFoodName(tm[1]);
+  const name = displayFoodName(tm[1]);
   if (!name) return null;
   const qty = Number(String(tm[2]).replace(",", "."));
-  const unitRaw = normalizeFoodName(tm[3] || "");
+  const unitRaw = displayFoodName(tm[3] || "");
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
   const resolvedQty = Number.isFinite(qty) ? qty : null;
   return {
@@ -253,7 +287,7 @@ export function parseLoosePantryText(raw: unknown): PantryItem[] {
       }
 
       return {
-        name: normalizeFoodName(p),
+        name: displayFoodName(p),
         qty: null,
         unit: null,
         notes: null,
