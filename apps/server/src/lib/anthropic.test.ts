@@ -546,4 +546,32 @@ describe("recordAnthropicUsage / extractAnthropicText", () => {
     ).toHaveBeenCalledWith({ version: "v1", outcome: "miss" });
     expect(anthropicMocks.recordUsageToDb).toHaveBeenCalledOnce();
   });
+
+  // Знахідка B1 (`docs/90-work/audits/ai-pipeline-2026-08-05.md`): раніше тут
+  // стояв гейт `if (pickAnthropicPricing(model))`, який відсікав саме моделі
+  // шлюзу — а вони єдині, хто присилає фактичний `usage.cost`. Наслідок:
+  // `ai_cost_estimate_usd_total` під `CHAT_VIA_OPENROUTER=true` не рухався,
+  // і `anthropicBudgetGuard` (який читає рівно цей лічильник) не бачив
+  // найдорожчої поверхні. Тест фіксує, що вартість доїжджає до лічильника.
+  it("records the gateway-reported cost for a model absent from the pricing table", () => {
+    recordAnthropicUsage("z-ai/glm-5.2", "chat", {
+      input_tokens: 10_000,
+      output_tokens: 500,
+      cost: 0.42,
+    });
+
+    expect(anthropicMocks.aiCostEstimateUsd.inc).toHaveBeenCalledWith(
+      { provider: "anthropic", model: "z-ai/glm-5.2", endpoint: "chat" },
+      0.42,
+    );
+  });
+
+  it("still records nothing when the model is unknown AND no cost is reported", () => {
+    recordAnthropicUsage("some/unpriced-model", "chat", {
+      input_tokens: 10_000,
+      output_tokens: 500,
+    });
+
+    expect(anthropicMocks.aiCostEstimateUsd.inc).not.toHaveBeenCalled();
+  });
 });

@@ -25,5 +25,9 @@
     "_scratch/**"
   ],
   "explicitInclude": [],
-  "explicitExclude": ["docs/05-design/design/redesign-v2/handoff.md"]
+  "explicitExclude": [
+    "docs/05-design/design/redesign-v2/handoff.md",
+    "docs/90-work/planning/model-eval-2026-08-04.md",
+    "docs/90-work/planning/vision-eval-2026-08-04.md"
+  ]
 }
