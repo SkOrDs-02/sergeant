@@ -35,8 +35,33 @@ interface MigrationGateValue {
 const MigrationGateContext = createContext<MigrationGateValue>({
   isReady: true,
 });
-const inFlightByUser = new Map<string, Promise<{ migratedRows: number }>>();
+
+interface MigrationRun {
+  promise: Promise<{ migratedRows: number }>;
+  /** Розвідка вже знайшла рядки — перенос справді триває. */
+  transferring: boolean;
+  /** Підписники, що чекають на перехід у фазу переносу. */
+  readonly listeners: Set<() => void>;
+}
+
+const inFlightByUser = new Map<string, MigrationRun>();
 const successToastUsers = new Set<string>();
+
+/**
+ * Скільки тримати екран порожнім, поки триває розвідка.
+ *
+ * AI-CONTEXT: гейт монтується на КОЖНОМУ старті авторизованої сесії, і до
+ * цієї правки повноекранне «Переносимо дані в профіль…» показувалось увесь
+ * час роботи `migrateAnonymousDataToProfile` — включно з випадком, коли
+ * переносити нема чого взагалі (`snapshot.length === 0`). А це не миттєво:
+ * перемикання партиції SQLite, міграції схем чотирьох модулів і скан усіх
+ * таблиць. Тобто на кожному перезавантаженні (у тому числі автоматичному з
+ * `chunkReload`) користувач бачив тривожний текст про перенесення даних без
+ * жодного перенесення. Рендер дітей при цьому лишається заблокованим: під
+ * час розвідки активна партиція перемкнута на анонімну, і читання модулів у
+ * цю мить бачило б чужі дані.
+ */
+const PROBE_GRACE_MS = 500;
 
 /**
  * Маршрути, які не читають і не пишуть дані профілю. Юридичні тексти й
@@ -104,14 +129,36 @@ async function bootSyncForUser(userId: string): Promise<void> {
   }
 }
 
-function runSingleFlight(userId: string): Promise<{ migratedRows: number }> {
+function runSingleFlight(
+  userId: string,
+  onTransferStart?: () => void,
+): Promise<{ migratedRows: number }> {
   const existing = inFlightByUser.get(userId);
-  if (existing) return existing;
-  const run = migrateAnonymousDataToProfile(userId).finally(() => {
+  if (existing) {
+    // Прогін уже йде (StrictMode-подвійний маунт, повторний рендер). Або
+    // одразу віддаємо факт, або підписуємось на нього.
+    if (onTransferStart) {
+      if (existing.transferring) onTransferStart();
+      else existing.listeners.add(onTransferStart);
+    }
+    return existing.promise;
+  }
+  const run: MigrationRun = {
+    promise: Promise.resolve({ migratedRows: 0 }),
+    transferring: false,
+    listeners: new Set(onTransferStart ? [onTransferStart] : []),
+  };
+  run.promise = migrateAnonymousDataToProfile(userId, {
+    onTransferStart: () => {
+      run.transferring = true;
+      for (const listener of run.listeners) listener();
+      run.listeners.clear();
+    },
+  }).finally(() => {
     inFlightByUser.delete(userId);
   });
   inFlightByUser.set(userId, run);
-  return run;
+  return run.promise;
 }
 
 export function AnonymousDataMigrationProvider({
@@ -151,13 +198,15 @@ function AuthenticatedMigrationGate({
   const { success, warning } = useToast();
   const [state, setState] = useState<"running" | "ready" | "failed">("running");
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
+  const [transferring, setTransferring] = useState(false);
+  const [probeGraceElapsed, setProbeGraceElapsed] = useState(false);
 
   // Свідомо БЕЗ синхронного setState — інакше `react-hooks/set-state-in-effect`
   // ловить каскадний ререндер на маунті. Початковий стан уже `"running"`, тож
   // ефекту досить просто запустити роботу; перехід у `"running"` потрібен лише
   // на повторі, і живе він у `retry`.
   const kickoff = useCallback(() => {
-    void runSingleFlight(userId)
+    void runSingleFlight(userId, () => setTransferring(true))
       .then((result) => {
         setState("ready");
         if (result.migratedRows > 0 && !successToastUsers.has(userId)) {
@@ -179,6 +228,14 @@ function AuthenticatedMigrationGate({
   useEffect(() => {
     kickoff();
   }, [kickoff]);
+
+  // Страховка на випадок повільної розвідки: якщо вона не вклалась у
+  // {@link PROBE_GRACE_MS}, показуємо панель, щоб порожній екран не виглядав
+  // як зависання. Швидкий шлях (переносити нема чого) до цього не доходить.
+  useEffect(() => {
+    const timer = setTimeout(() => setProbeGraceElapsed(true), PROBE_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
   const retry = useCallback(() => {
     setState("running");
@@ -204,6 +261,21 @@ function AuthenticatedMigrationGate({
   // замість повного екрана: застосунок працює, а факт «дані ще не в профілі»
   // лишається на очах, поки не зникне сам.
   const showDeferredNotice = !isReady && (deferred || !blocking);
+
+  // Панель показуємо, лише коли є що сказати: почався справжній перенос, він
+  // впав, або розвідка затягнулась понад {@link PROBE_GRACE_MS}. Доти рендер
+  // дітей так само заблоковано — просто порожнім полотном кольору фону,
+  // невідмінним від звичайного буту застосунку.
+  const showProgressPanel =
+    transferring || state === "failed" || probeGraceElapsed;
+
+  if (!isReady && blocking && !deferred && !showProgressPanel) {
+    return (
+      <MigrationGateContext.Provider value={value}>
+        <div className="min-h-screen bg-bg" aria-hidden="true" />
+      </MigrationGateContext.Provider>
+    );
+  }
 
   if (!isReady && blocking && !deferred) {
     return (

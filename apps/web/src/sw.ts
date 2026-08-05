@@ -31,18 +31,35 @@ declare const self: ServiceWorkerGlobalScope;
 
 setupCacheRoutes();
 
-self.addEventListener("install", (event) => {
-  // Activate the freshly installed SW immediately. Without this, the
-  // previous SW keeps controlling open tabs / standalone PWA sessions
-  // and continues to serve stale precached chunks indefinitely (на iOS
-  // PWA «закриття» не вбиває worker — тому стара версія може жити
-  // тижнями). `clients.claim()` у `activate` потім забирає контроль над
-  // усіма вкладками, а `controllerchange` у `main.tsx` робить один
-  // hard-reload, щоб JS-граф у пам'яті синхронізувався з новим
-  // precache-манифестом.
-  event.waitUntil(self.skipWaiting());
-});
-
+// AI-DANGER: тут НЕ можна викликати `self.skipWaiting()`.
+//
+// Історія (browser-аудит 2026-08-05). Раніше `install` робив
+// `event.waitUntil(self.skipWaiting())`, щоб стара версія не жила тижнями в
+// iOS-PWA, де «закриття» не вбиває worker. Ціна виявилась вищою за виграш:
+//
+//   1. **Кнопка «Оновити» не з'являлась ніколи.** `vite-plugin-pwa` у режимі
+//      `prompt` вішає `onNeedRefresh` рівно на workbox-подію `waiting`, а
+//      `workbox-window` спеціально захищений від skipWaiting-в-install: він
+//      чекає 200 мс і диспатчить `waiting`, лише якщо воркер УСЕ ЩЕ в
+//      `waiting`; перехід у `activating` скидає той таймер. Наш воркер
+//      активувався миттєво, тож подія не приходила, `pwa-update-ready` не
+//      піднімався, і ні тост, ні дзвіночок не бачили оновлення.
+//   2. **Клік по «Оновити» був no-op.** `updateSW()` зводиться до
+//      `wb.messageSkipWaiting()`, який шле повідомлення лише за наявності
+//      `registration.waiting`. Waiting-воркера не існувало → повідомлення
+//      нікуди не йшло, reload не відбувався.
+//   3. **Самовільні перезавантаження.** `clients.claim()` віддавав живій
+//      вкладці новий precache під старим JS-графом у пам'яті. Перший же
+//      lazy-чанк зі старим хешем падав у 404 → `chunkReload.ts` робив
+//      `location.reload()` без запиту, з'їдаючи незбережений ввід.
+//
+// Тепер оновлення проходить штатним prompt-циклом: новий воркер стає в
+// `waiting` → `onNeedRefresh` (`main.tsx`) → `pwa-update-ready` → тост і
+// рядок у дзвіночку → користувач тисне «Оновити» → `SKIP_WAITING` приходить
+// сюди повідомленням (`./sw/messages`) → `activate` + `clients.claim()` →
+// `vite-plugin-pwa` робить один reload на `controlling`. Проти застряглої
+// версії працює periodic-polling `registration.update()` у `autoUpdate.ts`
+// та idle-auto-skip-waiting, який тепер теж бачить `reg.waiting`.
 self.addEventListener("message", handleSwMessage);
 
 self.addEventListener("notificationclick", (event) => {

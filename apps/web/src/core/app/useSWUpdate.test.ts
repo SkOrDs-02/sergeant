@@ -52,6 +52,50 @@ function makeMutationCache(pendingCount = 0) {
   };
 }
 
+/**
+ * `applyUpdate` спершу читає реєстрацію SW, тож між кліком і рішенням
+ * «слати SKIP_WAITING чи перезавантажуватись» лежить кілька мікротасків.
+ * Таймери в цьому suite фейкові, тому чекати можна лише на них.
+ */
+async function flushMicrotasks(ticks = 5): Promise<void> {
+  for (let i = 0; i < ticks; i += 1) await Promise.resolve();
+}
+
+/**
+ * Підміняє `navigator.serviceWorker` і `window.location.reload` на час одного
+ * тесту. jsdom не має SW-реєстрації взагалі, а `location.reload` там —
+ * неімплементована навігація, тож обидва треба стабити явно.
+ */
+function stubServiceWorker({ waiting }: { waiting: boolean }) {
+  const reloadSpy = vi.fn();
+  const originalLocation = window.location;
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: { ...originalLocation, reload: reloadSpy },
+  });
+  Object.defineProperty(navigator, "serviceWorker", {
+    configurable: true,
+    value: {
+      getRegistration: vi
+        .fn()
+        .mockResolvedValue({ waiting: waiting ? {} : null }),
+    },
+  });
+  return {
+    reloadSpy,
+    restore() {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+      Object.defineProperty(navigator, "serviceWorker", {
+        configurable: true,
+        value: undefined,
+      });
+    },
+  };
+}
+
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return React.createElement(
@@ -237,9 +281,57 @@ describe("useSWUpdate — defer-while-busy", () => {
     expect(mockToastInfo).toHaveBeenCalledOnce();
   });
 
-  it("applyUpdate calls window.__pwaUpdateSW when available", () => {
+  it("applyUpdate calls window.__pwaUpdateSW when available", async () => {
     const mockUpdateSW = vi.fn();
     window.__pwaUpdateSW = mockUpdateSW;
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: true });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+
+    expect(mockUpdateSW).toHaveBeenCalledWith(true);
+    // Waiting-воркер є — reload зробить сам `vite-plugin-pwa` на
+    // `controlling`, тож дублювати його тут не можна.
+    expect(reloadSpy).not.toHaveBeenCalled();
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  // Регресія: плашку піднімає не лише SW-шлях, а й build-id hard-floor
+  // (`autoUpdate.ts`) — а він спрацьовує саме тоді, коли waiting-воркера
+  // немає. `updateSW()` у цьому стані шле `SKIP_WAITING` в нікуди і reload не
+  // відбувається, тож кнопка «Оновити» не робила рівно нічого.
+  it("applyUpdate falls back to a reload when no waiting worker exists", async () => {
+    const mockUpdateSW = vi.fn();
+    window.__pwaUpdateSW = mockUpdateSW;
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: false });
+
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+
+    expect(mockUpdateSW).toHaveBeenCalledWith(true);
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  it("applyUpdate reloads when the pwa register hook is missing entirely", () => {
+    delete window.__pwaUpdateSW;
+    const { reloadSpy, restore } = stubServiceWorker({ waiting: false });
 
     const { result } = renderHook(() => useSWUpdate(), {
       wrapper: makeWrapper(queryClient),
@@ -249,8 +341,7 @@ describe("useSWUpdate — defer-while-busy", () => {
       result.current.applyUpdate();
     });
 
-    expect(mockUpdateSW).toHaveBeenCalledWith(true);
-
-    delete window.__pwaUpdateSW;
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    restore();
   });
 });
