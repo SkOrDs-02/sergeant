@@ -185,14 +185,20 @@ describe("smoke: createApp wiring", () => {
     expect(res.body).toMatchObject({ code: "NOT_CONFIGURED" });
   });
 
-  it("POST /api/chat → 503 without ANTHROPIC_API_KEY env", async () => {
+  it("POST /api/chat → 401 без сесії (A1: requireSession стоїть перед ключем)", async () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/chat")
       .set("content-type", "application/json")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ messages: [] });
-    expect(res.status).toBe(503);
+    // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) поставила
+    // `requireSession()` ПЕРЕД `requireAnthropicKey()`, тож анонімний запит
+    // тепер відсікається на сесії (401) і до перевірки ключа не доходить.
+    // Раніше тут очікувалось 503 — це очікування пережило фікс і стало
+    // хибним. 401 раніше за 503 — правильний порядок: не світимо стан
+    // конфігурації тому, хто взагалі не має доступу.
+    expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ error: expect.any(String) });
   });
 

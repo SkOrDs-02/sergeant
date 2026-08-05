@@ -417,6 +417,10 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
     SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
+    // BETTER_AUTH_URL — прод-гард, доданий пізніше за ці кейси. Він стоїть
+    // ВИЩЕ за перевірку, яку міряє цей блок, тож без нього assertStartupEnv
+    // кидає на ньому й тест ніколи не доходить до власної умови.
+    BETTER_AUTH_URL: "https://api.example.com",
   };
 
   it("throws in production when METRICS_TOKEN is missing", async () => {
@@ -589,6 +593,10 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
     SENTRY_DSN: "https://examplePublicKey@o0.ingest.sentry.io/0",
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
+    // BETTER_AUTH_URL — прод-гард, доданий пізніше за ці кейси. Він стоїть
+    // ВИЩЕ за перевірку, яку міряє цей блок, тож без нього assertStartupEnv
+    // кидає на ньому й тест ніколи не доходить до власної умови.
+    BETTER_AUTH_URL: "https://api.example.com",
   };
 
   it("throws in production when both VAPID keys are missing", async () => {
@@ -682,6 +690,10 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
     VAPID_PRIVATE_KEY: "e".repeat(40),
     OPENCLAW_GITHUB_PAT: "",
     Git_PAT: "",
+    // BETTER_AUTH_URL — прод-гард, доданий пізніше за ці кейси. Він стоїть
+    // ВИЩЕ за перевірку, яку міряє цей блок, тож без нього assertStartupEnv
+    // кидає на ньому й тест ніколи не доходить до власної умови.
+    BETTER_AUTH_URL: "https://api.example.com",
   };
 
   it("throws in production when SENTRY_DSN is missing", async () => {
