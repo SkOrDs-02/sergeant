@@ -882,7 +882,12 @@ describe("generateRecommendations", () => {
     ).toBeUndefined();
   });
 
-  it("використовує fallback значення при відсутності nutrition_prefs", () => {
+  it("мовчить про прогрес до цілі, поки ціль не задана", () => {
+    // Раніше тут очікувався фолбек 2000 ккал / 120 г — і Hub заявляв «Лише
+    // 400 ккал з 2000 ккал цілі» людині, яка жодної цілі не ставила, тимчасом
+    // як екран «Їжа» просив ту ціль спершу встановити (browser QA 2026-08-05,
+    // F-010). Вигадана ціль — це вигадана статистика: без неї сигнали, що
+    // міряють відсоток виконання, не мають про що говорити.
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-27T19:00:00Z"));
 
@@ -892,12 +897,32 @@ describe("generateRecommendations", () => {
         meals: [{ macros: { kcal: 400, protein_g: 20 } }],
       },
     });
-    // No prefs → fallback to 2000 kcal / 120g protein
+    // Ніяких prefs — цілі не існує.
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "nutrition_kcal_low")).toBeUndefined();
+    expect(recs.find((r) => r.id === "nutrition_protein_low")).toBeUndefined();
+  });
+
+  it("показує прогрес до цілі, щойно ціль задана", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-27T19:00:00Z"));
+
+    const today = "2026-04-27";
+    setLS("nutrition_log_v1", {
+      [today]: {
+        meals: [{ macros: { kcal: 400, protein_g: 20 } }],
+      },
+    });
+    setLS("nutrition_prefs_v1", {
+      dailyTargetKcal: 1800,
+      dailyTargetProtein_g: 100,
+    });
 
     const recs = generateRecommendations();
     const kcalLow = recs.find((r) => r.id === "nutrition_kcal_low");
     expect(kcalLow).toBeDefined();
-    expect(kcalLow!.title).toContain("2000"); // default target
+    expect(kcalLow!.title).toContain("1800");
   });
 
   it("обробляє порожні/null macros", () => {

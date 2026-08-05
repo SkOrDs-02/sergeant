@@ -288,6 +288,13 @@ function buildRoutineRecs(): Rec[] {
   return recs;
 }
 
+/** Ціль вважається заданою лише якщо це додатне число. `0` — не ціль. */
+function positiveTarget(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : null;
+}
+
 function buildNutritionRecs(): Rec[] {
   const recs: Rec[] = [];
   // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read the
@@ -305,8 +312,13 @@ function buildNutritionRecs(): Rec[] {
     protein += m?.macros?.protein_g ?? 0;
   }
 
-  const targetKcal = prefs.dailyTargetKcal ?? 2000;
-  const targetProtein = prefs.dailyTargetProtein_g ?? 120;
+  // Ціль може бути не задана — і тоді її НЕМА, а не «2000 за замовчуванням».
+  // Раніше тут стояв фолбек, тож Hub заявляв «Лише 0 ккал з 2000 ккал цілі»
+  // людині, якій сам модуль «Їжа» на сусідньому екрані пропонував ту ціль
+  // спершу встановити (browser QA 2026-08-05, F-010). Сигнали, що міряють
+  // прогрес відносно цілі, без цілі просто мовчать.
+  const targetKcal = positiveTarget(prefs.dailyTargetKcal);
+  const targetProtein = positiveTarget(prefs.dailyTargetProtein_g);
 
   const hour = new Date().getHours();
 
@@ -322,8 +334,13 @@ function buildNutritionRecs(): Rec[] {
       pwaAction: "add_meal",
     });
   } else if (meals.length > 0) {
-    const pctKcal = kcal / targetKcal;
-    if (pctKcal < 0.5 && hour >= 18) {
+    const pctKcal = targetKcal === null ? null : kcal / targetKcal;
+    if (
+      targetKcal !== null &&
+      pctKcal !== null &&
+      pctKcal < 0.5 &&
+      hour >= 18
+    ) {
       recs.push({
         id: "nutrition_kcal_low",
         module: "nutrition",
@@ -336,8 +353,13 @@ function buildNutritionRecs(): Rec[] {
       });
     }
 
-    const pctProtein = protein / targetProtein;
-    if (pctProtein < 0.6 && hour >= 16) {
+    const pctProtein = targetProtein === null ? null : protein / targetProtein;
+    if (
+      targetProtein !== null &&
+      pctProtein !== null &&
+      pctProtein < 0.6 &&
+      hour >= 16
+    ) {
       recs.push({
         id: "nutrition_protein_low",
         module: "nutrition",
@@ -359,7 +381,7 @@ function buildNutritionRecs(): Rec[] {
       );
       const lastHours =
         (Date.now() - new Date(sorted[0]!.startedAt).getTime()) / 3_600_000;
-      if (lastHours < 2 && pctProtein < 0.4) {
+      if (lastHours < 2 && pctProtein !== null && pctProtein < 0.4) {
         recs.push({
           id: "nutrition_post_workout_protein",
           module: "nutrition",

@@ -206,7 +206,7 @@ export function WorkoutItemCard({
               <div className="text-xs mt-1.5 rounded-xl border border-warning/40 bg-warning/10 px-2 py-1.5 text-warning-strong dark:text-warning leading-snug">
                 {cf.red.length ? (
                   <>
-                    Рано навантажувати:{" "}
+                    Ще не відновились:{" "}
                     <span className="font-semibold">{redL}</span>.{" "}
                   </>
                 ) : null}
