@@ -434,6 +434,11 @@ describe("HubDashboard", () => {
 
   it("routes hero and insight callbacks to the correct dashboard actions", () => {
     const onOpenModule = vi.fn();
+    // Після 8a19987 soft-auth фаєриться для гостя вже з першого
+    // session-day після реального запису і виграє hero-слот у
+    // TodayFocus. Цей тест перевіряє роутінг фокус-картки, тож
+    // прибираємо конкурента так само, як зробив би юзер — дізмісом.
+    localStorage.setItem("hub_soft_auth_dismissed_v1", "1");
     mocks.dashboardFocus.focus = rec({
       id: "focus",
       title: "Focus recommendation",
@@ -470,6 +475,9 @@ describe("HubDashboard", () => {
   });
 
   it("keeps the post-FTUX focus card in normal flow instead of translating it over module cards", () => {
+    // Див. коментар у попередньому тесті: без дізмісу soft-auth
+    // (8a19987) фокус-картка не виграє hero-слот для гостя.
+    localStorage.setItem("hub_soft_auth_dismissed_v1", "1");
     mocks.dashboardFocus.focus = rec({
       id: "focus-no-overlap",
       title: "Focus without overlap",
