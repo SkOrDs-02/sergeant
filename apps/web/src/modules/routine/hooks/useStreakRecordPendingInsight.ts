@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { RoutineState } from "../lib/types";
@@ -47,7 +48,7 @@ export function useStreakRecordPendingInsight(
     return {
       id: "routine-streak-record-pending",
       module: "routine",
-      title: `Серія: ${currentStreak} днів`,
+      title: `Серія: ${currentStreak} ${pluralDays(currentStreak)}`,
       subtitle: `Ще один — і рекорд ${longestStreak}`,
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",

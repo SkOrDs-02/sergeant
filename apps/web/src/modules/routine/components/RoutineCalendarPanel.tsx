@@ -322,7 +322,7 @@ export function RoutineCalendarPanel({
           <EmptyState
             className={C.emptyStateWarm}
             title="Почни з однієї звички"
-            description="Потім вона зʼявиться тут і в календарі. Відтискання вже можна лічити блоком вище."
+            description="Потім вона зʼявиться тут і в календарі — з відмітками по днях."
             action={
               <Button
                 type="button"

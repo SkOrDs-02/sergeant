@@ -246,8 +246,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     retry: false,
   });
 
-  const user = meQuery.data?.user ?? null;
-  const isLoading = meQuery.isLoading;
+  // `signedOut` — явний маркер «сесію завершено цим табом», який має
+  // пріоритет над кешем `me`.
+  //
+  // AI-DANGER: не заміняй його на «просто почистити кеш». `queryClient.clear()`
+  // прибирає запис `me` зі сховища, але НЕ повідомляє вже змонтований
+  // `useUser`-observer — той і далі віддає останню успішну відповідь. Через це
+  // після виходу застосунок лишався «залогіненим»: хедер вітав попереднього
+  // юзера, вкладка «Профіль» показувала його email, а редирект на `/sign-in`
+  // відскакував назад на хаб, бо `renderStandaloneRoute` бачив непорожній
+  // `user` (browser QA 2026-08-05, F-008). Прапорець робить перехід у
+  // signed-out незалежним від внутрішньої механіки React Query.
+  const [signedOut, setSignedOut] = useState(false);
+
+  const user = signedOut ? null : (meQuery.data?.user ?? null);
+  const isLoading = !signedOut && meQuery.isLoading;
   const status: AuthStatus = isLoading
     ? "loading"
     : user
@@ -278,6 +291,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Leaving demo on auth prevents the demo+authenticated mixed state
         // that wedges the post-logout transition (QA D-004).
         clearDemoFlag();
+        setSignedOut(false);
         await invalidateMe();
         return true;
       } catch (err) {
@@ -371,6 +385,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Leaving demo on auth prevents the demo+authenticated mixed state
         // that wedges the post-logout transition (QA D-004).
         clearDemoFlag();
+        setSignedOut(false);
         await invalidateMe();
         return true;
       } catch (err) {
@@ -384,6 +399,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const logout = useCallback(async () => {
+    // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
+    // нижче — teardown, який не має права гейтити цей перехід (і історично
+    // саме тому клали `clear()` першим — див. коментар нижче).
+    setSignedOut(true);
     try {
       await signOut();
     } catch {
@@ -397,9 +416,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     //   1. `invalidateMe()` alone only marks `me` stale and refetches — but the
     //      refetch 401s and React Query *retains* the last-good `me` payload on
     //      error, so `user` stayed populated and the UI stayed logged-in until a
-    //      manual reload (browser-QA finding (a)). `clear()` removes the cached
-    //      user (and every authed module query) immediately, so `useUser`
-    //      re-renders with no data → `unauthenticated`.
+    //      manual reload (browser-QA finding (a)). `clear()` викидає кеш
+    //      користувача (і всі authed-query модулів) одразу, тож жоден екран не
+    //      віддає дані попереднього юзера. Але сам по собі `clear()` НЕ
+    //      перемикає `status` — змонтований `useUser`-observer не отримує
+    //      нотифікації про видалення і далі тримає останню успішну відповідь.
+    //      За перехід у `unauthenticated` відповідає `setSignedOut(true)` вище.
     //   2. Ordering is the safety net: this used to run LAST, so a single
     //      wedged step in between (SW `ready` never settling — see
     //      `swControl.ts :: SW_READY_TIMEOUT_MS`) left the server session

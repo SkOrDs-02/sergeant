@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -25,6 +26,12 @@ import type { MemoryEntry } from "./types";
 interface PendingImport extends MemoryImportPreview {
   fileName: string;
 }
+
+const MEMORY_ENTRY_FORMS: UaPluralForms = {
+  one: "запис",
+  few: "записи",
+  many: "записів",
+};
 
 export function MemoryBankSection() {
   const toast = useToast();
@@ -136,7 +143,7 @@ export function MemoryBankSection() {
     const added = pendingImport.newEntries.length;
     setPendingImport(null);
     toast.success(
-      `Імпортовано ${added} ${added === 1 ? "запис" : added < 5 ? "записи" : "записів"}`,
+      `Імпортовано ${added} ${pluralUa(added, MEMORY_ENTRY_FORMS)}`,
     );
   }, [entries, pendingImport, saveEntries, toast]);
 
@@ -182,12 +189,7 @@ export function MemoryBankSection() {
         <Icon name="sparkle" size={18} className="text-muted" />
         <span className="text-style-label text-text">Пам&apos;ять ШІ</span>
         <span className="ml-auto text-style-caption text-muted">
-          {entries.length}{" "}
-          {entries.length === 1
-            ? "запис"
-            : entries.length < 5
-              ? "записи"
-              : "записів"}
+          {entries.length} {pluralUa(entries.length, MEMORY_ENTRY_FORMS)}
           {" \u00b7 "}
           {storageSize}
         </span>

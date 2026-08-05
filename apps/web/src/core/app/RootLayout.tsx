@@ -30,14 +30,17 @@ import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
 import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
+import { useNutritionQuickStatsBoot } from "../../modules/nutrition/hooks/useNutritionQuickStatsBoot";
 import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWriteBoot";
 import { useFinykMonoMirrorBoot } from "../../modules/finyk/hooks/useFinykMonoMirrorBoot";
 import { useFinykQuickStatsBoot } from "../../modules/finyk/hooks/useFinykQuickStatsBoot";
 import { useFinykSqliteReadBoot } from "../../modules/finyk/hooks/useFinykSqliteReadBoot";
 import { useFizrukDualWriteBoot } from "../../modules/fizruk/hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "../../modules/fizruk/hooks/useFizrukSqliteReadBoot";
+import { useFizrukQuickStatsBoot } from "../../modules/fizruk/hooks/useFizrukQuickStatsBoot";
 import { useRoutineDualWriteBoot } from "../../modules/routine/hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "../../modules/routine/hooks/useSqliteReadBoot";
+import { useRoutineQuickStatsBoot } from "../../modules/routine/hooks/useRoutineQuickStatsBoot";
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { isDemoActive } from "../onboarding/onboardingGate";
@@ -52,6 +55,7 @@ import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 function AuthenticatedNutritionBoot() {
   useNutritionDualWriteBoot();
   useNutritionSqliteReadBoot();
+  useNutritionQuickStatsBoot();
   return null;
 }
 
@@ -84,6 +88,10 @@ function FinykBootGate() {
 function AuthenticatedFizrukBoot() {
   useFizrukDualWriteBoot();
   useFizrukSqliteReadBoot();
+  // Знімок quick-stats для бенто-картки хаба. Без нього картка лишалася на
+  // empty-state-обіцянці до першого відкриття модуля — рівно як було у
+  // Фініка до `useFinykQuickStatsBoot` (browser QA 2026-08-05, F-007).
+  useFizrukQuickStatsBoot();
   return null;
 }
 
@@ -95,6 +103,7 @@ function FizrukBootGate() {
 function AuthenticatedRoutineBoot() {
   useRoutineDualWriteBoot();
   useRoutineSqliteReadBoot();
+  useRoutineQuickStatsBoot();
   return null;
 }
 

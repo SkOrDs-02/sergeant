@@ -49,8 +49,9 @@ export const stringWithDefault = (defaultValue: string) =>
     .optional()
     .transform((v) => v ?? defaultValue);
 
-export const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
-  z.enum(["anthropic", "openrouter", "stub"]).default(d);
+// `llmProviderEnum` жив тут до мержу з main: PR #634 переніс усі
+// LLM_*-ключі у `aiRoutingEnv.ts`, який тримає власну копію хелпера.
+// Тут він лишився б мертвим експортом і світив би у Knip.
 
 export const optionalUrl = () =>
   z

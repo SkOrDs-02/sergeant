@@ -287,6 +287,48 @@ describe("AuthContext", () => {
     expect(clearSpy).toHaveBeenCalled();
   });
 
+  it("flips to unauthenticated on logout even while useUser() still serves the cached user", async () => {
+    // Regression for browser QA 2026-08-05 F-008. `queryClient.clear()` evicts
+    // the `me` entry but never notifies the mounted `useUser` observer, so the
+    // hook keeps returning the last successful payload — `setUser` below models
+    // exactly that. Before the fix `user` stayed populated after logout: the
+    // header greeted the signed-out user, Profile rendered their email, and the
+    // `/sign-in` redirect bounced back to the hub.
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(result.current.status).toBe("authenticated");
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("returns to authenticated after logging in again", async () => {
+    // The signed-out marker must not outlive the session that set it, otherwise
+    // the next login renders a permanently blank profile.
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+    expect(result.current.status).toBe("unauthenticated");
+
+    await act(async () => {
+      const ok = await result.current.login("a@b.c", "pw");
+      expect(ok).toBe(true);
+    });
+
+    expect(result.current.user).toEqual(SAMPLE_USER);
+    expect(result.current.status).toBe("authenticated");
+  });
+
   it("purges app-owned localStorage on logout but preserves foreign keys", async () => {
     // Browser-QA finding (b): logout left the previous user's local-first data
     // (transactions, water log, hub prefs) readable by the next user on a

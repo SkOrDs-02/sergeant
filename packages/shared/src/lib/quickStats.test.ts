@@ -101,6 +101,20 @@ describe("selectModulePreview — fizruk", () => {
     });
   });
 
+  // Картка хаба після першого ж тренування показувала «Серія: 1 днів»
+  // (browser QA 2026-08-05, F-004): число підставлялося у зашитий множинний
+  // суфікс. Три форми — три перевірки, бо саме межі 1 / 2-4 / 5+ і ламаються.
+  it.each([
+    [1, "Серія: 1 день"],
+    [2, "Серія: 2 дні"],
+    [5, "Серія: 5 днів"],
+    [11, "Серія: 11 днів"],
+    [21, "Серія: 21 день"],
+  ])("declines the streak suffix for %i", (streak, expected) => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak });
+    expect(selectModulePreview("fizruk", raw).sub).toBe(expected);
+  });
+
   it("falls back to empty preview on missing data", () => {
     expect(selectModulePreview("fizruk", null)).toEqual({
       main: null,
@@ -114,7 +128,7 @@ describe("selectModulePreview — routine", () => {
     const raw = JSON.stringify({ todayDone: 3, todayTotal: 6, streak: 4 });
     expect(selectModulePreview("routine", raw)).toEqual({
       main: "3/6",
-      sub: "Серія: 4 днів",
+      sub: "Серія: 4 дні",
       progress: 50,
     });
   });

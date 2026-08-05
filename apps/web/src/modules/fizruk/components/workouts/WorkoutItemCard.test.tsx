@@ -340,7 +340,7 @@ describe("WorkoutItemCard — recovery conflict warning", () => {
         },
       },
     });
-    expect(screen.getByText(/Рано навантажувати/)).toBeInTheDocument();
+    expect(screen.getByText(/Ще не відновились/)).toBeInTheDocument();
   });
 });
 

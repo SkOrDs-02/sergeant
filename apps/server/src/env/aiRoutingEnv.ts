@@ -1,0 +1,82 @@
+import { z } from "zod";
+
+/**
+ * Маршрутизація AI-викликів: який шлюз, яка модель, куди відкочуватись.
+ *
+ * WHY окремий модуль. `env.ts` перетнув стелю Hard Rule #18 (600 рядків коду),
+ * і саме цей блок ріс найшвидше — кожен новий шлях додає пару «провайдер +
+ * модель». Тримати їх разом заодно корисно: розійшовшись, `LLM_*_PROVIDER` і
+ * `OPENROUTER_*_MODEL` дають шлюзу id, якого він не знає, і кожен запит падає
+ * з 404. Тут вони видно поруч.
+ *
+ * Форма (`shape`), а не окрема схема: `envSchema` лишається одним zod-обʼєктом,
+ * інакше `parseEnv()` довелося б зшивати два результати й помилки валідації
+ * розповзлися б на два повідомлення.
+ */
+
+const stringWithDefault = (defaultValue: string) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => v ?? defaultValue);
+
+const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
+  z.enum(["anthropic", "openrouter", "stub"]).default(d);
+
+export const aiRoutingEnvShape = {
+  OPENROUTER_API_KEY: stringWithDefault(""),
+
+  /** Глобальний override id; порожній — шлях бере власну змінну нижче. */
+  OPENROUTER_MODEL: stringWithDefault(""),
+
+  OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
+  OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  /**
+   * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
+   * зорового стенду (розмите фото, порожній кадр, етикетка іноземною,
+   * перерахунок порції) за $0.13/1k і 1.3 с. Новіші `gemini-3.1/3.5-flash-lite`
+   * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
+   */
+  OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  LLM_PROVIDER: llmProviderEnum("anthropic"),
+  LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),
+  LLM_DIGEST_PROVIDER: llmProviderEnum("openrouter"),
+  LLM_COACH_PROVIDER: llmProviderEnum("openrouter"),
+  LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
+  LLM_MONO_PROVIDER: llmProviderEnum("openrouter"),
+
+  LLM_FALLBACK_ENABLED: boolFromEnvLocal(true),
+  LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnvLocal(true),
+
+  /**
+   * Зорові шляхи (`analyze-photo`, `refine-photo`) через OpenRouter.
+   *
+   * WHY окремий прапорець від `CHAT_VIA_OPENROUTER`: ці два ендпоінти НЕ
+   * ходять через `getLLMProvider()` — їм потрібен `image`-блок у тілі, тож
+   * вони кличуть `anthropicMessages` напряму й `LLM_NUTRITION_PROVIDER` їх
+   * не стосується. Спільний із чатом прапорець зробив би відкат одного
+   * відкатом обох, а це різні за ризиком поверхні.
+   *
+   * Дефолт `true` з 2026-08-05; виміри й умова відкату — у
+   * `modules/nutrition/visionTransport.ts`.
+   */
+  VISION_VIA_OPENROUTER: boolFromEnvLocal(true),
+};
+
+function boolFromEnvLocal(defaultValue: boolean) {
+  return z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return defaultValue;
+      const lower = v.toLowerCase();
+      if (lower === "true" || lower === "1") return true;
+      if (lower === "false" || lower === "0") return false;
+      return defaultValue;
+    });
+}
