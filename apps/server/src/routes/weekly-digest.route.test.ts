@@ -100,7 +100,10 @@ beforeEach(() => {
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
-  getSessionUserMock.mockResolvedValue(null);
+  // Дефолт — залогінений: роут стоїть за `requireSession()`, тож без юзера
+  // кожен тест нижче впирався б у 401 замість своєї перевірки. Анонімну гілку
+  // перевіряє окремий блок «auth guard».
+  getSessionUserMock.mockResolvedValue({ id: "u1" });
   // Default: no Anthropic key (covers the key-guard test). Quota disabled so
   // `requireAiQuota` is a no-op in the happy-path test (it reads
   // `process.env.AI_QUOTA_DISABLED` at runtime — no re-import needed).
@@ -111,6 +114,23 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
+});
+
+describe("weekly-digest route — auth guard", () => {
+  // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) — роут витрачає
+  // Anthropic-ключ власника і будує звіт про особисті дані, тож сесія
+  // обов'язкова і перевіряється до ключа.
+  it("POST /api/weekly-digest → 401 без сесії", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/weekly-digest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send(VALID_BODY);
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("weekly-digest route — key guard", () => {
