@@ -3,7 +3,7 @@
 > **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
-> Відкриті: B3–B29 (порядок робіт — у кінці). Знімок стану на момент аудиту.
+> Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
 
 Питання, на яке відповідає документ: **чи коректно зроблений AI-шар Sergeant —
 чи немає вразливостей, чи правильно застосовані обгортки, і що потребує змін.**
@@ -689,6 +689,50 @@ Grep по всьому репо на `forgetById` / `previewForget` / `confirmFo
 хоча значення вже є в скоупі. Не безпека — латентність і навантаження на
 Better Auth; але рядок 585 виправляється тривіально.
 
+### B30 — `ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`
+
+Знайдено не читанням коду, а розбором червоного CI: `rollback-sanity.test.ts`
+падає на `main` і на цій гілці **однаковим** assertion-ом (не флейк — таймаут
+тесту 180 с, а падіння настає за ~6 с). Таблиця в діффі — рівно та, про яку
+йдеться в B1: DB-леджер витрат на ШІ.
+
+Тест робить `up → всі down.sql у зворотному порядку → переapply` і звіряє
+відбиток схеми. Розбіжність — у порядку колонок `ai_usage_daily`:
+
+```text
+- Expected (чистий forward)        + Received (після rollback + reapply)
+  ...                                ...
+  "bucket:text:NO",                  "bucket:text:NO",
+                                   + "endpoint:text:YES",
+                                   + "cache_read_tokens:bigint:YES",
+                                   + "cache_creation_tokens:bigint:YES",
+                                   + "actual_cost_usd:numeric:YES",
+  "input_tokens:bigint:NO",          "input_tokens:bigint:NO",
+  ...                                ...
+  "est_cost_usd:numeric:NO",         "est_cost_usd:numeric:NO",
+- "endpoint:text:YES",
+- "cache_read_tokens:bigint:YES",
+- "cache_creation_tokens:bigint:YES",
+- "actual_cost_usd:numeric:YES",
+```
+
+Причина механічна. Сусідні міграції по цій таблиці мають `.down.sql`
+(`012` — токен-лічильники, `036` — `usd_micros`, `059` — `est_cost_usd`), а
+[`091_ai_usage_endpoint_and_cache.sql`](../../../apps/server/src/migrations/091_ai_usage_endpoint_and_cache.sql)
+— ні. Тому на down-проході чотири колонки 091 **лишаються**, а `012/036/059`
+переapply-яться після них і стають в кінець. Порядок колонок розходиться.
+
+Сам по собі порядок колонок майже нікого не турбує — доки хтось не напише
+`INSERT` без списку колонок або не порівняє два `pg_dump`. Але справжня
+знахідка інша: **відкотитись за 091 неможливо** — колонки лишаться, і це
+асиметрія покриття саме на таблиці обліку витрат.
+
+**Фікс:** додати `091_ai_usage_endpoint_and_cache.down.sql` із
+`DROP COLUMN IF EXISTS` на ті ж чотири колонки. Тоді down-набір стає
+симетричним, порядок переapply збігається з forward, і гейт зеленіє.
+Робота для `sergeant-data-and-migrations` (Hard Rule #4), не для цього PR —
+дефект успадкований, у гілці не змінено жодної міграції.
+
 ## Що підтверджено закритим
 
 Перевірено по коду, а не по описах у попередньому аудиті:
@@ -823,6 +867,12 @@ severity:
 12. **B17, B18, B19, B20** — валідація `AI_QUOTA_FOUNDER_IDS`; `api_key` /
     `openrouterKey` і регекспи `sk-ant-*`/`sk-or-v1-*` у редакції; MCP-пароль
     через `env:`; ключ Anthropic — fail-loud на старті за зразком Voyage.
+
+**Гігієна CI (успадковане з `main`, але тримає гейти червоними):**
+
+13. **B30** — додати `091_ai_usage_endpoint_and_cache.down.sql`. Один файл,
+    чотири `DROP COLUMN IF EXISTS` — і `rollback-sanity` перестає падати
+    на кожному PR.
 
 **Решта:** B3 (огорожа coach), B4 (tier у `opts.model`), B5/B6 (mobile),
 B22 (схеми `remember`/`save_note`), B23, B24, B8, B9, B29.
