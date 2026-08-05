@@ -11,6 +11,7 @@ const {
   registerMock,
   debugMock,
   logoutMock,
+  openHubSettingsSectionMock,
   themeState,
 } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
@@ -21,6 +22,7 @@ const {
   registerMock: vi.fn(),
   debugMock: vi.fn(),
   logoutMock: vi.fn<() => Promise<void>>(),
+  openHubSettingsSectionMock: vi.fn(),
   themeState: { isDark: false },
 }));
 
@@ -39,6 +41,11 @@ vi.mock("@shared/hooks/useTheme", () => ({
 vi.mock("@shared/components/ui/CommandPalette", () => ({
   useRegisterCommand: registerMock,
 }));
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/lib/modules/hubNav")>();
+  return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
+});
 vi.mock("../auth/AuthContext.jsx", () => ({
   useAuth: () => ({ logout: logoutMock }),
 }));
@@ -67,6 +74,7 @@ describe("useDemoCommands", () => {
     debugMock.mockReset();
     logoutMock.mockReset();
     logoutMock.mockResolvedValue(undefined);
+    openHubSettingsSectionMock.mockReset();
     themeState.isDark = false;
   });
 
@@ -113,12 +121,15 @@ describe("useDemoCommands", () => {
     expect(setChoiceMock).toHaveBeenCalledWith("light");
   });
 
-  it("settings.open surfaces a WIP toast", () => {
+  it("settings.open navigates to the Hub Settings tab via openHubSettingsSection()", () => {
     renderHook(() => useDemoCommands());
     const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
     byId["settings.open"]!.run();
-    expect(toastInfoMock).toHaveBeenCalledTimes(1);
+    expect(openHubSettingsSectionMock).toHaveBeenCalledTimes(1);
+    expect(openHubSettingsSectionMock).toHaveBeenCalledWith();
     expect(debugMock).toHaveBeenCalledTimes(1);
+    // No longer a WIP stub.
+    expect(toastInfoMock).not.toHaveBeenCalled();
   });
 
   // Regression: `session.sign-out` used to be a `toast.info` stub that never
