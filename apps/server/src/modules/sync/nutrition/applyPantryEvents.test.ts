@@ -162,6 +162,62 @@ describe("applyNutritionPantryEvents — tz_offset_min (міграція 109)", 
     );
     expect(fake.queries[0]!.params[12]).toBeNull();
   });
+
+  // Pre-beta input-boundaries audit / CodeRabbit PR #627: раніше приймався
+  // будь-який integer, тепер — лише реальний діапазон UTC-офсетів
+  // [-840, 840] хвилин (UTC-14 .. UTC+14).
+  it("приймає межове значення -840 (UTC-14, Baker Island)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -840 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "applied" });
+    expect(fake.queries[0]!.params[12]).toBe(-840);
+  });
+
+  it("приймає межове значення +840 (UTC+14, Line Islands)", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: 840 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({ status: "applied" });
+    expect(fake.queries[0]!.params[12]).toBe(840);
+  });
+
+  it("відхиляє -841 (за межею реальних UTC-офсетів) з invalid_tz_offset_min", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: -841 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({
+      status: "rejected",
+      reason: "invalid_tz_offset_min",
+    });
+    expect(fake.queries).toHaveLength(0);
+  });
+
+  it("відхиляє +841 (за межею реальних UTC-офсетів) з invalid_tz_offset_min", async () => {
+    const fake = new FakeClient();
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow({ tz_offset_min: 841 })),
+      USER,
+      CLIENT_TS,
+    );
+    expect(res).toEqual({
+      status: "rejected",
+      reason: "invalid_tz_offset_min",
+    });
+  });
 });
 
 describe("applyNutritionPantryEvents — append-only інваріант", () => {

@@ -4,6 +4,7 @@ import {
   isWithinTextBound,
   parseOptionalDate,
   parseOptionalNumber,
+  parseOptionalTzOffsetMin,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
@@ -160,13 +161,13 @@ export async function applyNutritionPantryEvents(
   const source = typeof row["source"] === "string" ? row["source"] : "manual";
   const mealId = typeof row["meal_id"] === "string" ? row["meal_id"] : null;
   // `tz_offset_min` (міграція 109) — опційне: старі клієнти його ще не
-  // шлють, тоді лишається NULL (ADR-0078 device-local day boundary).
-  // Дзеркалить парсинг у `applyRoutineCompletionEvents` (085).
-  const tzOffsetMin =
-    typeof row["tz_offset_min"] === "number" &&
-    Number.isInteger(row["tz_offset_min"])
-      ? row["tz_offset_min"]
-      : null;
+  // шлють, тоді лишається NULL (ADR-0078 device-local day boundary). Поза
+  // реальним діапазоном UTC-офсетів — reject, а не мовчазний NULL
+  // (pre-beta input-boundaries audit, CodeRabbit PR #627).
+  const tzOffsetMin = parseOptionalTzOffsetMin(row["tz_offset_min"]);
+  if (tzOffsetMin === "invalid") {
+    return { status: "rejected", reason: "invalid_tz_offset_min" };
+  }
 
   // `occurred_at` свідомо перевикористовує reason `invalid_created_at`
   // замість власного літерала: обидва поля — timestamptz однієї події, а

@@ -45,6 +45,7 @@ import {
   parseOptionalDate,
   parseOptionalInt,
   parseOptionalNumber,
+  parseOptionalTzOffsetMin,
   parseRequiredDate,
   readOriginDeviceId,
   recordSyncV2,
@@ -265,5 +266,36 @@ describe("parseOptionalBoundedNumber (pre-beta input-boundaries audit)", () => {
     expect(parseOptionalBoundedNumber("not a number", { max: 100 })).toBe(
       "invalid",
     );
+  });
+});
+
+describe("parseOptionalTzOffsetMin (CodeRabbit PR #627)", () => {
+  it("passes through null/undefined as null (old client doesn't send it)", () => {
+    expect(parseOptionalTzOffsetMin(null)).toBeNull();
+    expect(parseOptionalTzOffsetMin(undefined)).toBeNull();
+  });
+
+  it("falls back to null for non-integer/non-number input (unrelated to range)", () => {
+    expect(parseOptionalTzOffsetMin("120")).toBeNull();
+    expect(parseOptionalTzOffsetMin(1.5)).toBeNull();
+    expect(parseOptionalTzOffsetMin({})).toBeNull();
+  });
+
+  it("accepts values inside the real UTC-offset range, including both edges", () => {
+    expect(parseOptionalTzOffsetMin(0)).toBe(0);
+    expect(parseOptionalTzOffsetMin(-120)).toBe(-120);
+    expect(parseOptionalTzOffsetMin(180)).toBe(180);
+    expect(parseOptionalTzOffsetMin(-840)).toBe(-840); // UTC-14
+    expect(parseOptionalTzOffsetMin(840)).toBe(840); // UTC+14
+  });
+
+  it("rejects a present value just outside either edge", () => {
+    expect(parseOptionalTzOffsetMin(-841)).toBe("invalid");
+    expect(parseOptionalTzOffsetMin(841)).toBe("invalid");
+  });
+
+  it("rejects an implausibly large value (curl bypassing the client ceiling)", () => {
+    expect(parseOptionalTzOffsetMin(999_999)).toBe("invalid");
+    expect(parseOptionalTzOffsetMin(Number.MAX_SAFE_INTEGER)).toBe("invalid");
   });
 });

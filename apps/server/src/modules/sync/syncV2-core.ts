@@ -283,6 +283,37 @@ export function toJsonbParam(value: unknown): string | null {
 }
 
 /**
+ * Real-world UTC offset bounds in minutes, matching the sign convention of
+ * `Date.prototype.getTimezoneOffset()` (west of UTC → positive). UTC-14:00
+ * (Kiribati's Line Islands) to UTC+14:00 is the full range that exists on
+ * Earth today — anything outside it is malformed input, not a legitimate
+ * device clock.
+ */
+export const TZ_OFFSET_MIN_LOWER = -14 * 60;
+export const TZ_OFFSET_MIN_UPPER = 14 * 60;
+
+/**
+ * Parse `tz_offset_min` (migration 109, ADR-0078 device-local day
+ * boundary). Missing or non-integer input silently falls back to `null` —
+ * old clients don't send this field yet, and that absence is not an error.
+ * A PRESENT value outside the real UTC-offset range `[-840, 840]` is
+ * `"invalid"` (rejects the op), not silently nulled or clamped: pre-beta
+ * input-boundaries audit found `curl` could set e.g. `tz_offset_min:
+ * 999999` and it sailed straight through into a nullable-but-unchecked
+ * column.
+ */
+export function parseOptionalTzOffsetMin(
+  value: unknown,
+): number | null | "invalid" {
+  if (value == null) return null;
+  if (typeof value !== "number" || !Number.isInteger(value)) return null;
+  if (value < TZ_OFFSET_MIN_LOWER || value > TZ_OFFSET_MIN_UPPER) {
+    return "invalid";
+  }
+  return value;
+}
+
+/**
  * Bound check for user-supplied name/label/note/text fields (pre-beta
  * input-boundaries audit, `docs/90-work/planning/specs/beta-input-
  * boundaries.md` Фаза 3 — сервер). Client-side bounds

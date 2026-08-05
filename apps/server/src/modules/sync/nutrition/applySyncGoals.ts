@@ -3,6 +3,7 @@ import type { SyncV2Op } from "../../../http/schemas.js";
 import {
   parseOptionalBoundedNumber,
   parseOptionalDate,
+  parseOptionalTzOffsetMin,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
@@ -189,12 +190,13 @@ export async function applyNutritionGoalPeriods(
 
   // `tz_offset_min` (міграція 109) — опційне: старі клієнти його ще не
   // шлють, тоді лишається NULL (ADR-0078 device-local day boundary).
-  // Дзеркалить парсинг у `applyRoutineCompletionEvents` (085).
-  const tzOffsetMin =
-    typeof row["tz_offset_min"] === "number" &&
-    Number.isInteger(row["tz_offset_min"])
-      ? row["tz_offset_min"]
-      : null;
+  // Поза реальним діапазоном UTC-офсетів (curl бай-пасить клієнтську
+  // перевірку) — reject, а не мовчазний NULL (pre-beta input-boundaries
+  // audit, CodeRabbit PR #627).
+  const tzOffsetMin = parseOptionalTzOffsetMin(row["tz_offset_min"]);
+  if (tzOffsetMin === "invalid") {
+    return { status: "rejected", reason: "invalid_tz_offset_min" };
+  }
 
   await client.query(
     `INSERT INTO nutrition_goal_periods

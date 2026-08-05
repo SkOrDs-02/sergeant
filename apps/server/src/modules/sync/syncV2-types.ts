@@ -121,6 +121,12 @@ export const APPLY_REJECT_REASONS = [
   // metric doesn't need per-column granularity for "this string is too
   // long", only per-table (already carried by the `table` label).
   "text_too_long",
+  // `tz_offset_min` (migration 109, ADR-0078 device-local day boundary) had
+  // no range check at all — any integer sailed through. A present value
+  // outside the real UTC-offset range [-840, 840] minutes is now rejected
+  // rather than silently accepted or nulled (CodeRabbit PR #627,
+  // `parseOptionalTzOffsetMin()` in `syncV2-core.ts`).
+  "invalid_tz_offset_min",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];
