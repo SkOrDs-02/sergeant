@@ -1,21 +1,51 @@
 import type { AnthropicTool } from "./types.js";
 
+/**
+ * Канонічні категорії памʼяті. Дзеркалять ключі `CATEGORY_META` у
+ * `apps/web/src/core/profile/memoryBank.ts` — секція «Пам'ять ШІ» групує
+ * записи саме по цьому полю, а клієнтський виконавець (`crossActions/
+ * memoryHandlers.ts`) зводить усе поза цим списком у `other`.
+ *
+ * Тримаємо тут як `enum` у схемі, а не лише переліком у `description`:
+ * прозовий перелік модель ігнорувала разом із самим полем (воно було
+ * `optional`), і в проді практично все осідало в «Інше».
+ */
+const MEMORY_CATEGORIES = [
+  "allergy",
+  "diet",
+  "goal",
+  "training",
+  "health",
+  "preference",
+  "other",
+] as const;
+
 export const MEMORY_TOOLS: AnthropicTool[] = [
   {
     name: "remember",
+    // `strict: true` — grammar-constrained sampling гарантує, що `category`
+    // приїде і буде з `enum`. Без нього `required` для не-strict tool-а
+    // лишається проханням, а саме воно тут і не спрацювало. Бюджет
+    // Anthropic (≤20 strict-tools на запит) це витримує: 14 → 15.
+    strict: true,
     description:
-      "Запам'ятати факт про користувача: алергії, уподобання, цілі, обмеження тощо. Наприклад: 'запам'ятай що я не їм глютен'. Зберігається між сесіями.",
+      "Запам'ятати ОДИН факт про користувача: алергію, уподобання, ціль, обмеження тощо. Наприклад: 'запам'ятай що я не їм глютен'. Зберігається між сесіями. " +
+      "Один виклик — один самодостатній факт коротким рядком. Почув кілька фактів — виклич інструмент кілька разів; склеєний в один запис абзац користувач не зможе видалити частинами, і семантичний пошук по ньому працює гірше.",
     input_schema: {
       type: "object",
       properties: {
-        fact: { type: "string", description: "Факт для запам'ятовування" },
+        fact: {
+          type: "string",
+          description: "Один факт для запам'ятовування, коротким рядком",
+        },
         category: {
           type: "string",
+          enum: [...MEMORY_CATEGORIES],
           description:
-            "Категорія: allergy, diet, goal, training, health, preference, other",
+            "Категорія факту — по ній групується список у профілі. Немає відповідної — 'other'.",
         },
       },
-      required: ["fact"],
+      required: ["fact", "category"],
     },
   },
   {

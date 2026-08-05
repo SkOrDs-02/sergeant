@@ -70,6 +70,28 @@ export function normalizeMemoryCategory(category?: string): string {
   return key || "other";
 }
 
+/** Категорія входить у канонічний набір (= ключі `CATEGORY_META`). */
+export function isKnownMemoryCategory(category: string): boolean {
+  return Object.prototype.hasOwnProperty.call(CATEGORY_META, category);
+}
+
+/**
+ * Категорія на ЗАПИС: невідоме значення зводимо в `other`.
+ *
+ * Серверна схема `remember` віддає `enum` (`toolDefs/memory.ts`), але це
+ * гарантія лише для Anthropic-моделей у strict-режимі — під OpenRouter-шлюзом
+ * strict ігнорується, тож валідне значення тут не аксіома. Без зведення
+ * невідома категорія створює в секції «Пам'ять ШІ» групу з сирим ключем
+ * замість людської назви та іконки.
+ *
+ * На ЧИТАННЯ (`normalizeMemoryEntry`) навмисно лишаємо як є: легасі-записи
+ * з доенумної доби не переписуємо мовчки під користувачем.
+ */
+export function toWritableMemoryCategory(category?: string): string {
+  const key = normalizeMemoryCategory(category);
+  return isKnownMemoryCategory(key) ? key : "other";
+}
+
 export function normalizeMemoryEntry(item: unknown): MemoryEntry | null {
   if (!item || typeof item !== "object") return null;
   const obj = item as Record<string, unknown>;
@@ -181,7 +203,7 @@ export function upsertMemoryFact(
   const normalizedFact = fact.trim();
   if (!normalizedFact) throw new Error("Потрібен факт для запам'ятовування.");
 
-  const normalizedCategory = normalizeMemoryCategory(category);
+  const normalizedCategory = toWritableMemoryCategory(category);
   const existingIndex = entries.findIndex(
     (entry) => entry.fact.trim().toLowerCase() === normalizedFact.toLowerCase(),
   );
