@@ -157,7 +157,9 @@ describe("useDemoCommands", () => {
 
     await vi.waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
-        "Не вдалося вийти, спробуйте ще раз",
+        "Не вдалося вийти",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       ),
     );
     expect(navigateMock).not.toHaveBeenCalled();

@@ -110,7 +110,14 @@ export function SessionsSection({ online }: { online: boolean }) {
       // (already returned by `listSessions`) as the identifier.
       const res = await revokeSession({ token });
       if (res.error) {
-        toast.error(mapApiErrorToUserCopy(res.error, COPY.revokeFailed));
+        toast.error(
+          mapApiErrorToUserCopy(res.error, COPY.revokeFailed),
+          undefined,
+          {
+            label: "Повторити",
+            onClick: () => void handleRevoke(id, token, isCurrent),
+          },
+        );
         return;
       }
       toast.success(COPY.revokeSuccess);
@@ -128,7 +135,10 @@ export function SessionsSection({ online }: { online: boolean }) {
       }
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
-      toast.error(COPY.revokeFailed);
+      toast.error(COPY.revokeFailed, undefined, {
+        label: "Повторити",
+        onClick: () => void handleRevoke(id, token, isCurrent),
+      });
     } finally {
       setRevoking(null);
     }

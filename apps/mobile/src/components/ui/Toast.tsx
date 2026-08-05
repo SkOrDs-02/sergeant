@@ -72,6 +72,17 @@ export interface ToastItem {
   msg: ReactNode;
   type: ToastType;
   action: ToastAction | null;
+  /**
+   * Реальна тривалість авто-закриття, зафіксована на момент `show()`.
+   *
+   * AI-CONTEXT: раніше `ToastContainer` брав її з модульної мапи
+   * `toastDurations`, яку заповнював лише `useToastWithDuration` — а той
+   * хук не мав жодного call-site у застосунку. Тобто прогрес-бар усіх
+   * тостів анімувався за 3500 мс, тоді як `error`/`warning` жили 5000:
+   * смужка добігала до нуля, а тост ще секунду з половиною висів. Тепер
+   * тривалість їде разом із самим тостом, як на вебі.
+   */
+  duration: number;
 }
 
 export interface ToastApi {
@@ -93,6 +104,21 @@ export interface ToastContextValue extends ToastApi {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+
+/** Дзеркало web-таблиці з `apps/web/src/shared/hooks/useToast.tsx`. */
+const DEFAULT_DURATION: Record<ToastType, number> = {
+  success: 3500,
+  info: 3500,
+  warning: 5000,
+  error: 5000,
+};
+
+/**
+ * Скільки тостів одночасно на екрані — тримаємо в парі з web
+ * (`MAX_VISIBLE_TOASTS`). На мобільному вежа з п'яти аркушів з'їдала
+ * верхню третину екрана.
+ */
+const MAX_VISIBLE_TOASTS = 3;
 
 let idCounter = 0;
 
@@ -116,7 +142,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const show = useCallback<ToastApi["show"]>(
-    (msg, type = "success", duration = 3500, action) => {
+    (msg, type = "success", duration, action) => {
       const id = ++idCounter;
       const safeAction: ToastAction | null =
         action &&
@@ -124,11 +150,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         typeof action.onPress === "function"
           ? { label: String(action.label || "Дія"), onPress: action.onPress }
           : null;
-      setToasts((prev) => [
-        ...prev.slice(-4),
-        { id, msg, type, action: safeAction },
-      ]);
-      timersRef.current[id] = setTimeout(() => dismiss(id), duration);
+      const d = duration ?? DEFAULT_DURATION[type];
+      setToasts((prev) => {
+        const kept = prev.slice(-(MAX_VISIBLE_TOASTS - 1));
+        // Витіснений тост зникав з масиву, але його `setTimeout` лишався
+        // жити і за кілька секунд смикав `dismiss` за неіснуючим id.
+        prev.slice(0, prev.length - kept.length).forEach((t) => {
+          const timer = timersRef.current[t.id];
+          if (timer) clearTimeout(timer);
+          delete timersRef.current[t.id];
+        });
+        return [...kept, { id, msg, type, action: safeAction, duration: d }];
+      });
+      timersRef.current[id] = setTimeout(() => dismiss(id), d);
       return id;
     },
     [dismiss],
@@ -139,7 +173,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [show],
   );
   const error = useCallback<ToastApi["error"]>(
-    (msg, duration, action) => show(msg, "error", duration ?? 5000, action),
+    (msg, duration, action) => show(msg, "error", duration, action),
     [show],
   );
   const info = useCallback<ToastApi["info"]>(
@@ -147,7 +181,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [show],
   );
   const warning = useCallback<ToastApi["warning"]>(
-    (msg, duration, action) => show(msg, "warning", duration ?? 5000, action),
+    (msg, duration, action) => show(msg, "warning", duration, action),
     [show],
   );
 
@@ -375,9 +409,6 @@ export interface ToastContainerProps {
   className?: string;
 }
 
-/** Track toast durations for progress bar */
-const toastDurations = new Map<number, number>();
-
 export function ToastContainer({ className }: ToastContainerProps) {
   const { toasts, dismiss } = useToast();
   const insets = useSafeAreaInsets();
@@ -404,7 +435,7 @@ export function ToastContainer({ className }: ToastContainerProps) {
             <ToastRow
               key={toast.id}
               toast={toast}
-              duration={toastDurations.get(toast.id) ?? 3500}
+              duration={toast.duration}
               onDismiss={dismiss}
             />
           ))}
@@ -412,25 +443,4 @@ export function ToastContainer({ className }: ToastContainerProps) {
       </View>
     </GestureHandlerRootView>
   );
-}
-
-// Hook to track durations for progress bar
-export function useToastWithDuration() {
-  const toast = useToast();
-  const showWithDuration = useCallback(
-    (
-      msg: ReactNode,
-      type: ToastType = "success",
-      duration = 3500,
-      action?: ToastAction,
-    ) => {
-      const id = toast.show(msg, type, duration, action);
-      toastDurations.set(id, duration);
-      // Cleanup after toast is dismissed
-      setTimeout(() => toastDurations.delete(id), duration + 1000);
-      return id;
-    },
-    [toast],
-  );
-  return { ...toast, show: showWithDuration };
 }

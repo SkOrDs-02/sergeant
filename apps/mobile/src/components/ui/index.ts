@@ -104,7 +104,6 @@ export {
   ToastProvider,
   ToastContainer,
   useToast,
-  useToastWithDuration,
   type ToastType,
   type ToastAction,
   type ToastItem,

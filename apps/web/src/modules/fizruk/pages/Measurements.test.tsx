@@ -142,15 +142,29 @@ describe("Measurements page", () => {
     expect(addEntry).toHaveBeenCalledWith({ bodyFatPct: 12.5 });
   });
 
-  it("blocks an out-of-range value via the zod schema and warns (F3)", () => {
+  it("blocks an out-of-range value and marks the offending field (F3)", () => {
     render(<Measurements />);
     // weightKg max is 300 — 99999 must be rejected.
-    fireEvent.change(screen.getByLabelText(/Вага · кг/), {
-      target: { value: "99999" },
-    });
+    const weight = screen.getByLabelText(/Вага · кг/);
+    fireEvent.change(weight, { target: { value: "99999" } });
     fireEvent.click(getSaveButton());
     expect(addEntry).not.toHaveBeenCalled();
-    expect(warning).toHaveBeenCalledTimes(1);
+    // Помилка діапазону живе під своїм полем, а не в тості у куті екрана:
+    // з восьми полів користувач інакше не бачить, яке саме завелике.
+    expect(weight).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(warning).not.toHaveBeenCalled();
+  });
+
+  it("прибирає помилку поля, щойно користувач починає правити значення", () => {
+    render(<Measurements />);
+    const weight = screen.getByLabelText(/Вага · кг/);
+    fireEvent.change(weight, { target: { value: "99999" } });
+    fireEvent.click(getSaveButton());
+    expect(weight).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(weight, { target: { value: "85" } });
+    expect(weight).not.toHaveAttribute("aria-invalid");
   });
 
   it("strips NaN input so a stray value cannot enable submit (F3/F4)", () => {

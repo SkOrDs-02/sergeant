@@ -318,9 +318,12 @@ describe("ProfilePage", () => {
       const saveBtn = screen.getAllByRole("button", { name: "Зберегти" })[0];
       fireEvent.click(saveBtn!);
 
+      // Помилка форми лишається у формі (`useApiForm.serverError`), а не
+      // дублюється тостом — див. коментар у `PersonalInfoSection`.
       await waitFor(() =>
-        expect(toastErrorMock).toHaveBeenCalledWith("Не вдалося оновити ім'я"),
+        expect(screen.getByText("Не вдалося оновити ім'я")).toBeInTheDocument(),
       );
+      expect(toastErrorMock).not.toHaveBeenCalled();
       expect(saveBtn).not.toBeDisabled();
     });
   });
@@ -367,7 +370,9 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
       await waitFor(() =>
         expect(toastErrorMock).toHaveBeenCalledWith(
-          "Не вдалося вийти, спробуйте ще раз",
+          "Не вдалося вийти",
+          undefined,
+          expect.objectContaining({ label: "Повторити" }),
         ),
       );
     });

@@ -34,8 +34,12 @@ export function DangerZoneSection({
     try {
       const res = await deleteUser({ password: password || undefined });
       if (res.error) {
+        // Діалог лишається відкритим із уже введеним паролем, тож
+        // «Повторити» жене той самий запит без повторного набору.
         toast.error(
           mapApiErrorToUserCopy(res.error, "Не вдалося видалити акаунт"),
+          undefined,
+          { label: "Повторити", onClick: () => void handleDelete() },
         );
         return;
       }
@@ -50,7 +54,10 @@ export function DangerZoneSection({
       await onLogout();
       navigate("/", { replace: true });
     } catch {
-      toast.error("Не вдалося видалити акаунт");
+      toast.error("Не вдалося видалити акаунт", undefined, {
+        label: "Повторити",
+        onClick: () => void handleDelete(),
+      });
     } finally {
       setDeleting(false);
     }

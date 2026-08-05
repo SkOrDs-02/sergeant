@@ -46,7 +46,13 @@ export function ProfilePage() {
       // and `/sign-in` renders `AuthPage` instead of a momentary guest hub.
       navigate(SIGN_IN_PATH, { replace: true });
     } catch {
-      toast.error("Не вдалося вийти, спробуйте ще раз");
+      // Вихід ідемпотентний: якщо сесія вже впала на сервері, повтор просто
+      // догортає локальний teardown. Без кнопки користувач лишався на
+      // екрані профілю з враженням «я вийшов», хоча сесія жива.
+      toast.error("Не вдалося вийти", undefined, {
+        label: "Повторити",
+        onClick: () => void handleLogout(),
+      });
     } finally {
       setLoggingOut(false);
     }

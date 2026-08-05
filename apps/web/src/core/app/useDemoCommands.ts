@@ -42,15 +42,26 @@ export function useDemoCommands(): void {
   // cache and purges SW/SQLite/local-first state, so `user` is `null` by the
   // time we navigate — sending the signed-out user to `/sign-in` instead of
   // the hub root avoids a momentary guest-hub flash.
-  const signOutFromPalette = useCallback(async () => {
-    try {
-      await logout();
-      toast.success("Ви вийшли з акаунта");
-      navigate(SIGN_IN_PATH, { replace: true });
-    } catch {
-      toast.error("Не вдалося вийти, спробуйте ще раз");
-    }
-  }, [logout, navigate, toast]);
+  // Іменований function expression, щоб retry в тості міг покликати сам
+  // себе — стрілка з `const` тут ще в TDZ у момент створення замикання.
+  const signOutFromPalette = useCallback(
+    async function attempt(): Promise<void> {
+      try {
+        await logout();
+        toast.success("Ви вийшли з акаунта");
+        navigate(SIGN_IN_PATH, { replace: true });
+      } catch {
+        // Дзеркалить `ProfilePage.handleLogout`: вихід ідемпотентний, тож
+        // повтор безпечний і це єдиний вихід із «сесія жива, а я думав, що
+        // вийшов».
+        toast.error("Не вдалося вийти", undefined, {
+          label: "Повторити",
+          onClick: () => void attempt(),
+        });
+      }
+    },
+    [logout, navigate, toast],
+  );
 
   const commands = useMemo<PaletteCommand[]>(
     () => [

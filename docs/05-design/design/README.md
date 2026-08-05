@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -101,6 +101,7 @@ module-accent containment — свідомо не покриті grep-скрип
 
 | Документ                                               | Опис                                                                      |
 | ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| [`anti-slop-strategy.md`](./anti-slop-strategy.md)     | Диференціація від «генерованого» вигляду: аудит, 5 принципів, slop-тест   |
 | [`cross-module-prompts.md`](./cross-module-prompts.md) | Cross-module nudges із anti-nag-механікою                                 |
 | [`empty-states.md`](./empty-states.md)                 | Правила empty / error / zero-data станів (3 tier-и)                       |
 | [`module-accent.md`](./module-accent.md)               | Module-accent CSS variables, ESLint containment, Tailwind utilities       |

@@ -182,6 +182,8 @@ describe("SessionsSection — revoke flow", () => {
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
         "Для цієї дії потрібен свіжий вхід. Увійди ще раз.",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       ),
     );
   });

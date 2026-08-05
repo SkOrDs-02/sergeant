@@ -59,6 +59,15 @@ export function Measurements() {
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
+  /**
+   * Помилки діапазону — під конкретним полем, не в тості.
+   *
+   * До 2026-08-05 zod віддавав лише ПЕРШУ проблему, і вона летіла
+   * `toast.warning` у нижній кут: із восьми полів користувач не бачив, яке
+   * саме завелике, і мусив здогадуватись. Тепер підписані всі поля, що не
+   * пройшли, — рівно там, де їх виправляти.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const latest = entries[0] || null;
   const deltas = useMemo<Record<string, number>>(() => {
@@ -255,13 +264,32 @@ export function Measurements() {
                   max={f.max}
                   placeholder="—"
                   value={form[f.id] ?? ""}
-                  onChange={(e) =>
+                  aria-invalid={fieldErrors[f.id] ? true : undefined}
+                  aria-describedby={
+                    fieldErrors[f.id] ? `measure-error-${f.id}` : undefined
+                  }
+                  onChange={(e) => {
                     setForm((s: Record<string, string>) => ({
                       ...s,
                       [f.id]: e.target.value,
-                    }))
-                  }
+                    }));
+                    setFieldErrors((prev) => {
+                      if (!prev[f.id]) return prev;
+                      const next = { ...prev };
+                      delete next[f.id];
+                      return next;
+                    });
+                  }}
                 />
+                {fieldErrors[f.id] && (
+                  <p
+                    id={`measure-error-${f.id}`}
+                    role="alert"
+                    className="text-style-caption text-danger-strong dark:text-danger"
+                  >
+                    {fieldErrors[f.id]}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -293,15 +321,18 @@ export function Measurements() {
                     const validation =
                       measurementSchema.safeParse(parsedPayload);
                     if (!validation.success) {
-                      const firstError =
-                        validation.error.issues[0]?.message ??
-                        messages.fizruk.measurements.invalidValue;
-                      // Use warning (not error) — the user simply needs to
-                      // fix the input; the form stays visible so no recovery
-                      // CTA is needed (toast-policy § warning = no mandatory action).
-                      toast.warning(firstError);
+                      const next: Record<string, string> = {};
+                      for (const issue of validation.error.issues) {
+                        const key = issue.path[0];
+                        if (typeof key !== "string") continue;
+                        next[key] ??=
+                          issue.message ||
+                          messages.fizruk.measurements.invalidValue;
+                      }
+                      setFieldErrors(next);
                       return;
                     }
+                    setFieldErrors({});
                     addEntry(parsedPayload);
                     setForm(
                       Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),

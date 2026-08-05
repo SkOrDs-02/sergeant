@@ -8,6 +8,10 @@ import {
 } from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  useBottomInsetVar,
+} from "../../hooks/useBottomInsetVar";
 
 /**
  * Sergeant Design System — ModuleBottomNav
@@ -136,6 +140,10 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
   const kbInsetPx = useVisualKeyboardInset(true);
   const hidden = kbInsetPx > 0;
   const tablistRef = useRef<HTMLDivElement>(null);
+  // Див. `HubBottomNav` — та сама публікація нижнього inset-у для
+  // fixed-шарів (тост-трей) з іншої гілки дерева.
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !hidden);
 
   // Optimistic tap acknowledgement.
   //
@@ -212,6 +220,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
 
   return (
     <nav
+      ref={navRef}
       aria-label={ariaLabel}
       aria-hidden={hidden || undefined}
       className={cn(

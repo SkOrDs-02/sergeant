@@ -73,7 +73,10 @@ export function DashboardSection() {
       setActiveModulesState((prev) => {
         const isActive = prev.includes(id);
         if (isActive && prev.length === 1) {
-          toast.error("Щонайменше один модуль має бути активним");
+          // Не помилка, а заблокована дія: користувач нічого не зламав і
+          // нічого не «повторює» — він просто впорядковує дашборд далі.
+          // `warning` без дії, за tone-таблицею toast-policy.
+          toast.warning("Щонайменше один модуль має бути активним");
           return prev;
         }
         const next = isActive
