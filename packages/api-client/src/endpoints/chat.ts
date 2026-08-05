@@ -1,8 +1,8 @@
 import { ChatUsageResponseSchema } from "@sergeant/shared";
-import type { ChatUsageResponse } from "@sergeant/shared";
+import type { ChatPreset, ChatUsageResponse } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
 
-export type { ChatUsageResponse };
+export type { ChatPreset, ChatUsageResponse };
 
 export interface ChatMessage {
   role: "user" | "assistant" | string;
@@ -15,6 +15,13 @@ export interface ChatRequestPayload {
   tool_results?: unknown;
   tool_calls_raw?: unknown;
   stream?: boolean;
+  /**
+   * Сценарний режим розмови. Ідентифікатор із `CHAT_PRESETS`; текст
+   * інструкції живе на сервері (`apps/server/src/modules/chat/chatPresets.ts`)
+   * і в клієнтський бандл не потрапляє. Preset також переводить запит на
+   * власне тижневе відро AI-квоти — див. `resolvePresetBudget` в `aiQuota.ts`.
+   */
+  preset?: ChatPreset;
 }
 
 export interface ChatResponse {

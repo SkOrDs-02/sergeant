@@ -149,6 +149,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
         openChat({
           initialMessage: detail.message ?? "",
           autoSend: detail.autoSend ?? false,
+          ...(detail.preset ? { preset: detail.preset } : {}),
         });
       }),
     [openChat],

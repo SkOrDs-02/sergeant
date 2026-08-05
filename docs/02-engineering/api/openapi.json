@@ -3199,6 +3199,13 @@
             "type": "string",
             "maxLength": 40000
           },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "profile_interview",
+              "profile_add_info"
+            ]
+          },
           "messages": {
             "default": [],
             "maxItems": 50,

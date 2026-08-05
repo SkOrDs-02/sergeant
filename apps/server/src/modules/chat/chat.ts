@@ -269,6 +269,7 @@ export default async function handler(
     tool_results,
     tool_calls_raw,
     stream,
+    preset,
   } = parseBody(ChatRequestSchema, req);
 
   // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
@@ -370,7 +371,10 @@ export default async function handler(
     const payload = {
       model: proTier.model,
       max_tokens: 2500,
-      system: buildSystem(maskMachineText(context, knownValues)),
+      // Preset іде і в tool-result тур: інструкція інтервʼю має діяти й на
+      // синтезі після `remember`, інакше модель «забуває» ліміт у 4
+      // повідомлення рівно там, де підбиває підсумок.
+      system: buildSystem(maskMachineText(context, knownValues), preset),
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
@@ -455,7 +459,7 @@ export default async function handler(
     knownValues,
   );
 
-  const firstTurnSystem = buildSystem(augmentedContext);
+  const firstTurnSystem = buildSystem(augmentedContext, preset);
 
   // Response-cache (перший тур): ключ від фактичного system+messages. `system`
   // несе живий фінансовий снапшот + RAG + coach-кореляції, тож будь-яка зміна

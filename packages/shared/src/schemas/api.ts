@@ -274,9 +274,30 @@ export const ToolResult = z.object({
   content: z.union([z.string().max(8000), z.number(), z.boolean()]).optional(),
 });
 
+/**
+ * Ідентифікатори серверних preset-ів системної інструкції для `/api/chat`.
+ *
+ * Клієнт шле ЛИШЕ ідентифікатор — сам текст інструкції живе на сервері
+ * (`apps/server/src/modules/chat/chatPresets.ts`) і в клієнтський бандл не
+ * потрапляє. Це навмисно: інструкція, яку шле клієнт, — це переписаний
+ * системний промпт (та сама діра, що закрив v17 огорожею `<user_data>`
+ * навколо `context`). Enum на вході означає, що зловмисний POST може лише
+ * обрати один із двох наших сценаріїв, а не написати свій.
+ *
+ * Другий ефект — UX: інструкція більше не рендериться бульбашкою «від
+ * користувача» і не сміттить в історії чату (`hub_chat_history`).
+ *
+ * - `profile_interview` — коротке інтерв'ю на порожньому банку пам'яті
+ *   (кнопка «Заповнити профіль» у секції «Пам'ять ШІ»);
+ * - `profile_add_info` — доповнення вже непорожнього банку («Додати інфо»).
+ */
+export const CHAT_PRESETS = ["profile_interview", "profile_add_info"] as const;
+export type ChatPreset = (typeof CHAT_PRESETS)[number];
+
 /** /api/chat */
 export const ChatRequestSchema = z.object({
   context: z.string().max(40_000).optional().default(""),
+  preset: z.enum(CHAT_PRESETS).optional(),
   messages: z.array(ChatMessage).max(50).optional().default([]),
   tool_results: z.array(ToolResult).max(20).optional(),
   // tool_calls_raw — сирий вміст від Anthropic, не валідуємо глибоко,

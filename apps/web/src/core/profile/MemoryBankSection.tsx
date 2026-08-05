@@ -83,10 +83,18 @@ export function MemoryBankSection() {
     [entries, saveEntries, toast],
   );
 
+  // Порожній банк → інтервʼю, непорожній → доповнення. Разом із
+  // повідомленням їде `preset`: сама інструкція живе на сервері
+  // (`apps/server/src/modules/chat/chatPresets.ts`), а звідси йде лише
+  // ідентифікатор режиму. Preset також переводить розмову на окреме
+  // тижневе відро AI-квоти, щоб заповнення профілю не з'їдало денний ліміт.
   const openMemoryChat = useCallback(() => {
-    const prompt =
-      entries.length === 0 ? MEMORY_ONBOARDING_PROMPT : MEMORY_ADD_INFO_PROMPT;
-    emitHubBus("openChat", { message: prompt, autoSend: true });
+    const isOnboarding = entries.length === 0;
+    emitHubBus("openChat", {
+      message: isOnboarding ? MEMORY_ONBOARDING_PROMPT : MEMORY_ADD_INFO_PROMPT,
+      autoSend: true,
+      preset: isOnboarding ? "profile_interview" : "profile_add_info",
+    });
   }, [entries.length]);
 
   const handleExport = useCallback(() => {

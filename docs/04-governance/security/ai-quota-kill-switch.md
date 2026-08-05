@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## TL;DR
@@ -202,6 +202,44 @@ set in production`) — fires the moment the misconfig hits.
 > caller у chat-хендлері вирішує, як сигналізувати (зазвичай текстова
 > відповідь "ліміт вичерпано" замість виклику tool-а). DB-недоступність →
 > fail-open (`reason="store_unavailable"`), узгоджено з рештою модуля.
+
+## Runbook: preset-відро (сценарні режими)
+
+Третій тип bucket-а поряд із `default` і `tool:<name>` —
+`preset:<name>` для сценарних режимів чату (`CHAT_PRESETS` у
+`@sergeant/shared`; сьогодні це `profile_interview` і `profile_add_info`,
+кнопки секції «Пам'ять ШІ» у профілі).
+
+**Навіщо.** Онбординг-інтерв'ю пам'яті не влазило у Free-ліміт. Рахунок:
+`FREE_LIMITS.aiRequestsPerDay = 5`, і кожен тур їх їсть — тур із tool-call-ом
+коштує ДВА запити (перший + синтез після `remember`, обидва проходять
+`assertAiQuota`). Інтерв'ю на 4 обміни ≈ 8 запитів, тож новий користувач
+упирався в paywall посеред онбордингу, з половиною незбережених фактів.
+
+**Як влаштовано** (`resolvePresetBudget` у
+[`aiQuotaBudget.ts`](../../../apps/server/src/modules/chat/aiQuotaBudget.ts)):
+
+| Властивість | Значення                                                                             |
+| ----------- | ------------------------------------------------------------------------------------ |
+| Bucket      | `preset:<name>`                                                                      |
+| Вікно       | **тиждень** — `usage_day` = понеділок київського тижня (колонка лишається `DATE`)    |
+| Ліміт       | `AI_QUOTA_PRESET_WEEKLY_LIMIT`, default `12` (≤4 повідомлення × 2 запити + 1 повтор) |
+| Cost        | `1`, як у `default`                                                                  |
+| 429         | `code: "AI_QUOTA_PRESET"` — текст веде до безкоштовного ручного заповнення           |
+
+Вікно тижневе навмисно: профіль заповнюють один раз, тож стеля зловживання —
+`+12` запитів на **тиждень** понад денні 5, а не `+12` щодня.
+
+**Порядок резолву в `assertAiQuota`:** founder-bypass → plan-limit (`null` =
+Pro, вихід без відра) → `resolvePresetBudget()` → інакше `default`. Тобто
+Pro-юзер preset-відра взагалі не торкається, а невідоме значення `preset`
+(enum-звірка в `isChatPreset`) тихо падає у звичайне денне відро — підсунути
+собі нове відро довільним рядком не можна.
+
+**Як вимкнути:** `AI_QUOTA_PRESET_WEEKLY_LIMIT=0` блокує сценарні режими
+(429 з `AI_QUOTA_PRESET`); порожнє/невалідне значення → default `12`.
+Прибрати відро зовсім env-ом не можна навмисно — «нема ліміту на відро» не
+має означати «нема ліміту зовсім».
 
 ## Related docs
 

@@ -52,6 +52,7 @@ describe("useHubChatOverlay", () => {
       open: true,
       initialMessage: "Привіт",
       autoSendInitial: false,
+      preset: undefined,
       openChat: vi.fn(),
       closeChat: vi.fn(),
     };

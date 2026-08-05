@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
 import { trackEvent } from "../observability/analytics";
 import { HubChatHistoryDrawer } from "./HubChatHistoryDrawer";
 import { useChatSessions } from "./chat/useChatSessions";
@@ -15,6 +15,12 @@ interface HubChatProps {
   onClose: () => void;
   initialMessage?: string;
   autoSendInitial?: boolean;
+  /**
+   * Сценарний режим розмови (`CHAT_PRESETS`). Прокидується в
+   * `useChatSend`, який чіпляє його до перших N відправок — див.
+   * `PRESET_TURNS`.
+   */
+  preset?: ChatPreset | undefined;
   onOpenCatalogue?: () => void;
   /**
    * Поверхня, з якої відкрито чат — їде в `hubchat_opened`. Проп, а не
@@ -44,6 +50,7 @@ function HubChat({
   onClose,
   initialMessage,
   autoSendInitial,
+  preset,
   onOpenCatalogue,
   source = "overlay",
 }: HubChatProps) {
@@ -90,6 +97,7 @@ function HubChat({
     setMessages,
     initialMessage,
     autoSendInitial,
+    preset,
     onOpenCatalogue,
   });
   const {

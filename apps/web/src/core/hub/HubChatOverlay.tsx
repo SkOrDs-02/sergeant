@@ -28,7 +28,7 @@ const HubChat = lazyDefault(() => import("./HubChat"));
  * height; the existing iOS-style swipe-down dismiss still works.
  */
 export function HubChatOverlay() {
-  const { open, initialMessage, autoSendInitial, closeChat } =
+  const { open, initialMessage, autoSendInitial, preset, closeChat } =
     useHubChatOverlay();
   const location = useLocation();
   const navigate = useNavigate();
@@ -101,6 +101,7 @@ export function HubChatOverlay() {
           onClose={handleClose}
           initialMessage={initialMessage}
           autoSendInitial={autoSendInitial}
+          preset={preset}
           onOpenCatalogue={handleOpenCatalogue}
         />
       </SuspenseWithMinDelay>
