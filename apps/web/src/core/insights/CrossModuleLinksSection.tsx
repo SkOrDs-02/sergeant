@@ -18,7 +18,11 @@
 import { useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
-import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
+import {
+  CrossModuleLinkCard,
+  type CrossModuleLinkCardProps,
+} from "./CrossModuleLinkCard";
+import { CrossModuleLinkRow } from "./CrossModuleLinkRow";
 import {
   buildCrossModuleSeries,
   notablePairsFromSeries,
@@ -30,6 +34,11 @@ import {
 } from "./crossModuleLinkData";
 
 const MAX_CARDS = 3;
+
+/** Пара модулів + кількість спостережень — стабільна на весь рендер. */
+function linkKey(link: CrossModuleLinkCardProps): string {
+  return `${link.poleA.module}-${link.poleB.module}-${link.observations}`;
+}
 
 export default function CrossModuleLinksSection() {
   // Один прохід по рядах на весь рендер: `buildCrossModuleSeries` читає
@@ -67,12 +76,19 @@ export default function CrossModuleLinksSection() {
 
       {links.length > 0 ? (
         <div className="space-y-3">
-          {links.map((link) => (
-            <CrossModuleLinkCard
-              key={`${link.poleA.module}-${link.poleB.module}-${link.observations}`}
-              {...link}
-            />
-          ))}
+          {links.map((link, i) =>
+            // Перший — повна картка, решта — компактні рядки, що
+            // розгортаються на тапі. Це ієрархія густини (П2), а не
+            // економія місця: `notablePairsFromSeries` віддає пари
+            // впорядкованими за силою, тож три однакові картки
+            // стверджували б рівноцінність, якої немає. Заразом секція
+            // перестає займати цілий екран над звітами (≈860 → ≈400 px).
+            i === 0 ? (
+              <CrossModuleLinkCard key={linkKey(link)} {...link} />
+            ) : (
+              <CrossModuleLinkRow key={linkKey(link)} {...link} />
+            ),
+          )}
         </div>
       ) : silent ? (
         // `strength: 0` нижче — не заглушка, а точне твердження: сили зв'язку

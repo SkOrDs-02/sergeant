@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   gradeCrossModuleLink,
-  nextTierThreshold,
+  nextDaysThreshold,
   tierWord,
   tierMeta,
   formatWeeksUk,
   formatObservationsUk,
   MIN_N,
   NOTABLE_R,
-  REPEATING_N,
+  REPEATING_R,
   STABLE_N,
   STRONG_R,
 } from "./crossModuleLinkTiers";
@@ -32,22 +32,37 @@ describe("gradeCrossModuleLink", () => {
     expect(gradeCrossModuleLink(10, NaN)).toBeNull();
   });
 
-  it("tier 1 — just crossed the silence threshold", () => {
+  it("tier 1 — сила щойно за порогом помітності", () => {
     expect(gradeCrossModuleLink(MIN_N, NOTABLE_R)).toBe(1);
-    expect(gradeCrossModuleLink(REPEATING_N - 1, 0.5)).toBe(1);
+    expect(gradeCrossModuleLink(STABLE_N * 2, REPEATING_R - 0.01)).toBe(1);
   });
 
-  it("tier 2 — repeats beyond 2x MIN_N but under half the window and under STRONG_R", () => {
-    expect(gradeCrossModuleLink(REPEATING_N, 0.5)).toBe(2);
-    expect(gradeCrossModuleLink(STABLE_N - 1, STRONG_R - 0.01)).toBe(2);
+  it("tier 2 — сила помітно вища за поріг, але ще не сильна", () => {
+    expect(gradeCrossModuleLink(MIN_N, REPEATING_R)).toBe(2);
+    expect(gradeCrossModuleLink(STABLE_N * 2, STRONG_R - 0.01)).toBe(2);
   });
 
-  it("tier 3 — covers half the analysis window", () => {
-    expect(gradeCrossModuleLink(STABLE_N, 0.5)).toBe(3);
+  it("tier 3 — потрібні ОБИДВІ умови: сила ≥ STRONG_R і днів ≥ STABLE_N", () => {
+    expect(gradeCrossModuleLink(STABLE_N, STRONG_R)).toBe(3);
   });
 
-  it("tier 3 — strong correlation alone is enough once repeating", () => {
-    expect(gradeCrossModuleLink(REPEATING_N, STRONG_R)).toBe(3);
+  /**
+   * Регресія на схлопнуту драбину (AI-DANGER у `crossModuleLinkTiers.ts`).
+   *
+   * Раніше умова була `n ≥ STABLE_N АБО |r| ≥ STRONG_R`. Після фіксу
+   * структурних нулів `n` став однаковим для всіх пар і майже завжди
+   * більшим за 30, тож перша половина «або» вмикала третій ступінь навіть
+   * на межовій кореляції — слово впевненості переставало щось означати.
+   */
+  it("багато днів САМІ ПО СОБІ третього ступеня не дають", () => {
+    expect(gradeCrossModuleLink(STABLE_N * 2, NOTABLE_R + 0.01)).toBe(1);
+    expect(gradeCrossModuleLink(59, 0.41)).toBe(1);
+    expect(gradeCrossModuleLink(59, 0.6)).toBe(2);
+  });
+
+  it("сильна кореляція САМА ПО СОБІ третього ступеня не дає", () => {
+    expect(gradeCrossModuleLink(MIN_N, 0.95)).toBe(2);
+    expect(gradeCrossModuleLink(STABLE_N - 1, STRONG_R)).toBe(2);
   });
 
   it("negative correlations grade on |r|, not sign", () => {
@@ -56,14 +71,24 @@ describe("gradeCrossModuleLink", () => {
   });
 });
 
-describe("nextTierThreshold", () => {
-  it("points tier 1 at REPEATING_N and tier 2 at STABLE_N", () => {
-    expect(nextTierThreshold(1)).toBe(REPEATING_N);
-    expect(nextTierThreshold(2)).toBe(STABLE_N);
+describe("nextDaysThreshold", () => {
+  it("до порога мовчання ціль — MIN_N", () => {
+    expect(nextDaysThreshold(0)).toBe(MIN_N);
+    expect(nextDaysThreshold(MIN_N - 1)).toBe(MIN_N);
   });
 
-  it("tier 3 has no further threshold", () => {
-    expect(nextTierThreshold(3)).toBeNull();
+  it("між MIN_N і STABLE_N ціль — STABLE_N", () => {
+    expect(nextDaysThreshold(MIN_N)).toBe(STABLE_N);
+    expect(nextDaysThreshold(STABLE_N - 1)).toBe(STABLE_N);
+  });
+
+  it("після STABLE_N дні більше нічого не змінюють", () => {
+    expect(nextDaysThreshold(STABLE_N)).toBeNull();
+    expect(nextDaysThreshold(59)).toBeNull();
+  });
+
+  it("не падає на нечислових входах", () => {
+    expect(nextDaysThreshold(NaN)).toBeNull();
   });
 });
 

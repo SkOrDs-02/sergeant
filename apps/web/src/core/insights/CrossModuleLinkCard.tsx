@@ -35,7 +35,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import {
   gradeCrossModuleLink,
-  nextTierThreshold,
+  nextDaysThreshold,
   tierMeta,
   tierWord,
   formatObservationsUk,
@@ -112,7 +112,13 @@ export interface CrossModuleLinkCardProps {
   weeks?: number;
 }
 
-const MODULE_TEXT_CLASS: Record<CrossModuleLinkModule, string> = {
+/**
+ * Акцент модуля для тексту. Експортований, бо компактний рядок
+ * (`CrossModuleLinkRow`) фарбує полюси тим самим зіставленням — інакше
+ * згорнутий і розгорнутий вигляд того самого зв'язку розійшлись би в
+ * кольорі, і module-accent containment тримався б у двох місцях по-різному.
+ */
+export const MODULE_TEXT_CLASS: Record<CrossModuleLinkModule, string> = {
   finyk: "text-finyk",
   fizruk: "text-fizruk",
   routine: "text-routine",
@@ -201,24 +207,23 @@ function Pole({
 }
 
 /**
- * Доказова смуга — спостереження як позначки, з видимими «ще не набраними» до
- * наступного ступеня.
+ * Доказова смуга — спостереження як позначки, з видимими «ще не набраними»
+ * рівно доти, доки ДНІ ще на щось впливають (`nextDaysThreshold`).
  *
  * AI-NOTE: позначки НЕ рахуються один-до-одного після `MAX_EVIDENCE_MARKS` —
  * смуга впирається в ширину картки, тож 23 спостереження дають ті самі 16
  * позначок, що й 16. Це свідомо: точне число завжди стоїть поруч текстом
  * (`tierMeta` під смугою) і в `aria-label`, тож смуга читається як шкала
- * прогресу до наступного ступеня, а не як тáлі. Змінюєш ліміт — не забудь, що
+ * прогресу, а не як тáлі. Змінюєш ліміт — не забудь, що
  * `EVIDENCE_HEIGHT_PATTERN` циклиться, а не подовжується.
+ *
+ * AI-CONTEXT: `tier` більше не приймається — після перебудови драбини
+ * (жирний коментар угорі `crossModuleLinkTiers.ts`) ступінь рухає сила
+ * зв'язку, а не кількість днів, тож «скільки ще набрати» залежить лише від
+ * самих днів.
  */
-function EvidenceStrip({
-  tier,
-  observations,
-}: {
-  tier: CrossModuleLinkTier;
-  observations: number;
-}) {
-  const target = nextTierThreshold(tier) ?? observations;
+function EvidenceStrip({ observations }: { observations: number }) {
+  const target = nextDaysThreshold(observations) ?? observations;
   const totalMarks = Math.min(
     Math.max(target, observations),
     MAX_EVIDENCE_MARKS,
@@ -428,7 +433,7 @@ export function CrossModuleLinkCard({
               </span>
             </div>
           </div>
-          <EvidenceStrip tier={tier} observations={observations} />
+          <EvidenceStrip observations={observations} />
 
           {days && days.length > 0 && (
             <>
