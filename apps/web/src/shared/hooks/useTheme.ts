@@ -129,13 +129,13 @@ function resolveTheme(
 /**
  * Browser-chrome `theme-color` for each resolved theme. Must track the
  * `--c-bg` values in `src/styles/theme.css` (`:root` #f2ecdf / `.dark`
- * #0d1512). `html.hc` / `html.hc.dark` layer AAA-leaning text/border
+ * #14100e). `html.hc` / `html.hc.dark` layer AAA-leaning text/border
  * tokens on top but do not override `--c-bg`, so HC uses the same bg as
  * its underlying light/dark tier — no separate HC entry needed here.
  */
 const THEME_COLOR_BY_MODE = {
   light: "#f2ecdf",
-  dark: "#0d1512",
+  dark: "#14100e",
 } as const;
 
 function applyResolvedTheme({ isDark, isHighContrast }: ResolvedTheme): void {

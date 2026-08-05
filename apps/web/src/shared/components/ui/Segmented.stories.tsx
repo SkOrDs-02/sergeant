@@ -12,7 +12,7 @@ import { Segmented, type SegmentedProps } from "./Segmented";
  *                 скоупують активний стан до конкретного модуля).
  *   - `style`   — візуальне трактування активного chip-а:
  *                 - `solid` — інвертований ink («Чорнило» v3.1 § 6):
- *                   `bg-ink text-bg` (theme-aware — dark #e7f0ea/#0d1512,
+ *                   `bg-ink text-bg` (theme-aware — dark #e7f0ea/#14100e,
  *                   light дзеркально), бордер тримає module-акцент.
  *                 - `soft`  — `bg-{c}-soft` + accent-border + `text-{c}-strong`,
  *                   більш subtle treatment для filtering chips.

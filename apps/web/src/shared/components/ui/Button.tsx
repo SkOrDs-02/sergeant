@@ -144,7 +144,7 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // Module-specific branded buttons. Light keeps the AA-safe `-strong`
   // fill + white text. Dark «Чорнило» (spec § 4): the button is the
   // luminescent tier-400 module accent (`dark:bg-{module}` → theme-aware
-  // accent) with an ink foreground (`dark:text-bg` → #0d1512) and a resting
+  // accent) with an ink foreground (`dark:text-bg` → #14100e) and a resting
   // accent glow instead of a drop shadow — depth reads as light, not
   // elevation. Text over the accent is ink, never white (Rule #9 needs no
   // `-strong` companion here).

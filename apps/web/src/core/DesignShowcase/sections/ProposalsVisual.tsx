@@ -59,7 +59,7 @@ export function ProposalsVisualSection() {
         <ProposalCompareCard
           id="V-3"
           title="Динамічний theme-color"
-          intent="Зараз манифест має статичний theme_color, що слідує лише за `--c-bg` (light #f2ecdf / dark #0d1512), але не за модулем. Пропозиція: колір системної панелі підлаштовується під акцент активного модуля з плавним переходом."
+          intent="Зараз манифест має статичний theme_color, що слідує лише за `--c-bg` (light #f2ecdf / dark #14100e), але не за модулем. Пропозиція: колір системної панелі підлаштовується під акцент активного модуля з плавним переходом."
         >
           <DynamicThemeColorDemo />
         </ProposalCompareCard>
