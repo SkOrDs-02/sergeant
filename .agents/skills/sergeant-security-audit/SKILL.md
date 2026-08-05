@@ -29,12 +29,15 @@ pnpm typecheck                        # catches unsafe type coercions
 
 - **Auth:** Every route in `apps/server/src/modules/` must apply Better Auth session middleware. Confirm `requireSession` (or equivalent) is present — verify the error path, not just the happy path.
 - **Input validation:** Every request body must pass through a Zod schema. Raw `req.body` access without schema = flag immediately.
-- **SQL injection:** Sergeant uses Drizzle ORM. Risk vector is raw template literals with user input inside `sql\`...\``. Inspect all `sql` tagged template calls for user-controlled interpolation.
+- **SQL injection — audit BOTH access paths.** `drizzle.ts` wraps the same `pg` Pool as `db.ts`, so Sergeant has two live query surfaces and checking only one misses half the attack area:
+  1. **Raw `pg`** (most modules — `ai-memory`, `logRetention`, …): flag any query string built by concatenation/interpolation instead of `$1` placeholders.
+  2. **Drizzle**: flag user-controlled interpolation inside `` sql`...` `` tagged templates.
+  Also check `dbReplica.ts` call sites (`queryReplica()`) — same rules apply there.
 - **Hard Rule #1 (bigint coercion):** Serializers that skip `Number()` cast on `bigint` DB fields can expose internal types to API consumers — flag as data-contract issue.
 
 ## Pino redaction (`apps/server/src/obs/logger.ts`)
 
-The logger imports `REDACT_KEY_NAMES` from `@sergeant/shared/lib/pii.ts`. Redaction is key-name based (case-insensitive), recursive, non-mutating. Primitives redact to `"[redacted]"`, objects to `null`.
+The logger imports `REDACT_KEY_NAMES` from the package root `@sergeant/shared` (source of truth: `packages/shared/src/lib/pii.ts`). Redaction is key-name based (case-insensitive), recursive, non-mutating. Primitives redact to `"[redacted]"`, objects to `null`.
 
 When adding a surface that logs user data:
 
@@ -53,7 +56,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 ```
 
 - Cross-reference CVEs with `renovate.json` — if Renovate already has a pending update PR, do not create a duplicate; comment on the existing one instead.
-- Check `THIRD_PARTY_LICENSES.md` for GPL transitive deps — compliance risk.
+- For license/compliance risk (e.g. a copyleft transitive dep), inspect the resolved tree directly — `pnpm licenses list --json` — and record anything actionable in [`docs/04-governance/security/audit-exceptions.md`](../../../docs/04-governance/security/audit-exceptions.md). The repo has **no** `THIRD_PARTY_LICENSES.md`; do not look for one.
 - Run `pnpm outdated` to surface packages outside Renovate range constraints.
 - For safe dep bumps, follow `docs/00-start/playbooks/bump-dep-safely.md`.
 

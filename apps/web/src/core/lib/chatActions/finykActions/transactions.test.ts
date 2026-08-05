@@ -13,6 +13,17 @@ vi.mock("../../../../modules/finyk/lib/sqliteWriter", () => ({
   triggerHiddenTransactionSqliteMirror: vi.fn(),
   triggerManualExpenseDeleteSqliteMirror: vi.fn(),
 }));
+// `hideTransaction` / `splitTransaction` проганяють id через guard проти
+// вигаданих моделлю ідентифікаторів (`entityLookup`), а той читає реальні
+// SQLite- і Mono-кеші — у юніт-тесті вони порожні, тож кожен виклик впирався
+// б у «Не знайшов транзакцію». Підміняємо лише перевірки існування;
+// нормалізація та тексти помилок лишаються справжні, а саму відмову guard-а
+// покриває сусідній `guards.test.ts`.
+vi.mock("./entityLookup", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./entityLookup")>()),
+  finykTransactionExists: vi.fn(() => true),
+  finykCategoryExists: vi.fn(() => true),
+}));
 
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";

@@ -1,6 +1,6 @@
 # Playbook: Dependency Sweeper (періодичний тріаж залежностей)
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 **Trigger:** запланований періодичний прогін (`/schedule`, cadence 6h–1d) або ручний запит «що застаріло / які CVE / що безпечно бампнути». Це **не** заміна Renovate — див. § «Чим це відрізняється від Renovate».
@@ -18,7 +18,7 @@
 
 Renovate у цьому репо вже відкриває PR-и на бампи (щопонеділка до 6:00, `vulnerabilityAlerts` — будь-коли), групує `@types/*` та ESLint, automerge для частини. **Dependency Sweeper його не дублює й не замінює.** Sweeper — це шар **звітності + тріажу + ескалації** поверх наших примітивів:
 
-- зводить `pnpm outdated` + `pnpm audit` + `pnpm licenses:check` в **один людино-читаний дайджест** з ризик-класифікацією;
+- зводить `pnpm outdated` + `pnpm audit` + `pnpm licenses list` в **один людино-читаний дайджест** з ризик-класифікацією;
 - звіряє CVE з ledger-ом [`audit-exceptions.md`](../../04-governance/security/audit-exceptions.md), щоб **не нагадувати про вже-waived** вразливості;
 - підсвічує те, що **провалилось крізь Renovate** (згруповані major-и, що висять; CVE без запису в ledger; license-дрейф);
 - на L2 — **батчить safe-патчі**, які Renovate не заавтомерджив, окремим bump-PR.
@@ -29,13 +29,13 @@ Renovate у цьому репо вже відкриває PR-и на бампи 
 
 ## Фази патерна
 
-| Фаза                        | Що робить                                                         | Наш примітив                                                                 |
-| --------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **scan**                    | знайти застаріле + відомі CVE + license-дрейф                     | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses:check` |
-| **triage-risk**             | класифікувати кожен апдейт: safe vs risky                         | движок: major/unknown → risky; patch/minor → safe                            |
-| **patch-safe** _(L2+)_      | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | `/wt <topic>` → `pnpm up <pkg>@<v>` → commit `chore(deps): …`                |
-| **verify-worktree** _(L2+)_ | у тому ж worktree прогнати гейт                                   | `pnpm check` (мін. `--filter` typecheck+test зачепленого)                    |
-| **escalate-risky**          | major / high-CVE / denylist → людині                              | `mcp__ccd_session__spawn_task` чіп                                           |
+| Фаза                        | Що робить                                                         | Наш примітив                                                                |
+| --------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **scan**                    | знайти застаріле + відомі CVE + license-дрейф                     | `pnpm -r outdated --format json`, `pnpm audit --json`, `pnpm licenses list` |
+| **triage-risk**             | класифікувати кожен апдейт: safe vs risky                         | движок: major/unknown → risky; patch/minor → safe                           |
+| **patch-safe** _(L2+)_      | безпечні застосувати в **ізольованому** worktree, окремим bump-PR | `/wt <topic>` → `pnpm up <pkg>@<v>` → commit `chore(deps): …`               |
+| **verify-worktree** _(L2+)_ | у тому ж worktree прогнати гейт                                   | `pnpm check` (мін. `--filter` typecheck+test зачепленого)                   |
+| **escalate-risky**          | major / high-CVE / denylist → людині                              | `mcp__ccd_session__spawn_task` чіп                                          |
 
 **safe** = patch/minor bump у devDep або добре покритому пакеті. **risky** = major bump, high-sev CVE, denylist-пакет, unknown-range.
 

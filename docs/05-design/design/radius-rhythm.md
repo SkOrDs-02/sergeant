@@ -10,14 +10,14 @@ Sergeant використовує **size-driven** шкалу радіусів: �
 
 ## Шкала
 
-| Токен                   | Tailwind-клас  | px    | Де використовувати                                                                                     |
-| ----------------------- | -------------- | ----- | ------------------------------------------------------------------------------------------------------ |
-| **Swatch**              | `rounded-sm`   | 2 px  | Крихітні кольорові маркери (heatmap-клітинки, точки в легенді чарта, swatch-и macro-pie).              |
-| **Marker**              | `rounded-md`   | 6 px  | Елементи 5 × 5 / 6 × 6 px (квадратики чекбоксів, badge-чипи, in-place pill-лейбли).                    |
-| **Control (sm)**        | `rounded-xl`   | 12 px | `Button` size `xs`/`sm`; icon-кнопки `≤ 40 px`; малі input-чипи; рейл `IconButton`.                    |
-| **Card / Control (md)** | `rounded-2xl`  | 16 px | `Button` size `md`/`lg`; `Card` `radius="lg"` (типові контентні поверхні); `IconButton` ≥ 44 px.       |
-| **Hero / Control (xl)** | `rounded-3xl`  | 24 px | `Button` size `xl`; `Card` `radius="xl"` (hero / module-branded); shell `Modal`; shell bottom-sheet-у. |
-| **Pill**                | `rounded-full` | ∞     | FAB; кругові аватари; status-точки; градієнти module-bento-тайлів; toggle-pill-и.                      |
+| Токен                   | Tailwind-клас  | px    | Де використовувати                                                                                                                                                               |
+| ----------------------- | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Swatch**              | `rounded-sm`   | 2 px  | Крихітні кольорові маркери (heatmap-клітинки, точки в легенді чарта, swatch-и macro-pie).                                                                                        |
+| **Marker** _(legacy)_   | `rounded-md`   | 6 px  | ⛔ Заборонений у новому коді — згорнутий у CONTROL (`tailwind-preset.js` § radius rhythm). Лишається лише в незачищених call-site-ах; при дотику до файлу міняй на `rounded-xl`. |
+| **Control (sm)**        | `rounded-xl`   | 12 px | `Button` size `xs`/`sm`; icon-кнопки `≤ 40 px`; малі input-чипи; рейл `IconButton`.                                                                                              |
+| **Card / Control (md)** | `rounded-2xl`  | 16 px | `Button` size `md`/`lg`; `Card` `radius="lg"` (типові контентні поверхні); `IconButton` ≥ 44 px.                                                                                 |
+| **Hero / Control (xl)** | `rounded-3xl`  | 24 px | `Button` size `xl`; `Card` `radius="xl"` (hero / module-branded); shell `Modal`; shell bottom-sheet-у.                                                                           |
+| **Pill**                | `rounded-full` | ∞     | FAB; кругові аватари; status-точки; градієнти module-bento-тайлів; toggle-pill-и.                                                                                                |
 
 Шару семантичних аліасів (`rounded-card` / `rounded-control`) **немає**. Tailwind уже дає правильний примітив — додавати аліаси означає мати два імені для однієї речі, що тільки збільшує дрейф.
 

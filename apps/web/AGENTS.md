@@ -30,7 +30,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Surface-specific gotchas
 
-- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`). No inline `queryKey: [...]`.
+- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`). No inline `queryKey: [...]`.
 - **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
 - **No arbitrary hex / focus-visible (дизайн-конвенція — tokens + review, ex-Rules #11/#14, retired ADR-0081):** no arbitrary hex in `className`; use `focus-visible:` not `focus:`.
 - **Module accents (дизайн-конвенція — tokens + review, ex-Rule #12, retired ADR-0081):** module-accent containment — no foreign accents inside a module subtree.

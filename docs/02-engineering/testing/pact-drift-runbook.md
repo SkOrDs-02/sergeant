@@ -1,6 +1,6 @@
 # Pact contract drift — runbook
 
-> **Last touched:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-20.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) закомічений — cron 06:00 UTC + `workflow_dispatch`. Локально/ad-hoc — CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs). § Workflow YAML — дзеркало для review у docs.
@@ -20,7 +20,7 @@
 - Файл: [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) (§ Workflow YAML — дзеркало).
 - Тригери: cron `0 6 * * *` (06:00 UTC щодня) + `workflow_dispatch` з опціями (`base_url`, `include_mutations`, `strict`).
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
-- Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 22 інтеракціями).
+- Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 37 інтеракціями).
 - Idempotent issue logic: один open issue `[Pact drift] …` із label `contract-drift`. Наступні детекції → comment у той самий issue, а не дубльований issue. Mirrors `db-backup-verify.yml`.
 
 ### Як читається verdict
@@ -40,7 +40,7 @@
 
 | Secret                   | Опис                                                                                                      | Як отримати                                                                                                                                                                                                                                                                 |
 | ------------------------ | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `STAGING_BASE_URL`       | Provider base URL (e.g. `https://api.staging.sergeant.app`). Без trailing slash.                          | З deploy-config (Railway → staging service → public URL).                                                                                                                                                                                                                   |
+| `STAGING_BASE_URL`       | Provider base URL (e.g. `https://api.staging.sergeant.app`). Без trailing slash.                          | З deploy-config (Coolify → staging app → public URL).                                                                                                                                                                                                                       |
 | `STAGING_SESSION_COOKIE` | Повне значення для HTTP `Cookie` header — типово `better-auth.session_token=<...>` (без подвійних лапок). | Логін у staging як test-user `user-pact-001` → DevTools → Application → Cookies → копія `better-auth.session_token`. Test user створюється через staging seed-скрипт; password rotation — щонеділі (`.agents/skills/sergeant-data-and-migrations/SKILL.md § seed scripts`). |
 
 Без `STAGING_SESSION_COOKIE` всі auth-required endpoints отримають verdict `skip / missing_auth` (workflow зелений, але coverage обмежений до публічних endpoints). Hard-fail тільки коли `STAGING_BASE_URL` відсутній.

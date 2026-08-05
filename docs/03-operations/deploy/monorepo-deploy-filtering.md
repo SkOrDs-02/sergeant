@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-19.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 >
 > **⚠️ Бекенд-тригер переписано ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.
@@ -13,7 +13,7 @@ Sergeant ships production surfaces from one `main` branch:
 Without filtering, **every push to `main` triggers both deploys**, even
 for `docs/**`-only or `apps/mobile/**`-only changes. That wastes build
 minutes, churns Sentry release annotations, and creates unnecessary deploy
-events in `#deploys` Telegram alerts (n8n routes them per [`../observability/runbook.md`](../observability/runbook.md)).
+noise in the Coolify deploy history and burn CI minutes for nothing.
 
 This page is the canonical recipe for the **per-surface deploy filters**
 that keep the trunk-based workflow cheap.

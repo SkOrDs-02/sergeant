@@ -28,7 +28,7 @@ export function buildOpenApiDocument() {
     servers: [
       {
         url: "https://sergeant.app",
-        description: "Production (Vercel edge → Railway)",
+        description: "Production (Vercel edge → Coolify/Hetzner)",
       },
       {
         url: "http://localhost:3000",

@@ -1,8 +1,8 @@
 ---
 name: sergeant-start-here
 description: Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Стартова точка для Sergeant
@@ -13,6 +13,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 - Не знаєш, де щось живе? Спершу використай codebase-memory MCP (`search_graph`, `trace_path`, `get_code_snippet`); якщо MCP недоступний — TypeScript/LSP, Knip або `rg`. Repo-specific committed indexes retired за ADR-0081.
 - Не знаєш, з чого почати зміну? `pnpm agent:route` — за git-diff/гілкою підкаже потрібний specialist-skill + активні hard-rules.
+- Не знаєш, хто кого може викликати? [`.agents/agent-graph.json`](../../agent-graph.json) — явна топологія агентного шару (skill / agent / workspace + дозволені переходи). Гейт `pnpm lint:agent-graph`; rationale — [ADR-0084](../../../docs/04-governance/adr/0084-agent-graph-topology.md).
 - Прочитай [`docs/00-start/agents/decisions.md`](../../../docs/00-start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
 - Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
@@ -30,10 +31,10 @@ Read `.kilocode/snapshot.md` and react:
 
 - Red CI on `main` → stop, investigate before opening a new PR.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
-- Open entropy-janitor issues mentioning the touched surface → load `sergeant-tech-debt`.
+- Entropy-сигнали по зачепленій поверхні (dead code, docs drift, cycles — прямі перевірки, див. `sergeant-tech-debt` § «Прямі entropy checks») → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
 
-The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0067 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
+The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0071 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
 
 ## Не-узгоджувані правила
 

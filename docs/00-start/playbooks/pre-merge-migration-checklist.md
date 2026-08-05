@@ -1,6 +1,6 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-10-17.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
@@ -11,7 +11,7 @@
 - Coupled surface: `apps/server/src/modules` (serializers — rule #1), `packages/api-client` (rule #3)
 - Governing skill: `sergeant-data-and-migrations`
 
-> Призначення цього playbook-у — це **обов'язковий чек-лист**, який має бути скопійований у PR description і відмічений до merge. Закриває аудитний пункт `PR-5.C` (`docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md`).
+> Призначення цього playbook-у — це **обов'язковий чек-лист**, який має бути скопійований у PR description і відмічений до merge. Закриває аудитний пункт `PR-5.C` ([`2026-04-26-sergeant-audit-devin.md` @6e7b212](https://github.com/Skords-01/Sergeant/blob/6e7b21275fd8a72060257598f3f8cf1afa69da4b/docs/90-work/audits/archive/2026-04-26-sergeant-audit-devin.md)).
 
 > **Чому окремий чек-лист?** `add-sql-migration.md` описує авторинг (як написати міграцію). Цей playbook — про **review-фазу**: рев'юер та автор разом перевіряють, що міграція безпечно піде у production без 5-ти типових мисталок (DROP без grace, gaps у номерах, відсутній `down.sql`, забутий bigint-coercion, drift у `api-client`).
 

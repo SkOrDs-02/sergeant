@@ -19,7 +19,7 @@ Capacitor shell (`@sergeant/mobile-shell`) — це primary mobile-поверх�
 
 Phase 2 стартує лише коли Phase 1 (Web) виконала ці чек-пункти. Інакше bottom-up shell-білд буде багий «не своєю провиною»:
 
-- [ ] **Web build стабільний на production-домені.** `apps/server/dist` ↔ Vercel ↔ Railway зв'язка зелена, [`apps/web/vercel.json`](../../../../apps/web/vercel.json) `outputDirectory → apps/server/dist` (PR [#508](https://github.com/Skords-01/Sergeant/pull/508) уже мерджнуто).
+- [ ] **Web build стабільний на production-домені.** `apps/server/dist` ↔ Vercel ↔ Coolify API зв'язка зелена, [`apps/web/vercel.json`](../../../../apps/web/vercel.json) `outputDirectory → apps/server/dist` (PR [#508](https://github.com/Skords-01/Sergeant/pull/508) уже мерджнуто).
 - [ ] **`pnpm --filter @sergeant/mobile-shell build:web` працює без warning-ів.** Це делегує до `@sergeant/web build:capacitor` (`VITE_TARGET=capacitor`), який вимикає `vite-plugin-pwa` — у shell-бандлі НЕ повинно бути `sw.js`, `manifest.webmanifest`, `virtual:pwa-register`.
 - [ ] **Bearer-auth контракт зелений.** Login flow з web → shell-WebView повертає bearer-токен у `auth-storage.ts` (Keychain / EncryptedSharedPreferences) — інтеграція з PR [#505](https://github.com/Skords-01/Sergeant/pull/505).
 - [ ] **API доступний з `com.sergeant.shell://` origin.** `apps/server/src/middleware/cors.ts` має дозволяти shell-host-и; web-варіант CORS вже live.
@@ -539,7 +539,7 @@ Acceptance checklist — пройти ПОВНІСТЮ перед першим P
 - **PostHog** (US/EU) — analytics. Вибрати EU instance для GDPR-residency.
 - **Resend** (US) — transactional email.
 - **Monobank** (UA) — financial integration.
-- **Railway** (US) — backend hosting.
+- **Hetzner** (ЄС, Німеччина) — backend hosting (Coolify, ADR-0074).
 - **Vercel** (US) — frontend hosting.
 - **Firebase Cloud Messaging** (Google, US) — Android push.
 - **Apple Push Notification Service** (Apple, US) — iOS push.

@@ -1,6 +1,6 @@
 # Відстеження свіжості документації
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Ця система гарантує, що критична документація лишається актуальною — у документах вшиваються freshness-заголовки, а нічний джоб відкриває GitHub-issue для протермінованих файлів. **Список відстежуваних файлів автоматично виводиться з самого репо** — нічого додавати в JSON-allowlist не треба.
@@ -32,7 +32,7 @@
    }
    ```
 
-4. **Нічний workflow** — `.github/workflows/docs-freshness.yml` запускає `scripts/docs/check-freshness.mjs` щодня о 07:00 UTC. Для кожного файлу, у якого минула дата **Next review**, скрипт відкриває GitHub-issue з лейблами `documentation` і `freshness-overdue`.
+4. **Workflow** — `.github/workflows/docs-freshness.yml` запускає `scripts/docs/check-freshness.mjs` на кожному PR, що торкається `**/*.md` чи `scripts/docs/**`, і вручну через `workflow_dispatch`. Нічного cron-у немає (прибраний разом зі скороченням автоматизації); для кожного файлу з простроченим **Next review** скрипт відкриває GitHub-issue з лейблами `documentation` і `freshness-overdue`.
 
 5. **Coverage-gate** — `node scripts/docs/check-freshness.mjs --check-coverage` фейлиться, якщо в репо знайдено `.md` без freshness-заголовка, який при цьому не виключено через `excludeGlobs` / `explicitExclude`. Запускається в pre-merge CI, щоб новий док не пройшов без header-а.
 

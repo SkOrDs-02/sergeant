@@ -4,14 +4,14 @@ Backend API Sergeant — Node 22, Express, PostgreSQL (`pg`), Better Auth, Anthr
 
 ## Стек
 
-| Шар     | Технологія                                                   |
-| ------- | ------------------------------------------------------------ |
-| Runtime | Node 22, TypeScript 6                                        |
-| HTTP    | Express, Helmet, CORS, rate limiting                         |
-| DB      | PostgreSQL 16, `pg` driver, SQL-міграції                     |
-| Auth    | Better Auth (cookie-сесії, bearer для mobile)                |
-| AI      | Anthropic Claude (tool-use, streaming), Voyage AI embeddings |
-| Тести   | Vitest + Testcontainers (real Postgres)                      |
+| Шар     | Технологія                                                                |
+| ------- | ------------------------------------------------------------------------- |
+| Runtime | Node 22, TypeScript 6                                                     |
+| HTTP    | Express, Helmet, CORS, rate limiting                                      |
+| DB      | PostgreSQL 17 локально / 18 у проді (pgvector), `pg` driver, SQL-міграції |
+| Auth    | Better Auth (cookie-сесії, bearer для mobile)                             |
+| AI      | Anthropic Claude (tool-use, streaming), Voyage AI embeddings              |
+| Тести   | Vitest + Testcontainers (real Postgres)                                   |
 
 ## Структура
 
@@ -24,7 +24,7 @@ src/
 ├── db.ts           # PostgreSQL pool, ensureSchema(), міграції
 ├── routes/         # Express-роутери: auth, me, sync, chat, coach, push, banks, …
 ├── modules/        # Бізнес-логіка: chat/ (toolDefs/), mono/, nutrition/, push/, sync/, …
-├── migrations/     # 001_noop.sql … 045_*.sql (sequential, no gaps)
+├── migrations/     # 001_noop.sql … 103_*.sql (sequential, no gaps)
 ├── http/           # Спільний HTTP-шар (errorHandler, requireSession, rateLimit)
 └── obs/            # Observability (pino logger, metrics)
 ```
@@ -43,20 +43,20 @@ pnpm --filter @sergeant/server build            # Production build
 
 ## Деплой
 
-Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `pnpm db:migrate`.
+Hetzner + Coolify ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)): образ збирає `deploy-api.yml` → GHCR із `Dockerfile.api`, Coolify тягне й деплоїть. Pre-deploy: `pre_deployment_command = node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`).
 
 Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
 
 ### Trust proxy (`TRUST_PROXY`)
 
-`config.ts` читає `process.env.TRUST_PROXY` і передає у `app.set("trust proxy", …)`. Дефолт — `1` для Railway (Railway edge proxy додає рівно один hop у `X-Forwarded-For`).
+`config.ts` читає `process.env.TRUST_PROXY` і передає у `app.set("trust proxy", …)`. Дефолт — `1` для Coolify (його reverse-proxy додає рівно один hop у `X-Forwarded-For`).
 
 Коли і як міняти:
 
 | Сценарій                      | Значення                                |
 | ----------------------------- | --------------------------------------- |
-| Тільки Railway (default)      | не задавати, або `TRUST_PROXY=1`        |
-| Cloudflare → Railway          | `TRUST_PROXY=2`                         |
+| Тільки Coolify (default)      | не задавати, або `TRUST_PROXY=1`        |
+| Cloudflare → Coolify          | `TRUST_PROXY=2`                         |
 | AWS ALB → ECS                 | `TRUST_PROXY=2` або CIDR ALB            |
 | Internal-only (no edge proxy) | `TRUST_PROXY=false`                     |
 | Multi-edge з відомими IP      | `TRUST_PROXY=10.0.0.0/8,192.168.0.0/16` |

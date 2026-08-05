@@ -1,13 +1,15 @@
 ---
 name: sergeant-data-and-migrations
 description: Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Coolify pre-deploy data paths; also when adding indexes or fixing query perf; UA: правиш SQL, схему БД, міграції, rollout даних.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Дані і міграції в Sergeant
 
-Sergeant використовує raw `pg` плюс послідовні SQL-міграції. Зміни в БД мають бути безпечними для Coolify pre-deploy (`pre_deployment_command = node dist-server/migrate.js`, ADR-0074) і для старої версії app-у, яка ще може коротко обслуговувати трафік.
+Sergeant використовує **два шляхи до БД поверх одного `pg` Pool** — raw parameterized `pg` (`db.ts`, більшість модулів) і Drizzle ORM (`drizzle.ts`, waitlist / auth-суміжні таблиці, типізовані читання) — плюс послідовні SQL-міграції як єдине джерело істини для схеми. Обидва шляхи легітимні; новий код тримається стилю сусідніх файлів модуля. Для аудиту це означає, що перевіряти треба **обидві** поверхні (те саме формулювання — у `sergeant-security-audit` і `sergeant-backend-architecture`).
+
+Зміни в БД мають бути безпечними для Coolify pre-deploy (`pre_deployment_command = node dist-server/migrate.js`, ADR-0074) і для старої версії app-у, яка ще може коротко обслуговувати трафік.
 
 ## Що покриває
 
@@ -18,7 +20,7 @@ Sergeant використовує raw `pg` плюс послідовні SQL-м�
 
 ## Жорсткі правила
 
-- Створюй міграції через `pnpm gen migration --name <description>`.
+- Створюй міграції через `pnpm gen migration --name <description>` (plop-генератор проставляє номер і створює `.down.sql`-компаньйон). Якщо генератор недоступний — ручний порядок із [`add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md): знайди поточний максимум, +1, zero-pad. Обидва шляхи дають той самий результат; playbook — канон нумерації.
 - Тримай нумерацію послідовною, без пропусків.
 - Додавай колонки як `NULL`-able або з `DEFAULT`, якщо не запланований жорсткіший rollout.
 - Для DROP або rename — двофазно: спершу додай/backfill/пиши в обидві колонки, видаляй пізніше окремим деплоєм.

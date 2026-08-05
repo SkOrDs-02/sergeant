@@ -75,7 +75,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.goto("/fizruk/workouts", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
-  await page.getByRole("button", { name: "Quick Start" }).click();
+  await page.getByRole("button", { name: "Швидкий старт" }).click();
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   await page

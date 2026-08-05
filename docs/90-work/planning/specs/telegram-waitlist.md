@@ -1,16 +1,7 @@
 # Спека: Telegram-вейтліст
 
 > **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
-> **Status:** Active (реалізовано — спека лишається як design-контекст)
-> **Agent-ready:** n/a — реалізація вже в коді; спека нижче описує дизайн-рішення, не бек-лог.
->
-> **Оновлення 2026-08-05 (pre-beta аудит):** описаний тут флоу **вже
-> реалізований і є канонічним каналом бета-інвайтів** (рішення founder-а
-> 2026-08-04: інвайт у бету — через Telegram-бота, без gate-кодів).
-> Код: `apps/server/src/modules/telegram/waitlistBot.ts` (+ `betaTexts.ts`),
-> розсилки — `scripts/telegram/broadcast-waitlist.mjs` і
-> `scripts/telegram/send-survey.mjs`. Статус переведено з «Scaffolded
-> (не реалізовано)», який відстав від коду.
+> **Status:** Implemented — бот вейтліста живий (`apps/server/src/modules/telegram/waitlistBot.ts`, міграція `089_telegram_waitlist.sql`, follow-up `/stats` у #524). Спека лишається як reference на прийняті рішення.
 
 ## Проблема
 

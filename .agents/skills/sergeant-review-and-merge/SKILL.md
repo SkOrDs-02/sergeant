@@ -1,8 +1,8 @@
 ---
 name: sergeant-review-and-merge
 description: Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Ревʼю і мердж у Sergeant
@@ -57,6 +57,8 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 Перед тим як написати «Done», «Fixed», «Ready to merge», «Tests pass», або будь-яке інше completion claim — прогони відповідну перевірку **щойно**, в поточному стані коду. Не покладайся на попередні прогони, кеш або памʼять.
 
+Повний перелік заборонених формулювань і proving-команд — у `sergeant-verify-before-done`. Нижче — витяг, який найчастіше спрацьовує саме на PR-межі.
+
 ### Red Flags — заборонені формулювання до прогону
 
 | Red Flag                                      | Чому небезпечно                                               | Що робити замість                              |
@@ -72,14 +74,16 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ### Gate function
 
-Перед claim «Done» або «Ready to merge» виконай цей чекліст:
+**Канон гейта живе в [`sergeant-verify-before-done`](../sergeant-verify-before-done/SKILL.md)** — таблиця «claim → proving command», правило повного scope і цитування exit code. Не дублюй його тут і не веди власний список команд: розбіжні списки вже одного разу розійшлись (цей skill колись вимагав `pnpm lint && typecheck && test && build` без `format:check`, тож PR міг пройти гейт і впасти в CI на prettier).
 
-1. **Lint:** `pnpm lint` — exit 0, вставити останній рядок виводу.
-2. **Typecheck:** `pnpm typecheck` — exit 0.
-3. **Tests:** `pnpm test` (або surface-specific `pnpm --filter @sergeant/<app> test`) — exit 0, жодних skip/pending.
-4. **Build:** `pnpm build` — exit 0.
-5. **Surface-specific smoke:** якщо зміна торкається UI — відкрий у браузері і перевір; якщо API — curl/Postman; якщо migration — `pnpm db:migrate` на чистій БД.
-6. **Вставити evidence** у PR comment або повідомлення: command + вивід (скорочений, але достатній щоб рецензент бачив факт прогону).
+Одна команда, що покриває весь матрицю: **`pnpm check`** (= `format:check && lint && check:typecheck-and-test && build`) — той самий набір, що й у CI.
+
+Цей skill додає поверх канону лише те, що специфічне для **PR-межі**:
+
+1. **Merge-state, не локальний стан.** `git fetch origin main` і перевіряй на результаті злиття — зелень на застарілій базі не є доказом (`origin/main` рухається під довгою сесією).
+2. **Surface smoke:** UI → відкрий у браузері; API → curl; migration → `pnpm db:migrate` на чистій БД.
+3. **Evidence у PR:** command + скорочений вивід у коментарі, щоб рецензент бачив факт прогону, а не твоє слово.
+4. **Крос-поверхневий PR** (3+ governed surfaces) → `sergeant-review-squad`; повна per-surface картина тестів → `sergeant-qa-squad`.
 
 Якщо будь-який крок не пройшов — **не клейми completion**. Фікси проблему і повтори gate.
 

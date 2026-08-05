@@ -31,7 +31,7 @@ test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
   expect(errors, "Uncaught page errors on fizruk cold load").toEqual([]);
 });
 
-test("@critical fizruk: workouts empty state → Quick Start opens route", async ({
+test("@critical fizruk: workouts empty state → «Швидкий старт» opens route", async ({
   page,
 }) => {
   await seedFTUX(page, "post-ftux");
@@ -43,7 +43,7 @@ test("@critical fizruk: workouts empty state → Quick Start opens route", async
     timeout: 10_000,
   });
 
-  await page.getByRole("button", { name: "Quick Start" }).click();
+  await page.getByRole("button", { name: "Швидкий старт" }).click();
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   expect(errors, "Uncaught page errors on fizruk CTA happy path").toEqual([]);

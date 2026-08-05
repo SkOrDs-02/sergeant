@@ -1,5 +1,5 @@
 {
-  "$comment": "Heuristic routing table: maps file-path globs / surface keywords found in an initiative (paths, title, status text) to the canonical Sergeant specialist skill + best-fit playbook. Consumed by scripts/docs/generate-open-work.mjs to populate the `Skill` + `Playbook` columns in docs/open-work.md. NOT auto-generated — hand-edited; the routing logic is canonical per Initiative 0015 Phase 2 (PR-2.1). Rule order matters: the FIRST matching `skillRules` entry wins, so most-specific surfaces (hubchat, migrations, openclaw) are listed before broader ones (server, web).",
+  "$comment": "Heuristic routing table: maps file-path globs / surface keywords found in an initiative (paths, title, status text) to the canonical Sergeant specialist skill + best-fit playbook. Consumed by scripts/docs/generate-open-work.mjs to populate the `Skill` + `Playbook` columns in docs/open-work.md. NOT auto-generated — hand-edited; the routing logic is canonical per Initiative 0015 Phase 2 (PR-2.1). Rule order matters: the FIRST matching `skillRules` entry wins, so most-specific surfaces (hubchat, migrations, e2e, deploy, security) are listed before broader ones (server, web, packages). Every `skill` value MUST be an existing directory in `.agents/skills/` — validated by `pnpm lint:agent-graph`.",
   "fallbackSkill": "sergeant-start-here",
   "skillRules": [
     {
@@ -34,6 +34,59 @@
       ]
     },
     {
+      "skill": "sergeant-e2e-testing",
+      "globs": [
+        "apps/web/tests/**",
+        "apps/web/playwright*.config.ts",
+        "apps/*/e2e/**",
+        "**/*.spec.ts"
+      ],
+      "keywords": [
+        "playwright",
+        "e2e",
+        "smoke test",
+        "a11y test",
+        "axe",
+        "detox"
+      ]
+    },
+    {
+      "skill": "sergeant-deploy-and-observability",
+      "globs": [
+        "Dockerfile.api",
+        ".github/workflows/**",
+        "ops/**",
+        "apps/*/vercel.json",
+        "apps/server/src/obs/**",
+        "apps/server/src/env/**"
+      ],
+      "keywords": [
+        "deploy",
+        "coolify",
+        "vercel",
+        "sentry",
+        "health check",
+        "env var",
+        "observability",
+        "alert",
+        "slo",
+        "ci workflow"
+      ]
+    },
+    {
+      "skill": "sergeant-security-audit",
+      "globs": ["**/pii.ts", "**/env.ts", ".env.example"],
+      "keywords": [
+        "security audit",
+        "vulnerability",
+        "pnpm audit",
+        "cve",
+        "secret scan",
+        "redaction",
+        "pat"
+      ]
+    },
+    {
       "skill": "sergeant-server-api",
       "globs": ["apps/server/**"],
       "keywords": [
@@ -49,6 +102,11 @@
       "skill": "sergeant-mobile-expo",
       "globs": ["apps/mobile/**"],
       "keywords": ["expo", "react native", "react-native", "mobile app", "eas"]
+    },
+    {
+      "skill": "sergeant-mobile-expo",
+      "globs": ["apps/mobile-shell/**"],
+      "keywords": ["capacitor", "mobile shell", "native shell"]
     },
     {
       "skill": "sergeant-web-ui",
@@ -78,9 +136,42 @@
       "keywords": ["skill.md", "writing skill", "specialist skill"]
     },
     {
-      "skill": "docs",
+      "skill": "sergeant-tech-debt",
       "globs": ["docs/**", "scripts/docs/**", ".github/workflows/docs-*.yml"],
-      "keywords": ["docs automation", "open-work", "documentation", "freshness"]
+      "keywords": [
+        "docs automation",
+        "open-work",
+        "documentation",
+        "freshness",
+        "docs drift"
+      ]
+    },
+    {
+      "skill": "sergeant-web-ui",
+      "globs": ["apps/landing/**"],
+      "keywords": ["landing", "marketing site"]
+    },
+    {
+      "skill": "sergeant-tech-debt",
+      "globs": ["tools/**", "scripts/**", "knip.json", "eslint.baseline.js"],
+      "keywords": [
+        "dead code",
+        "knip",
+        "tech debt",
+        "refactor",
+        "eslint baseline",
+        "module size"
+      ]
+    },
+    {
+      "skill": "sergeant-monorepo-boundaries",
+      "globs": ["packages/**"],
+      "keywords": [
+        "shared package",
+        "monorepo boundary",
+        "extract shared",
+        "package boundary"
+      ]
     }
   ],
   "playbookRules": [
@@ -178,7 +269,10 @@
       "playbook": "enable-prompt-caching.md",
       "keywords": ["prompt caching", "anthropic cost", "prompt cache"]
     },
-    { "playbook": "release.md", "keywords": ["release", "реліз", "launch"] },
+    {
+      "playbook": "release.md",
+      "keywords": ["release", "реліз", "launch"]
+    },
     {
       "playbook": "reconcile-doc-drift.md",
       "keywords": [

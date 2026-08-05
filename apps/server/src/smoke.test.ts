@@ -14,7 +14,7 @@ import request from "supertest";
  * pool і може тягнути зовнішні конекшн-и при імпорті.
  */
 
-const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
+const { mockPool, queryMock } = vi.hoisted(() => {
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
   const mockPool = {
     query: queryMock,
@@ -24,8 +24,7 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
     idleCount: 0,
     waitingCount: 0,
   };
-  const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  return { mockPool, queryMock, getSessionUserMock };
+  return { mockPool, queryMock };
 });
 
 vi.mock("./db.js", () => ({
@@ -37,15 +36,10 @@ vi.mock("./db.js", () => ({
 
 // Better-auth намагається ініціалізуватися при імпорті. У smoke-тестах нам
 // достатньо, щоб рutteра mount-нувся — реальних /api/auth/* викликів ми тут
-// не робимо, тож повертаємо мінімально-сумісний shape. `getSessionUserMock`
-// вставлено, а не інлайновий `vi.fn()` (як було) — знахідка A1
-// (`docs/90-work/audits/ai-abuse-2026-08-05.md`) поставила `requireSession()`
-// на `/api/chat`, тож той конкретний smoke-тест нижче має могти залогінити
-// свого фейкового юзера, інакше він упирається в 401 замість перевірки
-// key-guard-а.
+// не робимо, тож повертаємо мінімально-сумісний shape.
 vi.mock("./auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
-  getSessionUser: getSessionUserMock,
+  getSessionUser: vi.fn().mockResolvedValue(null),
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
@@ -74,8 +68,6 @@ beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
-  getSessionUserMock.mockReset();
-  getSessionUserMock.mockResolvedValue(null);
   __resetAppStateForTests();
 });
 
@@ -193,19 +185,19 @@ describe("smoke: createApp wiring", () => {
     expect(res.body).toMatchObject({ code: "NOT_CONFIGURED" });
   });
 
-  it("POST /api/chat → 503 without ANTHROPIC_API_KEY env", async () => {
-    // `requireSession()` (finding A1) sits in front of the key-guard now —
-    // log in the fake session so this test still probes the key-guard, not
-    // the auth-guard (that has its own dedicated test in
-    // `routes/chat.route.test.ts`).
-    getSessionUserMock.mockResolvedValue({ id: "smoke-user" });
+  // `getSessionUser` замокано на `null` вгорі файла, тож запит анонімний.
+  // Після закриття зловживання AI-чатом `/api/chat` стоїть за `requireSession()`,
+  // який спрацьовує ДО перевірки ключа — тому тут 401, а не 503. Обидві гілки
+  // (401 без сесії, 503 із сесією але без ключа) покриває `chat.route.test.ts`
+  // § «auth guard»; тут перевіряємо лише те, що роут узагалі змонтований.
+  it("POST /api/chat → 401 for an anonymous request (session guard runs first)", async () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/chat")
       .set("content-type", "application/json")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ messages: [] });
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ error: expect.any(String) });
   });
 

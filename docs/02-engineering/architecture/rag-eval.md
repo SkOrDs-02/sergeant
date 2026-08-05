@@ -157,12 +157,12 @@ pnpm eval:rag -- --baseline=prev-summary.json
 
 ### Exit codes
 
-| Code | Status  | Threshold (default)                                                               |
-| ---- | ------- | --------------------------------------------------------------------------------- |
-| 0    | `pass`  | recall@4 mean ≥ 0.5                                                               |
-| 1    | `warn`  | 0.4 ≤ recall@4 mean < 0.5 — open issue, RAG залишається ON                        |
-| 2    | `kill`  | recall@4 mean < 0.4 — open critical issue, RAG автоматично OFF (Railway env-flag) |
-| 3    | `error` | CLI configuration error (invalid --mode, threshold paradox)                       |
+| Code | Status  | Threshold (default)                                                                 |
+| ---- | ------- | ----------------------------------------------------------------------------------- |
+| 0    | `pass`  | recall@4 mean ≥ 0.5                                                                 |
+| 1    | `warn`  | 0.4 ≤ recall@4 mean < 0.5 — open issue, RAG залишається ON                          |
+| 2    | `kill`  | recall@4 mean < 0.4 — open critical issue, RAG автоматично OFF (env-flag у Coolify) |
+| 3    | `error` | CLI configuration error (invalid --mode, threshold paradox)                         |
 
 ### Output schema (v2.0)
 
@@ -235,7 +235,7 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
   embedding-changes; alert не блокує. Якщо не повертається у `pass` за 2
   тижні — eскалюй до kill.
 - **`RagQualityGateKillSwitch`** (critical): set `AI_MEMORY_ENABLED=false`
-  на Railway → redeploy, потім root-cause через artifact + Voyage incident
+  у Coolify → redeploy, потім root-cause через artifact + Voyage incident
   status.
 
 ## Як додати нову метрику (наприклад nDCG)

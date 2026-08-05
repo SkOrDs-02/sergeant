@@ -28,7 +28,7 @@ not just a SQL migration.
 | ------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------- |
 | `LOG_ARCHIVE_ENABLED`          | `false`           | Master switch. Opt-in. Без `true` poller — no-op.                                                 |
 | `LOG_RETENTION_DAYS`           | `30`              | Скільки днів зберігати rows у live DB перед archive+DELETE. `0` → poller не запускається.         |
-| `LOG_ARCHIVE_POLL_INTERVAL_MS` | `60000_000` (1 h) | Інтервал tick-у. `0` → off.                                                                       |
+| `LOG_ARCHIVE_POLL_INTERVAL_MS` | `3_600_000` (1 h) | Інтервал tick-у. `0` → off.                                                                       |
 | `LOG_ARCHIVE_BATCH_SIZE`       | `1000`            | Скільки рядків брати у батч на таблицю на tick. Великі backlog-и дренуються через кілька tick-ів. |
 | `GCS_LOG_ARCHIVE_BUCKET`       | _empty_           | Цільовий GCS бакет. Пусто → poller лоґує warning і пропускає upload-и (rows залишаються у DB).    |
 

@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.
@@ -14,7 +14,7 @@
 </ModuleShell>
 ```
 
-- `bg-module-accent` → активний module-колір (`finyk`=emerald-500, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05) щоб disambiguate від finyk-emerald spectrum — див. [`redesign-v2/governance.md`](./redesign-v2/governance.md).
+- `bg-module-accent` → активний module-колір (`finyk`=teal-700, `fizruk`=cyan-700, `routine`=coral-500, `nutrition`=lime-500). Fizruk перейшов з teal-500 на cyan-700 у Sergeant v2 редизайн (2026-05), а finyk — з emerald-500 на teal-700 у M1-ребренді (2026-07) — див. [`redesign-v2/governance.md`](./redesign-v2/governance.md).
 - `bg-module-accent-strong` → WCAG-AA `-strong`-companion для фонів під `text-white` (clears 4.5 : 1).
 - Використовується у спільних компонентах, які живуть у 4 модулях — без hardcoded `bg-finyk` / `bg-fizruk`-лукапів.
 
@@ -24,7 +24,7 @@
 ┌─────────────────────────────────────────────────────────┐
 │  packages/design-tokens/tokens.js  (single source)     │
 │  └─ moduleAccentRgb = {                                │
-│       finyk:     { default: "16 185 129", strong: …}   │
+│       finyk:     { default: "15 118 110", strong: …}   │
 │       fizruk:    { default: "14 116 144", strong: "21 94 117" }  │  ← cyan-700 / cyan-800 (v2 2026-05)
 │       routine:   { default: "249 112 102", strong: …}  │
 │       nutrition: { default: "146 204 23", strong: …}   │
@@ -94,7 +94,7 @@
 
 ```tsx
 // ❌ BAD — хардкоднута RGB-трійка в React; дрейфне від Tailwind
-<div style={{ backgroundColor: "rgb(16 185 129 / 0.1)" }} />
+<div style={{ backgroundColor: "rgb(15 118 110 / 0.1)" }} />
 
 // ❌ BAD — таблиця-лукап, що переповнює те, що Tailwind уже дає
 const TINT = {

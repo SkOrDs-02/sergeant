@@ -1,8 +1,8 @@
 ---
 name: sergeant-monorepo-boundaries
 description: Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear — even if the change seems isolated to one app; UA: межі між app/package, спільна логіка в монорепо.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Межі монорепо в Sergeant
@@ -14,7 +14,8 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - App-specific UI лишається в app-і-власнику.
 - Cross-platform бізнес-логіка йде у відповідний domain-package.
 - Спільні схеми, wire-типи і cross-app утиліти живуть у `packages/shared` або `packages/api-client`, не дублюються в app-ах.
-- `apps/mobile-shell` — це packaging-glue, а не feature-surface.
+- `apps/mobile-shell` — це packaging-glue, а не feature-surface. Детальні правила розміщення для mobile/shell (і lint-правило `forbid-shell-only-feature`) — канонічно в [`sergeant-mobile-expo`](../sergeant-mobile-expo/SKILL.md) § Розміщення; тут лише межа, там — деталі.
+- `apps/landing` — маркетинговий сайт: окремий Vite-застосунок, не місце для продуктових фіч і не імпортує з `apps/web`.
 - Якщо хелпер використовується лише в одному модулі — тримай його co-located, поки повторне використання не доведено.
 
 ## Швидкі рішення
@@ -28,6 +29,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 | Генерична схема чи утиліта, що використовується багатьма | `packages/shared/**`        |
 | Expo-only UI або навігація                               | `apps/mobile/**`            |
 | Capacitor packaging або native-shell config              | `apps/mobile-shell/**`      |
+| Лендінг, маркетингова сторінка, публічний контент        | `apps/landing/**`           |
 
 ## Поширені помилки
 

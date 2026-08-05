@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -50,8 +50,8 @@ multi-burn-rate** алерти (Google SRE Workbook, Ch. 5). Формули SLI 
 - **Продуктова аналітика → PostHog EU** (проєкт `167740`), web-трафік.
 
 - **Mimir ruler → знову оцінює.** [`recording_rules.yml`](./prometheus/recording_rules.yml)
-  і [`alert_rules.yml`](./prometheus/alert_rules.yml) — 13 груп, **28 alerting +
-  25 recording rules**, 0 firing / 0 pending (цього разу справді здоровий стан).
+  і [`alert_rules.yml`](./prometheus/alert_rules.yml) — 11 груп, **24 alerting +
+  29 recording rules**, 0 firing / 0 pending (цього разу справді здоровий стан).
   `sli:*` recording-метрики знову обчислюються (`sli:http_latency_p95_ms:rate5m`
   ≈ 27 ms на момент перевірки), тому burn-rate-панелі наповнюються.
 - **PostHog server-side capture увімкнено.** `POSTHOG_PROJECT_API_KEY` додано в

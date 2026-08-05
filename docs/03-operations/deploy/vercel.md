@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last touched:** 2026-07-24 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface runs on \*\*Hetzner CX23
@@ -53,7 +53,7 @@ settings live in the Vercel UI under **Project → Settings → General**:
 | Install Command   | `(from vercel.json)` | Vercel honours `installCommand` from `vercel.json`; UI override is empty.                                                                                                                                                    |
 | Build Command     | `(from vercel.json)` | Same — leave blank in UI to defer to the file.                                                                                                                                                                               |
 | Ignored Build Cmd | `(from vercel.json)` | `ignoreCommand` in `vercel.json` runs `turbo-ignore @sergeant/web` so commits that don't touch `@sergeant/web` or its workspace deps skip the build. See [`./monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md). |
-| Node.js Version   | `20.x`               | Matches `package.json:engines.node` and `.nvmrc`.                                                                                                                                                                            |
+| Node.js Version   | `22.x`               | Matches `package.json:engines.node` (`22.x`) and `.nvmrc` (`22.19.0`).                                                                                                                                                       |
 
 Verify after every Vercel UI change:
 

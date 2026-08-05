@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -41,11 +41,11 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-e2e-testing`](../../../.agents/skills/sergeant-e2e-testing/SKILL.md)                           | Playwright E2E tests, smoke tests, a11y                          | 8 golden rules, seedFTUX, no waitForTimeout, role selectors                 |
 | [`sergeant-security-audit`](../../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety                    | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain           |
 | [`sergeant-tech-debt`](../../../.agents/skills/sergeant-tech-debt/SKILL.md)                               | Tech debt, dead code, ESLint baseline                            | Knip, eslint-baseline.js, module-size #18, noUncheckedIndexedAccess #19     |
-| _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, entropy issues, PR-ledger    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback |
+| _tooling:_ [`tools/agent-snapshot/snapshot.mjs`](../../../tools/agent-snapshot/README.md)                 | Dynamic agent context: CI, budgets, PR-ledger                    | Zero-dep, `<50 KB` cap, 15-min TTL cache, graceful `[unavailable]` fallback |
 | [`sergeant-writing-skills`](../../../.agents/skills/sergeant-writing-skills/SKILL.md)                     | Creating or editing `.agents/skills/**`                          | TDD-for-skills, frontmatter shape, lock SHA-256, security scan              |
 | [`sergeant-review-squad`](../../../.agents/skills/sergeant-review-squad/SKILL.md)                         | PR review across 3+ governed surfaces via Agent Team             | Parallel lens coverage (contract, design, security, docs)                   |
 | [`sergeant-deliver-squad`](../../../.agents/skills/sergeant-deliver-squad/SKILL.md)                       | Cross-surface feature delivery (DB→server→api-client→web/mobile) | Sequential handoff order, bigint coercion chain, contract triplet           |
-| [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel                          | Per-surface test + typecheck, all 4 surfaces before synthesis               |
+| [`sergeant-qa-squad`](../../../.agents/skills/sergeant-qa-squad/SKILL.md)                                 | Full QA across all surfaces in parallel                          | Per-surface test + typecheck, all 3 surfaces before synthesis               |
 | [`sergeant-council`](../../../.agents/skills/sergeant-council/SKILL.md)                                   | Advisory board for product/strategy/UX decisions                 | Dynamic specialist roster, parallel Agent Team, synthesis format            |
 | [`sergeant-planning-batch`](../../../.agents/skills/sergeant-planning-batch/SKILL.md)                     | Execute a batch of N planning tasks via parallel agents          | Dynamic batch select, parallel fan-out, tracker sync, fast-forward archive  |
 
@@ -72,6 +72,16 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | ------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `qa-mobile`               | Mobile QA report for `apps/mobile` + `apps/mobile-shell` unit tests and typecheck        | `sergeant-qa-squad`                                           |
 | `docs-governance-auditor` | Duplicate active docs, stale trackers, canonical-owner drift, generated catalog mismatch | `sergeant-tech-debt` or `sergeant-review-and-merge` by intent |
+
+## Agent graph (topology)
+
+Хто кого може викликати — не проза, а перевірюваний граф: [`.agents/agent-graph.json`](../../../.agents/agent-graph.json). Вузли — `skill` / `agent` / `workspace`; ребра — `governs`, `verifies`, `dispatches`, `handoff` (з `stage` і типізованим `payload`), `terminates`, `escalates`.
+
+```bash
+pnpm lint:agent-graph   # входить у pnpm lint:skills
+```
+
+Гейт падає на: висячому ребрі (squad кличе неіснуючого агента), workspace із тестами без жодного `verifies`-ребра, reviewer/runner/advisor із `Write`/`Edit`, роз'їханих `name` ↔ файл ↔ вузол, `skill-mapping.json`, що вказує на неіснуючий скіл, і deliver-ланцюгу без термінального ребра у верифікацію. Додав скіл або агента — додай вузол; інакше CI червоний. Rationale: [ADR-0084](../../04-governance/adr/0084-agent-graph-topology.md).
 
 ## Deprecated -> Replacement
 

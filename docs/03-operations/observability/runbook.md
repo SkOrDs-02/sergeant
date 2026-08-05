@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -10,7 +10,7 @@
 перший крок завжди `/metrics` + логи Pino за той же інтервал.
 
 > **Статус wiring:** алерти з `alert_rules.yml` **залиті в Grafana Cloud Mimir
-> і оцінюються в реальному часі** (28 alert + 25 recording rules; див.
+> і оцінюються в реальному часі** (24 alert + 29 recording rules; див.
 > [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-06-26)).
 > Сигнал приходить автоматично (Grafana managed alerting → Telegram), а також
 > через Sentry-issue, скаргу користувача чи ручну перевірку `/metrics`;
@@ -627,10 +627,10 @@ https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped
    - Чи був ingestion-change, що писав malformed content (e.g.,
      prompt-templates з placeholder-ами замість real text)? →
      revert ingestion PR.
-6. Після root-cause fix → запусти eval manually:
+6. Після root-cause fix → запусти eval локально (GH-Action
+   `rag-quality-gate.yml` прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §4):
    ```bash
-   gh workflow run rag-quality-gate.yml \
-     -f mode=mock  # або 'live' коли PR-21 зашиплений
+   pnpm eval:rag:weekly --mode=mock --skip-post   # або --mode=live
    ```
    Якщо `status=pass` → revert kill-switch (`AI_MEMORY_ENABLED=true`)
    - close issue.
@@ -646,8 +646,8 @@ https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped
 
 ## RagEvalAutomationAlert (auto-kill-switch via /api/internal/eval/rag-weekly)
 
-**Що горить**: weekly cron-job (n8n WF-28 — Mon 06:00 Kyiv, або
-GH-Action `rag-quality-gate.yml` — Mon 08:00 UTC) запостив eval-summary
+**Що горить**: weekly cron-job (n8n `29-rag-eval-weekly-cron` — Mon 06:00 Kyiv;
+GH-Action `rag-quality-gate.yml` прибрано ADR-0082 §4) запостив eval-summary
 на `POST /api/internal/eval/rag-weekly`, і endpoint **авто-активував
 in-memory kill-switch `mono_ai_memory_ingest`** (recall@4 < `kill_threshold`,
 default `0.4`). Це доповнює `RagQualityGateKillSwitch` (manual env-flip
@@ -689,7 +689,7 @@ WHERE workflow_id='rag-eval-weekly' ORDER BY created_at DESC LIMIT 1`
 5. Після fix:
    - Локально `pnpm eval:rag:weekly --mode=mock --skip-post` → перевір
      status=`pass`;
-   - Manually trigger GH-Action `rag-quality-gate.yml` → endpoint
+   - Прогнати `pnpm eval:rag:weekly` без `--skip-post` → endpoint
      отримає summary, але **kill-switch не deactivate-ситься
      автоматично**. Це навмисно — deactivation — operator decision.
 6. Deactivation: рестарт серверу (Coolify redeploy після env-flip

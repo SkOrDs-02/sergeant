@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FILE. Do not edit by hand. Generator: `pnpm --filter @sergeant/server eval:models` / `eval:vision` (apps/server/scripts/eval/report.ts). -->
+
 # Звіт стенду моделей
 
 > **Last touched:** 2026-08-04 by @claude (додано freshness-хедер — звіт-знімок зорового стенда). **Next review:** 2026-11-02.

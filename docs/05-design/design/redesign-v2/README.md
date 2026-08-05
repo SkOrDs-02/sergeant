@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-05-18 by council-v4 (alignment audit applied — scope boundaries section added).
 > **Next review:** оновлюється з кожним phase-wrap (див. `execution-status.md`).
-> **Status:** Active rollout (Phase 1 shipped; Phase 2 Wave 1 shipped; Phases 3–6 заплановані; Phase 7+ out of scope per scope boundaries section).
+> **Status:** Reference — Redesign-v2 закрито 2026-05-21 (див. [`execution-status.md`](./execution-status.md) і [`retrospective-2026-05-21.md`](./retrospective-2026-05-21.md)). Phase 7+ лишився out of scope per scope boundaries section.
 
 Sergeant v2 редизайн (foundation merged 2026-05) ввів parallel v2 token namespace
 поверх legacy `--c-*` токенів: glass surfaces, mesh background, ink-strong типографія
