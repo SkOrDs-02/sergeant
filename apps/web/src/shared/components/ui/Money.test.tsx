@@ -110,6 +110,29 @@ describe("Delta — зміна як типографіка, а не бейдж",
     expect(container.firstElementChild).not.toHaveClass("text-success");
   });
 
+  /**
+   * Регресія: `Delta` фарбує число, а тири лишались `text-muted` — сірий
+   * мінус упритул до червоної суми. Знак несе половину повідомлення, тож
+   * він мусить бути того самого кольору, лише тихішим.
+   */
+  it("на забарвленій дельті тири беруть її колір, а не сірий", () => {
+    const { container } = render(<Delta value={-340} polarity="positive" />);
+    const sign = container.querySelector(".text-\\[0\\.78em\\]");
+    const sym = container.querySelector(".text-\\[0\\.72em\\]");
+    expect(container.firstElementChild).toHaveClass("text-danger");
+    for (const tier of [sign, sym]) {
+      expect(tier).toHaveClass("opacity-65");
+      expect(tier!.className).not.toMatch(/text-muted/);
+    }
+  });
+
+  it("на нейтральній дельті тири лишаються приглушеними власним кольором", () => {
+    const { container } = render(<Delta value={340} polarity="neutral" />);
+    const sign = container.querySelector(".text-\\[0\\.78em\\]");
+    expect(sign).toHaveClass("text-muted");
+    expect(sign!.className).not.toMatch(/opacity-65/);
+  });
+
   it("приймає інший символ для часток", () => {
     const { container } = render(<Delta value={-12} symbol="%" />);
     expect(
@@ -128,7 +151,11 @@ describe("Money — анімоване ціле", () => {
     expect(flat(symbol(root))).toBe(" ₴");
 
     // А ціле доїжджає до кінцевого значення.
-    await waitFor(() => expect(flat(root)).toBe("1 250,50 ₴"));
+    // Явний таймаут: tween 800 ms надто близько до дефолтних 1000 ms
+    // `waitFor`, і на завантаженому CI така пара дає флейк.
+    await waitFor(() => expect(flat(root)).toBe("1 250,50 ₴"), {
+      timeout: 2000,
+    });
   });
 
   it("знак лишається окремим тиром і не потрапляє в анімацію", async () => {
@@ -137,8 +164,12 @@ describe("Money — анімоване ціле", () => {
     // Мінус стоїть уже на першому кадрі, коли ціле ще нуль: він властивість
     // суми, а не проміжного значення відліку.
     expect(sign!.textContent).toBe("−");
-    await waitFor(() =>
-      expect(flat(container.firstElementChild as HTMLElement)).toBe("−1 250 ₴"),
+    await waitFor(
+      () =>
+        expect(flat(container.firstElementChild as HTMLElement)).toBe(
+          "−1 250 ₴",
+        ),
+      { timeout: 2000 },
     );
   });
 });
