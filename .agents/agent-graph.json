@@ -1,0 +1,552 @@
+{
+  "$schema": "./agent-graph.schema.json",
+  "$comment": "Explicit topology of the Sergeant agent layer (graph engineering): nodes are skills, agents and workspaces; edges are the permitted transitions between them. Hand-maintained INTENT — `pnpm lint:agent-graph` cross-checks every node and edge against disk reality (.agents/skills/, .claude/agents/, package.json workspaces) and fails on dangling edges, orphan workspaces, least-privilege violations and roster drift. Adding an agent or skill without adding its node here is a lint error, which is the point: prose routing tables rot silently, a validated graph cannot.",
+  "version": 1,
+  "nodes": [
+    {
+      "id": "apps/web",
+      "kind": "workspace",
+      "package": "@sergeant/web",
+      "hasTests": true
+    },
+    {
+      "id": "apps/landing",
+      "kind": "workspace",
+      "package": "@sergeant/landing",
+      "hasTests": true
+    },
+    {
+      "id": "apps/server",
+      "kind": "workspace",
+      "package": "@sergeant/server",
+      "hasTests": true
+    },
+    {
+      "id": "apps/mobile",
+      "kind": "workspace",
+      "package": "@sergeant/mobile",
+      "hasTests": true
+    },
+    {
+      "id": "apps/mobile-shell",
+      "kind": "workspace",
+      "package": "@sergeant/mobile-shell",
+      "hasTests": true
+    },
+    {
+      "id": "packages/*",
+      "kind": "workspace",
+      "package": "packages/*",
+      "hasTests": true
+    },
+    {
+      "id": "better-auth-best-practices",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/better-auth-best-practices/SKILL.md"
+    },
+    {
+      "id": "sergeant-backend-architecture",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-backend-architecture/SKILL.md"
+    },
+    {
+      "id": "sergeant-bugfix-and-regression",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-bugfix-and-regression/SKILL.md"
+    },
+    {
+      "id": "sergeant-council",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-council/SKILL.md"
+    },
+    {
+      "id": "sergeant-data-and-migrations",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-data-and-migrations/SKILL.md"
+    },
+    {
+      "id": "sergeant-deliver-squad",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-deliver-squad/SKILL.md"
+    },
+    {
+      "id": "sergeant-deploy-and-observability",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-deploy-and-observability/SKILL.md"
+    },
+    {
+      "id": "sergeant-e2e-testing",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-e2e-testing/SKILL.md"
+    },
+    {
+      "id": "sergeant-feature-delivery",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-feature-delivery/SKILL.md"
+    },
+    {
+      "id": "sergeant-hubchat",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-hubchat/SKILL.md"
+    },
+    {
+      "id": "sergeant-mobile-expo",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-mobile-expo/SKILL.md"
+    },
+    {
+      "id": "sergeant-monorepo-boundaries",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-monorepo-boundaries/SKILL.md"
+    },
+    {
+      "id": "sergeant-planning-batch",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-planning-batch/SKILL.md"
+    },
+    {
+      "id": "sergeant-qa-squad",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-qa-squad/SKILL.md"
+    },
+    {
+      "id": "sergeant-review-and-merge",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-review-and-merge/SKILL.md"
+    },
+    {
+      "id": "sergeant-review-squad",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-review-squad/SKILL.md"
+    },
+    {
+      "id": "sergeant-security-audit",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-security-audit/SKILL.md"
+    },
+    {
+      "id": "sergeant-server-api",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-server-api/SKILL.md"
+    },
+    {
+      "id": "sergeant-start-here",
+      "kind": "skill",
+      "role": "entrypoint",
+      "path": ".agents/skills/sergeant-start-here/SKILL.md"
+    },
+    {
+      "id": "sergeant-tech-debt",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-tech-debt/SKILL.md"
+    },
+    {
+      "id": "sergeant-verify-before-done",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-verify-before-done/SKILL.md"
+    },
+    {
+      "id": "sergeant-web-ui",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-web-ui/SKILL.md"
+    },
+    {
+      "id": "sergeant-writing-skills",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-writing-skills/SKILL.md"
+    },
+    {
+      "id": "api-client-agent",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/api-client-agent.md"
+    },
+    {
+      "id": "contract-reviewer",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/contract-reviewer.md"
+    },
+    {
+      "id": "council-critic",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/council-critic.md"
+    },
+    {
+      "id": "council-growth-advisor",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/council-growth-advisor.md"
+    },
+    {
+      "id": "council-product-strategist",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/council-product-strategist.md"
+    },
+    {
+      "id": "council-tech-architect",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/council-tech-architect.md"
+    },
+    {
+      "id": "council-ux-advocate",
+      "kind": "agent",
+      "role": "advisor",
+      "path": ".claude/agents/council-ux-advocate.md"
+    },
+    {
+      "id": "design-reviewer",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/design-reviewer.md"
+    },
+    {
+      "id": "docs-governance-auditor",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/docs-governance-auditor.md"
+    },
+    {
+      "id": "docs-reviewer",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/docs-reviewer.md"
+    },
+    {
+      "id": "migration-agent",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/migration-agent.md"
+    },
+    {
+      "id": "mobile-agent",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/mobile-agent.md"
+    },
+    {
+      "id": "qa-mobile",
+      "kind": "agent",
+      "role": "runner",
+      "path": ".claude/agents/qa-mobile.md"
+    },
+    {
+      "id": "qa-packages",
+      "kind": "agent",
+      "role": "runner",
+      "path": ".claude/agents/qa-packages.md"
+    },
+    {
+      "id": "qa-server",
+      "kind": "agent",
+      "role": "runner",
+      "path": ".claude/agents/qa-server.md"
+    },
+    {
+      "id": "qa-web",
+      "kind": "agent",
+      "role": "runner",
+      "path": ".claude/agents/qa-web.md"
+    },
+    {
+      "id": "security-reviewer",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/security-reviewer.md"
+    },
+    {
+      "id": "server-agent",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/server-agent.md"
+    },
+    {
+      "id": "web-agent",
+      "kind": "agent",
+      "role": "implementer",
+      "path": ".claude/agents/web-agent.md"
+    }
+  ],
+  "edges": [
+    {
+      "from": "sergeant-web-ui",
+      "to": "apps/web",
+      "rel": "governs"
+    },
+    {
+      "from": "sergeant-web-ui",
+      "to": "apps/landing",
+      "rel": "governs"
+    },
+    {
+      "from": "sergeant-server-api",
+      "to": "apps/server",
+      "rel": "governs"
+    },
+    {
+      "from": "sergeant-mobile-expo",
+      "to": "apps/mobile",
+      "rel": "governs"
+    },
+    {
+      "from": "sergeant-mobile-expo",
+      "to": "apps/mobile-shell",
+      "rel": "governs"
+    },
+    {
+      "from": "sergeant-monorepo-boundaries",
+      "to": "packages/*",
+      "rel": "governs"
+    },
+    {
+      "from": "qa-web",
+      "to": "apps/web",
+      "rel": "verifies"
+    },
+    {
+      "from": "qa-web",
+      "to": "apps/landing",
+      "rel": "verifies"
+    },
+    {
+      "from": "qa-server",
+      "to": "apps/server",
+      "rel": "verifies"
+    },
+    {
+      "from": "qa-mobile",
+      "to": "apps/mobile",
+      "rel": "verifies"
+    },
+    {
+      "from": "qa-mobile",
+      "to": "apps/mobile-shell",
+      "rel": "verifies"
+    },
+    {
+      "from": "qa-packages",
+      "to": "packages/*",
+      "rel": "verifies"
+    },
+    {
+      "from": "sergeant-review-squad",
+      "to": "contract-reviewer",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-review-squad",
+      "to": "design-reviewer",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-review-squad",
+      "to": "security-reviewer",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-review-squad",
+      "to": "docs-reviewer",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "migration-agent",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "server-agent",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "api-client-agent",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "web-agent",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "mobile-agent",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-qa-squad",
+      "to": "qa-server",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-qa-squad",
+      "to": "qa-web",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-qa-squad",
+      "to": "qa-mobile",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-qa-squad",
+      "to": "qa-packages",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-council",
+      "to": "council-product-strategist",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-council",
+      "to": "council-ux-advocate",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-council",
+      "to": "council-growth-advisor",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-council",
+      "to": "council-tech-architect",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-council",
+      "to": "council-critic",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-tech-debt",
+      "to": "docs-governance-auditor",
+      "rel": "dispatches"
+    },
+    {
+      "from": "migration-agent",
+      "to": "server-agent",
+      "rel": "handoff",
+      "stage": 1,
+      "payload": "new bigint columns; schema delta; phase-2 DROP debt"
+    },
+    {
+      "from": "server-agent",
+      "to": "api-client-agent",
+      "rel": "handoff",
+      "stage": 2,
+      "payload": "HTTP method+path; exact JSON response shape; shared Zod schema"
+    },
+    {
+      "from": "api-client-agent",
+      "to": "web-agent",
+      "rel": "handoff",
+      "stage": 3,
+      "payload": "type names; import paths; breaking changes"
+    },
+    {
+      "from": "api-client-agent",
+      "to": "mobile-agent",
+      "rel": "handoff",
+      "stage": 3,
+      "payload": "type names; import paths; breaking changes"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "sergeant-qa-squad",
+      "rel": "terminates",
+      "note": "stage 5a — per-surface proof incl. api-client contract tests"
+    },
+    {
+      "from": "sergeant-deliver-squad",
+      "to": "sergeant-verify-before-done",
+      "rel": "terminates",
+      "note": "stage 5b — final gate before any done/green claim"
+    },
+    {
+      "from": "sergeant-start-here",
+      "to": "sergeant-feature-delivery",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-start-here",
+      "to": "sergeant-bugfix-and-regression",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-review-and-merge",
+      "to": "sergeant-verify-before-done",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-bugfix-and-regression",
+      "to": "sergeant-verify-before-done",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-feature-delivery",
+      "to": "sergeant-verify-before-done",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-review-and-merge",
+      "to": "sergeant-review-squad",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-server-api",
+      "to": "sergeant-data-and-migrations",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-server-api",
+      "to": "better-auth-best-practices",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-server-api",
+      "to": "sergeant-hubchat",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-backend-architecture",
+      "to": "sergeant-server-api",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-backend-architecture",
+      "to": "sergeant-monorepo-boundaries",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-monorepo-boundaries",
+      "to": "sergeant-mobile-expo",
+      "rel": "escalates"
+    }
+  ]
+}

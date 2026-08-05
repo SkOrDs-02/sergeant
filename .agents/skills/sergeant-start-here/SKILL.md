@@ -1,8 +1,8 @@
 ---
 name: sergeant-start-here
 description: Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Стартова точка для Sergeant
@@ -13,6 +13,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 - Не знаєш, де щось живе? Спершу використай codebase-memory MCP (`search_graph`, `trace_path`, `get_code_snippet`); якщо MCP недоступний — TypeScript/LSP, Knip або `rg`. Repo-specific committed indexes retired за ADR-0081.
 - Не знаєш, з чого почати зміну? `pnpm agent:route` — за git-diff/гілкою підкаже потрібний specialist-skill + активні hard-rules.
+- Не знаєш, хто кого може викликати? [`.agents/agent-graph.json`](../../agent-graph.json) — явна топологія агентного шару (skill / agent / workspace + дозволені переходи). Гейт `pnpm lint:agent-graph`; rationale — [ADR-0084](../../../docs/04-governance/adr/0084-agent-graph-topology.md).
 - Прочитай [`docs/00-start/agents/decisions.md`](../../../docs/00-start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
 - Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.

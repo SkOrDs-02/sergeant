@@ -1,8 +1,8 @@
 ---
 name: better-auth-best-practices
 description: Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Better Auth у Sergeant

@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # Technical Debt у Sergeant
 
-Technical debt in Sergeant has a taxonomy: the 26 hard rules define what "correct" looks like, and `eslint-baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
+Technical debt in Sergeant has a taxonomy: the **17 active hard rules** (numbered up to #26 — nine were retired by [ADR-0081](../../../docs/04-governance/adr/0081-repository-simplification.md), so the count and the highest number deliberately disagree) define what "correct" looks like, and `eslint.baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
 
 ## Debt inventory tools
 
@@ -16,9 +16,12 @@ Technical debt in Sergeant has a taxonomy: the 26 hard rules define what "correc
 `eslint.baseline.js` is the shared flat-config slice consumed by the root `eslint.config.js` (stack-pulse PR-31 phase-1 extraction) — it holds the monorepo-wide rule set, not a list of grandfathered violations.
 
 ```bash
-pnpm lint          # run ESLint across all packages
-pnpm lint --fix    # auto-fix fixable violations
+pnpm lint                                   # full gate: a long `&&` chain of ~30 checks, ESLint is only one link
+turbo run lint -- --fix                     # auto-fix across workspaces
+pnpm --filter @sergeant/web lint --fix      # auto-fix one workspace
 ```
+
+> ⚠️ **Never `pnpm lint --fix`.** Root `lint` is a `&&`-chain, so pnpm appends `--fix` to the **last** command in the chain (an OpenAPI type check), not to ESLint. It looks like it worked and fixes nothing.
 
 All react-hooks v7 rules (`set-state-in-effect`, `preserve-manual-memoization`, `purity`, `refs`, `immutability`, `static-components`, `use-memo`) are enforced as `error` — Initiative 0021 closed 2026-07-10 (PR #177) after clearing the monorepo. Do not downgrade a rule in `eslint.baseline.js` to silence a finding; fix the code. If a rule genuinely needs a scoped exception, use a file-scoped override with an inline justification.
 
@@ -28,7 +31,7 @@ All react-hooks v7 rules (`set-state-in-effect`, `preserve-manual-memoization`, 
 pnpm knip          # find unused exports, files, and deps across all workspaces
 ```
 
-Knip covers all 4 apps and `packages/`. Setting `ignoreExportsUsedInFile: true` suppresses same-file re-exports as false positives.
+Knip covers all 5 apps (`web`, `landing`, `server`, `mobile`, `mobile-shell`) and `packages/`. Setting `ignoreExportsUsedInFile: true` suppresses same-file re-exports as false positives.
 
 Before deleting a Knip finding, apply lifecycle marker guards per `docs/00-start/playbooks/cleanup-dead-code.md`:
 
@@ -47,9 +50,9 @@ grep -rn "<symbol>" --include="*.{ts,tsx,js,jsx,mjs,cjs,json,md}" .
 
 ### 3. Module size (Hard Rule #18 — `lint-enforced-convention`)
 
-Hard Rule #18 sets `max-lines: 600` for `apps/web` TS/TSX files as a permanent lint-enforced ESLint rule (promoted after initiative 0001 closed; allowlist removed).
+Hard Rule #18 sets `max-lines: 600` for **`apps/web` TS/TSX *and* `apps/server` TS/JS** files as a permanent lint-enforced ESLint rule (promoted after initiative 0001 closed; allowlist removed). Auditing only web under-reports the debt by an entire surface.
 
-When a file exceeds 600 lines, decompose by extracting a focused concern — a custom hook, a utility function, or a sub-component — into a sibling file within the same feature folder. Do not move shared logic to `apps/web/src/shared/` unless it truly belongs there; verify boundary with `sergeant-monorepo-boundaries` first.
+When a file exceeds 600 lines, decompose by extracting a focused concern — a custom hook, a utility function, a sub-component, or (on the server) one more flat use-case file in the same module — into a sibling file within the same feature folder. Do not move shared logic to `apps/web/src/shared/` unless it truly belongs there; verify boundary with `sergeant-monorepo-boundaries` first.
 
 Do not decompose files solely to pass the lint gate. Decompose when the extraction creates a coherent, independently named unit.
 
@@ -69,7 +72,7 @@ const first = items[0]?.name ?? "default";
 
 | Type | Priority | Signal |
 |---|---|---|
-| `blocker-invariant` Hard Rule violations (#1–#7, #20, #21) | Highest | Data loss or outage risk |
+| `blocker-invariant` Hard Rule violations (#1, #2, #3, #4, #6, #7, #20, #21 — 8 rules; #5 is `lint-enforced-convention`, not a blocker) | Highest | Data loss or outage risk |
 | `lint-enforced-convention` violations | High | Tracked; clear fix path |
 | Module size violations in high-churn files | Medium | Files touched > 2× per sprint per `git log` |
 | `@deprecated` symbols past `@removeBy` date | Medium | Clean up during related feature work |

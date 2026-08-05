@@ -51,5 +51,5 @@ If you are about to write "should", "probably", "seems", "Perfect!", "Done!", "I
 ## See also
 
 - [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — Active Skills catalog.
-- `.agents/skills/sergeant-review-and-merge/SKILL.md` — Verification gate at PR boundary.
+- `.agents/skills/sergeant-review-and-merge/SKILL.md` — PR-boundary additions on top of this gate (merge-state check, surface smoke, evidence in the PR comment). **This SKILL owns the gate itself**; review-and-merge points here rather than keeping a parallel command list.
 - `.agents/skills/sergeant-bugfix-and-regression/SKILL.md` — RED-GREEN discipline for the bugfix row above.

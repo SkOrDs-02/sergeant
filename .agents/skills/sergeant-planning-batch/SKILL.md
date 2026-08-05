@@ -22,9 +22,18 @@ Unlike the §11 docs-sync sweep, this workflow **does** carry real code work and
 
 Load when the request is «виконай N тасків з планінгу» / «прожени батч planning
 PR-карток» / «execute a batch of planning tasks», and the work spans multiple
-`docs/90-work/planning/*` PR-cards. Each PR-card carries
-`Status / Trigger / Action / Files / Acceptance / Size / P-рівень / Dependencies
-/ Freeze-compatible / Owner`.
+`docs/90-work/planning/*` tasks.
+
+**Read the live format, don't assume one.** Planning docs in this repo do **not**
+share a single card schema — today they range from `> **Status:**` lifecycle
+headers to sprint tables (`sprint-9-10-plan-2026.md` uses
+`ID / Source-roast / Surface / P-рівень / Effort / Залежності / Acceptance`) to
+prose roadmaps and research notes under `specs/` and `prompts/`. The richer
+`Status / Trigger / Action / Files / Acceptance / Size / P-рівень / Dependencies /
+Freeze-compatible / Owner` card is the **target** shape for new cards, not a
+guarantee about existing ones. Parse whatever fields a doc actually has; treat a
+missing `Dependencies` or `Freeze-compatible` field as "unknown → verify
+manually", never as "no dependencies".
 
 **Do not load** for a single isolated task that already maps to one specialist
 skill — route straight to that skill instead. Do not load for the read-only

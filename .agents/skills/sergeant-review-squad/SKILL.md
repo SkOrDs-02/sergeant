@@ -1,8 +1,8 @@
 ---
 name: sergeant-review-squad
 description: Use for Sergeant PR review touching 3+ governed surfaces — spawns 4 Agent Team reviewers (contract, design, security, docs) in parallel then synthesizes; UA: ревʼю PR через 3+ governed surfaces паралельно.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Review squad для Sergeant PRs
@@ -36,6 +36,18 @@ Ask each teammate to send their findings to the lead when done.
 ```
 
 Teammates автоматично завантажують CLAUDE.md і project context. Вони можуть писати одне одному через mailbox — наприклад, security-reviewer може запитати у contract-reviewer деталі про підозрілу зміну API.
+
+Точний перелік правил на кожного reviewer-а — канонічно в його власному `description:` у `.claude/agents/<name>.md`. Рядки вище — короткий орієнтир для spawn-у; якщо вони розійшлись із визначенням агента, правда в агента.
+
+## Поза межами цього squad-у (свідомо)
+
+Ці 4 лінзи покривають **коректність, безпеку і governance диффа** — не продуктивність і не поведінку в браузері:
+
+- **Bundle-бюджети і Lighthouse** (JS ≤1.35 MB, CSS ≤40 kB, eager ≤450 kB, LCP ≤3000 ms) — механічні CI-гейти: `size-limit`, `scripts/ci/check-eager-bundle.mjs`, workflow `Lighthouse CI`. Вони блокують мерж самі; reviewer-агент їх не дублює.
+- **E2E / Playwright** — окрема поверхня, `sergeant-e2e-testing`.
+- **Зелені тести** — `sergeant-qa-squad`, далі `sergeant-verify-before-done`.
+
+Якщо PR свідомо піднімає бюджет — це має бути в описі PR; review-squad перевіряє наявність обґрунтування, а не саме число.
 
 ## Synthesis protocol
 

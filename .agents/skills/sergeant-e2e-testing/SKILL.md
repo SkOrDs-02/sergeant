@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # E2E Testing (Playwright) у Sergeant
 
-Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/` split into `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Configs: `apps/web/playwright.smoke.config.ts` (smoke/critical-flow — boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`) and `apps/web/playwright.config.ts` (a11y only — self-managed build+preview `webServer`).
+Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`. Primary lanes: `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Two more lanes exist and are easy to miss: `tests/mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — local-only, **not** wired into CI) and `tests/ledger/`; `tests/utils/` holds shared helpers, not specs. Configs: `apps/web/playwright.smoke.config.ts` (smoke/critical-flow — boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`) and `apps/web/playwright.config.ts` (a11y only — self-managed build+preview `webServer`).
 
 ## 8 Golden Rules
 
