@@ -1,6 +1,6 @@
 # Release Policy
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
@@ -10,7 +10,7 @@ Canonical release policy for Sergeant. This document defines when a normal merge
 | Release class       | Typical changes                                                                                                                       | Required mindset                                                                  |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Merge-only          | docs-only, tests-only, internal refactors with no runtime or user-facing change                                                       | Standard PR and CI coverage                                                       |
-| Coordinated release | web-only UI behavior, server-only runtime behavior, mobile build, console agent prompt/tool changes                                   | Use the matching release playbook and record post-release verification            |
+| Coordinated release | web-only UI behavior, server-only runtime behavior, mobile build, HubChat prompt/tool changes                                         | Use the matching release playbook and record post-release verification            |
 | High-risk release   | schema changes, auth/session changes, env changes, external integration changes, multi-surface deploys, rollback-sensitive migrations | Treat the PR as release-bearing and follow explicit rollback + verification steps |
 
 ## A release PR mindset is required when

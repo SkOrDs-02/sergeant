@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                             |
@@ -81,7 +81,7 @@ Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Res
    - Day +7: «4 дні до блокування акаунту».
    - Day +13: «Завтра ми тимчасово обмежимо вхід».
 4. **Phase D — Sign-in soft-block.** Day 15+: новий per-user `forceVerifyAt: timestamp` колонка у `"user"` table. Better Auth sign-in hook читає колонку, якщо `forceVerifyAt < NOW() AND emailVerified = false` → повертаємо `403 EMAIL_VERIFICATION_REQUIRED` навіть якщо `REQUIRE_EMAIL_VERIFICATION=false`. Це **per-user**, тож global env-флаг лишається `false` доти, доки 80%+ legacy-юзерів не verify-нуться.
-5. **Phase E — Global flip.** Коли verified-rate ≥ 80% (вимір через PostHog event `email_verified` count proxied на DB count via nightly cron), flip `REQUIRE_EMAIL_VERIFICATION=true` через Railway env-update + standard staging-verification per [`docs/00-start/playbooks/deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md).
+5. **Phase E — Global flip.** Коли verified-rate ≥ 80% (вимір через PostHog event `email_verified` count proxied на DB count via nightly cron), flip `REQUIRE_EMAIL_VERIFICATION=true` через Coolify env-update + standard staging-verification per [`docs/00-start/playbooks/deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md).
 
 Pros:
 

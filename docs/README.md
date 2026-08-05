@@ -7,7 +7,7 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-08-04 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-08-05 via `pnpm docs:gen-trust-badge`_
 >
 > 0 stale docs · 0 WIP violations · 0 cron failures — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 
@@ -81,27 +81,27 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 
 ### Trackers (multi-PR series, registries, lifecycle-managed work)
 
-| Section                                                               | Purpose                                                                                         |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`open-work.md`](./open-work.md)                                      | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)     |
-| [`audits/`](./90-work/audits/README.md)                               | Індекс аудитів; завершена історія доступна через Git history/permalinks                         |
-| [`initiatives/`](./90-work/initiatives/README.md)                     | Numbered multi-PR initiatives (living: 0006 Withdrawn, 0010, 0015, 0022 + stack-pulse residual) |
-| [`launch/`](./01-product/launch/README.md)                            | Go-to-market, monetization, ops, FTUX master tracker + phases                                   |
-| [`planning/`](./90-work/planning/README.md)                           | Active roadmaps, infra plans, staged improvements                                               |
-| [`security/hardening/`](./04-governance/security/hardening/README.md) | Living security hardening backlog (жива картка: C2; решта в `archive/`)                         |
-| [`superpowers/`](./90-work/superpowers/README.md)                     | High-leverage guides; завершені плани під `plans/archive/`                                      |
-| [`tech-debt/`](./90-work/tech-debt/README.md)                         | Active debt registries (backend/frontend/mobile + assessment)                                   |
-| [`beta-launch/`](./90-work/beta-launch/README.md)                     | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання                                  |
+| Section                                                               | Purpose                                                                                                        |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| [`open-work.md`](./open-work.md)                                      | **Автогенерований єдиний дашборд** активних документів з усіх 7 tracker-ів (Rule #10 sweep)                    |
+| [`audits/`](./90-work/audits/README.md)                               | Індекс аудитів; завершена історія доступна через Git history/permalinks                                        |
+| [`initiatives/`](./90-work/initiatives/README.md)                     | Numbered multi-PR initiatives (living: 0010, 0015, 0022; завершені/withdrawn — GitHub permalinks per ADR-0081) |
+| [`launch/`](./01-product/launch/README.md)                            | Go-to-market, monetization, ops, FTUX master tracker + phases                                                  |
+| [`planning/`](./90-work/planning/README.md)                           | Active roadmaps, infra plans, staged improvements                                                              |
+| [`security/hardening/`](./04-governance/security/hardening/README.md) | Living security hardening backlog (жива картка: C2; решта в `archive/`)                                        |
+| [`superpowers/`](./90-work/superpowers/README.md)                     | High-leverage guides; завершені плани під `plans/archive/`                                                     |
+| [`tech-debt/`](./90-work/tech-debt/README.md)                         | Active debt registries (backend/frontend/mobile + assessment)                                                  |
+| [`beta-launch/`](./90-work/beta-launch/README.md)                     | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання                                                 |
 
 ### Збережені локальні архіви
 
-| Path                                                                                                                                                                               | What                                                             |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [`stack-pulse-2026-05/archive/`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive) | Closed stack-pulse PR cards (living: pr-25, pr-29)               |
-| [`launch/archive/`](./01-product/launch/archive)                                                                                                                                   | Frozen roadmaps, FTUX sprint-plan, sprint-retros                 |
-| [`tech-debt/archive/`](./90-work/tech-debt/archive)                                                                                                                                | Closed syncV2 / P1 / Express 5 / historical assessment (md+json) |
-| [`security/hardening/archive/`](./04-governance/security/hardening/archive)                                                                                                        | Closed hardening cards + sprint overviews                        |
-| [`superpowers/plans/archive/`](./90-work/superpowers/plans/archive)                                                                                                                | Closed superpowers implementation plans                          |
+| Path                                                                                                                                                                               | What                                                                                                                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`stack-pulse-2026-05/archive/`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive) | Closed stack-pulse PR cards (39/39 закрито 2026-07-20; відкриті залишки серії — [`hardening-matrix.md`](./90-work/initiatives/hardening-matrix.md)) |
+| [`launch/archive/`](./01-product/launch/archive)                                                                                                                                   | Frozen roadmaps, FTUX sprint-plan, sprint-retros                                                                                                    |
+| [`tech-debt/archive/`](./90-work/tech-debt/archive)                                                                                                                                | Closed syncV2 / P1 / Express 5 / historical assessment (md+json)                                                                                    |
+| [`security/hardening/archive/`](./04-governance/security/hardening/archive)                                                                                                        | Closed hardening cards + sprint overviews                                                                                                           |
+| [`superpowers/plans/archive/`](./90-work/superpowers/plans/archive)                                                                                                                | Closed superpowers implementation plans                                                                                                             |
 
 Завершені `90-work/{audits,initiatives,planning}` не дублюються локально: їхня історія лишається у Git, а чинні документи посилаються на immutable GitHub permalinks (ADR-0081).
 
@@ -112,4 +112,4 @@ Sections are grouped by **genre** so it is obvious at a glance whether a directo
 3. If it is policy or machine-readable governance, use `docs/04-governance/governance/`.
 4. If it changes routing for agents, sync `docs/00-start/agents/*` and `AGENTS.md`.
 5. For docs with review cadence, include `Last validated` and `Status` headers.
-6. When a tracker doc reaches `Closed`/`Done`/`Reference`, move it to the section's `archive/` subdirectory and leave a one-line redirect from the old path (default ≥90d after Closed; fast-forward OK with founder approval).
+6. When a tracker doc reaches `Closed`/`Done`/`Reference`, move it to the section's `archive/` subdirectory and leave a one-line redirect from the old path (default ≥90d after Closed; fast-forward OK with founder approval). Виняток — `90-work/{audits,initiatives,planning}`: локальних архівів немає (ADR-0081), завершений документ видаляється, а inbound-посилання переводяться на immutable GitHub permalink.

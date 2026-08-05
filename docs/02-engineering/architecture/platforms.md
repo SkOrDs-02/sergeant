@@ -77,7 +77,7 @@
 
 - Bundle: `vendor-zxing` (411kB) уже lazy-loaded через `React.lazy` у `NutritionApp`. На Chrome/Edge/Android Chrome використовується native `BarcodeDetector`, зxing-chunk не завантажується. 411 kB платять тільки Safari/Firefox користувачі.
 - Web push: VAPID-keys + `webpush.sendNotification`. Для RN/shell — APNs/FCM окремо (див. native секцію).
-- `THIRD_PARTY_LICENSES.md` регенерується через `pnpm licenses:gen` (фільтрує build/test-tooling).
+- Ліцензії залежностей перевіряються ad-hoc через `pnpm licenses list --prod` (committed-реєстру `THIRD_PARTY_LICENSES.md` у репо немає).
 
 **Blocking для релізу:** ❌ Немає. Запускається як є.
 

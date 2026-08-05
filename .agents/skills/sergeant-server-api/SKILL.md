@@ -1,8 +1,8 @@
 ---
 name: sergeant-server-api
 description: Use when editing Sergeant server routes, serializers, modules, api-client types, React Query server hooks, or time-sensitive logic; also for middleware or env changes; UA: правиш роути/серіалізатори/RQ-хуки.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Server API у Sergeant
@@ -17,9 +17,9 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 ## Жорсткі правила
 
-- Coerce кожне `bigint`-поле у `number` всередині серіалізатора.
+- Coerce кожне `bigint`-поле у `number` всередині серіалізатора — канонічне формулювання і BAD/GOOD у [Rule #1](../../../docs/04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md); тут не переказуй, лінкуй.
 - Якщо змінюється форма відповіді — онови server-серіалізатор, `packages/api-client` і contract-тест в одному PR.
-- Використовуй `Europe/Kyiv` day boundaries; не деривуй day-ключі raw UTC ISO-нарізкою.
+- **Межа доби — два режими (ADR-0078), не одне загальне правило.** Особисті сутності (відмітка звички, лог їжі, денний запис) мають **device-local** day-ключ: клієнт надсилає ключ, сервер йому довіряє і **не** передеривовує. `Europe/Kyiv` лишається для серверних звітів, фінансових періодів і **відображення** часу — там day-bucketing через `timezone('Europe/Kyiv', ts)`. Day-ключ входить у первинний ключ відмітки (`habitId:YYYY-MM-DD`), тому помилка режиму незворотна. Канонічні хелпери — [`packages/routine-domain/src/dateKeys.ts`](../../../packages/routine-domain/src/dateKeys.ts). Ніколи не деривуй ключ raw UTC ISO-нарізкою — це хибно в **обох** режимах. Деталі: [ADR-0078](../../../docs/04-governance/adr/0078-day-boundary-device-local.md).
 - Better Auth user-id-и — непрозорі рядки.
 - **Білінг (ADR-0068):** активна модель — Free + Pro ₴199/міс / ₴1 490/рік, reverse trial 7 днів (автоматичний Pro → downgrade). `plan: 'free' | 'pro'` тільки. Plus tier видалено зі scope. Enum живе у `apps/server/src/modules/billing/`. Деталі цін і лімітів — у [ADR-0068](../../../docs/04-governance/adr/0068-pricing-v4-uah-reverse-trial.md).
 - **Логування (Hard Rule #21):** нові поверхні логування мають відповідати Pino redaction policy — PII не потрапляє в логи. Перевірка: [`docs/04-governance/security/logging-redaction-policy.md`](../../../docs/04-governance/security/logging-redaction-policy.md).

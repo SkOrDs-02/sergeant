@@ -1,6 +1,6 @@
 # Дашборди Grafana
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 JSON-файли дашбордів Grafana для observability сервера Sergeant — готові до імпорту.
@@ -17,6 +17,10 @@ JSON-файли дашбордів Grafana для observability сервера S
 | `cost-monitoring.json`    | PR-33 — agregовані витрати з 6 провайдерів (Anthropic + Voyage + Hetzner + Vercel + PostHog + Sentry): пай-чарти, daily AI burn, run-rate vs budget.                                                                                                                                                                                |
 | `ai-cost.json`            | PR-13 — focused AI-cost (Anthropic + Voyage): 30d cost, hourly burn, per-model daily bar, top-10 endpoints, projected EOM, run-rate vs `*_MONTHLY_BUDGET_USD`.                                                                                                                                                                      |
 | `n8n-webhook-events.json` | PR-28/PR-29 — replay tracking для `n8n_webhook_events`: success-rate (24h), attempts-over-time per workflow×outcome, top-10 workflows by replays, p50/p95/p99 latency, латентний heatmap до 10s timeout.                                                                                                                            |
+| `auth.json`               | Auth-воронка та сесії: login/signup rate, помилки, активні сесії.                                                                                                                                                                                                                                                                   |
+| `frontend-cwv.json`       | Core Web Vitals з web-vitals beacon: LCP / INP / CLS по маршрутах.                                                                                                                                                                                                                                                                  |
+| `hubchat.json`            | HubChat: обсяг повідомлень, tool-use, латентність першого токена, помилки провайдера.                                                                                                                                                                                                                                               |
+| `sync.json`               | Sync v2 op-log: push/pull rate, розмір черги outbox, конфлікти, латентність.                                                                                                                                                                                                                                                        |
 
 ## Як імпортувати
 

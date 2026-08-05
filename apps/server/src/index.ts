@@ -94,7 +94,7 @@ connectRedis();
 // PR-14 (48-plan) — Anthropic daily budget alert ($3 soft / $5 hard).
 // Periodic background tick рахує `aiCostEstimateUsd{provider="anthropic"}`
 // delta за поточну UTC-добу і кидає Sentry-event при перевищенні
-// порогів. Sentry → n8n WF-22 alert-routing → Telegram (existing pipeline).
+// порогів. Sentry → n8n `03-sentry-alert-routing` → Telegram (existing pipeline).
 // Idempotency через Redis `SET NX EX` з fallback на in-memory Set.
 // No-op коли `ANTHROPIC_BUDGET_ALERT_ENABLED=false`.
 anthropicBudgetGuard.start();

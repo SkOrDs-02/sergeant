@@ -1,6 +1,6 @@
 # Логування (Pino JSON + ALS + Sentry / Loki)
 
-> **Last touched:** 2026-07-20 by @dimastahov16012003. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Цей документ описує **як** і **чому** бекенд Sergeant логує саме так, як
@@ -89,7 +89,8 @@ coupling, простіше тестувати.
 ## 3. Redaction-політика
 
 Pino маскує значення на `[redacted]` для шляхів, визначених у
-[`redactPaths`](../../../apps/server/src/obs/logger.ts#L24) (22 елементи).
+[`redactPaths`](../../../apps/server/src/obs/logger.ts#L24) (47 шляхів). Вкладені `email`/`phone` та інші чутливі ключі додатково зачищає
+`redactKeysRecursively` за списком `REDACT_KEY_NAMES` (44 ключі) у `packages/shared/src/lib/pii.ts`.
 Логічне групування:
 
 ### Auth-заголовки
@@ -249,6 +250,11 @@ app_errors_total{kind="operational|programmer", status="4xx|5xx", code="...", mo
 ---
 
 ## 6. Кореляція Sentry ↔ Pino ↔ Loki
+
+> **⚠️ Стан на 2026-08-02:** логи в Loki фактично не доходять — інстанс порожній
+> (0 лейблів за 29 днів), див. [`SLO.md § Статус wiring`](./SLO.md). Поки канал не
+> полагоджено, розслідування веди по логах застосунку в Coolify; Sentry-кореляція
+> нижче лишається валідною.
 
 Ключ кореляції — **`requestId`**. Він присутній у:
 

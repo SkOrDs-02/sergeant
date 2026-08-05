@@ -1,6 +1,6 @@
 # Storybook (apps/web)
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Sergeant ships a Storybook 10 (`@storybook/react-vite`) playground for the web design-system. It serves as:
@@ -129,7 +129,7 @@ If a future component lands in one of those buckets, reuse the same pattern — 
 `.github/workflows/storybook-deploy.yml`:
 
 - **PR builds:** `pnpm build-storybook` runs on every PR that touches `apps/web/**`, `packages/design-tokens/**`, or the workflow itself. Static bundle is uploaded as a workflow artifact (`storybook-static-<pr-number>`, 7-day retention) so reviewers can download + open locally.
-- **`main` deploy:** after merge, the bundle is published to GitHub Pages at `https://skords-01.github.io/Sergeant/`. The first run requires GitHub Pages to be enabled (Settings → Pages → Source = "GitHub Actions").
+- **`main` deploy:** after merge, the bundle is published to GitHub Pages at `https://skords-02.github.io/sergeant/`. The first run requires GitHub Pages to be enabled (Settings → Pages → Source = "GitHub Actions").
 
 Failed deploy → previous Pages build stays live. Investigate via the workflow logs.
 

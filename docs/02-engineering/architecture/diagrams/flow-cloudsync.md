@@ -1,9 +1,9 @@
 # Flow — Sync v2 push/pull
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
-Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047) і повертає `410 Gone`.
+Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047); sunset-middleware прибрано після 90-денного вікна, тож роут відповідає звичайним `404`.
 
 ```mermaid
 sequenceDiagram
@@ -77,13 +77,13 @@ sequenceDiagram
 
 ## Порівняння з v1
 
-| v1 (ADR-0047, знятий)               | v2 (поточний)                                |
-| ----------------------------------- | -------------------------------------------- |
-| `POST /api/sync` → 410 Gone         | `POST /api/v2/sync/push`                     |
-| Whole-module blob                   | Per-row operation log                        |
-| LWW на blob timestamp               | LWW per row з `idempotency_key`              |
-| offlineQueue у localStorage         | `sync_op_outbox` у SQLite-WASM (OPFS)        |
-| `module_data` JSONB (дропнута, 046) | Normalized per-domain tables + `sync_op_log` |
+| v1 (ADR-0047, знятий)                | v2 (поточний)                                |
+| ------------------------------------ | -------------------------------------------- |
+| `POST /api/sync` → 404 (роут знятий) | `POST /api/v2/sync/push`                     |
+| Whole-module blob                    | Per-row operation log                        |
+| LWW на blob timestamp                | LWW per row з `idempotency_key`              |
+| offlineQueue у localStorage          | `sync_op_outbox` у SQLite-WASM (OPFS)        |
+| `module_data` JSONB (дропнута, 046)  | Normalized per-domain tables + `sync_op_log` |
 
 ## Failure handling
 

@@ -1,9 +1,9 @@
 # Playbook: Add API Endpoint
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
-**Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або console surfaces.
+**Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або HubChat.
 
 ## Owner surface
 
@@ -69,7 +69,7 @@
 
 - Зміна лише в UI-споживанні існуючого endpoint.
 - Потрібна тільки DB migration без нового HTTP surface.
-- Працюєш з HubChat tool або internal console agent, а не public/app API.
+- Працюєш з HubChat tool/executor, а не public/app API.
 
 ## Related playbooks and skills
 

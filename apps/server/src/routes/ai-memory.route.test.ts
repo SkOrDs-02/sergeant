@@ -385,6 +385,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
       query: "що я їв на сніданок",
       topK: 5,
       sources: undefined,
+      caller: "explicit-recall",
     });
   });
 
@@ -412,6 +413,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
       query: "test",
       topK: undefined,
       sources: ["chat", "fizruk"],
+      caller: "explicit-recall",
     });
   });
 });

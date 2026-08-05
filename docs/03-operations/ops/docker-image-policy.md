@@ -1,6 +1,6 @@
 # Docker image policy
 
-> **Last touched:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > **Update 2026-07-21:** Backend на Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). `Dockerfile.openclaw` видалено з репо ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)). Trivy gate лишається лише для `Dockerfile.api`.
@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-1. **Runtime base:** `gcr.io/distroless/nodejs20-debian12:nonroot` — Node 20 + glibc, без shell, без package manager-ів, uid:gid `65532:65532`.
+1. **Runtime base:** `gcr.io/distroless/nodejs22-debian13:nonroot` — Node 22 + glibc, без shell, без package manager-ів, uid:gid `65532:65532`.
 2. **Multi-stage:** `builder` (повна збірка) → `deps` (production-only deps + cleanup) → `runtime` (distroless).
 3. **CVE budget:** Trivy gate на `HIGH/CRITICAL` у `.github/workflows/container-scan.yml` — `0` нових CVE allowed для `Dockerfile.api`.
 4. **Healthcheck:** немає в Dockerfile — Coolify моніторить через external HTTP probe (`/health`). Distroless не має shell-у, тож `HEALTHCHECK CMD wget …` / `pgrep …` не виконуються.
@@ -43,16 +43,16 @@ RUN find node_modules -maxdepth 3 -type d \
 - Немає `wget` / `curl` / `bash` → 0 BusyBox CVE.
 - `nonroot` user (uid 65532) → CIS Docker Benchmark + OWASP Top-10 default.
 
-Builder + deps stage-и залишаються на `node:20.20.2-alpine` — їм потрібен shell для `pnpm`. Cleanup CVE-noisy peers (vite/vitest/esbuild/rollup/tsx) робиться ТАМ, до того, як файли потрапляють у runtime. Trivy сканує тільки runtime layer-и.
+Builder + deps stage-и залишаються на `node:22.16.0-alpine` — їм потрібен shell для `pnpm`. Cleanup CVE-noisy peers (vite/vitest/esbuild/rollup/tsx) робиться ТАМ, до того, як файли потрапляють у runtime. Trivy сканує тільки runtime layer-и.
 
 ## Stage map
 
-### `Dockerfile.api` (Hub API, Express + grammy)
+### `Dockerfile.api` (Hub API, Express)
 
 | Stage     | Base                                          | Покликання                                                                                                             |
 | --------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `builder` | `node:20.20.2-alpine`                         | `pnpm install` (dev+prod), `pnpm --filter @sergeant/db-schema build`, `pnpm build` (esbuild → `dist-server/index.js`). |
-| `deps`    | `node:20.20.2-alpine`                         | `pnpm install --prod --filter @sergeant/server...`. Cleanup CVE-noisy peers через `find … -prune`.                     |
+| `builder` | `node:22.16.0-alpine`                         | `pnpm install` (dev+prod), `pnpm --filter @sergeant/db-schema build`, `pnpm build` (esbuild → `dist-server/index.js`). |
+| `deps`    | `node:22.16.0-alpine`                         | `pnpm install --prod --filter @sergeant/server...`. Cleanup CVE-noisy peers через `find … -prune`.                     |
 | `runtime` | `gcr.io/distroless/nodejs20-debian12:nonroot` | Тільки `node_modules` (з deps) + `dist-server/` (з builder) + `docs/<read_strategy_docs allowlist>/`. NO HEALTHCHECK.  |
 
 ~~`Dockerfile.openclaw`~~ — removed ADR-0075 (historical Trivy job `trivy-image-openclaw` теж знято).
@@ -133,7 +133,6 @@ PR-30 — single PR з Dockerfile.api, бо CVE-нова base layer + cleanup pa
 | `pg`                | No (pure-JS pool) | ✓              |
 | `bcryptjs`          | No (pure-JS)      | ✓              |
 | `@anthropic-ai/sdk` | No                | ✓              |
-| `grammy`            | No                | ✓              |
 | `voyageai`          | No                | ✓              |
 
 Native-binding deps (наприклад `sharp`) — НЕ у поточному dependency tree. Якщо колись додадуться — потрібен `:debug` distroless variant з glibc symbol-resolution або повернення на alpine. Test-build перед merge.

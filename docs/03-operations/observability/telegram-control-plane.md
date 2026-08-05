@@ -1,6 +1,6 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Це architectural review: **чи достатньо Telegram-бота, щоб масштабувати
@@ -24,24 +24,26 @@ mapping живе у [`../../ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops
 3. **Action surface** — людина може щось зробити у відповідь
    (acknowledge, mute, restart, dispatch, run a script).
 
-Telegram + n8n + HubChat сьогодні закривають перші два пункти
-повністю, а третій — частково (через HubChat slash-команди + Telegram
-кнопки, де вони реалізовані).
+Telegram + n8n сьогодні закривають перші два пункти повністю, а третій —
+частково (через inline ack-кнопки WF-104, де вони реалізовані). Двостороннього
+мосту «відповідь у Telegram → застосунок» немає: HubChat — це in-app чат
+(`apps/server/src/modules/chat`), а Telegram-командний рантайм пішов разом з
+OpenClaw ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
 
 ## Що працює у поточному setup
 
 ### Сильні сторони
 
-| Аспект                     | Чому працює зараз                                                                                                                                      |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Cost**                   | Telegram free; n8n self-hosted cost depends on the still-legacy runtime and must be verified before budgeting; supergroup без квот.                    |
-| **Mobile-first**           | Founder reads alerts on phone у будь-якому контексті. Push notification робиться сам.                                                                  |
-| **Setup latency**          | Від "треба новий канал alert-ів" до "канал є + бот пише" — < 5 хвилин.                                                                                 |
-| **Forum mode (Topics)**    | Нативна сегментація без створення multi-chat zoo. До 100 топіків на supergroup.                                                                        |
-| **Conversational replies** | Завдяки HubChat інтеграції, можна відповісти на алерт прямо в нитці. На відміну від email/SMS — двосторонній канал з нульовим контекстом-перемиканням. |
-| **Backend authoring**      | n8n Telegram node — drop-in. Не треба webhook-server поруч з n8n.                                                                                      |
-| **Audit trail**            | Telegram зберігає історію вічно; для compliance use cases — додатково WF-98 пише у Postgres `n8n_errors`. Тобто є dual-store з безкоштовним side.      |
-| **Search**                 | Telegram має full-text search by chat / topic — для current alert-volume цього достатньо.                                                              |
+| Аспект                  | Чому працює зараз                                                                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cost**                | Telegram free; n8n self-hosted cost depends on the still-legacy runtime and must be verified before budgeting; supergroup без квот.                  |
+| **Mobile-first**        | Founder reads alerts on phone у будь-якому контексті. Push notification робиться сам.                                                                |
+| **Setup latency**       | Від "треба новий канал alert-ів" до "канал є + бот пише" — < 5 хвилин.                                                                               |
+| **Forum mode (Topics)** | Нативна сегментація без створення multi-chat zoo. До 100 топіків на supergroup.                                                                      |
+| **Inline ack**          | На алерт можна відреагувати кнопкою прямо в нитці (WF-104 callback-router). Повноцінних conversational-відповідей немає — лише фіксований набір дій. |
+| **Backend authoring**   | n8n Telegram node — drop-in. Не треба webhook-server поруч з n8n.                                                                                    |
+| **Audit trail**         | Telegram зберігає історію вічно; для compliance use cases — додатково WF-98 пише у Postgres `n8n_errors`. Тобто є dual-store з безкоштовним side.    |
+| **Search**              | Telegram має full-text search by chat / topic — для current alert-volume цього достатньо.                                                            |
 
 ### Поточні структурні обмеження
 
@@ -62,7 +64,7 @@ Telegram + n8n + HubChat сьогодні закривають перші два
 | **Setup cost (mins to value)** | ✅ ~5 хв                                 | 🟡 ~30 хв (workspace + apps)           | ❌ дні-тижні             | 🟡 ~1 день         |
 | **$/міс при solo-founder**     | ✅ ~$0                                   | 🟡 free → \$\$ при > 90 day history    | ❌ infra cost + dev time | ❌ \$15+/seat      |
 | **Mobile push native**         | ✅                                       | ✅                                     | 🟡 (PWA / окремий app)   | ✅                 |
-| **Two-way replies**            | ✅ (HubChat)                             | ✅                                     | ❌ (треба свій chatbot)  | 🟡 (email-only)    |
+| **Two-way replies**            | 🟡 (лише inline ack-кнопки)              | ✅                                     | ❌ (треба свій chatbot)  | 🟡 (email-only)    |
 | **On-call rotations**          | ❌                                       | 🟡 (через Slack apps або зовнішній PD) | 🟡 (свій код)            | ✅                 |
 | **Acknowledge mechanism**      | 🟡 (через bot inline button — у roadmap) | 🟡 (через apps)                        | ✅                       | ✅                 |
 | **Audit trail**                | 🟡 (chat history + Postgres dual-store)  | ✅                                     | ✅                       | ✅                 |

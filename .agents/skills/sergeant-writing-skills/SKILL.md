@@ -1,8 +1,8 @@
 ---
 name: sergeant-writing-skills
 description: Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Як писати SKILL у Sergeant
@@ -62,14 +62,15 @@ SKILL.md — це не проза, а інструкція, яку агент в
 2. `name:` дорівнює slug-у директорії — інакше `pnpm lint:skills` падає.
 3. Body містить конкретний шлях у репо або `pnpm`/`pnpx` команду — інакше SKILL «не заземлений» і ловиться `check-skill-shape.mjs`.
 4. Body лінкує мінімум один playbook у `docs/00-start/playbooks/` або сам `docs/00-start/agents/agent-skills-catalog.md`.
-5. Реєструється в `.agents/skills-lock.json` (через `pnpm skills:lock`) і в таблиці Active Skills у `docs/00-start/agents/agent-skills-catalog.md`.
+5. Реєструється в `.agents/skills-lock.json` (через `pnpm skills:lock`), у таблиці Active Skills у `docs/00-start/agents/agent-skills-catalog.md` **і як вузол у [`.agents/agent-graph.json`](../../agent-graph.json)** — інакше `pnpm lint:agent-graph` падає з `disk-not-in-graph`. Якщо скіл диспетчерить агентів або ескалює в інший скіл — додай і відповідні ребра (`dispatches` / `escalates`).
 6. Не містить патернів з 7 категорій загроз — `pnpm lint:skills` валідовує через `scripts/check-skill-body-security.mjs` (Hard Rule #22, див. [`docs/04-governance/governance/rules/22-skill-body-security-scan.md`](../../../docs/04-governance/governance/rules/22-skill-body-security-scan.md)).
 
 ## Локальний контроль перед PR
 
 ```bash
-pnpm lint:skills    # shape + lock SHA-256 + security scan
+pnpm lint:skills    # shape + lock SHA-256 + security scan + agent-graph + trigger evals
 pnpm skills:lock    # регенерує SHA-256 після свідомої зміни вмісту
+pnpm lint:agent-graph       # топологія: висячі ребра, вузли-сироти, least-privilege
 pnpm lint:discoverability   # переконатися, що нові доки досяжні з AGENTS.md ≤ 2 hops
 ```
 

@@ -1,8 +1,8 @@
 ---
 name: sergeant-feature-delivery
 description: Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification — even if scope looks small; UA: робиш нову фічу/екран/endpoint.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Доставка фіч у Sergeant
@@ -17,7 +17,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
 5. Імплементуй мінімальний end-to-end slice.
 6. Онови доки лише там, де змінилася operator- або contributor-поведінка.
-7. Прогон цільову верифікацію перед тим, як казати «готово».
+7. Прогони цільову верифікацію перед тим, як казати «готово» — канонічний гейт і таблиця «claim → proving command» у [`sergeant-verify-before-done`](../sergeant-verify-before-done/SKILL.md). Для крос-поверхневої фічі перед цим — `sergeant-qa-squad`.
 
 ## Завжди покривай
 
