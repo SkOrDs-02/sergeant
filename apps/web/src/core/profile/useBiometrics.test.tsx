@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { vi } from "vitest";
 const { mockUseAuth } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(() => ({ user: null as { id: string } | null })),
 }));
@@ -14,7 +15,7 @@ vi.mock("./profileWriteThrough", () => ({
 }));
 
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   BIOMETRICS_DEFAULT,

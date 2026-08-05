@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { vi } from "vitest";
 /**
  * `useProfileWriteThroughBoot` — the RQ-backed `GET /api/me/profile` fetch
  * plus the "run reconcile exactly once per authenticated userId" guard.
@@ -18,7 +19,7 @@ vi.mock("./profileWriteThrough", () => ({
 
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { ReactNode } from "react";
 import { useProfileWriteThroughBoot } from "./useProfileWriteThroughBoot";
 

@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 /**
  * Reconciliation logic between `hub_biometrics_v1` (local, device-only)
  * and `/api/me/profile` (server write-through row, migration 115).
@@ -18,7 +19,7 @@ vi.mock("@shared/api", () => ({
   meApi: { updateProfile: mockUpdateProfile },
 }));
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import type { UserProfileResponse } from "@shared/api";
 import {
