@@ -66,6 +66,7 @@ export {
   purgeStaleTerminalOutbox,
   SYNC_OP_OUTBOX_STALE_TTL_DAYS,
   SYNC_OP_OUTBOX_TERMINAL_STATUSES,
+  SYNC_OP_OUTBOX_PURGEABLE_STATUSES,
   type PurgeStaleTerminalOutboxOptions,
   type PurgeStaleTerminalOutboxResult,
 } from "./syncOpOutboxPurgeStale.js";

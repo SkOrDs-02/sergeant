@@ -74,12 +74,36 @@ export const SYNC_OP_OUTBOX_STALE_TTL_DAYS = 30;
 export const SYNC_OP_OUTBOX_TERMINAL_STATUSES: readonly SyncOpOutboxStatus[] =
   SYNC_OP_OUTBOX_STATUSES.filter((status) => status !== "pending");
 
+/**
+ * Statuses the TTL sweep collects **by default** — terminal minus
+ * `'quarantined'`.
+ *
+ * AI-DANGER: `'quarantined'` навмисно НЕ тут. Аудит шару даних
+ * 2026-08-05: карантин — це глухий кут. Рядок туди кладе
+ * `drainSyncOpOutbox`, коли не може розібрати payload; банер
+ * синхронізації його не рахує (`SyncStatusCounts` знає лише
+ * `pending | rejected | dead_letter`), `recoverDeadLetter` його не
+ * бере (`WHERE status = 'dead_letter'`), а цей TTL-замітач через 30
+ * днів його видаляв. Тобто запис користувача зникав тихо, і ми навіть
+ * не дізнавались, що карантин узагалі трапляється.
+ *
+ * Тримаємо рядок на диску, поки не зʼявиться або UI відновлення, або
+ * дані з Sentry, що карантину в дикій природі не буває. Ціна —
+ * кілька осиротілих рядків на пристрій; вигода — подія лишається
+ * розслідуваною. Викликач, який СПРАВДІ хоче зібрати й карантин,
+ * передає {@link SYNC_OP_OUTBOX_TERMINAL_STATUSES} явно.
+ */
+export const SYNC_OP_OUTBOX_PURGEABLE_STATUSES: readonly SyncOpOutboxStatus[] =
+  SYNC_OP_OUTBOX_TERMINAL_STATUSES.filter((status) => status !== "quarantined");
+
 export interface PurgeStaleTerminalOutboxOptions {
   /** Delete terminal rows whose `created_at` is strictly older than this
    *  many days. Must be a finite number `> 0`. */
   readonly olderThanDays: number;
   /** Which statuses to collect. Defaults to
-   *  {@link SYNC_OP_OUTBOX_TERMINAL_STATUSES}. `'pending'` is rejected. */
+   *  {@link SYNC_OP_OUTBOX_PURGEABLE_STATUSES} (terminal MINUS
+   *  `'quarantined'` — див. докстрінг тієї константи). `'pending'` is
+   *  rejected. */
   readonly statuses?: readonly SyncOpOutboxStatus[];
   /** Restrict the purge to a single owner. Omit for a device-wide sweep. */
   readonly userId?: string;
@@ -121,7 +145,7 @@ export async function purgeStaleTerminalOutbox(
     );
   }
 
-  const statuses = options.statuses ?? SYNC_OP_OUTBOX_TERMINAL_STATUSES;
+  const statuses = options.statuses ?? SYNC_OP_OUTBOX_PURGEABLE_STATUSES;
   if (statuses.length === 0) {
     throw new Error(
       `purgeStaleTerminalOutbox: statuses must be a non-empty array`,

@@ -417,6 +417,32 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
       level: "warning",
       message: `sync_op_outbox.quarantine id=${event.id} table=${event.tableName} op=${event.op} reason=${event.reason}`,
     });
+    // Breadcrumb-а МАЛО: він спливає у Sentry лише разом із якоюсь
+    // іншою захопленою подією, а карантин нічого не кидає — тому
+    // де-факто ми про нього не дізнавались ніколи. А це втрата запису
+    // користувача: карантинний рядок не показує банер (`SyncStatusCounts`
+    // знає лише pending/rejected/dead_letter) і не бере `recoverDeadLetter`.
+    //
+    // Аудит шару даних 2026-08-05, рішення власника: спершу почати ЦЕ
+    // БАЧИТИ, і вже за даними вирішувати, чи потрібен UI відновлення.
+    // Тому окрема подія, а не лише хлібна крихта. Разом із нею
+    // `SYNC_OP_OUTBOX_PURGEABLE_STATUSES` більше не дає TTL-замітачу
+    // стирати карантин, тож рядок лишається на диску для розслідування.
+    //
+    // Шуму не боїмось: карантин — це нерозбірливий payload, подія
+    // структурно рідкісна. Якщо виявиться, що вона часта, це і є та
+    // відповідь, заради якої логування додано.
+    sentry.captureException(
+      new Error(`sync_op_outbox quarantined: ${event.reason}`),
+      {
+        extra: {
+          outboxRowId: event.id,
+          tableName: event.tableName,
+          op: event.op,
+          reason: event.reason,
+        },
+      },
+    );
   };
 
   const captureException = (
@@ -471,6 +497,11 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
       jitterMs: () => Math.random() * shared.dbSchema.SYNC_OP_JITTER_WINDOW_MS,
+      // Без цього тик у режимі польоту / метро палить спробу кожному
+      // рядку черги, і за 10-15 хвилин уся черга стає `dead_letter`,
+      // яку оживляє лише ручний тап. Контракт і межі довіри до
+      // `navigator.onLine` — у докстрінгу `isOnline` (`syncV2.pushLoop.ts`).
+      isOnline: () => navigator.onLine,
     },
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),

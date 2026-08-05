@@ -24,6 +24,7 @@ import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearDemoFlag } from "../onboarding/onboardingGate";
+import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { messages } from "../../shared/i18n/uk";
 import {
   safeReadStringSS,
@@ -226,7 +227,25 @@ interface AuthContextValue {
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+  /**
+   * Вихід із акаунта з повним локальним teardown (включно зі стиранням
+   * локальної SQLite).
+   *
+   * Перед стиранням завжди намагається доставити чергу синхронізації —
+   * автоматично, для БУДЬ-ЯКОГО викликача, щоб цей запобіжник не можна
+   * було забути підключити (саме так помер `purgeSyncOpOutboxForUser`).
+   *
+   * `confirmUnsyncedLoss` — необовʼязковий гак для шляхів, де виходить
+   * ЖИВА людина. Викликається лише тоді, коли після спроби доставки
+   * щось лишилось недоставленим, і отримує кількість таких записів.
+   * Поверни `false`, щоб СКАСУВАТИ вихід (нічого не буде стерто, сесія
+   * лишиться живою). Без гака вихід іде далі — така поведінка була
+   * завжди, і програмні шляхи (revoke сесії, demo-команди) на неї
+   * розраховують.
+   */
+  logout: (options?: {
+    confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
+  }) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -398,82 +417,98 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [invalidateMe],
   );
 
-  const logout = useCallback(async () => {
-    // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
-    // нижче — teardown, який не має права гейтити цей перехід (і історично
-    // саме тому клали `clear()` першим — див. коментар нижче).
-    setSignedOut(true);
-    try {
-      await signOut();
-    } catch {
-      // Ігноруємо: навіть якщо Better Auth endpoint повернув помилку,
-      // далі все одно викидаємо локальний me-кеш — UI має показати
-      // sign-in surface, а не застрягти в «напів-залогіненому» стані.
-    }
-    // Drop the whole in-memory query cache FIRST, before any of the
-    // best-effort teardown below. Two reasons:
-    //
-    //   1. `invalidateMe()` alone only marks `me` stale and refetches — but the
-    //      refetch 401s and React Query *retains* the last-good `me` payload on
-    //      error, so `user` stayed populated and the UI stayed logged-in until a
-    //      manual reload (browser-QA finding (a)). `clear()` викидає кеш
-    //      користувача (і всі authed-query модулів) одразу, тож жоден екран не
-    //      віддає дані попереднього юзера. Але сам по собі `clear()` НЕ
-    //      перемикає `status` — змонтований `useUser`-observer не отримує
-    //      нотифікації про видалення і далі тримає останню успішну відповідь.
-    //      За перехід у `unauthenticated` відповідає `setSignedOut(true)` вище.
-    //   2. Ordering is the safety net: this used to run LAST, so a single
-    //      wedged step in between (SW `ready` never settling — see
-    //      `swControl.ts :: SW_READY_TIMEOUT_MS`) left the server session
-    //      destroyed while the UI kept rendering the signed-out user's profile
-    //      and data, with no redirect (аудит 2026-08-04, знахідка 4). Clearing
-    //      up-front makes the UI transition unconditional; everything below is
-    //      cleanup that must never gate it.
-    queryClient.clear();
-    // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
-    // never resolves a stale cache entry that belonged to user A on
-    // shared devices. Fire-and-forget — ignore SW failures since the
-    // partition plugin (`cacheKeyWillBeUsed`) is the in-flight defense.
-    try {
-      await swClearCaches();
-    } catch (err) {
-      logger.warn("[auth.logout] swClearCaches failed", err);
-    }
-    try {
-      await swSetActiveUser(null);
-    } catch (err) {
-      logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
-    }
-    // Audit 10 / F17: delete the just-signed-out user's local SQLite DB so
-    // user B never reads user A's rows on a shared device, then reset the
-    // partition to `anon` for any post-logout anonymous usage. Dynamic import
-    // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
-    try {
-      const sqliteMod = await import("../db/sqlite");
-      await sqliteMod.wipeSqliteDb();
-      sqliteMod.setSqliteUser(null);
-    } catch (err) {
-      logger.warn("[auth.logout] sqlite wipe/reset failed", err);
-    }
-    // Browser-QA 2026-06-15: logout used to leave the previous user's
-    // local-first data behind (plaintext `finyk_tx_cache`, `nutrition_water_v1`,
-    // the `kvvfs-*` SQLite store, the RQ persister snapshot, and the in-memory
-    // warm cache) — all readable by the next user on a shared device. Purge the
-    // app-owned slices of every physical store. Allowlist-scoped, so foreign
-    // keys (PostHog/Sentry) are never touched. Dynamic import keeps the helper
-    // (and its kv/idb deps) out of the eager auth chunk.
-    try {
-      const { purgeAppOwnedLocalData } =
-        await import("../../shared/lib/storage/purgeLocalData");
-      await purgeAppOwnedLocalData();
-    } catch (err) {
-      logger.warn("[auth.logout] local-first data purge failed", err);
-    }
-    // Second `clear()`: the teardown above is async, so a query that was
-    // already in flight when the first clear ran can land afterwards and
-    // repopulate the cache. Cheap and idempotent.
-    queryClient.clear();
-  }, [queryClient]);
+  const logout = useCallback(
+    async (options?: {
+      confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
+    }) => {
+      // Це МУСИТЬ бути найпершим — до `setSignedOut`, до `signOut()`, до
+      // будь-якого teardown. Далі по функції йде `wipeSqliteDb()`, який
+      // видаляє файл локальної БД РАЗОМ із чергою синхронізації; поки
+      // запис не доїхав до Postgres, локальна копія — єдина, що існує.
+      // Скасувати вихід можна лише тут, поки нічого ще не зруйновано.
+      const { pending, unknown } = await flushPendingSyncOpsBeforeLogout();
+      if (!unknown && pending > 0 && options?.confirmUnsyncedLoss) {
+        const proceed = await options.confirmUnsyncedLoss(pending);
+        if (!proceed) return;
+      }
+
+      // Перше і найголовніше: перемкнути UI у signed-out ще до мережі. Все
+      // нижче — teardown, який не має права гейтити цей перехід (і історично
+      // саме тому клали `clear()` першим — див. коментар нижче).
+      setSignedOut(true);
+      try {
+        await signOut();
+      } catch {
+        // Ігноруємо: навіть якщо Better Auth endpoint повернув помилку,
+        // далі все одно викидаємо локальний me-кеш — UI має показати
+        // sign-in surface, а не застрягти в «напів-залогіненому» стані.
+      }
+      // Drop the whole in-memory query cache FIRST, before any of the
+      // best-effort teardown below. Two reasons:
+      //
+      //   1. `invalidateMe()` alone only marks `me` stale and refetches — but the
+      //      refetch 401s and React Query *retains* the last-good `me` payload on
+      //      error, so `user` stayed populated and the UI stayed logged-in until a
+      //      manual reload (browser-QA finding (a)). `clear()` викидає кеш
+      //      користувача (і всі authed-query модулів) одразу, тож жоден екран не
+      //      віддає дані попереднього юзера. Але сам по собі `clear()` НЕ
+      //      перемикає `status` — змонтований `useUser`-observer не отримує
+      //      нотифікації про видалення і далі тримає останню успішну відповідь.
+      //      За перехід у `unauthenticated` відповідає `setSignedOut(true)` вище.
+      //   2. Ordering is the safety net: this used to run LAST, so a single
+      //      wedged step in between (SW `ready` never settling — see
+      //      `swControl.ts :: SW_READY_TIMEOUT_MS`) left the server session
+      //      destroyed while the UI kept rendering the signed-out user's profile
+      //      and data, with no redirect (аудит 2026-08-04, знахідка 4). Clearing
+      //      up-front makes the UI transition unconditional; everything below is
+      //      cleanup that must never gate it.
+      queryClient.clear();
+      // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
+      // never resolves a stale cache entry that belonged to user A on
+      // shared devices. Fire-and-forget — ignore SW failures since the
+      // partition plugin (`cacheKeyWillBeUsed`) is the in-flight defense.
+      try {
+        await swClearCaches();
+      } catch (err) {
+        logger.warn("[auth.logout] swClearCaches failed", err);
+      }
+      try {
+        await swSetActiveUser(null);
+      } catch (err) {
+        logger.warn("[auth.logout] swSetActiveUser(null) failed", err);
+      }
+      // Audit 10 / F17: delete the just-signed-out user's local SQLite DB so
+      // user B never reads user A's rows on a shared device, then reset the
+      // partition to `anon` for any post-logout anonymous usage. Dynamic import
+      // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
+      try {
+        const sqliteMod = await import("../db/sqlite");
+        await sqliteMod.wipeSqliteDb();
+        sqliteMod.setSqliteUser(null);
+      } catch (err) {
+        logger.warn("[auth.logout] sqlite wipe/reset failed", err);
+      }
+      // Browser-QA 2026-06-15: logout used to leave the previous user's
+      // local-first data behind (plaintext `finyk_tx_cache`, `nutrition_water_v1`,
+      // the `kvvfs-*` SQLite store, the RQ persister snapshot, and the in-memory
+      // warm cache) — all readable by the next user on a shared device. Purge the
+      // app-owned slices of every physical store. Allowlist-scoped, so foreign
+      // keys (PostHog/Sentry) are never touched. Dynamic import keeps the helper
+      // (and its kv/idb deps) out of the eager auth chunk.
+      try {
+        const { purgeAppOwnedLocalData } =
+          await import("../../shared/lib/storage/purgeLocalData");
+        await purgeAppOwnedLocalData();
+      } catch (err) {
+        logger.warn("[auth.logout] local-first data purge failed", err);
+      }
+      // Second `clear()`: the teardown above is async, so a query that was
+      // already in flight when the first clear ran can land afterwards and
+      // repopulate the cache. Cheap and idempotent.
+      queryClient.clear();
+    },
+    [queryClient],
+  );
 
   // Привʼязуємо/відвʼязуємо аналітику до userId. Ref тримає попередній
   // userId, щоб `reset()` викликався тільки на реальному переході

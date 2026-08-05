@@ -262,6 +262,12 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       planRetry: dbSchema.planRetry,
       now: () => new Date(),
       jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
+      // Мобільний відповідник `navigator.onLine` — читаємо останній стан
+      // NetInfo із того самого таргета, що вже слухає reconnect. Без
+      // цього тик у режимі польоту палить спробу кожному рядку черги і
+      // за 10-15 хвилин переводить її в `dead_letter`. Семантика й
+      // fail-open — у докстрінгах `isOnline` тут і в `syncV2.pushLoop.ts`.
+      isOnline: () => eventTarget.isOnline(),
     },
     setInterval: (handler, ms) =>
       (globalThis.setInterval as (h: () => void, ms: number) => unknown)(

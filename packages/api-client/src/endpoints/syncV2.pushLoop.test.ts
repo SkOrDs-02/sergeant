@@ -117,6 +117,9 @@ function makeDeps(overrides: Partial<SyncEnginePushDeps> = {}): {
     ...(overrides.jitterMs !== undefined
       ? { jitterMs: overrides.jitterMs }
       : {}),
+    ...(overrides.isOnline !== undefined
+      ? { isOnline: overrides.isOnline }
+      : {}),
   };
 
   return {
@@ -131,6 +134,48 @@ function makeDeps(overrides: Partial<SyncEnginePushDeps> = {}): {
     now: now as ReturnType<typeof vi.fn> & (() => Date),
   };
 }
+
+describe("runSyncEnginePushOnce — offline guard", () => {
+  // Регресія аудиту шару даних 2026-08-05: без гарда кожен тик без мережі
+  // (планувальник ~30 с) зараховував невдалу спробу КОЖНОМУ рядку батча,
+  // і за 10-15 хвилин офлайну вся черга ставала `dead_letter`, яку оживляє
+  // лише ручний тап. Літак / метро / дача = мовчазна втрата черги.
+  it("is a no-op when offline: no drain, no push, no attempt burned", async () => {
+    const { deps, drain, push, markRetry, planRetry } = makeDeps({
+      isOnline: () => false,
+    });
+
+    const result = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(result).toEqual({ drained: 0, pushed: 0, retried: 0, rejected: 0 });
+    // Гард стоїть ПЕРЕД drain — черги не торкаємось узагалі.
+    expect(drain).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+    // Найголовніше: жодної спроби не витрачено.
+    expect(planRetry).not.toHaveBeenCalled();
+    expect(markRetry).not.toHaveBeenCalled();
+  });
+
+  it("runs normally when online", async () => {
+    const { deps, drain, push } = makeDeps({ isOnline: () => true });
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(drain).toHaveBeenCalled();
+    expect(push).toHaveBeenCalled();
+  });
+
+  it("runs normally when the probe is omitted (pre-guard behaviour)", async () => {
+    const { deps, drain, push } = makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+
+    await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(drain).toHaveBeenCalled();
+    expect(push).toHaveBeenCalled();
+  });
+});
 
 describe("runSyncEnginePushOnce — empty drain short-circuits", () => {
   it("returns zeros without calling push or any lifecycle helper", async () => {

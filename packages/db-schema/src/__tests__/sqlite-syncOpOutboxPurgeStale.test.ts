@@ -15,6 +15,7 @@ import {
   purgeStaleTerminalOutbox,
   SYNC_OP_OUTBOX_STALE_TTL_DAYS,
   SYNC_OP_OUTBOX_TERMINAL_STATUSES,
+  SYNC_OP_OUTBOX_PURGEABLE_STATUSES,
 } from "../sqlite/syncOpOutboxPurgeStale.js";
 import {
   SYNC_OP_OUTBOX_STATUSES,
@@ -217,18 +218,39 @@ describe("purgeStaleTerminalOutbox", () => {
     expect(countByStatus(db).dead_letter).toBe(0);
   });
 
-  it("default statuses cover every terminal bucket", async () => {
+  it("default statuses cover the purgeable buckets but SPARE quarantine", async () => {
     insertRow(db, { status: "rejected", createdAt: OLD_UTC });
     insertRow(db, { status: "dead_letter", createdAt: OLD_UTC });
     insertRow(db, { status: "quarantined", createdAt: OLD_UTC });
 
     expect(SYNC_OP_OUTBOX_TERMINAL_STATUSES).not.toContain("pending");
+    // Карантин — термінальний, але НЕ підлягає TTL-прибиранню за
+    // замовчуванням: його не показує банер і не бере `recoverDeadLetter`,
+    // тож автоматичне видалення робило втрату запису невидимою назавжди.
+    expect(SYNC_OP_OUTBOX_PURGEABLE_STATUSES).not.toContain("quarantined");
+    expect(SYNC_OP_OUTBOX_PURGEABLE_STATUSES).not.toContain("pending");
 
     const { purged } = await purgeStaleTerminalOutbox(client, {
       olderThanDays: 30,
     });
 
-    expect(purged).toBe(3);
+    expect(purged).toBe(2);
+    expect(countByStatus(db).quarantined).toBe(1);
+    expect(countByStatus(db).rejected).toBe(0);
+    expect(countByStatus(db).dead_letter).toBe(0);
+  });
+
+  it("still collects quarantine when the caller asks for it explicitly", async () => {
+    insertRow(db, { status: "quarantined", createdAt: OLD_UTC });
+
+    // Escape hatch: дефолт щадить карантин, але викликач, який СВІДОМО
+    // хоче його зібрати, передає повний термінальний набір явно.
+    const { purged } = await purgeStaleTerminalOutbox(client, {
+      olderThanDays: 30,
+      statuses: SYNC_OP_OUTBOX_TERMINAL_STATUSES,
+    });
+
+    expect(purged).toBe(1);
     expect(totalRows(db)).toBe(0);
   });
 
