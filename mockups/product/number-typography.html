@@ -192,6 +192,27 @@
       .red {
         color: var(--danger);
       }
+      /* ─── Матриця полярності ──────────────────────────────────────── */
+      .matrix {
+        display: grid;
+        grid-template-columns: auto 1fr 1fr;
+        gap: 6px 14px;
+        align-items: baseline;
+        font-size: 19px;
+        font-weight: 600;
+      }
+      .matrix .mh {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--ink-subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .matrix .mr {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink-muted);
+      }
       /* ─── Стовпчик сум ─────────────────────────────────────────────── */
       .stack {
         display: flex;
@@ -421,19 +442,42 @@
         </div>
         <div class="col">
           <span class="tag">стало</span>
-          <div style="font-size: 20px; font-weight: 600">
-            <span class="m green"
-              ><span class="sign">+</span>340<span class="sym"> ₴</span></span
-            >
-            <span style="margin: 0 10px; color: var(--ink-subtle)">·</span>
-            <span class="m green"
-              ><span class="sign">−</span>12<span class="sym"> %</span></span
-            >
+          <div class="matrix">
+            <div class="mh"></div>
+            <div class="mh">зросло</div>
+            <div class="mh">впало</div>
+
+            <div class="mr">Дохід</div>
+            <div>
+              <span class="m green"
+                ><span class="sign">+</span>340<span class="sym"> ₴</span></span
+              >
+            </div>
+            <div>
+              <span class="m red"
+                ><span class="sign">−</span>340<span class="sym"> ₴</span></span
+              >
+            </div>
+
+            <div class="mr">Витрати</div>
+            <div>
+              <span class="m red"
+                ><span class="sign">+</span>340<span class="sym"> ₴</span></span
+              >
+            </div>
+            <div>
+              <span class="m green"
+                ><span class="sign">−</span>340<span class="sym"> ₴</span></span
+              >
+            </div>
           </div>
           <p class="note">
             Те саме повідомлення несуть знак і колір, без другого прямокутника
-            поруч із першим. Обидві зелені: дохід виріс — добре, витрати впали —
-            теж добре.
+            поруч із першим. Червоне тут не рідкість, а половина таблиці:
+            <b>колір читається не зі знака, а з полярності</b>. Той самий
+            <code>+340 ₴</code> зелений у рядку доходу і червоний у рядку витрат
+            — і навпаки. Якби колір брався зі знака, картка витрат зеленіла б
+            від поганої новини.
           </p>
         </div>
       </div>
