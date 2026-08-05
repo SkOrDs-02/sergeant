@@ -35,6 +35,12 @@ export function createChatRouter(): Router {
       windowMs: 60_000,
       cost: () => 10,
     }),
+    // Чат витрачає Anthropic-ключ власника, тому це per-user фіча, не
+    // публічний proxy (той самий аргумент, що в `transcribe.ts`). Без сесії
+    // квота падала на `ip:<addr>`, а IPv6-клієнт має під підпискою цілу /64 —
+    // денний ліміт переставав бути лімітом. Знахідка A1,
+    // `docs/90-work/audits/ai-abuse-2026-08-05.md`.
+    requireSession(),
     requireAnthropicKey(),
     requireAiQuota(),
     chatHandler,
