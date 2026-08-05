@@ -17,8 +17,9 @@
 -- як `routine_prefs` / `fizruk_monthly_plan` / `nutrition_prefs` уже
 -- роблять для інших singleton-блобів цього продукту.
 --
--- Wiring (GET/PUT ендпоінти, дзеркало у web/mobile) — Stage 2/Stage 4;
--- ця міграція лише схема.
+-- Wiring (GET/PUT `/api/me/profile` у `apps/server/src/routes/me.ts`,
+-- write-through у web) приземляється В ЦЬОМУ Ж PR; ця міграція — лише
+-- схема.
 
 CREATE TABLE IF NOT EXISTS user_profile (
   user_id     TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
 );
 
 COMMENT ON TABLE user_profile IS
-  'Write-through store (not oplog-sync) for the profile blob historically kept client-only (packages/shared/src/sync/modules.ts SYNC_MODULES.profile: USER_PROFILE + HUB_BIOMETRICS local-storage keys). One row per user, single JSONB payload, LWW by updated_at. Endpoint wiring is Stage 2/Stage 4 — this migration is schema-only.';
+  'Write-through store (not oplog-sync) for the profile blob historically kept client-only (packages/shared/src/sync/modules.ts SYNC_MODULES.profile: USER_PROFILE + HUB_BIOMETRICS local-storage keys). One row per user, single JSONB payload, LWW by updated_at. Endpoint wiring (GET/PUT /api/me/profile) ships in the same PR - this migration is schema-only.';
 
 COMMENT ON COLUMN user_profile.payload IS
   'Open-ended JSON blob mirroring the client USER_PROFILE + HUB_BIOMETRICS shape. No column-level schema on purpose — same trade-off as routine_prefs.data / nutrition_prefs.prefs_json.';

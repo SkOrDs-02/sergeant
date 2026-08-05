@@ -10,6 +10,28 @@
 -- rollback-drill-а, який лише перевіряє, що схема повертається у
 -- попередній зафіксований стан, а не що цей стан безпечний.
 
+-- Preflight: 3-колонковий PK неможливо відновити, якщо дані вже містять
+-- кілька endpoint-рядків на ту саму трійку (саме той стан, який 106
+-- легалізувала). Фейлимось з ясним повідомленням ДО DROP CONSTRAINT —
+-- інакше ALTER упаде посеред шляху з криптичним 23505.
+DO $$
+DECLARE
+  duplicate_triples bigint;
+BEGIN
+  SELECT count(*) INTO duplicate_triples
+  FROM (
+    SELECT 1
+    FROM ai_usage_daily
+    GROUP BY subject_key, usage_day, bucket
+    HAVING count(*) > 1
+  ) AS dup;
+  IF duplicate_triples > 0 THEN
+    RAISE EXCEPTION
+      'ai_usage_daily: % трійок (subject_key, usage_day, bucket) мають >1 рядок — 3-колонковий PK не відновити. Злийте або видаліть дублікати перед rollback-ом 106.',
+      duplicate_triples;
+  END IF;
+END $$;
+
 ALTER TABLE ai_usage_daily
   DROP CONSTRAINT IF EXISTS ai_usage_daily_pkey;
 
