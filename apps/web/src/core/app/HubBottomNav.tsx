@@ -341,7 +341,7 @@ export function HubBottomNav({
     onClick: () => onChange("reports"),
     iconName: "bar-chart",
     prefetchPage: "reports",
-    label: "Звіти",
+    label: messages.nav.reports,
     hiddenSlot: !showReports,
     className: animateReveal ? "animate-bounce-in" : undefined,
   });

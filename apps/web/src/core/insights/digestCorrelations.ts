@@ -97,6 +97,16 @@ const PAIRS: readonly PairPhrase[] = [
   },
 ];
 
+/**
+ * Метрики курованих пар без фраз — щоб стан мовчання міг показати прогрес по
+ * тих самих парах, які колись заговорять, а не по довільній комбінації
+ * метрик.
+ */
+export const CURATED_PAIRS: ReadonlyArray<{
+  a: DailyMetric;
+  b: DailyMetric;
+}> = PAIRS.map((p) => ({ a: p.a, b: p.b }));
+
 const METRICS: DailyMetric[] = [
   "spending",
   "kcal",
@@ -110,31 +120,73 @@ const METRICS: DailyMetric[] = [
 ];
 
 /**
+ * Помітна пара в структурованому вигляді — та сама знахідка, що й рядок
+ * `correlationsFromSeries`, але до форматування в текст.
+ *
+ * AI-CONTEXT: винесено 2026-08-05, коли `CrossModuleLinkCard` (P2 анти-слоп)
+ * отримав власну секцію на `/insights`. Картці потрібні `n` і `r` окремими
+ * числами (з них рахується ступінь впевненості) плюс метрики полюсів (з них
+ * будуються дві осі) — тобто рівно те, що стара функція склеювала в рядок і
+ * викидала. Щоб поріг мовчання лишався ОДИН на продукт, обидва споживачі
+ * читають цей самий список, а не два паралельні обчислення.
+ */
+export interface NotablePair {
+  a: DailyMetric;
+  b: DailyMetric;
+  /** Людська фраза, уже обрана за знаком `pearson` (`pos` або `neg`). */
+  phrase: string;
+  /** Спільні дні з обома метриками (pairwise-complete). */
+  n: number;
+  pearson: number;
+}
+
+/**
+ * Чиста частина: з уже побудованих рядів дістає ВСІ помітні пари,
+ * відсортовані за |r|. Виокремлено для юніт-тестів (не залежить від
+ * storage/годинника). Обрізання під конкретну поверхню — на боці викликача.
+ */
+export function notablePairsFromSeries(series: DailySeries): NotablePair[] {
+  const byPair = new Map(
+    computePairwiseCorrelations(series).map((c) => [`${c.a}|${c.b}`, c]),
+  );
+
+  const found: NotablePair[] = [];
+  for (const p of PAIRS) {
+    const c = byPair.get(`${p.a}|${p.b}`) ?? byPair.get(`${p.b}|${p.a}`);
+    if (!c || c.n < MIN_N || !Number.isFinite(c.pearson)) continue;
+    if (Math.abs(c.pearson) < NOTABLE_R) continue;
+    found.push({
+      a: p.a,
+      b: p.b,
+      phrase: c.pearson > 0 ? p.pos : p.neg,
+      n: c.n,
+      pearson: c.pearson,
+    });
+  }
+
+  return found.sort((x, y) => Math.abs(y.pearson) - Math.abs(x.pearson));
+}
+
+/**
  * Чиста частина: з уже побудованих рядів дістає до 3 one-liner-ів про помітні
  * пари, відсортовані за |r|. Виокремлено для юніт-тестів (не залежить від
  * storage/годинника).
  */
 export function correlationsFromSeries(series: DailySeries): string[] {
-  const byPair = new Map(
-    computePairwiseCorrelations(series).map((c) => [`${c.a}|${c.b}`, c]),
-  );
-
-  const found: Array<{ text: string; abs: number }> = [];
-  for (const p of PAIRS) {
-    const c = byPair.get(`${p.a}|${p.b}`) ?? byPair.get(`${p.b}|${p.a}`);
-    if (!c || c.n < MIN_N || !Number.isFinite(c.pearson)) continue;
-    if (Math.abs(c.pearson) < NOTABLE_R) continue;
-    const phrase = c.pearson > 0 ? p.pos : p.neg;
-    found.push({
-      text: `${phrase} (r=${c.pearson.toFixed(2)}, ${c.n} дн)`,
-      abs: Math.abs(c.pearson),
-    });
-  }
-
-  return found
-    .sort((x, y) => y.abs - x.abs)
+  return notablePairsFromSeries(series)
     .slice(0, MAX_LINES)
-    .map((f) => f.text);
+    .map((p) => `${p.phrase} (r=${p.pearson.toFixed(2)}, ${p.n} дн)`);
+}
+
+/**
+ * Ряди за вікно аналізу — спільна основа для дайджест-рядків і для секції
+ * зв'язків на `/insights`. Обидві поверхні мусять дивитись на ОДНЕ вікно,
+ * інакше та сама пара показала б різні `n` у різних місцях.
+ */
+export function buildCrossModuleSeries(now: number = Date.now()): DailySeries {
+  const to = getKyivDayKey(now);
+  const from = getKyivDayKey(now - (WINDOW_DAYS - 1) * DAY_MS);
+  return buildDailySeries(METRICS, { from, to });
 }
 
 /**
@@ -142,7 +194,5 @@ export function correlationsFromSeries(series: DailySeries): string[] {
  * днів, відсортовані за |r|. Порожній масив, якщо нічого не набралося.
  */
 export function buildDigestCorrelations(now: number = Date.now()): string[] {
-  const to = getKyivDayKey(now);
-  const from = getKyivDayKey(now - (WINDOW_DAYS - 1) * DAY_MS);
-  return correlationsFromSeries(buildDailySeries(METRICS, { from, to }));
+  return correlationsFromSeries(buildCrossModuleSeries(now));
 }

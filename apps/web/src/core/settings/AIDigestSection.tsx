@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
@@ -38,8 +39,9 @@ export function AIDigestSection() {
       <div className="space-y-3">
         <p className="text-style-caption text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
-          харчування та звички. Згенерувати звіт можна на сторінці «Звіти» — у
-          режимі «Тиждень», або на головній у блоці інсайтів («Звіт тижня»).
+          харчування та звички. Згенерувати звіт можна на сторінці «
+          {messages.nav.reports}» — у режимі «Тиждень», або на головній у блоці
+          інсайтів («Звіт тижня»).
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">
           <p className="text-style-label text-text">Поточний тиждень</p>

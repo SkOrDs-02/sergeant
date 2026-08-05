@@ -30,6 +30,9 @@ const FitnessCard = lazy(() => import("./FitnessCard"));
 const ExpensesCard = lazy(() => import("./ExpensesCard"));
 const RoutineCard = lazy(() => import("./RoutineCard"));
 const NutritionCard = lazy(() => import("./NutritionCard"));
+const CrossModuleLinksSection = lazy(
+  () => import("../insights/CrossModuleLinksSection"),
+);
 
 // ── Card skeleton fallback ────────────────────────────────────────────
 
@@ -172,6 +175,20 @@ export function HubReports() {
 
   return (
     <div className="space-y-4">
+      {/*
+        Зв'язки стоять НАД перемикачем періоду навмисно: вони рахуються за
+        фіксоване 60-денне вікно і на «Тиждень / Місяць» не реагують. Під
+        перемикачем секція читалась би так, ніби ігнорує контрол просто над
+        собою; над ним — це окремий блок із власним вікном, яке підпис
+        секції називає прямо. Сторінка названа «Звʼязки», тож головне на ній
+        видно без прокрутки.
+      */}
+      <ChunkErrorBoundary minH={120}>
+        <Suspense fallback={<CardSkeleton />}>
+          <CrossModuleLinksSection />
+        </Suspense>
+      </ChunkErrorBoundary>
+
       <div className="flex items-center justify-between gap-2">
         <Segmented<Period>
           size="sm"
