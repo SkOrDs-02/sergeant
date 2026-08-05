@@ -20,14 +20,17 @@
 | [`2026-07-22-cycle6-typography-shared-ui.md`](./2026-07-22-cycle6-typography-shared-ui.md)                                            | Цикл 6, стадія 1 (`shared/components/ui`) — Reference                                                                                                                                                                                                                                                                                        |
 | [`2026-07-31-legal-docs-beta-readiness.md`](./2026-07-31-legal-docs-beta-readiness.md)                                                | **Active.** Аудит `apps/web/src/core/legal/**` проти чек-ліста Privacy Policy у [`04-launch-readiness.md § 1.1`](../../01-product/launch/business/04-launch-readiness.md). Дрейф субпроцесорів (9 задекларовано ↔ 18 у коді), хибні cookie-декларації, розрив explicit consent за GDPR Art. 9. Містить список «потребує юридичної перевірки» |
 | [`web-qa-pre-beta.md`](./web-qa-pre-beta.md)                                                                                          | **Active.** Браузерна QA `apps/web` перед закритою бетою: анонімний шлях + push-контур. Знайдені дефекти задокументовані, архітектурні винесені в backlog.                                                                                                                                                                                   |
+| [`security-comprehensive-2026-08-04.md`](./security-comprehensive-2026-08-04.md)                                                      | **Active.** Периметр: CI-ланцюг постачання, CORS, rate-limit, сесії, білінг, ops-стек. 26 із 50 знахідок закрито кодом у тій самій гілці; решта — продуктові рішення або великі роботи                                                                                                                                                       |
+| [`ai-abuse-2026-08-05.md`](./ai-abuse-2026-08-05.md)                                                                                  | **Active.** Межі AI-поверхні: зловживання чатом поза продуктом, prompt-injection через клієнтський `context`, стеля витрат, durability AI-шляху. A1/A2/A4 закриті кодом; A5 (стеля) — перемикач env і продуктове рішення                                                                                                                     |
 | [Історичний archive](https://github.com/Skords-01/Sergeant/tree/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive) | Усі завершені / Closed / Draft-stub аудити й прожарки у Git history                                                                                                                                                                                                                                                                          |
 
 Новий аудит кладеться сюди як `YYYY-MM-DD-*.md`; після `Closed`/`Done` та merge evidence frozen-файл видаляється cleanup-комітом, а inbound references переводяться на permalink. Виняток — звіт, на який спирається **незавершений** цикл: baseline
 `2026-07-21-design-audit.md` і стадії циклу 6 лишаються в корені, доки stage 3 не
 закрито.
 
-Станом на 2026-08-04 в активній зоні два Active-аудити
-(`2026-07-31-legal-docs-beta-readiness.md`, `web-qa-pre-beta.md`); решта — довідкові
+Станом на 2026-08-05 в активній зоні Active-аудити: `2026-07-31-legal-docs-beta-readiness.md`,
+`web-qa-pre-beta.md`, `security-comprehensive-2026-08-04.md`, `ai-abuse-2026-08-05.md`,
+`2026-08-04-global-qa-findings.md`, `2026-08-04-test-coverage-depth-audit.md`; решта — довідкові
 артефакти, а виконувані залишки дедупліковані в planning backlog.
 
 ## Архів (зведення)

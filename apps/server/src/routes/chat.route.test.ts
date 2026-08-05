@@ -121,7 +121,10 @@ beforeEach(() => {
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
-  getSessionUserMock.mockResolvedValue(null);
+  // Дефолт — залогінений: `/api/chat` за ланцюгом стоїть за `requireSession()`,
+  // тож без юзера кожен тест нижче впирався б у 401 замість своєї перевірки.
+  // Анонімну гілку перевіряє окремий блок «auth guard».
+  getSessionUserMock.mockResolvedValue({ id: "u1" });
   anthropicMessagesMock.mockReset();
   anthropicMessagesStreamMock.mockReset();
   // Default: no Anthropic key (covers the key-guard test). Quota disabled so
@@ -134,6 +137,25 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.resetModules();
+});
+
+describe("chat route — auth guard", () => {
+  // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`): роут довго стояв
+  // без `requireSession()`, і анонімна квота `ip:<addr>` не була межею — під
+  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обов'язкова і
+  // перевіряється ДО ключа: без неї 401, а не 503.
+  it("POST /api/chat → 401 без сесії", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+    expect(res.status).toBe(401);
+    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("chat route — key guard", () => {

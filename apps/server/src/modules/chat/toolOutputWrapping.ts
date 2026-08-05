@@ -83,6 +83,51 @@ export interface NormalizedToolResult {
   content: string;
 }
 
+/**
+ * Лейбл `tool` для ін'єкцій, знайдених не в tool-результаті, а в клієнтському
+ * `context`. Константа, не довільний рядок — cardinality метрики лишається
+ * обмеженою реєстром інструментів плюс цим одним значенням.
+ */
+const USER_CONTEXT_LABEL = "user_context";
+
+function escapeUserDataClose(s: string): string {
+  return s.replace(/<\/user_data>/gi, "&lt;/user_data&gt;");
+}
+
+/**
+ * Те саме, що `wrapAndScanToolResults`, але для `context` із тіла `/api/chat`.
+ *
+ * AI-DANGER: `context` приходить від клієнта (веб будує фінансовий снапшот на
+ * своєму боці) і рендериться як **system**-блок — найвищий рівень довіри в
+ * Anthropic API. Без цієї обгортки один POST перетворює асистента на
+ * універсальний LLM: інструкція в `system` важить більше за будь-яке правило
+ * з `SYSTEM_PREFIX`. Парний параграф у промпті (v17+) наказує моделі
+ * трактувати вміст `<user_data>` як дані.
+ *
+ * Порожній рядок повертаємо як є — `buildSystem` на ньому віддає лише
+ * cached-префікс, і обгортка порожнечі створила б блок із самого тегу.
+ */
+export function wrapAndScanUserContext(
+  context: string,
+  opts: WrapToolResultsOptions = {},
+): string {
+  if (!context) return "";
+  const patterns = opts.patterns ?? PROMPT_INJECTION_PATTERNS;
+  if (patterns.some((p) => p.test(context))) {
+    const inc =
+      opts.recordInjectionAttempt ??
+      ((labels) => {
+        try {
+          chatPromptInjectionAttemptTotal.inc(labels);
+        } catch {
+          /* prom-client може бути не ініціалізований у тестах — no-op */
+        }
+      });
+    inc({ tool: USER_CONTEXT_LABEL });
+  }
+  return `<user_data>${escapeUserDataClose(context)}</user_data>`;
+}
+
 export interface WrapToolResultsOptions {
   /** Override метрики — для тестів. */
   recordInjectionAttempt?: (labels: { tool: string }) => void;
