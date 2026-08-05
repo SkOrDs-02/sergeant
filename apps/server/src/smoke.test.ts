@@ -14,7 +14,7 @@ import request from "supertest";
  * pool і може тягнути зовнішні конекшн-и при імпорті.
  */
 
-const { mockPool, queryMock } = vi.hoisted(() => {
+const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
   const mockPool = {
     query: queryMock,
@@ -24,7 +24,8 @@ const { mockPool, queryMock } = vi.hoisted(() => {
     idleCount: 0,
     waitingCount: 0,
   };
-  return { mockPool, queryMock };
+  const getSessionUserMock = vi.fn().mockResolvedValue(null);
+  return { mockPool, queryMock, getSessionUserMock };
 });
 
 vi.mock("./db.js", () => ({
@@ -36,10 +37,15 @@ vi.mock("./db.js", () => ({
 
 // Better-auth намагається ініціалізуватися при імпорті. У smoke-тестах нам
 // достатньо, щоб рutteра mount-нувся — реальних /api/auth/* викликів ми тут
-// не робимо, тож повертаємо мінімально-сумісний shape.
+// не робимо, тож повертаємо мінімально-сумісний shape. `getSessionUserMock`
+// вставлено, а не інлайновий `vi.fn()` (як було) — знахідка A1
+// (`docs/90-work/audits/ai-abuse-2026-08-05.md`) поставила `requireSession()`
+// на `/api/chat`, тож той конкретний smoke-тест нижче має могти залогінити
+// свого фейкового юзера, інакше він упирається в 401 замість перевірки
+// key-guard-а.
 vi.mock("./auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
-  getSessionUser: vi.fn().mockResolvedValue(null),
+  getSessionUser: getSessionUserMock,
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
@@ -68,6 +74,8 @@ beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
+  getSessionUserMock.mockReset();
+  getSessionUserMock.mockResolvedValue(null);
   __resetAppStateForTests();
 });
 
@@ -186,6 +194,11 @@ describe("smoke: createApp wiring", () => {
   });
 
   it("POST /api/chat → 503 without ANTHROPIC_API_KEY env", async () => {
+    // `requireSession()` (finding A1) sits in front of the key-guard now —
+    // log in the fake session so this test still probes the key-guard, not
+    // the auth-guard (that has its own dedicated test in
+    // `routes/chat.route.test.ts`).
+    getSessionUserMock.mockResolvedValue({ id: "smoke-user" });
     const app = createApp();
     const res = await request(app)
       .post("/api/chat")
