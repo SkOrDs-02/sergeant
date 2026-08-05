@@ -216,7 +216,6 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/api/metrics/web-vitals",
   // Anonymous / public endpoints, gated by anonymous-quota or rate-limit.
   "/api/barcode", // anonymous nutrition scan
-  "/api/chat", // anonymous chat with quota
   "/api/food-search", // anonymous food search
   "/api/email/unsubscribe", // public unsubscribe link
   "/api/email/unsubscribe/confirm", // public unsubscribe confirm
@@ -248,9 +247,6 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   // browser session cookie by design.
   "/api/billing/liqpay-callback",
   "/api/billing/plata-webhook",
-  // Anonymous AI endpoint — gated by `requireAnthropicKey` +
-  // `requireAiQuota` (anonymous bucket via IP), same shape as `/api/chat`.
-  "/api/weekly-digest",
   // Public VAPID key — frontend reads this to subscribe a push
   // subscription. By design no session, no rate-limit (it's static).
   "/api/push/vapid-public",
