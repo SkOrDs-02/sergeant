@@ -20,9 +20,15 @@ import {
  */
 
 const DAY_MS = 86_400_000;
-const WINDOW_DAYS = 60;
-const NOTABLE_R = 0.4;
-const MIN_N = 5;
+
+// Exported (2026-08-05, P2 anti-slop форма зв'язку — `CrossModuleLinkCard`):
+// `crossModuleLinkTiers.ts` derives its 3-ступенева візуальна градація
+// впевненості з ЦИХ САМИХ порогів замість того, щоб вигадувати нові —
+// «епістемічний стандарт зв'язків» (product-overview.md §6) вимагає, щоб
+// поріг мовчання був один на весь продукт, а не по одному на кожну поверхню.
+export const WINDOW_DAYS = 60;
+export const NOTABLE_R = 0.4;
+export const MIN_N = 5;
 const MAX_LINES = 3;
 
 interface PairPhrase {

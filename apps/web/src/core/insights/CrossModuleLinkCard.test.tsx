@@ -1,0 +1,149 @@
+/** @vitest-environment jsdom */
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+
+import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
+import { MIN_N, REPEATING_N, STABLE_N } from "./crossModuleLinkTiers";
+
+const poleA = {
+  module: "fizruk" as const,
+  label: "Фізрук",
+  value: "3+",
+  unit: "тренування / тиждень",
+};
+const poleB = {
+  module: "finyk" as const,
+  label: "Фінік",
+  value: "−18%",
+  unit: "витрат на доставку",
+};
+
+describe("CrossModuleLinkCard — три ступені градації", () => {
+  afterEach(cleanup);
+
+  it("tier 1 — «схоже на закономірність» щойно за порогом мовчання", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={MIN_N}
+        strength={0.4}
+        weeks={2}
+      />,
+    );
+
+    expect(screen.getByText("Схоже на закономірність")).toBeInTheDocument();
+    expect(screen.getByText("2 тижні · 5 спостережень")).toBeInTheDocument();
+    // Обидва полюси видно з їхнім значенням і одиницею.
+    expect(screen.getByText("Фізрук")).toBeInTheDocument();
+    expect(screen.getByText("3+")).toBeInTheDocument();
+    expect(screen.getByText("Фінік")).toBeInTheDocument();
+    expect(screen.getByText("−18%")).toBeInTheDocument();
+  });
+
+  it("tier 2 — «повторюється» за 2x поріг, ще не пів вікна і не сильна кореляція", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={REPEATING_N}
+        strength={0.5}
+      />,
+    );
+
+    expect(screen.getByText("Повторюється")).toBeInTheDocument();
+    // Без переданого `weeks` метадані обмежуються спостереженнями — право
+    // мовчати діє і на похідні цифри, не лише на show/hide.
+    expect(screen.getByText("10 спостережень")).toBeInTheDocument();
+  });
+
+  it("tier 3 — «стабільно повторюється», коли покрито половину вікна аналізу", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={0.42}
+        weeks={9}
+      />,
+    );
+
+    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+    expect(
+      screen.getByText("9 тижнів поспіль · 30 спостережень"),
+    ).toBeInTheDocument();
+  });
+
+  it("tier 3 — сильна кореляція (|r|≥0.7) досягає стабільного ступеня і без великого n", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={REPEATING_N}
+        strength={-0.7}
+      />,
+    );
+
+    expect(screen.getByText("Стабільно повторюється")).toBeInTheDocument();
+  });
+});
+
+describe("CrossModuleLinkCard — право мовчати (порожній стан)", () => {
+  afterEach(cleanup);
+
+  it("рендерить гідний порожній стан, а не порожній список, коли n < MIN_N", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={2}
+        strength={0.9}
+      />,
+    );
+
+    expect(
+      screen.getByText("Поки що закономірностей не бачу"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2 з 5 спостережень/)).toBeInTheDocument();
+    // Полюси лишаються — контекст «що саме перевіряємо» не зникає, лише
+    // конкретні значення/одиниці мовчать.
+    expect(screen.getByText("Фізрук")).toBeInTheDocument();
+    expect(screen.getByText("Фінік")).toBeInTheDocument();
+    // Але сама тіла картки не стверджує ступінь впевненості.
+    expect(screen.queryByText("Схоже на закономірність")).toBeNull();
+    expect(screen.queryByText("Повторюється")).toBeNull();
+    expect(screen.queryByText("Стабільно повторюється")).toBeNull();
+  });
+
+  it("залишається мовчазним, коли спостережень достатньо, але зв'язку не видно (|r| < NOTABLE_R)", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={40}
+        strength={0.1}
+      />,
+    );
+
+    expect(
+      screen.getByText("Поки що закономірностей не бачу"),
+    ).toBeInTheDocument();
+    // Прогрес-бар не бреше: спостережень уже достатньо (5 з 5), проблема
+    // не в кількості даних, а у відсутності самого зв'язку.
+    expect(screen.getByText("5 з 5 спостережень")).toBeInTheDocument();
+  });
+
+  it("не показує доказову смугу чи місток у порожньому стані", () => {
+    const { container } = render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={1}
+        strength={0}
+      />,
+    );
+
+    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector('[role="img"]')).toBeNull();
+  });
+});
