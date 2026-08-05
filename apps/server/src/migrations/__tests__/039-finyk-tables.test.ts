@@ -310,7 +310,9 @@ describe("039_finyk_tables migration", () => {
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
       expect(byName["month"]!.type).toBe("text");
       expect(byName["month"]!.nullable).toBe("NO");
-      expect(byName["networth"]!.type).toBe("real");
+      // 039 створює networth як REAL; 108 розширює до DOUBLE PRECISION
+      // (lossless float4→float8) — тут перевіряється фінальний стан схеми.
+      expect(byName["networth"]!.type).toBe("double precision");
       expect(byName["snapshot_json"]!.type).toBe("jsonb");
 
       const pkCheck = await pool.query<{ column_name: string }>(
@@ -434,12 +436,18 @@ describe("039_finyk_tables migration", () => {
       // drops the finyk tables it touches, and re-applied last — after
       // 039/053 recreate them fresh as uuid — else `after` would still
       // be uuid while `before` (captured post-097) is text.
+      //
+      // 108_finyk_networth_history_double.sql так само сидить поверх 039
+      // (networth REAL → DOUBLE PRECISION), тож розмотується першим і
+      // накочується останнім.
+      await execSqlFile(pool, "108_finyk_networth_history_double.down.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.down.sql");
       await execSqlFile(pool, "039_finyk_tables.down.sql");
       await execSqlFile(pool, "039_finyk_tables.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
+      await execSqlFile(pool, "108_finyk_networth_history_double.sql");
 
       const after = {
         tables: await listTables(pool),

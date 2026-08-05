@@ -290,12 +290,18 @@ async function readUpMigrations(): Promise<string[]> {
     .sort();
 }
 
-/** Прокрутити всі forward-міграції на чистій схемі, КРІМ 087. */
+/**
+ * Прокрутити forward-міграції на чистій схемі СТРОГО ДО 087 (001–086) —
+ * рівно той стан, у якому 087 запускалася б у проді. Пізніші міграції
+ * застосовувати не можна: вони залежать від таблиці, яку створює сама 087
+ * (109 додає їй tz_offset_min, 110 — CHECK на день-ключ), тож «усі, крім
+ * 087» падали б на неіснуючій nutrition_goal_periods.
+ */
 async function applyForwardExcept087(p: pg.Pool): Promise<void> {
   await p.query(`DROP SCHEMA public CASCADE; CREATE SCHEMA public;`);
   await p.query(`GRANT ALL ON SCHEMA public TO public;`);
   for (const f of await readUpMigrations()) {
-    if (f.startsWith("087_")) continue;
+    if (Number.parseInt(f.slice(0, 3), 10) >= 87) break;
     const sql = (
       await fs.readFile(path.join(MIGRATIONS_DIR, f), "utf8")
     ).trim();
