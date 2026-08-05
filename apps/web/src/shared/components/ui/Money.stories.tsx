@@ -2,7 +2,7 @@
  * Last validated: 2026-08-05
  * Status: Active
  */
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Money, Delta } from "./Money";
 
