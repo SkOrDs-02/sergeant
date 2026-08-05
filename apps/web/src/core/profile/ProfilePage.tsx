@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useToast } from "@shared/hooks/useToast";
@@ -26,6 +27,14 @@ export function ProfilePage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  // Діалог «є незбережене» — відкривається лише тоді, коли `logout()` уже
+  // спробував доставити чергу й щось лишилось. `resolve` тримає обіцянку,
+  // яку чекає `confirmUnsyncedLoss`: поки людина не відповіла, вихід
+  // стоїть і НІЧОГО не стерто.
+  const [unsyncedPrompt, setUnsyncedPrompt] = useState<{
+    pending: number;
+    resolve: (proceed: boolean) => void;
+  } | null>(null);
 
   if (!user) {
     return null;
@@ -39,7 +48,23 @@ export function ProfilePage() {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
-      await logout();
+      let cancelled = false;
+      await logout({
+        confirmUnsyncedLoss: (pending) =>
+          new Promise<boolean>((resolve) => {
+            setUnsyncedPrompt({
+              pending,
+              resolve: (proceed) => {
+                cancelled = !proceed;
+                setUnsyncedPrompt(null);
+                resolve(proceed);
+              },
+            });
+          }),
+      });
+      // Людина обрала «Залишитись» — сесія жива, нічого не стерто, тож ні
+      // тосту про вихід, ні редіректу на екран входу бути не має.
+      if (cancelled) return;
       toast.success("Ви вийшли з акаунта");
       // Send the signed-out user to the auth surface, not the hub root —
       // `logout()` has already cleared the query cache so `user` is `null`,
@@ -151,6 +176,29 @@ export function ProfilePage() {
         <Icon name="log-out" size={16} />
         {loggingOut ? messages.loadingActions.exiting : "Вийти"}
       </Button>
+
+      {/* Вихід стирає локальну базу разом із чергою синхронізації, а поки
+          запис не доїхав на сервер — локальна копія єдина. Показуємо це
+          лише тоді, коли `logout()` уже спробував доставити чергу й не
+          зміг: на живій мережі людина цього діалогу не бачить ніколи. */}
+      <ConfirmDialog
+        open={unsyncedPrompt !== null}
+        danger
+        title="Є незбережені записи"
+        description={
+          <>
+            {unsyncedPrompt?.pending === 1
+              ? "1 запис ще не збережено на сервері."
+              : `${unsyncedPrompt?.pending ?? 0} записів ще не збережено на сервері.`}{" "}
+            Якщо вийти зараз, вони зникнуть назавжди. Підключися до мережі й
+            зачекай кілька секунд — або виходь, якщо ці записи не потрібні.
+          </>
+        }
+        confirmLabel="Все одно вийти"
+        cancelLabel="Залишитись"
+        onConfirm={() => unsyncedPrompt?.resolve(true)}
+        onCancel={() => unsyncedPrompt?.resolve(false)}
+      />
     </div>
   );
 }

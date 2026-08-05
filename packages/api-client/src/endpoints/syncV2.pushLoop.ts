@@ -262,6 +262,29 @@ export interface SyncEnginePushDeps {
    * desynchronize.
    */
   readonly jitterMs?: () => number;
+  /**
+   * Optional connectivity probe. When it returns `false`, the tick is a
+   * no-op: no drain, no push, and — critically — no retry attempt burned.
+   *
+   * AI-DANGER: без цього гарда довгий офлайн ВБИВАЄ чергу. Планувальник
+   * тикає кожні ~30 с; кожен тик без мережі кидає transport-помилку, а
+   * `catch` нижче зараховує невдалу спробу КОЖНОМУ рядку батча. При
+   * `SYNC_OP_MAX_ATTEMPTS = 10` і бекофі 1→2→4→…→512 с (перші п'ять
+   * кроків коротші за тик, тож їх задає саме тик) черга доходить до
+   * `dead_letter` приблизно за 10-15 хвилин без мережі — літак, метро,
+   * дача. `createSyncEngineFlushOnReconnect` рятує лише те, що ще
+   * `pending`; мертві рядки оживляє тільки ручний тап у налаштуваннях.
+   *
+   * Навмисно ін'єктується, а не читає `navigator.onLine` напряму: цей
+   * пакет спільний для web і React Native, де `navigator.onLine` не є
+   * надійним. Web передає `() => navigator.onLine`, mobile — свій
+   * NetInfo-адаптер. Опущено → поведінка як була (жодного гарда).
+   *
+   * Одностороннє за задумом: `false` довіряємо (браузер упевнений, що
+   * інтерфейсу нема), `true` — ні (Wi-Fi без інтернету все одно дасть
+   * помилку, і рядок піде в звичайний ретрай).
+   */
+  readonly isOnline?: () => boolean;
 }
 
 export interface SyncEnginePushOptions {
@@ -302,6 +325,13 @@ export async function runSyncEnginePushOnce(
   deps: SyncEnginePushDeps,
   options: SyncEnginePushOptions,
 ): Promise<SyncEnginePushResult> {
+  // Офлайн-гард стоїть ПЕРЕД `drain` навмисно: так тик не тільки не палить
+  // спробу, а й не чіпає чергу взагалі — жодного зайвого читання й жодної
+  // зміни стану рядків. Див. `isOnline` у `SyncEnginePushDeps`.
+  if (deps.isOnline?.() === false) {
+    return { drained: 0, pushed: 0, retried: 0, rejected: 0 };
+  }
+
   const now = deps.now();
   const drained = await deps.drain({ limit: options.limit, now });
 
