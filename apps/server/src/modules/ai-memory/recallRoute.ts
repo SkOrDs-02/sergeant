@@ -73,6 +73,7 @@ export async function recallMemoryHandler(
       query,
       topK,
       sources: sources as MemorySource[] | undefined,
+      caller: "explicit-recall",
     });
 
     const payload: RecallMemoryResponse = {

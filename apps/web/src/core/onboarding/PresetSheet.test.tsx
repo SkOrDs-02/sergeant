@@ -4,7 +4,13 @@
  * routine persist vs finyk prefill+navigate, and empty-item modules.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 const openHubModuleWithAction = vi.hoisted(() => vi.fn());
 const applyPreset = vi.hoisted(() => vi.fn());
@@ -46,6 +52,9 @@ describe("PresetSheet", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    // `applyPreset` тепер резолвиться в «чи запис ДІЙСНО в SQLite».
+    // Дефолт — happy path; кейс невдалого запису вмикається точково.
+    applyPreset.mockResolvedValue(true);
   });
 
   afterEach(cleanup);
@@ -65,7 +74,7 @@ describe("PresetSheet", () => {
     );
   });
 
-  it("persists a routine preset via applyPreset and notifies onPick", () => {
+  it("persists a routine preset via applyPreset and notifies onPick", async () => {
     render(
       <PresetSheet open moduleId="routine" onClose={onClose} onPick={onPick} />,
     );
@@ -78,12 +87,32 @@ describe("PresetSheet", () => {
       ANALYTICS_EVENTS.FTUX_PRESET_PICKED,
       { module: "routine", presetId: "water" },
     );
-    expect(onPick).toHaveBeenCalledWith({
-      moduleId: "routine",
-      presetId: "water",
-      persisted: true,
-    });
+    await waitFor(() =>
+      expect(onPick).toHaveBeenCalledWith({
+        moduleId: "routine",
+        presetId: "water",
+        persisted: true,
+      }),
+    );
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("keeps the sheet open and surfaces an error when the write is not durable", async () => {
+    // Спека `anonymous-local-first-persistence.md` («Похідне правило»):
+    // СТАРТ-блок витрачається лише після підтвердженого durable write.
+    // `onPick` — це і є сигнал «витрачено» (він гасить hero-картку в
+    // `FirstActionSheet`), тож на недолетілому записі він НЕ має піти.
+    applyPreset.mockResolvedValue(false);
+    render(
+      <PresetSheet open moduleId="routine" onClose={onClose} onPick={onPick} />,
+    );
+    fireEvent.click(screen.getByText("Випити воду"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося зберегти",
+    );
+    expect(onPick).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("prefills finyk data and opens add_expense without persisting", () => {

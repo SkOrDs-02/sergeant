@@ -3,7 +3,7 @@ import { resolveHabitGlyph } from "@sergeant/routine-domain";
 import { routineStorage } from "@routine/lib/routineStorageInstance";
 import {
   loadRoutineState,
-  saveRoutineState,
+  saveRoutineStateDurable,
 } from "@routine/lib/routineStorage";
 
 // Writes a single preset entry into the module's storage. This is how the
@@ -78,7 +78,7 @@ function uid(prefix: string) {
 
 // ─── Routine ─────────────────────────────────────────────────────────────
 
-function applyRoutinePreset(preset: RoutinePreset) {
+async function applyRoutinePreset(preset: RoutinePreset): Promise<boolean> {
   // Read current state from the SQLite warm cache (canonical path after
   // Stage-8 tombstone). Falls back to the LS tombstone key only in the
   // pre-warm window (extremely unlikely in FTUX context, but safe).
@@ -135,8 +135,13 @@ function applyRoutinePreset(preset: RoutinePreset) {
   };
 
   // Write through the canonical SQLite pipeline (updates warm cache +
-  // triggers dual-write + emits storage event). No raw LS write needed.
-  saveRoutineState(next as Parameters<typeof saveRoutineState>[0]);
+  // dual-write + emits storage event) and WAIT for SQLite to confirm.
+  // The fire-and-forget `saveRoutineState` would answer `true` even when
+  // no dual-write context is registered — and the caller spends the
+  // one-shot СТАРТ card on this answer. See `saveRoutineStateDurable`.
+  return saveRoutineStateDurable(
+    next as Parameters<typeof saveRoutineStateDurable>[0],
+  );
 }
 
 /**
@@ -144,10 +149,19 @@ function applyRoutinePreset(preset: RoutinePreset) {
  *
  * Only `routine` has a direct write path — other modules use the
  * `config.action` flow in `PresetSheet.tsx` (prefill + module add-sheet).
+ *
+ * Resolves `true` only when the entry is durably stored. `false` means the
+ * caller must NOT treat the first action as spent: either the write failed,
+ * or this module has no direct write path and the real save happens later
+ * in the module's own add-sheet.
  */
-export function applyPreset(moduleId: ModuleId, preset: ModulePreset) {
+export async function applyPreset(
+  moduleId: ModuleId,
+  preset: ModulePreset,
+): Promise<boolean> {
   if (moduleId === "routine") {
-    applyRoutinePreset(preset as RoutinePreset);
+    return applyRoutinePreset(preset as RoutinePreset);
   }
   // finyk / nutrition / fizruk: no direct write path (handled via config.action).
+  return false;
 }

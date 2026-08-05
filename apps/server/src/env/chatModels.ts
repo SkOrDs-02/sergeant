@@ -18,7 +18,7 @@ export function chatViaOpenRouter(): boolean {
   return Boolean(process.env["OPENROUTER_API_KEY"]);
 }
 
-type ChatModelSlot = "synthesis" | "standard" | "floor";
+type ChatModelSlot = "firstTurn" | "synthesis" | "standard" | "floor";
 
 /**
  * Дефолтні chat-моделі по слоту × шлюзу.
@@ -37,11 +37,29 @@ type ChatModelSlot = "synthesis" | "standard" | "floor";
  *     3.8 с, $0.32/1k. Удесятеро дешевший за однакову якість.
  * `gemini-2.5-flash-lite` лишається на floor: 11/16, але 730 мс і $0.16 —
  * там, де тир свідомо знижений, швидкість важить більше за дві пастки.
+ *
+ * ПЕРШИЙ ТУР — окрема історія, і початковий висновок був хибний.
+ *
+ * Payload першого туру — ~10.5k незмінних токенів (77 схем інструментів +
+ * `SYSTEM_PREFIX`), і прямий Anthropic кешує їх із TTL=1h. Звідси й бралася
+ * рекомендація «лишити на Anthropic»: OpenRouter кешу не дає взагалі
+ * (виміряно — `cache_read` = 0 навіть із явним `cache_control`).
+ *
+ * Арифметика мовчки припускала, що альтернатива коштує порівнянно. Не коштує.
+ * Кешований haiku-4.5: $5.60/1k на сесії з 5 повідомлень, $3.60 на 10, $2.60
+ * на 20. `deepseek-v4-flash` БЕЗ кешу — $1.51/1k, тобто дешевший на будь-якій
+ * довжині сесії. Прогін `eval:tools` на v15 (12 кейсів × 2): deepseek 22/24 і
+ * НУЛЬ вигаданих id, haiku 21/24 і два вигаданих. Вигаданий `habit_id` доїжджає
+ * до клієнтського виконавця й пише фантомний запис — це не косметика.
  */
 const CHAT_MODEL_DEFAULTS: Record<
   ChatModelSlot,
   { openrouter: string; anthropic: string }
 > = {
+  firstTurn: {
+    openrouter: "deepseek/deepseek-v4-flash",
+    anthropic: "claude-haiku-4-5-20251001",
+  },
   synthesis: { openrouter: "z-ai/glm-5.2", anthropic: "claude-sonnet-4-6" },
   standard: {
     openrouter: "deepseek/deepseek-v4-flash",

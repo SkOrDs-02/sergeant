@@ -95,7 +95,12 @@ export const nonEmptyUkVerdict = (text: string): boolean | string =>
 /** Найгірший режим відмови на порожньому вході: вигадані суми. */
 export const noInventedAmounts = (text: string): boolean | string => {
   if (!nonEmptyUk(text)) return "порожня або не українська відповідь";
-  const made = text.match(/\d{3,}/);
+  // Роки — не суми. `gemini-2.5-flash-lite` написав «почни з 2026 року» і
+  // отримав «вигадав суму 2026»; дата в тексті коуча законна, а порожній вхід
+  // вона не порушує. Вирізаємо 19xx/20xx перед пошуком, а не після — інакше
+  // перший збіг регексу все одно впаде на рік.
+  const withoutYears = text.replace(/(?<!\d)(19|20)\d{2}(?!\d)/g, "");
+  const made = withoutYears.match(/\d{3,}/);
   return made === null || `вигадав суму ${made[0]} — даних у вході немає`;
 };
 

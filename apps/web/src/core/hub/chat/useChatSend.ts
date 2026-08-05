@@ -361,7 +361,11 @@ export function useChatSend({
           if (isApiError(err) && err.kind === "http") {
             throw new ApiError({
               kind: "http",
-              message: friendlyApiError(err.status, err.serverMessage),
+              message: friendlyApiError(
+                err.status,
+                err.serverMessage,
+                (err.body as { code?: string } | undefined)?.code,
+              ),
               status: err.status,
               body: err.body,
               bodyText: err.bodyText,
@@ -538,11 +542,19 @@ export function useChatSend({
               } catch {
                 data2 = { error: raw2 };
               }
-              const parsed = data2 as { error?: string; text?: string };
+              const parsed = data2 as {
+                error?: string;
+                text?: string;
+                code?: string;
+              };
               if (!res2.ok)
                 throw new ApiError({
                   kind: "http",
-                  message: friendlyApiError(res2.status, parsed?.error),
+                  message: friendlyApiError(
+                    res2.status,
+                    parsed?.error,
+                    parsed?.code,
+                  ),
                   status: res2.status,
                   body: data2,
                   bodyText: raw2,

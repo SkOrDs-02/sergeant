@@ -67,6 +67,14 @@ vi.mock("../billing/TrialBanner", () => ({
   TrialBanner: () => <section data-testid="trial-banner" />,
 }));
 
+// Реальний банер читає `useLocalUserId` → `useAuth`, а цей набір рендерить
+// HubMainContent голим, без AuthProvider. Власна логіка показу покрита в
+// `core/durability/LocalOnlyDataBanner.test.tsx`; тут перевіряємо лише те,
+// що хаб його монтує і глушить під час FTUX.
+vi.mock("../durability/LocalOnlyDataBanner", () => ({
+  LocalOnlyDataBanner: () => <section data-testid="local-only-banner" />,
+}));
+
 vi.mock("@shared/components/ui/SuspenseWithMinDelay", () => ({
   SuspenseWithMinDelay: ({
     children,
@@ -154,6 +162,17 @@ describe("HubMainContent iOS install banner", () => {
 
     expect(screen.queryByTestId("ios-install-banner")).toBeNull();
     expect(screen.getByTestId("hub-dashboard")).toBeInTheDocument();
+    // Перша сесія тримає рівно один сигнал на екрані — CTA першої дії.
+    expect(screen.queryByTestId("local-only-banner")).toBeNull();
+  });
+
+  it("mounts the local-only durability banner on the dashboard outside FTUX", () => {
+    // Канон finyk §6.2: попередження про несинхронізовані дані жило лише
+    // всередині finyk/Overview, тож відвідувач у routine / nutrition /
+    // fizruk його не бачив. Хаб — спільний дах, банер належить сюди.
+    renderWithClient(<HubMainContent {...props()} />);
+
+    expect(screen.getByTestId("local-only-banner")).toBeInTheDocument();
   });
 
   it("shows the iOS install banner outside FTUX when iosVisible is set", () => {

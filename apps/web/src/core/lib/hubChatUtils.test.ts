@@ -53,6 +53,14 @@ describe("friendlyApiError", () => {
     );
     expect(friendlyApiError(429, "ліміт AI")).toContain("Денний ліміт AI");
   });
+  it("passes the server copy through for an anonymous quota block", () => {
+    // Копія цього випадку живе на сервері (`assertAiQuota`) в одному
+    // екземплярі — мапер не має права її переписати на «спробуй завтра»,
+    // бо аноніму чекати нема сенсу.
+    const serverCopy =
+      "Безкоштовна проба на сьогодні вичерпана. Увійди — 5 запитів на добу, без карти.";
+    expect(friendlyApiError(429, serverCopy, "AI_QUOTA_ANON")).toBe(serverCopy);
+  });
   it("delegates to base mapper otherwise", () => {
     const out = friendlyApiError(404, "not found");
     expect(typeof out).toBe("string");

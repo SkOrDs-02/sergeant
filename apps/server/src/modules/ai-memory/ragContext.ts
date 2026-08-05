@@ -146,6 +146,7 @@ export async function buildRagContext({
       userId,
       query,
       topK,
+      caller: "chat-rag",
     });
 
     const timeoutSignal = AbortSignal.timeout(RAG_TIMEOUT_MS);

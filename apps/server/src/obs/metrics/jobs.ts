@@ -131,3 +131,41 @@ export const aiMemoryIngestQueueDepth = new client.Gauge({
   labelNames: ["status"], // waiting|active|delayed|failed
   registers: [register],
 });
+
+/**
+ * Розподіл найкращого cosine-скору на запит до AI-пам'яті.
+ *
+ * WHY. Досі не існувало ЖОДНОГО сигналу про якість retrieval-у: прод рахував
+ * `llm_provider_invocations_total` (скільки викликів), але не те, чи знайшлося
+ * щось релевантне. Питання «чи варто міняти `voyage-3.5-lite`» не мало
+ * відповіді — і синтетичний стенд на неї теж не відповідає, бо міряє корпус,
+ * якого в проді немає.
+ *
+ * Читається так: якщо топ-скор стабільно осідає нижче ~0.4, пошук приносить
+ * шум і модель варто міняти; 0.7+ — працює, і витрачати на це нічого.
+ *
+ * PII тут немає за побудовою: пишемо число, не текст (Hard Rule #21).
+ * `caller` розділяє chat-RAG від forget-preview — у них різні очікування, і
+ * зливати їх в одну гістограму означає не побачити жодного.
+ */
+export const aiMemoryRecallTopScore = new client.Histogram({
+  name: "ai_memory_recall_top_score",
+  help: "Best cosine similarity returned by an AI-memory recall, by caller",
+  labelNames: ["caller"],
+  // Дрібніше в зоні рішення (0.3–0.7): саме там проходить межа між «шум» і
+  // «релевантно», і саме її треба бачити, а не хвости.
+  buckets: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+  registers: [register],
+});
+
+/**
+ * Результати одного recall: скільки повернулося. `0` — окремий, найважливіший
+ * випадок: він не потрапляє в гістограму скорів взагалі, тож без цього
+ * лічильника порожні відповіді були б невидимі.
+ */
+export const aiMemoryRecallResultsTotal = new client.Counter({
+  name: "ai_memory_recall_results_total",
+  help: "AI-memory recalls by caller and outcome (hit|empty)",
+  labelNames: ["caller", "outcome"],
+  registers: [register],
+});

@@ -197,6 +197,7 @@ describe("buildRagContext — happy path", () => {
       userId: "u1",
       query: LONG_QUERY,
       topK: 4,
+      caller: "chat-rag",
     });
     expect(out.startsWith(SHORT_CONTEXT)).toBe(true);
     expect(out).toContain("СХОЖІ ЗАПИСИ З ПАМʼЯТІ КОРИСТУВАЧА");
@@ -291,6 +292,7 @@ describe("buildRagContext — happy path", () => {
       userId: "u1",
       query: "новий запит про спорт",
       topK: 4,
+      caller: "chat-rag",
     });
   });
 });

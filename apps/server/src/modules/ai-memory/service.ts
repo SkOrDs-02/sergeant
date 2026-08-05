@@ -24,6 +24,10 @@ import type {
 } from "./types.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 import { isVoyageBudgetHardExceeded } from "./voyageBudget.js";
+import {
+  aiMemoryRecallTopScore,
+  aiMemoryRecallResultsTotal,
+} from "../../obs/metrics.js";
 
 /**
  * Параметри запису одного memory. Caller передає сирий `content`;
@@ -46,6 +50,46 @@ export interface RecallInput {
   query: string;
   topK?: number | undefined;
   sources?: MemorySource[] | undefined;
+  /**
+   * Хто питає. Йде міткою в `ai_memory_recall_*` — у chat-RAG і
+   * forget-preview різні очікування від скору, і зливати їх в одну
+   * гістограму означає не побачити жодного. Без значення — `unknown`.
+   */
+  caller?: RecallCaller | undefined;
+}
+
+/** Поверхні, що ходять у пам'ять. Літерали, а не `string`, щоб мітка не розповзлась. */
+export type RecallCaller = "chat-rag" | "forget-preview" | "explicit-recall";
+
+/**
+ * Знімає якість одного retrieval-у: розподіл найкращого скору й частку
+ * порожніх відповідей.
+ *
+ * WHY окремою функцією, а не інлайном: `recall()` має три ранні виходи
+ * (вимкнено, немає згоди, `topK <= 0`), і жоден із них НЕ є порожньою
+ * відповіддю в сенсі якості пошуку. Інлайн неминуче доповз би й туди, і
+ * метрика показувала б відсутність згоди як поганий retrieval.
+ *
+ * Логуємо число, не текст — вміст пам'яті це персональні дані (Hard Rule #21).
+ * `queryLen` замість самого запиту з тієї ж причини.
+ */
+function recordRecallQuality(
+  caller: string,
+  results: MemoryQueryResult[],
+): void {
+  const outcome = results.length > 0 ? "hit" : "empty";
+  aiMemoryRecallResultsTotal.inc({ caller, outcome });
+  const top = results[0];
+  if (top) aiMemoryRecallTopScore.observe({ caller }, top.score);
+  logger.debug({
+    msg: "ai_memory_recall_quality",
+    caller,
+    resultCount: results.length,
+    topScore: top ? Number(top.score.toFixed(3)) : null,
+    lowScore: results.length
+      ? Number((results[results.length - 1]?.score ?? 0).toFixed(3))
+      : null,
+  });
 }
 
 export interface AiMemoryService {
@@ -249,12 +293,15 @@ export function createAiMemoryService(
         throw new Error("Embedding provider returned empty result for query");
       }
 
-      return deps.vectorStore.query({
+      const results = await deps.vectorStore.query({
         userId: input.userId,
         embedding,
         topK,
         sources: input.sources,
       });
+
+      recordRecallQuality(input.caller ?? "unknown", results);
+      return results;
     },
 
     async forgetUser(userId: string): Promise<number> {
