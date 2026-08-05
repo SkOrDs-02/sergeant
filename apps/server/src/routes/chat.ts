@@ -39,7 +39,7 @@ export function createChatRouter(): Router {
     // публічний proxy (той самий аргумент, що в `transcribe.ts`). Без сесії
     // квота падала на `ip:<addr>`, а IPv6-клієнт має під підпискою цілу /64 —
     // денний ліміт переставав бути лімітом. Знахідка A1,
-    // `docs/90-work/audits/ai-abuse-2026-08-05.md` (main, PR #629).
+    // `docs/90-work/audits/ai-abuse-2026-08-05.md`.
     requireSession(),
     requireAnthropicKey(),
     requireAiQuota(),

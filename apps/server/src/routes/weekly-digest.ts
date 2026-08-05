@@ -20,7 +20,7 @@ export function createWeeklyDigestRouter(): Router {
     }),
     // Дайджест — звіт про дані конкретної людини й ще один витратний
     // Anthropic-виклик. Сесія обов'язкова з тих самих причин, що в `chat.ts`
-    // (знахідка A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`, main PR #629).
+    // (знахідка A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`).
     requireSession(),
     requireAnthropicKey(),
     requireAiQuota(),
