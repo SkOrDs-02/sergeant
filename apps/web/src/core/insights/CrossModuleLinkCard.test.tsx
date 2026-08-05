@@ -90,8 +90,33 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
     expect(screen.getByText("2 серп.")).toBeInTheDocument();
     expect(screen.getByText("380")).toBeInTheDocument();
     // Підпис пояснює, чому днів саме стільки, а не 60.
+    expect(screen.getByText("Дні, за якими я порівнював")).toBeInTheDocument();
+  });
+
+  it("довгий список обрізається, і про це сказано, а не приховано", async () => {
+    const user = userEvent.setup();
+    const many = Array.from({ length: 40 }, (_, i) => ({
+      key: `2026-07-${String(i + 1).padStart(2, "0")}`,
+      valueA: String(i),
+      valueB: String(i * 2),
+    }));
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N}
+        strength={0.62}
+        days={many}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Показати ці дні" }));
+
+    const rows = screen.getAllByRole("row");
+    // 14 днів + рядок заголовка таблиці.
+    expect(rows).toHaveLength(15);
     expect(
-      screen.getByText("Дні, коли ти записав і те, і те"),
+      screen.getByText(/Показано останні 14 днів із 40/),
     ).toBeInTheDocument();
   });
 

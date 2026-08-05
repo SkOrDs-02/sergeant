@@ -61,6 +61,47 @@ const METRIC_UNIT: Record<DailyMetric, string> = {
   habit_rate: "%",
 };
 
+// ─── Що означає ВІДСУТНІЙ запис за день ──────────────────────────────────────
+
+/**
+ * Порожня клітинка в ряді має два різні змісти, і до 2026-08-05 код їх плутав:
+ * усі пропуски були `undefined`, тож кореляція рахувалась лише на днях, де
+ * записано ОБИДВІ метрики. Для пари «тренування × звички» це означало вибірку
+ * з самих лише днів, коли людина і тренувалась, І виконала звичку, — тобто
+ * питання «чи пов'язані вони» ставилось рівно на тих днях, де відповідь уже
+ * «так». Систематичне завищення, а не шум.
+ *
+ * - `unknown` — не виміряно. Не з'їв 0 ккал і не важив 0 кг — просто не записав.
+ *   Такий день має лишитись поза розрахунком.
+ * - `zero` — справжній нуль від першого запису метрики й далі. Запис створює
+ *   САМА людина всередині застосунку (тренування, відмітка звички), тож день
+ *   без запису після першого — це день, коли вона цього не робила.
+ * - `zero-while-covered` — справжній нуль, але лише в межах підтвердженого
+ *   покриття. Транзакції приходять із ЗОВНІШНЬОГО дзеркала Monobank, і день без
+ *   транзакції може означати як «не витрачав», так і «синк відстав». Тому нулі
+ *   ставляться лише між першим і ОСТАННІМ побаченим записом — за останній
+ *   підтверджений день ми нулі не вигадуємо.
+ *
+ * AI-DANGER: перенести метрику з `unknown` у `zero` — це змінити зміст усіх
+ * кореляцій, у яких вона бере участь, і чисел на полюсах карток зв'язку
+ * (середнє стає «за календарний день», а не «за день із записом»). Не роби це
+ * без перечитування `crossModuleLinkData.ts` і копії в `uk.crossModuleLink.ts`.
+ */
+export type AbsenceMeaning = "unknown" | "zero" | "zero-while-covered";
+
+export const ABSENCE_MEANS: Record<DailyMetric, AbsenceMeaning> = {
+  spending: "zero-while-covered",
+  income: "zero-while-covered",
+  kcal: "unknown",
+  protein: "unknown",
+  water: "unknown",
+  workout_volume: "zero",
+  workouts: "zero",
+  weight: "unknown",
+  wellbeing: "unknown",
+  habit_rate: "zero",
+};
+
 const DAY_MS = 86_400_000;
 const DEFAULT_PERIOD_DAYS = 60;
 const MAX_PERIOD_DAYS = 365;
@@ -255,16 +296,54 @@ export interface DailySeries {
   from: string;
   to: string;
   days: string[];
-  /** Сирі значення (undefined = немає запису того дня). */
+  /** Значення по днях (`undefined` = день не виміряно; `0` може бути як записом, так і структурним нулем — див. `ABSENCE_MEANS`). */
   raw: Record<string, (number | undefined)[]>;
   metrics: DailyMetric[];
 }
 
 /**
- * Будує вирівняну по днях таблицю. `raw[metric][i]` = значення на `days[i]` або
- * `undefined`, якщо запису немає. Кореляції рахуються на `undefined`-aware
- * основі (див. `computePairwiseCorrelations`), тому `fill` впливає лише на
- * відображення, не на статистику.
+ * Проставляє СТРУКТУРНІ нулі — дні, коли метрика справді дорівнює нулю, а не
+ * дні, коли її не виміряли (`ABSENCE_MEANS`). Межі покриття беруться з ПОВНОЇ
+ * історії метрики, а не з вікна: якщо витрати пишуться пів року, то всі 60 днів
+ * вікна всередині покриття, і нуль там — вимірювання, а не здогад. І навпаки,
+ * до першого запису модуля нулів не буває — там просто ще нічого не було.
+ *
+ * `col` мутується на місці: викликається рівно один раз, одразу після
+ * заповнення стовпця, поки він ще нічий.
+ */
+function applyStructuralZeros(
+  col: (number | undefined)[],
+  days: string[],
+  readings: Map<string, number>,
+  meaning: AbsenceMeaning,
+): void {
+  if (meaning === "unknown" || readings.size === 0) return;
+  // Ключі дня — `YYYY-MM-DD`, тож лексикографічне порівняння = хронологічне.
+  let first: string | undefined;
+  let last: string | undefined;
+  for (const day of readings.keys()) {
+    if (first === undefined || day < first) first = day;
+    if (last === undefined || day > last) last = day;
+  }
+  if (first === undefined || last === undefined) return;
+  for (let i = 0; i < col.length; i += 1) {
+    if (col[i] !== undefined) continue;
+    const day = days[i];
+    if (day === undefined || day < first) continue;
+    if (meaning === "zero-while-covered" && day > last) continue;
+    col[i] = 0;
+  }
+}
+
+/**
+ * Будує вирівняну по днях таблицю. `raw[metric][i]` = значення на `days[i]`,
+ * `0` для дня без запису там, де відсутність означає справжній нуль
+ * (`ABSENCE_MEANS`), або `undefined`, якщо день просто не виміряний.
+ *
+ * Кореляції рахуються на `undefined`-aware основі (див.
+ * `computePairwiseCorrelations`), тому `fill` у `formatDailySeries` впливає
+ * лише на вигляд таблиці, не на статистику. Структурні нулі — навпаки: вони
+ * входять У статистику, бо це виміряні значення.
  */
 export function buildDailySeries(
   metrics: DailyMetric[],
@@ -275,10 +354,12 @@ export function buildDailySeries(
   const raw: Record<string, (number | undefined)[]> = {};
   for (const metric of metrics) {
     const col: (number | undefined)[] = new Array(days.length).fill(undefined);
-    for (const [day, value] of readMetric(metric, opts.habitId)) {
+    const readings = readMetric(metric, opts.habitId);
+    for (const [day, value] of readings) {
       const i = dayIndex.get(day);
       if (i !== undefined) col[i] = value;
     }
+    applyStructuralZeros(col, days, readings, ABSENCE_MEANS[metric]);
     raw[metric] = col;
   }
   return { from: opts.from, to: opts.to, days, raw, metrics };

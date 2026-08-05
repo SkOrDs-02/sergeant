@@ -227,9 +227,126 @@ describe("buildDailySeries — alignment", () => {
     });
     expect(s.days).toEqual(["2026-04-20", "2026-04-21", "2026-04-22"]);
     const col = s.raw["spending"]!;
+    // До ПЕРШОГО запису витрат нулів не буває — там ще нічого не було.
     expect(col[0]).toBeUndefined();
     expect(col[1]).toBeUndefined();
     expect(col[2]).toBe(5000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Структурні нулі: «нуль» проти «не записано» (`ABSENCE_MEANS`)
+// ---------------------------------------------------------------------------
+describe("buildDailySeries — структурні нулі", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useRealTimers();
+  });
+
+  async function seedDailyHabit(completions: string[]): Promise<void> {
+    const { loadRoutineState, saveRoutineState } =
+      await import("../../../../modules/routine/lib/routineStorage");
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      habits: [
+        {
+          id: "h1",
+          name: "Вода",
+          emoji: "✓",
+          archived: false,
+          paused: false,
+          recurrence: "daily",
+          startDate: "2026-04-01",
+          weekdays: [0, 1, 2, 3, 4, 5, 6],
+          reminderTimes: [],
+          createdAt: "2026-04-01T00:00:00.000Z",
+        } as never,
+      ],
+      habitOrder: ["h1"],
+      completions: { h1: completions },
+    });
+  }
+
+  it("habit_rate: день без відмітки після першої = 0%, а не пропуск", async () => {
+    // Перша відмітка 19-го, друга 21-го. 20-те — реальний нуль (не виконав),
+    // 18-те — ще до першого запису, тож лишається невиміряним.
+    await seedDailyHabit(["2026-04-19", "2026-04-21"]);
+    const s = buildDailySeries(["habit_rate"], {
+      from: "2026-04-18",
+      to: "2026-04-22",
+    });
+    expect(s.raw["habit_rate"]).toEqual([undefined, 100, 0, 100, 0]);
+  });
+
+  it("weight: пропуск лишається пропуском — це не «важив 0 кг»", () => {
+    localStorage.setItem(
+      "fizruk_daily_log_v1",
+      JSON.stringify([
+        { at: "2026-04-19T09:00:00.000Z", weightKg: 80 },
+        { at: "2026-04-21T09:00:00.000Z", weightKg: 79 },
+      ]),
+    );
+    const s = buildDailySeries(["weight"], {
+      from: "2026-04-19",
+      to: "2026-04-22",
+    });
+    expect(s.raw["weight"]).toEqual([80, undefined, 79, undefined]);
+  });
+
+  it("spending: дірка всередині покриття = 0, після останнього синку — ні", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    const at = (day: string) =>
+      Math.floor(Date.parse(`${day}T09:00:00Z`) / 1000);
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "e1", amount: -100 * 100, time: at("2026-04-19") },
+        { id: "e2", amount: -300 * 100, time: at("2026-04-21") },
+      ] as never[],
+    });
+    const s = buildDailySeries(["spending"], {
+      from: "2026-04-18",
+      to: "2026-04-22",
+    });
+    // 18-те — до першої транзакції; 20-те — день без витрат усередині
+    // підтвердженого покриття; 22-ге — за останнім синком, нулі не вигадуємо.
+    expect(s.raw["spending"]).toEqual([undefined, 100, 0, 300, undefined]);
+  });
+
+  it("нулі входять У статистику: пара набирає спільні дні, яких без них не було", async () => {
+    await seedDailyHabit(["2026-04-19", "2026-04-21"]);
+    localStorage.setItem(
+      "fizruk_daily_log_v1",
+      JSON.stringify([
+        { at: "2026-04-19T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-20T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-21T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-22T09:00:00.000Z", moodScore: 2 },
+      ]),
+    );
+    const s = buildDailySeries(["habit_rate", "wellbeing"], {
+      from: "2026-04-19",
+      to: "2026-04-22",
+    });
+    const [c] = computePairwiseCorrelations(s);
+    // Без структурних нулів спільними були б лише 19-те й 21-ше (n=2, пара
+    // відкидалась як закоротка) — і саме на тих днях, де звичка виконана,
+    // тобто питання ставилось там, де відповідь уже «так».
+    expect(c).toBeDefined();
+    expect(c!.n).toBe(4);
+    expect(c!.pearson).toBeCloseTo(1, 5);
   });
 });
 
