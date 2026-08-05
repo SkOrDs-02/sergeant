@@ -192,7 +192,7 @@ export const aiQuotaBlocksTotal = new client.Counter({
 export const aiCostConsumedTotal = new client.Counter({
   name: "ai_cost_consumed_total",
   help: "Total AI quota cost units consumed by accepted requests, by subject type and bucket type",
-  labelNames: ["subject_type", "bucket_type"], // subject_type=user|anon; bucket_type=default|tool
+  labelNames: ["subject_type", "bucket_type"], // subject_type=user|anon; bucket_type=default|tool|preset
   registers: [register],
 });
 

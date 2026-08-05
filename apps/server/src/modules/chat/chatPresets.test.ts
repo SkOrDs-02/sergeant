@@ -54,6 +54,22 @@ describe("інструкція інтервʼю", () => {
   });
 });
 
+// Anti-abuse: `preset` приходить від клієнта, і перевірити намір сервер не
+// може. Тижневе відро обмежує масштаб трюку, а це правило прибирає його
+// сенс — вкрадений бюджет не конвертується у безкоштовний універсальний LLM.
+// Тому рядок має бути в КОЖНОМУ режимі, не лише в інтервʼю.
+describe("відмова від сторонніх запитів", () => {
+  it("присутня в усіх preset-ах", () => {
+    for (const preset of CHAT_PRESETS) {
+      const text = presetInstruction(preset) ?? "";
+      expect(text, `preset "${preset}" без off-topic правила`).toMatch(
+        /не виконуй його/,
+      );
+      expect(text).toMatch(/зараз заповнюєш профіль/);
+    }
+  });
+});
+
 describe("isChatPreset", () => {
   it("звужує лише до значень із CHAT_PRESETS", () => {
     for (const preset of CHAT_PRESETS) expect(isChatPreset(preset)).toBe(true);

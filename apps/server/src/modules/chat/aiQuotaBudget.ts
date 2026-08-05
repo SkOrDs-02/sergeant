@@ -1,7 +1,10 @@
 import type { Request } from "express";
 import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
 
+import { logger } from "../../obs/logger.js";
 import { isChatPreset } from "./chatPresets.js";
+
+import type { ChatPreset } from "@sergeant/shared";
 
 /**
  * Резолв денного/тижневого бюджету для AI-квоти.
@@ -32,12 +35,30 @@ import { isChatPreset } from "./chatPresets.js";
 // +limit на добу. Лічильник — ПЕР-PRESET (`preset:<name>`), а не спільний:
 // `profile_add_info` повторюють тижнями, і спільний бюджет означав би, що
 // після інтервʼю людина до кінця тижня не додасть жодного факту. Тож сумарна
-// стеля = limit × кількість preset-ів; додаєш новий — перерахуй її
+// стеля = сума лімітів усіх preset-ів; додаєш новий — перерахуй її
 // (`docs/04-governance/security/ai-quota-kill-switch.md § preset-відро`).
+//
+// Другий бік цієї оборони живе не тут: `OFF_TOPIC_RULE` у `chatPresets.ts`
+// наказує моделі не виконувати сторонні запити всередині режиму. Лічильник
+// обмежує масштаб трюку, правило — прибирає його сенс.
 const PRESET_BUCKET_PREFIX = "preset:";
 
-// ≤4 повідомлення асистента × 2 запити на тур + запас на один повтор.
-const DEFAULT_PRESET_WEEKLY_LIMIT = 12;
+/**
+ * Вбудовані тижневі ліміти — по одному на сценарій, бо їхні профілі
+ * використання різні:
+ *
+ *   * `profile_interview` — ≤4 повідомлення асистента × 2 запити на тур
+ *     (перший + синтез після `remember`) = 8, плюс запас на один повтор;
+ *   * `profile_add_info` — один-два обміни за раз, але дію повторюють
+ *     протягом тижня.
+ *
+ * Спільної константи тут навмисно немає: одне число на всі режими робило
+ * сумарну стелю (12 × N) більшою, ніж потрібно кожному з них окремо.
+ */
+const DEFAULT_PRESET_WEEKLY_LIMITS: Record<ChatPreset, number> = {
+  profile_interview: 10,
+  profile_add_info: 4,
+};
 
 export interface QuotaBudget {
   bucket: string;
@@ -60,12 +81,48 @@ function thisWeek(): string {
   return toLocalISODate(kyivMondayStartMs());
 }
 
-/** Тижневий ліміт preset-відра (в одиницях квоти), env-tunable. */
-function presetWeeklyLimit(): number | null {
-  return parseLimit(
-    "AI_QUOTA_PRESET_WEEKLY_LIMIT",
-    DEFAULT_PRESET_WEEKLY_LIMIT,
-  );
+/**
+ * Per-preset ліміт із JSON-мапи `AI_QUOTA_PRESET_LIMITS`
+ * (`{"profile_interview":10,"profile_add_info":4}`). `undefined` — ключа
+ * немає або значення невалідне; битий JSON — fail-open + warn, як у
+ * `toolLimit()`: advisory-налаштування не має класти запити.
+ */
+function presetLimitFromMap(preset: ChatPreset): number | undefined {
+  const raw = process.env["AI_QUOTA_PRESET_LIMITS"];
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
+    if (parsed && typeof parsed === "object" && preset in parsed) {
+      const v = parsed[preset];
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0) return v;
+    }
+  } catch (e: unknown) {
+    logger.warn({
+      msg: "ai_quota_preset_limits_parse_failed",
+      err: { message: (e as Error)?.message || String(e) },
+    });
+  }
+  return undefined;
+}
+
+/**
+ * Тижневий ліміт відра для конкретного сценарію (в одиницях квоти).
+ *
+ * Precedence — дзеркало `toolLimit()`:
+ *   1. `AI_QUOTA_PRESET_LIMITS[preset]` — точкове налаштування одного режиму;
+ *   2. `AI_QUOTA_PRESET_WEEKLY_LIMIT` — одне число на ВСІ режими (глобальний
+ *      важіль; `0` вимикає сценарні режими цілком);
+ *   3. вбудований per-preset дефолт.
+ *
+ * Завжди число: «безлімітного» варіанту тут немає навмисно — відро існує
+ * саме як стеля, і зняти її означало б віддати сценарний режим без обмежень.
+ */
+function presetWeeklyLimit(preset: ChatPreset): number {
+  const fromMap = presetLimitFromMap(preset);
+  if (fromMap !== undefined) return fromMap;
+  const global = parseLimit("AI_QUOTA_PRESET_WEEKLY_LIMIT", null);
+  if (global !== null) return global;
+  return DEFAULT_PRESET_WEEKLY_LIMITS[preset];
 }
 
 /**
@@ -76,18 +133,15 @@ function presetWeeklyLimit(): number | null {
  * до enum-у, тому підсунути довільний рядок і створити собі нове відро не
  * вийде — невідоме значення просто падає у звичайний денний бюджет.
  *
- * `presetWeeklyLimit() == null` (env явно знімає ліміт) → теж `null`, тобто
- * сценарій рахується у звичайному денному відрі. Це навмисно консервативно:
- * «нема ліміту на відро» не має означати «нема ліміту зовсім».
+ * Ліміт береться per-preset (`presetWeeklyLimit`), тож режими не діляться
+ * спільним бюджетом і не гасять один одного.
  */
 export function resolvePresetBudget(req: Request): QuotaBudget | null {
   const preset = (req.body as { preset?: unknown } | undefined)?.preset;
   if (!isChatPreset(preset)) return null;
-  const limit = presetWeeklyLimit();
-  if (limit == null) return null;
   return {
     bucket: `${PRESET_BUCKET_PREFIX}${preset}`,
     day: thisWeek(),
-    limit,
+    limit: presetWeeklyLimit(preset),
   };
 }
