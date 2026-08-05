@@ -396,6 +396,26 @@ describe("крос-модульні зв'язки — синтетичний к�
     expect(restDay.workedOut).toBe(false);
   });
 
+  /**
+   * Регресія на колізію React-ключів (AI-CONTEXT у
+   * `CrossModuleLinksSection.tsx`). Ключ був `модульA-модульB-n`, і після
+   * фіксу структурних нулів `n` став однаковим для всіх пар — тобто перестав
+   * розрізняти будь-що. Різні куровані пари при цьому лягають на ту саму пару
+   * модулів, тож два записи списку могли отримати ідентичний `key`, і React
+   * перевикористав би стан не тієї картки: розгорнутий рядок «переїхав» би на
+   * сусідній зв'язок.
+   */
+  it("різні пари не зливаються в один ключ списку", () => {
+    const series = buildCrossModuleSeries();
+    const pairs = notablePairsFromSeries(series);
+    expect(pairs.length).toBeGreaterThan(1);
+
+    // Наївний ключ (модулі + n) на цих даних КОЛІЗІЙНИЙ або принаймні не
+    // гарантує унікальності; ключ із пари метрик — унікальний за побудовою.
+    const metricKeys = pairs.map((p) => `${p.a}-${p.b}`);
+    expect(new Set(metricKeys).size).toBe(pairs.length);
+  });
+
   it("картка будується лише для крос-модульних пар", () => {
     const series = buildCrossModuleSeries();
     for (const p of notablePairsFromSeries(series)) {
