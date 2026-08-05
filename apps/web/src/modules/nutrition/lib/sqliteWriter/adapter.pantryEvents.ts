@@ -35,6 +35,7 @@ export async function appendPantryEvent(
 ): Promise<void> {
   const { event } = op;
   const id = event.id ?? crypto.randomUUID();
+  const tzOffsetMin = pantryEventEnv.tzOffsetMin();
 
   await client.run(PANTRY_EVENT_INSERT_SQL, [
     id,
@@ -49,6 +50,7 @@ export async function appendPantryEvent(
     event.source,
     event.mealId,
     clientTs,
+    tzOffsetMin,
     clientTs,
     clientTs,
   ]);
@@ -71,6 +73,7 @@ export async function appendPantryEvent(
       source: event.source,
       meal_id: event.mealId,
       occurred_at: clientTs,
+      tz_offset_min: tzOffsetMin,
       created_at: clientTs,
     },
   });
@@ -80,8 +83,38 @@ export async function appendPantryEvent(
  * `INSERT OR IGNORE` — дзеркало `ON CONFLICT (id) DO NOTHING` у серверному
  * `applyNutritionPantryEvents`. `deleted_at` не в списку параметрів — нова
  * подія завжди жива, ретракція (`op='delete'`) сюди не заходить.
+ *
+ * `tz_offset_min` (міграція 109, той самий патерн, що
+ * `routine_completion_events` / `nutrition_goal_periods`) — опційне поле
+ * на сервері; тут завжди пишемо значення пристрою на момент запису.
  */
 const PANTRY_EVENT_INSERT_SQL = `INSERT OR IGNORE INTO nutrition_pantry_events
        (id, user_id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
-        unit, source, meal_id, occurred_at, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`;
+        unit, source, meal_id, occurred_at, tz_offset_min, created_at,
+        updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`;
+
+/**
+ * Єдина точка, де append-шлях читає ОТОЧЕННЯ (таймзона пристрою).
+ *
+ * Винесено в експортований обʼєкт навмисно, дзеркалячи
+ * `routine/.../adapter.completionEvents.ts` `completionEventEnv` і
+ * `./adapter.goalPeriods.ts` `goalPeriodEnv`: tz-offset залежить від
+ * машини, де крутиться CI, тож тест підміняє цей метод через `vi.spyOn`.
+ * Прод-код ходить сюди ж.
+ */
+export const pantryEventEnv = {
+  /** Зсув таймзони пристрою у хвилинах (схід від UTC — додатний). */
+  tzOffsetMin(): number | null {
+    try {
+      // Потрібен саме зсув таймзони ПРИСТРОЮ, той самий сирий факт, що
+      // `routine_completion_events.tz_offset_min` — див. коментар там.
+      // (nutrition не входить у files-скоуп `no-restricted-syntax`
+      // new-Date()-guard-а в eslint.cross-surface.js — Theme 1 покриває
+      // лише finyk/fizruk/routine — тож disable-коментар тут не потрібен.)
+      return -new Date().getTimezoneOffset();
+    } catch {
+      return null;
+    }
+  },
+};

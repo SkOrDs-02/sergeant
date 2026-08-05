@@ -29,6 +29,19 @@
  *    `all` повертає `[]` → pre-check пропускає дублі →
  *    INSERT OR IGNORE записується у snapshot → post-check `[]` → throws → caught.
  *
+ * Семантична зміна (CodeRabbit PR #627 — `enqueueOutboxUpsert` mutex):
+ * `enqueueOutboxUpsert` (`core/syncEngine/enqueueOutboxUpsert.ts`) now
+ * serialises its (content-dedup lookup → INSERT) critical section across
+ * concurrent calls via a module-level promise-chain mutex, so a race no
+ * longer lets two concurrent enqueues both see "nothing pending" and both
+ * insert. Side effect for THIS snapshot: the several fire-and-forget
+ * `enqueueOutboxUpsert` calls the canonical op set fires no longer
+ * interleave round-robin (each call's dedup-lookup/pre-check/insert ticks
+ * previously raced every other call's ticks); each call's outbox INSERT
+ * now completes in full before the next queued call starts. Same set of
+ * `(sql, params)` entries, reordered — confirmed via a sorted diff against
+ * the pre-fix snapshot (no entry added, removed, or altered).
+ *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
  */

@@ -194,6 +194,10 @@ describe("ANALYTICS_EVENTS registry", () => {
 
     // Експозиція стріку поза InsightCard.
     expect(ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN).toBe("routine_streak_shown");
+
+    // Стабільний крос-девайсний advice_id (беta-хардненінг).
+    expect(ANALYTICS_EVENTS.ADVICE_SHOWN).toBe("advice_shown");
+    expect(ANALYTICS_EVENTS.ADVICE_DISMISSED).toBe("advice_dismissed");
   });
 
   it("keeps the Wave-2 value-loop group reachable through the single registry", () => {
@@ -219,6 +223,8 @@ describe("ANALYTICS_EVENTS registry", () => {
       ANALYTICS_EVENTS.AI_ADVICE_REACTED,
       ANALYTICS_EVENTS.AI_ADVICE_FAILED,
       ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
+      ANALYTICS_EVENTS.ADVICE_SHOWN,
+      ANALYTICS_EVENTS.ADVICE_DISMISSED,
     ];
 
     // Тип мусить лишатись ЛІТЕРАЛЬНИМ після spread-у, а не розширитись до

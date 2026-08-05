@@ -12,7 +12,13 @@ import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
-const PRIVAT_ENABLED = false;
+// ПриватБанк-секція готова, але без live-rollout рішення лишається за
+// env-прапорцем (дефолт off), той самий патерн, що інші env-гейти web
+// (напр. `VITE_POSTHOG_KEY`, `VITE_TARGET` у `core/observability/posthog.ts`
+// / `main.tsx`) — bracket-доступ, бо ключ не в локальному `ImportMetaEnv`
+// (`vite-env.d.ts` декларує лише `VITE_BUILD_ID` / `VITE_TARGET`, інжектовані
+// unconditionally через `vite.config.js#define`).
+const PRIVAT_ENABLED = import.meta.env["VITE_PRIVAT_ENABLED"] === "true";
 
 interface CustomCategory {
   id: string;

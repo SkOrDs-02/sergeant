@@ -167,6 +167,14 @@ export const nutritionPantryEvents = pgTable(
     occurredAt: timestamp("occurred_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * Client timezone offset (minutes) at event time (migration 109,
+     * pre-beta schema-debt audit 2026-08-04) — closes the gap between
+     * ADR-0078 §3.2 (claims every Wave-1 journal already carries this)
+     * and reality. Nullable: NULL for pre-109 rows / clients not yet
+     * sending it. See ADR-0078 (device-local day boundary).
+     */
+    tzOffsetMin: integer("tz_offset_min"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -228,8 +236,11 @@ export const nutritionPrefs = pgTable("nutrition_prefs", {
  * push-а лягла в `ON CONFLICT DO NOTHING`, а не другим періодом з тими
  * самими числами. `crypto.randomUUID()` дав би дубль на кожному ретраї.
  *
- * `effectiveFrom` — TEXT 'YYYY-MM-DD' у Kyiv-локальному дні, як
- * `nutritionWaterLog.dateKey`, а не `date()`/`timestamp()`.
+ * `effectiveFrom` — TEXT 'YYYY-MM-DD', device-local day key (ADR-0078:
+ * personal day boundary is device-local, not Kyiv — corrected 2026-08-04,
+ * migration 109; 087's original comment said "Kyiv-local", ADR-0078 §3.1
+ * says otherwise for personal data), як `nutritionWaterLog.dateKey`, а не
+ * `date()`/`timestamp()`.
  *
  * Цілі NULLABLE: `dailyTargetKcal = null` — валідний дефолт, і «цілі немає»
  * не можна плутати з нулем. `deletedAt` — ретракція помилкового періоду
@@ -248,6 +259,12 @@ export const nutritionGoalPeriods = pgTable(
     carbsG: real("carbs_g"),
     waterMl: integer("water_ml"),
     origin: text().notNull().default("manual"),
+    /**
+     * Client timezone offset (minutes) at the moment the goal step was
+     * recorded (migration 109, pre-beta schema-debt audit 2026-08-04).
+     * Nullable: NULL for pre-109 rows / clients not yet sending it.
+     */
+    tzOffsetMin: integer("tz_offset_min"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

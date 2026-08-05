@@ -36,7 +36,6 @@ import { initPostHog } from "./core/observability/posthog.js";
 import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
 import { maybeRunOnboarding } from "./core/onboarding/index.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 import {
@@ -92,32 +91,33 @@ interface ErrorFallbackProps {
   resetError: () => void;
 }
 
+// Lazy: the top-level `<ErrorBoundary>` fallback only renders on an
+// unrecoverable crash (rare path), so the design-system `ServerErrorPage`
+// (`EmptyState` + illustration) stays out of the eager entry bundle —
+// `lazyImport` (not a bare `React.lazy`) so a stale-chunk-hash failure here
+// gets the same `ChunkLoadError` recovery as every other lazy route instead
+// of a raw `TypeError` on `m.ServerErrorPage`.
+const ServerErrorPage = lazyImport(
+  () => import("./core/errors/ServerErrorPage.js"),
+  "ServerErrorPage",
+);
+
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   // Hard rule #21 spirit: raw error.message може витекти внутрішні шляхи,
   // DB-колонки, API URL-и та `Error.cause`-ланцюги. У проді показуємо лише
-  // локалізований заголовок; повний нарратив усе ще в Sentry. Vite DCE
-  // вирізає dev-гілку з prod-бандлу.
+  // локалізований заголовок (усередині `ServerErrorPage`); повний нарратив
+  // усе ще в Sentry. Vite DCE вирізає dev-гілку з prod-бандлу.
   return (
-    <div className="p-8 font-sans">
-      <h2 className="text-style-title text-text">
-        {messages.errors.generic.somethingWrong}
-      </h2>
+    <>
+      <Suspense fallback={null}>
+        <ServerErrorPage onReset={resetError} />
+      </Suspense>
       {import.meta.env.DEV ? (
-        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap mt-2">
+        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap m-4 p-4 rounded-xl bg-panel border border-line">
           {error?.message}
         </pre>
       ) : null}
-      <button
-        type="button"
-        onClick={() => {
-          resetError?.();
-          window.location.reload();
-        }}
-        className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-style-label text-text"
-      >
-        {messages.actions.reload}
-      </button>
-    </div>
+    </>
   );
 }
 
@@ -307,15 +307,28 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
-  // Hard-reload one time when the SW controller changes. SW `install`
+  // Hard-reload one time when the SW controller змінюється ПІД уже
+  // контрольованою сторінкою (див. гейт `hadControllerAtLoad` нижче). SW `install`
   // тепер unconditional-но робить `skipWaiting()`, тож новий worker
   // активується одразу і `clients.claim()` у `activate` тригерить
   // `controllerchange` у всіх відкритих вкладках. Без reload-у
   // dynamic-import-и старих hash-named chunks падають у 404, бо
   // workbox-precache новij ге́нерації не містить їх. Guard `refreshing`
   // блокує цикл, якщо SW з якоїсь причини активувався двічі підряд.
+  //
+  // AI-CONTEXT: гейт `hadControllerAtLoad` обов'язковий. `clients.claim()`
+  // тригерить `controllerchange` і на ПЕРШОМУ візиті — коли контролера ще
+  // не було зовсім. Без гейта кожен новий відвідувач отримував один
+  // повний reload через ~1–3 с після приземлення (нестабільний момент —
+  // залежить від того, коли SW встиг install+activate). Перезавантажувати
+  // там нема від чого: сторінку віддала мережа, а не SW старої генерації,
+  // тож усі hash-named chunks у ній уже поточні. Саме ця гонка ламала
+  // axe-лейн (`page.evaluate: Execution context was destroyed`) —
+  // див. `tests/a11y/expanded-routes.spec.ts`.
+  const hadControllerAtLoad = navigator.serviceWorker.controller !== null;
   let refreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadControllerAtLoad) return;
     if (refreshing) return;
     refreshing = true;
     window.location.reload();

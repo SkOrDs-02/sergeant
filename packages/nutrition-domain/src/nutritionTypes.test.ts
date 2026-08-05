@@ -10,7 +10,8 @@ import {
 /**
  * These are the localStorage/sessionStorage key names apps/web reads and
  * writes existing users' nutrition data under (nutritionStorage.ts,
- * residualImport.ts, sqliteWriter/diff.ts, recipeCache.ts, ...). Nothing
+ * sqliteWriter/diff.ts, recipeCache.ts, ...; `apps/mobile` has its own
+ * boot-time `residualImport.ts` consumer for the MMKV equivalent). Nothing
  * else in this package imports nutritionTypes.ts directly, so without this
  * test the module — and an accidental key rename inside it — has zero
  * coverage: a silent rename here would orphan every existing user's stored

@@ -173,7 +173,17 @@ export const routineHabits = sqliteTable(
     timeOfDay: text("time_of_day").notNull().default(""),
     reminderTimesJson: text("reminder_times_json").notNull().default("[]"),
     weekdaysJson: text("weekdays_json").notNull().default("[0,1,2,3,4,5,6]"),
-    /** Датовані інтервали паузи (Хвиля 4) — JSON-масив як TEXT. */
+    /**
+     * Датовані інтервали паузи (Хвиля 4) — JSON-масив як TEXT.
+     *
+     * `paused` (вище) лишається живою колонкою — pre-beta schema-debt
+     * аудит 2026-08-04: `routine-domain/src/reducers.ts` і
+     * web/mobile `sqliteReader.ts` / `sqliteWriter/adapter.ts` досі
+     * читають/пишуть її, дзеркалячи серверний `applySyncFullState.ts` +
+     * `lib/reminders/sweep.ts`. Two-phase DROP (Hard Rule #4) вимагає
+     * Phase 1 (сервер + клієнт перестають читати/писати) перед будь-яким
+     * DROP COLUMN.
+     */
     pauseIntervalsJson: text("pause_intervals_json").notNull().default("[]"),
     createdAt: text("created_at")
       .notNull()

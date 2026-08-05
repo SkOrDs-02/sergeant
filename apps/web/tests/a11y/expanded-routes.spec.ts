@@ -21,6 +21,24 @@ async function waitForAppShell(page: import("@playwright/test").Page) {
     .locator("main, [role='main'], [data-a11y-root], #root > *")
     .first()
     .waitFor({ state: "visible", timeout: 10_000 });
+
+  // Дочекатися, поки service worker візьме сторінку під контроль, ПЕРШ
+  // ніж віддавати її axe. Це prod-білд під `vite preview`, тож SW тут
+  // реальний: `install` робить `skipWaiting()`, `activate` —
+  // `clients.claim()`, і момент, коли claim долітає, плаває на 1–3 с.
+  // Історично цей лаг вибивав axe помилкою «page.evaluate: Execution
+  // context was destroyed» (`main.tsx` перезавантажував сторінку на
+  // першому ж `controllerchange`). Reload звідти прибрано, але чекати на
+  // усталений SW усе одно правильно — інакше будь-яке майбутнє
+  // boot-навантаження знову вилізе як загадковий флейк саме тут.
+  // Best-effort: середовища без SW просто проходять далі.
+  await page
+    .waitForFunction(() => navigator.serviceWorker?.controller != null, null, {
+      timeout: 10_000,
+    })
+    .catch(() => {
+      /* allow-through: SW may be unavailable/disabled in this env */
+    });
 }
 
 for (const { name, path } of ROUTES) {

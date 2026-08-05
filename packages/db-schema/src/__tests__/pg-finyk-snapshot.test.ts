@@ -273,9 +273,9 @@ describe("pg/finykNetworthHistory schema snapshot", () => {
     expect(cols["month"]!.notNull).toBe(true);
   });
 
-  it("networth is REAL with default 0", () => {
+  it("networth is DOUBLE PRECISION with default 0 (migration 108, pre-beta schema-debt audit)", () => {
     const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
-    expect(cols["networth"]!.columnType).toBe("PgReal");
+    expect(cols["networth"]!.columnType).toBe("PgDoublePrecision");
     expect(cols["networth"]!.notNull).toBe(true);
     expect(cols["networth"]!.hasDefault).toBe(true);
   });

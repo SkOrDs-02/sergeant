@@ -212,9 +212,12 @@ export function isAiQuotaDisabled(): boolean {
 }
 
 // Anonymous callers get exactly one message a day: enough to see what the
-// assistant does, not enough to use it as a product. Lower than the free-user
-// cap (5) on purpose — an IP-keyed caller is the cheapest identity to spin up,
-// so it gets the tightest budget, and the 429 it hits is a sign-in prompt
+// assistant does, not enough to use it as a product. Lower than the
+// authenticated free-user cap (`FREE_LIMITS.aiRequestsPerDay` in
+// `billing/effectiveLimits.ts` — ADR-0068 §"Ліміти тірів" decided 15/day,
+// though the deployed constant has not moved off its ADR-0051-era 5 yet) on
+// purpose — an IP-keyed caller is the cheapest identity to spin up, so it
+// gets the tightest budget, and the 429 it hits is a sign-in prompt
 // (`AI_QUOTA_ANON` below), not a "try tomorrow" dead end.
 //
 // The deployed value comes from env `AI_DAILY_ANON_LIMIT` — changing this
@@ -235,8 +238,10 @@ function anonDailyLimit(): number | null {
  *
  * Distinct from a Pro plan: a founder keeps whatever billing plan they have
  * but is never blocked by the per-user counter, so internal dogfooding and
- * demos don't burn the free 5/day cap. Covers both the default chat bucket
- * and tool-use buckets.
+ * demos don't burn the authenticated free-tier cap
+ * (`FREE_LIMITS.aiRequestsPerDay`, `billing/effectiveLimits.ts` — see
+ * ADR-0068 for the current target vs. what's actually deployed).
+ * Covers both the default chat bucket and tool-use buckets.
  */
 function isFounderUser(userId: string): boolean {
   const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
@@ -246,7 +251,10 @@ function isFounderUser(userId: string): boolean {
 
 /**
  * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
- * Free → `FREE_LIMITS.aiRequestsPerDay` (5); Pro → `null` (unlimited).
+ * Free → `FREE_LIMITS.aiRequestsPerDay`; Pro → `null` (unlimited). See
+ * `billing/effectiveLimits.ts` for the live numeric value (ADR-0068
+ * §"Ліміти тірів" decided 15/day for Free — do not hardcode the number
+ * here, it has drifted from the ADR once already).
  * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
  *
  * On a plan-lookup error we fall back to the FREE cap — never silently grant
@@ -811,6 +819,18 @@ function rejectCircuitOpen(res: Response): boolean {
 }
 
 /**
+ * `endpoint` тег для quota-лічильника (міграції 104/106): PK `ai_usage_daily`
+ * тепер 4-колонковий `(subject_key, usage_day, bucket, endpoint)`, і
+ * `endpoint` NOT NULL без DEFAULT — INSERT без явного значення падає
+ * `23502`. Цей модуль рахує КІЛЬКІСТЬ повідомлень (bucket=`default`/`tool:*`),
+ * а не вартість конкретного кроку (те, що трекає `endpoint` в
+ * `anthropicUsageStore.ts`) — тож фіксоване значення `'quota'`, а не одне з
+ * реальних endpoint-значень (`chat`, `coach-insight`, …), щоб не змішувати
+ * дві різні осі групування в одному значенні колонки.
+ */
+const AI_QUOTA_ENDPOINT = "quota";
+
+/**
  * Атомарний інкремент лічильника з verifi-ON-CONFLICT:
  *   INSERT (cost) — якщо рядка ще немає (завжди проходить, бо cost <= limit
  *                   перевіряємо наперед).
@@ -835,17 +855,18 @@ async function consumeQuota({
   }
 
   const sql = `
-    INSERT INTO ai_usage_daily AS t (subject_key, usage_day, bucket, request_count)
-    VALUES ($1, $2::date, $3, $4)
-    ON CONFLICT (subject_key, usage_day, bucket)
+    INSERT INTO ai_usage_daily AS t (subject_key, usage_day, bucket, endpoint, request_count)
+    VALUES ($1, $2::date, $3, $4, $5)
+    ON CONFLICT (subject_key, usage_day, bucket, endpoint)
     DO UPDATE SET request_count = t.request_count + EXCLUDED.request_count
-      WHERE t.request_count + EXCLUDED.request_count <= $5
+      WHERE t.request_count + EXCLUDED.request_count <= $6
     RETURNING request_count
   `;
   const r = await pool.query<ConsumeQuotaRow>(sql, [
     subject,
     day,
     bucket,
+    AI_QUOTA_ENDPOINT,
     cost,
     limit,
   ]);
@@ -868,8 +889,15 @@ async function refundConsumed(ticket: ConsumedTicket): Promise<void> {
     await pool.query(
       `UPDATE ai_usage_daily
           SET request_count = GREATEST(0, request_count - $4)
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3`,
-      [ticket.subject, ticket.day, ticket.bucket, ticket.cost],
+        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+          AND endpoint = $5`,
+      [
+        ticket.subject,
+        ticket.day,
+        ticket.bucket,
+        ticket.cost,
+        AI_QUOTA_ENDPOINT,
+      ],
     );
   } catch (e: unknown) {
     const err = e as { message?: string; code?: string } | undefined;
@@ -903,4 +931,5 @@ export const __aiQuotaTestHooks = {
   refundConsumed,
   DEFAULT_BUCKET,
   TOOL_BUCKET_PREFIX,
+  AI_QUOTA_ENDPOINT,
 };

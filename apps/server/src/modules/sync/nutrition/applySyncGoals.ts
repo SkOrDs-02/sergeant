@@ -1,7 +1,25 @@
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
-import { parseOptionalDate, parseOptionalNumber } from "../syncV2-core.js";
+import {
+  parseOptionalBoundedNumber,
+  parseOptionalDate,
+  parseOptionalTzOffsetMin,
+} from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+
+/**
+ * Pre-beta input-boundaries audit (2026-08-04): `nutrition_goal_periods`
+ * numeric goals had NO upper bound at all — a `curl` could set
+ * `kcal: Number.MAX_SAFE_INTEGER`. Ceilings here are deliberately generous
+ * (2-3× the client's `GOAL_BOUNDS` WARN threshold in
+ * `packages/nutrition-domain/src/dailyPlanValidation.ts`, which is a soft
+ * UI nudge, not a hard cutoff) — this is a physiological-implausibility
+ * sanity ceiling to stop overflow/abuse, not a product-decided "reasonable
+ * goal" range.
+ */
+const GOAL_KCAL_MAX = 20_000;
+const GOAL_MACRO_G_MAX = 1_000;
+const GOAL_WATER_ML_MAX = 10_000;
 
 /**
  * Apply-шлях для `nutrition_goal_periods` — append-only журналу цілей КБЖВ.
@@ -130,17 +148,23 @@ export async function applyNutritionGoalPeriods(
   // Кожна ціль NULLABLE — «ціль не задана» це валідний стан, і він НЕ
   // дорівнює нулю. `parseOptionalNumber` розрізняє `null` (нема) і
   // `"invalid"` (є, але сміття) — друге відхиляємо, перше пропускаємо.
-  const kcal = parseOptionalNumber(row["kcal"]);
+  const kcal = parseOptionalBoundedNumber(row["kcal"], { max: GOAL_KCAL_MAX });
   if (kcal === "invalid") return { status: "rejected", reason: "invalid_kcal" };
-  const proteinG = parseOptionalNumber(row["protein_g"]);
+  const proteinG = parseOptionalBoundedNumber(row["protein_g"], {
+    max: GOAL_MACRO_G_MAX,
+  });
   if (proteinG === "invalid") {
     return { status: "rejected", reason: "invalid_protein_g" };
   }
-  const fatG = parseOptionalNumber(row["fat_g"]);
+  const fatG = parseOptionalBoundedNumber(row["fat_g"], {
+    max: GOAL_MACRO_G_MAX,
+  });
   if (fatG === "invalid") {
     return { status: "rejected", reason: "invalid_fat_g" };
   }
-  const carbsG = parseOptionalNumber(row["carbs_g"]);
+  const carbsG = parseOptionalBoundedNumber(row["carbs_g"], {
+    max: GOAL_MACRO_G_MAX,
+  });
   if (carbsG === "invalid") {
     return { status: "rejected", reason: "invalid_carbs_g" };
   }
@@ -148,7 +172,9 @@ export async function applyNutritionGoalPeriods(
   // літерала: кожен новий reason коштує кардинальності в
   // `sync_op_log_apply_total{reason}` (metrics.md §4), а окремий дашборд
   // саме по воді ніхто не будує.
-  const waterMl = parseOptionalNumber(row["water_ml"]);
+  const waterMl = parseOptionalBoundedNumber(row["water_ml"], {
+    max: GOAL_WATER_ML_MAX,
+  });
   if (waterMl === "invalid") {
     return { status: "rejected", reason: "invalid_qty" };
   }
@@ -162,11 +188,21 @@ export async function applyNutritionGoalPeriods(
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
+  // `tz_offset_min` (міграція 109) — опційне: старі клієнти його ще не
+  // шлють, тоді лишається NULL (ADR-0078 device-local day boundary).
+  // Поза реальним діапазоном UTC-офсетів (curl бай-пасить клієнтську
+  // перевірку) — reject, а не мовчазний NULL (pre-beta input-boundaries
+  // audit, CodeRabbit PR #627).
+  const tzOffsetMin = parseOptionalTzOffsetMin(row["tz_offset_min"]);
+  if (tzOffsetMin === "invalid") {
+    return { status: "rejected", reason: "invalid_tz_offset_min" };
+  }
+
   await client.query(
     `INSERT INTO nutrition_goal_periods
        (id, user_id, effective_from, kcal, protein_g, fat_g, carbs_g,
-        water_ml, origin, created_at, updated_at, deleted_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        water_ml, origin, tz_offset_min, created_at, updated_at, deleted_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      ON CONFLICT (id) DO NOTHING`,
     [
       id,
@@ -178,6 +214,7 @@ export async function applyNutritionGoalPeriods(
       carbsG ?? null,
       waterMl ?? null,
       origin,
+      tzOffsetMin,
       createdAt ?? clientTs,
       clientTs,
       deletedAt ?? null,

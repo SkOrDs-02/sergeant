@@ -45,6 +45,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { computeAdviceId } from "@sergeant/insights";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -55,6 +56,7 @@ import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
+import { getAnalyticsConsent } from "../../../core/observability/analyticsConsent";
 import { markSignalShown } from "../../../core/observability/valueSignalAttribution";
 
 /** Де саме рендериться картка — property `surface` контракту `value_signal_*`. */
@@ -143,6 +145,22 @@ export function InsightCard({
       signal: kind,
       surface,
     });
+    // Стабільний крос-девайсний advice_id (беta-хардненінг, рішення
+    // founder-а) — доповнює VALUE_SIGNAL_SHOWN вище, а не замінює. `id` тут
+    // уже детерміноване й cross-device-стабільне (генерується з domain-
+    // контенту, напр. category id), тож `computeAdviceId(kind, id)` дає
+    // ОДИН і той самий advice_id на будь-якому пристрої того самого
+    // акаунта — на відміну від `ai_advice_shown`, чий `advice_id`
+    // навмисно лишається випадковим uuid (окреме рішення, не тут).
+    // Той самий `shownOnce`-guard, ключований по `id`, коректно дедуплікує
+    // й `advice_id`, бо мапа `id → advice_id` детермінована.
+    if (getAnalyticsConsent()) {
+      trackEvent(ANALYTICS_EVENTS.ADVICE_SHOWN, {
+        advice_id: computeAdviceId(kind, id),
+        advice_type: kind,
+        module,
+      });
+    }
   }, [id, kind, module, surface, isHidden]);
 
   if (isHidden) return null;
@@ -158,6 +176,13 @@ export function InsightCard({
       signal: kind,
       surface,
     });
+    if (getAnalyticsConsent()) {
+      trackEvent(ANALYTICS_EVENTS.ADVICE_DISMISSED, {
+        advice_id: computeAdviceId(kind, id),
+        advice_type: kind,
+        module,
+      });
+    }
     dismiss(id);
     setHidden(true);
     onDismiss?.();

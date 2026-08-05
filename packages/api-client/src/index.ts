@@ -37,6 +37,8 @@ export {
   type User,
   type UserPreferences,
   type UserPreferencesPatch,
+  type UserProfilePayload,
+  type UserProfileResponse,
 } from "./endpoints/me";
 
 export {

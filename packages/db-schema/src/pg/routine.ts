@@ -160,7 +160,17 @@ export const routineHabits = pgTable(
     /**
      * Датовані інтервали планованої паузи (Хвиля 4, канон `routine.md` §4).
      * Форма: `[{ "from": "YYYY-MM-DD", "to": "YYYY-MM-DD" | null }]`.
-     * Колонка `paused` лишається поруч як легасі-прапор для старих клієнтів.
+     *
+     * Колонка `paused` (вище) НЕ є мертвим легасі-прапором для «старих
+     * клієнтів» — pre-beta schema-debt аудит 2026-08-04 підтвердив живих
+     * читачів/писарів по обидва боки: сервер (`applySyncFullState.ts`
+     * `readBoolField(row, "paused")` на INSERT/UPDATE,
+     * `lib/reminders/sweep.ts` `SELECT ... t.paused` для гейту нагадувань)
+     * і клієнт (`routine-domain/src/reducers.ts`, `sqliteReader.ts` /
+     * `sqliteWriter/adapter.ts` у web+mobile). Two-phase DROP (Hard Rule #4)
+     * тут ще не пройшло Phase 1 (сервер має спершу перестати
+     * читати/писати `paused`) — не видаляй колонку без окремого
+     * server-side PR, що це зробить.
      */
     pauseIntervals: jsonb("pause_intervals").notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })

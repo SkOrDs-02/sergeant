@@ -81,14 +81,19 @@ const mockUser = {
 const refreshMock = vi.fn(async () => undefined);
 const logoutMock = vi.fn(async () => undefined);
 
+const mockAuthValue = {
+  user: mockUser,
+  logout: logoutMock,
+  refresh: refreshMock,
+  isLoading: false,
+  status: "authenticated" as const,
+};
 vi.mock("../auth/AuthContext.jsx", () => ({
-  useAuth: () => ({
-    user: mockUser,
-    logout: logoutMock,
-    refresh: refreshMock,
-    isLoading: false,
-    status: "authenticated",
-  }),
+  useAuth: () => mockAuthValue,
+  // `BiometricsSection` → `useBiometrics` reads the non-throwing variant
+  // (see `useBiometrics.ts`); mirror the same authenticated value here so
+  // this suite still exercises the "signed in" write-through branch.
+  useAuthOptional: () => mockAuthValue,
 }));
 
 import { ProfilePage } from "./ProfilePage";

@@ -23,6 +23,15 @@
  * Deliberately **out of scope** (see PR notes — owner decision):
  *   - the per-user OPFS SQLite DB file → handled by `wipeSqliteDb()` in
  *     `AuthContext.logout`; other users' files stay isolated by filename;
+ *   - the `kvvfs-*` `localStorage` keys backing the sqlite-wasm `kvvfs`
+ *     fallback (Safari < 17 / iOS < 16.4) → also handled by `wipeSqliteDb()`,
+ *     which runs a row-level `DELETE ... WHERE user_id = ?` scoped to the
+ *     signed-out user's own rows instead of a wholesale key-removal. `kvvfs`
+ *     is a single physical store shared by every partition on the device (no
+ *     per-user filename, unlike OPFS), so blindly deleting every `kvvfs-*`
+ *     key here would erase the anonymous visitor's rows too — see
+ *     `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+ *     § «Відомий залишковий ризик»;
  *   - the authoritative nutrition IndexedDB stores (saved recipes, meal
  *     photos, food/barcode catalogue) and the `sync_meta` offline-op queue —
  *     clearing those risks losing un-synced local-first data, so they want a
@@ -40,10 +49,12 @@ import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
  * Prefix families for app-owned `localStorage` keys whose exact names are
  * versioned / dynamic (e.g. `hub_weekly_digest_<date>`,
  * `finyk_tx_day_collapse_v1`, `sergeant.profile.<x>.open`) and so are not all
- * enumerable from {@link STORAGE_KEYS}. `kvvfs-` is the sqlite-wasm
- * `JsStorageDb("local")` backing store (the `kvvfs-local-*` keys), and
- * `finto_` is the pre-rename legacy Finyk prefix still drained by
- * `storageManager`.
+ * enumerable from {@link STORAGE_KEYS}. `finto_` is the pre-rename legacy
+ * Finyk prefix still drained by `storageManager`.
+ *
+ * `kvvfs-` (the sqlite-wasm `JsStorageDb("local")` backing store) is
+ * intentionally NOT in this list — see the "Deliberately out of scope"
+ * note in the module doc comment above.
  */
 const APP_OWNED_LS_PREFIXES = [
   "hub_",
@@ -56,7 +67,6 @@ const APP_OWNED_LS_PREFIXES = [
   "pwa_",
   "sync_origin_device_id",
   "sergeant.",
-  "kvvfs-",
 ] as const;
 
 /**

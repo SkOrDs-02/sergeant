@@ -166,6 +166,13 @@ export const nutritionPantryEvents = sqliteTable(
     occurredAt: text("occurred_at")
       .notNull()
       .default(sql`(datetime('now'))`),
+    /**
+     * Client timezone offset (minutes) at event time — client migration
+     * `006_nutrition_events_tz_offset.sql`, mirrors PG migration 109
+     * (pre-beta schema-debt audit 2026-08-04). Nullable: NULL for
+     * pre-006 rows / clients not yet sending it.
+     */
+    tzOffsetMin: integer("tz_offset_min"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -236,6 +243,12 @@ export const nutritionGoalPeriods = sqliteTable(
     carbsG: real("carbs_g"),
     waterMl: integer("water_ml"),
     origin: text().notNull().default("manual"),
+    /**
+     * Client timezone offset (minutes) at the moment the goal step was
+     * recorded — client migration `006_nutrition_events_tz_offset.sql`,
+     * mirrors PG migration 109 (pre-beta schema-debt audit 2026-08-04).
+     */
+    tzOffsetMin: integer("tz_offset_min"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

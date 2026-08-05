@@ -100,6 +100,59 @@ export const BiometricsSchema = z.object({
 
 export type Biometrics = z.infer<typeof BiometricsSchema>;
 
+/**
+ * Extends the persisted `hub_biometrics_v1` blob with the Better Auth user
+ * id that wrote it, WITHOUT extending the public {@link Biometrics} type
+ * consumed everywhere else in the app (BMR calc, dual-write mirrors, and
+ * critically `pushBiometricsToServer`'s wire payload — `ownerId` must
+ * never reach the server). `readBiometrics()` still parses through
+ * {@link BiometricsSchema}, which silently drops unknown keys, so every
+ * existing caller keeps getting exactly the shape it always has.
+ *
+ * A missing `ownerId` (a value written before this field existed) parses
+ * to `null` — "unknown owner". See `profileWriteThrough.ts`'s
+ * cross-account upload guard (CodeRabbit PR #627) for why that must never
+ * be treated as "belongs to the current user".
+ */
+const StoredBiometricsSchema = BiometricsSchema.extend({
+  ownerId: z.string().nullable().default(null),
+});
+
+/**
+ * The Better Auth user id of the CURRENT device session, or `null` when
+ * signed out / anonymous. Set once per session change (mirrors
+ * `setSqliteUser`'s pattern in `core/db/sqlite.ts`) — see
+ * {@link setBiometricsOwner}.
+ */
+let currentBiometricsOwner: string | null = null;
+
+/**
+ * Records which user the CURRENT device session belongs to. Every
+ * subsequent {@link writeBiometrics} call — whether triggered by
+ * `BiometricsSection`, a Fizruk weigh-in mirror, or `profileWriteThrough`'s
+ * own server-hydrate — stamps its `ownerId` with this value, so a later
+ * reconcile on a SHARED device can tell whose data is actually sitting in
+ * this single global localStorage key. Called by `useProfileWriteThroughBoot`
+ * on every `userId` change, and defensively by `reconcileBiometricsWithServerProfile`
+ * itself (CodeRabbit PR #627).
+ */
+export function setBiometricsOwner(userId: string | null): void {
+  currentBiometricsOwner = userId;
+}
+
+/**
+ * The Better Auth user id last stamped onto the CURRENTLY persisted
+ * `hub_biometrics_v1` blob, or `null` when unknown — either a legacy value
+ * written before this field existed, or one written while signed
+ * out/anonymous.
+ */
+export function readBiometricsOwnerId(): string | null {
+  return safeReadLSValidated(BIOMETRICS_KEY, StoredBiometricsSchema, {
+    ...BIOMETRICS_DEFAULT,
+    ownerId: null,
+  }).ownerId;
+}
+
 const EPOCH = new Date(0).toISOString();
 
 export const BIOMETRICS_DEFAULT: Biometrics = {
@@ -138,8 +191,15 @@ export function subscribeBiometrics(listener: BiometricsListener): () => void {
   };
 }
 
+/**
+ * Persists `b`, stamping the CURRENT session's `ownerId` (see
+ * {@link setBiometricsOwner}) onto the raw stored blob — invisible to
+ * every caller here (they keep getting exactly `Biometrics`, no
+ * `ownerId`), but readable back via {@link readBiometricsOwnerId} for
+ * `profileWriteThrough.ts`'s cross-account upload guard.
+ */
 export function writeBiometrics(b: Biometrics): void {
-  safeWriteLS(BIOMETRICS_KEY, b);
+  safeWriteLS(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
   for (const listener of Array.from(biometricsListeners)) {
     try {
       listener(b);

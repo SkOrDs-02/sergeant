@@ -594,3 +594,20 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
+/**
+ * Non-throwing variant of {@link useAuth} — `null` when rendered outside
+ * `AuthProvider` instead of throwing.
+ *
+ * For shared hooks that are consumed BOTH by screens deep inside the
+ * authenticated app shell AND by narrower call-sites that don't need the
+ * full provider tree (e.g. a unit test rendering a single presentational
+ * component, or a future non-authenticated embed). `useBiometrics`
+ * (`core/profile/useBiometrics.ts`) is the first consumer: it only needs
+ * `user?.id` to decide whether to fire the `/api/me/profile` write-through
+ * push, and must not force every existing consumer of the hook to be
+ * wrapped in `AuthProvider` just to read a local biometrics cache.
+ */
+export function useAuthOptional(): AuthContextValue | null {
+  return useContext(AuthContext);
+}

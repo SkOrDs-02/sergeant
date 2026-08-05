@@ -14,6 +14,17 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
+// This suite is about the form itself, not the /api/me/profile
+// write-through leg (covered by `useBiometrics.test.tsx` and
+// `profileWriteThrough.test.ts`) — stub both to signed-out/no-op so no
+// real AuthProvider or network mock is needed here.
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => ({ user: null }),
+}));
+vi.mock("./profileWriteThrough", () => ({
+  pushBiometricsToServer: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Журнал ваги персиститься через dual-write пайплайн (SQLite — source of
 // truth після Stage 12 / PR #070f), а не через localStorage — перехоплюємо
 // trigger, щоб асертити дзеркалення Profile-ваги у fizruk daily log.

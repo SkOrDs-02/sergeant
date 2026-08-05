@@ -718,8 +718,7 @@ Better Auth; але рядок 585 виправляється тривіальн
 
 Причина механічна. Сусідні міграції по цій таблиці мають `.down.sql`
 (`012` — токен-лічильники, `036` — `usd_micros`, `059` — `est_cost_usd`), а
-[`091_ai_usage_endpoint_and_cache.sql`](../../../apps/server/src/migrations/091_ai_usage_endpoint_and_cache.sql)
-— ні. Тому на down-проході чотири колонки 091 **лишаються**, а `012/036/059`
+`091_ai_usage_endpoint_and_cache.sql` — ні. Тому на down-проході чотири колонки 091 **лишаються**, а `012/036/059`
 переapply-яться після них і стають в кінець. Порядок колонок розходиться.
 
 Сам по собі порядок колонок майже нікого не турбує — доки хтось не напише
@@ -727,11 +726,21 @@ Better Auth; але рядок 585 виправляється тривіальн
 знахідка інша: **відкотитись за 091 неможливо** — колонки лишаться, і це
 асиметрія покриття саме на таблиці обліку витрат.
 
-**Фікс:** додати `091_ai_usage_endpoint_and_cache.down.sql` із
-`DROP COLUMN IF EXISTS` на ті ж чотири колонки. Тоді down-набір стає
-симетричним, порядок переapply збігається з forward, і гейт зеленіє.
-Робота для `sergeant-data-and-migrations` (Hard Rule #4), не для цього PR —
-дефект успадкований, у гілці не змінено жодної міграції.
+**Фікс:** додати `.down.sql` із `DROP COLUMN IF EXISTS` на ті ж чотири
+колонки. Тоді down-набір стає симетричним, порядок переapply збігається
+з forward, і гейт зеленіє. Робота для `sergeant-data-and-migrations`
+(Hard Rule #4), не для цього PR — дефект успадкований, у гілці не
+змінено жодної міграції.
+
+> **Статус на 2026-08-05: закрито** у PR [#627](https://github.com/SkOrDs-02/sergeant/pull/627).
+> Там же розв'язано колізію нумерації 091: міграція переїхала в
+> [`104_ai_usage_endpoint_and_cache.sql`](../../../apps/server/src/migrations/104_ai_usage_endpoint_and_cache.sql)
+> (перейменування рядка в `migrations`-таблиці — окремою
+> [`105_rename_091_ai_usage_endpoint_and_cache.sql`](../../../apps/server/src/migrations/105_rename_091_ai_usage_endpoint_and_cache.sql)),
+> і до неї додано парну
+> [`104_ai_usage_endpoint_and_cache.down.sql`](../../../apps/server/src/migrations/104_ai_usage_endpoint_and_cache.down.sql).
+> Через це старий шлях `091_…sql` більше не існує — посилання вище знято
+> навмисно, щоб link-checker не ловив мертвий файл.
 
 ## Що підтверджено закритим
 

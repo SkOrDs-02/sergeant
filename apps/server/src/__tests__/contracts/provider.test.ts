@@ -15,12 +15,18 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 37 consumer interactions across 26
-// unique routes, including the chat-usage extension and the
-// billing/privat/finyk consumer expansion (2026-08-04). Of those, 8 routes are fully-verified
-// here via supertest replay against `createApp()`:
+// **Coverage:** the pact file has 41 consumer interactions across 29
+// unique routes, including the chat-usage extension, the
+// billing/privat/finyk consumer expansion (2026-08-04), and the
+// preferences/profile consumer expansion (2026-08-04, pre-beta
+// schema-debt audit: `healthDataConsent` + write-through `/api/me/profile`).
+// Of those, 11 routes are fully-verified here via supertest replay against
+// `createApp()`:
 //
 //   - GET  /api/v1/me                       (hub persona)
+//   - GET  /api/v1/me/preferences           (settings persona, healthDataConsent)
+//   - GET  /api/v1/me/profile                (settings persona, defaults-not-404)
+//   - PUT  /api/v1/me/profile                (settings persona, write-through roundtrip)
 //   - GET  /api/v1/mono/accounts             (finyk persona, bigint coercion)
 //   - GET  /api/v1/mono/sync-state           (finyk persona)
 //   - GET  /api/v1/mono/transactions         (finyk persona, bigint coercion)
@@ -172,6 +178,33 @@ function findInteraction(
   return match;
 }
 
+/**
+ * `GET /api/v1/me/preferences` has two consumer interactions (consented +
+ * legacy-server-without-healthDataConsent). `findInteraction` only returns
+ * the first method+path match, so this variant additionally filters by a
+ * substring of `description` for the routes where more than one
+ * interaction shares the same method+path.
+ */
+function findInteractionByDescription(
+  pact: PactFile,
+  method: string,
+  pathStr: string,
+  descriptionIncludes: string,
+): PactInteraction {
+  const match = pact.interactions.find(
+    (i) =>
+      i.request.method === method &&
+      i.request.path === pathStr &&
+      i.description.includes(descriptionIncludes),
+  );
+  if (!match) {
+    throw new Error(
+      `No interaction in pact for ${method} ${pathStr} matching description "${descriptionIncludes}".`,
+    );
+  }
+  return match;
+}
+
 // ── Test env / mock reset ────────────────────────────────────────────────────
 
 // `ENV_KEYS` here are the per-test env vars (VAPID is module-load-once but
@@ -205,10 +238,10 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 37 expected consumer interactions across 26 routes", () => {
+  it("pact file has 41 expected consumer interactions across 29 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(37);
+    expect(pact.interactions).toHaveLength(41);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -240,6 +273,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/privat/connect",
       "POST /api/v1/privat/disconnect",
       "POST /api/v1/finyk/manual-expenses",
+      // preferences/profile consumer expansion (3) — pre-beta schema-debt
+      // audit (2026-08-04): healthDataConsent + write-through user_profile.
+      "GET /api/v1/me/preferences",
+      "GET /api/v1/me/profile",
+      "PUT /api/v1/me/profile",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -280,6 +318,108 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
     expect(res.status).toBe(interaction.response.status);
     expect(res.body).toEqual(expected);
+  });
+
+  // ── GET /api/v1/me/preferences ─────────────────────────────────────────────
+  //
+  // Single SELECT against `user_preferences`. Replays the "consented"
+  // interaction (`healthDataConsent: true`) — the sibling "legacy server"
+  // interaction is a pure consumer-side default-fallback test (no server
+  // round-trip to replay: an old DB row simply has the column, migration
+  // 111 backfills `DEFAULT false`).
+  it("GET /api/v1/me/preferences replays against the real handler (settings persona, healthDataConsent)", async () => {
+    const interaction = findInteractionByDescription(
+      pact,
+      "GET",
+      "/api/v1/me/preferences",
+      "consented",
+    );
+    const expected = interaction.response.body as {
+      analytics: boolean;
+      aiMemory: boolean;
+      pushNotifications: boolean;
+      sergeantNudges: boolean;
+      healthDataConsent: boolean;
+      updatedAt: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: expected.analytics,
+          ai_memory: expected.aiMemory,
+          push_notifications: expected.pushNotifications,
+          sergeant_nudges: expected.sergeantNudges,
+          health_data_consent: expected.healthDataConsent,
+          updated_at: expected.updatedAt,
+        },
+      ],
+    });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    expect(typeof res.body.healthDataConsent).toBe("boolean");
+  });
+
+  // ── GET /api/v1/me/profile ─────────────────────────────────────────────────
+  //
+  // Write-through singleton (migration 115, NOT oplog-sync). No
+  // `user_profile` row for this pact persona → the handler's "defaults,
+  // not 404" branch fires: `{ profile: {}, updatedAt: null }`.
+  it("GET /api/v1/me/profile replays against the real handler (settings persona, defaults-not-404)", async () => {
+    const interaction = findInteraction(pact, "GET", "/api/v1/me/profile");
+    const expected = interaction.response.body as {
+      profile: Record<string, unknown>;
+      updatedAt: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+  });
+
+  // ── PUT /api/v1/me/profile ─────────────────────────────────────────────────
+  //
+  // Single INSERT ... ON CONFLICT DO UPDATE ... RETURNING against
+  // `user_profile`. The pact locks a small biometrics payload roundtrip.
+  it("PUT /api/v1/me/profile replays against the real handler (settings persona, write-through roundtrip)", async () => {
+    const interaction = findInteraction(pact, "PUT", "/api/v1/me/profile");
+    const expected = interaction.response.body as {
+      profile: Record<string, unknown>;
+      updatedAt: string | null;
+    };
+    const sentBody = interaction.request.body as {
+      profile: Record<string, unknown>;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
+    queryMock.mockResolvedValueOnce({
+      rows: [{ payload: expected.profile, updated_at: expected.updatedAt }],
+    });
+
+    const app = createApp();
+    const res = await request(app)
+      .put(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send(sentBody);
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    expect(typeof res.body.updatedAt).toBe("string");
   });
 
   // ── GET /api/v1/mono/accounts ──────────────────────────────────────────────

@@ -1,4 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../../modules/finyk/lib/sqliteReader";
 
 vi.mock("../../hubChatUtils", () => ({ ls: vi.fn() }));
 vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
@@ -60,6 +64,24 @@ beforeEach(() => {
     lsFixtures.has(key) ? lsFixtures.get(key) : fallback,
   );
   mockResolveMeta.mockReturnValue(null);
+  // hide/split валідують існування tx через entityLookup (гард проти
+  // вигаданих моделлю id, 2ae99a1) — happy-path кейси сідять "tx1" у кеш.
+  __setFinykSqliteStateCacheForTests({
+    manualExpenses: [
+      {
+        id: "tx1",
+        date: "2026-04-22",
+        description: "АТБ",
+        amount: 200,
+        category: "food",
+      },
+    ],
+    customCategories: [{ id: "custom_cat", label: "Кастомна" }],
+  });
+});
+
+afterEach(() => {
+  clearFinykSqliteCache();
 });
 
 // ─── createTransaction ──────────────────────────────────────────────────────

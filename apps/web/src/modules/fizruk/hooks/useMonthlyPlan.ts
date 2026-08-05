@@ -56,8 +56,12 @@ function loadState(): MonthlyPlanState {
 /**
  * Cache-first initial state: prefer the SQLite cache (warm on repeat
  * boots) over the LS blob. Teardown Phase 3 removed the LS write-mirror;
- * `loadState()` remains only as a pre-warm fallback reading whatever
- * `residualImport.ts` drained on boot (empty once drained).
+ * `loadState()` remains only as a pre-warm fallback for whatever this
+ * device's LS blob already held. The boot-time drain that used to
+ * refresh this blob from residual LS data (`residualImport.ts`) was
+ * removed 2026-08 — no pre-beta testers were left with pre-SQLite LS
+ * state to migrate — so on a fresh install this fallback simply misses
+ * and `loadState()` returns `DEFAULT_STATE`.
  */
 function loadInitialState(): MonthlyPlanState {
   const cache = getCachedFizrukSqliteState();

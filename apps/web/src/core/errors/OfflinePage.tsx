@@ -1,16 +1,15 @@
 /**
- * @scaffolded
+ * @status Active
  * @owner @Skords-01
- * @nextStep Register the `/offline` path in `StandaloneRoutes.tsx`
- *           (`apps/web/src/core/app/StandaloneRoutes.tsx`) and add the
- *           offline navigation-fallback to `apps/web/src/sw.ts` precache
- *           strategy. Once mounted, drop the tag.
  *
- * Canonical `/offline` surface. Intended to be shown by the service worker
- * when the browser can't reach the network and no cached page is available,
- * and mountable as a standalone route by `StandaloneRoutes`. Uses the
- * `<EmptyState>` primitive + `OfflineIllustration` so the page inherits
- * the design system's a11y, motion, and dark-mode recolouring contracts.
+ * Canonical `/offline` surface, registered as a standalone route in
+ * `StandaloneRoutes.tsx` (`OFFLINE_PATH`). The service worker's offline
+ * navigation fallback (`sw/cache.ts`'s `setCatchHandler`, page-audit-10 F1)
+ * already serves the precached SPA shell for any uncached navigation while
+ * offline, so this page is reachable that way too — no separate SW change
+ * needed once the client route exists. Uses the `<EmptyState>` primitive +
+ * `OfflineIllustration` so the page inherits the design system's a11y,
+ * motion, and dark-mode recolouring contracts.
  *
  * The tone follows the brandbook voice: warning, not danger. "bg-warning"
  * reads as "we're paused, not broken" — data is queued, not lost

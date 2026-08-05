@@ -236,10 +236,14 @@ export const STORAGE_KEYS = {
   // ─── Nutrition ────────────────────────────────────────────────────────
   // Stage 8 PR #057n-tombstone: the keys below are tombstoned. The
   // SQLite-WASM (web) / expo-sqlite (mobile) `nutrition_*` tables are
-  // the canonical source of truth. The boot-time residual-import helper
-  // (`apps/{web,mobile}/src/modules/nutrition/lib/residualImport.ts`)
-  // imports any leftover values written by older builds into SQLite
-  // and then deletes the LS / MMKV entries. Entries are kept here (not
+  // the canonical source of truth. Mobile still runs a boot-time
+  // residual-import helper (`apps/mobile/src/modules/nutrition/lib/
+  // residualImport.ts`) that imports any leftover MMKV values into
+  // SQLite and then deletes the entries. Web's counterpart
+  // (`apps/web/src/modules/nutrition/lib/residualImport.ts`) was a
+  // pre-beta, one-time LS→SQLite drain for existing testers — removed
+  // 2026-08 once no such users existed to migrate (see git history for
+  // the pre-removal implementation). Entries are kept here (not
   // deleted) so legacy cross-module reads / fixtures still resolve to
   // the same string literals. **Do NOT add new reads/writes against
   // these keys.**

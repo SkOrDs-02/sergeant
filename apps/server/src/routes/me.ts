@@ -6,6 +6,8 @@ import {
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
+  UserProfilePutBodySchema,
+  UserProfileResponseSchema,
   type MeResponse,
 } from "@sergeant/shared";
 import { parseBody, requireSession, setModule } from "../http/index.js";
@@ -16,6 +18,7 @@ import {
   getUserPreferences,
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
+import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
 
 type AuthedUser = {
   id: string;
@@ -93,6 +96,33 @@ export function createMeRouter(): Router {
       const patch = parseBody(UserPreferencesPatchSchema, req);
       const payload = UserPreferencesSchema.parse(
         await upsertUserPreferences(pool, user.id, patch),
+      );
+      res.json(payload);
+    },
+  );
+
+  // Write-through профіль/біометрія (migration 115) — НЕ oplog-sync,
+  // звичайний GET/PUT upsert по user_id (див. modules/me/profile.ts).
+  r.get(
+    "/api/me/profile",
+    requireSession(),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const payload = UserProfileResponseSchema.parse(
+        await getUserProfile(pool, user.id),
+      );
+      res.json(payload);
+    },
+  );
+
+  r.put(
+    "/api/me/profile",
+    requireSession(),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const body = parseBody(UserProfilePutBodySchema, req);
+      const payload = UserProfileResponseSchema.parse(
+        await upsertUserProfile(pool, user.id, body.profile),
       );
       res.json(payload);
     },

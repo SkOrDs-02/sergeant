@@ -28,6 +28,16 @@ const MeResponse = schemas.MeResponseSchema.meta({
   id: "MeResponse",
   description: "Відповідь на GET /api/me.",
 });
+const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
+  id: "UserProfilePutBody",
+  description:
+    "PUT /api/me/profile request body — write-through профіль/біометрія (migration 115, НЕ oplog-sync).",
+});
+const UserProfileResponse = schemas.UserProfileResponseSchema.meta({
+  id: "UserProfileResponse",
+  description:
+    "Відповідь GET/PUT /api/me/profile. `profile: {}` / `updatedAt: null` — дефолт, коли рядка ще немає.",
+});
 const ChatRequest = schemas.ChatRequestSchema.meta({
   id: "ChatRequest",
   description:
@@ -332,6 +342,8 @@ const ApiError = z
 export const namedSchemas = {
   User,
   MeResponse,
+  UserProfilePutBody,
+  UserProfileResponse,
   ChatRequest,
   ChatUsageResponse,
   RecallMemoryRequest,

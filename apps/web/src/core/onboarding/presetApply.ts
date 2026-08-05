@@ -17,9 +17,13 @@ import {
 // path: it now goes through `saveRoutineState` (canonical SQLite writer)
 // instead of the tombstoned `hub_routine_v1` LS key.
 
-// Kept for demo-seed bootstrap compatibility (residualImport drains this
-// key into SQLite on boot). applyRoutinePreset no longer writes here, but
-// the constant is preserved so residualImport.ts keeps functioning.
+// `applyRoutinePreset` no longer writes here (SQLite is canonical), but
+// still reads this key as a defensive pre-warm-window fallback below —
+// see the try/catch in `applyRoutinePreset`. The boot-time residual-import
+// drain that ALSO used to read this key (`residualImport.ts`) was removed
+// 2026-08 once no pre-beta testers were left with pre-SQLite LS data to
+// migrate; that removal does not affect this fallback's own reason to
+// keep the constant.
 const ROUTINE_STATE_KEY = "hub_routine_v1";
 
 export type RoutinePreset = {

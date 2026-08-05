@@ -56,6 +56,16 @@ export const UserPreferencesSchema = z.object({
    * тож «поля нема» і «поле false» означають рівно те саме.
    */
   sergeantNudges: z.boolean().default(false),
+  /**
+   * Explicit consent for processing health-adjacent data (fizruk
+   * workouts/wellbeing, nutrition logs) per GDPR Art. 9 — special category
+   * personal data requires explicit opt-in, never inferred silence.
+   * `.default(false)` for the same rolling-deploy reason as
+   * `sergeantNudges`: web/server deploy independently (Vercel vs Coolify),
+   * so an old server response missing the field must not throw ZodError
+   * client-side. Matches the DB column DEFAULT (migration 111).
+   */
+  healthDataConsent: z.boolean().default(false),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -66,6 +76,7 @@ export const UserPreferencesPatchSchema = z
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
     sergeantNudges: z.boolean().optional(),
+    healthDataConsent: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
@@ -103,6 +114,111 @@ export const MeDeleteResponseSchema = z.object({
   deletedAt: z.string().datetime({ offset: true }),
 });
 export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
+// ────────────────────── Profile write-through (/api/me/profile) ───────────
+
+/**
+ * Serialized size cap for the profile blob (migration 115 `user_profile.
+ * payload`). ~16KB — generous for a profile/biometrics blob (mirrors
+ * `USER_PROFILE` + `HUB_BIOMETRICS` client-side shapes,
+ * `packages/shared/src/sync/modules.ts`), tight enough that a `curl` can't
+ * turn this write-through singleton into a free-form blob store.
+ */
+export const USER_PROFILE_MAX_BYTES = 16 * 1024;
+
+/**
+ * Max OBJECT property-nesting depth for the profile payload. The top-level
+ * object itself counts as depth 1, so depth 3 allows e.g.
+ * `{ biometrics: { history: [{ weightKg: 70 }] } }` (biometrics → history →
+ * the array-element object = 3 levels of object nesting) but rejects a 4th
+ * level. Arrays are transparent for this count — a list is a sibling
+ * collection, not an extra hierarchy level, so `weightHistory: [...]`
+ * (a very ordinary profile shape) doesn't get penalized just for being an
+ * array. Guards against pathological recursive payloads (JSON-bomb style)
+ * reaching JSONB storage unchecked — this is genuinely a write-through
+ * blob (no column-level schema, migration 115's own comment), so depth is
+ * the one structural invariant we DO enforce.
+ */
+export const USER_PROFILE_MAX_DEPTH = 3;
+
+function isJsonContainer(
+  value: unknown,
+): value is Record<string, unknown> | unknown[] {
+  return Array.isArray(value) || (value !== null && typeof value === "object");
+}
+
+/**
+ * Depth of OBJECT property nesting only. Arrays are transparent: their
+ * elements are evaluated at the array's own depth, not depth+1 — so an
+ * array of objects costs exactly as much depth as the objects it contains,
+ * not one extra level for the array wrapper itself.
+ */
+function jsonNestingDepth(value: unknown): number {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 0;
+    return Math.max(...value.map((item) => jsonNestingDepth(item)));
+  }
+  if (value !== null && typeof value === "object") {
+    const containerChildren = Object.values(
+      value as Record<string, unknown>,
+    ).filter(isJsonContainer);
+    if (containerChildren.length === 0) return 1;
+    return 1 + Math.max(...containerChildren.map(jsonNestingDepth));
+  }
+  return 0;
+}
+
+/**
+ * The profile payload itself — an open-ended JSON object (no column-level
+ * schema by design, migration 115), bounded by size and nesting depth.
+ * `z.record` already rejects arrays/primitives at the top level (must be a
+ * plain object).
+ */
+export const UserProfilePayloadSchema = z
+  .record(z.string(), z.unknown())
+  .refine(
+    (value) => {
+      try {
+        // `String.length` counts UTF-16 code units, not bytes — Unicode text
+        // (Cyrillic, emoji) that fits well under the 16KB cap by `.length`
+        // can still exceed it once encoded as the UTF-8 bytes Postgres/JSONB
+        // and the HTTP wire actually store/transmit (every non-Latin-1
+        // codepoint costs 2-4 UTF-8 bytes but only 1-2 UTF-16 units).
+        // CodeRabbit PR #627 review: measure real bytes via `TextEncoder`.
+        return (
+          new TextEncoder().encode(JSON.stringify(value)).byteLength <=
+          USER_PROFILE_MAX_BYTES
+        );
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: `profile payload must be at most ${USER_PROFILE_MAX_BYTES} bytes`,
+    },
+  )
+  .refine((value) => jsonNestingDepth(value) <= USER_PROFILE_MAX_DEPTH, {
+    message: `profile payload must not nest more than ${USER_PROFILE_MAX_DEPTH} levels deep`,
+  });
+export type UserProfilePayload = z.infer<typeof UserProfilePayloadSchema>;
+
+/** Request body for `PUT /api/me/profile`. */
+export const UserProfilePutBodySchema = z.object({
+  profile: UserProfilePayloadSchema,
+});
+export type UserProfilePutBody = z.infer<typeof UserProfilePutBodySchema>;
+
+/**
+ * Response shape for both `GET /api/me/profile` and `PUT /api/me/profile`.
+ * `profile: {}` / `updatedAt: null` is the default when no row exists yet
+ * (first-ever read before any write) — same "defaults, not 404" pattern as
+ * `UserPreferencesSchema`.
+ */
+export const UserProfileResponseSchema = z.object({
+  profile: UserProfilePayloadSchema,
+  updatedAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
 
 /** Модерація: чат-повідомлення. */
 export const ChatMessage = z.object({

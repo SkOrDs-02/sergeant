@@ -334,6 +334,28 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 ## 🟡 Бажане
 
+### Повернути eager-бюджет до ≤450 kB (винести `vendor-sqlite` з критичного шляху)
+
+**Стан 2026-08-05.** Ліміт eager-бандла ратчетнуто вгору 450 → **470 kB**
+(`scripts/ci/check-eager-bundle.mjs`), бо факт на `origin/main` — **467.7 kB**
+у 111 preload-чанках. Це не був регрес конкретного PR: між ратчетом 2026-08-02
+(факт 430 kB) і 2026-08-05 критичний шлях виріс на ~38 kB, і гейт падав на
+кожному PR незалежно від змісту — тобто перестав бути сигналом. Підняття
+відновило його здатність ловити НОВІ регресії; борг лишився тут.
+
+**Що робити.** Найбільший одиничний кандидат — `vendor-sqlite` (**69.4 kB**
+brotli, друге місце після `vendor-*` 85.4 kB). Він у критичному шляху через
+статичний `import ... from "@sergeant/db-schema/sqlite"` у
+[`apps/web/src/core/db/kvStoreBoot.ts`](../../../apps/web/src/core/db/kvStoreBoot.ts):
+KV-store піднімається на буті, тож проста заміна на `import()` не спрацює —
+потрібен async-boot гейт (перший екран не має чекати на SQLite-WASM) з
+fallback-читанням, поки БД піднімається.
+
+**Ціль.** ≤450 kB після винесення (очікувано ~398 kB), далі опускати ліміт
+слідом за фактом. Орієнтир індустрії — ≤170 kB до інтерактиву на мобільному.
+
+**Верифікація:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size:eager`.
+
 <details>
 <summary>3. ~~Import extensions (.js/.jsx) в TypeScript файлах~~ — Виконано (розгорнути)</summary>
 

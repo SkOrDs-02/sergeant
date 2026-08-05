@@ -7,6 +7,8 @@ import {
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
+  UserProfilePutBodySchema,
+  UserProfileResponseSchema,
   type MeDeleteResponse,
   type AiMemoryClearResponse,
   type AiMemoryDeleteResponse,
@@ -17,6 +19,8 @@ import {
   type User,
   type UserPreferences,
   type UserPreferencesPatch,
+  type UserProfilePayload,
+  type UserProfileResponse,
 } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
 import type { RequestOptions } from "../types";
@@ -38,6 +42,25 @@ export interface MeEndpoints {
     patch: UserPreferencesPatch,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<UserPreferences>;
+  /**
+   * `GET /api/me/profile` — write-through профіль/біометрія (migration 115,
+   * НЕ oplog-sync). "Defaults, not 404": `{ profile: {}, updatedAt: null }`
+   * коли рядка ще немає (новий юзер до першого запису).
+   */
+  getProfile: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<UserProfileResponse>;
+  /**
+   * `PUT /api/me/profile` — повний upsert профілю по `user_id`. Валідує
+   * `profile` через `UserProfilePutBodySchema` (та сама схема, що і
+   * сервер) ДО мережевого запиту — розмір (≤16КБ serialized) і глибина
+   * вкладеності (≤3 рівні object property nesting) ловляться клієнтом
+   * симетрично серверу, тож UI отримує помилку без round-trip.
+   */
+  updateProfile: (
+    profile: UserProfilePayload,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<UserProfileResponse>;
   deleteAccount: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<MeDeleteResponse>;
@@ -85,6 +108,17 @@ export function createMeEndpoints(http: HttpClient): MeEndpoints {
       });
       return UserPreferencesSchema.parse(raw);
     },
+    getProfile: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/me/profile", { signal });
+      return UserProfileResponseSchema.parse(raw);
+    },
+    updateProfile: async (profile, { signal } = {}) => {
+      const body = UserProfilePutBodySchema.parse({ profile });
+      const raw = await http.put<unknown>("/api/me/profile", body, {
+        signal,
+      });
+      return UserProfileResponseSchema.parse(raw);
+    },
     deleteAccount: async ({ signal } = {}) => {
       const raw = await http.del<unknown>("/api/me", undefined, { signal });
       return MeDeleteResponseSchema.parse(raw);
@@ -125,4 +159,6 @@ export type {
   User,
   UserPreferences,
   UserPreferencesPatch,
+  UserProfilePayload,
+  UserProfileResponse,
 };

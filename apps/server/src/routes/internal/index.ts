@@ -21,6 +21,7 @@ import { createStrategicInternalRouter } from "./strategic.js";
 import { createAiMemoryInternalRouter } from "./ai-memory.js";
 import { createAiMemoryDlqInternalRouter } from "./ai-memory-dlq.js";
 import { createDebugWindowInternalRouter } from "./debug-window.js";
+import { createGdprInternalRouter } from "./gdpr.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard +
@@ -88,6 +89,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createAiMemoryInternalRouter({ pool }));
   router.use(createAiMemoryDlqInternalRouter({ pool }));
   router.use(createDebugWindowInternalRouter());
+  router.use(createGdprInternalRouter({ pool }));
 
   return router;
 }
