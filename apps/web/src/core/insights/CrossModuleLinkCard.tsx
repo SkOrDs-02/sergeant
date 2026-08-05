@@ -144,6 +144,7 @@ const EVIDENCE_HEIGHT_PATTERN = [
   14, 18, 11, 20, 16, 22, 13, 19, 17, 21, 12, 15,
 ];
 const MAX_EVIDENCE_MARKS = 16;
+const MAX_EVIDENCE_DAY_ROWS = 14;
 
 function LinkBond({ tier }: { tier: CrossModuleLinkTier }) {
   const cfg = BOND_CONFIG[tier];
@@ -257,7 +258,15 @@ function formatDayLabel(key: string): string {
   });
 }
 
-/** Розгорнутий список спільних днів під смугою доказів. */
+/**
+ * Розгорнутий список спільних днів під смугою доказів.
+ *
+ * Обрізається до `MAX_EVIDENCE_DAY_ROWS` найновіших: сенс списку — дати
+ * ЗМОГУ перевірити твердження, а не вивалити весь ряд. Зі структурними
+ * нулями (`ABSENCE_MEANS` у `dailySeries.ts`) порівняних днів буває всі 60,
+ * і повна таблиця всередині картки читається як стіна. Що приховано —
+ * сказано текстом, а не мовчки.
+ */
 function EvidenceDays({
   days,
   poleA,
@@ -267,10 +276,18 @@ function EvidenceDays({
   poleA: CrossModuleLinkPole;
   poleB: CrossModuleLinkPole;
 }) {
+  const shown = days.slice(0, MAX_EVIDENCE_DAY_ROWS);
+  const truncated = days.length > shown.length;
+
   return (
     <div className="mt-3 border-t border-line pt-3">
       <p className="text-style-caption text-subtle">
         {messages.crossModuleLink.daysNote}
+        {truncated
+          ? ` · ${messages.crossModuleLink.daysTruncated
+              .replace("{shown}", String(shown.length))
+              .replace("{total}", String(days.length))}`
+          : ""}
       </p>
       <table
         className="mt-2 w-full text-style-caption tabular-nums"
@@ -300,7 +317,7 @@ function EvidenceDays({
           </tr>
         </thead>
         <tbody>
-          {days.map((d) => (
+          {shown.map((d) => (
             <tr key={d.key}>
               <th scope="row" className="text-left font-normal text-muted">
                 {formatDayLabel(d.key)}
