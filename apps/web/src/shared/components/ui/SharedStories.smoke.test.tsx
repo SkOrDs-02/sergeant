@@ -134,8 +134,15 @@ describe("shared UI stories", () => {
 
     const stack = renderToastStory(ToastStories.Stack);
     fireEvent.click(screen.getByRole("button", { name: "Стек із 4" }));
-    fireEvent.click(screen.getByRole("button", { name: "6 поспіль (cap=5)" }));
-    expect(screen.getByText("Toast №6")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "6 поспіль (видимі 3)" }),
+    );
+    // Видиме вікно — 3 аркуші; решта чекає у черзі, тож №6 ще не в DOM.
+    expect(screen.queryByText("Toast №6")).not.toBeInTheDocument();
+    expect(screen.getByTestId("toast-tray").children).toHaveLength(3);
+    fireEvent.click(
+      screen.getByRole("button", { name: "4× однакових (коалесинг)" }),
+    );
     stack.unmount();
 
     const duration = renderToastStory(ToastStories.CustomDuration);

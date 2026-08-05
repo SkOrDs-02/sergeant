@@ -25,8 +25,36 @@ export function PWASection() {
       toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
-      toast.error("Не вдалося скинути кеш PWA");
+      // Скидання кешу ідемпотентне — повторна спроба безпечна і це єдиний
+      // вихід із «застряглої версії», заради якої користувач сюди й прийшов.
+      toast.error("Не вдалося скинути кеш PWA", undefined, {
+        label: "Повторити",
+        onClick: () => {
+          void performClearCaches();
+        },
+      });
       logger.warn("[sw] clear caches failed", err);
+    } finally {
+      setSwBusy(false);
+    }
+  };
+
+  const runSwDiagnostics = async () => {
+    setSwBusy(true);
+    try {
+      await swSetDebug(true);
+      const snap = await swGetDebugSnapshot();
+      setSwSnapshot(snap);
+      logger.info("[sw] snapshot", snap);
+      toast.success("SW-діагностику підготовлено");
+    } catch (err) {
+      toast.error("Не вдалося отримати діагностику SW", undefined, {
+        label: "Повторити",
+        onClick: () => {
+          void runSwDiagnostics();
+        },
+      });
+      logger.warn("[sw] debug failed", err);
     } finally {
       setSwBusy(false);
     }
@@ -45,20 +73,8 @@ export function PWASection() {
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}
-          onClick={async () => {
-            setSwBusy(true);
-            try {
-              await swSetDebug(true);
-              const snap = await swGetDebugSnapshot();
-              setSwSnapshot(snap);
-              logger.info("[sw] snapshot", snap);
-              toast.success("SW-діагностику підготовлено");
-            } catch (err) {
-              toast.error("Не вдалося отримати діагностику SW");
-              logger.warn("[sw] debug failed", err);
-            } finally {
-              setSwBusy(false);
-            }
+          onClick={() => {
+            void runSwDiagnostics();
           }}
         >
           Діагностика SW

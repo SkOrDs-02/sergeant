@@ -92,6 +92,8 @@ describe("PWASection", () => {
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith(
         "Не вдалося отримати діагностику SW",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       );
     });
   });
@@ -137,6 +139,8 @@ describe("PWASection", () => {
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith(
         "Не вдалося скинути кеш PWA",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       );
     });
   });

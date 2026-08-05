@@ -143,7 +143,7 @@ describe("NutritionLogPage", () => {
     expect(setAddMealSheetOpen).toHaveBeenCalledWith(true);
   });
 
-  it("clicking 'Видалити meal' calls handleRemoveMeal and fires an info toast (undo pattern)", async () => {
+  it("clicking 'Видалити meal' calls handleRemoveMeal and fires a success toast (undo pattern)", async () => {
     const handleRemoveMeal = vi.fn();
     const handleRestoreMeal = vi.fn();
     const log = makeLog({ handleRemoveMeal, handleRestoreMeal });
@@ -158,11 +158,12 @@ describe("NutritionLogPage", () => {
     );
 
     expect(handleRemoveMeal).toHaveBeenCalledTimes(1);
-    // showUndoToast always calls toast.show with type "info"
+    // showUndoToast always calls toast.show with type "success" — це
+    // підтвердження результату дії користувача, а не системна нотифікація.
     expect(toast.show).toHaveBeenCalledTimes(1);
     const [, toastType] = (toast.show as ReturnType<typeof vi.fn>).mock
       .calls[0] as [unknown, string];
-    expect(toastType).toBe("info");
+    expect(toastType).toBe("success");
   });
 
   it("the undo callback inside the toast calls handleRestoreMeal", async () => {

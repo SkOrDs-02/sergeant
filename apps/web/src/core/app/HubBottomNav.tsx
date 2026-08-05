@@ -7,6 +7,10 @@ import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { useReducedMotion } from "@shared/hooks/useReducedMotion";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
 import { getPagePrefetchProps, type PageKey } from "../lib/useRoutePrefetch";
@@ -250,6 +254,12 @@ export function HubBottomNav({
   const kbInsetPx = useVisualKeyboardInset(true);
   const kbHidden = kbInsetPx > 0;
   const reduceMotion = useReducedMotion();
+  // Публікуємо зайняту знизу смугу для fixed-шарів з інших гілок дерева
+  // (`<ToastContainer>` живе у `Providers`, поза `children`, тож локальний
+  // `--bottom-nav-height` до нього не доходить). Під відкритою клавіатурою
+  // навігація з'їжджає вниз — тоді змінна знімається і тост опускається.
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !kbHidden);
 
   // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
   // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
@@ -377,6 +387,7 @@ export function HubBottomNav({
 
   return (
     <nav
+      ref={navRef}
       aria-label={messages.nav.hubSections}
       aria-hidden={kbHidden || undefined}
       className={cn(

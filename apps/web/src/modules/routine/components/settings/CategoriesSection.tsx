@@ -46,9 +46,23 @@ export function CategoriesSection({
   setCatDraft,
 }: CategoriesSectionProps) {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  /**
+   * Помилка валідації назви живе ПІД полем, а не в тості.
+   *
+   * До 2026-08-05 «Введи назву» / «Така категорія вже є» летіли
+   * `toast.warning` у протилежний кут екрана: користувач мусив
+   * відірватись від поля, знайти повідомлення внизу і повернутись назад.
+   * Це помилка конкретного поля — за галузевою практикою (і за
+   * tone-таблицею toast-policy, де warning — це деградація сервісу, а не
+   * валідація) вона належить полю. Toast лишається для наслідків дій.
+   */
+  const [nameError, setNameError] = useState<string | null>(null);
   const toast = useToast();
 
-  const resetDraft = () => setCatDraft({ name: "", emoji: "" });
+  const resetDraft = () => {
+    setCatDraft({ name: "", emoji: "" });
+    setNameError(null);
+  };
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
@@ -73,7 +87,14 @@ export function CategoriesSection({
           placeholder="Назва категорії"
           aria-label="Назва категорії"
           value={catDraft.name}
-          onChange={(e) => setCatDraft((d) => ({ ...d, name: e.target.value }))}
+          error={!!nameError}
+          helperText={nameError ?? undefined}
+          onChange={(e) => {
+            setCatDraft((d) => ({ ...d, name: e.target.value }));
+            // Користувач уже виправляє — не тримай червоне до наступного
+            // натискання «Зберегти».
+            if (nameError) setNameError(null);
+          }}
         />
         {editingCatId ? (
           <>
@@ -96,9 +117,7 @@ export function CategoriesSection({
                         trimmed.toLocaleLowerCase(),
                   );
                   if (conflict) {
-                    // tone=warning per docs/ui/toast-policy.md
-                    // (validation-style soft-fail, no recovery action).
-                    toast.warning(messages.validation.categoryNameDuplicate);
+                    setNameError(messages.validation.categoryNameDuplicate);
                     return;
                   }
                 }
@@ -138,7 +157,7 @@ export function CategoriesSection({
               // щоб користувач розумів, чому «Додати» не працює.
               const trimmed = catDraft.name.trim();
               if (!trimmed) {
-                toast.warning(messages.validation.categoryNameRequired);
+                setNameError(messages.validation.categoryNameRequired);
                 return;
               }
               const isDuplicate = routine.categories.some(
@@ -147,7 +166,7 @@ export function CategoriesSection({
                   trimmed.toLocaleLowerCase(),
               );
               if (isDuplicate) {
-                toast.warning(messages.validation.categoryNameDuplicate);
+                setNameError(messages.validation.categoryNameDuplicate);
                 return;
               }
               setRoutine((s) => createCategory(s, trimmed, catDraft.emoji));

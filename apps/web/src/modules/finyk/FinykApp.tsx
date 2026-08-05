@@ -120,9 +120,19 @@ export default function App({
     if (syncHandledRef.current) return;
     syncHandledRef.current = true;
     if (window.location.search.includes("sync=")) {
-      const ok = storage.loadFromUrl();
-      if (ok) toast.success("Налаштування синхронізовано!");
-      else toast.error("Не вдалось завантажити синк-даних");
+      const loadSync = () => {
+        if (storage.loadFromUrl()) {
+          toast.success("Налаштування синхронізовано!");
+          return;
+        }
+        // Читання з URL чисте — повтор безпечний. Без кнопки користувач,
+        // що прийшов саме по sync-лінку, лишався ні з чим і без підказки.
+        toast.error("Не вдалось завантажити синк-дані", undefined, {
+          label: "Повторити",
+          onClick: loadSync,
+        });
+      };
+      loadSync();
     }
   }, [storage, toast]);
 

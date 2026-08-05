@@ -58,8 +58,19 @@ describe("Toast", () => {
       result.current.info("i");
       result.current.warning("w");
     });
+    // Видиме вікно — 3 аркуші (MAX_VISIBLE_TOASTS), тож найстаріший
+    // ("success") витіснено; типи решти мають лишитись рівно тими.
     const types = result.current.toasts.map((t) => t.type).sort();
-    expect(types).toEqual(["error", "info", "success", "warning"]);
+    expect(types).toEqual(["error", "info", "warning"]);
+  });
+
+  it("зберігає реальну тривалість на самому тості (прогрес-бар читає її)", () => {
+    const { result } = renderHook(() => useToast(), { wrapper });
+    act(() => {
+      result.current.success("s");
+      result.current.error("e");
+    });
+    expect(result.current.toasts.map((t) => t.duration)).toEqual([3500, 5000]);
   });
 
   it("dismiss() removes a toast by id", () => {
@@ -87,16 +98,31 @@ describe("Toast", () => {
     expect(result.current.toasts).toHaveLength(0);
   });
 
-  it("caps the queue at 5 toasts (keeps the newest, drops the oldest)", () => {
+  it("caps the stack at 3 toasts (keeps the newest, drops the oldest)", () => {
     const { result } = renderHook(() => useToast(), { wrapper });
     act(() => {
       for (let i = 0; i < 7; i += 1) {
         result.current.show(`t${i}`, "info", 10_000);
       }
     });
-    expect(result.current.toasts).toHaveLength(5);
+    expect(result.current.toasts).toHaveLength(3);
     const msgs = result.current.toasts.map((t) => t.msg);
-    expect(msgs).toEqual(["t2", "t3", "t4", "t5", "t6"]);
+    expect(msgs).toEqual(["t4", "t5", "t6"]);
+  });
+
+  it("витіснений тост не лишає живого таймера", () => {
+    const { result } = renderHook(() => useToast(), { wrapper });
+    act(() => {
+      for (let i = 0; i < 5; i += 1) {
+        result.current.show(`t${i}`, "info", 1000);
+      }
+    });
+    // Якби таймери витіснених жили далі, вони б смикали `dismiss` за
+    // неіснуючими id і рвали список нижче.
+    act(() => {
+      jest.advanceTimersByTime(1100);
+    });
+    expect(result.current.toasts).toHaveLength(0);
   });
 
   it("useToast() throws when used outside the provider", () => {

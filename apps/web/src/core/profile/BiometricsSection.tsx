@@ -245,7 +245,11 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
       }
       toast.success(COPY.saveSuccess);
     } catch {
-      toast.error(COPY.saveError);
+      // Значення лишились у полях форми, тож повтор шле рівно те саме.
+      toast.error(COPY.saveError, undefined, {
+        label: "Повторити",
+        onClick: () => void handleSave(),
+      });
     }
   };
 

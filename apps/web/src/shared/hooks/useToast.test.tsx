@@ -25,7 +25,7 @@ describe("useToast", () => {
     expect(consoleError).toHaveBeenCalled();
   });
 
-  it("shows typed toasts with normalized actions and keeps the newest five", () => {
+  it("shows typed toasts with normalized actions and queues them FIFO", () => {
     vi.useFakeTimers();
     const actionClick = vi.fn();
     const { result, unmount } = renderHook(() => useToast(), { wrapper });
@@ -47,20 +47,104 @@ describe("useToast", () => {
       result.current.show("latest", "info", 10_000);
     });
 
-    expect(result.current.toasts).toHaveLength(5);
+    // Нічого не втрачено — просто хвіст чекає у черзі (рендериться лише
+    // перша трійка, це відповідальність `<ToastContainer>`).
     expect(result.current.toasts.map((toast) => toast.msg)).toEqual([
+      "saved",
       "failed",
       "info",
       "warning",
       "plain",
       "latest",
     ]);
-    expect(result.current.toasts[0]).toMatchObject({
+    expect(result.current.toasts[1]).toMatchObject({
       type: "error",
       action: { label: "Retry", onClick: actionClick },
       duration: 10_000,
     });
-    expect(result.current.toasts[3]?.action).toBeNull();
+    // 4-й аргумент без `onClick` — не action, тост рендериться без кнопки.
+    expect(result.current.toasts[4]?.action).toBeNull();
+    // Порожній label нормалізується до дефолтного.
+    expect(result.current.toasts[0]?.action?.label).toBe("Дія");
+
+    unmount();
+  });
+
+  it("тримає таймер лише для видимого вікна; черга стартує після звільнення слота", () => {
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    act(() => {
+      result.current.info("a", 1000);
+      result.current.info("b", 1000);
+      result.current.info("c", 1000);
+      result.current.info("d", 1000);
+    });
+
+    // "d" чекає — його відлік ще не почався.
+    act(() => {
+      vi.advanceTimersByTime(1000 + 200);
+    });
+    expect(result.current.toasts.map((t) => t.msg)).toEqual(["d"]);
+
+    // …і тільки тепер "d" горить свою повну секунду.
+    act(() => {
+      vi.advanceTimersByTime(1000 + 200);
+    });
+    expect(result.current.toasts).toHaveLength(0);
+
+    unmount();
+  });
+
+  it("коалесить однакові тости без action у лічильник замість нового аркуша", () => {
+    vi.useFakeTimers();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    let firstId = 0;
+    let secondId = 0;
+    act(() => {
+      firstId = result.current.success("Збережено", 1000);
+      vi.advanceTimersByTime(600);
+      secondId = result.current.success("Збережено", 1000);
+    });
+
+    expect(secondId).toBe(firstId);
+    expect(result.current.toasts).toHaveLength(1);
+    expect(result.current.toasts[0]?.repeat).toBe(2);
+
+    // Відлік перезапустився з нуля — 600 мс, що вже минули, не рахуються.
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(result.current.toasts).toHaveLength(1);
+    act(() => {
+      vi.advanceTimersByTime(400 + 200);
+    });
+    expect(result.current.toasts).toHaveLength(0);
+
+    unmount();
+  });
+
+  it("НЕ коалесить тости з action — кожен несе власне undo-замикання", () => {
+    vi.useFakeTimers();
+    const undoA = vi.fn();
+    const undoB = vi.fn();
+    const { result, unmount } = renderHook(() => useToast(), { wrapper });
+
+    act(() => {
+      result.current.info("Операцію приховано", 5000, {
+        label: "Повернути",
+        onClick: undoA,
+      });
+      result.current.info("Операцію приховано", 5000, {
+        label: "Повернути",
+        onClick: undoB,
+      });
+    });
+
+    expect(result.current.toasts).toHaveLength(2);
+    expect(result.current.toasts[0]?.action?.onClick).toBe(undoA);
+    expect(result.current.toasts[1]?.action?.onClick).toBe(undoB);
 
     unmount();
   });

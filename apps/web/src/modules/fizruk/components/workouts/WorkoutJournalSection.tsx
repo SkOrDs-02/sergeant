@@ -341,6 +341,9 @@ export function WorkoutJournalSection({
                     mood: null,
                     injurySites: [],
                   });
+                  // Аркуш «Самопочуття» — не live-region; без цього факт
+                  // збереження лишався б неозвученим.
+                  announce("Тренування завершено та збережено.");
                 } else if (isWorkoutWin) {
                   // Підсумку немає (порожня чи шаблонна сесія), але робота
                   // була — тоді трофей нікого не перекриває й лишається
@@ -349,16 +352,18 @@ export function WorkoutJournalSection({
                     "Тренування завершено!",
                     "Відмінна робота — сесія збережена.",
                   );
+                  // Модалка не має live-region — озвучуємо окремо.
+                  announce("Тренування завершено та збережено.");
                 } else {
                   // Empty or template-only workout: fall back to a plain toast
                   // so the save is still acknowledged without a jarring modal.
+                  //
+                  // Окремого `announce()` тут НЕМА свідомо: тост уже несе
+                  // `role="status" aria-live="polite"` зі своїм текстом, і
+                  // дубль означав би, що незряча людина чує про одне
+                  // збереження двічі, різними словами.
                   toast.success("Тренування збережено.");
                 }
-                // Mirror the visible toast for screen-reader users — the
-                // toast queue uses an `aria-live` region too but only for
-                // the toast text region, which AT may filter as cosmetic.
-                // A polite announce() here is short and high-signal.
-                announce("Тренування завершено та збережено.");
                 // Collapse the expanded active workout panel immediately —
                 // a finished session should live on in the history list as a
                 // "Завершене" entry, not keep occupying the "Активне" slot.
