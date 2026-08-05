@@ -7,6 +7,7 @@ import { useAppLockContext } from "../security/AppLockContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 import { writeMemoryEntries } from "../profile/memoryBank";
+import { setAnalyticsConsent } from "../observability/analyticsConsent";
 import { AiMemoryList } from "./AiMemoryList";
 
 const m = messages.privacy.lock;
@@ -16,10 +17,12 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   aiMemory: true,
   pushNotifications: false,
   sergeantNudges: false,
+  healthDataConsent: false,
   updatedAt: null,
 };
 
-type PreferenceKey = "analytics" | "aiMemory" | "pushNotifications";
+type PreferenceKey =
+  "analytics" | "aiMemory" | "pushNotifications" | "healthDataConsent";
 
 export function PrivacySection() {
   const appLock = useAppLockContext();
@@ -44,6 +47,7 @@ export function PrivacySection() {
         if (cancelled) return;
         setPreferences(next);
         setPreferencesLoaded(true);
+        setAnalyticsConsent(next.analytics);
       })
       .catch(() => {
         if (cancelled) return;
@@ -87,6 +91,7 @@ export function PrivacySection() {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
       setPreferencesLoaded(true);
+      setAnalyticsConsent(next.analytics);
     } catch {
       setPreferences(previous);
       setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
@@ -158,6 +163,18 @@ export function PrivacySection() {
           }
           checked={preferences.aiMemory}
           onChange={(checked) => void updatePreference("aiMemory", checked)}
+        />
+        <ToggleRow
+          label="Дані про здоровʼя"
+          description={
+            savingPreference === "healthDataConsent"
+              ? "Зберігаю…"
+              : "Явна згода на обробку тренувань, самопочуття й харчування — без неї ця інформація не використовується."
+          }
+          checked={preferences.healthDataConsent}
+          onChange={(checked) =>
+            void updatePreference("healthDataConsent", checked)
+          }
         />
         <div className="rounded-2xl border border-line bg-panelHi p-3">
           <p className="text-style-caption text-subtle leading-relaxed">

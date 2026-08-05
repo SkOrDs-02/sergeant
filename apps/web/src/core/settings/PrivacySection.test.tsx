@@ -51,6 +51,7 @@ vi.mock("@shared/api", () => {
     aiMemory: true,
     pushNotifications: false,
     sergeantNudges: false,
+    healthDataConsent: false,
     updatedAt: null,
   };
   return {
@@ -77,6 +78,10 @@ vi.mock("./AiMemoryList", () => ({
 }));
 
 import { meApi } from "@shared/api";
+import {
+  __resetAnalyticsConsentForTests,
+  getAnalyticsConsent,
+} from "../observability/analyticsConsent";
 import { PrivacySection } from "./PrivacySection";
 
 async function openSection() {
@@ -151,6 +156,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     aiMemory: true,
     pushNotifications: false,
     sergeantNudges: false,
+    healthDataConsent: false,
     updatedAt: null,
   };
 
@@ -159,10 +165,12 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     mockUseFlag.mockReturnValue(false);
     vi.mocked(meApi.getPreferences).mockResolvedValue({ ...basePrefs });
     vi.mocked(meApi.updatePreferences).mockResolvedValue({ ...basePrefs });
+    __resetAnalyticsConsentForTests();
   });
 
   afterEach(() => {
     cleanup();
+    __resetAnalyticsConsentForTests();
   });
 
   it("loads and displays preferences from the API on mount", async () => {
@@ -192,6 +200,34 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
     );
   });
 
+  it("caches the fetched analytics preference into the analyticsConsent module on mount", async () => {
+    vi.mocked(meApi.getPreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    render(<PrivacySection />);
+    await openSection();
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
+  it("updates the cached analytics consent after toggling", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    render(<PrivacySection />);
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
   it("toggles aiMemory preference and calls updatePreferences", async () => {
     vi.mocked(meApi.updatePreferences).mockResolvedValue({
       ...basePrefs,
@@ -207,6 +243,27 @@ describe("PrivacySection — preferences (analytics / aiMemory / pushNotificatio
 
     await waitFor(() =>
       expect(meApi.updatePreferences).toHaveBeenCalledWith({ aiMemory: false }),
+    );
+  });
+
+  it("defaults healthDataConsent off and toggles it via updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      healthDataConsent: true,
+    });
+    render(<PrivacySection />);
+    await openSection();
+
+    const consentToggle = await screen.findByRole("switch", {
+      name: /Дані про здоровʼя/i,
+    });
+    expect(consentToggle).not.toBeChecked();
+    fireEvent.click(consentToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({
+        healthDataConsent: true,
+      }),
     );
   });
 
