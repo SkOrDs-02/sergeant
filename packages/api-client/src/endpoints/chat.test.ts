@@ -51,6 +51,26 @@ describe("createChatEndpoints.send", () => {
     expect(JSON.parse(String((init as RequestInit).body))).toEqual(payload);
   });
 
+  // Hard Rule #3 — контрактна трійка для `preset`: поле має долетіти до
+  // сервера як є. Значення береться з `CHAT_PRESETS` (`@sergeant/shared`),
+  // тим самим enum-ом валідує `ChatRequestSchema` на боці сервера.
+  it("надсилає preset у тілі запиту", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ text: "ok" }),
+    ) as FetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const chat = createChatEndpoints(http);
+    await chat.send({ ...payload, preset: "profile_interview" });
+
+    const [, init] = firstCall(fetchMock);
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({
+      ...payload,
+      preset: "profile_interview",
+    });
+  });
+
   it("passes through an AbortSignal", async () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({ text: "ok" }),

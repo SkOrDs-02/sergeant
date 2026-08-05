@@ -113,9 +113,13 @@ describe("MemoryBankSection — empty state", () => {
     expect(screen.getByText("Банк пам'яті порожній")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Заповнити профіль/ }));
 
+    // Preset — головне тут: інструкція інтервʼю живе на сервері
+    // (`chatPresets.ts`), а звідси йде лише ідентифікатор режиму. Він же
+    // переводить розмову на окреме тижневе відро AI-квоти.
     expect(emitHubBusMock).toHaveBeenCalledWith("openChat", {
       message: "ONBOARDING_PROMPT",
       autoSend: true,
+      preset: "profile_interview",
     });
   });
 
@@ -170,7 +174,11 @@ describe("MemoryBankSection — populated", () => {
     expect(emitHubBusMock).toHaveBeenCalledTimes(1);
     const [event, payload] = emitHubBusMock.mock.calls[0]!;
     expect(event).toBe("openChat");
-    expect(payload).toEqual({ message: "ADD_INFO_PROMPT", autoSend: true });
+    expect(payload).toEqual({
+      message: "ADD_INFO_PROMPT",
+      autoSend: true,
+      preset: "profile_add_info",
+    });
   });
 });
 

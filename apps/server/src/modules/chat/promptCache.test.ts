@@ -34,6 +34,39 @@ describe("buildSystem", () => {
     expect(blocks[1]!.cache_control).toBeUndefined();
     expect(blocks[1]!.text).toContain("Алергія на горіхи");
   });
+
+  it("preset іде окремим блоком МІЖ cached-префіксом і context-ом", () => {
+    const blocks = buildSystem("[Профіль] Алергія", "profile_interview");
+    expect(blocks).toHaveLength(3);
+    // Порядок критичний: preset ПІСЛЯ breakpoint-а (інакше кожен запит із
+    // preset-ом інвалідував би cross-user кеш `tools + SYSTEM_PREFIX`) і
+    // ПЕРЕД даними (правила, потім дані).
+    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL_1H);
+    expect(blocks[1]!.cache_control).toBeUndefined();
+    expect(blocks[1]!.text).toContain("РЕЖИМ:");
+    expect(blocks[2]!.text).toContain("Алергія");
+  });
+
+  it("preset без context — рівно два блоки", () => {
+    const blocks = buildSystem("", "profile_add_info");
+    expect(blocks).toHaveLength(2);
+    expect(blocks[1]!.text).toContain("РЕЖИМ:");
+  });
+
+  // Огорожа `<user_data>` навколо клієнтського context-у наказує моделі
+  // читати вміст як ДАНІ. Preset — наш текст і має лишатись інструкцією,
+  // інакше він просто не діє.
+  it("preset НЕ загортається в <user_data>", () => {
+    const blocks = buildSystem("контекст", "profile_interview");
+    expect(blocks[1]!.text).not.toContain("<user_data>");
+    expect(blocks[2]!.text).toContain("<user_data>");
+  });
+
+  it("невідомий preset ігнорується (жодного зайвого блоку)", () => {
+    expect(buildSystem("", "не-наш-режим")).toHaveLength(1);
+    expect(buildSystem("", 42)).toHaveLength(1);
+    expect(buildSystem("", { preset: "profile_interview" })).toHaveLength(1);
+  });
 });
 
 describe("applyToolsCacheBreakpoint", () => {

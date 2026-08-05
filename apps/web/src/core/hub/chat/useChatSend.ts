@@ -25,7 +25,7 @@ import {
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
 import {
@@ -100,12 +100,34 @@ function incrementDailyChatCount(): void {
   });
 }
 
+/**
+ * Скільки ПОСЛІДОВНИХ відправок несуть preset, рахуючи seed-повідомлення.
+ *
+ * AI-CONTEXT: preset мусить пережити не лише перший хід — інтервʼю
+ * багатоходове, і без цього інструкція зникала б після першої відповіді,
+ * а модель поверталась би до загальної поведінки рівно там, де користувач
+ * почав відповідати. Але й «назавжди» не годиться: доївши інтервʼю,
+ * людина питає «скільки я витратив на каву» в тому ж вікні — з активним
+ * preset-ом це і поведінка не та, і списання з preset-відра квоти замість
+ * денного.
+ *
+ * Числа дзеркалять самі інструкції (`apps/server/.../chatPresets.ts`):
+ * інтервʼю — seed + до 4 відповідей користувача; доповнення — seed +
+ * одне уточнення.
+ */
+const PRESET_TURNS: Record<ChatPreset, number> = {
+  profile_interview: 5,
+  profile_add_info: 2,
+};
+
 export interface UseChatSendOptions {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   initialMessage?: string | undefined;
   autoSendInitial?: boolean | undefined;
   onOpenCatalogue?: (() => void) | undefined;
+  /** Сценарний режим (кнопки секції «Пам'ять ШІ»). Див. `PRESET_TURNS`. */
+  preset?: ChatPreset | undefined;
 }
 
 export interface UseChatSendResult {
@@ -152,6 +174,7 @@ export function useChatSend({
   initialMessage,
   autoSendInitial,
   onOpenCatalogue,
+  preset,
 }: UseChatSendOptions): UseChatSendResult {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -252,6 +275,10 @@ export function useChatSend({
     setSpeaking(true);
   }, []);
 
+  // Лічильник ходів, що ще несуть preset. Ref, а не state: `send`
+  // читає його всередині і не має перестворюватись на кожному ході.
+  const presetTurnsRef = useRef(preset ? PRESET_TURNS[preset] : 0);
+
   const send = useCallback(
     async (text?: string, fromVoice = false) => {
       const msg = (text || input).trim();
@@ -289,7 +316,16 @@ export function useChatSend({
         return;
       }
 
-      if (!isPro) {
+      // Хід у сценарному режимі. Списується з окремого тижневого відра на
+      // сервері (`resolvePresetBudget` у `aiQuota.ts`), тож денний лічильник
+      // його не рахує і пейвол на ньому не спрацьовує: інакше онбординг
+      // упирався б у paywall посеред інтервʼю — рівно та проблема, заради
+      // якої відро й заведено. Вичерпання preset-відра приходить окремим
+      // 429 `AI_QUOTA_PRESET` з тексту сервера.
+      const turnPreset = presetTurnsRef.current > 0 ? preset : undefined;
+      if (turnPreset) presetTurnsRef.current -= 1;
+
+      if (!isPro && !turnPreset) {
         const usage = readDailyChatCount();
         if (usage.count >= FREE_DAILY_AI_CHAT_LIMIT) {
           setPaywallOpen(true);
@@ -353,7 +389,14 @@ export function useChatSend({
 
         let data;
         try {
-          data = await chatApi.send({ context, messages: history }, { signal });
+          data = await chatApi.send(
+            {
+              context,
+              messages: history,
+              ...(turnPreset ? { preset: turnPreset } : {}),
+            },
+            { signal },
+          );
         } catch (err) {
           // Rewrite `message` to user-friendly while staying inside
           // `ApiError` — the outer `friendlyChatError` should see the
@@ -511,6 +554,10 @@ export function useChatSend({
                 tool_results: toolResults,
                 tool_calls_raw: data.tool_calls_raw,
                 stream: true,
+                // Той самий preset і на турі синтезу: інструкція має діяти
+                // й після `remember`, і цей запит теж має списатись із
+                // preset-відра, а не з денного.
+                ...(turnPreset ? { preset: turnPreset } : {}),
               },
               { signal },
             );
@@ -647,6 +694,7 @@ export function useChatSend({
       online,
       maybeSpeak,
       onOpenCatalogue,
+      preset,
       queryClient,
       requestDestructiveConfirm,
       scheduleContextBuild,

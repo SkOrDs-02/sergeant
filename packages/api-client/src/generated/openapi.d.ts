@@ -3317,6 +3317,8 @@ export interface components {
         ChatRequest: {
             /** @default  */
             context: string;
+            /** @enum {string} */
+            preset?: "profile_interview" | "profile_add_info";
             /** @default [] */
             messages: {
                 /** @enum {string} */

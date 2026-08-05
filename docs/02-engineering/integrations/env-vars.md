@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -125,6 +125,18 @@ Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен ви
 - `AI_QUOTA_TOOL_COST=3` (default).
 - `AI_QUOTA_TOOL_DEFAULT_LIMIT=60` (default).
 - `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто).
+
+### `AI_QUOTA_PRESET_LIMITS`, `AI_QUOTA_PRESET_WEEKLY_LIMIT` _(optional)_
+
+Тижневе відро для сценарних режимів чату (`preset:<name>` у `ai_usage_daily` — сьогодні `profile_interview` і `profile_add_info`, кнопки секції «Пам'ять ШІ»). Заповнення профілю не витрачає денні 5 запитів Free-тіру: інтерв'ю на 4 обміни коштує ≈8 запитів (кожен тур із tool-call-ом = два), тобто без окремого відра онбординг упирався в paywall на середині.
+
+Вікно — **тиждень** (понеділок київського тижня), cost=1 за запит. Precedence ліміту:
+
+- `AI_QUOTA_PRESET_LIMITS={"profile_interview":10,"profile_add_info":4}` — per-preset override (JSON-мапа, за зразком `AI_QUOTA_TOOL_LIMITS`). Битий JSON → fail-open на наступний рівень + warn-лог.
+- `AI_QUOTA_PRESET_WEEKLY_LIMIT=10` — одне число на **всі** режими; `0` вимикає сценарні режими цілком (429 з `code: "AI_QUOTA_PRESET"`).
+- Вбудовані дефолти, якщо жодного env немає: `profile_interview` = `10`, `profile_add_info` = `4`.
+
+Pro-юзери відра не торкаються взагалі (unlimited виходить раніше). Резолв — [`aiQuotaBudget.ts`](../../../apps/server/src/modules/chat/aiQuotaBudget.ts); стеля зловживання, що моніторити й коли крутити ці числа — [`ai-quota-kill-switch.md § preset-відро`](../../04-governance/security/ai-quota-kill-switch.md).
 
 ### `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` _(optional)_
 

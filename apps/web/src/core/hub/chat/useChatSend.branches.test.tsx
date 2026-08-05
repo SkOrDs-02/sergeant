@@ -77,6 +77,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 import { ApiError } from "@shared/api";
 import { useChatSend } from "./useChatSend";
 import type { ChatMessage } from "../../lib/hubChatUtils";
+import type { ChatPreset } from "@sergeant/shared";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -89,7 +90,7 @@ function makeWrapper() {
   };
 }
 
-function renderWithCapture() {
+function renderWithCapture(options: { preset?: ChatPreset } = {}) {
   const captured: ChatMessage[][] = [];
   const setMessages = vi.fn((updater: unknown) => {
     if (typeof updater === "function") {
@@ -99,9 +100,10 @@ function renderWithCapture() {
       captured.push(updater as ChatMessage[]);
     }
   });
-  const hook = renderHook(() => useChatSend({ messages: [], setMessages }), {
-    wrapper: makeWrapper(),
-  });
+  const hook = renderHook(
+    () => useChatSend({ messages: [], setMessages, ...options }),
+    { wrapper: makeWrapper() },
+  );
   return { ...hook, captured, setMessages };
 }
 
@@ -208,6 +210,62 @@ describe("useChatSend — guard branches", () => {
 
     act(() => result.current.closePaywall());
     await waitFor(() => expect(result.current.paywallOpen).toBe(false));
+  });
+
+  // 1C: заповнення профілю не витрачає денні 5 запитів. Без цього
+  // онбординг упирався в paywall посеред інтервʼю — сценарій на ~8 запитів
+  // проти ліміту 5 (кожен хід із tool-call-ом коштує два: перший запит +
+  // синтез після `remember`).
+  it("preset-хід не блокується пейволом на вичерпаному денному ліміті", async () => {
+    flags.isPro = false;
+    sendMock.mockResolvedValue({ text: "Питання перше" });
+    const { getKyivDayKey } = await vi.importActual<
+      typeof import("@shared/lib/time/kyivTime")
+    >("@shared/lib/time/kyivTime");
+    localStorage.setItem(
+      "sergeant:ai-chat:daily-count:v1",
+      JSON.stringify({ day: getKyivDayKey(), count: 15 }),
+    );
+
+    const { result } = renderWithCapture({ preset: "profile_interview" });
+    await act(async () => {
+      await result.current.send("Заповни мій профіль");
+    });
+
+    expect(result.current.paywallOpen).toBe(false);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock.mock.calls[0]![0]).toMatchObject({
+      preset: "profile_interview",
+    });
+    // Денний лічильник не зрушив — списання йде з preset-відра на сервері.
+    expect(
+      JSON.parse(localStorage.getItem("sergeant:ai-chat:daily-count:v1")!)
+        .count,
+    ).toBe(15);
+  });
+
+  // Preset не може жити вічно: доївши інтервʼю, людина питає щось звичайне
+  // в тому ж вікні, і це має бути звичайний запит зі звичайного відра.
+  it("preset відпадає після вичерпання бюджету ходів", async () => {
+    flags.isPro = true;
+    sendMock.mockResolvedValue({ text: "ок" });
+    const { result } = renderWithCapture({ preset: "profile_add_info" });
+
+    // `profile_add_info` — seed + одне уточнення.
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await result.current.send(`хід ${i}`);
+      });
+    }
+
+    const presets = sendMock.mock.calls.map(
+      (call) => (call[0] as { preset?: string }).preset,
+    );
+    expect(presets).toEqual([
+      "profile_add_info",
+      "profile_add_info",
+      undefined,
+    ]);
   });
 
   it("free-tier user under the limit increments the counter and sends", async () => {

@@ -26,6 +26,7 @@
  */
 
 import { useEffect } from "react";
+import type { ChatPreset } from "@sergeant/shared";
 
 export interface HubBusEvents {
   /**
@@ -37,7 +38,16 @@ export interface HubBusEvents {
    *   without waiting for the user to confirm. Defaults to `false` for
    *   safety (user retains the chance to edit).
    */
-  openChat: { message: string | null; autoSend?: boolean };
+  openChat: {
+    message: string | null;
+    autoSend?: boolean;
+    /**
+     * Сценарний режим розмови (`CHAT_PRESETS` у `@sergeant/shared`).
+     * Клієнт передає лише ідентифікатор — інструкція живе на сервері, тож
+     * `message` лишається короткою людською фразою, а не стіною правил.
+     */
+    preset?: ChatPreset;
+  };
   /** Open the global Hub search overlay (⌘K equivalent). */
   openSearch: void;
   /**

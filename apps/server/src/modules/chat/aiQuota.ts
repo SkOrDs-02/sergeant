@@ -9,6 +9,11 @@ import {
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
 import { toLocalISODate } from "@sergeant/shared";
+import {
+  parseLimit,
+  resolvePresetBudget,
+  type QuotaBudget,
+} from "./aiQuotaBudget.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
@@ -179,16 +184,6 @@ function setTierHeader(res: Response, tier: ProTier): void {
   } catch {
     /* ignore */
   }
-}
-
-function parseLimit<F extends number | null>(
-  name: string,
-  fallback: F,
-): number | F {
-  const v = process.env[name];
-  if (v === undefined || v === "") return fallback;
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
 /**
@@ -380,11 +375,24 @@ export async function assertAiQuota(
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
-  const limit = sessionUser
+  const planLimit = sessionUser
     ? await userDailyLimit(sessionUser.id)
     : anonDailyLimit();
 
-  if (limit == null) return true;
+  // Unlimited (Pro) виходить ДО резолву preset-відра: безлімітному юзеру
+  // окремий бюджет нічого не додає, а зайве відро тільки шумить у метриках.
+  if (planLimit == null) return true;
+
+  // Сценарний preset витрачає власне тижневе відро замість денного (див.
+  // `resolvePresetBudget`). Усе решта — той самий шлях.
+  const presetBudget = resolvePresetBudget(req);
+  const isPresetBudget = presetBudget !== null;
+  const budget: QuotaBudget = presetBudget ?? {
+    bucket: DEFAULT_BUCKET,
+    day: today(),
+    limit: planLimit,
+  };
+  const limit = budget.limit;
 
   if (limit === 0) {
     try {
@@ -414,14 +422,14 @@ export async function assertAiQuota(
 
   const subject = subjectFor(sessionUser, req);
   try {
-    const day = today();
+    const day = budget.day;
     const cost = 1;
     const result = await consumeQuota({
       subject,
       day,
       limit,
       cost,
-      bucket: DEFAULT_BUCKET,
+      bucket: budget.bucket,
     });
     aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
@@ -430,37 +438,49 @@ export async function assertAiQuota(
       } catch {
         /* ignore */
       }
-      // Анонім і Free вичерпують РІЗНІ ліміти, тож і виходу в них різні.
-      // Free справді лишається чекати доби. Аноніму чекати нема сенсу —
-      // вхід піднімає його ліміт негайно, і саме це має сказати копія.
+      // Анонім, Free і сценарний preset вичерпують РІЗНІ ліміти, тож і
+      // виходи в них різні. Free справді лишається чекати доби. Аноніму
+      // чекати нема сенсу — вхід піднімає його ліміт негайно. Preset має
+      // тижневе вікно, і «спробуй завтра» там просто неправда: вихід —
+      // ручне заповнення, яке взагалі не витрачає AI.
       // Клієнт розрізняє випадки за `code` (див. `friendlyApiError` у
       // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
       res.status(429).json(
-        sessionUser
+        isPresetBudget
           ? {
-              error: "Денний ліміт AI вичерпано. Спробуй завтра.",
-              code: "AI_QUOTA",
+              error:
+                "Ліміт AI-заповнення профілю на цей тиждень вичерпано. Дозаповни вручну в Профілі — це безкоштовно.",
+              code: "AI_QUOTA_PRESET",
               limit: result.limit,
             }
-          : {
-              error:
-                "Безкоштовна проба на сьогодні вичерпана. Увійди — 5 запитів на добу, без карти.",
-              code: "AI_QUOTA_ANON",
-              limit: result.limit,
-            },
+          : sessionUser
+            ? {
+                error: "Денний ліміт AI вичерпано. Спробуй завтра.",
+                code: "AI_QUOTA",
+                limit: result.limit,
+              }
+            : {
+                error:
+                  "Безкоштовна проба на сьогодні вичерпана. Увійди — 5 запитів на добу, без карти.",
+                code: "AI_QUOTA_ANON",
+                limit: result.limit,
+              },
       );
       return false;
     }
     try {
       const subjectType = sessionUser ? "user" : "anon";
       aiCostConsumedTotal.inc(
-        { subject_type: subjectType, bucket_type: "default" },
+        {
+          subject_type: subjectType,
+          bucket_type: isPresetBudget ? "preset" : "default",
+        },
         cost,
       );
     } catch {
       /* ignore */
     }
-    attachRefund(req, { subject, day, bucket: DEFAULT_BUCKET, cost });
+    attachRefund(req, { subject, day, bucket: budget.bucket, cost });
     setRemainingHeader(res, String(result.remaining));
     return true;
   } catch (e) {

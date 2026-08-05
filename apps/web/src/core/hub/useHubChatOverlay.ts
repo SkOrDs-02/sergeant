@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import type { ChatPreset } from "@sergeant/shared";
 
 /**
  * Sergeant v2 Phase 7 D5 — HubChat bottom-sheet overlay.
@@ -22,10 +23,16 @@ export interface HubChatOverlayState {
   open: boolean;
   initialMessage: string;
   autoSendInitial: boolean;
+  /** Сценарний режим для цього відкриття (`CHAT_PRESETS`). */
+  preset: ChatPreset | undefined;
 }
 
 export interface HubChatOverlayApi extends HubChatOverlayState {
-  openChat: (opts?: { initialMessage?: string; autoSend?: boolean }) => void;
+  openChat: (opts?: {
+    initialMessage?: string;
+    autoSend?: boolean;
+    preset?: ChatPreset;
+  }) => void;
   closeChat: () => void;
 }
 
@@ -35,11 +42,17 @@ export function useHubChatOverlayState(): HubChatOverlayApi {
   const [open, setOpen] = useState(false);
   const [initialMessage, setInitialMessage] = useState("");
   const [autoSendInitial, setAutoSendInitial] = useState(false);
+  const [preset, setPreset] = useState<ChatPreset | undefined>(undefined);
 
   const openChat = useCallback(
-    (opts?: { initialMessage?: string; autoSend?: boolean }) => {
+    (opts?: {
+      initialMessage?: string;
+      autoSend?: boolean;
+      preset?: ChatPreset;
+    }) => {
       setInitialMessage(opts?.initialMessage ?? "");
       setAutoSendInitial(!!opts?.autoSend);
+      setPreset(opts?.preset);
       setOpen(true);
     },
     [],
@@ -52,6 +65,7 @@ export function useHubChatOverlayState(): HubChatOverlayApi {
     // imperative prompt.
     setInitialMessage("");
     setAutoSendInitial(false);
+    setPreset(undefined);
   }, []);
 
   return useMemo(
@@ -59,10 +73,11 @@ export function useHubChatOverlayState(): HubChatOverlayApi {
       open,
       initialMessage,
       autoSendInitial,
+      preset,
       openChat,
       closeChat,
     }),
-    [open, initialMessage, autoSendInitial, openChat, closeChat],
+    [open, initialMessage, autoSendInitial, preset, openChat, closeChat],
   );
 }
 
@@ -84,6 +99,7 @@ const NOOP_API: HubChatOverlayApi = {
   open: false,
   initialMessage: "",
   autoSendInitial: false,
+  preset: undefined,
   openChat: () => {},
   closeChat: () => {},
 };

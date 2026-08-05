@@ -5,6 +5,7 @@
 // інлайн-версії: жодна не мутує вхід.
 
 import { env } from "../../env.js";
+import { presetInstruction } from "./chatPresets.js";
 import { TOOLS, SYSTEM_PREFIX } from "./tools.js";
 import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import {
@@ -124,14 +125,32 @@ function stableCacheControl(): CacheControl {
  * звіряє ні з чим — без огорожі один POST переписує системний промпт і
  * перетворює асистента на універсальний LLM.
  */
-export function buildSystem(context: string): AnthropicSystemBlock[] {
+export function buildSystem(
+  context: string,
+  preset?: unknown,
+): AnthropicSystemBlock[] {
   const cached: AnthropicSystemBlock = {
     type: "text",
     text: SYSTEM_PREFIX,
     cache_control: stableCacheControl(),
   };
-  if (!context) return [cached];
-  return [cached, { type: "text", text: wrapAndScanUserContext(context) }];
+  const blocks: AnthropicSystemBlock[] = [cached];
+
+  // Preset-блок стоїть ПІСЛЯ cached-префікса і ПЕРЕД `context`:
+  //   * після — щоб не зсувати байти всередині breakpoint-а (інакше кожен
+  //     запит із preset-ом інвалідував би cross-user кеш `tools + SYSTEM_PREFIX`);
+  //   * перед — бо це інструкція, а `context` це дані; порядок «правила,
+  //     потім дані» дзеркалить структуру самого `SYSTEM_PREFIX`.
+  //
+  // AI-DANGER: без `<user_data>`-огорожі — навмисно, це наш текст, а не
+  // клієнтський (`chatPresets.ts`). Клієнт передає лише enum-ідентифікатор.
+  const instruction = presetInstruction(preset);
+  if (instruction) blocks.push({ type: "text", text: instruction });
+
+  if (context) {
+    blocks.push({ type: "text", text: wrapAndScanUserContext(context) });
+  }
+  return blocks;
 }
 
 /**
