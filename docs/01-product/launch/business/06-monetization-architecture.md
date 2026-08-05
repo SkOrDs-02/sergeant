@@ -1,9 +1,15 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active (architecture reference; delivery status lives in revenue PR plan)
 
 > **Update 2026-06-27:** цінові параметри і trial-механіка зафіксовані в [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) (Supersedes ADR-0051). Активна модель: **₴199/міс / ₴1490/рік**, **reverse trial 7 днів** (автоматичний Pro → downgrade), Free AI 15 msg/day, Free cloud-sync 2 пристрої. Якщо нижче зустрічаєте `$7/міс`, `$49/рік`, `₴99/міс` або «trial без картки» (opt-in) — це **Superseded by ADR-0068**, historical context only.
+>
+> **Update 2026-08-05 (рішення founder-а, pre-beta аудит 2026-08-04):**
+>
+> 1. **У беті платежів немає.** Жоден провайдер не вмикається; бета-тестери отримують Pro вручну (manual grant), тож Free-ліміти в беті не працюють як paywall.
+> 2. **Цільові провайдери після бети — LiqPay та «Плата» від Monobank** (Plata acquiring). «Stripe primary» нижче (ADR-1.1 та shipped `stripe-webhook`-контракт) — поточний стан коду й historical context, але напрямок продажу в Україні — LiqPay/Плата; вибір і порядок інтеграції — окреме майбутнє рішення.
+> 3. **Grandfather-механіка скасована** (PR #4, migration 011, `legacy_grace`, provider `grandfather`). Прод-БД зачищається перед бетою — «існуючих юзерів», яких треба grandfather-ити, не існує і не існуватиме. Секція 3.3 і згадки grandfather нижче — historical context; НЕ реалізовувати.
 
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.
 > Canonical delivery owner: [`docs/90-work/planning/pr-plan-revenue-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-revenue-2026-05.md). PR tables below are architecture context, not the live execution tracker.
@@ -219,7 +225,11 @@ CREATE INDEX IF NOT EXISTS idx_stripe_webhook_events_processed
   ON stripe_webhook_events(processed_at);
 ```
 
-### 3.3 Migration 011 — grandfather seed (data migration)
+### 3.3 Migration 011 — grandfather seed (data migration) — ~~СКАСОВАНО 2026-08-05~~
+
+> **Скасовано рішенням founder-а (pre-beta аудит 2026-08-04):** прод-БД
+> зачищається перед бетою, тож pre-2026-05-01 юзерів, для яких писався цей
+> seed, не буде. Блок лишено як historical context — не реалізовувати.
 
 ```sql
 -- apps/server/src/migrations/011_grandfather_existing_users.sql

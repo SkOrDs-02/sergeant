@@ -1,7 +1,11 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last validated:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
+
+> **Оновлення 2026-08-05:** усі операційні кроки переписані з Railway на
+> **Coolify** (Hetzner CX23, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)) —
+> Railway виведено з експлуатації. Семантика прапорців і метрик не змінилась.
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після
 landing PR1 (foundation) + PR2 (ingestion) + PR3 (retrieval). Усі три PR-и
@@ -23,7 +27,7 @@ ADR — [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](../../../04-govern
       ≈ 100M tokens/міс ≈ **~$2/міс**. Free tier дає 50M tokens/міс — достатньо
       для пілоту, але прод-rollout потребує paid акаунту. Dashboard:
       <https://dash.voyageai.com/>.
-- [ ] **pgvector extension у Railway Postgres.** Перевірити, що міграція 025
+- [ ] **pgvector extension у prod Postgres (Coolify).** Перевірити, що міграція 025
       (`025_ai_memories_pgvector.sql`) виконана на prod-БД:
       `SELECT to_regclass('ai_memories');` має повернути не-null.
       Якщо null — `pnpm --filter @sergeant/server db:migrate` спочатку.
@@ -41,29 +45,31 @@ ADR — [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](../../../04-govern
 
 ## Activation steps
 
-### Step 1. Provision `VOYAGE_API_KEY` (Railway)
+### Step 1. Provision `VOYAGE_API_KEY` (Coolify)
 
 1. Створити прод-API-ключ на <https://dash.voyageai.com/api-keys>. Назва
    рекомендована: `sergeant-prod` (для traceability у Voyage billing).
-2. У Railway dashboard для сервісу `hub-api`:
-   - Variables → New Variable
+2. У Coolify dashboard для застосунку API (`sergeant-api`):
+   - Environment Variables → Add
    - Name: `VOYAGE_API_KEY`
    - Value: `pa-...` (без quotes, без trailing whitespace)
-   - Service: `hub-api` тільки (НЕ `hub-web` — клієнт не дзвонить Voyage).
-3. **Redeploy не потрібен** — Voyage-клієнт читає env при першому виклику
-   `recall()` / `remember()`. Якщо `AI_MEMORY_ENABLED=false`, ключ читається
-   тільки коли flag вмикається (Step 2).
+   - Тільки бекенд-застосунок (web на Vercel Voyage не дзвонить).
+3. Env-зміни в Coolify підхоплюються лише при перестворенні контейнера —
+   але окремий redeploy тут не обов'язковий: якщо `AI_MEMORY_ENABLED=false`,
+   ключ знадобиться тільки на redeploy-ї Step 2, який і так перестворює
+   контейнер.
 
-### Step 2. Toggle `AI_MEMORY_ENABLED=true` (Railway)
+### Step 2. Toggle `AI_MEMORY_ENABLED=true` (Coolify)
 
-1. У Railway dashboard для `hub-api`:
-   - Variables → знайти `AI_MEMORY_ENABLED` → Edit
+1. У Coolify dashboard для `sergeant-api`:
+   - Environment Variables → знайти `AI_MEMORY_ENABLED` → Edit
    - Value: `true`
-2. Railway автоматично redeploy-ить сервіс (~30s). Це **хот toggle** —
-   жодних DDL змін не відбувається.
+2. Натиснути **Redeploy** — Coolify перестворює контейнер з новим env
+   (образ уже спулений з ghcr.io, ~1–2 хв; pre-deploy заганяє міграції).
+   Це **конфіг-toggle** — жодних DDL змін не відбувається.
 3. **Верифікація:** після redeploy зробити sanity-curl з production-сесією:
    ```bash
-   curl -X POST https://sergeant-production.up.railway.app/api/ai-memory/recall \
+   curl -X POST https://api.167-233-98-92.sslip.io/api/ai-memory/recall \
      -H "Cookie: better-auth.session_token=<token>" \
      -H "Content-Type: application/json" \
      -d '{"query":"тест активації memory","top_k":3}'
@@ -128,7 +134,7 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
 
 Якщо щось пішло не так:
 
-1. **Швидкий kill (≤30s):** `AI_MEMORY_ENABLED=false` у Railway → redeploy.
+1. **Швидкий kill:** `AI_MEMORY_ENABLED=false` у Coolify → Redeploy (~1–2 хв).
    Усі гілки (`recall_memory` tool, RAG-injection, ingestion-producer-и)
    no-op-лять негайно. Existing data у `ai_memories` лишається — нема
    destructive truncate.
@@ -164,15 +170,15 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
 
 ## Redis startup configuration
 
-`Sergeant.redis` (Railway service `humorous-eagerness/redis`,
-id `51da2282-8cf4-47bb-b632-92e060704b78`) хостить BullMQ-стейт двох черг
-(`auth-mail`, `ai-memory-ingest`, prefix `sergeant:`) і rate-limit
-counters. Конфігурація задається у `startCommand` сервіс-інстансу
-(`production` env, id `81b68dcb-0107-44ba-b719-df445ea71c71`) — у репо її
-немає, бо Redis провіжнений з template-image `redis:7-alpine` без
-own-Dockerfile-у.
+Redis живе поруч з API на тому ж Hetzner-хості як Coolify-сервіс
+`redis:7.2` ([ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md))
+і хостить BullMQ-стейт двох черг (`auth-mail`, `ai-memory-ingest`, prefix
+`sergeant:`) та rate-limit counters. Конфігурація задається start-командою
+сервісу в Coolify UI — у репо її немає, бо Redis провіжнений з
+template-image без own-Dockerfile-у.
 
-**Поточний `startCommand` (2026-05-02):**
+**Поточна start-команда (перенесена з Railway-конфіга 2026-05-02 при
+міграції на Coolify):**
 
 ```sh
 sh -c 'exec redis-server \
@@ -189,30 +195,16 @@ sh -c 'exec redis-server \
 evict-ити enqueued jobs до того, як worker їх підхопить — це viewable
 data-loss всередині черги (job було записано, але worker його ніколи не
 побачить). Спочатку (2026-05-02) Redis підняли з default-template
-`--maxmemory-policy allkeys-lru` → BullMQ при connect-і логував warning. У
-той самий день переключили через Railway GraphQL `serviceInstanceUpdate` +
-`serviceInstanceRedeploy`. Тепер worker-и логують лише
+`--maxmemory-policy allkeys-lru` → BullMQ при connect-і логував warning;
+того ж дня start-команду виправили (тоді ще на Railway), і саме виправлену
+версію перенесено в Coolify. Worker-и логують лише
 `bullmq_connection_ready` без warning-у.
 
-**Як змінити повторно:**
+**Як змінити повторно:** Coolify UI → сервіс Redis → налаштування
+start-команди (Custom Command) → зберегти → **Restart** сервісу. Після
+рестарту перевірити логи API-застосунку на `bullmq_connection_ready`.
 
-```sh
-RAILWAY_TOKEN="…" \
-  ENVIRONMENT_ID="81b68dcb-0107-44ba-b719-df445ea71c71" \
-  SERVICE_ID="51da2282-8cf4-47bb-b632-92e060704b78"
-
-curl -sS -X POST https://backboard.railway.com/graphql/v2 \
-  -H "Authorization: Bearer $RAILWAY_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\":\"mutation Q(\$eid: String!, \$sid: String!, \$cmd: String!) { serviceInstanceUpdate(environmentId: \$eid, serviceId: \$sid, input: { startCommand: \$cmd }) }\",\"variables\":{\"eid\":\"$ENVIRONMENT_ID\",\"sid\":\"$SERVICE_ID\",\"cmd\":\"<новий startCommand>\"}}"
-
-curl -sS -X POST https://backboard.railway.com/graphql/v2 \
-  -H "Authorization: Bearer $RAILWAY_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\":\"mutation Q(\$eid: String!, \$sid: String!) { serviceInstanceRedeploy(environmentId: \$eid, serviceId: \$sid) }\",\"variables\":{\"eid\":\"$ENVIRONMENT_ID\",\"sid\":\"$SERVICE_ID\"}}"
-```
-
-**Verify:** `curl -sS https://sergeant-production.up.railway.app/healthz |
+**Verify:** `curl -sS https://api.167-233-98-92.sslip.io/healthz |
 jq .checks.redis` має повертати `connected: true, reconnectAttempts: 0`,
 а Sergeant logs — `redis_connected` + `bullmq_connection_ready` без
 `Eviction policy is allkeys-lru` warning-у.
