@@ -23,6 +23,7 @@
  */
 
 import { formatMoney } from "./formatMoney";
+import { pluralDays } from "../utils/ukrainianPlural";
 
 export const QUICK_STATS_MODULE_IDS = [
   "finyk",
@@ -114,7 +115,7 @@ export function selectModulePreview(
       const streak = asFiniteNumber(stats["streak"]);
       return {
         main: weekWorkouts ? `${weekWorkouts} трен.` : null,
-        sub: streak ? `Серія: ${streak} днів` : null,
+        sub: streak ? `Серія: ${streak} ${pluralDays(streak)}` : null,
       };
     }
     case "routine": {
@@ -135,7 +136,7 @@ export function selectModulePreview(
           : 0;
       return {
         main,
-        sub: streak ? `Серія: ${streak} днів` : null,
+        sub: streak ? `Серія: ${streak} ${pluralDays(streak)}` : null,
         progress,
       };
     }
