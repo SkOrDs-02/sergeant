@@ -34,6 +34,8 @@
     "ops/openclaw/cheap-router.system.md",
     "docs/05-design/design/redesign-v2/handoff.md",
     "docs/05-design/design/redesign-v2/handoff-package/Handoff for Claude Code.md",
-    "docs/05-design/design/redesign-v2/handoff-package/Hidden tech-debt audit.md"
+    "docs/05-design/design/redesign-v2/handoff-package/Hidden tech-debt audit.md",
+    "docs/90-work/planning/model-eval-2026-08-04.md",
+    "docs/90-work/planning/vision-eval-2026-08-04.md"
   ]
 }
