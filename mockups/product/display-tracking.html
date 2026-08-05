@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Sergeant · Трекінг display: −0.03em / −0.012em</title>
     <!--
-      Status: Active — мокап для рішення власника.
+      Status: Active — матеріал ухваленого рішення (2026-08-05: −0.012em).
 
       Питання одне: чи міняти `letterSpacing` ролі `.text-style-display`
       з −0.03em на −0.012em. Це один рядок у
@@ -228,9 +228,9 @@
         <code>clamp()</code> на мобільній ширині.
       </p>
       <p class="ask">
-        <b>Що вирішуємо.</b> −0.03em калібрувалось під латиницю. Питання не
-        «гарніше чи ні», а чи згоден ти, що для кирилиці це занадто. Я вийняв цю
-        зміну з PR #652 — там лишилась тільки робота по Огляду.
+        <b>Рішення ухвалено 2026-08-05: −0.012em.</b> Файл лишається як запис
+        того, на чому рішення стояло — які саме рядки порівнювались і чому
+        «глобальна зміна» тут зачіпає рівно чотири заголовки.
       </p>
 
       <h2>1 · Слова — там, де різниця і є</h2>
@@ -245,7 +245,7 @@
           <span class="src">VerifyEmailPage.tsx</span>
         </div>
         <div class="col">
-          <span class="tag">пропозиція · <b>−0.012em</b></span>
+          <span class="tag">ухвалено · <b>−0.012em</b></span>
           <span class="d easy">Твій тиждень</span>
           <span class="src">IntroSlide.tsx</span>
           <span class="d easy">Новий пароль</span>
@@ -282,7 +282,7 @@
           <span class="src">HeroCard.tsx · NutritionSlide.tsx</span>
         </div>
         <div class="col">
-          <span class="tag">пропозиція · <b>−0.012em</b></span>
+          <span class="tag">ухвалено · <b>−0.012em</b></span>
           <span class="d easy num">940<span class="sym"> ₴/день</span></span>
           <span class="d easy num">2 340<span class="sym"> ккал</span></span>
           <span class="src">HeroCard.tsx · NutritionSlide.tsx</span>
@@ -366,9 +366,7 @@
           <span class="d" style="letter-spacing: -0.02em"
             >Не вийшло підтвердити</span
           >
-          <span class="flag" style="margin-top: 10px"
-            >−0.012em (пропозиція)</span
-          >
+          <span class="flag" style="margin-top: 10px">−0.012em (ухвалено)</span>
           <span class="d easy">Не вийшло підтвердити</span>
         </div>
         <p class="note">
