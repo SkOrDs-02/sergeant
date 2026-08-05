@@ -32,7 +32,8 @@ import type { GdprCleanupService } from "./cleanupQueue.js";
  *      and (absent a `try/catch`) that exception used to propagate out of
  *      the `for` loop and abort the ENTIRE batch — every row behind the
  *      poison one silently starved too. Fix: `MAX_ATTEMPTS` ceiling (10 —
- *      backoff tops out at 2^10 = 1024min ≈ 17h07m); a row that reaches the
+ *      останній записаний backoff — 2^9 = 512min ≈ 8.5h, бо рядок, що
+ *      досяг стелі, більше не ретраїться); a row that reaches the
  *      ceiling is marked exhausted (`next_attempt_at = 'infinity'`,
  *      `last_error` prefixed `max_attempts_exhausted:`) instead of retried
  *      forever, and the retry-`UPDATE` itself is wrapped in `try/catch` so
@@ -120,10 +121,11 @@ export interface ProcessGdprCleanupQueueResult {
 const DEFAULT_DEADLINE_MS = 60_000;
 
 /**
- * Backoff/retry ceiling (CodeRabbit #627, fix #2). `2^MAX_ATTEMPTS` minutes
- * (1024min ≈ 17h07m) is a sane worst-case retry cadence for a background
- * cleanup queue with no user-facing latency; a row that fails this many
- * times in a row almost certainly needs an operator, not another retry.
+ * Backoff/retry ceiling (CodeRabbit #627, fix #2). Останній backoff, який
+ * реально записується — `2^(MAX_ATTEMPTS-1)` = 512min ≈ 8.5h: рядок, чиї
+ * attempts досягли стелі, позначається exhausted замість чергового retry.
+ * Це sane worst-case cadence для фонової черги без user-facing latency;
+ * рядок, що впав стільки разів поспіль, потребує оператора, не ретраю.
  */
 const MAX_ATTEMPTS = 10;
 

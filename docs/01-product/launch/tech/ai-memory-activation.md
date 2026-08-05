@@ -2,7 +2,7 @@
 
 > **Last validated:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
-
+>
 > **Оновлення 2026-08-05:** усі операційні кроки переписані з Railway на
 > **Coolify** (Hetzner CX23, [ADR-0074](../../../04-governance/adr/0074-hosting-hetzner-coolify.md)) —
 > Railway виведено з експлуатації. Семантика прапорців і метрик не змінилась.

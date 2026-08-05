@@ -79,7 +79,7 @@
 
 Без змін vs 2026-07-01: pairwise diff спростовує «dedup»; не брати як чистку дублікатів.
 
-**Оновлення 2026-08-05:** 4 web-копії `residualImport.ts` (finyk/fizruk/nutrition/routine) видалено — це був окремий клас боргу від «dualWrite = дублікат» гіпотези: одноразовий pre-beta LS→SQLite дренаж для «наявних юзерів», яких у проді ніколи не було. Видалення — не dedup цього розділу, а закриття мертвого коду тепер, коли ризик для наявних тестерів відсутній. Mobile-копії (`apps/mobile/src/modules/*/lib/residualImport.ts`) лишаються — мобільний dual-write ще не має Stage 10 parity (completion-only), тож тамтешній тombstone поки передчасний (див. коментар у видалених web-файлах, збережений у git history).
+**Оновлення 2026-08-05:** 4 web-копії `residualImport.ts` (finyk/fizruk/nutrition/routine) видалено — це був окремий клас боргу від «dualWrite = дублікат» гіпотези: одноразовий pre-beta LS→SQLite дренаж для «наявних юзерів», яких у проді ніколи не було. Видалення — не dedup цього розділу, а закриття мертвого коду тепер, коли ризик для наявних тестерів відсутній. Mobile-копії (`apps/mobile/src/modules/*/lib/residualImport.ts`) лишаються — мобільний dual-write ще не має Stage 10 parity (completion-only), тож тамтешній tombstone поки передчасний (див. коментар у видалених web-файлах, збережений у git history).
 
 ## Група 5 — Дрібні + заблоковані (після waves)
 

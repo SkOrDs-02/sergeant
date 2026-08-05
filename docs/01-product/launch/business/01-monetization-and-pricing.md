@@ -156,7 +156,7 @@ Freemium — найкращий вибір для Sergeant, бо:
            (як Spotify/Netflix) — легально, але Apple воює.
 ```
 
-**Прескриптивний висновок для Sergeant:**
+**Прескриптивний висновок для Sergeant** _(historical, травень 2026 — superseded рішенням founder-а 2026-08-05: цільова пара після бети — LiqPay + «Плата» від Monobank; Stripe — неактивний задел, Paddle знято з активної послідовності; див. Update у шапці)_:
 
 1. **Місяць 1–3 (MVP, UA):** обрати **LiqPay** — найшвидший старт, рідний для UA, знайома checkout-сторінка для Mono-юзерів.
 2. **Місяць 3–6 (масштаб):** додати **Stripe** паралельно — міжнародні картки, Customer Portal, subscription lifecycle webhooks.
