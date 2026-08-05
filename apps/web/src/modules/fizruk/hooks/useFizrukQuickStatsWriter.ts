@@ -22,16 +22,23 @@ export function useFizrukQuickStatsWriter(workouts: Workout[]): void {
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const stats = computeFizrukQuickStats(workouts);
-    const payload = JSON.stringify(stats);
-    if (payload === lastWrittenRef.current) return;
-    if (safeReadStringLS(STORAGE_KEYS.FIZRUK_QUICK_STATS) === payload) {
-      lastWrittenRef.current = payload;
-      return;
-    }
-    if (safeWriteLS(STORAGE_KEYS.FIZRUK_QUICK_STATS, payload)) {
-      lastWrittenRef.current = payload;
-      emitHubBus("storageUpdated", undefined);
-    }
+    const payload = writeFizrukQuickStatsSnapshot(workouts);
+    lastWrittenRef.current = payload;
   }, [workouts]);
+}
+
+/**
+ * Same write, without the React lifecycle — щоб знімок можна було відновити
+ * поза екраном модуля (див. `useFizrukQuickStatsBoot`). Повертає записаний
+ * payload, тож викликач може тримати власний dedupe-ref.
+ */
+export function writeFizrukQuickStatsSnapshot(workouts: Workout[]): string {
+  const payload = JSON.stringify(computeFizrukQuickStats(workouts));
+  if (safeReadStringLS(STORAGE_KEYS.FIZRUK_QUICK_STATS) === payload) {
+    return payload;
+  }
+  if (safeWriteLS(STORAGE_KEYS.FIZRUK_QUICK_STATS, payload)) {
+    emitHubBus("storageUpdated", undefined);
+  }
+  return payload;
 }

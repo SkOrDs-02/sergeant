@@ -29,16 +29,37 @@ export function useNutritionQuickStatsWriter({
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const stats = computeNutritionQuickStats(log, prefs, getKyivDayKey());
-    const payload = JSON.stringify(stats);
-    if (payload === lastWrittenRef.current) return;
-    if (safeReadStringLS(STORAGE_KEYS.NUTRITION_QUICK_STATS) === payload) {
-      lastWrittenRef.current = payload;
-      return;
-    }
-    if (safeWriteLS(STORAGE_KEYS.NUTRITION_QUICK_STATS, payload)) {
-      lastWrittenRef.current = payload;
-      emitHubBus("storageUpdated", undefined);
-    }
+    lastWrittenRef.current = writeNutritionQuickStatsSnapshot({ log, prefs });
   }, [log, prefs]);
+}
+
+/**
+ * Same write, без React-життєвого циклу — щоб знімок можна було відновити
+ * поза екраном модуля (див. `useNutritionQuickStatsBoot`).
+ *
+ * `prefs` навмисно приймає `null`: у теплому SQLite-кеші його немає, доки
+ * користувач не задав цілі. Ніякого дефолтного таргета тут не вигадуємо —
+ * `computeNutritionQuickStats` поверне `calGoal: 0`, а селектор
+ * `selectModulePreview` на нулі просто не рендерить рядок «Ціль: …» і
+ * лишає кільце прогресу порожнім. З'їдені сьогодні калорії — виміряний
+ * факт, тож їх картка показує й без цілі; мовчить саме та частина, що без
+ * цілі не має сенсу (пор. F-010 у browser QA 2026-08-04).
+ */
+export function writeNutritionQuickStatsSnapshot({
+  log,
+  prefs,
+}: {
+  log: NutritionLog;
+  prefs: NutritionPrefs | null;
+}): string {
+  const payload = JSON.stringify(
+    computeNutritionQuickStats(log, prefs, getKyivDayKey()),
+  );
+  if (safeReadStringLS(STORAGE_KEYS.NUTRITION_QUICK_STATS) === payload) {
+    return payload;
+  }
+  if (safeWriteLS(STORAGE_KEYS.NUTRITION_QUICK_STATS, payload)) {
+    emitHubBus("storageUpdated", undefined);
+  }
+  return payload;
 }

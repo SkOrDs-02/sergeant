@@ -29,20 +29,32 @@ export function useRoutineQuickStatsWriter({
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const stats = computeRoutineQuickStats(
+    lastWrittenRef.current = writeRoutineQuickStatsSnapshot({
       habits,
       completions,
-      getKyivDayKey(),
-    );
-    const payload = JSON.stringify(stats);
-    if (payload === lastWrittenRef.current) return;
-    if (safeReadStringLS(STORAGE_KEYS.ROUTINE_QUICK_STATS) === payload) {
-      lastWrittenRef.current = payload;
-      return;
-    }
-    if (safeWriteLS(STORAGE_KEYS.ROUTINE_QUICK_STATS, payload)) {
-      lastWrittenRef.current = payload;
-      emitHubBus("storageUpdated", undefined);
-    }
+    });
   }, [habits, completions]);
+}
+
+/**
+ * Same write, без React-життєвого циклу — щоб знімок можна було відновити
+ * поза екраном модуля (див. `useRoutineQuickStatsBoot`).
+ */
+export function writeRoutineQuickStatsSnapshot({
+  habits,
+  completions,
+}: {
+  habits: Habit[];
+  completions: Record<string, string[]>;
+}): string {
+  const payload = JSON.stringify(
+    computeRoutineQuickStats(habits, completions, getKyivDayKey()),
+  );
+  if (safeReadStringLS(STORAGE_KEYS.ROUTINE_QUICK_STATS) === payload) {
+    return payload;
+  }
+  if (safeWriteLS(STORAGE_KEYS.ROUTINE_QUICK_STATS, payload)) {
+    emitHubBus("storageUpdated", undefined);
+  }
+  return payload;
 }
