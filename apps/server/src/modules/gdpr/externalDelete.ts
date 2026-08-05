@@ -72,12 +72,15 @@ async function deleteExternalResource(
       return { outcome: "rate_limited", status: 429, ms };
     }
 
+    // Hard Rule #21 (Pino redaction): vendor error bodies can carry PII
+    // (echoed email, customer id) — log length + a truncation flag only,
+    // never the raw text.
     const bodyText = await response.text().catch(() => "");
     recordExternalHttp(upstream, "error", ms);
     logger.warn({
       msg: `${upstream}_gdpr_delete_failed`,
       status: response.status,
-      body: bodyText.slice(0, 500),
+      bodyLength: bodyText.length,
     });
     return {
       outcome: "error",
@@ -160,30 +163,35 @@ export async function deleteSentryUser(
 }
 
 /**
- * `DELETE {host}/api/audiences/:id/contacts/:email` (ADR-6.3 table). Needs
- * BOTH `RESEND_API_KEY` (already used for transactional email, `email/
- * ftuxDripMail.ts`) AND `RESEND_AUDIENCE_ID` (new — which marketing
- * audience the contact lives in); skipped when either is missing.
+ * `DELETE https://api.resend.com/contacts/{email}` — the canonical
+ * account-wide Resend contact-delete endpoint (Resend does not expose
+ * `DELETE /audiences/:id/contacts/:email`; that path 404s unconditionally).
+ * ADR-6.3's table sketched the audience-scoped shape before this was ever
+ * implemented — CodeRabbit review on PR #627 caught that it doesn't exist,
+ * which meant every real call 404'd and the worker mis-read that as
+ * "contact already gone" (see the `not_found` idempotent-success comment
+ * below — still correct, just for the wrong reason).
+ *
+ * Only `RESEND_API_KEY` is required now (already used for transactional
+ * email, `email/ftuxDripMail.ts`); `RESEND_AUDIENCE_ID` is no longer
+ * consulted — the endpoint deletes by email across the whole account, not
+ * scoped to one audience.
  */
 export async function deleteResendContact(
   email: string | null | undefined,
   options: DeleteOptions & {
     apiKey?: string | undefined;
-    audienceId?: string | undefined;
     host?: string | undefined;
   } = {},
 ): Promise<VendorDeleteResult> {
   const apiKey = options.apiKey ?? process.env["RESEND_API_KEY"];
-  const audienceId = options.audienceId ?? process.env["RESEND_AUDIENCE_ID"];
-  if (!apiKey || !audienceId || !email) {
+  if (!apiKey || !email) {
     return { outcome: "skipped" };
   }
   const host = (options.host ?? "https://api.resend.com").replace(/\/+$/, "");
   return deleteExternalResource(
     "resend",
-    `${host}/audiences/${encodeURIComponent(audienceId)}/contacts/${encodeURIComponent(
-      email,
-    )}`,
+    `${host}/contacts/${encodeURIComponent(email)}`,
     { Authorization: `Bearer ${apiKey}` },
     options,
   );

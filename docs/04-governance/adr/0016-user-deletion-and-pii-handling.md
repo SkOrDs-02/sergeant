@@ -245,12 +245,12 @@ proposed.
 
 При delete-account треба cleanup-нути дані юзера у:
 
-| Сервіс  | API                                                     | Auth    | Latency / SLA |
-| ------- | ------------------------------------------------------- | ------- | ------------- |
-| Stripe  | `customers.del(stripeCustomerId)`                       | API key | ~200ms        |
-| Sentry  | `DELETE /api/0/projects/{org}/{p}/users/{userId}/`      | DSN     | ~500ms        |
-| PostHog | `DELETE /api/projects/:id/persons/?distinct_id=:userId` | API key | ~1s           |
-| Resend  | `DELETE /api/audiences/:id/contacts/:email`             | API key | ~200ms        |
+| Сервіс  | API                                                                               | Auth    | Latency / SLA |
+| ------- | --------------------------------------------------------------------------------- | ------- | ------------- |
+| Stripe  | `customers.del(stripeCustomerId)`                                                 | API key | ~200ms        |
+| Sentry  | `DELETE /api/0/projects/{org}/{p}/users/{userId}/`                                | DSN     | ~500ms        |
+| PostHog | `DELETE /api/projects/:id/persons/?distinct_id=:userId`                           | API key | ~1s           |
+| Resend  | `DELETE /contacts/{email}` (account-wide; no audience-scoped delete route exists) | API key | ~200ms        |
 
 Усі async, retry-able, тимчасові network-failure-и. Інлайнити їх у
 `DELETE /api/v1/me`-handler — це: (а) latency 2-3s блокує юзерську взаємодію;

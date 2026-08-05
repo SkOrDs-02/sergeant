@@ -17,8 +17,16 @@ import { processGdprCleanupQueueBatch } from "../../modules/gdpr/cleanupWorker.j
 
 const ProcessBody = z
   .object({
-    /** Cap rows processed per call — protects rate limits + DB load. */
-    limit: z.number().int().min(1).max(200).optional(),
+    /**
+     * Cap rows processed per call — protects rate limits + DB load. Max
+     * lowered 200 → 25 (CodeRabbit #627): each row can spend up to
+     * `DEFAULT_TIMEOUT_MS` (10s, `externalDelete.ts`) per vendor HTTP call,
+     * so `limit=200` was a theoretical ~2000s single request. 25 rows ×
+     * 10s ≈ 250s worst case, comfortably under the 60s
+     * `processGdprCleanupQueueBatch` deadline (`deadlineMs`, default 60s)
+     * that now caps the actual wall-clock spend regardless of `limit`.
+     */
+    limit: z.number().int().min(1).max(25).optional(),
   })
   .strict();
 

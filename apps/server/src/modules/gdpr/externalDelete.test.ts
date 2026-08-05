@@ -11,7 +11,6 @@ beforeEach(() => {
   delete process.env["SENTRY_ORG_SLUG"];
   delete process.env["SENTRY_PROJECT_SLUG"];
   delete process.env["RESEND_API_KEY"];
-  delete process.env["RESEND_AUDIENCE_ID"];
 });
 
 describe("deleteStripeCustomer", () => {
@@ -75,23 +74,37 @@ describe("deleteSentryUser", () => {
 });
 
 describe("deleteResendContact", () => {
-  it("skips when API key / audience id are unset", async () => {
+  it("skips when RESEND_API_KEY is unset", async () => {
     const result = await deleteResendContact("u@example.com");
     expect(result).toEqual({ outcome: "skipped" });
   });
 
-  it("calls DELETE against the audience contacts endpoint when configured", async () => {
+  it("skips when there is no email, even with a configured key", async () => {
+    const result = await deleteResendContact(null, { apiKey: "re_123" });
+    expect(result).toEqual({ outcome: "skipped" });
+  });
+
+  it("calls DELETE against the canonical /contacts/{email} endpoint when configured", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 200 });
     const result = await deleteResendContact("u@example.com", {
       apiKey: "re_123",
-      audienceId: "aud_1",
       fetchImpl,
     });
     expect(result.outcome).toBe("ok");
     const [url, init] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe(
-      "https://api.resend.com/audiences/aud_1/contacts/u%40example.com",
-    );
+    // Resend has no `/audiences/:id/contacts/:email` route (that 404s
+    // unconditionally) — the canonical delete-by-email endpoint is
+    // account-wide, not audience-scoped.
+    expect(url).toBe("https://api.resend.com/contacts/u%40example.com");
     expect(init.headers.Authorization).toBe("Bearer re_123");
+  });
+
+  it("maps 404 to not_found (idempotent — contact already gone)", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    const result = await deleteResendContact("u@example.com", {
+      apiKey: "re_123",
+      fetchImpl,
+    });
+    expect(result.outcome).toBe("not_found");
   });
 });
