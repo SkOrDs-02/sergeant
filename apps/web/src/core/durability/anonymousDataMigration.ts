@@ -33,6 +33,17 @@ export interface AnonymousMigrationResult {
   readonly migratedRows: number;
 }
 
+export interface AnonymousMigrationOptions {
+  /**
+   * Викликається рівно один раз і лише тоді, коли розвідка знайшла анонімні
+   * рядки, тобто починається справжній перенос. До цього моменту функція
+   * тільки перемикає партицію, доганяє схеми модулів і сканує таблиці —
+   * робота, про яку користувачу нема чого повідомляти (див.
+   * `AnonymousDataMigrationProvider`).
+   */
+  readonly onTransferStart?: () => void;
+}
+
 const MIGRATION_ORIGIN_DEVICE_ID = "anonymous-profile-migration";
 
 async function migrateModuleSchemas(
@@ -253,6 +264,7 @@ async function deleteSourceRows(
 /** Run or resume the durable first-auth handoff. */
 export async function migrateAnonymousDataToProfile(
   targetUserId: string,
+  options: AnonymousMigrationOptions = {},
 ): Promise<AnonymousMigrationResult> {
   if (!targetUserId) throw new Error("Target user id is required");
   const sqlite = await import("../db/sqlite.js");
@@ -264,6 +276,7 @@ export async function migrateAnonymousDataToProfile(
     await sqlite.switchSqliteUser(targetUserId);
     return { migratedRows: 0 };
   }
+  options.onTransferStart?.();
   const claim = await getOrCreateClaim(sourceClient, targetUserId);
 
   await sqlite.switchSqliteUser(targetUserId);

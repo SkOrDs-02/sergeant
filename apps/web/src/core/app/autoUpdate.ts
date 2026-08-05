@@ -23,7 +23,8 @@
  *      for longer than `buildIdMismatchPromptMs` (1 h default), we
  *      force the prompt even when the SW pipeline thinks nothing is
  *      waiting (e.g. mid-deploy where a stale client talks to a new
- *      server but the new SW hasn't been served yet).
+ *      server but the new SW hasn't been served yet). Both sides are
+ *      normalized to a git short SHA first — see {@link normalizeBuildId}.
  *
  * The module is deliberately framework-agnostic — all DOM globals can
  * be overridden via options so the test suite can drive a fake clock /
@@ -103,12 +104,40 @@ const NOOP_DISPOSE: AutoUpdateController = {
   reportServerBuildId: () => undefined,
 };
 
+/**
+ * Довжина git-short-SHA. `resolveServerBuildId`
+ * (`apps/server/src/http/buildIdHeader.ts`) ріже свій ідентифікатор рівно
+ * до неї, тож клієнтський бік мусить різати так само.
+ */
+const SHORT_SHA_LEN = 7;
+
+/**
+ * Зводить обидва build-id до спільної форми.
+ *
+ * AI-CONTEXT: до цієї правки порівняння `server === client` не могло стати
+ * істинним НІКОЛИ — навіть коли фронт і бек зібрані з одного коміту. Сервер
+ * віддає `X-Server-Build-Id` обрізаним до 7 символів, а клієнтський
+ * `VITE_BUILD_ID` — це повний 40-символьний `VERCEL_GIT_COMMIT_SHA`
+ * (`vite.config.js`). Наслідок: розбіжність вважалась вічною і hard-floor
+ * піднімав плашку «доступна нова версія» рівно через `buildIdMismatchPromptMs`
+ * у КОЖНІЙ сесії, незалежно від того, чи був деплой. Оскільки решта джерел
+ * події на той момент мовчала (SW не проходив через `waiting`), це був єдиний
+ * шлях, яким плашка взагалі з'являлась — тобто користувач бачив рівно
+ * false-positive і нічого крім нього.
+ *
+ * Порівнюємо саме короткі форми, а не «повний проти повного»: сервер довшої
+ * форми не має в принципі, тож 7 символів — це стеля спільної інформації.
+ */
+function normalizeBuildId(raw: string): string {
+  return raw.trim().slice(0, SHORT_SHA_LEN);
+}
+
 function resolveClientBuildId(explicit?: string): string {
   if (typeof explicit === "string" && explicit.trim() !== "") {
-    return explicit.trim();
+    return normalizeBuildId(explicit);
   }
   const fromEnv = (import.meta.env.VITE_BUILD_ID as string | undefined) ?? "";
-  return fromEnv.trim() !== "" ? fromEnv.trim() : "dev";
+  return fromEnv.trim() !== "" ? normalizeBuildId(fromEnv) : "dev";
 }
 
 function getRegistration(
@@ -264,7 +293,7 @@ export function setupAutoUpdate(
   };
   const reportServerBuildId = (raw: string | null | undefined) => {
     if (typeof raw !== "string") return;
-    const serverBuildId = raw.trim();
+    const serverBuildId = normalizeBuildId(raw);
     if (serverBuildId === "") return;
     // Server has caught up — clear any pending mismatch state. Also
     // resets the "we already fired" guard so a future divergence

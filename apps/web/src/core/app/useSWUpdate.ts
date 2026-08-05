@@ -58,12 +58,38 @@ export function useSWUpdate() {
     queryClientRef.current = queryClient;
   }, [toast, queryClient]);
 
+  /**
+   * Застосувати оновлення.
+   *
+   * `updateSW()` з `virtual:pwa-register` зводиться до
+   * `wb.messageSkipWaiting()`, а той шле `SKIP_WAITING` ЛИШЕ за наявності
+   * `registration.waiting`; сам reload робить слухач `controlling`, який
+   * `vite-plugin-pwa` вішає в момент `onNeedRefresh`. Обидві умови
+   * виконуються на штатному SW-шляху, але плашку піднімає ще й build-id
+   * hard-floor (`autoUpdate.ts`) — а він спрацьовує саме тоді, коли
+   * waiting-воркера немає (стара вкладка проти вже нового сервера). На
+   * тому шляху клік не робив рівно нічого. Тому: якщо waiting-воркера не
+   * видно, перезавантажуємось напряму.
+   */
   const applyUpdate = useCallback(() => {
-    if (typeof window.__pwaUpdateSW === "function") {
-      window.__pwaUpdateSW(true);
-    } else {
+    const updateSW = window.__pwaUpdateSW;
+    if (typeof updateSW !== "function") {
       window.location.reload();
+      return;
     }
+    void (async () => {
+      let hasWaiting = false;
+      try {
+        const registration = await navigator.serviceWorker?.getRegistration();
+        hasWaiting = Boolean(registration?.waiting);
+      } catch {
+        // Реєстрацію не прочитати (privacy-режим, SW недоступний) — падаємо
+        // у reload-гілку: вона гірша лише зайвим мережевим запитом.
+        hasWaiting = false;
+      }
+      updateSW(true);
+      if (!hasWaiting) window.location.reload();
+    })();
   }, []);
 
   // Stored in a ref so the poll interval can reference the latest version
