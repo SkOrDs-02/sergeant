@@ -22,13 +22,28 @@ describe("MonthPulseCard", () => {
     unknownOutCount: 0,
   };
 
+  /**
+   * Знайти суму, набрану `Money`, за її повним читабельним текстом.
+   * `getAllBy…[0]`, бо та сама сума легітимно трапляється двічі на картці
+   * (факт зверху і той самий факт у рядку прогнозу).
+   */
+  function money(text: string): HTMLElement {
+    return screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" &&
+        el.className.includes("tabular-nums") &&
+        (el.textContent ?? "").replace(/[\s\u00a0\u202f]/g, " ") === text,
+    )[0]!;
+  }
+
   it("renders Місяць label, date, spent + income pair", () => {
     render(<MonthPulseCard {...baseProps} />);
     expect(screen.getByText("Місяць")).toBeInTheDocument();
     expect(screen.getByText("2 травня")).toBeInTheDocument();
     expect(screen.getByText("Витрати")).toBeInTheDocument();
     expect(screen.getByText("Дохід")).toBeInTheDocument();
-    expect(screen.getByText("4 261")).toBeInTheDocument();
+    // Сума набрана `Money`: розряди й символ — окремі вузли (П4).
+    expect(money("4 261 ₴")).toBeInTheDocument();
   });
 
   it("does not duplicate the day-budget — no Фінпульс block", () => {
@@ -91,8 +106,14 @@ describe("MonthPulseCard", () => {
         unknownOutCount={1}
       />,
     );
+    expect(money("−1 200 ₴")).toBeInTheDocument();
     expect(
-      screen.getByText(/Враховано планових:.*1 200.*без суми/),
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === "P" &&
+          /Враховано планових:/.test(el.textContent ?? "") &&
+          /без суми/.test(el.textContent ?? ""),
+      ),
     ).toBeInTheDocument();
   });
 
