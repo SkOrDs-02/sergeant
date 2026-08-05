@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "3.2.0",
+  "current": "3.2.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -195,6 +195,14 @@
         "rule #25: eval-звіти емітять AUTO-GENERATED маркер із генератора (apps/server/scripts/eval/report.ts) і додані у scope правила",
         "AGENTS.md: RQ-фабрики, формулювання Lighthouse CI, branch-naming, .codex 21 -> 20 файлів",
         "skills: інфраструктурний дрифт Railway -> Coolify/Hetzner, зачистка мертвих згадок OpenClaw (ADR-0074/0075), retired hard rules більше не подаються як чинні (ADR-0081)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "3.2.1": {
+      "releasedAt": "2026-08-05",
+      "changes": [
+        "bump from 3.2.0 -> 3.2.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

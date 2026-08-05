@@ -1,12 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
+import {
+  WORKOUT_BANNER_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { messages } from "@shared/i18n/uk";
 
 function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
   const [startMs] = useState(() => Date.now());
   const [elapsedMin, setElapsedMin] = useState(0);
+  // Тост-трей стоїть НАД цією плашкою. Раніше він читав
+  // `--active-workout-banner-offset`, якої ніхто у репо не ставив — тобто
+  // змінна завжди розгорталась у `0px`, і на вузькому екрані (де тост
+  // 92vw) вони накладались. Публікуємо реальну зайняту смугу.
+  const bannerRef = useRef<HTMLDivElement>(null);
+  useBottomInsetVar(bannerRef, WORKOUT_BANNER_INSET_VAR);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -22,6 +32,7 @@ function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
 
   return (
     <div
+      ref={bannerRef}
       className="fixed left-4 z-40 pointer-events-none"
       style={{ bottom: "calc(5.25rem + env(safe-area-inset-bottom, 0px))" }}
       aria-live="polite"

@@ -9,9 +9,14 @@ import {
 } from "react";
 import {
   useToast,
+  MAX_VISIBLE_TOASTS,
   type ToastItem,
   type ToastType,
 } from "@shared/hooks/useToast";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  WORKOUT_BANNER_INSET_VAR,
+} from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { messages } from "@shared/i18n/uk";
@@ -270,7 +275,25 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
           aria-hidden
         />
       </span>
-      <span className="min-w-0 flex-1 leading-snug">{toast.msg}</span>
+      <span className="min-w-0 flex-1 leading-snug">
+        {toast.msg}
+        {toast.repeat > 1 && (
+          // Та сама подія повторилась, поки тост ще на екрані. Показуємо
+          // лічильник замість другого аркуша — інакше серія однакових дій
+          // (три свайпи, чотири помилки з `Promise.allSettled`) будувала
+          // вежу з ідентичних тостів.
+          <span
+            className={cn(
+              "ml-1.5 inline-block align-middle rounded-full px-1.5 py-px",
+              "text-style-caption font-semibold bg-line/15",
+              ACCENT_TEXT[toast.type],
+            )}
+            data-toast-repeat={toast.repeat}
+          >
+            ×{toast.repeat}
+          </span>
+        )}
+      </span>
       {toast.action?.onClick && (
         <button
           type="button"
@@ -324,6 +347,12 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  * `ActiveWorkoutBanner`, and iOS safe-area inset; never overlaps with
  * those layers even when several toasts stack up on a 375 px viewport.
  *
+ * Тримає щонайбільше `MAX_VISIBLE_TOASTS` аркушів; решта чекає у черзі
+ * провайдера й піднімається, щойно звільниться слот. Порожній трей
+ * лишається змонтованим навмисно — live-region, у яку контент
+ * вставляється разом із самим регіоном, частина screen-reader-ів
+ * пропускає.
+ *
  * Per-toast politeness — error and undo-bearing toasts get
  * `role="alert" aria-live="assertive"` (the 5 s undo-window can't wait
  * for the polite queue to drain); info/success/warning stay
@@ -342,28 +371,55 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
 export function ToastContainer() {
   const { toasts, dismiss, pause, resume } = useToast();
 
-  if (toasts.length === 0) return null;
+  // Показуємо лише видиме вікно — решта чекає у черзі в провайдері й
+  // навіть не має запущеного таймера (див. `MAX_VISIBLE_TOASTS`).
+  // `leaving`-аркуші лишаємо у рендері, інакше exit-анімація не встигне
+  // програтись, але слота вони вже не займають.
+  const visible: ToastItem[] = [];
+  let slots = 0;
+  for (const t of toasts) {
+    if (t.leaving) {
+      visible.push(t);
+      continue;
+    }
+    if (slots >= MAX_VISIBLE_TOASTS) break;
+    slots += 1;
+    visible.push(t);
+  }
 
   return (
     <div
-      // Bottom-anchored above (in DOM-stacking sense — visually upward
-      // from) the bottom-nav (`--bottom-nav-height`, 60 px when present),
-      // the optional `ActiveWorkoutBanner` (~84 px above the bottom-nav),
-      // and the iOS home-indicator safe-area. `z-9999` keeps the tray
-      // over the FAB and module shells but still below modal portals
-      // when they are explicitly placed at `z-[10000]`.
+      // Bottom-anchored above the bottom-nav, the optional
+      // `ActiveWorkoutBanner` and the iOS home-indicator safe-area.
+      //
+      // AI-DANGER: обидві змінні ставляться на `<html>` хуком
+      // `useBottomInsetVar` і НЕ мають локальних аналогів у цій гілці
+      // дерева. Попередня версія читала `--bottom-nav-height`, яку
+      // виставляє утиліта `bottom-nav-height-var` на корені модуля —
+      // тобто всередині `children` у `Providers`, тоді як цей трей —
+      // їхня СЕСТРА. CSS-змінні успадковуються лише вниз, тож там завжди
+      // спрацьовував fallback `0px`, і тости лягали просто поверх нижньої
+      // навігації. Не повертай `var(--bottom-nav-height)` сюди.
+      //
+      // Обидва inset-и вже включають safe-area (вона всередині
+      // `padding-bottom` навігації), тому `max()`, а не сума: додавати
+      // `env(safe-area-inset-bottom)` зверху означало б порахувати її
+      // двічі. Fallback-гілка `max()` тримає safe-area для екранів без
+      // навігації (auth, onboarding).
+      //
+      // `z-9999` keeps the tray over the FAB and module shells but still
+      // below modal portals when they are explicitly placed at `z-[10000]`.
       className={cn(
         "fixed left-1/2 -translate-x-1/2 z-9999",
         "flex flex-col items-center gap-2 pointer-events-none",
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom:
-          "calc(env(safe-area-inset-bottom, 0px) + var(--bottom-nav-height, 0px) + var(--active-workout-banner-offset, 0px) + 1rem)",
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
     >
-      {toasts.map((t) => (
+      {visible.map((t) => (
         <ToastRow
           key={t.id}
           toast={t}

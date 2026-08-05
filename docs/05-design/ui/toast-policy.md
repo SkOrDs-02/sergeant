@@ -1,7 +1,7 @@
 # Toast policy
 
-> **Last validated:** 2026-08-04 by @claude.
-> **Next review:** 2026-08-11.
+> **Last validated:** 2026-08-05 by @claude.
+> **Next review:** 2026-08-12.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -54,7 +54,8 @@ toast.error("Не вдалося синхронізувати дані. Пере
 | `toast.error("Не вдалося", 0, …)` (нескінченне `duration`)                                      | Користувач не зможе закрити тост клавіатурою / автоматично — `aria-live=assertive` блокує screen-reader queue. | Default 5000 ms або явне число; user може hover/focus pause-ити.                                                         |
 | `toast.success("Видалено")` без undo                                                            | Випадкове видалення → нема як відновити; doc стерто з cloud після 200 ms.                                      | `undoToast(...)` із 6-сек grace window. Див. [`undoToast.tsx`](../../../apps/web/src/shared/lib/ui/undoToast.tsx).       |
 | `toast.error(error.message)` де `error.message` — це stack-trace або сервер-internal            | Користувач бачить "TypeError: Cannot read property 'data' of undefined" — лякає, не допомагає.                 | Покажи human copy (`Не вдалося оновити аватар`) + `console.error(error)` для дев-консолі.                                |
-| Чотири підряд `toast.error(...)` у `Promise.allSettled` loop-і                                  | Стек 4-х однакових тостів — screen-reader розриватиме фокус, користувач не зрозуміє нічого.                    | Агрегуй: `toast.error("3 з 4 операцій впали. Подивитись?", …, { label: "Відкрити", onClick: openLog })`.                 |
+| Чотири підряд `toast.error(...)` у `Promise.allSettled` loop-і                                  | Ідентичні зіллються у `×4`, але різні тексти займуть чотири слоти з черги — користувач читатиме їх по черзі.   | Агрегуй сам: `toast.error("3 з 4 операцій впали. Подивитись?", …, { label: "Відкрити", onClick: openLog })`.             |
+| `onClick: () => { …; toast.dismiss(id); }` в action-і                                           | `<ToastRow>` уже закриває аркуш у `finally` — другий `dismiss` перезаписує exit-таймер і лишає перший сиротою. | Просто зроби дію; закриття — відповідальність компонента.                                                                |
 | `toast.warning("Слабкий зв'язок")` у `setInterval(5000)` поки offline                           | Spam — користувач бачить tower of toasts.                                                                      | Один persistent banner у network-layer (PWASection / network indicator). Toast — лише на перший трансишн online↔offline. |
 | `toast.show(msg, "error", 5000, () => {...})` (4-й арг = function замість `{ label, onClick }`) | `useToast` мовчки drop-ає не-object `action`-параметр — toast рендериться без кнопки.                          | Завжди `{ label, onClick }`-форма.                                                                                       |
 
@@ -70,13 +71,41 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 `assertive` НЕ означає "блимай" — це лише сигнал реколайзингу для AT.
 Анімація / контраст / `duration` живуть окремо.
 
+## Скільки одночасно на екрані
+
+Одночасно видно **щонайбільше 3** аркуші (`MAX_VISIBLE_TOASTS` у
+[`useToast.tsx`](../../../apps/web/src/shared/hooks/useToast.tsx)). Решта
+чекає у черзі провайдера і піднімається, щойно звільниться слот — тост із
+черги починає «горіти» рівно тоді, коли став видимим, а не поки чекав.
+Глибина черги — 5 понад видимі; далі найстаріший **незапущений** тост
+тихо викидається.
+
+Раніше cap був 5 із мовчазним викиданням найстарішого прямо в `show()` —
+серія швидких дій (три свайпи по транзакціях, чотири помилки з
+`Promise.allSettled`) забудовувала пів екрана на 667-px в'юпорті.
+
+**Коалесинг.** Однаковий текст + однаковий tone + **без `action`** не
+займає новий слот: лічильник на наявному аркуші росте (`×2`, `×3`) і
+відлік перезапускається. Тости **з `action` не зливаються** — кожен несе
+власне замикання (undo саме цього запису, retry саме цього запиту), і
+злиття тихо забрало б у користувача можливість скасувати першу дію.
+
 ## Layout
 
 `<ToastContainer>` живе у `apps/web/src/core/app/Providers.tsx` як root-portal.
 
-- На mobile: `bottom: safe-area-inset-bottom + 12px`. На iOS PWA — над
-  Home Indicator (safe-area).
-- На desktop: `bottom-right` стак, max 5 одночасно (старші — leaving).
+- Bottom-центрований стак, `w-[min(92vw,24rem)]`.
+- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset) + 0.75rem`.
+  **AI-DANGER:** обидві `--sgt-*` змінні ставить хук
+  [`useBottomInsetVar`](../../../apps/web/src/shared/hooks/useBottomInsetVar.ts)
+  на `<html>`. Локальна `--bottom-nav-height` (утиліта
+  `bottom-nav-height-var`) сюди **не доходить**: вона живе на корені
+  модуля, тобто всередині `children` у `Providers`, а трей — їхня сестра,
+  і CSS-змінні успадковуються лише вниз. Саме тому тости раніше лягали
+  поверх нижньої навігації. Не повертай `var(--bottom-nav-height)` у цей
+  `calc()`.
+- Порожній трей лишається змонтованим — live-region, у яку контент
+  вставляється разом із самим регіоном, частина screen-reader-ів пропускає.
 - Touch-dismiss: горизонтальний swipe ≥ 64 px (або 32 px з велосіті ≥ 0.4 px/ms).
 - Hover / focus / touch-drag → `pause()`; mouseleave / blur / touchend
   → `resume()`. Реалізовано в [`useToast.tsx:118-140`](../../../apps/web/src/shared/hooks/useToast.tsx).

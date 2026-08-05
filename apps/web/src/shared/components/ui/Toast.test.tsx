@@ -262,3 +262,53 @@ describe("Toast — undo-action", () => {
     }
   });
 });
+
+describe("Toast — стек і черга", () => {
+  beforeEach(() => {
+    navigator.vibrate = vi.fn();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("рендерить максимум 3 аркуші; 4-й чекає у черзі й з'являється після звільнення слота", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.info("Перший", 1000);
+      api.info("Другий", 1000);
+      api.info("Третій", 1000);
+      api.info("Четвертий", 1000);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(3);
+    expect(screen.queryByText("Четвертий")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1000 + 220);
+    });
+
+    expect(screen.getByText("Четвертий")).toBeInTheDocument();
+  });
+
+  it("однакові actionless-тости зливаються в один аркуш із бейджем ×N", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.success("Збережено", 4000);
+      api.success("Збережено", 4000);
+      api.success("Збережено", 4000);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(1);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+  });
+
+  it("порожній трей лишається у DOM — live-region має існувати до вставки тексту", () => {
+    renderHarness();
+    expect(screen.getByTestId("toast-tray")).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(0);
+  });
+});
