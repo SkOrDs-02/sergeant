@@ -377,6 +377,45 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
     }
   });
 
+  // `enqueueGdprCleanup` no-ops silently on a falsy email
+  // (`cleanupQueue.ts`: `if (!userId || !email) return;`) — a NULL
+  // `"user".email` at delete-time (soft-delete anonymization edge case,
+  // or a row that never had one) would otherwise skip the entire external
+  // cleanup queue instead of enqueueing it under a synthetic address.
+  it("falls back to a synthetic {userId}@deleted.sergeant.app address when email is null", async () => {
+    const client = {
+      query: vi.fn().mockImplementation((sql: string) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes(`SELECT email FROM "user"`)
+        ) {
+          return Promise.resolve({ rows: [{ email: null }] });
+        }
+        return Promise.resolve({ rows: [] });
+      }),
+      release: vi.fn(),
+    };
+    const pool = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      connect: vi.fn().mockResolvedValue(client),
+    } as unknown as Pool;
+
+    await deleteUserData(pool, "user-1");
+
+    const calls = (client.query as ReturnType<typeof vi.fn>).mock.calls;
+    const enqueueCalls = calls.filter(
+      (c: unknown[]) =>
+        typeof c[0] === "string" &&
+        (c[0] as string).includes("INSERT INTO gdpr_cleanup_queue"),
+    );
+    expect(enqueueCalls).toHaveLength(4);
+    for (const call of enqueueCalls) {
+      const values = call[1] as unknown[];
+      expect(values[0]).toBe("user-1");
+      expect(values[1]).toBe("user-1@deleted.sergeant.app");
+    }
+  });
+
   it("skips gdpr_cleanup_queue enqueue when the user row is already gone (idempotent second delete)", async () => {
     // mockPoolWithTransaction() defaults every client.query call to
     // `{ rows: [] }` — including the SELECT email snapshot, simulating a

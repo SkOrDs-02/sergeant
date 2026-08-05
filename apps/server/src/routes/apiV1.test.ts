@@ -259,6 +259,14 @@ describe("/api/v1/me data rights", () => {
           ai_memory: true,
           push_notifications: false,
           sergeant_nudges: false,
+          // `true` (not the DEFAULT_PREFERENCES value `false`) on purpose —
+          // CodeRabbit PR #627 review: the old mocked row omitted this
+          // column entirely, so the assertion below matched by COINCIDENCE
+          // with serializePreferences()'s own `=== true` default-to-false
+          // fallback and could never catch a real regression (wrong column
+          // name, dropped SELECT/RETURNING field, etc). Asserting `true`
+          // here is a genuine round-trip check of `row["health_data_consent"]`.
+          health_data_consent: true,
           updated_at: new Date("2026-06-06T10:05:00.000Z"),
         },
       ],
@@ -276,7 +284,7 @@ describe("/api/v1/me data rights", () => {
       aiMemory: true,
       pushNotifications: false,
       sergeantNudges: false,
-      healthDataConsent: false,
+      healthDataConsent: true,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
