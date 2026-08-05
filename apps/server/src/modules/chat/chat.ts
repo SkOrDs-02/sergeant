@@ -327,13 +327,24 @@ export default async function handler(
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
     // повний blob — у Sentry breadcrumb для debug-у.
     const requestId = als.getStore()?.requestId ?? undefined;
-    const normalizedToolResults = truncateToolResults(tool_results, {
-      requestId,
-    }).map((r) =>
+    // AI-DANGER: маска стоїть ПЕРЕД `truncateToolResults`, а не після.
+    // Truncate кладе ПОВНИЙ оригінал у Sentry-breadcrumb (`data.full`), а
+    // `applyBeforeBreadcrumb` чистить `data` лише для `category: "http"` —
+    // тобто при масці після усічення сирі імена контрагентів та IBAN-и
+    // їхали в Sentry повз рішення founder-а #10. Sentry — теж «за
+    // периметром». Маскуємо один раз, до обох стоків.
+    // Знахідка B2, `docs/90-work/audits/ai-pipeline-2026-08-05.md`.
+    //
+    // `ToolResult.content` — `string | number | boolean` (schemas/api.ts),
+    // тож нерядкові значення PII не несуть і маски не потребують.
+    const maskedToolResults = tool_results.map((r) =>
       typeof r.content === "string"
         ? { ...r, content: maskMachineText(r.content, knownValues) }
         : r,
     );
+    const normalizedToolResults = truncateToolResults(maskedToolResults, {
+      requestId,
+    });
     // M8 — обгортаємо tool_result-content у `<tool_output tool="...">` envelope
     // і скануємо на prompt-injection маркери. SYSTEM_PREFIX (v8+) інструктує
     // модель трактувати все всередині envelope як ДАНІ. Це захищає від

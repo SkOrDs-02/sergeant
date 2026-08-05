@@ -9,7 +9,7 @@ import {
 } from "../obs/metrics.js";
 import { env } from "../env.js";
 import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
-import { estimateAnthropicCostUsd, pickAnthropicPricing } from "./aiPricing.js";
+import { estimateAnthropicCostUsd } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
 import { elapsedMs, sleep } from "./timing.js";
 
@@ -173,6 +173,13 @@ interface AnthropicUsage {
    */
   cache_creation_input_tokens?: number;
   cache_read_input_tokens?: number;
+  /**
+   * OpenRouter-only: сума в USD, яку шлюз реально списав за цей виклик.
+   * Дзеркалить `StreamUsage.cost` у `modules/chat/chatShared.ts` — без цього
+   * поля тип мовчки розходився з тим, що реально прилітає зі стріму, і
+   * cost-шлях виглядав «мертвим» для читача.
+   */
+  cost?: number;
 }
 
 interface AnthropicResponseData {
@@ -255,16 +262,23 @@ function recordUsage(
       });
     }
     // Cost estimate per request (USD). Безпечно інкрементує counter навіть
-    // дробовими значеннями (prom-client це підтримує). Невідома модель →
-    // нічого не інкрементуємо.
-    if (pickAnthropicPricing(model)) {
-      const usd = estimateAnthropicCostUsd(model, usage) ?? 0;
-      if (usd > 0) {
-        aiCostEstimateUsd.inc(
-          { provider: "anthropic", model, endpoint: ep },
-          usd,
-        );
-      }
+    // дробовими значеннями (prom-client це підтримує).
+    //
+    // AI-DANGER: НЕ повертай сюди гейт `if (pickAnthropicPricing(model))`.
+    // `estimateAnthropicCostUsd` сам віддає `null` для невідомої моделі, але
+    // ПЕРЕД тим бере `usage.cost` — фактичну суму від OpenRouter. Гейт
+    // відсікав рівно той випадок, заради якого cost-поле й існує: моделі
+    // шлюзу (`deepseek/deepseek-v4-flash`, `z-ai/glm-5.2`) у таблиці цін
+    // відсутні, тож під `CHAT_VIA_OPENROUTER=true` лічильник стояв на нулі —
+    // а `anthropicBudgetGuard` читає саме його, тобто стеля $3/$5 не бачила
+    // найдорожчої поверхні взагалі. Знахідка B1,
+    // `docs/90-work/audits/ai-pipeline-2026-08-05.md`.
+    const usd = estimateAnthropicCostUsd(model, usage) ?? 0;
+    if (usd > 0) {
+      aiCostEstimateUsd.inc(
+        { provider: "anthropic", model, endpoint: ep },
+        usd,
+      );
     }
     // PR-12: persistent USD ledger у `ai_usage_daily` (паралельно з
     // Prometheus). Fire-and-forget — fail-open усередині helper-а, тому

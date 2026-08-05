@@ -25,6 +25,15 @@ vi.mock("../../lib/counterpartyNames.js", () => ({
   getCounterpartyNames: vi.fn(async () => ["Іван Петренко"]),
 }));
 
+/**
+ * Sentry-breadcrumb-и — другий стік «за периметром» поряд з Anthropic.
+ * Мокаємо, щоб тест міг дивитись на те, що реально пішло б у Sentry.
+ */
+const sentryMocks = vi.hoisted(() => ({ addBreadcrumb: vi.fn() }));
+vi.mock("../../sentry.js", () => ({
+  Sentry: { addBreadcrumb: sentryMocks.addBreadcrumb },
+}));
+
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import handler from "./chat.js";
 import { __resetChatResponseCache } from "./chatResponseCache.js";
@@ -152,5 +161,38 @@ describe("маскування на вході чату", () => {
     const sent = JSON.stringify(sentPayload()["messages"]);
     expect(sent).not.toContain("Іван Петренко");
     expect(sent).not.toContain("ivan@mail.com");
+  });
+
+  // Знахідка B2 (`docs/90-work/audits/ai-pipeline-2026-08-05.md`): Anthropic —
+  // не єдиний стік за периметром. `truncateToolResults` кладе ПОВНИЙ оригінал
+  // у Sentry-breadcrumb (`data.full`), а `applyBeforeBreadcrumb` чистить `data`
+  // лише для `category: "http"`. Поки маска стояла ПІСЛЯ усічення, сирі імена
+  // їхали в Sentry. Тест дивиться саме на breadcrumb, а не на payload — інакше
+  // регресія знову пройде повз (payload лишиться чистим в обох порядках).
+  it("не пускає немасковане ім'я у Sentry-breadcrumb усічення", async () => {
+    const long = `Від Іван Петренко ivan@mail.com ${"деталі ".repeat(400)}`;
+    expect(long.length).toBeGreaterThan(2000); // інакше truncate не спрацює
+
+    await handler(
+      makeReq({
+        context: "",
+        messages: [{ role: "user", content: "покажи перекази" }],
+        tool_calls_raw: [
+          { type: "tool_use", id: "t1", name: "find_transaction", input: {} },
+        ],
+        tool_results: [{ tool_use_id: "t1", content: long }],
+      }),
+      makeRes(),
+    );
+
+    const breadcrumbs = sentryMocks.addBreadcrumb.mock.calls
+      .map((c) => c[0] as { category?: string; data?: Record<string, unknown> })
+      .filter((b) => b?.category === "chat.tool_result");
+    expect(breadcrumbs).toHaveLength(1);
+
+    const full = String(breadcrumbs[0]?.data?.["full"] ?? "");
+    expect(full).not.toBe("");
+    expect(full).not.toContain("Іван Петренко");
+    expect(full).not.toContain("ivan@mail.com");
   });
 });
