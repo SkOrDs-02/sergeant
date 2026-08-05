@@ -87,6 +87,17 @@ describe("tierMeta", () => {
   it("uses 'поспіль' framing for tier 3", () => {
     expect(tierMeta(3, 23, 9)).toBe("9 тижнів поспіль · 23 спостереження");
   });
+
+  // Регресія: поріг сегмента — сирий `weeks < 1`, не округлений. Інакше 0.6
+  // тижня давало «1 тиждень» — дописаний тиждень спостережень, якого не було.
+  it("drops the weeks segment for a partial first week", () => {
+    expect(tierMeta(1, 6, 0.5)).toBe("6 спостережень");
+    expect(tierMeta(1, 6, 0.9)).toBe("6 спостережень");
+  });
+
+  it("floors a fractional week instead of rounding it up", () => {
+    expect(tierMeta(1, 6, 1.5)).toBe("1 тиждень · 6 спостережень");
+  });
 });
 
 describe("uk-UA pluralisation (style-guide.uk.md §8)", () => {
@@ -96,6 +107,14 @@ describe("uk-UA pluralisation (style-guide.uk.md §8)", () => {
     expect(formatWeeksUk(4)).toBe("4 тижні");
     expect(formatWeeksUk(5)).toBe("5 тижнів");
     expect(formatWeeksUk(9)).toBe("9 тижнів");
+  });
+
+  // Повні тижні, а не найближчі: 0.5 — це нуль повних тижнів, 1.5 — один.
+  it("formatWeeksUk: floors fractions, never rounds up", () => {
+    expect(formatWeeksUk(0.5)).toBe("0 тижнів");
+    expect(formatWeeksUk(1.5)).toBe("1 тиждень");
+    expect(formatWeeksUk(2.9)).toBe("2 тижні");
+    expect(formatWeeksUk(-3)).toBe("0 тижнів");
   });
 
   it("formatObservationsUk: one / few / many", () => {

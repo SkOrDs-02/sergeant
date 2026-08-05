@@ -115,12 +115,14 @@ function pluralUk(
 }
 
 export function formatWeeksUk(n: number): string {
-  // `Math.max(0, …)`, не `Math.max(1, …)`: округлення вгору перетворювало
-  // виміряний нуль на твердження «1 тиждень» — рівно та вигадана цифра, яку
-  // цей файл забороняє (див. AI-CONTEXT вище). Нуль тижнів узагалі не
-  // доходить до UI — `tierMeta` опускає сегмент, — але сама функція теж не
-  // має брехати, бо експортована.
-  const v = Math.max(0, Math.round(n));
+  // `Math.floor`, не `Math.round`: тут рахуються ПОВНІ тижні, які зв'язок уже
+  // протримався, тож 1.5 тижня — це «1 тиждень», а не «2 тижні». Округлення
+  // вгору дописувало б людині тиждень спостережень, якого не було, — рівно та
+  // вигадана цифра, яку цей файл забороняє (див. AI-CONTEXT вище).
+  // `Math.max(0, …)`, не `Math.max(1, …)`: виміряний нуль лишається нулем.
+  // Нуль тижнів узагалі не доходить до UI — `tierMeta` опускає сегмент, — але
+  // сама функція теж не має брехати, бо експортована.
+  const v = Math.max(0, Math.floor(n));
   return `${v} ${pluralUk(v, { one: "тиждень", few: "тижні", many: "тижнів", other: "тижня" })}`;
 }
 
@@ -151,8 +153,9 @@ export function tierMeta(
 ): string {
   const obs = formatObservationsUk(observations);
   // Менше одного повного тижня — не привід писати «1 тиждень»: рядок чесно
-  // обмежується спостереженнями, як і за відсутнього `weeks`.
-  if (weeks === undefined || !Number.isFinite(weeks) || Math.round(weeks) < 1) {
+  // обмежується спостереженнями, як і за відсутнього `weeks`. Поріг — сирий
+  // `weeks < 1`, а не округлений: 0.6 тижня це ще не тиждень.
+  if (weeks === undefined || !Number.isFinite(weeks) || weeks < 1) {
     return obs;
   }
   const weeksLabel = formatWeeksUk(weeks);
