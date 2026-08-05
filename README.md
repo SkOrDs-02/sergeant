@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-08-04 by @Skords-01. **Next review:** 2026-11-02.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -48,7 +48,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 - **Frontend (web):** React 18, Vite, Tailwind CSS, TanStack Query
 - **Mobile:** Expo 52, React Native 0.76, NativeWind
 - **Mobile shell:** Capacitor (web wrapper for native distribution)
-- **Backend:** Express.js, PostgreSQL 16, Better Auth (authentication)
+- **Backend:** Express.js, PostgreSQL (pg17 локально / pg18 у проді, pgvector), Better Auth (authentication)
 - **AI:** Anthropic Claude API, Voyage AI (embeddings)
 - **Monorepo:** Turborepo, pnpm 9.15.1
 - **Testing:** Vitest, Testing Library, MSW (API mocking), Testcontainers (real Postgres in tests), Playwright (E2E)
@@ -56,7 +56,6 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 - **CI/CD:** GitHub Actions
 - **Deploy:** Vercel (frontend), Hetzner CX23 + Coolify (backend: API + PostgreSQL + Redis; see [ADR-0074](docs/04-governance/adr/0074-hosting-hetzner-coolify.md))
 - **Monitoring:** Sentry (errors), PostHog (analytics), Grafana (metrics), Web Vitals
-- **Telegram bot:** grammy + Anthropic (internal ops)
 
 ## What is in the repo
 
@@ -195,7 +194,7 @@ Open `.env` in your editor. Most values are pre-filled for local development. Ke
 pnpm dev:db
 ```
 
-This runs `docker compose up -d` + `pnpm db:migrate` — starts PostgreSQL 16 in a Docker container and runs all SQL migrations.
+This runs `docker compose up -d` + `pnpm db:migrate` — starts PostgreSQL 17 (`pgvector/pgvector:pg17`) in a Docker container and runs all SQL migrations.
 
 To stop the database: `pnpm db:down` (or `docker compose down`).
 
@@ -307,16 +306,16 @@ Test stacks by surface:
 
 ## Troubleshooting
 
-| Symptom                                  | Cause                                       | Fix                                               |
-| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
-| `pnpm install` fails with lockfile error | Wrong pnpm version                          | `npm i -g pnpm@9.15.1`                            |
-| `pnpm dev:db` doesn't work               | Docker not running                          | Start Docker Desktop, then retry                  |
-| Port 5432 busy                           | Another Postgres or container               | `docker ps` → stop conflicting container          |
-| API returns "401 Unauthorized"           | No session or `BETTER_AUTH_SECRET` mismatch | Restart server after changing `.env`, re-register |
-| HubChat says "Unknown action"            | `max_tokens` cut off JSON tool-call         | Don't reduce `max_tokens` without testing         |
-| lint-staged fails on commit              | Code didn't pass ESLint / Prettier          | Fix errors, `pnpm lint --fix`                     |
-| Streaks reset unexpectedly               | Used UTC instead of Kyiv timezone           | Always calculate "today" via `Europe/Kyiv`        |
-| Numbers from API come as strings         | bigint → string (PostgreSQL pg driver)      | `Number(r.id)` in serializer                      |
+| Symptom                                  | Cause                                       | Fix                                                                                                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install` fails with lockfile error | Wrong pnpm version                          | `npm i -g pnpm@9.15.1`                                                                                                                                                                                  |
+| `pnpm dev:db` doesn't work               | Docker not running                          | Start Docker Desktop, then retry                                                                                                                                                                        |
+| Port 5432 busy                           | Another Postgres or container               | `docker ps` → stop conflicting container                                                                                                                                                                |
+| API returns "401 Unauthorized"           | No session or `BETTER_AUTH_SECRET` mismatch | Restart server after changing `.env`, re-register                                                                                                                                                       |
+| HubChat says "Unknown action"            | `max_tokens` cut off JSON tool-call         | Don't reduce `max_tokens` without testing                                                                                                                                                               |
+| lint-staged fails on commit              | Code didn't pass ESLint / Prettier          | Fix errors, `pnpm lint --fix`                                                                                                                                                                           |
+| Streaks reset unexpectedly               | Used UTC instead of Kyiv timezone           | Порахуй «сьогодні» за годинником пристрою (device-local day-key + `tz_offset_minutes`, [ADR-0078](docs/04-governance/adr/0078-day-boundary-device-local.md)) — Kyiv лишається лише для серверних звітів |
+| Numbers from API come as strings         | bigint → string (PostgreSQL pg driver)      | `Number(r.id)` in serializer                                                                                                                                                                            |
 
 ## Feature flags
 

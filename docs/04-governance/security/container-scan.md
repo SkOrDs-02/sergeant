@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Огляд
@@ -20,7 +20,9 @@ Trivy-джоби для нього ніколи не було потреби з�
 
 Це окремий шар від [nightly-audit](./nightly-audit.md), який сканує лише
 **lockfile-залежності** (pnpm audit, OSV-Scanner, Snyk). Trivy дивиться на
-**рантайм-image**: alpine OS-пакети, файли в final-stage, потенційні misconfig.
+**рантайм-image**: пакети базового шару (сьогодні distroless Debian 13), файли
+в final-stage, потенційні misconfig. Alpine лишився тільки в `builder`/`deps`
+стейджах, які в рантайм не потрапляють.
 
 ### Тригери
 
@@ -90,7 +92,7 @@ Trivy-джоби для нього ніколи не було потреби з�
 
 ## Platform invariant
 
-Скановані образи **завжди** будуються для `linux/amd64` — це Railway runtime
+Скановані образи **завжди** будуються для `linux/amd64` — це prod runtime
 arch (closes hardening card [L13](hardening/archive/L13-docker-platform-pin.md)).
 
 - `Dockerfile.api` має `linux/amd64` build path у workflow.
@@ -100,7 +102,7 @@ arch (closes hardening card [L13](hardening/archive/L13-docker-platform-pin.md))
   loaded image не `linux/amd64`.
 
 Без цього invariant дев на Apple Silicon локально отримує arm64-image,
-Trivy сканує arm64-шар, а Railway деплоїть amd64 — drift проходить
+Trivy сканує arm64-шар, а прод (Hetzner/Coolify) деплоїть amd64 — drift проходить
 повз nightly-audit і виявляється тільки коли arm64 lockfile-version
 розходиться з amd64. Не міняй це без оновлення обох сторін
 (Dockerfile + workflow) і відповідного запису в

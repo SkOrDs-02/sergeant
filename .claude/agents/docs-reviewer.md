@@ -29,7 +29,7 @@ Bodies of `docs/**/*.md`, `.agents/skills/**/SKILL.md`, and playbooks must be Uk
 
 ## Hard Rule #25 — AUTO-GENERATED marker
 
-Generated docs carry an `<!-- AUTO-GENERATED … -->` marker near the top (e.g. `knowledge-graph.html`, `symbol-index.html`, `docs/open-work.md`, `hard-rules-matrix.md`, playbook `INDEX.md`). Flag a file that is clearly generator output (matches a `pnpm docs:gen-*` target) but was hand-edited or lacks the marker — the generator's `--check` will fail CI anyway.
+Generated docs carry an `<!-- AUTO-GENERATED … -->` marker near the top (e.g. `docs/open-work.md`, `docs/STATUS.md`, `hard-rules-matrix.md`, `freshness-dashboard.html`, playbook `INDEX.md`). Flag a file that is clearly generator output (matches a `pnpm docs:gen-*` target) but was hand-edited or lacks the marker — the generator's `--check` will fail CI anyway.
 
 ## Hard Rule #26 — PR ledger (the only BLOCKER)
 

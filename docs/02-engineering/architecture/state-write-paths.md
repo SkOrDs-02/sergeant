@@ -1,6 +1,6 @@
 # State write-paths — `apps/web`
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 > Як, де і чому web-додаток мутить state. Дві writer-доріжки (`useMutation` vs HubChat tool-call), коли яку обирати, і де живуть инваріанти. Закриває §2.1 з [`docs/90-work/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-03-web-deep-dive/02-architecture-and-state.md) (parallel-write paths require explicit doc).
@@ -99,7 +99,7 @@ LLM continues stream → final assistant message
 
 ## Інваріанти, які CI перевіряє
 
-1. **RQ-keys factory only** — Hard Rule #2 ([`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) + ESLint `sergeant-design/no-inline-rq-keys`). Жодного інлайнового `["finyk", "transactions"]` у `queryKey` / `setQueryData` / `invalidateQueries`. Усе йде через `<module>Keys` з [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
+1. **RQ-keys factory only** — Hard Rule #2 ([`docs/04-governance/governance/hard-rules.json`](../../04-governance/governance/hard-rules.json) + ESLint `sergeant-design/rq-keys-only-from-factory`). Жодного інлайнового `["finyk", "transactions"]` у `queryKey` / `setQueryData` / `invalidateQueries`. Усе йде через `<module>Keys` з [`queryKeys.ts`](../../../apps/web/src/shared/lib/api/queryKeys.ts).
 2. **`no-raw-local-storage`** — Hard Rule (`sergeant-design/no-raw-local-storage`). Production-allowlist у [`eslint.config.js`](../../../eslint.config.js) — порожній; усі write-и йдуть через `webKVStore` / `safeReadLS` / `safeWriteLS` з `@shared/lib/storage/storage`. Це робить **Канал 1 → API** єдиним шляхом до durable state — навіть якщо handler хоче кешувати, він робить це через KV-store з cross-tab `onChange`.
 3. **chatActions handlers повертають `string`** — статичний контракт у `hubChatActions.ts:dispatch`. Якщо handler потрібно повернути JSON, він серіалізує його в текст для LLM (`JSON.stringify(...)` обгорнутий у природне речення).
 4. **chatActions-тести покривають happy path + error path** для кожного handler-а — [`docs/02-engineering/architecture/module-ownership.md`](./module-ownership.md) row `apps/web/src/core/lib/chatActions/**` контракт. `fizrukActions.test.ts` / `finykActions.test.ts` / `nutritionActions.test.ts` / `routineActions.test.ts` — `pnpm --filter @sergeant/web test src/core/lib/chatActions` має 0 fail.

@@ -19,7 +19,7 @@ You are the **web UI specialist** — Stage 4 (web) of sergeant-deliver-squad. Y
 
 ## Hard Rules you enforce
 
-**Hard Rule #2 — React Query keys via factories only.** Existing factories: `finykKeys, nutritionKeys, hubKeys, coachKeys, digestKeys, pushKeys, syncKeys, strategicKeys, billingKeys`. Extend one; never inline.
+**Hard Rule #2 — React Query keys via factories only.** Existing factories: `finykKeys, nutritionKeys, hubKeys, coachKeys, chatKeys, digestKeys, pushKeys, syncKeys, strategicKeys, billingKeys, aiMemoryKeys`. Extend one; never inline.
 
 ```ts
 // ❌ BAD — drift; can't bulk-invalidate; typos compile

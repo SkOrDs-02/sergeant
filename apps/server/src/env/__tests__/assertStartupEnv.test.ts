@@ -407,6 +407,9 @@ describe("assertStartupEnv — METRICS_TOKEN hard-fail (T2 audit #4)", () => {
   // PROD_BASELINE inherits the Git_PAT gate.
   const METRICS_BASELINE = {
     NODE_ENV: "production" as const,
+    // BETTER_AUTH_URL обовʼязковий у production (див. PROD_BASELINE) —
+    // без нього гейт спрацьовує раніше за перевірку, яку тестує цей блок.
+    BETTER_AUTH_URL: "https://api.example.com",
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
@@ -582,6 +585,9 @@ describe("assertStartupEnv — backend-perf PR-01: VAPID keypair required in pro
   // check fires. Legacy PATs cleared (same Git_PAT gate as PROD_BASELINE).
   const VAPID_MISSING_BASELINE = {
     NODE_ENV: "production" as const,
+    // BETTER_AUTH_URL обовʼязковий у production (див. PROD_BASELINE) —
+    // без нього гейт спрацьовує раніше за перевірку, яку тестує цей блок.
+    BETTER_AUTH_URL: "https://api.example.com",
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),
@@ -674,6 +680,9 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
   // every other required var must be present here).
   const SENTRY_MISSING_BASELINE = {
     NODE_ENV: "production" as const,
+    // BETTER_AUTH_URL обовʼязковий у production (див. PROD_BASELINE) —
+    // без нього гейт спрацьовує раніше за перевірку, яку тестує цей блок.
+    BETTER_AUTH_URL: "https://api.example.com",
     DATABASE_URL: "postgres://hub:hub@127.0.0.1:5432/hub",
     BETTER_AUTH_TOKEN_ENC_KEY: "a".repeat(64),
     NUTRITION_BACKUP_KEY_SECRET: "b".repeat(64),

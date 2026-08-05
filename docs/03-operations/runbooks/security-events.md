@@ -1,6 +1,6 @@
 # Security Events — Операційний Playbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-07.
+> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
 > **Status:** Active
 
 ## Загальна архітектура
@@ -178,7 +178,7 @@ hardening). Запит відхилено з HTTP 402.
 
 ## Тимчасове вимкнення алертів
 
-Встановити `SECURITY_EVENTS_MUTED=1` у Railway-середовищі сервера для
+Встановити `SECURITY_EVENTS_MUTED=1` в env застосунку у Coolify сервера для
 придушення Telegram-push для всіх security events без впливу на Pino-логування
 або Prometheus-метрики. Корисно під час load-тестів, запланованого технічного
 обслуговування або під час розслідування патерну хибних спрацьовувань з
