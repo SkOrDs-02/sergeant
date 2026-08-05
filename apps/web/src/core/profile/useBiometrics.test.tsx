@@ -1,6 +1,20 @@
 // @vitest-environment jsdom
+const { mockUseAuth } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(() => ({ user: null as { id: string } | null })),
+}));
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: mockUseAuth,
+}));
+
+const { mockPushBiometricsToServer } = vi.hoisted(() => ({
+  mockPushBiometricsToServer: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("./profileWriteThrough", () => ({
+  pushBiometricsToServer: mockPushBiometricsToServer,
+}));
+
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   BIOMETRICS_DEFAULT,
@@ -11,6 +25,8 @@ import { useBiometrics } from "./useBiometrics";
 
 beforeEach(() => {
   localStorage.clear();
+  mockUseAuth.mockReturnValue({ user: null });
+  mockPushBiometricsToServer.mockClear();
 });
 
 afterEach(() => {
@@ -88,5 +104,32 @@ describe("useBiometrics", () => {
     expect(result.current.biometrics.weightUpdatedAt).toBe(
       "2026-04-01T12:00:00.000Z",
     );
+  });
+
+  describe("write-through to /api/me/profile", () => {
+    it("does NOT push when signed out", () => {
+      mockUseAuth.mockReturnValue({ user: null });
+      const { result } = renderHook(() => useBiometrics());
+
+      act(() => {
+        result.current.saveBiometrics({ heightCm: 180 });
+      });
+
+      expect(mockPushBiometricsToServer).not.toHaveBeenCalled();
+    });
+
+    it("pushes the merged record when authenticated", () => {
+      mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+      const { result } = renderHook(() => useBiometrics());
+
+      act(() => {
+        result.current.saveBiometrics({ heightCm: 180, sex: "male" });
+      });
+
+      expect(mockPushBiometricsToServer).toHaveBeenCalledTimes(1);
+      const [pushed] = mockPushBiometricsToServer.mock.calls[0]!;
+      expect(pushed.heightCm).toBe(180);
+      expect(pushed.sex).toBe("male");
+    });
   });
 });

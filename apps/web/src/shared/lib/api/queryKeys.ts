@@ -109,6 +109,14 @@ export const chatKeys = {
 export const hubKeys = {
   all: ["hub"] as const,
   preview: (module: ModuleAccent) => ["hub", "preview", module] as const,
+  /**
+   * `GET /api/me/profile` write-through row (profile/biometrics; migration
+   * 115, NOT an oplog table). One-shot boot fetch consumed by
+   * `useProfileWriteThroughBoot` (`core/profile/profileWriteThrough.ts`) to
+   * reconcile the local `hub_biometrics_v1` cache against the server on
+   * first authenticated boot — see that module for the LWW contract.
+   */
+  profile: ["hub", "profile"] as const,
 };
 
 // ─── Strategic mode (PR-34 — per-persona weekly goals) ────────────────────

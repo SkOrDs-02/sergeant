@@ -132,4 +132,6 @@ export type {
   WeeklyDigestResponse,
   UserPreferences,
   UserPreferencesPatch,
+  UserProfilePayload,
+  UserProfileResponse,
 } from "@sergeant/api-client";
