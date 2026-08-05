@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { aiRoutingEnvShape } from "./aiRoutingEnv.js";
 import { defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
 
@@ -43,9 +44,6 @@ const stringWithDefault = (defaultValue: string) =>
     .optional()
     .transform((v) => v ?? defaultValue);
 
-const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
-  z.enum(["anthropic", "openrouter", "stub"]).default(d);
-
 const optionalUrl = () =>
   z
     .string()
@@ -65,6 +63,8 @@ const optionalUrl = () =>
     );
 
 const envSchema = z.object({
+  ...aiRoutingEnvShape,
+
   NODE_ENV: z
     .enum(["production", "development", "test"])
     .default("development"),
@@ -177,10 +177,10 @@ const envSchema = z.object({
 
   CHAT_MODEL_SYNTHESIS: stringWithDefault(defaultChatModel("synthesis")),
 
-  // Kill-switch транспорту чату: `true` — Messages API OpenRouter-а,
-  // `false` (дефолт) — прямий Anthropic-ендпоінт. Впливає лише на
-  // `/api/chat`; digest, nutrition, mono й classify ходять напряму завжди.
-  CHAT_VIA_OPENROUTER: boolFromEnv(false),
+  // Транспорт чату: `true` (дефолт з 2026-08-05) — шлюз OpenRouter, `false` —
+  // прямий Anthropic. Лише `/api/chat`. Виміри й умова відкату — в
+  // `env/chatModels.ts`; без `OPENROUTER_API_KEY` прапорець не діє.
+  CHAT_VIA_OPENROUTER: boolFromEnv(true),
 
   CHAT_STRICT_TOOLS: boolFromEnv(true),
 
@@ -191,18 +191,6 @@ const envSchema = z.object({
   CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),
 
   CHAT_RESPONSE_CACHE_MAX_ENTRIES: intFromEnv(500),
-
-  LLM_PROVIDER: llmProviderEnum("anthropic"),
-
-  LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),
-
-  LLM_DIGEST_PROVIDER: llmProviderEnum("openrouter"),
-
-  LLM_COACH_PROVIDER: llmProviderEnum("openrouter"),
-
-  LLM_FALLBACK_ENABLED: boolFromEnv(true),
-
-  LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnv(true),
 
   AI_TIMEOUT_MS: intFromEnv(180_000),
 
@@ -634,14 +622,6 @@ const envSchema = z.object({
 
   VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
 
-  OPENROUTER_API_KEY: stringWithDefault(""),
-
-  OPENROUTER_MODEL: stringWithDefault(""),
-
-  OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-  OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-  OPENROUTER_COACH_MODEL: stringWithDefault("openai/gpt-5.1"),
-
   // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
   // OpenRouter-ом). WHY окрема змінна: раніше тут стояв
   // `CHAT_MODEL_SYNTHESIS`, а він тепер може нести OpenRouter-only id —
@@ -650,38 +630,11 @@ const envSchema = z.object({
 
   NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
 
-  /**
-   * Зорові шляхи (`analyze-photo`, `refine-photo`) через OpenRouter.
-   *
-   * WHY окремий прапорець від `CHAT_VIA_OPENROUTER`: ці два ендпоінти НЕ
-   * ходять через `getLLMProvider()` — їм потрібен `image`-блок у тілі, тож
-   * вони кличуть `anthropicMessages` напряму й `LLM_NUTRITION_PROVIDER` їх
-   * не стосується. Спільний із чатом прапорець зробив би відкат одного
-   * відкатом обох, а це різні за ризиком поверхні.
-   */
-  VISION_VIA_OPENROUTER: boolFromEnv(false),
-
-  /**
-   * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
-   * зорового стенду (розмите фото, порожній кадр, етикетка іноземною,
-   * перерахунок порції) за $0.13/1k і 1.3 с. Новіші `gemini-3.1/3.5-flash-lite`
-   * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
-   */
-  OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-
-  LLM_NUTRITION_PROVIDER: llmProviderEnum("openrouter"),
-
-  OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-
   DIGEST_MODEL: stringWithDefault("claude-sonnet-4-6"),
 
   CLASSIFY_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
 
   MONO_ENRICHMENT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
-
-  LLM_MONO_PROVIDER: llmProviderEnum("openrouter"),
-
-  OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -752,13 +705,13 @@ export function assertStartupEnv(): void {
   // означає лишити ops у переконанні, що міграція відбулась.
   if (env.CHAT_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
     warnings.push(
-      "CHAT_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids; the flag has no effect.",
+      "CHAT_VIA_OPENROUTER is on (now the default) but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids. Set the key to activate the gateway, or CHAT_VIA_OPENROUTER=false to silence this.",
     );
   }
 
   if (env.VISION_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
     warnings.push(
-      "VISION_VIA_OPENROUTER=true but OPENROUTER_API_KEY is not set — analyze-photo/refine-photo stay on direct Anthropic with NUTRITION_MODEL; the flag has no effect.",
+      "VISION_VIA_OPENROUTER is on (now the default) but OPENROUTER_API_KEY is not set — analyze-photo/refine-photo stay on direct Anthropic with NUTRITION_MODEL. Set the key to activate the gateway, or VISION_VIA_OPENROUTER=false to silence this.",
     );
   }
 
