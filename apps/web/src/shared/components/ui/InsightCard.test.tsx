@@ -10,11 +10,16 @@ vi.mock("../../../core/observability/analytics", async () => {
   return { ...actual, trackEvent: vi.fn() };
 });
 
+import { computeAdviceId } from "@sergeant/insights";
 import { InsightCard, __resetInsightShownGuard } from "./InsightCard";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
+import {
+  __resetAnalyticsConsentForTests,
+  setAnalyticsConsent,
+} from "../../../core/observability/analyticsConsent";
 import {
   readSignalContext,
   resetSignalAttribution,
@@ -29,6 +34,7 @@ beforeEach(() => {
   __resetInsightShownGuard();
   resetSignalAttribution();
   trackEventMock.mockClear();
+  __resetAnalyticsConsentForTests();
 });
 
 /** Усі виклики `trackEvent` з конкретним іменем події. */
@@ -284,5 +290,107 @@ describe("InsightCard — value-loop telemetry", () => {
     );
 
     expect(readSignalContext().after_signal).toBe(false);
+  });
+});
+
+// ── Стабільний крос-девайсний advice_id (беta-хардненінг) ─────────────
+describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
+  it("емітить advice_shown поруч із value_signal_shown, з детермінованим advice_id", () => {
+    render(
+      <InsightCard
+        id="finyk-coffee-limit-2026-07"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+
+    const shown = callsOf(ANALYTICS_EVENTS.ADVICE_SHOWN);
+    expect(shown).toHaveLength(1);
+    expect(shown[0]?.[1]).toEqual({
+      advice_id: computeAdviceId(
+        "finyk-coffee-limit",
+        "finyk-coffee-limit-2026-07",
+      ),
+      advice_type: "finyk-coffee-limit",
+      module: "finyk",
+    });
+  });
+
+  it("advice_id є ідентичним для того самого id, обчислений незалежно (crypto двох 'пристроїв')", () => {
+    render(
+      <InsightCard
+        id="routine-todo-evening"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+    const shown = callsOf(ANALYTICS_EVENTS.ADVICE_SHOWN);
+    const emitted = shown[0]?.[1]?.["advice_id"];
+    // Ніякого спільного in-memory guard-а між цим обчисленням і компонентом —
+    // computeAdviceId детермінований, тож збіг доводить крос-девайс стабільність.
+    expect(emitted).toBe(
+      computeAdviceId("routine-todo-evening", "routine-todo-evening"),
+    );
+  });
+
+  it("не дублює advice_shown при повторному mount у межах сесії (той самий guard, що value_signal_shown)", () => {
+    const card = (
+      <InsightCard
+        id="fizruk-pr-pending"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />
+    );
+    const first = render(card);
+    first.unmount();
+    render(card);
+
+    expect(callsOf(ANALYTICS_EVENTS.ADVICE_SHOWN)).toHaveLength(1);
+  });
+
+  it("емітить advice_dismissed з тим самим advice_id/advice_type/module на dismiss", () => {
+    const { getByLabelText } = render(
+      <InsightCard
+        id="nutrition-streak-7-days-2026-W30"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText("Закрити пропозицію"));
+
+    const dismissed = callsOf(ANALYTICS_EVENTS.ADVICE_DISMISSED);
+    expect(dismissed).toHaveLength(1);
+    expect(dismissed[0]?.[1]).toEqual({
+      advice_id: computeAdviceId(
+        "nutrition-streak-7-days",
+        "nutrition-streak-7-days-2026-W30",
+      ),
+      advice_type: "nutrition-streak-7-days",
+      module: "nutrition",
+    });
+  });
+
+  it("НЕ емітить advice_shown / advice_dismissed без analytics-згоди, але value_signal_* лишається неушкодженим", () => {
+    setAnalyticsConsent(false);
+    const { getByLabelText } = render(
+      <InsightCard
+        id="finyk-recurring-detected"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+      />,
+    );
+    fireEvent.click(getByLabelText("Закрити пропозицію"));
+
+    expect(callsOf(ANALYTICS_EVENTS.ADVICE_SHOWN)).toHaveLength(0);
+    expect(callsOf(ANALYTICS_EVENTS.ADVICE_DISMISSED)).toHaveLength(0);
+    // Consent gate scoped to the two new events only — the pre-existing
+    // value_signal_* pair is unaffected.
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN)).toHaveLength(1);
+    expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED)).toHaveLength(1);
   });
 });
