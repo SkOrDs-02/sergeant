@@ -33,7 +33,16 @@ Generated docs carry an `<!-- AUTO-GENERATED … -->` marker near the top (e.g. 
 
 ## Hard Rule #26 — PR ledger (the only BLOCKER)
 
-If the diff touches canonical docs — `docs/04-governance/adr/*.md`, `docs/90-work/initiatives/*.md`, `docs/00-start/playbooks/*.md`, `docs/04-governance/governance/rules/*.md`, `docs/02-engineering/architecture/**`, `AGENTS.md`, `CLAUDE.md` — the PR must also update `docs/04-governance/pr-ledger/index.json`. If canonical docs changed but that file is absent from the diff → **BLOCKER**. (Local check: `pnpm docs:check-pr-ledger`.)
+The whitelist is exactly four globs (canonical source: [`rules/26-pr-ledger-update-on-merge.md § Scope`](../../docs/04-governance/governance/rules/26-pr-ledger-update-on-merge.md), enforced by `scripts/ci/update-pr-backlinks.mjs`):
+
+- `docs/04-governance/adr/*.md` (excl. `TEMPLATE.md`, `README.md`)
+- `docs/90-work/initiatives/*.md` (excl. `archive/`, `follow-ups.md`, `README.md`)
+- `docs/00-start/playbooks/*.md` (excl. `INDEX.md`, `README.md`, `_TEMPLATE-*`)
+- `docs/04-governance/governance/rules/*.md` (excl. `README.md`)
+
+If a diff touches one of those but `docs/04-governance/pr-ledger/index.json` is absent → **BLOCKER**. (Local check: `pnpm docs:check-pr-ledger`.)
+
+> ⚠️ **Do NOT raise this BLOCKER for `docs/02-engineering/architecture/**`, `docs/90-work/audits/**`, `AGENTS.md`, or `CLAUDE.md`** — the rule excludes them deliberately (audits are snapshot-natured; architecture is covered by drift-detectors). Flagging them is a false BLOCKER that stalls a correct PR.
 
 ## Report format
 

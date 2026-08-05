@@ -1,8 +1,8 @@
 ---
 name: sergeant-deploy-and-observability
 description: Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, n8n, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry, n8n.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
 
 # Деплой і обсервабіліті в Sergeant
@@ -11,7 +11,7 @@ Production-facing зміни в Sergeant не вважаються заверш�
 
 ## Що покриває
 
-- `Dockerfile.api` + `.github/workflows/deploy-api.yml`, `vercel.json`, deploy-доки, health-endpoints
+- `Dockerfile.api` (root) + `.github/workflows/deploy-api.yml`; Vercel-конфіги живуть per-app — `apps/web/vercel.json` і `apps/landing/vercel.json`, не в корені; deploy-доки, health-endpoints
 - env-зміни через web/server
 - Sentry, readiness/liveness, маршрутизація алертів, release-верифікація
 - operator-facing доки для деплою або реакції на інцидент
