@@ -13,6 +13,8 @@ import {
   removeMemoryEntry,
   makeMemoryId,
   buildMemoryImportPreview,
+  isKnownMemoryCategory,
+  toWritableMemoryCategory,
 } from "./memoryBank";
 import type { MemoryEntry } from "./types";
 
@@ -146,6 +148,47 @@ describe("upsertMemoryFact", () => {
     expect(created).toBe(false);
     expect(entries).toHaveLength(1);
     expect(entries[0]!.category).toBe("preference");
+  });
+
+  it("зводить невідому категорію в other на запису", () => {
+    const { entry } = upsertMemoryFact([], "Біжить марафон", "спорт");
+    expect(entry.category).toBe("other");
+  });
+
+  it("зберігає всі канонічні категорії як є", () => {
+    for (const category of Object.keys(CATEGORY_META)) {
+      const { entry } = upsertMemoryFact([], `факт ${category}`, category);
+      expect(entry.category).toBe(category);
+    }
+  });
+});
+
+describe("isKnownMemoryCategory", () => {
+  it("канонічний набір = ключі CATEGORY_META", () => {
+    for (const category of Object.keys(CATEGORY_META)) {
+      expect(isKnownMemoryCategory(category)).toBe(true);
+    }
+    expect(isKnownMemoryCategory("спорт")).toBe(false);
+    // Захист від прототипних ключів: `"toString" in CATEGORY_META` було б true.
+    expect(isKnownMemoryCategory("toString")).toBe(false);
+  });
+});
+
+describe("toWritableMemoryCategory", () => {
+  it("нормалізує регістр і пробіли перед звіркою з канонічним набором", () => {
+    expect(toWritableMemoryCategory("  DIET ")).toBe("diet");
+  });
+
+  it("порожнє / відсутнє значення → other", () => {
+    expect(toWritableMemoryCategory()).toBe("other");
+    expect(toWritableMemoryCategory("   ")).toBe("other");
+  });
+
+  // Читання лишається толерантним: легасі-записи з доенумної доби
+  // (`category` була optional) не переписуємо під користувачем.
+  it("не чіпає легасі-категорію на читанні", () => {
+    const entry = normalizeMemoryEntry({ fact: "a", category: "спорт" });
+    expect(entry!.category).toBe("спорт");
   });
 });
 
