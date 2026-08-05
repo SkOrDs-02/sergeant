@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkRow } from "./CrossModuleLinkRow";
-import { MIN_N, REPEATING_N } from "./crossModuleLinkTiers";
+import { MIN_N, REPEATING_R } from "./crossModuleLinkTiers";
 
 const poleA = {
   module: "finyk" as const,
@@ -27,8 +27,8 @@ describe("CrossModuleLinkRow — згорнутий зв'язок", () => {
       <CrossModuleLinkRow
         poleA={poleA}
         poleB={poleB}
-        observations={REPEATING_N}
-        strength={0.5}
+        observations={10}
+        strength={REPEATING_R}
         phrase="Коли витрачаєш більше — їси більше"
       />,
     );
@@ -52,8 +52,8 @@ describe("CrossModuleLinkRow — згорнутий зв'язок", () => {
       <CrossModuleLinkRow
         poleA={poleA}
         poleB={poleB}
-        observations={REPEATING_N}
-        strength={0.5}
+        observations={10}
+        strength={REPEATING_R}
         phrase="Коли витрачаєш більше — їси більше"
       />,
     );

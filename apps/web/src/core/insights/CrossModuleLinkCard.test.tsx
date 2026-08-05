@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
-import { MIN_N, REPEATING_N, STABLE_N } from "./crossModuleLinkTiers";
+import { MIN_N, REPEATING_R, STABLE_N } from "./crossModuleLinkTiers";
 
 const poleA = {
   module: "fizruk" as const,
@@ -159,13 +159,13 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
     expect(screen.getByText("−18%")).toBeInTheDocument();
   });
 
-  it("tier 2 — «повторюється» за 2x поріг, ще не пів вікна і не сильна кореляція", () => {
+  it("tier 2 — «повторюється», коли сила перетнула REPEATING_R", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
         poleB={poleB}
-        observations={REPEATING_N}
-        strength={0.5}
+        observations={10}
+        strength={REPEATING_R}
       />,
     );
 
@@ -175,13 +175,13 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
     expect(screen.getByText("10 спостережень")).toBeInTheDocument();
   });
 
-  it("tier 3 — «тримається стабільно», коли покрито половину вікна аналізу", () => {
+  it("tier 3 — «тримається стабільно» лише коли сильно І довго", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
         poleB={poleB}
         observations={STABLE_N}
-        strength={0.42}
+        strength={0.82}
         weeks={9}
       />,
     );
@@ -192,17 +192,38 @@ describe("CrossModuleLinkCard — три ступені градації", () =>
     ).toBeInTheDocument();
   });
 
-  it("tier 3 — сильна кореляція (|r|≥0.7) досягає стабільного ступеня і без великого n", () => {
+  /**
+   * Регресія на схлопнуту драбину (AI-DANGER у `crossModuleLinkTiers.ts`):
+   * після фіксу структурних нулів `n` майже завжди більше за `STABLE_N`, тож
+   * якби днів вистачало САМИХ ПО СОБІ, кожна помічена пара одразу казала б
+   * «Тримається стабільно» — і слово перестало б щось означати.
+   */
+  it("багато днів на слабкій кореляції лишаються «поки що збігом»", () => {
     render(
       <CrossModuleLinkCard
         poleA={poleA}
         poleB={poleB}
-        observations={REPEATING_N}
-        strength={-0.7}
+        observations={59}
+        strength={0.42}
       />,
     );
 
-    expect(screen.getByText("Тримається стабільно")).toBeInTheDocument();
+    expect(screen.getByText("Поки що збіг")).toBeInTheDocument();
+    expect(screen.queryByText("Тримається стабільно")).toBeNull();
+  });
+
+  it("сильна кореляція на малій вибірці не дотягує до стабільного ступеня", () => {
+    render(
+      <CrossModuleLinkCard
+        poleA={poleA}
+        poleB={poleB}
+        observations={STABLE_N - 1}
+        strength={-0.9}
+      />,
+    );
+
+    expect(screen.getByText("Повторюється")).toBeInTheDocument();
+    expect(screen.queryByText("Тримається стабільно")).toBeNull();
   });
 });
 
