@@ -1,6 +1,6 @@
 # Playbook: Add API Endpoint
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-08-05 by @github-actions[bot]. **Next review:** 2026-11-03.
 > **Status:** Active
 
 **Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або HubChat.
@@ -77,3 +77,14 @@
 - [fix-failing-ci.md](./fix-failing-ci.md)
 - Skill: `sergeant-server-api`
 - Skill: `sergeant-data-and-migrations`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                 | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ---------- |
+| [#633](https://github.com/Skords-01/Sergeant/pull/633) | docs(docs): звірити документацію з кодом і зняти застарілі твердження | 2026-08-05 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

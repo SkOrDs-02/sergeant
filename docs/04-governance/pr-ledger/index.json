@@ -1,8 +1,28 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-07-29",
+  "generated_at": "2026-08-05",
   "prs": [
+    {
+      "number": 633,
+      "title": "docs(docs): звірити документацію з кодом і зняти застарілі твердження",
+      "merged_at": "2026-08-05T09:17:22Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/00-start/playbooks/add-api-endpoint.md",
+        "docs/00-start/playbooks/dependency-sweeper.md",
+        "docs/00-start/playbooks/embedding-provider-migration.md",
+        "docs/00-start/playbooks/modify-n8n-workflow.md",
+        "docs/00-start/playbooks/pre-merge-migration-checklist.md",
+        "docs/04-governance/governance/rules/02-rq-keys-via-centralized-factories.md",
+        "docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/04-governance/governance/rules/05-conventional-commits-explicit-scope.md",
+        "docs/04-governance/governance/rules/15-governance-and-doc-language.md",
+        "docs/04-governance/governance/rules/25-auto-generated-marker.md",
+        "docs/04-governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/04-governance/governance/rules/kyiv-time-helpers.md"
+      ]
+    },
     {
       "number": 508,
       "title": "fix(docs): reconcile canonical docs with current repo",
@@ -101,6 +121,17 @@
         "docs/90-work/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
         "packages/api-client/README.md",
         "packages/dualwrite-core/README.md"
+      ]
+    },
+    {
+      "number": 74,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "2026-06-30T13:28:53Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/04-governance/adr/0066-entropy-janitors.md",
+        "docs/04-governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     },
     {
@@ -285,17 +316,6 @@
       "touchedDocs": [
         "docs/04-governance/adr/0058-knowledge-graph-schema.md",
         "docs/90-work/initiatives/0014-knowledge-graph-and-catalogs.md"
-      ]
-    },
-    {
-      "number": 74,
-      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
-      "merged_at": "2026-06-30T13:28:53Z",
-      "author": "@Skords-01",
-      "touchedDocs": [
-        "docs/04-governance/adr/0066-entropy-janitors.md",
-        "docs/04-governance/governance/entropy-janitors/README.md",
-        ".agents/skills/sergeant-tech-debt/SKILL.md"
       ]
     }
   ]

@@ -109,3 +109,14 @@ sub-хвилинний таймер).
 - [`apps/web/src/shared/lib/time/kyivTime.ts`](../../../../apps/web/src/shared/lib/time/kyivTime.ts) — реалізація Kyiv-хелперів
 - [`docs/90-work/audits/2026-05-13-page-audit-03-hub-chat-search.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-page-audit-03-hub-chat-search.md) F1/F2/F8 — перший кластер порушень, що породив правило
 - [`docs/90-work/audits/2026-05-13-page-audit-09-routine-strategy.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-page-audit-09-routine-strategy.md) F3 — кластер `setHours(12,…)` у Routine
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                 | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------- | ---------- |
+| [#633](https://github.com/Skords-01/Sergeant/pull/633) | docs(docs): звірити документацію з кодом і зняти застарілі твердження | 2026-08-05 |
+
+_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
