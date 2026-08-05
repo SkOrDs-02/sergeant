@@ -335,17 +335,29 @@ Vite + React (не Next), 17 файлів, повністю підключени
 
 ### 6д. Конфіги
 
-| Сутність                                                                | Стан                                                                                                                                                                                                                                          |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.codex/` (21 файл = 19 agents + config.toml + hooks.json)              | ✅ узгоджений з AGENTS.md; `pnpm codex:status` відпрацьовує, бачить 23 repo-skills                                                                                                                                                            |
-| `.kilo/harness-versions.json`                                           | ✅ current 3.0.1, 19 versions, `abExperiments: {}` — рівно як після зняття A/B (ADR-0082)                                                                                                                                                     |
-| `patches/@expo__cli@0.22.28.patch`                                      | ✅ актуальний — версія збігається зі встановленою, гейт `lint:patches` у lint-ланцюзі                                                                                                                                                         |
-| `turbo.json`                                                            | ✅ усі 6 tasks викликаються                                                                                                                                                                                                                   |
-| `docker-compose.yml`                                                    | живий (`pnpm db:up`), але коментар досі перелічує `visual-regression.yml` серед воркфлоу з тим самим SHA — файл видалено ADR-0082                                                                                                             |
-| `.github/dependabot.yml`                                                | живий; коментар посилається на `dependabot-automerge.yml`, видалений ADR-0082 §3                                                                                                                                                              |
-| `ops/scripts/backup-n8n-db.ps1`, `restore-n8n-db.ps1`                   | `dead` (ймовірно `legacy-replaced`): PowerShell-скрипти від 2026-04-29, жодної згадки в docs/runbook-ах; бекап n8n нині покритий n8n-воркфлоу `04-daily-backup-verification.json` + `db-backup-verify.yml`. Підтвердити у власника й видалити |
-| `ops/grafana-alloy/`, `ops/prometheus/`, `ops/grafana/`, `ops/posthog/` | ✅ живі (деплой поза CI через Coolify; posthog-манифести гейтяться `lint:posthog-manifests`)                                                                                                                                                  |
-| `.mcp.json`                                                             | ✅ github / postgres / codebase-memory — canonical discovery-шлях ADR-0081 §1                                                                                                                                                                 |
+| Сутність                                                   | Стан                                                                                                                                                                                                                                          |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.codex/` (21 файл = 19 agents + config.toml + hooks.json) | ✅ узгоджений з AGENTS.md; `pnpm codex:status` відпрацьовує, бачить 23 repo-skills                                                                                                                                                            |
+| `.kilo/harness-versions.json`                              | ✅ current 3.0.1, 19 versions, `abExperiments: {}` — рівно як після зняття A/B (ADR-0082)                                                                                                                                                     |
+| `patches/@expo__cli@0.22.28.patch`                         | ✅ актуальний — версія збігається зі встановленою, гейт `lint:patches` у lint-ланцюзі                                                                                                                                                         |
+| `turbo.json`                                               | ✅ усі 6 tasks викликаються                                                                                                                                                                                                                   |
+| `docker-compose.yml`                                       | живий (`pnpm db:up`), але коментар досі перелічує `visual-regression.yml` серед воркфлоу з тим самим SHA — файл видалено ADR-0082                                                                                                             |
+| `.github/dependabot.yml`                                   | живий; коментар посилається на `dependabot-automerge.yml`, видалений ADR-0082 §3                                                                                                                                                              |
+| `ops/scripts/backup-n8n-db.ps1`, `restore-n8n-db.ps1`      | `dead` (ймовірно `legacy-replaced`): PowerShell-скрипти від 2026-04-29, жодної згадки в docs/runbook-ах; бекап n8n нині покритий n8n-воркфлоу `04-daily-backup-verification.json` + `db-backup-verify.yml`. Підтвердити у власника й видалити |
+
+### 6е. Осиротілий deploy-таргет: четвертий Vercel-проєкт
+
+Знайдено в CI цього PR, тож фіксую тут — це єдина сирота, що живе **не в репо**, а в зовнішньому сервісі, і тому невидима для будь-якого локального інструмента.
+
+До репозиторію під'єднані **чотири** Vercel-проєкти, а не три. Три очікувані належать команді `skords-01s-projects` і мають коректний `rootDirectory` — `sergeant` (→ `apps/web`), `sergeant-landing` (→ `apps/landing`), `beta` (→ `apps/web`); на docs-only комітах вони справно дають `Ignored`. Четвертий — теж на ім'я `sergeant`, але в **іншій команді** (`robotwildmoose-3254s-projects`), з `rootDirectory: null` і міткою `v0: true`, тобто збирається з кореня монорепо і **падає на кожному коміті** незалежно від змісту.
+
+Класифікація: `never-wired` (створений, ймовірно, автоматично через v0.app і не доведений до робочого стану). Докази, що це не наслідок конкретних змін: він упав однаково на PR [#629](https://github.com/Skords-01/Sergeant/pull/629) (уже в `main`) і на кожному з чотирьох комітів цієї гілки, тоді як три «справжні» проєкти на тих самих комітах були `Ready`/`Ignored`.
+
+Ціна не нульова: постійно червоний обов'язковий статус `Vercel – sergeant` привчає ігнорувати червоне на PR — те саме «червоний завжди = гейт вимкнено», що вже описано в AGENTS.md про бандл-бюджети. Плюс кожен коміт запускає марну збірку.
+
+**Рекомендація:** від'єднати проєкт від репозиторію в налаштуваннях Vercel або задати йому `rootDirectory`. Дія — поза репо, у Vercel-дашборді; кодом це не лікується.
+| `ops/grafana-alloy/`, `ops/prometheus/`, `ops/grafana/`, `ops/posthog/` | ✅ живі (деплой поза CI через Coolify; posthog-манифести гейтяться `lint:posthog-manifests`) |
+| `.mcp.json` | ✅ github / postgres / codebase-memory — canonical discovery-шлях ADR-0081 §1 |
 
 ## 7. Невикористані експорти (28) — сліпа зона `exclude: ["exports"]`
 
