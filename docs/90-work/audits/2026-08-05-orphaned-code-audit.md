@@ -259,7 +259,7 @@ Import-граф від коренів expo-router: 699 файлів, 46 роут
 
 ### 5в. apps/landing — чистий
 
-Vite + React (не Next), 17 файлів, повністю підключений граф; сиротілих сторінок/секцій нуль. `scripts/generate-og.mjs` — false-positive (свідомо не в білді: og.png закомічений, скрипт — для відтворення). Єдиний залишок — стейл knip-entry `middleware.ts` (§ 1).
+Vite + React (не Next), 17 файлів, повністю підключений граф; сиротілих сторінок/секцій нуль. `apps/landing/scripts/generate-og.mjs` — false-positive (свідомо не в білді: og.png закомічений, скрипт — для відтворення). Єдиний залишок — стейл knip-entry `middleware.ts` (§ 1).
 
 ### 5г. Спільні пакети очима mobile
 
