@@ -129,6 +129,38 @@ describe("UserProfilePayloadSchema — write-through profile blob", () => {
     expect(UserProfilePayloadSchema.safeParse(huge).success).toBe(false);
   });
 
+  // CodeRabbit PR #627 review: the size cap used to measure `String.length`
+  // (UTF-16 code units), not real bytes. A BMP non-Latin codepoint (Cyrillic,
+  // e.g.) costs 1 UTF-16 unit but 2 UTF-8 bytes, so a payload that reads as
+  // "under the cap" by `.length` could be roughly DOUBLE the cap in the
+  // bytes Postgres/JSONB and the HTTP wire actually store/transmit.
+  it("відхиляє Unicode-payload, що вкладається в ліміт по .length, але не по байтах", () => {
+    // ~10_000 кириличних символів → .length ≈ 10_011 (< 16_384, старий чек
+    // пропустив би), але кожен символ — 2 UTF-8 байти → ~20_011 байт (> 16_384).
+    const value = { blob: "а".repeat(10_000) };
+    const serialized = JSON.stringify(value);
+    expect(serialized.length).toBeLessThan(USER_PROFILE_MAX_BYTES);
+    expect(new TextEncoder().encode(serialized).byteLength).toBeGreaterThan(
+      USER_PROFILE_MAX_BYTES,
+    );
+    expect(UserProfilePayloadSchema.safeParse(value).success).toBe(false);
+  });
+
+  it("приймає ASCII payload, де .length і byteLength збігаються, точно на межі", () => {
+    // Suffix + JSON wrapper `{"blob":"..."}` — прораховуємо запас так, щоб
+    // серіалізований результат впритул дорівнював стелі в БАЙТАХ.
+    const wrapperBytes = new TextEncoder().encode(
+      JSON.stringify({ blob: "" }),
+    ).byteLength;
+    const blob = "x".repeat(USER_PROFILE_MAX_BYTES - wrapperBytes);
+    const value = { blob };
+    const serializedBytes = new TextEncoder().encode(
+      JSON.stringify(value),
+    ).byteLength;
+    expect(serializedBytes).toBe(USER_PROFILE_MAX_BYTES);
+    expect(UserProfilePayloadSchema.safeParse(value).success).toBe(true);
+  });
+
   it("відхиляє масив на верхньому рівні (мусить бути об'єктом)", () => {
     expect(UserProfilePayloadSchema.safeParse([1, 2, 3]).success).toBe(false);
   });

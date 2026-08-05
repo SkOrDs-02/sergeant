@@ -179,7 +179,16 @@ export const UserProfilePayloadSchema = z
   .refine(
     (value) => {
       try {
-        return JSON.stringify(value).length <= USER_PROFILE_MAX_BYTES;
+        // `String.length` counts UTF-16 code units, not bytes — Unicode text
+        // (Cyrillic, emoji) that fits well under the 16KB cap by `.length`
+        // can still exceed it once encoded as the UTF-8 bytes Postgres/JSONB
+        // and the HTTP wire actually store/transmit (every non-Latin-1
+        // codepoint costs 2-4 UTF-8 bytes but only 1-2 UTF-16 units).
+        // CodeRabbit PR #627 review: measure real bytes via `TextEncoder`.
+        return (
+          new TextEncoder().encode(JSON.stringify(value)).byteLength <=
+          USER_PROFILE_MAX_BYTES
+        );
       } catch {
         return false;
       }

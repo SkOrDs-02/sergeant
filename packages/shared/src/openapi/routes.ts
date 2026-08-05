@@ -93,6 +93,12 @@ export const paths: ZodOpenApiPathsObject = {
       tags: ["auth"],
       security: cookieOrBearer,
       requestBody: {
+        // OpenAPI 3 defaults `requestBody.required` to `false` when omitted
+        // — misleading here since `UserProfilePutBodySchema` requires a
+        // `profile` field with no default; a client generated straight off
+        // the spec could omit the body entirely and only find out it's
+        // mandatory from the 400 (CodeRabbit PR #627 review).
+        required: true,
         content: {
           "application/json": { schema: namedSchemas.UserProfilePutBody },
         },
