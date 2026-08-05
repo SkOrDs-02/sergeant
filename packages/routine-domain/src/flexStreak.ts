@@ -81,6 +81,13 @@ export interface FlexibleStreakOptions {
   maxGraceBudget?: number | undefined;
 }
 
+/** Один день вікна серії — дата + тип, готовий для рендеру «полотна». */
+export interface FlexibleStreakDayCell {
+  /** `YYYY-MM-DD`. */
+  key: string;
+  kind: StreakDayKind;
+}
+
 export interface FlexibleStreakBreakdown {
   /**
    * Число, яке показуємо користувачу: **виконані** дні у поточній серії.
@@ -104,6 +111,16 @@ export interface FlexibleStreakBreakdown {
   todayPending: boolean;
   /** День, на якому серія обірвалась (`null` — дійшли до початку історії). */
   brokenOn: string | null;
+  /**
+   * Дні поточної серії, у хронологічному порядку (найдавніший → сьогодні) —
+   * саме той матеріал, з якого рахуються `days`/`graceUsed`/`pauseDays`/
+   * `skipDays` вище. Призначення — UI-полотно з типами дня (кожен
+   * `StreakDayKind` — окремий візуальний стан, не лише число). `"miss"`
+   * усередині цього вікна за визначенням прощений бюджетом: день, який
+   * бюджет не потягнув, стає межею вікна (`brokenOn`) і в нього не
+   * потрапляє.
+   */
+  window: FlexibleStreakDayCell[];
 }
 
 function dateKeyMinusDays(baseKey: string, daysBack: number): string {
@@ -145,6 +162,7 @@ export function flexibleStreakBreakdown(
     skipDays: 0,
     todayPending: false,
     brokenOn: null,
+    window: [],
   };
 
   // Нижня межа проходу — найдавніша відома дата звички. Без неї рідкі
@@ -272,6 +290,16 @@ export function flexibleStreakBreakdown(
     maxGrace,
     earnEvery > 0 ? Math.floor(days / earnEvery) : 0,
   );
+
+  // Той самий [0, cut) зріз, з якого щойно порахували `days`/`graceUsed`/…,
+  // але для UI-полотна — хронологічно, найдавніший день ліворуч.
+  const window: FlexibleStreakDayCell[] = [];
+  for (let i = cut - 1; i >= 0; i--) {
+    const k = keys[i];
+    const kind = kinds[i];
+    if (k !== undefined && kind !== undefined) window.push({ key: k, kind });
+  }
+
   return {
     days,
     graceUsed,
@@ -280,6 +308,7 @@ export function flexibleStreakBreakdown(
     skipDays,
     todayPending,
     brokenOn,
+    window,
   };
 }
 
