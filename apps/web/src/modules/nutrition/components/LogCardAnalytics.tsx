@@ -55,7 +55,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                 "px-2 py-1 rounded-xl text-style-caption border",
                 statsRange === d
                   ? "border-nutrition/60 text-nutrition-strong dark:text-nutrition bg-nutrition/10"
-                  : "border-line text-subtle bg-panelHi",
+                  : "border-line text-muted bg-panelHi",
               )}
             >
               {d} днів
@@ -72,11 +72,11 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           { key: "carbs_g", label: "Сер. В/день", v: statsAvg.carbs_g },
         ].map((x) => (
           <div key={x.key} className="bg-panelHi rounded-2xl px-2 py-3">
-            <div className="text-style-caption text-subtle">{x.label}</div>
+            <div className="text-style-caption text-muted">{x.label}</div>
             <div className="text-base font-extrabold text-text tabular-nums">
               {Math.round(Number(x.v) || 0)}
             </div>
-            <div className="text-style-caption text-subtle">
+            <div className="text-style-caption text-muted">
               на {statsSummary.daysWithAnyMacros} активн. днів
             </div>
           </div>
@@ -88,7 +88,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
           Калорії по днях (останні {Math.min(statsRange, statsRows.length)})
         </SectionHeading>
         {statsRows.length === 0 ? (
-          <div className="text-xs text-muted">Поки що порожньо</div>
+          <div className="text-style-caption text-muted">Поки що порожньо</div>
         ) : (
           (() => {
             const kcals = statsRows.map((r) => Number(r.kcal) || 0);
@@ -122,7 +122,9 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             Топ страв
           </SectionHeading>
           {statsTop.length === 0 ? (
-            <div className="text-xs text-muted">Поки що порожньо</div>
+            <div className="text-style-caption text-muted">
+              Поки що порожньо
+            </div>
           ) : (
             <ol className="space-y-1">
               {statsTop.map((x) => (
@@ -130,8 +132,10 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                   key={x.name}
                   className="flex items-baseline justify-between gap-2"
                 >
-                  <span className="text-xs text-text truncate">{x.name}</span>
-                  <span className="text-xs text-subtle shrink-0">
+                  <span className="text-style-caption text-text truncate">
+                    {x.name}
+                  </span>
+                  <span className="text-style-caption text-muted shrink-0">
                     {x.count}× · {Math.round(x.kcal)} ккал
                   </span>
                 </li>
@@ -149,7 +153,9 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             Розподіл прийомів
           </SectionHeading>
           {Object.keys(statsMealTypes).length === 0 ? (
-            <div className="text-xs text-muted">Поки що порожньо</div>
+            <div className="text-style-caption text-muted">
+              Поки що порожньо
+            </div>
           ) : (
             <ul className="space-y-1">
               {MEAL_ORDER.filter(
@@ -162,10 +168,10 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                     key={t}
                     className="flex items-baseline justify-between gap-2"
                   >
-                    <span className="text-xs text-text">
+                    <span className="text-style-caption text-text">
                       {MEAL_META[t]?.emoji} {MEAL_META[t]?.label || t}
                     </span>
-                    <span className="text-xs text-subtle shrink-0">
+                    <span className="text-style-caption text-muted shrink-0">
                       {s.count}× · {Math.round(s.kcal)} ккал
                     </span>
                   </li>
