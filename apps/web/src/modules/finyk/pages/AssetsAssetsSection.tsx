@@ -2,6 +2,7 @@ import { DebtCard } from "../components/DebtCard";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
+import { Money } from "@shared/components/ui/Money";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -284,15 +285,21 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-style-label tabular-nums text-success-strong dark:text-success">
-                    {showBalance
-                      ? `${Number(a.amount).toLocaleString("uk-UA")} ${
+                    {showBalance ? (
+                      <Money
+                        amount={Number(a.amount)}
+                        symbol={
                           a.currency === "UAH"
                             ? "\u20B4"
                             : a.currency === "USD"
                               ? "$"
-                              : a.currency
-                        }`
-                      : "\u2022\u2022\u2022\u2022"}
+                              : (a.currency ?? "\u20B4")
+                        }
+                        tone="inherit"
+                      />
+                    ) : (
+                      "\u2022\u2022\u2022\u2022"
+                    )}
                   </span>
                   <button
                     type="button"

@@ -7,6 +7,7 @@ import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -82,9 +83,7 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           Витрати на підписки за місяць
         </span>
         <strong className="text-style-label tabular-nums text-finyk-soft-fg">
-          {showBalance
-            ? `${subsMonthly.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
-            : "••••"}
+          {showBalance ? <Money amount={Math.round(subsMonthly)} /> : "••••"}
         </strong>
       </div>
       {subscriptions.length > 0 && (

@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
+import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { getAccountLabel, getMonoDebt } from "../utils";
 import type {
@@ -281,17 +282,16 @@ export function AssetsTxPickerView({
             <Card variant="flat" radius="md" className="mb-3">
               <div className="text-xs text-subtle mb-1">{label}</div>
               <div className="text-style-headline text-danger-strong dark:text-danger">
-                −
-                {remaining.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })}{" "}
-                ₴ залишок боргу
+                <Money amount={-Math.round(remaining)} tone="inherit" /> залишок
+                боргу
               </div>
               <div className="text-xs text-subtle mt-1">
-                Погашено цього місяця:{" "}
-                {paid.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴ ·
-                Базовий борг:{" "}
-                {total.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
+                {/* Обидва числа з символом: це не пара «X з Y», а два
+                    самостійні факти через «·». Символ опускають лише там,
+                    де числа читаються одним виразом (див. «Сплачено X з Y»
+                    в `AssetsDebtTxPicker`). */}
+                Погашено цього місяця: <Money amount={Math.round(paid)} /> ·
+                Базовий борг: <Money amount={Math.round(total)} />
               </div>
               <div className="h-1.5 bg-line rounded-full overflow-hidden mt-3">
                 <div

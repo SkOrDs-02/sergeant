@@ -2,6 +2,7 @@ import type { InternalTransferSuggestion } from "@sergeant/finyk-domain/domain/t
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import type { TxAccount } from "./Transactions";
+import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 
 interface TransferSuggestionCardProps {
@@ -60,9 +61,7 @@ export function TransferSuggestionCard({
   const toAccount = accounts?.find((account) => account.id === toId);
   const isCreditCardRepayment =
     typeof toAccount?.creditLimit === "number" && toAccount.creditLimit > 0;
-  const amount = `${Math.round(suggestion.amountMinor / 100).toLocaleString(
-    "uk-UA",
-  )} ₴`;
+  const amountUah = Math.round(suggestion.amountMinor / 100);
   // Account labels alone ("Чорна • 1234 → Банка") do not let the user recall
   // which pair of operations this is about. Show each side's own description
   // and date, the way the transaction list identifies them.
@@ -104,7 +103,7 @@ export function TransferSuggestionCard({
           </p>
         </div>
         <span className="text-style-label tabular-nums text-finyk-strong dark:text-finyk shrink-0">
-          {showBalance ? amount : "••••"}
+          {showBalance ? <Money amount={amountUah} tone="inherit" /> : "••••"}
         </span>
       </div>
       <p className="text-xs text-muted leading-snug">
