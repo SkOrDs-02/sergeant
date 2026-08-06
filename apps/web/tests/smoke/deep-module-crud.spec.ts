@@ -352,6 +352,27 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // focus-then-keypress choreography, which is more exposed to the same
     // sync-driven remount churn documented above.
     await editDialog.getByRole("button", { name: "Зберегти зміни" }).click();
+    await expect(editDialog).toBeHidden();
+
+    // Saving closes ONLY the edit dialog — `HabitDetailSheet` renders
+    // `HabitQuickCreateDialog` with `onClose={() => setEditOpen(false)}`, so
+    // the detail sheet stays open behind it showing the new title. `Sheet` is
+    // `aria-modal="true"` with an inert background (`useDialogFocusTrap`,
+    // `inertBackground: true`), which takes the habit list out of the
+    // accessibility tree entirely — a `getByRole` for the list row resolves to
+    // zero nodes, not to a hidden one, while the sheet is up. So assert the
+    // rename where it is actually visible (the sheet), then close the sheet
+    // and assert the list row picked the new title up.
+    //
+    // This used to pass by accident: until `e6a01ce` the save was a
+    // `press("Enter")`, which CI logged as "navigated to /routine" — the
+    // reload tore the sheet down before the list assertion ran.
+    const detailSheet = page.getByRole("dialog", {
+      name: "DCRUD вода оновлено",
+    });
+    await expect(detailSheet).toBeVisible();
+    await detailSheet.getByRole("button", { name: "Закрити" }).first().click();
+    await expect(detailSheet).toBeHidden();
     await expect(
       routineDetailButton(page, "DCRUD вода оновлено"),
     ).toBeVisible();

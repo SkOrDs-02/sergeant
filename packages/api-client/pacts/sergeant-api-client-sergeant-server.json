@@ -457,6 +457,7 @@
       },
       "response": {
         "body": {
+          "activeModules": null,
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": true,

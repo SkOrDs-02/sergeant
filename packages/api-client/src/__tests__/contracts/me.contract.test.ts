@@ -99,6 +99,14 @@ describe(
             pushNotifications: true,
             sergeantNudges: false,
             healthDataConsent: true,
+            // Явний `null`, а не відсутнє поле: після міграції 116
+            // серіалізатор `dataRights.ts` ВЗАВЖДИ віддає ключ
+            // `activeModules`, і саме ця інтеракція реплеїться проти
+            // живого хендлера в `apps/server/src/__tests__/contracts/`.
+            // Пропуск ключа тут зробив би pact формою pre-116-сервера —
+            // рівно той дрейф, який provider-replay і має ловити.
+            // Відсутність поля перевіряє окрема legacy-інтеракція нижче.
+            activeModules: null,
             updatedAt: "2026-08-01T12:00:00.000Z",
           });
         })
@@ -108,6 +116,7 @@ describe(
           const out = await me.getPreferences();
           expect(out.healthDataConsent).toBe(true);
           expect(typeof out.healthDataConsent).toBe("boolean");
+          expect(out.activeModules).toBeNull();
         });
     });
 
