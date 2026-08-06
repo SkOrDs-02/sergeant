@@ -302,7 +302,7 @@ export function EmptyState({
         tokens.outer,
         asDocument && "edge-stub border border-line bg-panel",
         !disableAnimation &&
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300",
+          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-slow",
         className,
       )}
     >
@@ -312,7 +312,7 @@ export function EmptyState({
           className={cn(
             "flex items-center justify-center",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
           )}
         >
           {illustration}
@@ -326,7 +326,7 @@ export function EmptyState({
               tone.container,
               tokens.iconBox,
               !disableAnimation &&
-                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
             )}
           >
             {icon}
@@ -364,7 +364,7 @@ export function EmptyState({
             "w-full mt-2 p-3 rounded-xl bg-panel/50 border border-dashed border-line/60",
             tokens.descriptionMax,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-100",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-100",
           )}
         >
           <p className="text-style-caption text-muted mb-2 font-medium">
@@ -379,7 +379,7 @@ export function EmptyState({
             "flex flex-wrap items-center justify-center",
             tokens.actionGap,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 motion-safe:delay-150",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow motion-safe:delay-150",
           )}
         >
           {primary}
@@ -391,7 +391,7 @@ export function EmptyState({
           className={cn(
             "mt-1",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           {tertiaryLink}
@@ -405,7 +405,7 @@ export function EmptyState({
             // лише 3.33:1 на panel-фоні (axe color-contrast, a11y-гейт).
             "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           <Icon

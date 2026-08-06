@@ -214,7 +214,7 @@ const HeroCardImpl = function HeroCard({
           </div>
           <div className="h-1 rounded-full bg-finyk-soft-border overflow-hidden">
             <div
-              className="h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-500"
+              className="h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-slower"
               style={{ width: `${monthProgressPct}%` }}
             />
           </div>

@@ -61,7 +61,7 @@ export function DayProgressRing({
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={offset}
-            className="text-hero-ink transition-colors duration-700 ease-out"
+            className="text-hero-ink transition-colors duration-slowest ease-standard"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

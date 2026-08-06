@@ -76,7 +76,7 @@ export function DropdownMenuEntryView({
         }}
         className={cn(
           "flex w-full items-center gap-2.5 px-3 py-2 text-left",
-          "transition-colors duration-150 rounded-xl",
+          "transition-colors duration-fast rounded-xl",
           "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           // Highlight is data-driven from focusedIndex so keyboard nav
@@ -209,7 +209,7 @@ function DropdownMenuSubmenuPanel({ entry, onClose }: SubmenuPanelProps) {
             }}
             className={cn(
               "flex w-full items-center gap-2.5 px-3 py-2 text-left text-style-label",
-              "transition-colors duration-150 rounded-xl",
+              "transition-colors duration-fast rounded-xl",
               "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               "hover:bg-panelHi focus-visible:bg-panelHi",

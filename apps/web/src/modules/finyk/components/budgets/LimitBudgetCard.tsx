@@ -171,7 +171,7 @@ function LimitBudgetCardComponent({
           <div className="h-2 bg-bg rounded-full overflow-hidden">
             <div
               className={cn(
-                "h-full rounded-full transition-[width,background-color] duration-500",
+                "h-full rounded-full transition-[width,background-color] duration-slower",
                 overLimit
                   ? "bg-danger"
                   : warnLimit

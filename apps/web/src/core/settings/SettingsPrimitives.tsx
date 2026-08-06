@@ -23,7 +23,7 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
       name="chevron-right"
       size={16}
       className={cn(
-        "transition-transform duration-200 shrink-0",
+        "transition-transform duration-base shrink-0",
         expanded && "rotate-90",
       )}
     />
@@ -132,7 +132,7 @@ export function SettingsGroup({
       </button>
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
@@ -175,7 +175,7 @@ export function SettingsSubGroup({
       </button>
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >

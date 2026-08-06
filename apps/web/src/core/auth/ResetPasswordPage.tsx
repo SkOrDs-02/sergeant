@@ -131,7 +131,7 @@ export function ResetPasswordPage() {
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 outline-none"
+        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower outline-none"
       >
         <div className="text-center mb-6">
           <BrandLogo as="h1" size="md" className="justify-center" />

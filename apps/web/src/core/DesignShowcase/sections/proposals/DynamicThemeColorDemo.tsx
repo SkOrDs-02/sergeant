@@ -67,7 +67,7 @@ export function DynamicThemeColorDemo() {
         <div className="flex flex-col items-center gap-3">
           <MiniPhone>
             <div
-              className="h-9 shrink-0 flex items-center justify-between px-4 transition-colors duration-500"
+              className="h-9 shrink-0 flex items-center justify-between px-4 transition-colors duration-slower"
               style={{ backgroundColor: mod.bar }}
             >
               <span className="text-style-caption font-semibold text-white">
@@ -79,7 +79,7 @@ export function DynamicThemeColorDemo() {
             </div>
             <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4">
               <span
-                className="h-11 w-11 rounded-2xl flex items-center justify-center transition-colors duration-500"
+                className="h-11 w-11 rounded-2xl flex items-center justify-center transition-colors duration-slower"
                 style={{ backgroundColor: `${mod.bar}22`, color: mod.bar }}
               >
                 <Icon name={mod.icon} size={22} />

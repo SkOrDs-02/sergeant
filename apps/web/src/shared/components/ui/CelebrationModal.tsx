@@ -324,7 +324,7 @@ export const CelebrationModal = memo(function CelebrationModal({
         <div className="h-3 bg-panel-hi rounded-full overflow-hidden">
           <div
             className={cn(
-              "h-full rounded-full transition-all duration-700 ease-out",
+              "h-full rounded-full transition-all duration-slowest ease-standard",
               theme === "finyk" && "bg-finyk",
               theme === "fizruk" && "bg-fizruk",
               theme === "routine" && "bg-routine",

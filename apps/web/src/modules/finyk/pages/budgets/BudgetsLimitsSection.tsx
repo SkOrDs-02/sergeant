@@ -158,7 +158,7 @@ export function BudgetsLimitsSection({
                 }
               }}
               className={cn(
-                "rounded-2xl transition-shadow duration-300",
+                "rounded-2xl transition-shadow duration-slow",
                 isHighlighted &&
                   "ring-2 ring-finyk/60 ring-offset-2 ring-offset-bg",
               )}

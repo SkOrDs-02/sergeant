@@ -77,7 +77,7 @@ export function TransactionDayHeader({
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden
-          className="shrink-0 motion-safe:transition-transform motion-safe:duration-150"
+          className="shrink-0 motion-safe:transition-transform motion-safe:duration-fast"
           style={{
             transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
           }}

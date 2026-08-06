@@ -98,7 +98,7 @@ function MinDelayFallback({
   return (
     <div
       className={cn(
-        "motion-safe:animate-fade-in motion-safe:duration-200",
+        "motion-safe:animate-fade-in motion-safe:duration-base",
         className,
       )}
     >
@@ -117,7 +117,7 @@ function FadeInContent({
   return (
     <div
       className={cn(
-        "motion-safe:animate-fade-in motion-safe:duration-200",
+        "motion-safe:animate-fade-in motion-safe:duration-base",
         className,
       )}
     >

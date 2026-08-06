@@ -100,7 +100,7 @@ export function SegmentedSheetFallbackDemo() {
               <div
                 className={cn(
                   "absolute inset-x-0 bottom-0 z-20 rounded-t-3xl bg-panelHi border-t border-line p-4",
-                  "transition-transform duration-300 max-h-[85%] overflow-y-auto no-scrollbar",
+                  "transition-transform duration-slow max-h-[85%] overflow-y-auto no-scrollbar",
                   open ? "translate-y-0" : "translate-y-full",
                 )}
               >

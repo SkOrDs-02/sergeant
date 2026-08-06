@@ -226,7 +226,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       className={cn(
         "shrink-0 relative z-30",
         "bottom-nav-shell border border-line bg-panel shadow-lg",
-        "transition-transform duration-200 motion-reduce:transition-none",
+        "transition-transform duration-base motion-reduce:transition-none",
         hidden && "translate-y-full pointer-events-none",
         className,
       )}
@@ -260,7 +260,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               className={cn(
                 "relative flex-1 flex items-center justify-center min-h-touch-target",
                 "my-1.5 rounded-xl border border-transparent",
-                "transition-[color,transform,border-color] duration-200",
+                "transition-[color,transform,border-color] duration-base",
                 "active:scale-95",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active ? "text-bg" : "text-text hover:text-text/80",
@@ -269,7 +269,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               <span
                 className={cn(
                   "relative flex items-center justify-center gap-1.5 rounded-2xl py-1.5",
-                  "transition-[background-color,padding,color] duration-200",
+                  "transition-[background-color,padding,color] duration-base",
                   active
                     ? cn("px-3 text-bg", tokens.fillLight, tokens.fillDark)
                     : "px-2 text-text",
@@ -302,7 +302,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   aria-hidden
                   className={cn(
                     "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap",
-                    "transition-[max-width,opacity] duration-200 motion-reduce:transition-none",
+                    "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
                       ? "max-w-[88px] opacity-100"
                       : "max-w-0 opacity-0 pointer-events-none",

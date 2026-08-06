@@ -172,7 +172,7 @@ export function WelcomeModulePicker({
               aria-label={MODULE_LABELS[id]}
               className={cn(
                 "relative min-h-[120px] sm:min-h-[140px] p-3.5 text-left",
-                "rounded-2xl border bg-panel transition-all duration-200",
+                "rounded-2xl border bg-panel transition-all duration-base",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 "active:scale-[0.97] motion-reduce:active:scale-100",
                 active

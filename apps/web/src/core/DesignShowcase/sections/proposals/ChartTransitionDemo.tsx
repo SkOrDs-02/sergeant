@@ -56,7 +56,7 @@ export function ChartTransitionDemo() {
               {values.map((v, i) => (
                 <span
                   key={i}
-                  className="w-4 rounded-t-md bg-finyk transition-[height] duration-500 ease-out"
+                  className="w-4 rounded-t-md bg-finyk transition-[height] duration-slower ease-standard"
                   style={{ height: `${v}%` }}
                 />
               ))}

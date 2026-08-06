@@ -304,7 +304,7 @@ function DigestContent({
           </div>
           <div
             className={cn(
-              "grid transition-[grid-template-rows] duration-200 ease-in-out",
+              "grid transition-[grid-template-rows] duration-base ease-standard",
               expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
             )}
           >

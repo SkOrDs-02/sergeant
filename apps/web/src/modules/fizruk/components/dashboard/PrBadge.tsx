@@ -74,7 +74,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
   return (
     <div
       aria-hidden
-      className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+      className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow"
     >
       <Badge variant="fizruk" size="xs" className="h-6 px-2 rounded-xl">
         <svg

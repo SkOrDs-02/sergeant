@@ -102,7 +102,7 @@ export function WeeklyDigestStories({
       <div className="absolute inset-0 bg-black/90" />
       <div
         ref={surfaceRef}
-        className="absolute inset-0 transition-[transform,opacity] duration-150 ease-out touch-none"
+        className="absolute inset-0 transition-[transform,opacity] duration-fast ease-standard touch-none"
         {...gestures}
       >
         {renderSlide(slide)}

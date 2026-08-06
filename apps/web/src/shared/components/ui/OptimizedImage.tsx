@@ -177,7 +177,7 @@ export function OptimizedImage({
             "w-full h-full object-cover",
             blurOnLoad && !isLoaded && "blur-sm scale-105",
             blurOnLoad && isLoaded && "blur-0 scale-100",
-            "transition-[filter,transform] duration-500 ease-out",
+            "transition-[filter,transform] duration-slower ease-standard",
             "motion-reduce:transition-none motion-reduce:blur-0 motion-reduce:scale-100",
             className,
           )}

@@ -232,7 +232,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
-        "transition-[transform,opacity] duration-300 ease-out",
+        "transition-[transform,opacity] duration-slow ease-standard",
         hidden && "translate-y-24 opacity-0 pointer-events-none",
         className,
       )}
@@ -249,7 +249,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
         className={cn(
           "inline-flex items-center justify-center rounded-full",
           "touch-manipulation select-none",
-          "shadow-lg transition-[transform,box-shadow,background-color,color] duration-200",
+          "shadow-lg transition-[transform,box-shadow,background-color,color] duration-base",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand",
           "active:scale-95",
           variantStyles[variant],
@@ -263,7 +263,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
               size={styles.icon}
               strokeWidth={2.5}
               className={cn(
-                "transition-transform duration-200",
+                "transition-transform duration-base",
                 isOpen && "rotate-45",
               )}
             />
@@ -302,7 +302,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
                   "flex items-center gap-3 pl-4 pr-5 py-2.5 rounded-full",
                   "bg-panel border border-line shadow-float",
                   "hover:bg-panel-hi active:scale-95",
-                  "transition-[transform,background-color,color,border-color] duration-200",
+                  "transition-[transform,background-color,color,border-color] duration-base",
                   "motion-safe:animate-fab-item",
                 )}
                 style={{

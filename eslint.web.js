@@ -99,6 +99,22 @@ export const webBlocks = [
       ],
       "sergeant-design/no-flat-shared-lib": "error",
       "sergeant-design/prefer-kyiv-time": "warn",
+      // Рух через токени, не через сирі числа (анти-слоп §4/П5,
+      // рішення власника 2026-08-06). Без цього гейта прохід
+      // розпадеться: `duration-200` лишається валідним класом
+      // Tailwind, тож наступний автор напише його не зі зла, а тому,
+      // що воно працює. Тести — виняток: там класи ЦИТУЮТЬ в асертах.
+      "sergeant-design/no-raw-motion-value": "error",
+    },
+  },
+  {
+    files: [
+      "apps/web/**/*.test.{ts,tsx}",
+      "apps/web/**/*.stories.{ts,tsx}",
+      "apps/web/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-raw-motion-value": "off",
     },
   },
   // Hash-router migration gate — initiative 0006 (frontend routing &

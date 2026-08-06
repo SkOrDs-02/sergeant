@@ -128,7 +128,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
         <div className="h-2 bg-line/30 rounded-full overflow-hidden mb-3">
           <div
             className={cn(
-              "h-full rounded-full transition-[width,background-color] duration-500",
+              "h-full rounded-full transition-[width,background-color] duration-slower",
               done ? "bg-success" : "bg-info",
             )}
             style={{ width: `${pct}%` }}

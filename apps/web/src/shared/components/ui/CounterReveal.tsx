@@ -11,7 +11,7 @@ import { cn } from "@shared/lib/ui/cn";
  * Animated numeric reveal for hero values (Routine completed/scheduled,
  * Nutrition kcal consumed, Finyk balance, etc.). Tweens from
  * `entranceFrom` (default 0) to `value` over `duration` ms via
- * `requestAnimationFrame` with an ease-out-cubic curve.
+ * `requestAnimationFrame` with an ease-standard-cubic curve.
  *
  * Hard Rule #17 — single ambient motion:
  *   CounterReveal counts as the active motion slot on the screen it

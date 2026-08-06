@@ -27,7 +27,7 @@ export function PasswordStrengthBar({ password }: { password: string }) {
       <div className="h-1 rounded-full bg-line overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-300",
+            "h-full rounded-full transition-all duration-slow",
             widths[level],
             colors[level],
           )}

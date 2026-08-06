@@ -116,7 +116,7 @@ function DebtCardComponent({
       <div className="h-1.5 bg-line rounded-full overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-[width,background-color] duration-500",
+            "h-full rounded-full transition-[width,background-color] duration-slower",
             isReceivable ? "bg-success" : "bg-primary",
           )}
           style={{ width: `${pct}%` }}

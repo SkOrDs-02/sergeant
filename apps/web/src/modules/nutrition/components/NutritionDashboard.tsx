@@ -122,7 +122,7 @@ function MiniBar({
             >
               <div
                 className={cn(
-                  "w-full max-w-[18px] rounded-t-md transition-[height,background-color] duration-300",
+                  "w-full max-w-[18px] rounded-t-md transition-[height,background-color] duration-slow",
                   isToday ? "bg-nutrition" : "bg-nutrition/30",
                 )}
                 style={{ height: `${h}%`, minHeight: "3px" }}

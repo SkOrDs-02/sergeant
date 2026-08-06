@@ -172,7 +172,7 @@ function HubBottomNavTab({
           // а слот на 375px-екрані — ≈89px: активний піл вилазив за межі
           // кнопки, у крайнього таба — за край екрана (user report).
           "flex items-center justify-center gap-1.5 rounded-2xl max-w-full",
-          "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
+          "duration-base ease-standard",
           active
             ? "bg-brand-strong dark:bg-brand-400 text-bg px-3 py-1.5"
             : "bg-transparent text-text px-2 py-1.5",
@@ -190,7 +190,7 @@ function HubBottomNavTab({
           className={cn(
             "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
             transition,
-            "duration-[var(--motion-duration-base)] ease-[var(--motion-ease-standard)]",
+            "duration-base ease-standard",
             active
               ? "max-w-[96px] opacity-100"
               : "max-w-0 opacity-0 pointer-events-none",
@@ -393,7 +393,7 @@ export function HubBottomNav({
       className={cn(
         "shrink-0 relative z-30",
         "bottom-nav-shell border border-line bg-panel shadow-lg",
-        "transition-transform duration-200 motion-reduce:transition-none",
+        "transition-transform duration-base motion-reduce:transition-none",
         kbHidden && "translate-y-full pointer-events-none",
       )}
     >

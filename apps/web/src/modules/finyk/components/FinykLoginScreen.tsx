@@ -262,7 +262,7 @@ export function FinykLoginScreen({
               "hover:from-brand-800 hover:to-brand-800",
               "text-white font-semibold",
               "shadow-md hover:shadow-glow",
-              "transition-[background-color,box-shadow,opacity,transform] duration-200",
+              "transition-[background-color,box-shadow,opacity,transform] duration-base",
               "active:scale-[0.98]",
             )}
             disabled={connecting || isSubmitting || !tokenValue.trim()}

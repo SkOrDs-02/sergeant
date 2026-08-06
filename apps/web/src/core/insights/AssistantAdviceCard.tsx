@@ -126,7 +126,7 @@ export function AssistantAdviceCard({
     <div
       className={cn(
         "rounded-2xl overflow-hidden",
-        "transition-all duration-200",
+        "transition-all duration-base",
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
@@ -194,7 +194,7 @@ export function AssistantAdviceCard({
             {insight && (
               <p
                 key={insight}
-                className="text-style-body text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-200"
+                className="text-style-body text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-base"
               >
                 {insight}
               </p>

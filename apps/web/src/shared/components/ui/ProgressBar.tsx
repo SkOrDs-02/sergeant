@@ -137,7 +137,7 @@ export function ProgressBar({
           <div
             aria-hidden="true"
             className={cn(
-              "h-full rounded-full motion-safe:transition-[width] motion-safe:duration-300",
+              "h-full rounded-full motion-safe:transition-[width] motion-safe:duration-slow",
               fillClass[variant],
             )}
             style={fillStyle}

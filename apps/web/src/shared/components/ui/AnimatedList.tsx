@@ -118,7 +118,7 @@ export const AnimatedList = memo(function AnimatedList({
         <div
           key={index}
           className={cn(
-            "transition-all ease-out",
+            "transition-all ease-standard",
             isVisible && !prefersReducedMotion ? anim.animate : anim.initial,
             prefersReducedMotion &&
               "opacity-100 translate-y-0 translate-x-0 scale-100",
@@ -197,7 +197,7 @@ export const AnimatedFadeIn = memo(function AnimatedFadeIn({
     <div
       ref={ref}
       className={cn(
-        "transition-all ease-out",
+        "transition-all ease-standard",
         isVisible && !prefersReducedMotion ? anim.animate : anim.initial,
         prefersReducedMotion &&
           "opacity-100 translate-y-0 translate-x-0 scale-100",
