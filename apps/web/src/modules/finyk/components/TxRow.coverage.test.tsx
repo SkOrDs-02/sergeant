@@ -188,7 +188,7 @@ describe("TxRow", () => {
   });
 
   it("sets the amount through Money — sign, kopecks and symbol as own tiers", () => {
-    // AI-CONTEXT: тест пінить НАБІР, а не наявність цифр. Асерти вище
+    // Тест пінить НАБІР, а не наявність цифр. Асерти вище
     // (`/250/`, `getAllByText(/\d/)`) проходили й на сирому рядку
     // `fmtAmt`, тобто не тримали нічого з того, що змінив П4.
     const { container } = render(<TxRow tx={mkTx()} />);
