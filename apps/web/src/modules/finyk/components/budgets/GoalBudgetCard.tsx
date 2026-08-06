@@ -13,10 +13,14 @@ import { cn } from "@shared/lib/ui/cn";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   dismissNudge,
+  // `formatMoney` лишається рівно для `aria-label` кнопки видалення:
+  // там потрібен РЯДОК, а `Money` — це вузли. Видиме число на екрані
+  // йде через `Money`, озвучене — через рядок; обидва з одних даних.
   formatMoney,
   isNudgeDismissed,
   pluralDays,
 } from "@sergeant/shared";
+import { Money } from "@shared/components/ui/Money";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { JarSelector, type JarOption } from "../JarSelector";
 
@@ -203,7 +207,8 @@ function GoalBudgetCardComponent({
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-style-caption text-muted">
-                  {formatMoney(saved)} / {formatMoney(budget.targetAmount)}
+                  <Money amount={saved} /> /{" "}
+                  <Money amount={budget.targetAmount} />
                 </span>
                 <button
                   type="button"
@@ -237,7 +242,8 @@ function GoalBudgetCardComponent({
             {hasBreakdown && (
               <div className="text-style-caption text-subtle mt-0.5">
                 з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
-                {formatMoney(fromJar)} · вручну {formatMoney(fromContributions)}
+                <Money amount={fromJar} /> · вручну{" "}
+                <Money amount={fromContributions} />
               </div>
             )}
             <div className="mt-3 flex items-center gap-3">
@@ -325,7 +331,7 @@ function GoalBudgetCardComponent({
                       {c.note ? ` · ${c.note}` : ""}
                     </span>
                     <span className="flex items-center gap-2">
-                      {formatMoney(c.amountUah)}
+                      <Money amount={c.amountUah} />
                       <button
                         type="button"
                         onClick={() => onDeleteContribution?.(c.id)}
