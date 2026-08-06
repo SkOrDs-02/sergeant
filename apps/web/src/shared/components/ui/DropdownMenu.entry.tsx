@@ -46,7 +46,7 @@ export function DropdownMenuEntryView({
       <SectionHeading
         as="div"
         role="presentation"
-        size="2xs"
+        size="xs"
         variant="subtle"
         className="px-3 pt-2 pb-1"
       >

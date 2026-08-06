@@ -4,7 +4,7 @@ import type { Slide } from "../../types";
 export function OverallSlide({ slide }: { slide: Slide }) {
   return (
     <StoryShell slide={slide}>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/75 font-bold mb-2">
+      <p className="text-style-caption uppercase tracking-[0.3em] text-white/75 font-bold mb-2">
         Підсумок тижня
       </p>
       <h2 className="text-style-headline leading-[1.1] mb-5">Що робити далі</h2>

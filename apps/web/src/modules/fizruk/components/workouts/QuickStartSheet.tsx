@@ -179,7 +179,7 @@ export function QuickStartSheet({
               <Icon name="clipboard" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">За шаблоном</div>
-                <div className="text-xs text-subtle mt-0.5">
+                <div className="text-style-caption text-subtle mt-0.5">
                   Готовий набір вправ — старт із заповненим списком.
                 </div>
               </div>
@@ -200,7 +200,7 @@ export function QuickStartSheet({
                 <div className="text-style-label text-text">
                   Підібрати вправи
                 </div>
-                <div className="text-xs text-subtle mt-0.5">
+                <div className="text-style-caption text-subtle mt-0.5">
                   Обери вправи зараз і почни — без збереження шаблону.
                 </div>
               </div>

@@ -466,7 +466,7 @@ export function Dashboard({
                 aria-label="Швидкий старт"
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <SectionHeading as="h2" size="sm" variant="fizruk">
+                  <SectionHeading as="h2" size="xs" variant="fizruk">
                     Швидкий старт
                   </SectionHeading>
                   <span className="text-style-caption text-muted">

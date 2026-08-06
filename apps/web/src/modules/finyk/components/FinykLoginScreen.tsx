@@ -121,7 +121,7 @@ export function FinykLoginScreen({
           >
             API токен Monobank
           </label>
-          <p className="text-xs text-subtle mb-2">
+          <p className="text-style-caption text-subtle mb-2">
             Mono → Налаштування → Інші → API
           </p>
           <div className="relative mt-1">
@@ -222,14 +222,14 @@ export function FinykLoginScreen({
           {formState.errors.token && (
             <p
               id="finyk-token-error"
-              className="mt-1.5 text-xs text-danger-strong"
+              className="mt-1.5 text-style-caption text-danger-strong"
               role="alert"
             >
               {formState.errors.token.message}
             </p>
           )}
 
-          <p className="text-xs text-subtle mt-2">
+          <p className="text-style-caption text-subtle mt-2">
             Токен відправляється на сервер і не зберігається у браузері.
           </p>
 
@@ -238,8 +238,8 @@ export function FinykLoginScreen({
               <p className="font-semibold text-text">
                 Токен потребує оновлення
               </p>
-              <p className="text-xs text-muted">{authError}</p>
-              <p className="text-xs text-muted">
+              <p className="text-style-caption text-muted">{authError}</p>
+              <p className="text-style-caption text-muted">
                 Отримайте новий токен: Monobank → Налаштування → API
               </p>
             </div>
@@ -285,7 +285,7 @@ export function FinykLoginScreen({
           >
             Почати без банку
           </Button>
-          <p className="mt-2 text-center text-xs text-subtle">
+          <p className="mt-2 text-center text-style-caption text-subtle">
             Ручні витрати, бюджети та аналітика — без API-токена. Monobank можна
             підключити пізніше.
           </p>

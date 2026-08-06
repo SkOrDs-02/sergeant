@@ -280,12 +280,12 @@ export function AssetsTxPickerView({
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-3">
-              <div className="text-xs text-subtle mb-1">{label}</div>
+              <div className="text-style-caption text-subtle mb-1">{label}</div>
               <div className="text-style-headline text-danger-strong dark:text-danger">
                 <Money amount={-Math.round(remaining)} tone="inherit" /> залишок
                 боргу
               </div>
-              <div className="text-xs text-subtle mt-1">
+              <div className="text-style-caption text-subtle mt-1">
                 {/* Обидва числа з символом: це не пара «X з Y», а два
                     самостійні факти через «·». Символ опускають лише там,
                     де числа читаються одним виразом (див. «Сплачено X з Y»
@@ -389,7 +389,7 @@ export function AssetsTxPickerView({
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-4">
-              <p className="text-xs text-subtle leading-relaxed">
+              <p className="text-style-caption text-subtle leading-relaxed">
                 Обери списання (наприклад через Apple/Google). День місяця з
                 транзакції підставиться в «день списання»; сума піде в огляд і в
                 Рутину.

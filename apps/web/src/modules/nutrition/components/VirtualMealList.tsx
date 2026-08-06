@@ -74,7 +74,7 @@ export function VirtualMealList({
           return (
             <div className="flex items-center gap-2 pt-2 pb-1">
               <span className="text-base">{meta.emoji}</span>
-              <SectionHeading as="span" size="sm" variant="nutrition">
+              <SectionHeading as="span" size="xs" variant="nutrition">
                 {meta.label}
               </SectionHeading>
             </div>

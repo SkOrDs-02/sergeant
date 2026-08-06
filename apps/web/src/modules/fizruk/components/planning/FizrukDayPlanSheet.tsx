@@ -154,7 +154,7 @@ export function FizrukDayPlanSheet({
                 : messages.fizruk.dayPlan.chooseTemplate}
             </SectionHeading>
             {templates.length === 0 ? (
-              <p className="text-xs text-subtle">
+              <p className="text-style-caption text-subtle">
                 {messages.fizruk.dayPlan.noTemplates}
               </p>
             ) : (

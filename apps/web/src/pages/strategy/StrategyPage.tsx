@@ -310,7 +310,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
                         key={g.id}
                         className="rounded-md border border-line px-3 py-2 text-sm"
                       >
-                        <span className="font-mono text-xs text-muted">
+                        <span className="font-mono text-style-caption text-muted">
                           #{g.id} · {g.status}
                         </span>
                         <div>{g.goalText}</div>

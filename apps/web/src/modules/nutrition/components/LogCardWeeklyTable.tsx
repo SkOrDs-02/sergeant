@@ -50,7 +50,7 @@ export function LogCardWeeklyTable({
 
       {weekOpen && (
         <div className="overflow-x-auto mt-2">
-          <table className="w-full text-xs text-left">
+          <table className="w-full text-style-caption text-left">
             <thead>
               <tr className="text-subtle">
                 <th className="py-1 pr-2">Дата</th>

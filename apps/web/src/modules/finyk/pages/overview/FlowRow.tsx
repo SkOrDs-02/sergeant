@@ -41,7 +41,7 @@ export const FlowRow = memo(function FlowRow({
         <div className="text-style-body leading-snug truncate">
           {flow.title}
         </div>
-        <div className="text-xs text-subtle mt-0.5">{flow.hint}</div>
+        <div className="text-style-caption text-subtle mt-0.5">{flow.hint}</div>
       </div>
       <div
         className={cn(

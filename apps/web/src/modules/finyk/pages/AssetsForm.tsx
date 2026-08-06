@@ -77,7 +77,7 @@ export function SubscriptionForm({
           }
         />
       </div>
-      <p className="text-xs text-subtle">
+      <p className="text-style-caption text-subtle">
         Якщо не вибрати транзакцію вручну, знайдемо найновішу витрату, опис якої
         містить цей текст. Пошук не залежить від регістру.
       </p>
@@ -318,7 +318,7 @@ export function AssetForm({
           <div className="text-style-label text-text">
             {editingId ? "Редагування активу" : "Новий актив"}
           </div>
-          <div className="text-xs text-muted mt-0.5">
+          <div className="text-style-caption text-muted mt-0.5">
             Готівка, брокерський рахунок, крипта тощо.
           </div>
         </div>
@@ -452,7 +452,7 @@ export function DebtForm({
         <div className="text-style-label text-danger-strong dark:text-danger">
           {editingId ? "Редагування пасиву" : "Новий пасив"}
         </div>
-        <div className="text-xs text-muted mt-0.5">
+        <div className="text-style-caption text-muted mt-0.5">
           Кредит, борг або інше зобов&#x27;язання.
         </div>
       </div>

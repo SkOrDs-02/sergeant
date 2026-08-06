@@ -56,7 +56,7 @@ export function Programs({
             <h1 className="text-style-title text-text">
               {messages.fizruk.programs.title}
             </h1>
-            <p className="text-xs text-subtle mt-0.5">
+            <p className="text-style-caption text-subtle mt-0.5">
               {activeProgram
                 ? `Активна: ${activeProgram.name}`
                 : "Оберіть тренувальну програму"}
@@ -107,7 +107,7 @@ export function Programs({
                           {messages.fizruk.programs.daysPerWeekSuffix}
                         </span>
                       </div>
-                      <p className="text-xs text-subtle mt-1.5 leading-relaxed">
+                      <p className="text-style-caption text-subtle mt-1.5 leading-relaxed">
                         {prog.description}
                       </p>
                     </div>
@@ -278,7 +278,7 @@ function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-muted italic">
+              <div className="text-style-caption text-muted italic">
                 {messages.fizruk.programs.missingExercises}
               </div>
             )}

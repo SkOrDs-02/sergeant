@@ -59,7 +59,9 @@ export function WorkoutsHeader({
       <div className="flex-1">
         <h1 className="text-style-title text-text">{title}</h1>
         {view === "home" ? (
-          <p className="text-xs text-subtle mt-0.5">{homeSubtitle}</p>
+          <p className="text-style-caption text-subtle mt-0.5">
+            {homeSubtitle}
+          </p>
         ) : null}
       </div>
       {view === "catalog" ? (

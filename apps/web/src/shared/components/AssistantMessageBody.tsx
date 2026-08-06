@@ -32,7 +32,7 @@ const PROSE_CLASS_NAME =
   "[&_blockquote]:pl-3 [&_blockquote]:mt-3 [&_blockquote]:text-subtle " +
   "[&_blockquote]:italic " +
   "[&_code]:bg-surface [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded " +
-  "[&_code]:text-xs";
+  "[&_code]:text-style-caption";
 
 export interface AssistantMessageBodyProps {
   text: string;

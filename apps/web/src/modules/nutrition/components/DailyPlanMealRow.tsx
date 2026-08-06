@@ -63,7 +63,7 @@ export function DailyPlanMealRow({
               className="text-nutrition shrink-0"
               aria-hidden
             />
-            <SectionHeading as="span" size="sm" variant="nutrition">
+            <SectionHeading as="span" size="xs" variant="nutrition">
               {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
             </SectionHeading>
           </div>
@@ -71,7 +71,7 @@ export function DailyPlanMealRow({
             {meal.name}
           </div>
           {meal.description && (
-            <div className="text-xs text-subtle mt-0.5 leading-snug">
+            <div className="text-style-caption text-subtle mt-0.5 leading-snug">
               {meal.description}
             </div>
           )}
@@ -113,7 +113,7 @@ export function DailyPlanMealRow({
       {(meal.ingredients?.length ?? 0) > 0 && (
         <button
           type="button"
-          className="mt-2 text-xs text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
+          className="mt-2 text-style-caption text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? "▲ Сховати інгредієнти" : "▼ Інгредієнти"}

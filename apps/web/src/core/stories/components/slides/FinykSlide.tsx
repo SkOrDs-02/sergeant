@@ -13,7 +13,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-style-caption uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Фінанси · ФІНІК
       </p>
       <div className="mb-6">
@@ -28,7 +28,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
 
       {topCats.length > 0 && (
         <div className="mb-6 space-y-2">
-          <p className="text-xs uppercase tracking-wider text-white/75 font-bold">
+          <p className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Куди пішли гроші
           </p>
           {topCats.map((c: { name: string; amount: number }) => {

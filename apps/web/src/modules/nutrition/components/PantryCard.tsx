@@ -73,7 +73,7 @@ function ItemRow({
           {item?.name || "—"}
         </span>
         {(item?.qty != null || item?.unit) && (
-          <span className="text-xs text-subtle shrink-0">
+          <span className="text-style-caption text-subtle shrink-0">
             {item?.qty != null && item?.unit
               ? `${item.qty} ${item.unit}`
               : item?.qty != null

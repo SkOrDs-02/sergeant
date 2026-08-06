@@ -73,7 +73,7 @@ export function PrBoard({
   return (
     <Card radius="lg" padding="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
-        <SectionHeading as="div" size="sm" variant="fizruk">
+        <SectionHeading as="div" size="xs" variant="fizruk">
           {messages.fizruk.prBoard.heading} · {prs.length}
         </SectionHeading>
         {filtered.length !== prs.length && (

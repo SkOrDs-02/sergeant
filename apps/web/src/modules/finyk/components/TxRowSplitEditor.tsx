@@ -190,7 +190,7 @@ export function TxRowSplitEditor({
             },
           ])
         }
-        className="text-xs text-primary/70 hover:text-primary transition-colors"
+        className="text-style-caption text-primary/70 hover:text-primary transition-colors"
       >
         + Додати частину
       </button>

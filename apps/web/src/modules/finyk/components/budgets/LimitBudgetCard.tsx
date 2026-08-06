@@ -146,7 +146,7 @@ function LimitBudgetCardComponent({
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "text-xs tabular-nums",
+                  "text-style-caption tabular-nums",
                   overLimit
                     ? "text-danger-strong dark:text-danger font-semibold"
                     : warnLimit
@@ -183,7 +183,7 @@ function LimitBudgetCardComponent({
           </div>
           <div
             className={cn(
-              "text-xs mt-2",
+              "text-style-caption mt-2",
               overLimit
                 ? "text-danger-strong dark:text-danger font-medium"
                 : warnLimit

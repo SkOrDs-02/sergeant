@@ -5,7 +5,7 @@ export function IntroSlide({ slide }: { slide: Slide }) {
   return (
     <StoryShell slide={slide}>
       <div className="flex-1 flex flex-col justify-center">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-3">
+        <p className="text-style-caption uppercase tracking-[0.3em] text-white/70 font-bold mb-3">
           Щотижневий дайджест
         </p>
         <h2 className="text-style-display tnum mb-4">Твій тиждень</h2>

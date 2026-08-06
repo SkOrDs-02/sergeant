@@ -99,7 +99,7 @@ export function WarmupCooldownChecklist({
               )}
             </button>
             <span
-              className={`text-xs ${item.done ? "line-through text-subtle" : "text-text"}`}
+              className={`text-style-caption ${item.done ? "line-through text-subtle" : "text-text"}`}
             >
               {item.label}
             </span>

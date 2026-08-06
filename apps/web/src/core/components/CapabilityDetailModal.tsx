@@ -74,7 +74,7 @@ export function CapabilityDetailModal({
           )}
 
           <div>
-            <SectionHeading size="sm" className="mb-2">
+            <SectionHeading size="xs" className="mb-2">
               Приклади
             </SectionHeading>
             <ul className="space-y-1.5">

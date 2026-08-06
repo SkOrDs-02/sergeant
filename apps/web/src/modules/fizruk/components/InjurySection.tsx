@@ -49,12 +49,12 @@ export function InjurySection() {
 
   return (
     <Card as="section" radius="lg" padding="lg" aria-label={t.title}>
-      <SectionHeading size="sm" variant="fizruk" as="h2">
+      <SectionHeading size="xs" variant="fizruk" as="h2">
         {t.title}
       </SectionHeading>
 
       {active.length === 0 ? (
-        <p className="text-xs text-muted mt-2">{t.empty}</p>
+        <p className="text-style-caption text-muted mt-2">{t.empty}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {active.map((m) => (
@@ -66,7 +66,7 @@ export function InjurySection() {
                 <span className="block text-sm font-medium truncate">
                   {injurySiteLabelUk(m.site)}
                 </span>
-                <span className="block text-xs text-muted">
+                <span className="block text-style-caption text-muted">
                   {formatSince(m.startedAt)}
                 </span>
               </span>

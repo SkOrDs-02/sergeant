@@ -99,9 +99,9 @@ describe("SectionHeading", () => {
     expect(container.querySelector("h3")).toBeNull();
   });
 
-  it("size='2xs' renders the compact eyebrow scale (caption + kicker bar)", () => {
+  it("size='xs' renders the eyebrow scale (caption + kicker bar)", () => {
     const { container } = render(
-      <SectionHeading size="2xs">Загальні рекомендації</SectionHeading>,
+      <SectionHeading size="xs">Загальні рекомендації</SectionHeading>,
     );
     const cls = container.querySelector("h3")!.className;
     expect(cls).toContain("text-style-caption");
@@ -109,21 +109,6 @@ describe("SectionHeading", () => {
     expect(cls).toContain("before:bg-current");
     expect(cls).toContain("font-semibold");
     expect(cls).toContain("text-muted");
-  });
-
-  // AI-CONTEXT: пінить AI-DANGER біля `sizeTokens` — після зняття капсу
-  // три eyebrow-розміри відрізнялися лише трекінгом, тож стали
-  // ідентичними. Тест ловить момент, коли хтось спробує «полагодити» це
-  // штучною різницею замість зведення в одне ім'я (борг у frontend.md).
-  it("2xs / xs / sm are synonyms after the caps removal", () => {
-    const cls = (size: "2xs" | "xs" | "sm") => {
-      const { container } = render(
-        <SectionHeading size={size}>Розділ</SectionHeading>,
-      );
-      return container.querySelector("h3")!.className;
-    };
-    expect(cls("xs")).toBe(cls("2xs"));
-    expect(cls("sm")).toBe(cls("2xs"));
   });
 
   it("weight='medium' / weight='normal' override the size-default semibold", () => {
@@ -145,7 +130,7 @@ describe("SectionHeading", () => {
     expect(container.firstElementChild!.tagName).toBe("H3");
   });
 
-  it("`eyebrow` renders a compact 2xs kicker above the heading", () => {
+  it("`eyebrow` renders a kicker above the heading", () => {
     const { container, getByText } = render(
       <SectionHeading eyebrow="Маркетинг">Заголовок</SectionHeading>,
     );

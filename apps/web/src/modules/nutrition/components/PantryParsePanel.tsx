@@ -122,7 +122,9 @@ export function PantryParsePreview({
                   {item.name}
                 </span>
                 {qty && (
-                  <span className="text-xs text-subtle shrink-0">{qty}</span>
+                  <span className="text-style-caption text-subtle shrink-0">
+                    {qty}
+                  </span>
                 )}
               </label>
             </li>

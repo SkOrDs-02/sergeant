@@ -406,7 +406,7 @@ export function AddMealSheet({
                 opening. The full button stays below for discoverability
                 when users scroll past the sources. */}
             <div className="mb-3 flex items-start justify-between gap-3">
-              <p className="text-xs text-muted">
+              <p className="text-style-caption text-muted">
                 Оберіть джерело нижче. Макроси, назву й час відредагуєте на
                 наступному кроці.
               </p>
@@ -538,7 +538,7 @@ export function AddMealSheet({
             )}
 
             {form.err && (
-              <div className="text-xs text-danger-strong dark:text-danger mt-2">
+              <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
                 {form.err}
               </div>
             )}

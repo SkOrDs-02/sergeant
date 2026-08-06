@@ -72,7 +72,7 @@ export function RecentWorkoutsSection({
       aria-label="Останні тренування"
     >
       <div className="flex items-baseline justify-between gap-2 mb-3">
-        <SectionHeading as="h2" size="sm" variant="fizruk">
+        <SectionHeading as="h2" size="xs" variant="fizruk">
           Останні тренування
         </SectionHeading>
         {recent.length > 0 ? (

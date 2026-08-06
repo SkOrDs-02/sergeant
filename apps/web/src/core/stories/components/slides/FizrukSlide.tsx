@@ -11,13 +11,13 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-style-caption uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Тренування · ФІЗРУК
       </p>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="rounded-2xl bg-white/15 border border-white/20 px-4 py-3">
-          <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
+          <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Тренувань
           </div>
           <div className="text-style-headline leading-none tabular-nums mt-1">
@@ -25,7 +25,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
           </div>
         </div>
         <div className="rounded-2xl bg-white/15 border border-white/20 px-4 py-3">
-          <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
+          <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
             Обсяг, кг
           </div>
           <div className="text-style-headline leading-none tabular-nums mt-1">
@@ -36,7 +36,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
 
       {topEx.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs uppercase tracking-wider text-white/75 font-bold mb-2">
+          <p className="text-style-caption uppercase tracking-wider text-white/75 font-bold mb-2">
             Головні вправи
           </p>
           <div className="space-y-1">

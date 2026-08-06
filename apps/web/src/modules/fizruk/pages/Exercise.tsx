@@ -308,7 +308,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card radius="lg">
             <SectionHeading
               as="div"
-              size="sm"
+              size="xs"
               className="mb-3"
               variant="fizruk"
             >
@@ -327,7 +327,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card radius="lg">
             <SectionHeading
               as="div"
-              size="sm"
+              size="xs"
               className="mb-3"
               variant="fizruk"
             >
@@ -346,7 +346,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card radius="lg">
             <SectionHeading
               as="div"
-              size="sm"
+              size="xs"
               className="mb-3"
               variant="fizruk"
             >
@@ -368,7 +368,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card radius="lg">
             <SectionHeading
               as="div"
-              size="sm"
+              size="xs"
               className="mb-3"
               variant="fizruk"
             >
@@ -396,7 +396,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         )}
 
         <Card radius="lg" padding="lg">
-          <SectionHeading as="div" size="sm" className="mb-3" variant="fizruk">
+          <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
             Історія сетів
           </SectionHeading>
           {history.length === 0 ? (

@@ -219,7 +219,7 @@ function CategoryPieChartComponent({
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ background: arc.color }}
               />
-              <span className="text-text truncate flex-1 min-w-0 text-xs">
+              <span className="text-text truncate flex-1 min-w-0 text-style-caption">
                 {arc.label}
               </span>
               {(() => {
@@ -229,7 +229,7 @@ function CategoryPieChartComponent({
                 // are still > 0.
                 const pctInt = Math.round(arc.pct * 100);
                 return (
-                  <span className="text-muted tabular-nums text-xs shrink-0">
+                  <span className="text-muted tabular-nums text-style-caption shrink-0">
                     {pctInt < 1 ? "<1" : pctInt}%
                   </span>
                 );

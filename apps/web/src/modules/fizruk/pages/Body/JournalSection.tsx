@@ -62,10 +62,12 @@ export function JournalSection({
         )}
       >
         <div className="flex-1 min-w-0 flex items-baseline gap-2">
-          <SectionHeading as="h2" size="sm" className="mb-0!" variant="fizruk">
+          <SectionHeading as="h2" size="xs" className="mb-0!" variant="fizruk">
             {messages.fizruk.journal.title}
           </SectionHeading>
-          <span className="text-xs text-muted tabular-nums">{totalCount}</span>
+          <span className="text-style-caption text-muted tabular-nums">
+            {totalCount}
+          </span>
         </div>
         <span
           aria-hidden

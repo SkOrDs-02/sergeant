@@ -45,7 +45,7 @@ export function NoBankBanner({
               рівень тут ламав би структуру заголовків. Як лендмарк він уже
               підписаний через `role="region"` + `aria-label` вище. */}
           <p className="text-style-label text-text">Без банку?</p>
-          <p className="text-xs text-muted mt-1 leading-snug">
+          <p className="text-style-caption text-muted mt-1 leading-snug">
             Записуй витрати вручну — або підключи Monobank, щоб транзакції
             підтягувались автоматично. Підключити можна пізніше з Налаштувань.
           </p>

@@ -155,7 +155,7 @@ export function Measurements() {
                 rows={measurementGuideRows}
               />
             </div>
-            <p className="text-xs text-subtle leading-relaxed">
+            <p className="text-style-caption text-subtle leading-relaxed">
               {messages.fizruk.measurements.guideDisclaimer}
             </p>
             <div className="flex flex-wrap gap-3 text-style-caption">
@@ -207,7 +207,7 @@ export function Measurements() {
             </svg>
           </div>
           <div className="min-w-0">
-            <SectionHeading as="div" size="sm" variant="fizruk">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.manual}
             </SectionHeading>
             <div className="text-style-label text-success-strong dark:text-success mt-0.5">
@@ -244,7 +244,7 @@ export function Measurements() {
         </div>
 
         <Card radius="lg">
-          <SectionHeading as="div" size="sm" className="mb-3" variant="fizruk">
+          <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
             {messages.fizruk.measurements.addHeading}
           </SectionHeading>
           <div className="grid grid-cols-2 gap-2">
@@ -350,14 +350,14 @@ export function Measurements() {
           <Card radius="lg">
             <div className="flex items-center justify-between">
               <div>
-                <SectionHeading as="div" size="sm" variant="fizruk">
+                <SectionHeading as="div" size="xs" variant="fizruk">
                   {messages.fizruk.measurements.lastEntry}{" "}
                   <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
                     · {stats.latestAt}
                   </span>
                 </SectionHeading>
               </div>
-              <div className="text-xs text-subtle">
+              <div className="text-style-caption text-subtle">
                 {Object.keys(deltas).length ? "Δ від попереднього" : ""}
               </div>
             </div>
@@ -400,7 +400,7 @@ export function Measurements() {
 
         <Card radius="lg" padding="none" className="overflow-hidden">
           <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
-            <SectionHeading as="div" size="sm" variant="fizruk">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.history}
             </SectionHeading>
           </div>
@@ -426,7 +426,7 @@ export function Measurements() {
                   {messages.actions.delete}
                 </button>
               </div>
-              <div className="text-xs text-subtle mt-1">
+              <div className="text-style-caption text-subtle mt-1">
                 {MEASURE_FIELDS.filter((f) => e[f.id] != null)
                   .slice(0, 4)
                   .map(

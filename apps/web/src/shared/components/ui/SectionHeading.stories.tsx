@@ -3,7 +3,7 @@ import { SectionHeading } from "./SectionHeading";
 
 /**
  * `SectionHeading` — канонічний eyebrow / heading-компонент: 6 розмірів
- * (`2xs`–`xl`) × 8 варіантів кольору × 5 weight-токенів. Stories
+ * (`xs`–`xl`) × 8 варіантів кольору × 5 weight-токенів. Stories
  * покривають розміри, module-tinted variants (finyk / fizruk / routine
  * / nutrition), action-slot та custom weight. Initiative 0007 Phase 2 —
  * shared/ui story.
@@ -28,13 +28,11 @@ type Story = StoryObj<typeof SectionHeading>;
 /** Дефолтний eyebrow (xs / subtle / bold). */
 export const Default: Story = {};
 
-/** Усі шість розмірів — від компактного 2xs eyebrow до xl page-heading. */
+/** Усі чотири розміри — від кікера `xs` до `xl` page-heading. */
 export const Sizes: Story = {
   render: () => (
     <div className="flex flex-col gap-3">
-      <SectionHeading size="2xs">2xs · compact eyebrow</SectionHeading>
-      <SectionHeading size="xs">xs · default eyebrow</SectionHeading>
-      <SectionHeading size="sm">sm · widest tracking eyebrow</SectionHeading>
+      <SectionHeading size="xs">xs · кікер (єдиний)</SectionHeading>
       <SectionHeading size="md">md · body heading</SectionHeading>
       <SectionHeading size="lg">lg · card title</SectionHeading>
       <SectionHeading size="xl">xl · page title</SectionHeading>
@@ -46,16 +44,16 @@ export const Sizes: Story = {
 export const ModuleVariants: Story = {
   render: () => (
     <div className="flex flex-col gap-3">
-      <SectionHeading size="sm" variant="finyk">
+      <SectionHeading size="xs" variant="finyk">
         Фінік · витрати
       </SectionHeading>
-      <SectionHeading size="sm" variant="fizruk">
+      <SectionHeading size="xs" variant="fizruk">
         Фізрук · тренування
       </SectionHeading>
-      <SectionHeading size="sm" variant="routine">
+      <SectionHeading size="xs" variant="routine">
         Рутина · звички
       </SectionHeading>
-      <SectionHeading size="sm" variant="nutrition">
+      <SectionHeading size="xs" variant="nutrition">
         Харчування · раціон
       </SectionHeading>
     </div>

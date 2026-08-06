@@ -371,7 +371,7 @@ export function RoutineCalendarPanel({
                   <SectionHeading
                     key={key}
                     as="h3"
-                    size="sm"
+                    size="xs"
                     className="mb-2 mt-3"
                     variant="routine"
                   >

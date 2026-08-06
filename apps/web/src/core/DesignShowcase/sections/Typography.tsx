@@ -97,7 +97,7 @@ export function TypographySection() {
       <Group label="SectionHeading — варіанти">
         <div className="space-y-2">
           <SectionHeading size="xs">SectionHeading xs — eyebrow</SectionHeading>
-          <SectionHeading size="sm">SectionHeading sm — eyebrow</SectionHeading>
+          <SectionHeading size="xs">SectionHeading sm — eyebrow</SectionHeading>
           <SectionHeading size="md">SectionHeading md</SectionHeading>
           <SectionHeading size="lg">SectionHeading lg</SectionHeading>
           <SectionHeading size="xl">SectionHeading xl</SectionHeading>

@@ -20,40 +20,32 @@ import { cn } from "../../lib/ui/cn";
  *
  * **Кікер — це смужка й колір, а не капс** (правило 4 типографіки тексту,
  * `docs/05-design/design/anti-slop-strategy.md`; рішення власника
- * 2026-08-06 на `mockups/product/kickers.html`). Розміри `2xs`/`xs`/`sm`
- * більше не роблять `uppercase` і не розріджують трекінг — деталі й
- * причина в AI-CONTEXT біля `sizeTokens` нижче.
+ * 2026-08-06 на `mockups/product/kickers.html`). Кікер `xs` більше не
+ * робить `uppercase` і не розріджує трекінг — деталі й причина в
+ * AI-CONTEXT біля `sizeTokens` нижче.
  */
 
 /**
  * Розміри кікера й заголовка.
  *
- * AI-DANGER: `2xs` і `sm` — ЗАСТАРІЛІ синоніми `xs`, а не окремі
- * розміри. Після зняття капсу (рішення власника 2026-08-06) різниця між
- * трьома іменами зникла: вона полягала лише в трекінгу, який існував
- * заради капсу. Три імені для одного результату — стан, що гниє:
- * наступний викликач обирає `sm`, вважаючи його більшим, витрачає на це
- * увагу й не отримує нічого.
+ * AI-CONTEXT: кікер тут РІВНО ОДИН — `xs`. Колись їх було три (`2xs`,
+ * `xs`, `sm`), і різниця між ними полягала лише в трекінгу, який існував
+ * заради капсу. Після зняття капсу (рішення власника 2026-08-06) вони
+ * стали трьома іменами одного результату — стан, що гниє: наступний
+ * викликач обирає `sm`, вважаючи його більшим, витрачає на це увагу й не
+ * отримує нічого.
  *
- * Синоніми лишені навмисно, а не викорінені одним махом: їх 66 у 87
- * файлах, і PR на стільки файлів ніхто не прочитає. Вони підуть самі,
- * коли ті файли й так редагуватимуться. У НОВОМУ коді — тільки `xs`;
- * `@deprecated` нижче дає перекреслення прямо в редакторі, тож окремого
- * лінт-правила під це не заводимо.
+ * Спершу вони лишились як `@deprecated`-синоніми, бо їх було 73 у 46
+ * файлах і PR на стільки файлів ніхто б не прочитав. Прибрані 2026-08-06
+ * на прохання власника — одним проходом, разом із рештою механічного
+ * боргу. Тепер це не угода про стиль, а ТИП: `size="sm"` більше не
+ * компілюється, тож розходження не може повернутись непоміченим.
  *
- * «Полагодити», давши їм справжню різницю в розмірі, НЕ можна: 12px —
- * підлога типографічної шкали, нижче не пускає доступність, а вище — це
+ * «Полагодити», давши кікерам справжню різницю в розмірі, НЕ можна: 12px
+ * — підлога типографічної шкали, нижче не пускає доступність, а вище — це
  * вже не кікер, а заголовок (`md`).
  */
-export type SectionHeadingSize =
-  /** @deprecated Синонім `xs`. Використовуй `xs`. */
-  | "2xs"
-  | "xs"
-  /** @deprecated Синонім `xs`. Використовуй `xs`. */
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl";
+export type SectionHeadingSize = "xs" | "md" | "lg" | "xl";
 
 export type SectionHeadingVariant =
   | "subtle"
@@ -99,19 +91,11 @@ const KICKER_BAR =
   "before:content-[''] before:w-0.5 before:h-3 before:shrink-0 " +
   "before:rounded-full before:bg-current";
 
-/**
- * Єдиний кікер. `2xs` і `sm` посилаються сюди ж — див. `SectionHeadingSize`.
- *
- * Спільна константа, а не три однакові рядки: три копії розійшлися б при
- * першій же правці, і побачити розбіжність можна було б лише поставивши
- * два кікери поруч — тобто в останню чергу.
- */
+/** Єдиний кікер — див. `SectionHeadingSize`. */
 const KICKER = `text-style-caption ${KICKER_BAR}`;
 
 const sizeTokens: Record<SectionHeadingSize, string> = {
-  "2xs": KICKER,
   xs: KICKER,
-  sm: KICKER,
   md: "text-style-label",
   lg: "text-style-title leading-tight",
   xl: "text-style-headline leading-tight",
@@ -130,9 +114,7 @@ const weightTokens: Record<SectionHeadingWeight, string> = {
 // «чіпляють» погляд), тож вагу піднімали, щоб рядок не зникав. У змішаному
 // регістрі 700 на 12px уже читається як другий заголовок поруч із першим.
 const defaultWeightForSize: Record<SectionHeadingSize, SectionHeadingWeight> = {
-  "2xs": "semibold",
   xs: "semibold",
-  sm: "semibold",
   md: "semibold",
   lg: "extrabold",
   xl: "extrabold",
@@ -166,9 +148,7 @@ const variants: Record<SectionHeadingVariant, string> = {
 // 3.13:1 на панелі (axe serious, design-audit F9); `text-muted` = 6.03:1.
 const defaultVariantForSize: Record<SectionHeadingSize, SectionHeadingVariant> =
   {
-    "2xs": "muted",
     xs: "muted",
-    sm: "muted",
     md: "text",
     lg: "text",
     xl: "text",
@@ -235,8 +215,8 @@ export function SectionHeading({
       <EyebrowComponent
         id={eyebrowId}
         className={cn(
-          sizeTokens["2xs"],
-          weightTokens[defaultWeightForSize["2xs"]],
+          sizeTokens.xs,
+          weightTokens[defaultWeightForSize.xs],
           variants[eyebrowTone],
         )}
       >

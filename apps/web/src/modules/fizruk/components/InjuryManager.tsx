@@ -104,7 +104,7 @@ export function InjuryManager() {
   return (
     <Card radius="lg" padding="lg" className="space-y-3">
       <div>
-        <SectionHeading as="h2" size="sm" variant="fizruk">
+        <SectionHeading as="h2" size="xs" variant="fizruk">
           {t.title}
         </SectionHeading>
         <p className="text-style-caption text-subtle mt-1">{t.description}</p>

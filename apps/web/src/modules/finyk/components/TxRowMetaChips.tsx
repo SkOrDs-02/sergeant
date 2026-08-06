@@ -50,7 +50,7 @@ export function TxRowMetaChips({
           {accountName}
         </span>
       )}
-      <span className="shrink-0 text-xs text-subtle">{catName}</span>
+      <span className="shrink-0 text-style-caption text-subtle">{catName}</span>
       {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
           so users can tell which categorizations are inferred (MCC +
           description match) vs explicit (user override, manual entry,

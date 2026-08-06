@@ -103,7 +103,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
         <button
           type="button"
           onClick={() => setShowTime(true)}
-          className="mt-2 text-xs text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
+          className="mt-2 text-style-caption text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
         >
           Не зараз? Змінити час ({form.time})
         </button>
