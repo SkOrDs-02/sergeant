@@ -3,8 +3,8 @@
  * Status: Active
  */
 import { memo, useMemo } from "react";
-import { fmtAmt, getCategory, getIncomeCategory } from "../utils";
-import { CURRENCY } from "../constants";
+import { getCategory, getIncomeCategory } from "../utils";
+import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
@@ -17,6 +17,7 @@ import {
 } from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
+import { Money } from "@shared/components/ui/Money";
 
 export type { TxRowTx };
 
@@ -169,14 +170,37 @@ function TxRowImpl({
               isIncome ? "text-success-strong dark:text-success" : "text-text",
             )}
           >
+            {/* AI-CONTEXT: `fmtAmt` тут замінено на `Money` (анти-слоп П4).
+                Значення те саме — обидва ділять копійки на 100 і показують
+                дві дробові цифри, — але набір інший: знак, копійки й символ
+                стають окремими приглушеними тирами. Заразом зникає давня
+                вада `fmtAmt`: він клеїв символ до суми без пробілу
+                (`1 234,56₴`), бо шаблон рядка не мав розділювача. `Money`
+                ставить вузький нерозривний. `tone="inherit"` — бо колонка
+                доходу забарвлена, і тири мають брати її колір, а не сірий. */}
             <MaskedAmount masked={hideAmount}>
-              {fmtAmt(tx.amount, CURRENCY.UAH)}
+              <Money
+                amount={tx.amount / 100}
+                signed
+                kopecks
+                tone={isIncome ? "inherit" : "muted"}
+              />
             </MaskedAmount>
           </div>
           {tx.currencyCode !== CURRENCY.UAH && tx.operationAmount && (
             <div className="text-style-caption text-muted tabular-nums">
               <MaskedAmount masked={hideAmount}>
-                {fmtAmt(tx.operationAmount, tx.currencyCode)}
+                <Money
+                  amount={tx.operationAmount / 100}
+                  signed
+                  kopecks
+                  // `?? CURRENCY.UAH` відтворює дефолт параметра `fmtAmt`,
+                  // який тут був: `currencyCode` опційний у `TxRowTx`, і
+                  // гілка `!== CURRENCY.UAH` не звужує `undefined`.
+                  symbol={
+                    CURRENCY_SYMBOL[tx.currencyCode ?? CURRENCY.UAH] ?? "₴"
+                  }
+                />
               </MaskedAmount>
             </div>
           )}

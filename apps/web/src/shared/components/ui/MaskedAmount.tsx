@@ -30,9 +30,11 @@ import {
   useRef,
   useState,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useHaptic } from "@shared/hooks/useHaptic";
+import { messages } from "@shared/i18n/uk";
 
 /** How long a tap-peek stays revealed before auto-hiding again. */
 const REVEAL_MS = 2500;
@@ -40,8 +42,18 @@ const REVEAL_MS = 2500;
 const BLUR_PX = 5;
 
 export interface MaskedAmountProps {
-  /** Pre-formatted amount string, e.g. "−1 234,00 ₴". */
-  children: string;
+  /**
+   * Сума до показу — або готовий рядок, або вузол (`Money`, який набирає
+   * знак, копійки й символ окремими тирами, анти-слоп П4).
+   *
+   * AI-CONTEXT: тип був `string`, і в стратегії це записали як блокер для
+   * П4 на `TxRow` — мовляв, із рядка будується й маскування, й `aria-label`.
+   * Насправді доступна назва приходить із пропа `label` («Прихована сума»),
+   * а `children` лише рендериться всередині `aria-hidden`-обгортки. Тобто
+   * розширення типу нічого не ламає: блюр накладається на весь вузол
+   * фільтром, а не на текст, і тирам усередині байдуже.
+   */
+  children: ReactNode;
   /** When true, hide the value behind a blur until revealed. */
   masked: boolean;
   /**
@@ -112,7 +124,11 @@ function MaskedValue({
         style={blurStyle}
       >
         <span aria-hidden={blurred}>{children}</span>
-        {blurred && <span className="sr-only">Прихована {label}</span>}
+        {blurred && (
+          <span className="sr-only">
+            {messages.status.hiddenValuePrefix} {label}
+          </span>
+        )}
       </span>
     );
   }
@@ -121,10 +137,13 @@ function MaskedValue({
     <button
       type="button"
       onClick={toggle}
+      // Той самий `hiddenValuePrefix`, що й у sr-only-гілці вище: два
+      // написання «Прихована» в одному компоненті розійшлися б при першій
+      // же правці тексту.
       aria-label={
         revealed
           ? `${label} показана, натисніть щоб приховати`
-          : `Прихована ${label}, натисніть щоб показати`
+          : `${messages.status.hiddenValuePrefix} ${label}, натисніть щоб показати`
       }
       className={cn(
         "tabular-nums cursor-pointer border-0 bg-transparent p-0 font-inherit text-inherit",
