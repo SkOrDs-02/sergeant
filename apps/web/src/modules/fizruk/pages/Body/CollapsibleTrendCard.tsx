@@ -72,7 +72,7 @@ export function CollapsibleTrendCard({
         )}
       >
         <div className="flex-1 min-w-0">
-          <SectionHeading as="h2" size="sm" className="mb-0!">
+          <SectionHeading as="h2" size="sm" className="mb-0!" variant="fizruk">
             {title}
           </SectionHeading>
         </div>

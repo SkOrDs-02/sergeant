@@ -233,7 +233,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
       radius="lg"
       aria-label={messages.fizruk.body.formAriaLabel}
     >
-      <SectionHeading as="h2" size="sm" className="mb-3">
+      <SectionHeading as="h2" size="sm" className="mb-3" variant="fizruk">
         {messages.fizruk.body.formHeading}
       </SectionHeading>
       <form onSubmit={submit} noValidate className="space-y-4">

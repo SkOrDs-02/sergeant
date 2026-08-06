@@ -359,7 +359,12 @@ export function Progress({ onNavigate }: ProgressProps) {
         {/* Cross-module activity */}
         {hasPushupData && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading
+              as="div"
+              size="sm"
+              className="mb-3"
+              variant="fizruk"
+            >
               {messages.fizruk.progress.crossModuleHeading}
             </SectionHeading>
             <div className="flex items-center gap-3 mb-3">
@@ -471,7 +476,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         {/* Weight trend chart */}
         {weightTrend.filter((d) => d.value != null).length >= 2 && (
           <Card radius="lg">
-            <SectionHeading size="sm" className="mb-3">
+            <SectionHeading size="sm" className="mb-3" variant="fizruk">
               {messages.fizruk.progress.weightTrend}
             </SectionHeading>
             <MiniLineChart
@@ -486,7 +491,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         {/* Body fat trend chart */}
         {fatTrend.filter((d) => d.value != null).length >= 2 && (
           <Card radius="lg">
-            <SectionHeading size="sm" className="mb-3">
+            <SectionHeading size="sm" className="mb-3" variant="fizruk">
               {messages.fizruk.progress.bodyFatTrend}
             </SectionHeading>
             <MiniLineChart
@@ -501,7 +506,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         {/* Wellbeing chart */}
         {wellbeingData.length >= 2 && (
           <Card radius="lg">
-            <SectionHeading size="sm" className="mb-3">
+            <SectionHeading size="sm" className="mb-3" variant="fizruk">
               {messages.fizruk.progress.wellbeing}
             </SectionHeading>
             <WellbeingChart data={wellbeingData} />
@@ -510,7 +515,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
         {/* Muscle volume bars */}
         <Card radius="lg" padding="lg">
-          <SectionHeading size="sm" className="mb-3">
+          <SectionHeading size="sm" className="mb-3" variant="fizruk">
             {messages.fizruk.progress.muscleVolume}
           </SectionHeading>
           {weeklyByMuscle.top.length === 0 ? (

@@ -68,7 +68,7 @@ export function DayReportSheet({
 
       {done.length > 0 && (
         <div className="mb-4">
-          <SectionHeading as="p" size="xs" className="mb-2">
+          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
             Виконано ({done.length})
           </SectionHeading>
           <ul className="space-y-1.5">
@@ -101,7 +101,7 @@ export function DayReportSheet({
 
       {missed.length > 0 && (
         <div>
-          <SectionHeading as="p" size="xs" className="mb-2">
+          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
             Пропущено ({missed.length})
           </SectionHeading>
           <ul className="space-y-1.5">
@@ -160,7 +160,7 @@ export function DayReportSheet({
 
       {skipped.length > 0 && (
         <div className="mt-4">
-          <SectionHeading as="p" size="xs" className="mb-2">
+          <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
             Не зміг ({skipped.length})
           </SectionHeading>
           <ul className="space-y-1.5">

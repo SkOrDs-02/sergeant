@@ -242,7 +242,7 @@ export function RoutineCalendarPanel({
       />
 
       <Card variant="default" radius="lg" padding="sm" className="bg-panel/80">
-        <SectionHeading as="p" size="xs" className="mb-2">
+        <SectionHeading as="p" size="xs" className="mb-2" variant="routine">
           Тиждень
         </SectionHeading>
         <WeekDayStrip
@@ -373,6 +373,7 @@ export function RoutineCalendarPanel({
                     as="h3"
                     size="sm"
                     className="mb-2 mt-3"
+                    variant="routine"
                   >
                     {item.label}
                   </SectionHeading>

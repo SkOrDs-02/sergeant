@@ -150,7 +150,7 @@ export function ExerciseDetailSheet({
       )}
 
       <div className="space-y-2">
-        <SectionHeading as="div" size="sm">
+        <SectionHeading as="div" size="sm" variant="fizruk">
           Мʼязи
         </SectionHeading>
         <div className="flex flex-wrap gap-1.5">
@@ -174,7 +174,7 @@ export function ExerciseDetailSheet({
       </div>
 
       <div className="mt-4 space-y-2">
-        <SectionHeading as="div" size="sm">
+        <SectionHeading as="div" size="sm" variant="fizruk">
           Обладнання
         </SectionHeading>
         <div className="flex flex-wrap gap-1.5">
@@ -191,7 +191,7 @@ export function ExerciseDetailSheet({
 
       {tips.length ? (
         <div className="mt-4">
-          <SectionHeading as="div" size="sm" className="mb-2">
+          <SectionHeading as="div" size="sm" className="mb-2" variant="fizruk">
             Підказки
           </SectionHeading>
           <ul className="space-y-1.5">

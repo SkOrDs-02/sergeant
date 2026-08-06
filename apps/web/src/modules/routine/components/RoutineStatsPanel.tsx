@@ -81,7 +81,7 @@ export function RoutineStatsPanel({
       className="space-y-4"
     >
       <Card as="section" radius="lg" aria-label="Зведена статистика">
-        <SectionHeading as="p" size="sm" className="mb-3">
+        <SectionHeading as="p" size="sm" className="mb-3" variant="routine">
           Зведення
         </SectionHeading>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">

@@ -81,7 +81,7 @@ const Section = memo(function Section({
 }: SectionProps) {
   return (
     <Card radius="lg" padding="lg" className={className}>
-      <SectionHeading as="div" size="sm" className="mb-4">
+      <SectionHeading as="div" size="sm" className="mb-4" variant="finyk">
         {title}
       </SectionHeading>
       {children}
