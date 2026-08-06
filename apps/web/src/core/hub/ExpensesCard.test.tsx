@@ -62,11 +62,21 @@ function txCacheToday(): { txs: unknown[] } {
 
 describe("ExpensesCard", () => {
   beforeEach(() => {
+    // AI-CONTEXT: годинник заморожений на середу опівдні за Києвом.
+    // `txCacheToday()` бере «сьогодні» з пристрою, а картка відбирає
+    // операції за КИЇВСЬКИЙ тиждень. Різниця в 3 години робить неділю
+    // ввечері за UTC уже понеділком у Києві, тож на межі тижня операція
+    // випадала б за межі періоду і сума ставала нулем. Середина тижня
+    // прибирає цю щілину для всіх тестів файлу, а не лише для одного.
+    vi.setSystemTime(new Date("2026-08-05T09:00:00.000Z"));
     localStorage.clear();
     getFinykExcludedTxIdsFromStorage.mockReturnValue([]);
     getFinykTxSplitsFromStorage.mockReturnValue({});
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
 
   it("renders collapsed by default with a hryvnia summary and toggles open", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
@@ -100,6 +110,16 @@ describe("ExpensesCard", () => {
     )[0];
     expect(money).toBeDefined();
     expect(container.querySelector(".text-\\[0\\.72em\\]")).not.toBeNull();
+
+    // Розгорнутий стан — ще два `Money`: головне число і підпис із
+    // попереднім періодом. PR міняв усі три сайти, тож перевіряємо всі три.
+    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    const expanded = screen.getAllByText(
+      (_, el) =>
+        el?.tagName === "SPAN" && el.className.includes("tabular-nums"),
+    );
+    expect(expanded.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
   it("renders the no-data placeholder when the tx cache is empty", () => {
