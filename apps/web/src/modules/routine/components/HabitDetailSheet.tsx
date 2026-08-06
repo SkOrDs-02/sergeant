@@ -369,7 +369,7 @@ export function HabitDetailSheet({
         panelClassName="routine-sheet max-w-4xl"
         zIndex={200}
       >
-        <div className="text-xs text-subtle space-y-0.5 mb-5">
+        <div className="text-style-caption text-subtle space-y-0.5 mb-5">
           <p>
             {recLabel}
             {habit.timeOfDay ? ` · ${habit.timeOfDay}` : ""}
@@ -447,7 +447,7 @@ export function HabitDetailSheet({
                   </span>
                 )}
                 {pct30 !== null && (
-                  <span className="text-xs text-muted tabular-nums">
+                  <span className="text-style-caption text-muted tabular-nums">
                     {pct30}%
                   </span>
                 )}

@@ -196,7 +196,7 @@ export function DayReportSheet({
 
       {scheduledHabits.length > 0 && (
         <div className="mt-4 pt-3 border-t border-line text-center">
-          <p className="text-xs text-subtle">
+          <p className="text-style-caption text-subtle">
             {done.length} з {counted} виконано
             {counted > 0 && (
               <span className="ml-1 font-semibold text-text">

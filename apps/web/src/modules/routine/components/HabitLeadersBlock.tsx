@@ -65,7 +65,7 @@ export function HabitLeadersBlock({
             <HabitGlyph value={best.habit.emoji} size="sm" />
             <span className="truncate">{best.habit.name}</span>
           </p>
-          <p className="text-xs text-subtle mt-0.5 tabular-nums">
+          <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
             {Math.round(best.rate * 100)}% · {best.completed}/{best.scheduled}
           </p>
         </div>
@@ -78,7 +78,7 @@ export function HabitLeadersBlock({
               <HabitGlyph value={worst.habit.emoji} size="sm" />
               <span className="truncate">{worst.habit.name}</span>
             </p>
-            <p className="text-xs text-subtle mt-0.5 tabular-nums">
+            <p className="text-style-caption text-subtle mt-0.5 tabular-nums">
               {Math.round(worst.rate * 100)}% · {worst.completed}/
               {worst.scheduled}
             </p>

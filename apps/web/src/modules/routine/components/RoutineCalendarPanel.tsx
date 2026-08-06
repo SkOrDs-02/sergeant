@@ -447,7 +447,7 @@ export function RoutineCalendarPanel({
                           <p className="font-semibold text-text text-base leading-snug">
                             {e.title}
                           </p>
-                          <p className="text-xs text-subtle mt-0.5">
+                          <p className="text-style-caption text-subtle mt-0.5">
                             {parseDateKey(e.date).toLocaleDateString("uk-UA", {
                               weekday: "short",
                               day: "numeric",

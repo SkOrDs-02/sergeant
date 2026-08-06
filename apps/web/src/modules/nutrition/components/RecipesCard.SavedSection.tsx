@@ -59,7 +59,9 @@ export function SavedSection({
               {saved.length}
             </span>
           )}
-          {savedBusy && <span className="text-xs text-subtle">…</span>}
+          {savedBusy && (
+            <span className="text-style-caption text-muted">…</span>
+          )}
         </div>
         <ChevronIcon open={savedOpen} />
       </button>
@@ -67,7 +69,7 @@ export function SavedSection({
       {savedOpen && (
         <div className="mt-3">
           {saved.length === 0 ? (
-            <div className="text-xs text-subtle">
+            <div className="text-style-caption text-muted">
               Тут з&apos;являться збережені рецепти. Згенеруй рецепти нижче й
               натисни &quot;Зберегти&quot;.
             </div>
@@ -96,7 +98,7 @@ export function SavedSection({
                           <span className="text-style-label block text-text wrap-break-word">
                             {r.title}
                           </span>
-                          <span className="block text-xs text-subtle mt-0.5">
+                          <span className="block text-style-caption text-muted mt-0.5">
                             {r.timeMinutes ? `${r.timeMinutes} хв` : "—"} ·{" "}
                             {r.servings ? `${r.servings} порц.` : "—"}
                             {r.macros?.kcal != null
@@ -126,7 +128,7 @@ export function SavedSection({
                       </div>
                     </div>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs text-subtle">
+                      <span className="text-style-caption text-muted">
                         Порції (множник):
                       </span>
                       <Input
@@ -140,7 +142,7 @@ export function SavedSection({
                         inputMode="decimal"
                         className="w-20"
                       />
-                      <span className="text-xs text-subtle">
+                      <span className="text-style-caption text-muted">
                         × макроси рецепту
                       </span>
                     </div>
@@ -150,7 +152,7 @@ export function SavedSection({
                         {Array.isArray(r.ingredients) &&
                           r.ingredients.length > 0 && (
                             <div className="text-sm text-text wrap-break-word">
-                              <div className="text-xs text-subtle mb-1">
+                              <div className="text-style-caption text-muted mb-1">
                                 Інгредієнти
                               </div>
                               {r.ingredients.join(", ")}
@@ -158,7 +160,7 @@ export function SavedSection({
                           )}
                         {Array.isArray(r.steps) && r.steps.length > 0 && (
                           <div className="text-sm text-text">
-                            <div className="text-xs text-subtle mb-1">
+                            <div className="text-style-caption text-muted mb-1">
                               Кроки
                             </div>
                             <ol className="list-decimal pl-5 space-y-1">
@@ -170,7 +172,7 @@ export function SavedSection({
                         )}
                         {Array.isArray(r.tips) && r.tips.length > 0 && (
                           <div className="text-sm text-text">
-                            <div className="text-xs text-subtle mb-1">
+                            <div className="text-style-caption text-muted mb-1">
                               Поради
                             </div>
                             <ul className="list-disc pl-5 space-y-1">
@@ -184,7 +186,7 @@ export function SavedSection({
                           (r.macros.protein_g != null ||
                             r.macros.fat_g != null ||
                             r.macros.carbs_g != null) && (
-                            <div className="text-xs text-subtle">
+                            <div className="text-style-caption text-muted">
                               Б: {fmtMacro(r.macros.protein_g)} г · Ж:{" "}
                               {fmtMacro(r.macros.fat_g)} г · В:{" "}
                               {fmtMacro(r.macros.carbs_g)} г
@@ -192,7 +194,7 @@ export function SavedSection({
                           )}
                         {!Array.isArray(r.ingredients) &&
                           !Array.isArray(r.steps) && (
-                            <div className="text-xs text-subtle">
+                            <div className="text-style-caption text-muted">
                               Деталі цього рецепту не збережені.
                             </div>
                           )}
@@ -202,7 +204,7 @@ export function SavedSection({
                 );
               })}
               {saved.length > 8 && (
-                <div className="text-xs text-subtle">
+                <div className="text-style-caption text-muted">
                   Показано 8 з {saved.length}.
                 </div>
               )}

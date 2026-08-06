@@ -148,7 +148,7 @@ export function RoutineCalendarMonthGrid({
             );
           })}
         </div>
-        <p className="text-xs text-subtle mt-3 pt-3 border-t border-line">
+        <p className="text-style-caption text-subtle mt-3 pt-3 border-t border-line">
           Обрано:{" "}
           {parseDateKey(selectedDay).toLocaleDateString("uk-UA", {
             weekday: "long",

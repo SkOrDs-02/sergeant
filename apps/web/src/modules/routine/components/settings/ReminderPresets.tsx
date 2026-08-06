@@ -19,7 +19,9 @@ export function ReminderPresets({
   const times = habitDraft.reminderTimes || [];
   return (
     <div className="space-y-2">
-      <div className="text-xs text-subtle">Нагадування (необовʼязково)</div>
+      <div className="text-style-caption text-subtle">
+        Нагадування (необовʼязково)
+      </div>
       <div
         className="flex flex-wrap gap-1.5"
         role="radiogroup"
