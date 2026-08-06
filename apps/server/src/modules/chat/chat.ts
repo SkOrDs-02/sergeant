@@ -19,8 +19,10 @@ import { streamAnthropicToSse } from "./chatStream.js";
 import { SYSTEM_PROMPT_VERSION } from "./tools.js";
 import {
   applyMessagesCacheBreakpoint,
+  buildSynthesisToolsPayload,
   buildSystem,
   buildToolsPayload,
+  toolNamesFromRawCalls,
 } from "./promptCache.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import {
@@ -379,7 +381,16 @@ export default async function handler(
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
-      tools: buildToolsPayload(proTier.model),
+      //
+      // На турі синтезу шлемо лише згадані в реплеї визначення: `tool_use`
+      // звідси нікуди не доїжджає (нижче — `extractAnthropicText`, у стрімі —
+      // лише `text_delta`), а під шлюзом без tool search тут інакше їхав би
+      // весь реєстр — ~18k токенів без кешу на кожному турі. Деталі й межі —
+      // `promptCache.ts::buildSynthesisToolsPayload`.
+      tools: buildSynthesisToolsPayload(
+        proTier.model,
+        toolNamesFromRawCalls(tool_calls_raw),
+      ),
       messages: fullMessages,
     };
 

@@ -272,6 +272,69 @@ export function __resetToolsPayloadCache(): void {
 }
 
 /**
+ * Tools для ТУРУ СИНТЕЗУ (`chat-tool-result`) — лише ті визначення, які реально
+ * згадані у відтвореному `tool_calls_raw`.
+ *
+ * AI-CONTEXT (вимір 2026-08-06). Під шлюзом tool search недоступний: allowlist
+ * у `toolSearch.ts` містить лише `claude-*`, а дефолтні chat-моделі там —
+ * `deepseek/deepseek-v4-flash` і `z-ai/glm-5.2`. Тож `buildToolsPayload`
+ * тихо відкочується на legacy-масив, і в контекст їде ВЕСЬ реєстр: 77 схем,
+ * ~18 000 токенів проти ~3 300 на Anthropic. Прompt-cache під шлюзом теж не
+ * працює (виміряно: `cache_read` = 0), тож це оплачується повністю й щоразу —
+ * на КОЖНОМУ турі. У вартості premium-синтезу префікс дає ~78%.
+ *
+ * Чому саме тур синтезу можна різати без втрати поведінки: `tool_use`, який
+ * модель поверне на цьому турі, **нікуди не доїжджає**. Non-streaming шлях
+ * робить `extractAnthropicText(data)` і віддає лише `{ text }`
+ * (`chat.ts`), стрімовий — форвардить лише `text_delta` (`chatStream.ts`).
+ * Тобто 77 схем тут не дають моделі жодної нової можливості; `SYSTEM_PREFIX`
+ * до того ж прямо називає цей крок синтезом, а не викликом.
+ *
+ * Чому не порожній масив: у розмові вже лежать `tool_use`/`tool_result` блоки.
+ * Ми не перевіряли живим запитом, чи приймає API такий payload без `tools`, і
+ * ціна помилки — 400 на кожному другому турі. Підмножина «рівно ті, що
+ * згадані» знімає це питання за побудовою й водночас дає майже весь виграш.
+ *
+ * На Anthropic поведінка НЕ змінюється: там працює tool search (6 схем у
+ * контексті) і кеш, спільний між юзерами. Підмножина per-conversation
+ * фрагментувала б цей кеш і зробила б гірше — тому шлях лишається старим.
+ */
+export function buildSynthesisToolsPayload(
+  model: string,
+  usedToolNames: readonly string[],
+): ReadonlyArray<object> {
+  const full = buildToolsPayload(model);
+  if (!env.CHAT_SYNTHESIS_TRIM_TOOLS) return full;
+  // Anthropic: tool search + cross-user cache — не чіпаємо.
+  if (env.CHAT_TOOL_SEARCH && modelSupportsToolSearch(model)) return full;
+
+  const wanted = new Set(usedToolNames);
+  if (wanted.size === 0) return full;
+
+  const base = env.CHAT_STRICT_TOOLS
+    ? keepStrictTrueOnly(TOOLS)
+    : stripStrictModeForAnthropic(TOOLS);
+  const subset = base.filter((t) => wanted.has(t.name));
+  // Жодне ім'я не збіглося з реєстром (перейменували tool, а клієнт шле старий
+  // id) — краще заплатити за повний payload, ніж лишити модель без контексту.
+  if (subset.length === 0) return full;
+
+  return applyToolsCacheBreakpoint(subset);
+}
+
+/** Імена `tool_use`-блоків у відтвореному `tool_calls_raw`. */
+export function toolNamesFromRawCalls(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const names = new Set<string>();
+  for (const block of raw) {
+    if (!block || typeof block !== "object") continue;
+    const b = block as { type?: unknown; name?: unknown };
+    if (b.type === "tool_use" && typeof b.name === "string") names.add(b.name);
+  }
+  return [...names];
+}
+
+/**
  * Вхід для `applyMessagesCacheBreakpoint` — мінімальна структурна форма
  * повідомлення (string-content). `ClientChatMessage` із `chat.ts` структурно
  * сумісний; тримаємо тип локальним, щоб уникнути циклічного імпорту.

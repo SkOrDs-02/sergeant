@@ -141,6 +141,17 @@ const envSchema = z.object({
 
   CHAT_TOOL_SEARCH: boolFromEnv(true),
 
+  /**
+   * Слати на турі синтезу лише ті tool-визначення, які згадані у
+   * відтвореному `tool_calls_raw`, замість усього реєстру.
+   *
+   * Діє лише там, де tool search недоступний (шлюз OpenRouter) — на Anthropic
+   * payload лишається старим, щоб не фрагментувати спільний prompt-cache.
+   * Обґрунтування й вимір — у `chat/promptCache.ts::buildSynthesisToolsPayload`.
+   * `false` — миттєвий відкат без редеплою.
+   */
+  CHAT_SYNTHESIS_TRIM_TOOLS: boolFromEnv(true),
+
   CHAT_CACHE_TTL_1H: boolFromEnv(true),
 
   CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),
