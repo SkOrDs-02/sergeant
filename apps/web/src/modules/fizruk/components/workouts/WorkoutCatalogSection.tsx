@@ -99,6 +99,11 @@ export function WorkoutCatalogSection({
                       setEquipmentFilter(toggleArr(equipmentFilter, id))
                     }
                     className={cn(
+                      // AI-DANGER: `text-xs` — розмір КОНТРОЛА (рамка,
+                      // падинг, hover), а не роль тексту. Шкала ролей
+                      // описує текст; спеціальної ролі для контролів у
+                      // ній немає, тож правильна дія — лишити сирий
+                      // розмір, а не підібрати найближчу роль.
                       "text-xs px-3 py-1.5 rounded-full border transition-colors",
                       active
                         ? "bg-text text-bg border-text"
@@ -125,7 +130,7 @@ export function WorkoutCatalogSection({
       )}
 
       {mode === "log" && (
-        <p className="text-xs text-subtle mb-2 leading-relaxed">
+        <p className="text-style-caption text-muted mb-2 leading-relaxed">
           Розкрий групу й тапни по вправі — додасться в активне тренування.
           Кнопка «ⓘ» праворуч — опис і фото без додавання.
         </p>
@@ -153,7 +158,7 @@ export function WorkoutCatalogSection({
                   aria-controls={panelId}
                 >
                   <div className="text-style-label text-text">{g.label}</div>
-                  <div className="text-xs text-muted flex items-center gap-2">
+                  <div className="text-style-caption text-muted flex items-center gap-2">
                     <span>{g.total}</span>
                     <span className="text-lg leading-none">
                       {isOpen ? "▾" : "▸"}
@@ -194,7 +199,7 @@ export function WorkoutCatalogSection({
                                     />
                                   ) : null}
                                 </div>
-                                <div className="text-xs text-subtle mt-0.5">
+                                <div className="text-style-caption text-muted mt-0.5">
                                   Мʼязи:{" "}
                                   <span className="font-semibold text-muted">
                                     {(ex?.muscles?.primary || [])
@@ -203,7 +208,7 @@ export function WorkoutCatalogSection({
                                   </span>
                                 </div>
                               </div>
-                              <div className="shrink-0 text-xs text-muted tabular-nums">
+                              <div className="shrink-0 text-style-caption text-muted tabular-nums">
                                 {typeof ex["rating"] === "number"
                                   ? ex["rating"].toFixed(1)
                                   : ""}
@@ -230,7 +235,7 @@ export function WorkoutCatalogSection({
                       );
                     })}
                     {g.total > g.items.length && (
-                      <div className="px-4 py-3 text-xs text-subtle border-t border-line">
+                      <div className="px-4 py-3 text-style-caption text-muted border-t border-line">
                         Показано {g.items.length} з {g.total} (уточни пошук щоб
                         звузити)
                       </div>
