@@ -157,7 +157,7 @@ export function HabitForm({
   const formContent = (
     <>
       {!hideHeading && (
-        <SectionHeading as="h2" size="sm" variant="routine">
+        <SectionHeading as="h2" size="xs" variant="routine">
           {editingId ? "Редагувати звичку" : "Нова звичка"}
         </SectionHeading>
       )}

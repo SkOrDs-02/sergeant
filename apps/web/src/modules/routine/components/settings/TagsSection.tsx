@@ -106,7 +106,7 @@ export function TagsSection({
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="sm" variant="routine">
+      <SectionHeading as="h2" size="xs" variant="routine">
         Теги
       </SectionHeading>
       <div className="flex gap-2 items-stretch">

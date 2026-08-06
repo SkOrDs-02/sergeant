@@ -336,12 +336,7 @@ function CommandGroup({
     <div role="group" aria-label={group.label} className="mb-1.5">
       {/* Груповий заголовок палітри — той самий кікер, що й у секціях,
           тож набирає його примітив, а не ручний набір класів. */}
-      <SectionHeading
-        as="div"
-        size="2xs"
-        variant="subtle"
-        className="px-4 py-1"
-      >
+      <SectionHeading as="div" size="xs" variant="subtle" className="px-4 py-1">
         {group.label}
       </SectionHeading>
       <ul role="presentation" className="px-1.5 space-y-0.5">

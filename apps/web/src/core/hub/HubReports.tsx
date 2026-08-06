@@ -328,7 +328,7 @@ export function HubReports() {
 
       {insights.length >= 1 ? (
         <div className="space-y-3">
-          <SectionHeading as="p" size="sm">
+          <SectionHeading as="p" size="xs">
             Інсайти
           </SectionHeading>
           {insights.map((ins) => (

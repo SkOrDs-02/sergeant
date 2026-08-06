@@ -80,7 +80,7 @@ export function BudgetsLimitsSection({
           </span>
           <SectionHeading
             as="span"
-            size="sm"
+            size="xs"
             className="mb-0! normal-case tracking-normal"
             variant="finyk"
           >

@@ -239,7 +239,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
 
   return (
     <Card ref={rootRef} radius="lg">
-      <SectionHeading as="p" size="sm" className="mb-3" variant="routine">
+      <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
         Активність: сьогодні та історія
       </SectionHeading>
 

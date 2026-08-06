@@ -307,7 +307,7 @@ export function WorkoutFinishSheets({
             <div className="fizruk-summary-header">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <SectionHeading size="sm" variant="fizruk" as="div">
+                  <SectionHeading size="xs" variant="fizruk" as="div">
                     Завершено
                   </SectionHeading>
                   <div className="text-style-title text-fizruk-soft-fg mt-1 leading-tight">

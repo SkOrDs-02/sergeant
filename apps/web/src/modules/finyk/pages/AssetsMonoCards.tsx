@@ -66,7 +66,7 @@ export function AssetsMonoCards({
     <CollapsibleSection
       storageKey="finyk_assets_mono_cards_open_v1"
       title={t.sectionTitle}
-      headingSize="sm"
+      headingSize="xs"
       collapsedIcon="credit-card"
     >
       {accounts.map((a, i) => {

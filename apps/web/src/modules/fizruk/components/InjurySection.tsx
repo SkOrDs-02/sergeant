@@ -49,7 +49,7 @@ export function InjurySection() {
 
   return (
     <Card as="section" radius="lg" padding="lg" aria-label={t.title}>
-      <SectionHeading size="sm" variant="fizruk" as="h2">
+      <SectionHeading size="xs" variant="fizruk" as="h2">
         {t.title}
       </SectionHeading>
 

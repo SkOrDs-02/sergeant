@@ -132,7 +132,7 @@ export function InlineAiRail({
               />
             </span>
             <div className="min-w-0">
-              <SectionHeading as="p" size="sm" variant="muted">
+              <SectionHeading as="p" size="xs" variant="muted">
                 {STATUS_LABEL[state.status]}
               </SectionHeading>
               <div className="text-style-label text-text truncate">

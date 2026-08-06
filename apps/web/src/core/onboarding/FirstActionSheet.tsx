@@ -226,7 +226,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <SectionHeading as="div" size="sm" variant="subtle">
+              <SectionHeading as="div" size="xs" variant="subtle">
                 Старт
               </SectionHeading>
               <h2 className="text-style-title text-text mt-0.5">
@@ -310,7 +310,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <SectionHeading as="div" size="sm" variant="subtle">
+              <SectionHeading as="div" size="xs" variant="subtle">
                 Старт
               </SectionHeading>
               <h2 className="text-style-title text-text mt-0.5">
@@ -399,7 +399,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <SectionHeading as="div" size="sm" variant="subtle">
+            <SectionHeading as="div" size="xs" variant="subtle">
               Старт
             </SectionHeading>
             <h2 className="text-style-title text-text mt-0.5">

@@ -69,7 +69,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           aria-expanded={receivablesExpanded}
           onClick={() => setReceivablesExpanded((value) => !value)}
         >
-          <SectionHeading as="span" size="sm" variant="finyk">
+          <SectionHeading as="span" size="xs" variant="finyk">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="hand-coins" size={14} className="text-success" />
               Мені винні
@@ -189,7 +189,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           aria-expanded={assetsExpanded}
           onClick={() => setAssetsExpanded((value) => !value)}
         >
-          <SectionHeading as="span" size="sm" variant="finyk">
+          <SectionHeading as="span" size="xs" variant="finyk">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="piggy-bank" size={14} className="text-muted" />
               Інші активи

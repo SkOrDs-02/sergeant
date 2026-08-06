@@ -41,7 +41,7 @@ export function Atlas() {
                 hero-ink tone; the existing `dark:text-fizruk-300/70`
                 already reads fine on the dark hero and stays. */}
             <SectionHeading
-              size="sm"
+              size="xs"
               variant="fizruk"
               as="p"
               className="text-hero-ink/80"

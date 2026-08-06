@@ -207,7 +207,7 @@ export function Measurements() {
             </svg>
           </div>
           <div className="min-w-0">
-            <SectionHeading as="div" size="sm" variant="fizruk">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.manual}
             </SectionHeading>
             <div className="text-style-label text-success-strong dark:text-success mt-0.5">
@@ -244,7 +244,7 @@ export function Measurements() {
         </div>
 
         <Card radius="lg">
-          <SectionHeading as="div" size="sm" className="mb-3" variant="fizruk">
+          <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
             {messages.fizruk.measurements.addHeading}
           </SectionHeading>
           <div className="grid grid-cols-2 gap-2">
@@ -350,7 +350,7 @@ export function Measurements() {
           <Card radius="lg">
             <div className="flex items-center justify-between">
               <div>
-                <SectionHeading as="div" size="sm" variant="fizruk">
+                <SectionHeading as="div" size="xs" variant="fizruk">
                   {messages.fizruk.measurements.lastEntry}{" "}
                   <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
                     · {stats.latestAt}
@@ -400,7 +400,7 @@ export function Measurements() {
 
         <Card radius="lg" padding="none" className="overflow-hidden">
           <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
-            <SectionHeading as="div" size="sm" variant="fizruk">
+            <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.history}
             </SectionHeading>
           </div>

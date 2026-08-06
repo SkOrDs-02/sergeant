@@ -63,7 +63,7 @@ export function DailyPlanMealRow({
               className="text-nutrition shrink-0"
               aria-hidden
             />
-            <SectionHeading as="span" size="sm" variant="nutrition">
+            <SectionHeading as="span" size="xs" variant="nutrition">
               {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
             </SectionHeading>
           </div>

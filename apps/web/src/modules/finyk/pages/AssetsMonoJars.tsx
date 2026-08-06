@@ -37,7 +37,7 @@ export function AssetsMonoJars({
     <CollapsibleSection
       storageKey="finyk_assets_mono_jars_open_v1"
       title={t.sectionTitle}
-      headingSize="sm"
+      headingSize="xs"
       collapsedIcon="piggy-bank"
     >
       {jars.map((j, i) => {
