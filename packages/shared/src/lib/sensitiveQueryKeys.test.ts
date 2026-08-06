@@ -43,6 +43,12 @@ describe("isSensitiveQueryKey — namespace exclusions", () => {
     expect(isSensitiveQueryKey(["sync", "manifest"])).toBe(true);
     expect(isSensitiveQueryKey(["sync", "module", "finyk"])).toBe(true);
   });
+
+  it("excludes the billing namespace (F13 — persisted tier crossed accounts)", () => {
+    expect(isSensitiveQueryKey(["billing"])).toBe(true);
+    expect(isSensitiveQueryKey(["billing", "status"])).toBe(true);
+    expect(isSensitiveQueryKey(["billing", "providers"])).toBe(true);
+  });
 });
 
 describe("isSensitiveQueryKey — fragment exclusions", () => {
@@ -116,6 +122,7 @@ describe("SENSITIVE_QUERY_KEY_NAMESPACES contents", () => {
     // drift is exactly what this test is meant to catch.
     expect([...SENSITIVE_QUERY_KEY_NAMESPACES].sort()).toEqual([
       "auth",
+      "billing",
       "coach",
       "me",
       "sync",

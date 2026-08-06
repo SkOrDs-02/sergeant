@@ -59,6 +59,12 @@ export const SENSITIVE_QUERY_KEY_NAMESPACES: ReadonlySet<string> = new Set([
   "coach",
   // Cloud-sync subsystem — `module_data` payloads, manifest, etc.
   "sync",
+  // Billing/subscription state (`["billing", "status"]` та ін.) —
+  // user-scoped: persisted снапшот пережив reload і НАВІТЬ зміну
+  // акаунта на пристрої (persister keyed by build-id), тож trialing-
+  // платник бачив «Free — зараз ваш план» зі старого кешу сусіднього
+  // акаунта (браузерна верифікація 2026-08-06, F13).
+  "billing",
 ]);
 
 /**
