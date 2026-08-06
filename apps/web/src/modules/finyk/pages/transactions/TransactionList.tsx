@@ -71,12 +71,26 @@ function DayCardShell({
   const roundBottom = edge === "bottom" || edge === "single";
   return (
     <div className={cn(groupEnd && "pb-2.5")}>
+      {/* AI-CONTEXT: день транзакцій — це чек, і тепер він так і
+          виглядає (П3 «край і зріз», рішення власника 2026-08-06 на
+          `mockups/product/own-material-variants.html`). Замість
+          скруглень: друкарська лінійка там, де день починається, і
+          відривна перфорація там, де закінчується.
+
+          Утиліти РОЗДІЛЕНІ саме заради цього місця. Група дня — це
+          стос із кількох `DayCardShell`; якби лінійка й перфорація
+          були одним класом, кожна транзакція отримала б обидві, і
+          матеріал став би візерунком.
+
+          AI-DANGER: `overflow-hidden` тут більше НЕ ставиться на
+          перфорованому краю — він обрізав би маску, і зубці зникли б.
+          Замість нього обрізанням займається сама маска. */}
       <div
         className={cn(
           "bg-panel",
-          roundTop && "rounded-t-2xl",
-          roundBottom && "rounded-b-2xl",
-          (roundTop || roundBottom) && "overflow-hidden",
+          roundTop && "edge-rule border-line",
+          roundBottom && "edge-perf",
+          roundTop && !roundBottom && "overflow-hidden",
         )}
       >
         {inset && (
