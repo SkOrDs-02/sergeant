@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import * as Sentry from "@sentry/node";
+
 import {
   enqueueAuthMail,
   registerAuthMailDispatcher,
@@ -7,6 +9,16 @@ import {
 } from "../lib/jobs/authMail.js";
 import { isDeployedProduction } from "../env/env.js";
 import { logger } from "../obs/logger.js";
+
+/**
+ * Observability: без `RESEND_API_KEY` у проді транзакційні листи
+ * (verify-email / reset / change-email) мовчки НЕ надсилаються, а
+ * викликаючий Better Auth endpoint усе одно віддає `200` — founder не має
+ * сигналу, що доставка зламана (browser-QA 2026-08-06). Один Sentry-alert
+ * на процес (далі лише per-email warn-лог), щоб не флудити подіями на
+ * кожен sign-up при затягнутому мисконфізі.
+ */
+let providerMisconfigAlerted = false;
 
 function emailFingerprint(email: string): string {
   return createHash("sha256")
@@ -60,6 +72,18 @@ async function dispatchAuthTransactionalEmail(
         kind: args.kind,
         emailHash: emailFingerprint(args.to),
       });
+      if (!providerMisconfigAlerted) {
+        providerMisconfigAlerted = true;
+        Sentry.captureMessage(
+          "Auth email provider not configured (RESEND_API_KEY missing) — " +
+            "verification / password-reset / change-email emails are being " +
+            "silently dropped while endpoints still return 200.",
+          {
+            level: "error",
+            tags: { area: "auth-mail", reason: "no_provider" },
+          },
+        );
+      }
     } else {
       logger.info({
         msg: "auth_transactional_email_skipped_dev_no_resend",

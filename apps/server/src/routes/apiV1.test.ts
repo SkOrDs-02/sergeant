@@ -700,11 +700,15 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
 });
 
 /**
- * H6 — sensitive-action gate `/api/mono/connect` мусить вимагати
- * `email_verified=true`. Закриває squat-attack: атакувальник реєструє
- * акаунт на чужий email і одразу під'єднує свій Mono-token, отримуючи
- * картину "хтось бачить мої транзакції" та забруднюючи нашу БД
- * кросс-власницькими записами.
+ * H6 — sensitive-action gate `/api/mono/connect`.
+ *
+ * AI-LEGACY: expires 2026-11-07 — бета-виняток. Email-верифікаційний гейт
+ * на підключення банку тимчасово знято (`mono-webhook.ts`), поки не
+ * налагоджено доставку верифікаційних листів: бета-юзер не міг би
+ * підтвердити пошту й узагалі під'єднати Mono. Тому нижче більше НЕ
+ * очікуємо `403 EMAIL_VERIFICATION_REQUIRED` для неверифікованого — цей
+ * тест разом із гейтом треба відновити (unverified → 403) щойно листи
+ * запрацюють. `requireSession()` (401 для анонів) лишається чинним.
  */
 describe("H6: /api/mono/connect gate on email verification", () => {
   // `MONO_WEBHOOK_ENABLED` за замовчуванням false у тест-env, тож для
@@ -731,7 +735,7 @@ describe("H6: /api/mono/connect gate on email verification", () => {
     }
   });
 
-  it("unverified user → 403 EMAIL_VERIFICATION_REQUIRED, без виклику Mono-API", async () => {
+  it("бета-виняток: unverified user проходить email-гейт (НЕ 403 EMAIL_VERIFICATION_REQUIRED)", async () => {
     getSessionUserMock.mockResolvedValueOnce({
       id: "u-unverified",
       email: "squat@victim.com",
@@ -740,21 +744,21 @@ describe("H6: /api/mono/connect gate on email verification", () => {
       emailVerified: false,
     });
     const app = createApp();
+    // Короткий токен: `connectHandler` відсік би його ще ДО мережевого fetch
+    // до Mono-API. Нам важливо лише, що запит ПРОЙШОВ email-гейт і дійшов до
+    // handler-ланцюга — тобто верифікація email більше не блокує (бета).
     const res = await request(app)
       .post("/api/mono/connect")
       .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .set("Content-Type", "application/json")
-      .send({ token: "would-be-victim-token-12345" });
-    expect(res.status).toBe(403);
-    expect(res.body).toMatchObject({
-      code: "EMAIL_VERIFICATION_REQUIRED",
-    });
-    // CORP-гарантія H8 продовжує діяти і на 403.
-    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
-    // Жоден запит до БД (encrypt-token, INSERT mono_connection) не мав
-    // піти, бо middleware відсікає ДО handler-а.
-    expect(queryMock).not.toHaveBeenCalled();
+      .send({ token: "short" });
+    // AI-LEGACY: expires 2026-11-07 — відновити на `403` +
+    // `code: EMAIL_VERIFICATION_REQUIRED`, коли гейт повернеться. Зараз
+    // рефекшн приходить від handler-а (webhook-disabled / token-check у
+    // тест-env), а НЕ від email-гейта — ключове, що це не 403 EMAIL_*.
+    expect(res.status).not.toBe(403);
+    expect(res.body?.code).not.toBe("EMAIL_VERIFICATION_REQUIRED");
   });
 
   it("unauthenticated → 401 (gate не downgrades 401 у 403)", async () => {
