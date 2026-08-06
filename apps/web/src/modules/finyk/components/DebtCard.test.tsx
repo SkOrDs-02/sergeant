@@ -23,7 +23,19 @@ describe("DebtCard", () => {
       />,
     );
     expect(screen.getByText("Кредит")).toBeInTheDocument();
-    expect(screen.getByText(/−5,?000\s*₴|−5 000 ₴/)).toBeInTheDocument();
+    // `Money` розкладає суму на тири, тож рядковий матчер її не бачить.
+    // Пробіли нерозривні: U+00A0 у розрядах, U+202F перед ₴ (див.
+    // `NARROW_NBSP` у `Money`). Зі звичайним пробілом тест не знайде
+    // нічого, хоча на екрані все правильно.
+    // `getAllByText`, а не `getByText`: збіг дає і обгортка суми, і
+    // сам `Money` всередині — у них однаковий `textContent`. Нас
+    // цікавить факт наявності, а не конкретний вузол.
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.textContent === "\u22125\u00a0000\u202f\u20b4",
+        { selector: "span" },
+      ).length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText(/Сплачено/)).toBeInTheDocument();
   });
 
@@ -39,7 +51,11 @@ describe("DebtCard", () => {
       />,
     );
     expect(screen.getByText(/Отримано/)).toBeInTheDocument();
-    expect(screen.getByText(/\+3/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText((_, el) => (el?.textContent ?? "").startsWith("+3"), {
+        selector: "span",
+      }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("masks amounts when showBalance is false", () => {
