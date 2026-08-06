@@ -97,6 +97,32 @@ export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 // the one contract.
 export type CardRadius = "md" | "lg" | "xl";
 
+/**
+ * Обробка краю — власний матеріал Sergeant (П3, рішення власника
+ * 2026-08-06 на `mockups/product/own-material-variants.html`).
+ *
+ * AI-CONTEXT: це НЕ радіус і не його четверте значення. Радіус описує,
+ * наскільки скруглений прямокутник; край описує, чим поверхня взагалі
+ * є. `stub` каже «це відривний талон», `rule` — «це аркуш під
+ * друкарською лінійкою». Обидва скасовують радіус, і саме тому проп
+ * окремий: інакше `radius="stub"` читалося б як «скруглення розміру
+ * stub», чого не буває.
+ *
+ * Навіщо: §3.2 анти-слоп-стратегії міряє 723 входження
+ * `rounded-2xl|3xl|full` — це найбільший атрактор у нас, і єдиний, у
+ * якого є число. Матеріал бʼє саме по ньому.
+ */
+export type CardEdge = "stub" | "rule" | "perf";
+
+const edges: Record<CardEdge, string> = {
+  /** Окремий документ поза стосом: лінійка зверху + відривний низ. */
+  stub: "edge-stub",
+  /** Перша поверхня в стосі — лише друкарська лінійка. */
+  rule: "edge-rule",
+  /** Остання поверхня в стосі — лише відривний низ. */
+  perf: "edge-perf",
+};
+
 const radii: Record<CardRadius, string> = {
   md: "rounded-xl", // 12px — CONTROL tier
   lg: "rounded-2xl", // 16px — CARD tier
@@ -289,6 +315,11 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
   prominence?: CardProminence | undefined;
   padding?: CardPadding | undefined;
   radius?: CardRadius | undefined;
+  /**
+   * Документна обробка краю. Коли задана — `radius` ігнорується, бо
+   * обидва описують ту саму межу поверхні й не складаються.
+   */
+  edge?: CardEdge | undefined;
   as?: ElementType | undefined;
   children?: ReactNode | undefined;
 }
@@ -319,6 +350,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     prominence,
     padding = "md",
     radius,
+    edge,
     as: Component = "div",
     children,
     ...props
@@ -332,7 +364,10 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
       ref={ref}
       className={cn(
         surfaceClass(resolved),
-        radii[effectiveRadius],
+        // Край скасовує радіус, а не додається до нього: це дві назви
+        // однієї межі. Порядок важливий — `edge-*` мусить іти після
+        // `surfaceClass`, бо обнуляє його рамку й тінь.
+        edge ? edges[edge] : radii[effectiveRadius],
         paddings[padding],
         className,
       )}

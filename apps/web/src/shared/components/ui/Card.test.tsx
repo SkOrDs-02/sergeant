@@ -261,4 +261,42 @@ describe("Card", () => {
     expect(getByText("Футер").className).toContain("footer-extra");
     expect(getByText("Футер").className).toContain("border-t");
   });
+
+  // AI-CONTEXT: край — власний матеріал (П3, рішення власника
+  // 2026-08-06). Тести тримають головний інваріант: край і радіус
+  // описують ту саму межу поверхні й НЕ складаються. Якщо колись
+  // з'явиться картка одночасно зі скругленням і перфорацією — це
+  // означає, що хтось зробив їх ортогональними, а вони не такі.
+  describe("edge — документна обробка краю", () => {
+    it("replaces the radius instead of stacking with it", () => {
+      const { container } = render(
+        <Card edge="stub" radius="xl">
+          Талон
+        </Card>,
+      );
+      const cls = container.firstElementChild!.className;
+      expect(cls).toContain("edge-stub");
+      expect(cls).not.toContain("rounded-3xl");
+      expect(cls).not.toContain("rounded-2xl");
+      expect(cls).not.toContain("rounded-xl");
+    });
+
+    it("keeps the standard radius when no edge is given", () => {
+      const { container } = render(<Card radius="xl">Картка</Card>);
+      const cls = container.firstElementChild!.className;
+      expect(cls).toContain("rounded-3xl");
+      expect(cls).not.toContain("edge-");
+    });
+
+    // Розділені утиліти — щоб у стосі лінійка дісталась першій
+    // поверхні, а перфорація останній.
+    it.each([
+      ["rule", "edge-rule"],
+      ["perf", "edge-perf"],
+      ["stub", "edge-stub"],
+    ] as const)("edge=%s maps to .%s", (edge, expected) => {
+      const { container } = render(<Card edge={edge}>Документ</Card>);
+      expect(container.firstElementChild!.className).toContain(expected);
+    });
+  });
 });
